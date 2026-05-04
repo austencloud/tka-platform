@@ -12,20 +12,20 @@
 -->
 <script lang="ts">
 
-import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
+import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-  import type { PropState } from "../../shared/domain/types/PropState";
+  import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { startPositionDeriver as startPositionDeriverSingleton } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
   interface Props {
     /** Sequence to preview (from library) */

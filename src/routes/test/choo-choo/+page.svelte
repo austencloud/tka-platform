@@ -8,11 +8,11 @@
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 
-  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
-  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import {
     generateChooChoo,
     generateChooChooVariations,

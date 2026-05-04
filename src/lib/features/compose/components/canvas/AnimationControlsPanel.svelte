@@ -80,9 +80,9 @@
     isPlaying?: boolean;
     blueMotionVisible?: boolean;
     redMotionVisible?: boolean;
-    playbackMode?: import("../../state/animation-panel-state.svelte").PlaybackMode;
+    playbackMode?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
     stepPlaybackPauseMs?: number;
-    stepPlaybackStepSize?: import("../../state/animation-panel-state.svelte").StepPlaybackStepSize;
+    stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
     isSideBySideLayout?: boolean;
     isExpanded?: boolean;
     scrollContainerRef?: HTMLDivElement | null;
@@ -96,11 +96,11 @@
     onPlaybackStart?: () => void;
     onPlaybackToggle?: () => void;
     onPlaybackModeChange?: (
-      mode: import("../../state/animation-panel-state.svelte").PlaybackMode
+      mode: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode
     ) => void;
     onStepPlaybackPauseMsChange?: (pauseMs: number) => void;
     onStepPlaybackStepSizeChange?: (
-      stepSize: import("../../state/animation-panel-state.svelte").StepPlaybackStepSize
+      stepSize: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize
     ) => void;
     onStepHalfBeatBackward?: () => void;
     onStepHalfBeatForward?: () => void;

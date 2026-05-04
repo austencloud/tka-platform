@@ -8,7 +8,7 @@
   When granularity is "solo", a third row appears to pick which color (Blue / Red).
 -->
 <script lang="ts">
-  import type { BrowseViewMode } from "../domain/BrowseViewMode";
+  import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 
   interface Props {
     viewMode: BrowseViewMode;

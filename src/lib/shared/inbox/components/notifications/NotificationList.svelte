@@ -5,7 +5,7 @@
    * List of notifications with error handling and accessibility
    */
 
-  import type { UserNotification } from "$lib/features/feedback/domain/models/notification-models";
+  import type { UserNotification } from "$lib/shared/notifications/domain/models/notification-models";
   import InboxNotificationItem from "./InboxNotificationItem.svelte";
   import NotificationSkeleton from "../skeletons/NotificationSkeleton.svelte";
   import EmptyNotifications from "../empty-states/EmptyNotifications.svelte";

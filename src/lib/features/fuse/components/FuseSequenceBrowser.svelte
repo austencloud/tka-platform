@@ -9,9 +9,9 @@
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-	import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
+	import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-	import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+	import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 	import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 	import { getFuseContext } from "../context/fuse-context";
 

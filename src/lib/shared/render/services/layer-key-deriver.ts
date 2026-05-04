@@ -8,7 +8,7 @@
  */
 
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
-import type { StepData } from "../../../features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { LayerRenderOptions } from "../services/contracts/types";
 
 export interface BaseLayerKeyComponents {

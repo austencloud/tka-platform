@@ -14,12 +14,12 @@ import type { OrientationContinuityError, TransitionValidationResult } from "./c
 export interface OrientationContinuityValidator {
   validateSequence: (sequence: import("$lib/shared/foundation/domain/models/SequenceData").SequenceData) => OrientationContinuityError[];
   validateTransition: (
-    lastStep: import("$lib/features/create/shared/domain/models/StepData").StepData,
+    lastStep: import("$lib/shared/foundation/domain/models/StepData").StepData,
     nextPictograph: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData,
     orientationCalculator: import("$lib/shared/pictograph/prop/services/implementations/OrientationCalculator").OrientationCalculator
   ) => TransitionValidationResult;
 }
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";

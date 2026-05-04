@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-  import { getBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/getBrowseThumbnailProvider";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getBrowseThumbnailProvider } from "$lib/shared/browse/getBrowseThumbnailProvider";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
 
   interface Props {
     visible: boolean;

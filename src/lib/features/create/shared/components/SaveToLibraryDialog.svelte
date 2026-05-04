@@ -5,7 +5,7 @@ Dialog for configuring sequence metadata before saving to library.
 Allows user to set name, visibility, tags, collections, and notes.
 -->
 <script lang="ts" module>
-  import type { SequenceVisibility } from "$lib/features/library/domain/models/LibrarySequence";
+  import type { SequenceVisibility } from "$lib/shared/library/domain/models/LibrarySequence";
 
   export interface SaveMetadata {
     name: string;

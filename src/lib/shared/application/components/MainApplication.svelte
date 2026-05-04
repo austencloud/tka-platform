@@ -20,7 +20,7 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
   import InboxDrawer from "../../inbox/components/InboxDrawer.svelte";
   import InboxSubscriptionProvider from "../../inbox/components/InboxSubscriptionProvider.svelte";
   import MyFeedbackDetail from "$lib/features/feedback/components/my-feedback/MyFeedbackDetail.svelte";
-  import { myFeedbackDetailState } from "$lib/features/feedback/state/my-feedback-detail-state.svelte";
+  import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
   import FirstRunWizard from "../../onboarding/components/first-run/FirstRunWizard.svelte";
   import CreateTutorialWizard from "../../onboarding/components/create-tutorial/CreateTutorialWizard.svelte";
   import TutorialPrompt from "../../onboarding/components/create-tutorial/TutorialPrompt.svelte";

@@ -8,11 +8,11 @@
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-  import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+  import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { creatorsViewState } from "../state/creators-view-state.svelte";
-  import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
+  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import ProfileHeaderBar from "./profile/ProfileHeaderBar.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";

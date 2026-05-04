@@ -20,20 +20,20 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
-import { getVideoExportOrchestrator } from "$lib/features/compose/getVideoExportOrchestrator";
-import { getVideoExporter } from "$lib/features/compose/getVideoExporter";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
+import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
+import { getVideoExporter } from "$lib/shared/animation-engine/getVideoExporter";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
-  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-  import type { VideoExporter } from "$lib/features/compose/services/implementations/VideoExporter";
-  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import type { VideoExporter } from "$lib/shared/animation-engine/services/implementations/VideoExporter";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-  import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import {
     getCurrentAnimationPanelState,
     updateAnimationPanelState,
@@ -48,7 +48,7 @@ import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compo
     ANIMATION_LOAD_DELAY_MS,
     ANIMATION_AUTO_START_DELAY_MS,
     VIDEO_EXPORT_SUCCESS_DELAY_MS,
-  } from "$lib/features/compose/shared/domain/constants/timing";
+  } from "$lib/shared/animation-engine/domain/constants/timing";
 import type { AnimationPanelState } from "../navigation/services/contracts/types";
   import { createComponentLogger } from "../utils/debug-logger";
   import { setAnimationPlaybackRef } from "./animation-playback-ref.svelte";

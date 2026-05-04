@@ -1,7 +1,7 @@
 <!-- ReleaseNotesTab - Master-detail version history with container query responsive layout -->
 <script lang="ts">
-  import { createVersionState } from "$lib/features/feedback/state/version-state.svelte";
-  import type { AppVersion } from "$lib/features/feedback/domain/models/version-models";
+  import { createVersionState } from "$lib/shared/feedback/state/version-state.svelte";
+  import type { AppVersion } from "$lib/shared/versioning/domain/models/version-models";
   import VersionCard from "./release-notes/VersionCard.svelte";
   import VersionListItem from "./release-notes/VersionListItem.svelte";
   import VersionDetailContent from "./release-notes/VersionDetailContent.svelte";

@@ -6,10 +6,10 @@
  */
 
 import type { CodexLetterMapping } from "../../../../../features/learn/codex/domain/models/codex-models";
-import type { CodexLetterMappingRepo } from "$lib/features/learn/codex/services/implementations/CodexLetterMappingRepo";
+import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/CodexLetterMappingRepo";
 import type { MotionType } from "../../../shared/domain/enums/pictograph-enums";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
-import type { ParsedCsvRow } from "../../../../../features/create/generate/shared/domain/csv-handling/CsvModels";
+import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModels";
 
 import type { Letter } from "../../../../foundation/domain/models/Letter";
 import type {

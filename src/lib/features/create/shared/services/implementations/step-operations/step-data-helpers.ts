@@ -4,7 +4,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "../../../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 
 /** Beat 0 = start position, steps 1+ are in the sequence */

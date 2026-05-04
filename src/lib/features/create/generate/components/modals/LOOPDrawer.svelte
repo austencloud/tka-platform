@@ -8,7 +8,7 @@
   import { portal } from "./portal";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import LOOPExpandedOverlay from "../cards/LOOPExpandedOverlay.svelte";
-  import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
 
   let {

@@ -22,7 +22,7 @@ interface ICodexPictographUpdater {
   colorSwapAllPictographs: typeof colorSwapAllPictographs;
 }
 
-import type { CodexLetterMappingRepo } from "./CodexLetterMappingRepo";
+import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/CodexLetterMappingRepo";
 
 export class Codex {
   private initialized = false;

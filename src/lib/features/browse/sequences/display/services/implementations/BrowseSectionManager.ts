@@ -6,12 +6,12 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import type {
   SectionConfig,
   SequenceSection,
-} from "$lib/features/browse/shared/domain/models/browse-models";
-import { sortSequencesByKineticAlphabet } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
+} from "$lib/shared/browse/domain/models/browse-models";
+import { sortSequencesByKineticAlphabet } from "$lib/shared/browse/utils/kinetic-alphabet-sort";
 import { deriveWord } from '$lib/shared/foundation/services/word-deriver';
 
 export class BrowseSectionManager {

@@ -10,7 +10,7 @@ redSoloProp is missing, those buttons are hidden.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { BrowseViewMode } from "../domain/BrowseViewMode";
+  import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {

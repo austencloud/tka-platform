@@ -6,7 +6,7 @@
  */
 
 import { extractSequenceMetadata } from "$lib/shared/pictograph/shared/utils/png-metadata-extractor";
-import type { StepData } from "../../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

@@ -17,7 +17,7 @@
 
 // Side-effect: configure ShortCodeManager with browse dep
 import { configureShortCodeManager } from "../qr/getShortCodeManager";
-import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 
 // Side-effect: late-bind QR generator into ImageComposer
 import { getQRCodeGenerator } from "../qr/getQRCodeGenerator";

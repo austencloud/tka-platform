@@ -13,7 +13,7 @@ import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { AngleCalculatorLike } from "../angle-calculator";
+import type { AngleCalculatorLike } from "$lib/shared/animation-engine/services/angle-calculator";
 import {
   calculateProTargetAngle,
   calculateAntispinTargetAngle,
@@ -21,7 +21,7 @@ import {
   calculateDashTargetAngle,
   calculateFloatStaffAngle,
 } from "../motion-calculator";
-import { PI } from "../../shared/domain/math-constants.js";
+import { PI } from "$lib/shared/foundation/domain/math-constants";
 
 // ✅ ELIMINATED: StepEndpoints and StepDefinition - pointless reshuffling!
 // Work directly with MotionData and return simple objects

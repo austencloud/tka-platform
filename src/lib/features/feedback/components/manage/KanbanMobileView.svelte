@@ -1,9 +1,9 @@
 <!-- Mobile view: tabs + active column -->
 <script lang="ts">
-  import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
+  import type { FeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
   import type { KanbanBoardState } from "../../state/kanban-board-state.svelte";
   import type {
-    FeedbackItem, FeedbackStatus, } from "../../domain/models/feedback-models";
+    FeedbackItem, FeedbackStatus, } from "$lib/shared/feedback/domain/models/feedback-models";
   import FeedbackKanbanColumn from "./FeedbackKanbanColumn.svelte";
   import KanbanStatusTab from "./KanbanStatusTab.svelte";
   import type { ClaimStatusDeriver } from "../../services/implementations/ClaimStatusDeriver";

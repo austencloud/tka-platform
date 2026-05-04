@@ -1,6 +1,6 @@
 <script lang="ts" module>
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
-import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
+import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 // propInterpolator and sequenceConverter are now module-level functions injected directly
 import { getViewer3DUndoManager } from "$lib/shared/3d/getViewer3DUndoManager";
@@ -160,8 +160,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { browser } from "$app/environment";
   import { generateViewerURL } from "$lib/shared/navigation/services/sequence-encoder";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-  import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { SequenceDataProvider } from "$lib/shared/sequence-viewer/services/implementations/SequenceDataProvider";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";

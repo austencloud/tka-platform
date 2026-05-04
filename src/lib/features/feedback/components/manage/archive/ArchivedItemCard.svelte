@@ -1,10 +1,10 @@
 <!-- ArchivedItemCard - Card display for archived feedback item in "All Items" view -->
 <script lang="ts">
-  import type { FeedbackItem } from "../../../domain/models/feedback-models";
+  import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
   import {
     TYPE_CONFIG,
     type FeedbackType,
-  } from "../../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
 
   const DEFAULT_TYPE_CONFIG = {
     label: "Unknown",

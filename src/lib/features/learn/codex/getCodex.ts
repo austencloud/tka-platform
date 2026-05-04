@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 import { Codex } from './services/implementations/Codex';
-import type { CodexLetterMappingRepo } from './services/implementations/CodexLetterMappingRepo';
+import type { CodexLetterMappingRepo } from '$lib/shared/learn/services/CodexLetterMappingRepo';
 import { getCodexLetterMappingRepo } from './getCodexLetterMappingRepo';
 import * as codexPictographUpdater from './services/codex-pictograph-updater';
 import { getQuizRepoManager } from '$lib/features/learn/quiz/getQuizRepoManager';

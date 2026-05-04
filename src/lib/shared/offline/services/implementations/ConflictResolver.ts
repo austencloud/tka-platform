@@ -7,7 +7,7 @@
  * another device saved changes while this device was offline).
  */
 
-import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import type { VersionConflict, ConflictResolution, ConflictPromptCallback } from "../contracts/types";
 
 export class ConflictResolver {

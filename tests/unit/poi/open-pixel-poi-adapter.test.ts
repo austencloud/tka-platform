@@ -5,7 +5,7 @@ import {
   buildSpeedPacket,
   chunkPacket,
 } from "$lib/features/poi/services/implementations/OpenPixelPoiAdapter";
-import { createEmptyPattern, setPixel } from "$lib/features/poi/domain/StripPattern";
+import { createEmptyPattern, setPixel } from "$lib/shared/poi/domain/StripPattern";
 import { BLE_START_BYTE, BLE_END_BYTE, BleCommCode } from "$lib/features/poi/domain/DeviceTypes";
 
 describe("Open-Pixel-Poi packet building", () => {

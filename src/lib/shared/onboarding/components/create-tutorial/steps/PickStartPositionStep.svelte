@@ -7,7 +7,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
-  import { createSimplifiedStartPositionState } from "$lib/features/create/construct/start-position-picker/state/start-position-state.svelte";
+  import { createSimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
   import { createTutorialState } from "../../../state/create-tutorial-state.svelte";
 
   interface Props {

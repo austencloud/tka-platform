@@ -12,8 +12,8 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { TurnPattern } from "../../domain/models/TurnPatternData";
-  import { formatTurnValue } from "../../domain/models/TurnPatternData";
+  import type { TurnPattern } from "$lib/shared/create/domain/TurnPatternData";
+  import { formatTurnValue } from "$lib/shared/create/domain/TurnPatternData";
   import {
     getTemplatesForStepCount,
     getComplexityInfo,
@@ -22,7 +22,7 @@
     type PatternComplexity,
     type TurnValue,
   } from "../../domain/templates/turn-pattern-templates";
-  import * as turnPatternManager from "../../services/turn-pattern-manager";
+  import * as turnPatternManager from "$lib/shared/create/services/turn-pattern-manager";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
   import PatternItemCard from "./PatternItemCard.svelte";
 

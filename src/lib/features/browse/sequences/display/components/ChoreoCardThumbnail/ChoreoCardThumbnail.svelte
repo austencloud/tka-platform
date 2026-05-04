@@ -21,7 +21,7 @@ Variation support:
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
-  import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
   import {

@@ -4,8 +4,8 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -15,8 +15,8 @@ import {
   Orientation,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createStepData } from "$lib/features/create/shared/domain/factories/createStepData";
-import { createStartPositionData } from "$lib/features/create/shared/domain/factories/createStartPositionData";
+import { createStepData } from "$lib/shared/foundation/domain/factories/createStepData";
+import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
 
 /**
  * Convert PictographData to StepData.

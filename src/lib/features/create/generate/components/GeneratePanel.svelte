@@ -37,7 +37,7 @@ Card-based architecture with integrated Generate button:
   import {
     setGeneratorVoiceRef,
     type GeneratorVoiceRef,
-  } from "../state/generator-voice-ref.svelte";
+  } from "$lib/shared/create/state/generator-voice-ref.svelte";
   import { uiConfigToGenerationOptions } from "../shared/utils/config-mapper";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/PropType";

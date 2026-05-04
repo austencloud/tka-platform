@@ -1,7 +1,7 @@
 <script lang="ts">
   import SegmentedSequenceProgressBar from "$lib/shared/animation-engine/components/layers/SegmentedSequenceProgressBar.svelte";
-  import { createStepData } from "$lib/features/create/shared/domain/factories/createStepData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import { createStepData } from "$lib/shared/foundation/domain/factories/createStepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   // Mock sequence data with varied durations

@@ -1,6 +1,6 @@
 import { VoiceSessionRecorder } from '$lib/shared/voice-control/services/implementations/VoiceSessionRecorder';
 import * as voiceSessionFormatter from './services/voice-session-formatter';
-import * as voiceSessionRepository from './services/voice-session-repository';
+import * as voiceSessionRepository from '$lib/shared/voice-sessions/services/voice-session-repository';
 import * as voiceSessionAnalyzer from './services/voice-session-analyzer';
 import { VoiceSessionReplayer } from './services/implementations/VoiceSessionReplayer';
 import * as tierPromotionEngine from './services/tier-promotion-engine';

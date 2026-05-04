@@ -9,7 +9,7 @@ import { firestoreGet, firestoreList, firestoreSet } from "$lib/shared/firestore
 import { UserWithFavoriteSchema } from "../domain/models/favorite-config-schemas";
 import type { FavoriteConfig, CommunityFavorite } from "../domain/models/favorite-config";
 import type { UIGenerationConfig } from "../state/generate-config.svelte";
-import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 
 const USERS_COLLECTION = "users";
 

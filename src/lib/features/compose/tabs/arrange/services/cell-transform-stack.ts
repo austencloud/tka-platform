@@ -9,7 +9,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { AppliedTransform } from "$lib/features/compose/compose/domain/types";
+import type { AppliedTransform } from "$lib/shared/animation-engine/domain/compose-types";
 import { applyTransform } from "./arrange-layer-transformer";
 
 export async function computeEffective(

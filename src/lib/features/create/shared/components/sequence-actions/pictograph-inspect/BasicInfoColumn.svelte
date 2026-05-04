@@ -4,7 +4,7 @@
    *
    * Displays basic beat information and lookup keys for debugging.
    */
-  import type { StepData } from "../../../domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { formatBasicInfo } from "./formatters";
 

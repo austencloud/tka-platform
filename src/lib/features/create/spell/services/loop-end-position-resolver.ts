@@ -15,7 +15,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import {
   LOOPType,
   Period,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
 
 /**
  * Interface describing the shape of the LOOP end position resolver module.
@@ -29,7 +29,7 @@ import {
   HALF_POSITION_MAP,
   QUARTER_POSITION_MAP_CW,
   QUARTER_POSITION_MAP_CCW,
-} from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
+} from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,

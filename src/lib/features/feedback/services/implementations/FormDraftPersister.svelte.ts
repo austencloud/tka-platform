@@ -2,7 +2,7 @@ import type { DraftSaveStatus } from "../contracts/types";
 import type {
   FeedbackFormData,
   FeedbackDraft,
-} from "../../domain/models/feedback-models";
+} from "$lib/shared/feedback/domain/models/feedback-models";
 import {
   saveDraft as saveToStorage,
   loadDraft as loadFromStorage,

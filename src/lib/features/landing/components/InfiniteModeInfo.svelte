@@ -12,7 +12,7 @@
     LOOPType,
     Period,
     LOOP_TYPE_LABELS,
-  } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
   let {
     sequenceInfo,

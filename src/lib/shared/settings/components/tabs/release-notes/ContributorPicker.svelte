@@ -1,6 +1,6 @@
 <!-- ContributorPicker - Search existing user accounts to tag as contributors on changelog entries -->
 <script lang="ts">
-	import type { Contributor } from '$lib/features/feedback/domain/models/contributor-models';
+	import type { Contributor } from '$lib/shared/versioning/domain/models/contributor-models';
 	import ContributorBadge from './ContributorBadge.svelte';
 
 	let {

@@ -14,11 +14,11 @@ import type {
   TesterConfirmationStatus,
   DeviceContext,
   StatusHistoryEntry,
-} from "../domain/models/feedback-models";
+} from "$lib/shared/feedback/domain/models/feedback-models";
 import {
   isFeedbackStatus,
   isFeedbackType,
-} from "../domain/models/feedback-models";
+} from "$lib/shared/feedback/domain/models/feedback-models";
 
 export function mapDocToFeedbackItem(
   id: string,

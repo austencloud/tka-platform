@@ -17,9 +17,9 @@
   import {
     generatorHelpContent,
     type GeneratorHelpItem,
-  } from "$lib/features/create/generate/domain/generator-help-content";
-  import { CARD_REGISTRY, type GeneratorCardId } from "$lib/features/create/generate/shared/domain/card-registry";
-  import { getCardColor } from "$lib/features/create/generate/shared/domain/card-colors";
+  } from "$lib/shared/create/domain/generator-help-content";
+  import { CARD_REGISTRY, type GeneratorCardId } from "$lib/shared/create/domain/card-registry";
+  import { getCardColor } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 

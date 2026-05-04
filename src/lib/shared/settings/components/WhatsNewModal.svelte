@@ -8,16 +8,16 @@
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { getContributorLoader } from "$lib/features/feedback/getContributorLoader";
+  import { getContributorLoader } from "$lib/shared/feedback/getContributorLoader";
   import {
     CATEGORY_ICONS,
     CATEGORY_LABELS,
-  } from "$lib/features/feedback/domain/constants/changelog-constants";
-  import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
+  } from "$lib/shared/versioning/domain/constants/changelog-constants";
+  import type { Contributor } from "$lib/shared/versioning/domain/models/contributor-models";
   import type {
     ChangelogCategory,
     ChangelogEntry,
-  } from "$lib/features/feedback/domain/models/version-models";
+  } from "$lib/shared/versioning/domain/models/version-models";
   import ContributorBadge from "./tabs/release-notes/ContributorBadge.svelte";
 
   // Category display order and colors

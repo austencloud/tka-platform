@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
-import type { EffortId, EffortParams } from "$lib/features/effort-lab/domain/effort-types";
-import * as effortHapticMapper from "$lib/features/effort-lab/services/effort-haptic-mapper";
+import type { EffortId, EffortParams } from "$lib/shared/effort/domain/effort-types";
+import * as effortHapticMapper from "$lib/shared/effort/services/effort-haptic-mapper";
 import type { HapticFeedbackConfig, HapticFeedbackType, HapticImpactStyle, HapticNotificationType } from "../contracts/types";
 import { isNative as isNativePlatform } from "$lib/shared/platform/services/platform-detector";
 

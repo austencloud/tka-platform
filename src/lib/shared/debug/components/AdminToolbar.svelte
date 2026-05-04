@@ -26,14 +26,14 @@
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
   import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
-  import * as cloudThumbnailCacheModule from "$lib/features/browse/sequences/display/services/cloud-thumbnail-cache";
-  import { getThumbnailLocalCache } from "$lib/features/browse/sequences/display/getThumbnailLocalCache";
-  import { getThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator";
+  import * as cloudThumbnailCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
+  import { getThumbnailLocalCache } from "$lib/shared/browse/getThumbnailLocalCache";
+  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
   import { getQuickAccessPersister } from "$lib/shared/debug/getQuickAccessPersister";
   import { getImageComposer } from "$lib/shared/render/getImageComposer";
   import type { QuickAccessPersister } from "../services/implementations/QuickAccessPersister";
 import type { QuickAccessUser } from "../services/contracts/types";
-  import { tikaPictographCache } from "$lib/features/tika/services/implementations/TikaPictographCache";
+  import { tikaPictographCache } from "$lib/shared/tika/services/TikaPictographCache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
 

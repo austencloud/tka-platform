@@ -1,7 +1,7 @@
 import { firestoreGet, firestoreSet } from "$lib/shared/firestore";
-import type { NotificationPreferences } from "../domain/models/notification-models";
-import { DEFAULT_NOTIFICATION_PREFERENCES } from "../domain/models/notification-models";
-import { NotificationPreferencesDocSchema } from "../domain/models/feedback-schemas";
+import type { NotificationPreferences } from "$lib/shared/feedback/domain/models/notification-models";
+import { DEFAULT_NOTIFICATION_PREFERENCES } from "$lib/shared/feedback/domain/models/notification-models";
+import { NotificationPreferencesDocSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";
 
 const USERS_COLLECTION = "users";
 const PREFERENCES_FIELD = "notificationPreferences";

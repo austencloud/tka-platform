@@ -4,14 +4,14 @@ import type { Offline3DExporter } from "$lib/shared/3d/services/implementations/
 import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
-import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
-import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { recordExportThroughput } from "../../state/export-timing-tracker";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { AnimationPlaybackController } from '$lib/features/compose/services/implementations/AnimationPlaybackController';
-import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/implementations/AnimationPlaybackController';
+import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
-import { getVideoExportOrchestrator } from "$lib/features/compose/getVideoExportOrchestrator";
+import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/getOffline3DExporter";
 
 export interface VideoExportEffectOverrides {

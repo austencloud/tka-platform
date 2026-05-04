@@ -1,13 +1,3 @@
-/**
- * Save Panel State
- *
- * Reactive state factory for SaveToLibraryPanel. Extracts all $state,
- * $derived, and data-logic $effect blocks out of the Svelte component
- * so the component file contains only template, styling, and DOM-bound effects.
- *
- * Domain: Create module - Save to library
- */
-
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { libraryState } from "$lib/features/library/state/library-state.svelte";

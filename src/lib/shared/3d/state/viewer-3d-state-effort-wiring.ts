@@ -1,6 +1,6 @@
 import type { AnimationEngine } from "$lib/shared/animation-engine/services/implementations/AnimationEngine.svelte";
 import type { PerformerManager } from "$lib/shared/3d/state/performer-manager.svelte";
-import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 
 export function installPerformerEffortResolver(
   engine: Pick<AnimationEngine, "setPerformerEffortResolver">,

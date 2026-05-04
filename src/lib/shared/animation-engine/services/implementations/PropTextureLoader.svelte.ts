@@ -5,9 +5,9 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import type { ISVGGenerator as SVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
-import type { ITrailCapturer as TrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
+import type { ISVGGenerator as SVGGenerator } from "$lib/shared/animation-engine/services/contracts/ISVGGenerator";
+import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
 import type {
   IPropTextureLoader,
   PropTextureState,

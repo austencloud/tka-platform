@@ -4,8 +4,8 @@ import type {
   VoiceCommandCategory,
   CommandContext,
 } from "../../../domain/voice-command-types";
-import { getGeneratorVoiceRef } from "$lib/features/create/generate/state/generator-voice-ref.svelte";
-import type { GeneratorHelpId } from "$lib/features/create/generate/domain/generator-help-content";
+import { getGeneratorVoiceRef } from "$lib/shared/create/state/generator-voice-ref.svelte";
+import type { GeneratorHelpId } from "$lib/shared/create/domain/generator-help-content";
 
 // Generate trigger phrases
 const GENERATE_PHRASES = new Set([

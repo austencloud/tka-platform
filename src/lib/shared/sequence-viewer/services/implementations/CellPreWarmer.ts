@@ -10,8 +10,8 @@ import { pictographPreparer } from "$lib/shared/pictograph/shared/services/imple
 import { getWorkerRenderPool } from "$lib/shared/render/services/implementations/WorkerRenderPool";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import { isCatDogMode } from "$lib/features/browse/sequences/display/utils/prop-mode-helpers";
-import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
+import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
+import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
 import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 
 interface CellTask {

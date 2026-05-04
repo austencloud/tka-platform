@@ -22,7 +22,7 @@ import {
 import { createLedMaterial, type LedMaterialOptions } from "../led/LedMaterial3D";
 import { QualityTier } from "../types";
 import { PovTrailRing, type PovTrailSnapshot } from "./PovTrailRing";
-import type { StripPattern } from "$lib/features/poi/domain/StripPattern";
+import type { StripPattern } from "$lib/shared/poi/domain/StripPattern";
 
 /** LED counts per quality tier */
 const LEDS_PER_TIER: Record<QualityTier, number> = {

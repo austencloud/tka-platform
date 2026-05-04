@@ -6,7 +6,7 @@
  */
 
 import { db } from "$lib/shared/persistence/database/TKADatabase";
-import type { StoredPerformance } from "../domain/models/TrainDatabaseModels";
+import type { StoredPerformance } from "$lib/shared/train/domain/TrainDatabaseModels";
 import type { PerformanceScore } from "../domain/models/PerformanceData";
 
 export interface PersonalBest {

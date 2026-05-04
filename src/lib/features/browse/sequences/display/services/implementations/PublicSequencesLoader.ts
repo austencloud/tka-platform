@@ -20,9 +20,9 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
+import { getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
+import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'

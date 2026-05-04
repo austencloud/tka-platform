@@ -4,8 +4,9 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StartPositionData } from "../../../domain/models/StartPositionData";
-import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import {
   createMotionData,
@@ -17,7 +18,7 @@ import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { reversalDetector } from "../../reversal-detector";
+import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
@@ -97,9 +98,12 @@ export function updateStepTurns(
         turnAmount > 0 &&
         currentMotion.rotationDirection === RotationDirection.NO_ROTATION
       ) {
-        updatedRotationDirection = RotationDirection.CLOCKWISE;
+        const steps = createModuleState.sequenceState.currentSequence?.steps;
+        updatedRotationDirection = steps
+          ? findPreviousRotationDirection(steps, stepNumber, color as MotionColor)
+          : RotationDirection.CLOCKWISE;
         logger.log(
-          `Auto-assigned CLOCKWISE rotation to ${updatedMotionType} motion with ${turnAmount} turns`
+          `Auto-assigned ${updatedRotationDirection} rotation to ${updatedMotionType} motion with ${turnAmount} turns`
         );
       } else if (turnAmount === 0) {
         updatedRotationDirection = RotationDirection.NO_ROTATION;
@@ -205,4 +209,18 @@ export function updateStepTurns(
   }
 
   createModuleState.sequenceState.setCurrentSequence(updatedSequence);
+}
+
+export function findPreviousRotationDirection(
+  steps: readonly StepData[],
+  stepNumber: number,
+  color: MotionColor
+): RotationDirection {
+  for (let i = stepNumber - 2; i >= 0; i--) {
+    const motion = steps[i]?.motions?.[color];
+    if (motion && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
+      return motion.rotationDirection;
+    }
+  }
+  return RotationDirection.CLOCKWISE;
 }

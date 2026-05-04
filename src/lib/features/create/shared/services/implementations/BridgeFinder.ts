@@ -27,11 +27,11 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   LOOPType,
   Period,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
-} from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
+} from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
 import type { LOOPOption } from "./LOOPValidator";
 
 export class BridgeFinder {

@@ -16,7 +16,7 @@ import type { ExportResult, AnimationExportDependencies, ExportUserInfo } from "
 import type { ShareOptions } from "$lib/shared/share/domain/models/ShareOptions";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-import { VIDEO_EXPORT_SUCCESS_DELAY_MS } from "$lib/features/compose/shared/domain/constants/timing";
+import { VIDEO_EXPORT_SUCCESS_DELAY_MS } from "$lib/shared/animation-engine/domain/constants/timing";
 import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
 
 export class ExportOrchestrator {

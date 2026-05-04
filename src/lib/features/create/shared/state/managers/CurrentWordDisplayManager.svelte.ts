@@ -19,7 +19,7 @@
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { createCreateModuleState as CreateModuleStateType } from "../create-module-state.svelte";
 import type { createConstructTabState as ConstructTabStateType } from "../construct-tab-state.svelte";
-import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+import type { LetterSource } from "$lib/shared/create/domain/spell-models";
 
 type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 type ConstructTabState = ReturnType<typeof ConstructTabStateType>;

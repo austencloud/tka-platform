@@ -6,7 +6,7 @@
  * and converted to client-side format at import time.
  */
 
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { GridLocation, GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

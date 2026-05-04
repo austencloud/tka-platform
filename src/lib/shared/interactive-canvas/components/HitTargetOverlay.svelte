@@ -8,7 +8,7 @@
   clickable circles themselves.
 -->
 <script lang="ts">
-  import { getHitTargets, getHitTargetRadius } from "$lib/features/assemble-lab/services/grid-hit-target-calculator";
+  import { getHitTargets, getHitTargetRadius } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 

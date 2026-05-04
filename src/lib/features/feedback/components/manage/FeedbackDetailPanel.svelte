@@ -4,10 +4,10 @@
   import type {
     FeedbackItem,
     FeedbackPriority,
-  } from "../../domain/models/feedback-models";
-  import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
+  import type { FeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
   import { createFeedbackDetailState } from "../../state/feedback-detail-state.svelte";
-  import { PRIORITY_CONFIG } from "../../domain/models/feedback-models";
+  import { PRIORITY_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
   import FeedbackHeader from "./detail/FeedbackHeader.svelte";
   import FeedbackMetadataCard from "./detail/FeedbackMetadataCard.svelte";
   import FeedbackSubtaskPanel from "./detail/FeedbackSubtaskPanel.svelte";

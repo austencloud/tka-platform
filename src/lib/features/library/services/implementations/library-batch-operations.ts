@@ -21,7 +21,7 @@ import {
   getUserSequencesPath,
   getUserSequencePath,
   getPublicSequencePath,
-} from "../../data/firestore-paths";
+} from "$lib/shared/library/data/firestore-paths";
 import { notifyLibraryMutated } from "$lib/shared/library/library-events";
 import type {
   LibrarySequence,

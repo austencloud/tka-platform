@@ -19,18 +19,15 @@
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
   import { onMount, onDestroy, untrack } from "svelte";
   import { calculateLayout } from "$lib/shared/render/services/layout-calculator";
-  import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
+  import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
-  import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
+  import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
-  import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
   import { getQRCodeGenerator } from "$lib/shared/qr/getQRCodeGenerator";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
-  import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
+  import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { renderCell, deleteCellCache } from "../services/preview-cell-renderer";
   import { cellCacheKeyDeriver } from "../services/implementations/CellCacheKeyDeriver";
   import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
@@ -38,10 +35,8 @@
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
-  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
-  import { calculateTimelineRowsByBeatCount } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
-  import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
-  import { getMandalaPlacements } from "../services/getMandalaPlacements";
+  import { calculateTimelineRowsByBeatCount } from "$lib/shared/create/utils/grid-calculations";
+  import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
 
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -50,86 +45,24 @@
   import CardHeader from "./CardHeader.svelte";
   import CardFooter from "./CardFooter.svelte";
   import CardGridLayout from "./CardGridLayout.svelte";
+
+  // Extracted modules
   import {
-    HEADER_HEIGHT_DIVISOR, FOOTER_HEIGHT_DIVISOR,
-    BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE,
-    HEADER_WORD_FONT_SCALE, HEADER_WORD_FONT_MIN_SCALE,
-    FOOTER_FONT_SCALE, FOOTER_MARGIN_SCALE,
-    STEP_NUMBER_FONT_RATIO, STEP_NUMBER_FONT_MAX,
-  } from "@tka/render-composition";
+    type CachedPreview,
+    globalPreviewCache,
+    getPreviewCacheKey,
+    storePreviewInCache,
+    calculateGridPosition,
+    detectMixedDurations,
+    buildRenderOptions,
+  } from "$lib/shared/choreo-card/services/choreo-card-cell-pipeline";
+  import { createChoreoCardLayoutState } from "$lib/shared/choreo-card/state/choreo-card-layout-state.svelte";
+  import { createDarkModeCrossfaderState } from "$lib/shared/choreo-card/state/dark-mode-crossfader-state.svelte";
+  import { buildChoreoCardContextMenu } from "$lib/shared/choreo-card/services/choreo-card-context-menu";
 
   // Eagerly initialize the singleton so its constructor (which mutates $state)
   // runs in the script block, not inside a $derived expression.
   const compositionManager = getImageCompositionManager();
-
-  // ============================================================================
-  // GLOBAL CELL URL CACHE
-  // Survives component remounts so drag-to-move doesn't re-render all cells.
-  // Keyed by sequence content + render options hash. Capped at 10 entries (LRU).
-  // ============================================================================
-  interface CachedPreview {
-    cells: { index: number; label: string; imageUrl: string; gridColumn: number; gridRow: number; duration: number }[];
-    columns: number;
-    rows: number;
-    durationRows?: TimelineRow[];
-    hasMixedDurations?: boolean;
-    durationColCount?: number;
-  }
-  const MAX_PREVIEW_CACHE = 30;
-  const globalPreviewCache = new Map<string, CachedPreview>();
-
-  function getPreviewCacheKey(
-    seq: SequenceData,
-    opts: PreviewCellRenderOptions,
-    colCount: number | null,
-    isDark: boolean,
-    spl: "row" | "column" = "column",
-  ): string {
-    const stepLetters = seq.steps?.map(s => s.letter ?? "?").join("") ?? "";
-    const durationFingerprint = seq.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    // Motion fingerprint captures orientation + rotation data that affects rendering.
-    // Without this, two sequences with identical letters but different orientations
-    // would collide in the cache.
-    const motionFingerprint = seq.steps?.map(s => {
-      const b = s.motions?.blue;
-      const r = s.motions?.red;
-      return `${b?.startOrientation ?? ""}${b?.endOrientation ?? ""}${b?.rotationDirection ?? ""}${r?.startOrientation ?? ""}${r?.endOrientation ?? ""}${r?.rotationDirection ?? ""}`;
-    }).join("") ?? "";
-    const vm = opts.browseViewMode;
-    const vmKey = vm ? `${vm.subject}-${vm.granularity}-${vm.color}` : "default";
-    // Resolve prop types to actual values (fall back to global settings) so the
-    // in-memory cache differentiates between e.g. staff and fan when the caller
-    // doesn't explicitly pass a prop type override.
-    const settings = getSettings();
-    const resolvedBlue = opts.bluePropType ?? settings.bluePropType ?? "staff";
-    const resolvedRed = opts.redPropType ?? settings.redPropType ?? "staff";
-    const mv = `${opts.showBlueMotion === false ? "B0" : "B1"}${opts.showRedMotion === false ? "R0" : "R1"}`;
-    const gv = `${opts.showVTG ? "V1" : "V0"}${opts.showElemental ? "E1" : "E0"}${opts.showPositions ? "P1" : "P0"}`;
-    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
-  }
-
-  function storePreviewInCache(key: string, data: CachedPreview): void {
-    if (globalPreviewCache.size >= MAX_PREVIEW_CACHE && !globalPreviewCache.has(key)) {
-      const oldest = globalPreviewCache.keys().next().value;
-      if (oldest !== undefined) {
-        const evicted = globalPreviewCache.get(oldest);
-        if (evicted) {
-          const activeUrls = new Set<string>();
-          for (const c of cells) {
-            if (c.imageUrl.startsWith("blob:")) activeUrls.add(c.imageUrl);
-            if (c.fadeOutUrl?.startsWith("blob:")) activeUrls.add(c.fadeOutUrl);
-          }
-          for (const cell of evicted.cells) {
-            if (cell.imageUrl.startsWith("blob:") && !activeUrls.has(cell.imageUrl)) {
-              URL.revokeObjectURL(cell.imageUrl);
-            }
-          }
-        }
-        globalPreviewCache.delete(oldest);
-      }
-    }
-    globalPreviewCache.set(key, data);
-  }
 
   interface Props {
     sequence: SequenceData;
@@ -148,7 +81,7 @@
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */
     handPathMode?: boolean;
     /** Browse view mode for solo prop/hand filtering */
-    browseViewMode?: import("$lib/features/browse/shared/domain/BrowseViewMode").BrowseViewMode;
+    browseViewMode?: import("$lib/shared/browse/domain/BrowseViewMode").BrowseViewMode;
     // Settings
     darkMode?: boolean;
     userName?: string;
@@ -263,20 +196,11 @@
   /** Max duration units in any single row (including start position), for CSS --col-count */
   let durationColCount = $state(0);
 
-  // Cross-fade state: smooth dark mode transitions without sequential spinners
-  let crossfadeActive = $state(false);
-  let crossfadeTimer: ReturnType<typeof setTimeout> | null = null;
-  // Initialize to the prop value so the first render has the correct dark mode class.
-  // Do NOT initialize to false - that causes a one-frame flash where backgrounds
-  // render in light mode even though the images are rendered for dark mode.
-  let activeDarkMode = $state(untrack(() => darkMode));
-  let lastContentKey = "";
-  let lastImageKey = "";
-  // Tracks the portion of the render key that drives GRID STRUCTURE (cell
-  // count, columns, durations, start-position row). Crossfade-swaps are
-  // only safe when this is unchanged - otherwise cells might shift
-  // between old/new rows mid-transition and read as visual glitches.
-  let lastGridStableKey = "";
+  // Cross-fade state machine (extracted)
+  const crossfader = createDarkModeCrossfaderState(() => darkMode);
+  // Reactive aliases used by the template and internal functions
+  const crossfadeActive = $derived(crossfader.crossfadeActive);
+  const activeDarkMode = $derived(crossfader.activeDarkMode);
 
   // Container-based sizing for "contain" behavior
   let containerElement: HTMLDivElement | undefined = $state();
@@ -284,11 +208,6 @@
   let containedHeight = $state<number | null>(null);
   let heightGrowing = $state(false);
 
-  // Scroll mode for long sequences (>16 beats)
-  const SCROLL_THRESHOLD = 16;
-  // Whether the sequence exceeds scroll threshold (independent of forceContain)
-  const isLongSequence = $derived((sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
-  const needsScroll = $derived(!forceContain && isLongSequence);
   let gridScrollRef: HTMLDivElement | undefined = $state();
 
   // Visibility settings from user preferences (reactive)
@@ -320,17 +239,6 @@
     compositionManager.unregisterObserver(onCompositionChanged);
   });
 
-  // Start-position layout - "row" puts start in a top row spanning all columns,
-  // "column" puts start in a left column. Per-step-count override, falls back
-  // to global default. Read reactively via compositionVersion.
-  const startPositionLayout = $derived.by<"row" | "column">(() => {
-    void compositionVersion;
-    if (startPositionLayoutOverride) return startPositionLayoutOverride;
-    const stepCount = sequence?.steps?.length ?? 0;
-    if (stepCount === 0) return compositionManager.startPositionLayout;
-    return compositionManager.getStartPositionLayoutForStepCount(stepCount);
-  });
-
   // Motion visibility: viewer-scoped. When rendered outside a viewer
   // (browse previews, export pipeline), fall back to always-visible.
   const viewerVisibility = tryGetViewerVisibilityContext();
@@ -356,25 +264,6 @@
   let qrDataUrl = $state<string | null>(null);
   const qrCacheMap = new Map<string, string>();
   let lastQrKey = "";
-
-  // Find the grid position for the QR code.
-  // Column layout: bottom of column 1 (under start position). Needs 2+ rows.
-  // Row layout: rightmost cell of row 1 (the start row), alongside the start pictograph.
-  const qrGridPosition = $derived.by(() => {
-    if (!showQRCode || !includeStartPosition) return null;
-    if (mandalaLayoutOverride) {
-      return {
-        gridColumn: mandalaLayoutOverride.qrPos.col,
-        gridRow: mandalaLayoutOverride.qrPos.row,
-      };
-    }
-    if (startPositionLayout === "row") {
-      if (effectiveColumns < 2) return null;
-      return { gridColumn: effectiveColumns, gridRow: 1 };
-    }
-    if (effectiveRows < 2) return null;
-    return { gridColumn: 1, gridRow: effectiveRows };
-  });
 
   // Derive a stable cache key from the values that actually matter for QR content.
   // This prevents re-generation when unrelated reactive values change.
@@ -505,11 +394,47 @@
     return { bg: style.cssBg, border: style.border, text: style.text };
   });
 
+  // Layout state factory (extracted) — computes columns, rows, aspect ratio, sizing
+  const layoutState = createChoreoCardLayoutState(() => ({
+    sequence,
+    includeStartPosition,
+    columnCount,
+    showHeader,
+    showFooter,
+    showQRCode,
+    showMandala,
+    forceContain,
+    showBlueMotion,
+    showRedMotion,
+    startPositionLayoutOverride,
+    compositionVersion,
+    cellWidth,
+    hasMixedDurations,
+    durationColCount,
+  }));
+
+  // Reactive aliases for values that move to the layout state factory.
+  // Keeps downstream code and the template unchanged.
+  const isLongSequence = $derived(layoutState.isLongSequence);
+  const needsScroll = $derived(layoutState.needsScroll);
+  const startPositionLayout = $derived(layoutState.startPositionLayout);
+  const effectiveColumns = $derived(layoutState.effectiveColumns);
+  const effectiveRows = $derived(layoutState.effectiveRows);
+  const mandalaLayoutOverride = $derived(layoutState.mandalaLayoutOverride);
+  const mandalaPlacements = $derived(layoutState.mandalaPlacements);
+  const previewAspectRatio = $derived(layoutState.previewAspectRatio);
+  const scaledHeaderHeight = $derived(layoutState.scaledHeaderHeight);
+  const scaledFooterHeight = $derived(layoutState.scaledFooterHeight);
+  const stepNumFontSize = $derived(layoutState.stepNumFontSize);
+  const badgeSize = $derived(layoutState.badgeSize);
+  const badgePadding = $derived(layoutState.badgePadding);
+  const badgeNumberFontSize = $derived(layoutState.badgeNumberFontSize);
+  const wordTitleFontSize = $derived(layoutState.wordTitleFontSize);
+  const footerFontSize = $derived(layoutState.footerFontSize);
+  const footerMargin = $derived(layoutState.footerMargin);
+  const qrGridPosition = $derived(layoutState.qrGridPosition);
+
   // Filtered cells based on includeStartPosition.
-  // Start cell (index -1) is always excluded here and rendered separately
-  // so it can have its own enter/exit transition without breaking animate:flip.
-  // When start position is hidden, recalculate grid positions so steps
-  // fill the grid from column 1 (instead of leaving a gap at column 1).
   const visibleCells = $derived.by(() => {
     if (includeStartPosition) {
       return cells.filter(cell => cell.index !== -1);
@@ -522,38 +447,6 @@
         gridColumn: (cell.index % cols) + 1,
         gridRow: Math.floor(cell.index / cols) + 1,
       }));
-  });
-
-  // Effective columns - synchronously computed from layout tables so the grid
-  // updates immediately when includeStartPosition toggles (before async re-render).
-  // Row layout: start sits in the top row, no extra column is added.
-  // Column layout: start sits in its own left column, so beat cols + 1.
-  const baseColumns = $derived.by(() => {
-    if (!sequence?.steps?.length) return columns || 0;
-    const stepCount = sequence.steps.length;
-    const spl = startPositionLayout;
-
-    if (columnCount !== null && columnCount > 0) {
-      // columnCount is the number of *beat* columns the user wants.
-      // Column layout adds a dedicated start column; row layout does not.
-      return includeStartPosition && spl === "column" ? columnCount + 1 : columnCount;
-    }
-    // Check per-length column count from global composition settings (4+ steps only)
-    if (stepCount >= 4) {
-      const compositionCols = compositionManager.getColumnCountForStepCount(stepCount);
-      if (compositionCols !== null && compositionCols > 0) {
-        return includeStartPosition && spl === "column" ? compositionCols + 1 : compositionCols;
-      }
-    }
-    // Long sequences use fixed 5 columns whether scrolling or force-contained.
-    // This keeps the cell grid positions consistent so entering export mode
-    // doesn't trigger a full re-render with different column positions.
-    if (isLongSequence) {
-      return 5;
-    }
-    // Use the layout service directly for an instant column count
-    const [cols] = calculateLayout(stepCount, includeStartPosition, spl);
-    return cols;
   });
 
   // When the column count changes (start position toggle, column picker),
@@ -569,195 +462,28 @@
     prevEffectiveColumns = cols;
   });
 
-  // Effective rows - must match effective columns to keep aspect ratio correct.
-  // When the column count comes from any override (prop, composition manager,
-  // or isLongSequence), derive rows from that count instead of the layout table
-  // (which assumes its own column count and would produce wrong rows).
-  const baseRows = $derived.by(() => {
-    if (!sequence?.steps?.length) return rows || 0;
-    const stepCount = sequence.steps.length;
-
-    // If we know the column count (prop override, composition manager, or
-    // long-sequence), derive rows from it. The composition manager check
-    // mirrors baseColumns so the two stay in sync.
-    const cols = baseColumns;
-    const spl = startPositionLayout;
-    const hasCompositionOverride = stepCount >= 4
-      && compositionManager.getColumnCountForStepCount(stepCount) !== null;
-    if (cols > 0 && (columnCount !== null || isLongSequence || hasCompositionOverride)) {
-      if (includeStartPosition && spl === "row") {
-        // Row layout: start occupies row 0 alone; steps fill full-width rows 1+.
-        return 1 + Math.ceil(stepCount / cols);
-      }
-      // Column layout (or no start): steps use cols-startCol columns, first row
-      // already holds some steps alongside the start position.
-      const stepsPerRow = includeStartPosition ? cols - 1 : cols;
-      const firstRowSteps = Math.min(stepsPerRow, stepCount);
-      const remainingSteps = stepCount - firstRowSteps;
-      return 1 + Math.ceil(remainingSteps / stepsPerRow);
-    }
-
-    const [, rws] = calculateLayout(stepCount, includeStartPosition, spl);
-
-    // Column layout only: mandala fill needs at least one col-1 empty between
-    // start and QR. 6-count naturally lays out as 4×2 (packed); when mandala
-    // is on, expand to 4×3 so col 1 has a single empty cell (Full mandala).
-    // Row layout doesn't need this - mandalas go in the top row alongside
-    // start/QR and don't require an extra row.
-    if (
-      showMandala
-      && showQRCode
-      && includeStartPosition
-      && spl === "column"
-      && stepCount === 6
-      && rws === 2
-    ) {
-      return 3;
-    }
-    return rws;
-  });
-
-  // Compute mandala placements + optional 4-count horizontal layout override.
-  // Takes base dims as inputs; the override reshapes dims downstream.
-  const mandalaResult = $derived.by(() => {
-    return getMandalaPlacements({
-      stepCount: sequence?.steps?.length ?? 0,
-      cols: baseColumns,
-      rows: baseRows,
-      includeStartPosition,
-      showQRCode,
-      blueVisible: showBlueMotion,
-      redVisible: showRedMotion,
-      mandalaEnabled: showMandala,
-      startPositionLayout,
-    });
-  });
-  const mandalaLayoutOverride = $derived(mandalaResult.layoutOverride);
-  const mandalaPlacements = $derived(mandalaResult.placements);
-
-  // Final effective dims - override wins for the 4-count horizontal case.
-  const effectiveColumns = $derived(mandalaLayoutOverride?.cols ?? baseColumns);
-  const effectiveRows = $derived(mandalaLayoutOverride?.rows ?? baseRows);
-
-  // Compute aspect ratio for the entire preview (width / height)
-  // This ensures the preview maintains correct proportions regardless of container size
-  const previewAspectRatio = $derived.by(() => {
-    if (!effectiveColumns || !effectiveRows) return 1;
-
-    // Width in cell units - use effectiveColumns so the aspect ratio updates
-    // instantly when includeStartPosition toggles (before async re-render).
-    const gridWidth = effectiveColumns;
-
-    // In duration mode, each row's pixel height = cardWidth / durationColCount
-    // (because the widest row fills the card, and images maintain aspect ratio).
-    // In cell units: rowHeight = columns / durationColCount.
-    // For uniform grid: rowHeight = 1 cell unit (square cells).
-    const rowHeightInCellUnits = (hasMixedDurations && durationColCount > 0)
-      ? effectiveColumns / durationColCount
-      : 1;
-    const gridHeight = effectiveRows * rowHeightInCellUnits;
-
-    // Header and footer fractions use shared constants from @tka/render-composition
-    // so the interactive card and the export image never drift.
-    // For narrow grids (<=2 columns), scale fractions down so header/footer
-    // don't dominate the card. This matches the headerFooterRefWidth cap.
-    const cols = effectiveColumns;
-    const hfScale = cols >= 3 ? 1 : cols / 3;
-    const headerFraction = showHeader ? (1 / HEADER_HEIGHT_DIVISOR) * hfScale : 0;
-    const footerFraction = showFooter ? (1 / FOOTER_HEIGHT_DIVISOR) * hfScale : 0;
-
-    // Total height in cell-height units
-    const totalHeight = gridHeight + headerFraction + footerFraction;
-
-    // Aspect ratio = width / height
-    return gridWidth / totalHeight;
-  });
-
-  // Scaled sizes based on grid element width.
-  // When only 2 columns are visible, cells are very wide and the header/footer
-  // become disproportionately large. Cap the reference width as if there were
-  // at least 3 columns so header/footer stay compact.
-  const headerFooterRefWidth = $derived.by(() => {
-    if (!cellWidth || !Number.isFinite(cellWidth)) return 0;
-    const cols = effectiveColumns || 1;
-    if (cols >= 3) return cellWidth;
-    // Scale down: use (containerWidth / 3) instead of (containerWidth / 2)
-    return cellWidth * cols / 3;
-  });
-
-  const scaledHeaderHeight = $derived.by(() => {
-    if (!headerFooterRefWidth) return 0;
-    const proportional = Math.floor(headerFooterRefWidth / HEADER_HEIGHT_DIVISOR);
-    // On-screen viewing needs a minimum readable height (24px).
-    // Export/forceContain mode uses exact proportional sizing for WYSIWYG fidelity.
-    return forceContain ? proportional : Math.max(proportional, 24);
-  });
-
-  const scaledFooterHeight = $derived.by(() => {
-    if (!headerFooterRefWidth) return 0;
-    return Math.floor(headerFooterRefWidth / FOOTER_HEIGHT_DIVISOR);
-  });
-
-  // Step number font size uses shared constant from @tka/render-composition.
-  // Using cellWidth directly instead of cqw ensures consistent sizing
-  // even for wider duration cells.
-  const stepNumFontSize = $derived(
-    cellWidth ? Math.min(Math.round(cellWidth * STEP_NUMBER_FONT_RATIO), STEP_NUMBER_FONT_MAX) : 0
-  );
-
-  const badgeSize = $derived(scaledHeaderHeight * BADGE_SIZE_SCALE);
-  const badgePadding = $derived(scaledHeaderHeight * BADGE_PADDING_SCALE);
-  const badgeNumberFontSize = $derived(Math.round(badgeSize * BADGE_NUMBER_FONT_SCALE));
-
-  // Word title font size: shrinks for longer words so the full title fits
-  // between the difficulty badge and LOOP icon without clipping.
-  // Count letter units (dashes don't count as separate letters).
-  const wordTitleFontSize = $derived.by(() => {
-    const baseFontSize = Math.floor(scaledHeaderHeight * HEADER_WORD_FONT_SCALE);
-    if (!sequence.word) return baseFontSize;
-
-    const displayWord = simplifyAndTruncate(sequence.word, 16);
-    let letterCount = 0;
-    for (let i = 0; i < displayWord.length; i++) {
-      const ch = displayWord[i];
-      if (ch !== "-" && ch !== "." && ch !== " ") letterCount++;
-    }
-
-    // Up to 10 letters: full size. Beyond that, scale down proportionally.
-    if (letterCount <= 10) return baseFontSize;
-    return Math.max(Math.floor(baseFontSize * (10 / letterCount)), Math.floor(scaledHeaderHeight * HEADER_WORD_FONT_MIN_SCALE));
-  });
-
-  // Footer font/margin use shared constants from @tka/render-composition
-  const footerFontSize = $derived(Math.floor(scaledFooterHeight * FOOTER_FONT_SCALE));
-  const footerMargin = $derived(Math.floor(scaledFooterHeight * FOOTER_MARGIN_SCALE));
-
-
   /**
-   * Build render options from current component state
+   * Build render options from current component state (delegates to extracted pure function)
    */
-  function buildRenderOptions(): PreviewCellRenderOptions {
-    return {
-      size: CELL_SIZE,
+  function buildRenderOptionsFn(): PreviewCellRenderOptions {
+    return buildRenderOptions({
+      cellSize: CELL_SIZE,
       bluePropType,
       redPropType,
       catDogModeEnabled,
-      // Never bake step numbers into the rendered blob - identical pictographs
-      // at different beats must share the same cached image. Step numbers are
-      // rendered as HTML overlays on top of the <img> instead.
-      showStepNumbers: false,
-      showNonRadialPoints: showNonRadial,
-      handPointVisibility: handPointVis,
-      showTKA: isSoloMode ? false : showTKA,
-      showReversals: isSoloMode ? false : showReversals,
-      showVTG: isSoloMode ? false : showVTG,
-      showElemental: isSoloMode ? false : showElemental,
-      showPositions: isSoloMode ? false : showPositions,
+      showNonRadial,
+      handPointVis,
+      showTKA,
+      showReversals,
+      showVTG,
+      showElemental,
+      showPositions,
+      isSoloMode,
       handPathMode,
       browseViewMode,
       showBlueMotion,
       showRedMotion,
-    };
+    });
   }
 
   /**
@@ -818,73 +544,9 @@
     }
   }
 
-  /**
-   * Calculate grid position for a step index.
-   * With start position: first row has all columns, subsequent rows offset by 1.
-   * Layout example for 16 steps (5 cols × 4 rows):
-   *   Row 1: Start(col 1), 1(col 2), 2(col 3), 3(col 4), 4(col 5)
-   *   Row 2: 5(col 2), 6(col 3), 7(col 4), 8(col 5)
-   *   Row 3: 9(col 2), 10(col 3), 11(col 4), 12(col 5)
-   *   Row 4: 13(col 2), 14(col 3), 15(col 4), 16(col 5)
-   */
-  function calculateGridPosition(stepIndex: number, cols: number): { gridColumn: number; gridRow: number } {
-    // 4-count horizontal mandala override: start/step positions come from the override spec.
-    const override = mandalaLayoutOverride;
-    if (override) {
-      if (stepIndex === -1) {
-        return { gridColumn: override.startPos.col, gridRow: override.startPos.row };
-      }
-      const pos = override.stepPositions[stepIndex];
-      if (pos) return { gridColumn: pos.col, gridRow: pos.row };
-    }
-
-    // Start position is always at column 1, row 1
-    if (stepIndex === -1) {
-      return { gridColumn: 1, gridRow: 1 };
-    }
-
-    if (includeStartPosition && startPositionLayout === "row") {
-      // Row layout: start position occupies row 1 alone; steps fill full-width
-      // rows starting at row 2, using all `cols` columns.
-      const col = (stepIndex % cols) + 1;
-      const row = Math.floor(stepIndex / cols) + 2;
-      return { gridColumn: col, gridRow: row };
-    }
-
-    if (includeStartPosition) {
-      // Column layout: col 1 is reserved for start, steps start at col 2.
-      const stepsPerRow = cols - 1;
-      const firstRowSteps = cols - 1;
-
-      if (stepIndex < firstRowSteps) {
-        return { gridColumn: stepIndex + 2, gridRow: 1 };
-      }
-
-      const remainingIndex = stepIndex - firstRowSteps;
-      const row = Math.floor(remainingIndex / stepsPerRow) + 2;
-      const col = (remainingIndex % stepsPerRow) + 2;
-      return { gridColumn: col, gridRow: row };
-    } else {
-      // Without start position: all columns available for steps
-      const col = (stepIndex % cols) + 1;
-      const row = Math.floor(stepIndex / cols) + 1;
-      return { gridColumn: col, gridRow: row };
-    }
-  }
-
-  /**
-   * Render all cells (start position + steps)
-   */
-  /**
-   * Detect whether the sequence has mixed (non-uniform) durations.
-   * Returns false if all durations are 1.0 or undefined.
-   */
-  function detectMixedDurations(steps: readonly { duration?: number }[]): boolean {
-    for (const step of steps) {
-      const d = step.duration ?? 1;
-      if (Math.abs(d - 1.0) > 0.001) return true;
-    }
-    return false;
+  /** Thin wrapper over extracted calculateGridPosition with component-scoped closure values */
+  function calcGridPos(stepIndex: number, cols: number): { gridColumn: number; gridRow: number } {
+    return calculateGridPosition(stepIndex, cols, includeStartPosition, startPositionLayout, mandalaLayoutOverride);
   }
 
   /** Format duration for badge display (e.g., 2 → "2×", 1.25 → "1.25×") */
@@ -909,12 +571,12 @@
 
     // Recalculate grid positions for all existing cells
     cells = cells.map(cell => {
-      const { gridColumn, gridRow } = calculateGridPosition(cell.index, cols);
+      const { gridColumn, gridRow } = calcGridPos(cell.index, cols);
       return { ...cell, gridColumn, gridRow };
     });
 
     // Update the global cache entry with new positions
-    const renderOptions = buildRenderOptions();
+    const renderOptions = buildRenderOptionsFn();
     const isDark = darkMode;
     const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
     storePreviewInCache(cacheKey, {
@@ -927,7 +589,7 @@
       durationRows,
       hasMixedDurations,
       durationColCount,
-    });
+    }, cells);
   }
 
   async function renderAllCells() {
@@ -1016,7 +678,7 @@
       rows = rws;
 
       // Build render options once for all cells
-      const renderOptions = buildRenderOptions();
+      const renderOptions = buildRenderOptionsFn();
 
       // Only render the current mode - halves total render count
       const isDark = darkMode;
@@ -1062,7 +724,7 @@
       // Start position placeholder
       const firstStep = sequence.steps[0];
       if (sequence.startPosition || firstStep) {
-        const { gridColumn, gridRow } = calculateGridPosition(-1, cols);
+        const { gridColumn, gridRow } = calcGridPos(-1, cols);
         placeholderCells.push({
           index: -1, label: "Start",
           imageUrl: "", isLoaded: false,
@@ -1072,7 +734,7 @@
 
       // Step placeholders
       for (let i = 0; i < sequence.steps.length; i++) {
-        const { gridColumn, gridRow } = calculateGridPosition(i, cols);
+        const { gridColumn, gridRow } = calcGridPos(i, cols);
         placeholderCells.push({
           index: i, label: isBrowseSoloMode ? getSoloLocationLabel(i) : String(i + 1),
           imageUrl: "", isLoaded: false,
@@ -1208,7 +870,7 @@
         durationRows: computedDurationRows,
         hasMixedDurations: mixed,
         durationColCount,
-      });
+      }, cells);
 
       // Now safe to revoke old blob URLs - new ones are in the DOM
       for (const url of oldBlobUrls) {
@@ -1254,20 +916,14 @@
     }
     isRendering = true;
 
-    // Flush any pending cleanup timer from a previous cross-fade BEFORE
-    // reading the cache. Without this, a rapid toggle (dark→light→dark within
-    // 400ms) can pull URLs from the cache that the pending timer is about to
-    // revoke - causing ERR_FILE_NOT_FOUND when the timer fires during our await.
-    if (crossfadeTimer) {
-      clearTimeout(crossfadeTimer);
-      crossfadeTimer = null;
-      crossfadeActive = false;
+    // Flush any pending cleanup timer from a previous cross-fade
+    crossfader.flushPendingCrossfade(() => {
       cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
-    }
+    });
 
     try {
       const isDark = darkMode;
-      const renderOptions = buildRenderOptions();
+      const renderOptions = buildRenderOptionsFn();
 
       // Check global cache first - may already have the target mode rendered
       const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
@@ -1312,7 +968,7 @@
           durationRows: [...durationRows],
           hasMixedDurations,
           durationColCount,
-        });
+        }, cells);
       }
 
       // If another render was requested while we were working, abort the cross-fade
@@ -1335,34 +991,24 @@
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       });
 
-      // Trigger the cross-fade: backgrounds transition and images fade simultaneously
-      activeDarkMode = isDark;
-      crossfadeActive = true;
+      // Trigger the cross-fade
+      crossfader.beginCrossfade(isDark);
 
       // Clean up after the CSS transition completes.
-      // Don't revoke fadeOutUrl blob URLs here - they may still be referenced
-      // by globalPreviewCache entries for other modes (e.g. the opposite
-      // motion-visibility state). Revoking them poisons the cache, causing
-      // ERR_FILE_NOT_FOUND on the next toggle. URLs are revoked later by
-      // renderAllCells (full re-render), storePreviewInCache (eviction),
-      // or clearCellUrls (component destroy).
-      if (crossfadeTimer) clearTimeout(crossfadeTimer);
-      crossfadeTimer = setTimeout(() => {
-        crossfadeActive = false;
+      crossfader.scheduleCrossfadeEnd(() => {
         cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
-        crossfadeTimer = null;
-      }, 400);
+      });
     } catch (error) {
       console.error("Failed to cross-fade dark mode:", error);
       // Fallback: apply dark mode immediately
-      activeDarkMode = darkMode;
+      crossfader.setActiveDarkMode(darkMode);
     } finally {
       isRendering = false;
       if (renderQueued) {
         renderQueued = false;
-        crossfadeActive = false;
-        if (crossfadeTimer) { clearTimeout(crossfadeTimer); crossfadeTimer = null; }
-        cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
+        crossfader.abortCrossfade(() => {
+          cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
+        });
         renderAllCells();
       }
     }
@@ -1386,87 +1032,14 @@
     cells = [];
   }
 
-  // Admin context menu (save/copy/claude + re-render)
+  // Admin context menu (extracted to choreo-card-context-menu.ts)
   let contextMenuState: ContextMenuState = $state({ open: false });
 
-  const contextMenuItems: ContextMenuEntry[] = $derived.by(() => {
-    const seq = sequence;
-    const isAdmin = featureFlagService.isAdmin;
-    const items: ContextMenuEntry[] = [];
-
-    if (isAdmin) {
-      items.push(
-        {
-          id: "save-image",
-          label: "Save image",
-          icon: "fa-download",
-          async action() {
-            try {
-              const { sharer } = await import(
-                "$lib/shared/share/services/implementations/Sharer"
-              );
-              await sharer.downloadImage(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
-              toast.success("Image saved");
-            } catch (err) {
-              console.error("Save image failed:", err);
-              toast.error("Failed to save image");
-            }
-          },
-        },
-        {
-          id: "copy-image",
-          label: "Copy image",
-          icon: "fa-copy",
-          async action() {
-            try {
-              const { sharer } = await import(
-                "$lib/shared/share/services/implementations/Sharer"
-              );
-              const blob = await sharer.getImageBlob(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
-              await navigator.clipboard.write([
-                new ClipboardItem({ "image/png": blob }),
-              ]);
-              toast.success("Image copied to clipboard");
-            } catch (err) {
-              console.error("Copy image failed:", err);
-              toast.error("Failed to copy image");
-            }
-          },
-        },
-        {
-          id: "copy-for-claude",
-          label: "Copy for Claude",
-          icon: "fa-robot",
-          async action() {
-            try {
-              const copier = getClaudeCodeCopier();
-              const result = await copier.copyForClaude(seq);
-              if (result.success) {
-                toast.success("Copied for Claude");
-              } else {
-                toast.error("Failed to copy for Claude");
-              }
-            } catch (err) {
-              console.error("Copy for Claude failed:", err);
-              toast.error("Failed to copy for Claude");
-            }
-          },
-        },
-        { type: "separator" as const },
-      );
-    }
-
-    items.push({
-      id: "rerender",
-      label: "Re-render",
-      icon: "fa-sync-alt",
-      action() {
-        forceRerenderAllCells();
-      },
-    });
-
-    return items;
-  });
+  const contextMenuItems = $derived(
+    buildChoreoCardContextMenu(sequence, featureFlagService.isAdmin, {
+      forceRerender: forceRerenderAllCells,
+    })
+  );
 
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
@@ -1483,7 +1056,7 @@
   async function forceRerenderAllCells(): Promise<void> {
     if (!sequence?.steps?.length) return;
 
-    const renderOptions = buildRenderOptions();
+    const renderOptions = buildRenderOptionsFn();
     const isDark = darkMode;
 
     // 1. Clear global in-memory preview cache entry for this sequence
@@ -1678,48 +1251,32 @@
     if (!hasMounted) return;
     if (renderKey === lastEffectRenderKey) return;
 
-    const contentChanged = contentKey !== lastContentKey;
-    const imageChanged = imageKey !== lastImageKey;
     const cellsLoaded = untrack(() => cells.length > 0 && cells.some(c => c.isLoaded));
-    const isDarkModeOnly = !contentChanged && cellsLoaded;
-    // Layout-only: images are identical but columns/start position changed.
-    // Duration sequences need a full re-render because durationRows/durationColCount
-    // must be recalculated (relayoutCells only repositions uniform grid cells).
     const hasDurations = untrack(() => hasMixedDurations);
-    const isLayoutOnly = !imageChanged && contentChanged && cellsLoaded && !hasDurations;
-
-    // Grid-structure key: anything that changes row/column count or cell
-    // positions. When this is unchanged we can safely reuse the crossfade
-    // path for image-content swaps (motion visibility toggle, glyph
-    // overlays, etc.) - each cell keeps its slot, only its image changes.
     const gridStableKey = `${stepCount}-${durationKey}-cols:${effCols}-isp:${isp}`;
-    const gridStable = gridStableKey === lastGridStableKey && cellsLoaded;
+
+    const changeType = crossfader.classifyChange(contentKey, imageKey, gridStableKey, cellsLoaded, hasDurations);
 
     lastEffectRenderKey = renderKey;
-    lastContentKey = contentKey;
-    lastImageKey = imageKey;
-    lastGridStableKey = gridStableKey;
+    crossfader.updateKeys({ contentKey, imageKey, gridStableKey });
 
-    if (isDarkModeOnly) {
+    if (changeType === "dark-mode-only") {
       untrack(() => {
         crossfadeCellImages();
       });
-    } else if (isLayoutOnly) {
-      activeDarkMode = dm;
+    } else if (changeType === "layout-only") {
+      crossfader.setActiveDarkMode(dm);
       untrack(() => {
         relayoutCells();
       });
-    } else if (gridStable && imageChanged) {
-      // Grid structure stable, only cell images need to swap - reuse the
-      // crossfade path so the transition reads as a smooth fade rather
-      // than a visible pop. Covers motion-visibility toggles, VTG /
-      // elemental / positions overlays, TKA glyph, reversal dots, etc.
-      activeDarkMode = dm;
+    } else if (changeType === "grid-stable-image") {
+      // Grid structure stable, only cell images need to swap
+      crossfader.setActiveDarkMode(dm);
       untrack(() => {
         crossfadeCellImages();
       });
     } else {
-      activeDarkMode = dm;
+      crossfader.setActiveDarkMode(dm);
       untrack(() => {
         renderAllCells();
       });
@@ -1829,17 +1386,18 @@
     const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const stepCount = sequence?.steps?.length ?? 0;
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    lastImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-cols:${effectiveColumns}-mv:${showBlueMotion ? "1" : "0"}${showRedMotion ? "1" : "0"}-gv:${showVTG ? "1" : "0"}${showElemental ? "1" : "0"}${showPositions ? "1" : "0"}`;
-    lastContentKey = `${lastImageKey}-${includeStartPosition}`;
-    lastEffectRenderKey = `${lastContentKey}-${darkMode}`;
-    lastGridStableKey = `${stepCount}-${durationKey}-cols:${effectiveColumns}-isp:${includeStartPosition}`;
+    const initImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-cols:${effectiveColumns}-mv:${showBlueMotion ? "1" : "0"}${showRedMotion ? "1" : "0"}-gv:${showVTG ? "1" : "0"}${showElemental ? "1" : "0"}${showPositions ? "1" : "0"}`;
+    const initContentKey = `${initImageKey}-${includeStartPosition}`;
+    const initGridStableKey = `${stepCount}-${durationKey}-cols:${effectiveColumns}-isp:${includeStartPosition}`;
+    crossfader.updateKeys({ contentKey: initContentKey, imageKey: initImageKey, gridStableKey: initGridStableKey });
+    lastEffectRenderKey = `${initContentKey}-${darkMode}`;
 
     // Synchronous cache probe: if the global cache already has this exact render,
     // populate cells immediately so the first paint shows content instead of a
     // loading skeleton flash. renderAllCells() would also hit the cache, but it's
     // async - the component renders at least one frame with isLoading=true first.
     if (sequence?.steps?.length) {
-      const renderOptions = buildRenderOptions();
+      const renderOptions = buildRenderOptionsFn();
       const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, darkMode, startPositionLayout);
       const cached = globalPreviewCache.get(cacheKey);
       if (cached) {
@@ -1863,7 +1421,7 @@
   onDestroy(() => {
     cancelLongPress();
     clearCellUrls();
-    if (crossfadeTimer) clearTimeout(crossfadeTimer);
+    crossfader.destroy();
     if (resizeObserver) {
       resizeObserver.disconnect();
     }

@@ -8,7 +8,7 @@ End Position: Single select (for freeform mode only)
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import {
     GridMode,
     type GridPosition,

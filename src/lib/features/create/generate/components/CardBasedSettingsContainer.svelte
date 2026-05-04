@@ -8,7 +8,7 @@ import { buildCardDescriptors } from "$lib/features/create/generate/shared/servi
 import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/getLOOPParameterProvider";
   import { onMount, getContext } from "svelte";
   import { flip } from "svelte/animate";
-  import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import type { PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { quintOut } from "svelte/easing";
 
   import type { CardDescriptor } from "../shared/services/contracts/types";

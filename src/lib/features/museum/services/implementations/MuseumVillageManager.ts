@@ -16,7 +16,7 @@ import { createVillageVisualState, type VillageVisualState } from "$lib/features
 import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
 import { getAvatarModelPath } from "$lib/shared/3d/config/avatar-definitions";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 // propInterpolator / sequenceConverter are now module-level functions
 

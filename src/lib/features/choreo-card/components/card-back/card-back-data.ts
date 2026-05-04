@@ -7,15 +7,15 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { explainLOOP } from "../../services/loop-explainer";
 import type { LOOPExplanation } from "../../services/contracts/types";
-import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { DIFFICULTY_LEVELS, DIFFICULTY_FONT_FAMILY } from "$lib/shared/config/difficulty-styles";
 import {
   LOOP_TYPE_LABELS,
   ROTATED_LOOP_TYPES,
   Period,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { VTG_TURNS_RATIO_MAP } from "../../domain/elemental-theme";
 import { getReversalPattern } from "../../domain/reversal-patterns";
 import { matchReversalPatternId } from "../../domain/reversal-matcher";

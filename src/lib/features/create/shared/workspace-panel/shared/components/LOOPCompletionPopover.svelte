@@ -9,11 +9,11 @@
   Gray = not possible (disabled).
 -->
 <script lang="ts">
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { LOOP_COMPONENT_MAP } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import type { LOOPOption } from "../../../services/implementations/LOOPValidator";
-  import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
   interface Props {
     /** Components active in detected LOOP */

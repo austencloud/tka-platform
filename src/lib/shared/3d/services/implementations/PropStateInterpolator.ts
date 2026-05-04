@@ -7,7 +7,7 @@
 
 import type { Vector3 } from "three";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
+import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
 import type { PropState3D } from "../../domain/models/PropState3D";
 import type { MotionConfig3D } from "../../domain/models/MotionData3D";
 import { Plane } from "../../domain/enums/Plane";

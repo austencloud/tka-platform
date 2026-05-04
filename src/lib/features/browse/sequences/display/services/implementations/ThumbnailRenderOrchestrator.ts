@@ -18,7 +18,7 @@ import type { ThumbnailRenderInput, ThumbnailCacheKey } from "../thumbnail-key-d
 import * as keyDeriverModule from "../thumbnail-key-deriver";
 import type { ThumbnailRenderQueue } from "./ThumbnailRenderQueue";
 import type { ThumbnailRenderer } from "./ThumbnailRenderer";
-import * as cloudCacheModule from "../cloud-thumbnail-cache";
+import * as cloudCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
 import type { ThumbnailLocalCache } from "./ThumbnailLocalCache";
 import type { ThumbnailMetricsCollector } from "./ThumbnailMetricsCollector";
 

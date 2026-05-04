@@ -12,7 +12,7 @@
 
 import type { LedTipData, LedOverlayConfig } from "../../domain/types/LedTypes";
 import { hexToLedColor, resolveHandColor } from "../../domain/types/LedTypes";
-import type { PropState } from "../../domain/PropState";
+import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { evaluatePattern as evaluatePatternNew } from "../../domain/patterns/evaluator";
 import {

@@ -17,9 +17,9 @@ import {
   LOCATION_ANGLES,
   PI,
   TWO_PI,
-} from "$lib/features/compose/shared/domain/math-constants";
+} from "$lib/shared/foundation/domain/math-constants";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
+import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 
 // 950x950 SVG coordinate space
 const CENTER = 475;

@@ -9,12 +9,12 @@
 import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
 import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
-import { getCreateModuleRef } from "$lib/features/create/shared/state/create-module-state-ref.svelte";
+import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state-ref.svelte";
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
 import { executeClearSequenceWorkflow } from "$lib/features/create/shared/utils/clearSequenceWorkflow";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
-import { shiftStartPosition } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
+import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 

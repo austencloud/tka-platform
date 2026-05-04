@@ -8,7 +8,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { AlignmentResult, AlignedBeatPair, LocalAlignmentResult, CircularAlignmentResult, AlignmentOptions } from "../contracts/types";
 import type { StepSignatureGenerator } from "./StepSignatureGenerator";
 import type { SpatialTransformDetector } from "./SpatialTransformDetector";

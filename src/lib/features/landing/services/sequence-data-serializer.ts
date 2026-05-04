@@ -1,5 +1,5 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { GenerationSettings } from "../domain/models/spinner-models";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 

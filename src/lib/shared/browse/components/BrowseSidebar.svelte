@@ -13,7 +13,7 @@
 
 {#if engine.sections.length > 1}
   <SectionIndexSidebar
-    sections={engine.sections as import("$lib/features/browse/shared/domain/models/browse-models").SequenceSection[]}
+    sections={engine.sections as import("$lib/shared/browse/domain/models/browse-models").SequenceSection[]}
     {onScrollToSection}
     {activeSection}
   />

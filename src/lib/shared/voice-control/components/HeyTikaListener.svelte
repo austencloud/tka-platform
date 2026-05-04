@@ -18,7 +18,7 @@
 -->
 <script lang="ts">
 
-import { getVoiceSessionRepository } from "$lib/features/voice-sessions/getVoiceSessionRepository";
+import { getVoiceSessionRepository } from "$lib/shared/voice-sessions/getVoiceSessionRepository";
 import { getCommandDispatcher } from "$lib/shared/voice-control/getCommandDispatcher";
 import { getCommandInterpreter } from "$lib/shared/voice-control/getCommandInterpreter";
 import { resolveIntent } from "$lib/shared/voice-control/services/llm-intent-resolver";
@@ -31,7 +31,7 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   import type { CommandDispatcher } from "../services/implementations/CommandDispatcher";
   import type { WebSpeechTTSProvider } from "$lib/shared/voice-control/services/implementations/WebSpeechTTSProvider";
   import type { VoiceSessionRecorder } from "../services/implementations/VoiceSessionRecorder";
-  import type * as VoiceSessionRepositoryModule from "$lib/features/voice-sessions/services/voice-session-repository";
+  import type * as VoiceSessionRepositoryModule from "$lib/shared/voice-sessions/services/voice-session-repository";
   import { navigationState } from "../../navigation/state/navigation-state.svelte";
   import { voiceControlState } from "../state/voice-control-state.svelte";
   import { classifyTier } from "../ai/tier-classifier";

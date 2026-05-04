@@ -1,5 +1,5 @@
 import { DuetPersister } from './services/implementations/DuetPersister';
-import { getBrowseLoader } from '$lib/features/browse/sequences/display/getBrowseLoader';
+import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
 
 let instance: DuetPersister | null = null;
 export function getDuetPersister(): DuetPersister {

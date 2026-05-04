@@ -15,14 +15,14 @@
   import type { SequenceImageSharer } from "$lib/shared/share/services/implementations/SequenceImageSharer";
   import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
   import type { SequenceDetailLoader } from "$lib/features/browse/sequences/display/services/implementations/SequenceDetailLoader";
-  import type { VideoCountManager } from "$lib/features/browse/sequences/display/services/implementations/VideoCountManager";
+  import type { VideoCountManager } from "$lib/shared/browse/services/VideoCountManager";
   import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-  import type { PlaybackMode, StepPlaybackStepSize } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import type { PlaybackMode, StepPlaybackStepSize } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
-  import { getSequenceDetailLoader } from "$lib/features/browse/sequences/display/getSequenceDetailLoader";
-  import { getVideoCountManager } from "$lib/features/browse/sequences/display/getVideoCountManager";
+  import { getSequenceDetailLoader } from "$lib/shared/browse/getSequenceDetailLoader";
+  import { getVideoCountManager } from "$lib/shared/browse/getVideoCountManager";
   import { onMount, untrack } from "svelte";
 
   import SequenceViewer from "./SequenceViewer.svelte";
@@ -30,7 +30,7 @@
   // ExportControlsSection removed - edit mode now uses inline action buttons
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { browseNavigationState } from "$lib/features/browse/shared/state/browse-navigation-state.svelte";
+  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
 
   /**
    * Panel mode determines which features and actions are available

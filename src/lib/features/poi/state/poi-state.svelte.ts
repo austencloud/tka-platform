@@ -1,7 +1,7 @@
 import type { StripPatternEngine } from "../services/implementations/StripPatternEngine";
 import type { PoiDeviceManager } from "../services/implementations/PoiDeviceManager";
 import * as poiImageLibrary from "../services/poi-image-library";
-import type { StripPattern, PatternParams, RGBColor } from "../domain/StripPattern";
+import type { StripPattern, PatternParams, RGBColor } from "$lib/shared/poi/domain/StripPattern";
 import type { PoiDeviceInfo } from "../domain/DeviceTypes";
 import type { IPatternPreset } from "../domain/PatternPreset";
 import type { PatternTimeline, PatternClip } from "../domain/pattern-timeline-types";
@@ -12,7 +12,7 @@ import {
   removePatternClip,
 } from "../domain/pattern-timeline-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { libraryState } from "$lib/features/library/state/library-state.svelte";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 

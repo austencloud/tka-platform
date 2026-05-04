@@ -4,7 +4,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import { getBrowseLoader } from "../../sequences/display/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getBrowseEventHandler } from "../getBrowseEventHandler";
   import { getThumbnailRenderOrchestrator } from "../../sequences/display/getThumbnailRenderOrchestrator";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";

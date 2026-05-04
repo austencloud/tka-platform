@@ -7,7 +7,7 @@ Features frame processing loop for pose estimation and overlay support.
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { CameraManager } from "../services/implementations/CameraManager";
+  import { CameraManager } from "$lib/shared/train/services/CameraManager";
   import type { Snippet } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";

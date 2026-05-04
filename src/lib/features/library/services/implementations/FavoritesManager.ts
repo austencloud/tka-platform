@@ -11,8 +11,8 @@ import {
   removeSequenceFromCollection,
   addSequenceToCollection,
   getCollectionSequences,
-} from "../collection-manager";
-import type { LibrarySequence } from "../../domain/models/LibrarySequence";
+} from "$lib/shared/library/services/collection-manager";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 
 export class FavoritesManager {
   constructor() {}

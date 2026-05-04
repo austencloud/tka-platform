@@ -1,12 +1,3 @@
-/**
- * editing-pane-persistence.ts
- *
- * Pure functions for persisting and loading the active editing pane
- * to/from sessionStorage with a short TTL, scoped to a specific sequence.
- *
- * Extracted from SequenceViewerOrchestrator.
- */
-
 const EDITING_PANE_SESSION_KEY = "tka-viewer-editing-pane";
 const EDITING_PANE_TTL_MS = 2000;
 
@@ -18,10 +9,6 @@ interface PersistedEditingPane {
   sequenceId: string | null;
 }
 
-/**
- * Load the most recently persisted editing pane, if it matches
- * the given sequence and hasn't expired (TTL = 2 s).
- */
 export function loadRecentEditingPane(currentSequenceId: string | null): EditingPaneValue | null {
   if (typeof sessionStorage === "undefined") return null;
   try {
@@ -40,9 +27,6 @@ export function loadRecentEditingPane(currentSequenceId: string | null): Editing
   }
 }
 
-/**
- * Persist the current editing pane (or clear it when null).
- */
 export function persistEditingPane(pane: EditingPaneValue | null, sequenceId: string | null): void {
   if (typeof sessionStorage === "undefined") return;
   try {

@@ -8,10 +8,10 @@ Always renders as a pure button. Word input is now in WordInputCard.
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { UIGenerationConfig } from "../../state/generate-config.svelte";
-  import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import { uiConfigToGenerationOptions } from "$lib/features/create/generate/shared/utils/config-mapper";
+  import { uiConfigToGenerationOptions } from "$lib/shared/create/utils/config-mapper";
 
   let {
     isGenerating,

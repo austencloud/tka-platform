@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   const TKA_LETTER_RE = /^[a-zA-ZͰ-Ͽ⊕]-?$/;
 

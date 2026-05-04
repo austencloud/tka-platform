@@ -1,6 +1,6 @@
 import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
-import type { AdditionalLayerRenderData } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
-import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
+import type { AdditionalLayerRenderData } from "../../domain/types/AnimationRenderTypes";
+import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 export interface TrailOverlayRenderParams {

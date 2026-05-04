@@ -1,7 +1,7 @@
 <!-- VersionDetailPanel - Drawer wrapper for version detail content -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { AppVersion } from "$lib/features/feedback/domain/models/version-models";
+  import type { AppVersion } from "$lib/shared/versioning/domain/models/version-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import VersionDetailContent from "./VersionDetailContent.svelte";
 

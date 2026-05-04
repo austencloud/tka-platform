@@ -13,7 +13,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-  import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
+  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import {
     collectionsBrowseState,
     type CreatorContentTab,

@@ -7,7 +7,7 @@
  * Domain: Create module - Responsive Layout Management
  */
 
-import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
+import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
 
 export interface LayoutManagerConfig {
   layoutService: ResponsiveLayoutManager;

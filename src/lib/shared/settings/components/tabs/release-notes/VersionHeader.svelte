@@ -1,6 +1,6 @@
 <!-- VersionHeader - Badge and date display -->
 <script lang="ts">
-  import { PRE_RELEASE_VERSION } from "$lib/features/feedback/domain/models/version-models";
+  import { PRE_RELEASE_VERSION } from "$lib/shared/versioning/domain/models/version-models";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
   let {

@@ -12,8 +12,8 @@
   import { getFeedbackTypeResolver } from "$lib/features/feedback/getFeedbackTypeResolver";
   import { getAudioAnalyzer } from "$lib/features/feedback/getAudioAnalyzer";
   import type { FeedbackSubmitState } from "../../state/feedback-submit-state.svelte";
-  import { TYPE_CONFIG } from "../../domain/models/feedback-models";
-  import type { FeedbackType } from "../../domain/models/feedback-models";
+  import { TYPE_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
+  import type { FeedbackType } from "$lib/shared/feedback/domain/models/feedback-models";
   import SuccessState from "./SuccessState.svelte";
   import TypeSelector from "./TypeSelector.svelte";
   import EncouragementHint from "./EncouragementHint.svelte";

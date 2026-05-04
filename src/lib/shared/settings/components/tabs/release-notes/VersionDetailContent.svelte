@@ -5,24 +5,24 @@
     AppVersion,
     ChangelogCategory,
     ChangelogEntry,
-  } from "$lib/features/feedback/domain/models/version-models";
-  import { CHANGELOG_CATEGORIES } from "$lib/features/feedback/domain/constants/changelog-constants";
+  } from "$lib/shared/versioning/domain/models/version-models";
+  import { CHANGELOG_CATEGORIES } from "$lib/shared/versioning/domain/constants/changelog-constants";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import FeedbackDetailPanel from "$lib/features/feedback/components/manage/FeedbackDetailPanel.svelte";
-  import type { FeedbackItem } from "$lib/features/feedback/domain/models/feedback-models";
-  import { feedbackService } from "$lib/features/feedback/services/implementations/FeedbackRepository";
-  import { createFeedbackManageState } from "$lib/features/feedback/state/feedback-manage-state.svelte";
+  import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
+  import { feedbackService } from "$lib/shared/feedback/services/implementations/FeedbackRepository";
+  import { createFeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
   import EditableReleaseNotes from "./EditableReleaseNotes.svelte";
   import ChangeGroupSection from "./ChangeGroupSection.svelte";
   import VersionHeader from "./VersionHeader.svelte";
   import NoChangelogState from "./NoChangelogState.svelte";
   import ActionToast from "./ActionToast.svelte";
   import ContributorBadge from "./ContributorBadge.svelte";
-  import { getContributorLoader } from "$lib/features/feedback/getContributorLoader";
-  import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
+  import { getContributorLoader } from "$lib/shared/feedback/getContributorLoader";
+  import type { Contributor } from "$lib/shared/versioning/domain/models/contributor-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { changelogEditState } from "./state/changelog-edit-state.svelte";
-  import * as versionService from "$lib/features/feedback/services/version-service";
+  import * as versionService from "$lib/shared/feedback/services/version-service";
 
   let {
     version,

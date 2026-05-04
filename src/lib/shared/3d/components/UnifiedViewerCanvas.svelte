@@ -26,7 +26,7 @@
   import { createViewerCameraPlayerState } from "../state/viewer-camera-player-state.svelte";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 
   export type CameraMode = "orthographic-2d" | "perspective-3d";
 

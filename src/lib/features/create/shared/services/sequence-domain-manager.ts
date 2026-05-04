@@ -7,7 +7,7 @@
  * and desktop.modern.domain.models for actual validation and business rules.
  */
 
-import type { StepData } from "../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type {
   ValidationErrorInfo,
   ValidationResult,

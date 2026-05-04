@@ -10,14 +10,14 @@ import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/Filtering
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type {
-  LOOPType} from "$lib/features/create/generate/circular/domain/models/circular-models";
+  LOOPType} from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
   LOOP_TYPE_LABELS,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 import { detectRotationPeriod } from "$lib/features/create/generate/circular/domain/constants/detect-rotation-period";
-import { calculateDifficultyLevel } from "../sequence-difficulty-calculator";
+import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 
 // Constants
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;

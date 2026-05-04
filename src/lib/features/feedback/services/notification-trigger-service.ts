@@ -51,10 +51,10 @@ import type {
   MessageNotification,
   SystemNotification,
   ModerationNotification,
-} from "../domain/models/notification-models";
-import { getPreferenceKeyForType } from "../domain/models/notification-models";
+} from "$lib/shared/feedback/domain/models/notification-models";
+import { getPreferenceKeyForType } from "$lib/shared/feedback/domain/models/notification-models";
 import { getPreferences } from "./notification-preferences-manager";
-import { UserNotificationSchema } from "../domain/models/feedback-schemas";
+import { UserNotificationSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";
 
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";

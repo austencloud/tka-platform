@@ -11,7 +11,7 @@
  */
 
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
-import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 
 /**

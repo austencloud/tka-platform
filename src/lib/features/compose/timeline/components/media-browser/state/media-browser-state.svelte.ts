@@ -5,16 +5,16 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
+import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
 import type { BrowseFilter } from "$lib/features/browse/sequences/display/services/implementations/BrowseFilter";
 import { sortSequences as browseSortSequences } from "$lib/features/browse/sequences/display/services/browse-sorter";
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
-import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
-import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-import { getBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/getBrowseThumbnailProvider";
-import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
+import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+import { getBrowseThumbnailProvider } from "$lib/shared/browse/getBrowseThumbnailProvider";
+import { getBrowseFilter } from "$lib/shared/browse/getBrowseFilter";
 
 const BATCH_SIZE = 24;
 

@@ -56,7 +56,7 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { createConstructTabState as ConstructTabStateType } from "../state/construct-tab-state.svelte";
   import { createPanelCoordinationState } from "../state/panel-coordination-state.svelte";
-  import { setCreateModuleStateRef } from "../state/create-module-state-ref.svelte";
+  import { setCreateModuleStateRef } from "$lib/shared/create/state/create-module-state-ref.svelte";
   import type { IToolPanelMethods } from "../types/create-module-types";
   import TransferConfirmDialog from "./TransferConfirmDialog.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
@@ -82,8 +82,8 @@ import { getLibraryRepository } from "$lib/features/library/getLibraryRepository
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
   import { createPanelHeightTracker } from "../state/managers/PanelHeightTracker.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-  import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
-  import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import type { LetterSource } from "$lib/shared/create/domain/spell-models";
+  import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { formatLOOPTypeForDisplay } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { UndoOperationType } from "../services/implementations/UndoManager";

@@ -8,7 +8,7 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { getCameraManager } from "$lib/features/train/getCameraManager";
+  import { getCameraManager } from "$lib/shared/train/getCameraManager";
   import { getVideoRecorder } from "../services/implementations/VideoRecorder";
   import type {
     RecordingProgress,

@@ -18,12 +18,12 @@
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
   import PlaybackModeToggle from "$lib/features/compose/components/controls/PlaybackModeToggle.svelte";
-  import type { PlaybackMode } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import "./bento/rail-tile.css";
   import "./pill-nav/pill-nav.css";
   import TempoControl from "./TempoControl.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
+  import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
   import { EFFECT_LABELS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";

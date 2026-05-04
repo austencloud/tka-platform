@@ -3,8 +3,8 @@
  * Handles prop type updates for individual steps and bulk operations.
  */
 
-import type { StepData } from "../../../domain/models/StepData";
-import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";

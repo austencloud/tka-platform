@@ -15,7 +15,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-import type { LibraryCollection } from "../../domain/models/Collection";
+import type { LibraryCollection } from "$lib/shared/library/domain/models/Collection";
 
 /**
  * Error class for collection operations
@@ -35,7 +35,7 @@ export class CollectionError extends Error {
     this.name = "CollectionError";
   }
 }
-import type { LibrarySequence } from "../../domain/models/LibrarySequence";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 
 /**
  * Get the current user ID or throw if not authenticated

@@ -6,10 +6,10 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { StepData } from "../domain/models/StepData";
-import type { StartPositionData } from "../domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-import type { SimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
+import type { SimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
 import type { createCreateModuleState } from "../state/create-module-state.svelte";
 import type { SequenceState } from "../state/SequenceStateOrchestrator.svelte";
 

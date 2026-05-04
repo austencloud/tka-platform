@@ -1,6 +1,6 @@
 import type { AppSettings } from "../../settings/domain/AppSettings";
-import type { CompleteBrowseState } from "../../../features/browse/shared/domain/models/browse-models";
-import type { StartPositionData } from "../../../features/create/shared/domain/models/StartPositionData";
+import type { CompleteBrowseState } from "$lib/shared/browse/domain/models/browse-models";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { TabId } from "../../navigation/domain/types";
 import {
   createSequenceData,

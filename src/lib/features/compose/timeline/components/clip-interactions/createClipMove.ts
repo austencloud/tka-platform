@@ -8,7 +8,7 @@
 
 import type { TimelineClip } from "../../domain/timeline-types";
 import { pixelsToTime } from "../../domain/timeline-types";
-import { getTimelineState } from "../../state/timeline-state.svelte";
+import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
 import { getTimelineSnapper } from "../../services/implementations/TimelineSnapService";
 
 export interface ClipMoveHandlers {

@@ -1,6 +1,6 @@
-import type { FeedbackItem } from "../../domain/models/feedback-models";
+import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
 import { firestoreList } from "$lib/shared/firestore";
-import { FeedbackItemSchema } from "../../domain/models/feedback-schemas";
+import { FeedbackItemSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";
 
 /**
  * Loads archived feedback items from Firestore

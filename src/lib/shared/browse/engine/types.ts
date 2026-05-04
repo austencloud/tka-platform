@@ -15,8 +15,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
-import type { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
-import type { SequenceSection } from "$lib/features/browse/shared/domain/models/browse-models";
+import type { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+import type { SequenceSection } from "$lib/shared/browse/domain/models/browse-models";
 
 // ---------------------------------------------------------------------------
 // Sequence Source

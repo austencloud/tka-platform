@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { OrientationCycleDetector } from './services/implementations/OrientationCycleDetector';
+import { OrientationCycleDetector } from '$lib/shared/create/services/OrientationCycleDetector';
 import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
 
 let instance: OrientationCycleDetector | null = null;

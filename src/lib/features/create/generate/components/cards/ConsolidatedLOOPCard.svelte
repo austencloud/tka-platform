@@ -7,11 +7,11 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import {
     LOOPType,
-  } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
   import { onMount, getContext } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import type { PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import CardHeader from "./shared/CardHeader.svelte";
 
   let {

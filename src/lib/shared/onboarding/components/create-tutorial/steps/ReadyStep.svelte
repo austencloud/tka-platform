@@ -9,8 +9,8 @@
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { createTutorialState } from "../../../state/create-tutorial-state.svelte";
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface Props {

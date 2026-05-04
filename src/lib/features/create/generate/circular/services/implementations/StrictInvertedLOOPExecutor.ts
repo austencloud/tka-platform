@@ -9,7 +9,7 @@
  * in StrictMirroredLOOPExecutor.
  */
 
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {

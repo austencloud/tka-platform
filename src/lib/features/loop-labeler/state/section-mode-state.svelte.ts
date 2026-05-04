@@ -9,7 +9,7 @@ import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getL
 import type { SectionDesignation } from "../domain/models/section-models";
 import type { LabeledSequence } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
-import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { LOOPLabelsFirebaseRepository } from "../services/implementations/LOOPLabelsFirebaseRepository";
 
 export interface SectionModeState {

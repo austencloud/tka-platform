@@ -6,12 +6,12 @@
   Uses shared design tokens from app.css.
 -->
 <script lang="ts">
-  import type { SequenceEntry } from "../../domain/models/sequence-models";
+  import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
   import type { LabeledSequence } from "../../domain/models/label-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   type FilterMode = "all" | "unlabeled" | "labeled" | "unknown";
 

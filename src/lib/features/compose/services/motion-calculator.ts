@@ -7,12 +7,12 @@
 
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { PI } from "../shared/domain/math-constants.js";
+import { PI } from "$lib/shared/foundation/domain/math-constants";
 import {
   mapOrientationToAngle,
   normalizeAnglePositive,
   normalizeAngleSigned,
-} from "./angle-calculator";
+} from "$lib/shared/animation-engine/services/angle-calculator";
 
 export function calculateProIsolationStaffAngle(
   centerPathAngle: number,

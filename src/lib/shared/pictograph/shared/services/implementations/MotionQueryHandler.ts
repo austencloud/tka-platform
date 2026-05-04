@@ -5,7 +5,7 @@ import { createMotionData } from "../../domain/models/MotionData";
 import type { PictographData } from "../../domain/models/PictographData";
 import type { ICSVPictographParser as ICSVPictographParser } from "../../../../foundation/services/contracts/data/ICSVPictographParser";
 import type { CSVRow } from "../../../../foundation/services/contracts/data/ICSVPictographParser";
-import type { ParsedCsvRow } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
+import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModels";
 import type { CsvLoader } from "../../../../foundation/services/implementations/data/CsvLoader";
 import type { IMotionQueryHandler } from "../../../../foundation/services/contracts/data/data-contracts";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";

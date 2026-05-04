@@ -2,7 +2,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { StagedImageState } from "../../domain/models/feedback-models";
+  import type { StagedImageState } from "$lib/shared/feedback/domain/models/feedback-models";
 
   const {
     images = [],

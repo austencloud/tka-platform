@@ -4,8 +4,8 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "../../../../shared/domain/models/StepData";
-import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import {
   updateSequenceData,
@@ -60,7 +60,7 @@ export class OrientationCycleExtender {
   }
 }
 
-import { orientationCycleDetector } from "./OrientationCycleDetector";
+import { orientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 
 export const orientationCycleExtender = new OrientationCycleExtender(

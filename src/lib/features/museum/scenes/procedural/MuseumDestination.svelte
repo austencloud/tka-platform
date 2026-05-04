@@ -3,7 +3,7 @@
 import * as museumPersister from "$lib/features/museum/scenes/procedural/services/museum-persister";
   import WorldScene from "$lib/shared/3d/procedural-engine/components/WorldScene.svelte";
   import { MUSEUM_GROUNDS_CONFIG } from "$lib/shared/3d/procedural-engine/core/world-definitions";
-  import { getActiveMuseumState } from "./state/museum-state-bridge.svelte";
+  import { getActiveMuseumState } from "$lib/shared/museum/state/museum-state-bridge.svelte";
   import InteractionPrompt from "./components/InteractionPrompt.svelte";
   import SequenceBrowserOverlay from "./overlay/SequenceBrowserOverlay.svelte";
   import { destinationManager } from "$lib/shared/3d/destinations/destination-manager.svelte";

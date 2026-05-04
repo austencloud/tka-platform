@@ -9,7 +9,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onDestroy } from "svelte";
   import WaveSurfer from "wavesurfer.js";
-  import { getTimelineState } from "../state/timeline-state.svelte";
+  import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import { generateStepTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
   import { timeToPixels } from "../domain/timeline-types";

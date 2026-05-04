@@ -4,7 +4,7 @@
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { getCreateModuleContext } from "../shared/context/create-module-context";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
-  import { shiftStartPosition } from "../shared/services/implementations/sequence-transforms/sequence-transforms";
+  import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import * as subDrawerStatePersister from "../shared/services/sub-drawer-state-persister";
   import type { PropPreset } from "$lib/shared/settings/domain/AppSettings";

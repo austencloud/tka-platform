@@ -7,7 +7,7 @@ import { orientationCalculator } from '$lib/shared/pictograph/prop/services/impl
 import { getSequenceExtender } from '$lib/features/create/shared/getSequenceExtender';
 import { getStartPositionValidator } from './getStartPositionValidator';
 import * as orientationContinuityValidator from './services/orientation-continuity-validator';
-import { reversalDetector } from '$lib/features/create/shared/services/reversal-detector';
+import { reversalDetector } from '$lib/shared/create/services/reversal-detector';
 
 let instance: WordSequenceGenerator | null = null;
 

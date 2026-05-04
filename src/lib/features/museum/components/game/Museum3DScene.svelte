@@ -3,16 +3,13 @@
   import { T, useTask, useThrelte } from "@threlte/core";
   import { PCFSoftShadowMap } from "three";
   import {
-    MathUtils,
     Vector3,
-    Quaternion,
-    Euler,
   } from "three";
   import type { BatchedMesh, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
   import { tileKey } from "../../domain/museum-grid-types";
-  import type { AvatarState, PhysicsProvider } from "$lib/shared/3d/camera/types";
+  import type { AvatarState } from "$lib/shared/3d/camera/types";
   import { CameraMode } from "$lib/shared/3d/camera/types";
   import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
   import { createMuseumPhysicsProvider, MuseumPhysicsProvider } from "../../services/implementations/MuseumPhysicsProvider";
@@ -30,7 +27,7 @@
   // Start preloading village avatar models immediately - they'll be cached
   // by the time the player reaches the Room of Collaboration
   preloadVillageAvatarModels();
-  import { createTorchInstance, disposeTorchMaterialCache, type TorchMaterials } from "../../services/torch-material-cache";
+  import { createTorchInstance, type TorchMaterials } from "../../services/torch-material-cache";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
@@ -43,12 +40,7 @@
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
-  import { ProximityGrid } from "../../services/implementations/ProximityGrid";
   import { generateCanvas as generatePlaqueCanvas } from "../../services/plaque-texture-generator";
-  import {
-    bucketMuseumTilesByRoom,
-    buildRoomChunk,
-  } from "../../services/implementations/MuseumGeometryBuilder";
   import type {
     RoomChunk,
     BatchedMeshData,
@@ -57,13 +49,15 @@
     LightPosition,
     RoomLight,
   } from "../../services/implementations/MuseumGeometryBuilder";
-  import { RoomLifecycleManager } from "../../services/implementations/RoomLifecycleManager";
-  import { createRoomDescriptor } from "../../domain/room-descriptor";
-  import type { SerializedBucketEntry } from "../../domain/room-descriptor";
-  import { dryRunFromWorkerTransfer } from "../../services/implementations/MuseumGeometryBuilder";
-  import type { MuseumGeometryDryRun } from "../../services/implementations/MuseumGeometryBuilder";
-  import type { RoomBuiltResponse } from "../../workers/geometry-worker-protocol";
   import { MUSEUM_EDGES } from "../../data/museum-room-graph";
+
+  // ── Extracted modules ──
+  import { MuseumCameraFlipController } from "../../services/implementations/museum-camera-flip-controller";
+  import type { CameraFlipState } from "../../services/implementations/museum-camera-flip-controller";
+  import { MuseumGeometryStreamer } from "../../services/implementations/museum-geometry-streamer";
+  import { MuseumProximityRenderer, PROXIMITY_MAX_MOUNTS_PER_FRAME } from "../../services/implementations/museum-proximity-renderer";
+  import type { MountCategory } from "../../services/implementations/museum-proximity-renderer";
+  import { MuseumPlayerController } from "../../services/implementations/museum-player-controller";
 
   // Plaque texture generation uses module-level cache (generatePlaqueCanvas)
   // Torch materials use module-level template compiled once on first createTorchInstance call
@@ -243,14 +237,6 @@
   // Wall height - used for ceiling light placement in the template
   const WALL_HEIGHT = 4.5;
 
-  // ── Helpers ──
-  function yawToFacing(yaw: number): string {
-    // Normalize to 0..2π then quantize to 8 directions
-    const a = ((yaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    const idx = Math.round(a / (Math.PI / 4)) % 8;
-    return ["south", "southwest", "west", "northwest", "north", "northeast", "east", "southeast"][idx]!;
-  }
-
   // ── Camera ──
   let camera: PerspectiveCamera | undefined = $state();
   // Reused scratch vector for reading the editor-orbit target on each
@@ -258,8 +244,6 @@
   const _editorTargetVec = new Vector3();
 
   // Grid metrics
-  const gridCenterX = (grid.width * TILE_SIZE) / 2;
-  const gridCenterZ = (grid.height * TILE_SIZE) / 2;
   const maxExtent = Math.max(grid.width, grid.height) * TILE_SIZE;
   const spawnWorldX = initialPlayerPos?.x ?? grid.spawn.x * TILE_SIZE;
   const spawnWorldZ = initialPlayerPos?.z ?? grid.spawn.y * TILE_SIZE;
@@ -268,129 +252,28 @@
   const portalConfig = createPortalConfig(grid, TILE_SIZE);
   const portalChecker = new PortalProximityChecker(portalConfig.pairs);
 
-  function handlePortalTeleport(playerX: number, playerZ: number): boolean {
-    const hit = portalChecker.check(playerX, playerZ);
-    if (!hit) return false;
-    physicsProvider.teleport!({ x: hit.destX, y: 0, z: hit.destZ });
-    syncPositionFromPhysics();
-    playerYaw = hit.destYaw;
-    targetPlayerYaw = hit.destYaw;
-    fpsInitialYaw = hit.destYaw;
-    fpsInitialPitch = 0;
-    fpsActive = false;
-    requestAnimationFrame(() => {
-      fpsActive = true;
-      progress = 1;
-    });
-    return true;
-  }
-
-  // ── Top-down camera: zoomed-in follow camera above the player ──
-  // Height lerps toward the parent-controlled topDownHeight prop for smooth zoom.
-  let currentTopDownHeight = props.topDownHeight ?? 12;
-  const TOP_DOWN_FOV = 50;
-  const CAMERA_SMOOTHING = 0.08; // Exponential lerp factor for camera follow
-  const ZOOM_SMOOTHING = 0.12; // Lerp factor for zoom height changes
-  const TOP_DOWN_MOVE_SPEED = 3; // units/sec - matches FPS
-  const TOP_DOWN_SPRINT_MULTIPLIER = 2.5; // Shift key multiplier
-
-  // Mutable - position tracks the player, not the grid center
-  const TOP_DOWN = {
-    position: new Vector3(spawnWorldX, currentTopDownHeight, spawnWorldZ),
-    quaternion: new Quaternion().setFromEuler(new Euler(-Math.PI / 2, 0, 0)),
-    fov: TOP_DOWN_FOV,
-  };
-
-  // These must match UCC's SETTINGS.firstPerson exactly
-  const UCC_FP_HEIGHT = 0.75;
-  const UCC_FP_FORWARD_OFFSET = 0.05;
-  const UCC_FPS_FOV = 65;
-  const UCC_FAR_PLANE = 10000; // UCC forces this in its game loop
-
-  const FPS = {
-    position: new Vector3(spawnWorldX, 0.85 + UCC_FP_HEIGHT, spawnWorldZ + UCC_FP_FORWARD_OFFSET),
-    quaternion: new Quaternion(), // computed by syncFpsFromPlayer/syncFpsFromCamera
-    fov: UCC_FPS_FOV,
-  };
-
-  /**
-   * Compute FPS target from the player's current position + yaw.
-   * Used when ENTERING FPS from top-down - the animation needs to land
-   * where UCC will place the camera on its first frame.
-   */
-  function syncFpsFromPlayer(): void {
-    const pos = physicsProvider.getPlayerPosition();
-    const camX = pos.x + Math.sin(playerYaw) * UCC_FP_FORWARD_OFFSET;
-    const camY = pos.y + UCC_FP_HEIGHT;
-    const camZ = pos.z + Math.cos(playerYaw) * UCC_FP_FORWARD_OFFSET;
-    FPS.position.set(camX, camY, camZ);
-    FPS.fov = UCC_FPS_FOV;
-
-    // Match UCC's camera orientation exactly.
-    // UCC uses camera.lookAt(target) where target is computed from yaw/pitch.
-    // Rather than reverse-engineering that with Object3D.lookAt (which can differ),
-    // use a temporary PerspectiveCamera to get the exact same quaternion.
-    if (camera) {
-      // Temporarily position OUR camera where FPS will be, lookAt the same target UCC would
-      const savedPos = camera.position.clone();
-      const savedQuat = camera.quaternion.clone();
-      const savedFov = camera.fov;
-
-      camera.position.set(camX, camY, camZ);
-      camera.up.set(0, 1, 0);
-      const lookDist = 100;
-      camera.lookAt(
-        camX + Math.sin(playerYaw) * lookDist * Math.cos(playerPitch),
-        camY - Math.sin(playerPitch) * lookDist,
-        camZ + Math.cos(playerYaw) * lookDist * Math.cos(playerPitch)
-      );
-      FPS.quaternion.copy(camera.quaternion);
-
-      // Restore camera to its previous state (the animation will use FPS as the target)
-      camera.position.copy(savedPos);
-      camera.quaternion.copy(savedQuat);
-      camera.fov = savedFov;
-    } else {
-      // Fallback: simple forward-facing quaternion
-      FPS.quaternion.setFromEuler(new Euler(0, playerYaw, 0));
-    }
-  }
-
-  /**
-   * Capture the camera's ACTUAL state into FPS.
-   * Used when EXITING FPS - so the flip-back animation starts from
-   * exactly where UCC had the camera. No reverse-engineering needed.
-   */
-  function syncFpsFromCamera(): void {
-    if (camera) {
-      FPS.position.copy(camera.position);
-      FPS.quaternion.copy(camera.quaternion);
-      FPS.fov = camera.fov;
-    }
-  }
+  // ── Extracted controllers ──
+  const cameraFlip = new MuseumCameraFlipController(
+    spawnWorldX,
+    spawnWorldZ,
+    props.topDownHeight ?? 12,
+  );
 
   // ── Flip animation state ──
-  const DURATION = 0.8;
-  let progress = initialFpsActive ? 1 : 0;
+  let flipState: CameraFlipState = {
+    progress: initialFpsActive ? 1 : 0,
+    animating: false,
+    goingDown: true,
+    initialized: false,
+    lastFlipCount: 0,
+  };
   let animating = $state(false);
-  let goingDown = true;
-  let lastFlipCount = 0;
-  let initialized = false;
-
-  const tempPos = new Vector3();
-  const tempQuat = new Quaternion();
-
-  function easeInOutCubic(x: number): number {
-    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
-  }
 
   // ── FPS mode: active when flip animation has completed (progress=1) ──
   // UnifiedCameraController takes over camera when this is true.
   let fpsActive = $state(initialFpsActive);
 
   // Track the user's preferred 3D camera mode so flipping back to 3D restores it.
-  // Default to first-person; updated whenever the user presses V to switch modes.
-  // Persisted to sessionStorage so it survives HMR remounts.
   const CAMERA_MODE_HMR_KEY = "museum-last-camera-mode";
   function loadLastCameraMode(): CameraMode {
     try {
@@ -476,12 +359,15 @@
     { x: spawnWorldX, y: 0, z: spawnWorldZ }
   ) as MuseumPhysicsProvider;
 
+  // Player controller - handles movement, portals, void recovery
+  const playerCtrl = new MuseumPlayerController(grid, TILE_SIZE, physicsProvider, portalChecker);
+
   // Root motion disabled - code-driven movement for responsive controls.
   // The root motion infrastructure is preserved for future A/B testing.
   // To re-enable: set rootMotionEnabled = fpsActive and enableRootMotion={true} on Avatar3D.
 
   // Initialize FPS target at spawn (must be after physicsProvider is created)
-  syncFpsFromPlayer();
+  cameraFlip.syncFpsFromPlayer(physicsProvider.getPlayerPosition(), playerYaw, playerPitch, camera);
 
   // Simple wing theme lookup - used once per frame for atmosphere transitions.
   // Not performance-critical (the hot path tile→theme lookup is in MuseumGeometryBuilder).
@@ -506,6 +392,33 @@
     }
   }
 
+  /** Handle portal teleport — updates reactive state for yaw/pitch/fps reset */
+  function handlePortalTeleport(playerX: number, playerZ: number): boolean {
+    const hit = portalChecker.check(playerX, playerZ);
+    if (!hit) return false;
+    physicsProvider.teleport!({ x: hit.destX, y: 0, z: hit.destZ });
+    syncPositionFromPhysics();
+    playerYaw = hit.destYaw;
+    targetPlayerYaw = hit.destYaw;
+    fpsInitialYaw = hit.destYaw;
+    fpsInitialPitch = 0;
+    fpsActive = false;
+    requestAnimationFrame(() => {
+      fpsActive = true;
+      flipState.progress = 1;
+    });
+    return true;
+  }
+
+  /** Sync playerPosition and top-down camera to where the physics provider says the player is */
+  function syncPositionFromPhysics(): void {
+    const pos = physicsProvider.getPlayerPosition();
+    playerPosition.x = pos.x;
+    playerPosition.y = pos.y;
+    playerPosition.z = pos.z;
+    cameraFlip.snapTopDownToPlayer(pos);
+  }
+
   // ── Flip animation loop ──
   // When fpsActive, UnifiedCameraController owns the camera - we don't touch it.
   useTask((delta) => {
@@ -514,9 +427,9 @@
     // In editor mode, OrbitControls owns the camera - skip all movement/animation
     if (museum3dEditorState.editorActive) return;
 
-    // Drain pending mount queue (max 5 per frame to avoid spikes)
+    // Drain pending mount queue (max per frame to avoid spikes)
     if (pendingMounts.length > 0) {
-      const batch = pendingMounts.splice(0, MAX_MOUNTS_PER_FRAME);
+      const batch = pendingMounts.splice(0, PROXIMITY_MAX_MOUNTS_PER_FRAME);
       for (const { category, item } of batch) {
         switch (category) {
           case "plaque": visiblePlaques = [...visiblePlaques, item]; break;
@@ -532,218 +445,108 @@
     // Proximity visibility recheck - when player moves 2+ tiles
     const currentTX = Math.round(playerPosition.x / TILE_SIZE);
     const currentTY = Math.round(playerPosition.z / TILE_SIZE);
-    const dCheckX = currentTX - lastCheckTX;
-    const dCheckY = currentTY - lastCheckTY;
-    if (dCheckX * dCheckX + dCheckY * dCheckY >= 16) {
-      recomputeVisibility(currentTX, currentTY);
+    if (proximityRenderer.shouldRecompute(currentTX, currentTY)) {
+      proximityRenderer.recomputeVisibility(currentTX, currentTY);
     }
 
     // First frame: initialize camera
-    if (!initialized) {
-      initialized = true;
+    if (!flipState.initialized) {
+      flipState.initialized = true;
       if (initialFpsActive) {
-        // HMR restore: go straight to FPS - skip top-down and flip animation
         cameraPreferences.setModeForDestination("museum", lastCameraMode);
-        syncFpsFromPlayer();
-        camera.position.copy(FPS.position);
-        camera.quaternion.copy(FPS.quaternion);
-        camera.fov = FPS.fov;
-      } else {
-        camera.position.copy(TOP_DOWN.position);
-        camera.quaternion.copy(TOP_DOWN.quaternion);
-        camera.fov = TOP_DOWN.fov;
+        cameraFlip.syncFpsFromPlayer(physicsProvider.getPlayerPosition(), playerYaw, playerPitch, camera);
       }
-      camera.near = 0.1;
-      camera.far = UCC_FAR_PLANE;
-      camera.updateProjectionMatrix();
+      cameraFlip.initializeCamera(camera, initialFpsActive);
       onReady?.();
       return;
     }
 
     // If FPS mode is active, UCC owns the camera - skip everything
     if (fpsActive) {
-      // Still report player position to parent for interaction detection
-      const fpsPos = physicsProvider.getPlayerPosition();
-      // Void recovery in FPS mode too
-      const fpsTileKey = `${Math.round(fpsPos.x / TILE_SIZE)},${Math.round(fpsPos.z / TILE_SIZE)}`;
-      if (!grid.tiles.has(fpsTileKey)) {
-        const spawnX = grid.spawn.x * TILE_SIZE;
-        const spawnZ = grid.spawn.y * TILE_SIZE;
-        physicsProvider.teleport!({ x: spawnX, y: 0, z: spawnZ });
-        const corrected = physicsProvider.getPlayerPosition();
-        fpsPos.x = corrected.x;
-        fpsPos.y = corrected.y;
-        fpsPos.z = corrected.z;
-      }
-      // Portal teleportation check - if the player walked into a portal, jump to dest
-      if (handlePortalTeleport(fpsPos.x, fpsPos.z)) {
-        const teleported = physicsProvider.getPlayerPosition();
-        fpsPos.x = teleported.x;
-        fpsPos.y = teleported.y;
-        fpsPos.z = teleported.z;
+      // Delegate to player controller for position sync, void recovery, portal check
+      const fpsResult = playerCtrl.syncFpsPosition();
+      if (fpsResult.portalHit) {
+        // Portal teleport needs to update reactive state
+        if (handlePortalTeleport(fpsResult.position.x, fpsResult.position.z)) {
+          // handlePortalTeleport already did the teleport and state update
+          const corrected = physicsProvider.getPlayerPosition();
+          fpsResult.position.x = corrected.x;
+          fpsResult.position.y = corrected.y;
+          fpsResult.position.z = corrected.z;
+        }
       }
 
       // Sync reactive state for Avatar3D's animation system
-      const vel = physicsProvider.getVelocity();
-      playerSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
-      playerGrounded = physicsProvider.isGrounded();
-      playerVerticalVelocity = vel.y;
-      // playerJumpRequested is set/cleared by the keydown handler with rAF delay
+      playerSpeed = fpsResult.speed;
+      playerGrounded = fpsResult.grounded;
+      playerVerticalVelocity = fpsResult.velocity.y;
 
-      const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
-      const fpsTileZ = Math.round(fpsPos.z / TILE_SIZE);
+      const fpsTileX = Math.round(fpsResult.position.x / TILE_SIZE);
+      const fpsTileZ = Math.round(fpsResult.position.z / TILE_SIZE);
       updateAtmosphere(fpsTileX, fpsTileZ, delta);
-      updateStreaming(fpsTileX, fpsTileZ);
-      props.onPlayerUpdate?.(fpsPos.x, fpsPos.z, fpsTileX, fpsTileZ, yawToFacing(playerYaw), true, playerYaw);
+      geometryStreamer.updateStreaming(fpsTileX, fpsTileZ, fpsActive);
+      currentPlayerRoomId = geometryStreamer.currentPlayerRoomId;
+      props.onPlayerUpdate?.(fpsResult.position.x, fpsResult.position.z, fpsTileX, fpsTileZ, playerCtrl.yawToFacing(playerYaw), true, playerYaw);
       return;
     }
 
     // Detect new flip request (must check before movement/animation branches)
-    if ((props.flipRequested ?? 0) !== lastFlipCount) {
-      lastFlipCount = props.flipRequested ?? 0;
-      if (!animating) {
-        // Entering FPS: compute target from player position (NOT from top-down camera)
-        syncFpsFromPlayer();
-        animating = true;
-        goingDown = progress < 0.5;
-      }
-    }
+    flipState = cameraFlip.checkFlipRequest(
+      props.flipRequested ?? 0,
+      flipState,
+      physicsProvider.getPlayerPosition(),
+      playerYaw,
+      playerPitch,
+      camera,
+    );
+    animating = flipState.animating;
 
     // ── Top-down WASD movement (when not animating) ──
     if (!animating) {
       const keys = props.heldKeys ?? new Set<string>();
-      const forward = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) -
-                      (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
-      const strafe = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
-                     (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
+      const moveResult = playerCtrl.updateTopDownMovement(keys, delta, playerYaw);
+      playerSpeed = moveResult.speed;
+      playerYaw = moveResult.playerYaw;
 
-      if (forward !== 0 || strafe !== 0) {
-        // Sprint when Shift is held
-
-        const isSprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
-        const speed = isSprinting ? TOP_DOWN_MOVE_SPEED * TOP_DOWN_SPRINT_MULTIPLIER : TOP_DOWN_MOVE_SPEED;
-
-        // In top-down, "forward" = -Z (north on screen), "right" = +X (east)
-        let moveX = strafe * speed * delta;
-        let moveZ = -forward * speed * delta;
-
-        // Normalize diagonal
-        const len = Math.sqrt(moveX * moveX + moveZ * moveZ);
-        const maxMove = speed * delta;
-        if (len > maxMove) {
-          moveX *= maxMove / len;
-          moveZ *= maxMove / len;
-        }
-
-        physicsProvider.movePlayer({ x: moveX, y: 0, z: moveZ }, delta);
-        const topVel = physicsProvider.getVelocity();
-        playerSpeed = Math.sqrt(topVel.x * topVel.x + topVel.z * topVel.z);
-
-        // Update facing direction from movement
-        if (Math.abs(moveX) > 0.001 || Math.abs(moveZ) > 0.001) {
-          playerYaw = Math.atan2(moveX, moveZ);
-        }
-      } else {
-        playerSpeed = 0;
-      }
-
-      // Read back position from physics provider
-      const pos = physicsProvider.getPlayerPosition();
-
-      // If the player ended up in void (no tile at their position), teleport to spawn.
-      // This recovers from stale HMR restores or any physics edge case that escapes bounds.
-      const currentTileKey = `${Math.round(pos.x / TILE_SIZE)},${Math.round(pos.z / TILE_SIZE)}`;
-      if (!grid.tiles.has(currentTileKey)) {
-        const spawnX = grid.spawn.x * TILE_SIZE;
-        const spawnZ = grid.spawn.y * TILE_SIZE;
-        physicsProvider.teleport!({ x: spawnX, y: 0, z: spawnZ });
+      if (moveResult.teleported) {
+        // Portal hit in top-down: use handlePortalTeleport for reactive state
+        handlePortalTeleport(moveResult.position.x, moveResult.position.z);
         const corrected = physicsProvider.getPlayerPosition();
-        pos.x = corrected.x;
-        pos.y = corrected.y;
-        pos.z = corrected.z;
+        moveResult.position.x = corrected.x;
+        moveResult.position.y = corrected.y;
+        moveResult.position.z = corrected.z;
       }
 
-      // Portal teleportation check - walk into a portal, appear at the linked one
-      if (handlePortalTeleport(pos.x, pos.z)) {
-        const teleported = physicsProvider.getPlayerPosition();
-        pos.x = teleported.x;
-        pos.y = teleported.y;
-        pos.z = teleported.z;
-      }
+      playerPosition.x = moveResult.position.x;
+      playerPosition.y = moveResult.position.y;
+      playerPosition.z = moveResult.position.z;
 
-      playerPosition.x = pos.x;
-      playerPosition.y = pos.y;
-      playerPosition.z = pos.z;
-
-      // Smooth camera follow - lerp TOP_DOWN position toward player
-      TOP_DOWN.position.x += (pos.x - TOP_DOWN.position.x) * CAMERA_SMOOTHING;
-      TOP_DOWN.position.z += (pos.z - TOP_DOWN.position.z) * CAMERA_SMOOTHING;
-
-      // Smooth zoom - lerp height toward the parent-controlled target
-      currentTopDownHeight += ((props.topDownHeight ?? 12) - currentTopDownHeight) * ZOOM_SMOOTHING;
-      TOP_DOWN.position.y = currentTopDownHeight;
-
-      // Apply top-down camera position
-      camera.position.copy(TOP_DOWN.position);
-      camera.quaternion.copy(TOP_DOWN.quaternion);
-      camera.fov = TOP_DOWN.fov;
-      camera.near = 0.1;
-      camera.far = UCC_FAR_PLANE;
-      camera.updateProjectionMatrix();
+      // Smooth camera follow + zoom
+      cameraFlip.updateTopDownFollow(camera, moveResult.position, props.topDownHeight ?? 12);
 
       // Report to parent
-      const tileX = Math.round(pos.x / TILE_SIZE);
-      const tileZ = Math.round(pos.z / TILE_SIZE);
+      const tileX = Math.round(moveResult.position.x / TILE_SIZE);
+      const tileZ = Math.round(moveResult.position.z / TILE_SIZE);
       updateAtmosphere(tileX, tileZ, delta);
-      updateStreaming(tileX, tileZ);
-      props.onPlayerUpdate?.(pos.x, pos.z, tileX, tileZ, yawToFacing(playerYaw), false, playerYaw);
+      geometryStreamer.updateStreaming(tileX, tileZ, fpsActive);
+      currentPlayerRoomId = geometryStreamer.currentPlayerRoomId;
+      props.onPlayerUpdate?.(moveResult.position.x, moveResult.position.z, tileX, tileZ, playerCtrl.yawToFacing(playerYaw), false, playerYaw);
       return;
     }
 
     // ── Flip animation ──
-    const step = delta / DURATION;
-    if (goingDown) {
-      progress = Math.min(progress + step, 1);
-      if (progress >= 1) {
-        animating = false;
-        // Q cycle always enters first-person from top-down. Third-person is the next Q press.
-        lastCameraMode = CameraMode.FIRST_PERSON;
-        cameraPreferences.setModeForDestination("museum", CameraMode.FIRST_PERSON);
-        // Snapshot yaw/pitch ONCE for UCC's initialYaw/initialPitch.
-        // Do NOT pass live playerYaw - it creates a feedback loop with $effect.pre.
-        fpsInitialYaw = playerYaw;
-        fpsInitialPitch = playerPitch;
-        fpsActive = true;
-      }
-    } else {
-      progress = Math.max(progress - step, 0);
-      if (progress <= 0) animating = false;
+    const result = cameraFlip.updateFlipAnimation(camera, delta, flipState, playerYaw, playerPitch);
+    flipState = result;
+    animating = result.animating;
+
+    if (result.justEnteredFps) {
+      lastCameraMode = CameraMode.FIRST_PERSON;
+      cameraPreferences.setModeForDestination("museum", CameraMode.FIRST_PERSON);
+      fpsInitialYaw = result.fpsInitialYaw!;
+      fpsInitialPitch = result.fpsInitialPitch!;
+      fpsActive = true;
     }
-
-    const t = easeInOutCubic(progress);
-
-    tempPos.lerpVectors(TOP_DOWN.position, FPS.position, t);
-    camera.position.copy(tempPos);
-
-    tempQuat.slerpQuaternions(TOP_DOWN.quaternion, FPS.quaternion, t);
-    camera.quaternion.copy(tempQuat);
-
-    camera.fov = MathUtils.lerp(TOP_DOWN.fov, FPS.fov, t);
-    camera.near = MathUtils.lerp(0.1, 0.1, t);
-    camera.far = MathUtils.lerp(UCC_FAR_PLANE, UCC_FAR_PLANE, t);
-    camera.updateProjectionMatrix();
   });
-
-  /** Sync playerPosition and TOP_DOWN camera to where the physics provider says the player is */
-  function syncPositionFromPhysics(): void {
-    const pos = physicsProvider.getPlayerPosition();
-    playerPosition.x = pos.x;
-    playerPosition.y = pos.y;
-    playerPosition.z = pos.z;
-    // Snap top-down camera to player's current position (no lag on re-entry)
-    TOP_DOWN.position.x = pos.x;
-    TOP_DOWN.position.z = pos.z;
-  }
 
   // When Q is pressed again while in FPS mode, exit back to top-down.
   // CRITICAL: Exit pointer lock SYNCHRONOUSLY before starting the flip.
@@ -754,8 +557,8 @@
   // then the animation plays at 60fps.
   $effect(() => {
     const flip = props.flipRequested;
-    if (fpsActive && flip !== lastFlipCount) {
-      lastFlipCount = flip;
+    if (fpsActive && flip !== flipState.lastFlipCount) {
+      flipState.lastFlipCount = flip;
 
       // Exit pointer lock FIRST - Chrome will process this synchronously
       // and any UI freeze from Chrome's lock-exit notification happens
@@ -764,13 +567,14 @@
         document.exitPointerLock();
       }
 
-      syncFpsFromCamera();
+      if (camera) cameraFlip.syncFpsFromCamera(camera);
       syncPositionFromPhysics();
       // Clear held keys to prevent stale movement (mutate parent's Set)
       (props.heldKeys ?? new Set()).clear();
       fpsActive = false;
       animating = true;
-      goingDown = false;
+      flipState.animating = true;
+      flipState.goingDown = false;
     }
   });
 
@@ -799,9 +603,7 @@
     const reset = props.resetRequested ?? 0;
     if (reset !== lastResetCount) {
       lastResetCount = reset;
-      const spawnX = grid.spawn.x * TILE_SIZE;
-      const spawnZ = grid.spawn.y * TILE_SIZE;
-      physicsProvider.teleport!({ x: spawnX, y: 0, z: spawnZ });
+      playerCtrl.resetToSpawn();
       // Face north - looking down the hallway toward the cave
       playerYaw = Math.PI;
       targetPlayerYaw = Math.PI;
@@ -811,7 +613,7 @@
         fpsActive = false;
         requestAnimationFrame(() => {
           fpsActive = true;
-          progress = 1;
+          flipState.progress = 1;
         });
       }
       syncPositionFromPhysics();
@@ -878,153 +680,25 @@
     };
   });
 
-  // ── Per-room geometry streaming ──
-  // Instead of loading all 16 rooms at once, we only build geometry for
-  // the current room + adjacent rooms. Corridors are always loaded (cheap).
-  // This reduces GPU shader compilation from ~16 rooms to ~3 rooms on load.
-
+  // ── Per-room geometry streaming (delegated to MuseumGeometryStreamer) ──
   let geometryReady = $state(false);
-  const lifecycleManager = new RoomLifecycleManager(MUSEUM_EDGES);
 
-  // BFS from spawn room to assign build priority by graph distance.
-  // Closer rooms get lower priority numbers → built first by the worker.
-  function computeDistancesFromSpawn(spawn: string | null, allRoomIds: string[]): Map<string, number> {
-    const dist = new Map<string, number>();
-    if (!spawn) {
-      for (const id of allRoomIds) dist.set(id, 99);
-      return dist;
-    }
-    // Build adjacency from edges
-    const adj = new Map<string, Set<string>>();
-    for (const e of MUSEUM_EDGES) {
-      if (!adj.has(e.from)) adj.set(e.from, new Set());
-      if (!adj.has(e.to)) adj.set(e.to, new Set());
-      adj.get(e.from)!.add(e.to);
-      adj.get(e.to)!.add(e.from);
-    }
-    // BFS
-    const queue = [spawn];
-    dist.set(spawn, 0);
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      const d = dist.get(current)!;
-      for (const neighbor of adj.get(current) ?? []) {
-        if (!dist.has(neighbor)) {
-          dist.set(neighbor, d + 1);
-          queue.push(neighbor);
-        }
-      }
-    }
-    // Any room not reachable from spawn gets max distance
-    for (const id of allRoomIds) {
-      if (!dist.has(id)) dist.set(id, 99);
-    }
-    return dist;
-  }
+  const geometryStreamer = new MuseumGeometryStreamer(grid, MUSEUM_EDGES, TILE_SIZE);
 
-  // Per-room bucketing (pure data, computed once synchronously - fast)
-  const perRoomBuckets = bucketMuseumTilesByRoom(grid);
-
-  // Corridor chunk - always loaded
-  let corridorChunk = $state<RoomChunk | null>(null);
-
-  // ── Geometry Web Worker - all room building happens off main thread ──
-  const geometryWorker = new Worker(
-    new URL("../../workers/geometry-worker.ts", import.meta.url),
-    { type: "module" }
-  );
-
-  const pendingBuilds = new Map<string, (response: RoomBuiltResponse) => void>();
-
-  geometryWorker.onmessage = (event: MessageEvent) => {
-    const msg = event.data;
-    if (msg.type === "room-built") {
-      const resolve = pendingBuilds.get(msg.roomId);
-      if (resolve) {
-        pendingBuilds.delete(msg.roomId);
-        resolve(msg as RoomBuiltResponse);
-      }
-    }
-  };
-
-  function serializeBucketsForWorker(buckets: MuseumGeometryDryRun) {
-    const floorEntries: SerializedBucketEntry[] = [];
-    for (const [, bucket] of buckets.floorBuckets) {
-      floorEntries.push({ color: bucket.color, positions: [...bucket.positions], floorMaterial: bucket.floorMaterial });
-    }
-    const wallEntries: SerializedBucketEntry[] = [];
-    for (const [, bucket] of buckets.wallBuckets) {
-      wallEntries.push({ color: bucket.color, positions: [...bucket.positions], wingTheme: bucket.wingTheme });
-    }
-    return {
-      floorEntries,
-      wallEntries,
-      pedestalPositions: [...buckets.pedestalPositions],
-      signPositions: [...buckets.signPositions],
-      performerPositions: [...buckets.performerPositions],
-      totalFloorInstances: buckets.totalFloorInstances,
-      totalWallInstances: buckets.totalWallInstances,
-    };
-  }
-
-  function requestRoomBuild(roomId: string, priority: number): Promise<RoomBuiltResponse> {
-    return new Promise((resolve) => {
-      pendingBuilds.set(roomId, resolve);
-      const cached = lifecycleManager.getCachedDescriptor(roomId);
-      const buckets = perRoomBuckets.roomBuckets.get(roomId);
-      const wing = grid.wings.find((w) => w.id === roomId);
-
-      if (cached && wing) {
-        geometryWorker.postMessage({
-          type: "rebuild-from-cache",
-          roomId,
-          buckets: cached.tileBuckets,
-          wing: { bounds: wing.bounds, theme: wing.theme },
-          priority,
-        });
-      } else if (buckets && wing) {
-        geometryWorker.postMessage({
-          type: "build-room",
-          roomId,
-          buckets: serializeBucketsForWorker(buckets),
-          wing: { bounds: wing.bounds, theme: wing.theme },
-          priority,
-        });
-      }
-    });
-  }
+  // Proximity renderer
+  const proximityRenderer = new MuseumProximityRenderer(grid);
 
   // Clean up geometry worker on component destroy
   $effect(() => {
     return () => {
-      geometryWorker.terminate();
+      geometryStreamer.dispose();
     };
   });
 
   const MAX_POINT_LIGHTS = 32;
 
-  // ── Proximity-based rendering ──
-  const CELL_SIZE = 8;
-  const MOUNT_RADIUS = 30;
-  const UNMOUNT_RADIUS = 40;
-  const MAX_MOUNTS_PER_FRAME = 2;
-
-  // Proximity grids - rebuilt when chunks load/unload
-  let torchGrid = new ProximityGrid<TorchPosition>(CELL_SIZE);
-  let plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
-  let performerGrid = new ProximityGrid<typeof grid.performers[0]>(CELL_SIZE);
-  let exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
-  let ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
-  let sunlightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
-  let furnitureGrid = new ProximityGrid<NonNullable<typeof grid.furniture>[0]>(CELL_SIZE);
-
-  // Populate furniture and performer grids immediately (not per-room)
-  for (const f of (grid.furniture ?? [])) furnitureGrid.insert(f, f.tileX, f.tileY);
-  for (const p of grid.performers) performerGrid.insert(p, p.tileX, p.tileY);
-
   // Visible sets - only these items get rendered
   let visibleTorches = $state<TorchPosition[]>([]);
-  // manualTorches removed - placed torches are added imperatively to the scene
   let visiblePlaques = $state<PlaquePlacement[]>([]);
   let visiblePerformers = $state<typeof grid.performers>([]);
   let visibleExhibitLights = $state<LightPosition[]>([]);
@@ -1034,57 +708,8 @@
   let useSpotLights = $state(false);
 
   // ── Imperative mesh management ──
-  // Meshes are added directly to the Three.js scene during init, NOT through
-  // Svelte templates. This eliminates reactive overhead (no $derived arrays,
-  // no {#each} template diffing, no Threlte component mounting). Visibility
-  // is controlled with mesh.visible instead of mount/unmount.
   const allSceneMeshes: BatchedMesh[] = [];        // for cleanup on destroy
   const ceilingChunkRefs: BatchedMeshData[] = [];  // toggle per-instance visibility with fpsActive
-
-  /** Build global proximity grids once from ALL chunks (called after all chunks built) */
-  function buildGlobalProximityGrids(): void {
-    torchGrid = new ProximityGrid<TorchPosition>(CELL_SIZE);
-    plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
-    exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
-    ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
-    sunlightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
-
-    const allChunks = [corridorChunk, ...activeRoomChunks.values()].filter(Boolean) as RoomChunk[];
-    for (const chunk of allChunks) {
-      for (const t of chunk.torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
-      for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
-      for (const l of chunk.exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
-      for (const l of chunk.ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
-      for (const l of chunk.sunlightPositions) sunlightGrid.insert(l, l.tileX, l.tileY);
-    }
-  }
-
-  /** No-op - proximity grids are built once globally, not per-active-chunk */
-  function rebuildProximityGrids(): void {
-    // All grids built once in buildGlobalProximityGrids. Nothing to rebuild.
-  }
-
-
-  // ── Progressive room loading ──
-  // Instead of building all 16 rooms upfront, we build the lobby + corridors
-  // first, signal ready, then build adjacent rooms in the background via the
-  // geometry Web Worker. Rooms are added/removed from the scene as the player
-  // moves through the museum.
-  const activeRoomChunks = new Map<string, RoomChunk>();
-  let firstRoomActivated = false;
-
-  // Determine spawn room from tile coordinates
-  function getRoomAtTile(tileX: number, tileY: number): string | null {
-    for (const wing of grid.wings) {
-      const b = wing.bounds;
-      if (tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height) {
-        return wing.id;
-      }
-    }
-    return null;
-  }
-
-  const spawnRoomId = getRoomAtTile(grid.spawn.x, grid.spawn.y);
 
   /** Add a room chunk's meshes to the Three.js scene */
   function addChunkToScene(chunk: RoomChunk): void {
@@ -1124,99 +749,24 @@
     }
   }
 
-  async function activateRoom(roomId: string, priority: number): Promise<void> {
-    if (activeRoomChunks.has(roomId)) return;
-
-    const workerResult = await requestRoomBuild(roomId, priority);
-
-    const dryRun = dryRunFromWorkerTransfer(
-      workerResult.floorBatches,
-      workerResult.wallBatches,
-      workerResult.pedestalPositions,
-      workerResult.signPositions,
-      workerResult.totalFloorInstances,
-      workerResult.totalWallInstances,
-    );
-
-    // Merge fixture data from original buckets (torches, plaques, performers
-    // are not sent through the worker - they're non-geometry data)
-    const originalBuckets = perRoomBuckets.roomBuckets.get(roomId);
-    if (originalBuckets) {
-      dryRun.plaquePlacements = originalBuckets.plaquePlacements;
-      dryRun.torchPositions = originalBuckets.torchPositions;
-      dryRun.performerPositions = originalBuckets.performerPositions;
-    }
-
-    const wing = grid.wings.find((w) => w.id === roomId) ?? null;
-    const chunk = await buildRoomChunk(dryRun, roomId, wing);
-
-    addChunkToScene(chunk);
-    activeRoomChunks.set(roomId, chunk);
-
-    // Always visible once built - no visibility toggling. All rooms stay
-    // visible permanently. With 16 rooms using instanced geometry, GPU cost
-    // is negligible. This eliminates every "walls pop in" artifact.
-    console.log("[Museum] activateRoom done:", roomId);
-    setChunkVisible(chunk, true);
-
-    // Signal boot profiler that museum is ready - triggers the final summary
-    // with route-activation time included. Only on the first room activation.
-    if (!firstRoomActivated) {
-      firstRoomActivated = true;
-      void import("$lib/shared/analytics/boot-profiler").then(({ bootProfiler }) =>
-        bootProfiler.signalReady("museum"),
-      );
-    }
-
-    // Update proximity grids so fixtures in this room become discoverable
-    for (const t of chunk.torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
-    for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
-    for (const l of chunk.exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
-    for (const l of chunk.ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
-    for (const l of chunk.sunlightPositions) sunlightGrid.insert(l, l.tileX, l.tileY);
-  }
-
   props.onBuildStage?.("Tile bucketing");
 
-  let lastPlayerRoomId: string | null = null;
+  // ── Initial load orchestration (delegated to streamer) ──
+  const streamerCallbacks = {
+    addChunkToScene,
+    onBuildStage: props.onBuildStage,
+    onGeometryReady: undefined as (() => void) | undefined,
+    getCamera: () => camera,
+    getScene: () => (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene,
+    getRenderer: () => (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer,
+  };
 
-  // ── Initial load: lobby first, then ALL rooms progressively via worker ──
-  //
-  // Strategy: build lobby + corridors immediately so the player can walk.
-  // Then queue ALL remaining rooms through the worker in priority order:
-  //   priority 0 = lobby (already built)
-  //   priority 1 = direct neighbors of lobby
-  //   priority 2 = 2 hops from lobby
-  //   priority 3 = everything else
-  // Each room becomes visible the instant it finishes building. No visibility
-  // toggling, no pop-in. The worker processes ~50ms per room, so all 16 rooms
-  // are done in <1 second while the player explores the lobby.
   (async () => {
-    // 1. Build corridors on main thread (cheap, always visible)
-    const corridorDryRun = perRoomBuckets.corridorBucket;
-    props.onBuildStage?.("Building corridors");
-    const cc = await buildRoomChunk(corridorDryRun, "__corridor__", null);
-    corridorChunk = cc;
+    await geometryStreamer.runInitialLoad(streamerCallbacks);
 
-    const sceneObj = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
-    if (sceneObj) addChunkToScene(cc);
-
-    // 2. Build lobby via worker (highest priority - blocks until done)
-    props.onBuildStage?.("Building lobby");
-    if (spawnRoomId) {
-      lastPlayerRoomId = spawnRoomId;
-      await activateRoom(spawnRoomId, 0);
-    }
-
-    // 3. Compile shaders for lobby only
-    const renderer = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
-    if (renderer && camera && sceneObj) {
-      renderer.compile(sceneObj, camera);
-    }
-
-    // 4. Mount fixtures for currently loaded rooms
+    // Mount fixtures for currently loaded rooms
     props.onBuildStage?.("Mounting fixtures");
-    const lobbyChunks = [cc, ...activeRoomChunks.values()];
+    const lobbyChunks = [geometryStreamer.corridorChunk, ...geometryStreamer.activeRoomChunks.values()].filter(Boolean) as RoomChunk[];
     const initTorches: TorchPosition[] = [];
     const initExhibitLights: LightPosition[] = [];
     const initCeilingLights: LightPosition[] = [];
@@ -1231,41 +781,15 @@
     visibleCeilingLights = initCeilingLights;
     visibleSunlights = initSunlights;
     visibleTorches = initTorches;
-    visiblePlaques = getAllPlaquePlacements();
+    visiblePlaques = proximityRenderer.getAllPlaquePlacements(geometryStreamer.corridorChunk, geometryStreamer.activeRoomChunks);
     useSpotLights = visiblePlaques.length > 0 && visiblePlaques.length < 20;
     visiblePerformers = grid.performers;
     visibleFurniture = grid.furniture ?? [];
     await new Promise<void>(r => setTimeout(r, 0));
 
-    // 5. Signal ready - player can move
+    // Signal ready
     geometryReady = true;
     props.onGeometryReady?.();
-
-    // 6. Build ALL remaining rooms progressively via worker.
-    //    Assign priorities by graph distance from the spawn room so nearby
-    //    rooms finish first (what the player is most likely to see).
-    const allRoomIds = [...perRoomBuckets.roomBuckets.keys()];
-    const distances = computeDistancesFromSpawn(spawnRoomId, allRoomIds);
-    const sortedRooms = allRoomIds
-      .filter((id) => id !== spawnRoomId)
-      .sort((a, b) => (distances.get(a) ?? 99) - (distances.get(b) ?? 99));
-
-    console.log("[Museum] Initial load - spawn:", spawnRoomId);
-    console.log("[Museum] Building all rooms progressively:", sortedRooms.map((id) => `${id}(d=${distances.get(id)})`));
-
-    for (const roomId of sortedRooms) {
-      const dist = distances.get(roomId) ?? 99;
-      activateRoom(roomId, dist); // fire-and-forget - loads in background
-    }
-
-    // 7. Compile shaders for newly added rooms during idle time
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(() => {
-        const r2 = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
-        const s2 = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
-        if (r2 && camera && s2) r2.compile(s2, camera);
-      });
-    }
   })();
 
   // ── Room streaming: activate/deactivate rooms as the player moves ──
@@ -1278,54 +802,37 @@
   const collabCenterZ = $derived(
     collabWing ? (collabWing.bounds.y + collabWing.bounds.height / 2) * TILE_SIZE : 0,
   );
-  // Track which room the player is in (updated every streaming check)
+  // Track which room the player is in (updated by streamer each frame)
   let currentPlayerRoomId = $state<string | null>(null);
-  // Mount the village embed as soon as geometry is ready so GLTF avatar
-  // parsing happens in the background via requestIdleCallback while the
-  // player explores other rooms. It sits inside the collaboration room's
-  // walls, so it's only seen when looking in - no pop-in.
-  //
-  // Gated on the grid actually containing a collaboration wing. Without
-  // this guard, quick-traveling to a single-room view (e.g. Vulcan Cave)
-  // mounts the embed with collabCenterX/Z defaulting to (0,0), so the
-  // forest + avatars pile up at world origin inside the wrong room.
   const villageEmbedMounted = $derived(geometryReady && !!collabWing);
 
   /** Set mesh.visible on every mesh in a room chunk */
   function setChunkVisible(chunk: RoomChunk, visible: boolean): void {
     for (const { mesh } of chunk.floorMeshes) mesh.visible = visible;
     for (const { mesh } of chunk.wallMeshes) mesh.visible = visible;
-    // Ceiling visibility is handled separately (hidden in top-down, shown in FPS)
-    // so we only touch it here when hiding the entire room
     if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.visible = visible && fpsActive;
     if (chunk.pedestalMesh) chunk.pedestalMesh.visible = visible;
     if (chunk.signMesh) chunk.signMesh.visible = visible;
-    // performerMesh always null - platform rendered by MuseumPerformerStation3D
   }
 
   /** Show all active room chunks - used in top-down mode and during flip animation */
   function showAllRooms(): void {
-    for (const chunk of activeRoomChunks.values()) {
+    for (const chunk of geometryStreamer.activeRoomChunks.values()) {
       setChunkVisible(chunk, true);
     }
-    lastPlayerRoomId = null; // Force re-evaluation on next FPS frame
+    geometryStreamer.lastPlayerRoomId = null;
   }
 
   // Toggle ceiling visibility when switching between FPS and top-down.
-  // In top-down, ceilings hide so the floor plan is visible.
-  // In FPS, ceilings show - but only for rooms in the active set.
   $effect(() => {
     if (fpsActive) {
-      // FPS: show all ceilings (all rooms always visible)
-      for (const chunk of activeRoomChunks.values()) {
+      for (const chunk of geometryStreamer.activeRoomChunks.values()) {
         if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.visible = true;
       }
-      if (corridorChunk?.ceilingMesh) {
-        corridorChunk.ceilingMesh.mesh.visible = true;
+      if (geometryStreamer.corridorChunk?.ceilingMesh) {
+        geometryStreamer.corridorChunk.ceilingMesh.mesh.visible = true;
       }
     } else {
-      // Top-down: hide all ceilings so the floor plan is readable,
-      // but make sure all room geometry is visible for the overview
       for (const cm of ceilingChunkRefs) {
         cm.mesh.visible = false;
       }
@@ -1333,53 +840,10 @@
     }
   });
 
-  function updateStreaming(playerTX: number, playerTZ: number): void {
-    if (!geometryReady) return;
-    if (!fpsActive) return;
-
-    // Detect which room the player is in by tile coordinate
-    let detectedRoomId: string | null = null;
-    for (const wing of grid.wings) {
-      const b = wing.bounds;
-      if (playerTX >= b.x && playerTX < b.x + b.width && playerTZ >= b.y && playerTZ < b.y + b.height) {
-        detectedRoomId = wing.id;
-        break;
-      }
-    }
-    currentPlayerRoomId = detectedRoomId;
-
-    // Track room transitions for the UI label. No visibility toggling -
-    // all rooms stay visible once built. The progressive initial load
-    // ensures every room is built within ~1 second of entering the museum.
-    if (detectedRoomId && detectedRoomId !== lastPlayerRoomId) {
-      lastPlayerRoomId = detectedRoomId;
-      console.log("[Museum] Player entered room:", detectedRoomId);
-    }
-  }
-
   // Shadow disabled on dynamic lights - toggling castShadow reactively causes
-  // Three.js deallocateRenderTarget crashes, and PBR wall textures already consume
-  // most of the 16 WebGL texture units. Shadows are still received by floors/walls.
+  // Three.js deallocateRenderTarget crashes.
 
-  type MountCategory = "torch" | "plaque" | "performer" | "exhibitLight" | "ceilingLight" | "sunlight" | "furniture";
   let pendingMounts: { category: MountCategory; item: any }[] = [];
-
-  let lastCheckTX = -999;
-  let lastCheckTY = -999;
-
-  /** All plaque placements across all chunks */
-  function getAllPlaquePlacements(): PlaquePlacement[] {
-    const all: PlaquePlacement[] = [];
-    if (corridorChunk) all.push(...corridorChunk.plaquePlacements);
-    for (const chunk of activeRoomChunks.values()) all.push(...chunk.plaquePlacements);
-    return all;
-  }
-
-  function recomputeVisibility(_playerTX: number, _playerTY: number): void {
-    // All components (performers, plaques, furniture, torches, lights) are
-    // mounted globally at init. No proximity-based mount/unmount needed.
-    // This eliminates Svelte component mounting during gameplay entirely.
-  }
 
   // Torch light set - derived from visible torches, capped at MAX_POINT_LIGHTS
   const torchLightSet = $derived.by(() => {
@@ -1392,7 +856,7 @@
   // Room lights from all active chunks (updates as rooms load/unload)
   let roomLights = $derived.by(() => {
     const lights: RoomLight[] = [];
-    for (const chunk of activeRoomChunks.values()) {
+    for (const chunk of geometryStreamer.activeRoomChunks.values()) {
       if (chunk.roomLight) lights.push(chunk.roomLight);
     }
     return lights;
@@ -1405,7 +869,7 @@
 <T.PerspectiveCamera
   makeDefault
   bind:ref={camera}
-  fov={TOP_DOWN.fov}
+  fov={cameraFlip.topDown.fov}
   near={0.1}
   far={maxExtent * 3}
 >

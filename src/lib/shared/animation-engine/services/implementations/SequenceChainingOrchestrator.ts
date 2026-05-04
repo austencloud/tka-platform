@@ -7,14 +7,14 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-import type { EndState } from "$lib/features/landing/services/contracts/types";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import type { EndState } from "$lib/shared/landing/domain/types";
 import type { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
 
 export type SourceMode = "pick" | "library" | "infinite";
 
-import * as propTypeApplierModule from "$lib/features/landing/services/prop-type-applier";
+import * as propTypeApplierModule from "$lib/shared/landing/services/prop-type-applier";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";

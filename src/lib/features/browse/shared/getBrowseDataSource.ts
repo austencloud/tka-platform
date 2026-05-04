@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 import { BrowseDataSource } from './services/implementations/BrowseDataSource';
-import { getBrowseLoader } from '../sequences/display/getBrowseLoader';
+import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
 import { soloPropRepository } from '$lib/shared/foundation/services/implementations/SoloPropRepository';
 import { handPathRepository } from '$lib/shared/foundation/services/implementations/HandPathRepository';
 

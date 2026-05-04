@@ -1,14 +1,14 @@
 <!-- FeedbackManageTab - Admin Kanban board for managing feedback -->
 <script lang="ts">
   import AdminTwoPanelLayout from "$lib/shared/admin/components/AdminTwoPanelLayout.svelte";
-  import { createFeedbackManageState } from "../../state/feedback-manage-state.svelte";
-  import { createVersionState } from "../../state/version-state.svelte";
+  import { createFeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
+  import { createVersionState } from "$lib/shared/feedback/state/version-state.svelte";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import {
     notificationTargetState,
     getNotificationTargetFeedback,
     setNotificationTargetFeedback,
-  } from "../../state/notification-action-state.svelte";
+  } from "$lib/shared/feedback/state/notification-action-state.svelte";
   import { replaceState } from "$app/navigation";
   import { onMount } from "svelte";
   import FeedbackKanbanBoard from "./FeedbackKanbanBoard.svelte";

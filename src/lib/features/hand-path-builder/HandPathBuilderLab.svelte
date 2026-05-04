@@ -27,7 +27,7 @@
   import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { HandMove } from "./state/builder-state.svelte";
-  import { getHitTargets } from "$lib/features/assemble-lab/services/grid-hit-target-calculator";
+  import { getHitTargets } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";
   import PathPreview from "./components/PathPreview.svelte";
   import BuilderControls from "./components/BuilderControls.svelte";
   import GridModeSelector from "./components/GridModeSelector.svelte";

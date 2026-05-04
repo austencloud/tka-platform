@@ -7,11 +7,11 @@
    */
 
   import type { TimelineTrack } from "../domain/timeline-types";
-  import { getTimelineState } from "../state/timeline-state.svelte";
+  import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import TimelineClip from "./TimelineClip.svelte";
   import StepGrid from "./StepGrid.svelte";
   import { timeToPixels } from "../domain/timeline-types";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 
   interface Props {
     track: TimelineTrack;

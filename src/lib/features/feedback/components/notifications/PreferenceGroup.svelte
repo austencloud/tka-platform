@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { NotificationPreferences } from "../../domain/models/notification-models";
+  import type { NotificationPreferences } from "$lib/shared/feedback/domain/models/notification-models";
   import PreferenceItemCard from "./PreferenceItemCard.svelte";
   import type { PreferenceItem } from "./PreferenceItem";
 

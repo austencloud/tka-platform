@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { analyzeDifficulty, calculateDifficultyLevel } from "../sequence-difficulty-calculator";
+import { analyzeDifficulty, calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import {
   MotionColor,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 // Minimal StepData factory - only the fields the calculator reads.
 function makeStep(

@@ -5,7 +5,7 @@
   Choreo Card is disabled when layerCount > 1 (requires a single layer).
 -->
 <script lang="ts">
-  import type { CellMediaType } from "$lib/features/compose/compose/domain/types";
+  import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-types";
 
   let {
     currentMediaType,

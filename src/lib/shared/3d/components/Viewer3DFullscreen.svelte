@@ -18,7 +18,7 @@
   import Viewer3DCanvas from "./Viewer3DCanvas.svelte";
   import Viewer3DEffectPills from "./Viewer3DEffectPills.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";

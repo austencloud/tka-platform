@@ -7,7 +7,7 @@
    */
   import type { VideoEditorController } from "../../../state/VideoEditorController.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     video: ShowcaseVideo;

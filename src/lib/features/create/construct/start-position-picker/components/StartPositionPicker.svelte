@@ -14,7 +14,7 @@ Controls moved below the grid for better UX
   import {
     createSimplifiedStartPositionState,
     type SimplifiedStartPositionState,
-  } from "../state/start-position-state.svelte";
+  } from "$lib/shared/create/state/start-position-state.svelte";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import AdvancedStartPositionPicker from "./AdvancedStartPositionPicker.svelte";
   import OrientationCycler from "./OrientationCycler.svelte";

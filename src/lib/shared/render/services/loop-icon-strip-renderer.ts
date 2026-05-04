@@ -1,4 +1,4 @@
-import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { renderLoopIconStrip, type LOOPComponentId } from "@tka/render-composition";
 
 function toComponentId(c: LOOPComponent): LOOPComponentId {

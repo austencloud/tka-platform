@@ -1,4 +1,4 @@
-import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 
 export interface SequenceExportOptions {

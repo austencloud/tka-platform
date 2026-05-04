@@ -16,7 +16,7 @@ import type { SequencePersister } from "$lib/features/create/shared/services/imp
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
-import { reversalDetector, type ReversalDetector } from "../../shared/services/reversal-detector";
+import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { createSequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import type { UndoMetadata } from "../../shared/services/implementations/UndoManager";
@@ -31,7 +31,7 @@ import type {
   LOOPType,
   CircularizationOption,
 } from "../domain/models/spell-models";
-import { DEFAULT_SPELL_PREFERENCES } from "../domain/constants/spell-constants";
+import { DEFAULT_SPELL_PREFERENCES } from "$lib/shared/create/domain/spell-constants";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 const HAS_GENERATED_STORAGE_KEY = "spell-has-generated-once";

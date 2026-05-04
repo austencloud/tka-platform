@@ -3,10 +3,10 @@
  * Based on the exact implementation from standalone_animator.html
  */
 
-import type { PropState } from "../shared/domain/types/PropState";
-import { simplifyRepeatedWord, compressWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { renderHeader, type CompressedSegment } from "@tka/render-composition";
-import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { textRenderer } from "$lib/shared/render/services/implementations/TextRenderer";
 
 // Constants from standalone_animator.html

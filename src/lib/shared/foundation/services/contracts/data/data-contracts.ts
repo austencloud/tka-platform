@@ -8,7 +8,7 @@ import type { PictographData } from "../../../../pictograph/shared/domain/models
 import type { MotionData } from "../../../../pictograph/shared/domain/models/MotionData";
 import type { GridMode } from "../../../../pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "../../../domain/models/Letter";
-import type { CodexLetterMappingRepo } from "../../../../../features/learn/codex/services/implementations/CodexLetterMappingRepo";
+import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/CodexLetterMappingRepo";
 
 // ============================================================================
 // DATA CONTRACTS - MOVED TO DOMAIN

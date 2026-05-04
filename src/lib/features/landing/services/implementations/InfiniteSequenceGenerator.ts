@@ -17,17 +17,17 @@ import {
   GenerationMode,
   DifficultyLevel,
   PropContinuity,
-} from "$lib/features/create/generate/shared/domain/models/generate-models";
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { getAllPositions } from "$lib/features/create/generate/shared/domain/start-position-presets";
 import {
   LOOPType,
   Period,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { VERTICAL_MIRROR_POSITION_MAP } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
 import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
 import type { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import type { GeneratedSequenceInfo, GenerationSettings } from "../../domain/models/spinner-models";
-import type { EndState } from "../contracts/types";
+import type { EndState } from "$lib/shared/landing/domain/types";
 import type { SpinnerMetricsRepository } from "./SpinnerMetricsRepository";
 
 /**

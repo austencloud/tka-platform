@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import type { GridCell } from "../../../state/arrange-grid-state.svelte";
-  import type { TunnelLayerConfig } from "../../../../../compose/domain/types";
+  import type { TunnelLayerConfig } from "$lib/shared/animation-engine/domain/compose-types";
 
   const MAX_LAYERS = 4;
 

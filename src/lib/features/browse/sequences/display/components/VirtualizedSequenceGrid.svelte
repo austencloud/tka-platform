@@ -9,10 +9,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   } from "@tanstack/svelte-virtual";
   import type { Readable } from "svelte/store";
   import { onMount, onDestroy, untrack } from "svelte";
-  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
   import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { isCatDogMode } from "../utils/prop-mode-helpers";
+  import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getVariationGrouper } from "../getVariationGrouper";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";

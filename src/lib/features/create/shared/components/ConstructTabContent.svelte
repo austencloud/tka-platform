@@ -13,7 +13,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
   import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
-  import type { SimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
+  import type { SimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
   // Props
   let {
     shouldShowStartPositionPicker,

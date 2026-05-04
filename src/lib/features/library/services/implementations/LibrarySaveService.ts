@@ -15,7 +15,7 @@
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceVisibility } from "../../domain/models/LibrarySequence";
+import type { SequenceVisibility } from "$lib/shared/library/domain/models/LibrarySequence";
 import { findTagByName, createUserTag } from "../tag-manager";
 import type { ArtifactExtractor } from "./ArtifactExtractor";
 import { TAG_COLORS } from "../../domain/models/Tag";

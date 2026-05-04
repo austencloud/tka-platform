@@ -20,7 +20,7 @@ import {
   TrackingMode,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
-import type { AdditionalLayerRenderData } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
+import type { AdditionalLayerRenderData } from "$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer";
 import { DEFAULT_CANVAS_SIZE } from "$lib/shared/animation-engine/services/implementations/CanvasResizer.svelte";
 
 // ============================================================================

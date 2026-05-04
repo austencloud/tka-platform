@@ -7,7 +7,7 @@
 	the hover animation provides the real preview.
 -->
 <script lang="ts">
-	import type { CellConfig, GridLayout } from "../../../compose/domain/types";
+	import type { CellConfig, GridLayout } from "$lib/shared/animation-engine/domain/compose-types";
 
 	const {
 		cells,

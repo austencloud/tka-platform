@@ -19,7 +19,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreGet, firestoreList, firestoreDelete } from "$lib/shared/firestore";
 import type { Contributor } from "../domain/models/contributor-models";
-import { ContributorSchema } from "../domain/models/feedback-schemas";
+import { ContributorSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";
 
 const CONTRIBUTORS_COLLECTION = "contributors";
 const USERS_COLLECTION = "users";

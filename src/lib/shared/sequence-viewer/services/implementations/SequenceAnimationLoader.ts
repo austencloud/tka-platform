@@ -1,8 +1,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
-import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 export interface AnimationLoadResult {
   success: boolean;

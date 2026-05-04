@@ -29,7 +29,7 @@ import {
   SWAPPED_LOOP_VALIDATION_SET,
 } from "../../domain/constants/strict-loop-position-maps";
 import { Period } from "../../domain/models/circular-models";
-import type { StepData } from "../../../../shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class StrictSwappedLOOPExecutor {
   constructor(

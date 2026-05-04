@@ -6,7 +6,7 @@
  * videos, images, and text in configurable grid layouts.
  */
 
-import type { Composition } from "../compose/domain/types";
+import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
 
 /**

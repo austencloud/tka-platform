@@ -27,7 +27,7 @@
  * IMPORTANT: After rotation, sequence returns to home, which is valid for inverted mirror
  */
 
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 import { Period } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";

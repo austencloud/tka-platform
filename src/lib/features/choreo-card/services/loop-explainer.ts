@@ -9,9 +9,9 @@
  * Does NOT modify the LOOPDetector - wraps its output with richer analysis.
  */
 
-import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { LOOPExplanation, SeedInfo, SeedTransformation } from "./contracts/types";
 import {
   HORIZONTAL_MIRROR_POSITION_MAP,
@@ -20,7 +20,7 @@ import {
 } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
 import {
   HALF_POSITION_MAP,
-} from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
+} from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
 
 // Verb phrases describing what each transformation does to the sequence.
 // Written so they read naturally after a subject: "The second half [verb]."

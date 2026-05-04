@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
 

@@ -6,7 +6,7 @@
  * comes from the shared UIGenerationConfig.
  */
 
-import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+import type { LetterSource } from "$lib/shared/create/domain/spell-models";
 
 const STORAGE_KEY = "tka-generate-spell-word";
 

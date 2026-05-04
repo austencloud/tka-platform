@@ -16,7 +16,7 @@
  * IMPORTANT: End position must equal start position (returns to start)
  */
 
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   MotionType,

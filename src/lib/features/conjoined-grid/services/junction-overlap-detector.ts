@@ -3,7 +3,7 @@ import type {
   PointRef,
   Junction,
 } from "$lib/shared/multi-grid/domain/models/GridTopology";
-import type { JunctionOverlap, PropPlacement } from "../domain/types";
+import type { JunctionOverlap, PropPlacement } from "$lib/shared/conjoined-grid/domain/types";
 
 /**
  * Iterates over all junctions in a topology and checks whether both the blue

@@ -14,7 +14,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   let {
     visible = false,

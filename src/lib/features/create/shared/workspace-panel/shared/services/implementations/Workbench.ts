@@ -9,9 +9,9 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createStepData } from "../../../../domain/factories/createStepData";
-import type { StepData } from "../../../../domain/models/StepData";
-import type { StartPositionData } from "../../../../domain/models/StartPositionData";
+import { createStepData } from "$lib/shared/create/factories/createStepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import {
   saveSequence as persistSaveSequence,
 } from "$lib/shared/persistence/services/dexie-persistence-service";

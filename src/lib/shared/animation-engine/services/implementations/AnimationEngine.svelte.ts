@@ -30,13 +30,13 @@ import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import { type TrailSettings } from "../../domain/types/TrailTypes";
 import type { AdditionalLayerProps } from "../../domain/types/TrailCaptureTypes";
 import type { AnimationVisibilityState } from "./AnimationVisibilitySynchronizer";
-import type { PreRenderProgress } from "$lib/features/compose/services/implementations/SequenceFramePreRenderer";
+import type { PreRenderProgress } from "$lib/shared/animation-engine/services/implementations/SequenceFramePreRenderer";
 
 import { loadAnimatorServices as loadServices } from "../animator-loader";
-import { loadTrailSettings } from "$lib/features/compose/utils/animation-panel-persistence";
-import { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
-import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
+import { loadTrailSettings } from "$lib/shared/animation-engine/utils/animation-panel-persistence";
+import { TrailCapturer } from "$lib/shared/animation-engine/services/implementations/TrailCapturer";
+import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
@@ -79,7 +79,7 @@ import { LedTipTracker } from "./LedTipTracker";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
-import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
+import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
 
 // Extracted modules
 import { EffectRendererManager } from "./EffectRendererManager";

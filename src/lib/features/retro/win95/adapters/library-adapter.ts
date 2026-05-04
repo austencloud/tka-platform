@@ -10,7 +10,7 @@
  */
 
 import type { LibraryQueryOptions } from "$lib/features/library/services/contracts/types";
-import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import { convertFileName } from "../services/file-name-converter";
 
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";

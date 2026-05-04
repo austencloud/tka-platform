@@ -10,7 +10,7 @@ import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
 
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import type { DuetPersister } from "../../services/implementations/DuetPersister";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

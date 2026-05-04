@@ -14,7 +14,7 @@
   import { untrack } from "svelte";
   import type { InlinePictograph } from "../types";
   import { dev } from "$app/environment";
-  import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
+  import { tikaPictographCache } from "$lib/shared/tika/services/TikaPictographCache";
   import {
     getStaticPictographPath,
     saveStaticPictograph,

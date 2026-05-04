@@ -6,7 +6,7 @@
  */
 
 import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-import type { DeviceContext } from "../domain/models/feedback-models";
+import type { DeviceContext } from "$lib/shared/feedback/domain/models/feedback-models";
 
 /**
  * Capture current device/browser context

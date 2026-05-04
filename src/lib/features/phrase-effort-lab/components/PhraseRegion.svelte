@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { EffortPhrase } from "../domain/effort-timeline-types";
-  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
+  import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 
   interface Props {
     phrase: EffortPhrase;

@@ -70,7 +70,7 @@ export interface MotionSignature {
 }
 import type { StepSignatureGenerator } from "./StepSignatureGenerator";
 import type { SpatialTransformDetector } from "./SpatialTransformDetector";
-import type { WordCyclicEquivalenceDetector } from "../../../../features/create/shared/services/word-cyclic-equivalence-detector";
+import type { WordCyclicEquivalenceDetector } from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class SequenceEquivalenceDetector {
@@ -439,7 +439,7 @@ export class SequenceEquivalenceDetector {
 import { sequenceCanonicalizer } from "./SequenceCanonicalizer";
 import { stepSignatureGenerator } from "./StepSignatureGenerator";
 import { spatialTransformDetector } from "./SpatialTransformDetector";
-import * as wordCyclicEquivalenceDetector from "$lib/features/create/shared/services/word-cyclic-equivalence-detector";
+import * as wordCyclicEquivalenceDetector from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
 
 export const sequenceEquivalenceDetector = new SequenceEquivalenceDetector(
   sequenceCanonicalizer,

@@ -1,7 +1,7 @@
 import {
   analyzeZoneCoverage,
   type ZoneCoverageAnalysis,
-} from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
+} from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 export interface StepProperties {

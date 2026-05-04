@@ -5,10 +5,10 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
-  import TKAWordGlyph from "./TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     sequence: SequenceData;

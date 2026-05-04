@@ -2,7 +2,7 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { SequenceVisibility } from "../../domain/models/LibrarySequence";
+import type { SequenceVisibility } from "$lib/shared/library/domain/models/LibrarySequence";
 
 // === From ILibraryRepository ===
 

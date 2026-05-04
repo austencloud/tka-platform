@@ -4,7 +4,7 @@ Shows current length with +/- stepper controls for quick adjustment.
 In spell mode, shows bridge count as subtitle and allows upward adjustment.
 -->
 <script lang="ts">
-  import { GenerationMode } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { GenerationMode } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import StepperCard from "./StepperCard/StepperCard.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";

@@ -8,8 +8,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   BrowseEventHandlerParams } from "../contracts/types";
-import { sequencePanelManager } from "../../state/sequence-panel-state.svelte";
-import { browseScrollState } from "../../state/BrowseScrollState.svelte";
+import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
+import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";

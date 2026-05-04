@@ -16,7 +16,7 @@ import type {
 import { Shortcut } from "../../domain/models/Shortcut";
 import { NormalizedKeyboardEvent } from "../../domain/models/KeyboardEvent";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
+import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
 import { hasOpenDrawers, dismissTopDrawer } from "$lib/shared/foundation/ui/drawer/DrawerStack";
 
 const debug = createComponentLogger("KeyboardShortcutManager");

@@ -28,8 +28,8 @@ import type {
 import type {
   StoredPerformance,
   StoredCalibrationProfile,
-} from "$lib/features/train/domain/models/TrainDatabaseModels";
-import type { Composition } from "$lib/features/compose/compose/domain/types";
+} from "$lib/shared/train/domain/TrainDatabaseModels";
+import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
 import type {
   GalleryCacheEntry,
   GalleryCacheMeta,

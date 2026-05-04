@@ -20,14 +20,14 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { ThumbnailVariant, ThumbnailRenderInput, ThumbnailVisibilitySettings } from "../services/thumbnail-key-deriver";
   import { getThumbnailRenderOrchestrator } from "../getThumbnailRenderOrchestrator";
-  import { getThumbnailLocalCache } from "../getThumbnailLocalCache";
+  import { getThumbnailLocalCache } from "$lib/shared/browse/getThumbnailLocalCache";
   import type { ThumbnailLoadStatus, ThumbnailRenderOrchestrator } from "../services/implementations/ThumbnailRenderOrchestrator";
   import type { ThumbnailLocalCache } from "../services/implementations/ThumbnailLocalCache";
   import { deriveKey } from "../services/thumbnail-key-deriver";
   import { invalidateUrl as invalidateCloudUrl } from "../services/cloud-thumbnail-cache";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
-  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     sequence: SequenceData;

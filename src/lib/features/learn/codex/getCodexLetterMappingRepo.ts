@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { CodexLetterMappingRepo } from './services/implementations/CodexLetterMappingRepo';
+import { CodexLetterMappingRepo } from '$lib/shared/learn/services/CodexLetterMappingRepo';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
 
 let instance: CodexLetterMappingRepo | null = null;

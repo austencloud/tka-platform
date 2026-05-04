@@ -11,7 +11,7 @@ import {
   LOOPType,
   LOOP_TYPE_LABELS,
   Period,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
 
 /**
  * Describes a single LOOP option available for extension
@@ -39,7 +39,7 @@ export interface LOOPValidationResult {
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
-} from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
+} from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
 import {
   MIRRORED_LOOP_VALIDATION_SET,
   FLIPPED_LOOP_VALIDATION_SET,

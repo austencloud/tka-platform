@@ -9,12 +9,12 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
-  import TKAWordGlyph from "./TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import {
     LOOP_TYPE_LABELS,
     ROTATED_LOOP_TYPES,
-  } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
   interface Props {
     sequence: SequenceData;

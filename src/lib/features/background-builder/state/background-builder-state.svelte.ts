@@ -19,7 +19,7 @@ import {
   type RainbowLabSettings,
   type EmberGlowLabSettings,
   type BackgroundLabSettings,
-} from "../domain/lab-settings-types";
+} from "$lib/shared/background-builder/domain/lab-settings-types";
 
 const STORAGE_KEY = "tka-background-builder-active-tab";
 

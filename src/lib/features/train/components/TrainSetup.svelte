@@ -6,7 +6,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import { onMount } from "svelte";

@@ -5,7 +5,7 @@
     CellMediaType,
     CellEffect,
     PropColors,
-  } from "../../../../../compose/domain/types";
+  } from "$lib/shared/animation-engine/domain/compose-types";
   import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import type { PillId } from "$lib/shared/sequence-viewer/components/pill-nav/pill-types";

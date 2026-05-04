@@ -8,7 +8,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "../../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 
 // Note: This service will need to be updated to use the new DI pattern

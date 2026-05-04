@@ -15,11 +15,11 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+  import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import type { EffortTimeline, EffortPhrase } from "./domain/effort-timeline-types";
   import {
     createEffortTimeline,
@@ -28,12 +28,12 @@
     insertPhrase,
     removePhrase,
   } from "./domain/effort-timeline-types";
-  import { interpolatePhrase } from "./services/phrase-interpolator";
+  import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 
-  import { createAngleCalculator } from "$lib/features/compose/services/angle-calculator";
-  import { EndpointCalculator } from "$lib/features/compose/services/implementations/EndpointCalculator";
-  import { PropInterpolator } from "$lib/features/compose/services/implementations/PropInterpolator";
-  import { mapTimePositionToBeat } from "$lib/features/compose/services/step-calculator";
+  import { createAngleCalculator } from "$lib/shared/animation-engine/services/angle-calculator";
+  import { EndpointCalculator } from "$lib/shared/animation-engine/services/implementations/EndpointCalculator";
+  import { PropInterpolator } from "$lib/shared/animation-engine/services/implementations/PropInterpolator";
+  import { mapTimePositionToBeat } from "$lib/shared/animation-engine/services/step-calculator";
 
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { doc, setDoc, serverTimestamp } from "firebase/firestore";

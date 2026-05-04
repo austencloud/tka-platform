@@ -14,7 +14,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StartPositionData } from "../../domain/models/StartPositionData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";

@@ -5,7 +5,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { StartEndOptions, PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import type { StartEndOptions, PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { onMount, getContext } from "svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import CardHeader from "./shared/CardHeader.svelte";

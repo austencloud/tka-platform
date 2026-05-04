@@ -11,7 +11,7 @@
   import type {
     PlaybackMode,
     StepPlaybackStepSize,
-  } from "../../../state/animation-panel-state.svelte";
+  } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import BpmChips from "../BpmChips.svelte";
 
   let {

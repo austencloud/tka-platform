@@ -1,7 +1,7 @@
 <!-- EditableChangelogItem - A changelog entry with inline editing for admins -->
 <script lang="ts">
-  import type { ChangelogEntry } from "$lib/features/feedback/domain/models/version-models";
-  import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
+  import type { ChangelogEntry } from "$lib/shared/versioning/domain/models/version-models";
+  import type { Contributor } from "$lib/shared/versioning/domain/models/contributor-models";
   import { fly, scale } from "svelte/transition";
   import ContributorBadge from "./ContributorBadge.svelte";
   import ContributorPicker from "./ContributorPicker.svelte";

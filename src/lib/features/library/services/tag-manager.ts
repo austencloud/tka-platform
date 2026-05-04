@@ -27,7 +27,7 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import type { LibraryTag, CreateTagOptions } from "../domain/models/Tag";
 import { createTag } from "../domain/models/Tag";
-import { getUserTagsPath, getUserTagPath } from "../data/firestore-paths";
+import { getUserTagsPath, getUserTagPath } from "$lib/shared/library/data/firestore-paths";
 
 /**
  * Error class for tag operations

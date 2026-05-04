@@ -1,10 +1,10 @@
 <!-- FeedbackArchiveView - Archived feedback organized by version -->
 <script lang="ts">
-  import type { VersionState } from "../../state/version-state.svelte";
-  import type { FeedbackItem } from "../../domain/models/feedback-models";
+  import type { VersionState } from "$lib/shared/feedback/state/version-state.svelte";
+  import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
   import { getFeedback } from "../../services/feedback-querier";
   import { archiveLoader } from "../../services/implementations/ArchiveLoader";
-  import type { AppVersion } from "../../domain/models/version-models";
+  import type { AppVersion } from "$lib/shared/feedback/domain/models/version-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import FeedbackDetailPanel from "./FeedbackDetailPanel.svelte";
   import VersionDetailContent from "$lib/shared/settings/components/tabs/release-notes/VersionDetailContent.svelte";

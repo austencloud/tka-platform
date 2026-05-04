@@ -21,7 +21,7 @@ export interface VideoExportOptions {
   /** Auto-download when complete. Default: true */
   autoDownload?: boolean;
 }
-import { VIDEO_EXPORT_FPS } from "../../shared/domain/constants/timing";
+import { VIDEO_EXPORT_FPS } from "$lib/shared/animation-engine/domain/constants/timing";
 import { WebCodecsVideoEncoder } from "./WebCodecsVideoEncoder";
 import { WasmVideoEncoder } from "./WasmVideoEncoder";
 

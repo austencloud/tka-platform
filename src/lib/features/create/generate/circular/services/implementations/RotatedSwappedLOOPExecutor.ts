@@ -34,7 +34,7 @@ import {
   QUARTERED_LOOPS,
 } from "../../domain/constants/circular-position-maps";
 import { Period } from "../../domain/models/circular-models";
-import type { StepData } from "../../../../shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class RotatedSwappedLOOPExecutor {
   constructor(

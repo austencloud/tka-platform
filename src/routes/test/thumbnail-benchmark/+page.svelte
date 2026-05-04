@@ -18,10 +18,10 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
-  import { getThumbnailRenderOrchestrator } from '$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator';
+  import { getThumbnailRenderOrchestrator } from '$lib/shared/browse/getThumbnailRenderOrchestrator';
   import { deriveKey as deriveThumbnailKey } from '$lib/features/browse/sequences/display/services/thumbnail-key-deriver';
   import { getThumbnailMetricsCollector } from '$lib/features/browse/sequences/display/getThumbnailMetricsCollector';
-  import { getThumbnailLocalCache } from '$lib/features/browse/sequences/display/getThumbnailLocalCache';
+  import { getThumbnailLocalCache } from '$lib/shared/browse/getThumbnailLocalCache';
   import { PublicSequencesLoader } from '$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
   import type { ThumbnailRenderOrchestrator } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator';

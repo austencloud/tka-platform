@@ -6,8 +6,8 @@
    * Core component for any sequence review workflow.
    */
   import type { BaseSequenceEntry } from "../domain/models/review-models";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";

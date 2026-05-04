@@ -4,7 +4,7 @@
  * Orchestrates the complex async initialization sequence for AnimatorCanvas.
  */
 
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
 import { loadAnimationRenderer } from "../animator-loader";
 import { DEFAULT_CANVAS_SIZE } from "./CanvasResizer.svelte";
 import type {

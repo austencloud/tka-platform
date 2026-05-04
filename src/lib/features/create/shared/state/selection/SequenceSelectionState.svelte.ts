@@ -16,7 +16,7 @@
  * - stepNumber 2 = steps[1] (second beat in array)
  */
 
-import type { StartPositionData } from "../../domain/models/StartPositionData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 
 export type SelectionMode = "single" | "multi";
 

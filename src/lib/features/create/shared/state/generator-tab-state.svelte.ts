@@ -16,7 +16,7 @@ import type { SequencePersister } from "$lib/features/create/shared/services/imp
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
-import { reversalDetector, type ReversalDetector } from "../services/reversal-detector";
+import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { UndoMetadata } from "../services/implementations/UndoManager";

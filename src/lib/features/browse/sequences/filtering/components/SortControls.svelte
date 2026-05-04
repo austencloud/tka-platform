@@ -10,7 +10,7 @@ Follows Svelte 5 runes + microservices architecture.
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
     import { onMount } from "svelte";
-  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+  import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes

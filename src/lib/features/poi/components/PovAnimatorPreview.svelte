@@ -19,14 +19,14 @@
   import { onMount } from "svelte";
   import { getPoiContext } from "../context/poi-context";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-  import { createAngleCalculator } from "$lib/features/compose/services/angle-calculator";
-  import { EndpointCalculator } from "$lib/features/compose/services/implementations/EndpointCalculator";
-  import { PropInterpolator } from "$lib/features/compose/services/implementations/PropInterpolator";
+  import { createAngleCalculator } from "$lib/shared/animation-engine/services/angle-calculator";
+  import { EndpointCalculator } from "$lib/shared/animation-engine/services/implementations/EndpointCalculator";
+  import { PropInterpolator } from "$lib/shared/animation-engine/services/implementations/PropInterpolator";
 
   const poi = getPoiContext();
 

@@ -16,7 +16,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   import type { CreateModuleState } from "../../state/create-module-state.svelte";
   import type { IAnimationStateRef } from "../../types/create-module-types";
   import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
-  import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+  import type { LetterSource } from "$lib/shared/create/domain/spell-models";
 
   // Services
   let StepOperator: StepOperator | null = null;

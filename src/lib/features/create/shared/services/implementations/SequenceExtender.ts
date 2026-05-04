@@ -5,12 +5,12 @@
  * using the LOOP (Linked Orbital Offset Pattern) executor infrastructure.
  */
 
-import type { StepData } from "../../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LOOPOption } from "./LOOPValidator";
 import type { OrientationAlignment } from "../orientation-alignment-calculator";
-import { Period, type LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period, type LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
@@ -133,7 +133,7 @@ export interface ExtensionApplyResult {
   message: string;
 }
 import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
-import type { ReversalDetector } from "../reversal-detector";
+import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
 type StepConverter = typeof StepConverterSingleton;
@@ -141,11 +141,11 @@ import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services
 import type { LOOPValidator } from "./LOOPValidator";
 import type { SequenceAnalyzer } from "./SequenceAnalyzer";
 import type { BridgeFinder } from "./BridgeFinder";
-import { recalculateAllOrientations } from "./sequence-transforms/orientation-propagation";
+import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
-} from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
+} from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
 
 export class SequenceExtender {
   constructor(
@@ -514,7 +514,7 @@ export class SequenceExtender {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { loopExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
-import { reversalDetector } from "../reversal-detector";
+import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";

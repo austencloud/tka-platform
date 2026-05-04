@@ -1,6 +1,6 @@
-import type { StripPattern, PatternParams, RGBColor } from "./StripPattern";
-import { setPixel } from "./StripPattern";
-import { createEmptyPattern } from "./StripPattern";
+import type { StripPattern, PatternParams, RGBColor } from "$lib/shared/poi/domain/StripPattern";
+import { setPixel } from "$lib/shared/poi/domain/StripPattern";
+import { createEmptyPattern } from "$lib/shared/poi/domain/StripPattern";
 
 export type PresetCategory = "basic" | "motion-driven";
 

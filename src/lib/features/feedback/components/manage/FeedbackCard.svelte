@@ -3,12 +3,12 @@
   import type {
     FeedbackItem,
     FeedbackStatus,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import {
     TYPE_CONFIG,
     STATUS_CONFIG,
     PRIORITY_CONFIG,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

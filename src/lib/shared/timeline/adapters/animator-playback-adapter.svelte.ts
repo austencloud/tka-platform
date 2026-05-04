@@ -1,5 +1,5 @@
 import type { UnifiedPlaybackContext } from "../unified-playback-context";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 // ── Pure computation functions (exported for testing) ──────────────────
 

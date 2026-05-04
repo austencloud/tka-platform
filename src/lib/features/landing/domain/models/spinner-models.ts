@@ -8,8 +8,8 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { LOOPType, Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import type { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import type { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 
 /**
  * The three modes of endless spinner operation.

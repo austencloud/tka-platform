@@ -42,7 +42,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount, untrack } from "svelte";
   import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
-  import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import {
@@ -59,7 +59,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   } from "$lib/features/create/shared/domain/templates/duration-templates";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
-  import { startPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
+  import { startPositionManager } from "$lib/shared/create/services/StartPositionManager";
 
   type AccordionSection = "style" | "rhythm" | "startEnd";
   type StartPosMode = "all" | "classic" | "specific";

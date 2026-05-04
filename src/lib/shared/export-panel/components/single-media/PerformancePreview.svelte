@@ -17,8 +17,8 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
-  import { getCameraManager } from "$lib/features/train/getCameraManager";
-  import type { CameraManager } from "$lib/features/train/services/implementations/CameraManager";
+  import { getCameraManager } from "$lib/shared/train/getCameraManager";
+  import type { CameraManager } from "$lib/shared/train/services/CameraManager";
   import { getVideoRecorder } from "$lib/shared/video-record/services/implementations/VideoRecorder";
   import type {
     RecordingProgress,

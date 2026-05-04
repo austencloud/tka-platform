@@ -12,11 +12,11 @@ it's probably like the rules of like you know maintaining the size and transform
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PropState } from "../../shared/domain/types/PropState";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import type { VideoRenderResult } from "../../services/implementations/VideoPreRenderer";
-  import type { StartPositionData } from "../../../create/shared/domain/models/StartPositionData";
-  import type { StepData } from "../../../create/shared/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
   let {
     blueProp = null,

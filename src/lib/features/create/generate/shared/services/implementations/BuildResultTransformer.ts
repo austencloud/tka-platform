@@ -22,13 +22,13 @@ import type {
   MotionData as EngineMotionData,
 } from "@tka/sequence-engine/core";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { GenerationOptions } from "../../domain/models/generate-models";
 import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from "../sequence-metadata-manager";
 type SequenceMetadataManager = typeof SequenceMetadataManagerSingleton;
-import type { ReversalDetector } from "../../../../shared/services/reversal-detector";
-import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
+import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
+import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 import { PropContinuity } from "../../domain/models/generate-models";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {

@@ -1,4 +1,4 @@
-import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { getTextScalingFactors } from "../dimension-calculator";
 import type {
   TextRenderOptions,
@@ -17,7 +17,7 @@ import {
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
-import { compressWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { compressWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 export class TextRenderer {
   private readonly titleFontFamily = "Georgia, serif";

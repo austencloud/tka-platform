@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { StartPositionManager } from './services/implementations/StartPositionManager';
+import { StartPositionManager } from '$lib/shared/create/services/StartPositionManager';
 import { gridPositionDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver';
 
 let instance: StartPositionManager | null = null;

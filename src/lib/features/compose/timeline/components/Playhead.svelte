@@ -7,7 +7,7 @@
    */
 
   import type { TimeSeconds } from "../domain/timeline-types";
-  import { getTimelineState } from "../state/timeline-state.svelte";
+  import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import { timeToPixels, pixelsToTime } from "../domain/timeline-types";
 
   interface Props {

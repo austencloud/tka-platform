@@ -12,11 +12,11 @@
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import HitTargetOverlay from "./components/HitTargetOverlay.svelte";
 

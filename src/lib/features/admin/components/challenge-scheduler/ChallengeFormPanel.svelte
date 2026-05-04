@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
-  import { getBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/getBrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
+  import { getBrowseThumbnailProvider } from "$lib/shared/browse/getBrowseThumbnailProvider";
 
   interface Props {
     selectedDate: string | null;

@@ -10,7 +10,7 @@ import type { BrowseQueryResult } from "../contracts/types";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { SoloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
 import type { HandPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
-import type { BrowseViewMode } from "../../domain/BrowseViewMode";
+import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 
 export class BrowseDataSource {
   constructor(

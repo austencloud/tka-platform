@@ -10,10 +10,10 @@
  */
 
 import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
-import type { GenerationOptions } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import {
-  DifficultyLevel, GenerationMode, } from "$lib/features/create/generate/shared/domain/models/generate-models";
-import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+  DifficultyLevel, GenerationMode, } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import {
   GridLocation,

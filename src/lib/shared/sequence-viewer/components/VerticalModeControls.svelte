@@ -10,7 +10,7 @@
 	import TempoControl from "./TempoControl.svelte";
 	import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
 	import SettingsTogglePanel from "$lib/features/compose/components/controls/SettingsTogglePanel.svelte";
-	import { sequencePanelManager } from "$lib/features/browse/shared/state/sequence-panel-state.svelte";
+	import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
 	import type { ControlsLevel } from "../domain/types";
 
 	let {

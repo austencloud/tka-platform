@@ -9,7 +9,7 @@ import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { ActiveClipInfo } from "../contracts/types";
 import type { TimeSeconds, TimelineClip } from "../../domain/timeline-types";
 import { getClipEndTime } from "../../domain/timeline-types";
-import { getTimelineState } from "../../state/timeline-state.svelte";
+import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 export class TimelinePlayer {

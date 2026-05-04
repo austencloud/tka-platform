@@ -1,7 +1,7 @@
 <!-- Mobile status tab button with count badge -->
 <script lang="ts">
-  import type { FeedbackStatus } from "../../domain/models/feedback-models";
-  import { STATUS_CONFIG } from "../../domain/models/feedback-models";
+  import type { FeedbackStatus } from "$lib/shared/feedback/domain/models/feedback-models";
+  import { STATUS_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
 
   interface Props {
     status: FeedbackStatus;

@@ -4,12 +4,12 @@
   import type {
     FeedbackItem,
     FeedbackStatus,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import {
     STATUS_CONFIG,
     TYPE_CONFIG,
     CONFIRMATION_STATUS_CONFIG,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import MyFeedbackCard from "./MyFeedbackCard.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

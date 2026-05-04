@@ -14,8 +14,8 @@
  * instant synchronous transforms for smooth CSS animations.
  */
 
-import type { StepData } from "../../../domain/models/StepData";
-import { createStepData } from "../../../domain/factories/createStepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import { createStepData } from "$lib/shared/create/factories/createStepData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";

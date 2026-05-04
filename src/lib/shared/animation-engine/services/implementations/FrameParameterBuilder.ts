@@ -19,7 +19,7 @@ import { DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
+import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
@@ -65,7 +65,7 @@ import type {
   WaterIntent,
 } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
-import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
+import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
 import type { AnimationEngineProps } from "./AnimationEngine.svelte";

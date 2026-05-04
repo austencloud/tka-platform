@@ -13,7 +13,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
     PipelineDiagnostics,
     PipelineTier,
   } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
-  import type { StepData } from "../../../domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { ArrowAdjustmentOrchestrator } from "../../../services/implementations/ArrowAdjustmentOrchestrator";
 import type { SelectedArrowContext } from "../../../services/implementations/ArrowAdjustmentOrchestrator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";

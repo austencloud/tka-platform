@@ -15,7 +15,7 @@
  * modulo its period to the sequence length, equals the observed signature.
  */
 
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import {
   REVERSAL_PATTERNS,
   type ReversalPatternDef,

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { simplifyAndTruncate, simplifyRepeatedWord } from "../../shared/utils/word-simplifier";
-  import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+  import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";

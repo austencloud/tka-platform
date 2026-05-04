@@ -12,7 +12,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
-import type { StepData } from "../../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 import {
   saveSequence as persistSaveSequence,
@@ -21,7 +21,7 @@ import {
 } from "$lib/shared/persistence/services/dexie-persistence-service";
 import type { SequenceImporter } from "./SequenceImporter";
 type ReversalDetector = { processReversals: (sequence: SequenceData) => SequenceData };
-import { separateStepsFromStartPosition } from "$lib/features/compose/services/sequence-normalizer";
+import { separateStepsFromStartPosition } from "$lib/shared/animation-engine/services/sequence-normalizer";
 type SequenceDomainManager = {
   createSequence: (request: unknown) => SequenceData;
   updateStep: (sequence: SequenceData, stepIndex: number, stepData: unknown) => SequenceData;
@@ -37,7 +37,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import {
   getUserSequencesPath,
-} from "$lib/features/library/data/firestore-paths";
+} from "$lib/shared/library/data/firestore-paths";
 
 export class SequenceRepository {
   constructor(
@@ -246,7 +246,7 @@ const sequenceDomainManager: SequenceDomainManager = {
   createSequence: sequenceDomainManagerModule.createSequence as SequenceDomainManager['createSequence'],
   updateStep: sequenceDomainManagerModule.updateStep as SequenceDomainManager['updateStep'],
 };
-import * as reversalDetectorModule from "../reversal-detector";
+import * as reversalDetectorModule from "$lib/shared/create/services/reversal-detector";
 const reversalDetector: ReversalDetector = {
   processReversals: reversalDetectorModule.processReversals,
 };

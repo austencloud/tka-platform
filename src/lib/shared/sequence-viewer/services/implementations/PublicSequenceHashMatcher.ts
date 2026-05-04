@@ -16,9 +16,9 @@ import {
 	limit,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
+import { getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
+import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
 import { encodeSequence } from "$lib/shared/navigation/services/sequence-encoder";
 
 export interface SequenceMatchResult {

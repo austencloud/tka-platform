@@ -6,7 +6,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { onMount, onDestroy } from "svelte";
   // NOTE: animate-css-grid disabled - causes layout chaos with async thumbnail loading
   // import { wrapGrid } from "animate-css-grid";
-  import type { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
+  import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
   import type { VariationGrouper } from "../services/implementations/VariationGrouper";
   import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import SectionHeader from "./SectionHeader.svelte";
@@ -14,7 +14,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     type VirtualGridApi,
   } from "./VirtualizedSequenceGrid.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { isCatDogMode } from "../utils/prop-mode-helpers";
+  import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getVariationGrouper } from "../getVariationGrouper";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";

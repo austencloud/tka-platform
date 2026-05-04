@@ -14,7 +14,7 @@
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { getTimelineState } from "../state/timeline-state.svelte";
+  import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import { getTimelineSnapper } from "../services/implementations/TimelineSnapService";
   import {

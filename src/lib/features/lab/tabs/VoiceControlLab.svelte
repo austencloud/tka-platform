@@ -9,7 +9,7 @@
 import { getVoiceSessionAnalyzer } from "$lib/features/voice-sessions/getVoiceSessionAnalyzer";
 import { getVoiceSessionFormatter } from "$lib/features/voice-sessions/getVoiceSessionFormatter";
 import { getVoiceSessionReplayer } from "$lib/features/voice-sessions/getVoiceSessionReplayer";
-import { getVoiceSessionRepository } from "$lib/features/voice-sessions/getVoiceSessionRepository";
+import { getVoiceSessionRepository } from "$lib/shared/voice-sessions/getVoiceSessionRepository";
 import { getCommandDispatcher } from "$lib/shared/voice-control/getCommandDispatcher";
 import { getCommandInterpreter } from "$lib/shared/voice-control/getCommandInterpreter";
 import { getVoiceSessionRecorder } from "$lib/shared/voice-control/getVoiceSessionRecorder";
@@ -20,7 +20,7 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   import type { CommandDispatcher } from "$lib/shared/voice-control/services/implementations/CommandDispatcher";
   import type { VoiceSessionRecorder } from "$lib/shared/voice-control/services/implementations/VoiceSessionRecorder";
   import type * as VoiceSessionFormatterModule from "$lib/features/voice-sessions/services/voice-session-formatter";
-  import type * as VoiceSessionRepositoryModule from "$lib/features/voice-sessions/services/voice-session-repository";
+  import type * as VoiceSessionRepositoryModule from "$lib/shared/voice-sessions/services/voice-session-repository";
   import type * as VoiceSessionAnalyzerModule from "$lib/features/voice-sessions/services/voice-session-analyzer";
   import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionReplayer";
   import type { WakeWordState } from "$lib/shared/voice-control/domain/voice-command-types";

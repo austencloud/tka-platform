@@ -23,7 +23,7 @@ import {
   getUserCompositionsPath,
   getUserCompositionPath,
 } from "../data/firestore-paths";
-import type { Composition } from "../compose/domain/types";
+import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
 
 /**
  * Get the current authenticated user ID.

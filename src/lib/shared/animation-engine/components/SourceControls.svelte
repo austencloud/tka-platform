@@ -7,7 +7,8 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { SourceMode } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
-  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
   interface Props {
     sourceMode: SourceMode;
@@ -17,6 +18,8 @@
     onPick: () => void;
     onSkip: () => void;
     onShuffle: () => void;
+    getDebugData?: () => string | Promise<string>;
+    onSave?: () => void;
   }
 
   let {
@@ -27,6 +30,8 @@
     onPick,
     onSkip,
     onShuffle,
+    getDebugData,
+    onSave,
   }: Props = $props();
 </script>
 
@@ -66,10 +71,31 @@
   </div>
 
   {#if sourceMode === "pick"}
-    <button class="action-btn" onclick={onPick} aria-label={sequence ? "Change the current sequence" : "Pick a sequence to load"}>
-      <i class="fas fa-folder-open" aria-hidden="true"></i>
-      {sequence ? "Change Sequence" : "Pick Sequence"}
-    </button>
+    <div class="auto-actions">
+      <button class="action-btn" onclick={onPick} aria-label={sequence ? "Change the current sequence" : "Pick a sequence to load"}>
+        <i class="fas fa-folder-open" aria-hidden="true"></i>
+        {sequence ? "Change Sequence" : "Pick Sequence"}
+      </button>
+      {#if sequence}
+        <div class="util-actions">
+          {#if getDebugData}
+            <CopyForAIButton
+              getData={getDebugData}
+              variant="icon-only"
+              size="md"
+              ariaLabel="Copy sequence data for AI"
+              useToast
+              labels={{ success: "Sequence copied", error: "Copy failed" }}
+            />
+          {/if}
+          {#if onSave}
+            <button class="icon-btn save-btn" onclick={onSave} aria-label="Save sequence to library" title="Save to library">
+              <i class="fas fa-bookmark" aria-hidden="true"></i>
+            </button>
+          {/if}
+        </div>
+      {/if}
+    </div>
   {:else}
     <div class="auto-actions">
       <button class="action-btn skip-btn" onclick={onSkip} disabled={isChainingNow || !sequence} aria-label="Skip to the next sequence">
@@ -82,6 +108,25 @@
           Shuffle
         </button>
       {/if}
+      {#if sequence}
+        <div class="util-actions">
+          {#if getDebugData}
+            <CopyForAIButton
+              getData={getDebugData}
+              variant="icon-only"
+              size="md"
+              ariaLabel="Copy sequence data for AI"
+              useToast
+              labels={{ success: "Sequence copied", error: "Copy failed" }}
+            />
+          {/if}
+          {#if onSave}
+            <button class="icon-btn save-btn" onclick={onSave} aria-label="Save sequence to library" title="Save to library">
+              <i class="fas fa-bookmark" aria-hidden="true"></i>
+            </button>
+          {/if}
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -92,7 +137,6 @@
       <span class="seq-name">{simplifyAndTruncate(sequence.word || sequence.name || "Unnamed")}</span>
       <span class="seq-meta">
         <span class="seq-beats">{sequence.steps?.length || 0} beats</span>
-        <span class="seq-hint" title="Press D to copy sequence data to clipboard">D = copy</span>
       </span>
     {:else}
       <span class="seq-name seq-placeholder">&nbsp;</span>
@@ -191,10 +235,48 @@
   .auto-actions {
     display: flex;
     gap: 6px;
+    align-items: center;
   }
 
   .auto-actions .action-btn {
     flex: 1;
+  }
+
+  .util-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, white);
+    cursor: pointer;
+    transition: all 150ms ease;
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .icon-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .icon-btn:active {
+    transform: scale(0.95);
   }
 
   .skip-btn:disabled,
@@ -240,13 +322,6 @@
   .seq-beats {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  .seq-hint {
-    font-size: var(--font-size-compact, 12px);
-    color: rgba(79, 195, 247, 0.5);
-    font-family: monospace;
-    cursor: default;
   }
 
   @media (prefers-reduced-motion: reduce) {

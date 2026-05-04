@@ -243,8 +243,8 @@ import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/im
 import { BrowserVariationProvider } from "./BrowserVariationProvider";
 import { BuildResultTransformer } from "./BuildResultTransformer";
 import { sequenceMetadataManager } from "../sequence-metadata-manager";
-import { reversalDetector } from "$lib/features/create/shared/services/reversal-detector";
-import { orientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
+import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
+import { orientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 
 const browserVariationProvider = new BrowserVariationProvider(
   letterQueryHandler

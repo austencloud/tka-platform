@@ -1,4 +1,4 @@
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   INVERTED_LETTER_MAP,

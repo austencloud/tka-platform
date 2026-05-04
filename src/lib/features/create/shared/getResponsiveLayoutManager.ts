@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ResponsiveLayoutManager } from './services/implementations/ResponsiveLayoutManager';
+import { ResponsiveLayoutManager } from '$lib/shared/create/services/ResponsiveLayoutManager';
 import { getDeviceDetector } from '$lib/shared/device/getDeviceDetector';
 import { getViewportManager } from '$lib/shared/device/getViewportManager';
 

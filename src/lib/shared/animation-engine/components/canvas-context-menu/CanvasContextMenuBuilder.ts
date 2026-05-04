@@ -21,8 +21,8 @@ import type {
   ContextMenuItem,
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { AnimationVisibilityStateManager, GridMode } from "../../state/animation-visibility-state.svelte";
-import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
-import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
+import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { animationSettings } from "../../state/animation-settings-state.svelte";
 import { TrackingMode } from "../../domain/types/TrailTypes";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

@@ -7,7 +7,7 @@
    */
 
   import type { TimelineTrack } from "../domain/timeline-types";
-  import { getTimelineState } from "../state/timeline-state.svelte";
+  import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 
   interface Props {

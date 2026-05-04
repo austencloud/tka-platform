@@ -1,14 +1,16 @@
 <!-- FeedbackKanbanBoard - Kanban board layout for feedback management -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
+  import type { FeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
   import type { KanbanBoardState } from "../../state/kanban-board-state.svelte";
   import { createKanbanBoardState } from "../../state/kanban-board-state.svelte";
   import { getFeedbackSorter } from "$lib/features/feedback/getFeedbackSorter";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { STATUS_CONFIG } from "../../domain/models/feedback-models";
+  import { STATUS_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
   import KanbanMobileView from "./KanbanMobileView.svelte";
   import KanbanDesktopView from "./KanbanDesktopView.svelte";
+  import DeferFeedbackDialog from "./DeferFeedbackDialog.svelte";
+  import TrashFeedbackDialog from "./TrashFeedbackDialog.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
@@ -167,49 +169,6 @@
     };
   });
 
-  async function handleDeferSubmit() {
-    if (!boardState || !boardState.itemToDefer || !boardState.deferDate) return;
-
-    boardState.setIsSubmittingDefer(true);
-
-    try {
-      await manageState.deferFeedback(
-        boardState.itemToDefer.id,
-        boardState.deferDate,
-        boardState.deferNotes
-      );
-      boardState.resetDeferDialog();
-    } catch (err) {
-      console.error("Failed to defer feedback:", err);
-    } finally {
-      boardState.setIsSubmittingDefer(false);
-    }
-  }
-
-  function handleDeferCancel() {
-    boardState?.resetDeferDialog();
-  }
-
-  async function handleTrashConfirm() {
-    if (!boardState || !boardState.itemToTrash) return;
-
-    boardState.setIsSubmittingTrash(true);
-
-    try {
-      await manageState.deleteFeedback(boardState.itemToTrash.id);
-      toast.info(t("feedback_deleted"));
-      boardState.resetTrashDialog();
-    } catch (err) {
-      console.error("Failed to delete feedback:", err);
-      toast.error(t("feedback_failed_delete"));
-    } finally {
-      boardState.setIsSubmittingTrash(false);
-    }
-  }
-
-  function handleTrashCancel() {
-    boardState?.resetTrashDialog();
-  }
 </script>
 
 <div

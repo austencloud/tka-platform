@@ -1,6 +1,6 @@
 import type { LayerType, LayerRenderOptions, LayerVisibility, LayerRenderResult, CompositionResult, LayerCacheStats, RenderCanvas, RenderContext2D } from "../contracts/types";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
-import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { deriveBaseLayerKey, deriveGridPointsLayerKey, deriveTKALayerKey, deriveReversalLayerKey } from "../layer-key-deriver";
 import { turnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { Letter } from "../../../foundation/domain/models/Letter";

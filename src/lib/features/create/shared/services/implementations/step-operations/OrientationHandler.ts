@@ -4,9 +4,9 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "../../../domain/models/StepData";
-import type { StartPositionData } from "../../../domain/models/StartPositionData";
-import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import {
   createMotionData,

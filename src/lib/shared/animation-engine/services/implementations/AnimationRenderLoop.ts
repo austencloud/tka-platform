@@ -13,7 +13,7 @@ import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animat
 import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
 import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode } from "../../domain/types/TrailTypes";
-import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
+import type { AnimationPathCache } from "$lib/shared/animation-engine/services/implementations/AnimationPathCache";
 import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
 import type { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
 import type { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";

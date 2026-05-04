@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { CellEditorPanelState } from "../state/cell-editor-panel-state.svelte";
-  import type { TransformType } from "$lib/features/compose/compose/domain/types";
+  import type { TransformType } from "$lib/shared/animation-engine/domain/compose-types";
 
   let {
     panelState,

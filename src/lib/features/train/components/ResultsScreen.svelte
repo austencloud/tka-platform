@@ -7,7 +7,7 @@
   import { onMount } from "svelte";
   import type { TrainChallenge } from "../domain/models/TrainChallengeModels";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface XPBreakdown {
     baseXP: number;

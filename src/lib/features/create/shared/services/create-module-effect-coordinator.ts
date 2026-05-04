@@ -11,12 +11,12 @@ import type { CreateModuleState } from "../state/create-module-state.svelte";
 import type { ConstructTabState } from "../state/construct-tab-state.svelte";
 import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
 import type { NavigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import type { ResponsiveLayoutManager } from "./implementations/ResponsiveLayoutManager";
+import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
 import type { NavigationSyncer } from "./implementations/NavigationSyncer";
 import type { DeepLinkSequenceHandler } from "./implementations/DeepLinkSequenceHandler";
 import type { StepOperator } from "./implementations/StepOperator";
 import type { Autosaver } from "./Autosaver";
-import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+import type { LetterSource } from "$lib/shared/create/domain/spell-models";
 
 /**
  * Configuration for CreateModule effects

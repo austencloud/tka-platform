@@ -2,15 +2,15 @@
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import * as propTypeApplier from "$lib/features/landing/services/prop-type-applier";
+  import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 
   const animationState = createAnimationPanelState();

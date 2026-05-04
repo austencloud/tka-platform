@@ -13,7 +13,7 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type {
   PlaybackMode,
   StepPlaybackStepSize,
-} from "../../../state/animation-panel-state.svelte";
+} from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
 const debug = createComponentLogger("PlaybackState");
 

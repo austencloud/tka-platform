@@ -1,4 +1,4 @@
-import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { LOOPDesignation, SectionDesignation } from "./contracts/types";
 
 /**

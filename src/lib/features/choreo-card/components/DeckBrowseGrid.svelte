@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Deck } from "../domain/models/Deck";
   import DeckCard from "./DeckCard.svelte";
-  import { LOOP_TYPE_LABELS } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { VTG_FAMILY_LABELS } from "../state/deck-browse-types";
 
   interface Props {

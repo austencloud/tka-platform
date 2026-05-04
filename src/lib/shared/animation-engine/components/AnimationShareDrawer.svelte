@@ -24,18 +24,18 @@
 
   // Services
   import { getKeyboardShortcutManager } from "$lib/shared/keyboard/getKeyboardShortcutManager";
-  import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
-  import type { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
+  import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
   import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
   import { animationShortcutRegistrar } from "../services/implementations/AnimationShortcutRegistrar";
 
   // Types
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   // ============================================================================
@@ -173,9 +173,9 @@
     error?: string | null;
     speed?: number;
     isPlaying?: boolean;
-    playbackMode?: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode;
+    playbackMode?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
     stepPlaybackPauseMs?: number;
-    stepPlaybackStepSize?: import("$lib/features/compose/state/animation-panel-state.svelte").StepPlaybackStepSize;
+    stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
     blueProp?: PropState | null;
     redProp?: PropState | null;
     gridVisible?: boolean;
@@ -190,11 +190,11 @@
     onPlaybackStart?: () => void;
     onPlaybackToggle?: () => void;
     onPlaybackModeChange?: (
-      mode: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode
+      mode: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode
     ) => void;
     onStepPlaybackPauseMsChange?: (pauseMs: number) => void;
     onStepPlaybackStepSizeChange?: (
-      stepSize: import("$lib/features/compose/state/animation-panel-state.svelte").StepPlaybackStepSize
+      stepSize: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize
     ) => void;
     onStepHalfBeatBackward?: () => void;
     onStepHalfBeatForward?: () => void;

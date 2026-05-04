@@ -11,7 +11,7 @@ import {
   getPlaneNormal,
   calculatePropQuaternion,
 } from "../domain/constants/plane-transforms";
-import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
+import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
 
 /** Convert a path angle on a plane to a 3D world position. */
 export function angleToPosition3D(plane: Plane, angle: number, radius: number = GRID_RADIUS_3D): Vector3 {

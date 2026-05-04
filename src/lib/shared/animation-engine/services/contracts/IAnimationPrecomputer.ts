@@ -8,17 +8,17 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { TrailSettings } from "../../domain/types/TrailTypes";
-import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
-import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+import type { ITrailCapturer } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
+import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
 import type {
   AnimationPathCache,
   AnimationPathCacheData,
-} from "$lib/features/compose/services/implementations/AnimationPathCache";
+} from "$lib/shared/animation-engine/services/implementations/AnimationPathCache";
 import type {
   SequenceFramePreRenderer,
   PreRenderProgress,
-} from "$lib/features/compose/services/implementations/SequenceFramePreRenderer";
+} from "$lib/shared/animation-engine/services/implementations/SequenceFramePreRenderer";
 
 /**
  * Prop dimensions for cache configuration

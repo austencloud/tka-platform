@@ -2,7 +2,7 @@
   import type { DeckBrowseState } from "../state/deck-browse-state.svelte";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import FilterChipRow from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipRow.svelte";
-  import { LOOP_TYPE_LABELS } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { VTG_FAMILY_LABELS } from "../state/deck-browse-types";
 
   interface Props {

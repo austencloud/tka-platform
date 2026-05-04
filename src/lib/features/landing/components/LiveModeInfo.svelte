@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { BroadcastStateClient } from "../domain/models/broadcast-models";
+  import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let {

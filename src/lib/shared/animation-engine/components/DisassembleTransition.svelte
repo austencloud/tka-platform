@@ -9,11 +9,11 @@
   When direction is "idle", just renders the static disassembled layout.
 -->
 <script lang="ts">
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { PropState } from "../domain/PropState";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";

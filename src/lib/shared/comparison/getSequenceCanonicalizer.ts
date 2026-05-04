@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 
 import { SequenceCanonicalizer } from './services/implementations/SequenceCanonicalizer';
 import { getStepSignatureGenerator } from './getStepSignatureGenerator';
-import * as wordCyclicEquivalenceDetector from '$lib/features/create/shared/services/word-cyclic-equivalence-detector';
+import * as wordCyclicEquivalenceDetector from '$lib/shared/foundation/utils/word-cyclic-equivalence-detector';
 
 let instance: SequenceCanonicalizer | null = null;
 

@@ -20,7 +20,7 @@
   import ArrowAdjustmentHistory from "./ArrowAdjustmentHistory.svelte";
   import StepEditorTour from "$lib/shared/onboarding/components/step-editor-tour/StepEditorTour.svelte";
   import { stepEditorTourState } from "$lib/shared/onboarding/state/step-editor-tour-state.svelte";
-  import type { StepData } from "../../domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
     MotionColor,
@@ -29,7 +29,7 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
-  import { selectedArrowState } from "../../state/selected-arrow-state.svelte";
+  import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
 
   interface Props {
     isOpen: boolean;

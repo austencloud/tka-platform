@@ -9,8 +9,8 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { GridModeDeriver } from "../../../pictograph/grid/services/implementations/GridModeDeriver";
 

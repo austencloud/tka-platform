@@ -9,7 +9,7 @@
  */
 
 import { configureShortCodeManager } from "./qr/getShortCodeManager";
-import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 import { getQRCodeGenerator } from "./qr/getQRCodeGenerator";
 import { getImageComposer } from "./render/getImageComposer";
 

@@ -14,7 +14,7 @@
   import { DoubleSide } from "three";
   import { Plane, PLANE_LABELS } from "../domain/enums/Plane";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
+  import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
   import { planeAngleToWorldPosition } from "../domain/constants/plane-transforms";
   import {
     CENTER_POINT_SIZE,

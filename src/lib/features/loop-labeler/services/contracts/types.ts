@@ -2,7 +2,7 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { TransformationIntervals } from "../../domain/models/label-models";
 
 // === From ITransformationAnalyzer ===

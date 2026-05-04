@@ -8,8 +8,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { generatePattern, getIOSPulseCount } from "../../src/lib/features/effort-lab/services/effort-haptic-mapper";
-import type { EffortId } from "../../src/lib/features/effort-lab/domain/effort-types";
+import { generatePattern, getIOSPulseCount } from "../../src/lib/shared/effort/services/effort-haptic-mapper";
+import type { EffortId } from "../../src/lib/shared/effort/domain/effort-types";
 
 // Functions imported directly from effort-haptic-mapper module
 

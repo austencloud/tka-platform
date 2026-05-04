@@ -5,7 +5,7 @@
 import type { SequenceState } from "../../../state/SequenceStateOrchestrator.svelte";
   import { getCreateModuleContext } from "../../../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+  import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import StepGrid from "./StepGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
@@ -15,9 +15,9 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { formatLOOPTypeForDisplay } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { analyzeDifficulty } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import { analyzeDifficulty } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
   import { updateStepDuration } from "../../../services/implementations/step-operations/DurationHandler";

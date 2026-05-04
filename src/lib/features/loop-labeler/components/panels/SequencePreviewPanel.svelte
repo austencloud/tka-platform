@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { SequenceEntry } from "../../domain/models/sequence-models";
+  import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
   import type { LabeledSequence } from "../../domain/models/label-models";
   import type { LOOPDetectionResult } from "../../services/contracts/ILOOPDetector";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import {
     createMotionData,
     type MotionData,

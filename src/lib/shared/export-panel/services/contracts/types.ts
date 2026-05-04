@@ -11,8 +11,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ExportSettings } from "../../domain/models/ExportSettings";
 import type { VideoExportProgress } from '$lib/features/compose/services/implementations/VideoExportOrchestrator';
-import type { AnimationPlaybackController } from '$lib/features/compose/services/implementations/AnimationPlaybackController';
-import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/implementations/AnimationPlaybackController';
+import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
 /** Result of an export operation */
 export interface ExportResult {

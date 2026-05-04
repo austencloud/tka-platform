@@ -15,7 +15,7 @@ import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domai
 import type { GridMode } from "$lib/shared/render/core/types";
 import type { PrepareOptions } from "$lib/shared/pictograph/shared/services/contracts/types";
 import type { PositionPair } from "$lib/shared/multi-grid/services/contracts/types";
-import type { ConjoinedGridMode, PropPlacement, JunctionOverlap } from "../domain/types";
+import type { ConjoinedGridMode, PropPlacement, JunctionOverlap } from "$lib/shared/conjoined-grid/domain/types";
 import { TOPOLOGY_PRESETS, type TopologyPreset } from "$lib/shared/multi-grid/domain/constants/TopologyPresets";
 import { detectOverlaps } from "../services/junction-overlap-detector";
 import { mapToTopology } from "../services/pictograph-topology-mapper";

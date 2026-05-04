@@ -22,19 +22,19 @@ import type {
 
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
-import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
-import type { SectionConfig, SequenceSection } from "$lib/features/browse/shared/domain/models/browse-models";
+import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+import type { SectionConfig, SequenceSection } from "$lib/shared/browse/domain/models/browse-models";
 
-import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 import { detectRotationPeriod } from "$lib/features/create/generate/circular/domain/constants/detect-rotation-period";
-import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-import { getBrowseFilter } from "$lib/features/browse/sequences/display/getBrowseFilter";
-import { getMultiFilter } from "$lib/features/browse/sequences/display/getMultiFilter";
+import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+import { getBrowseFilter } from "$lib/shared/browse/getBrowseFilter";
+import { getMultiFilter } from "$lib/shared/browse/getMultiFilter";
 import { sortSequences as browseSortSequences } from "$lib/features/browse/sequences/display/services/browse-sorter";
-import { getBrowseSectionManager } from "$lib/features/browse/sequences/display/getBrowseSectionManager";
-import { toggleFavorite as doToggleFavorite } from "$lib/features/library/services/collection-manager";
+import { getBrowseSectionManager } from "$lib/shared/browse/getBrowseSectionManager";
+import { toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 
 import { authState } from "$lib/shared/auth/state/authState.svelte";

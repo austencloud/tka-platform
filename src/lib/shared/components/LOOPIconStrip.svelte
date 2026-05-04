@@ -21,8 +21,8 @@ Used in:
 3. Layered sequence preview
 -->
 <script lang="ts">
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { LOOP_ICON_GAP_SCALE } from "@tka/render-composition";
   import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
   import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";

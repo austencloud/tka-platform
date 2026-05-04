@@ -12,7 +12,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "../../../../shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { LOOPType } from "../../domain/models/circular-models";
 import { Period } from "../../domain/models/circular-models";
 import { LOOPComponent } from "../../../shared/domain/models/generate-models";
@@ -21,7 +21,7 @@ import type {
   LOOPDetectionResult,
   CompoundPattern,
 } from "../contracts/ILOOPDetector";
-import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
+import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { generateLOOPType } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";
 import {
   QUARTER_POSITION_MAP_CW,

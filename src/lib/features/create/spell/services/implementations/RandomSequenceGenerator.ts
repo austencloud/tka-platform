@@ -8,7 +8,7 @@
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { VariationConstraints } from "../../domain/models/spell-models";
 import type { RandomSequenceGenerationOptions } from "../contracts/types";
@@ -19,14 +19,14 @@ import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services
 import type { SequenceExtender } from "../../../shared/services/implementations/SequenceExtender";
 import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
 type StepConverter = typeof StepConverterSingleton;
-import type { ReversalDetector } from "../../../shared/services/reversal-detector";
+import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import type { LOOPEndPositionResolver } from "../loop-end-position-resolver";
-import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
 import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
+import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 
 interface RandomWalkState {
   steps: StepData[];
@@ -973,7 +973,7 @@ import * as orientationContinuityValidator from "../orientation-continuity-valid
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
-import { reversalDetector } from "$lib/features/create/shared/services/reversal-detector";
+import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import * as loopEndPositionResolver from "../loop-end-position-resolver";
 
 export const randomSequenceGenerator = new RandomSequenceGenerator(

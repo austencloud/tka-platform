@@ -24,8 +24,8 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { stripUndefined } from "$lib/shared/firestore";
-import { getPublicSequencePath, getPublicSequencesPath } from "../../data/firestore-paths";
-import type { LibrarySequence } from "../../domain/models/LibrarySequence";
+import { getPublicSequencePath, getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import type { FlaggedTerm } from "$lib/features/moderation/domain/models/content-moderation-models";
 
 interface ContentModerator {
@@ -40,10 +40,10 @@ import { ContentModerationError } from "$lib/features/moderation/errors/ContentM
 import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
-import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
+import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
-import { periodToNumber } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { isSeamlesslyLoopable } from "$lib/features/compose/services/sequence-loopability-checker";
+import { periodToNumber } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 
 

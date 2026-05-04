@@ -9,7 +9,7 @@
    */
 
   import type { TimelineClip as ClipType } from "../domain/timeline-types";
-  import { getTimelineState } from "../state/timeline-state.svelte";
+  import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import { timeToPixels } from "../domain/timeline-types";
   import { createClipMove } from "./clip-interactions/createClipMove";
   import { createClipTrim } from "./clip-interactions/createClipTrim";

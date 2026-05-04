@@ -13,7 +13,7 @@ import type {
   BatchEditChanges,
 } from "../../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { StepData } from "../../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 // Import handlers
 import { removeStep } from "./step-operations/StepRemovalHandler";

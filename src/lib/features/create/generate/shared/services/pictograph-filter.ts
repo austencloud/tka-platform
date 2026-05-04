@@ -4,8 +4,8 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { FilteringError } from "../domain/errors/generation-errors";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";

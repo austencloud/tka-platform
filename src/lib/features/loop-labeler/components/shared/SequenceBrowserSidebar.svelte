@@ -5,10 +5,10 @@
    * Persistent sidebar for browsing and jumping between sequences.
    * Shows on wide screens, hidden on narrow screens.
    */
-  import type { SequenceEntry } from "../../domain/models/sequence-models";
+  import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
   import type { LabeledSequence } from "../../domain/models/label-models";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { formatDesignation } from "../../services/label-formatter";
 
   interface Props {

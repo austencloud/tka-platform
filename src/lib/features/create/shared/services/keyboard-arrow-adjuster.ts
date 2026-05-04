@@ -19,7 +19,7 @@
  * legacy\src\main_window\main_widget\sequence_workbench\graph_editor\hotkey_graph_adjuster\arrow_movement_manager.py
  */
 
-import type { StepData } from "../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {

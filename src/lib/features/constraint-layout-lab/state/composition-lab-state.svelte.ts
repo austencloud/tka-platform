@@ -1,11 +1,3 @@
-/**
- * composition-lab-state.svelte.ts
- *
- * Reactive state factory for the Composition Lab.
- * Owns all cell state, selection, undo/redo, mutation handlers,
- * keyboard shortcuts, and persistence effects.
- */
-
 import { browser } from "$app/environment";
 import { LAYOUT_PRESETS, resetCellIdCounter, findPresetById } from "../services/LayoutPresets";
 import { solveConstraints, GRID_SIZE } from "../services/ConstraintSolver";
@@ -531,7 +523,6 @@ export function createCompositionLabState(initialPresetId?: string) {
     if (e.key === "Delete" || e.key === "Backspace") {
       if (selectedCellIds.size > 0) {
         e.preventDefault();
-        pushUndo();
         handleDeleteCell();
       }
       return;

@@ -41,6 +41,15 @@ class TerminalState {
 	/** CRT effects enabled */
 	crtEffects = $state(true);
 
+	/** When true, input characters display as asterisks (for password entry) */
+	inputMask = $state(false);
+
+	/** Display name of the authenticated user (null = not logged in) */
+	authenticatedUser = $state<string | null>(null);
+
+	/** Word passed from GENERATE command (consumed by ScribeGenerate on mount) */
+	pendingWord = $state<string | null>(null);
+
 	/**
 	 * Input handler callback - set by app components to intercept user input.
 	 * When set, DosTerminal routes submitted input here instead of the default

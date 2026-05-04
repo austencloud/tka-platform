@@ -2,14 +2,14 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
+  import type { FeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
   import { createFilterBarUIState } from "../../state/filter-bar-ui-state.svelte";
   import {
     TYPE_CONFIG,
     STATUS_CONFIG,
     PRIORITY_CONFIG,
-  } from "../../domain/models/feedback-models";
-  import type { FeedbackType } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
+  import type { FeedbackType } from "$lib/shared/feedback/domain/models/feedback-models";
   import FilterButton from "./FilterButton.svelte";
   import FilterMobileSheet from "./FilterMobileSheet.svelte";
   import FilterDesktopDrawers from "./FilterDesktopDrawers.svelte";

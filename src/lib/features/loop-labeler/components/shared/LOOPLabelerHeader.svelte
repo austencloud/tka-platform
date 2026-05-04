@@ -6,9 +6,9 @@
    * Uses shared design tokens from app.css.
    */
   import { onDestroy } from "svelte";
-  import type { SequenceEntry } from "../../domain/models/sequence-models";
+  import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   type FilterMode = "all" | "needsVerification" | "verified";
   type SyncStatus = "idle" | "syncing" | "synced" | "error";

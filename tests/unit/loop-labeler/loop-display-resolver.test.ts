@@ -17,8 +17,8 @@ import {
 import {
   LOOPType,
   Period,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 // Minimal SequenceData factory — only the fields the resolver reads. The

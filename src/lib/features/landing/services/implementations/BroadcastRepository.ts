@@ -9,9 +9,9 @@ import { doc, onSnapshot, Timestamp, type Firestore } from "firebase/firestore";
 import { httpsCallable, type Functions } from "firebase/functions";
 import { firestoreListen } from "$lib/shared/firestore";
 import { BroadcastHistoryEntrySchema } from "../../domain/models/broadcast-schemas";
-import type { BroadcastState, BroadcastStateClient, BroadcastHistoryEntry, ServerTimeResponse, } from "../../domain/models/broadcast-models";
+import type { BroadcastState, BroadcastStateClient, BroadcastHistoryEntry, ServerTimeResponse, } from "$lib/shared/landing/domain/broadcast-models";
 import type {
-  BroadcastStateCallback, BroadcastHistoryCallback } from "../contracts/types";
+  BroadcastStateCallback, BroadcastHistoryCallback } from "$lib/shared/landing/domain/types";
 import { getFirestoreInstance, getFunctionsInstance } from "$lib/shared/auth/firebase";
 // Firestore paths
 const BROADCAST_STATE_DOC = "liveBroadcast/current";

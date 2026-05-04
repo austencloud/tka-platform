@@ -1,4 +1,4 @@
-import type { SequenceEntry } from "../domain/models/sequence-models";
+import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
 import type {
   LabeledSequence,
   FilterMode,

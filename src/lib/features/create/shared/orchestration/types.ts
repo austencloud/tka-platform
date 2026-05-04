@@ -7,7 +7,7 @@ import type { ViewportManager } from '$lib/shared/device/services/implementation
  */
 
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-import type { StartPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
+import type { StartPositionManager } from "$lib/shared/create/services/StartPositionManager";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";

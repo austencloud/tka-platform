@@ -3,7 +3,7 @@ import {
   generateRedPropSvg,
   generatePropSvg,
   generateGridSvg,
-} from "$lib/features/compose/services/svg-generator";
+} from "$lib/shared/animation-engine/services/svg-generator";
 
 /**
  * Canvas2D Image Loader

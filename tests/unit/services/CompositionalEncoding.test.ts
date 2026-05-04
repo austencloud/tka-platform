@@ -13,7 +13,7 @@ import {
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import {
   MotionType,
   RotationDirection,

@@ -16,7 +16,7 @@ import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 
 // ===== Session-local Persistence (localStorage) =====

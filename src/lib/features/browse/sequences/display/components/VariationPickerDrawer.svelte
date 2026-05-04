@@ -11,7 +11,7 @@
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { isCatDogMode } from "../utils/prop-mode-helpers";
+  import { isCatDogMode } from "$lib/shared/browse/utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 

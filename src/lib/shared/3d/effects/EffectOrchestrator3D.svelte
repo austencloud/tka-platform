@@ -29,7 +29,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
   import { DynamicLightManager, type LightHandle } from "./lighting/DynamicLightManager";
   import { TipPositionBridge3D } from "./TipPositionBridge3D";
   import { PovStripRenderer3D } from "./poi/PovStripRenderer3D";
-  import type { StripPattern } from "$lib/features/poi/domain/StripPattern";
+  import type { StripPattern } from "$lib/shared/poi/domain/StripPattern";
   import {
     resolveEffect,
     type TipEffectMap,

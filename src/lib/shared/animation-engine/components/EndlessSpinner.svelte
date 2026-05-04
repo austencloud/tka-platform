@@ -1,19 +1,19 @@
 <script lang="ts">
 
 import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "./AnimatorCanvas.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import type { EndState } from "$lib/features/landing/services/contracts/types";
-  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import type { EndState } from "$lib/shared/landing/domain/types";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import {
     animationSettings,
     TrackingMode,

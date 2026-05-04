@@ -7,7 +7,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { StepData } from "../../../src/lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "../../../src/lib/shared/foundation/domain/models/StepData";
 import { Letter } from "../../../src/lib/shared/foundation/domain/models/Letter";
 import {
   GridLocation,
@@ -21,7 +21,7 @@ import {
 } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { SwappedInvertedLOOPExecutor } from "../../../src/lib/features/create/generate/circular/services/implementations/SwappedInvertedLOOPExecutor";
 import type { IOrientationCalculator } from "../../../src/lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
-import { Period } from "../../../src/lib/features/create/generate/circular/domain/models/circular-models";
+import { Period } from "../../../src/lib/shared/foundation/domain/models/generation/circular-models";
 
 // Mock OrientationCalculator that passes through unchanged
 const mockOrientationCalculator: IOrientationCalculator = {

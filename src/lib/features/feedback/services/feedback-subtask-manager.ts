@@ -11,7 +11,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type {
   FeedbackSubtask,
   SubtaskStatus,
-} from "../domain/models/feedback-models";
+} from "$lib/shared/feedback/domain/models/feedback-models";
 
 /**
  * Add a new subtask to feedback item

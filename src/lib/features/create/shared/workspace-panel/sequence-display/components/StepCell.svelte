@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { StepData } from "../../../domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { onMount } from "svelte";

@@ -7,8 +7,8 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import type { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
@@ -16,7 +16,7 @@ import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/service
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type {
-  EndState, PositionGroup, SpinnerStats } from "../contracts/types";
+  EndState, PositionGroup, SpinnerStats } from "$lib/shared/landing/domain/types";
 import {
   GridMode,
   GridPosition,
@@ -31,14 +31,14 @@ import {
   GenerationMode,
   DifficultyLevel,
   PropContinuity,
-} from "$lib/features/create/generate/shared/domain/models/generate-models";
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   shiftStartPosition,
   createStartPositionFromStepEnd,
-} from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
-import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
+} from "$lib/shared/create/services/sequence-transforms";
+import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 // Cardinal locations (for DIAMOND grid) and intercardinal (for BOX grid)
 const CARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.NORTH,

@@ -9,7 +9,7 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { LayerRenderOptions, LayerVisibility } from "../../render/services/contracts/types";
-import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
+import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 
 /**
  * Options for rendering a preview cell.

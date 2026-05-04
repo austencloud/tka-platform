@@ -20,7 +20,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
+  import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
 
   // Detect if we're on desktop (for push-over effect)
   let isSideBySide = $state(false);

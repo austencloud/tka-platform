@@ -1,6 +1,6 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import {
   loadSequence as persistLoadSequence,
   saveSequence as persistSaveSequence,

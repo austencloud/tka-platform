@@ -15,9 +15,9 @@ import type { SequencePersister } from "$lib/features/create/shared/services/imp
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
-import { reversalDetector, type ReversalDetector } from "../services/reversal-detector";
+import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import type { StepData } from "../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 // ARCHIVED: AssemblerTabState import removed (Feb 2026) - files kept for reference
 import type { GeneratorTabState } from "./generator-tab-state.svelte";

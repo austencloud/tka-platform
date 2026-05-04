@@ -8,7 +8,7 @@
 import type { CharcoalSparkParams } from "../domain/types/CharcoalSparkTypes";
 import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/CharcoalSparkTypes";
 import type { FireColorCurve } from "../domain/types/FireTypes";
-import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
 import { findPreset, validatePreset, type LedColorPreset } from "../domain/types/LedColorPresets";
 import type { EffectLayerMode } from "../services/effect-layer";

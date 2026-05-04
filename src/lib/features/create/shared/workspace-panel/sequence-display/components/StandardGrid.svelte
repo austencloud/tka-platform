@@ -1,13 +1,13 @@
 <!-- StandardGrid.svelte - Standard CSS Grid layout with uniform cell sizes -->
 <script lang="ts">
-  import type { StepData } from "../../../domain/models/StepData";
-  import type { StartPositionData } from "../../../domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-  import type { GridLayout } from "../utils/grid-calculations";
+  import type { GridLayout } from "$lib/shared/create/utils/grid-calculations";
   import type { StepGridDisplayState } from "../state/step-grid-display-state.svelte";
   import type { ScrollState } from "../state/scroll-state.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { calculateStepPosition } from "../utils/grid-calculations";
+  import { calculateStepPosition } from "$lib/shared/create/utils/grid-calculations";
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
 

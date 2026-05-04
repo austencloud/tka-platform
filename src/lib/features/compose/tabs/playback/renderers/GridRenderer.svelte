@@ -28,9 +28,9 @@
     isPlaying?: boolean;
     speed?: number;
     shouldLoop?: boolean;
-    playbackMode?: import("../../../state/animation-panel-state.svelte").PlaybackMode;
+    playbackMode?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
     stepPlaybackPauseMs?: number;
-    stepPlaybackStepSize?: import("../../../state/animation-panel-state.svelte").StepPlaybackStepSize;
+    stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
     onSelectCell: (index: GridIndex) => void;
     onRemoveCell: (index: GridIndex) => void;
     onOpenSettings: (canvasId: string) => void;

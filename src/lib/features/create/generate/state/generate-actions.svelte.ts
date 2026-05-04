@@ -33,7 +33,7 @@ import {
   LOOPType,
   Period,
   periodToNumber,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { loopViabilityService } from "$lib/features/create/generate/shared/services/loop-viability-service";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";

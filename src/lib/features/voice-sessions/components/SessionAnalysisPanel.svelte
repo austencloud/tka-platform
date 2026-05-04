@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type * as VoiceSessionRepositoryModule from "$lib/features/voice-sessions/services/voice-session-repository";
+  import type * as VoiceSessionRepositoryModule from "$lib/shared/voice-sessions/services/voice-session-repository";
   import type * as VoiceSessionAnalyzerModule from "$lib/features/voice-sessions/services/voice-session-analyzer";
   import type { SessionAnalysis } from "$lib/features/voice-sessions/services/contracts/types";
   import type { VoiceSession, ResolutionTier } from "$lib/shared/voice-control/domain/voice-session-types";

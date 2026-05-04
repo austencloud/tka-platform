@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
@@ -15,12 +15,12 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { AnimationPlaybackController } from "../../../services/implementations/AnimationPlaybackController";
-  import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import {
     ANIMATION_LOAD_DELAY_MS,
     ANIMATION_AUTO_START_DELAY_MS,
-  } from "../../../shared/domain/constants/timing";
+  } from "$lib/shared/animation-engine/domain/constants/timing";
   import CanvasControls from "../components/CanvasControls.svelte";
 
   let {
@@ -40,9 +40,9 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
     isPlaying?: boolean;
     speed?: number;
     shouldLoop?: boolean;
-    playbackMode?: import("../../../state/animation-panel-state.svelte").PlaybackMode;
+    playbackMode?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
     stepPlaybackPauseMs?: number;
-    stepPlaybackStepSize?: import("../../../state/animation-panel-state.svelte").StepPlaybackStepSize;
+    stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
     visible?: boolean;
     blueVisible?: boolean;
     redVisible?: boolean;

@@ -1,13 +1,13 @@
 <!-- TimelineGrid.svelte - Duration-proportional timeline layout -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { StepData } from "../../../domain/models/StepData";
-  import type { StartPositionData } from "../../../domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-  import type { TimelineRow } from "../utils/grid-calculations";
+  import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
   import type { StepGridDisplayState } from "../state/step-grid-display-state.svelte";
   import type { ScrollState } from "../state/scroll-state.svelte";
-  import { getTimelineWidthMultiplier } from "../utils/grid-calculations";
+  import { getTimelineWidthMultiplier } from "$lib/shared/create/utils/grid-calculations";
   import {
     MIN_DURATION,
     MAX_DURATION,

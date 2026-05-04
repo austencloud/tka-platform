@@ -8,7 +8,7 @@ Touch-friendly interface for changing sort method and jumping to sections
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { NavigationSection } from "$lib/features/browse/shared/domain/types/browse-types";
-  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+  import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 
   let {
     currentSortMethod,

@@ -6,8 +6,8 @@
 -->
 <script lang="ts">
   import StepGrid from "../../workspace-panel/sequence-display/components/StepGrid.svelte";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 
   interface Props {
     steps: readonly StepData[];

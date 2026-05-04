@@ -3,7 +3,7 @@
 -->
 <script lang="ts">
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {

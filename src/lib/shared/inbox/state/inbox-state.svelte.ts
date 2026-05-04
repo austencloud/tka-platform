@@ -9,7 +9,7 @@ import type {
   Conversation,
 } from "$lib/shared/messaging/domain/models/conversation-models";
 import type { Message } from "$lib/shared/messaging/domain/models/message-models";
-import type { UserNotification } from "$lib/features/feedback/domain/models/notification-models";
+import type { UserNotification } from "$lib/shared/notifications/domain/models/notification-models";
 
 // Inbox tab types
 export type InboxTab = "messages" | "notifications";

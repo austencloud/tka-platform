@@ -5,7 +5,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
 import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
-import type { BrowseViewMode } from "../../domain/BrowseViewMode";
+import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 import type { BrowseEngine } from "$lib/shared/browse/engine/types";
 
 // === From IBrowseDataSource ===

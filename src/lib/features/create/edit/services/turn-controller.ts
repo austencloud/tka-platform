@@ -1,4 +1,4 @@
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 const turnValues = [0, 0.5, 1, 1.5, 2, 2.5, 3];
 

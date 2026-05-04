@@ -7,13 +7,13 @@
 
 import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, loadSequencesByIds } from "$lib/features/choreo-card/services/deck-loader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-  import { getThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/getThumbnailRenderOrchestrator";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import { onMount, onDestroy } from "svelte";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
-  import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
+  import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import ChoreoCardNavigation from "./Navigation.svelte";
   import ChoreoCardFilters from "./ChoreoCardFilters.svelte";
   import ChoreoCardExport from "./ChoreoCardExport.svelte";
@@ -26,7 +26,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
-  import { buildChoreoCardContextMenuItems } from "./context-menu/CardDesignerContextMenuBuilder";
+  import { buildChoreoCardContextMenuItems } from "$lib/shared/choreo-card/services/CardDesignerContextMenuBuilder";
 
 
   // Services

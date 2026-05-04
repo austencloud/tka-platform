@@ -14,7 +14,7 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { buildThumbnailUrl } from "../../state/send-sequence-state.svelte";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     attachment: MessageAttachment;

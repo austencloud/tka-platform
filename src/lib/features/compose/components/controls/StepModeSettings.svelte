@@ -6,7 +6,7 @@
   Only rendered when playbackMode === "step".
 -->
 <script lang="ts">
-  import type { StepPlaybackStepSize } from "../../state/animation-panel-state.svelte";
+  import type { StepPlaybackStepSize } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
   let {
     stepPlaybackStepSize = 1,

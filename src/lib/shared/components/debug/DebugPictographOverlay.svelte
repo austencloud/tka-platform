@@ -34,7 +34,7 @@
     GridMode,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
   let visible = $state(false);
   let stepData: StepData | null = $state(null);

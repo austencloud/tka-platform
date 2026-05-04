@@ -1,16 +1,16 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceEntry } from "../domain/models/sequence-models";
+import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
 import type { ComponentId } from "../domain/constants/loop-components";
 import {
   LOOPComponent,
   RESERVED_ORIENTATION_PRIMITIVES,
   type LOOPDomain,
-} from "$lib/features/create/generate/shared/domain/models/generate-models";
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { LOOPSpec } from "@tka/sequence-engine/loop";
 import {
   Period,
   type LOOPType,
-} from "$lib/features/create/generate/circular/domain/models/circular-models";
+} from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { loopDetector } from "./implementations/LOOPDetector";
 import { convert as convertSequenceToEntry } from "$lib/features/choreo-card/services/sequence-to-entry-converter";
 import { parseLoopComponents } from "$lib/features/create/generate/shared/services/implementations/loop-type-utils";

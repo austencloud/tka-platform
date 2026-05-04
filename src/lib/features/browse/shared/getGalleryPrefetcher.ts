@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { GalleryPrefetcher } from './services/implementations/GalleryPrefetcher';
-import { getBrowseLoader } from '../sequences/display/getBrowseLoader';
+import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
 import { getGalleryOfflineCache } from '$lib/shared/offline/getGalleryOfflineCache';
 
 let instance: GalleryPrefetcher | null = null;

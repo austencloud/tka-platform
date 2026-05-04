@@ -17,7 +17,7 @@
   import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+  import type { LetterSource } from "$lib/shared/create/domain/spell-models";
 
   type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 

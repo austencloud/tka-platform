@@ -15,7 +15,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { ExtensionAnalysis, CircularizationOption } from "../../services/implementations/SequenceExtender";
-  import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { ExtensionFlowCoordinator } from "../../services/implementations/ExtensionFlowCoordinator";
   import type { SubDrawerType } from "../../services/sub-drawer-state-persister";
   type FirstStepAnalyzer = typeof firstStepAnalyzerModule;

@@ -8,8 +8,8 @@
   import type {
     TipEffortMap,
   } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
-  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
-  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
+  import type { EffortId } from "$lib/shared/effort/domain/effort-types";
+  import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
   import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 
   type Scope = "cell" | "hand" | "tip";

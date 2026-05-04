@@ -1,9 +1,9 @@
 <!-- FeedbackKanbanCard - Compact card for Kanban board -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { FeedbackItem } from "../../domain/models/feedback-models";
+  import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
   import {
-    TYPE_CONFIG, PRIORITY_CONFIG, } from "../../domain/models/feedback-models";
+    TYPE_CONFIG, PRIORITY_CONFIG, } from "$lib/shared/feedback/domain/models/feedback-models";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import type { ClaimHealth } from "../../services/contracts/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";

@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
 	applyEffort,
 	sampleEffortCurve,
-} from "../../src/lib/features/effort-lab/domain/effort-easing-unified";
-import type { EffortId } from "../../src/lib/features/effort-lab/domain/effort-types";
+} from "../../src/lib/shared/effort/domain/effort-easing-unified";
+import type { EffortId } from "../../src/lib/shared/effort/domain/effort-types";
 
 const ALL_EFFORTS: EffortId[] = [
 	"linear",

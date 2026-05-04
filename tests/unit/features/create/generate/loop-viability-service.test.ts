@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { checkLoopViability } from "$lib/features/create/generate/shared/services/loop-viability-service";
-import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
 
 describe("LoopViabilityService", () => {

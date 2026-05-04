@@ -1,5 +1,5 @@
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
   GridLocation,

@@ -15,22 +15,22 @@
   import { onMount } from "svelte";
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
+  import { getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
   import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
-  import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
-  import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
+  import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import HowTkaAnimationCard from "./HowTkaAnimationCard.svelte";
 
   interface Props {

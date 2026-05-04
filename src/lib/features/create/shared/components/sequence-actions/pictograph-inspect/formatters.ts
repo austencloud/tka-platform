@@ -3,7 +3,7 @@
  *
  * Pure functions for formatting pictograph data as text.
  */
-import type { StepData } from "../../../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import DefaultPropPositioner from "$lib/shared/pictograph/prop/services/implementations/DefaultPropPositioner";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

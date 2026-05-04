@@ -5,7 +5,7 @@
   Designed for widescreen desktop use with easy copy-paste for AI agents.
 -->
 <script lang="ts">
-  import type { StepData } from "../../domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { generateOrientationKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";

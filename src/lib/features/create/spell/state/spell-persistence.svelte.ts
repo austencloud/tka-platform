@@ -13,7 +13,7 @@
 
 import { browser } from "$app/environment";
 import type { SpellPreferences } from "../domain/models/spell-models";
-import { DEFAULT_SPELL_PREFERENCES } from "../domain/constants/spell-constants";
+import { DEFAULT_SPELL_PREFERENCES } from "$lib/shared/create/domain/spell-constants";
 import { debounce } from "$lib/shared/utils/debounce";
 
 // ============================================================================

@@ -11,8 +11,8 @@
 import type {
   FeedbackItem,
   FeedbackType,
-} from "../domain/models/feedback-models";
-import { feedbackService } from "../services/implementations/FeedbackRepository";
+} from "$lib/shared/feedback/domain/models/feedback-models";
+import { feedbackService } from "$lib/shared/feedback/services/implementations/FeedbackRepository";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";

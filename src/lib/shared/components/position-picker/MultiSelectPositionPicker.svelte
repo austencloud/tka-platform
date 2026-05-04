@@ -19,7 +19,7 @@ Uses blocklist approach: positions in blockedPositions are excluded.
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import { createStartPositionVariations } from "./start-position-utils";
-  import { startPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
+  import { startPositionManager } from "$lib/shared/create/services/StartPositionManager";
 
   let {
     blockedPositions = [],

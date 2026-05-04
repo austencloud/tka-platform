@@ -10,14 +10,14 @@
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { quickFeedbackState } from "../../state/quick-feedback-state.svelte";
+  import { quickFeedbackState } from "$lib/shared/feedback/state/quick-feedback-state.svelte";
   import {
     getSharedFeedbackSubmitState,
     resetSharedFeedbackSubmitState,
   } from "../../state/feedback-submit-state.svelte";
   import FeedbackForm from "../submit/FeedbackForm.svelte";
-  import { TYPE_CONFIG } from "../../domain/models/feedback-models";
-  import type { FeedbackType } from "../../domain/models/feedback-models";
+  import { TYPE_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
+  import type { FeedbackType } from "$lib/shared/feedback/domain/models/feedback-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'

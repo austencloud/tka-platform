@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
 
-import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
+import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
 import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
   import { onMount, onDestroy, untrack } from "svelte";
@@ -16,18 +16,18 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
-  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
 
-  import { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-  import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-  import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
-  import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
+  import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+  import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
+  import { AnimationLoop } from "$lib/shared/animation-engine/services/implementations/AnimationLoop";
 
   // Auto-chaining
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
@@ -45,6 +45,11 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
 
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import SourceControls from "$lib/shared/animation-engine/components/SourceControls.svelte";
+  import SequenceHistoryPanel from "./SequenceHistoryPanel.svelte";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
+  import { saveSequence as persistSaveSequence } from "$lib/shared/persistence/services/dexie-persistence-service";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
   const DEFAULT_BPM = 60;
   const STORAGE_KEY = "effects-lab-state";
@@ -242,7 +247,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       );
 
       chainingOrchestrator = new SequenceChainingOrchestrator(spinnerOrch, infiniteGen);
-      chainingOrchestrator.onSequenceSwapped((seq) => { sequence = seq; });
+      chainingOrchestrator.onSequenceSwapped((seq) => { sequence = seq; pushHistory(seq); });
       chainingOrchestrator.onError((msg) => { error = msg; });
       await chainingOrchestrator.initialize(playbackController, animationState);
 
@@ -295,6 +300,7 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   async function handleSequenceSelected(seq: SequenceData) {
     showPicker = false;
     sequence = seq;
+    pushHistory(seq);
     await loadAnimation();
   }
 
@@ -372,42 +378,71 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     await chainingOrchestrator?.shuffle();
   }
 
-  // ─── Debug: copy current sequence data to clipboard ─────────────
-  let debugToast = $state<string | null>(null);
-  let debugToastTimer: ReturnType<typeof setTimeout> | null = null;
+  // ─── Copy / Save / History ─────────────────────────────────────
+  const MAX_HISTORY = 30;
+  const copier = getClaudeCodeCopier();
 
-  function captureSequenceDebugData() {
-    const seqData = animationState.sequenceData;
-    if (!seqData) {
-      showDebugToast("No sequence loaded");
-      return;
-    }
-
-    const debugPayload = {
-      word: seqData.word ?? seqData.name ?? "unknown",
-      stepCount: seqData.steps?.length ?? 0,
-      gridMode: seqData.gridMode,
-      startPosition: seqData.startPosition,
-      steps: seqData.steps?.map((step, i) => ({
-        beat: i,
-        letter: step.letter,
-        startPosition: step.startPosition,
-        endPosition: step.endPosition,
-        motions: step.motions,
-      })),
-    };
-
-    const json = JSON.stringify(debugPayload, null, 2);
-    navigator.clipboard.writeText(json).then(
-      () => showDebugToast(`Copied ${debugPayload.stepCount} steps`),
-      () => showDebugToast("Clipboard write failed"),
-    );
+  interface HistoryEntry {
+    word: string;
+    stepCount: number;
+    gridMode?: string;
+    timestamp: number;
+    sequenceData: SequenceData;
   }
 
-  function showDebugToast(msg: string) {
-    debugToast = msg;
-    if (debugToastTimer) clearTimeout(debugToastTimer);
-    debugToastTimer = setTimeout(() => { debugToast = null; }, 2000);
+  let sequenceHistory = $state<HistoryEntry[]>([]);
+
+  function pushHistory(seq: SequenceData) {
+    const entry: HistoryEntry = {
+      word: seq.word ?? seq.name ?? "unknown",
+      stepCount: seq.steps?.length ?? 0,
+      gridMode: seq.gridMode,
+      timestamp: Date.now(),
+      sequenceData: seq,
+    };
+    sequenceHistory = [entry, ...sequenceHistory].slice(0, MAX_HISTORY);
+  }
+
+  async function getDebugData(): Promise<string> {
+    const seqData = animationState.sequenceData;
+    if (!seqData) return "No sequence loaded";
+    return copier.generatePrompt(seqData);
+  }
+
+  async function getHistoryDebugData(seq: SequenceData): Promise<string> {
+    return copier.generatePrompt(seq);
+  }
+
+  async function saveCurrentSequence() {
+    const seqData = animationState.sequenceData;
+    if (!seqData) {
+      toast.error("No sequence to save");
+      return;
+    }
+    try {
+      const plain: SequenceData = JSON.parse(JSON.stringify(seqData));
+      await persistSaveSequence(plain);
+      toast.success(`Saved "${plain.word ?? plain.name ?? "sequence"}"`);
+    } catch (err) {
+      console.error("Failed to save sequence:", err);
+      toast.error("Save failed");
+    }
+  }
+
+  async function saveHistoryEntry(entry: { sequenceData: unknown }) {
+    try {
+      const plain: SequenceData = JSON.parse(JSON.stringify(entry.sequenceData));
+      await persistSaveSequence(plain);
+      toast.success(`Saved "${plain.word ?? plain.name ?? "sequence"}"`);
+    } catch (err) {
+      console.error("Failed to save sequence:", err);
+      toast.error("Save failed");
+    }
+  }
+
+  function viewHistoryEntry(entry: { sequenceData: unknown }) {
+    const seq = JSON.parse(JSON.stringify(entry.sequenceData)) as SequenceData;
+    openSequenceViewer(seq, { returnPath: "/effects-lab", returnLabel: "Effects Lab" });
   }
 
   // ─── Keyboard shortcuts ────────────────────────────────────────────
@@ -420,10 +455,9 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
       togglePlayback();
     }
 
-    // Press D to capture current sequence data to clipboard for debugging
     if (e.code === "KeyD" && !e.repeat) {
       e.preventDefault();
-      captureSequenceDebugData();
+      getDebugData().then((data) => navigator.clipboard.writeText(data)).catch(() => {});
     }
   }
 </script>
@@ -504,6 +538,15 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
         onPick={() => (showPicker = true)}
         onSkip={handleSkip}
         onShuffle={handleShuffle}
+        {getDebugData}
+        onSave={saveCurrentSequence}
+      />
+
+      <SequenceHistoryPanel
+        entries={sequenceHistory}
+        getEntryData={(entry) => getHistoryDebugData(entry.sequenceData as SequenceData)}
+        onSave={saveHistoryEntry}
+        onView={viewHistoryEntry}
       />
 
       <EffectsPanel
@@ -516,11 +559,6 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     </div>
   </div>
 </div>
-
-<!-- Debug toast -->
-{#if debugToast}
-  <div class="debug-toast">{debugToast}</div>
-{/if}
 
 <!-- Sequence Picker Modal -->
 <SequencePickerModal
@@ -641,19 +679,4 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
     }
   }
 
-  .debug-toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: #4fc3f7;
-    padding: 8px 20px;
-    border-radius: 8px;
-    font-size: var(--font-size-sm, 14px);
-    font-family: monospace;
-    z-index: 9999;
-    pointer-events: none;
-    border: 1px solid rgba(79, 195, 247, 0.3);
-  }
 </style>

@@ -9,7 +9,7 @@
   import { fade } from "svelte/transition";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SpinnerMode, SpinnerMetrics } from "../domain/models/spinner-models";
-  import type { SpinnerStats } from "../services/contracts/types";
+  import type { SpinnerStats } from "$lib/shared/landing/domain/types";
 
   let {
     mode,

@@ -14,7 +14,7 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type { Composition } from "../../compose/domain/types";
+import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
 import {
   saveComposition as dexieSaveComposition,
   deleteComposition as dexieDeleteComposition,

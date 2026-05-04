@@ -15,8 +15,8 @@
 import {
   VIDEO_EXPORT_FPS,
   VIDEO_INITIAL_CAPTURE_DELAY_MS,
-} from "../../shared/domain/constants/timing";
-import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
+} from "$lib/shared/animation-engine/domain/constants/timing";
+import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import {
   downloadBlob,
   generateTimestampedFilename,
@@ -26,9 +26,9 @@ import {
   getHeaderHeight,
   getProgressBarHeight,
 } from "../canvas-renderer";
-import type { VideoExporter } from "../implementations/VideoExporter";
-import type { CompositeVideoRenderer } from "../implementations/CompositeVideoRenderer";
-import type { ExportGlyphPrerenderer } from "../implementations/ExportGlyphPrerenderer";
+import type { VideoExporter } from "$lib/shared/animation-engine/services/implementations/VideoExporter";
+import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/implementations/CompositeVideoRenderer";
+import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
 import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
 
 export type VideoExportFormat = "webm" | "mp4";
@@ -78,10 +78,10 @@ export interface VideoExportOrchestratorOptions {
   /** Called after export completes (success or failure) to reset transient state like fire caches */
   onCleanup?: () => void;
 }
-import type { BackgroundVideoEncoder } from "../implementations/BackgroundVideoEncoder";
+import type { BackgroundVideoEncoder } from "$lib/shared/animation-engine/services/implementations/BackgroundVideoEncoder";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
-import { getExportDimensions, calculateBitrate } from "../../shared/domain/video-export-calculations";
+import { getExportDimensions, calculateBitrate } from "$lib/shared/animation-engine/domain/video-export-calculations";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";

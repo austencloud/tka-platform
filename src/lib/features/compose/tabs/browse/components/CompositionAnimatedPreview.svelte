@@ -8,13 +8,13 @@
 -->
 <script lang="ts">
 
-import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
+import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
 	import { onMount, onDestroy } from "svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-	import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-	import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
-	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-	import type { CellConfig, GridLayout } from "../../../compose/domain/types";
+	import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+	import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
+	import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+	import type { CellConfig, GridLayout } from "$lib/shared/animation-engine/domain/compose-types";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 	const {

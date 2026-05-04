@@ -9,7 +9,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { ExtensionFlowStart, BridgeAppendResult, ExtensionApplyResult } from "./SequenceExtender";
 import type { SequenceExtender } from "./SequenceExtender";
-import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
 export class ExtensionFlowCoordinator {
   constructor(private readonly sequenceExtender: SequenceExtender) {}

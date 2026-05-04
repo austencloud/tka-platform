@@ -6,7 +6,7 @@
  * while maintaining backward compatibility.
  */
 
-import type { StepData } from "../../../../../features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { createPictographData } from "../factories/createPictographData";
 import type { PictographData } from "../models/PictographData";
 

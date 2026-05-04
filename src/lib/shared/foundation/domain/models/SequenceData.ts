@@ -1,5 +1,5 @@
 ﻿import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
+import type { EffortTimeline } from "$lib/shared/effort/domain/effort-timeline-types";
 import type { TimeSignatureKey } from "./TimeSignature";
 import type { CreatorIntent } from "./CreatorIntent";
 /**
@@ -12,15 +12,15 @@ import type { CreatorIntent } from "./CreatorIntent";
  * The steps array should only contain actual steps (stepNumber >= 1), never start position.
  */
 
-import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { GridPositionGroup } from "../../../pictograph/grid/domain/enums/grid-enums";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
-import type { LOOPType } from "../../../../features/create/generate/circular/domain/models/circular-models";
+import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type {
   LOOPComponent,
   LOOPDomain,
-} from "../../../../features/create/generate/shared/domain/models/generate-models";
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { LOOPSpec } from "@tka/sequence-engine/loop";
 import type { SoloPropData } from "./SoloPropData";
 import type { StepPairingData } from "./StepPairingData";

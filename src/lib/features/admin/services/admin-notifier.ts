@@ -14,8 +14,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { AdminNotification } from "$lib/features/feedback/domain/models/notification-models";
-import { getPreferenceKeyForType } from "$lib/features/feedback/domain/models/notification-models";
+import type { AdminNotification } from "$lib/shared/feedback/domain/models/notification-models";
+import { getPreferenceKeyForType } from "$lib/shared/feedback/domain/models/notification-models";
 
 import { getPreferences } from "$lib/features/feedback/services/notification-preferences-manager";
 

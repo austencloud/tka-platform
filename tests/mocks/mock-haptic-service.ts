@@ -5,7 +5,7 @@ import type {
   HapticNotificationType,
   IHapticFeedback,
 } from "$lib/shared/application/services/contracts/IHapticFeedback";
-import type { EffortId, EffortParams } from "$lib/features/effort-lab/domain/effort-types";
+import type { EffortId, EffortParams } from "$lib/shared/effort/domain/effort-types";
 
 interface HapticCall {
   method: string;

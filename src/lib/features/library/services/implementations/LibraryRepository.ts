@@ -40,7 +40,7 @@ import {
 } from "../../domain/models/library-schemas";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
-import type { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
+import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 import type { PublicIndexSyncer } from "./PublicIndexSyncer";
 import type { ConflictResolver } from "../../../../shared/offline/services/implementations/ConflictResolver";
 import { computeHash } from "../sequence-content-hasher";
@@ -57,7 +57,7 @@ import { createLibrarySequence } from "$lib/shared/library/domain/models/Library
 import {
   getUserSequencesPath,
   getUserSequencePath,
-} from "../../data/firestore-paths";
+} from "$lib/shared/library/data/firestore-paths";
 import {
   notifyLibraryMutated,
   notifyLibrarySequenceAdded,

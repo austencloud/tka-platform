@@ -16,15 +16,15 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
 	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
-	import { createAnimationPanelState, type AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+	import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";

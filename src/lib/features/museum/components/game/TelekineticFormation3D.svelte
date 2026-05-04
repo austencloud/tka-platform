@@ -27,7 +27,7 @@
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { GridMode } from "$lib/shared/3d/domain/constants/grid-layout";
   import { MUSEUM_EXHIBIT_SEQUENCES, type MuseumSequenceData } from "../../data/museum-exhibit-sequences";
 

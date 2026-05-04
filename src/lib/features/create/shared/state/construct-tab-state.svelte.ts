@@ -12,19 +12,19 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
-import { createSimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
+import { createSimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 const debug = createComponentLogger("ConstructTabState");
-import { createStartPositionData } from "../domain/factories/createStartPositionData";
+import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
 import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
-import { reversalDetector, type ReversalDetector } from "../services/reversal-detector";
+import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { UndoMetadata } from "../services/implementations/UndoManager";

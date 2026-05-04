@@ -7,14 +7,14 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
 	import { onMount, onDestroy, untrack } from "svelte";
 	import { getFuseContext } from "../context/fuse-context";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-	import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+	import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
 	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 

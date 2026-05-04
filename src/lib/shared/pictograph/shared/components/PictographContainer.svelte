@@ -35,7 +35,7 @@ with pre-prepared data for better performance.
   import { pictographPreparer } from "../services/implementations/PictographPreparer";
   import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
   import type { PictographData } from "../domain/models/PictographData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { PropType } from "../../prop/domain/enums/PropType";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";

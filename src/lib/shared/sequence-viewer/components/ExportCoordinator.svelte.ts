@@ -10,8 +10,8 @@
  * Extracted from SequenceViewerOrchestrator.
  */
 
-import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";

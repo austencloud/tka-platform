@@ -12,7 +12,7 @@
     EffectType,
   } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
-  import type { CellEffect } from "$lib/features/compose/compose/domain/types";
+  import type { CellEffect } from "$lib/shared/animation-engine/domain/compose-types";
 
   const SHIPPED_CELL_EFFECTS = new Set<string>(["none", "fire", "charcoal", "led", "trails"]);
   function asCellEffect(e: EffectType): CellEffect {

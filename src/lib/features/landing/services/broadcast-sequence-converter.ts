@@ -5,10 +5,10 @@
  * internal sequence formats used by the animation engine.
  */
 
-import type { BroadcastSequence, BroadcastStepData } from "../domain/models/broadcast-models";
+import type { BroadcastSequence, BroadcastStepData } from "$lib/shared/landing/domain/broadcast-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { GridPosition, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {

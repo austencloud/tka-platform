@@ -1,5 +1,5 @@
-import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 /** Converts a PublicSequenceIndex doc into a SequenceData for gallery display. */

@@ -14,7 +14,7 @@
     navigationState,
     MODULE_DEFINITIONS,
   } from "../../state/navigation-state.svelte";
-  import { sequencePanelManager } from "$lib/features/browse/shared/state/sequence-panel-state.svelte";
+  import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import { adminToolbarState } from "$lib/shared/debug/state/admin-toolbar-state.svelte";
 

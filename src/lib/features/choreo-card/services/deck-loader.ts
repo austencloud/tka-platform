@@ -3,7 +3,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { Deck } from "../domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -12,8 +12,8 @@ import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   getSystemDecksPath,
   getSystemDeckSequencesPath,
-} from "$lib/features/library/data/firestore-paths";
-import { reversalDetector } from "$lib/features/create/shared/services/reversal-detector";
+} from "$lib/shared/library/data/firestore-paths";
+import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 
 /**
  * Derive the TKA letter from a grid position string.

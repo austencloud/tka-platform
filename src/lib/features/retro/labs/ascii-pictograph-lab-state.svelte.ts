@@ -22,8 +22,8 @@ import type {
 } from "$lib/features/retro/shared/domain/pictograph-types";
 import type { VariationExplorationOrchestrator } from "../../create/spell/services/implementations/VariationExplorationOrchestrator";
 import type { RandomSequenceGenerator } from "../../create/spell/services/implementations/RandomSequenceGenerator";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 
 import { getRandomSequenceGenerator } from "$lib/features/create/spell/getRandomSequenceGenerator";
 import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/getVariationExplorationOrchestrator";

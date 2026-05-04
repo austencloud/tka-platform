@@ -31,7 +31,7 @@
   import { mapOrientationToAngle } from "$lib/shared/3d/services/orientation-mapper";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
+  import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { STAGE } from "$lib/shared/3d/scale/scale-constants";
   import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";

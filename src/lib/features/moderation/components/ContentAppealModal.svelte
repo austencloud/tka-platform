@@ -12,7 +12,7 @@
 	import { getContentAppealManager } from '$lib/features/moderation/getContentAppealManager';
 	import type { FlaggedTerm, CreateAppealData } from '../domain/models/content-moderation-models';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
-	import TKAWordGlyph from '$lib/features/choreo-card/components/TKAWordGlyph.svelte';
+	import TKAWordGlyph from '$lib/shared/choreo-card/components/TKAWordGlyph.svelte';
 
 	interface Props {
 		/** The word/content that was flagged */

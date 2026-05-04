@@ -11,7 +11,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import type { BrowseEngine } from "../engine/types";
-  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+  import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import ExpandableSearchBar from "$lib/features/browse/shared/components/ExpandableSearchBar.svelte";
   import LevelFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
   import FavoritesFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/FavoritesFilterChip.svelte";

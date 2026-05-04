@@ -1,11 +1,3 @@
-/**
- * fullscreen-controller.svelte.ts
- *
- * Reactive module that manages fullscreen state and auto-hiding controls overlay.
- *
- * Extracted from SequenceViewerOrchestrator.
- */
-
 import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
 export interface FullscreenControllerDeps {

@@ -10,7 +10,7 @@
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
   import { onMount } from "svelte";
   import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";

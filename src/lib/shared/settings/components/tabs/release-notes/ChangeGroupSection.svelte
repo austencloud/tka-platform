@@ -3,14 +3,14 @@
   import type {
     ChangelogCategory,
     ChangelogEntry,
-  } from "$lib/features/feedback/domain/models/version-models";
-  import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
+  } from "$lib/shared/versioning/domain/models/version-models";
+  import type { Contributor } from "$lib/shared/versioning/domain/models/contributor-models";
   import {
     CATEGORY_ICONS,
     CATEGORY_LABELS,
     CATEGORY_PLACEHOLDERS,
     CATEGORY_ADD_LABELS,
-  } from "$lib/features/feedback/domain/constants/changelog-constants";
+  } from "$lib/shared/versioning/domain/constants/changelog-constants";
   import EditableChangelogItem from "./EditableChangelogItem.svelte";
 
   let {

@@ -14,7 +14,7 @@
 
   import { fade } from "svelte/transition";
   import type { IToolPanelMethods } from "../types/create-module-types";
-  import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+  import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import WorkspacePanel from "../workspace-panel/core/WorkspacePanel.svelte";
   import DurationPreviewWorkspace from "./sequence-actions/DurationPreviewWorkspace.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";

@@ -21,7 +21,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
-  import { getClaudeCodeCopier } from "$lib/features/browse/sequences/display/getClaudeCodeCopier";
+  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
@@ -43,8 +43,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
-  import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
-  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   const overlay = getSequenceOverlayState();
 

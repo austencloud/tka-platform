@@ -16,7 +16,7 @@ import type { SequencePersister } from "$lib/features/create/shared/services/imp
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
-import { reversalDetector, type ReversalDetector } from "../services/reversal-detector";
+import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import { createAssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
@@ -28,8 +28,8 @@ import {
   lookupLetter,
 } from "$lib/features/assemble-lab/services/builder-step-converter";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createStepData } from "../domain/factories/createStepData";
-import { createStartPositionData } from "../domain/factories/createStartPositionData";
+import { createStepData } from "$lib/shared/create/factories/createStepData";
+import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
 export function createAssembleTabState(

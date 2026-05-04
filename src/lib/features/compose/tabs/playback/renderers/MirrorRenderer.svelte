@@ -26,9 +26,9 @@
     isPlaying?: boolean;
     speed?: number;
     shouldLoop?: boolean;
-    playbackMode?: import("../../../state/animation-panel-state.svelte").PlaybackMode;
+    playbackMode?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
     stepPlaybackPauseMs?: number;
-    stepPlaybackStepSize?: import("../../../state/animation-panel-state.svelte").StepPlaybackStepSize;
+    stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
     onOpenSettings: (canvasId: string) => void;
   } = $props();
 </script>

@@ -10,7 +10,7 @@ Haptic feedback on letter selection.
   import {
     GREEK_LETTER_PALETTE,
     GREEK_LETTER_DISPLAY,
-  } from "../domain/constants/spell-constants";
+  } from "$lib/shared/create/domain/spell-constants";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   let {

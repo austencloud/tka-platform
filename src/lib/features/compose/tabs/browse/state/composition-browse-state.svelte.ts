@@ -7,7 +7,7 @@
  */
 
 import type { AnimationMode } from "../../../shared/domain/AnimationMode";
-import type { CellConfig, Composition, GridLayout } from "../../../compose/domain/types";
+import type { CellConfig, Composition, GridLayout } from "$lib/shared/animation-engine/domain/compose-types";
 import { getComposition as dexieGetComposition } from "../../../services/dexie-composition-repository";
 import { compositionSyncer } from "../../../services/implementations/CompositionSyncer";
 

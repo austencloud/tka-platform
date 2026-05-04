@@ -4,7 +4,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import type { VariationConstraints } from "../../domain/models/spell-models";
 import type { ConstraintSet } from "$lib/shared/sequence-engine/constraints/types";
 import type { LetterSource } from "../../domain/models/spell-models";
-import type { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { SpellPreferences } from "../../domain/models/spell-models";
 
 /**

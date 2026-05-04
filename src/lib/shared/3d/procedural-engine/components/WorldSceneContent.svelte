@@ -60,9 +60,9 @@
 
   // Museum
   import MuseumGrounds from "$lib/features/museum/scenes/procedural/components/MuseumGrounds.svelte";
-  import { createMuseumState } from "$lib/features/museum/scenes/procedural/state/museum-state.svelte";
-  import { findInteractableSlot } from "$lib/features/museum/scenes/procedural/services/interaction-detector";
-  import { setActiveMuseumState } from "$lib/features/museum/scenes/procedural/state/museum-state-bridge.svelte";
+  import { createMuseumState } from "$lib/shared/museum/state/museum-state.svelte";
+  import { findInteractableSlot } from "$lib/shared/museum/services/interaction-detector";
+  import { setActiveMuseumState } from "$lib/shared/museum/state/museum-state-bridge.svelte";
 
   // Archive (The Kinetic Archive) - standalone via ArchiveDestination + IndoorScene
 

@@ -9,7 +9,7 @@
    * Add media button
    */
 
-  import { getTimelineState } from "../state/timeline-state.svelte";
+  import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import SnapControls from "./SnapControls.svelte";
   import TimeSignatureChip from "./TimeSignatureChip.svelte";

@@ -3,12 +3,12 @@
   import { replaceState } from "$app/navigation";
   import { onMount, onDestroy } from "svelte";
   import { createMyFeedbackState } from "../../state/my-feedback-state.svelte";
-  import { myFeedbackDetailState } from "../../state/my-feedback-detail-state.svelte";
+  import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
   import {
     notificationTargetState,
     takeNotificationTargetFeedback,
     setNotificationTargetFeedback,
-  } from "../../state/notification-action-state.svelte";
+  } from "$lib/shared/feedback/state/notification-action-state.svelte";
   import { useUserPreview } from "$lib/shared/debug/context/user-preview-context";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import MyFeedbackList from "./MyFeedbackList.svelte";

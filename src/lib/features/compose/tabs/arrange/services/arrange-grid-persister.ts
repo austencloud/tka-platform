@@ -11,8 +11,8 @@ import {
   MAX_GRID_SIZE,
   createInitialGrid,
 } from "../state/arrange-grid-state.svelte";
-import type { CellMediaType } from "../../../compose/domain/types";
-import type { TunnelLayerConfig } from "../../../compose/domain/types";
+import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-types";
+import type { TunnelLayerConfig } from "$lib/shared/animation-engine/domain/compose-types";
 import { gridCellsToComposition } from "./arrange-composition-converter";
 import { saveComposition as dexieSaveComposition } from "../../../services/dexie-composition-repository";
 

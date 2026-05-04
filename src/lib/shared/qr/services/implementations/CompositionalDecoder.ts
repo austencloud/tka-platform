@@ -12,9 +12,9 @@
  * Domain: QR - Compositional Encoding
  */
 
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createStartPositionData } from "$lib/features/create/shared/domain/factories/createStartPositionData";
+import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
 import { RECIPE_PREFIX, TAG_TO_LOOP_TYPE } from "../contracts/types";
 import type { ICompositionalDecoder } from "../contracts/types";
 import {

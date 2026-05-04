@@ -23,12 +23,12 @@ import type {
 } from "../contracts/ITrailOverlayCanvas";
 import type { TrailPoint } from "../../domain/types/TrailTypes";
 import { TrackingMode } from "../../domain/types/TrailTypes";
-import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
+import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import { calculatePropCenter } from "$lib/shared/animation-engine/services/prop-position-calculator";
 import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
-import { Canvas2DVisibilityFadeManager } from "$lib/features/compose/services/implementations/canvas2d/Canvas2DVisibilityFadeManager";
+import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DVisibilityFadeManager";
 import { resolveEffect } from "../../domain/types/TipEffectTypes";
 import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 

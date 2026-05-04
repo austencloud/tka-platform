@@ -8,20 +8,20 @@
   import { fade, scale, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import {
     LOOP_ICON_SIZE_SCALE,
   } from "@tka/render-composition";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     sequence: { word?: string };
     showHeader: boolean;
     isBrowseSoloMode: boolean;
     soloColor: "blue" | "red" | undefined;
-    browseViewMode?: import("$lib/features/browse/shared/domain/BrowseViewMode").BrowseViewMode;
+    browseViewMode?: import("$lib/shared/browse/domain/BrowseViewMode").BrowseViewMode;
     showDifficultyLevel: boolean;
     difficultyLevel: number;
     currentLevelStyle: { bg: string; border: string; text: string };

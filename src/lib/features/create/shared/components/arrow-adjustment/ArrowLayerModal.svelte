@@ -9,7 +9,7 @@
 
 import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getArrowAdjustmentOrchestrator";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { StepData } from "../../domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { AdjustmentTargetKey } from "../../services/implementations/ArrowAdjustmentOrchestrator";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import LayerTabBar from "./LayerTabBar.svelte";

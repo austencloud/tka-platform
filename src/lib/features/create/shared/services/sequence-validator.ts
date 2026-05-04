@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { ValidationResult } from "../../../../shared/validation/ValidationResult";
 
 /**

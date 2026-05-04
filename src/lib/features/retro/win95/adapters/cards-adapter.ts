@@ -8,8 +8,8 @@
  * Domain: Retro CARDS App
  */
 
-import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import {
   GridMode,
   GridLocation,

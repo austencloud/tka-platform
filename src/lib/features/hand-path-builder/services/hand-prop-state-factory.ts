@@ -1,6 +1,6 @@
-import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
+import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
+import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
 
 export function locationToPropState(location: GridLocation): PropState {
   return {

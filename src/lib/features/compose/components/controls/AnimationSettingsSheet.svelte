@@ -11,7 +11,7 @@
   import type {
     PlaybackMode,
     StepPlaybackStepSize,
-  } from "../../state/animation-panel-state.svelte";
+  } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {

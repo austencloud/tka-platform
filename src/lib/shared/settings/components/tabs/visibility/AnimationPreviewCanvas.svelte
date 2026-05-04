@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 

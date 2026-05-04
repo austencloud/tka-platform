@@ -3,7 +3,7 @@ import { motionDataToConfig3D, beatDataToConfigs } from "$lib/shared/3d/services
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 describe("SequenceConverter plane passthrough", () => {
   it("reads motion.plane when no modeConfig is active", () => {

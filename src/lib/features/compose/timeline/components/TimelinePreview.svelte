@@ -11,7 +11,7 @@
 -->
 <script lang="ts">
 
-import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
+import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -19,8 +19,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSeque
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import type { TimelineClip } from "../domain/timeline-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-  import type { PropState } from "../../shared/domain/types/PropState";
+  import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { startPositionDeriver as startPositionDeriverSingleton } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 

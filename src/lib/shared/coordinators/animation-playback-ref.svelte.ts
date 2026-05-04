@@ -7,7 +7,7 @@
  * Set by AnimationSheetCoordinator when it mounts, cleared when it unmounts.
  */
 
-import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
 let playbackControllerRef: AnimationPlaybackController | null = null;
 
 export function setAnimationPlaybackRef(

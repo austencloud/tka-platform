@@ -16,7 +16,7 @@ import { authState } from "../../auth/state/authState.svelte";
 import { isModuleAccessible } from "../../auth/domain/guest-access-config";
 import { resolveAccessTier } from "../../auth/domain/AccessTier";
 import { isPremiumOrAbove } from "../../auth/domain/models/UserRole";
-import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
+import { quickFeedbackState } from "$lib/shared/feedback/state/quick-feedback-state.svelte";
 import { saveActiveTab } from "../../settings/utils/tab-persistence.svelte";
 import { adminToolbarState } from "../../debug/state/admin-toolbar-state.svelte";
 import { settingsService } from "../../settings/state/SettingsState.svelte";

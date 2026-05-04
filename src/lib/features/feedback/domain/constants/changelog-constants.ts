@@ -1,4 +1,4 @@
-import type { ChangelogCategory } from "../models/version-models";
+import type { ChangelogCategory } from "$lib/shared/feedback/domain/models/version-models";
 
 export const CATEGORY_ICONS: Record<ChangelogCategory, string> = {
   fixed: "fa-bug",

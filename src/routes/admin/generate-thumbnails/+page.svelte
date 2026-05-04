@@ -8,8 +8,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import {
     MotionType,
     RotationDirection,

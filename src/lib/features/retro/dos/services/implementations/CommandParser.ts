@@ -14,6 +14,9 @@
 import type { DosFileSystem } from "./DosFileSystem";
 import type { DosFile } from "../../domain/dos-types";
 import { terminalState } from "../../state/terminal-state.svelte";
+import { signInWithEmail } from "$lib/shared/auth/services/authenticator";
+import { signOut } from "$lib/shared/auth/state/authState.svelte";
+import { auth } from "$lib/shared/auth/firebase";
 
 export class CommandParser {
 	private readonly fs: DosFileSystem;
@@ -70,6 +73,29 @@ export class CommandParser {
 				break;
 			case "REGISTER":
 				this.handleRegister();
+				break;
+			case "LOGIN":
+				this.handleLogin();
+				break;
+			case "LOGOUT":
+				this.handleLogout();
+				break;
+			case "WHOAMI":
+				this.handleWhoami();
+				break;
+			case "DOOM":
+			case "DOOM.EXE":
+				this.handleDoom();
+				break;
+			case "FORMAT":
+				this.handleFormat(args);
+				break;
+			case "DEL":
+			case "DELETE":
+				this.handleDel(args);
+				break;
+			case "EDIT":
+				this.handleEdit(args);
 				break;
 			default:
 				this.handleUnknown();
@@ -246,9 +272,15 @@ export class CommandParser {
 
 	private handleHelp(args: string[]): void {
 		if (args.includes("/TUTORIAL")) {
-			// Transition to tutorial mode inside SCRIBE
 			terminalState.mode = "scribe";
 			terminalState.scribeMode = "tutorial";
+			return;
+		}
+
+		if (args.includes("/LETHE")) {
+			terminalState.writeLine("Bad command or file name");
+			terminalState.writeBlank();
+			console.log("Nice try.");
 			return;
 		}
 
@@ -267,6 +299,9 @@ export class CommandParser {
 		terminalState.writeLine("  SCRIBE         Launch the SCRIBE notation utility");
 		terminalState.writeLine("  GENERATE <w>   Generate a sequence for word <w>");
 		terminalState.writeLine("  SPELL <w>      Spell a word using TKA letters");
+		terminalState.writeLine("  LOGIN          Sign in to Bellweather system");
+		terminalState.writeLine("  LOGOUT         Sign out");
+		terminalState.writeLine("  WHOAMI         Display current user");
 		terminalState.writeLine("  REGISTER       Software registration");
 		terminalState.writeBlank();
 		terminalState.writeLine("  All commands are case-insensitive.");
@@ -288,14 +323,12 @@ export class CommandParser {
 
 	private handleGenerate(args: string[]): void {
 		if (args.length === 0) {
-			// No word provided - launch generate mode interactively
 			terminalState.mode = "scribe";
 			terminalState.scribeMode = "generate";
 			return;
 		}
 
-		// Launch generate mode - the word will be passed via terminal state
-		// or handled by the generate component reading the args
+		terminalState.pendingWord = args[0]!;
 		terminalState.mode = "scribe";
 		terminalState.scribeMode = "generate";
 	}
@@ -409,6 +442,204 @@ export class CommandParser {
 
 	/** Saved prompt string to restore after the REGISTER dialog */
 	private savedPrompt = "C:\\BELLWTHR>";
+
+	/* ------------------------------------------------------------------ */
+	/* LOGIN - Firebase email/password authentication                      */
+	/* ------------------------------------------------------------------ */
+
+	private handleLogin(): void {
+		if (auth.currentUser) {
+			terminalState.writeLine(
+				`Already authenticated as ${auth.currentUser.displayName ?? auth.currentUser.email}.`,
+			);
+			terminalState.writeBlank();
+			return;
+		}
+
+		terminalState.writeBlank();
+		terminalState.writeLine("BELLWEATHER AUTHENTICATION SYSTEM", "white");
+		terminalState.writeBlank();
+
+		const savedPrompt = terminalState.promptString;
+		terminalState.promptString = "E-mail: ";
+
+		terminalState.inputHandler = (email: string) => {
+			if (!email) {
+				terminalState.inputHandler = null;
+				terminalState.promptString = savedPrompt;
+				return;
+			}
+
+			terminalState.promptString = "Password: ";
+			terminalState.inputMask = true;
+
+			terminalState.inputHandler = (password: string) => {
+				terminalState.inputHandler = null;
+				terminalState.inputMask = false;
+				terminalState.promptString = savedPrompt;
+
+				if (!password) return;
+
+				terminalState.writeLine("Authenticating...");
+				signInWithEmail(email, password)
+					.then(() => {
+						const user = auth.currentUser;
+						const name = user?.displayName ?? user?.email ?? "unknown";
+						terminalState.writeBlank();
+						terminalState.writeLine(`Welcome, ${name}. Access granted.`, "white");
+						terminalState.writeBlank();
+						this.updatePromptForAuth();
+					})
+					.catch(() => {
+						terminalState.writeBlank();
+						terminalState.writeLine(
+							"ACCESS DENIED: Credentials not recognized.",
+							"red",
+						);
+						terminalState.writeBlank();
+					});
+			};
+		};
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* LOGOUT - Sign out of Firebase                                       */
+	/* ------------------------------------------------------------------ */
+
+	private handleLogout(): void {
+		if (!auth.currentUser) {
+			terminalState.writeLine("Not currently authenticated.");
+			terminalState.writeBlank();
+			return;
+		}
+
+		signOut().then(() => {
+			terminalState.writeLine("Signed out. Session terminated.");
+			terminalState.writeBlank();
+			terminalState.authenticatedUser = null;
+			terminalState.promptString = "C:\\BELLWTHR>";
+		});
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* WHOAMI - Show current user                                          */
+	/* ------------------------------------------------------------------ */
+
+	private handleWhoami(): void {
+		const user = auth.currentUser;
+		if (!user) {
+			terminalState.writeLine("Not authenticated. Type LOGIN to sign in.");
+			terminalState.writeBlank();
+			return;
+		}
+
+		terminalState.writeBlank();
+		if (user.displayName) {
+			terminalState.writeLine(`  Name:  ${user.displayName}`);
+		}
+		if (user.email) {
+			terminalState.writeLine(`  Email: ${user.email}`);
+		}
+		terminalState.writeLine(`  UID:   ${user.uid}`);
+		terminalState.writeBlank();
+	}
+
+	/** Update prompt and terminal state to reflect auth */
+	updatePromptForAuth(): void {
+		const user = auth.currentUser;
+		if (user) {
+			const label = user.displayName ?? user.email ?? "user";
+			terminalState.authenticatedUser = label;
+			terminalState.promptString = `C:\\BELLWTHR [${label}]>`;
+		} else {
+			terminalState.authenticatedUser = null;
+			terminalState.promptString = "C:\\BELLWTHR>";
+		}
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Easter eggs                                                         */
+	/* ------------------------------------------------------------------ */
+
+	private handleDoom(): void {
+		terminalState.writeLine(
+			"DOOM.EXE not found. Insufficient memory. Nice try.",
+		);
+		terminalState.writeBlank();
+	}
+
+	private handleFormat(args: string[]): void {
+		if (!args.some((a) => a.startsWith("C"))) {
+			terminalState.writeLine("Required parameter missing");
+			terminalState.writeBlank();
+			return;
+		}
+
+		terminalState.writeLine("WARNING, ALL DATA ON NON-REMOVABLE DISK");
+		terminalState.writeLine("DRIVE C: WILL BE LOST!");
+
+		let progress = 0;
+		const interval = setInterval(() => {
+			progress += Math.floor(Math.random() * 8) + 3;
+			if (progress >= 99) {
+				clearInterval(interval);
+				terminalState.writeLine(
+					"FORMAT ABORTED: Cannot format active notation archive.",
+					"red",
+				);
+				terminalState.writeBlank();
+				return;
+			}
+			terminalState.writeLine(`  ${progress} percent completed.`);
+		}, 200);
+	}
+
+	private handleDel(args: string[]): void {
+		if (args.includes("*.*")) {
+			const savedPrompt = terminalState.promptString;
+			terminalState.writeLine(
+				`All files in ${this.fs.getCurrentPath()}\\? Are you sure (Y/N)?`,
+			);
+			terminalState.promptString = "";
+
+			terminalState.inputHandler = (input: string) => {
+				terminalState.inputHandler = null;
+				terminalState.promptString = savedPrompt;
+
+				if (input.toUpperCase() === "Y") {
+					terminalState.writeLine(
+						"ERROR: Notation archives are protected by Order Directive 7.",
+						"red",
+					);
+				}
+				terminalState.writeBlank();
+			};
+			return;
+		}
+
+		terminalState.writeLine("File not found");
+		terminalState.writeBlank();
+	}
+
+	private handleEdit(args: string[]): void {
+		if (args.some((a) => a.includes("CONFIG"))) {
+			terminalState.writeBlank();
+			terminalState.writeLine("DEVICE=C:\\SYSTEM\\KINETIC.SYS");
+			terminalState.writeLine("DEVICE=C:\\SYSTEM\\SPIRAL.DRV");
+			terminalState.writeLine("DEVICE=C:\\SYSTEM\\GRID.DRV");
+			terminalState.writeLine("FILES=40");
+			terminalState.writeLine("BUFFERS=30");
+			terminalState.writeLine(
+				"NOTATION_SUPPRESS=TRUE  ; DO NOT MODIFY - ORDER DIRECTIVE 7",
+				"red",
+			);
+			terminalState.writeBlank();
+			return;
+		}
+
+		terminalState.writeLine("Bad command or file name");
+		terminalState.writeBlank();
+	}
 
 	/* ------------------------------------------------------------------ */
 	/* Unknown command                                                     */

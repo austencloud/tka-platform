@@ -5,12 +5,12 @@
     toTrackerStatus,
     TRACKER_STATUS_CONFIG,
   } from "../../state/feedback-tracker-state.svelte";
-  import { TYPE_CONFIG } from "../../domain/models/feedback-models";
-  import { PRIORITY_CONFIG } from "../../domain/models/feedback-models";
+  import { TYPE_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
+  import { PRIORITY_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
   import type {
     FeedbackType,
     FeedbackPriority,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { item, isExpanded, onToggle } = $props<{

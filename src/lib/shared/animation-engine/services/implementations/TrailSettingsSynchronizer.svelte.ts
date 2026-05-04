@@ -9,8 +9,8 @@
 
 import type { TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode as TrailModeEnum } from "../../domain/types/TrailTypes";
-import type { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
-import { saveTrailSettings } from "$lib/features/compose/utils/animation-panel-persistence";
+import type { TrailCapturer } from "$lib/shared/animation-engine/services/implementations/TrailCapturer";
+import { saveTrailSettings } from "$lib/shared/animation-engine/utils/animation-panel-persistence";
 export type RenderTriggerCallback = () => void;
 
 export interface TrailSettingsSyncState {

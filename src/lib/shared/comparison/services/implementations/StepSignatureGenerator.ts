@@ -5,7 +5,7 @@
  * Composes motion signatures with position group and hand angle information.
  */
 
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { MotionSignatureGenerator } from "./MotionSignatureGenerator";
 import type {
   StepSignature,
@@ -18,7 +18,7 @@ import {
   GridPositionGroup,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { getPositionGroup } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
+import { getPositionGroup } from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
 
 /**
  * Scoring weights for beat similarity calculation.

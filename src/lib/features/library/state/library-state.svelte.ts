@@ -15,10 +15,10 @@ import type { LibraryQueryOptions, LibraryStats } from "../services/contracts/ty
 import type {
   LibrarySequence,
   SequenceVisibility,
-} from "../domain/models/LibrarySequence";
+} from "$lib/shared/library/domain/models/LibrarySequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { compareKineticLetters } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
-import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { compareKineticLetters } from "$lib/shared/browse/utils/kinetic-alphabet-sort";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";

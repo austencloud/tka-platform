@@ -6,12 +6,12 @@
     FeedbackType,
     FeedbackStatus,
     FeedbackPriority,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import {
     STATUS_CONFIG,
     TYPE_CONFIG,
     PRIORITY_CONFIG,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import FeedbackEditDrawer from "./FeedbackEditDrawer.svelte";
   import FeedbackReplyPanel from "./FeedbackReplyPanel.svelte";

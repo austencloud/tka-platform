@@ -15,7 +15,7 @@
   import LetterSelectionSheet from "../../sequences/filtering/components/bento-filter/LetterSelectionSheet.svelte";
   import PositionOptionsSheet from "../../sequences/filtering/components/bento-filter/PositionOptionsSheet.svelte";
   import VariationPickerDrawer from "../../sequences/display/components/VariationPickerDrawer.svelte";
-  import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
+  import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
   import {
     getVariationPickerState,
     closeVariationPicker,

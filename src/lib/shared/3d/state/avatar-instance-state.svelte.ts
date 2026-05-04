@@ -20,11 +20,11 @@ import type { StepMotionConfigs } from "../services/sequence-converter";
 import type { AvatarId } from "../config/avatar-definitions";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
 import { SCALE } from "$lib/shared/3d/scale/scale-constants";
-import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
-import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
-import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
-import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
-import { interpolatePhrase } from "$lib/features/phrase-effort-lab/services/phrase-interpolator";
+import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
+import type { EffortId } from "$lib/shared/effort/domain/effort-types";
+import type { EffortTimeline } from "$lib/shared/effort/domain/effort-timeline-types";
+import { findPhraseAtBeat } from "$lib/shared/effort/domain/effort-timeline-types";
+import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 import {
   makeDefaultPerformerSettings,
   type PerformerSettings,

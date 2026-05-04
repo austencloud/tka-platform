@@ -1,4 +1,4 @@
-import type { CsvDataSet } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
+import type { CsvDataSet } from "$lib/shared/foundation/domain/models/CsvModels";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 // Module-level cache shared across all instances (defense against non-singleton usage)
 let sharedCsvCache: CsvDataSet | null = null;

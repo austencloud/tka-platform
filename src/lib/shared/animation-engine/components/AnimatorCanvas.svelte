@@ -25,11 +25,11 @@ Last audit: 2025-12-27
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { StartPositionData } from "../../../features/create/shared/domain/models/StartPositionData";
-  import type { StepData } from "../../../features/create/shared/domain/models/StepData";
-  import type { PropState } from "../domain/PropState";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { TrailSettings } from "../domain/types/TrailTypes";
-  import type { AdditionalLayerProps } from "$lib/features/compose/services/implementations/TrailCapturer";
+  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/TrailCaptureTypes";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
@@ -38,10 +38,10 @@ Last audit: 2025-12-27
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
-  import { isSeamlesslyLoopable as sequenceLoopabilityCheck } from "$lib/features/compose/services/sequence-loopability-checker";
-  import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
+  import { isSeamlesslyLoopable as sequenceLoopabilityCheck } from "$lib/shared/foundation/services/sequence-loopability-checker";
+  import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
@@ -362,10 +362,10 @@ Last audit: 2025-12-27
       : {
           components: new Set<LOOPComponent>(),
           rotationPeriod: undefined as
-            | import("$lib/features/create/generate/circular/domain/models/circular-models").Period
+            | import("$lib/shared/foundation/domain/models/generation/circular-models").Period
             | undefined,
           inversionPeriod: undefined as
-            | import("$lib/features/create/generate/circular/domain/models/circular-models").Period
+            | import("$lib/shared/foundation/domain/models/generation/circular-models").Period
             | undefined,
           period: 1,
         }

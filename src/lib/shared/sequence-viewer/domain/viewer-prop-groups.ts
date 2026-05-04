@@ -1,7 +1,7 @@
-import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 export interface ViewerPlaybackState {

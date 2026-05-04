@@ -35,7 +35,7 @@
 
 import { tick } from "svelte";
 import { Vector2 } from "three";
-import type { BackgroundVideoEncoder } from "$lib/features/compose/services/implementations/BackgroundVideoEncoder";
+import type { BackgroundVideoEncoder } from "$lib/shared/animation-engine/services/implementations/BackgroundVideoEncoder";
 import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import type { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
 
@@ -112,7 +112,7 @@ export interface Offline3DExportDependencies {
 import {
   getExportDimensions,
   calculateBitrate,
-} from "$lib/features/compose/shared/domain/video-export-calculations";
+} from "$lib/shared/animation-engine/domain/video-export-calculations";
 import type { CanvasFrameCapturer } from "$lib/shared/video-export/services/implementations/CanvasFrameCapturer";
 import { interpolateKeyframes } from "$lib/shared/video-export/services/camera-keyframe-interpolator";
 import { ExportDiagnostics } from "$lib/shared/video-export/domain/ExportDiagnostics";

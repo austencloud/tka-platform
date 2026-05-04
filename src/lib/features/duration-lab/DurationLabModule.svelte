@@ -19,7 +19,7 @@
   } from "$lib/features/create/shared/domain/templates/duration-templates";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
   // State
   let stepCount = $state(8);

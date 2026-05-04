@@ -8,7 +8,7 @@
 import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
 // propInterpolator / sequenceConverter are now module-level functions
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { VillageOrchestrator } from "../engine/VillageOrchestrator";
 import * as sequenceMutator from "../services/sequence-mutator";
 import type { VillageConfig } from "../engine/VillageConfig";

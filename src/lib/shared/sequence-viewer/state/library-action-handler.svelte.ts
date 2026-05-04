@@ -1,15 +1,4 @@
-/**
- * library-action-handler.svelte.ts
- *
- * Reactive module that owns library-action state and handlers:
- * - isSaved / isFavorite reactive flags (with savedHashCache)
- * - handleSave, handleDelete, handlePublishAction, handleUnpublishAction
- * - handleFavoriteToggle (optimistic toggle)
- *
- * Extracted from SequenceViewerOrchestrator.
- */
-
-import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/features/library/services/collection-manager";
+import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/features/library/getLibraryRepository";
 import type { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
@@ -37,7 +26,6 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
 
   const savedHashCache = new Map<string, boolean>();
 
-  /** Recompute isSaved whenever sequence or auth changes. Called via $effect in the orchestrator. */
   function syncSavedState(sequence: SequenceData | null) {
     const seq = sequence as LibrarySequence | null;
     if (!seq?.contentHash || !authState.user?.uid) {
@@ -60,7 +48,6 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
       .catch(() => {});
   }
 
-  /** Recompute isFavorite whenever sequence changes. Called via $effect in the orchestrator. */
   function syncFavoriteState(sequence: SequenceData | null) {
     if (!sequence) { isFavorite = false; return; }
 

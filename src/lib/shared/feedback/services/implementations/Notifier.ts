@@ -1,0 +1,365 @@
+/**
+ * NotificationService
+ *
+ * Manages tester notifications for feedback updates.
+ */
+
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  getDocs,
+  doc,
+  updateDoc,
+  where,
+  onSnapshot,
+  serverTimestamp,
+  Timestamp,
+} from "firebase/firestore";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreList, firestoreDelete } from "$lib/shared/firestore";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
+import type { UserNotification } from "$lib/shared/feedback/domain/models/notification-models";
+import { UserNotificationSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";
+
+const USERS_COLLECTION = "users";
+const NOTIFICATIONS_SUBCOLLECTION = "notifications";
+
+export class NotificationService {
+  private unsubscribe: (() => void) | null = null;
+
+  /**
+   * Get unread notification count for a user
+   */
+  async getUnreadCount(userId: string): Promise<number> {
+    try {
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      const items = await firestoreList(
+        subcollectionPath,
+        UserNotificationSchema,
+        { where: [{ field: "read", op: "==", value: false }] },
+      );
+      return items.length;
+    } catch (error) {
+      console.error("[Notifier] Failed to get unread count:", error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get notifications for a user
+   */
+  async getNotifications(
+    userId: string,
+    maxCount: number = 20
+  ): Promise<UserNotification[]> {
+    try {
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      const items = await firestoreList(
+        subcollectionPath,
+        UserNotificationSchema,
+        {
+          orderBy: [{ field: "createdAt", direction: "desc" }],
+          limit: maxCount,
+        },
+      );
+      // Cast validated Zod output to UserNotification union
+      return items as unknown as UserNotification[];
+    } catch (error) {
+      console.error("[Notifier] Failed to get notifications:", error);
+      toast.error("Failed to load notifications.");
+      return [];
+    }
+  }
+
+  /**
+   * Map Firestore document to notification object
+   */
+  private mapDocToNotification(
+    id: string,
+    data: Record<string, unknown>
+  ): UserNotification {
+    const baseNotification = {
+      id,
+      userId: data["userId"] as string,
+      type: data["type"] as UserNotification["type"],
+      message: data["message"] as string,
+      createdAt: (data["createdAt"] as Timestamp)?.toDate() || new Date(),
+      read: data["read"] as boolean,
+      readAt: (data["readAt"] as Timestamp)?.toDate(),
+      fromUserId: data["fromUserId"] as string | undefined,
+      fromUserName: data["fromUserName"] as string | undefined,
+    };
+
+    const type = data["type"] as string;
+
+    // Map to specific notification type based on type field
+    if (type.startsWith("feedback-")) {
+      return {
+        ...baseNotification,
+        type: type as UserNotification["type"],
+        feedbackId: data["feedbackId"] as string,
+        feedbackTitle: data["feedbackTitle"] as string,
+        fromUserId: data["fromUserId"] as string,
+        fromUserName: data["fromUserName"] as string,
+      } as UserNotification;
+    } else if (type.startsWith("sequence-")) {
+      return {
+        ...baseNotification,
+        type: type as UserNotification["type"],
+        sequenceId: data["sequenceId"] as string,
+        sequenceTitle: data["sequenceTitle"] as string,
+        fromUserId: data["fromUserId"] as string,
+        fromUserName: data["fromUserName"] as string,
+        videoUrl: data["videoUrl"] as string | undefined,
+        commentText: data["commentText"] as string | undefined,
+      } as UserNotification;
+    } else if (type === "user-followed" || type === "achievement-unlocked") {
+      return {
+        ...baseNotification,
+        type: type as UserNotification["type"],
+        achievementId: data["achievementId"] as string | undefined,
+        achievementName: data["achievementName"] as string | undefined,
+      } as UserNotification;
+    } else if (type === "system-announcement") {
+      return {
+        ...baseNotification,
+        type: type as UserNotification["type"],
+        title: data["title"] as string,
+        actionUrl: data["actionUrl"] as string | undefined,
+      } as UserNotification;
+    } else if (type === "admin-new-user-signup") {
+      return {
+        ...baseNotification,
+        type: type as UserNotification["type"],
+        newUserId: data["newUserId"] as string,
+        newUserEmail: data["newUserEmail"] as string | null,
+        newUserDisplayName: data["newUserDisplayName"] as string,
+      } as UserNotification;
+    }
+
+    // Fallback for unknown types - treat as base notification
+    return baseNotification as UserNotification;
+  }
+
+  /**
+   * Mark a notification as read
+   */
+  async markAsRead(userId: string, notificationId: string): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const notificationRef = doc(
+        firestore,
+        USERS_COLLECTION,
+        userId,
+        NOTIFICATIONS_SUBCOLLECTION,
+        notificationId
+      );
+
+      await updateDoc(notificationRef, {
+        read: true,
+        readAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("[Notifier] Failed to mark notification as read:", error);
+      // Silent failure - non-critical for UX
+    }
+  }
+
+  /**
+   * Mark a notification as unread
+   */
+  async markAsUnread(userId: string, notificationId: string): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const notificationRef = doc(
+        firestore,
+        USERS_COLLECTION,
+        userId,
+        NOTIFICATIONS_SUBCOLLECTION,
+        notificationId
+      );
+
+      await updateDoc(notificationRef, {
+        read: false,
+        readAt: null,
+      });
+    } catch (error) {
+      console.error("[Notifier] Failed to mark notification as unread:", error);
+      // Silent failure - non-critical for UX
+    }
+  }
+
+  /**
+   * Mark all notifications as read
+   */
+  async markAllAsRead(userId: string): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const notificationsRef = collection(
+        firestore,
+        USERS_COLLECTION,
+        userId,
+        NOTIFICATIONS_SUBCOLLECTION
+      );
+
+      const q = query(notificationsRef, where("read", "==", false));
+      const snapshot = await getDocs(q);
+
+      const updates = snapshot.docs.map((docSnap) =>
+        updateDoc(docSnap.ref, { read: true, readAt: serverTimestamp() })
+      );
+
+      await Promise.all(updates);
+    } catch (error) {
+      console.error("[Notifier] Failed to mark all as read:", error);
+      toast.error("Failed to mark all as read.");
+    }
+  }
+
+  /**
+   * Delete a single notification
+   */
+  async deleteNotification(
+    userId: string,
+    notificationId: string
+  ): Promise<void> {
+    try {
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      await firestoreDelete(subcollectionPath, notificationId);
+    } catch (error) {
+      console.error("[Notifier] Failed to delete notification:", error);
+      toast.error("Failed to delete notification.");
+    }
+  }
+
+  /**
+   * Delete all read notifications
+   */
+  async deleteAllReadNotifications(userId: string): Promise<void> {
+    try {
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      const items = await firestoreList(
+        subcollectionPath,
+        UserNotificationSchema,
+        { where: [{ field: "read", op: "==", value: true }] },
+      );
+
+      const deletes = items.map((item) =>
+        firestoreDelete(subcollectionPath, item.id),
+      );
+      await Promise.all(deletes);
+    } catch (error) {
+      console.error("[Notifier] Failed to delete read notifications:", error);
+      toast.error("Failed to clear read notifications.");
+    }
+  }
+
+  /**
+   * Delete all notifications
+   */
+  async deleteAllNotifications(userId: string): Promise<void> {
+    try {
+      const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
+      const items = await firestoreList(
+        subcollectionPath,
+        UserNotificationSchema,
+      );
+
+      const deletes = items.map((item) =>
+        firestoreDelete(subcollectionPath, item.id),
+      );
+      await Promise.all(deletes);
+    } catch (error) {
+      console.error("[Notifier] Failed to delete all notifications:", error);
+      toast.error("Failed to clear all notifications.");
+    }
+  }
+
+  /**
+   * Subscribe to real-time notification updates
+   * @param userId - User ID to subscribe to
+   * @param callback - Callback function to receive notifications
+   * @param maxCount - Maximum number of notifications to retrieve (default: 20, set to 0 for all)
+   */
+  subscribeToNotifications(
+    userId: string,
+    callback: (notifications: UserNotification[]) => void,
+    maxCount: number = 20
+  ): () => void {
+    // Clean up previous subscription
+    if (this.unsubscribe) {
+      this.unsubscribe();
+    }
+
+    // Initialize subscription asynchronously
+    void (async () => {
+      try {
+        const firestore = await getFirestoreInstance();
+        const notificationsRef = collection(
+          firestore,
+          USERS_COLLECTION,
+          userId,
+          NOTIFICATIONS_SUBCOLLECTION
+        );
+
+        // Build query with or without limit based on maxCount
+        const q =
+          maxCount > 0
+            ? query(
+                notificationsRef,
+                orderBy("createdAt", "desc"),
+                limit(maxCount)
+              )
+            : query(notificationsRef, orderBy("createdAt", "desc"));
+
+        this.unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            const notifications: UserNotification[] = snapshot.docs.map(
+              (docSnap) => this.mapDocToNotification(docSnap.id, docSnap.data())
+            );
+            callback(notifications);
+          },
+          (error) => {
+            // Expected on sign-out. Skip the toast; the listener is about to
+            // be cleaned up by the auth state handler.
+            if (isPermissionDeniedError(error)) return;
+            console.error(
+              "[Notifier] Notifications subscription error:",
+              error
+            );
+            toast.error("Lost connection to notifications. Please refresh.");
+          }
+        );
+      } catch (error) {
+        console.error(
+          "[Notifier] Failed to initialize notifications subscription:",
+          error
+        );
+        toast.error("Failed to connect to notifications.");
+      }
+    })();
+
+    return () => {
+      if (this.unsubscribe) {
+        this.unsubscribe();
+      }
+    };
+  }
+
+  /**
+   * Clean up subscriptions
+   */
+  cleanup(): void {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+  }
+}
+
+// Export singleton instance
+export const notificationService = new NotificationService();

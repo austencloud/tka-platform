@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
 
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
@@ -18,13 +18,13 @@ import { getAnimationPlaybackController } from "$lib/features/compose/getAnimati
     type SequenceData,
   } from "$lib/shared/foundation/domain/models/SequenceData";
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import {
     createAnimationPanelState,
     type AnimationStateKey,
-  } from "$lib/features/compose/state/animation-panel-state.svelte";
+  } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   interface Props {

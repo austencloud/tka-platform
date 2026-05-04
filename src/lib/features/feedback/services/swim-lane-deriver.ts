@@ -1,4 +1,4 @@
-import type { FeedbackItem } from "../domain/models/feedback-models";
+import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
 import type { SwimLane } from "./contracts/types";
 
 export function deriveLane(item: FeedbackItem): SwimLane {

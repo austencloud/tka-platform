@@ -1,8 +1,8 @@
 import LZString from "lz-string";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "../../../features/create/shared/domain/models/StartPositionData";
-import { createStartPositionData } from "../../../features/create/shared/domain/factories/createStartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {

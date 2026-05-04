@@ -18,7 +18,7 @@
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
-  import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
+  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import { creatorsDataState } from "../state/creators-data-state.svelte";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";

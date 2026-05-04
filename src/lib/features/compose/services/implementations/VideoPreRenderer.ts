@@ -64,9 +64,9 @@ export interface VideoRenderOptions {
   /** Video quality (0-1, default: 0.9) */
   quality?: number;
 }
-import { Canvas2DAnimationRenderer } from "./Canvas2DAnimationRenderer";
-import { generateBluePropSvg, generateRedPropSvg } from "$lib/features/compose/services/svg-generator";
-import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
+import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer";
+import { generateBluePropSvg, generateRedPropSvg } from "$lib/shared/animation-engine/services/svg-generator";
+import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
 
 import {
   DEFAULT_TRAIL_SETTINGS,

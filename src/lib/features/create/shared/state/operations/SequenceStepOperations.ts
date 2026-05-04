@@ -11,11 +11,11 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "../../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceAnimationState } from "../animation/SequenceAnimationState.svelte";
 import type { SequenceCoreState } from "../core/SequenceCoreState.svelte";
 import type { SequenceSelectionState } from "../selection/SequenceSelectionState.svelte";
-import type { ReversalDetector } from "../../services/reversal-detector";
+import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 
 export interface StepOperationsConfig {
   coreState: SequenceCoreState;

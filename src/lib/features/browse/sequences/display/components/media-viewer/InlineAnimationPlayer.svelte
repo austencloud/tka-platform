@@ -8,23 +8,23 @@
 -->
 <script lang="ts">
 
-import { getPropInterpolator } from "$lib/features/compose/getPropInterpolator";
+import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
   import { onMount, onDestroy, untrack } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
-  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/features/create/shared/getSequenceRepository";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   // Per-instance playback stack imports (avoid shared singleton)
-  import { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
-  import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
-  import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
-  import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
+  import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+  import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
+  import { AnimationLoop } from "$lib/shared/animation-engine/services/implementations/AnimationLoop";
 
   // BPM/Speed conversion constant
   const DEFAULT_BPM = 60;

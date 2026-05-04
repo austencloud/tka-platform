@@ -6,7 +6,7 @@
    * Decomposed from 772 lines to ~120 lines.
    */
 
-  import { getTimelineState } from "../state/timeline-state.svelte";
+  import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import type { TimelineClip } from "../domain/timeline-types";
   import ClipInfoSection from "./inspector/ClipInfoSection.svelte";
   import ClipSpeedSection from "./inspector/ClipSpeedSection.svelte";

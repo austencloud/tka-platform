@@ -12,12 +12,12 @@ import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
   import type {
     NotificationPreferences,
     NotificationType,
-  } from "../domain/models/notification-models";
+  } from "$lib/shared/feedback/domain/models/notification-models";
   import {
     DEFAULT_NOTIFICATION_PREFERENCES,
     NOTIFICATION_TYPE_CONFIG,
     getPreferenceKeyForType,
-  } from "../domain/models/notification-models";
+  } from "$lib/shared/feedback/domain/models/notification-models";
   import PreferenceGroup from "./notifications/PreferenceGroup.svelte";
   import type { PreferenceItem } from "./notifications/PreferenceItem";
   import {

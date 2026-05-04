@@ -1,6 +1,6 @@
 <script lang="ts">
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
-  import type { SequenceSection } from "../../../shared/domain/models/browse-models";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import type { SequenceSection } from "$lib/shared/browse/domain/models/browse-models";
 
   const TKA_LETTER_RE = /^[a-zA-ZͰ-Ͽ⊕]-?$/;
 

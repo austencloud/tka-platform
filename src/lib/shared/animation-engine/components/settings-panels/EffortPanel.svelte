@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
-  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
+  import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 
   const vm = getAnimationVisibilityManager();
 

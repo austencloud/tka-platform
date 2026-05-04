@@ -5,11 +5,11 @@
  * Handles RAF scheduling, trail point gathering, and scene rendering.
  */
 
-import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import type { ITrailCapturer, AdditionalLayerProps } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
+import type { ITrailCapturer, AdditionalLayerProps } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
 import type { TrailSettings } from "../../domain/types/TrailTypes";
-import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
-import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
+import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+import type { AnimationPathCache } from "$lib/shared/animation-engine/services/implementations/AnimationPathCache";
 import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
 import type { WebGLFireRenderer } from "$lib/shared/animation-engine/services/implementations/fire/WebGLFireRenderer";
 import type { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/implementations/charcoal/CharcoalSparkRenderer";
@@ -34,8 +34,8 @@ import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Pulse2DParams, Silk2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 /**

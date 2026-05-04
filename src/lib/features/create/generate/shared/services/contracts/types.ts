@@ -1,8 +1,8 @@
 import type { DifficultyLevel, GenerationMode, PropContinuity } from "../../domain/models/generate-models";
 import type { LOOPType, Period } from "../../../circular/domain/models/circular-models";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-import type { GeneratorCardId } from "../../domain/card-registry";
+import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
+import type { GeneratorCardId } from "$lib/shared/create/domain/card-registry";
 
 /**
  * Card descriptor for rendering in the UI

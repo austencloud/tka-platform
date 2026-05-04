@@ -9,7 +9,7 @@
   import type {
     PlaybackMode,
     StepPlaybackStepSize,
-  } from "../../state/animation-panel-state.svelte";
+  } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import ModeTabBar, {
     type SettingsMode,
   } from "./settings-panel/ModeTabBar.svelte";

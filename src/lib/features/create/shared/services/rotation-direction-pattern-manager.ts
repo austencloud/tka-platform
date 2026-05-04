@@ -29,14 +29,14 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StepData } from "../domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type {
   RotationDirectionPattern,
   RotationDirectionPatternCreateData,
   RotationDirectionPatternEntry,
   RotationDirectionValue,
 } from "../domain/models/RotationDirectionPatternData";
-import type { TargetHand } from "./turn-pattern-manager";
+import type { TargetHand } from "$lib/shared/create/services/turn-pattern-manager";
 
 /**
  * Result of applying a rotation direction pattern to a sequence
@@ -66,7 +66,7 @@ import {
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { createStepData } from "../domain/factories/createStepData";
+import { createStepData } from "$lib/shared/create/factories/createStepData";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("RotationDirectionPatternManager");

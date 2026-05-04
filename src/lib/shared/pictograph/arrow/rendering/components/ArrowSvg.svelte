@@ -29,7 +29,7 @@ even when Svelte recreates the component instance.
     ArrowAssets,
     ArrowPosition,
   } from "../../orchestration/domain/arrow-models";
-  import { selectedArrowState } from "../../../../../features/create/shared/state/selected-arrow-state.svelte";
+  import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
 
   let {

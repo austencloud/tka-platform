@@ -2,7 +2,7 @@
   MediaSortRow.svelte - Sort options and advanced filter toggle
 -->
 <script lang="ts">
-  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+  import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

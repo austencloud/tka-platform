@@ -8,7 +8,7 @@
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
-  import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
+  import { quickFeedbackState } from "$lib/shared/feedback/state/quick-feedback-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 
   const LONG_PRESS_MS = 500;

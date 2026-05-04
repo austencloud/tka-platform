@@ -15,10 +15,10 @@ import type {
   TurnPattern,
   TurnPatternEntry,
   TurnValue,
-} from "../models/TurnPatternData";
+} from "$lib/shared/create/domain/TurnPatternData";
 
 // Re-export TurnValue for consumers
-export type { TurnValue } from "../models/TurnPatternData";
+export type { TurnValue } from "$lib/shared/create/domain/TurnPatternData";
 
 /**
  * Complexity level for pattern categorization

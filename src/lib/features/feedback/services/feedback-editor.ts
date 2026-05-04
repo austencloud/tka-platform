@@ -6,7 +6,7 @@
  */
 
 import type { EditSnapshot, EditableFields, ValidationResult } from "./contracts/types";
-import type { FeedbackItem } from "../domain/models/feedback-models";
+import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
 
 /**
  * Create a snapshot of current feedback state for change tracking

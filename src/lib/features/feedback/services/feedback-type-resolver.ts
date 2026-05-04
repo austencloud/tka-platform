@@ -1,6 +1,6 @@
 import type { FeedbackTypeConfig } from "./contracts/types";
-import type { FeedbackType } from "../domain/models/feedback-models";
-import { TYPE_CONFIG } from "../domain/models/feedback-models";
+import type { FeedbackType } from "$lib/shared/feedback/domain/models/feedback-models";
+import { TYPE_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
 
 /**
  * Resolves type-specific configuration for feedback forms.

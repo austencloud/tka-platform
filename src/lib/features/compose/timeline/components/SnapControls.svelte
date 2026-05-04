@@ -8,7 +8,7 @@
   - Responsive: bottom sheet on mobile, right sheet on desktop
 -->
 <script lang="ts">
-  import { getTimelineState } from "../state/timeline-state.svelte";
+  import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   // Get timeline state directly - access the singleton once and read from it reactively

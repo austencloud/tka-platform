@@ -132,9 +132,12 @@
   function submitInput(): void {
     const input = terminalState.inputText.trim();
 
-    // Echo the typed line (prompt + input) to the output buffer
+    // Echo the typed line — mask password characters
     const escapedPrompt = terminalState.escapeForDisplay(terminalState.promptString);
-    const escapedInput = terminalState.escapeForDisplay(terminalState.inputText);
+    const displayText = terminalState.inputMask
+      ? "*".repeat(terminalState.inputText.length)
+      : terminalState.inputText;
+    const escapedInput = terminalState.escapeForDisplay(displayText);
     terminalState.writeHtml(`${escapedPrompt}${escapedInput}`);
 
     // Clear input field
@@ -176,6 +179,16 @@
   function onBootComplete(): void {
     terminalState.mode = "prompt";
     terminalState.inputEnabled = true;
+
+    // If already authenticated from a previous session, update the prompt
+    commandParser.updatePromptForAuth();
+    if (terminalState.authenticatedUser) {
+      terminalState.writeLine(
+        `Authenticated as ${terminalState.authenticatedUser}.`,
+        "cyan",
+      );
+      terminalState.writeBlank();
+    }
   }
 
   /* ------------------------------------------------------------------ */
@@ -256,9 +269,12 @@
 
         <!-- Input line with prompt + cursor -->
         {#if terminalState.inputEnabled}
+          {@const maskedInput = terminalState.inputMask
+            ? "*".repeat(terminalState.inputText.length)
+            : terminalState.inputText}
           <div class="dos-input-line">
             <span class="dos-prompt-text">{@html terminalState.escapeForDisplay(terminalState.promptString)}</span>
-            <span class="dos-input-text">{@html terminalState.escapeForDisplay(terminalState.inputText)}</span>
+            <span class="dos-input-text">{@html terminalState.escapeForDisplay(maskedInput)}</span>
             <span class="dos-cursor" aria-hidden="true"></span>
           </div>
         {/if}

@@ -6,12 +6,12 @@
     FeedbackItem,
     FeedbackType,
     FeedbackStatus,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import {
     TYPE_CONFIG,
     STATUS_CONFIG,
-  } from "../../domain/models/feedback-models";
-  import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

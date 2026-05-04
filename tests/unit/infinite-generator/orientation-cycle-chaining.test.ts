@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
+import { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 import { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -11,7 +11,7 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 function makeStep(
   stepNumber: number,

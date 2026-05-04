@@ -4,8 +4,8 @@
  */
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import { Canvas2DAnimationRenderer } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
+import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer";
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import {
   generateGridSvg,
@@ -14,10 +14,10 @@ import {
   generateRedPropSvg,
   generateBlueStaffSvg,
   generateRedStaffSvg,
-} from "$lib/features/compose/services/svg-generator";
-import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
-import { getSequenceAnimationOrchestrator } from "$lib/features/compose/getSequenceAnimationOrchestrator";
-import { getTrailCapturer } from "$lib/features/compose/getTrailCapturer";
+} from "$lib/shared/animation-engine/services/svg-generator";
+import type { ISVGGenerator } from "$lib/shared/animation-engine/services/contracts/ISVGGenerator";
+import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
+import { getTrailCapturer } from "$lib/shared/animation-engine/getTrailCapturer";
 
 import type {
   AnimatorServices,

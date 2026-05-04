@@ -10,7 +10,7 @@
 
 import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/services/plane-coordinate-mapper";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
+  import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
   import { Plane } from "$lib/shared/3d/domain/enums/Plane";
   import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
   import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";

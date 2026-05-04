@@ -12,12 +12,12 @@ Supports letter highlighting during animation playback.
 <script lang="ts">
   import { cubicOut } from "svelte/easing";
   import { safeSlide } from "$lib/shared/utils/transitions";
-  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
   import { untrack } from "svelte";
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
-  import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import type { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { browser } from "$app/environment";

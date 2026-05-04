@@ -8,7 +8,7 @@ import { getStartPositionValidator } from './getStartPositionValidator';
 import * as orientationContinuityValidator from './services/orientation-continuity-validator';
 import { getSequenceExtender } from '$lib/features/create/shared/getSequenceExtender';
 import { getStepConverter } from '$lib/features/create/generate/shared/getStepConverter';
-import { reversalDetector } from '$lib/features/create/shared/services/reversal-detector';
+import { reversalDetector } from '$lib/shared/create/services/reversal-detector';
 
 let instance: RandomSequenceGenerator | null = null;
 

@@ -8,11 +8,11 @@
  * CellConfig stores sequences[] at the cell level, with optional tunnelLayers.
  */
 
-import type { Composition, CellConfig, CellType, MediaDisplayType, } from "../../../compose/domain/types";
+import type { Composition, CellConfig, CellType, MediaDisplayType, } from "$lib/shared/animation-engine/domain/compose-types";
 import {
-  getDefaultTrailSettings, getTunnelLayerColors, } from "../../../compose/domain/types";
-import type { CellMediaType } from "../../../compose/domain/types";
-import type { TunnelLayerConfig } from "../../../compose/domain/types";
+  getDefaultTrailSettings, getTunnelLayerColors, } from "$lib/shared/animation-engine/domain/compose-types";
+import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-types";
+import type { TunnelLayerConfig } from "$lib/shared/animation-engine/domain/compose-types";
 import {
   type GridCell, createInitialGrid, generateCellId, } from "../state/arrange-grid-state.svelte";
 import type { GridStateSnapshot } from "./contracts/types";

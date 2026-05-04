@@ -10,8 +10,8 @@
  * - "both": Transform both motions (default, original behavior)
  */
 
-import type { StartPositionData } from "../../../domain/models/StartPositionData";
-import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";

@@ -7,7 +7,7 @@
    */
   import LinkedSequenceChip from "../../LinkedSequenceChip.svelte";
   import type { MatchedSequence, LinkedSequence } from "../../../types";
-  import TKAWordGlyph from "$lib/features/choreo-card/components/TKAWordGlyph.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     linkedSequences: LinkedSequence[];

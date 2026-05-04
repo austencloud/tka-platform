@@ -1,5 +1,5 @@
 import type { PoiDeviceInfo } from "../../domain/DeviceTypes";
-import type { StripPattern } from "../../domain/StripPattern";
+import type { StripPattern } from "$lib/shared/poi/domain/StripPattern";
 
 export interface IPoiConnection {
   readonly deviceInfo: PoiDeviceInfo;

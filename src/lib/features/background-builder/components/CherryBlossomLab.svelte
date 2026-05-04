@@ -10,7 +10,7 @@
   import type {
     CherryBlossomDensityPreset,
     CherryBlossomWindPreset,
-  } from "../domain/lab-settings-types";
+  } from "$lib/shared/background-builder/domain/lab-settings-types";
 
   // Background system
   let backgroundSystem: CherryBlossomBackgroundSystem | null = $state(null);

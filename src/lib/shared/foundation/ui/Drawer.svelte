@@ -17,7 +17,7 @@
 <script lang="ts">
   import "./drawer/Drawer.css";
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
-  import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
   import { SwipeToDismiss } from "./drawer/SwipeToDismiss";
   import { FocusTrap } from "./drawer/FocusTrap";
   import { SnapPoints, type SnapPointValue } from "./drawer/SnapPoints";

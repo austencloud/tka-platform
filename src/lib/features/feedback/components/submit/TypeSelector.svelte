@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { TYPE_CONFIG } from "../../domain/models/feedback-models";
-  import type { FeedbackType } from "../../domain/models/feedback-models";
+  import { TYPE_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
+  import type { FeedbackType } from "$lib/shared/feedback/domain/models/feedback-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { selectedType, onTypeChange, isInputMode = false } = $props<{

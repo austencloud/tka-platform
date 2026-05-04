@@ -7,9 +7,9 @@
 -->
 <script lang="ts">
   import type { EffortTimeline, EffortPhrase } from "../domain/effort-timeline-types";
-  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
-  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
-  import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
+  import type { EffortId } from "$lib/shared/effort/domain/effort-types";
+  import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
+  import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 
   interface Props {
     timeline: EffortTimeline;

@@ -18,8 +18,8 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { AppSettings } from "$lib/shared/settings/domain/AppSettings";
-import type { NotificationPreferences } from "$lib/features/feedback/domain/models/notification-models";
-import { DEFAULT_NOTIFICATION_PREFERENCES } from "$lib/features/feedback/domain/models/notification-models";
+import type { NotificationPreferences } from "$lib/shared/notifications/domain/models/notification-models";
+import { DEFAULT_NOTIFICATION_PREFERENCES } from "$lib/shared/notifications/domain/models/notification-models";
 
 // ============================================================================
 // Types

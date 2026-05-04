@@ -6,7 +6,7 @@
  * - Cell layout section showing grid positions, spans, layers, transforms, offsets
  */
 
-import type { TunnelLayerConfig, TransformType, AppliedTransform, } from "../../../compose/domain/types";
+import type { TunnelLayerConfig, TransformType, AppliedTransform, } from "$lib/shared/animation-engine/domain/compose-types";
 import type { GridCell } from "../state/arrange-grid-state.svelte";
 import type { SerializationContext } from "./contracts/types";
 

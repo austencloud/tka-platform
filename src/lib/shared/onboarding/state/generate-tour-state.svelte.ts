@@ -8,7 +8,7 @@
  * automatically includes any new cards added to the generator.
  */
 
-import { CARD_REGISTRY, type GeneratorCardId } from "$lib/features/create/generate/shared/domain/card-registry";
+import { CARD_REGISTRY, type GeneratorCardId } from "$lib/shared/create/domain/card-registry";
 
 const TOUR_COMPLETED_KEY = "tka-generate-tour-completed";
 const TOUR_INDEX_KEY = "tka-generate-tour-index";

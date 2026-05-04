@@ -10,7 +10,7 @@
  * pre-rendering, the export would only show a bare letter SVG.
  */
 
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SvgImageConverter } from '$lib/shared/foundation/services/implementations/SvgImageConverter'
 
 export interface GlyphAsset {

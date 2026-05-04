@@ -13,7 +13,7 @@ import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-pat
   import type { DeckFamily } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import ChoreoCard from "./ChoreoCard.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";

@@ -5,7 +5,7 @@ Color-coded icons per primitive. Rotated splits into halved/quartered.
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import FilterChipBase from "../FilterChipBase.svelte";
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { LOOP_COMPONENT_MAP } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";

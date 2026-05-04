@@ -3,14 +3,14 @@
   import { fly } from "svelte/transition";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-  import type { EndState, SpinnerStats } from '$lib/features/landing/services/contracts/types';
+  import type { EndState, SpinnerStats } from '$lib/shared/landing/domain/types';
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
-  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-import { getBrowseLoader } from "$lib/features/browse/sequences/display/getBrowseLoader";
-import { getAnimationPlaybackController } from "$lib/features/compose/getAnimationPlaybackController";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
 import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceTransformer";
 
@@ -40,10 +40,10 @@ import { getSequenceTransformer } from "$lib/features/create/shared/getSequenceT
   import SpinnerStatsBar from "$lib/features/landing/components/SpinnerStatsBar.svelte";
 
   // Broadcast imports
-  import type { BroadcastStateClient } from "$lib/features/landing/domain/models/broadcast-models";
+  import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
   import { BroadcastRepository } from "$lib/features/landing/services/implementations/BroadcastRepository";
   import * as broadcastSequenceConverter from "$lib/features/landing/services/broadcast-sequence-converter";
-  import * as propTypeApplier from "$lib/features/landing/services/prop-type-applier";
+  import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
 
   // Local extracted components
   import SpinnerControls from "./components/SpinnerControls.svelte";

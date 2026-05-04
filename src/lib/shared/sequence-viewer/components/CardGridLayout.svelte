@@ -11,7 +11,7 @@
   import { cubicOut } from "svelte/easing";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
+  import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import CellRenderer from "./CellRenderer.svelte";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";

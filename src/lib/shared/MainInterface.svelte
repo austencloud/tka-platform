@@ -53,7 +53,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery"
 
   import { deepLinker } from "./navigation/services/implementations/DeepLinker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
-  import { browseScrollState } from "../features/browse/shared/state/BrowseScrollState.svelte";
+  import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
   import { fuseTourState } from "./onboarding/state/fuse-tour-state.svelte";
   import type { ModuleId } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";

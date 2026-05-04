@@ -5,8 +5,8 @@
  * These enable TypeScript to narrow union types and enforce type safety.
  */
 
-import type { StepData } from "../models/StepData";
-import type { StartPositionData } from "../models/StartPositionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
 /**

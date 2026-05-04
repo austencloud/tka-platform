@@ -13,7 +13,7 @@ import {
   DEFAULT_SNAP_THRESHOLD,
   type SnapContext,
 } from "../SnapService";
-import { getTimelineState } from "../../state/timeline-state.svelte";
+import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
 
 export class TimelineSnapper {
   private _activeSnapResult: SnapResult | null = null;

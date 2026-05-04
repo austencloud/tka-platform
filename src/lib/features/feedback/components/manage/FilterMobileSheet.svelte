@@ -2,18 +2,18 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
+  import type { FeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
   import type { FilterBarUIState } from "../../state/filter-bar-ui-state.svelte";
   import {
     TYPE_CONFIG,
     STATUS_CONFIG,
     PRIORITY_CONFIG,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import type {
     FeedbackType,
     FeedbackStatus,
     FeedbackPriority,
-  } from "../../domain/models/feedback-models";
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import FilterSectionHeader from "./FilterSectionHeader.svelte";
   import FilterOptionGrid from "./FilterOptionGrid.svelte";
 

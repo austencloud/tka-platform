@@ -13,12 +13,12 @@
   5. Hit target circles (always on top for click capture)
 -->
 <script lang="ts">
-  import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     MotionColor, Orientation, RotationDirection, } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import type { GridHitTarget } from "../services/contracts/types";
-  import { getHitTargets, getHitTargetRadius } from "../services/grid-hit-target-calculator";
+  import { getHitTargets, getHitTargetRadius } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";
   import { SvgPropAnimator } from "../services/implementations/SvgPropAnimator";
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
 
@@ -26,7 +26,7 @@
   import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { PropRotAngleManager } from "$lib/shared/pictograph/prop/services/implementations/PropRotAngleManager";
-  import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
+  import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
@@ -47,6 +47,18 @@
   // Grid hit targets derived from current grid mode
   const hitTargets = $derived(getHitTargets(builderState.gridMode, builderState.showCenter));
   const hitRadius = getHitTargetRadius();
+
+  const LOCATION_TO_KEY_LABEL: Record<string, string> = {
+    [GridLocation.NORTHWEST]: "7",
+    [GridLocation.NORTH]: "8",
+    [GridLocation.NORTHEAST]: "9",
+    [GridLocation.WEST]: "4",
+    [GridLocation.CENTER]: "5",
+    [GridLocation.EAST]: "6",
+    [GridLocation.SOUTHWEST]: "1",
+    [GridLocation.SOUTH]: "2",
+    [GridLocation.SOUTHEAST]: "3",
+  };
 
   // Fallback circle radius (shown while SVG loads)
   const FALLBACK_RADIUS = 28;
@@ -176,7 +188,7 @@
 
   // Register animation callback on state so addMotion() can trigger animation
   $effect(() => {
-    builderState.setAnimationCallback(async (step: BuilderStep) => {
+    builderState.setAnimationCallback(async (step: BuilderStep, durationMs?: number) => {
       if (!activePropGroupRef) return;
       const animations: Promise<void>[] = [];
 
@@ -189,7 +201,7 @@
           rotationDirection: step.rotationDirection,
           turnCount: step.turnCount,
           startOrientation: step.startOrientation,
-          durationMs: ANIMATION_DURATION_MS,
+          durationMs: durationMs ?? ANIMATION_DURATION_MS,
           propCenter: activePropCenter,
         })
       );
@@ -212,13 +224,13 @@
               rotationDirection: blueStep.rotationDirection,
               turnCount: blueStep.turnCount,
               startOrientation: blueStep.startOrientation,
-              durationMs: ANIMATION_DURATION_MS,
+              durationMs: durationMs ?? ANIMATION_DURATION_MS,
               propCenter: bluePropData.svgData.center,
             })
           );
         } else {
           // Blue has no step here - fade out in sync with the active prop's animation
-          animations.push(fadeOutElement(ghostBluePropGroupRef, ANIMATION_DURATION_MS));
+          animations.push(fadeOutElement(ghostBluePropGroupRef, durationMs ?? ANIMATION_DURATION_MS));
         }
       }
 
@@ -240,13 +252,13 @@
               rotationDirection: redStep.rotationDirection,
               turnCount: redStep.turnCount,
               startOrientation: redStep.startOrientation,
-              durationMs: ANIMATION_DURATION_MS,
+              durationMs: durationMs ?? ANIMATION_DURATION_MS,
               propCenter: redPropData.svgData.center,
             })
           );
         } else {
           // Red has no step here - fade out in sync with the active prop's animation
-          animations.push(fadeOutElement(ghostRedPropGroupRef, ANIMATION_DURATION_MS));
+          animations.push(fadeOutElement(ghostRedPropGroupRef, durationMs ?? ANIMATION_DURATION_MS));
         }
       }
 
@@ -651,6 +663,17 @@
 
     <!-- Layer 5: Hit targets (always on top for clicks) -->
     {#each hitTargets as target (target.location)}
+      {#if builderState.keyboardMode}
+        <text
+          x={target.x}
+          y={target.y + 5}
+          class="key-label"
+          class:key-invalid={!isActiveTarget(target)}
+          text-anchor="middle"
+          dominant-baseline="middle"
+          aria-hidden="true"
+        >{LOCATION_TO_KEY_LABEL[target.location] ?? ""}</text>
+      {/if}
       <circle
         cx={target.x}
         cy={target.y}
@@ -844,6 +867,19 @@
     cursor: not-allowed;
     opacity: 0.3;
     pointer-events: none;
+  }
+
+  .key-label {
+    font-size: 28px;
+    font-weight: 700;
+    fill: rgba(255, 255, 255, 0.25);
+    pointer-events: none;
+    font-family: var(--font-mono, monospace);
+    user-select: none;
+  }
+
+  .key-label.key-invalid {
+    fill: rgba(255, 255, 255, 0.08);
   }
 
   /* Blue pulse - fill + stroke + subtle scale */

@@ -11,7 +11,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
 import type { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
-import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { cellPreWarmer } from "./CellPreWarmer";
 
 export class SequenceDataProvider {

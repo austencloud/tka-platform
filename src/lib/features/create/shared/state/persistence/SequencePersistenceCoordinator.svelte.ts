@@ -9,7 +9,7 @@
  * RESPONSIBILITY: Persistence coordination, observes state changes
  */
 
-import type { StartPositionData } from "../../domain/models/StartPositionData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";

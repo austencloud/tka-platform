@@ -13,11 +13,11 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreList } from "$lib/shared/firestore";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
-import type { FeedbackItem, AdminResponse, TesterConfirmation, TesterConfirmationStatus, FeedbackStatus, } from "../../domain/models/feedback-models";
-import { FeedbackItemSchema } from "../../domain/models/feedback-schemas";
-import type { FeedbackNotification } from "../../domain/models/notification-models";
+import type { FeedbackItem, AdminResponse, TesterConfirmation, TesterConfirmationStatus, FeedbackStatus, } from "$lib/shared/feedback/domain/models/feedback-models";
+import { FeedbackItemSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";
+import type { FeedbackNotification } from "$lib/shared/feedback/domain/models/notification-models";
 import * as notificationTriggerService from "$lib/features/feedback/services/notification-trigger-service";
-import { getFeedback } from "../feedback-querier";
+import { getFeedback } from "$lib/shared/feedback/services/feedback-querier";
 
 const COLLECTION_NAME = "feedback";
 

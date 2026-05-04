@@ -18,7 +18,7 @@ import {
 	isFeedbackType,
 	type FeedbackType,
 	type FeedbackPriority,
-} from "$lib/features/feedback/domain/models/feedback-models";
+} from "$lib/shared/feedback/domain/models/feedback-models";
 
 // ── Constants ────────────────────────────────────────────────────────
 

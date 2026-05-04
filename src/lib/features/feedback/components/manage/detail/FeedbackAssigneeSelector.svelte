@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
   import type { Contributor } from "../../../domain/models/contributor-models";
   import type { FeedbackDetailState } from "../../../state/feedback-detail-state.svelte";
-  import { getContributorLoader } from "$lib/features/feedback/getContributorLoader";
+  import { getContributorLoader } from "$lib/shared/feedback/getContributorLoader";
 
   const {
     detailState,

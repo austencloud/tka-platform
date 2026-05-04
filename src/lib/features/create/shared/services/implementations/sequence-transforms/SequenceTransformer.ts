@@ -12,7 +12,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-import type { ReversalDetector } from "../../reversal-detector";
+import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import type { TargetHand } from "../../../state/panel-coordination-state.svelte";
 
 import {
@@ -26,7 +26,7 @@ import {
   rewindSequence,
   shiftStartPosition,
   deriveSequenceLetters,
-} from "./sequence-transforms";
+} from "$lib/shared/create/services/sequence-transforms";
 
 export class SequenceTransformer {
   constructor(
@@ -133,7 +133,7 @@ export class SequenceTransformer {
 // ============================================================================
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { reversalDetector } from "../../reversal-detector";
+import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
 export const sequenceTransformer = new SequenceTransformer(
