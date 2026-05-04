@@ -21,18 +21,15 @@ import {
   downloadBlob,
   generateTimestampedFilename,
 } from "$lib/shared/foundation/services/file-downloader";
-import type { AnimationPlaybackController } from "../implementations/AnimationPlaybackController";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
 import {
   getHeaderHeight,
   getProgressBarHeight,
-  renderStepNumberToCanvas,
-  renderWordHeaderToCanvas,
-  renderProgressBarToCanvas,
 } from "../canvas-renderer";
 import type { VideoExporter } from "../implementations/VideoExporter";
 import type { CompositeVideoRenderer } from "../implementations/CompositeVideoRenderer";
 import type { ExportGlyphPrerenderer } from "../implementations/ExportGlyphPrerenderer";
-import type { GlyphAsset } from "../implementations/ExportGlyphPrerenderer";
+import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
 
 export type VideoExportFormat = "webm" | "mp4";
 
@@ -85,11 +82,11 @@ import type { BackgroundVideoEncoder } from "../implementations/BackgroundVideoE
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
 import { getExportDimensions, calculateBitrate } from "../../shared/domain/video-export-calculations";
-import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/features/browse/sequences/display/services/sequence-difficulty-calculator";
+import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-import { Period } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
-import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 export class VideoExportOrchestrator {
   private _isExporting = false;
@@ -437,6 +434,15 @@ export class VideoExportOrchestrator {
       // than the previous approach of compositing at source size then resizing.
       const offscreenCanvas = document.createElement("canvas");
 
+      // Scale factor from source canvas to output resolution.
+      const scaleFactor = isCompositeMode ? 1 : outputWidth / sourceWidth;
+
+      // Header/progress bar heights at OUTPUT resolution
+      const headerHeight = Math.round(srcHeaderHeight * scaleFactor);
+      const progressBarHeight = Math.round(srcProgressBarHeight * scaleFactor);
+      // The square animation area in the output
+      const outputCanvasSize = isCompositeMode ? sourceWidth : outputWidth;
+
       // Set canvas dimensions based on mode
       if (isCompositeMode) {
         const compositeDims = this.compositeRenderer.getCompositeDimensions();
@@ -458,31 +464,34 @@ export class VideoExportOrchestrator {
       offscreenCtx.imageSmoothingEnabled = true;
       offscreenCtx.imageSmoothingQuality = "high";
 
-      // Scale factor from source canvas to output resolution.
-      const scaleFactor = isCompositeMode ? 1 : outputWidth / sourceWidth;
-
-      // Header/progress bar heights at OUTPUT resolution
-      const headerHeight = Math.round(srcHeaderHeight * scaleFactor);
-      const progressBarHeight = Math.round(srcProgressBarHeight * scaleFactor);
-      // The square animation area in the output
-      const outputCanvasSize = isCompositeMode ? sourceWidth : outputWidth;
-      const actualCanvasSize = outputCanvasSize;
-
-      // Track the current glyph cache key for crossfade detection
-      let currentCacheKey = "";
-      let currentGlyph: GlyphAsset | null = null;
-      let currentStepNumber: number | null = null;
-
-      // Track previous frame's glyph and beat number for crossfade
-      let previousGlyph: GlyphAsset | null = null;
-      let previousStepNumber: number | null = null;
-
-      // Crossfade configuration (matches GlyphOverlay.svelte)
-      const CROSSFADE_DURATION_MS = 200;
-      const crossfadeDurationFrames = Math.ceil(
-        (CROSSFADE_DURATION_MS / 1000) * fps
+      // Build frame compositor for overlay rendering
+      const compositorConfig: FrameCompositorConfig = {
+        outputWidth,
+        outputHeight,
+        sourceWidth,
+        headerHeight,
+        progressBarHeight,
+        outputCanvasSize,
+        scaleFactor,
+        fps,
+        showTkaGlyph,
+        showStepNumbers,
+        showWordHeader,
+        showProgressBar,
+        isDarkMode,
+        isCompositeMode: !!isCompositeMode,
+        sequenceWord: panelState.sequenceWord,
+        difficultyLevel,
+        loopComponents,
+        rotationPeriod,
+        inversionPeriod,
+        loopPeriod,
+      };
+      const frameCompositor = new ExportFrameCompositor(
+        compositorConfig,
+        this.glyphPrerenderer,
+        this.compositeRenderer
       );
-      let framesSinceTransition = 0;
 
       // Frame duration in microseconds for WebCodecs timestamps
       const frameDurationMicros = Math.round(1_000_000 / fps);
@@ -561,238 +570,27 @@ export class VideoExportOrchestrator {
         // When the canvas is temporarily unavailable, the offscreen canvas keeps
         // its previous content, producing a duplicated frame in the video.
         if (canvasAvailable) {
-          if (isCompositeMode) {
-            // Composite mode: render animation + grid + beat highlight
-            const compositeStepIndex = isInStartPosition ? 0 : Math.max(0, stepIndex);
-            this.compositeRenderer.renderCompositeFrame(
-              canvas,
-              compositeStepIndex,
-              offscreenCanvas
-            );
-          } else {
-            // Normal mode: scale each source layer up to output resolution individually.
-            // High-quality (Lanczos) interpolation is set on offscreenCtx above.
-            offscreenCtx.clearRect(
-              0,
-              0,
-              offscreenCanvas.width,
-              offscreenCanvas.height
-            );
-
-            // Animation content goes below header (and above progress bar), at output scale
-            const canvasY = headerHeight > 0 ? headerHeight : 0;
-
-            // Scale the live canvas to output resolution. The 9-arg drawImage
-            // handles canvas resize mid-export (mobile layout shifts) and scales
-            // from source to output in a single step.
-            offscreenCtx.drawImage(
-              canvas,
-              0, 0, canvas.width, canvas.height,                       // source: full current canvas
-              0, canvasY, outputCanvasSize, outputCanvasSize             // dest: fill output square area
-            );
-
-            // Composite overlay canvases (trails, fire, charcoal sparks, LED effects).
-            // Each overlay is scaled from its source size to output resolution
-            // individually, preserving detail in transparent layers (trails, glow).
-            const container = canvas.parentElement;
-            if (container) {
-              const overlayCanvases = container.querySelectorAll("canvas");
-              for (const overlay of overlayCanvases) {
-                if (overlay === canvas) continue; // Skip the main canvas
-                if (overlay.width === 0 || overlay.height === 0) continue; // Skip uninitialized
-
-                // --- EXPORT DIAGNOSTIC: flat strings ---
-                if (i < 3) {
-                  const el = overlay as HTMLCanvasElement;
-                  const isWebGL = !!el.getContext("webgl2");
-                  const oType = el.dataset?.overlayType ?? "NONE";
-                  const blend = oType === "emissive" ? "lighter" : "source-over";
-                  console.log(`[export-comp] f${i} overlay ${el.width}x${el.height} type=${oType} blend=${blend} webgl=${isWebGL}`);
-
-                  if (isWebGL) {
-                    const glCtx = el.getContext("webgl2") as WebGL2RenderingContext;
-                    if (glCtx) {
-                      const px = new Uint8Array(4);
-                      const w = el.width, h = el.height;
-                      glCtx.readPixels(Math.floor(w/2), Math.floor(h/2), 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
-                      const center = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
-                      glCtx.readPixels(Math.floor(w/2), Math.floor(h*0.25), 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
-                      const quarter = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
-                      glCtx.readPixels(5, 5, 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
-                      const corner = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
-                      console.log(`[export-comp] f${i} pixels: center=${center} quarter=${quarter} corner=${corner}`);
-                    }
-                  }
-                }
-
-                const isEmissive = (overlay as HTMLCanvasElement).dataset?.overlayType === "emissive";
-                if (isEmissive) {
-                  offscreenCtx.globalCompositeOperation = "lighter";
-                }
-                offscreenCtx.drawImage(
-                  overlay,
-                  0, 0, overlay.width, overlay.height,                  // source: full overlay
-                  0, canvasY, outputCanvasSize, outputCanvasSize          // dest: scaled to output
-                );
-                if (isEmissive) {
-                  offscreenCtx.globalCompositeOperation = "source-over";
-                }
-              }
-            }
-          }
-
-          // Use the stepIndex calculated above (already accounts for start position offset).
-          // During start position, stepIndex is -1 so no glyph or beat number is shown.
-          const clampedStepIndex = Math.max(
-            0,
-            Math.min(stepIndex, steps.length - 1)
+          const compositeStepIndex = isInStartPosition ? 0 : Math.max(0, stepIndex);
+          frameCompositor.renderCanvasLayers(
+            offscreenCtx,
+            canvas,
+            !!isCompositeMode,
+            compositeStepIndex,
+            offscreenCanvas,
+            i
           );
 
-          // Calculate beat number for display (1-indexed, null during start position)
-          const stepNumber = isInStartPosition ? null : clampedStepIndex + 1;
-
-          // Use cache key for glyph transition detection (includes letter + turns + colors).
-          // During start position (stepIndex === -1), no glyph should be shown.
-          const cacheKey = isInStartPosition
-            ? ""
-            : this.glyphPrerenderer.getCacheKeyForStep(clampedStepIndex);
-
-          // Detect transitions (cache key or beat number changed)
-          const glyphChanged = cacheKey !== currentCacheKey;
-          const stepNumberChanged = stepNumber !== currentStepNumber;
-          const transitionDetected = glyphChanged || stepNumberChanged;
-
-          if (transitionDetected) {
-            // Store previous state for crossfade
-            previousGlyph = currentGlyph;
-            previousStepNumber = currentStepNumber;
-
-            // Update current state
-            currentCacheKey = cacheKey;
-            currentStepNumber = stepNumber;
-
-            if (glyphChanged) {
-              currentGlyph = cacheKey
-                ? this.glyphPrerenderer.getGlyph(cacheKey)
-                : null;
-            }
-
-            // Reset crossfade counter
-            framesSinceTransition = 0;
-          }
-
-          // Calculate crossfade opacities (linear fade over 200ms)
-          const inCrossfade = framesSinceTransition < crossfadeDurationFrames;
-          const fadeProgress = inCrossfade
-            ? framesSinceTransition / crossfadeDurationFrames
-            : 1;
-
-          const fadeOutOpacity = Math.max(0, 1 - fadeProgress); // 1 → 0
-          const fadeInOpacity = Math.min(1, fadeProgress); // 0 → 1
-
-          // Apply translation offset for header when rendering overlays
-          if (headerHeight > 0 && !isCompositeMode) {
-            offscreenCtx.save();
-            offscreenCtx.translate(0, headerHeight);
-          }
-
-          // Render TKA glyph if enabled (pre-rendered includes letter + dash + turns)
-          // Dark mode is already baked into the pre-rendered image - no ctx.filter needed
-          if (showTkaGlyph) {
-            // Render fading-out glyph (if in crossfade and previous exists)
-            if (inCrossfade && previousGlyph?.image && fadeOutOpacity > 0) {
-              this.drawPrerenderedGlyph(
-                offscreenCtx,
-                actualCanvasSize,
-                previousGlyph,
-                fadeOutOpacity
-              );
-            }
-
-            // Render fading-in glyph (current glyph)
-            if (currentGlyph?.image) {
-              const opacity = inCrossfade ? fadeInOpacity : 1;
-              this.drawPrerenderedGlyph(
-                offscreenCtx,
-                actualCanvasSize,
-                currentGlyph,
-                opacity
-              );
-            }
-          }
-
-          // Render beat numbers if enabled
-          if (showStepNumbers) {
-            // Render fading-out beat number (if in crossfade and previous exists)
-            if (
-              inCrossfade &&
-              previousStepNumber !== null &&
-              fadeOutOpacity > 0
-            ) {
-              renderStepNumberToCanvas(
-                offscreenCtx,
-                actualCanvasSize,
-                previousStepNumber,
-                fadeOutOpacity,
-                isDarkMode
-              );
-            }
-
-            // Render fading-in beat number (current beat number)
-            if (currentStepNumber !== null) {
-              const opacity = inCrossfade ? fadeInOpacity : 1;
-              renderStepNumberToCanvas(
-                offscreenCtx,
-                actualCanvasSize,
-                currentStepNumber,
-                opacity,
-                isDarkMode
-              );
-            }
-          }
-
-          // Restore context if we applied header offset
-          if (headerHeight > 0 && !isCompositeMode) {
-            offscreenCtx.restore();
-          }
-
-          // Render word header if enabled (at top of canvas, no offset)
-          // Pass activeStepNumber for letter highlighting
-          if (showWordHeader) {
-            const activeStepNumber = stepNumber;
-            renderWordHeaderToCanvas(
-              offscreenCtx,
-              actualCanvasSize,
-              panelState.sequenceWord,
-              isDarkMode,
-              activeStepNumber,
-              difficultyLevel,
-              loopComponents,
-              rotationPeriod,
-              inversionPeriod,
-              loopPeriod
-            );
-          }
-
-          // Render progress bar if enabled (below canvas area).
-          // The progress bar expects a 0-based step index float.
-          if (showProgressBar && !isCompositeMode) {
-            const progressBarY = headerHeight + outputCanvasSize;
-            const progressBeat = isInStartPosition
-              ? 0
-              : isInEndHold
-                ? steps.length
-                : (playbackPosition - 1); // Undo the +1 offset to get 0-based step index
-            renderProgressBarToCanvas(
-              offscreenCtx,
-              actualCanvasSize,
-              progressBarY,
-              steps.length,
-              progressBeat,
-              stepDurations,
-              isDarkMode
-            );
-          }
+          frameCompositor.renderOverlays(
+            offscreenCtx,
+            canvas,
+            stepIndex,
+            isInStartPosition,
+            isInEndHold,
+            playbackPosition,
+            steps,
+            stepDurations,
+            i
+          );
         }
 
         // -----------------------------------------------------------------------
@@ -819,9 +617,6 @@ export class VideoExportOrchestrator {
         } else if (inlineExporter) {
           await inlineExporter.addFrame(offscreenCanvas);
         }
-
-        // Increment crossfade frame counter
-        framesSinceTransition++;
 
         onProgress({
           progress: (i + 1) / totalFrames,
@@ -945,55 +740,6 @@ export class VideoExportOrchestrator {
     );
   }
 
-  /**
-   * Get the step number for a specific frame
-   * Matches the logic in AnimatorCanvas.svelte's stepNumber derived
-   * Step numbers are 1-indexed (steps[0] = step 1, steps[1] = step 2, etc.)
-   */
-  private getStepNumberForFrame(
-    stepPosition: number,
-    panelState: AnimationPanelState
-  ): number | null {
-    if (!panelState.sequenceData?.steps) {
-      return null;
-    }
-
-    // Calculate which step index we're showing
-    const stepIndex = Math.floor(stepPosition);
-    const clampedIndex = Math.max(
-      0,
-      Math.min(stepIndex, panelState.sequenceData.steps.length - 1)
-    );
-
-    // Beat numbers are 1-indexed
-    return clampedIndex + 1;
-  }
-
-  /**
-   * Draw a pre-rendered composite glyph (letter + dash + turns column) onto the canvas.
-   * Position matches the standard glyph origin: x=50, y=800 in 950px viewBox,
-   * adjusted upward by yOffset to accommodate top turn numbers.
-   */
-  private drawPrerenderedGlyph(
-    ctx: CanvasRenderingContext2D,
-    canvasSize: number,
-    glyph: GlyphAsset,
-    opacity: number
-  ): void {
-    const gridScaleFactor = canvasSize / 950;
-
-    // Position at standard glyph origin, shifted up by yOffset for turn numbers
-    const x = 50 * gridScaleFactor;
-    const y = (800 - glyph.yOffset) * gridScaleFactor;
-
-    const scaledWidth = glyph.dimensions.width * gridScaleFactor;
-    const scaledHeight = glyph.dimensions.height * gridScaleFactor;
-
-    ctx.save();
-    ctx.globalAlpha = opacity;
-    ctx.drawImage(glyph.image, x, y, scaledWidth, scaledHeight);
-    ctx.restore();
-  }
 
   /**
    * Convert a time position (in duration units) to a beat position (float).

@@ -1,0 +1,308 @@
+import {
+  getHeaderHeight,
+  getProgressBarHeight,
+  renderStepNumberToCanvas,
+  renderWordHeaderToCanvas,
+  renderProgressBarToCanvas,
+} from "../canvas-renderer";
+import type { GlyphAsset } from "./ExportGlyphPrerenderer";
+import type { ExportGlyphPrerenderer } from "./ExportGlyphPrerenderer";
+import type { CompositeVideoRenderer } from "./CompositeVideoRenderer";
+import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+
+export interface FrameCompositorConfig {
+  outputWidth: number;
+  outputHeight: number;
+  sourceWidth: number;
+  headerHeight: number;
+  progressBarHeight: number;
+  outputCanvasSize: number;
+  scaleFactor: number;
+  fps: number;
+  showTkaGlyph: boolean;
+  showStepNumbers: boolean;
+  showWordHeader: boolean;
+  showProgressBar: boolean;
+  isDarkMode: boolean;
+  isCompositeMode: boolean;
+  sequenceWord: string;
+  difficultyLevel: number | null;
+  loopComponents: Set<string> | null;
+  rotationPeriod: Period | undefined;
+  inversionPeriod: Period | undefined;
+  loopPeriod: number | undefined;
+}
+
+interface CrossfadeState {
+  currentCacheKey: string;
+  currentGlyph: GlyphAsset | null;
+  currentStepNumber: number | null;
+  previousGlyph: GlyphAsset | null;
+  previousStepNumber: number | null;
+  framesSinceTransition: number;
+}
+
+const CROSSFADE_DURATION_MS = 200;
+
+export class ExportFrameCompositor {
+  private crossfade: CrossfadeState = {
+    currentCacheKey: "",
+    currentGlyph: null,
+    currentStepNumber: null,
+    previousGlyph: null,
+    previousStepNumber: null,
+    framesSinceTransition: 0,
+  };
+  private crossfadeDurationFrames: number;
+
+  constructor(
+    private readonly config: FrameCompositorConfig,
+    private readonly glyphPrerenderer: ExportGlyphPrerenderer,
+    private readonly compositeRenderer: CompositeVideoRenderer
+  ) {
+    this.crossfadeDurationFrames = Math.ceil(
+      (CROSSFADE_DURATION_MS / 1000) * config.fps
+    );
+  }
+
+  static computeLayoutFromCanvas(
+    canvas: HTMLCanvasElement,
+    showWordHeader: boolean,
+    showProgressBar: boolean,
+    resolution: number | undefined,
+    isCompositeMode: boolean,
+    getExportDimensions: (res: number, ar: number) => { width: number; height: number }
+  ): { sourceWidth: number; sourceHeight: number; outputWidth: number; outputHeight: number; srcHeaderHeight: number; srcProgressBarHeight: number } {
+    const srcHeaderHeight = showWordHeader ? getHeaderHeight(canvas.width) : 0;
+    const srcProgressBarHeight = showProgressBar ? getProgressBarHeight(canvas.width) : 0;
+    const sourceWidth = Math.round(canvas.width);
+    const sourceHeight = Math.round(canvas.width + srcHeaderHeight + srcProgressBarHeight);
+
+    let outputWidth: number;
+    let outputHeight: number;
+
+    if (resolution) {
+      const aspectRatio = sourceWidth / sourceHeight;
+      const dims = getExportDimensions(resolution, aspectRatio);
+      outputWidth = dims.width;
+      outputHeight = dims.height;
+    } else {
+      outputWidth = sourceWidth;
+      outputHeight = sourceHeight;
+    }
+
+    return { sourceWidth, sourceHeight, outputWidth, outputHeight, srcHeaderHeight, srcProgressBarHeight };
+  }
+
+  renderOverlays(
+    offscreenCtx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    stepIndex: number,
+    isInStartPosition: boolean,
+    isInEndHold: boolean,
+    playbackPosition: number,
+    steps: readonly { duration?: number }[],
+    stepDurations: number[],
+    frameIndex: number
+  ): void {
+    const {
+      headerHeight,
+      outputCanvasSize,
+      isCompositeMode,
+      showTkaGlyph,
+      showStepNumbers,
+      showWordHeader,
+      showProgressBar,
+      isDarkMode,
+      sequenceWord,
+      difficultyLevel,
+      loopComponents,
+      rotationPeriod,
+      inversionPeriod,
+      loopPeriod,
+    } = this.config;
+
+    const actualCanvasSize = outputCanvasSize;
+    const clampedStepIndex = Math.max(0, Math.min(stepIndex, steps.length - 1));
+    const stepNumber = isInStartPosition ? null : clampedStepIndex + 1;
+    const cacheKey = isInStartPosition
+      ? ""
+      : this.glyphPrerenderer.getCacheKeyForStep(clampedStepIndex);
+
+    // Detect transitions
+    const glyphChanged = cacheKey !== this.crossfade.currentCacheKey;
+    const stepNumberChanged = stepNumber !== this.crossfade.currentStepNumber;
+    const transitionDetected = glyphChanged || stepNumberChanged;
+
+    if (transitionDetected) {
+      this.crossfade.previousGlyph = this.crossfade.currentGlyph;
+      this.crossfade.previousStepNumber = this.crossfade.currentStepNumber;
+      this.crossfade.currentCacheKey = cacheKey;
+      this.crossfade.currentStepNumber = stepNumber;
+
+      if (glyphChanged) {
+        this.crossfade.currentGlyph = cacheKey
+          ? this.glyphPrerenderer.getGlyph(cacheKey)
+          : null;
+      }
+
+      this.crossfade.framesSinceTransition = 0;
+    }
+
+    // Calculate crossfade opacities
+    const inCrossfade = this.crossfade.framesSinceTransition < this.crossfadeDurationFrames;
+    const fadeProgress = inCrossfade
+      ? this.crossfade.framesSinceTransition / this.crossfadeDurationFrames
+      : 1;
+    const fadeOutOpacity = Math.max(0, 1 - fadeProgress);
+    const fadeInOpacity = Math.min(1, fadeProgress);
+
+    // Apply translation offset for header
+    if (headerHeight > 0 && !isCompositeMode) {
+      offscreenCtx.save();
+      offscreenCtx.translate(0, headerHeight);
+    }
+
+    // Render TKA glyph
+    if (showTkaGlyph) {
+      if (inCrossfade && this.crossfade.previousGlyph?.image && fadeOutOpacity > 0) {
+        this.drawPrerenderedGlyph(offscreenCtx, actualCanvasSize, this.crossfade.previousGlyph, fadeOutOpacity);
+      }
+      if (this.crossfade.currentGlyph?.image) {
+        const opacity = inCrossfade ? fadeInOpacity : 1;
+        this.drawPrerenderedGlyph(offscreenCtx, actualCanvasSize, this.crossfade.currentGlyph, opacity);
+      }
+    }
+
+    // Render beat numbers
+    if (showStepNumbers) {
+      if (inCrossfade && this.crossfade.previousStepNumber !== null && fadeOutOpacity > 0) {
+        renderStepNumberToCanvas(offscreenCtx, actualCanvasSize, this.crossfade.previousStepNumber, fadeOutOpacity, isDarkMode);
+      }
+      if (this.crossfade.currentStepNumber !== null) {
+        const opacity = inCrossfade ? fadeInOpacity : 1;
+        renderStepNumberToCanvas(offscreenCtx, actualCanvasSize, this.crossfade.currentStepNumber, opacity, isDarkMode);
+      }
+    }
+
+    // Restore context
+    if (headerHeight > 0 && !isCompositeMode) {
+      offscreenCtx.restore();
+    }
+
+    // Render word header
+    if (showWordHeader) {
+      renderWordHeaderToCanvas(
+        offscreenCtx,
+        actualCanvasSize,
+        sequenceWord,
+        isDarkMode,
+        stepNumber,
+        difficultyLevel,
+        loopComponents,
+        rotationPeriod,
+        inversionPeriod,
+        loopPeriod
+      );
+    }
+
+    // Render progress bar
+    if (showProgressBar && !isCompositeMode) {
+      const progressBarY = headerHeight + outputCanvasSize;
+      const progressBeat = isInStartPosition
+        ? 0
+        : isInEndHold
+          ? steps.length
+          : (playbackPosition - 1);
+      renderProgressBarToCanvas(offscreenCtx, actualCanvasSize, progressBarY, steps.length, progressBeat, stepDurations, isDarkMode);
+    }
+
+    this.crossfade.framesSinceTransition++;
+  }
+
+  renderCanvasLayers(
+    offscreenCtx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    isCompositeMode: boolean,
+    compositeStepIndex: number,
+    offscreenCanvas: HTMLCanvasElement,
+    frameIndex: number
+  ): void {
+    const { headerHeight, outputCanvasSize } = this.config;
+
+    if (isCompositeMode) {
+      this.compositeRenderer.renderCompositeFrame(canvas, compositeStepIndex, offscreenCanvas);
+    } else {
+      offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+      const canvasY = headerHeight > 0 ? headerHeight : 0;
+      offscreenCtx.drawImage(
+        canvas,
+        0, 0, canvas.width, canvas.height,
+        0, canvasY, outputCanvasSize, outputCanvasSize
+      );
+
+      const container = canvas.parentElement;
+      if (container) {
+        const overlayCanvases = container.querySelectorAll("canvas");
+        for (const overlay of overlayCanvases) {
+          if (overlay === canvas) continue;
+          if (overlay.width === 0 || overlay.height === 0) continue;
+
+          if (frameIndex < 3) {
+            const el = overlay as HTMLCanvasElement;
+            const isWebGL = !!el.getContext("webgl2");
+            const oType = el.dataset?.overlayType ?? "NONE";
+            const blend = oType === "emissive" ? "lighter" : "source-over";
+            console.log(`[export-comp] f${frameIndex} overlay ${el.width}x${el.height} type=${oType} blend=${blend} webgl=${isWebGL}`);
+
+            if (isWebGL) {
+              const glCtx = el.getContext("webgl2") as WebGL2RenderingContext;
+              if (glCtx) {
+                const px = new Uint8Array(4);
+                const w = el.width, h = el.height;
+                glCtx.readPixels(Math.floor(w / 2), Math.floor(h / 2), 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
+                const center = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
+                glCtx.readPixels(Math.floor(w / 2), Math.floor(h * 0.25), 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
+                const quarter = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
+                glCtx.readPixels(5, 5, 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
+                const corner = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
+                console.log(`[export-comp] f${frameIndex} pixels: center=${center} quarter=${quarter} corner=${corner}`);
+              }
+            }
+          }
+
+          const isEmissive = (overlay as HTMLCanvasElement).dataset?.overlayType === "emissive";
+          if (isEmissive) {
+            offscreenCtx.globalCompositeOperation = "lighter";
+          }
+          offscreenCtx.drawImage(
+            overlay,
+            0, 0, overlay.width, overlay.height,
+            0, canvasY, outputCanvasSize, outputCanvasSize
+          );
+          if (isEmissive) {
+            offscreenCtx.globalCompositeOperation = "source-over";
+          }
+        }
+      }
+    }
+  }
+
+  private drawPrerenderedGlyph(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    glyph: GlyphAsset,
+    opacity: number
+  ): void {
+    const gridScaleFactor = canvasSize / 950;
+    const x = 50 * gridScaleFactor;
+    const y = (800 - glyph.yOffset) * gridScaleFactor;
+    const scaledWidth = glyph.dimensions.width * gridScaleFactor;
+    const scaledHeight = glyph.dimensions.height * gridScaleFactor;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(glyph.image, x, y, scaledWidth, scaledHeight);
+    ctx.restore();
+  }
+}
