@@ -25,6 +25,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
+  import { createSequenceActionsSubdrawerState } from "../../state/sequence-actions-subdrawer-state.svelte";
 
   import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
   import SequencePreviewDialog from "./SequencePreviewDialog.svelte";
