@@ -22,7 +22,7 @@ import {
   LOCATION_ANGLES,
   PI,
   TWO_PI,
-} from "$lib/features/compose/shared/domain/math-constants";
+} from "$lib/shared/foundation/domain/math-constants";
 
 export type BuilderPhase = "idle" | "placing" | "building" | "animating" | "complete";
 
@@ -41,6 +41,7 @@ export function createAssembleState() {
   let activeHand = $state<MotionColor>(MotionColor.BLUE);
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
   let showCenter = $state<boolean>(false);
+  let keyboardMode = $state<boolean>(false);
 
   // Per-hand completed steps
   let blueSteps = $state<BuilderStep[]>([]);
@@ -56,7 +57,7 @@ export function createAssembleState() {
 
   // Animation callback - set by the component to trigger SvgPropAnimator
   let onAnimationRequest = $state<
-    ((step: BuilderStep) => Promise<void>) | null
+    ((step: BuilderStep, durationMs?: number) => Promise<void>) | null
   >(null);
 
   // Undo animation callback - plays the reverse animation before state is modified
@@ -333,6 +334,10 @@ export function createAssembleState() {
     showCenter = show;
   }
 
+  function toggleKeyboardMode(): void {
+    keyboardMode = !keyboardMode;
+  }
+
   /** Switch to a specific hand, restoring that hand's last position */
   function switchToHand(hand: MotionColor): void {
     if (hand === activeHand) return;
@@ -352,7 +357,7 @@ export function createAssembleState() {
     }
   }
 
-  function setAnimationCallback(cb: (step: BuilderStep) => Promise<void>): void {
+  function setAnimationCallback(cb: (step: BuilderStep, durationMs?: number) => Promise<void>): void {
     onAnimationRequest = cb;
   }
 
@@ -380,6 +385,7 @@ export function createAssembleState() {
     get canFinishHand() { return canFinishHand; },
     get showCenter() { return showCenter; },
     get canChangeGridMode() { return canChangeGridMode; },
+    get keyboardMode() { return keyboardMode; },
 
     // Actions
     handlePointClick,
@@ -393,6 +399,7 @@ export function createAssembleState() {
     setGridMode,
     setShowCenter,
     switchToHand,
+    toggleKeyboardMode,
     setAnimationCallback,
     setUndoAnimationCallback,
   };
