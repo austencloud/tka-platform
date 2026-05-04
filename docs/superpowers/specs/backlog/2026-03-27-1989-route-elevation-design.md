@@ -2,11 +2,11 @@
 status: backlog
 value: 3
 effort: XL
-remaining: "Real command parser, ASCII pictograph renderer, auth adapter"
+remaining: "Auth (LOGIN/LOGOUT/WHOAMI) + GENERATE wiring + easter eggs shipped. Next: SAVE/LOAD/DELETE commands, filesystem wiring (real library in SEQUENCES dir), construct, browse+cards, tutorial+config"
 depends_on: ""
 plan_path: ""
 tags: []
-last_triaged: 2026-04-26
+last_triaged: 2026-05-04
 ---
 # /1989 Route Elevation: TKAUTIL.COM as a Real CLI Client
 

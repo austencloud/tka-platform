@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" 
+    id="Layer_1" 
+    xmlns="http://www.w3.org/2000/svg" 
+    x="0" 
+    y="0" 
+    viewBox="0 0 950 950" 
+    xml:space="preserve">
+  <style>
+    /* Default: show normal points, hide strict points */
+    .diamond-grid-invisible{fill:none}
+    .normal-hand-point{fill:currentColor}
+    .normal-layer2-point{fill:none}
+    .strict-hand-point{fill:none}
+    .strict-layer2-point{fill:none}
+
+    /* Strict mode: hide normal points, show strict points */
+    .strict-mode .normal-hand-point{fill:none}
+    .strict-mode .normal-layer2-point{fill:none}
+    .strict-mode .strict-hand-point{fill:currentColor}
+    .strict-mode .strict-layer2-point{fill:currentColor}
+  </style>
+  
+  <!-- Outer points -->
+  <circle id="n_diamond_outer_point" cx="475" cy="175" r="25"/>
+  <circle id="e_diamond_outer_point" cx="775" cy="475" r="25"/>
+  <circle id="s_diamond_outer_point" cx="475" cy="775" r="25"/>
+  <circle id="w_diamond_outer_point" cx="175" cy="475" r="25"/>
+  
+  <!-- Hand points -->
+  <circle id="n_diamond_hand_point" class="normal-hand-point" cx="475" cy="331.9" r="4.7"/>
+  <circle id="e_diamond_hand_point" class="normal-hand-point" cx="618.1" cy="475" r="4.7"/>
+  <circle id="s_diamond_hand_point" class="normal-hand-point" cx="475" cy="618.1" r="4.7"/>
+  <circle id="w_diamond_hand_point" class="normal-hand-point" cx="331.9" cy="475" r="4.7"/>
+  
+  <!-- Layer 2 points -->
+  <circle id="ne_diamond_layer2_point" class="normal-layer2-point" cx="618.1" cy="331.9" r="8.8"/>
+  <circle id="se_diamond_layer2_point" class="normal-layer2-point" cx="618.1" cy="618.1" r="8.8"/>
+  <circle id="sw_diamond_layer2_point" class="normal-layer2-point" cx="331.9" cy="618.1" r="8.8"/>
+  <circle id="nw_diamond_layer2_point" class="normal-layer2-point" cx="331.9" cy="331.9" r="8.8"/>
+  
+  <!-- Layer 2 strict points -->
+  <circle id="ne_diamond_layer2_point_strict" class="strict-layer2-point" cx="625" cy="325" r="8.8"/>
+  <circle id="se_diamond_layer2_point_strict" class="strict-layer2-point" cx="625" cy="625" r="8.8"/>
+  <circle id="sw_diamond_layer2_point_strict" class="strict-layer2-point" cx="325" cy="625" r="8.8"/>
+  <circle id="nw_diamond_layer2_point_strict" class="strict-layer2-point" cx="325" cy="325" r="8.8"/>
+  
+  <!-- Hand strict points -->
+  <circle id="n_diamond_hand_point_strict" class="strict-hand-point" cx="475" cy="325" r="4.7"/>
+  <circle id="e_diamond_hand_point_strict" class="strict-hand-point" cx="625" cy="475" r="4.7"/>
+  <circle id="s_diamond_hand_point_strict" class="strict-hand-point" cx="475" cy="625" r="4.7"/>
+  <circle id="w_diamond_hand_point_strict" class="strict-hand-point" cx="325" cy="475" r="4.7"/>
+  
+  <!-- Center point -->
+  <circle id="center_point" cx="475" cy="475" r="12"/>
+</svg>
