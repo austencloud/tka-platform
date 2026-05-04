@@ -15,7 +15,20 @@
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
   import PersonalityBars from "./PersonalityBars.svelte";
   import type { CoralSceneRenderer } from "../services/implementations/CoralSceneRenderer";
-  type ColorPreset = "default" | "cyan" | "blue" | "lime" | "amber" | "rose" | "emerald" | "red" | "gray";
+  import { createDeepOceanLabState } from "../state/deep-ocean-lab-state.svelte";
+  import {
+    type ColorPreset,
+    moodOptions as MOOD_OPTIONS,
+    wobbleOptions as WOBBLE_OPTIONS,
+    rareBehaviorOptions as RARE_BEHAVIOR_OPTIONS,
+    getMoodColor as getFishMoodColor,
+    triggerMood as triggerMoodAction,
+    triggerWobble as triggerWobbleAction,
+    triggerRareBehavior as triggerRareBehaviorAction,
+    forceHuntOnSelected as forceHuntAction,
+    spawnFish as spawnFishAction,
+    spawnJellyfish as spawnJellyfishAction,
+  } from "../services/fish-behavior-controls";
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
