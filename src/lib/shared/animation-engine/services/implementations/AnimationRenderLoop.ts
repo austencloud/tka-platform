@@ -9,14 +9,15 @@
  * Handles RAF scheduling, trail point gathering, and scene rendering.
  */
 
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import type { ITrailCapturer as TrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
+import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
 import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode } from "../../domain/types/TrailTypes";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
 import type { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
 import type { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";
+import type { RenderedPropTransform, PropTipData } from "../../domain/types/FireTypes";
 import type { FireTipTrackerConfig } from "./FireTipTracker";
 import type { FireTipTracker } from "./FireTipTracker";
 import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer'
@@ -55,7 +56,7 @@ import type {
 import { QualityTier } from "../../domain/types/QualityTypes";
 import { effectErrorSignal } from "../../state/effect-error-signal.svelte";
 import { resolveEffect } from "../../domain/types/TipEffectTypes";
-import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
+import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 // ============================================================================
 // Longtask observer singleton - one PerformanceObserver shared across every
@@ -107,6 +108,35 @@ function hasTrailTips(map: TipEffectMap | undefined): boolean {
   return Object.values(map).some(a => a.effect === "trails");
 }
 
+
+/**
+ * Context shared across all registry effect dispatches within a single frame.
+ */
+interface EffectDispatchContext {
+  tipMap: TipEffectMap;
+  sharedTips: PropTipData[];
+  params: RenderFrameParams;
+  currentTime: number;
+  renderedTransforms: { blue: RenderedPropTransform | null; red: RenderedPropTransform | null } | undefined;
+  loopDetectedThisFrame: boolean;
+  isSeamlesslyLoopable: boolean;
+}
+
+/**
+ * Descriptor for a single registry-driven effect.
+ * Each entry defines how to get the renderer, build the tip input,
+ * and invoke the renderer's renderFrame method.
+ */
+interface EffectDispatchEntry {
+  effect: EffectType;
+  configKey: keyof RenderFrameParams;
+  getRenderer: (loop: AnimationRenderLoop) => { isInitialized(): boolean; clear(): void; renderFrame: Function } | null;
+  needsDt: boolean;
+  resetTimeOnInactive: boolean;
+  buildInput: (ctx: EffectDispatchContext, dt: number) => unknown;
+  render: (renderer: any, config: any, input: unknown, dt: number, ctx: EffectDispatchContext) => void;
+}
+
 export class AnimationRenderLoop {
   private renderer: AnimationRenderer | null = null;
   private TrailCapturer: TrailCapturer | null = null;
@@ -123,59 +153,32 @@ export class AnimationRenderLoop {
   private echoRenderer: EchoOverlayRenderer | null = null;
   private bloomRenderer: BloomOverlayRenderer | null = null;
   private waterRenderer: WaterOverlayRenderer | null = null;
-  private lastWaterFrameTime: number = 0;
   private bubblesRenderer: BubblesOverlayRenderer | null = null;
-  private lastBubblesFrameTime: number = 0;
   private petalsRenderer: PetalsOverlayRenderer | null = null;
-  private lastPetalsFrameTime: number = 0;
   private smokeRenderer: SmokeOverlayRenderer | null = null;
-  private lastSmokeFrameTime: number = 0;
   private inkRenderer: InkOverlayRenderer | null = null;
-  private lastInkFrameTime: number = 0;
   private frostRenderer: FrostOverlayRenderer | null = null;
-  private lastFrostFrameTime: number = 0;
   private silkRenderer: SilkOverlayRenderer | null = null;
-  private lastSilkFrameTime: number = 0;
   private pulseRenderer: PulseOverlayRenderer | null = null;
-  private lastPulseFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
-  private lastSparklesFrameTime: number = 0;
   private rafId: number | null = null;
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
   private isDisposed: boolean = false; // Prevent RAF from continuing after disposal
 
   // Effect error tracking: auto-recover on first failure, escalate on repeated failures
+  // Fire and LED keep dedicated fields (special dispatch logic)
   private consecutiveFireErrors: number = 0;
   private consecutiveLedErrors: number = 0;
-  private consecutiveZapErrors: number = 0;
-  private consecutiveSparklesErrors: number = 0;
-  private consecutiveEchoErrors: number = 0;
-  private consecutiveBloomErrors: number = 0;
-  private consecutiveWaterErrors: number = 0;
-  private consecutiveBubblesErrors: number = 0;
-  private consecutivePetalsErrors: number = 0;
-  private consecutiveSmokeErrors: number = 0;
-  private consecutiveInkErrors: number = 0;
-  private consecutiveFrostErrors: number = 0;
-  private consecutiveSilkErrors: number = 0;
-  private consecutivePulseErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
-  private zapDisabledByError: boolean = false;
-  private sparklesDisabledByError: boolean = false;
-  private echoDisabledByError: boolean = false;
-  private bloomDisabledByError: boolean = false;
-  private waterDisabledByError: boolean = false;
-  private bubblesDisabledByError: boolean = false;
-  private petalsDisabledByError: boolean = false;
-  private smokeDisabledByError: boolean = false;
-  private inkDisabledByError: boolean = false;
-  private frostDisabledByError: boolean = false;
-  private silkDisabledByError: boolean = false;
-  private pulseDisabledByError: boolean = false;
+
+  // Registry effects: error tracking via Maps keyed by EffectType
+  private readonly effectErrors = new Map<EffectType, number>();
+  private readonly effectDisabled = new Map<EffectType, boolean>();
+  private readonly effectLastFrameTime = new Map<EffectType, number>();
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -342,32 +345,11 @@ export class AnimationRenderLoop {
     // Reset effect error tracking so effects can retry on next start
     this.consecutiveFireErrors = 0;
     this.consecutiveLedErrors = 0;
-    this.consecutiveZapErrors = 0;
-    this.consecutiveSparklesErrors = 0;
-    this.consecutiveEchoErrors = 0;
-    this.consecutiveBloomErrors = 0;
-    this.consecutiveWaterErrors = 0;
-    this.consecutiveBubblesErrors = 0;
-    this.consecutivePetalsErrors = 0;
-    this.consecutiveSmokeErrors = 0;
-    this.consecutiveInkErrors = 0;
-    this.consecutiveFrostErrors = 0;
-    this.consecutiveSilkErrors = 0;
-    this.consecutivePulseErrors = 0;
     this.fireDisabledByError = false;
     this.ledDisabledByError = false;
-    this.zapDisabledByError = false;
-    this.sparklesDisabledByError = false;
-    this.echoDisabledByError = false;
-    this.bloomDisabledByError = false;
-    this.waterDisabledByError = false;
-    this.bubblesDisabledByError = false;
-    this.petalsDisabledByError = false;
-    this.smokeDisabledByError = false;
-    this.inkDisabledByError = false;
-    this.frostDisabledByError = false;
-    this.silkDisabledByError = false;
-    this.pulseDisabledByError = false;
+    this.effectErrors.clear();
+    this.effectDisabled.clear();
+    this.effectLastFrameTime.clear();
   }
 
   isRunning(): boolean {
@@ -474,6 +456,289 @@ export class AnimationRenderLoop {
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
     this.reusableAdditionalLayerTrails.length = 0;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Registry-driven effect dispatch infrastructure
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Build 4-position tip input ({bluePosA, bluePosB, redPosA, redPosB}) from
+   * sharedTipResult. Used by zap, sparkles, echo, water, bubbles, petals,
+   * smoke, ink, frost, silk.
+   */
+  private static buildFourPosTips(
+    tips: PropTipData[],
+    tipMap: TipEffectMap,
+    effect: EffectType
+  ): { bluePosA: { x: number; y: number } | null; bluePosB: { x: number; y: number } | null; redPosA: { x: number; y: number } | null; redPosB: { x: number; y: number } | null } {
+    const result: { bluePosA: { x: number; y: number } | null; bluePosB: { x: number; y: number } | null; redPosA: { x: number; y: number } | null; redPosB: { x: number; y: number } | null } = {
+      bluePosA: null,
+      bluePosB: null,
+      redPosA: null,
+      redPosB: null,
+    };
+    for (const t of tips) {
+      if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== effect) continue;
+      const pos = { x: t.x, y: t.y };
+      if (t.propIndex === 0) {
+        if (t.tipIndex === 0) result.bluePosA = pos;
+        else if (t.tipIndex === 1) result.bluePosB = pos;
+      } else if (t.propIndex === 1) {
+        if (t.tipIndex === 0) result.redPosA = pos;
+        else if (t.tipIndex === 1) result.redPosB = pos;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Build array-of-tips input for bloom and pulse (effects that need
+   * {x, y, propIndex, tipIndex, blueColor, redColor}[] with center fallback).
+   */
+  private static buildArrayTips(
+    tips: PropTipData[],
+    tipMap: TipEffectMap,
+    effect: EffectType,
+    params: RenderFrameParams,
+    renderedTransforms: { blue: RenderedPropTransform | null; red: RenderedPropTransform | null } | undefined
+  ): { x: number; y: number; propIndex: 0 | 1; tipIndex: number; blueColor: string; redColor: string }[] {
+    const blueColor = params.trailSettings.blueColor;
+    const redColor = params.trailSettings.redColor;
+    const result: { x: number; y: number; propIndex: 0 | 1; tipIndex: number; blueColor: string; redColor: string }[] = [];
+    let globalTipIndex = 0;
+    for (const t of tips) {
+      if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== effect) continue;
+      result.push({
+        x: t.x,
+        y: t.y,
+        propIndex: t.propIndex as 0 | 1,
+        tipIndex: globalTipIndex++,
+        blueColor,
+        redColor,
+      });
+    }
+    // Center fallback for props with no tip-tracker output
+    const blueTransform = renderedTransforms?.blue;
+    if (
+      params.props.blueProp &&
+      blueTransform &&
+      resolveEffect(0, 0, tipMap, {}) === effect &&
+      !result.some((t) => t.propIndex === 0)
+    ) {
+      result.push({
+        x: blueTransform.centerX,
+        y: blueTransform.centerY,
+        propIndex: 0,
+        tipIndex: globalTipIndex++,
+        blueColor,
+        redColor,
+      });
+    }
+    const redTransform = renderedTransforms?.red;
+    if (
+      params.props.redProp &&
+      redTransform &&
+      resolveEffect(1, 0, tipMap, {}) === effect &&
+      !result.some((t) => t.propIndex === 1)
+    ) {
+      result.push({
+        x: redTransform.centerX,
+        y: redTransform.centerY,
+        propIndex: 1,
+        tipIndex: globalTipIndex++,
+        blueColor,
+        redColor,
+      });
+    }
+    return result;
+  }
+
+  /** Dispatch registry — one entry per simple overlay effect. */
+  private readonly effectDispatchRegistry: readonly EffectDispatchEntry[] = [
+    // --- Zap: 4-pos, no dt ---
+    {
+      effect: "zap",
+      configKey: "zapConfig",
+      getRenderer: (l) => l.zapRenderer as any,
+      needsDt: false,
+      resetTimeOnInactive: false,
+      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "zap"),
+      render: (r, cfg, inp) => r.renderFrame(cfg, inp),
+    },
+    // --- Sparkles: 4-pos, dt ---
+    {
+      effect: "sparkles",
+      configKey: "sparklesConfig",
+      getRenderer: (l) => l.sparklesRenderer as any,
+      needsDt: true,
+      resetTimeOnInactive: false,
+      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "sparkles"),
+      render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
+    },
+    // --- Echo: 4-pos + currentStep + colors, no dt ---
+    {
+      effect: "echo",
+      configKey: "echoConfig",
+      getRenderer: (l) => l.echoRenderer as any,
+      needsDt: false,
+      resetTimeOnInactive: false,
+      buildInput: (ctx) => ({
+        ...AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "echo"),
+        currentStep: ctx.params.currentStep,
+        blueColor: ctx.params.trailSettings.blueColor,
+        redColor: ctx.params.trailSettings.redColor,
+      }),
+      render: (r, cfg, inp) => r.renderFrame(cfg, inp),
+    },
+    // --- Bloom: array-of-tips, no dt ---
+    {
+      effect: "bloom",
+      configKey: "bloomConfig",
+      getRenderer: (l) => l.bloomRenderer as any,
+      needsDt: false,
+      resetTimeOnInactive: false,
+      buildInput: (ctx) => AnimationRenderLoop.buildArrayTips(ctx.sharedTips, ctx.tipMap, "bloom", ctx.params, ctx.renderedTransforms),
+      render: (r, cfg, inp) => r.renderFrame(cfg, inp),
+    },
+    // --- Water: 4-pos, dt, resetTimeOnInactive ---
+    {
+      effect: "water",
+      configKey: "waterConfig",
+      getRenderer: (l) => l.waterRenderer as any,
+      needsDt: true,
+      resetTimeOnInactive: true,
+      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "water"),
+      render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
+    },
+    // --- Bubbles: 4-pos, dt, resetTimeOnInactive ---
+    {
+      effect: "bubbles",
+      configKey: "bubblesConfig",
+      getRenderer: (l) => l.bubblesRenderer as any,
+      needsDt: true,
+      resetTimeOnInactive: true,
+      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "bubbles"),
+      render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
+    },
+    // --- Petals: 4-pos, dt, resetTimeOnInactive ---
+    {
+      effect: "petals",
+      configKey: "petalsConfig",
+      getRenderer: (l) => l.petalsRenderer as any,
+      needsDt: true,
+      resetTimeOnInactive: true,
+      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "petals"),
+      render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
+    },
+    // --- Smoke: 4-pos, dt, resetTimeOnInactive ---
+    {
+      effect: "smoke",
+      configKey: "smokeConfig",
+      getRenderer: (l) => l.smokeRenderer as any,
+      needsDt: true,
+      resetTimeOnInactive: true,
+      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "smoke"),
+      render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
+    },
+    // --- Ink: 4-pos, dt, resetTimeOnInactive ---
+    {
+      effect: "ink",
+      configKey: "inkConfig",
+      getRenderer: (l) => l.inkRenderer as any,
+      needsDt: true,
+      resetTimeOnInactive: true,
+      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "ink"),
+      render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
+    },
+    // --- Frost: 4-pos, dt, resetTimeOnInactive ---
+    {
+      effect: "frost",
+      configKey: "frostConfig",
+      getRenderer: (l) => l.frostRenderer as any,
+      needsDt: true,
+      resetTimeOnInactive: true,
+      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "frost"),
+      render: (r, cfg, inp, dt) => r.renderFrame(cfg, inp, dt),
+    },
+    // --- Silk: 4-pos, dt, resetTimeOnInactive, loopDetected arg ---
+    {
+      effect: "silk",
+      configKey: "silkConfig",
+      getRenderer: (l) => l.silkRenderer as any,
+      needsDt: true,
+      resetTimeOnInactive: true,
+      buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "silk"),
+      render: (r, cfg, inp, dt, ctx) => r.renderFrame(cfg, inp, dt, ctx.loopDetectedThisFrame && ctx.isSeamlesslyLoopable),
+    },
+    // --- Pulse: array-of-tips, dt, resetTimeOnInactive, currentStep arg ---
+    {
+      effect: "pulse",
+      configKey: "pulseConfig",
+      getRenderer: (l) => l.pulseRenderer as any,
+      needsDt: true,
+      resetTimeOnInactive: true,
+      buildInput: (ctx) => AnimationRenderLoop.buildArrayTips(ctx.sharedTips, ctx.tipMap, "pulse", ctx.params, ctx.renderedTransforms),
+      render: (r, cfg, inp, dt, ctx) => r.renderFrame(cfg, inp, ctx.params.currentStep ?? 0, dt),
+    },
+  ];
+
+  /**
+   * Dispatch a single effect from the registry. Handles:
+   *   - renderer existence + initialization check
+   *   - config presence check
+   *   - error-disabled check (circuit breaker)
+   *   - dt computation (if needsDt)
+   *   - buildInput → render call
+   *   - error counting + auto-disable after threshold
+   *   - inactive clear + time reset
+   */
+  private dispatchEffect(entry: EffectDispatchEntry, ctx: EffectDispatchContext): void {
+    const renderer = entry.getRenderer(this);
+    if (!renderer?.isInitialized()) return;
+
+    const config = (ctx.params as any)[entry.configKey];
+    const hasOverlay = this.fireTipTracker && config != null;
+
+    if (hasOverlay && !this.effectDisabled.get(entry.effect)) {
+      try {
+        let dt = 0;
+        if (entry.needsDt) {
+          const lastTime = this.effectLastFrameTime.get(entry.effect) ?? 0;
+          const rawDt = lastTime > 0 ? (ctx.currentTime - lastTime) / 1000 : 1 / 60;
+          dt = Math.min(0.1, (!Number.isFinite(rawDt) || rawDt <= 0) ? 1 / 60 : rawDt);
+          this.effectLastFrameTime.set(entry.effect, ctx.currentTime);
+        }
+        const input = entry.buildInput(ctx, dt);
+        entry.render(renderer, config, input, dt, ctx);
+        this.effectErrors.set(entry.effect, 0);
+      } catch (error) {
+        const count = (this.effectErrors.get(entry.effect) ?? 0) + 1;
+        this.effectErrors.set(entry.effect, count);
+        renderer.clear();
+
+        if (count >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.effectDisabled.set(entry.effect, true);
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error(`[AnimationRenderLoop] ${entry.effect} effect disabled after repeated failures:`, err);
+          if (this.onEffectError) {
+            this.onEffectError(entry.effect, err);
+          } else {
+            effectErrorSignal.trigger(entry.effect, err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] ${entry.effect} render error (attempt ${count}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (!hasOverlay) {
+      renderer.clear();
+      if (entry.resetTimeOnInactive) {
+        this.effectLastFrameTime.set(entry.effect, 0);
+      }
+    }
   }
 
   private renderLoop = (currentTime: number): void => {
@@ -750,53 +1015,10 @@ export class AnimationRenderLoop {
           if (ctx) ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
         }
       }
-      // Clear zap overlay (Canvas2D)
-      if (this.zapRenderer?.isInitialized()) {
-        this.zapRenderer.clear();
-      }
-      // Clear sparkles overlay (Canvas2D)
-      if (this.sparklesRenderer?.isInitialized()) {
-        this.sparklesRenderer.clear();
-      }
-      // Clear echo overlay (Canvas2D)
-      if (this.echoRenderer?.isInitialized()) {
-        this.echoRenderer.clear();
-      }
-      // Clear bloom overlay (Canvas2D)
-      if (this.bloomRenderer?.isInitialized()) {
-        this.bloomRenderer.clear();
-      }
-      // Clear water overlay (Canvas2D) - also drops the droplet pool.
-      if (this.waterRenderer?.isInitialized()) {
-        this.waterRenderer.clear();
-      }
-      // Clear bubbles overlay (Canvas2D) - also drops the bubble pool.
-      if (this.bubblesRenderer?.isInitialized()) {
-        this.bubblesRenderer.clear();
-      }
-      // Clear petals overlay (Canvas2D) - also drops the petal pool.
-      if (this.petalsRenderer?.isInitialized()) {
-        this.petalsRenderer.clear();
-      }
-      // Clear smoke overlay (Canvas2D) - also drops the puff pool.
-      if (this.smokeRenderer?.isInitialized()) {
-        this.smokeRenderer.clear();
-      }
-      // Clear ink overlay (Canvas2D) - also drops the per-tip stroke history.
-      if (this.inkRenderer?.isInitialized()) {
-        this.inkRenderer.clear();
-      }
-      // Clear frost overlay (Canvas2D) - also drops the particle pool.
-      if (this.frostRenderer?.isInitialized()) {
-        this.frostRenderer.clear();
-      }
-      // Clear silk overlay (Canvas2D) - also drops the ribbon trail buffers.
-      if (this.silkRenderer?.isInitialized()) {
-        this.silkRenderer.clear();
-      }
-      // Clear pulse overlay (Canvas2D) - also drops the ring pool.
-      if (this.pulseRenderer?.isInitialized()) {
-        this.pulseRenderer.clear();
+      // Clear all registry effect overlays (Canvas2D)
+      for (const entry of this.effectDispatchRegistry) {
+        const renderer = entry.getRenderer(this);
+        if (renderer?.isInitialized()) renderer.clear();
       }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
@@ -886,56 +1108,14 @@ export class AnimationRenderLoop {
     // once per frame and the result is shared across the three branches below.
     const activeFireRenderer = this.fireRenderer?.isInitialized() ? this.fireRenderer : null;
     const activeCharcoalRenderer = this.charcoalRenderer?.isInitialized() ? this.charcoalRenderer : null;
-    const activeZapRenderer = this.zapRenderer?.isInitialized() ? this.zapRenderer : null;
     const hasFireOrCharcoalOverlay = this.fireTipTracker && (
       (activeFireRenderer && params.fireConfig != null) || activeCharcoalRenderer
     );
-    const hasZapOverlay = this.fireTipTracker && activeZapRenderer && params.zapConfig != null;
-    const hasSparklesOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.sparklesRenderer?.isInitialized()
-      && params.sparklesConfig != null;
-    const hasEchoOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.echoRenderer?.isInitialized()
-      && params.echoConfig != null;
-    const hasBloomOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.bloomRenderer?.isInitialized()
-      && params.bloomConfig != null;
-    const hasWaterOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.waterRenderer?.isInitialized()
-      && params.waterConfig != null;
-    const hasBubblesOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.bubblesRenderer?.isInitialized()
-      && params.bubblesConfig != null;
-    const hasPetalsOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.petalsRenderer?.isInitialized()
-      && params.petalsConfig != null;
-    const hasSmokeOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.smokeRenderer?.isInitialized()
-      && params.smokeConfig != null;
-    const hasInkOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.inkRenderer?.isInitialized()
-      && params.inkConfig != null;
-    const hasFrostOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.frostRenderer?.isInitialized()
-      && params.frostConfig != null;
-    const hasSilkOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.silkRenderer?.isInitialized()
-      && params.silkConfig != null;
-    const hasPulseOverlayForTipUpdate =
-      this.fireTipTracker
-      && this.pulseRenderer?.isInitialized()
-      && params.pulseConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate || hasFrostOverlayForTipUpdate || hasSilkOverlayForTipUpdate || hasPulseOverlayForTipUpdate;
+    const hasAnyRegistryOverlay = this.fireTipTracker && this.effectDispatchRegistry.some(entry => {
+      const renderer = entry.getRenderer(this);
+      return renderer?.isInitialized() && (params as any)[entry.configKey] != null;
+    });
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasAnyRegistryOverlay;
 
     let sharedTipResult: import("./FireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -1032,839 +1212,25 @@ export class AnimationRenderLoop {
       }
     }
 
-    // Zap (lightning) overlay: draws procedural arcs between blue/red prop tips.
-    // Reads the same shared tip positions as fire/charcoal but ignores velocity.
-    // Composites on top of fire (z-index 2) so arcs read cleanly over flame glow.
-    if (hasZapOverlay && !this.zapDisabledByError && !params.suppress2DOverlays && sharedTipResult) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const zapInput: ZapTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-        };
-        // Pull the (up to 2) tips per prop assigned to "zap" out of the shared
-        // tracker result. Indexing maps {propIndex 0 = blue, 1 = red} and
-        // {tipIndex 0 = A, 1 = B}, matching the 3D zap shader's convention.
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "zap") continue;
-          const pos = { x: t.x, y: t.y };
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) zapInput.bluePosA = pos;
-            else if (t.tipIndex === 1) zapInput.bluePosB = pos;
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) zapInput.redPosA = pos;
-            else if (t.tipIndex === 1) zapInput.redPosB = pos;
-          }
-        }
 
-        activeZapRenderer!.renderFrame(params.zapConfig!, zapInput);
-        this.consecutiveZapErrors = 0;
-      } catch (error) {
-        this.consecutiveZapErrors++;
-        activeZapRenderer?.clear();
 
-        if (this.consecutiveZapErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.zapDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Zap effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("zap", err);
-          } else {
-            effectErrorSignal.trigger("zap", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Zap render error (attempt ${this.consecutiveZapErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
+    // Registry-driven dispatch: replaces 12 individual effect blocks
+    // (sparkles, echo, bloom, water, bubbles, petals, smoke, ink, frost, silk, pulse)
+    // with a single loop over the dispatch registry.
+    if (!params.suppress2DOverlays && sharedTipResult) {
+      const tipMap = params.tipEffectMap ?? {};
+      const ctx: EffectDispatchContext = {
+        tipMap,
+        sharedTips: sharedTipResult.tips,
+        params,
+        currentTime,
+        renderedTransforms,
+        loopDetectedThisFrame: this.loopDetectedThisFrame,
+        isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
+      };
+      for (const entry of this.effectDispatchRegistry) {
+        this.dispatchEffect(entry, ctx);
       }
-    } else if (activeZapRenderer && !hasZapOverlay) {
-      // Zap renderer exists but no zap config / not active this frame - clear
-      // any leftover arcs so they don't sit stale on screen.
-      activeZapRenderer.clear();
-    }
-
-    // Sparkles overlay: particle sparkles around prop tips. Reads the same
-    // shared tip positions as fire/charcoal/zap.
-    const activeSparklesRenderer = this.sparklesRenderer?.isInitialized()
-      ? this.sparklesRenderer
-      : null;
-    const hasSparklesOverlay =
-      this.fireTipTracker && activeSparklesRenderer && params.sparklesConfig != null;
-
-    if (
-      hasSparklesOverlay &&
-      !this.sparklesDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const sparklesInput: SparklesTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-        };
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "sparkles") continue;
-          const pos = { x: t.x, y: t.y };
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) sparklesInput.bluePosA = pos;
-            else if (t.tipIndex === 1) sparklesInput.bluePosB = pos;
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) sparklesInput.redPosA = pos;
-            else if (t.tipIndex === 1) sparklesInput.redPosB = pos;
-          }
-        }
-        // Use a sparkles-specific frame timestamp so dt is correct even when
-        // trails are disabled. Clamp to avoid catastrophic dt on first frame
-        // or after a long pause.
-        const rawDt = this.lastSparklesFrameTime > 0
-          ? (currentTime - this.lastSparklesFrameTime) / 1000
-          : 1 / 60;
-        const dt = Math.min(0.1, rawDt);
-        this.lastSparklesFrameTime = currentTime;
-        activeSparklesRenderer!.renderFrame(params.sparklesConfig!, sparklesInput, dt);
-        this.consecutiveSparklesErrors = 0;
-      } catch (error) {
-        this.consecutiveSparklesErrors++;
-        activeSparklesRenderer?.clear();
-        if (this.consecutiveSparklesErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.sparklesDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Sparkles effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("sparkles", err);
-          } else {
-            effectErrorSignal.trigger("sparkles", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Sparkles render error (attempt ${this.consecutiveSparklesErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activeSparklesRenderer && !hasSparklesOverlay) {
-      activeSparklesRenderer.clear();
-    }
-
-    // Echo overlay: beat-onset phantoms of the staff. Reads the same shared
-    // tip positions as fire/charcoal/zap/sparkles, plus per-prop trail colors
-    // for prop-matched colorMode. Unlike the others, echo does not need dt -
-    // phantom aging is driven by `currentStep`.
-    const activeEchoRenderer = this.echoRenderer?.isInitialized()
-      ? this.echoRenderer
-      : null;
-    const hasEchoOverlay =
-      this.fireTipTracker && activeEchoRenderer && params.echoConfig != null;
-
-    if (
-      hasEchoOverlay &&
-      !this.echoDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const echoInput: EchoTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-          currentStep: params.currentStep,
-          blueColor: params.trailSettings.blueColor,
-          redColor: params.trailSettings.redColor,
-        };
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "echo") continue;
-          const pos = { x: t.x, y: t.y };
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) echoInput.bluePosA = pos;
-            else if (t.tipIndex === 1) echoInput.bluePosB = pos;
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) echoInput.redPosA = pos;
-            else if (t.tipIndex === 1) echoInput.redPosB = pos;
-          }
-        }
-        activeEchoRenderer!.renderFrame(params.echoConfig!, echoInput);
-        this.consecutiveEchoErrors = 0;
-      } catch (error) {
-        this.consecutiveEchoErrors++;
-        activeEchoRenderer?.clear();
-        if (this.consecutiveEchoErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.echoDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Echo effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("echo", err);
-          } else {
-            effectErrorSignal.trigger("echo", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Echo render error (attempt ${this.consecutiveEchoErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activeEchoRenderer && !hasEchoOverlay) {
-      activeEchoRenderer.clear();
-    }
-
-    // Bloom overlay: per-tip radial halation. Reads the same shared tip
-    // positions as the other tip-sourced overlays, plus per-prop trail
-    // colors for prop-matched colorMode. Pulse modulation is time-based
-    // (performance.now() inside the renderer), so no dt parameter.
-    const activeBloomRenderer = this.bloomRenderer?.isInitialized()
-      ? this.bloomRenderer
-      : null;
-    const hasBloomOverlay =
-      this.fireTipTracker && activeBloomRenderer && params.bloomConfig != null;
-
-    if (
-      hasBloomOverlay &&
-      !this.bloomDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const blueColor = params.trailSettings.blueColor;
-        const redColor = params.trailSettings.redColor;
-        const bloomTips: BloomTipInput[] = [];
-        let globalTipIndex = 0;
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "bloom") continue;
-          bloomTips.push({
-            x: t.x,
-            y: t.y,
-            propIndex: t.propIndex as 0 | 1,
-            tipIndex: globalTipIndex++,
-            blueColor,
-            redColor,
-          });
-        }
-        // Augment with prop-center halos for visible props that emit no
-        // tip-tracker output (hand, contactball, etc. - empty tip-point
-        // configs). These props still occupy a meaningful position in
-        // space; bloom should fire on their center even though they have
-        // no per-tip endpoints. Only synthesizes when tipEffectMap
-        // resolves to "bloom" for the prop AND no per-tip bloom tip
-        // already exists for it.
-        const blueTransform = renderedTransforms?.blue;
-        if (
-          params.props.blueProp &&
-          blueTransform &&
-          resolveEffect(0, 0, tipMap, {}) === "bloom" &&
-          !bloomTips.some((t) => t.propIndex === 0)
-        ) {
-          bloomTips.push({
-            x: blueTransform.centerX,
-            y: blueTransform.centerY,
-            propIndex: 0,
-            tipIndex: globalTipIndex++,
-            blueColor,
-            redColor,
-          });
-        }
-        const redTransform = renderedTransforms?.red;
-        if (
-          params.props.redProp &&
-          redTransform &&
-          resolveEffect(1, 0, tipMap, {}) === "bloom" &&
-          !bloomTips.some((t) => t.propIndex === 1)
-        ) {
-          bloomTips.push({
-            x: redTransform.centerX,
-            y: redTransform.centerY,
-            propIndex: 1,
-            tipIndex: globalTipIndex++,
-            blueColor,
-            redColor,
-          });
-        }
-        activeBloomRenderer!.renderFrame(params.bloomConfig!, bloomTips);
-        this.consecutiveBloomErrors = 0;
-      } catch (error) {
-        this.consecutiveBloomErrors++;
-        activeBloomRenderer?.clear();
-        if (this.consecutiveBloomErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.bloomDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Bloom effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("bloom", err);
-          } else {
-            effectErrorSignal.trigger("bloom", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Bloom render error (attempt ${this.consecutiveBloomErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activeBloomRenderer && !hasBloomOverlay) {
-      activeBloomRenderer.clear();
-    }
-
-    // Water overlay: per-tip droplet emitter. Reads sharedTipResult to
-    // pull the 2 tips per prop into the {bluePosA, bluePosB, redPosA,
-    // redPosB} shape Water2DRenderer expects. Filters tips by
-    // tipEffectMap resolution. dt drives particle physics + spawn-rate
-    // integration - unlike bloom, water has persistent pool state.
-    const activeWaterRenderer = this.waterRenderer?.isInitialized()
-      ? this.waterRenderer
-      : null;
-    const hasWaterOverlay =
-      this.fireTipTracker && activeWaterRenderer && params.waterConfig != null;
-
-    if (
-      hasWaterOverlay &&
-      !this.waterDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const waterTips: WaterTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-        };
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "water") continue;
-          // propIndex 0 = blue, 1 = red. tipIndex 0 = A end, 1 = B end.
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) waterTips.bluePosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) waterTips.bluePosB = { x: t.x, y: t.y };
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) waterTips.redPosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) waterTips.redPosB = { x: t.x, y: t.y };
-          }
-        }
-        // dt - seconds since last water frame (computed once from currentTime).
-        const nowMs = currentTime;
-        let dt = this.lastWaterFrameTime > 0 ? (nowMs - this.lastWaterFrameTime) / 1000 : 1 / 60;
-        // Clamp absurd dts (tab switch, export pause, etc.) so a stalled frame
-        // doesn't teleport every droplet off-screen.
-        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-        if (dt > 0.1) dt = 0.1;
-        this.lastWaterFrameTime = nowMs;
-        activeWaterRenderer!.renderFrame(params.waterConfig!, waterTips, dt);
-        this.consecutiveWaterErrors = 0;
-      } catch (error) {
-        this.consecutiveWaterErrors++;
-        activeWaterRenderer?.clear();
-        if (this.consecutiveWaterErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.waterDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Water effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("water", err);
-          } else {
-            effectErrorSignal.trigger("water", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Water render error (attempt ${this.consecutiveWaterErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activeWaterRenderer && !hasWaterOverlay) {
-      activeWaterRenderer.clear();
-      this.lastWaterFrameTime = 0;
-    }
-
-    // Bubbles overlay: per-tip buoyant bubble emitter. Reads sharedTipResult
-    // to pull the 2 tips per prop into the {bluePosA, bluePosB, redPosA,
-    // redPosB} shape Bubbles2DRenderer expects. Filters tips by
-    // tipEffectMap resolution. dt drives particle physics + spawn-rate
-    // integration - like water, bubbles have persistent pool state.
-    const activeBubblesRenderer = this.bubblesRenderer?.isInitialized()
-      ? this.bubblesRenderer
-      : null;
-    const hasBubblesOverlay =
-      this.fireTipTracker && activeBubblesRenderer && params.bubblesConfig != null;
-
-    if (
-      hasBubblesOverlay &&
-      !this.bubblesDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const bubblesTips: BubblesTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-        };
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "bubbles") continue;
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) bubblesTips.bluePosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) bubblesTips.bluePosB = { x: t.x, y: t.y };
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) bubblesTips.redPosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) bubblesTips.redPosB = { x: t.x, y: t.y };
-          }
-        }
-        const nowMs = currentTime;
-        let dt = this.lastBubblesFrameTime > 0 ? (nowMs - this.lastBubblesFrameTime) / 1000 : 1 / 60;
-        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-        if (dt > 0.1) dt = 0.1;
-        this.lastBubblesFrameTime = nowMs;
-        activeBubblesRenderer!.renderFrame(params.bubblesConfig!, bubblesTips, dt);
-        this.consecutiveBubblesErrors = 0;
-      } catch (error) {
-        this.consecutiveBubblesErrors++;
-        activeBubblesRenderer?.clear();
-        if (this.consecutiveBubblesErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.bubblesDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Bubbles effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("bubbles", err);
-          } else {
-            effectErrorSignal.trigger("bubbles", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Bubbles render error (attempt ${this.consecutiveBubblesErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activeBubblesRenderer && !hasBubblesOverlay) {
-      activeBubblesRenderer.clear();
-      this.lastBubblesFrameTime = 0;
-    }
-
-    // Petals overlay: per-tip falling silhouette emitter. Mirrors the bubbles
-    // pipeline - reads sharedTipResult, filters by tipEffectMap, integrates
-    // physics via dt since last frame. Petal pool state persists across frames
-    // so we only clear on disable / error / sequence boundary.
-    const activePetalsRenderer = this.petalsRenderer?.isInitialized()
-      ? this.petalsRenderer
-      : null;
-    const hasPetalsOverlay =
-      this.fireTipTracker && activePetalsRenderer && params.petalsConfig != null;
-
-    if (
-      hasPetalsOverlay &&
-      !this.petalsDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const petalsTips: PetalsTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-        };
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "petals") continue;
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) petalsTips.bluePosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) petalsTips.bluePosB = { x: t.x, y: t.y };
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) petalsTips.redPosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) petalsTips.redPosB = { x: t.x, y: t.y };
-          }
-        }
-        const nowMs = currentTime;
-        let dt = this.lastPetalsFrameTime > 0 ? (nowMs - this.lastPetalsFrameTime) / 1000 : 1 / 60;
-        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-        if (dt > 0.1) dt = 0.1;
-        this.lastPetalsFrameTime = nowMs;
-        activePetalsRenderer!.renderFrame(params.petalsConfig!, petalsTips, dt);
-        this.consecutivePetalsErrors = 0;
-      } catch (error) {
-        this.consecutivePetalsErrors++;
-        activePetalsRenderer?.clear();
-        if (this.consecutivePetalsErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.petalsDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Petals effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("petals", err);
-          } else {
-            effectErrorSignal.trigger("petals", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Petals render error (attempt ${this.consecutivePetalsErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activePetalsRenderer && !hasPetalsOverlay) {
-      activePetalsRenderer.clear();
-      this.lastPetalsFrameTime = 0;
-    }
-
-    // Smoke overlay: per-tip curl-noise puff emitter. Mirrors the petals
-    // pipeline - reads sharedTipResult, filters by tipEffectMap, integrates
-    // curl motion via dt since last frame. Puff pool state persists across
-    // frames so we only clear on disable / error / sequence boundary.
-    const activeSmokeRenderer = this.smokeRenderer?.isInitialized()
-      ? this.smokeRenderer
-      : null;
-    const hasSmokeOverlay =
-      this.fireTipTracker && activeSmokeRenderer && params.smokeConfig != null;
-
-    if (
-      hasSmokeOverlay &&
-      !this.smokeDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const smokeTips: SmokeTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-        };
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "smoke") continue;
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) smokeTips.bluePosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) smokeTips.bluePosB = { x: t.x, y: t.y };
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) smokeTips.redPosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) smokeTips.redPosB = { x: t.x, y: t.y };
-          }
-        }
-        const nowMs = currentTime;
-        let dt = this.lastSmokeFrameTime > 0 ? (nowMs - this.lastSmokeFrameTime) / 1000 : 1 / 60;
-        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-        if (dt > 0.1) dt = 0.1;
-        this.lastSmokeFrameTime = nowMs;
-        activeSmokeRenderer!.renderFrame(params.smokeConfig!, smokeTips, dt);
-        this.consecutiveSmokeErrors = 0;
-      } catch (error) {
-        this.consecutiveSmokeErrors++;
-        activeSmokeRenderer?.clear();
-        if (this.consecutiveSmokeErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.smokeDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Smoke effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("smoke", err);
-          } else {
-            effectErrorSignal.trigger("smoke", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Smoke render error (attempt ${this.consecutiveSmokeErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activeSmokeRenderer && !hasSmokeOverlay) {
-      activeSmokeRenderer.clear();
-      this.lastSmokeFrameTime = 0;
-    }
-
-    // Ink overlay: per-tip stroke path builder. Mirrors the smoke pipeline -
-    // reads sharedTipResult, filters by tipEffectMap, ages points via dt. The
-    // per-tip point history persists across frames so we only clear on
-    // disable / error / sequence boundary.
-    const activeInkRenderer = this.inkRenderer?.isInitialized()
-      ? this.inkRenderer
-      : null;
-    const hasInkOverlay =
-      this.fireTipTracker && activeInkRenderer && params.inkConfig != null;
-
-    if (
-      hasInkOverlay &&
-      !this.inkDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const inkTips: InkTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-        };
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "ink") continue;
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) inkTips.bluePosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) inkTips.bluePosB = { x: t.x, y: t.y };
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) inkTips.redPosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) inkTips.redPosB = { x: t.x, y: t.y };
-          }
-        }
-        const nowMs = currentTime;
-        let dt = this.lastInkFrameTime > 0 ? (nowMs - this.lastInkFrameTime) / 1000 : 1 / 60;
-        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-        if (dt > 0.1) dt = 0.1;
-        this.lastInkFrameTime = nowMs;
-        activeInkRenderer!.renderFrame(params.inkConfig!, inkTips, dt);
-        this.consecutiveInkErrors = 0;
-      } catch (error) {
-        this.consecutiveInkErrors++;
-        activeInkRenderer?.clear();
-        if (this.consecutiveInkErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.inkDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Ink effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("ink", err);
-          } else {
-            effectErrorSignal.trigger("ink", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Ink render error (attempt ${this.consecutiveInkErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activeInkRenderer && !hasInkOverlay) {
-      activeInkRenderer.clear();
-      this.lastInkFrameTime = 0;
-    }
-
-    // Frost overlay: per-tip cold aura particle system. Same tip-filtering
-    // pipeline as ink/smoke - reads sharedTipResult, resolves "frost" tips,
-    // drives the particle renderer with dt.
-    const activeFrostRenderer = this.frostRenderer?.isInitialized()
-      ? this.frostRenderer
-      : null;
-    const hasFrostOverlay =
-      this.fireTipTracker && activeFrostRenderer && params.frostConfig != null;
-
-    if (
-      hasFrostOverlay &&
-      !this.frostDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const frostTips: FrostTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-        };
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "frost") continue;
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) frostTips.bluePosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) frostTips.bluePosB = { x: t.x, y: t.y };
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) frostTips.redPosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) frostTips.redPosB = { x: t.x, y: t.y };
-          }
-        }
-        const nowMs = currentTime;
-        let dt = this.lastFrostFrameTime > 0 ? (nowMs - this.lastFrostFrameTime) / 1000 : 1 / 60;
-        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-        if (dt > 0.1) dt = 0.1;
-        this.lastFrostFrameTime = nowMs;
-        activeFrostRenderer!.renderFrame(params.frostConfig!, frostTips, dt);
-        this.consecutiveFrostErrors = 0;
-      } catch (error) {
-        this.consecutiveFrostErrors++;
-        activeFrostRenderer?.clear();
-        if (this.consecutiveFrostErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.frostDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Frost effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("frost", err);
-          } else {
-            effectErrorSignal.trigger("frost", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Frost render error (attempt ${this.consecutiveFrostErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activeFrostRenderer && !hasFrostOverlay) {
-      activeFrostRenderer.clear();
-      this.lastFrostFrameTime = 0;
-    }
-
-    // Silk overlay: per-tip deformable ribbon. Same tip-filtering
-    // pipeline as frost - reads sharedTipResult, resolves "silk" tips,
-    // drives the ribbon renderer with dt.
-    const activeSilkRenderer = this.silkRenderer?.isInitialized()
-      ? this.silkRenderer
-      : null;
-    const hasSilkOverlay =
-      this.fireTipTracker && activeSilkRenderer && params.silkConfig != null;
-
-    if (
-      hasSilkOverlay &&
-      !this.silkDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const silkTips: SilkTipInput = {
-          bluePosA: null,
-          bluePosB: null,
-          redPosA: null,
-          redPosB: null,
-        };
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "silk") continue;
-          if (t.propIndex === 0) {
-            if (t.tipIndex === 0) silkTips.bluePosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) silkTips.bluePosB = { x: t.x, y: t.y };
-          } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) silkTips.redPosA = { x: t.x, y: t.y };
-            else if (t.tipIndex === 1) silkTips.redPosB = { x: t.x, y: t.y };
-          }
-        }
-        const nowMs = currentTime;
-        let dt = this.lastSilkFrameTime > 0 ? (nowMs - this.lastSilkFrameTime) / 1000 : 1 / 60;
-        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-        if (dt > 0.1) dt = 0.1;
-        this.lastSilkFrameTime = nowMs;
-        const silkLoopDetected = this.loopDetectedThisFrame && (params.isSeamlesslyLoopable ?? false);
-        activeSilkRenderer!.renderFrame(params.silkConfig!, silkTips, dt, silkLoopDetected);
-        this.consecutiveSilkErrors = 0;
-      } catch (error) {
-        this.consecutiveSilkErrors++;
-        activeSilkRenderer?.clear();
-        if (this.consecutiveSilkErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.silkDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Silk effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("silk", err);
-          } else {
-            effectErrorSignal.trigger("silk", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Silk render error (attempt ${this.consecutiveSilkErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activeSilkRenderer && !hasSilkOverlay) {
-      activeSilkRenderer.clear();
-      this.lastSilkFrameTime = 0;
-    }
-
-    // Pulse overlay: expanding wave rings from tip positions.
-    const activePulseRenderer = this.pulseRenderer?.isInitialized()
-      ? this.pulseRenderer
-      : null;
-    const hasPulseOverlay =
-      this.fireTipTracker && activePulseRenderer && params.pulseConfig != null;
-
-    if (
-      hasPulseOverlay &&
-      !this.pulseDisabledByError &&
-      !params.suppress2DOverlays &&
-      sharedTipResult
-    ) {
-      try {
-        const tipMap = params.tipEffectMap ?? {};
-        const blueColor = params.trailSettings.blueColor;
-        const redColor = params.trailSettings.redColor;
-        const pulseTips: PulseTipInput[] = [];
-        let globalPulseTipIndex = 0;
-        for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "pulse") continue;
-          pulseTips.push({
-            x: t.x,
-            y: t.y,
-            propIndex: t.propIndex as 0 | 1,
-            tipIndex: globalPulseTipIndex++,
-            blueColor,
-            redColor,
-          });
-        }
-        const blueTransformPulse = renderedTransforms?.blue;
-        if (
-          params.props.blueProp &&
-          blueTransformPulse &&
-          resolveEffect(0, 0, tipMap, {}) === "pulse" &&
-          !pulseTips.some((t) => t.propIndex === 0)
-        ) {
-          pulseTips.push({
-            x: blueTransformPulse.centerX,
-            y: blueTransformPulse.centerY,
-            propIndex: 0,
-            tipIndex: globalPulseTipIndex++,
-            blueColor,
-            redColor,
-          });
-        }
-        const redTransformPulse = renderedTransforms?.red;
-        if (
-          params.props.redProp &&
-          redTransformPulse &&
-          resolveEffect(1, 0, tipMap, {}) === "pulse" &&
-          !pulseTips.some((t) => t.propIndex === 1)
-        ) {
-          pulseTips.push({
-            x: redTransformPulse.centerX,
-            y: redTransformPulse.centerY,
-            propIndex: 1,
-            tipIndex: globalPulseTipIndex++,
-            blueColor,
-            redColor,
-          });
-        }
-        const nowMs = currentTime;
-        let dt = this.lastPulseFrameTime > 0 ? (nowMs - this.lastPulseFrameTime) / 1000 : 1 / 60;
-        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-        if (dt > 0.1) dt = 0.1;
-        this.lastPulseFrameTime = nowMs;
-        const pulseCurrentStep = params.currentStep ?? 0;
-        activePulseRenderer!.renderFrame(params.pulseConfig!, pulseTips, pulseCurrentStep, dt);
-        this.consecutivePulseErrors = 0;
-      } catch (error) {
-        this.consecutivePulseErrors++;
-        activePulseRenderer?.clear();
-        if (this.consecutivePulseErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.pulseDisabledByError = true;
-          const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Pulse effect disabled after repeated failures:", err);
-          if (this.onEffectError) {
-            this.onEffectError("pulse", err);
-          } else {
-            effectErrorSignal.trigger("pulse", err);
-          }
-        } else {
-          console.warn(
-            `[AnimationRenderLoop] Pulse render error (attempt ${this.consecutivePulseErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
-            error
-          );
-        }
-      }
-    } else if (activePulseRenderer && !hasPulseOverlay) {
-      activePulseRenderer.clear();
-      this.lastPulseFrameTime = 0;
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire
