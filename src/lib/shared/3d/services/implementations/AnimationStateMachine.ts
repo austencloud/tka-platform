@@ -18,12 +18,59 @@
  *                       LANDING ──→ IDLE or WALKING (after landingDuration)
  */
 
-import {
-	LocomotionState,
-	type LocomotionStateInput,
-	type LocomotionStateOutput,
-	type AnimationStateMachineConfig,
-} from "../contracts/types";
+export enum LocomotionState {
+	IDLE = "idle",
+	WALKING = "walking",
+	CROUCHING = "crouching",
+	JUMPING = "jumping",
+	FALLING = "falling",
+	LANDING = "landing",
+}
+
+export interface LocomotionStateInput {
+	/** Player is pressing movement keys */
+	hasMovementInput: boolean;
+	/** Horizontal movement speed in scene units/sec */
+	horizontalSpeed: number;
+	/** Vertical velocity - positive = ascending, negative = falling */
+	verticalVelocity: number;
+	/** On the ground? (from PhysicsProvider.isGrounded()) */
+	isGrounded: boolean;
+	/** Player is holding the crouch key (Ctrl) */
+	isCrouching: boolean;
+	/** True on the frame jump was requested (input-driven, not physics-driven) */
+	isJumpRequested?: boolean;
+	/** Movement direction relative to facing (-1..+1 per axis) */
+	moveDirection?: { x: number; z: number };
+	/** Facing angle in radians */
+	facingAngle?: number;
+}
+
+export interface LocomotionStateOutput {
+	/** Current locomotion state (drives clip selection) */
+	state: LocomotionState;
+	/** Smoothed speed for animation playback rate (visual only) */
+	animationSpeed: number;
+	/** Whether walk clips should be active */
+	isMoving: boolean;
+	/** Directional weights for 4-way walk blending */
+	moveDirection?: { x: number; z: number };
+	/** Facing angle pass-through */
+	facingAngle?: number;
+}
+
+export interface AnimationStateMachineConfig {
+	/** Time to ramp from 0 to full walk speed (seconds, default 0.15) */
+	accelerationTime?: number;
+	/** Time to ramp from full walk speed to 0 (seconds, default 0.2) */
+	decelerationTime?: number;
+	/** Duration of the landing state before auto-transition (seconds, default 0.4) */
+	landingDuration?: number;
+	/** Grace period before WALKING->FALLING to absorb bumps (seconds, default 0.1) */
+	coyoteGrace?: number;
+	/** Vertical velocity threshold to trigger jump/fall states (default 0.5) */
+	verticalThreshold?: number;
+}
 
 // ── Defaults ──
 

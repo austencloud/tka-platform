@@ -6,7 +6,13 @@
  */
 
 import DOMPurify from 'dompurify';
-import type { ParsedMarkdown } from "./contracts/types";
+
+export interface ParsedMarkdown {
+	/** The HTML-rendered content */
+	html: string;
+	/** Extracted links for footnote-style display */
+	links: Array<{ text: string; url: string }>;
+}
 
 export function parseMarkdown(markdown: string): ParsedMarkdown {
 	if (!markdown) return { html: '', links: [] };

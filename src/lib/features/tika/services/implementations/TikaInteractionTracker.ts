@@ -22,8 +22,20 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { TikaTopicInteraction } from "../contracts/types";
 import { recordAttempt } from "$lib/features/learn/services/quiz-history-recorder";
+
+export interface TikaTopicInteraction {
+  /** Normalized topic identifier (e.g., "letter-A", "position-alpha", "type-1") */
+  topic: string;
+  /** How many times this topic has been discussed */
+  interactionCount: number;
+  /** When this topic was last discussed */
+  lastDiscussed: Date;
+  /** Number of quiz attempts on this topic via TIKA inline quizzes */
+  quizAttempts: number;
+  /** Ratio of correct answers (0-1), or 0 if no attempts */
+  quizCorrectRate: number;
+}
 import {
   getUserTikaInteractionsPath,
   getUserTikaInteractionPath,

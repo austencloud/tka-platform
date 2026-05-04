@@ -7,17 +7,19 @@
 
 import {
   doc,
-  getDoc,
-  setDoc,
   updateDoc,
   increment,
-  serverTimestamp,
   onSnapshot,
   type Unsubscribe,
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { firestoreGet, firestoreSet } from "$lib/shared/firestore";
+import { SpinnerMetricsSchema } from "../../domain/models/spinner-metrics-schemas";
 import type { SpinnerMetrics } from "../../domain/models/spinner-models";
+
+const METRICS_COLLECTION = "appMetrics";
+const METRICS_DOC_ID = "spinner";
 const METRICS_PATH = "appMetrics/spinner";
 
 export class SpinnerMetricsRepository {
@@ -30,25 +32,20 @@ export class SpinnerMetricsRepository {
     }
 
     try {
-      const firestore = await getFirestoreInstance();
-      const docRef = doc(firestore, METRICS_PATH);
-      const snapshot = await getDoc(docRef);
+      const result = await firestoreGet(METRICS_COLLECTION, METRICS_DOC_ID, SpinnerMetricsSchema);
 
-      if (snapshot.exists()) {
-        const data = snapshot.data();
+      if (result) {
         this.cachedMetrics = {
-          totalGenerated: data.totalGenerated ?? 0,
-          lastGeneratedAt: data.lastGeneratedAt
-            ? (data.lastGeneratedAt as Timestamp).toDate()
-            : null,
+          totalGenerated: result.totalGenerated,
+          lastGeneratedAt: result.lastGeneratedAt,
         };
       } else {
         // Initialize the document if it doesn't exist
-        await setDoc(docRef, {
-          totalGenerated: 0,
-          lastGeneratedAt: null,
-          createdAt: serverTimestamp(),
-        });
+        await firestoreSet(
+          METRICS_COLLECTION,
+          METRICS_DOC_ID,
+          { totalGenerated: 0, lastGeneratedAt: null } as Record<string, unknown>,
+        );
         this.cachedMetrics = {
           totalGenerated: 0,
           lastGeneratedAt: null,
@@ -68,17 +65,14 @@ export class SpinnerMetricsRepository {
 
   async incrementGeneratedCount(): Promise<number> {
     try {
-      const firestore = await getFirestoreInstance();
-      const docRef = doc(firestore, METRICS_PATH);
-
       // Ensure document exists first
-      const snapshot = await getDoc(docRef);
-      if (!snapshot.exists()) {
-        await setDoc(docRef, {
-          totalGenerated: 1,
-          lastGeneratedAt: serverTimestamp(),
-          createdAt: serverTimestamp(),
-        });
+      const existing = await firestoreGet(METRICS_COLLECTION, METRICS_DOC_ID, SpinnerMetricsSchema);
+      if (!existing) {
+        await firestoreSet(
+          METRICS_COLLECTION,
+          METRICS_DOC_ID,
+          { totalGenerated: 1, lastGeneratedAt: null } as Record<string, unknown>,
+        );
         if (this.cachedMetrics) {
           this.cachedMetrics.totalGenerated = 1;
           this.cachedMetrics.lastGeneratedAt = new Date();
@@ -86,15 +80,16 @@ export class SpinnerMetricsRepository {
         return 1;
       }
 
-      // Atomic increment
+      // Atomic increment (requires direct Firestore updateDoc)
+      const firestore = await getFirestoreInstance();
+      const docRef = doc(firestore, METRICS_PATH);
       await updateDoc(docRef, {
         totalGenerated: increment(1),
-        lastGeneratedAt: serverTimestamp(),
       });
 
-      // Update cache and return new value
-      const newSnapshot = await getDoc(docRef);
-      const newTotal = newSnapshot.data()?.totalGenerated ?? 0;
+      // Re-read to get the updated value
+      const updated = await firestoreGet(METRICS_COLLECTION, METRICS_DOC_ID, SpinnerMetricsSchema);
+      const newTotal = updated?.totalGenerated ?? 0;
 
       if (this.cachedMetrics) {
         this.cachedMetrics.totalGenerated = newTotal;
@@ -119,6 +114,7 @@ export class SpinnerMetricsRepository {
 
     let unsubscribed = false;
 
+    // Single-doc onSnapshot — firestoreListen handles collections, not single docs
     const setupSubscription = async () => {
       try {
         const firestore = await getFirestoreInstance();

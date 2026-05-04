@@ -10,8 +10,20 @@
  * 4. Explore (static fallback) - purple
  */
 
-import type { WelcomeContext, WelcomeSuggestion, TikaTopicInteraction } from "./contracts/types";
+import type { TikaTopicInteraction } from "./implementations/TikaInteractionTracker";
 import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
+
+export interface WelcomeSuggestion {
+  icon: string;
+  text: string;
+  question: string;
+  reason: "review" | "next" | "continue" | "explore";
+}
+export interface WelcomeContext {
+  greeting: string;
+  suggestions: WelcomeSuggestion[];
+  hasHistory: boolean;
+}
 
 const MAX_SUGGESTIONS = 6;
 

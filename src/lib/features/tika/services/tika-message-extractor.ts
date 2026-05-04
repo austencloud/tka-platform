@@ -13,7 +13,20 @@ import type {
 	InlineStepGrid,
 	InlineQuiz
 } from '../types';
-import type { ToolInfo, InlineContent } from "./contracts/types";
+
+export interface ToolInfo {
+	name: string;
+	args: Record<string, unknown>;
+	isPending: boolean;
+}
+export interface InlineContent {
+	pictograph?: InlinePictograph;
+	gallery?: InlineGallery;
+	galleries?: InlineGallery[];
+	sequencePlayer?: InlineSequencePlayer;
+	stepGrid?: InlineStepGrid;
+	quiz?: InlineQuiz;
+}
 
 export function getTextFromParts(parts: UIMessage['parts']): string {
 	if (!parts) return '';

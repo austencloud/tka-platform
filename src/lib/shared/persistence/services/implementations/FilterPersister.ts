@@ -11,15 +11,11 @@ import type {
   IFilterPersister,
   SimpleBrowseState,
 } from "../contracts/IFilterPersister";
-import { StorageManager } from "../../../foundation/services/implementations/StorageManager";
-
-const storageService = new StorageManager();
-const safeSessionStorageGet =
-  storageService.safeSessionStorageGet.bind(storageService);
-const safeSessionStorageSet =
-  storageService.safeSessionStorageSet.bind(storageService);
-const safeSessionStorageRemove =
-  storageService.removeSessionStorageItem.bind(storageService);
+import {
+  safeSessionStorageGet,
+  safeSessionStorageSet,
+  removeSessionStorageItem as safeSessionStorageRemove,
+} from "../../../foundation/services/storage-manager";
 
 export class FilterPersister implements IFilterPersister {
   private readonly CACHE_VERSION = "v2.1"; // ✅ ROBUST: Cache versioning

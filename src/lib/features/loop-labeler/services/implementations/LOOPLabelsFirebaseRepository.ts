@@ -1,14 +1,10 @@
 import {
-  collection,
-  doc,
-  setDoc,
-  deleteDoc,
-  getDocs,
-  getDoc,
-  type Firestore,
-} from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
+  firestoreSet,
+  firestoreDelete,
+  firestoreGet,
+  firestoreList,
+} from "$lib/shared/firestore";
+import { LabeledSequenceSchema } from "../../domain/models/loop-label-schemas";
 import type { LabeledSequence } from "../contracts/types";
 
 const LOOP_LABELS_COLLECTION = "loop-labels";
@@ -25,34 +21,20 @@ const LOCAL_STORAGE_KEY = "loop-labels";
  * - On save: Write to Firebase FIRST, then update localStorage cache
  */
 export class LOOPLabelsFirebaseRepository {
-  private firestore: Firestore | null = null;
   private syncStatus: "synced" | "syncing" | "error" = "synced";
-
-  /**
-   * Initialize Firestore instance (called lazily)
-   */
-  private async ensureFirestore(): Promise<Firestore> {
-    if (!this.firestore) {
-      this.firestore = await getFirestoreInstance();
-    }
-    return this.firestore;
-  }
 
   async saveLabelToFirebase(
     word: string,
     label: LabeledSequence
   ): Promise<void> {
     try {
-      const firestore = await this.ensureFirestore();
       this.syncStatus = "syncing";
 
-      await trackWrite(
-        () =>
-          setDoc(doc(firestore, LOOP_LABELS_COLLECTION, word), {
-            ...label,
-            updatedAt: new Date().toISOString(),
-          }),
-        "loop-labels"
+      await firestoreSet(
+        LOOP_LABELS_COLLECTION,
+        word,
+        { ...label } as Record<string, unknown>,
+        { trackOffline: true, repoName: "loop-labels" },
       );
 
       this.syncStatus = "synced";
@@ -66,13 +48,12 @@ export class LOOPLabelsFirebaseRepository {
 
   async deleteLabelFromFirebase(word: string): Promise<void> {
     try {
-      const firestore = await this.ensureFirestore();
       this.syncStatus = "syncing";
 
-      await trackWrite(
-        () => deleteDoc(doc(firestore, LOOP_LABELS_COLLECTION, word)),
-        "loop-labels"
-      );
+      await firestoreDelete(LOOP_LABELS_COLLECTION, word, {
+        trackOffline: true,
+        repoName: "loop-labels",
+      });
 
       this.syncStatus = "synced";
       console.log(`[LOOP Labels] Deleted "${word}" from Firebase`);
@@ -176,7 +157,6 @@ export class LOOPLabelsFirebaseRepository {
     labels: Map<string, LabeledSequence>
   ): Promise<void> {
     try {
-      const firestore = await this.ensureFirestore();
       this.syncStatus = "syncing";
 
       const entries = Array.from(labels.entries());
@@ -184,10 +164,11 @@ export class LOOPLabelsFirebaseRepository {
       let successCount = 0;
       for (const [word, label] of entries) {
         try {
-          await setDoc(doc(firestore, LOOP_LABELS_COLLECTION, word), {
-            ...label,
-            updatedAt: new Date().toISOString(),
-          });
+          await firestoreSet(
+            LOOP_LABELS_COLLECTION,
+            word,
+            { ...label } as Record<string, unknown>,
+          );
           successCount++;
         } catch (error) {
           console.error(`Failed to sync "${word}":`, error);
@@ -206,15 +187,12 @@ export class LOOPLabelsFirebaseRepository {
    * Load all labels from Firebase
    */
   private async loadFromFirebase(): Promise<Map<string, LabeledSequence>> {
-    const firestore = await this.ensureFirestore();
-    const snapshot = await getDocs(
-      collection(firestore, LOOP_LABELS_COLLECTION)
-    );
+    const items = await firestoreList(LOOP_LABELS_COLLECTION, LabeledSequenceSchema);
 
     const labels = new Map<string, LabeledSequence>();
-    snapshot.forEach((docSnap) => {
-      labels.set(docSnap.id, docSnap.data() as LabeledSequence);
-    });
+    for (const item of items) {
+      labels.set(item.word, item as LabeledSequence);
+    }
 
     return labels;
   }
@@ -235,30 +213,31 @@ export class LOOPLabelsFirebaseRepository {
     word: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const firestore = await this.ensureFirestore();
       this.syncStatus = "syncing";
 
       // Check if sequence exists in publicSequences
-      const sequenceRef = doc(
-        firestore,
+      const sequence = await firestoreGet(
         PUBLIC_SEQUENCES_COLLECTION,
-        sequenceId
+        sequenceId,
+        LabeledSequenceSchema,
       );
-      const sequenceSnap = await getDoc(sequenceRef);
 
-      if (!sequenceSnap.exists()) {
+      if (!sequence) {
         console.warn(`Sequence "${sequenceId}" not found in publicSequences`);
         // Continue anyway to delete the LOOP label
       } else {
         // Delete from publicSequences
-        await deleteDoc(sequenceRef);
+        await firestoreDelete(PUBLIC_SEQUENCES_COLLECTION, sequenceId);
       }
 
       // Also delete the LOOP label if it exists
-      const labelRef = doc(firestore, LOOP_LABELS_COLLECTION, word);
-      const labelSnap = await getDoc(labelRef);
-      if (labelSnap.exists()) {
-        await deleteDoc(labelRef);
+      const label = await firestoreGet(
+        LOOP_LABELS_COLLECTION,
+        word,
+        LabeledSequenceSchema,
+      );
+      if (label) {
+        await firestoreDelete(LOOP_LABELS_COLLECTION, word);
       }
 
       this.syncStatus = "synced";

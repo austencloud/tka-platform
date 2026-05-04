@@ -5,8 +5,10 @@
  * Provides synchronized playback state and history access.
  */
 
-import { doc, collection, query, orderBy, limit, onSnapshot, Timestamp, type Firestore } from "firebase/firestore";
+import { doc, onSnapshot, Timestamp, type Firestore } from "firebase/firestore";
 import { httpsCallable, type Functions } from "firebase/functions";
+import { firestoreListen } from "$lib/shared/firestore";
+import { BroadcastHistoryEntrySchema } from "../../domain/models/broadcast-schemas";
 import type { BroadcastState, BroadcastStateClient, BroadcastHistoryEntry, ServerTimeResponse, } from "../../domain/models/broadcast-models";
 import type {
   BroadcastStateCallback, BroadcastHistoryCallback } from "../contracts/types";
@@ -105,49 +107,26 @@ export class BroadcastRepository {
   }
 
   subscribeToHistory(historyLimit: number, callback: BroadcastHistoryCallback): () => void {
-    let unsubscribe: (() => void) | null = null;
-    let cancelled = false;
-
-    // Initialize async then set up subscription
-    this.ensureInitialized().then(() => {
-      if (cancelled || !this.firestoreInstance) return;
-
-      const historyRef = collection(this.firestoreInstance, BROADCAST_HISTORY_COLLECTION);
-      const historyQuery = query(
-        historyRef,
-        orderBy("sequenceNumber", "desc"),
-        limit(historyLimit)
-      );
-
-      unsubscribe = onSnapshot(
-        historyQuery,
-        (snapshot) => {
-          const entries: BroadcastHistoryEntry[] = snapshot.docs.map((docSnapshot) => {
-            const data = docSnapshot.data();
-            return {
-              sequence: data.sequence,
-              sequenceNumber: data.sequenceNumber,
-              playedAtMs: timestampToMs(data.playedAt),
-            };
-          });
-
-          callback(entries);
-        },
-        (error) => {
-          console.error("[BroadcastRepository] Error subscribing to history:", error);
-          callback([]);
-        }
-      );
-    }).catch((error) => {
-      console.error("[BroadcastRepository] Failed to initialize:", error);
-      callback([]);
-    });
-
-    // Return unsubscribe function
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-    };
+    return firestoreListen(
+      BROADCAST_HISTORY_COLLECTION,
+      BroadcastHistoryEntrySchema,
+      (items) => {
+        const entries: BroadcastHistoryEntry[] = items.map((item) => ({
+          sequence: item.sequence,
+          sequenceNumber: item.sequenceNumber,
+          playedAtMs: item.playedAt instanceof Date ? item.playedAt.getTime() : Date.now(),
+        }));
+        callback(entries);
+      },
+      {
+        orderBy: [{ field: "sequenceNumber", direction: "desc" }],
+        limit: historyLimit,
+      },
+      (error) => {
+        console.error("[BroadcastRepository] Error subscribing to history:", error);
+        callback([]);
+      },
+    );
   }
 
   async getServerTime(): Promise<ServerTimeResponse> {

@@ -53,3 +53,14 @@ export const BroadcastStateSchema = z
   .passthrough();
 
 export type BroadcastState = z.infer<typeof BroadcastStateSchema>;
+
+export const BroadcastHistoryEntrySchema = z
+  .object({
+    id: z.string(),
+    sequence: BroadcastSequenceSchema,
+    sequenceNumber: z.number(),
+    playedAt: firestoreDate,
+  })
+  .passthrough();
+
+export type BroadcastHistoryEntryParsed = z.infer<typeof BroadcastHistoryEntrySchema>;

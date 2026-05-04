@@ -13,7 +13,7 @@
  */
 
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { HandPathNamer } from "$lib/shared/foundation/services/implementations/HandPathNamer";
+import { handPathToName } from "$lib/shared/foundation/services/hand-path-namer";
 
 export type BuilderPhase = "blue" | "red" | "complete";
 
@@ -65,8 +65,6 @@ export interface HandMove {
   to: GridLocation;
 }
 
-const namer = new HandPathNamer();
-
 export function createBuilderState() {
   let phase = $state<BuilderPhase>("blue");
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
@@ -79,10 +77,10 @@ export function createBuilderState() {
 
   // Derived path names - live-update as locations are tapped
   const bluePathName = $derived(
-    blueLocations.length > 0 ? namer.toName(blueLocations) : ""
+    blueLocations.length > 0 ? handPathToName(blueLocations) : ""
   );
   const redPathName = $derived(
-    redLocations.length > 0 ? namer.toName(redLocations) : ""
+    redLocations.length > 0 ? handPathToName(redLocations) : ""
   );
 
   // Which locations the grid should render as tappable

@@ -4,8 +4,12 @@
  * Pure functions, no Firestore, instant.
  */
 
-import type { CapabilityMatch } from "./contracts/types";
 import { APP_CAPABILITIES, type AppCapability } from "../knowledge/app-capabilities-manifest";
+
+export interface CapabilityMatch {
+  capability: AppCapability;
+  relevance: number; // 0-1
+}
 
 const DEFAULT_LIMIT = 3;
 

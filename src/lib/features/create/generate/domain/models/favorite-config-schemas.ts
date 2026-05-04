@@ -23,3 +23,26 @@ export const CommunityFavoriteSchema = z
   .passthrough();
 
 export type CommunityFavorite = z.infer<typeof CommunityFavoriteSchema>;
+
+/**
+ * Minimal schema for reading a user doc that may contain a favoriteConfig field.
+ * Used by firestoreGet/firestoreList to parse the raw Firestore user doc.
+ */
+export const UserWithFavoriteSchema = z
+  .object({
+    id: z.string(),
+    favoriteConfig: z
+      .object({
+        config: z.record(z.string(), z.unknown()),
+        startEndOptions: z.record(z.string(), z.unknown()).nullable().optional(),
+        setAt: firestoreDate.optional(),
+      })
+      .passthrough()
+      .nullable()
+      .optional(),
+    displayName: z.string().optional(),
+    photoURL: z.string().optional(),
+  })
+  .passthrough();
+
+export type UserWithFavorite = z.infer<typeof UserWithFavoriteSchema>;

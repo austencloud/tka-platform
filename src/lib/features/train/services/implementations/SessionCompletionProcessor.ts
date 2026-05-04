@@ -8,7 +8,12 @@
  * - Processes challenge progression
  */
 
-import type { PracticeMode } from "../../domain/enums/TrainEnums";
+import type * as performanceHistoryTrackerModule from "../performance-history-tracker";
+import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
+import type { TrainChallengeManager } from "./TrainChallengeManager";
+import type { StoredPerformance } from "../../domain/models/TrainDatabaseModels";
+import type { TrainChallenge } from "../../domain/models/TrainChallengeModels";
+import { PracticeMode } from "../../domain/enums/TrainEnums";
 
 export interface SessionCompletionParams {
   totalSteps: number;
@@ -49,12 +54,6 @@ export interface SessionCompletionResult {
   accuracy: number;
   challengeProgress?: ChallengeProgressResult;
 }
-import type * as performanceHistoryTrackerModule from "../performance-history-tracker";
-import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
-import type { TrainChallengeManager } from "./TrainChallengeManager";
-import type { StoredPerformance } from "../../domain/models/TrainDatabaseModels";
-import type { TrainChallenge } from "../../domain/models/TrainChallengeModels";
-import { PracticeMode } from "../../domain/enums/TrainEnums";
 import {
   calculateSessionXP,
   checkChallengeRequirement,

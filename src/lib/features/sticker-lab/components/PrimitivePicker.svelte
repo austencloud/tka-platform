@@ -2,7 +2,7 @@
   import { getStickerLabContext } from "../context/sticker-lab-context";
   import { loadPrimitiveCatalog } from "../services/implementations/PrimitiveCatalogReader";
   import { loadPrimitivePaths, getPrimitivePaths } from "../state/mandala-paths-cache.svelte";
-  import { MandalaRenderer } from "$lib/shared/mandala/services/implementations/MandalaRenderer";
+  import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
   import { entryToRef } from "../domain/primitive-catalog-types";
   import type { PrimitiveCatalogEntry } from "../domain/primitive-catalog-types";
   import type { MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
@@ -16,7 +16,6 @@
   let { open = $bindable(), onclose }: Props = $props();
 
   const stickerState = getStickerLabContext();
-  const renderer = new MandalaRenderer();
 
   const PICKER_PALETTE: MandalaPalette = {
     blueStroke: "#1e40af",
@@ -92,7 +91,7 @@
             aria-label="{entry.displayName} - {copies > 0 ? `${copies} on sheet` : 'Add to sheet'}"
           >
             {#if paths}
-              {@html renderer.renderSVG(paths, {
+              {@html renderMandalaSVG(paths, {
                 size: 120,
                 style: "stroke",
                 showGridDots: false,

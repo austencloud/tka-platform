@@ -5,9 +5,7 @@
  * following the microservices architecture pattern.
  */
 
-import { StorageManager } from "$lib/shared/foundation/services/implementations/StorageManager";
-
-const storageService = new StorageManager();
+import { safeSessionStorageGet, safeSessionStorageSet } from "$lib/shared/foundation/services/storage-manager";
 export class FavoritesManager {
   private readonly CACHE_VERSION = "v2.1"; // ✅ ROBUST: Cache versioning
   private readonly STORAGE_KEY = `tka-${this.CACHE_VERSION}-favorites`;
@@ -110,7 +108,7 @@ export class FavoritesManager {
 
   private loadFavoritesFromStorage(): void {
     try {
-      const favorites = storageService.safeSessionStorageGet<string[]>(
+      const favorites = safeSessionStorageGet<string[]>(
         this.STORAGE_KEY,
         []
       );
@@ -127,7 +125,7 @@ export class FavoritesManager {
         throw new Error("Favorites cache not initialized");
       }
       const favorites = Array.from(this.favoritesCache);
-      storageService.safeSessionStorageSet(this.STORAGE_KEY, favorites);
+      safeSessionStorageSet(this.STORAGE_KEY, favorites);
     } catch (error) {
       console.error("Failed to save favorites to storage:", error);
     }
