@@ -51,6 +51,8 @@
   import type { CreatorIntent } from "$lib/shared/foundation/domain/models/CreatorIntent";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { createPhraseEffortLabState } from "./state/phrase-effort-lab-state.svelte";
+  import { persistTimeline as persistTimelineToSession, getPersistedSequenceId as getStoredSequenceId } from "./services/phrase-effort-lab-persister";
 
   const SESSION_KEY = "phrase-effort-lab-sequence-id";
   const SESSION_TIMELINE_KEY = "phrase-effort-lab-timeline";
