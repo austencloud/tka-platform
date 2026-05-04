@@ -3,20 +3,19 @@ import type {
   GPUChunkResult,
   GPUVegetationData,
 } from "./gpu/terrain-compute-types";
-import { applyErosion, applyThermalErosion, mulberry32 } from "../seed-generator";
+import { applyErosion, applyThermalErosion, mulberry32, SeededNoise } from "./seed-generator";
 import {
   generateVegetationScatter,
   toLegacyFormat,
   type TerrainSample,
-} from "../vegetation-scatter";
+  type LegacyVegetationType,
+} from "./vegetation-scatter";
 import {
-  BiomeType,
   getBiomeType,
   BIOME_CHARACTERISTICS,
   biomeTypeToLegacy,
   DEFAULT_BIOME_CONFIG,
-} from "../biome-system";
-import { SeededNoise } from "../seed-generator";
+} from "./biome-system";
 import { buildTerrainGeometry, addSkirtGeometry } from "./terrain-mesh-builder";
 
 export function generateChunkCPU(
