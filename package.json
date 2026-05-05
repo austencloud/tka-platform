@@ -16,7 +16,7 @@
     "dev:mobile": "vite --host 0.0.0.0",
     "adb:connect": "node scripts/adb-connect.js",
     "adb:watch": "node scripts/adb-connect.js --watch",
-    "build:native": "cross-env DISABLE_PWA=true npm run build && npx cap sync",
+    "build:native": "npm run build && npx cap sync",
     "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android",
     "cap:ios": "npx cap open ios",
@@ -54,7 +54,6 @@
     "flow:advanced": "playwright test tests/e2e/flows/4-advanced-start-position-flow.spec.ts --config tests/config/playwright.config.ts",
     "flow:drills": "playwright test tests/e2e/flows/5-learn-drills-flow.spec.ts --config tests/config/playwright.config.ts",
     "flow:library": "playwright test tests/e2e/flows/6-library-save-reload-flow.spec.ts --config tests/config/playwright.config.ts",
-    "flow:pwa": "playwright test tests/e2e/flows/7-mobile-pwa-install-flow.spec.ts --config tests/config/playwright.config.ts",
     "lint": "prettier --check . && eslint .",
     "lint:fix": "prettier --write . && eslint . --fix",
     "format": "prettier --write .",
@@ -137,7 +136,6 @@
     "@types/sortablejs": "^1.15.9",
     "@types/three": "^0.182.0",
     "@types/web-bluetooth": "^0.0.21",
-    "@vite-pwa/sveltekit": "^1.1.0",
     "@vitest/browser": "^4.0.16",
     "canvas": "^3.2.0",
     "cross-env": "^10.1.0",
@@ -169,11 +167,9 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
-    "vite-plugin-pwa": "^1.2.0",
     "vite-plugin-static-copy": "^3.1.4",
     "vitest": "^4.0.16",
-    "web-vitals": "^5.1.0",
-    "workbox-window": "^7.4.0"
+    "web-vitals": "^5.1.0"
   },
   "engines": {
     "node": ">=22.0.0"
