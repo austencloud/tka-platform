@@ -11,7 +11,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   import type { PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { quintOut } from "svelte/easing";
 
-  import type { CardDescriptor } from "../shared/services/contracts/types";
+  import type { CardDescriptor } from "$lib/shared/create/domain/generator-contract-types";
   import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
   import { calculateResponsiveFontSize } from "../shared/services/responsive-typographer";
   import type { UIGenerationConfig } from "../state/generate-config.svelte";

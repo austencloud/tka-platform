@@ -17,7 +17,7 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import { getCompositionState } from "../../state/composition-state.svelte";
-  import type { MediaDisplayType } from "../../domain/types";
+  import type { MediaDisplayType } from "$lib/shared/animation-engine/domain/compose-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   const compState = getCompositionState();

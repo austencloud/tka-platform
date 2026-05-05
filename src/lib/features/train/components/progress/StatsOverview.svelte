@@ -4,11 +4,11 @@
   Displays key training statistics in a responsive grid.
 -->
 <script lang="ts">
-  import type { StatsOverview } from "../../services/contracts/types";
+  import type { StatsOverview as StatsOverviewData } from "../../services/performance-history-tracker";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
-    stats: StatsOverview;
+    stats: StatsOverviewData;
   }
 
   let { stats }: Props = $props();

@@ -23,7 +23,7 @@
   import type {
     XPBreakdown,
     ChallengeProgressResult,
-  } from "../services/contracts/types";
+  } from "../services/implementations/SessionCompletionProcessor";
   import { getTrainPracticeState } from "../state/train-practice-state.svelte";
   import ModeSettingsSheet from "./practice/ModeSettingsSheet.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";

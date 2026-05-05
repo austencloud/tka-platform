@@ -6,8 +6,8 @@
    * Provides quick actions: configure, clear, duplicate settings.
    */
 
-  import type { CellConfig } from "../../domain/types";
-  import { isCellConfigured } from "../../domain/types";
+  import type { CellConfig } from "$lib/shared/animation-engine/domain/compose-types";
+  import { isCellConfigured } from "$lib/shared/animation-engine/domain/compose-types";
   import { getCompositionState } from "../../state/composition-state.svelte";
 
   interface Props {

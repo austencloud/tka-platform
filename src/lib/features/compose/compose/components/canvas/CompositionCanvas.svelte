@@ -6,7 +6,7 @@
    * This is both the build view and the playback view.
    */
 
-  import type { Composition } from "../../domain/types";
+  import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
   import CompositionCell from "./CompositionCell.svelte";
 
   interface Props {

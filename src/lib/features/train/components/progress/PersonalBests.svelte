@@ -4,7 +4,7 @@
   Displays best performance for each sequence.
 -->
 <script lang="ts">
-  import type { PersonalBest } from "../../services/contracts/types";
+  import type { PersonalBest } from "../../services/performance-history-tracker";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

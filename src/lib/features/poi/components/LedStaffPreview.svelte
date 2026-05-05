@@ -13,7 +13,7 @@
 -->
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
-  import type { StripPattern } from "../domain/StripPattern";
+  import type { StripPattern } from "$lib/shared/poi/domain/StripPattern";
   import ScrubValue from "./ScrubValue.svelte";
 
   const poi = getPoiContext();

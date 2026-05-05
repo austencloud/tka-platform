@@ -31,7 +31,7 @@ Card-based architecture with integrated Generate button:
   import CustomizeDrawer from "./modals/CustomizeDrawer.svelte";
   import PresetDrawer from "./presets/PresetDrawer.svelte";
   import { createFavoriteState } from "../state/favorite-state.svelte";
-  import type { GeneratorHelpId } from "../domain/generator-help-content";
+  import type { GeneratorHelpId } from "$lib/shared/create/domain/generator-help-content";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
   import GeneratePanelTour from "$lib/shared/onboarding/components/generate-tour/GeneratePanelTour.svelte";
   import {

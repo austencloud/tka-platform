@@ -6,7 +6,7 @@
   Visual height: 32px. Touch target: 48px via invisible padding.
 -->
 <script lang="ts">
-  import type { TargetHand } from "../../domain/types/panel-types";
+  import type { TargetHand } from "$lib/shared/create/domain/panel-types";
 
   interface Props {
     value: TargetHand;

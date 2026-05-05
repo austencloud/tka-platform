@@ -20,22 +20,22 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import type { VideoCountManager } from "$lib/shared/browse/services/VideoCountManager";
   import type { SequenceImageSharer } from "$lib/shared/share/services/implementations/SequenceImageSharer";
   import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
-  import type { ClaudeCodeCopier } from "../services/implementations/ClaudeCodeCopier";
+  import type { ClaudeCodeCopier } from "$lib/shared/browse/services/ClaudeCodeCopier";
   import type { MediaType } from "$lib/shared/sequence-viewer/domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
   import { resolvePresentation } from "$lib/shared/sequence-viewer/services/presentation-resolver";
 import type { ViewingContext } from "$lib/shared/sequence-viewer/services/presentation-resolver";
   import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
-  import { getSequenceDetailLoader } from "../getSequenceDetailLoader";
-  import { getVideoCountManager } from "../getVideoCountManager";
+  import { getSequenceDetailLoader } from "$lib/shared/browse/getSequenceDetailLoader";
+  import { getVideoCountManager } from "$lib/shared/browse/getVideoCountManager";
   import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { onMount } from "svelte";
   import { untrack } from "svelte";
   import { getAuthSync } from "$lib/shared/auth/firebase";
 
   // Child components
-  import AvatarImage from "../../../creators/components/profile/AvatarImage.svelte";
+  import AvatarImage from "$lib/shared/browse/components/AvatarImage.svelte";
   import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
   import VideosPanel from "$lib/shared/video-collaboration/components/VideosPanel.svelte";
   import VariationStrip from "./VariationStrip.svelte";
