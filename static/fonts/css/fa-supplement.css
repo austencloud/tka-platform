@@ -1,0 +1,32 @@
+/*!
+ * Font Awesome Free 7.0.1 — Brands + Regular supplement for TKA
+ * Solid is the primary weight (loaded via solid.min.css).
+ * This file adds only the two extra weights the codebase uses.
+ */
+@font-face {
+  font-family: "Font Awesome 6 Brands";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../webfonts/fa-brands-400.woff2") format("woff2");
+}
+
+.fab,
+.fa-brands {
+  font-family: "Font Awesome 6 Brands";
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Font Awesome 6 Free";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../webfonts/fa-regular-400.woff2") format("woff2");
+}
+
+.far,
+.fa-regular {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 400;
+}
