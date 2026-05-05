@@ -24,7 +24,7 @@ import {
 import { createCellsFromTemplate, getTemplateById } from "../domain/templates";
 import { getComposition as dexieGetComposition, exists as dexieExists } from "../../services/dexie-composition-repository";
 import { compositionSyncer } from "../../services/implementations/CompositionSyncer";
-import { loadCustomPresets } from "$lib/features/constraint-layout-lab/services/LayoutPersistence";
+import { loadCustomPresets } from "$lib/features/lab/constraint-layout-lab/services/LayoutPersistence";
 import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-types";
 
 // Import types and helpers

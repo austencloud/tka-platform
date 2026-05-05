@@ -7,11 +7,11 @@
   import { LEVELS_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
-    level4: () => import("$lib/features/level5-lab/Level5LabModule.svelte"),
+    level4: () => import("$lib/features/levels/level5-lab/Level5LabModule.svelte"),
     level5: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
-    level6: () => import("$lib/features/level7-lab/Level7LabModule.svelte"),
-    "conjoined-grid": () => import("$lib/features/conjoined-grid/ConjoinedGridTab.svelte"),
-    poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
+    level6: () => import("$lib/features/levels/level7-lab/Level7LabModule.svelte"),
+    "conjoined-grid": () => import("$lib/features/levels/conjoined-grid/ConjoinedGridTab.svelte"),
+    poi: () => import("$lib/features/levels/poi-lab/PoiLabModule.svelte"),
   };
 
   const activeTab = $derived(navigationState.activeTab || LEVELS_TABS[0]?.id || "level4");

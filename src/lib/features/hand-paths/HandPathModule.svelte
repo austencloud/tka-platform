@@ -12,8 +12,8 @@
   import { HAND_PATH_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
-    "hand-path-explorer": () => import("$lib/features/hand-path-explorer/HandPathExplorerLab.svelte"),
-    "hand-path-builder": () => import("$lib/features/hand-path-builder/HandPathBuilderLab.svelte"),
+    "hand-path-explorer": () => import("$lib/features/hand-paths/hand-path-explorer/HandPathExplorerLab.svelte"),
+    "hand-path-builder": () => import("$lib/features/hand-paths/hand-path-builder/HandPathBuilderLab.svelte"),
   };
 
   const activeTab = $derived(navigationState.activeTab || HAND_PATH_TABS[0]?.id || "hand-path-explorer");

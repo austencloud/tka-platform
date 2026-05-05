@@ -3,10 +3,10 @@
   Navigate to /test/math-foundations to browse the mathematical patterns in TKA
 -->
 <script lang="ts">
-  import HeroSection from "$lib/features/math-foundations/components/HeroSection.svelte";
-  import PositionGroupsSection from "$lib/features/math-foundations/components/PositionGroupsSection.svelte";
-  import LetterTriadSection from "$lib/features/math-foundations/components/LetterTriadSection.svelte";
-  import MotionTypesSection from "$lib/features/math-foundations/components/MotionTypesSection.svelte";
+  import HeroSection from "$lib/features/learn/math-foundations/components/HeroSection.svelte";
+  import PositionGroupsSection from "$lib/features/learn/math-foundations/components/PositionGroupsSection.svelte";
+  import LetterTriadSection from "$lib/features/learn/math-foundations/components/LetterTriadSection.svelte";
+  import MotionTypesSection from "$lib/features/learn/math-foundations/components/MotionTypesSection.svelte";
 
   // ITI container is ready synchronously - no module loading needed
   let servicesReady = $state(true);

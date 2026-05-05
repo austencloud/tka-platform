@@ -10,7 +10,7 @@
 
   import { getCompositionState } from "./state/composition-state.svelte";
   import PresetPicker from "./components/PresetPicker.svelte";
-  import CompositionLab from "$lib/features/constraint-layout-lab/CompositionLab.svelte";
+  import CompositionLab from "$lib/features/lab/constraint-layout-lab/CompositionLab.svelte";
 
   // Get singleton state
   const compState = getCompositionState();

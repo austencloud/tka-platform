@@ -9,12 +9,12 @@
    */
 
   import { onMount } from "svelte";
-  import { LAYOUT_PRESETS } from "$lib/features/constraint-layout-lab/services/LayoutPresets";
-  import type { LayoutPreset } from "$lib/features/constraint-layout-lab/domain/types";
+  import { LAYOUT_PRESETS } from "$lib/features/lab/constraint-layout-lab/services/LayoutPresets";
+  import type { LayoutPreset } from "$lib/features/lab/constraint-layout-lab/domain/types";
   import {
     loadCustomPresets,
     type CustomPreset,
-  } from "$lib/features/constraint-layout-lab/services/LayoutPersistence";
+  } from "$lib/features/lab/constraint-layout-lab/services/LayoutPersistence";
 
   interface Props {
     onSelectPreset: (templateId: string) => void;

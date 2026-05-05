@@ -21,20 +21,20 @@
       import("$lib/features/mandala-generator/components/MandalaGeneratorModule.svelte"),
     backgrounds: () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
-    composition: () => import("$lib/features/constraint-layout-lab/CompositionLab.svelte"),
+    composition: () => import("$lib/features/lab/constraint-layout-lab/CompositionLab.svelte"),
     // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
     // community, connect graduated to Social module (Mar 2026)
     voice: () => import("./tabs/VoiceControlLab.svelte"),
-    vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
+    vtg: () => import("$lib/features/lab/vtg-lab/VtgLabModule.svelte"),
     // skel2tka graduated to Video module (Mar 2026)
-    trigrid: () => import("$lib/features/trigrid-lab/TriGridLabModule.svelte"),
-    duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
-    effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
+    trigrid: () => import("$lib/features/lab/trigrid-lab/TriGridLabModule.svelte"),
+    duration: () => import("$lib/features/lab/duration-lab/DurationLabModule.svelte"),
+    effects: () => import("$lib/features/lab/effects-lab/EffectsLabModule.svelte"),
     "hand-pose": () => import("./tabs/hand-pose-editor/HandPoseEditor.svelte"),
-    disassemble: () => import("$lib/features/disassemble-lab/DisassembleLab.svelte"),
+    disassemble: () => import("$lib/features/lab/disassemble-lab/DisassembleLab.svelte"),
     "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
     // retro, ascii-pictograph, retro-pictograph graduated to Retro module (Mar 2026)
-    "phrase-effort": () => import("$lib/features/phrase-effort-lab/PhraseEffortLabModule.svelte"),
+    "phrase-effort": () => import("$lib/features/lab/phrase-effort-lab/PhraseEffortLabModule.svelte"),
     village: () => import("$lib/features/village/VillageLabTab.svelte"),
     "pov-pattern": () => import("./tabs/PovPatternLab.svelte"),
     "collision-lab": () => import("./tabs/collision-lab/CollisionLab.svelte"),
