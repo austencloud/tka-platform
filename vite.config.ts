@@ -1,3 +1,5 @@
+import { getEnabledFeaturesDefineMap } from "./src/config/feature-flags";
+import { featureGatePlugin } from "./src/config/vite-plugin-feature-gate";
 import { museumPlacementPlugin } from './src/lib/features/museum/dev/museum-placement-plugin';
 import { sveltekit } from "@sveltejs/kit/vite";
 import { SvelteKitPWA } from "@vite-pwa/sveltekit";
@@ -594,8 +596,10 @@ export default defineConfig({
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(packageJson.version),
     // PWA flag - used by hooks.client.ts to conditionally import virtual:pwa-register
     __PWA_ENABLED__: process.env.DISABLE_PWA !== "true",
+    ...getEnabledFeaturesDefineMap(),
   },
   plugins: [
+    featureGatePlugin(),
     // realtime-bpm-analyzer is browser-only (AudioContext) and has broken
     // package exports that Vite/Rollup can't resolve in some environments
     // (especially pnpm on Cloudflare Pages). SSR: mark external.

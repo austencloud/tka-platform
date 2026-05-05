@@ -29,7 +29,7 @@ import {
   WATCH_TABS,
 } from "../config/tab-definitions";
 
-import { MODULE_DEFINITIONS, normalizeModuleId } from "../config/module-definitions";
+import { MODULE_DEFINITIONS, ENABLED_MODULE_DEFINITIONS, normalizeModuleId } from "../config/module-definitions";
 
 import {
   CURRENT_MODULE_KEY,
@@ -69,7 +69,7 @@ export {
   WATCH_TABS,
 } from "../config/tab-definitions";
 
-export { MODULE_DEFINITIONS } from "../config/module-definitions";
+export { MODULE_DEFINITIONS, ENABLED_MODULE_DEFINITIONS } from "../config/module-definitions";
 
 export function createNavigationState() {
   let currentCreateMode = $state<string>("construct");

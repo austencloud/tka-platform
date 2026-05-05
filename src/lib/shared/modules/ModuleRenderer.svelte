@@ -61,20 +61,19 @@
     });
 
     // Preload heavy modules (museum = Three.js/Threlte) during idle time.
-    // Wait 3s after mount so we don't compete with initial page render,
-    // then use requestIdleCallback to avoid blocking user interaction.
-    preloadTimer = setTimeout(() => {
-      const idle =
-        (window as any).requestIdleCallback ??
-        ((cb: () => void) => setTimeout(cb, 100));
-      idle(() => {
-        if (activeModule !== "museum" && !moduleCache.has("museum")) {
-          loadModule("museum").catch(() => {
-            // Preload failure is non-critical - user gets normal loading on click
-          });
-        }
-      });
-    }, 3000);
+    // Skip when museum is disabled at compile time (prod builds without museum).
+    if (typeof __FEATURE_MUSEUM__ === "undefined" || __FEATURE_MUSEUM__) {
+      preloadTimer = setTimeout(() => {
+        const idle =
+          (window as any).requestIdleCallback ??
+          ((cb: () => void) => setTimeout(cb, 100));
+        idle(() => {
+          if (activeModule !== "museum" && !moduleCache.has("museum")) {
+            loadModule("museum").catch(() => {});
+          }
+        });
+      }, 3000);
+    }
   });
 
   onDestroy(() => {

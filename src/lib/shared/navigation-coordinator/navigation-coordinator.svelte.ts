@@ -20,6 +20,7 @@ type DocumentWithViewTransition = Document & {
 import type { ModuleId, Section } from "../navigation/domain/types";
 import {
   MODULE_DEFINITIONS,
+  ENABLED_MODULE_DEFINITIONS,
   navigationState,
 } from "../navigation/state/navigation-state.svelte";
 import { switchModule } from "../application/state/ui/module-state";
@@ -473,7 +474,7 @@ export function getModuleDefinitions() {
   // The object reference changes on each update, so reading it establishes the dependency
   const _globalOverrides = featureFlagState.globalFlagOverrides;
 
-  return MODULE_DEFINITIONS.filter((module) => {
+  return ENABLED_MODULE_DEFINITIONS.filter((module) => {
     // Library module is now integrated into Gallery via Community/My Library toggle
     // (Note: "library" is not in ModuleId type but may exist in legacy data)
     if (module.id === ("library" as any)) {

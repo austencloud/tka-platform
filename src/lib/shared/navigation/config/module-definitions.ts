@@ -312,3 +312,34 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   // - gallery3d → Retired, merged into Gallery destination
   // - 3d-viewer → Retired, merged into Stage destination
 ];
+
+const FEATURE_ENABLED: Record<string, boolean> = {
+  create: true,
+  browse: true,
+  feedback: true,
+  social: typeof __FEATURE_SOCIAL__ !== "undefined" ? __FEATURE_SOCIAL__ : true,
+  learn: typeof __FEATURE_LEARN__ !== "undefined" ? __FEATURE_LEARN__ : true,
+  tika: typeof __FEATURE_TIKA__ !== "undefined" ? __FEATURE_TIKA__ : true,
+  premium: typeof __FEATURE_PREMIUM__ !== "undefined" ? __FEATURE_PREMIUM__ : true,
+  compose: typeof __FEATURE_COMPOSE__ !== "undefined" ? __FEATURE_COMPOSE__ : true,
+  watch: typeof __FEATURE_WATCH__ !== "undefined" ? __FEATURE_WATCH__ : true,
+  arena: typeof __FEATURE_ARENA__ !== "undefined" ? __FEATURE_ARENA__ : true,
+  train: typeof __FEATURE_TRAIN__ !== "undefined" ? __FEATURE_TRAIN__ : true,
+  choreo_card: typeof __FEATURE_CHOREO_CARD__ !== "undefined" ? __FEATURE_CHOREO_CARD__ : true,
+  write: typeof __FEATURE_WRITE__ !== "undefined" ? __FEATURE_WRITE__ : true,
+  moderation: typeof __FEATURE_MODERATION__ !== "undefined" ? __FEATURE_MODERATION__ : true,
+  admin: typeof __FEATURE_ADMIN__ !== "undefined" ? __FEATURE_ADMIN__ : true,
+  festivals: typeof __FEATURE_FESTIVALS__ !== "undefined" ? __FEATURE_FESTIVALS__ : true,
+  museum: typeof __FEATURE_MUSEUM__ !== "undefined" ? __FEATURE_MUSEUM__ : true,
+  archive: typeof __FEATURE_ARCHIVE__ !== "undefined" ? __FEATURE_ARCHIVE__ : true,
+  retro: typeof __FEATURE_RETRO__ !== "undefined" ? __FEATURE_RETRO__ : true,
+  levels: typeof __FEATURE_LEVELS__ !== "undefined" ? __FEATURE_LEVELS__ : true,
+  "hand-paths": typeof __FEATURE_HAND_PATHS__ !== "undefined" ? __FEATURE_HAND_PATHS__ : true,
+  video: typeof __FEATURE_VIDEO__ !== "undefined" ? __FEATURE_VIDEO__ : true,
+  lab: typeof __FEATURE_LAB__ !== "undefined" ? __FEATURE_LAB__ : true,
+  settings: typeof __FEATURE_SETTINGS__ !== "undefined" ? __FEATURE_SETTINGS__ : true,
+};
+
+export const ENABLED_MODULE_DEFINITIONS = MODULE_DEFINITIONS.filter(
+  (m) => FEATURE_ENABLED[m.id] !== false
+);

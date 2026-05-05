@@ -30,12 +30,46 @@ declare global {
       filterMode?: string;
       // WordInputOverlay back-button support
       wordInputOverlay?: boolean;
+      // Deck navigation (ChoreoCardTab)
+      deckNavId?: string | null;
+      deckNavVtgFamily?: string | null;
     }
     // interface Platform {}
   }
 
   /** App version injected from package.json at build time */
   const __APP_VERSION__: string;
+
+  /** Compile-time feature flags injected by getEnabledFeaturesDefineMap() */
+  const __FEATURE_SOCIAL__: boolean;
+  const __FEATURE_LEARN__: boolean;
+  const __FEATURE_PREMIUM__: boolean;
+  const __FEATURE_COMPOSE__: boolean;
+  const __FEATURE_TRAIN__: boolean;
+  const __FEATURE_CHOREO_CARD__: boolean;
+  const __FEATURE_WRITE__: boolean;
+  const __FEATURE_ADMIN__: boolean;
+  const __FEATURE_ARENA__: boolean;
+  const __FEATURE_WATCH__: boolean;
+  const __FEATURE_RETRO__: boolean;
+  const __FEATURE_MUSEUM__: boolean;
+  const __FEATURE_ARCHIVE__: boolean;
+  const __FEATURE_MODERATION__: boolean;
+  const __FEATURE_FESTIVALS__: boolean;
+  const __FEATURE_LEVELS__: boolean;
+  const __FEATURE_HAND_PATHS__: boolean;
+  const __FEATURE_VIDEO__: boolean;
+  const __FEATURE_LAB__: boolean;
+  const __FEATURE_TIKA__: boolean;
+  const __FEATURE_SETTINGS__: boolean;
+  const __FEATURE_CONNECT__: boolean;
+  const __FEATURE_FUSE__: boolean;
+  const __FEATURE_ASSEMBLE_LAB__: boolean;
+  const __FEATURE_LOOP_LABELER__: boolean;
+  const __FEATURE_PROMO_GENERATOR__: boolean;
+  const __FEATURE_GALLERY_GENERATOR__: boolean;
+  const __FEATURE_HALL_OF_SHAME__: boolean;
+  const __FEATURE_LANDING__: boolean;
 
   /** Google Identity Services types */
   interface GoogleOneTapConfig {

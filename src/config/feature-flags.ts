@@ -39,17 +39,17 @@ export const FEATURES: FeatureDefinition[] = [
   {
     id: "create",
     tier: "core",
-    modulePaths: ["src/lib/features/create"],
+    modulePaths: ["features/create/"],
   },
   {
     id: "browse",
     tier: "core",
-    modulePaths: ["src/lib/features/browse"],
+    modulePaths: ["features/browse/"],
   },
   {
     id: "feedback",
     tier: "core",
-    modulePaths: ["src/lib/features/feedback"],
+    modulePaths: ["features/feedback/"],
   },
 
   // ── Shipped (on by default, can be disabled) ──────────────────────────────
@@ -59,58 +59,58 @@ export const FEATURES: FeatureDefinition[] = [
   {
     id: "social",
     tier: "dev",
-    modulePaths: ["src/lib/features/social"],
+    modulePaths: ["features/social/"],
   },
   {
     id: "learn",
     tier: "dev",
-    modulePaths: ["src/lib/features/learn"],
+    modulePaths: ["features/learn/"],
   },
   {
     id: "premium",
     tier: "dev",
-    modulePaths: ["src/lib/features/premium"],
+    modulePaths: ["features/premium/"],
   },
   {
     id: "compose",
     tier: "dev",
-    modulePaths: ["src/lib/features/compose"],
+    modulePaths: ["features/compose/"],
   },
   {
     id: "train",
     tier: "dev",
-    modulePaths: ["src/lib/features/train"],
+    modulePaths: ["features/train/"],
   },
   {
     id: "choreo-card",
     tier: "dev",
-    modulePaths: ["src/lib/features/choreo-card"],
+    modulePaths: ["features/choreo-card/"],
   },
   {
     id: "write",
     tier: "dev",
-    modulePaths: ["src/lib/features/write"],
+    modulePaths: ["features/write/"],
   },
   {
     id: "admin",
     tier: "dev",
-    modulePaths: ["src/lib/features/admin"],
+    modulePaths: ["features/admin/"],
     routePatterns: ["src/routes/admin/"],
   },
   {
     id: "arena",
     tier: "dev",
-    modulePaths: ["src/lib/features/arena"],
+    modulePaths: ["features/arena/"],
   },
   {
     id: "watch",
     tier: "dev",
-    modulePaths: ["src/lib/features/watch"],
+    modulePaths: ["features/watch/"],
   },
   {
     id: "retro",
     tier: "dev",
-    modulePaths: ["src/lib/features/retro"],
+    modulePaths: ["features/retro/"],
     routePatterns: [
       "src/routes/1989/",
       "src/routes/1995/",
@@ -121,92 +121,92 @@ export const FEATURES: FeatureDefinition[] = [
   {
     id: "museum",
     tier: "dev",
-    modulePaths: ["src/lib/features/museum"],
+    modulePaths: ["features/museum/"],
   },
   {
     id: "archive",
     tier: "dev",
-    modulePaths: ["src/lib/features/archive"],
+    modulePaths: ["features/archive/"],
   },
   {
     id: "moderation",
     tier: "dev",
-    modulePaths: ["src/lib/features/moderation"],
+    modulePaths: ["features/moderation/"],
   },
   {
     id: "festivals",
     tier: "dev",
-    modulePaths: ["src/lib/features/festivals"],
+    modulePaths: ["features/festivals/"],
   },
   {
     id: "levels",
     tier: "dev",
-    modulePaths: ["src/lib/features/levels"],
+    modulePaths: ["features/levels/"],
   },
   {
     id: "hand-paths",
     tier: "dev",
-    modulePaths: ["src/lib/features/hand-paths"],
+    modulePaths: ["features/hand-paths/"],
   },
   {
     id: "video",
     tier: "dev",
-    modulePaths: ["src/lib/features/video"],
+    modulePaths: ["features/video/"],
   },
   {
     id: "lab",
     tier: "dev",
-    modulePaths: ["src/lib/features/lab"],
+    modulePaths: ["features/lab/"],
   },
   {
     id: "tika",
     tier: "dev",
-    modulePaths: ["src/lib/features/tika"],
+    modulePaths: ["features/tika/"],
   },
   {
     id: "settings",
     tier: "dev",
-    modulePaths: ["src/lib/features/settings"],
+    modulePaths: ["features/settings/"],
   },
   {
     id: "connect",
     tier: "dev",
-    modulePaths: ["src/lib/features/connect"],
+    modulePaths: ["features/connect/"],
   },
   {
     id: "fuse",
     tier: "dev",
-    modulePaths: ["src/lib/features/fuse"],
+    modulePaths: ["features/fuse/"],
   },
   {
     id: "assemble-lab",
     tier: "dev",
-    modulePaths: ["src/lib/features/assemble-lab"],
+    modulePaths: ["features/assemble-lab/"],
   },
   {
     id: "loop-labeler",
     tier: "dev",
-    modulePaths: ["src/lib/features/loop-labeler"],
+    modulePaths: ["features/loop-labeler/"],
   },
   {
     id: "promo-generator",
     tier: "dev",
-    modulePaths: ["src/lib/features/promo-generator"],
+    modulePaths: ["features/promo-generator/"],
   },
   {
     id: "gallery-generator",
     tier: "dev",
-    modulePaths: ["src/lib/features/gallery-generator"],
+    modulePaths: ["features/gallery-generator/"],
   },
   {
     id: "hall-of-shame",
     tier: "dev",
-    modulePaths: ["src/lib/features/hall-of-shame"],
+    modulePaths: ["features/hall-of-shame/"],
   },
   {
     id: "landing",
     tier: "dev",
-    modulePaths: ["src/lib/features/landing"],
+    modulePaths: ["features/landing/"],
   },
 ];
 
