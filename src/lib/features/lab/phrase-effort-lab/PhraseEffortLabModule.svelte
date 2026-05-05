@@ -247,7 +247,7 @@
         if (nextPhrase && distToEnd > 0) {
           // Blend: lerp between current phrase result and next phrase result
           const blendT = 1 - (distToEnd / halfBlend); // 0 at blend start → 1 at boundary
-          const nextResult = phraseInterpolator.interpolate(
+          const nextResult = interpolatePhrase(
             nextPhrase,
             beat1Based,
             steps.length,
@@ -271,7 +271,7 @@
           }
           if (prevPhrase) {
             const blendT = distFromStart / halfBlend; // 0 at boundary → 1 at blend end
-            const prevResult = phraseInterpolator.interpolate(
+            const prevResult = interpolatePhrase(
               prevPhrase,
               beat1Based,
               steps.length,

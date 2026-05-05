@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet, Component } from "svelte";
-  import { onMount, setContext } from "svelte";
+  import { onMount } from "svelte";
   import { afterNavigate, onNavigate, replaceState } from "$app/navigation";
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
@@ -168,14 +168,6 @@
   // Track cleanup functions for app-mode resources
   let appCleanup: (() => void) | null = null;
 
-  // Deferred DI container reference - set once the dynamic import resolves
-  let containerRef: any = null;
-
-  // Set context synchronously during component init - the getter defers to the
-  // dynamically loaded container once available. Legacy code calls getContext()
-  // in onMount or later, by which point the container will be loaded.
-  setContext("di-container", () => containerRef);
-
   // Update viewport height on window resize and visualViewport changes
   function updateViewportHeight() {
     if (typeof window !== "undefined") {
@@ -242,13 +234,10 @@
       }
     }
 
-    // Load DI container - this triggers all service registration
+    // Load composition root - triggers all service registrations
     bootProfiler.mark("di-container");
-    const { container } = await imports.di;
+    await imports.di;
     bootProfiler.end("di-container");
-
-    // Populate the deferred container reference (context was set synchronously above)
-    containerRef = container;
 
     // Preload TKA letter glyph images before children render (required for canvas headers)
     try {
@@ -465,8 +454,7 @@
 
       import("$lib/features/retro/shared/services/retro-init")
         .then(({ initRetroMode }) => initRetroMode())
-        .then(({ container: retroContainer }) => {
-          containerRef = retroContainer;
+        .then(() => {
           containerReady = true;
         })
         .catch((error) => {

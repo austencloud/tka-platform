@@ -1,12 +1,17 @@
 import { getLetterImagePath } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 import { Letter } from "../../../foundation/domain/models/Letter";
 
+const GLYPH_CACHE_VERSION = 3;
+
 const hmrGlyphCache: Map<string, string> =
-  import.meta.hot?.data?.glyphCache ?? new Map();
+  (import.meta.hot?.data?.glyphCacheVersion === GLYPH_CACHE_VERSION
+    ? import.meta.hot?.data?.glyphCache
+    : null) ?? new Map();
 
 if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
     data.glyphCache = hmrGlyphCache;
+    data.glyphCacheVersion = GLYPH_CACHE_VERSION;
   });
 }
 

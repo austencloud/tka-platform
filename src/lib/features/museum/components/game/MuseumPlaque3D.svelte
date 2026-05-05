@@ -89,7 +89,7 @@
   const frameMat = getOrCreateFrameMat(isWhiteboard);
 
   // ── Generate texture from content (per-instance - unique canvas per plaque) ──
-  const canvas = generator.generateCanvas(content, size, refId);
+  const canvas = generator(content, size, refId);
   const texture = new CanvasTexture(canvas as unknown as HTMLCanvasElement);
   texture.needsUpdate = true;
 

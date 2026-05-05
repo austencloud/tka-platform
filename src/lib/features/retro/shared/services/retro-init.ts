@@ -1,14 +1,13 @@
 /**
  * Lightweight bootstrap for retro routes.
- * Loads Firebase + auth + DI container.
+ * Loads composition root (side-effect registrations) + Firebase + auth.
  * Skips: prefetch, analytics, moderation banners, modal state, web vitals.
  */
 export async function initRetroMode(): Promise<{
-	container: typeof import("$lib/shared/composition-root").container;
 	authState: typeof import("$lib/shared/auth/state/authState.svelte").authState;
 }> {
-	// 1. Load DI container (triggers service registration)
-	const { container } = await import("$lib/shared/composition-root");
+	// 1. Load composition root (triggers service registration)
+	await import("$lib/shared/composition-root");
 
 	// 2. Initialize Firestore
 	const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
@@ -20,5 +19,5 @@ export async function initRetroMode(): Promise<{
 	);
 	await authState.initialize();
 
-	return { container, authState };
+	return { authState };
 }

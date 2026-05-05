@@ -1,21 +1,6 @@
 import type { ModuleDefinition, ModuleId, Section } from "../domain/types";
 import { logModuleView } from "../../analytics/services/posthog-activity-logger";
 
-let _containerRef: { items: Record<string, unknown> } | null = null;
-
-function tryResolveService<T>(serviceName: string): T | null {
-  try {
-    if (!_containerRef) {
-      const { container } = require("../../di");
-      _containerRef = container as { items: Record<string, unknown> };
-    }
-    const service = _containerRef.items[serviceName];
-    return service ? (service as T) : null;
-  } catch {
-    return null;
-  }
-}
-
 import {
   CREATE_TABS,
   DEFAULT_CREATE_TAB,
@@ -329,15 +314,6 @@ export function createNavigationState() {
             moduleWithTab,
             previousModuleLocal
           );
-        } catch {
-          // ignore
-        }
-
-        try {
-          const promptTrigger = tryResolveService<{ recordModuleVisit: (id: string) => void }>("attributionPromptTrigger");
-          if (promptTrigger?.recordModuleVisit) {
-            promptTrigger.recordModuleVisit(moduleId);
-          }
         } catch {
           // ignore
         }

@@ -11,7 +11,7 @@
    */
 
   import { getCompositionState } from "../../state/composition-state.svelte";
-  import { LAYOUT_PRESETS, type LayoutPresetKey } from "../../domain/types";
+  import { LAYOUT_PRESETS, type LayoutPresetKey, type GridLayout } from "$lib/shared/animation-engine/domain/compose-types";
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
 
   // Renamed to avoid conflict with $state rune
@@ -28,7 +28,7 @@
 
   // Current layout key
   const currentLayoutKey = $derived(
-    (Object.entries(LAYOUT_PRESETS).find(
+    ((Object.entries(LAYOUT_PRESETS) as [LayoutPresetKey, GridLayout][]).find(
       ([_, preset]) =>
         preset.rows === layout.rows && preset.cols === layout.cols
     )?.[0] ?? "custom") as LayoutPresetKey | "custom"
@@ -150,22 +150,23 @@
 
         {#if showLayoutDropdown}
           <div class="dropdown layout-dropdown" id="layout-dropdown-menu">
-            {#each Object.entries(LAYOUT_PRESETS) as [key, preset]}
+            {#each Object.entries(LAYOUT_PRESETS) as [key, preset] (key)}
+              {@const p = preset as GridLayout}
               <button
                 class="dropdown-item"
                 class:active={currentLayoutKey === key}
                 onclick={() => handleLayoutChange(key as LayoutPresetKey)}
               >
                 <span class="layout-preview">
-                  {#each Array(preset.rows) as _, row}
+                  {#each Array(p.rows) as _, row}
                     <span class="layout-row">
-                      {#each Array(preset.cols) as _, col}
+                      {#each Array(p.cols) as _, col}
                         <span class="layout-cell"></span>
                       {/each}
                     </span>
                   {/each}
                 </span>
-                <span>{preset.rows}×{preset.cols}</span>
+                <span>{p.rows}×{p.cols}</span>
               </button>
             {/each}
           </div>

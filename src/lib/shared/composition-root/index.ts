@@ -101,12 +101,6 @@ if (typeof window !== 'undefined') {
   );
 }
 
-// ============================================================================
-// LEGACY CONTAINER SHIM (retained for retro module compatibility)
-// ============================================================================
-export const container = (typeof window !== 'undefined' ? { items: {} } : null) as unknown as
-  { items: Record<string, unknown> };
-
 if (typeof window !== 'undefined' && isBootProfileVerbose()) {
   const totalBoot = performance.now() - _bootStart;
   console.log(
@@ -128,7 +122,3 @@ if (typeof window !== 'undefined') {
     // ImageComposer not yet initialized - QR injection will happen on first use
   }
 }
-
-export type AppContainer = { items: Record<string, unknown> };
-
-export default container;
