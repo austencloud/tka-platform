@@ -30,3 +30,20 @@ if (browser && dev && "serviceWorker" in navigator) {
       console.warn("[FCM-Dev] Messaging service worker registration failed:", err);
     });
 }
+
+// Production: register the minimal hand-written service worker
+if (browser && !dev && "serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("/sw.js", { scope: "/" })
+    .then((registration) => {
+      console.log("[SW] Registered");
+      if (registration.active && "sync" in registration) {
+        (registration as ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } })
+          .sync.register("tka-sync-queue")
+          .catch(() => {});
+      }
+    })
+    .catch((err) => {
+      console.error("[SW] Registration failed:", err);
+    });
+}
