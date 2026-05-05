@@ -2,7 +2,7 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
-  import AvatarImage from "./AvatarImage.svelte";
+  import AvatarImage from "$lib/shared/browse/components/AvatarImage.svelte";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 
   type ListType = "followers" | "following";

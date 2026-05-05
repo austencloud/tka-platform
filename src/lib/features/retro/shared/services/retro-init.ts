@@ -4,11 +4,11 @@
  * Skips: prefetch, analytics, moderation banners, modal state, web vitals.
  */
 export async function initRetroMode(): Promise<{
-	container: typeof import("$lib/shared/di").container;
+	container: typeof import("$lib/shared/composition-root").container;
 	authState: typeof import("$lib/shared/auth/state/authState.svelte").authState;
 }> {
 	// 1. Load DI container (triggers service registration)
-	const { container } = await import("$lib/shared/di");
+	const { container } = await import("$lib/shared/composition-root");
 
 	// 2. Initialize Firestore
 	const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");

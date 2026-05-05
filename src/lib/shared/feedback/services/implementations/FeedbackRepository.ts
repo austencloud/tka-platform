@@ -30,15 +30,15 @@ import {
   type FeedbackStatusService,
 } from "$lib/shared/feedback/services/implementations/FeedbackStatusManager";
 import {
-  feedbackTesterWorkflowService,
-  type FeedbackTesterWorkflowService,
-} from "$lib/features/feedback/services/implementations/FeedbackTesterWorkflow";
+  getFeedbackTesterWorkflow,
+  type IFeedbackTesterWorkflow,
+} from "$lib/shared/feedback/services/IFeedbackTesterWorkflow";
 import * as feedbackSubscriberModule from "$lib/shared/feedback/services/feedback-subscriber";
 
 export class FeedbackService {
   constructor(
     private readonly statusService: FeedbackStatusService = feedbackStatusService,
-    private readonly testerWorkflowService: FeedbackTesterWorkflowService = feedbackTesterWorkflowService,
+    private readonly testerWorkflowService: IFeedbackTesterWorkflow = getFeedbackTesterWorkflow(),
   ) {}
 
   // ============================================================

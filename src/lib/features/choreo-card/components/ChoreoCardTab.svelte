@@ -19,7 +19,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   import ChoreoCardExport from "./ChoreoCardExport.svelte";
   import PageDisplay from "./PageDisplay.svelte";
   import type { Deck } from "../domain/models/Deck";
-  import type { ThumbnailRenderOrchestrator } from "../../browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator";
+  import type { ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/ThumbnailRenderOrchestrator";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
   import ScanActivityTab from "./scan-activity/ScanActivityTab.svelte";

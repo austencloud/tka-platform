@@ -8,7 +8,6 @@
   import type { BaseSequenceEntry } from "../domain/models/review-models";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
   import type { Snippet } from "svelte";
@@ -165,14 +164,16 @@
       </div>
 
       <div class="step-grid-wrapper" class:interactive>
-        <StepGrid
-          steps={parsedSteps}
-          startPosition={showStartPosition ? startPosition : null}
-          {onStepClick}
-          manualColumnCount={effectiveColumnCount}
-          {highlightedSteps}
-          heightSizingRowThreshold={20}
-        />
+        {#await import("$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte") then mod}
+          <mod.default
+            steps={parsedSteps}
+            startPosition={showStartPosition ? startPosition : null}
+            {onStepClick}
+            manualColumnCount={effectiveColumnCount}
+            {highlightedSteps}
+            heightSizingRowThreshold={20}
+          />
+        {/await}
       </div>
     </div>
   {:else}

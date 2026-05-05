@@ -185,7 +185,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			// Cast to the service's ActiveFilter type (it only reads `type` and `value`)
 			result = multiFilterService.applyFilters(
 				result,
-				activeFilters as unknown as Map<string, import("$lib/features/browse/shared/domain/models/multi-filter-models").ActiveFilter>
+				activeFilters as unknown as Map<string, import("$lib/shared/browse/domain/multi-filter-models").ActiveFilter>
 			);
 		}
 
@@ -610,7 +610,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 				allSequences,
 				candidateType,
 				candidateValue,
-				activeFilters as unknown as Map<string, import("$lib/features/browse/shared/domain/models/multi-filter-models").ActiveFilter>
+				activeFilters as unknown as Map<string, import("$lib/shared/browse/domain/multi-filter-models").ActiveFilter>
 			);
 		},
 

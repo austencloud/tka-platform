@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { MultiFilter } from '$lib/features/browse/sequences/display/services/implementations/MultiFilter';
-import { BrowseFilter } from '$lib/features/browse/sequences/display/services/implementations/BrowseFilter';
+import { MultiFilter } from './services/implementations/MultiFilter';
+import { BrowseFilter } from './services/implementations/BrowseFilter';
 
 let instance: MultiFilter | null = null;
 

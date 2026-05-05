@@ -7,12 +7,9 @@
  * Set by CreateModule when it mounts, cleared when it unmounts.
  */
 
-import type { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
-import type { createConstructTabState } from "$lib/features/create/shared/state/construct-tab-state.svelte";
+import type { CreateModuleState, ConstructTabState } from "$lib/shared/create/state/create-module-state-types";
 import type { createPanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
 
-type CreateModuleState = ReturnType<typeof createCreateModuleState>;
-type ConstructTabState = ReturnType<typeof createConstructTabState>;
 type PanelCoordinationState = ReturnType<typeof createPanelCoordinationState>;
 
 interface CreateModuleGlobalRef {

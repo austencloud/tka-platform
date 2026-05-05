@@ -17,13 +17,10 @@
  */
 
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import type { createCreateModuleState as CreateModuleStateType } from "$lib/features/create/shared/state/create-module-state.svelte";
-import type { createConstructTabState as ConstructTabStateType } from "$lib/features/create/shared/state/construct-tab-state.svelte";
+import type { CreateModuleState, ConstructTabState } from "$lib/shared/create/state/create-module-state-types";
 import type { createPanelCoordinationState as PanelCoordinationStateType } from "$lib/shared/create/state/panel-coordination-state.svelte";
-import { UndoOperationType } from "$lib/features/create/shared/services/implementations/UndoManager";
+import { UndoOperationType } from "$lib/shared/create/domain/undo-operation-types";
 
-type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
-type ConstructTabState = ReturnType<typeof ConstructTabStateType>;
 type PanelCoordinationState = ReturnType<typeof PanelCoordinationStateType>;
 
 export interface ClearSequenceConfig {

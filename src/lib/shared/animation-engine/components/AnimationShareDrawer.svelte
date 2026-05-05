@@ -19,8 +19,11 @@
   import AnimationPanelHeader from "$lib/shared/animation-engine/components/canvas/AnimationPanelHeader.svelte";
   import AnimationCanvas from "$lib/shared/animation-engine/components/canvas/AnimationCanvas.svelte";
   import AnimationControlsPanel from "$lib/shared/animation-engine/components/canvas/AnimationControlsPanel.svelte";
-  import CreatePanelDrawer from "$lib/features/create/shared/components/CreatePanelDrawer.svelte";
   import AnimationViewerHelpSheet from "./AnimationViewerHelpSheet.svelte";
+
+  // Lazy-loaded to avoid shared/ → features/ static import
+  let CreatePanelDrawer = $state<typeof import("$lib/features/create/shared/components/CreatePanelDrawer.svelte").default | null>(null);
+  import("$lib/features/create/shared/components/CreatePanelDrawer.svelte").then(m => { CreatePanelDrawer = m.default; });
 
   // Services
   import { getKeyboardShortcutManager } from "$lib/shared/keyboard/getKeyboardShortcutManager";
@@ -325,6 +328,7 @@
   }
 </script>
 
+{#if CreatePanelDrawer}
 <CreatePanelDrawer
   isOpen={show}
   panelName="animation"
@@ -428,6 +432,7 @@
     {/if}
   </div>
 </CreatePanelDrawer>
+{/if}
 
 <!-- Help Sheet -->
 <AnimationViewerHelpSheet bind:isOpen={showHelpSheet} {isSideBySideLayout} />

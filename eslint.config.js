@@ -133,6 +133,26 @@ export default tseslint.config(
     },
   },
 
+  // Enforce shared/ → features/ boundary (composition root is the only exception)
+  {
+    files: ["src/lib/shared/**/*.ts", "src/lib/shared/**/*.svelte"],
+    ignores: ["src/lib/shared/composition-root/**", "src/lib/shared/di/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["$lib/features/*", "$lib/features/**"],
+              message:
+                "shared/ must not import from features/ (one-way dependency). Use the registration pattern in composition-root/ or extract an interface to shared/.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Enforce kebab-case filenames for .ts files
   {
     files: ["**/*.ts"],

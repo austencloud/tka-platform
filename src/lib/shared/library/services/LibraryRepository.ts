@@ -37,18 +37,18 @@ import {
 import {
   LibrarySequenceDocSchema,
   UserProfileDocSchema,
-} from "$lib/features/library/domain/models/library-schemas";
+} from "$lib/shared/library/domain/library-schemas";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
-import type { PublicIndexSyncer } from "$lib/features/library/services/implementations/PublicIndexSyncer";
+import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
 import type { ConflictResolver } from "$lib/shared/offline/services/implementations/ConflictResolver";
-import { computeHash } from "$lib/features/library/services/sequence-content-hasher";
-import { migrateSequenceTags } from "$lib/features/library/services/migrations/tag-migration";
+import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
+import { getTagMigrator } from "$lib/shared/library/getTagMigrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import type {
-  LibraryStats, LibraryQueryOptions } from "$lib/features/library/services/contracts/types";
+  LibraryStats, LibraryQueryOptions } from "$lib/shared/library/domain/library-contract-types";
 import type {
   LibrarySequence,
   SequenceVisibility,
@@ -63,8 +63,8 @@ import {
   notifyLibrarySequenceAdded,
   notifyLibrarySequenceUpdated,
 } from "$lib/shared/library/library-events";
-import { LibraryRecycleBin } from "$lib/features/library/services/implementations/library-recycle-bin";
-import { LibraryBatchOperations } from "$lib/features/library/services/implementations/library-batch-operations";
+import { LibraryRecycleBin } from "$lib/shared/library/services/library-recycle-bin";
+import { LibraryBatchOperations } from "$lib/shared/library/services/library-batch-operations";
 
 export class LibraryError extends Error {
   constructor(
@@ -476,7 +476,7 @@ export class LibraryRepository {
     // Post-write: Tag migration (async, non-blocking)
     let finalSequence = libSeq;
     if (!libSeq.sequenceTags || libSeq.sequenceTags.length === 0) {
-      migrateSequenceTags(libSeq)
+      getTagMigrator()(libSeq)
         .then((migrationResult) => {
           finalSequence = {
             ...libSeq,

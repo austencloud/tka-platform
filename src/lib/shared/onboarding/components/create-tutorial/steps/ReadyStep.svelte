@@ -6,7 +6,6 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { createTutorialState } from "../../../state/create-tutorial-state.svelte";
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
@@ -167,10 +166,12 @@
 
       <div class="grid-area">
         {#if beatSteps.length > 0}
-          <StepGrid
-            steps={beatSteps}
-            startPosition={startPositionStep}
-          />
+          {#await import("$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte") then mod}
+            <mod.default
+              steps={beatSteps}
+              startPosition={startPositionStep}
+            />
+          {/await}
         {/if}
 
         <div class="tap-hint">

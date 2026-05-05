@@ -1,6 +1,5 @@
 <script lang="ts">
 
-import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 
   import { onMount, onDestroy, tick } from "svelte";
@@ -13,17 +12,13 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { EndState } from "$lib/shared/landing/domain/types";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import {
     animationSettings,
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
-  import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
+  import { createEndlessSpinnerOrchestrator, type IEndlessSpinnerOrchestrator } from "$lib/shared/animation-engine/getEndlessSpinnerOrchestrator";
   import { startPositionDeriver as startPositionDeriverDirect } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import { orientationCalculator as orientationCalculatorDirect } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-  import { gridPositionDeriver as gridPositionDeriverDirect } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -71,7 +66,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   const animationState = createAnimationPanelState();
   let playbackController: AnimationPlaybackController | null = null;
   let startPositionDeriver: StartPositionDeriver | null = null;
-  let spinnerOrchestrator: EndlessSpinnerOrchestrator | null = null;
+  let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
 
   let isReady = $state(false);
   let isLoading = $state(false);
@@ -167,18 +162,9 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
       // Get services from DI container (some still need others use direct imports)
       playbackController = getAnimationPlaybackController();
       startPositionDeriver = startPositionDeriverDirect;
-      const browseLoader = getBrowseLoader();
-      const sequenceTransformer = getSequenceTransformer();
 
-      // Create the spinner orchestrator
-      spinnerOrchestrator = new EndlessSpinnerOrchestrator(
-        browseLoader,
-        generationOrchestrator,
-        sequenceTransformer,
-        startPositionDeriverDirect,
-        orientationCalculatorDirect,
-        gridPositionDeriverDirect
-      );
+      // Create the spinner orchestrator via registered factory
+      spinnerOrchestrator = createEndlessSpinnerOrchestrator();
 
       // Initialize the orchestrator
       await spinnerOrchestrator.initialize();

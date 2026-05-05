@@ -6,7 +6,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getBrowseEventHandler } from "../getBrowseEventHandler";
-  import { getThumbnailRenderOrchestrator } from "../../sequences/display/getThumbnailRenderOrchestrator";
+  import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { onMount, onDestroy, setContext } from "svelte";
   import { fly } from "svelte/transition";
@@ -26,12 +26,12 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
   import GalleryTab from "./GalleryTab.svelte";
-  import { browseScrollState } from "../state/BrowseScrollState.svelte";
+  import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
   import {
     browseNavigationState,
     getCreatorIdFromURL,
     type BrowseLocation,
-  } from "../state/browse-navigation-state.svelte";
+  } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import { BrowseScrollBehavior } from "../services/implementations/BrowseScrollBehavior";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";

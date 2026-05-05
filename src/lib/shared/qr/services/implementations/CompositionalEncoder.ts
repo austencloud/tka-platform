@@ -18,7 +18,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
-import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOP_TYPE_TAGS, RECIPE_PREFIX } from "../contracts/types";
 import {
@@ -42,7 +42,7 @@ export class CompositionalEncoder {
     if (!sequence.steps || sequence.steps.length < 4) return null;
 
     // Step 1: Detect LOOP pattern
-    const detection = loopDetector.detectLOOPType(sequence);
+    const detection = getLoopDetector().detectLOOPType(sequence);
 
     if (!detection.loopType || detection.confidence !== "strict") return null;
 

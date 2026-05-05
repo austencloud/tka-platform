@@ -10,7 +10,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { EndState } from "$lib/shared/landing/domain/types";
-import type { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
+import type { IInfiniteSequenceGenerator, IEndlessSpinnerOrchestrator } from "$lib/shared/animation-engine/domain/chaining-types";
 
 export type SourceMode = "pick" | "library" | "infinite";
 
@@ -19,7 +19,6 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
 
 export class SequenceChainingOrchestrator {
   private playbackController: AnimationPlaybackController | null = null;
@@ -36,8 +35,8 @@ export class SequenceChainingOrchestrator {
   private errorCallback: ((message: string) => void) | null = null;
 
   constructor(
-    private readonly spinnerOrchestrator: EndlessSpinnerOrchestrator,
-    private readonly infiniteGenerator: InfiniteSequenceGenerator
+    private readonly spinnerOrchestrator: IEndlessSpinnerOrchestrator,
+    private readonly infiniteGenerator: IInfiniteSequenceGenerator
   ) {}
 
   get isChainingNow(): boolean {

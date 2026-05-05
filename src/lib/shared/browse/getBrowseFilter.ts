@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { BrowseFilter } from '$lib/features/browse/sequences/display/services/implementations/BrowseFilter';
+import { BrowseFilter } from './services/implementations/BrowseFilter';
 
 let instance: BrowseFilter | null = null;
 

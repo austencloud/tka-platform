@@ -22,7 +22,7 @@
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+  import { getLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
@@ -333,7 +333,7 @@
   // stored-loopType path (fast) and the on-demand detect path (when a
   // sequence was edited and its stored loopType might be stale), plus
   // caching keyed by sequence id.
-  const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
+  const loopDisplay = $derived.by(() => getLoopDisplayResolver()(sequence));
   const loopComponents = $derived(
     loopDisplay.components.size > 0 ? loopDisplay.components : null
   );

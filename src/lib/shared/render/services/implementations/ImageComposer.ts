@@ -5,7 +5,7 @@ import type { SequenceData } from "../../../foundation/domain/models/SequenceDat
 import { type PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
-import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+import { getLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
   RESERVED_ORIENTATION_PRIMITIVES,
@@ -413,7 +413,7 @@ export class ImageComposer {
     let loopComponents: Set<LOOPComponent> | undefined;
     let rotationPeriod: Period | undefined;
 
-    const display = resolveLoopDisplay(sequence);
+    const display = getLoopDisplayResolver()(sequence);
     rotationPeriod = display.rotationPeriod;
     const inversionPeriod = display.inversionPeriod;
     const loopPeriod = display.period;

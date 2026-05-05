@@ -6,7 +6,7 @@ Only renders when at least one filter is active.
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
-  import type { ActiveFilter } from "../../../../shared/domain/models/multi-filter-models";
+  import type { ActiveFilter } from "$lib/shared/browse/domain/multi-filter-models";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {

@@ -6,7 +6,6 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
   import { createSimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
   import { createTutorialState } from "../../../state/create-tutorial-state.svelte";
 
@@ -46,7 +45,9 @@
   <p class="subtitle">Every sequence begins with a position. Tap one.</p>
 
   <div class="picker-container">
-    <StartPositionPicker {startPositionState} />
+    {#await import("$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte") then mod}
+      <mod.default {startPositionState} />
+    {/await}
   </div>
 </div>
 

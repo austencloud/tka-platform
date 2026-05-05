@@ -13,7 +13,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+  import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type {
     ViewerPlaybackState, ImageCompositionProps, PropRenderingProps, } from "../domain/viewer-prop-groups";

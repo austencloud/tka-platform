@@ -13,7 +13,7 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
-  import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+  import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";

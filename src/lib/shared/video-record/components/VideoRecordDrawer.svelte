@@ -5,9 +5,8 @@
   Used in Create and Library modules for low-stakes "proof of completion" videos.
 -->
 <script lang="ts">
-  import CreatePanelDrawer from "$lib/features/create/shared/components/CreatePanelDrawer.svelte";
+  import { getContext } from "svelte";
   import PanelHeader from "$lib/shared/create/components/PanelHeader.svelte";
-  import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import VideoRecordPanel from "./VideoRecordPanel.svelte";
   import type { RecordingResult } from "../services/contracts/types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -36,14 +35,19 @@
     handleClose();
   }
 
-  const createModuleContext = tryGetCreateModuleContext();
-  const isSideBySideLayout = $derived(
-    createModuleContext
-      ? createModuleContext.layout.shouldUseSideBySideLayout
-      : false
-  );
+  // Read create-module context directly via Svelte's getContext.
+  // Avoids any import from features/ — the context is set by CreateModule
+  // and we only need the layout boolean.
+  const createModuleCtx = getContext<{ layout: { shouldUseSideBySideLayout: boolean } } | undefined>("createModule");
+
+  // Lazy-loaded to avoid shared/ → features/ static imports
+  let CreatePanelDrawer = $state<any>(null);
+  let isSideBySideLayout = $derived(createModuleCtx?.layout.shouldUseSideBySideLayout ?? false);
+
+  import("$lib/features/create/shared/components/CreatePanelDrawer.svelte").then(m => { CreatePanelDrawer = m.default; });
 </script>
 
+{#if CreatePanelDrawer}
 <CreatePanelDrawer
   isOpen={show}
   panelName="video-record"
@@ -73,6 +77,7 @@
     </div>
   </div>
 </CreatePanelDrawer>
+{/if}
 
 <style>
   /* Screen reader only class */

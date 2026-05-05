@@ -1,0 +1,72 @@
+/**
+ * Structural type interfaces for CreateModuleState and ConstructTabState.
+ *
+ * These exist so that shared/ consumers can reference the shape of the
+ * feature-level state without importing from features/create directly.
+ * The actual implementations in features/create satisfy these interfaces.
+ */
+
+import type { UndoOperationType } from "$lib/shared/create/domain/undo-operation-types";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+
+/**
+ * SequenceState interface covering what shared/ consumers access.
+ * Includes methods used by clearSequenceWorkflow and register-create-shortcuts.
+ */
+export type TargetHand = "blue" | "red" | "both";
+
+export interface SequenceStateMinimal {
+  readonly currentSequence: SequenceData | null;
+  readonly selectedStepData: StepData | null;
+  clearPersistedState(): Promise<void>;
+  setCurrentSequence(sequence: SequenceData | null): void;
+  clearSelection(): void;
+  clearError(): void;
+  clearSequence(): void;
+  clearSequenceCompletely(): Promise<void>;
+  hasSequence(): boolean;
+  getSelectedStepIndex(): number | null;
+  removeStepAndSubsequentWithAnimation(stepIndex: number, onComplete?: () => void): void;
+  selectStep(stepIndex: number): void;
+  selectStartPositionForEditing(): void;
+  mirrorSequence(targetHand?: TargetHand): Promise<void>;
+  flipSequence(targetHand?: TargetHand): Promise<void>;
+  swapColors(): Promise<void>;
+  invertSequence(): Promise<void>;
+  rewindSequence(targetHand?: TargetHand): Promise<void>;
+  rotateSequence(direction: "clockwise" | "counterclockwise", targetHand?: TargetHand): Promise<void>;
+}
+
+/**
+ * Interface for CreateModuleState as consumed by shared/ utilities.
+ * Covers: create-module-state-ref, clearSequenceWorkflow, register-create-shortcuts
+ */
+export interface CreateModuleState {
+  readonly sequenceState: SequenceStateMinimal;
+  getActiveTabSequenceState(): SequenceStateMinimal;
+  pushUndoSnapshot(type: UndoOperationType, metadata?: { description?: string }): void;
+  undo(): boolean;
+  redo(): boolean;
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  readonly assembleTabState: {
+    readonly assembleBuilderState: {
+      reset(): void;
+    };
+  } | null;
+}
+
+/**
+ * Minimal interface for ConstructTabState as consumed by shared/ utilities.
+ * Covers: clearSequenceWorkflow
+ */
+export interface ConstructTabState {
+  setShowStartPositionPicker(show: boolean): void;
+  setSelectedStartPosition(position: PictographData | null): void;
+  readonly startPositionStateService: {
+    clearSelectedPosition(): void;
+  };
+  clearError(): void;
+}

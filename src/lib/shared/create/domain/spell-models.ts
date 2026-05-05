@@ -7,11 +7,55 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { GridPosition, GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import type { ExtensionAnalysis } from "$lib/features/create/shared/services/implementations/SequenceExtender";
-import type { LOOPOption } from "$lib/features/create/shared/services/implementations/LOOPValidator";
 import type { ConstraintPresetId } from "$lib/shared/sequence-engine/constraints";
+
+/**
+ * Describes a single LOOP option available for extension.
+ * Structural copy from LOOPValidator to avoid shared/ → features/ import.
+ */
+export interface LOOPOption {
+  /** The LOOP type */
+  loopType: LOOPType;
+  /** Human-readable name */
+  name: string;
+  /** Short description of what this LOOP does */
+  description: string;
+  /** Icon class (FontAwesome) */
+  icon: string;
+}
+
+/**
+ * Describes the type of extension available for a sequence.
+ * Structural copy from SequenceExtender to avoid shared/ → features/ import.
+ */
+export type ExtensionType =
+  | "already_complete"
+  | "half_rotation"
+  | "quarter_rotation"
+  | "not_extendable";
+
+/**
+ * Result of analyzing whether a sequence can be extended.
+ * Structural copy from SequenceExtender to avoid shared/ → features/ import.
+ */
+export interface ExtensionAnalysis {
+  /** Whether extension is available */
+  canExtend: boolean;
+  /** The type of extension possible */
+  extensionType: ExtensionType;
+  /** Start position of the sequence */
+  startPosition: GridPosition | null;
+  /** Current end position of the sequence */
+  currentEndPosition: GridPosition | null;
+  /** Available LOOP options for extension */
+  availableLOOPOptions: LOOPOption[];
+  /** Unavailable LOOP options */
+  unavailableLOOPOptions: LOOPOption[];
+  /** Human-readable description of the extension */
+  description: string;
+}
 
 /**
  * Tracks whether a letter in the sequence is original (user-typed) or a bridge (interpolated)
@@ -183,4 +227,4 @@ export interface LetterAlias {
 }
 
 // Re-export LOOP types for convenience
-export type { LOOPType, ExtensionAnalysis, LOOPOption };
+export type { LOOPType };

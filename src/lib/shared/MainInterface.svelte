@@ -90,8 +90,6 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery"
   import NearbySyncBanner from "./lan-sync/components/NearbySyncBanner.svelte";
   import { lanSyncState } from "./lan-sync/state/lan-sync-state.svelte";
 
-  // Connect module - Invite overlay for app-wide invite notifications
-  import InviteOverlay from "../features/connect/components/InviteOverlay.svelte";
 
   // Props
   let {
@@ -273,7 +271,9 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery"
 <NearbySyncBanner />
 
 <!-- Connect Module Invite Overlay -->
-<InviteOverlay />
+{#await import("$lib/features/connect/components/InviteOverlay.svelte") then mod}
+  <mod.default />
+{/await}
 
 <div
   class="main-interface"

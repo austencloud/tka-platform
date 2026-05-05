@@ -44,8 +44,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
 
   // Animation imports
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+  import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/implementations/ExportUrlManager";
   import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
@@ -71,7 +70,7 @@ import type { VideoExportProgress } from "$lib/features/compose/services/impleme
 
   // Animation services (lazy-loaded when Animation format selected)
   let playbackController: AnimationPlaybackController | null = null;
-  let videoExportOrchestrator: VideoExportOrchestrator | null = null;
+  let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
   let layoutService: ResponsiveLayoutManager | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;
 

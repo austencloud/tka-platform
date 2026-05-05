@@ -1,7 +1,7 @@
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { libraryState } from "$lib/features/library/state/library-state.svelte";
-import { computeHash as computeSequenceHash } from "$lib/features/library/services/sequence-content-hasher";
+import { computeHash as computeSequenceHash } from "$lib/shared/library/services/sequence-content-hasher";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
 import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";

@@ -21,13 +21,13 @@ import {
   VERTICAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,
   SWAPPED_POSITION_MAP,
-} from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
+} from "$lib/shared/create/domain/strict-loop-position-maps";
 import {
   mirrorMotion,
   flipMotion,
   rotateMotion,
   swapMotionColor,
-} from "$lib/features/create/shared/services/implementations/sequence-transforms/motion-transforms";
+} from "$lib/shared/create/services/motion-transforms";
 import { invertMotionType, reverseRotationDirection } from "$lib/shared/create/services/rotation-helpers";
 import type { TargetHand } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";

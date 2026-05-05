@@ -10,7 +10,7 @@ import type { ViewportManager } from '$lib/shared/device/services/implementation
 
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
-import type { LayoutConfiguration } from "$lib/features/create/shared/orchestration/types";
+import type { LayoutConfiguration } from "$lib/shared/create/services/layout-types";
 
 export class ResponsiveLayoutManager {
   private layoutChangeCallbacks: Set<(config: LayoutConfiguration) => void> =

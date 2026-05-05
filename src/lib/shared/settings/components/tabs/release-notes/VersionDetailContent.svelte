@@ -8,7 +8,6 @@
   } from "$lib/shared/versioning/domain/models/version-models";
   import { CHANGELOG_CATEGORIES } from "$lib/shared/versioning/domain/constants/changelog-constants";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import FeedbackDetailPanel from "$lib/features/feedback/components/manage/FeedbackDetailPanel.svelte";
   import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
   import { feedbackService } from "$lib/shared/feedback/services/implementations/FeedbackRepository";
   import { createFeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
@@ -435,12 +434,14 @@
     showHandle={false}
     ariaLabel={`Edit feedback: ${selectedFeedback.title}`}
   >
-    <FeedbackDetailPanel
-      item={selectedFeedback}
-      {manageState}
-      onClose={closeFeedbackPanel}
-      readOnly={!isAdmin}
-    />
+    {#await import("$lib/features/feedback/components/manage/FeedbackDetailPanel.svelte") then mod}
+      <mod.default
+        item={selectedFeedback}
+        {manageState}
+        onClose={closeFeedbackPanel}
+        readOnly={!isAdmin}
+      />
+    {/await}
   </Drawer>
 {/if}
 

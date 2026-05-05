@@ -16,7 +16,6 @@
   } from "../services/contracts/types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createVideoRecordSettings } from "../state/video-record-settings.svelte";
-  import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
   import GridPreview from "./GridPreview.svelte";
   import VideoRecordSettingsSheet from "./VideoRecordSettingsSheet.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -347,11 +346,13 @@
           </div>
           <div class="reference-wrapper">
             {#if activeReferenceView === "animation"}
-              <InlineAnimationPlayer
-                {sequence}
-                autoPlay={true}
-                showControls={false}
-              />
+              {#await import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte") then mod}
+                <mod.default
+                  {sequence}
+                  autoPlay={true}
+                  showControls={false}
+                />
+              {/await}
             {:else if activeReferenceView === "grid"}
               <GridPreview
                 {sequence}

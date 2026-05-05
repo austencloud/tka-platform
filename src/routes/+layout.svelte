@@ -126,7 +126,7 @@
     startActiveModulePreload();
     const common = {
       bootProfiler: import("$lib/shared/analytics/boot-profiler"),
-      di: import("$lib/shared/di"),
+      di: import("$lib/shared/composition-root"),
       firebase: import("$lib/shared/auth/firebase"),
       authState: import("$lib/shared/auth/state/authState.svelte"),
       i18n: import("$lib/shared/i18n/i18n.svelte.js"),

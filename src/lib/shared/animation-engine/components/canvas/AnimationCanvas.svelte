@@ -8,7 +8,6 @@ it's probably like the rules of like you know maintaining the size and transform
 -->
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import AnimationVideoPlayer from "$lib/features/compose/components/canvas/AnimationVideoPlayer.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -79,15 +78,17 @@ it's probably like the rules of like you know maintaining the size and transform
   </div>
 
   <!-- Video player overlay -->
-  <AnimationVideoPlayer
-    {sequenceData}
-    {isPlaying}
-    {speed}
-    autoGenerateVideo={false}
-    onVideoReady={handleVideoReady}
-    onModeChange={handleModeChange}
-    onStepChange={onVideoStepChange}
-  />
+  {#await import("$lib/features/compose/components/canvas/AnimationVideoPlayer.svelte") then mod}
+    <mod.default
+      {sequenceData}
+      {isPlaying}
+      {speed}
+      autoGenerateVideo={false}
+      onVideoReady={handleVideoReady}
+      onModeChange={handleModeChange}
+      onStepChange={onVideoStepChange}
+    />
+  {/await}
 </div>
 
 <style>

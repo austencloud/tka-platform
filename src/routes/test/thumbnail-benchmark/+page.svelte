@@ -26,8 +26,8 @@
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
   import type { ThumbnailRenderOrchestrator } from '$lib/shared/browse/services/ThumbnailRenderOrchestrator';
   import type { ThumbnailRenderInput } from '$lib/shared/browse/services/thumbnail-key-deriver';
-  import type { ThumbnailMetricsSummary } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector';
-import type { ThumbnailMetricsCollector } from '$lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector';
+  import type { ThumbnailMetricsSummary } from '$lib/shared/browse/services/ThumbnailMetricsCollector';
+  import type { ThumbnailMetricsCollector } from '$lib/shared/browse/services/ThumbnailMetricsCollector';
   import type { ThumbnailLocalCache } from '$lib/shared/browse/services/ThumbnailLocalCache';
 
   // Configuration

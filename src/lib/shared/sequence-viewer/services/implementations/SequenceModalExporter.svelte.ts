@@ -1,5 +1,4 @@
-import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
 import type { Offline3DExporter } from "$lib/shared/3d/services/implementations/Offline3DExporter";
 import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
@@ -130,11 +129,11 @@ export class SequenceModalExporter {
   private _error = $state<string | null>(null);
   private _previewBlobUrl = $state<string | null>(null);
 
-  private _videoExportOrchestrator: VideoExportOrchestrator | null = null;
+  private _videoExportOrchestrator: IVideoExportOrchestrator | null = null;
   private _sequenceRenderer: SequenceRenderer | null = null;
   private _activeExporter: Offline3DExporter | null = null;
 
-  private get videoExportOrchestrator(): VideoExportOrchestrator | null {
+  private get videoExportOrchestrator(): IVideoExportOrchestrator | null {
     if (!this._videoExportOrchestrator) {
       this._videoExportOrchestrator = getVideoExportOrchestrator();
     }

@@ -986,7 +986,7 @@ export default defineConfig({
       "firebase/messaging",
       "firebase/analytics",
 
-      // ITI: DI container — used in shared/di/index.ts on every page
+      // ITI: legacy — was used by dissolved DI container, retained for compat
       "iti",
 
       // UI components (lightweight)

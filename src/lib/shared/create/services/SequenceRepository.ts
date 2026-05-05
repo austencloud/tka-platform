@@ -13,13 +13,13 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { SequenceCreateRequest } from "$lib/features/create/shared/domain/models/sequence-models";
+import type { SequenceCreateRequest } from "$lib/shared/create/domain/sequence-models";
 import {
   saveSequence as persistSaveSequence,
   loadSequence as persistLoadSequence,
   loadAllSequences as persistLoadAllSequences,
 } from "$lib/shared/persistence/services/dexie-persistence-service";
-import type { SequenceImporter } from "$lib/features/create/shared/services/implementations/SequenceImporter";
+import type { SequenceImporter } from "$lib/shared/create/services/SequenceImporter";
 type ReversalDetector = { processReversals: (sequence: SequenceData) => SequenceData };
 import { separateStepsFromStartPosition } from "$lib/shared/animation-engine/services/sequence-normalizer";
 type SequenceDomainManager = {
@@ -241,7 +241,7 @@ export class SequenceRepository {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import * as sequenceDomainManagerModule from "$lib/features/create/shared/services/sequence-domain-manager";
+import * as sequenceDomainManagerModule from "$lib/shared/create/services/sequence-domain-manager";
 const sequenceDomainManager: SequenceDomainManager = {
   createSequence: sequenceDomainManagerModule.createSequence as SequenceDomainManager['createSequence'],
   updateStep: sequenceDomainManagerModule.updateStep as SequenceDomainManager['updateStep'],

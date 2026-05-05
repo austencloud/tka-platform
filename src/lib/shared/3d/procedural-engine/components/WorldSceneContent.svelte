@@ -57,7 +57,6 @@
   import type { RealmConfig } from "../core/world-config";
 
   // Museum
-  import MuseumGrounds from "$lib/features/museum/scenes/procedural/components/MuseumGrounds.svelte";
   import { createMuseumState } from "$lib/shared/museum/state/museum-state.svelte";
   import { setActiveMuseumState } from "$lib/shared/museum/state/museum-state-bridge.svelte";
 
@@ -981,11 +980,13 @@
 
 <!-- Museum Pavilions (only when museum realm is active) -->
 {#if isMuseumRealm && isInitialized && isReadyToRender}
-  <MuseumGrounds
-    {museumState}
-    groundY={(activeConfig.terrain.waterLevel ?? 5) + 3}
-    {playerPosition}
-  />
+  {#await import("$lib/features/museum/scenes/procedural/components/MuseumGrounds.svelte") then mod}
+    <mod.default
+      {museumState}
+      groundY={(activeConfig.terrain.waterLevel ?? 5) + 3}
+      {playerPosition}
+    />
+  {/await}
 {/if}
 
 <!-- Archive: The Kinetic Archive is now standalone via ArchiveDestination + IndoorScene -->

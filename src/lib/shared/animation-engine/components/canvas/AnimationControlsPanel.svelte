@@ -22,12 +22,10 @@
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 
   // Subcomponents
-  import CompactMobileRow from "$lib/features/compose/components/controls/CompactMobileRow.svelte";
   import QuickBpmPresets from "$lib/shared/animation-engine/components/QuickBpmPresets.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import SettingsTogglePanel from "$lib/shared/animation-engine/components/controls/SettingsTogglePanel.svelte";
   import ExportActionsPanel from "$lib/shared/animation-engine/components/ExportActionsPanel.svelte";
-  import AnimationSettingsSheet from "$lib/features/compose/components/controls/AnimationSettingsSheet.svelte";
   import AnimationStepGrid from "$lib/shared/animation-engine/components/AnimationStepGrid.svelte";
 
   type MobileToolView = "controls" | "step-grid";
@@ -215,14 +213,16 @@
 >
   <!-- Mobile Compact Mode -->
   {#if !isSideBySideLayout && !isExpanded}
-    <CompactMobileRow
-      {mobileToolView}
-      {isPlaying}
-      {isExpanded}
-      {onToggleToolView}
-      {onPlaybackToggle}
-      {onToggleExpanded}
-    />
+    {#await import("$lib/features/compose/components/controls/CompactMobileRow.svelte") then mod}
+      <mod.default
+        {mobileToolView}
+        {isPlaying}
+        {isExpanded}
+        {onToggleToolView}
+        {onPlaybackToggle}
+        {onToggleExpanded}
+      />
+    {/await}
 
     <!-- Tool Area: Beat Grid or Quick Presets -->
     {#if mobileToolView === "step-grid"}
@@ -296,24 +296,26 @@
 </div>
 
 <!-- Settings Sheet (Compact mobile - all settings) -->
-<AnimationSettingsSheet
-  bind:isOpen={isSettingsSheetOpen}
-  bind:bpm
-  {blueMotionVisible}
-  {redMotionVisible}
-  {currentPropType}
-  {playbackMode}
-  {stepPlaybackPauseMs}
-  {stepPlaybackStepSize}
-  {isPlaying}
-  onBpmChange={handleBpmChange}
-  {onToggleBlue}
-  {onToggleRed}
-  {onPlaybackModeChange}
-  {onStepPlaybackPauseMsChange}
-  {onStepPlaybackStepSizeChange}
-  {onPlaybackToggle}
-/>
+{#await import("$lib/features/compose/components/controls/AnimationSettingsSheet.svelte") then mod}
+  <mod.default
+    bind:isOpen={isSettingsSheetOpen}
+    bind:bpm
+    {blueMotionVisible}
+    {redMotionVisible}
+    {currentPropType}
+    {playbackMode}
+    {stepPlaybackPauseMs}
+    {stepPlaybackStepSize}
+    {isPlaying}
+    onBpmChange={handleBpmChange}
+    {onToggleBlue}
+    {onToggleRed}
+    {onPlaybackModeChange}
+    {onStepPlaybackPauseMsChange}
+    {onStepPlaybackStepSizeChange}
+    {onPlaybackToggle}
+  />
+{/await}
 
 <style>
   /* Controls Panel Container */

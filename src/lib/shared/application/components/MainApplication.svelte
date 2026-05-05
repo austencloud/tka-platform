@@ -12,14 +12,11 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
   import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
   import AchievementNotificationToast from "../../gamification/components/AchievementNotificationToast.svelte";
   import XPToast from "../../gamification/components/XPToast.svelte";
-  import QuickFeedbackPanel from "$lib/features/feedback/components/quick/QuickFeedbackPanel.svelte";
-  import AnnouncementChecker from "$lib/features/admin/components/AnnouncementChecker.svelte";
   import WhatsNewChecker from "../../settings/components/WhatsNewChecker.svelte";
   import ErrorModal from "../../error/components/ErrorModal.svelte";
   import ErrorToast from "../../error/components/ErrorToast.svelte";
   import InboxDrawer from "../../inbox/components/InboxDrawer.svelte";
   import InboxSubscriptionProvider from "../../inbox/components/InboxSubscriptionProvider.svelte";
-  import MyFeedbackDetail from "$lib/features/feedback/components/my-feedback/MyFeedbackDetail.svelte";
   import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
   import FirstRunWizard from "../../onboarding/components/first-run/FirstRunWizard.svelte";
   import CreateTutorialWizard from "../../onboarding/components/create-tutorial/CreateTutorialWizard.svelte";
@@ -594,19 +591,25 @@ import type { SheetType } from "../../navigation/services/contracts/types";
     <InboxDrawer />
 
     <!-- Quick Feedback Panel (desktop hotkey: f) -->
-    <QuickFeedbackPanel />
+    {#await import("$lib/features/feedback/components/quick/QuickFeedbackPanel.svelte") then mod}
+      <mod.default />
+    {/await}
 
     <!-- My Feedback Detail Drawer (for viewing/editing user's own feedback) -->
-    <MyFeedbackDetail
-      item={feedbackDetailItem}
-      isOpen={showFeedbackDetail}
-      onClose={() => myFeedbackDetailState.close()}
-      onUpdate={myFeedbackDetailState.updateItem}
-      onDelete={myFeedbackDetailState.deleteItem}
-    />
+    {#await import("$lib/features/feedback/components/my-feedback/MyFeedbackDetail.svelte") then mod}
+      <mod.default
+        item={feedbackDetailItem}
+        isOpen={showFeedbackDetail}
+        onClose={() => myFeedbackDetailState.close()}
+        onUpdate={myFeedbackDetailState.updateItem}
+        onDelete={myFeedbackDetailState.deleteItem}
+      />
+    {/await}
 
     <!-- System Announcements Modal -->
-    <AnnouncementChecker />
+    {#await import("$lib/features/admin/components/AnnouncementChecker.svelte") then mod}
+      <mod.default />
+    {/await}
 
     <!-- What's New Modal (version updates) -->
     <WhatsNewChecker />

@@ -6,7 +6,6 @@
   Auto-advances to the next wizard step after the 4th beat.
 -->
 <script lang="ts">
-  import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
   import {
     createTutorialState,
     REQUIRED_BEATS,
@@ -50,11 +49,13 @@
 
   <div class="picker-container">
     {#if currentSequence.length > 0}
-      <OptionPicker
-        {currentSequence}
-        {currentGridMode}
-        onOptionSelected={handleOptionSelected}
-      />
+      {#await import("$lib/features/create/construct/option-picker/components/OptionPicker.svelte") then mod}
+        <mod.default
+          {currentSequence}
+          {currentGridMode}
+          onOptionSelected={handleOptionSelected}
+        />
+      {/await}
     {:else}
       <p class="loading">Loading options...</p>
     {/if}

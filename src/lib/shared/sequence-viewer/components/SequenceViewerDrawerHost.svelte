@@ -28,7 +28,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
-  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
@@ -201,7 +201,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
       const hydrated = await hydrateSequence(resolved, {
         letterDeriver: getLetterDeriver(),
         positionDeriver: getPositionDeriver(),
-        loopDetector,
+        loopDetector: getLoopDetector(),
         gridModeDeriver,
       });
 

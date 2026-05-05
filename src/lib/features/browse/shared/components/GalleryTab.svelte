@@ -21,7 +21,7 @@
     closeVariationPicker,
   } from "../state/variation-picker-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
-  import { browseScrollState } from "../state/BrowseScrollState.svelte";
+  import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import VirtualKeyboard from "$lib/shared/components/touch/VirtualKeyboard.svelte";
 

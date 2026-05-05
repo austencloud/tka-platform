@@ -17,7 +17,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ThumbnailRenderInput, ThumbnailCacheKey } from "./thumbnail-key-deriver";
 import * as keyDeriverModule from "./thumbnail-key-deriver";
 import type { ThumbnailRenderQueue } from "./ThumbnailRenderQueue";
-import type { ThumbnailRenderer } from "$lib/features/browse/sequences/display/services/implementations/ThumbnailRenderer";
+import type { ThumbnailRenderer } from "$lib/shared/browse/services/ThumbnailRenderer";
 import * as cloudCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
 import type { ThumbnailLocalCache } from "./ThumbnailLocalCache";
 import type { ThumbnailMetricsCollector } from "./ThumbnailMetricsCollector";

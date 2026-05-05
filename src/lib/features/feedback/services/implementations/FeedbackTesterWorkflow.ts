@@ -16,12 +16,13 @@ import { authState } from "$lib/shared/auth/state/authState.svelte";
 import type { FeedbackItem, AdminResponse, TesterConfirmation, TesterConfirmationStatus, FeedbackStatus, } from "$lib/shared/feedback/domain/models/feedback-models";
 import { FeedbackItemSchema } from "$lib/shared/feedback/domain/models/feedback-schemas";
 import type { FeedbackNotification } from "$lib/shared/feedback/domain/models/notification-models";
+import type { IFeedbackTesterWorkflow } from "$lib/shared/feedback/services/IFeedbackTesterWorkflow";
 import * as notificationTriggerService from "$lib/features/feedback/services/notification-trigger-service";
 import { getFeedback } from "$lib/shared/feedback/services/feedback-querier";
 
 const COLLECTION_NAME = "feedback";
 
-export class FeedbackTesterWorkflowService {
+export class FeedbackTesterWorkflowService implements IFeedbackTesterWorkflow {
   constructor() {}
 
   async sendAdminResponse(

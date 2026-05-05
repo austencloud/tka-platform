@@ -18,7 +18,7 @@
   import type { VideoCountManager } from "$lib/shared/browse/services/VideoCountManager";
   import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { VideoExportProgress } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+  import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import type { PlaybackMode, StepPlaybackStepSize } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
   import { getSequenceDetailLoader } from "$lib/shared/browse/getSequenceDetailLoader";

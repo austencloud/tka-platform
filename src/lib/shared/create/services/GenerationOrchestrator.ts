@@ -18,7 +18,7 @@ import {
   GenerationMode,
   PropContinuity,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from "$lib/features/create/generate/shared/services/sequence-metadata-manager";
+import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from "$lib/shared/create/services/sequence-metadata-manager";
 type SequenceMetadataManager = typeof SequenceMetadataManagerSingleton;
 import { SequenceBuilder } from "@tka/sequence-engine/generation";
 import type { ConstraintOptions } from "@tka/sequence-engine/generation";
@@ -240,9 +240,9 @@ export class GenerationOrchestrator {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
-import { BrowserVariationProvider } from "$lib/features/create/generate/shared/services/implementations/BrowserVariationProvider";
-import { BuildResultTransformer } from "$lib/features/create/generate/shared/services/implementations/BuildResultTransformer";
-import { sequenceMetadataManager } from "$lib/features/create/generate/shared/services/sequence-metadata-manager";
+import { BrowserVariationProvider } from "$lib/shared/create/services/BrowserVariationProvider";
+import { BuildResultTransformer } from "$lib/shared/create/services/BuildResultTransformer";
+import { sequenceMetadataManager } from "$lib/shared/create/services/sequence-metadata-manager";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { orientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 

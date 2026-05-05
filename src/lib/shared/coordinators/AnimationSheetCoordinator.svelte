@@ -27,8 +27,7 @@ import { getVideoExporter } from "$lib/shared/animation-engine/getVideoExporter"
   import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import type { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
-import type { VideoExportProgress, VideoExportFormat } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+import type { IVideoExportOrchestrator, VideoExportProgress, VideoExportFormat } from "$lib/shared/compose/domain/video-export-types";
   import type { VideoExporter } from "$lib/shared/animation-engine/services/implementations/VideoExporter";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
@@ -72,7 +71,7 @@ import type { AnimationPanelState } from "../navigation/services/contracts/types
   let browseLoader: PublicSequencesLoader | null = null;
   let playbackController: AnimationPlaybackController | null = null;
   let hapticService: HapticFeedback | null = null;
-  let videoExportOrchestrator: VideoExportOrchestrator | null = null;
+  let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
   let VideoExporter: VideoExporter | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;
 

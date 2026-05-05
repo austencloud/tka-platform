@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { ThumbnailRenderOrchestrator } from '$lib/shared/browse/services/ThumbnailRenderOrchestrator';
 import { getThumbnailRenderQueue } from '$lib/shared/browse/getThumbnailRenderQueue';
-import { getThumbnailRenderer } from '$lib/features/browse/sequences/display/getThumbnailRenderer';
+import { getThumbnailRenderer } from '$lib/shared/browse/getThumbnailRenderer';
 import { getThumbnailLocalCache } from '$lib/shared/browse/getThumbnailLocalCache';
 import { getThumbnailMetricsCollector } from '$lib/shared/browse/getThumbnailMetricsCollector';
 

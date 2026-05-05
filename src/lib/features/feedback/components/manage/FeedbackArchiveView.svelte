@@ -2,7 +2,7 @@
 <script lang="ts">
   import type { VersionState } from "$lib/shared/feedback/state/version-state.svelte";
   import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
-  import { getFeedback } from "../../services/feedback-querier";
+  import { getFeedback } from "$lib/shared/feedback/services/feedback-querier";
   import { archiveLoader } from "../../services/implementations/ArchiveLoader";
   import type { AppVersion } from "$lib/shared/feedback/domain/models/version-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
