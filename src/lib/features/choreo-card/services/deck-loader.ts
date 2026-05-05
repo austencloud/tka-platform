@@ -66,12 +66,37 @@ export function getCachedDecks(): Deck[] | null {
   }
 }
 
+function purgeStaleKeys(): void {
+  try {
+    const stale: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith("deckLoader.seqs.") || key.startsWith("deckLoader.seqsTs."))) {
+        stale.push(key);
+      }
+    }
+    for (const key of stale) localStorage.removeItem(key);
+  } catch { /* ignore */ }
+}
+
+let hasPurged = false;
+
 function cacheDecks(decks: Deck[]): void {
   try {
-    const json = JSON.stringify(decks);
-    console.log('[deck-perf] caching %d decks (%d KB)', decks.length, Math.round(json.length / 1024));
+    if (!hasPurged) {
+      purgeStaleKeys();
+      hasPurged = true;
+    }
+    localStorage.removeItem(DECK_CACHE_KEY);
+    const trimmed = decks.map(d => ({
+      ...d,
+      families: d.families.map(f => ({
+        ...f,
+        sequenceIds: [] as readonly string[],
+      })),
+    }));
+    const json = JSON.stringify(trimmed);
     localStorage.setItem(DECK_CACHE_KEY, json);
-    console.log('[deck-perf] cache write success');
   } catch (e) {
     console.warn('[deck-perf] cache write failed:', e);
   }
@@ -99,7 +124,6 @@ export async function loadSequencesByIds(deckId: string, sequenceIds: string[]):
   const db = await getFirestoreInstance();
   const results: SequenceData[] = [];
 
-  // Firestore `in` queries support max 30 items per batch
   const BATCH_SIZE = 30;
   for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
     const batch = sequenceIds.slice(i, i + BATCH_SIZE);

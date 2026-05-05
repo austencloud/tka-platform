@@ -22,6 +22,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
   import type { CardPair } from "../services/contracts/types";
+  import { getDeckLayoutPolicy } from "../domain/deck-layout-policy";
   import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
   import {
     resolveVtgFamilyId as resolveVtgFamily,
@@ -633,6 +634,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             {showTKA}
             {showWord}
             {includeStartPosition}
+            deckMode={true}
             leftLabel={deckLeftLabel}
             elementFamilyId={resolvedVtgFamilyId}
             onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
@@ -659,6 +661,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
                         {showTKA}
                         {showWord}
                         {includeStartPosition}
+                        startPositionLayout={getDeckLayoutPolicy(sequence.steps?.length ?? 0)}
                         onSelect={() => {
                           const cardEl = document.querySelector(`[data-seq-id="${sequence.id}"]`);
                           inspectedFrontImageUrl = (cardEl?.querySelector('img') as HTMLImageElement)?.src ?? null;

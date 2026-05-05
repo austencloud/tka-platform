@@ -9,6 +9,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { getDeckLayoutPolicy } from "../../domain/deck-layout-policy";
 
   interface Props {
     sequences: SequenceData[];
@@ -25,6 +26,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     leftLabel?: string;
     /** VTG family ID for elemental icon loading (e.g. "quarter-same") */
     elementFamilyId?: string;
+    /** Use deck layout policy instead of user composition settings */
+    deckMode?: boolean;
     /** Bump to force a full re-render of all cards */
     rerenderKey?: number;
     /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
@@ -48,6 +51,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     elementTheme,
     leftLabel,
     elementFamilyId,
+    deckMode = false,
     rerenderKey = 0,
     onCardContextMenu,
     onCardClick,
@@ -102,9 +106,11 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       showQRCode: true,
       includeStartPosition,
       startPositionLayout:
-        stepCount != null
-          ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
-          : imageComposition.startPositionLayout,
+        deckMode && stepCount != null
+          ? getDeckLayoutPolicy(stepCount)
+          : stepCount != null
+            ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
+            : imageComposition.startPositionLayout,
       handPointsVisible,
       theme,
       elementTheme,

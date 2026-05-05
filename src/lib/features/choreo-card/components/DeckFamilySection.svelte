@@ -17,6 +17,7 @@ import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-pat
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import ChoreoCard from "./ChoreoCard.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";
+  import { getDeckLayoutPolicy } from "../domain/deck-layout-policy";
 
   interface Props {
     family: DeckFamily;
@@ -133,9 +134,7 @@ import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-pat
    * - Everything else: column (default portrait layout)
    */
   function getStartPositionLayout(seq: SequenceData): "row" | "column" {
-    if (seq.steps.length === 4) return "row";
-    if (seq.steps.length === 16) return "row";
-    return "column";
+    return getDeckLayoutPolicy(seq.steps.length);
   }
 
   function toggle() {
@@ -244,7 +243,7 @@ import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-pat
                 showTKA={false}
                 showWord={false}
                 {includeStartPosition}
-                startPositionLayout="column"
+                startPositionLayout={getDeckLayoutPolicy(hpSeq.steps?.length ?? 0)}
                 onSelect={onSelectSequence}
                 {onContextMenu}
               />

@@ -10,6 +10,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { pushState, replaceState } from "$app/navigation";
   import { onMount, onDestroy } from "svelte";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
@@ -157,6 +158,8 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   type ChoreoCardMode = "decks" | "designer" | "scan-activity";
   let mode = $state<ChoreoCardMode>("decks");
 
+  let browseSequencesLoaded = false;
+
   // Sync with navigation state (sidebar tab selection)
   $effect(() => {
     const navTab = navigationState.activeTab;
@@ -167,16 +170,26 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
         if (newMode !== "designer" && decks.length === 0) {
           loadDecks();
         }
+        // Lazy-load browse sequences when user first enters a mode that needs them
+        if (newMode !== "decks" && !browseSequencesLoaded && loaderService) {
+          browseSequencesLoaded = true;
+          loadSequences();
+        }
       }
     }
   });
 
-  // Deck state
-  let decks = $state<Deck[]>([]);
-  let selectedDeckId = $state<string | null>(getPersistedString(STORAGE_KEY_SELECTED_DECK));
+  // Deck state — seed deck metadata from localStorage so first render skips "Loading deck..." spinner.
+  // Cached decks have sequenceIds stripped (too large for localStorage) — enough to show the
+  // deck shell (name, breadcrumbs, family labels) while Firestore loads full data + sequences.
+  const _initDecks = getCachedDecks();
+  const _initDeckId = getPersistedString(STORAGE_KEY_SELECTED_DECK);
+  let decks = $state<Deck[]>(_initDecks ?? []);
+  let selectedDeckId = $state<string | null>(_initDeckId);
   let selectedVtgFamily = $state<string | null>(getPersistedString(STORAGE_KEY_VTG_FAMILY));
   let deckSequences = $state<SequenceData[]>([]);
-  let isDeckLoading = $state(false);
+  // Start in loading state if we have a saved deck — sequences must come from Firestore
+  let isDeckLoading = $state(!!_initDeckId);
   let deckErrorMessage = $state<string | null>(null);
 
   // ── Browser history (back/forward) for deck navigation ──
@@ -223,7 +236,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     const url = new URL(window.location.href);
     const encoded = encodeNavHash(state);
     url.hash = encoded;
-    history.pushState(state, "", url.toString());
+    pushState(url.toString(), { deckNavId: state.deckId, deckNavVtgFamily: state.vtgFamily });
   }
 
   async function restoreNavState(state: DeckNavState) {
@@ -244,11 +257,13 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
 
   $effect(() => {
     function handlePopState(event: PopStateEvent) {
-      const state = event.state as DeckNavState | null;
-      if (state && "deckId" in state) {
-        void restoreNavState(state);
+      const raw = event.state as Record<string, unknown> | null;
+      if (raw && "deckNavId" in raw) {
+        void restoreNavState({
+          deckId: (raw.deckNavId as string) ?? null,
+          vtgFamily: (raw.deckNavVtgFamily as string) ?? null,
+        });
       } else {
-        // No state object (e.g. initial page load entry) - go to root
         void restoreNavState({ deckId: null, vtgFamily: null });
       }
     }
@@ -354,13 +369,13 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   });
 
   onMount(async () => {
-    console.time('[deck-perf] total mount');
-    // Browse/Designer sequences load in background - don't block deck rendering
     loaderService = getBrowseLoader();
-    loadSequences();
 
-    // Check if the URL hash encodes a saved nav state (e.g. from a page refresh).
-    // If so, it takes priority over localStorage so the user lands back where they were.
+    // Defer browse sequence loading — only needed for designer/export modes, not decks
+    if (mode !== "decks") {
+      loadSequences();
+    }
+
     const hashState = decodeNavHash(window.location.hash);
     if (hashState) {
       isRestoringFromHistory = true;
@@ -370,35 +385,19 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
       isRestoringFromHistory = false;
     }
 
-    // Seed the history stack with the current state so popstate works on first Back.
-    // replaceState (not pushState) keeps the current URL entry intact.
     const initialState = buildCurrentNavState();
     const url = new URL(window.location.href);
     url.hash = encodeNavHash(initialState);
-    history.replaceState(initialState, "", url.toString());
+    replaceState(url.toString(), { deckNavId: initialState.deckId, deckNavVtgFamily: initialState.vtgFamily });
 
-    // Serve cached decks instantly, refresh from Firebase in background
-    if (decks.length === 0) {
-      const cached = getCachedDecks();
-      if (cached && cached.length > 0) {
-        console.log('[deck-perf] serving %d cached decks', cached.length);
-        decks = cached;
-        // Refresh in background - updates cache + state silently
-        loadDecks().then(() => console.log('[deck-perf] background refresh done'));
-      } else {
-        console.time('[deck-perf] loadDecks (cold)');
-        await loadDecks();
-        console.timeEnd('[deck-perf] loadDecks (cold)');
-      }
-    }
-
-    // Restore a previously selected deck if one was persisted
+    // Load deck metadata + sequences in parallel.
+    // Cached (trimmed) decks are already in state for instant shell render.
+    // Full deck data (with sequenceIds) + sequences come from Firestore.
+    const tasks: Promise<void>[] = [loadDecks().then(() => {})];
     if (selectedDeckId) {
-      console.time('[deck-perf] loadDeckSequences');
-      await handleSelectDeckSequences(selectedDeckId);
-      console.timeEnd('[deck-perf] loadDeckSequences');
+      tasks.push(handleSelectDeckSequences(selectedDeckId));
     }
-    console.timeEnd('[deck-perf] total mount');
+    await Promise.all(tasks);
   });
 
   onDestroy(() => {
@@ -464,16 +463,18 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     });
   }
 
+  let isLoadingDeckMetadata = $state(false);
+
   async function loadDecks() {
     try {
-      isDeckLoading = true;
+      isLoadingDeckMetadata = true;
       deckErrorMessage = null;
       decks = await deckLoaderLoadDecks();
     } catch (err) {
       console.warn("Failed to load decks:", err);
       deckErrorMessage = "Failed to load decks. Check your connection and try again.";
     } finally {
-      isDeckLoading = false;
+      isLoadingDeckMetadata = false;
     }
   }
 
@@ -487,11 +488,11 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     pushNavState();
   }
 
-  // Loads sequences for a deck without touching selectedDeckId or nav state.
-  // Used both by handleSelectDeck and restoreNavState.
   async function handleSelectDeckSequences(deckId: string) {
     const deck = decks.find((d) => d.id === deckId);
-    if (!deck) return;
+    if (!deck) {
+      return;
+    }
 
     isDeckLoading = true;
     deckErrorMessage = null;
@@ -500,8 +501,10 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
         deckSequences = await loadDeckSequences(deckId);
       } else {
         const firstFamily = deck.families[0];
-        if (firstFamily) {
+        if (firstFamily && firstFamily.sequenceIds.length > 0) {
           deckSequences = await loadSequencesByIds(deckId, [...firstFamily.sequenceIds]);
+        } else {
+          deckSequences = await loadDeckSequences(deckId);
         }
       }
     } catch (err) {
@@ -540,7 +543,11 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
       const seqIds = deck.families
         .filter((f) => familyIds.includes(f.id))
         .flatMap((f) => [...f.sequenceIds]);
-      deckSequences = await loadSequencesByIds(selectedDeckId, seqIds);
+      if (seqIds.length > 0) {
+        deckSequences = await loadSequencesByIds(selectedDeckId, seqIds);
+      } else {
+        deckSequences = await loadDeckSequences(selectedDeckId);
+      }
     } catch (err) {
       console.warn("Failed to load family sequences:", err);
     } finally {
@@ -567,7 +574,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
           {decks}
           {selectedDeckId}
           {deckSequences}
-          isLoading={isDeckLoading}
+          isLoading={isDeckLoading || isLoadingDeckMetadata}
           {handPointsVisible}
           {showGrid}
           {showTKA}

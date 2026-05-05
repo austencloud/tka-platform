@@ -9,6 +9,7 @@
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import { getDeckLayoutPolicy } from "../domain/deck-layout-policy";
 
   interface Props {
     sequence: SequenceData;
@@ -153,7 +154,7 @@
         {showTKA}
         {showWord}
         {includeStartPosition}
-        startPositionLayout="row"
+        startPositionLayout={getDeckLayoutPolicy(sequence.steps?.length ?? 0)}
         showBirthday={true}
         {showQRCode}
         showInfoCard={false}
