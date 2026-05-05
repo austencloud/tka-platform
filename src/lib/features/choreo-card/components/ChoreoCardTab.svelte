@@ -574,7 +574,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
           {decks}
           {selectedDeckId}
           {deckSequences}
-          isLoading={isDeckLoading || isLoadingDeckMetadata}
+          isLoading={isDeckLoading || (isLoadingDeckMetadata && decks.length === 0)}
           {handPointsVisible}
           {showGrid}
           {showTKA}
