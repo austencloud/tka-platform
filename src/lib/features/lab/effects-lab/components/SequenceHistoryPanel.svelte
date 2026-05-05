@@ -46,17 +46,16 @@
     </button>
 
     {#if open}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
+      <button
         class="backdrop"
+        type="button"
+        aria-label="Close recent sequences"
         onclick={handleBackdropClick}
-        onkeydown={(e) => e.key === "Escape" && (open = false)}
-      ></div>
+      ></button>
       <div
         class="popover"
         role="dialog"
         aria-label="Recent sequences"
-        onclick={(e) => e.stopPropagation()}
         in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
         out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
       >
@@ -160,6 +159,11 @@
     position: fixed;
     inset: 0;
     z-index: 99;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: default;
   }
 
   .popover {

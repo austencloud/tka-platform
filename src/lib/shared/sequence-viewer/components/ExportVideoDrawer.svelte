@@ -93,6 +93,8 @@
   }
 
   let pillNavEl = $state<HTMLElement | null>(null);
+  let panelScrollEl = $state<HTMLElement | null>(null);
+  let mobileBarEl = $state<HTMLElement | null>(null);
 
   function findPillButton(id: PillId): HTMLElement | null {
     return pillNavEl?.querySelector<HTMLElement>(`[data-pill-id="${id}"]`) ?? null;
@@ -111,6 +113,14 @@
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   });
+
+  function attachSpaceGuard(el: HTMLElement | null) {
+    if (!el) return;
+    el.addEventListener("keydown", preventSpaceActivation);
+    return () => el.removeEventListener("keydown", preventSpaceActivation);
+  }
+  $effect(() => attachSpaceGuard(panelScrollEl));
+  $effect(() => attachSpaceGuard(mobileBarEl));
 
   function preventSpaceActivation(event: KeyboardEvent) {
     if (event.key !== " " && event.code !== "Space") return;
@@ -451,8 +461,7 @@
         </PillBody>
       {/if}
 
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="mobile-bar" onkeydown={preventSpaceActivation}>
+      <div class="mobile-bar" bind:this={mobileBarEl}>
         <DownloadPillNav
           pills={pillSpecs}
           activeId={activePill}
@@ -499,12 +508,9 @@
       />
 
       <div class="sidebar-main">
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="panel-scroll"
-          onkeydown={preventSpaceActivation}
-          role="region"
-          aria-label="{activePillLabel} Settings"
+          bind:this={panelScrollEl}
         >
           {#if activePill}
             {@render pillBody()}
