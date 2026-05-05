@@ -304,104 +304,21 @@ export async function initializeAuthListener() {
         _state = { ..._state, user, initialized: true };
       }
 
-      // Safety timeout: if auth processing hangs (bad network, Firestore
-      // unreachable), force loading = false after 8 seconds so the app
-      // is never stuck on the loading spinner indefinitely.
-      const safetyTimeout = setTimeout(() => {
-        if (_state.loading) {
-          console.warn("⚠️ [authState] Auth processing timed out - unblocking UI");
-          _state = {
-            ..._state,
-            loading: false,
-            initialized: true,
-          };
-        }
-      }, 8000);
-
-      // CRITICAL: Initialize Firestore before any services try to use it
-      // This prevents race condition errors with the lazy-loaded Firestore Proxy
-      if (user) {
-        try {
-          const { getFirestoreInstance } =
-            await import("$lib/shared/auth/firebase");
-          await getFirestoreInstance();
-        } catch (error) {
-          console.error(
-            "❌ [authState] Failed to initialize Firestore:",
-            error
-          );
-        }
-      }
-
+      // ── Fast path: cached claims → set state → unblock UI ──
+      // getIdTokenResult(false) reads the local token cache — no network.
+      // The subscription listener force-refreshes when claims change.
       let isAdmin = false;
       let role: UserRole = "user";
 
       if (user) {
         try {
-          // Get user claims to determine role
-          const idTokenResult = await user.getIdTokenResult(true);
+          const idTokenResult = await user.getIdTokenResult(false);
           isAdmin = idTokenResult.claims.admin === true;
           role = (idTokenResult.claims.role as UserRole) || "user";
-
-          // Create or update user document in Firestore
-          const userDocumentService = getUserDocumentManager();
-          if (userDocumentService) {
-            try {
-              await userDocumentService.createOrUpdateUserDocument(user);
-            } catch (error) {
-              console.error(
-                "❌ [authState] Failed to update user document:",
-                error
-              );
-            }
-          }
-
-          // Update profile pictures from OAuth providers (non-blocking)
-          updateFacebookProfilePictureIfNeeded(user).catch((error: unknown) => {
-            console.warn(
-              "⚠️ [authState] Facebook profile picture update failed:",
-              error
-            );
-          });
-          updateGoogleProfilePictureIfNeeded(user).catch((error: unknown) => {
-            console.warn(
-              "⚠️ [authState] Google profile picture update failed:",
-              error
-            );
-          });
-
-          // Initialize feature flags for this user
-          // Pass the role from auth token to prevent race condition with Firestore
-          try {
-            await featureFlagService.initialize(user.uid, role);
-          } catch (_error) {
-            console.warn(
-              "⚠️ [authState] Failed to initialize feature flags:",
-              _error
-            );
-          }
-
-          // Link this device to the signed-in user (fire-and-forget)
-          linkDeviceToUser(user.uid)
-            .catch((err: unknown) => {
-              console.warn("⚠️ [authState] Failed to link device to user", err);
-            });
         } catch (_error) {
-          console.warn("⚠️ [authState] Auth processing error:", _error);
-        }
-      } else {
-        // Initialize feature flags without user
-        try {
-          await featureFlagService.initialize(null);
-        } catch (_error) {
-          console.warn(
-            "⚠️ [authState] Failed to initialize feature flags:",
-            _error
-          );
+          console.warn("⚠️ [authState] Failed to read cached token:", _error);
         }
       }
-
-      clearTimeout(safetyTimeout);
 
       const desktopAdminFallback = isDesktopEnv && !user;
       _state = {
@@ -411,6 +328,41 @@ export async function initializeAuthListener() {
         isAdmin: desktopAdminFallback ? true : isAdmin,
         role: desktopAdminFallback ? "admin" : role,
       };
+
+      // ── Background work: none of this blocks the UI ──
+      if (user) {
+        import("$lib/shared/auth/firebase")
+          .then(({ getFirestoreInstance }) => getFirestoreInstance())
+          .catch((error) => {
+            console.error("❌ [authState] Failed to initialize Firestore:", error);
+          });
+
+        const userDocumentService = getUserDocumentManager();
+        if (userDocumentService) {
+          userDocumentService.createOrUpdateUserDocument(user).catch((error) => {
+            console.error("❌ [authState] Failed to update user document:", error);
+          });
+        }
+
+        updateFacebookProfilePictureIfNeeded(user).catch((error: unknown) => {
+          console.warn("⚠️ [authState] Facebook profile picture update failed:", error);
+        });
+        updateGoogleProfilePictureIfNeeded(user).catch((error: unknown) => {
+          console.warn("⚠️ [authState] Google profile picture update failed:", error);
+        });
+
+        featureFlagService.initialize(user.uid, role).catch((_error) => {
+          console.warn("⚠️ [authState] Failed to initialize feature flags:", _error);
+        });
+
+        linkDeviceToUser(user.uid).catch((err: unknown) => {
+          console.warn("⚠️ [authState] Failed to link device to user", err);
+        });
+      } else {
+        featureFlagService.initialize(null).catch((_error) => {
+          console.warn("⚠️ [authState] Failed to initialize feature flags:", _error);
+        });
+      }
 
       // If the user just became authenticated, clear any in-flight auth
       // drawer state. Otherwise a "Sign up" the user opened before signing
