@@ -1,7 +1,7 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import { getBaseBeatSize } from "../layout-calculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
-import type { ImageComposer } from "./ImageComposer";
+import { ImageComposer } from "./ImageComposer";
 import type { CompositionProgressCallback, RenderCanvas } from "../contracts/types";
 import type { ImageFormatConverter } from "./ImageFormatConverter";
 
@@ -232,10 +232,22 @@ export class SequenceRenderer {
   }
 }
 
-import { imageComposer } from "./ImageComposer";
 import { imageFormatConverter } from "./ImageFormatConverter";
+import { textRenderer } from "./TextRenderer";
+import { pictographKeyHasher } from "./PictographKeyHasher";
+import { pictographMemoryCache } from "./PictographMemoryCache";
+import { canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
+import { layerCompositor } from "./LayerCompositor";
+import { pictographBlobCache } from "./PictographBlobCache";
 
 export const sequenceRenderer = new SequenceRenderer(
-  imageComposer,
+  new ImageComposer(
+    textRenderer,
+    pictographBlobCache,
+    pictographKeyHasher,
+    pictographMemoryCache,
+    canvas2DDirectRenderer,
+    layerCompositor
+  ),
   imageFormatConverter
 );

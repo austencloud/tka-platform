@@ -3,7 +3,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+// getSettings loaded dynamically to avoid pulling $app/environment into worker bundle
 
 interface MotionKeyData {
   motionType: string;
@@ -54,9 +54,12 @@ export class PictographKeyHasher {
   ): PictographKeyInput {
     const motions = data.motions ?? { blue: undefined, red: undefined };
 
-    const globalSettings = getSettings();
-    const resolvedBlueProp = visibility.bluePropType ?? globalSettings.bluePropType ?? "staff";
-    const resolvedRedProp = visibility.redPropType ?? globalSettings.redPropType ?? "staff";
+    // Callers (ImageComposer.getVisibilitySettings) always resolve prop types before
+    // calling deriveKey, so visibility.bluePropType/redPropType are always set.
+    // Default to "staff" for safety. Previously this called getSettings() which pulled
+    // $app/environment into the worker bundle via the static import chain.
+    const resolvedBlueProp = visibility.bluePropType ?? "staff";
+    const resolvedRedProp = visibility.redPropType ?? "staff";
 
     return {
       letter: data.letter ?? undefined,

@@ -785,6 +785,17 @@ export default defineConfig({
   // ============================================================================
   worker: {
     format: "es",
+    rollupOptions: {
+      // The composition worker dynamically imports modules that transitively
+      // reference $app/environment (resolved to __sveltekit/environment by SvelteKit).
+      // This virtual module doesn't exist in the worker Rollup context. Since these
+      // dynamic imports are behind try/catch and never actually reached in worker
+      // context, externalizing the unresolvable module lets the build succeed.
+      external: [
+        "__sveltekit/environment",
+        /^\$env\//,
+      ],
+    },
   },
   // ============================================================================
   // CSS

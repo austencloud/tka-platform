@@ -27,8 +27,6 @@ import {
 	BASE_SAMPLES_PER_BEAT,
 	MANDALA_GRID_RADIUS,
 	ENGINE_GRID_RADIUS,
-	OVERLAP_THRESHOLD,
-	OVERLAP_MIN_RUN,
 } from "../../domain/mandala-constants";
 import type {
 	MandalaPaths,
@@ -464,120 +462,6 @@ function getTipOffsetsForProp(propType: string | undefined): TipOffset[] {
 	return points;
 }
 
-// ─── Overlap detection (spatial hash) ──────────────────────────────────────
-
-/**
- * Build a spatial hash grid from a set of points. Each cell is cellSize units
- * wide. Returns a Set of "col,row" keys that have at least one point in them.
- * O(n) to build, O(1) per lookup.
- */
-function buildSpatialGrid(points: MandalaPoint[], cellSize: number): Set<string> {
-	const grid = new Set<string>();
-	for (const p of points) {
-		const col = Math.floor(p.x / cellSize);
-		const row = Math.floor(p.y / cellSize);
-		grid.add(`${col},${row}`);
-	}
-	return grid;
-}
-
-/**
- * Check whether a point is near any point in the spatial grid by checking
- * the 3x3 neighborhood of cells around it. This catches points within
- * ~cellSize distance regardless of their parametric index.
- */
-function isNearGrid(point: MandalaPoint, grid: Set<string>, cellSize: number): boolean {
-	const col = Math.floor(point.x / cellSize);
-	const row = Math.floor(point.y / cellSize);
-	for (let dc = -1; dc <= 1; dc++) {
-		for (let dr = -1; dr <= 1; dr++) {
-			if (grid.has(`${col + dc},${row + dr}`)) return true;
-		}
-	}
-	return false;
-}
-
-/**
- * Spatial proximity detection: for each point in `queryPoints`, check whether
- * ANY point in `referencePoints` occupies a nearby grid cell.
- * O(n + m) total - O(m) to build the grid, O(n) to query.
- */
-function detectOverlapMask(
-	queryPoints: MandalaPoint[],
-	referencePoints: MandalaPoint[],
-	threshold: number,
-): boolean[] {
-	const grid = buildSpatialGrid(referencePoints, threshold);
-	const mask = new Array<boolean>(queryPoints.length);
-	for (let i = 0; i < queryPoints.length; i++) {
-		mask[i] = isNearGrid(queryPoints[i]!, grid, threshold);
-	}
-	return mask;
-}
-
-/**
- * Extract contiguous runs of overlapping points from a point array.
- * Runs shorter than minRun are discarded to avoid tiny purple speckles.
- */
-function extractOverlapSegments(
-	points: MandalaPoint[],
-	mask: boolean[],
-	minRun: number,
-): MandalaPoint[][] {
-	const segments: MandalaPoint[][] = [];
-	let runStart = -1;
-
-	for (let i = 0; i <= mask.length; i++) {
-		if (i < mask.length && mask[i]) {
-			if (runStart === -1) runStart = i;
-		} else {
-			if (runStart !== -1) {
-				const runLength = i - runStart;
-				if (runLength >= minRun) {
-					segments.push(points.slice(runStart, i));
-				}
-				runStart = -1;
-			}
-		}
-	}
-
-	return segments;
-}
-
-/**
- * Detect purple overlap segments across all tip-pair combinations between
- * blue and red hands. For staff (2 tips each) this produces 4 combinations;
- * for fan (5 tips each) it produces 25, etc. Each blue tip is checked
- * against each red tip for spatial proximity.
- */
-function computePurplePaths(
-	bluePointSets: MandalaPoint[][],
-	redPointSets: MandalaPoint[][],
-): SVGPathData[] {
-	const purple: SVGPathData[] = [];
-	let tipIndex = 0;
-
-	for (const bluePoints of bluePointSets) {
-		for (const redPoints of redPointSets) {
-			if (bluePoints.length === 0 || redPoints.length === 0) continue;
-
-			const mask = detectOverlapMask(bluePoints, redPoints, OVERLAP_THRESHOLD);
-			const segments = extractOverlapSegments(bluePoints, mask, OVERLAP_MIN_RUN);
-
-			for (const segment of segments) {
-				const d = pointsToSVGPath(segment);
-				if (d) {
-					purple.push({ d, tipIndex });
-				}
-			}
-
-			tipIndex++;
-		}
-	}
-
-	return purple;
-}
-
 // ─── Public class ───────────────────────────────────────────────────────────
 
 export class MandalaGeometryCalculator {
@@ -670,10 +554,7 @@ export class MandalaGeometryCalculator {
 			if (d) red.push({ d, tipIndex: i });
 		}
 
-		// Detect purple overlap segments across all tip-pair combinations
-		const purple = computePurplePaths(bluePointSets, redPointSets);
-
-		const result: MandalaPaths = { blue, red, purple };
+		const result: MandalaPaths = { blue, red, purple: [] };
 
 		// Cache the result with LRU eviction if needed
 		if (this.cache.size >= MandalaGeometryCalculator.MAX_CACHE_SIZE) {

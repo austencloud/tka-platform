@@ -26,6 +26,22 @@ export interface MandalaPalette {
 	purpleFill: string;
 }
 
+export interface MandalaOverlapConfig {
+	feather: number;
+	bloomOpacity: number;
+	bloomBlur: number;
+	bloomWidth: number;
+	coreOpacity: number;
+}
+
+export const DEFAULT_OVERLAP_CONFIG: MandalaOverlapConfig = {
+	feather: 0.3,
+	bloomOpacity: 0.3,
+	bloomBlur: 4,
+	bloomWidth: 2,
+	coreOpacity: 1.0,
+};
+
 export interface MandalaRenderOptions {
 	/** Pixel size of the SVG viewBox (square) */
 	size: number;
@@ -41,6 +57,8 @@ export interface MandalaRenderOptions {
 	transparentBackground?: boolean;
 	/** Override the default dark-mode prop colors (e.g. for light-mode backgrounds) */
 	palette?: MandalaPalette;
+	/** Overlap rendering parameters */
+	overlap?: MandalaOverlapConfig;
 }
 
 export type MandalaMode = "card-back" | "gallery" | "animated";

@@ -15,7 +15,7 @@ import {
   type CompressedSegment,
 } from "@tka/render-composition";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
+// getGlyphCache loaded dynamically to avoid pulling $app/environment into worker bundle
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { compressWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createRenderCanvas } from "./createRenderCanvas";
@@ -33,6 +33,7 @@ export class TextRenderer {
 
   async preloadGlyphImages(): Promise<void> {
     if (this.glyphImageCache.size > 0) return;
+    const { getGlyphCache } = await import("$lib/shared/render/getGlyphCache");
     const cache = getGlyphCache();
     await cache.initialize();
 

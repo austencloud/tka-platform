@@ -2,7 +2,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import { type PropType } from "../../../pictograph/prop/domain/enums/PropType";
+import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 import { getLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
@@ -13,11 +13,9 @@ import {
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
-import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
-import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
-import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import { pictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
-import { cellCacheKeyDeriver } from "../../../sequence-viewer/services/implementations/CellCacheKeyDeriver";
+// These 5 imports are loaded dynamically at usage sites to avoid pulling
+// Svelte stores and $app/environment into the composition worker bundle.
+// See: getVisibilitySettings(), renderPictographDirect(), storePictographBlob()
 import type { PreviewCellRenderOptions } from "../../../sequence-viewer/services/preview-cell-renderer";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
@@ -40,7 +38,7 @@ import { createRenderCanvas } from "./createRenderCanvas";
 import type { RenderCanvas } from "../contracts/types";
 import { drawSmartCellBorders, findEmptyCellForQR } from "./cell-border-renderer";
 import { composeCardImage as composeCardImageFn } from "./card-composer";
-import { getMandalaGeometryCalculator } from "../../../mandala/getMandalaGeometryCalculator";
+// getMandalaGeometryCalculator loaded dynamically to avoid pulling $app/environment into worker bundle
 import { renderMandalaToCanvas } from "../../../mandala/services/mandala-renderer";
 import { getMandalaPlacements } from "../../../sequence-viewer/services/getMandalaPlacements";
 import {
@@ -121,7 +119,21 @@ export class ImageComposer {
       overrides.showReversals !== undefined &&
       overrides.showNonRadialPoints !== undefined
     ) {
-      const appSettings = getSettings();
+      // Resolve prop types: prefer overrides, fall back to app settings, then default to STAFF
+      let bluePropType = overrides.bluePropType;
+      let redPropType = overrides.redPropType;
+      if (!bluePropType || !redPropType) {
+        try {
+          const { getSettings } = await import("$lib/shared/application/state/app-state.svelte");
+          const appSettings = getSettings();
+          bluePropType ??= appSettings.bluePropType;
+          redPropType ??= appSettings.redPropType;
+        } catch {
+          // Worker context — no app state available, use default prop type
+          bluePropType ??= PropType.STAFF;
+          redPropType ??= PropType.STAFF;
+        }
+      }
       return {
         showTKA: overrides.showTKA,
         showVTG: overrides.showVTG,
@@ -132,17 +144,25 @@ export class ImageComposer {
         darkMode: overrides.darkMode,
         showGrid: overrides.showGrid,
         handPointVisibility: overrides.handPointVisibility,
-        bluePropType: overrides.bluePropType ?? appSettings.bluePropType,
-        redPropType: overrides.redPropType ?? appSettings.redPropType,
+        bluePropType,
+        redPropType,
         handPathMode: overrides.handPathMode,
       };
     }
 
+    // Fallback path: read from Svelte stores (not available in worker context)
+    const { getVisibilityStateManager } = await import(
+      "../../../pictograph/shared/state/visibility-state.svelte"
+    );
     const visibilityManager = getVisibilityStateManager();
     await visibilityManager.ensureSettingsLoaded();
 
+    const { getAnimationVisibilityManager } = await import(
+      "../../../animation-engine/state/animation-visibility-state.svelte"
+    );
     const animVisibilityManager = getAnimationVisibilityManager();
 
+    const { getSettings } = await import("$lib/shared/application/state/app-state.svelte");
     const appSettings = getSettings();
 
     const globalSettings: PictographVisibilityOptions = {
@@ -572,14 +592,19 @@ export class ImageComposer {
       handPathMode: visibilitySettings.handPathMode ?? false,
     };
 
-    const previewKey = cellCacheKeyDeriver.deriveCacheKey(
-      pictographData as PictographData,
-      stepNumber,
-      isDark,
-      previewOptions
-    );
-
-    this.blobCache.set(previewKey, blob).catch(() => {});
+    import("../../../sequence-viewer/services/implementations/CellCacheKeyDeriver")
+      .then(({ cellCacheKeyDeriver: keyDeriver }) => {
+        const previewKey = keyDeriver.deriveCacheKey(
+          pictographData as PictographData,
+          stepNumber,
+          isDark,
+          previewOptions
+        );
+        this.blobCache.set(previewKey, blob).catch(() => {});
+      })
+      .catch(() => {
+        // Worker context — preview cache write-through unavailable
+      });
   }
 
   private async renderPictographAt(
@@ -827,6 +852,9 @@ export class ImageComposer {
     redPropType?: PropType,
   ): Promise<void> {
     try {
+      const { getMandalaGeometryCalculator } = await import(
+        "../../../mandala/getMandalaGeometryCalculator"
+      );
       const calculator = getMandalaGeometryCalculator();
       const paths = calculator.calculate(
         sequence.steps ?? [],
@@ -975,7 +1003,10 @@ export class ImageComposer {
     await this.ensureCanvas2DInitialized();
 
     const themeMode = visibilitySettings.darkMode ? "dark" : "light";
-    const preparedPictograph = await pictographPreparer.prepareSingle(pictographData, {
+    const { pictographPreparer: preparer } = await import(
+      "../../../pictograph/shared/services/implementations/PictographPreparer"
+    );
+    const preparedPictograph = await preparer.prepareSingle(pictographData, {
       themeMode,
       bluePropType: visibilitySettings.bluePropType,
       redPropType: visibilitySettings.redPropType,
@@ -1035,18 +1066,6 @@ export class ImageComposer {
   }
 }
 
-import { textRenderer } from "./TextRenderer";
-import { pictographBlobCache } from "./PictographBlobCache";
-import { pictographKeyHasher } from "./PictographKeyHasher";
-import { pictographMemoryCache } from "./PictographMemoryCache";
-import { canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
-import { layerCompositor } from "./LayerCompositor";
-
-export const imageComposer = new ImageComposer(
-  textRenderer,
-  pictographBlobCache,
-  pictographKeyHasher,
-  pictographMemoryCache,
-  canvas2DDirectRenderer,
-  layerCompositor
-);
+// Default singleton removed — it pulled PictographBlobCache ($app/environment) into
+// the worker bundle. Use getImageComposer() from $lib/shared/render/getImageComposer
+// for main-thread usage. The worker creates its own instances via composition.worker.ts.

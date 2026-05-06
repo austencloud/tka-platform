@@ -49,19 +49,6 @@ export const DARK_MOTION_PURPLE_FILL = "rgba(167, 139, 250, 0.2)";
 export const LIGHT_MOTION_PURPLE_STROKE = "#6d28d9";
 export const LIGHT_MOTION_PURPLE_FILL = "rgba(109, 40, 217, 0.2)";
 
-/** Distance threshold in mandala coordinate units for overlap detection.
- * This is the spatial hash cell size; the 3×3 neighborhood check makes
- * the effective radius ~3× this value. Keep small so only truly
- * coincident paths (same trajectory) trigger purple - not parallel
- * paths that happen to be nearby (e.g. Sigma-Z dashes). */
-export const OVERLAP_THRESHOLD = 1.5;
-
-/** Sliding window size for proximity search (indices, not distance) */
-export const OVERLAP_WINDOW_SIZE = 20;
-
-/** Minimum consecutive overlapping points to form a purple segment */
-export const OVERLAP_MIN_RUN = 3;
-
 /**
  * Grid radius in the animation engine's coordinate space (prop-local units).
  * This is the distance from center to cardinal grid points in a 950px viewBox.

@@ -17,7 +17,8 @@ import {
 	PURPLE_STROKE,
 	PURPLE_FILL,
 } from "../domain/mandala-constants";
-import type { MandalaPaths, MandalaRenderOptions } from "../domain/mandala-types";
+import { DEFAULT_OVERLAP_CONFIG } from "../domain/mandala-types";
+import type { MandalaPaths, MandalaRenderOptions, MandalaOverlapConfig } from "../domain/mandala-types";
 
 const GRID_DOT_ANGLES = [
 	0,
@@ -31,6 +32,8 @@ const GRID_DOT_ANGLES = [
 ];
 
 const GRID_DOT_RADIUS = 2.5;
+
+let maskIdCounter = 0;
 
 function strokeAttributes(color: string, strokeWidth: number): string {
 	return `fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"`;
@@ -68,6 +71,28 @@ function drawPath(
 	}
 }
 
+function drawMaskPath(
+	ctx: OffscreenCanvasRenderingContext2D,
+	d: string,
+	style: "stroke" | "filled",
+	strokeWidth: number,
+): void {
+	const path = new Path2D(d);
+	if (style === "filled") {
+		ctx.fillStyle = "white";
+		ctx.fill(path);
+		ctx.strokeStyle = "white";
+		ctx.lineWidth = strokeWidth * 0.6;
+		ctx.lineCap = "round";
+		ctx.stroke(path);
+	} else {
+		ctx.strokeStyle = "white";
+		ctx.lineWidth = strokeWidth;
+		ctx.lineCap = "round";
+		ctx.stroke(path);
+	}
+}
+
 export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOptions): string {
 	const { size, style, showGridDots, show, strokeWidth = 2.5, transparentBackground = false } = options;
 	const center = size / 2;
@@ -78,12 +103,39 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 
 	const parts: string[] = [];
 
+	const uid = maskIdCounter++;
+	const needsMask = show === "both" && paths.blue.length > 0 && paths.red.length > 0;
+	const ov = options.overlap ?? DEFAULT_OVERLAP_CONFIG;
+
 	parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="100%" height="100%">`);
 	parts.push(`  <defs>`);
 	parts.push(`    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">`);
 	parts.push(`      <feGaussianBlur stdDeviation="3" result="blur"/>`);
 	parts.push(`      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>`);
 	parts.push(`    </filter>`);
+
+	if (needsMask) {
+		parts.push(`    <filter id="feather${uid}" x="-10%" y="-10%" width="120%" height="120%">`);
+		parts.push(`      <feGaussianBlur stdDeviation="${ov.feather}"/>`);
+		parts.push(`    </filter>`);
+		parts.push(`    <filter id="bloom${uid}" x="-50%" y="-50%" width="200%" height="200%">`);
+		parts.push(`      <feGaussianBlur stdDeviation="${ov.bloomBlur}" result="b"/>`);
+		parts.push(`      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>`);
+		parts.push(`    </filter>`);
+		parts.push(`    <mask id="bom${uid}">`);
+		parts.push(`      <g filter="url(#feather${uid})">`);
+		for (const pathData of paths.blue) {
+			if (style === "filled") {
+				const sw = (strokeWidth * 0.6).toFixed(2);
+				parts.push(`        <path d="${pathData.d}" fill="white" stroke="white" stroke-width="${sw}" stroke-linecap="round"/>`);
+			} else {
+				parts.push(`        <path d="${pathData.d}" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round"/>`);
+			}
+		}
+		parts.push(`      </g>`);
+		parts.push(`    </mask>`);
+	}
+
 	parts.push(`  </defs>`);
 
 	if (!transparentBackground) {
@@ -128,13 +180,22 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 		}
 	}
 
-	if (show === "both" && paths.purple?.length) {
-		for (const pathData of paths.purple) {
-			const attrs = style === "filled"
-				? filledAttributes(palette.purpleStroke, palette.purpleFill, strokeWidth)
-				: strokeAttributes(palette.purpleStroke, strokeWidth);
-			parts.push(`    <path d="${pathData.d}" ${attrs}/>`);
+	if (needsMask) {
+		const purpleCore = style === "filled"
+			? `fill="${palette.purpleFill}" stroke="${palette.purpleStroke}" stroke-width="${(strokeWidth * 0.6).toFixed(2)}" stroke-linecap="round"`
+			: `fill="none" stroke="${palette.purpleStroke}" stroke-width="${strokeWidth}" stroke-linecap="round"`;
+		parts.push(`    <g mask="url(#bom${uid})" opacity="${ov.coreOpacity}">`);
+		for (const pathData of paths.red) {
+			parts.push(`      <path d="${pathData.d}" ${purpleCore}/>`);
 		}
+		parts.push(`    </g>`);
+
+		const bloomWidth = style === "filled" ? strokeWidth : strokeWidth * ov.bloomWidth;
+		parts.push(`    <g mask="url(#bom${uid})" filter="url(#bloom${uid})" opacity="${ov.bloomOpacity}">`);
+		for (const pathData of paths.red) {
+			parts.push(`      <path d="${pathData.d}" fill="none" stroke="${palette.purpleStroke}" stroke-width="${bloomWidth}" stroke-linecap="round"/>`);
+		}
+		parts.push(`    </g>`);
 	}
 
 	parts.push(`  </g>`);
@@ -148,7 +209,7 @@ export function renderMandalaToCanvas(
 	paths: MandalaPaths,
 	options: MandalaRenderOptions & { offsetX: number; offsetY: number },
 ): void {
-	const { size, style, showGridDots, show, strokeWidth = 2, offsetX, offsetY } = options;
+	const { size, style, showGridDots, show, strokeWidth = 2, offsetX, offsetY, transparentBackground = false } = options;
 	const center = size / 2;
 	const tipReach = (ENGINE_GRID_RADIUS - DEFAULT_TIP_INSET_PX) * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
 	const maxExtent = MANDALA_GRID_RADIUS + tipReach;
@@ -156,10 +217,12 @@ export function renderMandalaToCanvas(
 
 	ctx.save();
 
-	ctx.fillStyle = "#0d0d1a";
-	ctx.beginPath();
-	ctx.roundRect(offsetX, offsetY, size, size, 12);
-	ctx.fill();
+	if (!transparentBackground) {
+		ctx.fillStyle = "#0d0d1a";
+		ctx.beginPath();
+		ctx.roundRect(offsetX, offsetY, size, size, 12);
+		ctx.fill();
+	}
 
 	ctx.translate(offsetX + center, offsetY + center);
 	ctx.scale(scale, scale);
@@ -178,22 +241,60 @@ export function renderMandalaToCanvas(
 		ctx.fill();
 	}
 
+	const palette = options.palette ?? {
+		blueStroke: BLUE_STROKE,
+		blueFill: BLUE_FILL,
+		redStroke: RED_STROKE,
+		redFill: RED_FILL,
+		purpleStroke: PURPLE_STROKE,
+		purpleFill: PURPLE_FILL,
+	};
+
 	if (show === "blue" || show === "both") {
 		for (const pathData of paths.blue) {
-			drawPath(ctx, pathData.d, BLUE_STROKE, BLUE_FILL, style, strokeWidth);
+			drawPath(ctx, pathData.d, palette.blueStroke, palette.blueFill, style, strokeWidth);
 		}
 	}
 
 	if (show === "red" || show === "both") {
 		for (const pathData of paths.red) {
-			drawPath(ctx, pathData.d, RED_STROKE, RED_FILL, style, strokeWidth);
+			drawPath(ctx, pathData.d, palette.redStroke, palette.redFill, style, strokeWidth);
 		}
 	}
 
-	if (show === "both" && paths.purple?.length) {
-		for (const pathData of paths.purple) {
-			drawPath(ctx, pathData.d, PURPLE_STROKE, PURPLE_FILL, style, strokeWidth);
+	if (show === "both" && paths.blue.length > 0 && paths.red.length > 0) {
+		const transform = ctx.getTransform();
+		const w = ctx.canvas.width;
+		const h = ctx.canvas.height;
+
+		const maskB = new OffscreenCanvas(w, h);
+		const maskR = new OffscreenCanvas(w, h);
+		const bC = maskB.getContext("2d")!;
+		const rC = maskR.getContext("2d")!;
+
+		bC.setTransform(transform);
+		rC.setTransform(transform);
+
+		for (const p of paths.blue) {
+			drawMaskPath(bC, p.d, style, strokeWidth);
 		}
+		for (const p of paths.red) {
+			drawMaskPath(rC, p.d, style, strokeWidth);
+		}
+
+		bC.setTransform(1, 0, 0, 1, 0, 0);
+		bC.globalCompositeOperation = "destination-in";
+		bC.drawImage(maskR, 0, 0);
+
+		bC.globalCompositeOperation = "source-in";
+		bC.fillStyle = options.palette?.purpleStroke ?? PURPLE_STROKE;
+		bC.fillRect(0, 0, w, h);
+
+		ctx.save();
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.globalAlpha = 0.9;
+		ctx.drawImage(maskB, 0, 0);
+		ctx.restore();
 	}
 
 	ctx.restore();

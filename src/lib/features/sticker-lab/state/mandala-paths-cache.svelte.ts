@@ -63,6 +63,10 @@ export async function loadPrimitivePaths(shapeHash: string): Promise<MandalaPath
   return promise;
 }
 
+export function cachePrimitivePaths(shapeHash: string, paths: MandalaPaths): void {
+  cache[shapeHash] = paths;
+}
+
 export function clearMandalaPathsCache(): void {
   for (const k of Object.keys(cache)) delete cache[k];
   inFlight.clear();
