@@ -11,9 +11,16 @@ import {
 
 export type { ViewerMode, ExportContext, ContentType, SplitConfig };
 
+function deriveInitialExportContext(mode: ViewerMode): ExportContext {
+	if (mode === 'animation') return 'animation-export';
+	if (mode === 'card') return 'image-export';
+	return null;
+}
+
 export function createViewerState() {
-	let viewerMode = $state<ViewerMode>(loadViewerMode());
-	let exportContext = $state<ExportContext>(null);
+	const initialMode = loadViewerMode();
+	let viewerMode = $state<ViewerMode>(initialMode);
+	let exportContext = $state<ExportContext>(deriveInitialExportContext(initialMode));
 	let splitConfig = $state<SplitConfig>(loadSplitConfig());
 
 	function setViewerMode(mode: ViewerMode) {
