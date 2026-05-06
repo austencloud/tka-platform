@@ -388,8 +388,13 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       {videoCount}
                       onBack={handleBackToSplit}
                       onSelectMode={(mode) => {
-                        ctx.viewerState.setViewerMode(mode);
-                        ctx.viewerState.exitExport();
+                        if (mode === 'animation') {
+                          ctx.viewerState.enterExport('animation-export');
+                        } else if (mode === 'card') {
+                          ctx.viewerState.enterExport('image-export');
+                        } else {
+                          ctx.viewerState.setViewerMode('videos');
+                        }
                       }}
                     />
                   {/if}
