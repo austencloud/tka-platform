@@ -14,7 +14,6 @@
   import TurnsEditMode from "./TurnsEditMode.svelte";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import DurationControl from "./DurationControl.svelte";
-  import PathShapeControl from "./PathShapeControl.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
@@ -164,6 +163,12 @@
 
   const bluePathShape = $derived(blueMotion?.pathShape);
   const redPathShape = $derived(redMotion?.pathShape);
+  const blueIsShift = $derived(
+    blueMotion ? blueMotion.startLocation !== blueMotion.endLocation : false
+  );
+  const redIsShift = $derived(
+    redMotion ? redMotion.startLocation !== redMotion.endLocation : false
+  );
 
   const stepLabel = $derived.by(() => {
     if (displayedStepNumber === null) return "";
@@ -421,20 +426,17 @@
             {showRedRotation}
             stacked={!isSideBySideLayout}
             compact={!isSideBySideLayout}
+            {bluePathShape}
+            {redPathShape}
+            {blueIsShift}
+            {redIsShift}
             {onTurnsChange}
             {onRotationChange}
             {onOpenPropSheet}
+            {onPathShapeChange}
+            {onPathShapeClear}
           />
         </div>
-        {#if onPathShapeChange && onPathShapeClear}
-          <PathShapeControl
-            {bluePathShape}
-            {redPathShape}
-            compact={!isSideBySideLayout}
-            onPathShapeChange={onPathShapeChange}
-            onPathShapeClear={onPathShapeClear}
-          />
-        {/if}
       {/if}
     </div>
   </div>

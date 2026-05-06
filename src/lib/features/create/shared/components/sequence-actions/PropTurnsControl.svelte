@@ -10,6 +10,8 @@
 -->
 <script lang="ts">
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { PathShapeValue } from "../../services/implementations/step-operations/PathShapeHandler";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   interface Props {
     color: "blue" | "red";
@@ -18,8 +20,12 @@
     showRotation: boolean;
     /** Compact mode: single row layout for mobile */
     compact?: boolean;
+    pathShape?: PathShapeValue | undefined;
+    isShift?: boolean;
     onTurnsChange: (delta: number) => void;
     onRotationChange: (direction: RotationDirection) => void;
+    onPathShapeChange?: (shape: PathShapeValue) => void;
+    onPathShapeClear?: () => void;
   }
 
   let {
@@ -28,8 +34,12 @@
     rotationDirection,
     showRotation,
     compact = false,
+    pathShape,
+    isShift = true,
     onTurnsChange,
     onRotationChange,
+    onPathShapeChange,
+    onPathShapeClear,
   }: Props = $props();
 
   const displayTurns = $derived(turns === "fl" ? "fl" : turns);
@@ -48,6 +58,15 @@
     e.stopPropagation();
     onTurnsChange(delta);
   }
+
+  const shapes: PathShapeValue[] = ["arc", "linear", "concave"];
+
+  const globalHint = $derived.by(() => {
+    const vm = getAnimationVisibilityManager();
+    if (vm.getMotionAwarePaths()) return "Motion-Aware";
+    const s = vm.getPathShape();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  });
 
   function handleInvert(e: MouseEvent) {
     e.stopPropagation();
@@ -86,17 +105,47 @@
     </button>
   </div>
 
-  <!-- Invert rotation toggle -->
+  <!-- Rotation direction toggle -->
   <button
     class="invert-btn"
     class:compact
-    aria-label="Invert {color} rotation (currently {directionLabel})"
+    aria-label="Toggle {color} rotation (currently {directionLabel})"
     onclick={handleInvert}
     disabled={!showRotation}
   >
     <i class="fas {directionIcon}" aria-hidden="true"></i>
-    <span class="invert-label">Invert</span>
+    <span class="invert-label">{directionLabel}</span>
   </button>
+
+  <!-- Path shape override (only for motions that traverse the grid) -->
+  {#if onPathShapeChange && onPathShapeClear && isShift}
+    <div class="path-row" class:compact>
+      {#each shapes as shape}
+        <button
+          class="shape-pill"
+          class:active={pathShape === shape}
+          class:compact
+          aria-pressed={pathShape === shape}
+          aria-label="{color} path: {shape}"
+          onclick={(e) => { e.stopPropagation(); onPathShapeChange(shape); }}
+        >
+          {shape.charAt(0).toUpperCase() + shape.slice(1)}
+        </button>
+      {/each}
+      <button
+        class="shape-pill reset"
+        class:compact
+        disabled={pathShape === undefined}
+        aria-label="Reset {color} path to global"
+        onclick={(e) => { e.stopPropagation(); onPathShapeClear(); }}
+      >
+        <i class="fas fa-rotate-left" aria-hidden="true"></i>
+      </button>
+      {#if pathShape === undefined}
+        <span class="path-hint">{globalHint}</span>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -273,9 +322,87 @@
     box-shadow: 0 2px 12px rgba(var(--prop-color-rgb, 239, 68, 68), 0.3);
   }
 
+  /* ============================================================================
+     PATH SHAPE ROW - Inline override pills
+     ============================================================================ */
+
+  .path-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: 4px;
+    width: 100%;
+  }
+
+  .path-row.compact {
+    padding-top: 4px;
+    margin-top: 2px;
+    gap: 3px;
+  }
+
+  .shape-pill {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.65rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+    min-height: 28px;
+  }
+
+  .shape-pill.compact {
+    padding: 3px 6px;
+    font-size: 0.6rem;
+    min-height: 24px;
+  }
+
+  .shape-pill:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .shape-pill.active {
+    color: white;
+  }
+
+  .turns-controls.blue .shape-pill.active {
+    background: rgba(var(--prop-color-rgb, 59, 130, 246), 0.25);
+    border-color: rgba(var(--prop-color-rgb, 59, 130, 246), 0.5);
+  }
+
+  .turns-controls.red .shape-pill.active {
+    background: rgba(var(--prop-color-rgb, 239, 68, 68), 0.25);
+    border-color: rgba(var(--prop-color-rgb, 239, 68, 68), 0.5);
+  }
+
+  .shape-pill.reset {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+    font-size: 0.6rem;
+  }
+
+  .shape-pill:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+  }
+
+  .path-hint {
+    font-size: 0.55rem;
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .ctrl-btn,
-    .invert-btn {
+    .invert-btn,
+    .shape-pill {
       transition: none;
     }
     .ctrl-btn:active:not(:disabled),

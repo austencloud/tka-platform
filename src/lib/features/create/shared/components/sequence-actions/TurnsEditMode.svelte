@@ -21,6 +21,7 @@
   } from "$lib/shared/application/state/app-state.svelte";
   import PropControlPair from "./PropControlPair.svelte";
   import PropTurnsControl from "./PropTurnsControl.svelte";
+  import type { PathShapeValue } from "../../services/implementations/step-operations/PathShapeHandler";
 
   interface Props {
     hasSelection: boolean;
@@ -33,12 +34,18 @@
     stacked?: boolean;
     /** Compact mode: single-row layout with icon-only prop selector */
     compact?: boolean;
+    bluePathShape?: PathShapeValue | undefined;
+    redPathShape?: PathShapeValue | undefined;
+    blueIsShift?: boolean;
+    redIsShift?: boolean;
     onTurnsChange: (color: MotionColor, delta: number) => void;
     onRotationChange: (
       color: MotionColor,
       direction: RotationDirection
     ) => void;
     onOpenPropSheet?: (color: "blue" | "red") => void;
+    onPathShapeChange?: (color: MotionColor, shape: PathShapeValue) => void;
+    onPathShapeClear?: (color: MotionColor) => void;
   }
 
   let {
@@ -51,9 +58,15 @@
     showRedRotation,
     stacked = false,
     compact = false,
+    bluePathShape,
+    redPathShape,
+    blueIsShift = true,
+    redIsShift = true,
     onTurnsChange,
     onRotationChange,
     onOpenPropSheet,
+    onPathShapeChange,
+    onPathShapeClear,
   }: Props = $props();
 
   // Get current prop types from settings
@@ -97,8 +110,12 @@
         rotationDirection={blueRotation}
         showRotation={showBlueRotation}
         {compact}
+        pathShape={bluePathShape}
+        isShift={blueIsShift}
         onTurnsChange={(delta) => onTurnsChange(MotionColor.BLUE, delta)}
         onRotationChange={(dir) => onRotationChange(MotionColor.BLUE, dir)}
+        onPathShapeChange={onPathShapeChange ? (shape) => onPathShapeChange(MotionColor.BLUE, shape) : undefined}
+        onPathShapeClear={onPathShapeClear ? () => onPathShapeClear(MotionColor.BLUE) : undefined}
       />
       <!-- Prop type row - compact shows icon-only -->
       <div class="prop-type-row blue" class:compact>
@@ -152,8 +169,12 @@
         rotationDirection={redRotation}
         showRotation={showRedRotation}
         {compact}
+        pathShape={redPathShape}
+        isShift={redIsShift}
         onTurnsChange={(delta) => onTurnsChange(MotionColor.RED, delta)}
         onRotationChange={(dir) => onRotationChange(MotionColor.RED, dir)}
+        onPathShapeChange={onPathShapeChange ? (shape) => onPathShapeChange(MotionColor.RED, shape) : undefined}
+        onPathShapeClear={onPathShapeClear ? () => onPathShapeClear(MotionColor.RED) : undefined}
       />
       <!-- Prop type row - compact shows icon-only -->
       <div class="prop-type-row red" class:compact>
