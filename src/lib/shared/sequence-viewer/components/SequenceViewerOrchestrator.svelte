@@ -150,6 +150,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     recordingElapsed: number;
     handleStopRecording: () => void;
 
+    viewerState: ReturnType<typeof import("../state/viewer-state.svelte").createViewerState>;
     viewerVisibility: SequenceViewerVisibilityState;
   }
 </script>
@@ -203,7 +204,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { createAuthActionQueue } from "./AuthActionQueue.svelte";
   import { createFullscreenController } from "../state/fullscreen-controller.svelte";
   import { createLibraryActionHandler } from "../state/library-action-handler.svelte";
-  import { loadRecentEditingPane, persistEditingPane } from "../services/editing-pane-persistence";
+  import { createViewerState } from "../state/viewer-state.svelte";
 
   interface Props {
     sequence: SequenceData | null;
@@ -277,11 +278,14 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     announce: (msg, priority) => accessibilityHelper.announce(msg, priority),
   });
 
-  let editingPane = $state<'animation' | 'image' | 'video-upload' | null>(
-    untrack(() => loadRecentEditingPane(sequence?.id ?? null))
-  );
-  $effect(() => {
-    persistEditingPane(editingPane, sequence?.id ?? null);
+  const viewerState = createViewerState();
+
+  const editingPane = $derived.by((): 'animation' | 'image' | 'video-upload' | null => {
+    const { viewerMode, exportContext } = viewerState;
+    if (exportContext === 'animation-export') return 'animation';
+    if (exportContext === 'image-export') return 'image';
+    if (viewerMode === 'videos') return 'video-upload';
+    return null;
   });
 
   let playbackSource = $state<PlaybackSource>("animation");
@@ -635,17 +639,24 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       viewer3DState.exit3D();
     }
     hapticService?.trigger("selection");
-    editingPane = pane;
 
-    if (pane === "animation") {
+    if (pane === 'animation') {
+      viewerState.enterExport('animation-export');
       if (!playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
       }
-    } else if (pane === "image" || pane === "video-upload") {
+    } else if (pane === 'image') {
       wasPlayingBeforeImageExport = playback.isPlayingLocal;
       if (playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
       }
+      viewerState.enterExport('image-export');
+    } else if (pane === 'video-upload') {
+      wasPlayingBeforeImageExport = playback.isPlayingLocal;
+      if (playback.isPlayingLocal && playbackControllerRef) {
+        playbackControllerRef.togglePlayback();
+      }
+      viewerState.setViewerMode('videos');
     }
 
     if (pane === 'video-upload') {
@@ -659,7 +670,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   function exitEditMode() {
     hapticService?.trigger("selection");
     const wasPaneImage = editingPane === "image" || editingPane === "video-upload";
-    editingPane = null;
+    viewerState.backToSplit();
     exportCoord.dismissPreview();
 
     if (wasPaneImage && wasPlayingBeforeImageExport && !playback.isPlayingLocal && playbackControllerRef) {
@@ -1114,6 +1125,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       catDogModeEnabled: activeCatDog,
     },
 
+    viewerState,
     viewerVisibility,
   });
 </script>
