@@ -52,6 +52,20 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
+  interface Props {
+    data: {
+      meta: {
+        word: string | null;
+        creator: string | null;
+        difficulty: string | null;
+        stepCount: number | null;
+        thumbnailUrl: string | null;
+      };
+    };
+  }
+
+  const { data }: Props = $props();
+
   // Route params
   const sequenceId = $derived($page.params.id);
 
@@ -83,6 +97,17 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   let isLoading = $state(true);
   let loadError = $state<string | null>(null);
   let handoffData = $state<SequenceRouteHandoff | null>(null);
+
+  // OG meta tag values (SSR from server data, then enhanced client-side)
+  const ogWord = $derived(sequence?.word || data?.meta?.word || "Sequence");
+  const ogCreator = $derived(sequence?.ownerDisplayName || data?.meta?.creator || null);
+  const ogDesc = $derived(
+    ogCreator
+      ? `Flow sequence by ${ogCreator}${data?.meta?.stepCount ? ` • ${data.meta.stepCount} beats` : ""}${data?.meta?.difficulty ? ` • Level ${data.meta.difficulty}` : ""}`
+      : "View this flow sequence in TKA Composer"
+  );
+  const ogImage = $derived(data?.meta?.thumbnailUrl || "https://tkaflowarts.com/og-default.png");
+  const ogUrl = $derived(`https://tkaflowarts.com/sequence/${sequenceId}`);
 
   // IAB banner padding
   const iabBannerShowing = $derived(getIabBannerVisible());
@@ -437,13 +462,17 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 </script>
 
 <svelte:head>
-  <title>{sequence?.word || sequence?.name || "Sequence"} - TKA Composer</title>
-  <meta
-    name="description"
-    content={sequence?.word
-      ? `View the "${sequence.word}" flow sequence in TKA Composer`
-      : "View this flow sequence in TKA Composer"}
-  />
+  <title>{ogWord} - TKA Composer</title>
+  <meta name="description" content={ogDesc} />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="{ogWord} - TKA Composer" />
+  <meta property="og:description" content={ogDesc} />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:url" content={ogUrl} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{ogWord} - TKA Composer" />
+  <meta name="twitter:description" content={ogDesc} />
+  <meta name="twitter:image" content={ogImage} />
 </svelte:head>
 
 {#if isLoading}

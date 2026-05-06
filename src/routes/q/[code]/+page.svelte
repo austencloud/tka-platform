@@ -47,6 +47,11 @@
         country: string | null;
         city: string | null;
       };
+      meta: {
+        word: string | null;
+        creator: string | null;
+        thumbnailUrl: string | null;
+      };
     };
   }
 
@@ -61,6 +66,14 @@
     | { kind: "playing"; videoUrl: string; word: string; isFirstView: boolean };
 
   let state = $state<PageState>({ kind: "loading" });
+
+  const ogWord = $derived(
+    (state.kind === "playing" || state.kind === "rendering" ? state.word : data?.meta?.word) || "Sequence"
+  );
+  const ogDesc = $derived(
+    ogWord !== "Sequence" ? `Watch the ${ogWord} flow sequence` : "Watch this flow sequence"
+  );
+  const ogImage = $derived(data?.meta?.thumbnailUrl || "https://tkaflowarts.com/og-default.png");
 
   const stubBrowseLoader = {
     loadSequenceMetadata: async () => [],
@@ -303,15 +316,17 @@
 </script>
 
 <svelte:head>
-  {#if state.kind === "playing" || state.kind === "rendering"}
-    <title>{state.word} - TKA</title>
-    <meta
-      name="description"
-      content="Watch the {state.word} flow sequence"
-    />
-  {:else}
-    <title>TKA Sequence</title>
-  {/if}
+  <title>{ogWord} - TKA</title>
+  <meta name="description" content={ogDesc} />
+  <meta property="og:type" content="video.other" />
+  <meta property="og:title" content="{ogWord} - TKA" />
+  <meta property="og:description" content={ogDesc} />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:url" content="https://tkaflowarts.com/q/{$page.params.code}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{ogWord} - TKA" />
+  <meta name="twitter:description" content={ogDesc} />
+  <meta name="twitter:image" content={ogImage} />
   <meta name="theme-color" content="#0f0f1a" />
 </svelte:head>
 
