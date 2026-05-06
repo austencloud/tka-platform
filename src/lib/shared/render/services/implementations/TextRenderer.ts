@@ -18,6 +18,8 @@ import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { compressWord } from "$lib/shared/foundation/utils/word-simplifier";
+import { createRenderCanvas } from "./createRenderCanvas";
+import type { RenderCanvas } from "../contracts/types";
 
 export class TextRenderer {
   private readonly titleFontFamily = "Georgia, serif";
@@ -75,8 +77,32 @@ export class TextRenderer {
     return result;
   }
 
+  setGlyphBitmaps(
+    entries: {
+      letter: string;
+      bitmap: ImageBitmap;
+      naturalWidth: number;
+      naturalHeight: number;
+      isDash: boolean;
+    }[]
+  ): void {
+    this.glyphImageCache.clear();
+    for (const entry of entries) {
+      this.glyphImageCache.set(entry.letter, {
+        image: entry.bitmap,
+        naturalWidth: entry.naturalWidth,
+        naturalHeight: entry.naturalHeight,
+        isDash: entry.isDash,
+      });
+    }
+  }
+
+  getGlyphCache(): Map<string, GlyphImageData> {
+    return this.glyphImageCache;
+  }
+
   renderWordText(
-    canvas: HTMLCanvasElement,
+    canvas: RenderCanvas,
     word: string,
     options: TextRenderOptions,
     stepCount: number = 3
@@ -85,7 +111,7 @@ export class TextRenderer {
       return;
     }
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
     if (!ctx) {
       return;
     }
@@ -115,7 +141,7 @@ export class TextRenderer {
   }
 
   renderWordFooter(
-    canvas: HTMLCanvasElement,
+    canvas: RenderCanvas,
     word: string,
     _options: TextRenderOptions,
     footerHeight: number,
@@ -125,7 +151,7 @@ export class TextRenderer {
       return;
     }
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
     if (!ctx) {
       return;
     }
@@ -157,7 +183,7 @@ export class TextRenderer {
   }
 
   renderWordHeader(
-    canvas: HTMLCanvasElement,
+    canvas: RenderCanvas,
     word: string,
     _options: TextRenderOptions,
     headerHeight: number,
@@ -311,7 +337,7 @@ export class TextRenderer {
     fontSize: number,
     fontWeight?: string
   ): { width: number; height: number } {
-    const canvas = document.createElement("canvas");
+    const canvas = createRenderCanvas(0, 0);
     const ctx = canvas.getContext("2d");
     if (!ctx) return { width: 0, height: 0 };
 
