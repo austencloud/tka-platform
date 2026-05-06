@@ -10,6 +10,7 @@
     saveShapeGroups,
     getProcessedDeckIds,
     markDecksProcessed,
+    clearShapeCatalog,
     type StoredShapeGroup,
     type StoredShapeEntry,
   } from "../services/implementations/ShapeCatalogStore";
@@ -85,22 +86,30 @@
 
   // --- Load from IndexedDB first, then process new decks in worker ---
   async function initialize() {
-    const cached = await loadCachedShapes();
-    if (cached.length > 0) {
-      cachedHit = true;
-      const map = new Map<string, ShapeGroup>();
-      for (const g of cached) {
-        map.set(g.fingerprint, {
-          fingerprint: g.fingerprint,
-          entries: g.entries,
-          repPaths: g.repPaths,
-        });
+    const [decks, processedIds] = await Promise.all([loadDecks(), getProcessedDeckIds()]);
+    const liveDeckIds = new Set(decks.map((d) => d.id));
+    const staleCache = [...processedIds].some((id) => !liveDeckIds.has(id));
+
+    if (staleCache) {
+      await clearShapeCatalog();
+    } else {
+      const cached = await loadCachedShapes();
+      if (cached.length > 0) {
+        cachedHit = true;
+        const map = new Map<string, ShapeGroup>();
+        for (const g of cached) {
+          map.set(g.fingerprint, {
+            fingerprint: g.fingerprint,
+            entries: g.entries,
+            repPaths: g.repPaths,
+          });
+        }
+        shapeMap = map;
       }
-      shapeMap = map;
     }
 
-    const [decks, processedIds] = await Promise.all([loadDecks(), getProcessedDeckIds()]);
-    const unprocessed = decks.filter((d) => !processedIds.has(d.id));
+    const freshProcessedIds = staleCache ? new Set<string>() : processedIds;
+    const unprocessed = decks.filter((d) => !freshProcessedIds.has(d.id));
 
     if (unprocessed.length === 0) return;
 
