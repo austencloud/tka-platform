@@ -883,6 +883,14 @@ export const LAB_TABS: Section[] = [
   // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
   // hand-path-explorer graduated to Hand Paths module (Mar 2026)
   {
+    id: "path-mandalas",
+    label: "Path Mandalas",
+    icon: '<i class="fas fa-atom" style="color: #a78bfa;" aria-hidden="true"></i>',
+    description: "Tune tip-path mandala overlap rendering with live sliders",
+    color: "#a78bfa",
+    gradient: "linear-gradient(135deg, #c084fc 0%, #a78bfa 100%)",
+  },
+  {
     id: "phrase-effort",
     label: "Phrase Effort",
     icon: '<i class="fas fa-music" aria-hidden="true"></i>',

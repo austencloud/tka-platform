@@ -4,23 +4,39 @@
   import StickerList from "./components/StickerList.svelte";
   import StickerSheetPreview from "./components/StickerSheetPreview.svelte";
   import StickerExportPanel from "./components/StickerExportPanel.svelte";
+  import ShapeBrowser from "./components/ShapeBrowser.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   const labState = createStickerLabState();
   setStickerLabContext(labState);
 
+  type ViewMode = "shapes" | "sheet";
+  let viewMode: ViewMode = $state<ViewMode>("shapes");
   let exportDrawerOpen = $state(false);
 </script>
 
 <div class="sticker-lab">
+  <section class="col col-main" aria-label={viewMode === "shapes" ? "Shape browser" : "Sheet preview"}>
+    <header>
+      <div class="view-toggle">
+        <button class:active={viewMode === "shapes"} onclick={() => (viewMode = "shapes")}>
+          <i class="fas fa-shapes" aria-hidden="true"></i> Shapes
+        </button>
+        <button class:active={viewMode === "sheet"} onclick={() => (viewMode = "sheet")}>
+          <i class="fas fa-file-image" aria-hidden="true"></i> Sheet
+        </button>
+      </div>
+    </header>
+    {#if viewMode === "shapes"}
+      <ShapeBrowser />
+    {:else}
+      <StickerSheetPreview />
+    {/if}
+  </section>
+
   <section class="col col-list" aria-label="Sticker list">
     <header><h2>Stickers</h2></header>
     <StickerList onExportClick={() => (exportDrawerOpen = true)} />
-  </section>
-
-  <section class="col col-preview" aria-label="Sheet preview">
-    <header><h2>Sheet Preview</h2></header>
-    <StickerSheetPreview />
   </section>
 </div>
 
@@ -53,7 +69,7 @@
 <style>
   .sticker-lab {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 1fr 280px;
     gap: var(--spacing-md);
     height: 100%;
     padding: var(--spacing-md);
@@ -63,10 +79,10 @@
   @media (max-width: 640px) {
     .sticker-lab {
       grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: 1fr auto;
     }
-    .col-preview {
-      min-height: 300px;
+    .col-list {
+      max-height: 200px;
     }
   }
 
@@ -76,11 +92,12 @@
     background: var(--theme-surface, rgba(255, 255, 255, 0.04));
     border-radius: var(--radius-2026-sm);
     padding: var(--spacing-md);
-    overflow: auto;
+    overflow: hidden;
   }
 
   .col header {
-    margin-bottom: var(--spacing-md);
+    flex-shrink: 0;
+    margin-bottom: var(--spacing-sm);
   }
 
   .col h2 {
@@ -88,6 +105,43 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--theme-text, white);
+  }
+
+  .col-main {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* View toggle */
+  .view-toggle {
+    display: flex;
+    gap: 1px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .view-toggle button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .view-toggle button.active {
+    background: rgba(168, 85, 246, 0.2);
+    color: var(--theme-text, white);
+    box-shadow: 0 1px 4px rgba(168, 85, 246, 0.15);
   }
 
   :global(.drawer-content.sticker-export-drawer[data-placement="right"]) {
