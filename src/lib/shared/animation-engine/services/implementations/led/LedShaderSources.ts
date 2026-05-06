@@ -172,6 +172,8 @@ precision highp float;
 in vec2 v_uv;
 uniform sampler2D u_source;
 uniform vec2 u_texelSize;
+uniform float u_threshold; // 0.0 = no prefilter (default for LED / subsequent mips)
+uniform float u_knee;      // soft-knee transition width
 
 out vec4 fragColor;
 
@@ -194,10 +196,26 @@ void main() {
   // Energy-preserving weights (LearnOpenGL PBR Bloom 13-tap)
   // Center: 0.125, Inner diamond: 4×0.125 = 0.5, Edges: 4×0.0625 = 0.25, Corners: 4×0.03125 = 0.125
   // Total: 0.125 + 0.5 + 0.25 + 0.125 = 1.0
-  fragColor = E * 0.125
-            + (D + F + I + K) * 0.125
-            + (B + G + H + J) * 0.0625
-            + (A + C + L + M) * 0.03125;
+  vec4 result = E * 0.125
+              + (D + F + I + K) * 0.125
+              + (B + G + H + J) * 0.0625
+              + (A + C + L + M) * 0.03125;
+
+  // Soft-knee luminance prefilter (UE4/Frostbite method).
+  // On the first downsample pass, prevents sub-HDR pixels from entering
+  // the bloom mip chain. Without this, faint fire trail pixels accumulate
+  // through the additive upsample chain and produce concentric halo rings
+  // visible when the fire canvas is composited onto dark backgrounds.
+  if (u_threshold > 0.0) {
+    float brightness = max(result.r, max(result.g, result.b));
+    float soft = brightness - u_threshold + u_knee;
+    soft = clamp(soft, 0.0, 2.0 * u_knee);
+    soft = soft * soft / (4.0 * u_knee + 0.0001);
+    float contribution = max(soft, brightness - u_threshold) / max(brightness, 0.0001);
+    result *= max(0.0, contribution);
+  }
+
+  fragColor = result;
 }
 `;
 

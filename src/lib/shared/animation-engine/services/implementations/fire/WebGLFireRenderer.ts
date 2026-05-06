@@ -285,6 +285,75 @@ export class WebGLFireRenderer {
   disableDiagnostics(): void { this._diagEnabled = false; }
   resetDiagnosticCounter(): void { this._diagFrameCount = 0; }
 
+  /**
+   * Capture fire canvas as a downloadable PNG for visual debugging.
+   * Also captures the composited result (main canvas + fire overlay)
+   * using the same blend as the export pipeline. Triggered via
+   * window.__tka_fire_snapshot() (wired in AnimatorCanvas).
+   */
+  snapshotFireCanvas(): void {
+    const gl = this.gl;
+    const c = this.canvas;
+    if (!gl || !c) { console.log('[fire-snapshot] no gl/canvas'); return; }
+
+    // 1. Fire canvas only
+    c.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fire-canvas-${Date.now()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      console.log(`[fire-snapshot] fire canvas saved (${c.width}x${c.height})`);
+    });
+
+    // 2. Composited frame (main + fire) using export blend
+    const container = c.parentElement;
+    if (container) {
+      const mainCanvas = container.querySelector('canvas:not([data-overlay-type])') as HTMLCanvasElement | null;
+      if (mainCanvas) {
+        const comp = document.createElement('canvas');
+        const size = Math.max(mainCanvas.width, mainCanvas.height);
+        comp.width = size;
+        comp.height = size;
+        const ctx = comp.getContext('2d')!;
+        ctx.drawImage(mainCanvas, 0, 0, mainCanvas.width, mainCanvas.height, 0, 0, size, size);
+        // Fire overlay with same "lighter" blend as export uses
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.drawImage(c, 0, 0, c.width, c.height, 0, 0, size, size);
+        ctx.globalCompositeOperation = 'source-over';
+        comp.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `fire-composited-lighter-${Date.now()}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          console.log(`[fire-snapshot] composited (lighter blend) saved`);
+        });
+        // Also save source-over version for comparison
+        const comp2 = document.createElement('canvas');
+        comp2.width = size;
+        comp2.height = size;
+        const ctx2 = comp2.getContext('2d')!;
+        ctx2.drawImage(mainCanvas, 0, 0, mainCanvas.width, mainCanvas.height, 0, 0, size, size);
+        ctx2.drawImage(c, 0, 0, c.width, c.height, 0, 0, size, size);
+        comp2.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `fire-composited-srcover-${Date.now()}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          console.log(`[fire-snapshot] composited (source-over blend) saved`);
+        });
+      }
+    }
+  }
+
   sampleFireCanvas(): string {
     const gl = this.gl;
     const c = this.canvas;
@@ -328,8 +397,10 @@ export class WebGLFireRenderer {
       const tipStr = tip0
         ? `tip0=(${Math.round(tip0.x)},${Math.round(tip0.y)}) spd=${Math.round(tip0.speed)} fs=${tip0.flameScale?.toFixed(2)}`
         : 'no-tips';
+      const rawDt = (input.currentTime - this.lastTime) / 1000;
+      const subSteps = Math.max(1, Math.ceil(Math.min(Math.abs(rawDt), 0.066) / 0.017));
       console.log(
-        `[fire-diag] frame ${this._diagFrameCount} | t=${input.currentTime.toFixed(1)} dt=${((input.currentTime - this.lastTime) / 1000).toFixed(4)} | ` +
+        `[fire-diag] frame ${this._diagFrameCount} | t=${input.currentTime.toFixed(1)} rawDt=${rawDt.toFixed(4)} subSteps=${subSteps} | ` +
         `canvas=${this.canvas?.width}x${this.canvas?.height} sim=${this.simWidth}x${this.simHeight} | ` +
         `tips=${input.tips.length} ${tipStr} | ` +
         `intensity=${config.intensity} bloom=${config.bloomStrength ?? 0.08} cacheDisabled=${config.disableFrameCache} loopDet=${input.loopDetected}`
@@ -510,6 +581,44 @@ export class WebGLFireRenderer {
     this.frameCache?.invalidate();
   }
 
+  // Clears accumulated thermal energy (temp, fuel, velocity, color) while
+  // preserving the converged pressure field. Used after export warmup: 60
+  // frames of fuel at stationary tips builds unrealistic energy that the
+  // live preview never accumulates. Pressure convergence is the entire
+  // purpose of warmup — keep it, discard the visual residue.
+  clearThermalFields(): void {
+    const gl = this.gl;
+    if (!gl || !this.initialized) return;
+
+    const thermalFields = [this.velocity, this.temperature, this.fuel, this.colorField];
+    for (const field of thermalFields) {
+      if (!field) continue;
+      for (const buf of [field.read, field.write]) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, buf.fbo);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+    }
+
+    if (this.divergenceFBO) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.divergenceFBO.fbo);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+    if (this.curlFBO) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.curlFBO.fbo);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    this.lastRenderTime = -1;
+    this.frameCache?.invalidate();
+  }
+
   clearSimulation(): void {
     const gl = this.gl;
     if (!gl || !this.initialized) return;
@@ -608,10 +717,10 @@ export class WebGLFireRenderer {
   ): void {
     const gl = this.gl!;
     const now = input.currentTime;
-    let dt = Math.min((now - this.lastTime) / 1000, 0.033);
-    if (this.reducedMotion) dt *= 0.2;
+    let totalDt = Math.min((now - this.lastTime) / 1000, 0.066);
+    if (this.reducedMotion) totalDt *= 0.2;
     this.lastTime = now;
-    if (dt <= 0) dt = 0.016;
+    if (totalDt <= 0) totalDt = 0.016;
 
     gl.viewport(0, 0, this.simWidth, this.simHeight);
     gl.disable(gl.BLEND);
@@ -623,20 +732,20 @@ export class WebGLFireRenderer {
     this.displayCanvasWidth = input.canvasWidth;
     this.displayCanvasHeight = input.canvasHeight;
 
-    // 1. Inject fuel + velocity at tip positions, scaled by per-tip flameScale.
-    //    When a tip moves far between frames (fast spin), interpolate intermediate
-    //    splats along the path so the flame trail stays continuous.
+    // Sub-step to keep dt ≤ 16ms. The Navier-Stokes solver is nonlinear —
+    // larger time steps cause numerical instability that makes the fire
+    // plume "explode" outward. At 30fps export (dt=33ms), this produced
+    // massive bloom halos absent from the 60fps live preview.
+    const MAX_SUB_DT = 0.017;
+    const subSteps = Math.max(1, Math.ceil(totalDt / MAX_SUB_DT));
+    const subDt = totalDt / subSteps;
+
+    // 1. Inject fuel + velocity at tip positions (ONCE per frame, not per sub-step).
     const p = this.physics;
     const baseSplatRadius = p.splatRadius;
-
-    // Step size in UV space for interpolation. Using the splat radius (not diameter)
-    // ensures Gaussian splats overlap by ~50%, producing a continuous fuel field
-    // instead of isolated dots.
     const stepUV = baseSplatRadius;
 
-    // Advance turbulence clock - used by the buoyancy shader to create wind
-    // perturbation on the rising plume (not the wick itself).
-    this.turbulenceClock += dt;
+    this.turbulenceClock += totalDt;
 
     for (const tip of tips) {
       const curUvX = tip.x / input.canvasWidth;
@@ -645,41 +754,29 @@ export class WebGLFireRenderer {
       const prevUvY = 1.0 - tip.prevY / input.canvasHeight;
       const fs = tip.flameScale;
 
-      // Measure how far the tip traveled in UV space
       const dxUV = curUvX - prevUvX;
       const dyUV = curUvY - prevUvY;
       const distUV = Math.sqrt(dxUV * dxUV + dyUV * dyUV);
 
-      // Number of splats needed to fill the gap (at least 1 = the current position).
-      // Cap at 32 to bound GPU cost on extreme frame drops.
       const splatCount = Math.min(32, Math.max(1, Math.ceil(distUV / stepUV)));
 
-      // Scale splat radius by flameScale (larger wicks = wider splat)
       this.physics.splatRadius = baseSplatRadius * fs;
 
       const velScale = config.velocityReactive ? p.velocityInjectScale : 0;
       const injectVx = -tip.velocityX * velScale * fs;
       const injectVy = tip.velocityY * velScale * fs + p.upwardBias * config.flameHeight * fs;
 
-      // Distribute fuel evenly across all sub-frame splats so total injection stays constant
       const fuelPerSplat = (p.fuelAmount * config.intensity * fs) / splatCount;
       const baseTempPerSplat = (p.temperatureInjection * config.intensity * fs) / splatCount;
 
-      // Temperature perturbation: vary the heat of each fuel parcel so some
-      // rise faster (hotter) and some slower (cooler). The differential buoyancy
-      // creates natural shear that triggers Kelvin-Helmholtz instability -
-      // the same mechanism that makes real fire flicker. Uses incommensurate
-      // frequencies per tip so flames don't pulse in unison.
       const tc = this.turbulenceClock;
       const tipPhase = tip.propIndex * 3.7 + tip.tipIndex * 2.3;
 
       for (let s = 0; s < splatCount; s++) {
-        // t=0 is previous position, t=1 is current position
         const t = splatCount === 1 ? 1.0 : s / (splatCount - 1);
         const uvX = prevUvX + dxUV * t;
         const uvY = prevUvY + dyUV * t;
 
-        // Modulate temperature ±20%: some fuel parcels are hotter, some cooler
         const tempNoise = Math.sin(tc * 8.3 + tipPhase) * 0.15
                         + Math.sin(tc * 13.7 + tipPhase * 1.4) * 0.1;
         const tempPerSplat = baseTempPerSplat * (1.0 + tempNoise);
@@ -688,7 +785,6 @@ export class WebGLFireRenderer {
         this.splat(this.velocity!, uvX, uvY, injectVx / splatCount, injectVy / splatCount, 0);
         this.splat(this.temperature!, uvX, uvY, tempPerSplat, 0, 0);
 
-        // Color injection: splat prop color into color field
         if ((config.colorBlend ?? 0) > 0 && input.propColors && this.colorField) {
           const propColor = input.propColors[tip.propIndex];
           if (propColor) {
@@ -698,10 +794,9 @@ export class WebGLFireRenderer {
       }
     }
 
-    // Restore base splat radius after per-tip overrides
     this.physics.splatRadius = baseSplatRadius;
 
-    // Cache tip UV positions + flameScales for the display pass (wick core rendering)
+    // Cache tip UV positions + flameScales for the display pass
     for (let ti = 0; ti < this.displayTipCount; ti++) {
       const tip = tips[ti]!;
       this.displayTipUVs[ti * 2] = tip.x / input.canvasWidth;
@@ -718,40 +813,28 @@ export class WebGLFireRenderer {
       }
     }
 
-    // 2. Advect velocity through itself
-    this.advect(this.velocity!, this.velocity!.read, p.velocityDissipation, dt, texelSize);
-
-    // 3. Curl + vorticity confinement
-    this.computeCurl(texelSize);
-    this.applyVorticity(dt, texelSize, config.flameHeight);
-
-    // 4. Buoyancy
-    this.applyBuoyancy(dt, config.flameHeight);
-
-    // 4b. Curl noise turbulence: divergence-free perturbation at flame boundaries.
-    // Inserted after buoyancy so buoyancy establishes the bulk upward flow,
-    // then curl noise adds the stochastic vortical detail that makes fire flicker.
-    this.applyCurlNoiseTurbulence(dt, texelSize, config.flameHeight, config.turbulence ?? 0.5);
-
-    // 5. Combustion + cooling
-    this.applyCombustion(dt, config.intensity);
-
-    // 6. Pressure projection
-    this.computeDivergence(texelSize);
-    this.scalePressure();
+    // 2-7. Physics sub-stepping: run advection, buoyancy, vorticity,
+    // combustion, and pressure solve at ≤16ms increments.
     const iterations = config.jacobiIterations ?? computeAdaptiveJacobiIterations(activeFireInstanceCount);
-    for (let i = 0; i < iterations; i++) {
-      this.jacobiStep(texelSize);
+    for (let step = 0; step < subSteps; step++) {
+      this.advect(this.velocity!, this.velocity!.read, p.velocityDissipation, subDt, texelSize);
+      this.computeCurl(texelSize);
+      this.applyVorticity(subDt, texelSize, config.flameHeight);
+      this.applyBuoyancy(subDt, config.flameHeight);
+      this.applyCurlNoiseTurbulence(subDt, texelSize, config.flameHeight, config.turbulence ?? 0.5);
+      this.applyCombustion(subDt, config.intensity);
+      this.computeDivergence(texelSize);
+      this.scalePressure();
+      for (let i = 0; i < iterations; i++) {
+        this.jacobiStep(texelSize);
+      }
+      this.gradientSubtract(texelSize);
+      this.advect(this.temperature!, this.temperature!.read, p.temperatureDissipation, subDt, texelSize);
+      this.advect(this.fuel!, this.fuel!.read, p.fuelDissipation, subDt, texelSize);
+      if (this.colorField && (config.colorBlend ?? 0) > 0) {
+        this.advect(this.colorField, this.colorField.read, p.fuelDissipation, subDt, texelSize);
+      }
     }
-    this.gradientSubtract(texelSize);
-
-    // 7. Advect temperature + fuel
-    this.advect(this.temperature!, this.temperature!.read, p.temperatureDissipation, dt, texelSize);
-    this.advect(this.fuel!, this.fuel!.read, p.fuelDissipation, dt, texelSize);
-    if (this.colorField && (config.colorBlend ?? 0) > 0) {
-      this.advect(this.colorField, this.colorField.read, p.fuelDissipation, dt, texelSize);
-    }
-
   }
 
   // ============================================================
@@ -1082,16 +1165,23 @@ export class WebGLFireRenderer {
     const downProg = this.bloomDownsampleProgram!;
     gl.useProgram(downProg.program);
 
-    // First downsample: from displayFBO to mip[0]
+    // First downsample: from displayFBO to mip[0] — with luminance prefilter.
+    // The soft-knee threshold (UE4/Frostbite method) gates which pixels enter
+    // the bloom chain. Only HDR values (wick cores at 4.0+) create bloom;
+    // sub-HDR trail pixels are excluded, preventing the concentric halo rings
+    // that appear when the fire canvas is composited onto dark backgrounds.
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.displayFBO!.texture);
     gl.uniform1i(downProg.uniforms.get("u_source")!, 0);
     gl.uniform2f(downProg.uniforms.get("u_texelSize")!, 1.0 / this.simWidth, 1.0 / this.simHeight);
+    gl.uniform1f(downProg.uniforms.get("u_threshold")!, 3.0);
+    gl.uniform1f(downProg.uniforms.get("u_knee")!, 0.5);
     gl.bindFramebuffer(gl.FRAMEBUFFER, mips[0]!.fbo);
     gl.viewport(0, 0, sizes[0]![0], sizes[0]![1]);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    // Subsequent downsamples: mip[i-1] → mip[i]
+    // Subsequent downsamples: mip[i-1] → mip[i] (no threshold)
+    gl.uniform1f(downProg.uniforms.get("u_threshold")!, 0.0);
     for (let i = 1; i < mips.length; i++) {
       gl.bindTexture(gl.TEXTURE_2D, mips[i - 1]!.texture);
       gl.uniform2f(downProg.uniforms.get("u_texelSize")!, 1.0 / sizes[i - 1]![0], 1.0 / sizes[i - 1]![1]);
@@ -1372,7 +1462,7 @@ export class WebGLFireRenderer {
       "u_time",
     ]);
     this.bloomDownsampleProgram = this.buildProgram(BLOOM_DOWNSAMPLE_FRAG, [
-      "u_source", "u_texelSize",
+      "u_source", "u_texelSize", "u_threshold", "u_knee",
     ]);
     this.bloomUpsampleProgram = this.buildProgram(BLOOM_UPSAMPLE_FRAG, [
       "u_source", "u_texelSize", "u_bloomRadius",

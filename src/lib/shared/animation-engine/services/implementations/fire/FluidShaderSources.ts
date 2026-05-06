@@ -678,11 +678,9 @@ void main() {
   vec4 scene = texture(u_scene, v_uv);
   vec4 bloom = texture(u_bloom, v_uv);
 
-  // Additive bloom: bright areas glow beyond their bounds
   vec4 combined = scene + bloom * u_bloomStrength;
 
-  // Premultiplied alpha: bloom adds light but doesn't inflate coverage.
-  // RGB may exceed alpha (emissive glow) — valid premultiplied, composites additively.
-  fragColor = vec4(combined.rgb, min(combined.a, 1.0));
+  float a = min(combined.a, 1.0);
+  fragColor = vec4(min(combined.rgb, vec3(a)), a);
 }
 `;

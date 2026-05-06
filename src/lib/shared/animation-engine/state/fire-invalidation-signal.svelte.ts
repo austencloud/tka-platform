@@ -12,23 +12,31 @@
  */
 
 let _signal = $state(0);
-let _cacheOnly = $state(false);
+let _mode = $state<"full" | "cacheOnly" | "thermalClear">("full");
 
 export const fireCacheInvalidation = {
   get signal() {
     return _signal;
   },
   get cacheOnly() {
-    return _cacheOnly;
+    return _mode === "cacheOnly";
+  },
+  get mode() {
+    return _mode;
   },
   /** Full invalidation: clear simulation FBOs + frame cache. */
   trigger() {
-    _cacheOnly = false;
+    _mode = "full";
     _signal++;
   },
   /** Cache-only invalidation: keep warm simulation, just drop cached frames. */
   triggerCacheOnly() {
-    _cacheOnly = true;
+    _mode = "cacheOnly";
+    _signal++;
+  },
+  /** Clear thermal fields (temp/fuel/velocity/color) but keep pressure. */
+  triggerThermalClear() {
+    _mode = "thermalClear";
     _signal++;
   },
 };

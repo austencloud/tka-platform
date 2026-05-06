@@ -273,8 +273,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           playbackController.calculateStateForStep(0);
           await this.waitForAnimationFrame();
         }
-        // Drop any cached warmup frames but keep the converged simulation FBOs
-        fireCacheInvalidation.triggerCacheOnly();
+        // Clear accumulated thermal energy from warmup (60 frames of fuel at
+        // stationary tips). Preserves converged pressure field. Without this,
+        // concentrated thermal buildup produces bloom halos absent from live preview.
+        fireCacheInvalidation.triggerThermalClear();
         await this.waitForAnimationFrame();
         // Reset fire diagnostic counter so export frames get logged (warmup consumed the first 5)
         if (typeof window !== 'undefined' && (window as any).__tka_fire_diag) {

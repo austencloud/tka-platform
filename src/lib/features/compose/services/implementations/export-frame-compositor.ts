@@ -248,41 +248,11 @@ export class ExportFrameCompositor {
           if (overlay === canvas) continue;
           if (overlay.width === 0 || overlay.height === 0) continue;
 
-          if (frameIndex < 3) {
-            const el = overlay as HTMLCanvasElement;
-            const isWebGL = !!el.getContext("webgl2");
-            const oType = el.dataset?.overlayType ?? "NONE";
-            const blend = oType === "emissive" ? "lighter" : "source-over";
-            console.log(`[export-comp] f${frameIndex} overlay ${el.width}x${el.height} type=${oType} blend=${blend} webgl=${isWebGL}`);
-
-            if (isWebGL) {
-              const glCtx = el.getContext("webgl2") as WebGL2RenderingContext;
-              if (glCtx) {
-                const px = new Uint8Array(4);
-                const w = el.width, h = el.height;
-                glCtx.readPixels(Math.floor(w / 2), Math.floor(h / 2), 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
-                const center = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
-                glCtx.readPixels(Math.floor(w / 2), Math.floor(h * 0.25), 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
-                const quarter = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
-                glCtx.readPixels(5, 5, 1, 1, glCtx.RGBA, glCtx.UNSIGNED_BYTE, px);
-                const corner = `rgba(${px[0]},${px[1]},${px[2]},${px[3]})`;
-                console.log(`[export-comp] f${frameIndex} pixels: center=${center} quarter=${quarter} corner=${corner}`);
-              }
-            }
-          }
-
-          const isEmissive = (overlay as HTMLCanvasElement).dataset?.overlayType === "emissive";
-          if (isEmissive) {
-            offscreenCtx.globalCompositeOperation = "lighter";
-          }
           offscreenCtx.drawImage(
             overlay,
             0, 0, overlay.width, overlay.height,
             0, canvasY, outputCanvasSize, outputCanvasSize
           );
-          if (isEmissive) {
-            offscreenCtx.globalCompositeOperation = "source-over";
-          }
         }
       }
     }
