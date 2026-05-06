@@ -1,0 +1,277 @@
+// src/lib/shared/render/workers/composition.worker.ts
+//
+// Off-thread composition worker for thumbnail / export rendering.
+// Instantiated by CompositionDispatcher as a pool of N workers.
+//
+// Transitive-import strategy:
+//   ImageComposer (and its deps) pull in Svelte stores and $app/environment
+//   at module level. We dynamic-import the entire pipeline so failures are
+//   caught at init time and the dispatcher falls back to the main thread.
+
+import type {
+  CompositionWorkerInMessage,
+  CompositionWorkerOutMessage,
+  GlyphTransferEntry,
+} from "../services/implementations/CompositionDispatcher";
+import type { CompositionProgressCallback, RenderCanvas } from "../services/contracts/types";
+
+// ---------------------------------------------------------------------------
+// Worker-safe cache stubs
+// ---------------------------------------------------------------------------
+// The worker performs fresh renders every time — caching is handled by the
+// main-thread ThumbnailRenderOrchestrator. These stubs satisfy the
+// ImageComposer constructor without pulling in IndexedDB ($app/environment)
+// or HTMLImageElement (PictographMemoryCache).
+
+/** No-op blob cache — worker renders are not persisted to IndexedDB. */
+class WorkerBlobCache {
+  async get(_key: string): Promise<Blob | null> {
+    return null;
+  }
+  async put(_key: string, _blob: Blob): Promise<void> {}
+  async delete(_key: string): Promise<void> {}
+  async clear(): Promise<void> {}
+  async getStats() {
+    return { count: 0, sizeBytes: 0, maxSizeBytes: 0 };
+  }
+}
+
+/** No-op memory cache — worker has no HTMLImageElement support. */
+class WorkerMemoryCache {
+  getKey(baseHash: string, size: number): string {
+    return `${baseHash}:${size}`;
+  }
+  get(_key: string): undefined {
+    return undefined;
+  }
+  set(_key: string, _img: unknown): void {}
+  delete(_key: string): void {}
+  clear(): void {}
+  get size(): number {
+    return 0;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+
+const activeRenders = new Map<number, { cancelled: boolean }>();
+
+// Pipeline singletons — created lazily at init
+let imageComposer: InstanceType<
+  typeof import("../services/implementations/ImageComposer").ImageComposer
+> | null = null;
+let workerTextRenderer: InstanceType<
+  typeof import("../services/implementations/TextRenderer").TextRenderer
+> | null = null;
+
+// ---------------------------------------------------------------------------
+// Messaging helpers
+// ---------------------------------------------------------------------------
+
+function postResult(
+  msg: CompositionWorkerOutMessage,
+  transfer?: Transferable[],
+): void {
+  self.postMessage(msg, { transfer: transfer ?? [] });
+}
+
+// ---------------------------------------------------------------------------
+// Init — build the render pipeline inside the worker
+// ---------------------------------------------------------------------------
+
+async function handleInit(
+  glyphs: ImageBitmap[],
+  glyphMeta: GlyphTransferEntry[],
+): Promise<void> {
+  // Dynamic-import the pipeline classes.  If any import fails (e.g. because a
+  // transitive dep references `document` or Svelte stores), the error
+  // propagates to the dispatcher which falls back to the main thread.
+  const [
+    { ImageComposer },
+    { TextRenderer },
+    { Canvas2DDirectRenderer },
+    { LayerCompositor },
+    { PictographKeyHasher },
+  ] = await Promise.all([
+    import("../services/implementations/ImageComposer"),
+    import("../services/implementations/TextRenderer"),
+    import("../services/implementations/Canvas2DDirectRenderer"),
+    import("../services/implementations/LayerCompositor"),
+    import("../services/implementations/PictographKeyHasher"),
+  ]);
+
+  // --- TextRenderer: populate with transferred glyph bitmaps ---
+  workerTextRenderer = new TextRenderer();
+  const entries = glyphMeta.map((meta, i) => ({
+    letter: meta.letter,
+    bitmap: glyphs[i]!,
+    naturalWidth: meta.naturalWidth,
+    naturalHeight: meta.naturalHeight,
+    isDash: meta.isDash,
+  }));
+  workerTextRenderer.setGlyphBitmaps(entries);
+
+  // --- Render pipeline ---
+  const keyHasher = new PictographKeyHasher();
+  const canvas2DRenderer = new Canvas2DDirectRenderer();
+  await canvas2DRenderer.initialize();
+  const layerCompositor = new LayerCompositor();
+
+  // Worker-safe cache stubs (see class definitions above)
+  const blobCache = new WorkerBlobCache();
+  const memoryCache = new WorkerMemoryCache();
+
+  imageComposer = new ImageComposer(
+    workerTextRenderer,
+    blobCache as any,         // satisfies PictographBlobCache interface
+    keyHasher,
+    memoryCache as any,       // satisfies PictographMemoryCache interface
+    canvas2DRenderer,
+    layerCompositor,
+  );
+
+  // Attempt to register fonts in the worker context
+  try {
+    const georgiaFont = new FontFace("Georgia", "local('Georgia')");
+    await georgiaFont.load();
+    (self as unknown as WorkerGlobalScope & { fonts: FontFaceSet }).fonts?.add(
+      georgiaFont,
+    );
+  } catch {
+    // Font load failure is non-fatal; text renders in fallback font
+  }
+
+  postResult({ type: "init-done" });
+}
+
+// ---------------------------------------------------------------------------
+// Compose — render a sequence/card image and return ImageBitmap
+// ---------------------------------------------------------------------------
+
+async function handleCompose(
+  msg: Extract<CompositionWorkerInMessage, { type: "compose" }>,
+): Promise<void> {
+  const { id, sequence, options } = msg;
+  const renderState = { cancelled: false };
+  activeRenders.set(id, renderState);
+
+  try {
+    if (!imageComposer) {
+      throw new Error("Worker not initialized");
+    }
+
+    const effectiveOptions = { ...options };
+    if (msg.elementIconBitmap) {
+      (effectiveOptions as Record<string, unknown>).elementIcon =
+        msg.elementIconBitmap;
+    }
+
+    // Pseudo AbortSignal that checks the local cancelled flag.
+    // ImageComposer checks signal?.aborted between beats.
+    const pseudoSignal = {
+      get aborted() {
+        return renderState.cancelled;
+      },
+      addEventListener() {},
+      removeEventListener() {},
+      dispatchEvent() {
+        return false;
+      },
+      onabort: null,
+      reason: undefined,
+      throwIfAborted() {
+        if (renderState.cancelled)
+          throw new DOMException("Aborted", "AbortError");
+      },
+    } as AbortSignal;
+
+    const onProgress: CompositionProgressCallback = (progress) => {
+      if (renderState.cancelled) return;
+      postResult({
+        type: "progress",
+        id,
+        current: progress.current,
+        total: progress.total,
+        stage: progress.stage,
+      });
+    };
+
+    const canvas: RenderCanvas = effectiveOptions.cardMode
+      ? await imageComposer.composeCardImage(
+          sequence,
+          effectiveOptions,
+          onProgress,
+          pseudoSignal,
+        )
+      : await imageComposer.composeSequenceImage(
+          sequence,
+          effectiveOptions,
+          onProgress,
+          pseudoSignal,
+        );
+
+    if (renderState.cancelled) {
+      postResult({
+        type: "error",
+        id,
+        message: "Render cancelled (AbortError)",
+      });
+      return;
+    }
+
+    // Convert to ImageBitmap for zero-copy transfer to main thread
+    let bitmap: ImageBitmap;
+    if (canvas instanceof OffscreenCanvas) {
+      bitmap = canvas.transferToImageBitmap();
+    } else {
+      bitmap = await createImageBitmap(canvas as ImageBitmapSource);
+    }
+
+    postResult({ type: "result", id, bitmap }, [bitmap]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    postResult({ type: "error", id, message });
+  } finally {
+    activeRenders.delete(id);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Message router
+// ---------------------------------------------------------------------------
+
+self.onmessage = (event: MessageEvent<CompositionWorkerInMessage>) => {
+  const msg = event.data;
+
+  switch (msg.type) {
+    case "init":
+      handleInit(msg.glyphs, msg.glyphMeta).catch((err) => {
+        console.error("[composition.worker] Init failed:", err);
+        postResult({
+          type: "error",
+          id: -1,
+          message: `Init failed: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      });
+      break;
+
+    case "compose":
+      handleCompose(msg).catch((err) => {
+        console.error("[composition.worker] Compose failed:", err);
+        postResult({
+          type: "error",
+          id: msg.id,
+          message: err instanceof Error ? err.message : String(err),
+        });
+      });
+      break;
+
+    case "cancel": {
+      const state = activeRenders.get(msg.id);
+      if (state) state.cancelled = true;
+      break;
+    }
+  }
+};
