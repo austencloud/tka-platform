@@ -11,7 +11,7 @@
  *   - Effects: None, Fire, Charcoal, LED, Trails (radio-style, one active)
  *   - Trail Tracking: Pinky / Thumb / Both (when trails active)
  *   - Efforts: 8 effort presets from the effort-lab domain (radio-style)
- *   - Path Shape: Arc vs Linear (radio-style)
+ *   - Path Shape: Arc / Linear / Concave / Motion-Aware (radio-style)
  *
  * Plus: Disassemble toggle.
  */
@@ -147,20 +147,42 @@ function buildPathShapeChildren(
   vm: AnimationVisibilityStateManager
 ): ContextMenuItem[] {
   const current = vm.getPathShape();
+  const motionAware = vm.getMotionAwarePaths();
   return [
     {
       id: "path-arc",
       label: "Arc",
       icon: "fa-bezier-curve",
-      checked: current === "arc",
-      action: () => vm.setPathShape("arc"),
+      checked: current === "arc" && !motionAware,
+      action: () => { vm.setMotionAwarePaths(false); vm.setPathShape("arc"); },
     },
     {
       id: "path-linear",
       label: "Linear",
       icon: "fa-arrows-alt-h",
-      checked: current === "linear",
-      action: () => vm.setPathShape("linear"),
+      checked: current === "linear" && !motionAware,
+      action: () => { vm.setMotionAwarePaths(false); vm.setPathShape("linear"); },
+    },
+    {
+      id: "path-concave",
+      label: "Concave",
+      icon: "fa-compress",
+      checked: current === "concave" && !motionAware,
+      action: () => { vm.setMotionAwarePaths(false); vm.setPathShape("concave"); },
+    },
+    {
+      id: "path-motion-aware",
+      label: "Motion-Aware",
+      icon: "fa-shuffle",
+      checked: motionAware,
+      action: () => vm.toggleMotionAwarePaths(),
+    },
+    {
+      id: "path-lines",
+      label: "Show Path Lines",
+      icon: "fa-route",
+      checked: vm.getVisibility("pathLines"),
+      action: () => vm.toggleVisibility("pathLines"),
     },
   ];
 }

@@ -115,8 +115,8 @@ export interface SequenceData {
    * Extensible metadata bag for stylistic/performance properties.
    *
    * Known keys:
-   * - `pathShape`: "arc" | "linear" - creator's intended path shape for shift interpolation.
-   *   Absent or "arc" = default arc behavior. "linear" = straight-line shifts.
+   * - `pathShape`: "arc" | "linear" | "concave" - creator's intended path shape for shift interpolation.
+   *   Absent or "arc" = default arc behavior. "linear" = straight-line shifts. "concave" = inward-curving astroid.
    */
   readonly metadata: Record<string, unknown>;
 

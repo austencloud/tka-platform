@@ -75,8 +75,12 @@ interface AnimationVisibilitySettings {
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
   reversalIndicators: boolean;
   effortPreset: EffortId;
-  /** Path shape for shift interpolation: "arc" (default) or "linear" */
-  pathShape: "arc" | "linear";
+  /** Path shape for shift interpolation: "arc" (default), "linear", or "concave" */
+  pathShape: "arc" | "linear" | "concave";
+  /** When true, pro→arc and anti→concave regardless of pathShape */
+  motionAwarePaths: boolean;
+  /** Show path shape lines on canvas during animation */
+  pathLines: boolean;
 
   // Per-tip effect/effort assignments (global level)
   // tipEffectMap is the sole authority for which effect is active.
@@ -181,6 +185,8 @@ export class AnimationVisibilityStateManager {
       reversalIndicators: false, // Less clutter during animation
       effortPreset: "linear",
       pathShape: "arc",
+      motionAwarePaths: false,
+      pathLines: false,
 
       // tipEffectMap is the sole authority for which effect is active.
       // Default: trails on so new users see motion paths.
@@ -289,6 +295,8 @@ export class AnimationVisibilityStateManager {
         }
 
         if (!("pathShape" in parsed)) parsed.pathShape = "arc";
+        if (!("motionAwarePaths" in parsed)) parsed.motionAwarePaths = false;
+        if (!("pathLines" in parsed)) parsed.pathLines = false;
 
         // Migrate old gridMode values ("diamond" | "box") → new system ("8point" | "auto")
         if (parsed.gridMode === "diamond" || parsed.gridMode === "box") {
@@ -962,18 +970,34 @@ export class AnimationVisibilityStateManager {
   // PATH SHAPE
   // ============================================================================
 
-  getPathShape(): "arc" | "linear" {
+  getPathShape(): "arc" | "linear" | "concave" {
     return this.settings.pathShape;
   }
 
-  setPathShape(shape: "arc" | "linear"): void {
+  setPathShape(shape: "arc" | "linear" | "concave"): void {
     this.settings.pathShape = shape;
     this.saveToStorage();
     this.notifyObservers();
   }
 
   togglePathShape(): void {
-    this.setPathShape(this.settings.pathShape === "arc" ? "linear" : "arc");
+    const cycle: Array<"arc" | "linear" | "concave"> = ["arc", "linear", "concave"];
+    const idx = cycle.indexOf(this.settings.pathShape);
+    this.setPathShape(cycle[(idx + 1) % cycle.length]!);
+  }
+
+  getMotionAwarePaths(): boolean {
+    return this.settings.motionAwarePaths;
+  }
+
+  setMotionAwarePaths(enabled: boolean): void {
+    this.settings.motionAwarePaths = enabled;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  toggleMotionAwarePaths(): void {
+    this.setMotionAwarePaths(!this.settings.motionAwarePaths);
   }
 
   // ============================================================================

@@ -8,7 +8,7 @@ export interface DisplayFlags {
   grid: boolean;
 }
 
-export type PathShape = "arc" | "linear";
+export type PathShape = "arc" | "linear" | "concave";
 
 export function computeDisplaySummary(
   flags: DisplayFlags,

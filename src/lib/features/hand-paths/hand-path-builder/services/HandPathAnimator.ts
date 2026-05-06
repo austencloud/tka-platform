@@ -56,10 +56,32 @@ function applyEasing(t: number): number {
   return applyEffort(preset, t);
 }
 
-/** Should this motion use linear (Cartesian) interpolation? */
-function shouldUseLinear(isDash: boolean): boolean {
-  if (isDash) return true; // Dashes are always linear
-  return getAnimationVisibilityManager().getPathShape() === "linear";
+function resolveHandPathType(isDash: boolean): "arc" | "linear" | "concave" {
+  if (isDash) return "linear";
+  return getAnimationVisibilityManager().getPathShape();
+}
+
+function interpolateConcavePoint(
+  startAngle: number,
+  endAngle: number,
+  t: number,
+): { x: number; y: number } {
+  // Circle point
+  const arcAngle = lerpAngle(startAngle, endAngle, t);
+  const circleX = Math.cos(arcAngle);
+  const circleY = Math.sin(arcAngle);
+  // Straight line point
+  const sx = Math.cos(startAngle);
+  const sy = Math.sin(startAngle);
+  const ex = Math.cos(endAngle);
+  const ey = Math.sin(endAngle);
+  const straightX = sx + (ex - sx) * t;
+  const straightY = sy + (ey - sy) * t;
+  // Reflect
+  return {
+    x: CENTER + (2 * straightX - circleX) * GRID_RADIUS,
+    y: CENTER + (2 * straightY - circleY) * GRID_RADIUS,
+  };
 }
 
 /**
@@ -72,16 +94,16 @@ export function getPathPoints(
   from: GridLocation,
   to: GridLocation,
   numSegments = 20,
+  overridePathType?: "arc" | "linear" | "concave",
 ): Array<{ x: number; y: number }> {
   const startAngle = locToAngle(from);
   const endAngle = locToAngle(to);
   const isDash = isOpposite(from, to);
-  const useLinear = shouldUseLinear(isDash);
+  const pathType = overridePathType ?? resolveHandPathType(isDash);
 
   const points: Array<{ x: number; y: number }> = [];
 
-  if (useLinear) {
-    // Straight line through center
+  if (pathType === "linear") {
     const sx = Math.cos(startAngle);
     const sy = Math.sin(startAngle);
     const ex = Math.cos(endAngle);
@@ -95,8 +117,12 @@ export function getPathPoints(
         y: CENTER + cy * GRID_RADIUS,
       });
     }
+  } else if (pathType === "concave") {
+    for (let i = 0; i <= numSegments; i++) {
+      const t = i / numSegments;
+      points.push(interpolateConcavePoint(startAngle, endAngle, t));
+    }
   } else {
-    // Arc along the grid circle
     for (let i = 0; i <= numSegments; i++) {
       const t = i / numSegments;
       const angle = lerpAngle(startAngle, endAngle, t);
@@ -115,8 +141,12 @@ export function getPathPoints(
  * Arc paths use a series of line segments to approximate the curve.
  * Dash paths are a straight line.
  */
-export function getPathD(from: GridLocation, to: GridLocation): string {
-  const points = getPathPoints(from, to);
+export function getPathD(
+  from: GridLocation,
+  to: GridLocation,
+  overridePathType?: "arc" | "linear" | "concave",
+): string {
+  const points = getPathPoints(from, to, 20, overridePathType);
   if (points.length === 0) return "";
   const [first, ...rest] = points;
   return `M${first!.x},${first!.y} ${rest.map(p => `L${p.x},${p.y}`).join(" ")}`;
@@ -146,15 +176,16 @@ export class HandPathAnimator {
     const endAngle = locToAngle(endPosition);
     const isSamePoint = startPosition === endPosition;
     const isDash = !isSamePoint && isOpposite(startPosition, endPosition);
-    const useLinear = shouldUseLinear(isDash);
+    const pathType = resolveHandPathType(isDash);
+    const useCartesian = pathType !== "arc";
 
-    const startX = useLinear ? Math.cos(startAngle) : 0;
-    const startY = useLinear ? Math.sin(startAngle) : 0;
-    const endX = useLinear ? Math.cos(endAngle) : 0;
-    const endY = useLinear ? Math.sin(endAngle) : 0;
+    const startX = useCartesian ? Math.cos(startAngle) : 0;
+    const startY = useCartesian ? Math.sin(startAngle) : 0;
+    const endX = useCartesian ? Math.cos(endAngle) : 0;
+    const endY = useCartesian ? Math.sin(endAngle) : 0;
 
     if (duration <= 0 || isSamePoint) {
-      this.applyPosition(element, endAngle, useLinear, endX, endY, handCenter);
+      this.applyPosition(element, endAngle, useCartesian, endX, endY, handCenter);
       return;
     }
 
@@ -171,7 +202,12 @@ export class HandPathAnimator {
         let cartY = 0;
         let angle: number;
 
-        if (useLinear) {
+        if (pathType === "concave") {
+          const pt = interpolateConcavePoint(startAngle, endAngle, t);
+          cartX = (pt.x - CENTER) / GRID_RADIUS;
+          cartY = (pt.y - CENTER) / GRID_RADIUS;
+          angle = Math.atan2(cartY, cartX);
+        } else if (pathType === "linear") {
           cartX = startX + (endX - startX) * t;
           cartY = startY + (endY - startY) * t;
           angle = Math.atan2(cartY, cartX);
@@ -179,7 +215,7 @@ export class HandPathAnimator {
           angle = lerpAngle(startAngle, endAngle, t);
         }
 
-        this.applyPosition(element, angle, useLinear, cartX, cartY, handCenter);
+        this.applyPosition(element, angle, useCartesian, cartX, cartY, handCenter);
 
         if (rawProgress < 1) {
           this.animationFrameId = requestAnimationFrame(tick);
@@ -208,7 +244,7 @@ export class HandPathAnimator {
   private applyPosition(
     element: SVGGElement,
     centerAngle: number,
-    useLinear: boolean,
+    useCartesian: boolean,
     cartX: number,
     cartY: number,
     handCenter: { x: number; y: number },
@@ -216,7 +252,7 @@ export class HandPathAnimator {
     let x: number;
     let y: number;
 
-    if (useLinear) {
+    if (useCartesian) {
       x = CENTER + cartX * GRID_RADIUS;
       y = CENTER + cartY * GRID_RADIUS;
     } else {

@@ -289,7 +289,8 @@ export class AnimationEngine {
   private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
   private prevCharcoalParamsJson: string = "";
   private prevEffortPreset: EffortId = "linear";
-  private prevPathShape: "arc" | "linear" = "arc";
+  private prevPathShape: "arc" | "linear" | "concave" = "arc";
+  private prevMotionAwarePaths: boolean = false;
 
   /** Per-performer effort resolver. When set, getEffortForPerformer() calls it
    *  instead of reading the global visibility manager. */
@@ -783,6 +784,7 @@ export class AnimationEngine {
   invalidateFireCache(): void {
     this.effectRendererManager.fireRenderer?.clearSimulation();
     this.effectRendererManager.charcoalRenderer?.clearSimulation();
+    this.effectRendererManager.ledRenderer?.resetExportState();
   }
 
   /**
@@ -792,6 +794,13 @@ export class AnimationEngine {
    */
   invalidateFireFrameCacheOnly(): void {
     this.effectRendererManager.fireRenderer?.invalidateFrameCache();
+  }
+
+  clearFireThermalFields(): void {
+    this.effectRendererManager.fireRenderer?.clearThermalFields();
+    // Charcoal is particle-based, not fluid-sim — full clear is fine
+    this.effectRendererManager.charcoalRenderer?.clearSimulation();
+    this.effectRendererManager.ledRenderer?.resetExportState();
   }
 
   // --- EXPORT DIAGNOSTIC (remove after debugging) ---
@@ -806,6 +815,9 @@ export class AnimationEngine {
   }
   sampleFireCanvas(): string {
     return (this.effectRendererManager.fireRenderer as any)?.sampleFireCanvas?.() ?? 'no fire renderer';
+  }
+  snapshotFireCanvas(): void {
+    (this.effectRendererManager.fireRenderer as any)?.snapshotFireCanvas?.();
   }
 
   /**
@@ -1295,10 +1307,12 @@ export class AnimationEngine {
       }
     }
 
-    // Path shape changed (arc <-> linear).
+    // Path shape or motion-aware mode changed.
     const pathShape = vm.getPathShape();
-    if (pathShape !== this.prevPathShape) {
+    const motionAwarePaths = vm.getMotionAwarePaths();
+    if (pathShape !== this.prevPathShape || motionAwarePaths !== this.prevMotionAwarePaths) {
       this.prevPathShape = pathShape;
+      this.prevMotionAwarePaths = motionAwarePaths;
 
       erm.fireTipTracker?.reset();
 

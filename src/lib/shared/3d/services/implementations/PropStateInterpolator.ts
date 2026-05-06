@@ -80,6 +80,59 @@ export class PropStateInterpolator {
     return { worldPosition, centerPathAngle };
   }
 
+  private resolvePathType(motionType: MotionType, motionPathShape?: "arc" | "linear" | "concave"): "arc" | "linear" | "concave" {
+    if (motionPathShape) return motionPathShape;
+    if (motionType === MotionType.DASH) return "linear";
+    if (motionType === MotionType.STATIC) return "arc";
+
+    const vm = getAnimationVisibilityManager();
+
+    if (vm.getMotionAwarePaths()) {
+      if (motionType === MotionType.PRO) return "arc";
+      if (motionType === MotionType.ANTI) return "concave";
+    }
+
+    return vm.getPathShape();
+  }
+
+  /**
+   * Concave path: reflection of the arc path across the straight line.
+   */
+  private interpolateConcavePosition(
+    config: MotionConfig3D,
+    startAngle: number,
+    endAngle: number,
+    progress: number
+  ): { worldPosition: Vector3; centerPathAngle: number } {
+    // Circle point (arc path)
+    const arcAngle = this.angleMath.lerpAngle(startAngle, endAngle, progress);
+    const circleX = Math.cos(arcAngle);
+    const circleY = Math.sin(arcAngle);
+
+    // Straight line point
+    const startX = Math.cos(startAngle);
+    const startY = Math.sin(startAngle);
+    const endX = Math.cos(endAngle);
+    const endY = Math.sin(endAngle);
+    const straightX = this.angleMath.lerp(startX, endX, progress);
+    const straightY = this.angleMath.lerp(startY, endY, progress);
+
+    // Reflect circle across straight line
+    const concaveX = 2 * straightX - circleX;
+    const concaveY = 2 * straightY - circleY;
+
+    const radius = Math.sqrt(concaveX * concaveX + concaveY * concaveY);
+    const centerPathAngle = Math.atan2(concaveY, concaveX);
+
+    const worldPosition = planeAngleToWorldPosition(
+      config.plane,
+      centerPathAngle,
+      radius * GRID_RADIUS_3D
+    );
+
+    return { worldPosition, centerPathAngle };
+  }
+
   /**
    * Calculate PropState3D from config and progress
    */
@@ -120,16 +173,11 @@ export class PropStateInterpolator {
       staffRotationAngle
     );
 
-    // DASH motions always use Cartesian interpolation (straight line through center).
-    // PRO/ANTI/FLOAT use it too when the user has selected "linear" path shape.
-    const useLinear =
-      config.motionType === MotionType.DASH ||
-      (config.motionType !== MotionType.STATIC &&
-        getAnimationVisibilityManager().getPathShape() === "linear");
+    const pathType = this.resolvePathType(config.motionType);
 
     let result: PropState3D;
 
-    if (useLinear) {
+    if (pathType === "linear") {
       const { worldPosition, centerPathAngle } = this.interpolateDashPosition(
         config,
         startCenterAngle,
@@ -144,15 +192,28 @@ export class PropStateInterpolator {
         worldPosition,
         worldRotation,
       };
+    } else if (pathType === "concave") {
+      const { worldPosition, centerPathAngle } = this.interpolateConcavePosition(
+        config,
+        startCenterAngle,
+        endCenterAngle,
+        progress
+      );
+
+      result = {
+        plane: config.plane,
+        centerPathAngle,
+        staffRotationAngle,
+        worldPosition,
+        worldRotation,
+      };
     } else {
-      // All other motions: interpolate along circular path
       const centerPathAngle = this.interpolateCenterPath(
         startCenterAngle,
         endCenterAngle,
         progress
       );
 
-      // Convert to 3D position (fixed radius for circular motion)
       const worldPosition = planeAngleToWorldPosition(
         config.plane,
         centerPathAngle,

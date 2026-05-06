@@ -32,6 +32,7 @@ Last audit: 2025-12-27
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/TrailCaptureTypes";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
+  import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
@@ -305,6 +306,7 @@ Last audit: 2025-12-27
   let wordHeaderVisible = $state(false);
   let progressBarVisible = $state(false);
   let fireEffectEnabled = $state(false);
+  let pathLinesVisible = $state(false);
   $effect.pre(() => {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
     stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
@@ -313,6 +315,7 @@ Last audit: 2025-12-27
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
     fireEffectEnabled = visibilityManager.hasEffect("fire");
+    pathLinesVisible = visibilityManager.getVisibility("pathLines");
   });
 
   const darkModeEnabled = $derived(
@@ -337,6 +340,7 @@ Last audit: 2025-12-27
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
     fireEffectEnabled = visibilityManager.hasEffect("fire");
+    pathLinesVisible = visibilityManager.getVisibility("pathLines");
   }
 
   // Register/unregister observer reactively so visibilityManager is tracked
@@ -384,8 +388,11 @@ Last audit: 2025-12-27
     const sig = fireCacheInvalidation.signal;
     if (sig !== lastFireInvalidationSignal) {
       lastFireInvalidationSignal = sig;
-      if (fireCacheInvalidation.cacheOnly) {
+      const mode = fireCacheInvalidation.mode;
+      if (mode === "cacheOnly") {
         untrack(() => engine.invalidateFireFrameCacheOnly());
+      } else if (mode === "thermalClear") {
+        untrack(() => engine.clearFireThermalFields());
       } else {
         untrack(() => engine.invalidateFireCache());
       }
@@ -400,6 +407,7 @@ Last audit: 2025-12-27
       reset: () => engine.resetFireDiagnosticCounter(),
       sample: () => engine.sampleFireCanvas(),
     };
+    (window as any).__tka_fire_snapshot = () => engine.snapshotFireCanvas();
   }
 
   // When an overlay effect (fire/charcoal/LED) fails repeatedly, the render loop
@@ -601,6 +609,10 @@ Last audit: 2025-12-27
             currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
           }
         />
+
+        {#if pathLinesVisible}
+          <PathLinesOverlay {sequenceData} {currentStep} />
+        {/if}
 
         <ProgressOverlay
           {isPreRendering}

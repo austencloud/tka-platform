@@ -370,7 +370,7 @@
   );
 
   // Show footer when any footer element is enabled
-  const hasPathShapeMetadata = $derived(sequence?.metadata?.pathShape === "linear");
+  const hasPathShapeMetadata = $derived(sequence?.metadata?.pathShape === "linear" || sequence?.metadata?.pathShape === "concave");
   const showFooter = $derived(showCreatorName || showNotes || showBirthday || hasPathShapeMetadata);
 
   // Format birthday date - use the sequence's saved birthday when available.

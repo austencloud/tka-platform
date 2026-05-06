@@ -64,6 +64,52 @@ function interpolateDashPosition(
   return { worldPosition, centerPathAngle };
 }
 
+function resolvePathType(motionType: MotionType): "arc" | "linear" | "concave" {
+  if (motionType === MotionType.DASH) return "linear";
+  if (motionType === MotionType.STATIC) return "arc";
+
+  const vm = getAnimationVisibilityManager();
+
+  if (vm.getMotionAwarePaths()) {
+    if (motionType === MotionType.PRO) return "arc";
+    if (motionType === MotionType.ANTI) return "concave";
+  }
+
+  return vm.getPathShape();
+}
+
+function interpolateConcavePosition(
+  config: MotionConfig3D,
+  startAngle: number,
+  endAngle: number,
+  progress: number
+): { worldPosition: Vector3; centerPathAngle: number } {
+  const arcAngle = lerpAngle(startAngle, endAngle, progress);
+  const circleX = Math.cos(arcAngle);
+  const circleY = Math.sin(arcAngle);
+
+  const startX = Math.cos(startAngle);
+  const startY = Math.sin(startAngle);
+  const endX = Math.cos(endAngle);
+  const endY = Math.sin(endAngle);
+  const straightX = lerp(startX, endX, progress);
+  const straightY = lerp(startY, endY, progress);
+
+  const concaveX = 2 * straightX - circleX;
+  const concaveY = 2 * straightY - circleY;
+
+  const radius = Math.sqrt(concaveX * concaveX + concaveY * concaveY);
+  const centerPathAngle = Math.atan2(concaveY, concaveX);
+
+  const worldPosition = planeAngleToWorldPosition(
+    config.plane,
+    centerPathAngle,
+    radius * GRID_RADIUS_3D
+  );
+
+  return { worldPosition, centerPathAngle };
+}
+
 /**
  * Calculate PropState3D from config and progress.
  */
@@ -98,13 +144,27 @@ export function calculatePropState(
     staffRotationAngle
   );
 
-  const useLinear =
-    config.motionType === MotionType.DASH ||
-    (config.motionType !== MotionType.STATIC &&
-      getAnimationVisibilityManager().getPathShape() === "linear");
+  const pathType = resolvePathType(config.motionType);
 
-  if (useLinear) {
+  if (pathType === "linear") {
     const { worldPosition, centerPathAngle } = interpolateDashPosition(
+      config,
+      startCenterAngle,
+      endCenterAngle,
+      progress
+    );
+
+    return {
+      plane: config.plane,
+      centerPathAngle,
+      staffRotationAngle,
+      worldPosition,
+      worldRotation,
+    };
+  }
+
+  if (pathType === "concave") {
+    const { worldPosition, centerPathAngle } = interpolateConcavePosition(
       config,
       startCenterAngle,
       endCenterAngle,

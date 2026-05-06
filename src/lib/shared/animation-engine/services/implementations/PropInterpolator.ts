@@ -14,23 +14,19 @@ import type { AngleCalculatorLike } from "../angle-calculator";
 import type { EndpointCalculator } from "./EndpointCalculator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
-/**
- * Returns true if this motion type should use Cartesian (straight-line) interpolation.
- * DASH always uses linear. PRO, ANTI, and FLOAT (arc/shift motions) use linear only when
- * the user has enabled "linear" pathShape in animation visibility settings.
- * STATIC is unaffected - it doesn't move at all.
- */
-function shouldUseLinear(motionType: MotionType): boolean {
-  if (motionType === MotionType.DASH) return true;
-  // Arc motions (PRO, ANTI, FLOAT) can toggle between arc and linear.
-  if (
-    motionType === MotionType.PRO ||
-    motionType === MotionType.ANTI ||
-    motionType === MotionType.FLOAT
-  ) {
-    return getAnimationVisibilityManager().getPathShape() === "linear";
+function resolvePathType(motionType: MotionType, motionPathShape?: "arc" | "linear" | "concave"): "arc" | "linear" | "concave" {
+  if (motionPathShape) return motionPathShape;
+  if (motionType === MotionType.DASH) return "linear";
+  if (motionType === MotionType.STATIC) return "arc";
+
+  const vm = getAnimationVisibilityManager();
+
+  if (vm.getMotionAwarePaths()) {
+    if (motionType === MotionType.PRO) return "arc";
+    if (motionType === MotionType.ANTI) return "concave";
   }
-  return false;
+
+  return vm.getPathShape();
 }
 
 export class PropInterpolator {
@@ -66,20 +62,12 @@ export class PropInterpolator {
     if (blueMotion) {
       const blueEndpoints =
         this.endpointCalculator.calculateMotionEndpoints(blueMotion);
-      const blueDash = shouldUseLinear(blueMotion.motionType);
-      blueAngles = blueDash
-        ? this.interpolateLinearMotion(blueEndpoints, stepProgress)
-        : {
-            centerPathAngle: this.angleCalculator.lerpAngle(
-              blueEndpoints.startCenterAngle,
-              blueEndpoints.targetCenterAngle,
-              stepProgress
-            ),
-            staffRotationAngle: this.angleCalculator.normalizeAnglePositive(
-              blueEndpoints.startStaffAngle +
-                blueEndpoints.staffRotationDelta * stepProgress
-            ),
-          };
+      blueAngles = this.interpolateMotion(
+        blueEndpoints,
+        blueMotion.motionType,
+        stepProgress,
+        blueMotion.pathShape
+      );
     }
 
     // Interpolate red prop (null if not present)
@@ -87,26 +75,52 @@ export class PropInterpolator {
     if (redMotion) {
       const redEndpoints =
         this.endpointCalculator.calculateMotionEndpoints(redMotion);
-      const redDash = shouldUseLinear(redMotion.motionType);
-      redAngles = redDash
-        ? this.interpolateLinearMotion(redEndpoints, stepProgress)
-        : {
-            centerPathAngle: this.angleCalculator.lerpAngle(
-              redEndpoints.startCenterAngle,
-              redEndpoints.targetCenterAngle,
-              stepProgress
-            ),
-            staffRotationAngle: this.angleCalculator.normalizeAnglePositive(
-              redEndpoints.startStaffAngle +
-                redEndpoints.staffRotationDelta * stepProgress
-            ),
-          };
+      redAngles = this.interpolateMotion(
+        redEndpoints,
+        redMotion.motionType,
+        stepProgress,
+        redMotion.pathShape
+      );
     }
 
     return {
       blueAngles,
       redAngles,
       isValid: true,
+    };
+  }
+
+  private interpolateMotion(
+    endpoints: MotionEndpoints,
+    motionType: MotionType,
+    progress: number,
+    motionPathShape?: "arc" | "linear" | "concave"
+  ): {
+    centerPathAngle: number;
+    staffRotationAngle: number;
+    x?: number;
+    y?: number;
+  } {
+    const pathType = resolvePathType(motionType, motionPathShape);
+
+    if (pathType === "linear") {
+      return this.interpolateLinearMotion(endpoints, progress);
+    }
+
+    if (pathType === "concave") {
+      return this.interpolateConcaveMotion(endpoints, progress);
+    }
+
+    return {
+      centerPathAngle: this.angleCalculator.lerpAngle(
+        endpoints.startCenterAngle,
+        endpoints.targetCenterAngle,
+        progress
+      ),
+      staffRotationAngle: this.angleCalculator.normalizeAnglePositive(
+        endpoints.startStaffAngle +
+          endpoints.staffRotationDelta * progress
+      ),
     };
   }
 
@@ -145,6 +159,48 @@ export class PropInterpolator {
 
     // Return x,y coordinates so renderer can use them directly
     return { centerPathAngle, staffRotationAngle, x: currentX, y: currentY };
+  }
+
+  /**
+   * Concave path: reflection of the arc path across the straight line.
+   * At every t, concavePoint = 2·straightPoint - circlePoint.
+   */
+  private interpolateConcaveMotion(
+    endpoints: MotionEndpoints,
+    progress: number
+  ): {
+    centerPathAngle: number;
+    staffRotationAngle: number;
+    x?: number;
+    y?: number;
+  } {
+    // Circle point (arc path)
+    const arcAngle = this.angleCalculator.lerpAngle(
+      endpoints.startCenterAngle,
+      endpoints.targetCenterAngle,
+      progress
+    );
+    const circleX = Math.cos(arcAngle);
+    const circleY = Math.sin(arcAngle);
+
+    // Straight line point
+    const startX = Math.cos(endpoints.startCenterAngle);
+    const startY = Math.sin(endpoints.startCenterAngle);
+    const endX = Math.cos(endpoints.targetCenterAngle);
+    const endY = Math.sin(endpoints.targetCenterAngle);
+    const straightX = startX + (endX - startX) * progress;
+    const straightY = startY + (endY - startY) * progress;
+
+    // Reflect circle across straight line
+    const concaveX = 2 * straightX - circleX;
+    const concaveY = 2 * straightY - circleY;
+
+    const centerPathAngle = Math.atan2(concaveY, concaveX);
+    const staffRotationAngle = this.angleCalculator.normalizeAnglePositive(
+      endpoints.startStaffAngle + endpoints.staffRotationDelta * progress
+    );
+
+    return { centerPathAngle, staffRotationAngle, x: concaveX, y: concaveY };
   }
 
   /**

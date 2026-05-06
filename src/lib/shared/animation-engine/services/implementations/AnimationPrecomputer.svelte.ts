@@ -50,9 +50,10 @@ function getSequencePathHash(seq: SequenceData, totalSteps: number, stepDuration
       return `${bPart}|${rPart}`;
     })
     .join(";") || "";
-  // Include pathShape so toggling arc/linear invalidates the cache
-  const pathShape = getAnimationVisibilityManager().getPathShape();
-  return `${seq.id || seq.word || "?"}-${totalSteps}-${stepDurationMs}-${pathShape}-${motionFingerprint}`;
+  const vm = getAnimationVisibilityManager();
+  const pathShape = vm.getPathShape();
+  const motionAware = vm.getMotionAwarePaths();
+  return `${seq.id || seq.word || "?"}-${totalSteps}-${stepDurationMs}-${pathShape}-${motionAware}-${motionFingerprint}`;
 }
 
 function storeInGlobalCache(hash: string, cache: AnimationPathCache): void {
