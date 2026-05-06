@@ -1,4 +1,5 @@
 import type { RequestHandler } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import fs from 'fs';
 import path from 'path';
 import { RATE_LIMITS } from '$lib/server/security/rate-limiter';
@@ -9,6 +10,8 @@ import { withRateLimit } from '$lib/server/security/withRateLimit';
  * No auth required
  */
 export const GET: RequestHandler = async (event) => {
+  if (!dev) { return new Response('This endpoint is only available in development', { status: 404 }); }
+
   const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, 'ip');
   if (blocked) return blocked;
 

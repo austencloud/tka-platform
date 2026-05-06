@@ -1,4 +1,5 @@
 import type { RequestHandler } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import fs from 'fs';
 import path from 'path';
 
@@ -7,6 +8,8 @@ import path from 'path';
  * Since Canvas2DDirectRenderer needs browser APIs, we can't render server-side
  */
 export const GET: RequestHandler = async ({ params }) => {
+  if (!dev) { return new Response('This endpoint is only available in development', { status: 404 }); }
+
   const { letter } = params;
 
   if (!letter) {
