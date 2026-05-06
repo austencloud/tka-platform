@@ -58,6 +58,12 @@ tests/                        # Unit and E2E tests
 |--------|-------------|
 | **Create** | Build sequences manually or with the constrained generator |
 | **Browse** | Search and explore the public sequence library |
+
+<details>
+<summary><strong>In Development</strong> — 20+ additional modules not yet public</summary>
+
+| Module | What it does |
+|--------|-------------|
 | **Learn** | Interactive lessons and drills on TKA concepts |
 | **Tika** | AI tutor that teaches TKA through conversation |
 | **Compose** | Arrange sequences into longer choreographies, export video |
@@ -77,6 +83,8 @@ tests/                        # Unit and E2E tests
 | **Settings** | Props, backgrounds, visibility, AI preferences |
 
 Admin-only: Lab (experiments), Admin (system config), Moderation (user reports).
+
+</details>
 
 ## Architecture
 
