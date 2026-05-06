@@ -1,4 +1,5 @@
 // import { getRedirectURL, shouldRedirectToPrimary } from "$config/domains"; // TODO: Fix config path
+import { dev } from "$app/environment";
 import type { Handle } from "@sveltejs/kit";
 
 /**
@@ -25,7 +26,7 @@ function isCssRequest(pathname: string): boolean {
 
 export const handle: Handle = async ({ event, resolve }) => {
   // Handle console forwarding endpoint
-  if (event.url.pathname === "/api/console-forward") {
+  if (dev && event.url.pathname === "/api/console-forward") {
     if (event.request.method === "POST") {
       try {
         const body = await event.request.text();
