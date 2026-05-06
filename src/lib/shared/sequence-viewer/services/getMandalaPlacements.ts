@@ -45,7 +45,7 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 		blueVisible,
 		redVisible,
 		mandalaEnabled,
-		startPositionLayout = "column",
+		startPositionLayout = "row",
 	} = args;
 
 	if (!mandalaEnabled) return EMPTY;

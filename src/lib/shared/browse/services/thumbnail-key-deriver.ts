@@ -19,6 +19,8 @@ export interface ThumbnailVisibilitySettings {
   showQRCode?: boolean;
   /** Render as hand path visualization (HAND props, float arrows, no TKA) */
   handPathMode?: boolean;
+  /** Render LOOP mandalas in empty cells */
+  showMandala?: boolean;
 }
 
 export interface ThumbnailRenderInput {
@@ -126,7 +128,7 @@ export function deriveKey(input: ThumbnailRenderInput): ThumbnailCacheKey {
         mode,
         variant: input.variant,
         loop: input.loopType ?? null,
-        spl: input.startPositionLayout ?? "column",
+        spl: input.startPositionLayout ?? "row",
       }
     : buildFullHashInput(input);
 
@@ -189,8 +191,8 @@ function checkInputUsesDefaults(
     input.includeStartPosition !== defaults.includeStartPosition
   )
     return false;
-  // startPositionLayout: "column" is the default, "row" is non-default
-  if (input.startPositionLayout !== undefined && input.startPositionLayout !== "column")
+  // startPositionLayout: "row" is the default, "column" is non-default
+  if (input.startPositionLayout !== undefined && input.startPositionLayout !== "row")
     return false;
   if (
     input.addDifficultyLevel !== undefined &&
@@ -225,6 +227,7 @@ function checkInputUsesDefaults(
       showNonRadialPoints: false,
       handPointVisibility: "all" as const,
       showQRCode: false, // QR codes only enabled in choreo card context
+      showMandala: false, // Mandalas only enabled in deck card context
     };
     // If any visibility setting differs from default, not using defaults
     if (input.visibility.showTKA !== undefined && input.visibility.showTKA !== defaultVisibility.showTKA)
@@ -240,6 +243,8 @@ function checkInputUsesDefaults(
     if (input.visibility.showQRCode !== undefined && input.visibility.showQRCode !== defaultVisibility.showQRCode)
       return false;
     if (input.visibility.handPathMode !== undefined && input.visibility.handPathMode !== false)
+      return false;
+    if (input.visibility.showMandala !== undefined && input.visibility.showMandala !== defaultVisibility.showMandala)
       return false;
   }
 
@@ -266,7 +271,7 @@ function buildFullHashInput(input: ThumbnailRenderInput): object {
     addWord: input.addWord,
     addStepNumbers: input.addStepNumbers,
     includeStartPosition: input.includeStartPosition,
-    startPositionLayout: input.startPositionLayout ?? "column",
+    startPositionLayout: input.startPositionLayout ?? "row",
     addDifficultyLevel: input.addDifficultyLevel,
     addUserInfo: input.addUserInfo,
     showCreatorName: input.showCreatorName,
@@ -282,6 +287,8 @@ function buildFullHashInput(input: ThumbnailRenderInput): object {
     showQRCode: input.visibility?.showQRCode,
     // Hand path visualization mode
     handPathMode: input.visibility?.handPathMode,
+    // LOOP mandalas in empty cells
+    showMandala: input.visibility?.showMandala,
     // LOOP badge
     loop: input.loopType ?? null,
     // EXCLUDED: showTKA, showReversals - these are canonical (always ON)

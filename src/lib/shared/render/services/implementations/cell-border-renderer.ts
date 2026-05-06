@@ -97,7 +97,7 @@ export function getOccupiedCells(
     occupied.add("0,0");
   }
 
-  const layoutMode = options.startPositionLayout ?? "column";
+  const layoutMode = options.startPositionLayout ?? "row";
   const useColumnMode = layoutMode === "column" && !!options.includeStartPosition;
   const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
   const startColumn = useColumnMode ? 1 : 0;
@@ -118,7 +118,7 @@ export function findEmptyCellForQR(
   sequence: SequenceData,
   options: Partial<SequenceExportOptions>
 ): { col: number; row: number } | null {
-  const layoutMode = options.startPositionLayout ?? "column";
+  const layoutMode = options.startPositionLayout ?? "row";
   const useColumnMode = layoutMode === "column" && !!options.includeStartPosition;
 
   if (options.includeStartPosition && !useColumnMode) {

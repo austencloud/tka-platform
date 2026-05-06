@@ -74,8 +74,8 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   // Mandala - shown by default (fills empty cells with path visualizations)
   showMandala: true,
 
-  // Start position layout - default to column (start as left column, beats fill remaining columns)
-  startPositionLayout: "column" as const,
+  // Start position layout - default to row (start as top row, beats fill remaining rows)
+  startPositionLayout: "row" as const,
 
   // No per-step-count overrides by default
   startPositionLayoutOverrides: {},
@@ -140,14 +140,14 @@ class ImageCompositionStateManager {
       this.loadFromStorage();
     }
 
-    // Migrate: old persisted "row" default → new "column" default.
+    // Migrate: old persisted "column" default → new "row" default.
     // Only migrate if there are no per-step-count overrides (user hasn't customized yet).
     if (
-      this.settings.startPositionLayout === "row" &&
+      this.settings.startPositionLayout === "column" &&
       (!this.settings.startPositionLayoutOverrides ||
         Object.keys(this.settings.startPositionLayoutOverrides).length === 0)
     ) {
-      this.settings.startPositionLayout = "column";
+      this.settings.startPositionLayout = "row";
       this.saveToStorage();
     }
 

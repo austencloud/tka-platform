@@ -110,7 +110,7 @@ export class PrintCardRenderer {
     const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, {
       deckCard: { contentWidth: contentW, contentHeight: contentH },
       includeStartPosition: options.includeStartPosition,
-      startPositionLayout: options.startPositionLayout ?? "column",
+      startPositionLayout: options.startPositionLayout ?? "row",
       addStepNumbers: true,
       addWord: options.showWord,
       addDifficultyLevel: true,
