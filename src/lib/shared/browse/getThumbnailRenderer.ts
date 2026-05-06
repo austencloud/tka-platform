@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { ThumbnailRenderer } from './services/ThumbnailRenderer';
-import { getSequenceRenderer } from '$lib/shared/render/getSequenceRenderer';
+import { getCompositionDispatcher } from '$lib/shared/render/getCompositionDispatcher';
 import { startPositionDeriver } from '$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver';
 import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
 import { loopDetector } from '$lib/shared/create/services/LOOPDetector';
@@ -10,7 +10,7 @@ let instance: ThumbnailRenderer | null = null;
 export function getThumbnailRenderer(): ThumbnailRenderer {
 	if (!browser) throw new Error('getThumbnailRenderer() is browser-only');
 	return instance ??= new ThumbnailRenderer(
-		getSequenceRenderer(),
+		getCompositionDispatcher(),
 		startPositionDeriver,
 		getBrowseLoader(),
 		loopDetector,

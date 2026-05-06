@@ -8,11 +8,11 @@
  * - Loading full sequence data if needed (via PublicSequencesLoader)
  * - Deriving start position if missing (via StartPositionDeriver)
  * - Applying prop type overrides
- * - Rendering via SequenceRenderer pipeline
+ * - Rendering via CompositionDispatcher (worker pool with main-thread fallback)
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
+import type { CompositionDispatcher } from "$lib/shared/render/services/implementations/CompositionDispatcher";
 import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
@@ -57,7 +57,7 @@ const WORDCARD_DEFAULTS: CompositionDefaults = {
 
 export class ThumbnailRenderer {
   constructor(
-    private sequenceRenderer: SequenceRenderer,
+    private compositionDispatcher: CompositionDispatcher,
     private startPositionDeriver: StartPositionDeriver,
     private browseLoader: PublicSequencesLoader | null,
     private loopDetector: ILOOPDetector
@@ -103,9 +103,9 @@ export class ThumbnailRenderer {
       fullSequence.dateAdded ??
       undefined;
 
-    // Render via SequenceRenderer (pass through progress callback)
+    // Render via CompositionDispatcher (worker pool with main-thread fallback)
     // Explicitly pass loopType in options so it doesn't rely on sequence fallback
-    const blob = await this.sequenceRenderer.renderSequenceToBlob(
+    const blob = await this.compositionDispatcher.compose(
       sequenceWithStartPos,
       {
         ...renderOptions,
@@ -118,7 +118,7 @@ export class ThumbnailRenderer {
         cardMode: input.cardMode ?? false,
       },
       onProgress,
-      signal
+      signal,
     );
 
     return blob;
@@ -216,7 +216,7 @@ export class ThumbnailRenderer {
 
       // Composition settings (use input or fall back to variant defaults)
       includeStartPosition: input.includeStartPosition ?? defaults.includeStartPosition,
-      startPositionLayout: input.startPositionLayout ?? "column",
+      startPositionLayout: input.startPositionLayout ?? "row",
       addStepNumbers: input.addStepNumbers ?? defaults.addStepNumbers,
       addWord: input.addWord ?? defaults.addWord,
       addDifficultyLevel: input.addDifficultyLevel ?? defaults.addDifficultyLevel,
@@ -264,6 +264,8 @@ export class ThumbnailRenderer {
         showQRCode: input.visibility?.showQRCode ?? false,
         // Hand path visualization mode
         handPathMode: input.visibility?.handPathMode ?? false,
+        // LOOP mandalas in empty cells
+        showMandala: input.visibility?.showMandala ?? false,
       },
     };
   }
