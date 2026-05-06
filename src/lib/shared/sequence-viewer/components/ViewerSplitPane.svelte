@@ -15,11 +15,14 @@
     PropRenderingProps,
     ViewerLayoutState,
   } from "../domain/viewer-prop-groups";
+  import type { ContentType, SplitConfig } from '../services/viewer-state-persistence';
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
   import UnifiedViewerCanvas from "$lib/shared/3d/components/UnifiedViewerCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
+  import PaneContentSelector from './PaneContentSelector.svelte';
+  import VideoGallery from './VideoGallery.svelte';
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
@@ -133,6 +136,8 @@
      * under the frame grabber, producing a squished/expanding video.
      */
     isExporting?: boolean;
+    splitConfig?: SplitConfig;
+    onSplitConfigChange?: (pane: 'left' | 'right', content: ContentType) => void;
   }
 
   let {
@@ -156,6 +161,8 @@
     onProgressBarScrubEnd,
     rerenderTrigger = 0,
     isExporting = false,
+    splitConfig = { leftPane: 'animation', rightPane: 'card' },
+    onSplitConfigChange,
   }: Props = $props();
 
   // Feature flag: set window.__TKA_UNIFIED_VIEWER = true to enable the
@@ -176,29 +183,20 @@
   }
 
   function handleAnimationClick(e: MouseEvent) {
-    // Freeze layout during export - a pane-focus toggle resizes the 3D
-    // canvas under the frame grabber, which corrupts the video. Orbit
-    // camera drags still go through because OrbitControls intercepts
-    // pointer events before click fires.
     if (isExporting) {
       pointerDownPos = null;
       return;
     }
 
-    // Clicks/releases on the transport scrubber or the play knob are
-    // their own controls - never read them as "expand the pane".
     const target = e.target as HTMLElement | null;
     if (target?.closest('[role="slider"], button')) {
       pointerDownPos = null;
       return;
     }
 
-    // For 3D mode, only expand on tap (no significant drag movement).
-    // OrbitControls use drag - a click without movement means "tap to expand".
     if (renderMode === '3d' && pointerDownPos) {
       const dx = Math.abs(e.clientX - pointerDownPos.x);
       const dy = Math.abs(e.clientY - pointerDownPos.y);
-      // If pointer moved more than 5px, it was a drag (orbit), not a tap
       if (dx > 5 || dy > 5) {
         pointerDownPos = null;
         return;
@@ -206,32 +204,21 @@
     }
     pointerDownPos = null;
 
-    if (layout.focusedPane === "animation") {
-      onUnfocusPane();
-    } else {
-      onFocusPane("animation");
-    }
+    if (layout.focusedPane === "animation") return;
+    onFocusPane("animation");
   }
 
   function handlePreviewClick() {
-    // Same reasoning as handleAnimationClick - don't let the user trigger
-    // a layout transition while a video or image export is running.
     if (isExporting) return;
-    if (layout.focusedPane === "image") {
-      onUnfocusPane();
-    } else {
-      onFocusPane("image");
-    }
+    if (layout.focusedPane === "image") return;
+    onFocusPane("image");
   }
 
   function handleKeydown(e: KeyboardEvent, pane: "animation" | "image") {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      if (layout.focusedPane === pane) {
-        onUnfocusPane();
-      } else {
-        onFocusPane(pane);
-      }
+      if (layout.focusedPane === pane) return;
+      onFocusPane(pane);
     }
   }
 
@@ -263,130 +250,19 @@
     aria-label={layout.focusedPane === "animation" ? "Exit focus mode" : "Focus on animation"}
     aria-expanded={layout.focusedPane === "animation"}
   >
-    <div
-      class="media-pane animation-pane"
-    >
-      <!-- Close button - shown when focused (desktop only) -->
-      {#if layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
-        <div
-          class="pane-close-btn"
-          role="button"
-          tabindex="0"
-          onclick={handleCloseClick}
-          onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") handleCloseClick(e); }}
-          aria-label="Exit focus mode"
-        >
-          <i class="fas fa-times" aria-hidden="true"></i>
-        </div>
-      {/if}
+    {#if !layout.focusedPane && onSplitConfigChange}
+      <PaneContentSelector
+        current={splitConfig.leftPane}
+        onSelect={(content) => onSplitConfigChange?.('left', content)}
+      />
+    {/if}
 
-      {#if playback.animationLoading}
-        <div class="loading-state">
-          <ProgressRing percent={-1} size={32} strokeWidth={3} />
-        </div>
-      {:else if playback.animationState.error}
-        <div class="error-state">
-          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-          <span>{playback.animationState.error}</span>
-        </div>
-      {:else}
-        <!-- Both canvases always mounted. Crossfade via opacity transition. -->
-        <div
-          class="canvas-layer canvas-3d-layer"
-          style="opacity:{renderMode === '3d' && !useUnifiedViewer ? 1 : 0};pointer-events:{renderMode === '3d' && !useUnifiedViewer ? 'auto' : 'none'};"
-        >
-          <Viewer3DCanvas
-            sequenceData={playback.animationState.sequenceData}
-            currentStep={playback.currentStep}
-            isPlaying={playback.isPlaying}
-            {bpm}
-            {onBpmChange}
-            bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-            redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-            hideOverlays={false}
-            fullScreen={layout.focusedPane === "animation"}
-            onExitFullScreen={onUnfocusPane}
-          />
-        </div>
-        {#if useUnifiedViewer}
-          <div
-            class="canvas-layer canvas-unified-layer"
-            style="opacity:1;pointer-events:auto;"
-          >
-            <UnifiedViewerCanvas
-              cameraMode={renderMode === '3d' ? 'perspective-3d' : 'orthographic-2d'}
-              sequenceData={playback.animationState.sequenceData}
-              currentStep={playback.currentStep}
-              isPlaying={playback.isPlaying}
-              {bpm}
-              {onBpmChange}
-              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-              bluePropState={playback.animationState.bluePropState}
-              redPropState={playback.animationState.redPropState}
-              gridMode={sequence?.gridMode?.toString()}
-              fullScreen={layout.focusedPane === "animation"}
-              onExitFullScreen={onUnfocusPane}
-              {onCanvasReady}
-            />
-          </div>
-        {/if}
-        <div
-          class="canvas-layer canvas-2d-layer"
-          style="opacity:{renderMode === '3d' || useUnifiedViewer ? 0 : 1};pointer-events:{renderMode === '3d' || useUnifiedViewer ? 'none' : 'auto'};"
-        >
-          <AnimatorCanvas
-            sequenceData={playback.animationState.sequenceData}
-            currentStep={playback.currentStep}
-            isPlaying={playback.isPlaying}
-            blueProp={playback.animationState.bluePropState}
-            redProp={playback.animationState.redPropState}
-            gridMode={sequence?.gridMode}
-            letter={playback.currentLetter}
-            stepData={playback.currentStepData}
-            word={sequence?.word}
-            bluePropType={propRendering.bluePropType}
-            redPropType={propRendering.redPropType}
-            {trailSettings}
-            {onCanvasReady}
-            {onPlaybackToggle}
-            onProgressBarSeek={onProgressBarSeek ?? null}
-            onProgressBarScrubStart={onProgressBarScrubStart ?? null}
-            onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
-            focused={layout.focusedPane === "animation"}
-            suppress2DOverlays={renderMode === '3d' || useUnifiedViewer}
-            hideProgressBar={renderMode === '3d' || useUnifiedViewer}
-          />
-        </div>
-      {/if}
-
-    </div>
-
-    <!-- Unified control rail - sibling of .media-pane, NOT inside it.
-         The hover-scale effect is applied to .media-pane so the rail
-         sits in a non-scaling layer. Keeps chip positions stable as
-         the user moves the cursor toward them (Fitts's Law). -->
-    <RightRail {sequence} {renderMode} {bpm} {onBpmChange} />
-  </div>
-
-  <!-- Image/Preview pane -->
-  <div
-    class="split-column preview-column"
-    class:focused={layout.focusedPane === "image"}
-    data-hidden={layout.focusedPane === "animation"}
-    role="button"
-    tabindex="0"
-    onclick={handlePreviewClick}
-    onkeydown={(e) => handleKeydown(e, "image")}
-    aria-label={layout.focusedPane === "image" ? "Exit focus mode" : "Focus on image"}
-    aria-expanded={layout.focusedPane === "image"}
-  >
-    <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
+    {#if splitConfig.leftPane === 'animation'}
       <div
-        class="media-pane preview-pane"
+        class="media-pane animation-pane"
       >
         <!-- Close button - shown when focused (desktop only) -->
-        {#if layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
+        {#if layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
           <div
             class="pane-close-btn"
             role="button"
@@ -399,10 +275,99 @@
           </div>
         {/if}
 
+        {#if playback.animationLoading}
+          <div class="loading-state">
+            <ProgressRing percent={-1} size={32} strokeWidth={3} />
+          </div>
+        {:else if playback.animationState.error}
+          <div class="error-state">
+            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+            <span>{playback.animationState.error}</span>
+          </div>
+        {:else}
+          <!-- Both canvases always mounted. Crossfade via opacity transition. -->
+          <div
+            class="canvas-layer canvas-3d-layer"
+            style="opacity:{renderMode === '3d' && !useUnifiedViewer ? 1 : 0};pointer-events:{renderMode === '3d' && !useUnifiedViewer ? 'auto' : 'none'};"
+          >
+            <Viewer3DCanvas
+              sequenceData={playback.animationState.sequenceData}
+              currentStep={playback.currentStep}
+              isPlaying={playback.isPlaying}
+              {bpm}
+              {onBpmChange}
+              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+              hideOverlays={false}
+              fullScreen={layout.focusedPane === "animation"}
+              onExitFullScreen={onUnfocusPane}
+            />
+          </div>
+          {#if useUnifiedViewer}
+            <div
+              class="canvas-layer canvas-unified-layer"
+              style="opacity:1;pointer-events:auto;"
+            >
+              <UnifiedViewerCanvas
+                cameraMode={renderMode === '3d' ? 'perspective-3d' : 'orthographic-2d'}
+                sequenceData={playback.animationState.sequenceData}
+                currentStep={playback.currentStep}
+                isPlaying={playback.isPlaying}
+                {bpm}
+                {onBpmChange}
+                bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+                redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+                bluePropState={playback.animationState.bluePropState}
+                redPropState={playback.animationState.redPropState}
+                gridMode={sequence?.gridMode?.toString()}
+                fullScreen={layout.focusedPane === "animation"}
+                onExitFullScreen={onUnfocusPane}
+                {onCanvasReady}
+              />
+            </div>
+          {/if}
+          <div
+            class="canvas-layer canvas-2d-layer"
+            style="opacity:{renderMode === '3d' || useUnifiedViewer ? 0 : 1};pointer-events:{renderMode === '3d' || useUnifiedViewer ? 'none' : 'auto'};"
+          >
+            <AnimatorCanvas
+              sequenceData={playback.animationState.sequenceData}
+              currentStep={playback.currentStep}
+              isPlaying={playback.isPlaying}
+              blueProp={playback.animationState.bluePropState}
+              redProp={playback.animationState.redPropState}
+              gridMode={sequence?.gridMode}
+              letter={playback.currentLetter}
+              stepData={playback.currentStepData}
+              word={sequence?.word}
+              bluePropType={propRendering.bluePropType}
+              redPropType={propRendering.redPropType}
+              {trailSettings}
+              {onCanvasReady}
+              {onPlaybackToggle}
+              onProgressBarSeek={onProgressBarSeek ?? null}
+              onProgressBarScrubStart={onProgressBarScrubStart ?? null}
+              onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
+              focused={layout.focusedPane === "animation"}
+              suppress2DOverlays={renderMode === '3d' || useUnifiedViewer}
+              hideProgressBar={renderMode === '3d' || useUnifiedViewer}
+            />
+          </div>
+        {/if}
+
+      </div>
+
+      <!-- Unified control rail - sibling of .media-pane, NOT inside it.
+           The hover-scale effect is applied to .media-pane so the rail
+           sits in a non-scaling layer. Keeps chip positions stable as
+           the user moves the cursor toward them (Fitts's Law). -->
+      <RightRail {sequence} {renderMode} {bpm} {onBpmChange} />
+    {:else if splitConfig.leftPane === 'card'}
+      <div class="media-pane preview-pane">
         <ChoreoCard
           {sequence}
-          highlightedStepIndex={layout.focusedPane === "image" ? null : playback.highlightedStepIndex}
-          showHighlight={layout.focusedPane === "image" ? false : (playback.isPlaying || playback.highlightedStepIndex !== null)}
+          highlightedStepIndex={playback.highlightedStepIndex}
+          showHighlight={playback.isPlaying || playback.highlightedStepIndex !== null}
           {onStepClick}
           {onRenderProgress}
           showWord={imageComposition.showWord}
@@ -418,7 +383,7 @@
           darkMode={imageComposition.darkMode}
           columnCount={imageComposition.columnCount}
           forceContain={imageComposition.forceContain}
-          fitWidth={layout.isMobile && layout.focusedPane === "image"}
+          fitWidth={false}
           userName={imageComposition.userName}
           bluePropType={propRendering.bluePropType}
           redPropType={propRendering.redPropType}
@@ -426,8 +391,113 @@
           {rerenderTrigger}
           onContextMenu={onChoreoCardContextMenu}
         />
-
       </div>
+    {:else if splitConfig.leftPane === 'videos'}
+      <div class="media-pane">
+        <VideoGallery {sequence} isOwned={false} />
+      </div>
+    {/if}
+  </div>
+
+  <!-- Image/Preview pane -->
+  <div
+    class="split-column preview-column"
+    class:focused={layout.focusedPane === "image"}
+    data-hidden={layout.focusedPane === "animation"}
+    role="button"
+    tabindex="0"
+    onclick={handlePreviewClick}
+    onkeydown={(e) => handleKeydown(e, "image")}
+    aria-label={layout.focusedPane === "image" ? "Exit focus mode" : "Focus on image"}
+    aria-expanded={layout.focusedPane === "image"}
+  >
+    {#if !layout.focusedPane && onSplitConfigChange}
+      <PaneContentSelector
+        current={splitConfig.rightPane}
+        onSelect={(content) => onSplitConfigChange?.('right', content)}
+      />
+    {/if}
+
+    <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
+      {#if splitConfig.rightPane === 'card'}
+        <div
+          class="media-pane preview-pane"
+        >
+          <!-- Close button - shown when focused (desktop only) -->
+          {#if layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
+            <div
+              class="pane-close-btn"
+              role="button"
+              tabindex="0"
+              onclick={handleCloseClick}
+              onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") handleCloseClick(e); }}
+              aria-label="Exit focus mode"
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </div>
+          {/if}
+
+          <ChoreoCard
+            {sequence}
+            highlightedStepIndex={layout.focusedPane === "image" ? null : playback.highlightedStepIndex}
+            showHighlight={layout.focusedPane === "image" ? false : (playback.isPlaying || playback.highlightedStepIndex !== null)}
+            {onStepClick}
+            {onRenderProgress}
+            showWord={imageComposition.showWord}
+            showStepNumbers={imageComposition.showStepNumbers}
+            showDifficultyLevel={imageComposition.showDifficulty}
+            includeStartPosition={imageComposition.showStartPos}
+            showCreatorName={imageComposition.showCreatorName}
+            showNotes={imageComposition.showNotes}
+            showQRCode={imageComposition.showQRCode}
+            showMandala={imageComposition.showMandala ?? false}
+            showBirthday={imageComposition.showBirthday}
+            showLoopGlyph={imageComposition.showLoopGlyph ?? true}
+            darkMode={imageComposition.darkMode}
+            columnCount={imageComposition.columnCount}
+            forceContain={imageComposition.forceContain}
+            fitWidth={layout.isMobile && layout.focusedPane === "image"}
+            userName={imageComposition.userName}
+            bluePropType={propRendering.bluePropType}
+            redPropType={propRendering.redPropType}
+            catDogModeEnabled={propRendering.catDogModeEnabled}
+            {rerenderTrigger}
+            onContextMenu={onChoreoCardContextMenu}
+          />
+
+        </div>
+      {:else if splitConfig.rightPane === 'animation'}
+        <div class="media-pane animation-pane">
+          <div class="canvas-layer canvas-2d-layer" style="opacity:1;pointer-events:auto;">
+            <AnimatorCanvas
+              sequenceData={playback.animationState.sequenceData}
+              currentStep={playback.currentStep}
+              isPlaying={playback.isPlaying}
+              blueProp={playback.animationState.bluePropState}
+              redProp={playback.animationState.redPropState}
+              gridMode={sequence?.gridMode}
+              letter={playback.currentLetter}
+              stepData={playback.currentStepData}
+              word={sequence?.word}
+              bluePropType={propRendering.bluePropType}
+              redPropType={propRendering.redPropType}
+              trailSettings={trailSettings}
+              onCanvasReady={() => {}}
+              onPlaybackToggle={onPlaybackToggle}
+              onProgressBarSeek={onProgressBarSeek ?? null}
+              onProgressBarScrubStart={onProgressBarScrubStart ?? null}
+              onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
+              focused={false}
+              suppress2DOverlays={false}
+              hideProgressBar={true}
+            />
+          </div>
+        </div>
+      {:else if splitConfig.rightPane === 'videos'}
+        <div class="media-pane">
+          <VideoGallery {sequence} isOwned={false} />
+        </div>
+      {/if}
     </div>
   </div>
 </div>
