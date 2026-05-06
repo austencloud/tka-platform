@@ -523,6 +523,17 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           }
         }
 
+        // --- LED EXPORT DIAGNOSTIC ---
+        const isDiagFrame = i < 5 || (i >= 28 && i <= 32);
+        if (isDiagFrame && typeof window !== 'undefined' && (window as any).__tka_led_diag) {
+          try {
+            const diag = (window as any).__tka_led_diag.stats();
+            if (diag) {
+              console.log(`[led-export-diag] frame=${i} step=${stepIndex} beat=${playbackPosition.toFixed(2)} ledPixels: maxR=${diag.maxR} maxA=${diag.maxA} nonZero=${diag.nonZero}/${diag.total}`);
+            }
+          } catch { /* ignore */ }
+        }
+
         // Render frame to offscreen canvas (only if live canvas is available).
         // When the canvas is temporarily unavailable, the offscreen canvas keeps
         // its previous content, producing a duplicated frame in the video.
@@ -548,6 +559,26 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             stepDurations,
             i
           );
+        }
+
+        // --- LED EXPORT DIAGNOSTIC: check composite result ---
+        if (isDiagFrame && typeof window !== 'undefined') {
+          try {
+            const px = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
+            let cMaxR = 0, cMaxG = 0, cMaxB = 0, cMaxA = 0;
+            let aboveA5 = 0, aboveA25 = 0, aboveA100 = 0;
+            for (let p = 0; p < px.length; p += 4) {
+              if (px[p]! > cMaxR) cMaxR = px[p]!;
+              if (px[p + 1]! > cMaxG) cMaxG = px[p + 1]!;
+              if (px[p + 2]! > cMaxB) cMaxB = px[p + 2]!;
+              if (px[p + 3]! > cMaxA) cMaxA = px[p + 3]!;
+              const a = px[p + 3]!;
+              if (a > 5) aboveA5++;
+              if (a > 25) aboveA25++;
+              if (a > 100) aboveA100++;
+            }
+            console.log(`[led-export-diag] composite frame=${i}: maxRGBA=${cMaxR},${cMaxG},${cMaxB},${cMaxA} alphaDistrib(>5/>25/>100)=${aboveA5}/${aboveA25}/${aboveA100} size=${offscreenCanvas.width}x${offscreenCanvas.height}`);
+          } catch { /* ignore */ }
         }
 
         // -----------------------------------------------------------------------

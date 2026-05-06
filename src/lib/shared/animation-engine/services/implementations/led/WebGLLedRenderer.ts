@@ -194,9 +194,17 @@ export class WebGLLedRenderer {
 		this.clearAllFramebuffers();
 	}
 
+	private _diagFrameCount = 0;
+
 	renderLeds(input: LedFrameInput, config: LedOverlayConfig): void {
 		if (!this.gl || !this.initialized) return;
 		const gl = this.gl;
+
+		if (this._diagFrameCount < 3) {
+			const es = computeEffectScale(input.canvasWidth, input.canvasHeight);
+			console.log(`[led-render-diag] frame=${this._diagFrameCount} canvasW=${input.canvasWidth} canvasH=${input.canvasHeight} displayW=${this.displayWidth} displayH=${this.displayHeight} effectScale=${es.toFixed(3)} glowRadius=${(config.glowRadius * 60 * es).toFixed(1)} tips=${input.tips.length} bloomIntensity=${config.bloomIntensity}`);
+			this._diagFrameCount++;
+		}
 
 		if (input.tips.length === 0) {
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -221,8 +229,7 @@ export class WebGLLedRenderer {
 		// and the halo reads as proportionally larger on small canvases.
 		const effectScale = computeEffectScale(input.canvasWidth, input.canvasHeight);
 		const baseGlowRadius = config.glowRadius * 60.0 * effectScale;
-		const currentTimeSec =
-			input.currentTime > 1e6 ? input.currentTime / 1000 : input.currentTime;
+		const currentTimeSec = input.currentTime / 1000;
 		const dt =
 			this.lastFrameTime >= 0 ? currentTimeSec - this.lastFrameTime : 0;
 		const isDiscontinuity = dt <= 0 || dt > MAX_STREAK_DT;
@@ -326,6 +333,15 @@ export class WebGLLedRenderer {
 		let srcHeight = this.displayHeight;
 		gl.useProgram(this.bloomDownProgram!.program);
 		gl.bindVertexArray(this.quadVAO);
+
+		// First downsample: soft-knee luminance prefilter gates which pixels
+		// enter the bloom mip chain. Without this, faint trail pixels
+		// accumulate through the additive upsample chain and produce visible
+		// halo discs when the LED canvas is composited onto dark backgrounds
+		// during video export (same class of bug as the fire bloom fix).
+		gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_threshold")!, 0.4);
+		gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_knee")!, 0.2);
+
 		for (let i = 0; i < this.bloomMips.length; i++) {
 			const mip = this.bloomMips[i]!;
 			const mipSize = this.bloomMipSizes[i]!;
@@ -340,6 +356,12 @@ export class WebGLLedRenderer {
 				1.0 / srcHeight,
 			);
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+			// Subsequent passes: no threshold (already filtered)
+			if (i === 0) {
+				gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_threshold")!, 0.0);
+			}
+
 			srcTexture = mip.texture;
 			srcWidth = mipSize.w;
 			srcHeight = mipSize.h;
@@ -406,6 +428,62 @@ export class WebGLLedRenderer {
 
 	getCanvas(): HTMLCanvasElement | null {
 		return this.canvas;
+	}
+
+	readPixelStats(): { maxR: number; maxG: number; maxB: number; maxA: number; nonZero: number; total: number } | null {
+		if (!this.gl || !this.canvas) return null;
+		const gl = this.gl;
+		const w = gl.canvas.width;
+		const h = gl.canvas.height;
+		const pixels = new Uint8Array(w * h * 4);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+		let maxR = 0, maxG = 0, maxB = 0, maxA = 0, nonZero = 0;
+		for (let i = 0; i < pixels.length; i += 4) {
+			if (pixels[i]! > 0 || pixels[i + 1]! > 0 || pixels[i + 2]! > 0 || pixels[i + 3]! > 0) nonZero++;
+			if (pixels[i]! > maxR) maxR = pixels[i]!;
+			if (pixels[i + 1]! > maxG) maxG = pixels[i + 1]!;
+			if (pixels[i + 2]! > maxB) maxB = pixels[i + 2]!;
+			if (pixels[i + 3]! > maxA) maxA = pixels[i + 3]!;
+		}
+		return { maxR, maxG, maxB, maxA, nonZero, total: w * h };
+	}
+
+	readTrailFBOStats(): { maxR: number; maxG: number; maxB: number; maxA: number } | null {
+		if (!this.gl || !this.trailFBOs) return null;
+		const gl = this.gl;
+		const w = this.displayWidth;
+		const h = this.displayHeight;
+		const pixels = new Float32Array(w * h * 4);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.trailFBOs.read.fbo);
+		gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, pixels);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		let maxR = 0, maxG = 0, maxB = 0, maxA = 0;
+		for (let i = 0; i < pixels.length; i += 4) {
+			if (pixels[i]! > maxR) maxR = pixels[i]!;
+			if (pixels[i + 1]! > maxG) maxG = pixels[i + 1]!;
+			if (pixels[i + 2]! > maxB) maxB = pixels[i + 2]!;
+			if (pixels[i + 3]! > maxA) maxA = pixels[i + 3]!;
+		}
+		return { maxR, maxG, maxB, maxA };
+	}
+
+	readBloomFBOStats(): { maxR: number; maxG: number; maxB: number; maxA: number } | null {
+		if (!this.gl || !this.bloomMips.length) return null;
+		const gl = this.gl;
+		const sz = this.bloomMipSizes[0]!;
+		const pixels = new Float32Array(sz.w * sz.h * 4);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.bloomMips[0]!.fbo);
+		gl.readPixels(0, 0, sz.w, sz.h, gl.RGBA, gl.FLOAT, pixels);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		let maxR = 0, maxG = 0, maxB = 0, maxA = 0;
+		for (let i = 0; i < pixels.length; i += 4) {
+			if (pixels[i]! > maxR) maxR = pixels[i]!;
+			if (pixels[i + 1]! > maxG) maxG = pixels[i + 1]!;
+			if (pixels[i + 2]! > maxB) maxB = pixels[i + 2]!;
+			if (pixels[i + 3]! > maxA) maxA = pixels[i + 3]!;
+		}
+		return { maxR, maxG, maxB, maxA };
 	}
 
 	setCanvasZIndex(z: number): void {
@@ -556,6 +634,7 @@ export class WebGLLedRenderer {
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 		this.prevPositions.clear();
 		this.lastFrameTime = -1;
+		this._diagFrameCount = 0;
 	}
 
 	private swapFBO(fbo: DoubleFBO): void {
@@ -605,7 +684,7 @@ export class WebGLLedRenderer {
 		);
 		this.bloomDownProgram = this.buildFullscreenProgram(
 			BLOOM_DOWNSAMPLE_FRAG,
-			["u_source", "u_texelSize"],
+			["u_source", "u_texelSize", "u_threshold", "u_knee"],
 		);
 		this.bloomUpProgram = this.buildFullscreenProgram(
 			BLOOM_UPSAMPLE_FRAG,

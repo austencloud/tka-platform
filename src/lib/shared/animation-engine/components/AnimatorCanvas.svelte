@@ -408,6 +408,34 @@ Last audit: 2025-12-27
       sample: () => engine.sampleFireCanvas(),
     };
     (window as any).__tka_fire_snapshot = () => engine.snapshotFireCanvas();
+    (window as any).__tka_led_diag = {
+      stats: () => {
+        const renderer = engine.getLedRenderer();
+        if (!renderer) { console.log('[led-diag] no ledRenderer'); return; }
+        const display = renderer.readPixelStats();
+        const trail = renderer.readTrailFBOStats();
+        const bloom = renderer.readBloomFBOStats();
+        console.log(`[led-diag] display(8bit): maxR=${display?.maxR} maxG=${display?.maxG} maxB=${display?.maxB} maxA=${display?.maxA} nonZero=${display?.nonZero}/${display?.total}`);
+        console.log(`[led-diag] trail(float): maxR=${trail?.maxR?.toFixed(4)} maxG=${trail?.maxG?.toFixed(4)} maxB=${trail?.maxB?.toFixed(4)} maxA=${trail?.maxA?.toFixed(4)}`);
+        console.log(`[led-diag] bloom(float): maxR=${bloom?.maxR?.toFixed(4)} maxG=${bloom?.maxG?.toFixed(4)} maxB=${bloom?.maxB?.toFixed(4)} maxA=${bloom?.maxA?.toFixed(4)}`);
+        return { display, trail, bloom };
+      },
+      snapshot: () => {
+        const renderer = engine.getLedRenderer();
+        if (!renderer?.getCanvas()) { console.log('[led-diag] no canvas'); return; }
+        const c = renderer.getCanvas()!;
+        c.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `led-overlay-${Date.now()}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          console.log('[led-diag] snapshot saved');
+        });
+      },
+    };
   }
 
   // When an overlay effect (fire/charcoal/LED) fails repeatedly, the render loop

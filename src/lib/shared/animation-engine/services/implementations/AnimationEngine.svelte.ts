@@ -804,6 +804,8 @@ export class AnimationEngine {
   }
 
   // --- EXPORT DIAGNOSTIC (remove after debugging) ---
+  getLedRenderer() { return this.effectRendererManager.ledRenderer; }
+
   enableFireDiagnostics(): void {
     this.effectRendererManager.fireRenderer?.enableDiagnostics();
   }
