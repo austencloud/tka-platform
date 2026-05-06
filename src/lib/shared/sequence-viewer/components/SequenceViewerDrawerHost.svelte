@@ -438,6 +438,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onProgressBarSeek={ctx.handleProgressBarSeek}
                       onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
                       onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
+                      splitConfig={ctx.viewerState.splitConfig}
+                      onSplitConfigChange={(pane, content) => ctx.viewerState.setSplitPaneContent(pane, content)}
                     />
                   {/if}
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
