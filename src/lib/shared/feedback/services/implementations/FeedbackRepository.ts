@@ -38,8 +38,18 @@ import * as feedbackSubscriberModule from "$lib/shared/feedback/services/feedbac
 export class FeedbackService {
   constructor(
     private readonly statusService: FeedbackStatusService = feedbackStatusService,
-    private readonly testerWorkflowService: IFeedbackTesterWorkflow = getFeedbackTesterWorkflow(),
   ) {}
+
+  private get testerWorkflow(): IFeedbackTesterWorkflow {
+    const wf = getFeedbackTesterWorkflow();
+    if (!wf) {
+      throw new Error(
+        "FeedbackTesterWorkflow not yet registered. " +
+          "This method requires deferred registrations to have completed."
+      );
+    }
+    return wf;
+  }
 
   // ============================================================
   // SUBMISSION
@@ -152,7 +162,7 @@ export class FeedbackService {
     message: string,
     notifyTester: boolean = true
   ): Promise<void> {
-    return this.testerWorkflowService.sendAdminResponse(
+    return this.testerWorkflow.sendAdminResponse(
       feedbackId,
       message,
       notifyTester
@@ -164,7 +174,7 @@ export class FeedbackService {
     status: TesterConfirmationStatus,
     comment?: string
   ): Promise<void> {
-    return this.testerWorkflowService.submitTesterConfirmation(
+    return this.testerWorkflow.submitTesterConfirmation(
       feedbackId,
       status,
       comment
@@ -172,14 +182,14 @@ export class FeedbackService {
   }
 
   async countPendingConfirmations(userId: string): Promise<number> {
-    return this.testerWorkflowService.countPendingConfirmations(userId);
+    return this.testerWorkflow.countPendingConfirmations(userId);
   }
 
   async notifyTesterResolved(
     feedbackId: string,
     message?: string
   ): Promise<void> {
-    return this.testerWorkflowService.notifyTesterResolved(feedbackId, message);
+    return this.testerWorkflow.notifyTesterResolved(feedbackId, message);
   }
 
   // ============================================================

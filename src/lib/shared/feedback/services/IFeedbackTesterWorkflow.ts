@@ -35,14 +35,9 @@ export function registerFeedbackTesterWorkflow(
 }
 
 /**
- * Get the registered FeedbackTesterWorkflow.
+ * Get the registered FeedbackTesterWorkflow, or null if not yet registered.
+ * Deferred registrations may not have fired yet during early boot.
  */
-export function getFeedbackTesterWorkflow(): IFeedbackTesterWorkflow {
-  if (!instance) {
-    throw new Error(
-      "FeedbackTesterWorkflow not registered. " +
-        "Ensure registerFeedbackTesterWorkflow() is called at app startup."
-    );
-  }
+export function getFeedbackTesterWorkflow(): IFeedbackTesterWorkflow | null {
   return instance;
 }

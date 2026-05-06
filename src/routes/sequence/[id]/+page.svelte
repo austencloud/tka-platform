@@ -40,7 +40,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import PracticeProgressIndicator from "$lib/shared/sequence-viewer/components/PracticeProgressIndicator.svelte";
   import RouteViewerHeader from "$lib/shared/sequence-viewer/components/RouteViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
-  import Viewer3DFullscreen from "$lib/shared/3d/components/Viewer3DFullscreen.svelte";
 
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -538,22 +537,24 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
               class:export-active={isAnyExportActive}
               class:desktop={!isMobile}
             >
-              <!-- Mobile 3D fullscreen overlay -->
+              <!-- Mobile 3D fullscreen overlay (lazy-loaded — Three.js is 3.8MB) -->
               {#if isMobile && ctx.renderMode === '3d' && ctx.effectiveSequence}
-                <Viewer3DFullscreen
-                  sequenceData={ctx.effectiveSequence}
-                  currentStep={ctx.currentStepLocal}
-                  isPlaying={ctx.isPlayingLocal}
-                  bpm={ctx.bpmLocal}
-                  word={ctx.effectiveSequence.word ?? null}
-                  bluePropType={ctx.bluePropType != null ? String(ctx.bluePropType) : null}
-                  redPropType={ctx.redPropType != null ? String(ctx.redPropType) : null}
-                  onClose={() => ctx.viewer3DState.exit3D()}
-                  onPlaybackToggle={ctx.handlePlaybackToggle}
-                  onBpmChange={ctx.handleBpmChange}
-                  onStepForward={ctx.stepFullBeatForward}
-                  onStepBackward={ctx.stepFullBeatBackward}
-                />
+                {#await import("$lib/shared/3d/components/Viewer3DFullscreen.svelte") then mod}
+                  <mod.default
+                    sequenceData={ctx.effectiveSequence}
+                    currentStep={ctx.currentStepLocal}
+                    isPlaying={ctx.isPlayingLocal}
+                    bpm={ctx.bpmLocal}
+                    word={ctx.effectiveSequence.word ?? null}
+                    bluePropType={ctx.bluePropType != null ? String(ctx.bluePropType) : null}
+                    redPropType={ctx.redPropType != null ? String(ctx.redPropType) : null}
+                    onClose={() => ctx.viewer3DState.exit3D()}
+                    onPlaybackToggle={ctx.handlePlaybackToggle}
+                    onBpmChange={ctx.handleBpmChange}
+                    onStepForward={ctx.stepFullBeatForward}
+                    onStepBackward={ctx.stepFullBeatBackward}
+                  />
+                {/await}
               {/if}
 
               <!-- Single persistent ViewerSplitPane - never destroyed, CSS grid transitions handle focus -->

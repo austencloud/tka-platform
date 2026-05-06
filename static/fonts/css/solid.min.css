@@ -13,7 +13,7 @@
   font-family: "Font Awesome 7 Free";
   font-style: normal;
   font-weight: 900;
-  font-display: block;
+  font-display: swap;
   src: url(../webfonts/fa-solid-900.woff2);
 }
 .fas {

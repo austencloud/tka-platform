@@ -239,16 +239,13 @@
     await imports.di;
     bootProfiler.end("di-container");
 
-    // Preload TKA letter glyph images before children render (required for canvas headers)
-    try {
-      const { textRenderer } = await import("$lib/shared/render/services/implementations/TextRenderer");
-      await textRenderer.preloadGlyphImages();
-    } catch {
-      // Non-critical — canvas headers fall back to text on failure
-    }
-
-    // Mark container ready so children can render
+    // Mark container ready so children can render immediately
     containerReady = true;
+
+    // Preload TKA letter glyph images in background (canvas headers fall back to text until ready)
+    import("$lib/shared/render/services/implementations/TextRenderer")
+      .then(({ textRenderer }) => textRenderer.preloadGlyphImages())
+      .catch(() => {});
 
     // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
     // No-op on web - the isNative check inside returns immediately.
