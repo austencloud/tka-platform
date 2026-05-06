@@ -390,14 +390,12 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     url.hash = encodeNavHash(initialState);
     replaceState(url.toString(), { deckNavId: initialState.deckId, deckNavVtgFamily: initialState.vtgFamily });
 
-    // Load deck metadata + sequences in parallel.
+    // Load deck metadata first, then sequences for the selected deck.
     // Cached (trimmed) decks are already in state for instant shell render.
-    // Full deck data (with sequenceIds) + sequences come from Firestore.
-    const tasks: Promise<void>[] = [loadDecks().then(() => {})];
+    await loadDecks();
     if (selectedDeckId) {
-      tasks.push(handleSelectDeckSequences(selectedDeckId));
+      await handleSelectDeckSequences(selectedDeckId);
     }
-    await Promise.all(tasks);
   });
 
   onDestroy(() => {
@@ -470,6 +468,11 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
       isLoadingDeckMetadata = true;
       deckErrorMessage = null;
       decks = await deckLoaderLoadDecks();
+      if (selectedDeckId && !decks.some((d) => d.id === selectedDeckId)) {
+        selectedDeckId = null;
+        deckSequences = [];
+        persist(STORAGE_KEY_SELECTED_DECK, null);
+      }
     } catch (err) {
       console.warn("Failed to load decks:", err);
       deckErrorMessage = "Failed to load decks. Check your connection and try again.";
@@ -489,23 +492,21 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   }
 
   async function handleSelectDeckSequences(deckId: string) {
-    const deck = decks.find((d) => d.id === deckId);
-    if (!deck) {
-      return;
-    }
-
     isDeckLoading = true;
     deckErrorMessage = null;
     try {
-      if (deck.totalSequences < 500) {
+      const deck = decks.find((d) => d.id === deckId);
+      if (deck && deck.totalSequences < 500) {
         deckSequences = await loadDeckSequences(deckId);
-      } else {
+      } else if (deck) {
         const firstFamily = deck.families[0];
         if (firstFamily && firstFamily.sequenceIds.length > 0) {
           deckSequences = await loadSequencesByIds(deckId, [...firstFamily.sequenceIds]);
         } else {
           deckSequences = await loadDeckSequences(deckId);
         }
+      } else {
+        deckSequences = await loadDeckSequences(deckId);
       }
     } catch (err) {
       console.warn("Failed to load deck sequences:", err);

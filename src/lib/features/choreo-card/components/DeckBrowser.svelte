@@ -423,35 +423,29 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 </script>
 
 <div class="deck-browser" bind:this={scrollContainer} onscroll={handleBrowseScroll}>
-  {#if selectedDeck || (selectedDeckId && decks.length === 0)}
-    {#if !selectedDeck}
-      <div class="loading" role="status" aria-live="polite">
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        Loading deck...
+  {#if selectedDeck}
+    <div class="level-container level-interior">
+      <div class="top-bar">
+        <nav class="breadcrumb" aria-label="Deck navigation">
+          <button class="crumb" onclick={onBackToCollections} type="button" aria-label="Go back to browser">
+            <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:12px;"></i>
+            Back to browser
+          </button>
+          <span class="crumb-sep" aria-hidden="true">›</span>
+          <span class="crumb current">{tkaDesignation}</span>
+          {#if vtgDesignation}
+            <span class="crumb-sep" aria-hidden="true">·</span>
+            <span class="crumb vtg-label">{vtgDesignation}</span>
+          {/if}
+        </nav>
       </div>
-    {:else}
-      <div class="level-container level-interior">
-        <div class="top-bar">
-          <nav class="breadcrumb" aria-label="Deck navigation">
-            <button class="crumb" onclick={onBackToCollections} type="button" aria-label="Go back to browser">
-              <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:12px;"></i>
-              Back to browser
-            </button>
-            <span class="crumb-sep" aria-hidden="true">›</span>
-            <span class="crumb current">{tkaDesignation}</span>
-            {#if vtgDesignation}
-              <span class="crumb-sep" aria-hidden="true">·</span>
-              <span class="crumb vtg-label">{vtgDesignation}</span>
-            {/if}
-          </nav>
-        </div>
-        {@render deckInterior()}
-      </div>
-    {/if}
+      {@render deckInterior()}
+    </div>
   {:else if isLoading || decks.length === 0}
-    <div class="loading" role="status" aria-live="polite">
-      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      Loading decks...
+    <div class="skeleton-grid deck-skeleton" role="status" aria-live="polite" aria-label="Loading decks">
+      {#each { length: 8 } as _}
+        <div class="skeleton-card deck-card-skeleton"></div>
+      {/each}
     </div>
   {:else}
     <DeckBrowseFilterBar state={browseState} />
@@ -544,9 +538,10 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       />
 
       {#if isLoading}
-        <div class="loading" role="status" aria-live="polite">
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Loading sequences...
+        <div class="skeleton-grid" role="status" aria-live="polite" aria-label="Loading sequences">
+          {#each { length: Math.min(selectedDeck?.totalSequences ?? 12, 12) } as _}
+            <div class="skeleton-card"></div>
+          {/each}
         </div>
       {:else if filteredSequences.length === 0}
         {#if isLargeDeck && interiorFilters.familyIds.length === 0 && viewMode === 'print'}
@@ -662,6 +657,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
                         {showWord}
                         {includeStartPosition}
                         startPositionLayout={getDeckLayoutPolicy(sequence.steps?.length ?? 0)}
+                        showMandala={true}
                         onSelect={() => {
                           const cardEl = document.querySelector(`[data-seq-id="${sequence.id}"]`);
                           inspectedFrontImageUrl = (cardEl?.querySelector('img') as HTMLImageElement)?.src ?? null;
@@ -966,16 +962,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   /* ── Shared States ── */
 
-  .loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 48px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-sm, 14px);
-  }
-
   .empty-state {
     display: flex;
     flex-direction: column;
@@ -1023,5 +1009,37 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     .sequence-grid {
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
+  }
+
+  .deck-skeleton {
+    padding: var(--spacing-lg, 16px);
+  }
+
+  .deck-card-skeleton {
+    aspect-ratio: 3 / 2;
+  }
+
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-lg, 16px);
+    padding: var(--spacing-md, 16px) 0;
+  }
+
+  .skeleton-card {
+    aspect-ratio: 5 / 7;
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-card { animation: none; opacity: 0.6; }
   }
 </style>

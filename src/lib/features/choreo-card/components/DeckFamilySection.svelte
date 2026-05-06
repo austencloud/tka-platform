@@ -277,6 +277,7 @@ import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-pat
               {showWord}
               {includeStartPosition}
               startPositionLayout={getStartPositionLayout(sequence)}
+              showMandala={true}
               onSelect={onSelectSequence}
               {onContextMenu}
             />

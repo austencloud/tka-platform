@@ -34,6 +34,8 @@
     customNotesText?: string;
     /** Pre-rendered image URL - displays this instead of rendering via PropAwareThumbnail */
     preRenderedImageUrl?: string | null;
+    /** Show mandala fills in empty grid cells */
+    showMandala?: boolean;
     onSelect?: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
@@ -53,6 +55,7 @@
     cardMode = false,
     customNotesText,
     preRenderedImageUrl: preRenderedImageUrlProp,
+    showMandala = false,
     onSelect,
     onContextMenu,
   }: Props = $props();
@@ -88,8 +91,9 @@
     showGrid,
     showNonRadialPoints: false, // Off by default for cleaner choreo cards
     handPointVisibility: handPointsVisible ? "all" as const : "active" as const,
-    showQRCode: showQRCodes, // QR rendered in empty cell by ImageComposer
+    showQRCode: showQRCodes,
     handPathMode,
+    showMandala,
   });
 
   function handleClick() {
