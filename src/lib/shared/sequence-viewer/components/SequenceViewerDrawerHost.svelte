@@ -13,6 +13,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     openSequenceOverlay,
   } from "../state/sequence-viewer-overlay-state.svelte";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
+  import ViewerContentRail from "./ViewerContentRail.svelte";
+  import VideoGallery from "./VideoGallery.svelte";
   import ViewerFooter from "./ViewerFooter.svelte";
   import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
@@ -273,13 +275,18 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         {@const isAnyExportActive = ctx.editingPane !== null}
         {@const isRecordSceneActive = isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl}
         {@const isSidebarExportActive = isAnyExportActive && !isRecordSceneActive}
+        {@const showRail = ctx.viewerState.viewerMode !== 'split' && !isMobileWidth}
+        {@const handleBackToSplit = () => {
+          ctx.viewerState.backToSplit();
+          setTimeout(() => rerenderTrigger++, 280);
+        }}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <header class="drawer-header">
               {#if isAnyExportActive}
                 <button
                   type="button"
                   class="drawer-back-button"
-                  onclick={ctx.exitEditMode}
+                  onclick={handleBackToSplit}
                   aria-label="Back to viewer"
                 >
                   <i class="fas fa-arrow-left" aria-hidden="true"></i>
@@ -373,41 +380,61 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   class:record-scene-active={isRecordSceneActive}
                   class:desktop={!isMobileWidth}
                   class:sidebar-collapsed={exportSidebarCollapsed}
+                  class:has-rail={showRail}
                 >
-                  <ViewerSplitPane
-                    sequence={ctx.effectiveSequence}
-                    renderMode={ctx.renderMode}
-                    isExporting={ctx.isExporting}
-                    playback={ctx.splitPanePlayback}
-                    imageComposition={isImageExportActive
-                      ? {
-                          ...ctx.splitPaneImageComposition,
-                          darkMode: ctx.exportOptions.imageDarkMode,
-                          columnCount: ctx.exportOptions.imageColumnCount,
-                          forceContain: true,
-                        }
-                      : ctx.splitPaneImageComposition}
-                    propRendering={ctx.splitPanePropRendering}
-                    layout={{
-                      isFullscreen: ctx.isFullscreen,
-                      fullscreenStackVertical: ctx.fullscreenStackVertical,
-                      isMobile: isMobileWidth,
-                      isLandscapeMobile: isLandscape,
-                      focusedPane: ctx.editingPane,
-                      suppressCloseButton: ctx.editingPane !== null,
-                    }}
-                    onRenderProgress={ctx.onRenderProgress}
-                    onFocusPane={ctx.enterEditMode}
-                    onUnfocusPane={ctx.exitEditMode}
-                    onStepClick={ctx.handleStepClick}
-                    onCanvasReady={ctx.handleCanvasReady}
-                    {rerenderTrigger}
-                    onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
-                    onPlaybackToggle={ctx.handlePlaybackToggle}
-                    onProgressBarSeek={ctx.handleProgressBarSeek}
-                    onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
-                    onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
-                  />
+                  {#if showRail}
+                    <ViewerContentRail
+                      activeMode={ctx.viewerState.viewerMode === 'split' ? 'animation' : ctx.viewerState.viewerMode}
+                      {videoCount}
+                      onBack={handleBackToSplit}
+                      onSelectMode={(mode) => {
+                        ctx.viewerState.setViewerMode(mode);
+                        ctx.viewerState.exitExport();
+                      }}
+                    />
+                  {/if}
+                  {#if ctx.viewerState.viewerMode === 'videos' && !isSidebarExportActive}
+                    <VideoGallery
+                      sequence={overlay.sequence!}
+                      isOwned={ctx.isOwned}
+                      onUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
+                    />
+                  {:else}
+                    <ViewerSplitPane
+                      sequence={ctx.effectiveSequence}
+                      renderMode={ctx.renderMode}
+                      isExporting={ctx.isExporting}
+                      playback={ctx.splitPanePlayback}
+                      imageComposition={isImageExportActive
+                        ? {
+                            ...ctx.splitPaneImageComposition,
+                            darkMode: ctx.exportOptions.imageDarkMode,
+                            columnCount: ctx.exportOptions.imageColumnCount,
+                            forceContain: true,
+                          }
+                        : ctx.splitPaneImageComposition}
+                      propRendering={ctx.splitPanePropRendering}
+                      layout={{
+                        isFullscreen: ctx.isFullscreen,
+                        fullscreenStackVertical: ctx.fullscreenStackVertical,
+                        isMobile: isMobileWidth,
+                        isLandscapeMobile: isLandscape,
+                        focusedPane: ctx.viewerState.viewerMode !== 'split' ? (ctx.viewerState.viewerMode === 'card' ? 'image' : 'animation') : ctx.editingPane,
+                        suppressCloseButton: ctx.viewerState.viewerMode !== 'split',
+                      }}
+                      onRenderProgress={ctx.onRenderProgress}
+                      onFocusPane={ctx.enterEditMode}
+                      onUnfocusPane={ctx.exitEditMode}
+                      onStepClick={ctx.handleStepClick}
+                      onCanvasReady={ctx.handleCanvasReady}
+                      {rerenderTrigger}
+                      onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
+                      onPlaybackToggle={ctx.handlePlaybackToggle}
+                      onProgressBarSeek={ctx.handleProgressBarSeek}
+                      onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
+                      onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
+                    />
+                  {/if}
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
                     <Recording3DOverlay
                       countdownValue={ctx.countdownValue}
@@ -830,9 +857,22 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     grid-template-columns: 1fr var(--export-sidebar-width);
   }
 
+  .viewer-and-export.export-active.desktop.has-rail {
+    grid-template-columns: 1fr 4fr var(--export-sidebar-width);
+  }
+
   .viewer-and-export.export-active.desktop.sidebar-collapsed {
     grid-template-columns: 1fr 0px;
   }
+
+  .viewer-and-export.export-active.desktop.has-rail.sidebar-collapsed {
+    grid-template-columns: 1fr 4fr 0px;
+  }
+
+  .viewer-and-export.desktop.has-rail:not(.export-active) {
+    grid-template-columns: 1fr 4fr;
+  }
+
 
   .export-panel-container {
     overflow: hidden;
