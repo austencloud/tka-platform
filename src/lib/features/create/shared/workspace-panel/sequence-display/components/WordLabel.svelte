@@ -167,6 +167,11 @@
     return cache.getGlyphDataUrl(base);
   }
 
+  function isAlphaGlyph(letter: string): boolean {
+    const base = isDashLetter(letter) ? getBaseLetter(letter) : letter;
+    return base === 'α';
+  }
+
   // Only show word label if there's an actual word (not empty, not default sequence names)
   const shouldShowWordLabel = $derived.by(() => {
     if (!word) return false;
@@ -230,7 +235,7 @@
             class:active={hasActiveHighlighting && activeLetterIndex === index}
           >
             {#if url}
-              <img src={url} alt={source.letter} class="glyph-img" draggable="false" />
+              <img src={url} alt={source.letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(source.letter)} draggable="false" />
               {#if isDashLetter(source.letter)}<span class="dash-bar"></span>{/if}
             {:else}{source.letter}{/if}
           </span>
@@ -249,7 +254,7 @@
             class:active-wave={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'wave'}
           >
             {#if url}
-              <img src={url} alt={letter} class="glyph-img" draggable="false" />
+              <img src={url} alt={letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(letter)} draggable="false" />
               {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
             {:else}{letter}{/if}
           </span>
@@ -259,7 +264,7 @@
           {@const url = getGlyphUrl(letter)}
           <span class="letter">
             {#if url}
-              <img src={url} alt={letter} class="glyph-img" draggable="false" />
+              <img src={url} alt={letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(letter)} draggable="false" />
               {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
             {:else}{letter}{/if}
           </span>
@@ -446,6 +451,10 @@
     width: auto;
     display: block;
     filter: invert(0.9);
+  }
+
+  .glyph-img.alpha-baseline {
+    transform: translateY(10%);
   }
 
   .dash-bar {

@@ -39,6 +39,11 @@ const DASH_W_SVG = 70;
 const DASH_H_SVG = 20;
 const DASH_GAP_SVG = 10;
 const DASH_RADIUS_SVG = 9.5;
+const ALPHA_BASELINE_SHIFT = 0.10;
+
+function isAlphaToken(token: string): boolean {
+  return token === 'α';
+}
 
 function renderGlyphWord(
   ctx: CanvasRenderingContext2D,
@@ -95,7 +100,8 @@ function renderGlyphWord(
     if (!data) continue;
     const scale = availableH / data.naturalHeight;
     const glyphW = data.naturalWidth * scale;
-    const glyphY = verticalCenter - availableH / 2;
+    const baseGlyphY = verticalCenter - availableH / 2;
+    const glyphY = baseGlyphY + (isAlphaToken(token) ? availableH * ALPHA_BASELINE_SHIFT : 0);
 
     if (darkMode) {
       ctx.save();
@@ -187,7 +193,8 @@ function renderCompressedGlyphWord(
       if (!data) continue;
       const scale = availableH / data.naturalHeight;
       const glyphW = data.naturalWidth * scale;
-      const glyphY = verticalCenter - availableH / 2;
+      const baseGlyphY = verticalCenter - availableH / 2;
+      const glyphY = baseGlyphY + (isAlphaToken(token) ? availableH * ALPHA_BASELINE_SHIFT : 0);
 
       if (darkMode) {
         ctx.save();

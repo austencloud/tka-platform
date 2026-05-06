@@ -30,6 +30,11 @@ Supports letter highlighting during animation playback.
     return cache.getGlyphDataUrl(base);
   }
 
+  function isAlphaGlyph(letter: string): boolean {
+    const base = isDashLetter(letter) ? getBaseLetter(letter) : letter;
+    return base === 'α';
+  }
+
   let {
     word = null,
     visible = true,
@@ -217,7 +222,7 @@ Supports letter highlighting during animation playback.
             class:active={activeLetterIndex === index}
           >
             {#if url}
-              <img src={url} alt={letter} class="glyph-img" draggable="false" />
+              <img src={url} alt={letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(letter)} draggable="false" />
               {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
             {:else}{letter}{/if}
           </span>
@@ -233,7 +238,7 @@ Supports letter highlighting during animation playback.
             style="--letter-index: {index}; --total-letters: {parsedLetters.length}; --reverse-index: {parsedLetters.length - 1 - index}"
           >
             {#if url}
-              <img src={url} alt={letter} class="glyph-img" draggable="false" />
+              <img src={url} alt={letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(letter)} draggable="false" />
               {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
             {:else}{letter}{/if}
           </span>
@@ -338,6 +343,10 @@ Supports letter highlighting during animation playback.
     height: 1em;
     width: auto;
     display: block;
+  }
+
+  .glyph-img.alpha-baseline {
+    transform: translateY(10%);
   }
 
   .word-header.dark-mode .glyph-img,

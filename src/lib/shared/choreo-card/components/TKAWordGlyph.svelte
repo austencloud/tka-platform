@@ -39,8 +39,9 @@
           {@const baseLetter = isDashLetter(token) ? getBaseLetter(token) : token}
           {@const dataUrl = cache.getGlyphDataUrl(baseLetter)}
           {#if dataUrl}
+            {@const isAlpha = baseLetter === 'α'}
             <span class="glyph" style="gap: {height * DASH_GAP_RATIO}px;">
-              <img src={dataUrl} alt={token} height={height} draggable="false" />
+              <img src={dataUrl} alt={token} height={height} draggable="false" class:alpha-baseline={isAlpha} />
               {#if isDashLetter(token)}
                 <span
                   class="dash-bar"
@@ -76,6 +77,10 @@
   .glyph img {
     display: block;
     width: auto;
+  }
+
+  .glyph img.alpha-baseline {
+    transform: translateY(10%);
   }
 
   .dark-mode .glyph img {
