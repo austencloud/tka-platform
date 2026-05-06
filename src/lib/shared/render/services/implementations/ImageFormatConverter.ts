@@ -1,4 +1,6 @@
 import { downloadBlob } from "$lib/shared/foundation/services/file-downloader";
+import { createRenderCanvas } from "./createRenderCanvas";
+import type { RenderCanvas } from "../contracts/types";
 
 interface ImageFormatOptions {
   format: "png" | "jpeg" | "webp";
@@ -26,11 +28,21 @@ export async function svgStringToImage(svgString: string): Promise<HTMLImageElem
   });
 }
 
-export async function canvasToImage(canvas: HTMLCanvasElement): Promise<HTMLImageElement> {
+export async function canvasToImage(canvas: RenderCanvas): Promise<HTMLImageElement> {
+  if (canvas instanceof OffscreenCanvas) {
+    const blob = await canvas.convertToBlob({ type: "image/png", quality: 1.0 });
+    const url = URL.createObjectURL(blob);
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to convert canvas to image")); };
+      img.src = url;
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    });
+  }
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onerror = () => reject(new Error("Failed to convert canvas to image"));
-    const dataUrl = canvas.toDataURL("image/png");
+    const dataUrl = (canvas as HTMLCanvasElement).toDataURL("image/png");
     img.src = dataUrl;
     img.onload = () => {
       resolve(img);
@@ -68,9 +80,7 @@ export async function blobToImage(blob: Blob): Promise<HTMLImageElement> {
 }
 
 export async function imageToBlob(img: HTMLImageElement): Promise<Blob> {
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width || img.naturalWidth;
-  canvas.height = img.height || img.naturalHeight;
+  const canvas = createRenderCanvas(img.width || img.naturalWidth, img.height || img.naturalHeight);
 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
@@ -79,8 +89,12 @@ export async function imageToBlob(img: HTMLImageElement): Promise<Blob> {
 
   ctx.drawImage(img, 0, 0);
 
+  if (canvas instanceof OffscreenCanvas) {
+    return canvas.convertToBlob({ type: "image/png", quality: 1.0 });
+  }
+
   return new Promise((resolve, reject) => {
-    canvas.toBlob(
+    (canvas as HTMLCanvasElement).toBlob(
       (blob) => {
         if (blob) {
           resolve(blob);

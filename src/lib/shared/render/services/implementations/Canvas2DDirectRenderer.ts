@@ -27,6 +27,8 @@ import {
   drawElementWithTransform,
   drawDash,
 } from "./canvas-2d-transform-helper";
+import { createRenderCanvas } from "./createRenderCanvas";
+import type { RenderCanvas } from "../contracts/types";
 
 const VIEWBOX_SIZE = 950;
 
@@ -103,7 +105,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   async renderPictograph(
     pictograph: PictographData | StepData,
     options: DirectRenderOptions
-  ): Promise<HTMLCanvasElement> {
+  ): Promise<RenderCanvas> {
     const { canvas } = await this.renderPictographWithTiming(pictograph, options);
     return canvas;
   }
@@ -111,7 +113,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   async renderPictographWithTiming(
     pictograph: PictographData | StepData,
     options: DirectRenderOptions
-  ): Promise<{ canvas: HTMLCanvasElement; timing: RenderTiming }> {
+  ): Promise<{ canvas: RenderCanvas; timing: RenderTiming }> {
     const timing: RenderTiming = {
       totalMs: 0,
       setupMs: 0,
@@ -123,11 +125,9 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
     // Setup canvas at requested size
     const setupStart = performance.now();
-    const canvas = document.createElement("canvas");
-    canvas.width = options.size;
-    canvas.height = options.size;
+    const canvas = createRenderCanvas(options.size, options.size);
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
     if (!ctx) {
       throw new Error("Failed to get 2D context");
     }

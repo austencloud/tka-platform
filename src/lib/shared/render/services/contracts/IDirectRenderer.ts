@@ -13,6 +13,7 @@
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
+import type { RenderCanvas } from "./types";
 
 /**
  * Render options for direct rendering
@@ -76,7 +77,7 @@ export interface IDirectRenderer {
   renderPictograph(
     pictograph: PictographData | StepData,
     options: DirectRenderOptions
-  ): Promise<HTMLCanvasElement>;
+  ): Promise<RenderCanvas>;
 
   /**
    * Render a single pictograph with timing information
@@ -89,7 +90,7 @@ export interface IDirectRenderer {
   renderPictographWithTiming(
     pictograph: PictographData | StepData,
     options: DirectRenderOptions
-  ): Promise<{ canvas: HTMLCanvasElement; timing: RenderTiming }>;
+  ): Promise<{ canvas: RenderCanvas; timing: RenderTiming }>;
 
   /**
    * Get current memory usage estimate in bytes

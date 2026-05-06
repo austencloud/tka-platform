@@ -103,7 +103,11 @@
         });
 
         // Return as base64 data URL
-        return canvas.toDataURL('image/png');
+        if (canvas instanceof OffscreenCanvas) {
+          const blob = await canvas.convertToBlob({ type: 'image/png' });
+          return URL.createObjectURL(blob);
+        }
+        return (canvas as HTMLCanvasElement).toDataURL('image/png');
       };
 
       console.log('✅ Renderer ready. window.renderPictograph() is available.');

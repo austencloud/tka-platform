@@ -1,7 +1,8 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
-import type { CompositionProgressCallback } from "../contracts/types";
+import type { CompositionProgressCallback, RenderCanvas } from "../contracts/types";
+import { createRenderCanvas } from "./createRenderCanvas";
 import { calculateLayout } from "../layout-calculator";
 import {
   calculateHeaderHeight as sharedHeaderHeight,
@@ -16,10 +17,10 @@ export async function composeCardImage(
     options: Partial<SequenceExportOptions>,
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal
-  ) => Promise<HTMLCanvasElement>,
+  ) => Promise<RenderCanvas>,
   onProgress?: CompositionProgressCallback,
   signal?: AbortSignal
-): Promise<HTMLCanvasElement> {
+): Promise<RenderCanvas> {
   const tightCanvas = await composeSequenceImage(
     sequence,
     options,
@@ -34,10 +35,8 @@ export async function composeCardImage(
     return tightCanvas;
   }
 
-  const cardCanvas = document.createElement("canvas");
-  cardCanvas.width = cardWidth;
-  cardCanvas.height = cardHeight;
-  const ctx = cardCanvas.getContext("2d");
+  const cardCanvas = createRenderCanvas(cardWidth, cardHeight);
+  const ctx = cardCanvas.getContext("2d") as CanvasRenderingContext2D | null;
   if (!ctx) throw new Error("Failed to get 2D context for card canvas");
 
   const isDarkMode = options.visibilityOverrides?.darkMode ?? false;
@@ -48,7 +47,7 @@ export async function composeCardImage(
   const layout = calculateLayout(
     stepCount,
     options.includeStartPosition ?? false,
-    options.startPositionLayout ?? "column"
+    options.startPositionLayout ?? "row"
   );
   const [columns, rows] = layout;
   const baseBeatSize = options.stepSize || 120;

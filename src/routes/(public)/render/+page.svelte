@@ -96,9 +96,12 @@
       });
 
       // Add canvas to page so script can access it
-      canvas.style.maxWidth = '400px';
-      canvas.style.border = '1px solid #444';
-      document.body.appendChild(canvas);
+      // renderPictograph returns RenderCanvas; this page runs in the browser
+      // where HTMLCanvasElement is always returned, so cast is safe.
+      const htmlCanvas = canvas as HTMLCanvasElement;
+      htmlCanvas.style.maxWidth = '400px';
+      htmlCanvas.style.border = '1px solid #444';
+      document.body.appendChild(htmlCanvas);
 
       status = `✅ Rendered pictograph-${letter}`;
 

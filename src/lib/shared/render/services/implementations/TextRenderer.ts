@@ -197,7 +197,7 @@ export class TextRenderer {
     inversionPeriod?: LoopInversionPeriod,
     period?: number
   ): void {
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
     if (!ctx) {
       return;
     }
@@ -234,7 +234,7 @@ export class TextRenderer {
   }
 
   renderUserInfo(
-    canvas: HTMLCanvasElement,
+    canvas: RenderCanvas,
     userInfo: UserExportInfo,
     _options: TextRenderOptions,
     footerHeight: number = 60,
@@ -259,7 +259,7 @@ export class TextRenderer {
       return;
     }
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
     if (!ctx) return;
 
     const notes =
@@ -294,12 +294,12 @@ export class TextRenderer {
   }
 
   renderDifficultyBadge(
-    canvas: HTMLCanvasElement,
+    canvas: RenderCanvas,
     level: number,
     position: [number, number],
     size: number
   ): void {
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
     if (!ctx) return;
 
     const [x, y] = position;

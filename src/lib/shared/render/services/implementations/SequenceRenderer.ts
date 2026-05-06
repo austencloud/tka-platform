@@ -2,7 +2,7 @@ import type { SequenceData } from "../../../foundation/domain/models/SequenceDat
 import { getBaseBeatSize } from "../layout-calculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type { ImageComposer } from "./ImageComposer";
-import type { CompositionProgressCallback } from "../contracts/types";
+import type { CompositionProgressCallback, RenderCanvas } from "../contracts/types";
 import type { ImageFormatConverter } from "./ImageFormatConverter";
 
 export class SequenceRenderer {
@@ -16,7 +16,7 @@ export class SequenceRenderer {
     options: Partial<SequenceExportOptions> = {},
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal
-  ): Promise<HTMLCanvasElement> {
+  ): Promise<RenderCanvas> {
     if (!sequence) {
       throw new Error("Sequence data is required for rendering");
     }
@@ -73,16 +73,23 @@ export class SequenceRenderer {
         signal
       );
 
-      const blob = await this.formatService.canvasToBlob(canvas, {
-        format: fullOptions.format.toLowerCase() as "png" | "jpeg" | "webp",
-        quality: fullOptions.quality,
-        ...(fullOptions.width !== undefined
-          ? { width: fullOptions.width }
-          : {}),
-        ...(fullOptions.height !== undefined
-          ? { height: fullOptions.height }
-          : {}),
-      });
+      let blob: Blob;
+      if (canvas instanceof OffscreenCanvas) {
+        const fmt = fullOptions.format.toLowerCase();
+        const mimeType = fmt === "jpeg" ? "image/jpeg" : fmt === "webp" ? "image/webp" : "image/png";
+        blob = await canvas.convertToBlob({ type: mimeType, quality: fullOptions.quality });
+      } else {
+        blob = await this.formatService.canvasToBlob(canvas as HTMLCanvasElement, {
+          format: fullOptions.format.toLowerCase() as "png" | "jpeg" | "webp",
+          quality: fullOptions.quality,
+          ...(fullOptions.width !== undefined
+            ? { width: fullOptions.width }
+            : {}),
+          ...(fullOptions.height !== undefined
+            ? { height: fullOptions.height }
+            : {}),
+        });
+      }
 
       return blob;
     } catch (error) {
@@ -112,7 +119,13 @@ export class SequenceRenderer {
         previewOptions
       );
 
-      return this.formatService.canvasToDataURL(canvas, {
+      if (canvas instanceof OffscreenCanvas) {
+        const fmt = previewOptions.format.toLowerCase();
+        const mimeType = fmt === "jpeg" ? "image/jpeg" : fmt === "webp" ? "image/webp" : "image/png";
+        const blob = await canvas.convertToBlob({ type: mimeType, quality: previewOptions.quality });
+        return URL.createObjectURL(blob);
+      }
+      return this.formatService.canvasToDataURL(canvas as HTMLCanvasElement, {
         format: previewOptions.format.toLowerCase() as "png" | "jpeg" | "webp",
         quality: previewOptions.quality,
         ...(previewOptions.width !== undefined
@@ -190,13 +203,13 @@ export class SequenceRenderer {
   async batchRender(
     sequences: SequenceData[],
     options: SequenceExportOptions
-  ): Promise<HTMLCanvasElement[]> {
+  ): Promise<RenderCanvas[]> {
     if (!sequences || sequences.length === 0) {
       throw new Error("At least one sequence is required for batch rendering");
     }
 
     try {
-      const canvases: HTMLCanvasElement[] = [];
+      const canvases: RenderCanvas[] = [];
 
       for (const sequence of sequences) {
         const canvas = await this.renderSequenceToCanvas(sequence, options);

@@ -199,9 +199,9 @@
   // ImageBitmap clone to recolor and stylize - it never reinvents motion
   // geometry.
 
-  let canonicalSource = $state<HTMLCanvasElement | null>(null);
+  let canonicalSource = $state<HTMLCanvasElement | OffscreenCanvas | null>(null);
 
-  async function buildCanonical(p: PictographData): Promise<HTMLCanvasElement | null> {
+  async function buildCanonical(p: PictographData): Promise<HTMLCanvasElement | OffscreenCanvas | null> {
     try {
       await canvas2DRenderer.initialize();
       const prepared = await pictographPreparer.prepareSingle(p, { themeMode: "dark" });
@@ -224,7 +224,7 @@
     }
   }
 
-  async function bitmapFor(cvs: HTMLCanvasElement | null): Promise<ImageBitmap | null> {
+  async function bitmapFor(cvs: HTMLCanvasElement | OffscreenCanvas | null): Promise<ImageBitmap | null> {
     if (!cvs) return null;
     try {
       return await createImageBitmap(cvs);

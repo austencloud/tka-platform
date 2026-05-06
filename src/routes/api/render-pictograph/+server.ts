@@ -105,16 +105,22 @@ export const GET: RequestHandler = async (event) => {
     });
 
     // Convert to PNG buffer (works with both browser and Node.js canvas)
-    const buffer = 'toBuffer' in canvas && typeof canvas.toBuffer === 'function'
-      ? (canvas.toBuffer as (type: string) => Buffer)('image/png')
-      : await new Promise<Buffer>((resolve) => {
-          canvas.toBlob((blob: Blob | null) => {
-            if (!blob) {
-              throw new Error('Failed to convert canvas to blob');
-            }
-            blob.arrayBuffer().then(ab => resolve(Buffer.from(ab)));
-          }, 'image/png');
-        });
+    let buffer: Buffer;
+    if ('toBuffer' in canvas && typeof canvas.toBuffer === 'function') {
+      buffer = (canvas.toBuffer as (type: string) => Buffer)('image/png');
+    } else if (canvas instanceof OffscreenCanvas) {
+      const blob = await canvas.convertToBlob({ type: 'image/png' });
+      buffer = Buffer.from(await blob.arrayBuffer());
+    } else {
+      buffer = await new Promise<Buffer>((resolve) => {
+        (canvas as HTMLCanvasElement).toBlob((blob: Blob | null) => {
+          if (!blob) {
+            throw new Error('Failed to convert canvas to blob');
+          }
+          blob.arrayBuffer().then(ab => resolve(Buffer.from(ab)));
+        }, 'image/png');
+      });
+    }
 
     return new Response(buffer as BodyInit, {
       headers: {

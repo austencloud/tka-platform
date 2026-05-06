@@ -220,7 +220,12 @@
         }
       });
       canvasTime = performance.now() - canvasStart;
-      canvasDataUrl = canvas.toDataURL('image/png');
+      if (canvas instanceof OffscreenCanvas) {
+        const blob = await canvas.convertToBlob({ type: 'image/png' });
+        canvasDataUrl = URL.createObjectURL(blob);
+      } else {
+        canvasDataUrl = (canvas as HTMLCanvasElement).toDataURL('image/png');
+      }
 
       const speedup = (svgTime / canvasTime).toFixed(1);
       status = `Done! SVG: ${svgTime.toFixed(0)}ms, Canvas: ${canvasTime.toFixed(0)}ms (${speedup}x faster)`;
@@ -292,10 +297,17 @@
           const canvasMs = performance.now() - canvasStart;
           totalCanvasTime += canvasMs;
 
+          let canvasDataUrlResult: string;
+          if (canvas instanceof OffscreenCanvas) {
+            const blob = await canvas.convertToBlob({ type: 'image/png' });
+            canvasDataUrlResult = URL.createObjectURL(blob);
+          } else {
+            canvasDataUrlResult = (canvas as HTMLCanvasElement).toDataURL('image/png');
+          }
           results.push({
             pictograph: picto,
             svgDataUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString),
-            canvasDataUrl: canvas.toDataURL('image/png'),
+            canvasDataUrl: canvasDataUrlResult,
             svgTime: svgMs,
             canvasTime: canvasMs,
             speedup: svgMs / canvasMs
@@ -451,11 +463,18 @@
             seqCanvasTime += canvasMs;
             totalCanvasTime += canvasMs;
 
+            let stepCanvasDataUrl: string;
+            if (canvas instanceof OffscreenCanvas) {
+              const blob = await canvas.convertToBlob({ type: 'image/png' });
+              stepCanvasDataUrl = URL.createObjectURL(blob);
+            } else {
+              stepCanvasDataUrl = (canvas as HTMLCanvasElement).toDataURL('image/png');
+            }
             stepResults.push({
               stepIndex: stepIdx,
               letter: beat.letter || '?',
               svgDataUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString),
-              canvasDataUrl: canvas.toDataURL('image/png'),
+              canvasDataUrl: stepCanvasDataUrl,
               svgTime: svgMs,
               canvasTime: canvasMs,
               speedup: svgMs / canvasMs
