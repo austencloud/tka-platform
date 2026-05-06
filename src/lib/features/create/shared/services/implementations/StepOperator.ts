@@ -30,6 +30,12 @@ import {
   persistBeatWithAdjustments,
 } from "./step-operations/ArrowAdjustmentHandler";
 import { updateStepDuration } from "./step-operations/DurationHandler";
+import {
+  setPathShape,
+  clearPathShape,
+  type PathShapeValue,
+} from "./step-operations/PathShapeHandler";
+import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class StepOperator {
   constructor(
@@ -131,6 +137,23 @@ export class StepOperator {
     createModuleState: ICreateModuleState
   ): void {
     updateStepDuration(stepNumber, newDuration, createModuleState);
+  }
+
+  setStepPathShape(
+    stepNumber: number,
+    color: MotionColor,
+    shape: PathShapeValue,
+    createModuleState: ICreateModuleState
+  ): void {
+    setPathShape(stepNumber, color, shape, createModuleState);
+  }
+
+  clearStepPathShape(
+    stepNumber: number,
+    color: MotionColor,
+    createModuleState: ICreateModuleState
+  ): void {
+    clearPathShape(stepNumber, color, createModuleState);
   }
 }
 

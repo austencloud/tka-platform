@@ -14,24 +14,23 @@
     currentStep?: number;
   } = $props();
 
-  function resolvePathTypeForMotion(motionType: MotionType): "arc" | "linear" | "concave" {
-    if (motionType === MotionType.DASH) return "linear";
-    if (motionType === MotionType.STATIC) return "arc";
+  function resolvePathTypeForMotion(motion: MotionData): "arc" | "linear" | "concave" {
+    if (motion.pathShape) return motion.pathShape;
+    if (motion.motionType === MotionType.DASH) return "linear";
+    if (motion.motionType === MotionType.STATIC) return "arc";
 
     const vm = getAnimationVisibilityManager();
-
     if (vm.getMotionAwarePaths()) {
-      if (motionType === MotionType.PRO) return "arc";
-      if (motionType === MotionType.ANTI) return "concave";
+      if (motion.motionType === MotionType.PRO) return "arc";
+      if (motion.motionType === MotionType.ANTI) return "concave";
     }
-
     return vm.getPathShape();
   }
 
   function buildPathD(motion: MotionData): string | null {
     if (motion.startLocation === motion.endLocation) return null;
     if (motion.motionType === MotionType.STATIC) return null;
-    const pathType = resolvePathTypeForMotion(motion.motionType);
+    const pathType = resolvePathTypeForMotion(motion);
     return getPathD(motion.startLocation, motion.endLocation, pathType);
   }
 

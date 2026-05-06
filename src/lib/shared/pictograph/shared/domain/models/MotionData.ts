@@ -73,6 +73,10 @@ export interface MotionData {
   // Absent/undefined = Plane.WALL (backward compatible).
   // Only used by the 3D viewer - 2D pictographs ignore this field.
   readonly plane?: Plane;
+
+  // Per-step path shape override for animation interpolation.
+  // Absent/undefined = use global pathShape setting.
+  readonly pathShape?: "arc" | "linear" | "concave";
 }
 
 /**
@@ -125,5 +129,6 @@ export function createMotionData(data: Partial<MotionData> = {}): MotionData {
     skewSteps: data.skewSteps ?? null,
     skewDir: data.skewDir ?? null,
     plane: data.plane ?? undefined,
+    pathShape: data.pathShape ?? undefined,
   };
 }

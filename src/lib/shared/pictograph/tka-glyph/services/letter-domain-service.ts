@@ -1,4 +1,4 @@
-import letterMappings from "../../../../../../static/data/learn/letter-mappings.json";
+import letterMappings from "../../../../../data/learn/letter-mappings.json";
 export type TKALetter = keyof typeof letterMappings.letters;
 
 export interface LetterPositionData {

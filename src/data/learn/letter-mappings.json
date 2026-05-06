@@ -1,0 +1,358 @@
+{
+  "letters": {
+    "A": {
+      "startPosition": "alpha1",
+      "endPosition": "alpha3",
+      "blueMotion": "pro",
+      "redMotion": "pro"
+    },
+    "B": {
+      "startPosition": "alpha1",
+      "endPosition": "alpha3",
+      "blueMotion": "anti",
+      "redMotion": "anti"
+    },
+    "C": {
+      "startPosition": "alpha1",
+      "endPosition": "alpha3",
+      "blueMotion": "anti",
+      "redMotion": "pro"
+    },
+    "D": {
+      "startPosition": "beta1",
+      "endPosition": "alpha3",
+      "blueMotion": "pro",
+      "redMotion": "pro"
+    },
+    "E": {
+      "startPosition": "beta1",
+      "endPosition": "alpha3",
+      "blueMotion": "anti",
+      "redMotion": "anti"
+    },
+    "F": {
+      "startPosition": "beta1",
+      "endPosition": "alpha3",
+      "blueMotion": "anti",
+      "redMotion": "pro"
+    },
+    "G": {
+      "startPosition": "beta3",
+      "endPosition": "beta5",
+      "blueMotion": "pro",
+      "redMotion": "pro"
+    },
+    "H": {
+      "startPosition": "beta3",
+      "endPosition": "beta5",
+      "blueMotion": "anti",
+      "redMotion": "anti"
+    },
+    "I": {
+      "startPosition": "beta3",
+      "endPosition": "beta5",
+      "blueMotion": "anti",
+      "redMotion": "pro"
+    },
+    "J": {
+      "startPosition": "alpha3",
+      "endPosition": "beta5",
+      "blueMotion": "pro",
+      "redMotion": "pro"
+    },
+    "K": {
+      "startPosition": "alpha3",
+      "endPosition": "beta5",
+      "blueMotion": "anti",
+      "redMotion": "anti"
+    },
+    "L": {
+      "startPosition": "alpha3",
+      "endPosition": "beta5",
+      "blueMotion": "anti",
+      "redMotion": "pro"
+    },
+    "M": {
+      "startPosition": "gamma11",
+      "endPosition": "gamma1",
+      "blueMotion": "pro",
+      "redMotion": "pro"
+    },
+    "N": {
+      "startPosition": "gamma11",
+      "endPosition": "gamma1",
+      "blueMotion": "anti",
+      "redMotion": "anti"
+    },
+    "O": {
+      "startPosition": "gamma11",
+      "endPosition": "gamma1",
+      "blueMotion": "anti",
+      "redMotion": "pro"
+    },
+    "P": {
+      "startPosition": "gamma1",
+      "endPosition": "gamma15",
+      "blueMotion": "pro",
+      "redMotion": "pro"
+    },
+    "Q": {
+      "startPosition": "gamma1",
+      "endPosition": "gamma15",
+      "blueMotion": "anti",
+      "redMotion": "anti"
+    },
+    "R": {
+      "startPosition": "gamma1",
+      "endPosition": "gamma15",
+      "blueMotion": "anti",
+      "redMotion": "pro"
+    },
+    "S": {
+      "startPosition": "gamma13",
+      "endPosition": "gamma11",
+      "blueMotion": "pro",
+      "redMotion": "pro"
+    },
+    "T": {
+      "startPosition": "gamma13",
+      "endPosition": "gamma11",
+      "blueMotion": "anti",
+      "redMotion": "anti"
+    },
+    "U": {
+      "startPosition": "gamma13",
+      "endPosition": "gamma11",
+      "blueMotion": "anti",
+      "redMotion": "pro"
+    },
+    "V": {
+      "startPosition": "gamma13",
+      "endPosition": "gamma11",
+      "blueMotion": "pro",
+      "redMotion": "anti"
+    },
+    "W": {
+      "startPosition": "gamma13",
+      "endPosition": "alpha3",
+      "blueMotion": "static",
+      "redMotion": "pro"
+    },
+    "X": {
+      "startPosition": "gamma13",
+      "endPosition": "alpha3",
+      "blueMotion": "static",
+      "redMotion": "anti"
+    },
+    "Y": {
+      "startPosition": "gamma11",
+      "endPosition": "beta5",
+      "blueMotion": "static",
+      "redMotion": "pro"
+    },
+    "Z": {
+      "startPosition": "gamma11",
+      "endPosition": "beta5",
+      "blueMotion": "static",
+      "redMotion": "anti"
+    },
+    "Σ": {
+      "startPosition": "alpha3",
+      "endPosition": "gamma13",
+      "blueMotion": "static",
+      "redMotion": "pro"
+    },
+    "Δ": {
+      "startPosition": "alpha3",
+      "endPosition": "gamma13",
+      "blueMotion": "static",
+      "redMotion": "anti"
+    },
+    "Θ": {
+      "startPosition": "beta5",
+      "endPosition": "gamma11",
+      "blueMotion": "static",
+      "redMotion": "pro"
+    },
+    "Ω": {
+      "startPosition": "beta5",
+      "endPosition": "gamma11",
+      "blueMotion": "static",
+      "redMotion": "anti"
+    },
+    "W-": {
+      "startPosition": "gamma5",
+      "endPosition": "alpha3",
+      "blueMotion": "dash",
+      "redMotion": "pro"
+    },
+    "X-": {
+      "startPosition": "gamma5",
+      "endPosition": "alpha3",
+      "blueMotion": "dash",
+      "redMotion": "anti"
+    },
+    "Y-": {
+      "startPosition": "gamma3",
+      "endPosition": "beta5",
+      "blueMotion": "dash",
+      "redMotion": "pro"
+    },
+    "Z-": {
+      "startPosition": "gamma3",
+      "endPosition": "beta5",
+      "blueMotion": "dash",
+      "redMotion": "anti"
+    },
+    "Σ-": {
+      "startPosition": "beta3",
+      "endPosition": "gamma13",
+      "blueMotion": "dash",
+      "redMotion": "pro"
+    },
+    "Δ-": {
+      "startPosition": "beta3",
+      "endPosition": "gamma13",
+      "blueMotion": "dash",
+      "redMotion": "anti"
+    },
+    "Θ-": {
+      "startPosition": "alpha5",
+      "endPosition": "gamma11",
+      "blueMotion": "dash",
+      "redMotion": "pro"
+    },
+    "Ω-": {
+      "startPosition": "alpha5",
+      "endPosition": "gamma11",
+      "blueMotion": "dash",
+      "redMotion": "anti"
+    },
+    "Φ": {
+      "startPosition": "beta7",
+      "endPosition": "alpha3",
+      "blueMotion": "static",
+      "redMotion": "dash"
+    },
+    "Ψ": {
+      "startPosition": "alpha1",
+      "endPosition": "beta5",
+      "blueMotion": "static",
+      "redMotion": "dash"
+    },
+    "Λ": {
+      "startPosition": "gamma7",
+      "endPosition": "gamma11",
+      "blueMotion": "static",
+      "redMotion": "dash"
+    },
+    "Φ-": {
+      "startPosition": "alpha3",
+      "endPosition": "alpha7",
+      "blueMotion": "dash",
+      "redMotion": "dash"
+    },
+    "Ψ-": {
+      "startPosition": "beta1",
+      "endPosition": "beta5",
+      "blueMotion": "dash",
+      "redMotion": "dash"
+    },
+    "Λ-": {
+      "startPosition": "gamma15",
+      "endPosition": "gamma11",
+      "blueMotion": "dash",
+      "redMotion": "dash"
+    },
+    "α": {
+      "startPosition": "alpha3",
+      "endPosition": "alpha3",
+      "blueMotion": "static",
+      "redMotion": "static"
+    },
+    "β": {
+      "startPosition": "beta5",
+      "endPosition": "beta5",
+      "blueMotion": "static",
+      "redMotion": "static"
+    },
+    "γ": {
+      "startPosition": "gamma11",
+      "endPosition": "gamma11",
+      "blueMotion": "static",
+      "redMotion": "static"
+    }
+  },
+  "rows": [
+    {
+      "index": 0,
+      "category": "dual-shift",
+      "letters": ["A", "B", "C", "D", "E", "F"]
+    },
+    {
+      "index": 1,
+      "category": "dual-shift",
+      "letters": ["G", "H", "I", "J", "K", "L"]
+    },
+    {
+      "index": 2,
+      "category": "dual-shift",
+      "letters": ["M", "N", "O", "P", "Q", "R"]
+    },
+    { "index": 3, "category": "dual-shift", "letters": ["S", "T", "U", "V"] },
+    {
+      "index": 4,
+      "category": "shift",
+      "letters": ["W", "X", "Y", "Z"]
+    },
+    {
+      "index": 5,
+      "category": "shift",
+      "letters": ["Σ", "Δ", "Θ", "Ω"]
+    },
+    {
+      "index": 6,
+      "category": "cross-shift",
+      "letters": ["W-", "X-", "Y-", "Z-"]
+    },
+    {
+      "index": 7,
+      "category": "cross-shift",
+      "letters": ["Σ-", "Δ-", "Θ-", "Ω-"]
+    },
+    { "index": 8, "category": "dash", "letters": ["Φ", "Ψ", "Λ"] },
+    { "index": 9, "category": "dual_dash", "letters": ["Φ-", "Ψ-", "Λ-"] },
+    { "index": 10, "category": "static", "letters": ["α", "β", "γ"] }
+  ],
+  "categories": {
+    "dual-shift": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "U",
+      "V"
+    ],
+    "shift": ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"],
+    "cross-shift": ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],
+    "dash": ["Φ", "Ψ", "Λ"],
+    "dual_dash": ["Φ-", "Ψ-", "Λ-"],
+    "static": ["α", "β", "γ"]
+  }
+}

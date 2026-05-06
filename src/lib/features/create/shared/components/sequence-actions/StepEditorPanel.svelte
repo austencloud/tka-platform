@@ -14,6 +14,7 @@
   import TurnsEditMode from "./TurnsEditMode.svelte";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import DurationControl from "./DurationControl.svelte";
+  import PathShapeControl from "./PathShapeControl.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
@@ -27,6 +28,7 @@
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { PathShapeValue } from "../../services/implementations/step-operations/PathShapeHandler";
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
@@ -50,6 +52,8 @@
     onStepDataUpdate?: (updatedStepData: StepData) => void;
     onPushUndoSnapshot?: () => void;
     onDurationChange?: (newDuration: number) => void;
+    onPathShapeChange?: (color: MotionColor, shape: PathShapeValue) => void;
+    onPathShapeClear?: (color: MotionColor) => void;
   }
 
   let {
@@ -68,6 +72,8 @@
     onStepDataUpdate,
     onPushUndoSnapshot,
     onDurationChange,
+    onPathShapeChange,
+    onPathShapeClear,
   }: Props = $props();
 
   // Track if an arrow is selected for showing adjustment panel
@@ -155,6 +161,9 @@
   const redRotation = $derived(
     redMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
   );
+
+  const bluePathShape = $derived(blueMotion?.pathShape);
+  const redPathShape = $derived(redMotion?.pathShape);
 
   const stepLabel = $derived.by(() => {
     if (displayedStepNumber === null) return "";
@@ -417,6 +426,15 @@
             {onOpenPropSheet}
           />
         </div>
+        {#if onPathShapeChange && onPathShapeClear}
+          <PathShapeControl
+            {bluePathShape}
+            {redPathShape}
+            compact={!isSideBySideLayout}
+            onPathShapeChange={onPathShapeChange}
+            onPathShapeClear={onPathShapeClear}
+          />
+        {/if}
       {/if}
     </div>
   </div>

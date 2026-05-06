@@ -64,17 +64,16 @@ function interpolateDashPosition(
   return { worldPosition, centerPathAngle };
 }
 
-function resolvePathType(motionType: MotionType): "arc" | "linear" | "concave" {
+function resolvePathType(motionType: MotionType, motionPathShape?: "arc" | "linear" | "concave"): "arc" | "linear" | "concave" {
+  if (motionPathShape) return motionPathShape;
   if (motionType === MotionType.DASH) return "linear";
   if (motionType === MotionType.STATIC) return "arc";
 
   const vm = getAnimationVisibilityManager();
-
   if (vm.getMotionAwarePaths()) {
     if (motionType === MotionType.PRO) return "arc";
     if (motionType === MotionType.ANTI) return "concave";
   }
-
   return vm.getPathShape();
 }
 
@@ -144,7 +143,7 @@ export function calculatePropState(
     staffRotationAngle
   );
 
-  const pathType = resolvePathType(config.motionType);
+  const pathType = resolvePathType(config.motionType, config.pathShape);
 
   if (pathType === "linear") {
     const { worldPosition, centerPathAngle } = interpolateDashPosition(

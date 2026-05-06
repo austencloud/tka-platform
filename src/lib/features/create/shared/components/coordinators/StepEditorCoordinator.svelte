@@ -26,6 +26,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
     MotionColor,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { PathShapeValue } from "../../services/implementations/step-operations/PathShapeHandler";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import {
     getSettings,
@@ -276,6 +277,20 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
     );
   }
 
+  function handlePathShapeChange(color: MotionColor, shape: PathShapeValue) {
+    if (selectedStepNumber === null || !StepOperator) return;
+    hapticService?.trigger("selection");
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.MODIFY_BEAT_PROPERTIES);
+    StepOperator.setStepPathShape(selectedStepNumber, color, shape, CreateModuleState);
+  }
+
+  function handlePathShapeClear(color: MotionColor) {
+    if (selectedStepNumber === null || !StepOperator) return;
+    hapticService?.trigger("selection");
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.MODIFY_BEAT_PROPERTIES);
+    StepOperator.clearStepPathShape(selectedStepNumber, color, CreateModuleState);
+  }
+
   function handleStepBeatDataUpdate(updatedStepData: typeof selectedStepData) {
     if (selectedStepNumber === null || !updatedStepData) return;
 
@@ -329,6 +344,8 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   onStepDataUpdate={handleStepBeatDataUpdate}
   onPushUndoSnapshot={handlePushUndoSnapshot}
   onDurationChange={handleDurationChange}
+  onPathShapeChange={handlePathShapeChange}
+  onPathShapeClear={handlePathShapeClear}
 />
 
 <!-- Prop Selection Sheet - rendered as sibling to StepEditorPanel -->

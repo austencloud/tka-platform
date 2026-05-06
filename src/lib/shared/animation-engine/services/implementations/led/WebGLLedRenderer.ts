@@ -548,6 +548,16 @@ export class WebGLLedRenderer {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	}
 
+	resetExportState(): void {
+		if (!this.gl) return;
+		this.clearAllFramebuffers();
+		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+		this.gl.clearColor(0, 0, 0, 0);
+		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+		this.prevPositions.clear();
+		this.lastFrameTime = -1;
+	}
+
 	private swapFBO(fbo: DoubleFBO): void {
 		const tmp = fbo.read;
 		fbo.read = fbo.write;

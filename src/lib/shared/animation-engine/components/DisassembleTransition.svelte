@@ -107,16 +107,18 @@
     slotRect: DOMRect,
     targetRect: { left: number; top: number; width: number; height: number }
   ) {
-    const slotCenterX = slotRect.left + slotRect.width / 2;
-    const slotCenterY = slotRect.top + slotRect.height / 2;
-    const targetCenterX = targetRect.left + targetRect.width / 2;
-    const targetCenterY = targetRect.top + targetRect.height / 2;
+    const slotW = slotRect.width || 1;
+    const slotH = slotRect.height || 1;
+    const slotCenterX = slotRect.left + slotW / 2;
+    const slotCenterY = slotRect.top + slotH / 2;
+    const targetCenterX = targetRect.left + (targetRect.width || slotW) / 2;
+    const targetCenterY = targetRect.top + (targetRect.height || slotH) / 2;
 
     return {
       tx: targetCenterX - slotCenterX,
       ty: targetCenterY - slotCenterY,
-      sx: targetRect.width / slotRect.width,
-      sy: targetRect.height / slotRect.height,
+      sx: (targetRect.width || slotW) / slotW,
+      sy: (targetRect.height || slotH) / slotH,
     };
   }
 

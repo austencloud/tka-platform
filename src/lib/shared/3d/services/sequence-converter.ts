@@ -41,6 +41,7 @@ export function motionDataToConfig3D(
     turns,
     startOrientation: motion.startOrientation,
     endOrientation: motion.endOrientation,
+    pathShape: motion.pathShape,
   };
 }
 

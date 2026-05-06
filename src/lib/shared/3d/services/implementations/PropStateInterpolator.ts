@@ -86,12 +86,10 @@ export class PropStateInterpolator {
     if (motionType === MotionType.STATIC) return "arc";
 
     const vm = getAnimationVisibilityManager();
-
     if (vm.getMotionAwarePaths()) {
       if (motionType === MotionType.PRO) return "arc";
       if (motionType === MotionType.ANTI) return "concave";
     }
-
     return vm.getPathShape();
   }
 
@@ -173,7 +171,7 @@ export class PropStateInterpolator {
       staffRotationAngle
     );
 
-    const pathType = this.resolvePathType(config.motionType);
+    const pathType = this.resolvePathType(config.motionType, config.pathShape);
 
     let result: PropState3D;
 

@@ -37,7 +37,7 @@
         {/if}
       </h3>
       {#if parsed.steps}
-        <span class="section-meta">{parsed.steps} beats</span>
+        <span class="section-meta">{parsed.steps} steps</span>
       {/if}
       {#if parsed.count}
         <span class="section-count">{parsed.count}</span>

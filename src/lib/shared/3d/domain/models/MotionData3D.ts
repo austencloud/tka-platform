@@ -38,6 +38,8 @@ export interface MotionConfig3D {
    * Defaults to `plane` when not specified.
    */
   rotationPlane?: Plane;
+  /** Per-step path shape override. Absent = use global setting. */
+  pathShape?: "arc" | "linear" | "concave";
 }
 
 /**
