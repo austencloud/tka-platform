@@ -36,8 +36,31 @@ import {
   calculateFooterHeight as sharedFooterHeight,
 } from "@tka/render-composition";
 import { blobToImage, canvasToImage, imageToBlob } from "./ImageFormatConverter";
+import { createRenderCanvas } from "./createRenderCanvas";
+import type { RenderCanvas } from "../contracts/types";
 import { drawSmartCellBorders, findEmptyCellForQR } from "./cell-border-renderer";
 import { composeCardImage as composeCardImageFn } from "./card-composer";
+import { getMandalaGeometryCalculator } from "../../../mandala/getMandalaGeometryCalculator";
+import { renderMandalaToCanvas } from "../../../mandala/services/mandala-renderer";
+import { getMandalaPlacements } from "../../../sequence-viewer/services/getMandalaPlacements";
+import {
+  LIGHT_MOTION_BLUE_STROKE,
+  LIGHT_MOTION_RED_STROKE,
+  LIGHT_MOTION_BLUE_FILL,
+  LIGHT_MOTION_RED_FILL,
+  LIGHT_MOTION_PURPLE_STROKE,
+  LIGHT_MOTION_PURPLE_FILL,
+  DARK_MOTION_BLUE_STROKE,
+  DARK_MOTION_RED_STROKE,
+  DARK_MOTION_BLUE_FILL,
+  DARK_MOTION_RED_FILL,
+  DARK_MOTION_PURPLE_STROKE,
+  DARK_MOTION_PURPLE_FILL,
+} from "../../../mandala/domain/mandala-constants";
+
+const yieldToEventLoop: () => Promise<void> =
+  (globalThis as any).scheduler?.yield?.bind((globalThis as any).scheduler) ??
+  (() => new Promise<void>((r) => setTimeout(r, 0)));
 
 const DECK_HEADER_RATIO = 0.133;
 const DECK_FOOTER_RATIO = 0.067;
@@ -161,7 +184,7 @@ export class ImageComposer {
     options: Partial<SequenceExportOptions>,
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal
-  ): Promise<HTMLCanvasElement> {
+  ): Promise<RenderCanvas> {
     if (!sequence.steps || sequence.steps.length === 0) {
       throw new Error("Sequence must have at least one beat");
     }
@@ -190,7 +213,7 @@ export class ImageComposer {
       [columns, rows] = calculateLayout(
         stepCount,
         options.includeStartPosition ?? false,
-        options.startPositionLayout ?? "column"
+        options.startPositionLayout ?? "row"
       );
     }
 
@@ -251,11 +274,11 @@ export class ImageComposer {
       canvasHeight = rows * stepSize + headerHeight + footerHeight;
     }
 
-    const canvas = document.createElement("canvas");
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
+    const canvas = createRenderCanvas(canvasWidth, canvasHeight);
 
-    const ctx = canvas.getContext("2d");
+    // Both HTMLCanvasElement and OffscreenCanvas provide compatible 2D contexts.
+    // Cast to CanvasRenderingContext2D to satisfy downstream method signatures.
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
     if (!ctx) {
       throw new Error("Failed to get 2D context");
     }
@@ -329,7 +352,7 @@ export class ImageComposer {
       });
     }
 
-    const layoutMode = options.startPositionLayout ?? "column";
+    const layoutMode = options.startPositionLayout ?? "row";
     const useColumnMode = layoutMode === "column" && options.includeStartPosition;
     const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
     const startColumn = useColumnMode ? 1 : 0;
@@ -337,7 +360,7 @@ export class ImageComposer {
 
     for (let i = 0; i < sequence.steps.length; i++) {
       if (signal?.aborted) throw new DOMException("Render aborted", "AbortError");
-      if (i > 0) await new Promise<void>(resolve => setTimeout(resolve, 0));
+      if (i > 0) await yieldToEventLoop();
       const beat = sequence.steps[i];
       if (!beat) continue;
       const col = startColumn + (i % stepsPerRow);
@@ -395,6 +418,22 @@ export class ImageComposer {
           gridOffsetX
         );
       }
+    }
+
+    if (options.visibilityOverrides?.showMandala && sequence.loopType) {
+      await this.renderMandalas(
+        ctx,
+        sequence,
+        columns,
+        rows,
+        stepSize,
+        gridOffsetY,
+        gridOffsetX,
+        isDarkMode,
+        options,
+        effectiveBluePropType,
+        effectiveRedPropType
+      );
     }
 
     drawSmartCellBorders(
@@ -774,15 +813,96 @@ export class ImageComposer {
   }
 
 
-  async composeFromCanvases(): Promise<HTMLCanvasElement> {
+  private async renderMandalas(
+    ctx: CanvasRenderingContext2D,
+    sequence: SequenceData,
+    columns: number,
+    rows: number,
+    stepSize: number,
+    gridOffsetY: number,
+    gridOffsetX: number,
+    isDarkMode: boolean,
+    options: Partial<SequenceExportOptions>,
+    bluePropType?: PropType,
+    redPropType?: PropType,
+  ): Promise<void> {
+    try {
+      const calculator = getMandalaGeometryCalculator();
+      const paths = calculator.calculate(
+        sequence.steps ?? [],
+        bluePropType,
+        redPropType,
+      );
+      if (paths.blue.length === 0 && paths.red.length === 0) return;
+
+      const layoutMode = options.startPositionLayout ?? "row";
+      const { placements } = getMandalaPlacements({
+        stepCount: sequence.steps?.length ?? 0,
+        cols: columns,
+        rows,
+        includeStartPosition: options.includeStartPosition ?? false,
+        showQRCode: options.visibilityOverrides?.showQRCode ?? false,
+        blueVisible: options.blueVisible ?? true,
+        redVisible: options.redVisible ?? true,
+        mandalaEnabled: true,
+        startPositionLayout: layoutMode,
+      });
+
+      if (placements.length === 0) return;
+
+      const palette = isDarkMode
+        ? {
+            blueStroke: DARK_MOTION_BLUE_STROKE,
+            blueFill: DARK_MOTION_BLUE_FILL,
+            redStroke: DARK_MOTION_RED_STROKE,
+            redFill: DARK_MOTION_RED_FILL,
+            purpleStroke: DARK_MOTION_PURPLE_STROKE,
+            purpleFill: DARK_MOTION_PURPLE_FILL,
+          }
+        : {
+            blueStroke: LIGHT_MOTION_BLUE_STROKE,
+            blueFill: LIGHT_MOTION_BLUE_FILL,
+            redStroke: LIGHT_MOTION_RED_STROKE,
+            redFill: LIGHT_MOTION_RED_FILL,
+            purpleStroke: LIGHT_MOTION_PURPLE_STROKE,
+            purpleFill: LIGHT_MOTION_PURPLE_FILL,
+          };
+
+      const mandalaScale = 0.85;
+      const mandalaSize = Math.floor(stepSize * mandalaScale);
+      const padding = (stepSize - mandalaSize) / 2;
+
+      for (const p of placements) {
+        const show = p.variant === "full" ? "both" as const : p.variant;
+        const x = (p.col - 1) * stepSize + gridOffsetX + padding;
+        const y = (p.row - 1) * stepSize + gridOffsetY + padding;
+
+        renderMandalaToCanvas(ctx, paths, {
+          size: mandalaSize,
+          style: "stroke",
+          showGridDots: false,
+          show,
+          strokeWidth: 2,
+          transparentBackground: true,
+          palette,
+          offsetX: x,
+          offsetY: y,
+        });
+      }
+    } catch (error) {
+      console.error("[ImageComposer] Failed to render mandalas:", error);
+    }
+  }
+
+  async composeFromCanvases(): Promise<RenderCanvas> {
     throw new Error("Not implemented in simple version");
   }
 
-  applyBackground(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  applyBackground(canvas: RenderCanvas): RenderCanvas {
     return canvas;
   }
 
-  optimizeForExport(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  optimizeForExport(canvas: RenderCanvas): RenderCanvas {
     return canvas;
   }
 
@@ -904,7 +1024,7 @@ export class ImageComposer {
     options: Partial<SequenceExportOptions>,
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal
-  ): Promise<HTMLCanvasElement> {
+  ): Promise<RenderCanvas> {
     return composeCardImageFn(
       sequence,
       options,
