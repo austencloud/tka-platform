@@ -35,6 +35,7 @@ Usage:
   import PositionGlyph from "./PositionGlyph.svelte";
   import StepNumber from "./StepNumber.svelte";
   import DurationGlyph from "./DurationGlyph.svelte";
+  import PathShapeGlyph from "./PathShapeGlyph.svelte";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
@@ -536,6 +537,13 @@ Usage:
         {hasValidData}
         {darkMode}
         centerX={expandedWidth / 2}
+      />
+
+      <!-- Path shape accidental glyph (top center, only when per-step override set) -->
+      <PathShapeGlyph
+        blueMotion={pictograph.motions?.blue}
+        redMotion={pictograph.motions?.red}
+        {darkMode}
       />
   </svg>
 </div>

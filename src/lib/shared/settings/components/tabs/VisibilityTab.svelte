@@ -75,6 +75,7 @@
   const animGridMode = $derived.by(() => { void version; return avm.getGridMode(); });
   const animStepNumbers = $derived.by(() => { void version; return avm.getSettings().stepNumbers; });
   const animProps = $derived.by(() => { void version; return avm.getSettings().props; });
+  const animPathLines = $derived.by(() => { void version; return avm.getSettings().pathLines; });
   const animWordHeader = $derived.by(() => { void version; return avm.getSettings().wordHeader; });
   const animProgressBar = $derived.by(() => { void version; return avm.getSettings().progressBar; });
   const animTrailStyle = $derived.by(() => { void version; return avm.isTrailsActive() ? "on" : "off"; });
@@ -129,6 +130,7 @@
       }); break;
       case "props": tap(() => avm.setVisibility("props", !animProps)); break;
       case "stepNumbers": tap(() => avm.setVisibility("stepNumbers", !animStepNumbers)); break;
+      case "pathLines": tap(() => avm.setVisibility("pathLines", !animPathLines)); break;
       case "wordHeader": tap(() => avm.setVisibility("wordHeader", !animWordHeader)); break;
       case "progressBar": tap(() => avm.setVisibility("progressBar", !animProgressBar)); break;
       case "tkaGlyph": tap(() => avm.setVisibility("tkaGlyph", !animTkaGlyph)); break;
@@ -192,6 +194,7 @@
       stepNumbersVisible={animStepNumbers}
       armsVisible={true}
       propsVisible={animProps}
+      pathLinesVisible={animPathLines}
       trailStyle={animTrailStyle}
       playbackMode={animPlaybackMode}
       bpm={animBpm}

@@ -6,7 +6,6 @@
   the controls so changes are immediately visible.
 -->
 <script lang="ts">
-  import AnimationPreviewController from "./AnimationPreviewController.svelte";
   import type { TrailVisibility, PlaybackMode } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { animationSettings, TrailMode, TrackingMode } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
@@ -15,6 +14,7 @@
     stepNumbersVisible: boolean;
     armsVisible: boolean;
     propsVisible: boolean;
+    pathLinesVisible: boolean;
     trailStyle: TrailVisibility;
     playbackMode: PlaybackMode;
     bpm: number;
@@ -33,6 +33,7 @@
     stepNumbersVisible,
     armsVisible,
     propsVisible,
+    pathLinesVisible,
     trailStyle,
     playbackMode,
     bpm,
@@ -93,11 +94,6 @@
     </span>
     <h3 class="panel-title">Animation</h3>
   </header>
-
-  <!-- Live Preview -->
-  <div class="preview-frame animation-preview">
-    <AnimationPreviewController />
-  </div>
 
   <!-- Controls -->
   <div class="panel-controls">
@@ -199,6 +195,15 @@
           >
             <i class="fas fa-hashtag" aria-hidden="true"></i>
             Beat #s
+          </button>
+          <button
+            class="toggle-btn"
+            class:active={pathLinesVisible}
+            onclick={() => onToggle("pathLines")}
+            aria-pressed={pathLinesVisible}
+          >
+            <i class="fas fa-route" aria-hidden="true"></i>
+            Paths
           </button>
         </div>
       </div>
@@ -362,6 +367,15 @@
         </button>
         <button
           class="toggle-btn"
+          class:active={pathLinesVisible}
+          onclick={() => onToggle("pathLines")}
+          aria-pressed={pathLinesVisible}
+        >
+          <i class="fas fa-route" aria-hidden="true"></i>
+          Paths
+        </button>
+        <button
+          class="toggle-btn"
           class:active={tkaGlyphVisible}
           onclick={() => onToggle("tkaGlyph")}
           aria-pressed={tkaGlyphVisible}
@@ -482,20 +496,6 @@
     color: var(--theme-text, #ffffff);
     letter-spacing: 0.02em;
     margin: 0;
-  }
-
-  /* ── Preview Frame ───────────────────────────────────────────────── */
-
-  .preview-frame {
-    aspect-ratio: 1;
-    max-width: 100%;
-    width: 100%;
-    align-self: center;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
-    flex-shrink: 0;
   }
 
   /* ── Controls Wrapper ────────────────────────────────────────────── */

@@ -7,7 +7,6 @@
 	let gridVisible = $state(vm.isGridVisible());
 	let tkaGlyph = $state(vm.getVisibility("tkaGlyph"));
 	let stepNumbers = $state(vm.getVisibility("stepNumbers"));
-	let beatPosition = $state(vm.getVisibility("beatPosition"));
 	let props = $state(vm.getVisibility("props"));
 	let wordHeader = $state(vm.getVisibility("wordHeader"));
 	let progressBar = $state(vm.getVisibility("progressBar"));
@@ -16,7 +15,6 @@
 		gridVisible = vm.isGridVisible();
 		tkaGlyph = vm.getVisibility("tkaGlyph");
 		stepNumbers = vm.getVisibility("stepNumbers");
-		beatPosition = vm.getVisibility("beatPosition");
 		props = vm.getVisibility("props");
 		wordHeader = vm.getVisibility("wordHeader");
 		progressBar = vm.getVisibility("progressBar");
@@ -29,10 +27,9 @@
 		vm.setGridMode(gridVisible ? "none" : "8point");
 	}
 
-	const toggles: { key: "tkaGlyph" | "stepNumbers" | "beatPosition" | "props" | "wordHeader" | "progressBar"; label: string }[] = [
+	const toggles: { key: "tkaGlyph" | "stepNumbers" | "props" | "wordHeader" | "progressBar"; label: string }[] = [
 		{ key: "tkaGlyph", label: "TKA Glyph" },
 		{ key: "stepNumbers", label: "Step #" },
-		{ key: "beatPosition", label: "Beat Pos" },
 		{ key: "props", label: "Props" },
 		{ key: "wordHeader", label: "Word" },
 		{ key: "progressBar", label: "Progress" },
@@ -42,7 +39,6 @@
 		switch (key) {
 			case "tkaGlyph": return tkaGlyph;
 			case "stepNumbers": return stepNumbers;
-			case "beatPosition": return beatPosition;
 			case "props": return props;
 			case "wordHeader": return wordHeader;
 			case "progressBar": return progressBar;
