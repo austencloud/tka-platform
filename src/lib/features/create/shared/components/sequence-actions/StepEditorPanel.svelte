@@ -365,11 +365,18 @@
     <!-- Pictograph Preview - shown on both mobile and desktop when beat selected -->
     <!-- Duration is now rendered INSIDE the pictograph via DurationGlyph -->
     {#if hasSelection && displayedStepData}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="preview-section"
         class:mobile={!isSideBySideLayout}
         class:tour-highlight={tourHighlight === "preview"}
         class:tour-dim={tourHighlight !== "none" && tourHighlight !== "preview"}
+        onclick={(e) => {
+          if (hasArrowSelected && !(e.target as HTMLElement).closest('[role="button"]')) {
+            selectedArrowState.clearSelection();
+          }
+        }}
       >
         <div class="pictograph-container">
           <PictographContainer
