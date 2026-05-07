@@ -393,6 +393,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                         } else if (mode === 'card') {
                           ctx.viewerState.enterExport('image-export');
                         } else {
+                          ctx.exitEditMode();
                           ctx.viewerState.setViewerMode('videos');
                         }
                       }}
@@ -402,6 +403,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     <VideoGallery
                       sequence={overlay.sequence!}
                       isOwned={ctx.isOwned}
+                      isLoggedIn={ctx.isLoggedIn}
                       onUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                     />
                   {:else}
@@ -440,6 +442,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
                       splitConfig={ctx.viewerState.splitConfig}
                       onSplitConfigChange={(pane, content) => ctx.viewerState.setSplitPaneContent(pane, content)}
+                      isLoggedIn={ctx.isLoggedIn}
+                      onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                     />
                   {/if}
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}

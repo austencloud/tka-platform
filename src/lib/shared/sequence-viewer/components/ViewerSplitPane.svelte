@@ -138,6 +138,8 @@
     isExporting?: boolean;
     splitConfig?: SplitConfig;
     onSplitConfigChange?: (pane: 'left' | 'right', content: ContentType) => void;
+    isLoggedIn?: boolean;
+    onVideoUpload?: () => void;
   }
 
   let {
@@ -163,6 +165,8 @@
     isExporting = false,
     splitConfig = { leftPane: 'animation', rightPane: 'card' },
     onSplitConfigChange,
+    isLoggedIn = false,
+    onVideoUpload,
   }: Props = $props();
 
   // Feature flag: set window.__TKA_UNIFIED_VIEWER = true to enable the
@@ -394,7 +398,7 @@
       </div>
     {:else if splitConfig.leftPane === 'videos'}
       <div class="media-pane">
-        <VideoGallery {sequence} isOwned={false} />
+        <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
       </div>
     {/if}
   </div>
@@ -495,7 +499,7 @@
         </div>
       {:else if splitConfig.rightPane === 'videos'}
         <div class="media-pane">
-          <VideoGallery {sequence} isOwned={false} />
+          <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
         </div>
       {/if}
     </div>

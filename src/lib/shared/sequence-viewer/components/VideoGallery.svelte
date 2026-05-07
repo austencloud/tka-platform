@@ -11,10 +11,11 @@
   interface Props {
     sequence: SequenceData;
     isOwned: boolean;
+    isLoggedIn?: boolean;
     onUpload?: () => void;
   }
 
-  let { sequence, isOwned, onUpload }: Props = $props();
+  let { sequence, isOwned, isLoggedIn = false, onUpload }: Props = $props();
 
   let videos = $state<CollaborativeVideo[]>([]);
   let loading = $state(true);
@@ -60,11 +61,13 @@
     <div class="gallery-empty">
       <i class="fas fa-video" aria-hidden="true"></i>
       <span>No videos yet</span>
-      {#if onUpload}
+      {#if isLoggedIn && onUpload}
         <button type="button" class="upload-btn" onclick={onUpload}>
           <i class="fas fa-upload" aria-hidden="true"></i>
-          Upload a performance
+          Record your performance
         </button>
+      {:else if !isLoggedIn}
+        <span class="sign-in-hint">Sign in to upload performances</span>
       {/if}
     </div>
   {:else}
@@ -150,6 +153,11 @@
   .gallery-empty i {
     font-size: 32px;
     opacity: 0.5;
+  }
+
+  .sign-in-hint {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    font-size: var(--font-size-xs, 12px);
   }
 
   .upload-btn {
