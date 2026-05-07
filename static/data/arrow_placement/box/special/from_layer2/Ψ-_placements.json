@@ -15,12 +15,8 @@
     "(ccw, 1, 0)": {
       "blue_rot_angle_override": true
     },
-    "(ccw, 3, 0)": {
-      "blue": [-10, -130]
-    },
-    "(cw, 3, 0)": {
-      "blue": [-10, -130]
-    },
+
+
     "(s, 3, 1)": {
       "red_rot_angle_override": true,
       "blue": [75, 100]
