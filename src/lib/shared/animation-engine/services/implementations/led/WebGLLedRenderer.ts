@@ -136,7 +136,7 @@ export class WebGLLedRenderer {
 
 		this.gl = this.canvas.getContext("webgl2", {
 			alpha: true,
-			premultipliedAlpha: true,
+			premultipliedAlpha: false,
 			antialias: false,
 			depth: false,
 			stencil: false,
@@ -196,6 +196,18 @@ export class WebGLLedRenderer {
 
 	private _diagFrameCount = 0;
 
+	// Nuclear blast diagnostic flags — set from console:
+	// window.__tka_led_blast = { noTrail: true }  etc.
+	private getBlastFlags(): { noTrail: boolean; noBloom: boolean; noBloomUpsample: boolean; spritesOnly: boolean } {
+		const w = typeof window !== "undefined" ? (window as any).__tka_led_blast : undefined;
+		return {
+			noTrail: w?.noTrail === true,
+			noBloom: w?.noBloom === true,
+			noBloomUpsample: w?.noBloomUpsample === true,
+			spritesOnly: w?.spritesOnly === true,
+		};
+	}
+
 	renderLeds(input: LedFrameInput, config: LedOverlayConfig): void {
 		if (!this.gl || !this.initialized) return;
 		const gl = this.gl;
@@ -205,6 +217,8 @@ export class WebGLLedRenderer {
 			console.log(`[led-render-diag] frame=${this._diagFrameCount} canvasW=${input.canvasWidth} canvasH=${input.canvasHeight} displayW=${this.displayWidth} displayH=${this.displayHeight} effectScale=${es.toFixed(3)} glowRadius=${(config.glowRadius * 60 * es).toFixed(1)} tips=${input.tips.length} bloomIntensity=${config.bloomIntensity}`);
 			this._diagFrameCount++;
 		}
+
+		const blast = this.getBlastFlags();
 
 		if (input.tips.length === 0) {
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -307,90 +321,95 @@ export class WebGLLedRenderer {
 		gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, tipCount);
 		gl.bindVertexArray(null);
 
-		// 3. Trail accumulation
-		gl.disable(gl.BLEND);
-		gl.useProgram(this.trailProgram!.program);
-		gl.bindFramebuffer(gl.FRAMEBUFFER, this.trailFBOs!.write.fbo);
-		gl.viewport(0, 0, this.displayWidth, this.displayHeight);
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.spriteFBO!.texture);
-		gl.uniform1i(this.trailProgram!.uniforms.get("u_currentFrame")!, 0);
-		gl.activeTexture(gl.TEXTURE1);
-		gl.bindTexture(gl.TEXTURE_2D, this.trailFBOs!.read.texture);
-		gl.uniform1i(this.trailProgram!.uniforms.get("u_previousTrail")!, 1);
-		gl.uniform1f(
-			this.trailProgram!.uniforms.get("u_fadeRate")!,
-			this.reducedMotion ? 0.0 : config.trailFadeRate,
-		);
-		gl.bindVertexArray(this.quadVAO);
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
-		gl.bindVertexArray(null);
-		this.swapFBO(this.trailFBOs!);
-
-		// 4. Bloom downsample
-		let srcTexture = this.trailFBOs!.read.texture;
-		let srcWidth = this.displayWidth;
-		let srcHeight = this.displayHeight;
-		gl.useProgram(this.bloomDownProgram!.program);
-		gl.bindVertexArray(this.quadVAO);
-
-		// First downsample: soft-knee luminance prefilter gates which pixels
-		// enter the bloom mip chain. Without this, faint trail pixels
-		// accumulate through the additive upsample chain and produce visible
-		// halo discs when the LED canvas is composited onto dark backgrounds
-		// during video export (same class of bug as the fire bloom fix).
-		gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_threshold")!, 0.4);
-		gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_knee")!, 0.2);
-
-		for (let i = 0; i < this.bloomMips.length; i++) {
-			const mip = this.bloomMips[i]!;
-			const mipSize = this.bloomMipSizes[i]!;
-			gl.bindFramebuffer(gl.FRAMEBUFFER, mip.fbo);
-			gl.viewport(0, 0, mipSize.w, mipSize.h);
+		// 3. Trail accumulation (skip if blast.noTrail or blast.spritesOnly)
+		if (!blast.noTrail && !blast.spritesOnly) {
+			gl.disable(gl.BLEND);
+			gl.useProgram(this.trailProgram!.program);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.trailFBOs!.write.fbo);
+			gl.viewport(0, 0, this.displayWidth, this.displayHeight);
 			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, srcTexture);
-			gl.uniform1i(this.bloomDownProgram!.uniforms.get("u_source")!, 0);
-			gl.uniform2f(
-				this.bloomDownProgram!.uniforms.get("u_texelSize")!,
-				1.0 / srcWidth,
-				1.0 / srcHeight,
+			gl.bindTexture(gl.TEXTURE_2D, this.spriteFBO!.texture);
+			gl.uniform1i(this.trailProgram!.uniforms.get("u_currentFrame")!, 0);
+			gl.activeTexture(gl.TEXTURE1);
+			gl.bindTexture(gl.TEXTURE_2D, this.trailFBOs!.read.texture);
+			gl.uniform1i(this.trailProgram!.uniforms.get("u_previousTrail")!, 1);
+			gl.uniform1f(
+				this.trailProgram!.uniforms.get("u_fadeRate")!,
+				this.reducedMotion ? 0.0 : config.trailFadeRate,
 			);
+			gl.bindVertexArray(this.quadVAO);
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			gl.bindVertexArray(null);
+			this.swapFBO(this.trailFBOs!);
+		}
 
-			// Subsequent passes: no threshold (already filtered)
-			if (i === 0) {
-				gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_threshold")!, 0.0);
+		// Source for bloom/display: trail FBO normally, sprite FBO if trail skipped
+		const displaySource = (blast.noTrail || blast.spritesOnly) ? this.spriteFBO!.texture : this.trailFBOs!.read.texture;
+
+		// 4-5. Bloom (skip if blast.noBloom or blast.spritesOnly)
+		if (!blast.noBloom && !blast.spritesOnly) {
+			// 4. Bloom downsample
+			let srcTexture = displaySource;
+			let srcWidth = this.displayWidth;
+			let srcHeight = this.displayHeight;
+			gl.disable(gl.BLEND);
+			gl.useProgram(this.bloomDownProgram!.program);
+			gl.bindVertexArray(this.quadVAO);
+
+			gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_threshold")!, 0.4);
+			gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_knee")!, 0.2);
+
+			for (let i = 0; i < this.bloomMips.length; i++) {
+				const mip = this.bloomMips[i]!;
+				const mipSize = this.bloomMipSizes[i]!;
+				gl.bindFramebuffer(gl.FRAMEBUFFER, mip.fbo);
+				gl.viewport(0, 0, mipSize.w, mipSize.h);
+				gl.activeTexture(gl.TEXTURE0);
+				gl.bindTexture(gl.TEXTURE_2D, srcTexture);
+				gl.uniform1i(this.bloomDownProgram!.uniforms.get("u_source")!, 0);
+				gl.uniform2f(
+					this.bloomDownProgram!.uniforms.get("u_texelSize")!,
+					1.0 / srcWidth,
+					1.0 / srcHeight,
+				);
+				gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+				if (i === 0) {
+					gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_threshold")!, 0.0);
+				}
+
+				srcTexture = mip.texture;
+				srcWidth = mipSize.w;
+				srcHeight = mipSize.h;
 			}
 
-			srcTexture = mip.texture;
-			srcWidth = mipSize.w;
-			srcHeight = mipSize.h;
+			// 5. Bloom upsample (additive) — skip if blast.noBloomUpsample
+			if (!blast.noBloomUpsample) {
+				gl.enable(gl.BLEND);
+				gl.blendFunc(gl.ONE, gl.ONE);
+				gl.useProgram(this.bloomUpProgram!.program);
+				for (let i = this.bloomMips.length - 1; i > 0; i--) {
+					const target = this.bloomMips[i - 1]!;
+					const source = this.bloomMips[i]!;
+					const targetSize = this.bloomMipSizes[i - 1]!;
+					const sourceSize = this.bloomMipSizes[i]!;
+					gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+					gl.viewport(0, 0, targetSize.w, targetSize.h);
+					gl.activeTexture(gl.TEXTURE0);
+					gl.bindTexture(gl.TEXTURE_2D, source.texture);
+					gl.uniform1i(this.bloomUpProgram!.uniforms.get("u_source")!, 0);
+					gl.uniform2f(
+						this.bloomUpProgram!.uniforms.get("u_texelSize")!,
+						1.0 / sourceSize.w,
+						1.0 / sourceSize.h,
+					);
+					gl.uniform1f(this.bloomUpProgram!.uniforms.get("u_bloomRadius")!, 1.0);
+					gl.drawArrays(gl.TRIANGLES, 0, 6);
+				}
+				gl.disable(gl.BLEND);
+			}
+			gl.bindVertexArray(null);
 		}
-
-		// 5. Bloom upsample (additive)
-		gl.enable(gl.BLEND);
-		gl.blendFunc(gl.ONE, gl.ONE);
-		gl.useProgram(this.bloomUpProgram!.program);
-		for (let i = this.bloomMips.length - 1; i > 0; i--) {
-			const target = this.bloomMips[i - 1]!;
-			const source = this.bloomMips[i]!;
-			const targetSize = this.bloomMipSizes[i - 1]!;
-			const sourceSize = this.bloomMipSizes[i]!;
-			gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
-			gl.viewport(0, 0, targetSize.w, targetSize.h);
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, source.texture);
-			gl.uniform1i(this.bloomUpProgram!.uniforms.get("u_source")!, 0);
-			gl.uniform2f(
-				this.bloomUpProgram!.uniforms.get("u_texelSize")!,
-				1.0 / sourceSize.w,
-				1.0 / sourceSize.h,
-			);
-			gl.uniform1f(this.bloomUpProgram!.uniforms.get("u_bloomRadius")!, 1.0);
-			gl.drawArrays(gl.TRIANGLES, 0, 6);
-		}
-		gl.disable(gl.BLEND);
-		gl.bindVertexArray(null);
 
 		// 6. Display composite to screen
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -399,19 +418,19 @@ export class WebGLLedRenderer {
 		gl.clear(gl.COLOR_BUFFER_BIT);
 		gl.enable(gl.BLEND);
 		gl.blendFuncSeparate(
-			gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
+			gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,
 			gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
 		);
 		gl.useProgram(this.displayProgram!.program);
 		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.trailFBOs!.read.texture);
+		gl.bindTexture(gl.TEXTURE_2D, displaySource);
 		gl.uniform1i(this.displayProgram!.uniforms.get("u_ledTrail")!, 0);
 		gl.activeTexture(gl.TEXTURE1);
 		gl.bindTexture(gl.TEXTURE_2D, this.bloomMips[0]!.texture);
 		gl.uniform1i(this.displayProgram!.uniforms.get("u_bloom")!, 1);
 		gl.uniform1f(
 			this.displayProgram!.uniforms.get("u_bloomIntensity")!,
-			config.bloomIntensity,
+			(blast.noBloom || blast.spritesOnly) ? 0.0 : config.bloomIntensity,
 		);
 		gl.bindVertexArray(this.quadVAO);
 		gl.drawArrays(gl.TRIANGLES, 0, 6);

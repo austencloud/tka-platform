@@ -271,7 +271,11 @@ void main() {
   // Additive bloom on top of LED output
   vec4 combined = led + bloom * u_bloomIntensity;
 
-  // Premultiplied alpha output
-  fragColor = vec4(combined.rgb, max(combined.r, max(combined.g, combined.b)));
+  // Straight alpha output (un-premultiplied RGB).
+  // Alpha = peak channel brightness; RGB divided by alpha so the browser's
+  // straight-alpha compositor reproduces the correct additive glow.
+  float a = max(combined.r, max(combined.g, combined.b));
+  vec3 rgb = a > 0.001 ? combined.rgb / a : vec3(0.0);
+  fragColor = vec4(rgb, a);
 }
 `;
