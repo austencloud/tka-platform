@@ -28,6 +28,7 @@
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -99,6 +100,21 @@
 
   // Layout calculator resolved synchronously (direct import for instant HMR)
 
+  // Resolve effective settings: explicit props > user preference from composition manager
+  const compositionManager = getImageCompositionManager();
+  const effectiveStartPositionLayout = $derived(
+    startPositionLayout ?? compositionManager.startPositionLayout
+  );
+
+  // Merge composition manager's QR/mandala settings into visibility when no explicit visibility passed
+  const effectiveVisibility = $derived.by<ThumbnailVisibilitySettings | undefined>(() => {
+    if (visibility) return visibility;
+    const qr = compositionManager.showQRCode;
+    const mandala = compositionManager.showMandala;
+    if (!qr && !mandala) return undefined;
+    return { showQRCode: qr, showMandala: mandala };
+  });
+
   // Derived: sequence name (raw)
   const sequenceName = $derived(sequence.word || sequence.name || "");
 
@@ -113,13 +129,13 @@
     sequence.steps?.length || sequence.sequenceLength || 4
   );
 
-  // Derived: aspect ratio based on beat count and variant
+  // Derived: aspect ratio based on beat count, variant, and start position layout
   // Gallery variant has header + footer, wordcard uses natural aspect ratio
   const aspectRatio = $derived.by(() => {
     if (variant === "wordcard") {
       return undefined; // Choreo card uses natural image aspect ratio
     }
-    return calculateGalleryAspectRatio(stepCount);
+    return calculateGalleryAspectRatio(stepCount, effectiveStartPositionLayout);
   });
 
   // Derived: Build render input from props
@@ -135,7 +151,7 @@
     addWord,
     addStepNumbers,
     includeStartPosition,
-    startPositionLayout,
+    startPositionLayout: effectiveStartPositionLayout,
     addDifficultyLevel,
     addUserInfo,
     userName,
@@ -143,7 +159,7 @@
     showNotes,
     showBirthday,
     customNotesText,
-    visibility,
+    visibility: effectiveVisibility,
     cardMode: cardMode || undefined, // Only include when true to avoid polluting cache keys
   });
 

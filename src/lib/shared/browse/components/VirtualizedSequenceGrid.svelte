@@ -17,6 +17,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { getVariationGrouper } from "$lib/shared/browse/getVariationGrouper";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
 
   /**
@@ -49,6 +50,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   const variationGrouper = getVariationGrouper();
   const sequenceDataProvider = getSequenceDataProvider();
+  const compositionManager = getImageCompositionManager();
 
   const variationMap = $derived.by(() => {
     return variationGrouper.buildVariationMap(sequences);
@@ -128,7 +130,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       if (steps > maxSteps) maxSteps = steps;
     }
 
-    const aspectRatio = calculateGalleryAspectRatio(maxSteps);
+    const aspectRatio = calculateGalleryAspectRatio(maxSteps, compositionManager.startPositionLayout);
     return cardWidth / aspectRatio;
   }
 
@@ -257,11 +259,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     };
   });
 
-  // Recreate virtualizer when row count changes (new filter, new data, etc.)
+  // Recreate virtualizer when row count, column count, or layout changes
   $effect(() => {
     const count = rowCount;
-    // Also track columnCount so we recreate when zoom changes
     const _cols = columnCount;
+    const _layout = compositionManager.startPositionLayout;
 
     untrack(() => {
       if (scrollElement) {

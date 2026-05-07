@@ -189,8 +189,11 @@ export function getLayoutsInRange(
   return results;
 }
 
-export function calculateGalleryAspectRatio(stepCount: number): number {
-  const [columns, rows] = calculateLayout(stepCount, true, "column");
+export function calculateGalleryAspectRatio(
+  stepCount: number,
+  startPositionLayout: "row" | "column" = "row"
+): number {
+  const [columns, rows] = calculateLayout(stepCount, true, startPositionLayout);
   const additionalHeightFraction = 10 / 21;
   return columns / (rows + additionalHeightFraction);
 }

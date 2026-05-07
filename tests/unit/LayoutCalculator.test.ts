@@ -24,12 +24,17 @@ describe("LayoutCalculator", () => {
     });
   });
 
-  describe("calculateGalleryAspectRatio with start column", () => {
-    it("uses column-based layout for aspect ratio", () => {
+  describe("calculateGalleryAspectRatio", () => {
+    it("uses column-based layout when startPositionLayout is column", () => {
       // 16 steps → LAYOUT_WITH_START_COLUMN[16] = [5, 4]
-      // AR = columns / (rows + header/footer fraction)
-      const ar = calculateGalleryAspectRatio(16);
+      const ar = calculateGalleryAspectRatio(16, "column");
       expect(ar).toBeCloseTo(5 / (4 + 10 / 21), 3);
+    });
+
+    it("uses row-based layout by default", () => {
+      // 16 steps → LAYOUT_WITH_START_ROW[16] = [4, 5]
+      const ar = calculateGalleryAspectRatio(16);
+      expect(ar).toBeCloseTo(4 / (5 + 10 / 21), 3);
     });
   });
 });
