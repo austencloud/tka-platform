@@ -36,7 +36,7 @@
 
   <section class="col col-list" aria-label="Sticker list">
     <header><h2>Stickers</h2></header>
-    <StickerList onExportClick={() => (exportDrawerOpen = true)} />
+    <StickerList onExportClick={() => (exportDrawerOpen = true)} onBrowseClick={() => (viewMode = "shapes")} />
   </section>
 </div>
 

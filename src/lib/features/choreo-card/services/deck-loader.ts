@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, limit, startAfter, orderBy, type QueryDocumentSnapshot } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { Deck } from "../domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -140,8 +140,25 @@ export async function loadSequencesByIds(deckId: string, sequenceIds: string[]):
   return results;
 }
 
+export async function loadDeckSequencesPage(
+  deckId: string,
+  pageSize: number,
+  afterDoc?: QueryDocumentSnapshot,
+): Promise<{ sequences: SequenceData[]; lastDoc: QueryDocumentSnapshot | null }> {
+  const db = await getFirestoreInstance();
+  const seqRef = collection(db, getSystemDeckSequencesPath(deckId));
+  const q = afterDoc
+    ? query(seqRef, orderBy("__name__"), startAfter(afterDoc), limit(pageSize))
+    : query(seqRef, orderBy("__name__"), limit(pageSize));
+  const snapshot = await getDocs(q);
+  return {
+    sequences: snapshot.docs.map((d) => hydrateDoc(d)),
+    lastDoc: snapshot.docs[snapshot.docs.length - 1] ?? null,
+  };
+}
+
 // Shared hydration logic for a single Firestore document
-function hydrateDoc(d: import("firebase/firestore").QueryDocumentSnapshot): SequenceData {
+function hydrateDoc(d: QueryDocumentSnapshot): SequenceData {
   const raw = { id: d.id, ...d.data() };
   const seq = createSequenceData(raw);
 

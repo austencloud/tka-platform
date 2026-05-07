@@ -1,19 +1,15 @@
 <script lang="ts">
   import { getStickerLabContext } from "../context/sticker-lab-context";
   import StickerListItem from "./StickerListItem.svelte";
-  import PrimitivePicker from "./PrimitivePicker.svelte";
 
   interface Props {
     onExportClick: () => void;
+    onBrowseClick: () => void;
   }
-  let { onExportClick }: Props = $props();
+  let { onExportClick, onBrowseClick }: Props = $props();
 
   const stickerState = getStickerLabContext();
-
-  let pickerOpen = $state(false);
 </script>
-
-<PrimitivePicker open={pickerOpen} onclose={() => (pickerOpen = false)} />
 
 <div class="list-header">
   <span class="count">
@@ -30,8 +26,8 @@
 <div class="list">
   {#if stickerState.sheet.stickers.length === 0}
     <div class="empty">
-      <p>Add a primitive to start your sheet.</p>
-      <button class="action-btn primary" onclick={() => (pickerOpen = true)}>Browse Primitives</button>
+      <p>Pick a shape to start your sheet.</p>
+      <button class="action-btn primary" onclick={onBrowseClick}>Browse Shapes</button>
     </div>
   {:else}
     {#each stickerState.sheet.stickers as sticker (sticker.id)}
@@ -41,7 +37,7 @@
 </div>
 
 <div class="list-footer">
-  <button class="action-btn primary" onclick={() => (pickerOpen = true)} aria-label="Browse primitives">
+  <button class="action-btn primary" onclick={onBrowseClick} aria-label="Browse shapes">
     + Add
   </button>
   <button class="action-btn secondary" onclick={onExportClick} aria-label="Open export panel">
