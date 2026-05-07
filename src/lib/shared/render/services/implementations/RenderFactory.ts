@@ -69,12 +69,13 @@ function sanitizeSvgForCreateImageBitmap(svgString: string): string {
 }
 
 /**
- * Check if the current environment supports worker-based rendering
+ * Check if the current environment supports worker-based rendering.
+ *
+ * Disabled: createImageBitmap() in workers cannot reliably decode SVG blobs.
+ * Errors are swallowed inside Canvas2DDirectRenderer draw methods, producing
+ * partial renders (grid only, no props/arrows/glyphs). Main-thread rendering
+ * uses HTMLImageElement which handles SVGs correctly.
  */
 export function supportsWorkerRendering(): boolean {
-  return (
-    typeof Worker !== "undefined" &&
-    typeof OffscreenCanvas !== "undefined" &&
-    typeof createImageBitmap !== "undefined"
-  );
+  return false;
 }
