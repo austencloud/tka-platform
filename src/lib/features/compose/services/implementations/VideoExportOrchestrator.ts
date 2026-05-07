@@ -378,6 +378,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // Get additional visibility settings (showWordHeader already checked above)
       const showTkaGlyph = visibilityManager.getVisibility("tkaGlyph");
       const showStepNumbers = visibilityManager.getVisibility("stepNumbers");
+      const showPathLines = visibilityManager.getVisibility("pathLines");
       const isDarkMode = visibilityManager.isDarkMode();
 
       // Pre-render complete glyphs (letter + dash + turns column) before the frame loop
@@ -443,6 +444,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         rotationPeriod,
         inversionPeriod,
         loopPeriod,
+        showPathLines,
+        sequenceSteps: steps,
       };
       const frameCompositor = new ExportFrameCompositor(
         compositorConfig,

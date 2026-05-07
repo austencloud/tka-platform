@@ -9,6 +9,12 @@ import type { GlyphAsset } from "$lib/shared/animation-engine/services/implement
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
 import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/implementations/CompositeVideoRenderer";
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { getPathPoints } from "$lib/features/hand-paths/hand-path-builder/services/HandPathAnimator";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 
 export interface FrameCompositorConfig {
   outputWidth: number;
@@ -31,6 +37,8 @@ export interface FrameCompositorConfig {
   rotationPeriod: Period | undefined;
   inversionPeriod: Period | undefined;
   loopPeriod: number | undefined;
+  showPathLines: boolean;
+  sequenceSteps: readonly StepData[];
 }
 
 interface CrossfadeState {
@@ -54,6 +62,7 @@ export class ExportFrameCompositor {
     framesSinceTransition: 0,
   };
   private crossfadeDurationFrames: number;
+  private tempOverlayCanvas: HTMLCanvasElement | null = null;
 
   constructor(
     private readonly config: FrameCompositorConfig,
@@ -185,6 +194,11 @@ export class ExportFrameCompositor {
       }
     }
 
+    // Render path lines
+    if (this.config.showPathLines) {
+      this.renderPathLines(offscreenCtx, actualCanvasSize, clampedStepIndex);
+    }
+
     // Restore context
     if (headerHeight > 0 && !isCompositeMode) {
       offscreenCtx.restore();
@@ -256,6 +270,64 @@ export class ExportFrameCompositor {
         }
       }
     }
+  }
+
+  private resolvePathType(motion: MotionData): "arc" | "linear" | "concave" {
+    if (motion.pathShape) return motion.pathShape;
+    if (motion.motionType === MotionType.DASH) return "linear";
+    if (motion.motionType === MotionType.STATIC) return "arc";
+
+    const vm = getAnimationVisibilityManager();
+    if (vm.getMotionAwarePaths()) {
+      if (motion.motionType === MotionType.PRO) return "arc";
+      if (motion.motionType === MotionType.ANTI) return "concave";
+    }
+    return vm.getPathShape();
+  }
+
+  private renderPathLines(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    stepIndex: number
+  ): void {
+    const { sequenceSteps } = this.config;
+    if (stepIndex < 0 || stepIndex >= sequenceSteps.length) return;
+
+    const step = sequenceSteps[stepIndex];
+    if (!step) return;
+
+    const scale = canvasSize / 950;
+
+    const drawMotionPath = (motion: MotionData | undefined, color: string) => {
+      if (!motion) return;
+      if (motion.startLocation === motion.endLocation) return;
+      if (motion.motionType === MotionType.STATIC) return;
+
+      const pathType = this.resolvePathType(motion);
+      const points = getPathPoints(motion.startLocation, motion.endLocation, 20, pathType);
+      if (points.length < 2) return;
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3 * scale;
+      ctx.lineCap = "round";
+      ctx.setLineDash([8 * scale, 6 * scale]);
+      ctx.globalAlpha = 0.5;
+
+      ctx.beginPath();
+      ctx.moveTo(points[0]!.x * scale, points[0]!.y * scale);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i]!.x * scale, points[i]!.y * scale);
+      }
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    const blueColor = getMotionColor(MotionColor.BLUE, "dark");
+    const redColor = getMotionColor(MotionColor.RED, "dark");
+
+    drawMotionPath(step.motions?.blue, blueColor);
+    drawMotionPath(step.motions?.red, redColor);
   }
 
   private drawPrerenderedGlyph(
