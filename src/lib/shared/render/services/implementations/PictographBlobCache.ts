@@ -3,7 +3,7 @@ import type { PictographBlobCacheStats } from "../contracts/types";
 
 const DB_NAME = "pictograph-blob-cache";
 const STORE_NAME = "blobs";
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 
 interface CachedBlobEntry {
   /** Hash key for the pictograph configuration (includes size) */
@@ -38,7 +38,7 @@ export class PictographBlobCache {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
           store.createIndex("timestamp", "timestamp", { unique: false });
-        } else if (oldVersion < 7) {
+        } else if (oldVersion < 8) {
           const tx = (event.target as IDBOpenDBRequest).transaction!;
           tx.objectStore(STORE_NAME).clear();
         }
