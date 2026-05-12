@@ -38,6 +38,9 @@ jobs:
       - name: Create .env from .env.example
         run: cp .env.example .env
 
+      - name: Build workspace packages
+        run: pnpm run build:packages
+
       - name: Type check (svelte-check)
         run: pnpm run check
 
