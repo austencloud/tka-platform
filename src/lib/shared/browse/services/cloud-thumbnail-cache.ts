@@ -41,7 +41,7 @@ export interface DeleteProgress {
 const URL_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 // Longer TTL for "known missing" entries - no need to re-check frequently
-const MISSING_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const _MISSING_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface CachedUrl {
   url: string | null;
@@ -429,7 +429,7 @@ async function doLoadManifest(): Promise<number> {
     for (const key of manifest.keys) {
       if (!exists.has(key)) {
         exists.add(key);
-        added++;
+        added++; // eslint-disable-line @typescript-eslint/no-unused-vars
       }
     }
 

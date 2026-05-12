@@ -21,7 +21,7 @@ import type {
   InlinePictograph,
   InlineSequencePlayer,
   InlineStepGrid,
-} from "../../types";
+} from "../types";
 
 export interface PictographExample {
   letter: string;

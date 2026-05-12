@@ -369,7 +369,6 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   });
 
   onMount(async () => {
-    throttleBackground();
     loaderService = getBrowseLoader();
 
     // Defer browse sequence loading — only needed for designer/export modes, not decks
@@ -400,7 +399,6 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   });
 
   onDestroy(() => {
-    restoreBackground();
     (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
   });
 

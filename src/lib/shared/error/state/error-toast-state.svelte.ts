@@ -143,7 +143,7 @@ function pauseErrorToast(id: string): void {
  */
 function resumeErrorToast(id: string): void {
   const toast = toasts.find((t) => t.id === id);
-  if (!toast || !toast.paused) return;
+  if (!toast?.paused) return;
 
   toasts = toasts.map((t) => {
     if (t.id !== id) return t;

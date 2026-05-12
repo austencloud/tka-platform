@@ -132,7 +132,7 @@ declare global {
     }): Promise<void>;
   }
 
-  // eslint-disable-next-line no-var
+   
   var scheduler: Scheduler | undefined;
 
   // Custom events

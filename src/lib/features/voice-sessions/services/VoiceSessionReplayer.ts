@@ -17,7 +17,7 @@ import type {
   ReplayEventComparison,
   ReplaySessionSummary,
   ReplayDiffType,
-} from "../../domain/replay-types";
+} from "../domain/replay-types";
 
 export class VoiceSessionReplayer {
   constructor(private readonly interpreter: CommandInterpreter) {}

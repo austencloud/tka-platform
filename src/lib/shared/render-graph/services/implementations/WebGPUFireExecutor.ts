@@ -737,7 +737,7 @@ export class WebGPUFireExecutor {
 
   // ── Sim step: splat ─────────────────────────────────────────────
 
-  private splat(src: FireSourcePoint, intensity: number, texelSize: [number, number]): void {
+  private splat(src: FireSourcePoint, intensity: number, _texelSize: [number, number]): void {
     const u = (src.position[0] + 1) / 2;
     const v = (src.position[1] + 1) / 2;
     const radius = src.radius > 0 ? src.radius : SPLAT_RADIUS;

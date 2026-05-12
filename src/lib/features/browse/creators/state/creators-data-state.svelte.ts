@@ -31,7 +31,7 @@ function createCreatorsDataState() {
   // Pagination state
   let hasMore = $state(true);
   let lastDocSnapshot = $state<DocumentSnapshot | null>(null);
-  let pageSize = $state(DEFAULT_PAGE_SIZE);
+  const pageSize = $state(DEFAULT_PAGE_SIZE);
 
   // Sort state
   let sortBy = $state<CreatorSortCriteria>("lastActive");

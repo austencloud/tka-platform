@@ -156,7 +156,7 @@ export class CollisionDetector {
     this.summaryInterval = setInterval(() => this.printSummary(), 10_000);
 
     if (typeof window !== "undefined") {
-      (window as any).__collisionDetector = this;
+      (window as unknown as Record<string, unknown>).__collisionDetector = this;
     }
   }
 
@@ -446,7 +446,7 @@ export class CollisionDetector {
       this.summaryInterval = null;
     }
     if (typeof window !== "undefined") {
-      delete (window as any).__collisionDetector;
+      delete (window as unknown as Record<string, unknown>).__collisionDetector;
     }
   }
 }

@@ -5,8 +5,8 @@ import { aggregateFamilySequences } from "$lib/features/choreo-card/services/vtg
 
   import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { FamilyRatioGroup } from "../services/contracts/types";
-import type { CardPair } from "../services/contracts/types";
+  import type { FamilyRatioGroup } from "../services/types";
+import type { CardPair } from "../services/types";
   import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
   import ChoreoCard from "./ChoreoCard.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";

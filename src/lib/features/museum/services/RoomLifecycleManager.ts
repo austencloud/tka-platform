@@ -13,9 +13,9 @@
  * in ~20ms instead of ~200ms.
  */
 
-import type { RoomDescriptor } from "../../domain/room-descriptor";
-import type { RoomEdge } from "../../domain/layout-types";
-import { RoomState, type LifecycleUpdate } from "../contracts/types";
+import type { RoomDescriptor } from "../domain/room-descriptor";
+import type { RoomEdge } from "../domain/layout-types";
+import { RoomState, type LifecycleUpdate } from "./types";
 
 export { RoomState, type LifecycleUpdate };
 

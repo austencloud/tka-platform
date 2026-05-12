@@ -4,7 +4,6 @@ import type { SequenceExportOptions } from "../../domain/models/SequenceExportOp
 import type { CompositionProgressCallback, RenderCanvas } from "../contracts/types";
 import type { ImageComposer } from "./ImageComposer";
 import type { TextRenderer } from "./TextRenderer";
-import type { GlyphBitmapEntry } from "./glyph-bitmap-loader";
 import { convertGlyphCacheToBitmaps } from "./glyph-bitmap-loader";
 
 // ---- Protocol types (shared with composition.worker.ts) ----

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { LOOPLabelsFirebaseRepository } from './services/implementations/LOOPLabelsFirebaseRepository';
+import { LOOPLabelsFirebaseRepository } from './services/LOOPLabelsFirebaseRepository';
 
 let instance: LOOPLabelsFirebaseRepository | null = null;
 

@@ -36,6 +36,6 @@ export class DeterministicProvider implements IInferenceProvider {
 
 	private extractFloat(text: string, key: string): number {
 		const match = text.match(new RegExp(`${key}=([\\d.]+)`));
-		return match && match[1] ? parseFloat(match[1]) : 0.5;
+		return match?.[1] ? parseFloat(match[1]) : 0.5;
 	}
 }

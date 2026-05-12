@@ -3,7 +3,7 @@
  * Wraps native geolocation with Promise-based interface
  */
 
-import type { GeolocationError, GeolocationPosition } from "./contracts/types";
+import type { GeolocationError, GeolocationPosition } from "./types";
 
 export function isSupported(): boolean {
   return "geolocation" in navigator;

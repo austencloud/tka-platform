@@ -1,4 +1,4 @@
-import type { ExtractedStep } from "../../../domain/models/internal-step-models";
+import type { ExtractedStep } from "../../domain/models/internal-step-models";
 import type { StepComparisonOrchestrator } from "../comparison/StepComparisonOrchestrator";
 import type { ComparisonMatrix } from "./types";
 

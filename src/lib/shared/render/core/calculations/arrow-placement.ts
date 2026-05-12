@@ -51,9 +51,10 @@ export function calculateArrowLocation(
 
     case "pro":
     case "anti":
-    case "float":
+    case "float": {
       const locationPairKey = createLocationPairKey([normalizedStartLoc, normalizedEndLoc]);
       return shiftDirectionPairs[locationPairKey] ?? normalizedStartLoc;
+    }
 
     case "dash":
       return normalizedEndLoc;

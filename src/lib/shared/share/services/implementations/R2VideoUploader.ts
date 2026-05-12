@@ -115,12 +115,12 @@ function xhrPutOnce(
         `This usually means CORS is not configured on the R2 bucket to allow PUT from ${location.origin}. ` +
         `Check the bucket's CORS settings in the Cloudflare dashboard.`
       );
-      (err as any).isNetworkError = true;
+      (err as unknown as Record<string, unknown>).isNetworkError = true;
       reject(err);
     };
     xhr.ontimeout = () => {
       const err = new Error("Upload timed out");
-      (err as any).isNetworkError = true;
+      (err as unknown as Record<string, unknown>).isNetworkError = true;
       reject(err);
     };
 
@@ -140,9 +140,10 @@ async function xhrPut(
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       return await xhrPutOnce(url, body, contentType, options);
-    } catch (error: any) {
-      const isAbort = error?.name === "AbortError";
-      const isNetworkError = error?.isNetworkError === true;
+    } catch (error: unknown) {
+      const errRecord = error as Record<string, unknown> | null;
+      const isAbort = errRecord?.name === "AbortError";
+      const isNetworkError = errRecord?.isNetworkError === true;
       const isLastAttempt = attempt === MAX_RETRIES - 1;
 
       if (isAbort || !isNetworkError || isLastAttempt) {

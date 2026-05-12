@@ -2,7 +2,7 @@ import { Period } from "$lib/shared/foundation/domain/models/generation/circular
 import type { SectionDesignation } from "../domain/models/section-models";
 import type { TransformationIntervals } from "../domain/models/label-models";
 import { BASE_COMPONENTS, type ComponentId } from "../domain/constants/loop-components";
-import type { LOOPDesignationInput } from "./contracts/types";
+import type { LOOPDesignationInput } from "./types";
 
 export function formatDesignation(d: LOOPDesignationInput | SectionDesignation): string {
   const hasBaseWord = "baseWord" in d && d.baseWord;

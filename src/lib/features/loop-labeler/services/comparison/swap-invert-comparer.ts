@@ -5,7 +5,7 @@ import type {
 import {
   hasRotationData,
   areRotDirsInvertedForRotation,
-} from "../implementations/comparison/rotation-direction-helpers";
+} from "../comparison/rotation-direction-helpers";
 
 /**
  * Detect pure swap and invert transformations.

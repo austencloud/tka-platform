@@ -33,7 +33,7 @@ const LOCAL_PATH = "/models/props";
  * Set USE_CDN to true once models are uploaded to R2.
  */
 const USE_CDN = false;
-function modelUrl(filename: string): string {
+function _modelUrl(filename: string): string {
   return USE_CDN
     ? `${R2_CDN}/models/props/${filename}`
     : `${LOCAL_PATH}/${filename}`;

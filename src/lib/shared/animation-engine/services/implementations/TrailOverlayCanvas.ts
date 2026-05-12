@@ -32,7 +32,6 @@ import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { resolveEffect } from "../../domain/types/TipEffectTypes";
-import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 /** Minimum ring capacity; actual capacity grows with `trailSettings.tailLength`. */
 const RING_BUFFER_MIN = 120;

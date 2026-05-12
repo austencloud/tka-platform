@@ -21,7 +21,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
-  import type { CardPair } from "../services/contracts/types";
+  import type { CardPair } from "../services/types";
   import { getDeckLayoutPolicy } from "../domain/deck-layout-policy";
   import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
   import {

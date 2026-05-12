@@ -28,9 +28,9 @@ import type {
 	Friend,
 	UserSearchResult,
 	FriendFirebaseData
-} from '../../domain/models/connect-models';
-import { FRIEND_CONFIG, FIREBASE_PATHS } from '../../domain/models/connect-constants';
-import type { PresenceTracker } from '../implementations/PresenceTracker';
+} from '../domain/models/connect-models';
+import { FRIEND_CONFIG, FIREBASE_PATHS } from '../domain/models/connect-constants';
+import type { PresenceTracker } from './PresenceTracker';
 
 export class FriendshipManager {
 	private _friends: Friend[] = [];

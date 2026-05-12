@@ -2,7 +2,7 @@ import {
   pushState as svelteKitPushState,
   replaceState as svelteKitReplaceState,
 } from "$app/navigation";
-import type { LabeledSequence } from "./contracts/types";
+import type { LabeledSequence } from "./types";
 
 /**
  * Navigation and utility functions for the LOOP labeler

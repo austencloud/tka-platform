@@ -1,5 +1,3 @@
-import type { PictographBlobCache } from "../implementations/PictographBlobCache";
-import type { PictographSVGCache } from "../implementations/PictographSVGCache";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";

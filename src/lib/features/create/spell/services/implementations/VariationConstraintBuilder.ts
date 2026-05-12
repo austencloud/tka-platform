@@ -19,7 +19,7 @@ export class VariationConstraintBuilder {
 
   buildConstraints(
     preferences: SpellPreferences,
-    expandedLetters: Letter[]
+    _expandedLetters: Letter[]
   ): VariationConstraints {
     return {
       // Target step count - use expanded letters length if specified

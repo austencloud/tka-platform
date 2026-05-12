@@ -1,5 +1,4 @@
 // --- From PhraseInterpolator ---
-import type { EffortPhrase } from "../../domain/effort-timeline-types";
 
 export interface PhraseInterpolationResult {
   /** 0-based step index in the sequence */

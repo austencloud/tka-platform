@@ -5,17 +5,17 @@
  * rating updates, and matchup prefetching.
  */
 
-import type { MatchupCandidate } from "../contracts/types";
+import type { MatchupCandidate } from "./types";
 import type {
   ArenaMatchup,
   ArenaLeaderboardEntry,
   ArenaUserStats,
   ArenaRating,
-} from "../../domain/models/arena-models";
+} from "../domain/models/arena-models";
 import {
   MIN_VOTE_INTERVAL_MS,
   RECENT_MATCHUP_BUFFER_SIZE,
-} from "../../domain/constants/arena-constants";
+} from "../domain/constants/arena-constants";
 import {
   loadPool,
   loadRecentVotePairs,

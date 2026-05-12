@@ -9,7 +9,7 @@
   useProgress() reads globally. No manual progress reporting needed.
 -->
 <script module lang="ts">
-  import { MuseumModelLoader } from "../../services/implementations/MuseumModelLoader";
+  import { MuseumModelLoader } from "../../services/MuseumModelLoader";
 
   // One loader shared across all mounts and HMR cycles. The internal
   // GLB cache survives remounts so furniture models are never re-fetched.
@@ -19,7 +19,7 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import type { Group } from "three";
-  import type { MuseumModelRole } from "../../services/contracts/types";
+  import type { MuseumModelRole } from "../../services/types";
 
   interface FurniturePlacement {
     id: string;

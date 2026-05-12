@@ -2,9 +2,8 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { RoomNode, RoomEdge, GridConfig, ValidationResult } from "../../domain/layout-types";
-import type { MuseumGrid, ExhibitDefinition } from "../../domain/museum-grid-types";
-import type { Group } from "three";
+import type { RoomNode, RoomEdge, ValidationResult } from "../domain/layout-types";
+import type { MuseumGrid, ExhibitDefinition } from "../domain/museum-grid-types";
 import type { RoomDefinition } from "$lib/shared/3d/indoor/domain/room-types";
 
 // === From IMuseumDesignValidator ===
@@ -61,7 +60,7 @@ export interface PlaqueContent {
   title: string;
   subtitle?: string;
   body: string;
-  footer?: string;
+  barter?: string;
 }
 
 export type PlaqueSize = "standard" | "large" | "dev-whiteboard";

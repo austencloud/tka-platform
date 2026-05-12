@@ -19,7 +19,6 @@ import {
 import type { StepMotionConfigs } from "../services/sequence-converter";
 import type { AvatarId } from "../config/avatar-definitions";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
-import { SCALE } from "$lib/shared/3d/scale/scale-constants";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { EffortTimeline } from "$lib/shared/effort/domain/effort-timeline-types";
@@ -114,10 +113,7 @@ export interface AvatarInstanceConfig {
 /**
  * Dependencies for avatar instance state
  */
-export interface AvatarInstanceDeps {
-  // propInterpolator and sequenceConverter are now module-level functions
-  // — no injection needed; retained as empty interface for future deps
-}
+export type AvatarInstanceDeps = Record<string, unknown>;
 
 /**
  * Create per-avatar animation state
@@ -186,7 +182,7 @@ export function createAvatarInstanceState(
     try {
       const v = localStorage.getItem(PLANE_MODE_KEY);
       if (v === PlaneMode.DUAL_WHEEL) return PlaneMode.DUAL_WHEEL;
-    } catch {}
+    } catch { /* ignore */ }
     return PlaneMode.WALL;
   }
 
@@ -194,7 +190,7 @@ export function createAvatarInstanceState(
     try {
       const v = localStorage.getItem(ROT_VARIANT_KEY);
       if (v !== null) return Math.max(0, Math.min(2, parseInt(v, 10) || 0));
-    } catch {}
+    } catch { /* ignore */ }
     return 1;
   }
 
@@ -370,11 +366,11 @@ export function createAvatarInstanceState(
     // DIAG: Dump raw start position and configs
     if (sequence.startPosition) {
       const sp = sequence.startPosition;
-      const bm = sp.motions?.blue;
-      const rm = sp.motions?.red;
+      const _bm = sp.motions?.blue;
+      const _rm = sp.motions?.red;
     }
     if (stepConfigs[0]) {
-      const s = stepConfigs[0];
+      const _s = stepConfigs[0];
     }
 
     currentStepIndex = 0;
@@ -427,7 +423,7 @@ export function createAvatarInstanceState(
 
   function setPlaneMode(mode: PlaneMode) {
     planeMode = mode;
-    try { localStorage.setItem(PLANE_MODE_KEY, mode); } catch {}
+    try { localStorage.setItem(PLANE_MODE_KEY, mode); } catch { /* ignore */ }
 
     // Sync custom plane trackers to the preset's planes when switching away from CUSTOM
     if (mode !== PlaneMode.CUSTOM) {
@@ -457,7 +453,7 @@ export function createAvatarInstanceState(
     else customRedPlane = plane;
 
     planeMode = derivePlaneModeFromHands(customBluePlane, customRedPlane);
-    try { localStorage.setItem(PLANE_MODE_KEY, planeMode); } catch {}
+    try { localStorage.setItem(PLANE_MODE_KEY, planeMode); } catch { /* ignore */ }
 
     reconvertWithConfig(getEffectiveModeConfig(planeMode));
   }
@@ -559,7 +555,7 @@ export function createAvatarInstanceState(
    */
   function cycleRotationVariant(): string {
     rotationVariantIndex = (rotationVariantIndex + 1) % ROTATION_VARIANTS.length;
-    try { localStorage.setItem(ROT_VARIANT_KEY, String(rotationVariantIndex)); } catch {}
+    try { localStorage.setItem(ROT_VARIANT_KEY, String(rotationVariantIndex)); } catch { /* ignore */ }
     const modeConfig = getEffectiveModeConfig(planeMode);
     reconvertWithConfig(modeConfig);
     return ROTATION_LABELS[rotationVariantIndex] ?? "Unknown";

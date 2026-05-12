@@ -78,7 +78,7 @@ export interface ImportedTerrainData {
  * Create a RealTerrainZone from imported terrain data
  */
 export function createRealTerrainZone(data: ImportedTerrainData): RealTerrainZone {
-  const { worldDimensions, heightmap, boundary, name } = data;
+  const { worldDimensions: _worldDimensions, heightmap, boundary, name } = data;
 
   // Convert heights array to Float32Array
   const heights = new Float32Array(heightmap.heights);

@@ -5,9 +5,6 @@
  * Calculates prop placement data for pictograph rendering.
  */
 
-import type { PictographData } from "../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../shared/domain/models/MotionData";
-import type { PropPlacementData } from "../../domain/models/PropPlacementData";
 
 /** Motion visibility passed into placement so that a hidden partner suppresses
  *  this prop's beta offset (no collision → no offset needed). Omitted fields
@@ -24,7 +21,6 @@ export interface PropPlacementVisibility {
  * Fast, direct SVG loading for props - mirrors arrow loading approach
  */
 
-import type { PropRenderData } from "../../domain/models/PropRenderData";
 import type { ThemeMode } from "../../../../utils/svg-color-utils";
 
 /**

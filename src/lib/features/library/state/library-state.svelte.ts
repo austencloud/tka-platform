@@ -11,7 +11,7 @@ import {
   type PreviewSequence,
 } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import type { LibraryQueryOptions, LibraryStats } from "../services/contracts/types";
+import type { LibraryQueryOptions, LibraryStats } from "../services/types";
 import type {
   LibrarySequence,
   SequenceVisibility,

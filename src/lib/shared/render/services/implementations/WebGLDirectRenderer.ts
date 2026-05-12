@@ -219,7 +219,7 @@ export class WebGLDirectRenderer implements IDirectRenderer {
     // Render each arrow variant to the atlas
     let tileX = 0;
     let tileY = 0;
-    const tilesPerRow = Math.floor(ATLAS_SIZE / ARROW_TILE_SIZE);
+    const _tilesPerRow = Math.floor(ATLAS_SIZE / ARROW_TILE_SIZE);
 
     for (const [arrowId, arrowData] of Object.entries(this.arrowPaths.arrows)) {
       // Render arrow to tile position
@@ -417,7 +417,7 @@ export class WebGLDirectRenderer implements IDirectRenderer {
     this.drawQuad(center - radius, center - lineWidth / 2, radius * 2, lineWidth);
 
     // Diagonal lines
-    const diag = radius * 0.707;
+    const _diag = radius * 0.707;
     // Would need to rotate quads for diagonal lines - simplified for now
   }
 

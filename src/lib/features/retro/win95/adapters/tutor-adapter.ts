@@ -129,7 +129,7 @@ export async function loadCodexLetters(): Promise<RetroCodexLetter[]> {
     const codex = getCodex() as Codex;
     const allData = await codex.getAllPictographData();
     return Object.entries(allData)
-      .filter(([_, data]) => data !== null && data.letter != null)
+      .filter(([_, data]) => data?.letter != null)
       .map(([letterKey, data]) => {
         const letter = data!.letter as Letter;
         let letterType: LetterType;

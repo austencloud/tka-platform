@@ -190,7 +190,7 @@ export function getPositionTags(features: SequenceFeatures): SuggestedTag[] {
 
 // === Private Helpers ===
 
-function getPropName(propType: PropType): string {
+function _getPropName(propType: PropType): string {
   switch (propType) {
     case PropType.STAFF:
     case PropType.SIMPLESTAFF:

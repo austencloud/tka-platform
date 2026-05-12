@@ -1,7 +1,6 @@
 import type {
   CustomBinding,
   ParsedKeyCombo,
-  ShortcutConflict,
   ShortcutRegistrationOptions,
 } from "../../domain/types/keyboard-types";
 

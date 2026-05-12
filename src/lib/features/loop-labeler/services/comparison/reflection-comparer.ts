@@ -10,7 +10,7 @@ import {
   hasRotationData,
   areRotDirsInvertedForMirrorFlip,
   invertMotionType,
-} from "../implementations/comparison/rotation-direction-helpers";
+} from "../comparison/rotation-direction-helpers";
 
 /**
  * Detect reflection transformations (mirror and flip) between beat pairs.

@@ -1,8 +1,8 @@
-import type { ComponentId } from "../../../domain/constants/loop-components";
+import type { ComponentId } from "../../domain/constants/loop-components";
 import type {
   CandidateDesignation,
   TransformationIntervals,
-} from "../../../domain/models/label-models";
+} from "../../domain/models/label-models";
 import type { MergedMatch, RewoundResult } from "./types";
 
 function buildDescription(match: MergedMatch): string {

@@ -1,4 +1,4 @@
-import type { Coordinates, GridLocation, GridMode } from "../types.js";
+import type { Coordinates, GridLocation } from "../types.js";
 
 /**
  * Diamond grid coordinates (cardinal hand points)

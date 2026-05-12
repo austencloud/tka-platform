@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { EventActivityAnalyzer } from './services/implementations/EventActivityAnalyzer';
+import { EventActivityAnalyzer } from './services/EventActivityAnalyzer';
 
 let instance: EventActivityAnalyzer | null = null;
 

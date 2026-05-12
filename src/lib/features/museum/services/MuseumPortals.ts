@@ -1,4 +1,4 @@
-import type { MuseumGrid } from "../../domain/museum-grid-types";
+import type { MuseumGrid } from "../domain/museum-grid-types";
 
 export interface PortalLink {
   srcX: number;

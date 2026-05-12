@@ -24,10 +24,7 @@ import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-typ
 import {
   deriveUserOverlay,
   getTypeComparison,
-  getTypeExplanation,
-  getPositionExplanation,
   getPositionComparison,
-  getMotionTypeExplanation,
   getMotionTypeComparison,
   getRotationExplanation,
   getGridModeExplanation,
@@ -46,13 +43,11 @@ import {
   tkaToVTG,
   listVTGCategories,
 } from "@vtg/domain";
-import type { VTGCategory } from "@vtg/domain";
 import {
   toDisplayOutput,
   filterLetterExplanation,
   filterTypeList,
   filterComparison,
-  filterSequence,
   filterQuiz,
 } from "$lib/features/tika/validation/output-filter";
 import { getTikaServerContainer } from "$lib/features/tika/services/server/tika-server-container";
@@ -106,7 +101,7 @@ function resolveQuizDifficulty(
 
 function createTikaTools(userId: string, completedConcepts: string[], masteryCtx?: MasteryContext) {
   const container = getContainer();
-  const { toolExecutor, sequenceValidator, sequenceGenerator, quizGenerator, progressWriter } = container;
+  const { toolExecutor, sequenceValidator, sequenceGenerator, quizGenerator, progressWriter } = container; // eslint-disable-line @typescript-eslint/no-unused-vars
 
   return {
     get_letter_explanation: tool({
@@ -721,7 +716,7 @@ function extractLastUserMessage(body: TIKARequest): string {
   if (body.messages && Array.isArray(body.messages)) {
     for (let i = body.messages.length - 1; i >= 0; i--) {
       const msg = body.messages[i];
-      if (!msg || msg.role !== "user") continue;
+      if (msg?.role !== "user") continue;
 
       for (const part of msg.parts) {
         if (part.type === "text") {

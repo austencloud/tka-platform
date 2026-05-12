@@ -17,7 +17,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { PresenceTracker } from "$lib/shared/presence/services/implementations/PresenceTracker";
 import type {
-  UserWithActivity, SessionSummary, UserActivityQueryOptions } from "../contracts/types";
+  UserWithActivity, SessionSummary, UserActivityQueryOptions } from "./types";
 import type {
   ActivityEvent,
   ActivityCategory,

@@ -3,6 +3,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { Section } from '../../domain/types';
 
 // === From ISheetRouter ===
 
@@ -117,7 +118,7 @@ export interface QRSizeEstimate {
 // === From ISidebarTabToggler ===
 
 export interface TabVisibilityInfo {
-  section: import("../../domain/types").Section;
+  section: Section;
   isVisible: boolean;
   isRoleLocked: boolean;
 }

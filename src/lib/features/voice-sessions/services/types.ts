@@ -3,7 +3,6 @@
  */
 
 import type {
-  VoiceSession,
   ResolutionTier,
 } from "$lib/shared/voice-control/domain/voice-session-types";
 import type { VoiceCommandCategory } from "$lib/shared/voice-control/domain/voice-command-types";

@@ -6,7 +6,7 @@
  * Provides real-time updates of the current broadcast and history.
  */
 
-import type { BroadcastStateClient, BroadcastHistoryEntry, ServerTimeResponse } from "$lib/shared/landing/domain/broadcast-models";
+import type { BroadcastStateClient, BroadcastHistoryEntry } from "$lib/shared/landing/domain/broadcast-models";
 
 /**
  * Callback for broadcast state updates.
@@ -30,7 +30,6 @@ export type BroadcastHistoryCallback = (entries: BroadcastHistoryEntry[]) => voi
  * When one sequence ends, finds another that starts where the previous ended.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 

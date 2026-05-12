@@ -4,7 +4,7 @@
    *
    * Shows compound pattern analysis with transformation intervals.
    */
-  import type { CompoundPattern } from "../../../services/contracts/ILOOPDetector";
+  import type { CompoundPattern } from "../../../services/ILOOPDetector";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   interface Props {

@@ -16,6 +16,7 @@ import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn
 import { isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 import { calculateReversalPositions } from "../../core";
 import type { DrawableImage } from "./SvgImageCache";
+import type { Canvas2DDirectRenderer } from './Canvas2DDirectRenderer';
 
 const VIEWBOX_SIZE = 950;
 const TKA_GLYPH_X = 50;
@@ -90,7 +91,7 @@ export class LayerCompositor {
   private tkaCache = new Map<string, RenderCanvas>();
   private reversalCache = new Map<string, RenderCanvas>();
 
-  private canvas2DRenderer: InstanceType<typeof import("./Canvas2DDirectRenderer").Canvas2DDirectRenderer> | null = null;
+  private canvas2DRenderer: InstanceType<typeof Canvas2DDirectRenderer> | null = null;
   private canvas2DInitPromise: Promise<void> | null = null;
 
   private stats = {
@@ -403,7 +404,7 @@ export class LayerCompositor {
     }
   }
 
-  private async ensureCanvas2DRenderer(): Promise<InstanceType<typeof import("./Canvas2DDirectRenderer").Canvas2DDirectRenderer>> {
+  private async ensureCanvas2DRenderer(): Promise<InstanceType<typeof Canvas2DDirectRenderer>> {
     if (this.canvas2DRenderer) {
       return this.canvas2DRenderer;
     }
@@ -671,7 +672,7 @@ export class LayerCompositor {
     pictograph: PreparedPictographData,
     letterDimensions: { width: number; height: number },
     scale: number,
-    darkMode: boolean
+    _darkMode: boolean
   ): Promise<void> {
     const turnsTuple = this.getTurnsTuple(pictograph);
 

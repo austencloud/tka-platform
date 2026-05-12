@@ -5,8 +5,8 @@ import type {
   InternalStepPair,
 } from "../domain/models/internal-step-models";
 import { TRANSFORMATION_PRIORITY } from "../domain/constants/transformation-priority";
-import type { FormattedTransformations } from "./contracts/types";
-import type { StepPairRelationship } from "./contracts/types";
+import type { FormattedTransformations } from "./types";
+import type { StepPairRelationship } from "./types";
 
 /**
  * Format a single raw transformation string into display form.

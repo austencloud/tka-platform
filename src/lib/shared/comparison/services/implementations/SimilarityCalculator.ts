@@ -405,13 +405,13 @@ export class SimilarityCalculator {
       const blueB = stepB.motions[MotionColor.BLUE];
       const redB = stepB.motions[MotionColor.RED];
 
-      if (blueA && blueB && blueA.motionType === blueB.motionType) {
+      if (blueA && blueA.motionType === blueB?.motionType) {
         motionTypeMatches++;
       } else {
         motionTypeMismatches++;
       }
 
-      if (redA && redB && redA.motionType === redB.motionType) {
+      if (redA && redA.motionType === redB?.motionType) {
         motionTypeMatches++;
       } else {
         motionTypeMismatches++;
@@ -496,10 +496,10 @@ export class SimilarityCalculator {
       const blueB = stepB.motions[MotionColor.BLUE];
       const redB = stepB.motions[MotionColor.RED];
 
-      if (blueA && blueB && blueA.motionType === blueB.motionType) {
+      if (blueA && blueA.motionType === blueB?.motionType) {
         matches++;
       }
-      if (redA && redB && redA.motionType === redB.motionType) {
+      if (redA && redA.motionType === redB?.motionType) {
         matches++;
       }
     }

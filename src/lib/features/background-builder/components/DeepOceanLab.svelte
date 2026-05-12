@@ -14,7 +14,7 @@
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
   import PersonalityBars from "./PersonalityBars.svelte";
-  import type { CoralSceneRenderer } from "../services/implementations/CoralSceneRenderer";
+  import type { CoralSceneRenderer } from "../services/CoralSceneRenderer";
   import { createDeepOceanLabState } from "../state/deep-ocean-lab-state.svelte";
   import {
     type ColorPreset,

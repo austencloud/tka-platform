@@ -85,6 +85,8 @@ import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpo
 import { EffectRendererManager } from "./EffectRendererManager";
 import { FrameParameterBuilder } from "./FrameParameterBuilder";
 import { PropTypeManager } from "./PropTypeManager";
+import type { EffectType } from '../../domain/types/TipEffectTypes';
+import type { FireColorCurve } from '../../domain/types/FireTypes';
 
 /**
  * Props passed to engine.update()
@@ -197,8 +199,8 @@ export class AnimationEngine {
       tkaGlyph: true, // TKA Glyph includes turn numbers
       darkMode: false,
       wordHeader: true,
-      activeEffect: "trails" as import("../../domain/types/TipEffectTypes").EffectType,
-      tipEffectMap: {} as import("../../domain/types/TipEffectTypes").TipEffectMap,
+      activeEffect: "trails" as EffectType,
+      tipEffectMap: {} as TipEffectMap,
     },
     isPreRendering: false,
     preRenderProgress: null,
@@ -286,7 +288,7 @@ export class AnimationEngine {
   private prevColorBlend: number = 0.5;
   private prevFireIntensity: number = 0.7;
   private prevFireTurbulence: number = 0.5;
-  private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
+  private prevFireColorCurve: FireColorCurve | null = null;
   private prevCharcoalParamsJson: string = "";
   private prevEffortPreset: EffortId = "linear";
   private prevPathShape: "arc" | "linear" | "concave" = "arc";
@@ -813,13 +815,13 @@ export class AnimationEngine {
     this.effectRendererManager.fireRenderer?.disableDiagnostics();
   }
   resetFireDiagnosticCounter(): void {
-    (this.effectRendererManager.fireRenderer as any)?.resetDiagnosticCounter?.();
+    this.effectRendererManager.fireRenderer?.resetDiagnosticCounter?.();
   }
   sampleFireCanvas(): string {
-    return (this.effectRendererManager.fireRenderer as any)?.sampleFireCanvas?.() ?? 'no fire renderer';
+    return this.effectRendererManager.fireRenderer?.sampleFireCanvas?.() ?? 'no fire renderer';
   }
   snapshotFireCanvas(): void {
-    (this.effectRendererManager.fireRenderer as any)?.snapshotFireCanvas?.();
+    this.effectRendererManager.fireRenderer?.snapshotFireCanvas?.();
   }
 
   /**
@@ -1490,7 +1492,7 @@ export class AnimationEngine {
    * Calculate the musical position display string as a continuous decimal.
    */
   private calculateMusicalPosition(props: AnimationEngineProps): string | null {
-    if (this.orchestrator && this.orchestrator.isInitialized()) {
+    if (this.orchestrator?.isInitialized()) {
       const continuousPosition = this.orchestrator.getContinuousMusicalPosition();
 
       if (continuousPosition <= 0) {

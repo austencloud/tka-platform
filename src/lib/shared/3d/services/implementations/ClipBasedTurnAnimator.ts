@@ -22,6 +22,7 @@ import { Quaternion, Euler, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { Object3D, AnimationClip, QuaternionKeyframeTrack } from "three";
 import type { ContactCurveData } from "../contact-curve-cache";
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export interface TurnRequest {
   /** Heading at phase 0, in radians (0 = +Z toward audience). */
@@ -345,7 +346,7 @@ export class ClipBasedTurnAnimator {
 
     const bakedClips = await Promise.all(
       manifest.map(async (entry) => {
-        const gltf = await new Promise<import("three/examples/jsm/loaders/GLTFLoader.js").GLTF>(
+        const gltf = await new Promise<GLTF>(
           (resolve, reject) => loader.load(entry.glbUrl, resolve, undefined, reject)
         );
         const rawClip = gltf.animations[0];

@@ -4,8 +4,8 @@ import {
   firestoreGet,
   firestoreList,
 } from "$lib/shared/firestore";
-import { LabeledSequenceSchema } from "../../domain/models/loop-label-schemas";
-import type { LabeledSequence } from "../contracts/types";
+import { LabeledSequenceSchema } from "../domain/models/loop-label-schemas";
+import type { LabeledSequence } from "./types";
 
 const LOOP_LABELS_COLLECTION = "loop-labels";
 const PUBLIC_SEQUENCES_COLLECTION = "publicSequences";

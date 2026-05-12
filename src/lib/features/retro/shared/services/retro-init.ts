@@ -1,10 +1,11 @@
+import type { authState } from '$lib/shared/auth/state/authState.svelte';
 /**
  * Lightweight bootstrap for retro routes.
  * Loads composition root (side-effect registrations) + Firebase + auth.
  * Skips: prefetch, analytics, moderation banners, modal state, web vitals.
  */
 export async function initRetroMode(): Promise<{
-	authState: typeof import("$lib/shared/auth/state/authState.svelte").authState;
+	authState: typeof authState;
 }> {
 	// 1. Load composition root (triggers service registration)
 	await import("$lib/shared/composition-root");

@@ -12,7 +12,7 @@
   import type { AvatarState } from "$lib/shared/3d/camera/types";
   import { CameraMode } from "$lib/shared/3d/camera/types";
   import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
-  import { createMuseumPhysicsProvider, MuseumPhysicsProvider } from "../../services/implementations/MuseumPhysicsProvider";
+  import { createMuseumPhysicsProvider, MuseumPhysicsProvider } from "../../services/MuseumPhysicsProvider";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
@@ -21,7 +21,7 @@
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
   import MuseumVillageEmbed from "./MuseumVillageEmbed.svelte";
-  import { preloadVillageAvatarModels } from "../../services/implementations/MuseumVillageManager";
+  import { preloadVillageAvatarModels } from "../../services/MuseumVillageManager";
   import MuseumTorch3D from "./MuseumTorch3D.svelte";
 
   // Start preloading village avatar models immediately - they'll be cached
@@ -33,10 +33,10 @@
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
   import PlacementGhost from '../editor/PlacementGhost.svelte';
   import { preloadAllFixtureModels, addTorchToScene, removeTorchFromScene } from './MuseumTorch3D.svelte';
-  import { createPortalConfig, PortalProximityChecker } from "../../services/implementations/MuseumPortals";
-  import { MuseumEditorPlacement } from "../../services/implementations/MuseumEditorPlacement";
-  import { createEmptyPool, recomputeNearbyRoomLights as recomputeNearbyLightsFromPool, type RoomLightSlot } from "../../services/implementations/MuseumRoomLightPool";
-  import { MuseumAtmosphere } from "../../services/implementations/MuseumAtmosphere";
+  import { createPortalConfig, PortalProximityChecker } from "../../services/MuseumPortals";
+  import { MuseumEditorPlacement } from "../../services/MuseumEditorPlacement";
+  import { createEmptyPool, recomputeNearbyRoomLights as recomputeNearbyLightsFromPool, type RoomLightSlot } from "../../services/MuseumRoomLightPool";
+  import { MuseumAtmosphere } from "../../services/MuseumAtmosphere";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
@@ -48,16 +48,16 @@
     TorchPosition,
     LightPosition,
     RoomLight,
-  } from "../../services/implementations/MuseumGeometryBuilder";
+  } from "../../services/MuseumGeometryBuilder";
   import { MUSEUM_EDGES } from "../../data/museum-room-graph";
 
   // ── Extracted modules ──
-  import { MuseumCameraFlipController } from "../../services/implementations/museum-camera-flip-controller";
-  import type { CameraFlipState } from "../../services/implementations/museum-camera-flip-controller";
-  import { MuseumGeometryStreamer } from "../../services/implementations/museum-geometry-streamer";
-  import { MuseumProximityRenderer, PROXIMITY_MAX_MOUNTS_PER_FRAME } from "../../services/implementations/museum-proximity-renderer";
-  import type { MountCategory } from "../../services/implementations/museum-proximity-renderer";
-  import { MuseumPlayerController } from "../../services/implementations/museum-player-controller";
+  import { MuseumCameraFlipController } from "../../services/museum-camera-flip-controller";
+  import type { CameraFlipState } from "../../services/museum-camera-flip-controller";
+  import { MuseumGeometryStreamer } from "../../services/museum-geometry-streamer";
+  import { MuseumProximityRenderer, PROXIMITY_MAX_MOUNTS_PER_FRAME } from "../../services/museum-proximity-renderer";
+  import type { MountCategory } from "../../services/museum-proximity-renderer";
+  import { MuseumPlayerController } from "../../services/museum-player-controller";
 
   // Plaque texture generation uses module-level cache (generatePlaqueCanvas)
   // Torch materials use module-level template compiled once on first createTorchInstance call

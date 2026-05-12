@@ -1,9 +1,7 @@
 import type {
   ArenaEntry,
-  ArenaMatchup,
   ArenaRating,
-  MatchupReason,
-} from "../../domain/models/arena-models";
+} from "../domain/models/arena-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 // --- From IStabilityAnalyzer ---

@@ -19,9 +19,9 @@ import { getFeedSnapDetector } from "$lib/features/watch/getFeedSnapDetector";
   import type { FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { FeedSnapDetector } from "../../services/implementations/FeedSnapDetector";
-  import type { FeedPreloader } from "../../services/implementations/FeedPreloader";
-  import type { FeedScrollBehavior } from "../../services/implementations/FeedScrollBehavior";
+  import type { FeedSnapDetector } from "../../services/FeedSnapDetector";
+  import type { FeedPreloader } from "../../services/FeedPreloader";
+  import type { FeedScrollBehavior } from "../../services/FeedScrollBehavior";
   import { feedScrollState } from "../../state/feed-scroll-state.svelte";
   import FeedCard from "./FeedCard.svelte";
   import FeedLoadingState from "./FeedLoadingState.svelte";
@@ -87,9 +87,9 @@ import { getFeedSnapDetector } from "$lib/features/watch/getFeedSnapDetector";
       scrollBehavior = getFeedScrollBehavior();
     } catch {
       // Services not registered yet - create inline
-      const { FeedSnapDetector } = await import("../../services/implementations/FeedSnapDetector");
-      const { FeedPreloader } = await import("../../services/implementations/FeedPreloader");
-      const { FeedScrollBehavior } = await import("../../services/implementations/FeedScrollBehavior");
+      const { FeedSnapDetector } = await import("../../services/FeedSnapDetector");
+      const { FeedPreloader } = await import("../../services/FeedPreloader");
+      const { FeedScrollBehavior } = await import("../../services/FeedScrollBehavior");
 
       snapDetector = new FeedSnapDetector();
       preloader = new FeedPreloader();

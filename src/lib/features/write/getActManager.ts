@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ActManager } from './services/implementations/ActManager';
+import { ActManager } from './services/ActManager';
 
 let instance: ActManager | null = null;
 

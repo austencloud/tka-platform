@@ -5,7 +5,7 @@
 
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
-import { renderHeader, type CompressedSegment } from "@tka/render-composition";
+import { renderHeader, type LOOPComponentId } from "@tka/render-composition";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { textRenderer } from "$lib/shared/render/services/implementations/TextRenderer";
 
@@ -400,7 +400,7 @@ function drawWordHeader(
     difficultyLevel: difficultyLevel ?? undefined,
     showDifficultyBadge: difficultyLevel != null,
     loopComponents: (loopComponents ?? undefined) as
-      | Set<import("@tka/render-composition").LOOPComponentId>
+      | Set<LOOPComponentId>
       | undefined,
     rotationPeriod: periodForRender,
     inversionPeriod: inversionForRender,

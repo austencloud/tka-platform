@@ -444,12 +444,12 @@ export class BrailleHybridRenderer implements IAsciiRenderer {
 		const center = charToPixel(centerCoord.col, centerCoord.row);
 
 		// Step 1: Grid skeleton
-		if (!layers || layers.grid !== false) {
+		if (layers?.grid !== false) {
 			this.drawGrid(ascii, outerCoords, handCoords, isBox);
 		}
 
 		// Step 2: Orientation staves
-		if (!layers || layers.staves !== false) {
+		if (layers?.staves !== false) {
 			const isBeta = data.blueHand.endLocation === data.redHand.endLocation;
 			if (isBeta) {
 				const betaMap = isBox ? BOX_BETA : DIAMOND_BETA;
@@ -465,7 +465,7 @@ export class BrailleHybridRenderer implements IAsciiRenderer {
 		}
 
 		// Step 3: Motion arrows (Braille layer, respecting ASCII)
-		if (!layers || layers.arrows !== false) {
+		if (layers?.arrows !== false) {
 			if (data.blueHand.motionType !== MotionType.STATIC) {
 				this.drawArrow(braille, ascii, data.blueHand, outerCoords, center, BRAILLE_BLUE);
 			}

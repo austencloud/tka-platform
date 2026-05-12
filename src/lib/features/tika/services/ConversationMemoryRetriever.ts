@@ -6,7 +6,7 @@
  * full message arrays.
  */
 
-import type { TikaSessionPreview, TikaSessionQueryOptions } from "../../domain/models/tika-conversation-models";
+import type { TikaSessionPreview, TikaSessionQueryOptions } from "../domain/models/tika-conversation-models";
 
 export interface ConversationMemorySummary {
   sessionId: string;

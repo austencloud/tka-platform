@@ -76,7 +76,7 @@ export class FBOPool {
     const w = Math.max(1, width);
     const h = Math.max(1, height);
     const existing = this.sized.get(name);
-    if (existing && existing.width === w && existing.height === h && existing.format === format) {
+    if (existing?.width === w && existing.height === h && existing.format === format) {
       return existing;
     }
     if (existing) this.destroyFBO(existing);

@@ -4,12 +4,17 @@ import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type {
+  MotionColor} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   MotionType,
   RotationDirection,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { ArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/ArrowPlacementData";
+import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/PropPlacementData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { CompressionResult, ShareURLResult, ShareURLMetadata, DeepLinkParseResult, QRSizeEstimate, SequenceRouteIdParseResult, URLPropOptions } from "./contracts/types";
 
@@ -246,13 +251,13 @@ function decodeMotion(
     turns,
     startOrientation,
     endOrientation,
-    color: motionColor as any,
+    color: motionColor as unknown as MotionColor,
     isVisible: true,
     propType,
-    gridMode: gridMode as any,
+    gridMode: gridMode as unknown as GridMode,
     arrowLocation: startLocation,
-    arrowPlacementData: {} as any,
-    propPlacementData: {} as any,
+    arrowPlacementData: {} as unknown as ArrowPlacementData,
+    propPlacementData: {} as unknown as PropPlacementData,
   };
 }
 

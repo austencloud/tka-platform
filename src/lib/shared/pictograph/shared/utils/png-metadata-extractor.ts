@@ -53,28 +53,24 @@ function findTextChunk(data: Uint8Array, keyword: string): string | null {
 export async function extractMetadata(
   filePath: string
 ): Promise<Record<string, unknown>[]> {
-  try {
-    const response = await fetch(filePath);
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch PNG file: ${response.status} ${response.statusText}`
-      );
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    const metadataJson = findTextChunk(uint8Array, "metadata");
-
-    if (!metadataJson) {
-      throw new Error("No unified JSON metadata found in PNG file");
-    }
-
-    const parsed = JSON.parse(metadataJson) as Record<string, unknown>;
-    const sequence = parsed["sequence"] as Record<string, unknown>[] | undefined;
-    return sequence ?? [parsed];
-  } catch (error) {
-    throw error;
+  const response = await fetch(filePath);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch PNG file: ${response.status} ${response.statusText}`
+    );
   }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const uint8Array = new Uint8Array(arrayBuffer);
+  const metadataJson = findTextChunk(uint8Array, "metadata");
+
+  if (!metadataJson) {
+    throw new Error("No unified JSON metadata found in PNG file");
+  }
+
+  const parsed = JSON.parse(metadataJson) as Record<string, unknown>;
+  const sequence = parsed["sequence"] as Record<string, unknown>[] | undefined;
+  return sequence ?? [parsed];
 }
 
 /**

@@ -22,7 +22,7 @@ export const SILK_PRESETS = [
     id: "silk-classic",
     name: "Classic",
     previewColor: "#c0c0d0",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applySilk(state, "silk-classic", {
         palette: "satin",
         intensity: 0.7,
@@ -37,7 +37,7 @@ export const SILK_PRESETS = [
     id: "silk-streamer",
     name: "Streamer",
     previewColor: "#c080ff",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applySilk(state, "silk-streamer", {
         palette: "ethereal",
         intensity: 0.6,
@@ -52,7 +52,7 @@ export const SILK_PRESETS = [
     id: "silk-whip",
     name: "Whip",
     previewColor: "#202830",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applySilk(state, "silk-whip", {
         palette: "shadow",
         intensity: 0.8,
@@ -67,7 +67,7 @@ export const SILK_PRESETS = [
     id: "silk-royal",
     name: "Royal",
     previewColor: "#ffd700",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applySilk(state, "silk-royal", {
         palette: "gold_leaf",
         intensity: 0.8,
@@ -82,7 +82,7 @@ export const SILK_PRESETS = [
     id: "silk-inferno",
     name: "Inferno",
     previewColor: "#ff6000",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applySilk(state, "silk-inferno", {
         palette: "ember",
         intensity: 0.9,
@@ -97,7 +97,7 @@ export const SILK_PRESETS = [
     id: "silk-phantom",
     name: "Phantom",
     previewColor: "#101020",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applySilk(state, "silk-phantom", {
         palette: "shadow",
         intensity: 0.3,

@@ -10,7 +10,7 @@ import type * as SequenceMutatorModule from "../services/sequence-mutator";
 import type { VillageEventEmitter } from "./VillageEventEmitter";
 import { createVillageWorld } from "./VillageWorld";
 import * as personalityGenerator from "../services/personality-generator";
-import { LineageTracker } from "../services/implementations/LineageTracker";
+import { LineageTracker } from "../services/LineageTracker";
 import { LifecycleSystem } from "./systems/LifecycleSystem";
 import { MovementSystem } from "./systems/MovementSystem";
 import { SocialSystem } from "./systems/SocialSystem";
@@ -48,7 +48,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 	readonly decisionEngine: VillageDecisionEngine;
 	private lineageTracker: LineageTracker;
 
-	private listeners = new Map<string, Set<Function>>();
+	private listeners = new Map<string, Set<(...args: never[]) => void>>();
 	private intervalId: ReturnType<typeof setInterval> | null = null;
 	private _currentTick = 0;
 	private destroyed = false;
@@ -101,7 +101,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 				}
 			}
 		});
-		this.on("teaching:completed", (teacher, learner, seqId) => {
+		this.on("teaching:completed", (teacher, learner, _seqId) => {
 			this.decisionEngine.eventLog.addEvent(teacher.id, `Taught ${learner.identity.name}`);
 			this.decisionEngine.eventLog.addEvent(learner.id, `Learned from ${teacher.identity.name}`);
 		});
@@ -190,7 +190,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		const handlers = this.listeners.get(event);
 		if (handlers) {
 			for (const handler of handlers) {
-				(handler as Function)(...args);
+				(handler as (...args: unknown[]) => void)(...args);
 			}
 		}
 	}
@@ -202,14 +202,14 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		if (!this.listeners.has(event)) {
 			this.listeners.set(event, new Set());
 		}
-		this.listeners.get(event)!.add(handler as Function);
+		this.listeners.get(event)!.add(handler as (...args: never[]) => void);
 	}
 
 	off<K extends VillageEventKey>(
 		event: K,
 		handler: VillageEventMap[K],
 	): void {
-		this.listeners.get(event)?.delete(handler as Function);
+		this.listeners.get(event)?.delete(handler as (...args: never[]) => void);
 	}
 
 	get currentTick(): number {

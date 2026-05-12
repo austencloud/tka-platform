@@ -6,7 +6,7 @@
  */
 
 import type { Coordinates, GridLocation, GridMode, Orientation, PropPlacement } from "../types.js";
-import { isCardinal, CARDINAL_LOCATIONS } from "../types.js";
+import { isCardinal } from "../types.js";
 import { getHandPointCoordinates } from "./grid-position.js";
 import { DIAMOND_PROP_ANGLES, BOX_PROP_ANGLES } from "../constants/rotation-maps.js";
 

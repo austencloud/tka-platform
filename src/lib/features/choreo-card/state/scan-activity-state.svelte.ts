@@ -238,7 +238,7 @@ class ScanActivityState {
       const enriched = await this.enrichDecoded(decoded, entry);
       this.decodeCache.set(encoded, { decoded: enriched });
       const current = this.byCode.get(entry.code);
-      if (current && current.encoded === encoded) {
+      if (current?.encoded === encoded) {
         current.decoded = enriched;
         current.integrityOk = true;
         this.resort();
@@ -247,7 +247,7 @@ class ScanActivityState {
       const reason = (err as Error).message;
       this.decodeCache.set(encoded, { decoded: null, reason });
       const current = this.byCode.get(entry.code);
-      if (current && current.encoded === encoded) {
+      if (current?.encoded === encoded) {
         current.decoded = null;
         current.integrityOk = false;
         current.integrityReason = reason;

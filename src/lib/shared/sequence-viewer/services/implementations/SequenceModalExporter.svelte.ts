@@ -12,6 +12,7 @@ import type { AnimationPanelState } from "$lib/shared/animation-engine/state/ani
 
 import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/getOffline3DExporter";
+import type { CameraKeyframeBuffer } from '$lib/shared/video-export/domain/CameraKeyframe';
 
 export interface VideoExportEffectOverrides {
   fire?: boolean;
@@ -103,7 +104,7 @@ export interface Video3DExportDependencies {
   /** Total animation duration in seconds (single loop, no start/end hold) */
   totalDurationSeconds: number;
   /** Camera keyframe buffer from pass 1 (or static capture) */
-  cameraKeyframes: import("$lib/shared/video-export/domain/CameraKeyframe").CameraKeyframeBuffer;
+  cameraKeyframes: CameraKeyframeBuffer;
   /** Three.js WebGLRenderer - needed for cinema-mode supersampling resize */
   renderer: {
     getSize(target: { x: number; y: number; set(w: number, h: number): unknown }): unknown;

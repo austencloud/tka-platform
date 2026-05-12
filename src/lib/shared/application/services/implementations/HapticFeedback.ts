@@ -29,9 +29,10 @@ export class HapticFeedback {
 
   constructor() {
     if (browser) {
-      // eslint-disable-next-line no-restricted-properties
+       
       this.hasVibrate =
         typeof navigator !== "undefined" &&
+        // eslint-disable-next-line no-restricted-properties
         typeof navigator.vibrate === "function" &&
         (navigator.maxTouchPoints ?? 0) > 0;
     }
@@ -204,6 +205,6 @@ export class HapticFeedback {
           this.config.enabled = false;
         }
       });
-    } catch {}
+    } catch { /* ignore */ }
   }
 }

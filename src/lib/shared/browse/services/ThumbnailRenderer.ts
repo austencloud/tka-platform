@@ -159,8 +159,7 @@ export class ThumbnailRenderer {
   private ensureStartPosition(sequence: SequenceData): SequenceData {
     const existingStartPos = sequence.startPosition;
     const hasValidStartPosition =
-      existingStartPos &&
-      existingStartPos.motions?.blue &&
+      existingStartPos?.motions?.blue &&
       existingStartPos.motions?.red;
 
     if (hasValidStartPosition) {

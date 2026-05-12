@@ -14,7 +14,7 @@ const DASH_RADIUS = 9.5;
 const DASH_FILL_DARK = "#231f20";
 const DASH_FILL_LIGHT = "#ffffff";
 
-const VIEWBOX_SIZE = 950;
+const _VIEWBOX_SIZE = 950;
 
 export function wrapSvgContent(
   innerContent: string,

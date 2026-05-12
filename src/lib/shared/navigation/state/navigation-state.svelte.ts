@@ -11,10 +11,9 @@ import {
   ADMIN_TABS,
   ACCOUNT_TABS,
   SETTINGS_TABS,
-  WATCH_TABS,
 } from "../config/tab-definitions";
 
-import { MODULE_DEFINITIONS, ENABLED_MODULE_DEFINITIONS, normalizeModuleId } from "../config/module-definitions";
+import { MODULE_DEFINITIONS, normalizeModuleId } from "../config/module-definitions";
 
 import {
   CURRENT_MODULE_KEY,
@@ -343,7 +342,7 @@ export function createNavigationState() {
   }
 
   function setActiveTab(tabId: string) {
-    const debug = typeof window !== "undefined" && (window as any).__DEBUG_NAV__;
+    const debug = typeof window !== "undefined" && (window as unknown as Record<string, unknown>).__DEBUG_NAV__;
 
     const moduleDefinition = MODULE_DEFINITIONS.find(
       (m) => m.id === currentModule
@@ -568,7 +567,7 @@ export type NavigationState = ReturnType<typeof createNavigationState>;
 export const navigationState = createNavigationState();
 
 if (typeof window !== "undefined") {
-  (window as any).__navState = navigationState;
+  (window as unknown as Record<string, unknown>).__navState = navigationState;
 }
 
 if (import.meta.hot) {

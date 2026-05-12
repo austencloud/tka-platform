@@ -6,7 +6,7 @@ import { createSequenceData } from "$lib/shared/foundation/domain/models/Sequenc
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {

@@ -15,7 +15,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import type { AuditLogEntry, AuditActionType } from "./contracts/types";
+import type { AuditLogEntry, AuditActionType } from "./types";
 
 /**
  * Log an admin action

@@ -25,7 +25,7 @@ import {
 
 let previousCorrectLetter: Letter | null = null;
 let allPictographs: PictographData[] = [];
-let pictographsByLetter: Map<Letter, PictographData[]> = new Map();
+const pictographsByLetter: Map<Letter, PictographData[]> = new Map();
 let availableLetters: Letter[] = [];
 let isInitialized = false;
 

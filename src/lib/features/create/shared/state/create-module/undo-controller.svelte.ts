@@ -12,9 +12,7 @@ import type { UndoMetadata } from "../../services/implementations/UndoManager";
 import { UndoOperationType } from "../../services/implementations/UndoManager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-// @ts-ignore tsc doesn't recognize Svelte module script exports, but svelte-check does
 import { clearPropPositionCache } from "$lib/shared/pictograph/prop/components/PropSvg.svelte";
-// @ts-ignore tsc doesn't recognize Svelte module script exports, but svelte-check does
 import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/components/ArrowSvg.svelte";
 import { setSuppressNextAnimation } from "../../workspace-panel/sequence-display/state/step-grid-display-state.svelte";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -43,7 +41,7 @@ export function createUndoController({
 }: UndoControllerDeps) {
   let showStartPositionPickerCallback: (() => void) | null = null;
   let syncPickerStateCallback: (() => void) | null = null;
-  let onUndoingOptionCallback: ((isUndoing: boolean) => void) | null = null;
+  let onUndoingOptionCallback: ((isUndoing: boolean) => void) | null = null; // eslint-disable-line @typescript-eslint/no-unused-vars
 
   let undoChangeCounter = $state(0);
 

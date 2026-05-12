@@ -1,5 +1,6 @@
+import type {
+  GridLocation} from "../../../grid/domain/enums/grid-enums";
 import {
-  GridLocation,
   GridMode,
 } from "../../../grid/domain/enums/grid-enums";
 import type { GridPointData } from "../../../grid/domain/models/grid-models";
@@ -8,7 +9,7 @@ import { createGridPointData } from "../../../grid/utils/grid-coordinate-utils";
 // Cardinal locations use diamond grid coordinates
 const CARDINAL_LOCATIONS = new Set(["n", "e", "s", "w"]);
 // Intercardinal locations use box grid coordinates
-const INTERCARDINAL_LOCATIONS = new Set(["ne", "se", "sw", "nw"]);
+const _INTERCARDINAL_LOCATIONS = new Set(["ne", "se", "sw", "nw"]);
 
 /**
  * DefaultPropPositioner - Calculates default prop positions using grid coordinates

@@ -7,6 +7,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
@@ -20,11 +21,11 @@ import type {
 import {
   GridMode,
   GridPosition,
-  GridPositionGroup,
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type {
+  Orientation} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
-  Orientation,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
@@ -35,8 +36,6 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
-  shiftStartPosition,
-  createStartPositionFromStepEnd,
 } from "$lib/shared/create/services/sequence-transforms";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 // Cardinal locations (for DIAMOND grid) and intercardinal (for BOX grid)
@@ -201,7 +200,7 @@ function calculateRotationSteps(
 
   // Determine the cycle length based on position group
   // Alpha/Beta have positions 1-8, Gamma has 1-8 and 9-16 (two separate cycles)
-  let cycleLength = 8;
+  const cycleLength = 8;
   if (fromGroup === "gamma") {
     // Gamma 1-8 and Gamma 9-16 are separate cycles
     const fromCycle = fromNum <= 8 ? "low" : "high";
@@ -257,7 +256,7 @@ function pickRandom<T>(items: T[]): T | null {
 /**
  * Get the next position group in the cycle (for bridge variety).
  */
-function getNextPositionGroup(current: PositionGroup | null): PositionGroup {
+function _getNextPositionGroup(current: PositionGroup | null): PositionGroup {
   const cycle: PositionGroup[] = ["alpha", "beta", "gamma"];
   if (!current) return pickRandom(cycle)!;
   const currentIndex = cycle.indexOf(current);
@@ -349,7 +348,7 @@ export class EndlessSpinnerOrchestrator {
     for (const sequence of this.circularSequences) {
       // Load full sequence data to get the steps
       const fullSequence = await this.browseLoader.loadFullSequenceData(sequence.word);
-      if (!fullSequence || !fullSequence.steps || fullSequence.steps.length === 0) continue;
+      if (!fullSequence?.steps || fullSequence.steps.length === 0) continue;
 
       // Get or derive start position
       const startPos = this.startPositionDeriver.getOrDeriveStartPosition(fullSequence);
@@ -739,7 +738,7 @@ export class EndlessSpinnerOrchestrator {
     targetGroup: PositionGroup
   ): Promise<SequenceData | null> {
     // Get sequences in the same position group
-    const candidatesInGroup = this.circularSequences.filter((seq) => {
+    const candidatesInGroup = this.circularSequences.filter((_seq) => {
       // We need to check the sequence's start position group
       // Since we only have metadata, we'll load a few candidates
       return true; // We'll filter after loading
@@ -769,11 +768,13 @@ export class EndlessSpinnerOrchestrator {
       if (!startPos) continue;
 
       // Try multiple ways to get the position - the data structure varies
-      const sequenceStartPosition =
-        (startPos as any).gridPosition ??
-        (startPos as any).startPosition ??
+      const startPosRecord = startPos as unknown as Record<string, unknown>;
+      const sequenceStartPosition = (
+        startPosRecord.gridPosition ??
+        startPosRecord.startPosition ??
         fullSequence.steps?.[0]?.startPosition ??
-        null;
+        null
+      ) as string | null;
 
       // Check if it's in the same position group
       const sequenceGroup = getPositionGroup(sequenceStartPosition);
@@ -926,10 +927,10 @@ export class EndlessSpinnerOrchestrator {
         difficulty: DifficultyLevel.BEGINNER,
         propContinuity: PropContinuity.CONTINUOUS,
         turnIntensity: 1,
-        startPosition: startPositionData,
+        startPosition: startPositionData as PictographData,
         endPosition: {
           startPosition: targetPosition,
-        } as any, // Minimal end position constraint
+        } as unknown as PictographData, // Minimal end position constraint
       });
 
       return bridge;
@@ -942,7 +943,7 @@ export class EndlessSpinnerOrchestrator {
   /**
    * Create a PictographData-like object from an end state for use as start position.
    */
-  private createStartPositionFromEndState(endState: EndState): any {
+  private createStartPositionFromEndState(endState: EndState): unknown {
     return {
       id: `spinner-start-${Date.now()}`,
       startPosition: endState.position,

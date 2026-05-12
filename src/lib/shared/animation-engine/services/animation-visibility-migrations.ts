@@ -1,8 +1,7 @@
 import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/CharcoalSparkTypes";
-import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
 import { validatePreset } from "../domain/types/LedColorPresets";
 
-export function migrateStoredSettings(parsed: Record<string, any>): Record<string, any> {
+export function migrateStoredSettings(parsed: Record<string, unknown>): Record<string, unknown> {
   if (parsed.propGlow !== undefined) {
     delete parsed.propGlow;
   }
@@ -34,8 +33,8 @@ export function migrateStoredSettings(parsed: Record<string, any>): Record<strin
     delete parsed.firePreset;
   }
 
-  if ("fireIntensity" in parsed && parsed.fireIntensity > 1.0) {
-    parsed.fireIntensity = Math.min(1.0, parsed.fireIntensity / 3.0);
+  if ("fireIntensity" in parsed && (parsed.fireIntensity as number) > 1.0) {
+    parsed.fireIntensity = Math.min(1.0, (parsed.fireIntensity as number) / 3.0);
   }
 
   if (!("fireColorBlend" in parsed)) parsed.fireColorBlend = 0.5;

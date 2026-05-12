@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { firestoreList } from "$lib/shared/firestore";
-import { LibrarySequenceDocSchema } from "../../domain/models/library-schemas";
+import { LibrarySequenceDocSchema } from "../domain/models/library-schemas";
 import {
   getUserSequencesPath,
   getUserSequencePath,

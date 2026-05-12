@@ -8,7 +8,8 @@
  * - Any future renderers
  */
 
-import { PerspectiveCamera, Vector3 as ThreeVector3 } from "three";
+import type { PerspectiveCamera} from "three";
+import { Vector3 as ThreeVector3 } from "three";
 import { CameraMode } from "../../types";
 import type { PhysicsProvider, Vector3 } from "../../types";
 

@@ -34,10 +34,17 @@
 
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let didLongPress = false;
+  let startX = 0;
+  let startY = 0;
+  let didDrag = false;
+  const DRAG_THRESHOLD = 8;
 
   function handlePointerDown(e: PointerEvent) {
     if (disabled && !unavailable) return;
     didLongPress = false;
+    didDrag = false;
+    startX = e.clientX;
+    startY = e.clientY;
 
     if (onLongPress) {
       longPressTimer = setTimeout(() => {
@@ -47,16 +54,30 @@
     }
   }
 
+  function handlePointerMove(e: PointerEvent) {
+    if (didDrag) return;
+    const dx = Math.abs(e.clientX - startX);
+    const dy = Math.abs(e.clientY - startY);
+    if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+      didDrag = true;
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    }
+  }
+
   function handlePointerUp() {
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       longPressTimer = null;
     }
 
-    if (!didLongPress && !disabled) {
+    if (!didLongPress && !didDrag && !disabled) {
       onAction();
     }
     didLongPress = false;
+    didDrag = false;
   }
 
   function handlePointerCancel() {
@@ -65,6 +86,7 @@
       longPressTimer = null;
     }
     didLongPress = false;
+    didDrag = false;
   }
 </script>
 
@@ -76,6 +98,7 @@
   {disabled}
   aria-label={label}
   onpointerdown={handlePointerDown}
+  onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
   onpointercancel={handlePointerCancel}
   onpointerleave={handlePointerCancel}

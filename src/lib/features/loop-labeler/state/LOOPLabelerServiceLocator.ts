@@ -8,9 +8,9 @@
 import * as sequenceLoaderModule from "../services/sequence-loader";
 import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
 import * as navigatorModule from "../services/navigator";
-import { loopDetector as loopDetectorInstance } from "../services/implementations/LOOPDetector";
-import type { ILOOPDetector } from "../services/contracts/ILOOPDetector";
-import type { LOOPLabelsFirebaseRepository } from "../services/implementations/LOOPLabelsFirebaseRepository";
+import { loopDetector as loopDetectorInstance } from "../services/LOOPDetector";
+import type { ILOOPDetector } from "../services/ILOOPDetector";
+import type { LOOPLabelsFirebaseRepository } from "../services/LOOPLabelsFirebaseRepository";
 
 export class LOOPLabelerServiceLocator {
   private cachedLabelsRepository: LOOPLabelsFirebaseRepository | null = null;

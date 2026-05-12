@@ -830,7 +830,7 @@ export class WebGL2Backend implements RenderBackend {
     if (this.unsupportedKindsWarned.has(kind)) return;
     this.unsupportedKindsWarned.add(kind);
     if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console -- one-shot dev warning
+       
       console.warn(
         `[WebGL2Backend] pass kind "${kind}" not implemented yet - skipped`,
       );

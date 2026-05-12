@@ -8,10 +8,10 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
 import { authState } from '$lib/shared/auth/state/authState.svelte';
 interface ReportQuerier {
-	getById(reportId: string): Promise<import('../../domain/models/report-models').UserReport | null>;
+	getById(reportId: string): Promise<UserReport | null>;
 }
-import type { ResolveReportInput, UserReport } from '../../domain/models/report-models';
-import { REPORT_CATEGORIES } from '../../domain/models/report-models';
+import type { ResolveReportInput, UserReport } from '../domain/models/report-models';
+import { REPORT_CATEGORIES } from '../domain/models/report-models';
 import * as notificationTriggerService from '$lib/features/feedback/services/notification-trigger-service';
 
 const REPORTS_COLLECTION = 'userReports';

@@ -1,4 +1,5 @@
-import { PointLight, Color, Object3D, Vector3 } from "three";
+import type { Color, Object3D, Vector3 } from "three";
+import { PointLight } from "three";
 import type { QualityTierConfig } from "../types";
 
 export interface LightHandle {

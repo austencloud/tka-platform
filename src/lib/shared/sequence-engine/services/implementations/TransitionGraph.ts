@@ -222,7 +222,7 @@ export class TransitionGraph implements ITransitionGraph {
 
     for (const letter of lettersFromStartGroup) {
       const info = this.letterPositions.get(letter);
-      if (info && info.endPositionGroup === targetGroup) {
+      if (info?.endPositionGroup === targetGroup) {
         bridges.push(letter);
       }
     }

@@ -1,4 +1,4 @@
-import { SoloPropSaveOrchestrator } from './services/implementations/SoloPropSaveOrchestrator';
+import { SoloPropSaveOrchestrator } from './services/SoloPropSaveOrchestrator';
 import { soloPropRepository } from '$lib/shared/foundation/services/implementations/SoloPropRepository';
 import { handPathRepository } from '$lib/shared/foundation/services/implementations/HandPathRepository';
 

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { SequenceFeatureExtractor } from './services/implementations/SequenceFeatureExtractor';
+import { SequenceFeatureExtractor } from './services/SequenceFeatureExtractor';
 import { getSequenceAnalyzer } from '$lib/features/create/shared/getSequenceAnalyzer';
 
 let instance: SequenceFeatureExtractor | null = null;

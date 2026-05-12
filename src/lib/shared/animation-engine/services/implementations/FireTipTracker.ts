@@ -149,7 +149,7 @@ export class FireTipTracker {
 		}
 
 		if (redProp) {
-			totalTips = this.emitPropTips(
+			totalTips = this.emitPropTips( // eslint-disable-line @typescript-eslint/no-unused-vars
 				redProp,
 				config.canvasSize,
 				config.redPropDimensions,

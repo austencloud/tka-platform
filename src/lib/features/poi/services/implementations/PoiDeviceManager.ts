@@ -67,7 +67,7 @@ export class PoiDeviceManager {
     onProgress?: (pct: number) => void
   ): Promise<void> {
     const connection = this._connections.get(deviceId);
-    if (!connection || !connection.connected) {
+    if (!connection?.connected) {
       throw new Error(`Device ${deviceId} not connected`);
     }
     await connection.uploadPattern(pattern, slot, onProgress);

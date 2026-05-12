@@ -36,7 +36,6 @@ export interface ImpersonatedUser {
  * Handles provider-specific logic for Facebook and Google profile pictures.
  */
 
-import type { User } from "firebase/auth";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 export interface GeneratedAvatarData {

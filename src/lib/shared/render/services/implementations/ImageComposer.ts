@@ -55,9 +55,10 @@ import {
   DARK_MOTION_PURPLE_STROKE,
   DARK_MOTION_PURPLE_FILL,
 } from "../../../mandala/domain/mandala-constants";
+import type { PreparedPictographData } from '../../../pictograph/shared/domain/models/PreparedPictographData';
 
 const yieldToEventLoop: () => Promise<void> =
-  (globalThis as any).scheduler?.yield?.bind((globalThis as any).scheduler) ??
+  (globalThis as unknown as Record<string, Record<string, () => Promise<void>>>).scheduler?.yield?.bind((globalThis as unknown as Record<string, unknown>).scheduler) ??
   (() => new Promise<void>((r) => setTimeout(r, 0)));
 
 const DECK_HEADER_RATIO = 0.133;
@@ -209,7 +210,7 @@ export class ImageComposer {
       throw new Error("Sequence must have at least one beat");
     }
 
-    await (this.TextRenderer as import("./TextRenderer").TextRenderer).preloadGlyphImages();
+    await (this.TextRenderer as TextRenderer).preloadGlyphImages();
 
     this.compositionL2Hits = 0;
     this.compositionL1Hits = 0;
@@ -470,10 +471,9 @@ export class ImageComposer {
 
     const loopTypeOverride = options.loopType;
     let loopComponents: Set<LOOPComponent> | undefined;
-    let rotationPeriod: Period | undefined;
 
     const display = getLoopDisplayResolver()(sequence);
-    rotationPeriod = display.rotationPeriod;
+    const rotationPeriod = display.rotationPeriod;
     const inversionPeriod = display.inversionPeriod;
     const loopPeriod = display.period;
 
@@ -1031,7 +1031,7 @@ export class ImageComposer {
     };
 
     const result = await this.layerCompositor.compose(
-      preparedPictograph as unknown as import("../../../pictograph/shared/domain/models/PreparedPictographData").PreparedPictographData,
+      preparedPictograph as unknown as PreparedPictographData,
       layerOptions,
       layerVisibility,
       stepNumber

@@ -1,4 +1,4 @@
-import { PublicIndexSyncer } from './services/implementations/PublicIndexSyncer';
+import { PublicIndexSyncer } from './services/PublicIndexSyncer';
 import * as contentModerator from '$lib/features/moderation/services/content-moderator';
 import * as contentAppealManager from '$lib/features/moderation/services/content-appeal-manager';
 import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';

@@ -30,9 +30,9 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { AnimationLoop } from "$lib/shared/animation-engine/services/implementations/AnimationLoop";
 
   // Auto-chaining
-  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
-  import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
-  import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
+  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
+  import { InfiniteSequenceGenerator } from "$lib/features/landing/services/InfiniteSequenceGenerator";
+  import { SpinnerMetricsRepository } from "$lib/features/landing/services/SpinnerMetricsRepository";
   import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";

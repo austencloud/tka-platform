@@ -26,26 +26,16 @@ export class SequenceImporter {
    * Import sequence from PNG metadata
    */
   async importFromPNG(id: string): Promise<SequenceData | null> {
-    try {
-      // Extract metadata from PNG file using the reliable extractor
-      // NOTE: Don't uppercase the ID - Greek letters like Θ would become Θ,
-      // which won't match the filesystem directory names
-      const pngMetadata =
-        await extractSequenceMetadata(id);
+    const pngMetadata =
+      await extractSequenceMetadata(id);
 
-      if (pngMetadata.length === 0) {
-        console.error(`No metadata found in PNG for sequence: ${id}`);
-        return null;
-      }
-
-      // Convert PNG metadata to web app format
-      const sequence = this.convertPngMetadata(id, pngMetadata);
-      return sequence;
-    } catch (error) {
-      // Don't log at error level - this is expected for user-generated sequences
-      // that don't have PNG metadata (stored only in IndexedDB/Firestore)
-      throw error;
+    if (pngMetadata.length === 0) {
+      console.error(`No metadata found in PNG for sequence: ${id}`);
+      return null;
     }
+
+    const sequence = this.convertPngMetadata(id, pngMetadata);
+    return sequence;
   }
 
   /**

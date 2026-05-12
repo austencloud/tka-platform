@@ -49,28 +49,28 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     containerHeight: 600,
   });
 
-  /**
-   * Creates a sequence ID that captures position and orientation changes.
-   * This ensures the option picker refreshes when:
-   * - Steps are added/removed (length changes)
-   * - Sequence is rotated (endPosition changes)
-   * - Sequence is mirrored/flipped (endPosition and orientations change)
-   * - Grid mode changes
-   */
+  function getMotionFingerprint(m: { startLocation?: string; endLocation?: string; startOrientation?: string; endOrientation?: string; motionType?: string; rotationDirection?: string; turns?: number | string } | undefined | null): string {
+    if (!m) return "x";
+    return `${m.startLocation}.${m.endLocation}.${m.startOrientation}.${m.endOrientation}.${m.motionType}.${m.rotationDirection}.${m.turns}`;
+  }
+
   function createSequenceId(
     sequence: PictographData[],
     gridMode: GridMode
   ): string {
-    if (sequence.length === 0) {
-      return `empty-${gridMode}`;
-    }
-
-    const lastStep = sequence[sequence.length - 1];
-    const endPos = lastStep?.endPosition ?? "none";
-    const blueEndOri = lastStep?.motions?.blue?.endOrientation ?? "none";
-    const redEndOri = lastStep?.motions?.red?.endOrientation ?? "none";
-
-    return `${sequence.length}-${lastStep?.id || "empty"}-${endPos}-${blueEndOri}-${redEndOri}-${gridMode}`;
+    if (sequence.length === 0) return `empty-${gridMode}`;
+    const first = sequence[0];
+    const last = sequence[sequence.length - 1];
+    return [
+      sequence.length,
+      first?.startPosition ?? "x",
+      getMotionFingerprint(first?.motions?.blue),
+      getMotionFingerprint(first?.motions?.red),
+      last?.endPosition ?? "x",
+      getMotionFingerprint(last?.motions?.blue),
+      getMotionFingerprint(last?.motions?.red),
+      gridMode,
+    ].join("|");
   }
 
   // Simplified filter state - just continuous vs all
@@ -123,12 +123,10 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     const sequenceId = createSequenceId(sequence, gridMode);
 
     if (lastSequenceId === sequenceId) {
-      // Even if skipped, update currentSequence in case it changed
-      // This can happen when steps are added but sequenceId happens to match
       if (sequence.length !== currentSequence.length) {
         currentSequence = sequence;
       }
-      return; // Skip reload for same sequence
+      return;
     }
 
     state = "loading";

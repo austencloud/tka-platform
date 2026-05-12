@@ -61,7 +61,7 @@ export class StripPatternEngine {
     pattern: StripPattern,
     maxBright: number,
     maxPower: number,
-    groupSize: number
+    _groupSize: number
   ): StripPattern {
     const { ledCount, frameCount, frames } = pattern;
     const limitedFrames: StripFrame[] = [];

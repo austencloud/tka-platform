@@ -211,7 +211,7 @@ export class HandPathConstraint implements IVariationConstraint {
    * Extract hand path from motion data
    */
   private getHandPath(motion: ConstraintMotionData): HandPath {
-    if (!motion || !motion.startLocation || !motion.endLocation) {
+    if (!motion?.startLocation || !motion.endLocation) {
       return HandPath.STATIC;
     }
     return getHandPathDirection(motion.startLocation, motion.endLocation);

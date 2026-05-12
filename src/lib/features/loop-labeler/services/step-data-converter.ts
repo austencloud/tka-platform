@@ -14,7 +14,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { RawStepData, SequenceEntry } from "./contracts/types";
+import type { RawStepData, SequenceEntry } from "./types";
 
 /**
  * Parse a raw motion type string to the MotionType enum.

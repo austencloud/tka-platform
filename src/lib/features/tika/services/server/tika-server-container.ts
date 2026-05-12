@@ -5,12 +5,12 @@
  * and can only run on the server. Used by the TIKA API endpoint.
  */
 
-import { TikaPictographLoader } from "../implementations/TikaPictographLoader";
-import { TikaSequenceValidator } from "../implementations/TikaSequenceValidator";
-import { TikaSequenceGenerator } from "../implementations/TikaSequenceGenerator";
-import { TikaQuizGenerator } from "../implementations/TikaQuizGenerator";
-import { TikaToolExecutor } from "../implementations/TikaToolExecutor";
-import { TikaModelProvider } from "../implementations/TikaModelProvider";
+import { TikaPictographLoader } from "../TikaPictographLoader";
+import { TikaSequenceValidator } from "../TikaSequenceValidator";
+import { TikaSequenceGenerator } from "../TikaSequenceGenerator";
+import { TikaQuizGenerator } from "../TikaQuizGenerator";
+import { TikaToolExecutor } from "../TikaToolExecutor";
+import { TikaModelProvider } from "../TikaModelProvider";
 import * as tikaProgressWriter from "./tika-progress-writer";
 import type { VerificationResult } from "./tika-progress-writer";
 

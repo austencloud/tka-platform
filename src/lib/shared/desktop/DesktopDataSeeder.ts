@@ -1,4 +1,6 @@
 import { db } from "$lib/shared/persistence/database/TKADatabase";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { AppSettings } from "$lib/shared/settings/domain/AppSettings";
 
 const BUNDLE_VERSION_KEY = "desktop-bundle-version";
 
@@ -49,7 +51,7 @@ export class DesktopDataSeeder {
 			const BATCH_SIZE = 500;
 			for (let i = 0; i < bundle.sequences.length; i += BATCH_SIZE) {
 				const batch = bundle.sequences.slice(i, i + BATCH_SIZE);
-				await db.sequences.bulkPut(batch as any);
+				await db.sequences.bulkPut(batch as unknown as SequenceData[]);
 				seeded += batch.length;
 
 				if (seeded % 2000 === 0) {
@@ -62,7 +64,7 @@ export class DesktopDataSeeder {
 		await db.settings.put({
 			id: BUNDLE_VERSION_KEY,
 			bundleVersion: appVersion,
-		} as any);
+		} as unknown as AppSettings & { id: string });
 
 		console.log(`[DesktopDataSeeder] Done. Seeded ${seeded} sequences.`);
 	}

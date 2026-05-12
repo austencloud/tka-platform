@@ -13,7 +13,7 @@ import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../../prop/domain/enums/PropType";
-import { MotionType, HandPath } from "../../domain/enums/pictograph-enums";
+import { MotionType, HandPath, type Orientation } from "../../domain/enums/pictograph-enums";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
 export class PictographPreparer {
@@ -237,7 +237,7 @@ export class PictographPreparer {
 
   private getMotionsWithOverrides(
     pictograph: PictographData,
-    settings: { bluePropType?: any; redPropType?: any },
+    settings: { bluePropType?: unknown; redPropType?: unknown },
     options?: PrepareOptions
   ): [string, MotionData][] {
     return Object.entries(pictograph.motions || {})
@@ -287,8 +287,8 @@ export class PictographPreparer {
         motionType: isShift ? MotionType.FLOAT : motion.motionType,
         turns: isShift ? ("fl" as const) : motion.turns,
         handPath: isShift ? handPath : (motion.handPath ?? null),
-        startOrientation: undefined as any,
-        endOrientation: undefined as any,
+        startOrientation: undefined as unknown as Orientation,
+        endOrientation: undefined as unknown as Orientation,
         propType: PropType.HAND,
       };
     };

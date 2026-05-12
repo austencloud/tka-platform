@@ -160,7 +160,7 @@ export class Sharer {
 
   private convertToRenderOptions(shareOptions: ShareOptions, sequenceBirthDate?: Date) {
     const rawDate = sequenceBirthDate ?? new Date();
-    const dateToUse = rawDate instanceof Date ? rawDate : new Date(rawDate as any);
+    const dateToUse = rawDate instanceof Date ? rawDate : new Date(rawDate as unknown as string | number);
 
     return {
       includeStartPosition: shareOptions.includeStartPosition,

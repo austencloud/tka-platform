@@ -2,15 +2,12 @@ import { Octree } from "../spatial/octree";
 import type {
   ChunkResultMessage,
   GenerateChunkMessage,
-  VegetationData,
   RealZoneLoadedMessage,
 } from "../workers/chunk-worker-messages";
-import type { DrainageData } from "../generation/gpu/terrain-compute-types";
 import { DEFAULT_EROSION_CONFIG } from "../generation/gpu/terrain-compute-types";
 import type { CampgroundConfig } from "./world-config";
 import type { ImportedTerrainData } from "../generation/real-terrain-zone";
 import {
-  type ChunkEntity,
   type ChunkManagerConfig,
   type ChunkState,
   type ChunkMeshData,
@@ -265,7 +262,7 @@ export class ChunkManager {
       const key = this.loadQueue.shift()!;
       const state = this.chunks.get(key);
 
-      if (!state || state.loadState !== "pending") continue;
+      if (state?.loadState !== "pending") continue;
 
       this.loadChunk(key, state);
     }

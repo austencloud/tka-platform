@@ -1,4 +1,4 @@
-import type { LoopTypeDefinition } from "../../../domain/constants/loop-type-definitions";
+import type { LoopTypeDefinition } from "../../domain/constants/loop-type-definitions";
 
 export interface ComparisonMatrix {
   halvedPairs: Map<string, string[]>;

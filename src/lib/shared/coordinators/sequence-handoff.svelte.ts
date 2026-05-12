@@ -97,7 +97,7 @@ export function consumeSequenceHandoff(): SequenceHandoff | null {
 		const handoff = JSON.parse(serialized) as SequenceHandoff;
 
 		// Basic validation
-		if (!handoff.sequence || !handoff.sequence.id) {
+		if (!handoff.sequence?.id) {
 			console.warn('[SequenceHandoff] Invalid handoff data - missing sequence');
 			return null;
 		}

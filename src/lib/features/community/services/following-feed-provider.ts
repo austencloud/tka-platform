@@ -9,7 +9,7 @@ import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { getFollowing } from "$lib/shared/community/services/user-repository";
 import { queryEvents } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type {
-  FollowingFeedItem, FollowingFeedOptions } from "./contracts/types";
+  FollowingFeedItem, FollowingFeedOptions } from "./types";
 import type { ActivityEvent } from "$lib/shared/analytics/domain/models/ActivityEvent";
 import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 

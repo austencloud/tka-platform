@@ -22,7 +22,7 @@ export const FROST_PRESETS = [
     id: "frost-classic",
     name: "Classic",
     previewColor: "#a0d8ff",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyFrost(state, "frost-classic", {
         palette: "glacial",
         ambientEmission: 0.4,
@@ -37,7 +37,7 @@ export const FROST_PRESETS = [
     id: "frost-breath",
     name: "Breath",
     previewColor: "#d0e8f0",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyFrost(state, "frost-breath", {
         palette: "breath",
         ambientEmission: 0.7,
@@ -52,7 +52,7 @@ export const FROST_PRESETS = [
     id: "frost-flash-freeze",
     name: "Flash Freeze",
     previewColor: "#e0f4ff",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyFrost(state, "frost-flash-freeze", {
         palette: "glacial",
         ambientEmission: 0.2,
@@ -67,7 +67,7 @@ export const FROST_PRESETS = [
     id: "frost-black-ice",
     name: "Black Ice",
     previewColor: "#202830",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyFrost(state, "frost-black-ice", {
         palette: "black_ice",
         ambientEmission: 0.3,
@@ -82,7 +82,7 @@ export const FROST_PRESETS = [
     id: "frost-aurora",
     name: "Aurora",
     previewColor: "#60ff80",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyFrost(state, "frost-aurora", {
         palette: "aurora",
         ambientEmission: 0.5,
@@ -97,7 +97,7 @@ export const FROST_PRESETS = [
     id: "frost-cursed",
     name: "Cursed",
     previewColor: "#4020a0",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyFrost(state, "frost-cursed", {
         palette: "cursed",
         ambientEmission: 0.3,

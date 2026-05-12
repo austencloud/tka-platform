@@ -10,7 +10,7 @@
 
 import { browser } from "$app/environment";
 import { auth } from "$lib/shared/auth/firebase";
-import type { UserEngagementSummary, ModuleActivityBreakdown, ContentMetrics, PostHogSessionSummary, TimePeriod } from "../contracts/types";
+import type { UserEngagementSummary, ModuleActivityBreakdown, ContentMetrics, PostHogSessionSummary, TimePeriod } from "./types";
 
 const POSTHOG_PROJECT_ID = "299320";
 

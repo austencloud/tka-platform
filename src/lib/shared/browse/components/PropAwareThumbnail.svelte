@@ -51,6 +51,8 @@
     customNotesText?: string;
     // Visibility overrides (grid, hand points, glyphs)
     visibility?: ThumbnailVisibilitySettings;
+    // Render as hand-path visualization (float arrows for shifts, zero-turn dash for dashes)
+    handPathMode?: boolean;
     // Skip IntersectionObserver and load immediately (use in modals/pickers)
     eager?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from lightMode/printMode) */
@@ -76,6 +78,7 @@
     showBirthday,
     customNotesText,
     visibility,
+    handPathMode = false,
     eager = false,
     cardMode = false,
   }: Props = $props();
@@ -108,11 +111,13 @@
 
   // Merge composition manager's QR/mandala settings into visibility when no explicit visibility passed
   const effectiveVisibility = $derived.by<ThumbnailVisibilitySettings | undefined>(() => {
-    if (visibility) return visibility;
+    if (visibility) {
+      return handPathMode ? { ...visibility, handPathMode: true } : visibility;
+    }
     const qr = compositionManager.showQRCode;
     const mandala = compositionManager.showMandala;
-    if (!qr && !mandala) return undefined;
-    return { showQRCode: qr, showMandala: mandala };
+    if (!qr && !mandala && !handPathMode) return undefined;
+    return { showQRCode: qr, showMandala: mandala, ...(handPathMode && { handPathMode: true }) };
   });
 
   // Derived: sequence name (raw)

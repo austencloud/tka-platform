@@ -400,7 +400,7 @@ export function applyErosion(
 
   // Calculate gradient at a position (direction of steepest descent)
   const getGradient = (x: number, z: number): { dx: number; dz: number; slope: number } => {
-    const h = getHeight(x, z);
+    const _h = getHeight(x, z);
     const hL = getHeight(x - 1, z);
     const hR = getHeight(x + 1, z);
     const hD = getHeight(x, z - 1);

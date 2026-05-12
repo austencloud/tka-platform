@@ -309,11 +309,19 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   // This triggers when currentSequence content changes but ID stays the same
   let lastSequenceHash = $state<string | null>(null);
 
+  function motionPrint(m: { startLocation?: string; endLocation?: string; startOrientation?: string; endOrientation?: string } | undefined | null): string {
+    if (!m) return "x";
+    return `${m.startLocation}.${m.endLocation}.${m.startOrientation}.${m.endOrientation}`;
+  }
+
   function getSequenceHash(seq: SequenceData | null): string | null {
     if (!seq) return null;
-    // Create a simple hash from beat durations to detect relevant changes
-    const beatDurations = seq.steps?.map(b => b.duration ?? 1).join(',') || '';
-    return `${seq.id || seq.word || 'unknown'}-${seq.steps?.length || 0}-${beatDurations}`;
+    const durations = seq.steps?.map(b => b.duration ?? 1).join(',') || '';
+    const sp = seq.startPosition;
+    const spPrint = `${motionPrint(sp?.motions?.blue)}-${motionPrint(sp?.motions?.red)}`;
+    const last = seq.steps?.[seq.steps.length - 1];
+    const lastPrint = `${motionPrint(last?.motions?.blue)}-${motionPrint(last?.motions?.red)}`;
+    return `${seq.steps?.length || 0}|${durations}|${spPrint}|${lastPrint}`;
   }
 
   $effect(() => {

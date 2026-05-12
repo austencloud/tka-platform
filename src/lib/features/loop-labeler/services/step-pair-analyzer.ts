@@ -5,7 +5,7 @@ import {
   COMPOUND_LETTER_MAP,
   ALPHA_BETA_COUNTERPART_LETTER_MAP,
 } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
-import type { StepPairRelationship, LetterRelationshipInfo } from "./contracts/types";
+import type { StepPairRelationship, LetterRelationshipInfo } from "./types";
 
 /**
  * Analyze the relationship between two steps.

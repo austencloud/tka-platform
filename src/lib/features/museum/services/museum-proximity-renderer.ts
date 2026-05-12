@@ -17,13 +17,13 @@ import type {
   TorchPosition,
   LightPosition,
 } from "./MuseumGeometryBuilder";
-import type { MuseumGrid } from "../../domain/museum-grid-types";
+import type { MuseumGrid } from "../domain/museum-grid-types";
 
 // ── Constants ──
 
 const CELL_SIZE = 8;
-const MOUNT_RADIUS = 30;
-const UNMOUNT_RADIUS = 40;
+const _MOUNT_RADIUS = 30;
+const _UNMOUNT_RADIUS = 40;
 
 export const PROXIMITY_MAX_MOUNTS_PER_FRAME = 2;
 
@@ -40,18 +40,18 @@ export type MountCategory =
 
 export interface PendingMount {
   category: MountCategory;
-  item: any;
+  item: unknown;
 }
 
 export class MuseumProximityRenderer {
   // Proximity grids
   torchGrid: ProximityGrid<TorchPosition>;
   plaqueGrid: ProximityGrid<PlaquePlacement>;
-  performerGrid: ProximityGrid<any>;
+  performerGrid: ProximityGrid<unknown>;
   exhibitLightGrid: ProximityGrid<LightPosition>;
   ceilingLightGrid: ProximityGrid<LightPosition>;
   sunlightGrid: ProximityGrid<LightPosition>;
-  furnitureGrid: ProximityGrid<any>;
+  furnitureGrid: ProximityGrid<unknown>;
 
   // Movement tracking for recompute threshold
   lastCheckTX = -999;
@@ -60,11 +60,11 @@ export class MuseumProximityRenderer {
   constructor(grid: MuseumGrid) {
     this.torchGrid = new ProximityGrid<TorchPosition>(CELL_SIZE);
     this.plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
-    this.performerGrid = new ProximityGrid<any>(CELL_SIZE);
+    this.performerGrid = new ProximityGrid<unknown>(CELL_SIZE);
     this.exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
     this.ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
     this.sunlightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
-    this.furnitureGrid = new ProximityGrid<any>(CELL_SIZE);
+    this.furnitureGrid = new ProximityGrid<unknown>(CELL_SIZE);
 
     // Populate furniture and performer grids immediately
     for (const f of (grid.furniture ?? [])) {

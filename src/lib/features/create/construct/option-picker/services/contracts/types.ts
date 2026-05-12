@@ -1,4 +1,3 @@
-import type { OptionTransitionCoordinator } from "../implementations/OptionTransitionCoordinator";
 
 /**
  * Aspect Layout Planner Service Interface

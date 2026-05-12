@@ -1,7 +1,6 @@
 import type { MergeResult } from "../contracts/types";
 import type { HybridLogicalClock } from './HybridLogicalClock';
 import type {
-	HLCTimestamp,
 	PlaybackIntent,
 	PeerInfo,
 	SyncedRoomState,

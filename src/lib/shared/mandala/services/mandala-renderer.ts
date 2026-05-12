@@ -18,7 +18,7 @@ import {
 	PURPLE_FILL,
 } from "../domain/mandala-constants";
 import { DEFAULT_OVERLAP_CONFIG } from "../domain/mandala-types";
-import type { MandalaPaths, MandalaRenderOptions, MandalaOverlapConfig } from "../domain/mandala-types";
+import type { MandalaPaths, MandalaRenderOptions } from "../domain/mandala-types";
 
 const GRID_DOT_ANGLES = [
 	0,

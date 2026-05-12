@@ -1,5 +1,5 @@
 import type { GridCell } from "../../state/arrange-grid-state.svelte";
-import type { Composition, TransformType } from "$lib/shared/animation-engine/domain/compose-types";
+import type { TransformType } from "$lib/shared/animation-engine/domain/compose-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 // --- From IArrangeUndoManager ---

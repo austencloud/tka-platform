@@ -1,13 +1,3 @@
-import type {
-  AnimationKeyframe,
-  AnimationPreset,
-  CameraState,
-  DeviceState,
-  ExportConfig,
-  ExportFormat,
-  ExportResolution,
-} from "../../domain/promo-models";
-
 // --- From IPromoVideoExporter ---
 /**
  * Promo Video Exporter Contract
@@ -15,8 +5,6 @@ import type {
  * Handles rendering the 3D scene animation to video format.
  * Uses h264-mp4-encoder/mp4-muxer for high-quality MP4 output.
  */
-
-import type * as THREE from "three";
 
 /**
  * Export progress callback

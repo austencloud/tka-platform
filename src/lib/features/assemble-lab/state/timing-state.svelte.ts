@@ -10,16 +10,11 @@ export function createTimingState() {
   let isReRecording = $state(false);
   let reRecordIndex = $state(0);
 
-  let pendingKeydown = $state<number | null>(null);
-
   const durations = $derived(computeDurations(records, captureMode, interpretMode, bpm, subdivision));
   const hasTimingData = $derived(records.length > 0);
 
   function recordKeydown(): void {
     const now = performance.now();
-    if (captureMode === "hold-duration") {
-      pendingKeydown = now;
-    }
     records = [...records, { keydownTimestamp: now, keyupTimestamp: now }];
   }
 
@@ -28,10 +23,9 @@ export function createTimingState() {
     const now = performance.now();
     const last = records[records.length - 1]!;
     records = [...records.slice(0, -1), { ...last, keyupTimestamp: now }];
-    pendingKeydown = null;
   }
 
-  function startReRecord(totalSteps: number): void {
+  function startReRecord(_totalSteps: number): void {
     records = [];
     isReRecording = true;
     reRecordIndex = 0;
@@ -49,7 +43,6 @@ export function createTimingState() {
 
   function clearTiming(): void {
     records = [];
-    pendingKeydown = null;
     isReRecording = false;
     reRecordIndex = 0;
   }

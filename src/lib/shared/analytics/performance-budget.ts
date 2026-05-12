@@ -81,7 +81,7 @@ class PerformanceBudgetChecker {
   check(
     metric: keyof PerformanceBudget,
     actual: number,
-    options?: { silent?: boolean }
+    _options?: { silent?: boolean }
   ): boolean {
     const budget = this.budget[metric];
     let isWithinBudget = true;

@@ -96,7 +96,7 @@ export function createAuthActionQueue() {
     // credential callback; we just need to invoke the prompt. The replay
     // effect below fires once the callback drives authState.isAuthenticated
     // to true.
-    const oneTap = (window as any).google?.accounts?.id;
+    const oneTap = (window as unknown as Record<string, Record<string, Record<string, { prompt(): void }>>>).google?.accounts?.id;
     if (oneTap) {
       try {
         oneTap.prompt();

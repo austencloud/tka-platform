@@ -194,14 +194,14 @@
         <div class="endpoint-row">
           <span class="endpoint-label">Tip</span>
           <div class="chip-row" role="radiogroup" aria-label="Trail tip point">
-            {#each editorState.points as _, i}
+            {#each editorState.points as tipPt, i}
               <button
                 class="chip chip-tip"
                 class:active={leftTipIndex === i}
                 role="radio"
                 aria-checked={leftTipIndex === i}
                 onclick={() => selectTip("left", i)}
-                title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
+                title="Tip {i + 1}: ({tipPt.dx}, {tipPt.dy})"
               >{i + 1}</button>
             {/each}
           </div>
@@ -211,14 +211,14 @@
         <div class="endpoint-row">
           <span class="endpoint-label">End 1</span>
           <div class="chip-row" role="radiogroup" aria-label="Trail end 1">
-            {#each editorState.points as _, i}
+            {#each editorState.points as tipPt, i}
               <button
                 class="chip chip-tip"
                 class:active={leftTipIndex === i}
                 role="radio"
                 aria-checked={leftTipIndex === i}
                 onclick={() => selectTip("left", i)}
-                title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
+                title="Tip {i + 1}: ({tipPt.dx}, {tipPt.dy})"
               >{i + 1}</button>
             {/each}
           </div>
@@ -226,14 +226,14 @@
         <div class="endpoint-row">
           <span class="endpoint-label">End 2</span>
           <div class="chip-row" role="radiogroup" aria-label="Trail end 2">
-            {#each editorState.points as _, i}
+            {#each editorState.points as tipPt, i}
               <button
                 class="chip chip-tip"
                 class:active={rightTipIndex === i}
                 role="radio"
                 aria-checked={rightTipIndex === i}
                 onclick={() => selectTip("right", i)}
-                title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
+                title="Tip {i + 1}: ({tipPt.dx}, {tipPt.dy})"
               >{i + 1}</button>
             {/each}
           </div>

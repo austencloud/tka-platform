@@ -11,12 +11,12 @@ import { getDailyActiveUsers, getEventCounts, queryEvents } from "$lib/shared/an
 import {
   getEventTypeDisplay,
   getModuleDisplay,
-} from "../config/analytics-config";
+} from "./config/analytics-config";
 import {
   extractUserDisplayDetails,
   type UserDisplayDetails,
-} from "../utils/ProfilePictureResolver";
-import type { UserActivityPoint, AnalyticsTimeRange, EventTypeBreakdown, ModuleUsageData, RecentActivityEvent } from "../contracts/types";
+} from "./utils/ProfilePictureResolver";
+import type { UserActivityPoint, AnalyticsTimeRange, EventTypeBreakdown, ModuleUsageData, RecentActivityEvent } from "./types";
 
 // Timeout for Firebase queries (10 seconds)
 const QUERY_TIMEOUT_MS = 10000;

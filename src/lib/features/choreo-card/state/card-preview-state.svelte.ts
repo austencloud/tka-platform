@@ -1,7 +1,7 @@
 import type { Deck } from "../domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { loadDeckSequences, loadSequencesByIds } from "../services/deck-loader";
-import type { PrintRenderOptions } from "../services/contracts/types";
+import type { PrintRenderOptions } from "../services/types";
 import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
 
 export type CardPreviewSource = 'loops' | 'vtg';
@@ -40,7 +40,7 @@ function persist(key: string, value: string | null) {
 }
 
 export function createCardPreviewState(
-  allDecks: Deck[]
+  _allDecks: Deck[]
 ) {
   // ── Navigation ──────────────────────────────────────────────────────────────
   let level = $state<0 | 1 | 2>(0);
@@ -67,12 +67,12 @@ export function createCardPreviewState(
   // ── Derived ──────────────────────────────────────────────────────────────────
 
   // True when the selected deck is large enough to warrant on-demand family loading.
-  let isLargeDeck = $derived(
+  const isLargeDeck = $derived(
     (selectedDeck?.totalSequences ?? 0) >= LARGE_DECK_THRESHOLD
   );
 
   // Applies active family and start-position filters to the loaded sequence set.
-  let filteredSequences = $derived.by(() => {
+  const filteredSequences = $derived.by(() => {
     let result = sequences;
 
     if (selectedFamilyIds.length > 0) {
@@ -95,7 +95,7 @@ export function createCardPreviewState(
   });
 
   // Trail of labels the user can click to jump back up the hierarchy.
-  let breadcrumbs = $derived.by<BreadcrumbSegment[]>(() => {
+  const breadcrumbs = $derived.by<BreadcrumbSegment[]>(() => {
     const crumbs: BreadcrumbSegment[] = [{ label: 'Card Preview', level: 0 }];
     if (selectedSource) {
       crumbs.push({

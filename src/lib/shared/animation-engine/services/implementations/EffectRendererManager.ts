@@ -530,7 +530,7 @@ export class EffectRendererManager {
         ? (window as { __TKA_TRAIL_GPU?: boolean }).__TKA_TRAIL_GPU
         : undefined;
     if (flag === false) {
-      // eslint-disable-next-line no-console -- one-shot dev telemetry
+       
       console.info("[TrailOverlay] using legacy Canvas2D (window.__TKA_TRAIL_GPU = false)");
       return new TrailOverlayCanvas();
     }

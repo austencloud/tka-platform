@@ -58,7 +58,7 @@ export function calculateDrainage(
   oceanLevel: number
 ): DrainageData {
   const vertexCount = resolution * resolution;
-  const step = chunkSize / (resolution - 1);
+  const _step = chunkSize / (resolution - 1);
 
   // Step 1: Calculate flow direction for each cell (D8 algorithm)
   const flowDirection = calculateFlowDirection(heights, resolution);

@@ -47,6 +47,7 @@ Variation support:
     catDogModeEnabled = false,
     lightMode = false,
     eager = false,
+    handPathMode = false,
   }: {
     sequence: SequenceData;
     variations?: SequenceData[];
@@ -60,6 +61,7 @@ Variation support:
     lightMode?: boolean;
     /** Skip lazy loading - load thumbnails immediately (use in modals/pickers) */
     eager?: boolean;
+    handPathMode?: boolean;
   } = $props();
 
   // Track which variation is currently displayed.
@@ -255,6 +257,7 @@ Variation support:
       {catDogModeEnabled}
       {lightMode}
       {eager}
+      {handPathMode}
       userName={displayedSequence.ownerDisplayName}
     />
   </div>

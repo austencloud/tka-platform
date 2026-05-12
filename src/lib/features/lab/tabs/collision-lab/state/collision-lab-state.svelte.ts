@@ -30,7 +30,7 @@ import type {
   StancePose,
   CandidateSet,
 } from "../domain/types";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
 import { poseToOptimizerInput, OPTIMIZER_BOUNDS } from "../services/pose-target-mapper";
 import { buildDiagnosticReport } from "../services/collision-lab-diagnostic";
 type PlaneFilter = Plane | "all";
@@ -380,7 +380,7 @@ export async function createCollisionLabState(
     const first = allPoses[0]!;
     if (candidateGenerator) {
       const set = ensureCandidatesFor(first);
-      if (set && set.candidates[0]) {
+      if (set?.candidates[0]) {
         applyStance(set.candidates[0].stance);
       }
     } else if (optimizer && autoSeedEnabled && !initialLabels[first.id]) {
@@ -669,7 +669,7 @@ export async function createCollisionLabState(
       const pose = currentPose;
       if (!pose || !candidateGenerator) return;
       const existing = candidateCache[pose.id];
-      if (!existing || existing.pickedIndex === null) return;
+      if (existing?.pickedIndex == null) return;
       const picked = existing.candidates[existing.pickedIndex];
       if (!picked) return;
       const input = poseToOptimizerInput(pose);

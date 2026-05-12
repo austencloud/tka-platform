@@ -7,7 +7,7 @@
  * 3. Random: 10% fully random pairs for exploration
  */
 
-import type { MatchupCandidate } from "./contracts/types";
+import type { MatchupCandidate } from "./types";
 import type { MatchupReason } from "../domain/models/arena-models";
 import {
   COLD_START_THRESHOLD,

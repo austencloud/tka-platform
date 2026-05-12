@@ -1,5 +1,5 @@
 import { PDFDocument } from 'pdf-lib';
-import type { CardPair } from "./contracts/types";
+import type { CardPair } from "./types";
 import { CARD_SIZES, getPageLayout, type CardSizeId } from '../domain/card-sizes';
 
 // Home printing: US Letter (8.5" x 11")

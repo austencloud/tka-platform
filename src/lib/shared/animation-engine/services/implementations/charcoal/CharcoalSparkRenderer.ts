@@ -279,7 +279,7 @@ export class CharcoalSparkRenderer {
 		this.sizeScale = Math.max(0.1, Math.min(1.0, minDim / CharcoalSparkRenderer.REFERENCE_SIZE));
 	}
 
-	renderCharcoal(input: FireFrameInput, config: FireOverlayConfig): void {
+	renderCharcoal(input: FireFrameInput, _config: FireOverlayConfig): void {
 		if (!this.initialized || !this.gl || !this.canvas) return;
 
 		// Compute delta time

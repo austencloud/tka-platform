@@ -30,13 +30,18 @@ import {
   type GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
+import type { CreateModuleState } from "$lib/shared/create/state/create-module-state-types";
 
 // Lazy import to break circular dependency
 // panel-coordination-state ↔ create-module-state-ref ↔ construct-tab-state (cycle)
+let _cachedGetCreateModuleStateRef: (() => CreateModuleState | null) | undefined;
 function getCreateModuleStateRefLazy() {
-  // Dynamic require breaks the cycle at module load time
-  const { getCreateModuleStateRef } = require("$lib/shared/create/state/create-module-state-ref.svelte");
-  return getCreateModuleStateRef();
+  if (!_cachedGetCreateModuleStateRef) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require("$lib/shared/create/state/create-module-state-ref.svelte");
+    _cachedGetCreateModuleStateRef = mod.getCreateModuleStateRef;
+  }
+  return _cachedGetCreateModuleStateRef!();
 }
 
 // Re-export TargetHand from standalone types file for backwards compatibility

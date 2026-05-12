@@ -40,12 +40,14 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     onAction = () => {},
     pinchColumnOverride,
     onGridReady,
+    handPathMode = false,
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: BrowseThumbnailProvider | null;
     onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
     pinchColumnOverride?: number;
     onGridReady?: (api: VirtualGridApi) => void;
+    handPathMode?: boolean;
   }>();
 
   const variationGrouper = getVariationGrouper();
@@ -323,6 +325,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
               redPropType={propSettings.redPropType}
               catDogModeEnabled={isCatDog}
               {lightMode}
+              {handPathMode}
             />
           </div>
         {/each}

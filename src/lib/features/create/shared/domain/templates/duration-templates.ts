@@ -86,7 +86,7 @@ export interface DurationTemplateDefinition {
 /**
  * Generate uniform pattern (same duration for all steps)
  */
-function generateUniformPattern(
+function _generateUniformPattern(
   stepCount: number,
   duration: DurationValue
 ): DurationPatternEntry[] {
@@ -158,7 +158,7 @@ function generateRepeatingPattern(
 /**
  * Generate gradual change pattern (ritardando/accelerando)
  */
-function generateGradualPattern(
+function _generateGradualPattern(
   stepCount: number,
   startDuration: DurationValue,
   endDuration: DurationValue

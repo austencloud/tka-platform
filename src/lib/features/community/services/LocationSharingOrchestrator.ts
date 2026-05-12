@@ -6,12 +6,12 @@
 import type {
   UserLocationWithProfile,
   LocationSharingPreferences,
-} from "../../domain/models/user-location";
+} from "../domain/models/user-location";
 import { Timestamp } from "firebase/firestore";
-import type { GeocodingService } from "../implementations/GeocodingService";
+import type { GeocodingService } from "./GeocodingService";
 import {
   getCurrentLocation,
-} from "../location-provider";
+} from "./location-provider";
 import {
   saveLocation,
   getLocation,
@@ -19,7 +19,7 @@ import {
   getPublicLocations,
   savePreferences,
   getPreferences,
-} from "../user-location-repository";
+} from "./user-location-repository";
 
 export class LocationSharingOrchestrator {
   constructor(

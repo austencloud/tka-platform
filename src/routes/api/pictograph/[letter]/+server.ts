@@ -39,7 +39,7 @@ export const GET: RequestHandler = async ({ params }) => {
     let row: string[] | null = null;
     for (let i = 1; i < lines.length; i++) {
       const r = lines[i]?.split(',');
-      if (r && r[0] === letter) {
+      if (r?.[0] === letter) {
         row = r;
         break;
       }

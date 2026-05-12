@@ -13,7 +13,7 @@
  * computes movement and returns results for the component to apply.
  */
 
-import type { MuseumGrid } from "../../domain/museum-grid-types";
+import type { MuseumGrid } from "../domain/museum-grid-types";
 import type { MuseumPhysicsProvider } from "./MuseumPhysicsProvider";
 import type { PortalProximityChecker } from "./MuseumPortals";
 

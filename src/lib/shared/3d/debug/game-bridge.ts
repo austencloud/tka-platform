@@ -169,7 +169,7 @@ export class GameBridge {
   // --------------------------------------------------------------------------
 
   private sendAuth(token: string): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (this.ws?.readyState !== WebSocket.OPEN) return;
     this.ws.send(JSON.stringify({ type: "auth", token }));
   }
 
@@ -232,7 +232,7 @@ export class GameBridge {
   }
 
   private sendResponse(id: string, result?: unknown, error?: string): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (this.ws?.readyState !== WebSocket.OPEN) return;
 
     const response: BridgeResponse = { type: "response", id };
     if (error) {
@@ -244,7 +244,7 @@ export class GameBridge {
   }
 
   private sendEvent(event: string, data: unknown): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (this.ws?.readyState !== WebSocket.OPEN) return;
 
     const msg: BridgeEvent = { type: "event", event, data };
     this.ws.send(JSON.stringify(msg));
@@ -730,7 +730,7 @@ let bridgeInstance: GameBridge | null = null;
  */
 function getWsUrl(): string {
   // Check for Vite env variable
-  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_GAME_BRIDGE_URL) {
+  if (import.meta?.env?.VITE_GAME_BRIDGE_URL) {
     return import.meta.env.VITE_GAME_BRIDGE_URL;
   }
   // Default to localhost
@@ -741,7 +741,7 @@ function getWsUrl(): string {
  * Get auth token from environment
  */
 function getAuthToken(): string {
-  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_GAME_BRIDGE_TOKEN) {
+  if (import.meta?.env?.VITE_GAME_BRIDGE_TOKEN) {
     return import.meta.env.VITE_GAME_BRIDGE_TOKEN;
   }
   return "";

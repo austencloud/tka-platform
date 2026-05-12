@@ -103,7 +103,7 @@ export class SvgImageCache {
       return this.bitmapSvgToImage(svgString);
     }
     // Node.js
-    return this.nodeSvgToImage(svgString);
+    return this.nodeSvgToImage(svgString) as Promise<DrawableImage>;
   }
 
   /**
@@ -176,44 +176,33 @@ export class SvgImageCache {
   /**
    * Node.js implementation using canvas package's Image with data URL
    */
-  private async nodeSvgToImage(svgString: string): Promise<any> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Dynamic import for ES modules
-        const canvas = await import('canvas');
-        const { Image } = canvas;
-        const img = new Image();
+  private async nodeSvgToImage(svgString: string): Promise<unknown> {
+    const canvas = await import('canvas');
+    const { Image } = canvas;
+    const img = new Image();
 
-        img.onload = () => resolve(img);
-        img.onerror = (err: Error) => reject(new Error(`Failed to load SVG as image: ${err.message}`));
-
-        // Node-canvas requires explicit width and height on SVG element
-        // Extract from viewBox and add if missing
-        let processedSvg = svgString;
-        if (!svgString.includes('width=') || !svgString.includes('height=')) {
-          const viewBoxMatch = svgString.match(/viewBox\s*=\s*["']([^"']+)["']/);
-          if (viewBoxMatch?.[1]) {
-            // viewBox format: "x y width height" (e.g., "0 0 950 950")
-            const parts = viewBoxMatch[1].split(/\s+/).map(Number);
-            const width = parts[2];
-            const height = parts[3];
-            if (width && height) {
-              // Add width and height attributes to the <svg> tag
-              processedSvg = svgString.replace(
-                /<svg([^>]*)>/,
-                `<svg$1 width="${width}" height="${height}">`
-              );
-            }
-          }
+    let processedSvg = svgString;
+    if (!svgString.includes('width=') || !svgString.includes('height=')) {
+      const viewBoxMatch = svgString.match(/viewBox\s*=\s*["']([^"']+)["']/);
+      if (viewBoxMatch?.[1]) {
+        const parts = viewBoxMatch[1].split(/\s+/).map(Number);
+        const width = parts[2];
+        const height = parts[3];
+        if (width && height) {
+          processedSvg = svgString.replace(
+            /<svg([^>]*)>/,
+            `<svg$1 width="${width}" height="${height}">`
+          );
         }
-
-        // Convert SVG to base64 data URL
-        // Node-canvas supports data URLs for SVG images
-        const base64 = Buffer.from(processedSvg).toString('base64');
-        img.src = `data:image/svg+xml;base64,${base64}`;
-      } catch (error) {
-        reject(new Error(`Node.js canvas package not available: ${error}`));
       }
+    }
+
+    const base64 = Buffer.from(processedSvg).toString('base64');
+
+    return new Promise((resolve, reject) => {
+      img.onload = () => resolve(img);
+      img.onerror = (err: Error) => reject(new Error(`Failed to load SVG as image: ${err.message}`));
+      img.src = `data:image/svg+xml;base64,${base64}`;
     });
   }
 
@@ -234,7 +223,7 @@ export class SvgImageCache {
       return this.bitmapLoadImageFromUrl(url);
     }
     // Node.js: read from file system and convert SVG
-    return this.nodeLoadImageFromUrl(url);
+    return this.nodeLoadImageFromUrl(url) as Promise<DrawableImage>;
   }
 
   /**
@@ -284,7 +273,7 @@ export class SvgImageCache {
   /**
    * Node.js implementation for loading images from file system
    */
-  private async nodeLoadImageFromUrl(url: string): Promise<any> {
+  private async nodeLoadImageFromUrl(url: string): Promise<unknown> {
     try {
       // Dynamic imports for ES modules
       const fs = await import('fs');

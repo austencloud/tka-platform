@@ -445,7 +445,7 @@ export class ExportGlyphPrerenderer {
    * stripping the XML declaration and DOCTYPE if present.
    */
   private extractSvgInnerContent(svgText: string): string {
-    let text = svgText
+    const text = svgText
       .replace(/<\?xml[^?]*\?>\s*/gi, "")
       .replace(/<!DOCTYPE[^>]*>\s*/gi, "");
     const match = text.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);

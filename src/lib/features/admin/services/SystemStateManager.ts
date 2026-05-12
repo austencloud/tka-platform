@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import type { UserAttribution } from "$lib/shared/attribution/domain/types";
-import type { SystemState, CachedUserMetadata, CachedChallenge, CachedAnnouncement } from "../contracts/types";
+import type { SystemState, CachedUserMetadata, CachedChallenge, CachedAnnouncement } from "./types";
 
 // Cache TTL: 2-3 minutes for ops work (stale data is acceptable)
 const SYSTEM_STATE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes

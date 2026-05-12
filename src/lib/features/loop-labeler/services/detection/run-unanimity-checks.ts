@@ -1,4 +1,4 @@
-import type { LoopTypeDefinition } from "../../../domain/constants/loop-type-definitions";
+import type { LoopTypeDefinition } from "../../domain/constants/loop-type-definitions";
 import type { ComparisonMatrix, UnanimityResult } from "./types";
 
 function extractDirection(target: string): "cw" | "ccw" | null {

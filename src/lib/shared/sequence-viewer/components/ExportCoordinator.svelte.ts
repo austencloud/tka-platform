@@ -15,7 +15,7 @@ import type { AnimationPanelState } from "$lib/shared/animation-engine/state/ani
 import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter.svelte";
+import { sequenceModalExporter, type Video3DExportDependencies } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter.svelte";
 import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -41,7 +41,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   let animationCanvas = $state<HTMLCanvasElement | null>(null);
 
   // ── 3D recording UI state ──
-  let countdownValue = $state(0);
+  const countdownValue = $state(0);
   let isRecording3D = $state(false);
   let recordingElapsed = $state(0);
   let recordingTimer: ReturnType<typeof setInterval> | null = null;
@@ -136,8 +136,8 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       const endDur = opts.includeEndHold ? 1 : 0;
       const singleLoopSec = (startDur + totalDurationUnits + endDur) * secondsPerBeat;
 
-      const threlteCamera = viewer3DState.threlteCamera;
-      const threlteRenderer = viewer3DState.threlteRenderer;
+      const threlteCamera = viewer3DState.threlteCamera as Video3DExportDependencies["camera"] | null;
+      const threlteRenderer = viewer3DState.threlteRenderer as Video3DExportDependencies["renderer"] | null;
       const threlteRunFrame = viewer3DState.threlteRunFrame;
       const threltePauseAutoLoop = viewer3DState.threltePauseAutoLoop;
       const threlteResumeAutoLoop = viewer3DState.threlteResumeAutoLoop;
@@ -186,7 +186,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       let autoStopTimer: ReturnType<typeof setTimeout> | null = null;
       if (driverActive && primaryAvatar) {
         let prevProgress = primaryAvatar.progress;
-        let completedLoops = 0;
+        let completedLoops = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
         boundaryPoller = setInterval(() => {
           const p = primaryAvatar.progress;
           if (prevProgress > 0.85 && p < 0.15) {

@@ -1,5 +1,5 @@
 
-import { PrintCardRenderer } from './services/implementations/PrintCardRenderer';
+import { PrintCardRenderer } from './services/PrintCardRenderer';
 import { getImageComposer } from '$lib/shared/render/getImageComposer';
 
 let instance: PrintCardRenderer | null = null;

@@ -1,4 +1,4 @@
-import type { SummaryMetrics, ContentStatistics, EngagementMetrics, AnalyticsTimeRange } from "../contracts/types";
+import type { SummaryMetrics, ContentStatistics, EngagementMetrics, AnalyticsTimeRange } from "./types";
 import type { SystemStateManager } from "./SystemStateManager";
 /**
  * User Metrics Analyzer

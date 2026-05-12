@@ -9,7 +9,7 @@
  */
 
 import type { ArenaRating, ArenaVote, ArenaLeaderboardEntry, ArenaUserStats, ArenaEntry, } from "../domain/models/arena-models";
-import type { MatchupCandidate } from "./contracts/types";
+import type { MatchupCandidate } from "./types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import {

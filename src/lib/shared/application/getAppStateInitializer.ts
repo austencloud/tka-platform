@@ -3,7 +3,7 @@ import { createAppStateInitializer } from '../foundation/services/implementation
 type AppStateInitializer = ReturnType<typeof createAppStateInitializer>;
 
 const hmrData = import.meta.hot?.data as { appStateInitializer?: AppStateInitializer } | undefined;
-let instance: AppStateInitializer = hmrData?.appStateInitializer ?? createAppStateInitializer();
+const instance: AppStateInitializer = hmrData?.appStateInitializer ?? createAppStateInitializer();
 
 if (import.meta.hot) {
 	import.meta.hot.dispose((data) => {

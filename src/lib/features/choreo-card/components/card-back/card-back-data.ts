@@ -6,13 +6,14 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { explainLOOP } from "../../services/loop-explainer";
-import type { LOOPExplanation } from "../../services/contracts/types";
-import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import { DIFFICULTY_LEVELS, DIFFICULTY_FONT_FAMILY } from "$lib/shared/config/difficulty-styles";
+import type { LOOPExplanation } from "../../services/types";
+import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
+import type {
+  Period} from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
   LOOP_TYPE_LABELS,
-  ROTATED_LOOP_TYPES,
-  Period,
+  ROTATED_LOOP_TYPES
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -71,9 +72,9 @@ export interface CardBackData {
   startPosition: StartPositionInfo | null;
   /** VTG turn ratio derived from sequence motions, e.g. "3:1" */
   vtgRatio: string | null;
-  /** Period-compressed turn pattern entries for the footer glyph */
+  /** Period-compressed turn pattern entries for the barter glyph */
   turnGlyphEntries: TurnGlyphEntry[];
-  /** Reversal pattern sequence string for the footer glyph */
+  /** Reversal pattern sequence string for the barter glyph */
   reversalSequence: string;
   /** Reversal pattern period (columns to display) */
   reversalPeriod: number;
@@ -219,7 +220,7 @@ function extractGroup(positionString: string | null | undefined): string | null 
  * Derive the starting position group from any available source:
  * explicit field, start position data, or first step.
  */
-function deriveStartPositionGroup(sequence: SequenceData): string | null {
+function _deriveStartPositionGroup(sequence: SequenceData): string | null {
 
   // Explicit field (most reliable when present)
   if (sequence.startingPositionGroup) return sequence.startingPositionGroup;

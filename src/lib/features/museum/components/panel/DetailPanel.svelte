@@ -48,7 +48,6 @@
           title={focusedExhibit.plaque.title}
           subtitle={focusedExhibit.plaque.subtitle}
           body={focusedExhibit.plaque.body}
-          footer={focusedExhibit.plaque.footer}
         />
       {/if}
       {#if focusedExhibit.sequenceId}

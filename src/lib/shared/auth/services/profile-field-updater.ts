@@ -9,7 +9,6 @@ import {
 import { claimUsername, releaseUsername } from "./username-validator";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "../firebase";
-import { auth } from "../firebase";
 
 export async function changeEmail(
   user: User,

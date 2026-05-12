@@ -13,15 +13,12 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { RenderFrameParams } from "../contracts/IAnimationRenderLoop";
 import { type TrailSettings, DEFAULT_TRAIL_SETTINGS, TrailMode } from "../../domain/types/TrailTypes";
 import { TrackingMode } from "../../domain/types/TrailTypes";
-import type { PropDimensions } from "../contracts/IPropTextureLoader";
 import { DEFAULT_PROP_DIMENSIONS } from "../contracts/IPropTextureLoader";
-import { DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
-import type { LedOverlayConfig } from "../../domain/types/LedTypes";
+import { DEFAULT_PROP_FLAME_COLORS } from "../../domain/types/FireTypes";
 import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 import type {
   Bloom2DParams,
@@ -186,7 +183,7 @@ export class FrameParameterBuilder {
       settingsService,
       effectRendererManager: erm,
       getVM,
-      orchestrator,
+      orchestrator, // eslint-disable-line @typescript-eslint/no-unused-vars
     } = deps;
 
     // Mutate the reusable object instead of creating new ones each frame

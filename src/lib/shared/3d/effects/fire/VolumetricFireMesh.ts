@@ -21,14 +21,15 @@
  *   - andrewkchan.dev/posts/fire - fluid sim velocity injection
  */
 
+import type {
+  Color} from "three";
 import {
   Mesh,
   BoxGeometry,
   ShaderMaterial,
   BackSide,
   AdditiveBlending,
-  Vector3,
-  Color,
+  Vector3
 } from "three";
 import { simplex3dNoise } from "./fire-noise.glsl.ts";
 import { getFireColors, type FireColorPreset, type FireColorSet } from "./FireColorCurve3D";

@@ -11,7 +11,7 @@ import type {
   SessionSuccessPoint,
   LatencyByTier,
   UnresolvedPattern,
-} from "./contracts/types";
+} from "./types";
 
 const TIER2_CANDIDATE_THRESHOLD = 3;
 

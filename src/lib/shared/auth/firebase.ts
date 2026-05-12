@@ -30,6 +30,8 @@ import type { Database } from "firebase/database";
 import type { FirebaseStorage } from "firebase/storage";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getFirebaseHMRManager, type FirebaseHMRManager } from "./firebase-hmr-manager";
+import type { Functions } from 'firebase/functions';
+import type { Unsubscribe } from 'firebase/firestore';
 
 const debug = createComponentLogger("Firebase");
 
@@ -467,14 +469,14 @@ export async function getStorageInstance(): Promise<FirebaseStorage> {
 // FUNCTIONS (LAZY + SYNC)
 // ============================================================================
 
-let functionsInstance: import("firebase/functions").Functions | null = null;
-let functionsInitPromise: Promise<import("firebase/functions").Functions> | null = null;
+let functionsInstance: Functions | null = null;
+let functionsInitPromise: Promise<Functions> | null = null;
 
 /**
  * Get Firebase Functions instance (lazy)
  * Uses the current HMR-safe app instance
  */
-export async function getFunctionsInstance(): Promise<import("firebase/functions").Functions> {
+export async function getFunctionsInstance(): Promise<Functions> {
   if (functionsInstance) {
     return functionsInstance;
   }
@@ -601,8 +603,8 @@ if (import.meta.hot) {
 export function createHMRSafeFirestoreListener(
   id: string,
   path: string,
-  subscribe: () => import("firebase/firestore").Unsubscribe
-): import("firebase/firestore").Unsubscribe {
+  subscribe: () => Unsubscribe
+): Unsubscribe {
   return hmrManager.registerFirestoreListener(id, path, subscribe);
 }
 

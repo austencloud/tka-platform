@@ -27,7 +27,7 @@ export class TeachingSystem {
 			const teacher = world.entities.find(
 				(e) => e.id === learner.social.partner,
 			);
-			if (!teacher || teacher.social.state !== "teaching") {
+			if (teacher?.social.state !== "teaching") {
 				this.resetToIdle(learner);
 				continue;
 			}

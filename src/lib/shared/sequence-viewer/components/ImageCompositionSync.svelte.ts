@@ -27,7 +27,7 @@ export function createImageCompositionSync() {
   let imgShowMandala = $state(imageComposition.showMandala);
   let imgShowLoopGlyph = $state(imageComposition.showLoopGlyph);
   let imgDarkMode = $state(imageComposition.darkMode);
-  let imgColumnCount = $state<number | null>(loadColumnCount());
+  const imgColumnCount = $state<number | null>(loadColumnCount());
 
   /** Observer callback that syncs manager → local state. */
   function syncFromManager() {

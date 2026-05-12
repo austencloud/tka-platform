@@ -17,7 +17,6 @@ import type {
 import {
   TrailMode,
   TrailEffect,
-  TrackingMode,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
 import type { AdditionalLayerRenderData } from "$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer";

@@ -7,14 +7,12 @@
 import {
   collection,
   query,
-  orderBy,
   getDocs,
   doc,
   updateDoc,
   where,
   serverTimestamp,
   writeBatch,
-  limit,
   getDoc,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";

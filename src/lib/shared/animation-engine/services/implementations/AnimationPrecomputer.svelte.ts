@@ -20,7 +20,6 @@ import {
   type PreRenderProgress,
 } from "$lib/shared/animation-engine/services/implementations/SequenceFramePreRenderer";
 import type {
-  IAnimationPrecomputer,
   PrecomputationServiceConfig,
   PrecomputationState,
   PropDimensions,

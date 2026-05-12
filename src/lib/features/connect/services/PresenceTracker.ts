@@ -20,8 +20,8 @@ import {
 	getAuthSync,
 	createHMRSafeDatabaseListener
 } from '$lib/shared/auth/firebase';
-import type { UserPresence, PresenceFirebaseData } from '../../domain/models/connect-models';
-import { PRESENCE_CONFIG, FIREBASE_PATHS } from '../../domain/models/connect-constants';
+import type { UserPresence, PresenceFirebaseData } from '../domain/models/connect-models';
+import { PRESENCE_CONFIG, FIREBASE_PATHS } from '../domain/models/connect-constants';
 
 export class PresenceTracker {
 	private _isTracking = false;
@@ -134,7 +134,7 @@ export class PresenceTracker {
 			return;
 		}
 
-		const update: Partial<PresenceFirebaseData> = {
+		const update: Partial<PresenceFirebaseData> = { // eslint-disable-line @typescript-eslint/no-unused-vars
 			currentSessionId: sessionId ?? undefined,
 			lastSeen: Date.now()
 		};

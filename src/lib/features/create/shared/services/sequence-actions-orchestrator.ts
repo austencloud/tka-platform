@@ -17,7 +17,7 @@ export interface SequenceActionsOrchestratorDeps {
     flipSequence(hand: string): Promise<void>;
     invertSequence(hand: string): Promise<void>;
     rotateSequence(dir: string, hand: string): Promise<void>;
-    setCurrentSequence(seq: any): void;
+    setCurrentSequence(seq: unknown): void;
     shiftStartPosition(step: number): Promise<void>;
   };
   pushUndoSnapshot: (type: UndoOperationType) => void;
@@ -87,8 +87,8 @@ export function createTransformHandlers(deps: SequenceActionsOrchestratorDeps) {
 export interface ExtendFlowResult {
   success: boolean;
   message: string;
-  analysis?: any;
-  circularizationOptions?: any[];
+  analysis?: unknown;
+  circularizationOptions?: unknown[];
   directUnavailableReason?: string | null;
 }
 
@@ -119,7 +119,7 @@ export async function appendBridge(
   deps: SequenceActionsOrchestratorDeps,
   sequence: SequenceData,
   bridgeLetter: Letter,
-): Promise<{ success: boolean; message: string; sequence?: any; analysis?: any }> {
+): Promise<{ success: boolean; message: string; sequence?: unknown; analysis?: unknown }> {
   if (!deps.extensionFlowCoordinator) {
     return { success: false, message: "Extension coordinator not available" };
   }
@@ -142,7 +142,7 @@ export async function applyLoop(
   deps: SequenceActionsOrchestratorDeps,
   sequence: SequenceData,
   loopType: LOOPType,
-): Promise<{ success: boolean; message: string; sequence?: any }> {
+): Promise<{ success: boolean; message: string; sequence?: unknown }> {
   if (!deps.extensionFlowCoordinator) {
     return { success: false, message: "Extension coordinator not available" };
   }

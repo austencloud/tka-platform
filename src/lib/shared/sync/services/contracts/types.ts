@@ -1,7 +1,6 @@
-import type { AdaptiveHeartbeatConfig, ConnectionQuality, HLCTimestamp, PeerInfo, PlaybackIntent, SyncedRoomState, ViewMode } from "../../domain/sync-types";
+import type { SyncedRoomState } from "../../domain/sync-types";
 import {  } from "../../domain/sync-types";
 import type { SyncMessage } from "../../domain/sync-messages";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 // --- From IMobileConnectionAdapter ---
 /**

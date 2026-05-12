@@ -17,7 +17,7 @@
   import type {
     CompoundPattern,
     AxisAlternatingPattern,
-  } from "../../services/contracts/ILOOPDetector";
+  } from "../../services/ILOOPDetector";
   import { onDestroy } from "svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import StepPairAnalysisDisplay from "../shared/StepPairAnalysisDisplay.svelte";

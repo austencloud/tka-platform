@@ -20,6 +20,7 @@ import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { EraRendererBase } from "../../../shared/services/implementations/EraRendererBase";
+import type { DrawableImage } from '$lib/shared/render/services/implementations/SvgImageCache';
 
 // ============================================================================
 // CONSTANTS
@@ -32,7 +33,7 @@ const XP_SIZE = 256;
  * The TKA rendering system uses a 950×950 coordinate space.
  * Grid point positions below are in that space.
  */
-const VIEWBOX_SIZE = 950;
+const _VIEWBOX_SIZE = 950;
 
 // Grid point positions in the 950×950 viewBox coordinate space.
 // Lines connect opposite cardinals through center; dots mark each position.
@@ -449,7 +450,7 @@ export class XPRenderer extends EraRendererBase {
 		ctx: CanvasRenderingContext2D,
 		letter: string,
 		scale: number,
-		size: number,
+		_size: number,
 	): void {
 		const fontSize = Math.round(scale * 95); // ~95 viewBox units
 		ctx.font = `bold ${fontSize}px Tahoma, Verdana, sans-serif`;
@@ -531,7 +532,7 @@ export class XPRenderer extends EraRendererBase {
 	 */
 	private drawTintedElement(
 		ctx: CanvasRenderingContext2D,
-		img: import("$lib/shared/render/services/implementations/SvgImageCache").DrawableImage,
+		img: DrawableImage,
 		params: {
 			x: number;
 			y: number;

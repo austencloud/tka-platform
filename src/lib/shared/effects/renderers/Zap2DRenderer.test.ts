@@ -51,7 +51,7 @@ describe("Zap2DRenderer.frequency", () => {
     const high = makeParams({ frequency: 30 });
     let highRegens = 0;
     const origGen = (r as any).generatePath.bind(r);
-    (r as any).generatePath = (...a: any[]) => { highRegens++; return origGen(...a); };
+    (r as any).generatePath = (...a: unknown[]) => { highRegens++; return origGen(...a); };
     for (let i = 0; i < 10; i++) r.render(ctx, high, tips);
 
     // At freq=1 → regen every 60/1=60 frames; over 10 frames = 0 regens (after first frame)
@@ -59,7 +59,7 @@ describe("Zap2DRenderer.frequency", () => {
     const low = makeParams({ frequency: 1 });
     let lowRegens = 0;
     const origGen2 = (r2 as any).generatePath.bind(r2);
-    (r2 as any).generatePath = (...a: any[]) => { lowRegens++; return origGen2(...a); };
+    (r2 as any).generatePath = (...a: unknown[]) => { lowRegens++; return origGen2(...a); };
     for (let i = 0; i < 10; i++) r2.render(ctx, low, tips);
 
     expect(highRegens).toBeGreaterThan(lowRegens);

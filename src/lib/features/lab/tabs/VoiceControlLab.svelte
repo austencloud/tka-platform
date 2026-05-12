@@ -22,7 +22,7 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
   import type * as VoiceSessionFormatterModule from "$lib/features/voice-sessions/services/voice-session-formatter";
   import type * as VoiceSessionRepositoryModule from "$lib/shared/voice-sessions/services/voice-session-repository";
   import type * as VoiceSessionAnalyzerModule from "$lib/features/voice-sessions/services/voice-session-analyzer";
-  import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionReplayer";
+  import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/VoiceSessionReplayer";
   import type { WakeWordState } from "$lib/shared/voice-control/domain/voice-command-types";
   import type { VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";

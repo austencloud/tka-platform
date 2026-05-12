@@ -12,8 +12,8 @@
 
   import { onMount } from "svelte";
   import { getSystemStateManager } from "$lib/features/admin/getSystemStateManager";
-  import type { CachedUserMetadata } from "../../services/contracts/types";
-  import type { SystemStateManager } from "../../services/implementations/SystemStateManager";
+  import type { CachedUserMetadata } from "../../services/types";
+  import type { SystemStateManager } from "../../services/SystemStateManager";
   import type {
     ReferrerCategory,
     SelfReportedSource,

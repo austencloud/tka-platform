@@ -423,7 +423,7 @@ export class SequenceExtender {
   async appendBridgeBeat(
     sequence: SequenceData,
     bridgeLetter: Letter,
-    pictographData?: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData
+    pictographData?: PictographData
   ): Promise<SequenceData> {
     const endPosition = this.sequenceAnalyzer.getCurrentEndPosition(sequence);
     if (!endPosition) {
@@ -432,7 +432,7 @@ export class SequenceExtender {
 
     const gridMode = sequence.gridMode || GridMode.DIAMOND;
 
-    let bridgeVariation: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData;
+    let bridgeVariation: PictographData;
 
     // Use the specific pictograph if provided (preferred - ensures correct end position)
     if (pictographData) {
@@ -496,7 +496,7 @@ export class SequenceExtender {
     sequence: SequenceData,
     bridgeLetter: Letter,
     loopType: LOOPType,
-    pictographData?: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData,
+    pictographData?: PictographData,
     period?: Period
   ): Promise<SequenceData> {
     // Use appendBridgeBeat to add the bridge, then apply LOOP

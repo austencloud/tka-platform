@@ -19,7 +19,7 @@ import { registerTagMigrator } from "$lib/shared/library/getTagMigrator";
 import { migrateSequenceTags } from "$lib/features/library/services/migrations/tag-migration";
 
 import { registerFeedbackTesterWorkflow } from "$lib/shared/feedback/services/IFeedbackTesterWorkflow";
-import { feedbackTesterWorkflowService } from "$lib/features/feedback/services/implementations/FeedbackTesterWorkflow";
+import { feedbackTesterWorkflowService } from "$lib/features/feedback/services/FeedbackTesterWorkflow";
 
 import { registerVideoExportOrchestratorFactory } from "../animation-engine/getVideoExportOrchestrator";
 import { getVideoExporter } from "../animation-engine/getVideoExporter";
@@ -29,7 +29,7 @@ import { getBackgroundVideoEncoder } from "../animation-engine/getBackgroundVide
 import { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 
 import { registerEndlessSpinnerOrchestratorFactory } from "../animation-engine/getEndlessSpinnerOrchestrator";
-import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
+import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 import { getSequenceTransformer } from "../create/getSequenceTransformer";
 import { generationOrchestrator } from "../create/services/GenerationOrchestrator";

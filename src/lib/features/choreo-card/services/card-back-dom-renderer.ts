@@ -1,6 +1,6 @@
 import { mount, unmount } from "svelte";
 import CardBack from "../components/card-back/CardBack.svelte";
-import type { CardBackDomRenderOptions } from "./contracts/types";
+import type { CardBackDomRenderOptions } from "./types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 export async function renderCardBack(sequence: SequenceData, options: CardBackDomRenderOptions): Promise<HTMLCanvasElement> {

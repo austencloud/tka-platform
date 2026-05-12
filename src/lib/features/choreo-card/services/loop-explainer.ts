@@ -12,7 +12,7 @@
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { LOOPExplanation, SeedInfo, SeedTransformation } from "./contracts/types";
+import type { LOOPExplanation, SeedInfo, SeedTransformation } from "./types";
 import {
   HORIZONTAL_MIRROR_POSITION_MAP,
   VERTICAL_MIRROR_POSITION_MAP,

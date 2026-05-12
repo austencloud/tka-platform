@@ -17,10 +17,8 @@ import {
 import {
 	LOCATION_ANGLES,
 	PI,
-	TWO_PI,
 } from "$lib/shared/foundation/domain/math-constants";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import {

@@ -13,15 +13,9 @@
  */
 
 import {
-  world,
-  withTransform,
-  withPhysics,
   withMesh,
   localPlayer,
-  dynamicBodies,
   withLOD,
-  type Entity,
-  type InputComponent,
 } from "./ecs-world";
 // TODO: Physics modules not yet implemented
 // import type { PhysicsWorldState } from "../physics/rapier-world";
@@ -33,14 +27,22 @@ import {
 // } from "../physics/player-controller";
 
 // Stub types until physics is implemented
-type PhysicsWorldState = any;
-type PlayerControllerState = any;
+type PhysicsWorldState = {
+  isInitialized: boolean;
+  world: { timestep: number; step(): void } | null;
+};
+type PlayerControllerState = {
+  controller: unknown;
+  rigidBody: unknown;
+  isGrounded: boolean;
+  groundNormal: { x: number; y: number; z: number };
+};
 const syncPhysicsToECS = () => {};
 const syncECSToPhysics = () => {};
-const checkGrounded = () => false;
+const checkGrounded = () => false; // eslint-disable-line @typescript-eslint/no-unused-vars
 const movePlayer = () => {};
 const getPlayerPosition = () => new Vector3();
-import type { PerspectiveCamera, Scene, Object3D } from "three";
+import type { PerspectiveCamera, Scene } from "three";
 import { Vector3, Quaternion, Euler } from "three";
 import { CameraMode } from "$lib/shared/3d/camera/types";
 import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
@@ -241,8 +243,8 @@ const SPRINT_MULTIPLIER = 2;
 const CROUCH_MULTIPLIER = 0.5;
 const JUMP_FORCE = 8;
 const GRAVITY = 25;
-const PLAYER_HEIGHT = 1.7;
-const CROUCH_HEIGHT = 1.0;
+const PLAYER_HEIGHT = 1.7; // eslint-disable-line @typescript-eslint/no-unused-vars
+const CROUCH_HEIGHT = 1.0; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 // Temporary vectors (reuse to avoid GC)
 const moveDir = new Vector3();
@@ -259,7 +261,7 @@ export function movementSystem(ctx: SystemContext): void {
   const pc = ctx.playerController;
 
   // Use physics-based movement if player controller is available
-  if (pc && pc.controller && pc.rigidBody) {
+  if (pc?.controller && pc.rigidBody) {
     movementSystemPhysics(ctx);
     return;
   }
@@ -315,7 +317,7 @@ function movementSystemPhysics(ctx: SystemContext): void {
     }
 
     // Compute desired movement (horizontal + vertical)
-    const desiredMovement = {
+    const desiredMovement = { // eslint-disable-line @typescript-eslint/no-unused-vars
       x: moveDir.x,
       y: verticalVelocity * ctx.deltaTime,
       z: moveDir.z,
@@ -414,9 +416,9 @@ export function physicsSystem(ctx: SystemContext): void {
 // RENDER SYNC SYSTEM
 // ============================================================================
 
-const tempPosition = new Vector3();
-const tempQuaternion = new Quaternion();
-const tempScale = new Vector3();
+const tempPosition = new Vector3(); // eslint-disable-line @typescript-eslint/no-unused-vars
+const tempQuaternion = new Quaternion(); // eslint-disable-line @typescript-eslint/no-unused-vars
+const tempScale = new Vector3(); // eslint-disable-line @typescript-eslint/no-unused-vars
 
 /**
  * Sync ECS transforms to Three.js objects

@@ -6,7 +6,7 @@
  * Canvases are cached by key so identical plaques reuse the same texture source.
  */
 
-import type { PlaqueContent, PlaqueSize } from "./contracts/types";
+import type { PlaqueContent, PlaqueSize } from "./types";
 
 // ---------------------------------------------------------------------------
 // Size configuration
@@ -35,7 +35,7 @@ interface ThemeTokens {
   titleColor: string;
   subtitleColor: string;
   bodyColor: string;
-  footerColor: string;
+  barterColor: string;
   dividerColor: string;
   titleFont: string;
   bodyFont: string;
@@ -49,7 +49,7 @@ function plaqueTheme(scaleFactor: number): ThemeTokens {
     titleColor: "#f0d890",
     subtitleColor: "#d0b878",
     bodyColor: "#e0d0b0",
-    footerColor: "#b8a878",
+    barterColor: "#b8a878",
     dividerColor: "#c8a050",
     titleFont: "Georgia, 'Times New Roman', serif",
     bodyFont: "Georgia, 'Times New Roman', serif",
@@ -64,7 +64,7 @@ function whiteboardTheme(scaleFactor: number): ThemeTokens {
     titleColor: "#1a1a1a",
     subtitleColor: "#444444",
     bodyColor: "#222222",
-    footerColor: "#666666",
+    barterColor: "#666666",
     dividerColor: "#bbbbbb",
     titleFont: "Consolas, 'Courier New', monospace",
     bodyFont: "Consolas, 'Courier New', monospace",
@@ -82,7 +82,7 @@ interface FontSizes {
   title: number;
   subtitle: number;
   body: number;
-  footer: number;
+  barter: number;
 }
 
 function computeFontSizes(
@@ -97,7 +97,7 @@ function computeFontSizes(
       title: Math.round(40 * (width / 2048)),
       subtitle: Math.round(28 * (width / 2048)),
       body: Math.round(24 * (width / 2048)),
-      footer: Math.round(22 * (width / 2048)),
+      barter: Math.round(22 * (width / 2048)),
     };
   }
 
@@ -105,7 +105,7 @@ function computeFontSizes(
     title: Math.round(36 * scale),
     subtitle: Math.round(22 * scale),
     body: Math.round(20 * scale),
-    footer: Math.round(18 * scale),
+    barter: Math.round(18 * scale),
   };
 }
 
@@ -229,18 +229,18 @@ export function generateCanvas(
 
   for (const line of bodyLines) {
     y += bodyLineHeight;
-    // Stop rendering if we'd overflow into the footer area
-    if (y > config.height - padding - fonts.footer * 2) break;
+    // Stop rendering if we'd overflow into the barter area
+    if (y > config.height - padding - fonts.barter * 2) break;
     ctx.fillText(line, padding, y);
   }
 
   // Footer - anchored near the bottom
-  if (content.footer) {
-    const footerY = config.height - padding - theme.borderWidth;
-    ctx.fillStyle = theme.footerColor;
-    ctx.font = `italic ${fonts.footer}px ${theme.bodyFont}`;
+  if (content.barter) {
+    const barterY = config.height - padding - theme.borderWidth;
+    ctx.fillStyle = theme.barterColor;
+    ctx.font = `italic ${fonts.barter}px ${theme.bodyFont}`;
     ctx.textAlign = "center";
-    ctx.fillText(content.footer, config.width / 2, footerY);
+    ctx.fillText(content.barter, config.width / 2, barterY);
   }
 
   if (cacheKey) {

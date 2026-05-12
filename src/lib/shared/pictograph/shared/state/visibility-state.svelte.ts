@@ -3,7 +3,7 @@ import type { SettingsState } from "$lib/shared/settings/state/SettingsState.sve
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { browser } from "$app/environment";
 
-const debug = createComponentLogger("VisibilityManager");
+const _debug = createComponentLogger("VisibilityManager");
 
 let settingsServiceInstance: SettingsState | null = null;
 

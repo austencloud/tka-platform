@@ -215,7 +215,7 @@ export class FirePassExecutor {
   // ── Splat: inject fuel, velocity, temperature at source points ──────────
 
   private splat(src: FireSourcePoint, intensity: number): void {
-    const gl = this.gl;
+    const _gl = this.gl;
     const prog = this.shaders.get("fire-splat");
 
     // Convert NDC position to UV

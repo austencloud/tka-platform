@@ -23,13 +23,13 @@ function deepCopy<T>(value: T): T {
 }
 
 interface UndoEntry {
-	points: any[];
+	points: TipPoint[];
 	label: string;
 }
 
 export class EffectPointEditorState {
 	selectedPropType = $state<string>("staff");
-	points = $state<any[]>([]);
+	points = $state<TipPoint[]>([]);
 	selectedPointIndex = $state<number>(-1);
 	isDragging = $state(false);
 	saveIndicatorVisible = $state(false);

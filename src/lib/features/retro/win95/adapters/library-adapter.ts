@@ -9,7 +9,7 @@
  * Domain: Retro File Manager
  */
 
-import type { LibraryQueryOptions } from "$lib/features/library/services/contracts/types";
+import type { LibraryQueryOptions } from "$lib/features/library/services/types";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
 import { convertFileName } from "../services/file-name-converter";
 

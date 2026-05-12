@@ -16,6 +16,7 @@ import type { AnimationAction, Object3D, Bone } from "three";
 import { AnimationMixer, AnimationClip, LoopRepeat, LoopOnce } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { LocomotionState } from "./AnimationStateMachine";
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export interface LocomotionInput {
   /** Whether the avatar is currently moving */
@@ -523,7 +524,7 @@ export class LocomotionAnimator {
 
   // --- Private helpers ---
 
-  private loadGltf(url: string): Promise<import("three/examples/jsm/loaders/GLTFLoader.js").GLTF> {
+  private loadGltf(url: string): Promise<GLTF> {
     return new Promise((resolve, reject) => {
       this.loader.load(url, resolve, undefined, reject);
     });

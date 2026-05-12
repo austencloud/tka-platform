@@ -25,6 +25,7 @@ function makeGradient(): FakeGradient {
 function makeCtx() {
   const gradients: FakeGradient[] = [];
   const fillRects: Array<{ x: number; y: number; w: number; h: number; fill: unknown }> = [];
+   
   const ctx: any = {
     globalCompositeOperation: "source-over",
     globalAlpha: 1,

@@ -8,7 +8,7 @@
 
 import { browser } from "$app/environment";
 import { getPostHogInstance } from "$lib/shared/analytics/services/posthog";
-import type { PostHogSummaryMetrics, UserSegments, PostHogDashboardLinks } from "../contracts/types";
+import type { PostHogSummaryMetrics, UserSegments, PostHogDashboardLinks } from "./types";
 
 // PostHog US cloud base URL
 const POSTHOG_APP_URL = "https://us.posthog.com";

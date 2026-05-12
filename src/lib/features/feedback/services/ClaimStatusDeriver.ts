@@ -3,7 +3,7 @@ import type { EffectiveStatus, ClaimHealth } from "$lib/shared/feedback/domain/f
 import {
   STALE_THRESHOLDS,
   checkClaimStaleness as sharedCheckClaimStaleness,
-} from "../../config/claim-config";
+} from "../config/claim-config";
 
 export class ClaimStatusDeriver {
   private readonly staleThresholdMs: number;

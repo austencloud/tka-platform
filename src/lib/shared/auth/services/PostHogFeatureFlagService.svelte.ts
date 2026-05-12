@@ -64,7 +64,7 @@ function featureIdToPostHogKey(featureId: FeatureId): string {
  * - tab-create-assemble -> tab:create:assemble
  * - capability-export-video -> capability:export:video
  */
-function postHogKeyToFeatureId(key: string): FeatureId | undefined {
+function _postHogKeyToFeatureId(key: string): FeatureId | undefined {
   let candidate: string | undefined;
 
   // Handle module flags
@@ -434,7 +434,7 @@ export const postHogFeatureFlagService = {
     // Merge default configs with PostHog values and local admin overrides
     return DEFAULT_FEATURE_FLAGS.map((config) => {
       const postHogKey = featureIdToPostHogKey(config.id);
-      let mergedConfig = { ...config };
+      const mergedConfig = { ...config };
 
       // Priority 1: Local admin enabled overrides (set via admin UI)
       const localEnabledOverride = _state.globalFlagOverrides[postHogKey];
@@ -506,7 +506,7 @@ export const postHogFeatureFlagService = {
     // If no global opinion, check default config
     if (globalEnabled === null) {
       const config = getDefaultFeatureConfig(featureId);
-      if (!config || !config.enabled) {
+      if (!config?.enabled) {
         return false;
       }
     }

@@ -9,7 +9,7 @@
   import KanbanArchiveDropZone from "./KanbanArchiveDropZone.svelte";
   import KanbanDeferDropZone from "./KanbanDeferDropZone.svelte";
   import KanbanTrashDropZone from "./KanbanTrashDropZone.svelte";
-  import type { ClaimStatusDeriver } from "../../services/implementations/ClaimStatusDeriver";
+  import type { ClaimStatusDeriver } from "../../services/ClaimStatusDeriver";
 
   interface Props {
     boardState: KanbanBoardState;

@@ -65,7 +65,7 @@ export function handleHMRInit() {
 
       // Track updated files for reactivity check
       const updatedFiles = payload.updates?.map(u => u.path) || [];
-      (window as any).__VITE_HMR_UPDATED_FILES__ = updatedFiles;
+      (window as unknown as Record<string, unknown>).__VITE_HMR_UPDATED_FILES__ = updatedFiles;
     });
 
     // After HMR update, verify the page is still functional and restore theme
@@ -144,7 +144,7 @@ function setupGlobalErrorHandler() {
     if (
       message.includes("MIME type") ||
       message.includes("Failed to load module script") ||
-      (error?.message && error.message.includes("MIME type"))
+      (error?.message?.includes("MIME type"))
     ) {
       console.warn(
         "[HMR] Module script MIME error detected - Svelte reactivity may be corrupted. " +
@@ -211,7 +211,7 @@ function checkReactivityHealth() {
   //
   // We expose a global that tracks the last HMR-updated files
   // and check it here
-  const updatedFiles = (window as any).__VITE_HMR_UPDATED_FILES__ as string[] | undefined;
+  const updatedFiles = (window as unknown as Record<string, unknown>).__VITE_HMR_UPDATED_FILES__ as string[] | undefined;
 
   if (!updatedFiles || updatedFiles.length === 0) {
     // Even without knowing which files updated, check for state/UI desync
@@ -232,7 +232,7 @@ function checkReactivityHealth() {
   }
 
   // Clear the tracking array
-  (window as any).__VITE_HMR_UPDATED_FILES__ = [];
+  (window as unknown as Record<string, unknown>).__VITE_HMR_UPDATED_FILES__ = [];
 }
 
 /**
@@ -254,7 +254,7 @@ async function checkStateUISync() {
     // Get current URL path
     const urlPath = window.location.pathname;
     const urlParts = urlPath.split('/').filter(Boolean);
-    const urlModule = urlParts[0];
+    const _urlModule = urlParts[0];
     const urlTab = urlParts[1];
 
     // Only check for Create module where tab desync is common

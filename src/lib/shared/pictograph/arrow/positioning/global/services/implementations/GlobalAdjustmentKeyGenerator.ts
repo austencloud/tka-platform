@@ -60,10 +60,10 @@ export class GlobalAdjustmentKeyGenerator {
 
     // Add optional prop types for Layer 2/3
     if (options?.propType) {
-      (key as any).propType = options.propType.toLowerCase();
+      (key as { propType?: string }).propType = options.propType.toLowerCase();
     }
     if (options?.otherPropType) {
-      (key as any).otherPropType = options.otherPropType.toLowerCase();
+      (key as { otherPropType?: string }).otherPropType = options.otherPropType.toLowerCase();
     }
 
     return key;

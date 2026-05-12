@@ -67,7 +67,7 @@ localeCache.set("en", enMessages);
 // Reactive state (initialized synchronously with English)
 let currentLocale = $state<Locale>(getInitialLocale());
 let messages = $state<Messages>(enMessages);
-let i18nInitialized = true;
+const _i18nInitialized = true;
 
 // HMR support - reload messages when locale JSON files change.
 // The i18nHmrPlugin reads the changed file on the server and sends

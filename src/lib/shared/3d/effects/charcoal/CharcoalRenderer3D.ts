@@ -11,12 +11,13 @@
  *   Low:     500 particles, no ground interaction
  */
 
-import {
+import type {
   Vector3,
+  Object3D} from "three";
+import {
   BufferGeometry,
   BufferAttribute,
-  Points,
-  Object3D,
+  Points
 } from "three";
 import { createCharcoalMaterial, type CharcoalMaterialOptions } from "./CharcoalMaterial3D";
 import { QualityTier } from "../types";
@@ -75,7 +76,7 @@ const IDLE_SIZE_MIN = 0.02;
 const IDLE_SIZE_MAX = 0.05;
 const IDLE_PERTURB_MIN = 0.05;
 const IDLE_PERTURB_MAX = 0.2; // barely move - stay near the tip
-const IDLE_SPREAD = Math.PI * 0.15; // tight cluster
+const _IDLE_SPREAD = Math.PI * 0.15; // tight cluster
 
 interface Particle {
   x: number;

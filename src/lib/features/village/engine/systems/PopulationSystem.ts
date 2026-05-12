@@ -2,7 +2,7 @@ import type { World } from "miniplex";
 import type { VillageEntity } from "../../domain/village-types";
 import type { VillageConfig } from "../VillageConfig";
 import type * as PersonalityGeneratorModule from "../../services/personality-generator";
-import type { LineageTracker } from "../../services/implementations/LineageTracker";
+import type { LineageTracker } from "../../services/LineageTracker";
 import type { VillageEventEmitter } from "../VillageEventEmitter";
 import { createAvatarEntity } from "../VillageWorld";
 import {
@@ -168,7 +168,7 @@ export class PopulationSystem {
 		}
 
 		// Store echo metadata for rendering layer
-		(newEntity as any)._reincarnationEcho = {
+		(newEntity as unknown as Record<string, unknown>)._reincarnationEcho = {
 			sourceEntityId: source.id,
 			sourceName: source.identity.name,
 		};

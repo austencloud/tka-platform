@@ -12,7 +12,7 @@ import { tileKey, parseTileKey } from "../domain/museum-grid-types";
 import type {
   RoomDefinition, RoomObjectDefinition, RoomLightDefinition, EntranceDefinition, WallMaterialId,
 } from "$lib/shared/3d/indoor/domain/room-types";
-import type { AnalyzedMuseum, ExhibitPlacement, PerformerPlacement, LightPlacement, ConnectionDef } from "./contracts/types";
+import type { AnalyzedMuseum, ExhibitPlacement, PerformerPlacement, LightPlacement, ConnectionDef } from "./types";
 
 // ── Coordinate helpers ──
 

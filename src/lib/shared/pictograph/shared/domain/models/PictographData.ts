@@ -8,6 +8,7 @@ import type { Letter } from "../../../../foundation/domain/models/Letter";
 import type { GridPosition } from "../../../grid/domain/enums/grid-enums";
 import type { MotionColor } from "../enums/pictograph-enums";
 import type { MotionData } from "./MotionData";
+import type { GridMode } from '../../../grid/domain/enums/grid-enums';
 
 export interface PictographData {
   readonly id: string;
@@ -21,7 +22,7 @@ export interface PictographData {
   readonly motions: Partial<Record<MotionColor, MotionData | undefined>>;
 
   // Grid mode (diamond, box, skewed) - can be pre-set from sequence data
-  readonly gridMode?: import("../../../grid/domain/enums/grid-enums").GridMode;
+  readonly gridMode?: GridMode;
 
   // Skewed mode category (1-4, see docs/SKEW-AUDIT-FINDINGS.md)
   // 1 = normal→skewed (one hand skews)

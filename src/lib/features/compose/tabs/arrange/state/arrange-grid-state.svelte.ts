@@ -20,7 +20,7 @@ import {
 
 import type { CellMediaType, PropColors } from "$lib/shared/animation-engine/domain/compose-types";
 import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
-import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 // compose-arrange-container dissolved - services accessed via module singleton getters
 import type {
@@ -154,7 +154,7 @@ function createArrangeGridState() {
   function startPlaybackPolling() {
     if (playbackPollId !== null) return;
     function poll() {
-      const wasPlaying = isPlaying;
+      const _wasPlaying = isPlaying;
       isPlaying = playbackEngine.isPlaying;
       currentStep = playbackEngine.currentStep;
       playbackBpm = playbackEngine.bpm;

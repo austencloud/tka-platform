@@ -13,7 +13,7 @@ export interface ExhibitContent {
     title: string;
     subtitle?: string;
     body: string;
-    footer?: string;
+    barter?: string;
   };
   sequenceId?: string;
 }
@@ -42,7 +42,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Please proceed through the exhibits in order. " +
             "Do not touch the artifacts. " +
             "Do not attempt to replicate what you see.",
-          footer: "Visiting hours: 24/7",
+          barter: "Visiting hours: 24/7",
         },
       },
       "entrance-guest-book": {
@@ -53,7 +53,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "All visitors must register with the front desk. " +
             "A valid government-issued ID is required for access " +
             "beyond the main gallery. Bags will be searched.",
-          footer: "Form 7741-A: Visitor Registration",
+          barter: "Form 7741-A: Visitor Registration",
         },
       },
       "entrance-bulletin": {
@@ -63,7 +63,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "ALL STAFF: Badge access updated effective 11/14/1998. " +
             "Please collect new credentials from Room 114. " +
             "Fire drill scheduled for Friday. Attendance mandatory.",
-          footer: "- Facilities Management",
+          barter: "- Facilities Management",
         },
       },
       "entrance-reception": {
@@ -74,7 +74,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Please check in with the front desk before proceeding. " +
             "Unauthorized access beyond the lobby is prohibited. " +
             "All personal effects must be declared.",
-          footer: "Department of Rotational Affairs",
+          barter: "Department of Rotational Affairs",
         },
       },
     },
@@ -92,7 +92,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "arranged in a repeating sequence. Carbon dating places " +
             "them among the oldest known artifacts in this collection. " +
             "The notation system is immediately recognizable to modern analysts.",
-          footer: "Acquisition: Order Field Team, Dordogne, 1942. Filing: KA-CAVE-001.",
+          barter: "Acquisition: Order Field Team, Dordogne, 1942. Filing: KA-CAVE-001.",
         },
       },
       "cave-lascaux-2": {
@@ -104,7 +104,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "what appears to be a complete choreographic phrase. " +
             "Note the reversal glyph at position 4. " +
             "The artist was describing a LOOP before the concept had a name.",
-          footer: "Cross-reference: KA-CAVE-001b. See also: Wing 4, Patent 7741.",
+          barter: "Cross-reference: KA-CAVE-001b. See also: Wing 4, Patent 7741.",
         },
       },
       "cave-paintings-1": {
@@ -116,7 +116,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "elongated objects. The figures are drawn in four successive positions, " +
             "suggesting movement over time. " +
             "The objects are staves. The motion is unmistakable.",
-          footer: "Recovered: North Africa, 1937. Classification: GRIPPED-BILATERAL.",
+          barter: "Recovered: North Africa, 1937. Classification: GRIPPED-BILATERAL.",
         },
       },
       "cave-paintings-2": {
@@ -141,7 +141,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "communities with no known contact. Marchand's conclusion: " +
             '"The sequences arrive. We merely record them." ' +
             "He was reassigned to Filing in 1951.",
-          footer: "Personnel file: MARCHAND-H. Status: INACTIVE.",
+          barter: "Personnel file: MARCHAND-H. Status: INACTIVE.",
         },
       },
     },
@@ -169,7 +169,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Hieroglyphic scrolls documenting the first formal Type classification system. " +
             "Six categories of movement, organized by hand path. " +
             "The priesthood controlled access to advanced notation.",
-          footer: "Translated by the Cairo Institute, 1923",
+          barter: "Translated by the Cairo Institute, 1923",
         },
       },
       "egypt-priesthood": {
@@ -198,7 +198,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "First evidence that access was deliberately restricted. " +
             "Temple records show notation scrolls stored separately from other documents, " +
             "with specialized access protocols.",
-          footer: "NILE BUREAU - Classification: RESTRICTED",
+          barter: "NILE BUREAU - Classification: RESTRICTED",
         },
       },
     },
@@ -220,7 +220,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Da Vinci's notebooks contain rotational diagrams that precisely match " +
             "the Kinetic Alphabet's position system. He decoded the Egyptian scrolls " +
             "and recast them as geometry.",
-          footer: "Reproductions. Originals: scattered across seven collections.",
+          barter: "Reproductions. Originals: scattered across seven collections.",
         },
       },
       "ren-vitruvian": {
@@ -264,7 +264,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "The only surviving prototype. A mechanical calculator that could " +
             "enumerate all possible four-step sequences for a given starting position. " +
             "Patent recalled by the Home Office within six months of filing.",
-          footer: "Inventor: [NAME REDACTED]",
+          barter: "Inventor: [NAME REDACTED]",
         },
         sequenceId: "vic-brass-seq",
       },
@@ -293,7 +293,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Key inventors were ruined by scandal. Anonymous complaints, funding reviews, " +
             "paper retractions. No violence. Just process. " +
             "The method is never explained in this archive.",
-          footer: "See also: Containment Protocol 4-C (discrediting)",
+          barter: "See also: Containment Protocol 4-C (discrediting)",
         },
       },
     },
@@ -311,7 +311,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "The original terminal running TKA-OS v2. One of an estimated 3,400 copies " +
             "distributed before the Bureau detected the breach. " +
             "Press E to boot the system.",
-          footer: "Serial: BKC-ASSET-7741",
+          barter: "Serial: BKC-ASSET-7741",
         },
         sequenceId: "digital-crt-seq",
       },
@@ -363,7 +363,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "The modern name. American, 1940s. The transition from ancient mystic guardians " +
             "to government bureaucracy was gradual - decades of absorption, not a founding date. " +
             "Eventually: a budget line item and reporting requirements.",
-          footer: "Department of Rotational Affairs, Facility 7",
+          barter: "Department of Rotational Affairs, Facility 7",
         },
       },
       "supp-order-3": {
@@ -402,7 +402,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Date of the final Protocol Lethe execution. The protocol was designed for " +
             "villages and monasteries. It cannot scale to eight billion people with broadband. " +
             "Ancient containment procedure versus YouTube.",
-          footer: "Status: PARTIAL FAILURE - See Addendum 7741-F",
+          barter: "Status: PARTIAL FAILURE - See Addendum 7741-F",
         },
       },
     },
@@ -435,7 +435,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "You've seen it throughout the museum. On floor tiles, in frame corners, " +
             "woven into decoration. Every spin is a spiral through time. " +
             "The Scribes didn't choose it. It chose them.",
-          footer: "- K",
+          barter: "- K",
         },
         sequenceId: "gallery-spiral-seq",
       },
@@ -455,7 +455,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
           body:
             "The gap between 'I can see this is beautiful' and 'I can do this myself' " +
             "is the whole story. Forty thousand years of it.",
-          footer: "- K",
+          barter: "- K",
         },
         sequenceId: "gallery-practice-seq",
       },
@@ -465,7 +465,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
           body:
             "This is my favorite room. I built it from what the Order left behind. " +
             "They had everything right except the padlock.",
-          footer: "- K",
+          barter: "- K",
         },
       },
     },
@@ -482,7 +482,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
           body:
             "This knowledge is a public health hazard. Seal the archive. Walk away. " +
             "Authorized handling personnel only.",
-          footer: "Bureau of Kinetic Containment - Form 7741-C",
+          barter: "Bureau of Kinetic Containment - Form 7741-C",
         },
       },
       "fear-containment-2": {
@@ -501,7 +501,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "If you have observed synchronized movement, gripped a prop-like object, " +
             "or experienced loss of time awareness during repetitive motion, " +
             "contact your regional monitor immediately.",
-          footer: "Hotline: [NUMBER DISCONNECTED]",
+          barter: "Hotline: [NUMBER DISCONNECTED]",
         },
       },
     },

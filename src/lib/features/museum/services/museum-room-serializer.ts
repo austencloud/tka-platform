@@ -1,5 +1,5 @@
 import type { RoomNode, RoomEdge } from "../domain/layout-types";
-import type { SerializationResult, ValidationError } from "./contracts/types";
+import type { SerializationResult, ValidationError } from "./types";
 
 const VALID_SEGMENT_TYPES = new Set([
   "door",

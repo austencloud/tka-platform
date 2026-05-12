@@ -21,7 +21,7 @@ const DOOM_BUNDLE_URL = "https://cdn.dos.zone/custom/dos/doom.jsdos";
 // js-dos v8 exposes a global `Dos` function after the script loads.
 // We declare the shape we need so TypeScript doesn't complain.
 declare global {
-	// eslint-disable-next-line no-var
+	 
 	var Dos: ((
 		element: HTMLDivElement,
 		options: { url: string },

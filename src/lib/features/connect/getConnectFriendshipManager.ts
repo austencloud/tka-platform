@@ -1,4 +1,4 @@
-import { FriendshipManager } from './services/implementations/FriendshipManager';
+import { FriendshipManager } from './services/FriendshipManager';
 import { getConnectPresenceTracker } from './getConnectPresenceTracker';
 
 let instance: FriendshipManager | null = null;

@@ -3,9 +3,6 @@
  * SVG Loader Interface
  */
 
-import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
-import type { ArrowSvgData } from "../../../../shared/domain/models/svg-models";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { ThemeMode } from "../../../../../utils/svg-color-utils";
 
 /**

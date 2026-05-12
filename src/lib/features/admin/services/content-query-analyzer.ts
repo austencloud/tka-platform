@@ -7,7 +7,7 @@
 
 import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { TopSequenceData } from "./contracts/types";
+import type { TopSequenceData } from "./types";
 
 // Timeout for Firebase queries (10 seconds)
 const QUERY_TIMEOUT_MS = 10000;

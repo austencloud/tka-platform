@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { MusicPlayer } from './services/implementations/MusicPlayer';
+import { MusicPlayer } from './services/MusicPlayer';
 
 let instance: MusicPlayer | null = null;
 

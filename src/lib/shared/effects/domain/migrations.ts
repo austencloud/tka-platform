@@ -11,20 +11,23 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   if (!raw || typeof raw !== "object") {
     return structuredClone(DEFAULT_EFFECTS_CONFIG);
   }
+   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy migration shapes have arbitrary keys
+  type LegacyRecord = Record<string, any>;
   const input = raw as Partial<EffectsConfig> & {
     version?: number;
-    zap?: any;
-    sparkles?: any;
-    motion?: any;
-    echo?: any;
-    bloom?: any;
-    water?: any;
-    bubbles?: any;
-    petals?: any;
-    smoke?: any;
-    ink?: any;
-    frost?: any;
-    silk?: any;
+    zap?: LegacyRecord;
+    sparkles?: LegacyRecord;
+    motion?: LegacyRecord;
+    echo?: LegacyRecord;
+    bloom?: LegacyRecord;
+    water?: LegacyRecord;
+    bubbles?: LegacyRecord;
+    petals?: LegacyRecord;
+    smoke?: LegacyRecord;
+    ink?: LegacyRecord;
+    frost?: LegacyRecord;
+    silk?: LegacyRecord;
   };
   const version = input.version ?? 1;
 
@@ -41,7 +44,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // the default-merge so existing persisted configs upgrade without losing
   // user selections.
   if (version < 4 && input.sparkles) {
-    const s = input.sparkles as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = input.sparkles as Record<string, any>;
     s.palette ??= ["#fbbf24", "#f59e0b", "#fde047"];
     s.colorMode ??= s.rainbow ? "rainbow" : "solid";
     s.spread ??= 8;
@@ -55,7 +59,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // defaults so the upgraded shape matches the old MotionIntent.
   // NOTE: v6 discards this motion block entirely - echo replaces it.
   if (version < 5 && input.motion) {
-    const m = input.motion as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const m = input.motion as Record<string, any>;
     m.color ??= "#ffffff";
     m.colorMode ??= "solid";
     m.length ??= 0.5;
@@ -83,13 +88,17 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     }
     if (input.tipEffectMap) {
       for (const key of Object.keys(input.tipEffectMap)) {
-        const entry: any = (input.tipEffectMap as any)[key];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
         if (entry?.effect === "motion") entry.effect = "echo";
       }
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (input.activePresets && "motion" in (input.activePresets as any)) {
-      (input.activePresets as any).echo = (input.activePresets as any).motion;
-      delete (input.activePresets as any).motion;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const presets = input.activePresets as Record<string, any>;
+      presets.echo = presets.motion;
+      delete presets.motion;
     }
   }
 
@@ -102,7 +111,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // valid.
   if (version < 7) {
     if (input.bloom) {
-      const b = input.bloom as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const b = input.bloom as Record<string, any>;
       const oldRadius = typeof b.radius === "number" ? b.radius : 0.5;
       const newRadiusPx = Math.min(200, Math.max(8, oldRadius * 200 + 8));
       const preservedIntensity = typeof b.intensity === "number" ? b.intensity : 0.7;
@@ -154,7 +164,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // (16th chip including "none"). No field migration - absent silk resolves
   // to DEFAULT_EFFECTS_CONFIG.silk via the merge below.
 
-  let out: EffectsConfig = {
+  const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
     trails: { ...DEFAULT_EFFECTS_CONFIG.trails, ...(input.trails ?? {}) },

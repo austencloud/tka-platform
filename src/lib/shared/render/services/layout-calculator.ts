@@ -10,7 +10,7 @@
 
 const BASE_BEAT_SIZE = 144;
 
-const LAYOUT_WITH_START_POSITION: Record<number, [number, number]> = {
+const LAYOUT_WITH_START_POSITION: Record<number, [number, number]> = { // eslint-disable-line @typescript-eslint/no-unused-vars
   0: [1, 1], 1: [2, 1], 2: [3, 1], 3: [4, 1], 4: [3, 2], 5: [3, 2],
   6: [4, 2], 7: [5, 2], 8: [5, 2], 9: [5, 3], 10: [6, 2], 11: [5, 3],
   12: [4, 4], 13: [5, 4], 14: [5, 4], 15: [5, 4], 16: [5, 4], 17: [5, 5],

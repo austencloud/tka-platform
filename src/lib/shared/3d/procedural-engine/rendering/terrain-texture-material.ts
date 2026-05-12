@@ -25,7 +25,6 @@ import {
   LinearFilter,
   SRGBColorSpace,
   type Texture,
-  type Material,
 } from "three";
 
 // ============================================================================

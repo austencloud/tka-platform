@@ -3,9 +3,9 @@ import type {
   CandidateDesignation,
   StepPairGroups,
   TransformationIntervals,
-} from "../../domain/models/label-models";
-import type { ComponentId } from "../../domain/constants/loop-components";
-import type { PolyrhythmicLOOPResult } from "../polyrhythmic-detector";
+} from "../domain/models/label-models";
+import type { ComponentId } from "../domain/constants/loop-components";
+import type { PolyrhythmicLOOPResult } from "./polyrhythmic-detector";
 import type { DetectedComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { StepPairRelationship } from "./types";
 import type { LayeredPathResult } from "./types";

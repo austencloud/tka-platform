@@ -2,7 +2,6 @@
 import { describe, it, expect } from "vitest";
 import {
   handleAssembleKeyDown,
-  type KeyboardAction,
   type KeyboardContext,
 } from "./assemble-keyboard-handler";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

@@ -529,12 +529,12 @@ export function createViewer3DState(deps: {
    */
   function redo(): void {
     const entry = deps.viewer3DUndoManager.redo();
-    if (!entry || !entry.afterState) return;
+    if (!entry?.afterState) return;
     restoreViewerSnapshot(entry.afterState);
     lastSpatialEntryId = null;
   }
 
-  let effectToggles = $state<Record<string, boolean>>({
+  const effectToggles = $state<Record<string, boolean>>({
     fire: false,
     led: false,
     trails: false,
@@ -558,9 +558,9 @@ export function createViewer3DState(deps: {
 
   // Threlte scene internals - registered by Viewer3DScene so the offline
   // exporter can drive rendering without coupling to Threlte's reactive layer.
-  let threlteRenderer = $state<any>(null);
-  let threlteScene = $state<any>(null);
-  let threlteCamera = $state<any>(null);
+  let threlteRenderer = $state<unknown>(null);
+  let threlteScene = $state<unknown>(null);
+  let threlteCamera = $state<unknown>(null);
   // runFrame drives Threlte's full pipeline synchronously: every useTask
   // callback (puppet loop, IK, effects, render) runs in one call. The
   // offline exporter uses this to render at CPU speed, decoupled from the
@@ -830,14 +830,14 @@ export function createViewer3DState(deps: {
     },
     setActivePreset(id: string | null) {
       activePreset = id;
-      try { localStorage.setItem(STORAGE_KEY_PRESET, id ?? ""); } catch {}
+      try { localStorage.setItem(STORAGE_KEY_PRESET, id ?? ""); } catch { /* ignore */ }
     },
     get activeCameraPreset() {
       return activeCameraPreset;
     },
     setActiveCameraPreset(id: string) {
       activeCameraPreset = id;
-      try { localStorage.setItem(STORAGE_KEY_CAM_PRESET, id); } catch {}
+      try { localStorage.setItem(STORAGE_KEY_CAM_PRESET, id); } catch { /* ignore */ }
     },
     /**
      * Toggle a single grid plane on or off.
@@ -868,7 +868,7 @@ export function createViewer3DState(deps: {
      * When turning on for the first time (or after hide-all), defaults to
      * wall-only since all current sequences use the wall plane.
      */
-    toggleGrid(sequenceData?: SequenceData | null) {
+    toggleGrid(_sequenceData?: SequenceData | null) {
       if (visiblePlanes.size > 0) {
         // Already showing something - turn off everything
         visiblePlanes = new Set();
@@ -902,9 +902,9 @@ export function createViewer3DState(deps: {
      * can drive the full render pipeline synchronously.
      */
     registerThrelteInternals(refs: {
-      renderer: any;
-      scene: any;
-      camera: any;
+      renderer: unknown;
+      scene: unknown;
+      camera: unknown;
       runFrame: (timeMs: number) => void;
       pauseAutoLoop: () => void;
       resumeAutoLoop: () => void;

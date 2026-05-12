@@ -1,4 +1,4 @@
-import { HandPathSaveOrchestrator } from './services/implementations/HandPathSaveOrchestrator';
+import { HandPathSaveOrchestrator } from './services/HandPathSaveOrchestrator';
 import { handPathRepository } from '$lib/shared/foundation/services/implementations/HandPathRepository';
 
 let instance: HandPathSaveOrchestrator | null = null;

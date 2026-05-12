@@ -63,7 +63,7 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 		const leftCol = 2;
 		const rightCol = showQRCode ? cols - 1 : cols;
 		const emptyCount = rightCol - leftCol + 1;
-		if (emptyCount < 1 || emptyCount > 3) return EMPTY;
+		if (emptyCount < 1) return EMPTY;
 
 		// Anchored: blue → leftmost slot, red → rightmost slot. Never migrate when one is toggled off.
 		return { placements: buildRowPlacements(emptyCount, leftCol, rightCol, blueVisible, redVisible), layoutOverride: null };
@@ -74,7 +74,7 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 	const topRow = 2;
 	const bottomRow = showQRCode ? rows - 1 : rows;
 	const emptyCount = bottomRow - topRow + 1;
-	if (emptyCount < 1 || emptyCount > 3) return EMPTY;
+	if (emptyCount < 1) return EMPTY;
 
 	void cols;
 
@@ -95,15 +95,14 @@ function buildRowPlacements(
 			{ row: 1, col: leftCol, variant: "blue" },
 			{ row: 1, col: rightCol, variant: "red" },
 		];
-		// emptyCount === 3
 		return [
 			{ row: 1, col: leftCol, variant: "blue" },
 			{ row: 1, col: leftCol + 1, variant: "full" },
-			{ row: 1, col: rightCol, variant: "red" },
+			{ row: 1, col: leftCol + 2, variant: "red" },
 		];
 	}
 	if (blueVisible) return [{ row: 1, col: leftCol, variant: "blue" }];
-	return [{ row: 1, col: rightCol, variant: "red" }];
+	return [{ row: 1, col: leftCol, variant: "red" }];
 }
 
 function buildColumnPlacements(
@@ -119,15 +118,14 @@ function buildColumnPlacements(
 			{ row: topRow, col: 1, variant: "blue" },
 			{ row: bottomRow, col: 1, variant: "red" },
 		];
-		// emptyCount === 3
 		return [
 			{ row: topRow, col: 1, variant: "blue" },
 			{ row: topRow + 1, col: 1, variant: "full" },
-			{ row: bottomRow, col: 1, variant: "red" },
+			{ row: topRow + 2, col: 1, variant: "red" },
 		];
 	}
 	if (blueVisible) return [{ row: topRow, col: 1, variant: "blue" }];
-	return [{ row: bottomRow, col: 1, variant: "red" }];
+	return [{ row: topRow, col: 1, variant: "red" }];
 }
 
 function buildFourCountHorizontal(

@@ -16,7 +16,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import {
   GenerationMode,
-  PropContinuity,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from "$lib/shared/create/services/sequence-metadata-manager";
 type SequenceMetadataManager = typeof SequenceMetadataManagerSingleton;
@@ -26,6 +25,7 @@ import { LOOPType, Period as EnginePeriod } from "@tka/sequence-engine/loop";
 import {
   TransitionGraph as EngineTransitionGraph,
   setLetterTransitionGraph,
+  type ISequenceDataProvider,
 } from "@tka/sequence-engine";
 import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/implementations/BrowserDataProvider";
 import { letterQueryHandler as globalLetterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
@@ -42,11 +42,11 @@ function ensureEngineTransitionGraph(): Promise<void> {
 
   engineTransitionGraphPromise = (async () => {
     const dataProvider = new BrowserDataProvider(globalLetterQueryHandler);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- app-local
+     
     // BrowserDataProvider structurally matches the engine's SequenceDataProvider;
     // the nominal type mismatch comes from two separate type declarations that
     // will be reconciled when the app's shim is retired.
-    const graph = new EngineTransitionGraph(dataProvider as any);
+    const graph = new EngineTransitionGraph(dataProvider as unknown as ISequenceDataProvider);
     await graph.initialize();
     setLetterTransitionGraph(graph);
   })();

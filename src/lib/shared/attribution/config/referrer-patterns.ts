@@ -144,7 +144,7 @@ export function extractDomain(url: string): string | undefined {
     return parsed.hostname.replace(/^www\./, "");
   } catch {
     // Handle malformed URLs gracefully
-    const match = url.match(/(?:https?:\/\/)?(?:www\.)?([^\/\?]+)/i);
+    const match = url.match(/(?:https?:\/\/)?(?:www\.)?([^/?]+)/i);
     return match?.[1]?.replace(/^www\./, "");
   }
 }

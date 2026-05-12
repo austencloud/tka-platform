@@ -1,4 +1,4 @@
-import { SequenceMatcher } from './services/implementations/SequenceMatcher';
+import { SequenceMatcher } from './services/SequenceMatcher';
 
 let instance: SequenceMatcher | null = null;
 export function getSequenceMatcher(): SequenceMatcher {

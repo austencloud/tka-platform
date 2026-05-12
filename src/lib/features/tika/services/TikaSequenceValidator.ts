@@ -6,7 +6,7 @@
  */
 
 import type { TikaPictographLoader } from "./TikaPictographLoader";
-import { LETTER_TO_TYPE, LETTER_TYPES } from "@tka/domain";
+import { LETTER_TO_TYPE } from "@tka/domain";
 
 export interface SequenceTransition {
   from: string;

@@ -23,6 +23,7 @@ import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import { EraRendererBase } from "../../../shared/services/implementations/EraRendererBase";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { DrawableImage } from '$lib/shared/render/services/implementations/SvgImageCache';
 
 // ============================================================================
 // WINDOWS 16-COLOR PALETTE
@@ -469,7 +470,7 @@ export class PixelRenderer extends EraRendererBase {
 	 */
 	private drawTintedElement(
 		ctx: CanvasRenderingContext2D,
-		img: import("$lib/shared/render/services/implementations/SvgImageCache").DrawableImage,
+		img: DrawableImage,
 		params: {
 			x: number;
 			y: number;

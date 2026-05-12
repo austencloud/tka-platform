@@ -3,7 +3,6 @@ import {
   adaptiveSubdivisions,
   buildTaperedMesh,
   createSmoothCurve,
-  TRAIL_VERTEX_STRIDE,
   type Point2D,
   type MeshBuildOptions,
 } from "../../math/trail-mesh";

@@ -7,7 +7,7 @@
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import type { EndState, SpinnerStats } from '$lib/shared/landing/domain/types';
-  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
+  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
@@ -30,8 +30,8 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
 
   // New imports for mode toggle and infinite generation
   import type { SpinnerMode, SpinnerMetrics, GeneratedSequenceInfo } from "$lib/features/landing/domain/models/spinner-models";
-  import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
-  import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
+  import { InfiniteSequenceGenerator } from "$lib/features/landing/services/InfiniteSequenceGenerator";
+  import { SpinnerMetricsRepository } from "$lib/features/landing/services/SpinnerMetricsRepository";
   import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
   import SpinnerModeToggle from "$lib/features/landing/components/SpinnerModeToggle.svelte";
   import LibraryModeInfo from "$lib/features/landing/components/LibraryModeInfo.svelte";
@@ -41,7 +41,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
 
   // Broadcast imports
   import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
-  import { BroadcastRepository } from "$lib/features/landing/services/implementations/BroadcastRepository";
+  import { BroadcastRepository } from "$lib/features/landing/services/BroadcastRepository";
   import * as broadcastSequenceConverter from "$lib/features/landing/services/broadcast-sequence-converter";
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
 

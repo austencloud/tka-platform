@@ -558,7 +558,7 @@ export class WebGPUBackend implements RenderBackend {
     height: number,
   ): GPUTextureEntry {
     const existing = this.textures.get(key);
-    if (existing && existing.width === width && existing.height === height) {
+    if (existing?.width === width && existing.height === height) {
       return existing;
     }
     existing?.texture.destroy();
@@ -585,8 +585,7 @@ export class WebGPUBackend implements RenderBackend {
   ): PingPongPair {
     const existing = this.pingPongs.get(key);
     if (
-      existing &&
-      existing.read.width === width &&
+      existing?.read.width === width &&
       existing.read.height === height
     ) {
       return existing;

@@ -1,4 +1,4 @@
-import type { StabilityReport } from "./contracts/types";
+import type { StabilityReport } from "./types";
 import type { ArenaRating } from "../domain/models/arena-models";
 import {
   STABLE_PHI_THRESHOLD,

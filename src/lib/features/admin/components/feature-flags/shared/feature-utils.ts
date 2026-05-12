@@ -10,7 +10,6 @@ import type {
 } from "$lib/shared/auth/domain/models/FeatureFlag";
 import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
 import {
-  ROLE_HIERARCHY,
   ROLE_DISPLAY,
   hasRolePrivilege,
 } from "$lib/shared/auth/domain/models/UserRole";

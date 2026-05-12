@@ -5,6 +5,7 @@
  * until after `wait` milliseconds have elapsed since the last call.
  */
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
@@ -28,6 +29,7 @@ export function debounce<T extends (...args: any[]) => any>(
  *
  * If immediate is true, function is called on the leading edge instead of trailing.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function debounceImmediate<T extends (...args: any[]) => any>(
   func: T,
   wait: number,

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { UserMetricsAnalyzer } from './services/implementations/UserMetricsAnalyzer';
+import { UserMetricsAnalyzer } from './services/UserMetricsAnalyzer';
 import { getSystemStateManager } from './getSystemStateManager';
 
 let instance: UserMetricsAnalyzer | null = null;

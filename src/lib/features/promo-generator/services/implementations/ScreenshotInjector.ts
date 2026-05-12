@@ -165,7 +165,7 @@ export class ScreenshotInjector {
           resolve(texture);
         },
         undefined,
-        (error) => {
+        (_error) => {
           reject(new Error(`Failed to load texture: ${source}`));
         }
       );

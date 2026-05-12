@@ -35,7 +35,7 @@ interface AdminReportsState {
 const PAGE_SIZE = 20;
 
 // Reactive state using Svelte 5 $state rune
-let _state = $state<AdminReportsState>({
+const _state = $state<AdminReportsState>({
 	reports: [],
 	selectedReport: null,
 	isLoading: false,

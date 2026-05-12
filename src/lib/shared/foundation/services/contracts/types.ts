@@ -24,8 +24,6 @@ export interface DownloadResult {
 }
 
 // --- From HandPathRepository ---
-import type { HandPathData } from "../../domain/models/HandPathData";
-import type { ArtifactProvenance } from "../../domain/models/ArtifactProvenance";
 import type {
   GridLocation,
   GridMode,
@@ -57,7 +55,6 @@ export interface SEOLinkOptions {
 }
 
 // --- From SoloPropRepository ---
-import type { SoloPropData } from "../../domain/models/SoloPropData";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface SoloPropFilters {
@@ -72,9 +69,6 @@ export interface SoloPropFilters {
 }
 
 // --- From StepDeriver ---
-import type { StepPairingData } from "../../domain/models/StepPairingData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 export interface ViewerPreferences {

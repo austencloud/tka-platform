@@ -5,9 +5,9 @@ import {
   DoubleSide,
   type Scene,
 } from "three";
-import type { MuseumGrid, WingTheme } from "../../domain/museum-grid-types";
-import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
-import { savePlacement, removePlacement } from "../placement-persister";
+import type { MuseumGrid, WingTheme, Direction } from "../domain/museum-grid-types";
+import { museum3dEditorState } from "../state/museum-3d-editor-state.svelte";
+import { savePlacement, removePlacement } from "./placement-persister";
 
 export interface TorchSceneFns {
   add: (scene: Scene, x: number, z: number, woX: number, woZ: number, theme: WingTheme, id: string) => unknown;
@@ -52,7 +52,7 @@ export class MuseumEditorPlacement {
       objectDefId: def.id,
       tileX,
       tileY,
-      wallFacing: wallFacing as any,
+      wallFacing: wallFacing as Direction | null,
       yaw,
     };
 

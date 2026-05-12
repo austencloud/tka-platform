@@ -1,4 +1,3 @@
-import { browser } from '$app/environment';
 import { SequenceEquivalenceDetector } from './services/implementations/SequenceEquivalenceDetector';
 import { getSequenceCanonicalizer } from './getSequenceCanonicalizer';
 import { getStepSignatureGenerator } from './getStepSignatureGenerator';

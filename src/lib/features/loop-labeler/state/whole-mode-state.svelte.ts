@@ -15,7 +15,7 @@ import type {
 } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import type { LOOPLabelsFirebaseRepository } from "../services/implementations/LOOPLabelsFirebaseRepository";
+import type { LOOPLabelsFirebaseRepository } from "../services/LOOPLabelsFirebaseRepository";
 
 /**
  * Map component IDs to their corresponding interval keys

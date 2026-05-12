@@ -5,12 +5,12 @@
  * Uses MeshPhysicalMaterial for WebGPU compatibility.
  */
 
+import type {
+  Vector3} from "three";
 import {
   PlaneGeometry,
   Mesh,
   Color,
-  Vector2,
-  Vector3,
   DoubleSide,
   MeshPhysicalMaterial,
   type Scene,

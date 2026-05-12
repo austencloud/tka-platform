@@ -1,4 +1,3 @@
-import type { LearningProgress } from "../../domain/types";
 
 /**
  * A detected gap from a single wrong answer.

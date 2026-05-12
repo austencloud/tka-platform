@@ -249,7 +249,7 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
     ) {
       if (!coreState.currentSequence) return;
 
-      const stepsToRemove = coreState.currentSequence.steps.length - stepIndex;
+      const _stepsToRemove = coreState.currentSequence.steps.length - stepIndex;
       const removingIndices: number[] = [];
       for (let i = stepIndex; i < coreState.currentSequence.steps.length; i++) {
         removingIndices.push(i);

@@ -5,7 +5,7 @@ import type {
   LabeledSequence,
   FilterMode,
 } from "../domain/models/label-models";
-import type { LOOPDetectionResult } from "../services/contracts/ILOOPDetector";
+import type { LOOPDetectionResult } from "../services/ILOOPDetector";
 import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
 
 const STORAGE_KEY = "tka-loop-labeler-state";

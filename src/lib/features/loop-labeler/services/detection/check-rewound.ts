@@ -1,4 +1,4 @@
-import type { ExtractedStep } from "../../../domain/models/internal-step-models";
+import type { ExtractedStep } from "../../domain/models/internal-step-models";
 import type { RewoundResult } from "./types";
 
 export function checkRewound(steps: ExtractedStep[]): RewoundResult {

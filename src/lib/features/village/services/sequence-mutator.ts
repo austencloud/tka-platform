@@ -1,7 +1,7 @@
 import type {
   MutationType,
   MutationResult,
-} from "./contracts/types";
+} from "./types";
 
 const MUTATION_TYPES: MutationType[] = [
   "mirror",

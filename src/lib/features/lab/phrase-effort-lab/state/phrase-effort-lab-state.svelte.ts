@@ -36,11 +36,11 @@ export function createPhraseEffortLabState() {
   let rafId: number | null = null;
   let lastTime: number | null = null;
 
-  let gridMode = $derived(sequence?.gridMode ?? GridMode.DIAMOND);
-  let sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
-  let totalSteps = $derived(steps.length);
-  let currentStepForTimeline = $derived(Math.floor(playbackBeat) + 1);
-  let hasUnsavedChanges = $derived(sequence !== null && timeline.phrases.length > 0);
+  const gridMode = $derived(sequence?.gridMode ?? GridMode.DIAMOND);
+  const sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
+  const totalSteps = $derived(steps.length);
+  const currentStepForTimeline = $derived(Math.floor(playbackBeat) + 1);
+  const hasUnsavedChanges = $derived(sequence !== null && timeline.phrases.length > 0);
 
   function loadSequence(seq: SequenceData) {
     showPicker = false;

@@ -12,7 +12,7 @@ import {
   LETTER_TYPES,
   LETTER_TO_TYPE,
 } from "@tka/domain";
-import type { InlineQuiz } from "../../types";
+import type { InlineQuiz } from "../types";
 
 export type QuizDifficulty = "easy" | "medium" | "hard";
 export interface TextOption {

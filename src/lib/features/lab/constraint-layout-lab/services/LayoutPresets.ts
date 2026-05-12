@@ -7,7 +7,7 @@
 
 import type { LayoutPreset, CellMediaType, ConstraintCell, ContainerBounds } from "../domain/types";
 
-let cellIdCounter = 0;
+let cellIdCounter = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 /** Media type colors for visual distinction */
 const MEDIA_COLORS: Record<CellMediaType, string> = {

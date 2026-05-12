@@ -4,7 +4,7 @@
  * Persists rendered gallery images to IndexedDB so they survive page refresh.
  */
 
-import type { RenderedImage } from "../../domain/gallery-models";
+import type { RenderedImage } from "../domain/gallery-models";
 
 const DB_NAME = "gallery-generator";
 const DB_VERSION = 1;

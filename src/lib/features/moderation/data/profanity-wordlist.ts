@@ -135,7 +135,7 @@ export const EXACT_MATCH_TERMS: Record<FlaggedCategory, Set<string>> = {
 		'blowjob',
 		'handjob',
 		'rimjob',
-		'footjob',
+		'bartjob',
 		'titjob',
 		'bukake',
 		'gangbang',
@@ -234,9 +234,9 @@ export const LEET_MAPPINGS: Record<string, string> = {
  */
 export const VARIATION_PATTERNS: Array<[RegExp, FlaggedCategory, string]> = [
 	// F-word variations (fu*k, f**k, fu-ck, etc.)
-	[/f+[u\*]+[c\(\<]+k+/i, 'profanity', 'fuck'],
-	[/f+[u\*]+k+/i, 'profanity', 'fuck'], // without the c
-	[/ph+[u\*]+[c\(\<]+k+/i, 'profanity', 'fuck'], // ph = f
+	[/f+[u*]+[c(<]+k+/i, 'profanity', 'fuck'],
+	[/f+[u*]+k+/i, 'profanity', 'fuck'], // without the c
+	[/ph+[u*]+[c(<]+k+/i, 'profanity', 'fuck'], // ph = f
 
 	// S-word variations
 	[/sh+[i1!]+t+/i, 'profanity', 'shit'],
@@ -255,17 +255,17 @@ export const VARIATION_PATTERNS: Array<[RegExp, FlaggedCategory, string]> = [
 	[/n+[i1!]+g+g+[ae]*/i, 'slur', 'nigga'],
 
 	// C-word variations
-	[/c+[u\*]+n+t+/i, 'profanity', 'cunt'],
+	[/c+[u*]+n+t+/i, 'profanity', 'cunt'],
 
 	// D-word variations
-	[/d+[i1!]+[c\(\<]+k+/i, 'profanity', 'dick'],
+	[/d+[i1!]+[c(<]+k+/i, 'profanity', 'dick'],
 
 	// Repeated letters (fuuuuck, shiiiit)
 	[/f{2,}u+c*k+/i, 'profanity', 'fuck'],
 	[/s{2,}h+i+t+/i, 'profanity', 'shit'],
 
 	// Common compound variations
-	[/mother\s*f+[u\*]+[c\(\<]*k*/i, 'profanity', 'motherfucker'],
+	[/mother\s*f+[u*]+[c(<]*k*/i, 'profanity', 'motherfucker'],
 	[/bull\s*sh+[i1!]+t+/i, 'profanity', 'bullshit']
 ];
 

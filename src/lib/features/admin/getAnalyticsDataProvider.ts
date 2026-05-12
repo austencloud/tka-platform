@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { AnalyticsDataProvider } from './services/implementations/AnalyticsDataProvider';
+import { AnalyticsDataProvider } from './services/AnalyticsDataProvider';
 import { getUserMetricsAnalyzer } from './getUserMetricsAnalyzer';
 import { getEventActivityAnalyzer } from './getEventActivityAnalyzer';
 

@@ -28,13 +28,8 @@
 
 import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/FireTypes";
 import type {
-  TrailPoint,
-  TrailSettings,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import type {
-  AdditionalLayerRenderData,
-  AnimationVisibilitySettings,
   RenderSceneParams,
 } from "$lib/shared/animation-engine/domain/types/AnimationRenderTypes";
 

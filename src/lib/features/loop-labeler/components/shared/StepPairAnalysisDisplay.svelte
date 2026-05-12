@@ -8,7 +8,7 @@
    */
   import type { StepPairRelationship } from "../../domain/models/steppair-models";
   import type { StepPairGroups } from "../../domain/models/label-models";
-  import type { AxisAlternatingPattern } from "../../services/contracts/ILOOPDetector";
+  import type { AxisAlternatingPattern } from "../../services/ILOOPDetector";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   interface Props {

@@ -1,4 +1,3 @@
-import { z } from "zod";
 import {
   collection,
   doc,
@@ -19,13 +18,14 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { stripUndefined } from "./firestore-helpers";
 import type { ListOptions, WriteOptions } from "./firestore-types";
+import type { Firestore, QueryConstraint } from 'firebase/firestore';
 
 function buildQuery(
   collectionPath: string,
-  db: import("firebase/firestore").Firestore,
+  db: Firestore,
   options?: ListOptions,
 ) {
-  const constraints: import("firebase/firestore").QueryConstraint[] = [];
+  const constraints: QueryConstraint[] = [];
 
   if (options?.where) {
     for (const clause of options.where) {

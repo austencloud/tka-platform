@@ -11,8 +11,8 @@ import { getAgeVerifier } from "$lib/features/hall-of-shame/getAgeVerifier";
 import { getHallOfShameLoader } from "$lib/features/hall-of-shame/getHallOfShameLoader";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { HallOfShameLoader } from "../services/implementations/HallOfShameLoader";
-  import type { AgeVerifier } from "../services/implementations/AgeVerifier";
+  import type { HallOfShameLoader } from "../services/HallOfShameLoader";
+  import type { AgeVerifier } from "../services/AgeVerifier";
   import type {
     HallOfShameEntry,
     ShameCategory,

@@ -5,10 +5,11 @@
  * Provides synchronized playback state and history access.
  */
 
-import { doc, onSnapshot, Timestamp, type Firestore } from "firebase/firestore";
+import type { Timestamp} from "firebase/firestore";
+import { doc, onSnapshot, type Firestore } from "firebase/firestore";
 import { httpsCallable, type Functions } from "firebase/functions";
 import { firestoreListen } from "$lib/shared/firestore";
-import { BroadcastHistoryEntrySchema } from "../../domain/models/broadcast-schemas";
+import { BroadcastHistoryEntrySchema } from "../domain/models/broadcast-schemas";
 import type { BroadcastState, BroadcastStateClient, BroadcastHistoryEntry, ServerTimeResponse, } from "$lib/shared/landing/domain/broadcast-models";
 import type {
   BroadcastStateCallback, BroadcastHistoryCallback } from "$lib/shared/landing/domain/types";

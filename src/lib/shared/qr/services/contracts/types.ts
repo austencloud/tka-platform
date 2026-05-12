@@ -1,5 +1,4 @@
 // --- From CompositionalEncoder ---
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 export const LOOP_TYPE_TAGS: Record<string, string> = {
   rotated: "sr",
   mirrored: "sm",

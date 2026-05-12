@@ -16,20 +16,20 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceVisibility } from "$lib/shared/library/domain/models/LibrarySequence";
-import { findTagByName, createUserTag } from "../tag-manager";
+import { findTagByName, createUserTag } from "./tag-manager";
 import type { ArtifactExtractor } from "./ArtifactExtractor";
-import { TAG_COLORS } from "../../domain/models/Tag";
+import { TAG_COLORS } from "../domain/models/Tag";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import type {
-  SaveToLibraryOptions, SaveProgress, SaveResult } from "../contracts/types";
+  SaveToLibraryOptions, SaveProgress, SaveResult } from "./types";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { LibraryError } from "$lib/shared/library/services/LibraryRepository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-import type { Sharer } from "../../../../shared/share/services/implementations/Sharer";
-import type { R2VideoUploader } from "../../../../shared/share/services/implementations/R2VideoUploader";
+import type { Sharer } from "../../../shared/share/services/implementations/Sharer";
+import type { R2VideoUploader } from "../../../shared/share/services/implementations/R2VideoUploader";
 import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 export class LibrarySaveService {
   private readonly shareService: Sharer | null;

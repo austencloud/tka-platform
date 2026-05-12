@@ -2,7 +2,6 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { StickerSheet } from "../../domain/sticker-types";
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 
 // === From IStickerSheetPdfExporter ===

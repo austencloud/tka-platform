@@ -1,5 +1,4 @@
 // --- From MandalaGeometryCalculator ---
-import type { MandalaPaths } from "../../domain/mandala-types";
 export interface StepLike {
 	motions?: {
 		blue?: MotionLike | null;

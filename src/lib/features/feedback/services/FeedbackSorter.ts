@@ -1,6 +1,6 @@
 import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
 import { ClaimStatusDeriver } from "./ClaimStatusDeriver";
-import { groupByLane } from "../swim-lane-deriver";
+import { groupByLane } from "./swim-lane-deriver";
 import type { SwimLane } from "$lib/shared/feedback/domain/feedback-contract-types";
 
 export class FeedbackSorter {

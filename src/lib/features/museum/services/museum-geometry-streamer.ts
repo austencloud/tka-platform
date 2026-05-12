@@ -12,11 +12,11 @@
  * with no framework dependencies.
  */
 
-import type { MuseumGrid } from "../../domain/museum-grid-types";
-import type { RoomEdge } from "../../domain/layout-types";
+import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import type { MuseumGrid } from "../domain/museum-grid-types";
+import type { RoomEdge } from "../domain/layout-types";
 import type {
   RoomChunk,
-  BatchedMeshData,
 } from "./MuseumGeometryBuilder";
 import {
   bucketMuseumTilesByRoom,
@@ -24,8 +24,8 @@ import {
   dryRunFromWorkerTransfer,
 } from "./MuseumGeometryBuilder";
 import type { MuseumGeometryDryRun } from "./MuseumGeometryBuilder";
-import type { RoomBuiltResponse } from "../../workers/geometry-worker-protocol";
-import type { SerializedBucketEntry } from "../../domain/room-descriptor";
+import type { RoomBuiltResponse } from "../workers/geometry-worker-protocol";
+import type { SerializedBucketEntry } from "../domain/room-descriptor";
 import { RoomLifecycleManager } from "./RoomLifecycleManager";
 
 // ── Types ──
@@ -39,9 +39,9 @@ export interface StreamerCallbacks {
   addChunkToScene(chunk: RoomChunk): void;
   onBuildStage?(stage: string): void;
   onGeometryReady?(): void;
-  getCamera(): import("three").PerspectiveCamera | undefined;
-  getScene(): import("three").Scene | undefined;
-  getRenderer(): import("three").WebGLRenderer | undefined;
+  getCamera(): PerspectiveCamera | undefined;
+  getScene(): Scene | undefined;
+  getRenderer(): WebGLRenderer | undefined;
 }
 
 export class MuseumGeometryStreamer {
@@ -79,7 +79,7 @@ export class MuseumGeometryStreamer {
     this.spawnRoomId = this.getRoomAtTile(grid.spawn.x, grid.spawn.y);
 
     this.worker = new Worker(
-      new URL("../../workers/geometry-worker.ts", import.meta.url),
+      new URL("../workers/geometry-worker.ts", import.meta.url),
       { type: "module" },
     );
 

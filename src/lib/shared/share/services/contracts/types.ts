@@ -2,8 +2,6 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import type { ShareOptions } from "../../domain/models/ShareOptions";
 
 // === From ISharer ===
 

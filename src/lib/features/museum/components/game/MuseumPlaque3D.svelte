@@ -47,7 +47,7 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import { onDestroy } from "svelte";
-  import type { PlaqueContent, PlaqueSize } from "../../services/contracts/types";
+  import type { PlaqueContent, PlaqueSize } from "../../services/types";
 
   interface Props {
     worldX: number;

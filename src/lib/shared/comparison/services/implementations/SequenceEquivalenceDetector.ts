@@ -46,23 +46,23 @@ export interface SequenceSignature {
   readonly word: string;
   readonly stepCount: number;
   readonly isCircular: boolean;
-  readonly beatSignatures: readonly StepSignature[];
+  readonly beatSignatures: readonly LocalStepSignature[];
   readonly hash: string;
 }
 
 /**
- * Rotation-invariant signature for a single beat
+ * Simplified rotation-invariant signature for a single beat (local to this detector)
  */
-export interface StepSignature {
-  readonly blue: MotionSignature;
-  readonly red: MotionSignature;
+interface LocalStepSignature {
+  readonly blue: LocalMotionSignature;
+  readonly red: LocalMotionSignature;
   readonly positionGroup: string;
 }
 
 /**
- * Rotation-invariant signature for a single motion
+ * Simplified rotation-invariant signature for a single motion (local to this detector)
  */
-export interface MotionSignature {
+interface LocalMotionSignature {
   readonly type: string;
   readonly direction: string;
   readonly turns: number | string;
@@ -412,7 +412,7 @@ export class SequenceEquivalenceDetector {
   /**
    * Convert internal StepSignature to the interface's expected format.
    */
-  private convertStepSignature(internal: import("../../domain/models/signatures").StepSignature): StepSignature {
+  private convertStepSignature(internal: StepSignature): LocalStepSignature {
     return {
       blue: this.convertMotionSignature(internal.blue),
       red: this.convertMotionSignature(internal.red),
@@ -423,7 +423,7 @@ export class SequenceEquivalenceDetector {
   /**
    * Convert internal MotionSignature to the interface's expected format.
    */
-  private convertMotionSignature(internal: import("../../domain/models/signatures").MotionSignature): MotionSignature {
+  private convertMotionSignature(internal: MotionSignature): LocalMotionSignature {
     return {
       type: internal.motionType,
       direction: internal.rotationDirection,
@@ -440,6 +440,7 @@ import { sequenceCanonicalizer } from "./SequenceCanonicalizer";
 import { stepSignatureGenerator } from "./StepSignatureGenerator";
 import { spatialTransformDetector } from "./SpatialTransformDetector";
 import * as wordCyclicEquivalenceDetector from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
+import type { MotionSignature, StepSignature } from '../../domain/models/signatures';
 
 export const sequenceEquivalenceDetector = new SequenceEquivalenceDetector(
   sequenceCanonicalizer,

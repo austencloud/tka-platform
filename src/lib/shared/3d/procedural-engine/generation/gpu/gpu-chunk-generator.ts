@@ -16,7 +16,6 @@ import {
   isWebGPUAvailable,
 } from "./terrain-compute-generator";
 import type {
-  TerrainComputeConfig,
   GPUChunkResult,
   ChunkGenerateRequest,
 } from "./terrain-compute-types";

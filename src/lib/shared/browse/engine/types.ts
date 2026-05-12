@@ -17,6 +17,7 @@ import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/Filt
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import type { SequenceSection } from "$lib/shared/browse/domain/models/browse-models";
+import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 
 // ---------------------------------------------------------------------------
 // Sequence Source
@@ -73,6 +74,7 @@ export interface PersistedEngineState {
 	/** Serialized Map<string, ActiveFilter> entries (non-locked only). */
 	activeFilters: Array<[string, ActiveFilter]>;
 	columns: number;
+	viewMode?: BrowseViewMode;
 }
 
 // ---------------------------------------------------------------------------
@@ -198,6 +200,11 @@ export interface BrowseEngine {
 	/** Current section grouping strategy. */
 	readonly sectionGroupBy: SectionGroupBy;
 
+	// --- View mode (compositional browsing) ---
+
+	/** Current view mode (props/hands × combined/solo). */
+	readonly viewMode: BrowseViewMode;
+
 	// --- Available filter metadata (for building filter UIs) ---
 
 	/** Distinct sequence lengths present in allSequences. */
@@ -268,6 +275,9 @@ export interface BrowseEngine {
 
 	/** Set the section grouping strategy. */
 	setSectionGroupBy(groupBy: SectionGroupBy): void;
+
+	/** Set the browse view mode (props/hands × combined/solo). */
+	setViewMode(mode: BrowseViewMode): void;
 
 	/** Invalidate library cache (e.g. when impersonated user changes). */
 	invalidateLibraryCache(): void;

@@ -140,7 +140,7 @@ export class LedTipTracker {
 
 		if (redProp) {
 			const blueLedCount = blueTipConfig?.points.length ?? 0;
-			totalTips = this.emitPropTips(
+			totalTips = this.emitPropTips( // eslint-disable-line @typescript-eslint/no-unused-vars
 				redProp,
 				config.canvasSize,
 				config.redPropDimensions,

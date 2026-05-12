@@ -553,7 +553,7 @@ export class SequenceAligner {
         mismatchedBeats++;
         totalSimilarity += pair.similarity;
       } else {
-        totalSimilarity += pair.similarity;
+        totalSimilarity += pair.similarity; // eslint-disable-line @typescript-eslint/no-unused-vars
       }
     }
 

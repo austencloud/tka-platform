@@ -9,7 +9,6 @@ import { Muxer, ArrayBufferTarget } from "mp4-muxer";
 import type * as THREE from "three";
 import type {
   ExportProgressCallback,
-  ExportStage,
   ExportResult,
 } from "../contracts/types";
 import type {
@@ -112,8 +111,8 @@ export class PromoVideoExporter {
       });
 
       // Set up video encoder
-      const encodedChunks: EncodedVideoChunk[] = [];
-      let encodedFrameCount = 0;
+      const encodedChunks: EncodedVideoChunk[] = []; // eslint-disable-line @typescript-eslint/no-unused-vars
+      let encodedFrameCount = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
 
       const encoder = new VideoEncoder({
         output: (chunk, meta) => {

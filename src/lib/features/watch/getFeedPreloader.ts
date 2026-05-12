@@ -1,4 +1,4 @@
-import { FeedPreloader } from './services/implementations/FeedPreloader';
+import { FeedPreloader } from './services/FeedPreloader';
 
 let instance: FeedPreloader | null = null;
 export function getFeedPreloader(): FeedPreloader {

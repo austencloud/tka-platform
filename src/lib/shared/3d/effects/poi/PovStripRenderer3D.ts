@@ -10,8 +10,9 @@
  * Reuses the existing LedMaterial3D shader (additive blending, core + halo).
  */
 
+import type {
+  Vector3} from "three";
 import {
-  Vector3,
   PlaneGeometry,
   InstancedMesh,
   InstancedBufferAttribute,

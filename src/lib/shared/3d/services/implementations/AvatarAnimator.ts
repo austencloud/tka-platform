@@ -15,6 +15,7 @@ import type { PropState3D } from "../../domain/models/PropState3D";
 import { computePoleVector } from "../elbow-pole-computer";
 import { computeClavicleRotation } from "../clavicle-raiser";
 import { computeSpineTwist } from "../spine-twister";
+import type { GripType } from '../../domain/models/GripPose';
 
 export interface HandPose {
   /** Target position in world space */
@@ -24,7 +25,7 @@ export interface HandPose {
   /** Staff rotation angle in radians - used to twist the hand to match the prop angle */
   staffAngle?: number;
   /** Grip type for fingers - see GripType enum in GripPose.ts */
-  gripType?: import("../../domain/models/GripPose").GripType;
+  gripType?: GripType;
   /** Which plane this hand's prop is operating on */
   plane?: Plane;
   /** Blend weight (0-1) */

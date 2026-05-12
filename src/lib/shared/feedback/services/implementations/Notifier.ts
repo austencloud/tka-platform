@@ -4,6 +4,8 @@
  * Manages tester notifications for feedback updates.
  */
 
+import type {
+  Timestamp} from "firebase/firestore";
 import {
   collection,
   query,
@@ -14,8 +16,7 @@ import {
   updateDoc,
   where,
   onSnapshot,
-  serverTimestamp,
-  Timestamp,
+  serverTimestamp
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreList, firestoreDelete } from "$lib/shared/firestore";

@@ -1,7 +1,7 @@
 import type { OptimizerBounds, OptimizerInput } from "../services/contracts/types";
 import type { SimPropTarget } from "../services/contracts/types";
 import type { DiamondPosition, PoseDefinition } from "../domain/types";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
 import {
   gridLocationToPosition3D,
   calculatePropRotation,

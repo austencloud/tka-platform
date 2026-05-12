@@ -12,11 +12,11 @@
 export interface AngleCalculatorLike {
   normalizeAnglePositive(angle: number): number;
   normalizeAngleSigned(angle: number): number;
-  mapPositionToAngle(loc: import("$lib/shared/pictograph/grid/domain/enums/grid-enums").GridLocation): number;
-  mapOrientationToAngle(ori: import("$lib/shared/pictograph/shared/domain/enums/pictograph-enums").Orientation, centerPathAngle: number): number;
+  mapPositionToAngle(loc: GridLocation): number;
+  mapOrientationToAngle(ori: Orientation, centerPathAngle: number): number;
   lerp(a: number, b: number, t: number): number;
   lerpAngle(a: number, b: number, t: number): number;
-  lerpAngleDirectional(startAngle: number, endAngle: number, direction: import("$lib/shared/pictograph/shared/domain/enums/pictograph-enums").RotationDirection, progress: number): number;
+  lerpAngleDirectional(startAngle: number, endAngle: number, direction: RotationDirection, progress: number): number;
 }
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

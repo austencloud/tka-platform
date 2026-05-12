@@ -11,9 +11,11 @@ import type { VegetationManager } from "../rendering/instanced-vegetation";
 import type { AtmosphereManager } from "../rendering/atmosphere";
 import type { WaterManager } from "../rendering/water";
 import type { DrainageWaterManager } from "../rendering/drainage-water";
-import { SeededNoise, getBiome } from "../generation/seed-generator";
+import type { SeededNoise} from "../generation/seed-generator";
+import { getBiome } from "../generation/seed-generator";
 import { isPointInPolygon } from "../generation/real-terrain-zone";
 import { findInteractableSlot } from "$lib/shared/museum/services/interaction-detector";
+import type { ExhibitSlot } from "$lib/shared/museum/domain/museum-types";
 import type { RealmConfig } from "../core/world-config";
 
 export interface GameLoopContext {
@@ -31,7 +33,7 @@ export interface GameLoopContext {
   worldNoise: SeededNoise;
   inputCapabilities: { shouldShowTouchUI(): boolean };
   museumState: {
-    layout: { pavilions: Array<{ slots: any[] }> } | null;
+    layout: { pavilions: Array<{ slots: ExhibitSlot[] }> } | null;
     isOverlayOpen: boolean;
     setInteractionTarget(id: string | null): void;
   };

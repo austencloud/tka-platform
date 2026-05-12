@@ -12,8 +12,8 @@ import type {
   CoralDepthLayer,
   CoralTintPalette,
   TintedCoralAsset,
-} from "../../domain/coral-types";
-import { DEFAULT_CORAL_TINT_PALETTE } from "../../domain/coral-types";
+} from "../domain/coral-types";
+import { DEFAULT_CORAL_TINT_PALETTE } from "../domain/coral-types";
 
 // --------------------------------------------------------------------------
 // Static manifest - runtime can't list directories

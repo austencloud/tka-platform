@@ -1,6 +1,6 @@
-import type { StreamingUpdate } from "../contracts/types";
-import type { WingRegion } from "../../domain/museum-grid-types";
-import type { RoomEdge } from "../../domain/layout-types";
+import type { StreamingUpdate } from "./types";
+import type { WingRegion } from "../domain/museum-grid-types";
+import type { RoomEdge } from "../domain/layout-types";
 
 /**
  * Manages which museum rooms have geometry loaded based on player position.

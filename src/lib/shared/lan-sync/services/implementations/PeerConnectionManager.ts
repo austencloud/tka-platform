@@ -7,9 +7,8 @@
 
 import type { SyncMessage, PeerConnectionState } from '../../domain/models/lan-sync-models';
 import { generateRoomCode, createInitialConnectionState } from '../../domain/models/lan-sync-models';
-
-type Peer = import('peerjs').default;
-type DataConnection = import('peerjs').DataConnection;
+import type Peer from 'peerjs';
+import type { DataConnection } from 'peerjs';
 
 export class PeerConnectionManager {
 	private peer: Peer | null = null;

@@ -251,7 +251,8 @@ export class MuseumCameraFlipController {
     playerPitch: number,
   ): CameraFlipResult {
     const step = delta / FLIP_DURATION;
-    let { progress, animating, goingDown } = state;
+    const { goingDown } = state;
+    let { progress, animating } = state;
     let justEnteredFps = false;
     let fpsInitialYaw: number | undefined;
     let fpsInitialPitch: number | undefined;

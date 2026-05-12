@@ -15,7 +15,6 @@ import type { GenerationOptions } from "../shared/domain/models/generate-models"
 import { GenerationMode } from "../shared/domain/models/generate-models";
 import type { GenerationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
 import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
-import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { levelToDifficulty, type UIGenerationConfig } from "../shared/utils/config-mapper";
 import {
   getTemplateById,
@@ -23,7 +22,7 @@ import {
 } from "$lib/features/create/shared/domain/templates/duration-templates";
 import type { SpellModeState } from "./spell-mode-state.svelte";
 import type { UndoMetadata } from "../../shared/services/implementations/UndoManager";
-import { UndoOperationType } from "../../shared/services/implementations/UndoManager";
+import type { UndoOperationType } from "../../shared/services/implementations/UndoManager";
 import { UndoOperationType as UndoOp } from "../../shared/services/implementations/UndoManager";
 import type { VariationExplorationOrchestrator } from "../../spell/services/implementations/VariationExplorationOrchestrator";
 import * as spellServiceLoaderModule from "$lib/features/create/spell/services/spell-service-loader";
@@ -213,7 +212,7 @@ export function createGenerationActionsState(
 
   async function onSpellGenerate() {
     const spellState = getSpellState?.();
-    if (!spellState || !spellState.inputWord.trim()) return;
+    if (!spellState?.inputWord.trim()) return;
     if (isGenerating) return;
 
     isGenerating = true;

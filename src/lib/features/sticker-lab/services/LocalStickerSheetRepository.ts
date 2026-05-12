@@ -1,8 +1,8 @@
-import type { StickerSheet, StickerUnit } from "../../domain/sticker-types";
+import type { StickerSheet, StickerUnit } from "../domain/sticker-types";
 import {
   STORAGE_KEY_ACTIVE_SHEET,
   STORAGE_SCHEMA_VERSION,
-} from "../../domain/sticker-constants";
+} from "../domain/sticker-constants";
 /** v1 stored payload shape (before MandalaPrimitiveRef). */
 interface StoredPayloadV1 {
   version: 1;

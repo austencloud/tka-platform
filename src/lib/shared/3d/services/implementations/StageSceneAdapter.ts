@@ -398,7 +398,7 @@ export function createStageSceneAdapter(
    * Check for state changes and notify subscribers.
    * Call this from a frame loop or $effect to detect changes.
    */
-  function checkForChanges(): void {
+  function _checkForChanges(): void {
     const currentPlayhead = timelineState.playhead.position;
     const currentIsPlaying = timelineState.playhead.isPlaying;
     const currentFormation = getActiveFormation();

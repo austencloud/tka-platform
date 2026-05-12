@@ -17,14 +17,12 @@ import {
 	orderBy,
 	serverTimestamp
 } from 'firebase/firestore';
-import type { Timestamp } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
 import type { AgeVerifier } from "./AgeVerifier";
 import type {
 	HallOfShameEntry,
 	ShameSubmissionParams,
-	MAX_SUBMISSIONS_PER_DAY
-} from '../../domain/models/hall-of-shame-models';
+} from '../domain/models/hall-of-shame-models';
 
 const DAILY_LIMIT = 3;
 

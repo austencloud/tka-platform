@@ -9,8 +9,6 @@ import {
 	doc,
 	getDoc,
 	getDocs,
-	setDoc,
-	updateDoc,
 	increment,
 	collection,
 	query,
@@ -21,7 +19,7 @@ import {
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
 import type { AgeVerifier } from "./AgeVerifier";
-import type { HallOfShameEntry, HallOfShameVote } from '../../domain/models/hall-of-shame-models';
+import type { HallOfShameEntry, HallOfShameVote } from '../domain/models/hall-of-shame-models';
 
 export class HallOfShameVoter {
 	private readonly ENTRIES_COLLECTION = 'hallOfShame';

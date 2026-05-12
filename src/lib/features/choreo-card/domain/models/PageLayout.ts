@@ -73,7 +73,7 @@ export interface PrintConfig {
   enableHeader: boolean;
   enableFooter: boolean;
   headerText?: string;
-  footerText?: string;
+  barterText?: string;
 }
 
 // ============================================================================

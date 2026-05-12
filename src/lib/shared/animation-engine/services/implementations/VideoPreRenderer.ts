@@ -166,7 +166,7 @@ export class VideoPreRenderer {
     this.cancelRequested = false;
 
     const {
-      fps = 60,
+      fps = 60, // eslint-disable-line @typescript-eslint/no-unused-vars
       quality = 0.9,
       format = "webm",
       width = 500,

@@ -21,7 +21,7 @@ export interface PropContextResolverDeps {
   viewingContext?: ViewingContext;
 }
 
-export function createPropContextResolver(deps: PropContextResolverDeps) {
+export function createPropContextResolver(_deps: PropContextResolverDeps) {
   let contextOverride = $state<ViewingContext | null>(null);
 
   function resolvePresentation(

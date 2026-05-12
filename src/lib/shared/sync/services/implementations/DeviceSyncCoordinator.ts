@@ -630,7 +630,7 @@ export class DeviceSyncCoordinator {
 		}
 	}
 
-	private handleStateRequest(message: SyncMessage & { type: 'STATE_REQUEST' }): void {
+	private handleStateRequest(_message: SyncMessage & { type: 'STATE_REQUEST' }): void {
 		if (!this._roomState) return;
 
 		const responseMessage = createStateResponseMessage(

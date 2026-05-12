@@ -19,7 +19,7 @@
 	import {
 		getMuseumVillageManager,
 		setMuseumVillageVisible,
-	} from "../../services/implementations/MuseumVillageManager";
+	} from "../../services/MuseumVillageManager";
 	import { onDestroy } from "svelte";
 	import { Vector3 } from "three";
 

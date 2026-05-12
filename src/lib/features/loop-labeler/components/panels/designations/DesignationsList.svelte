@@ -8,7 +8,7 @@
   import type { LOOPDesignation } from "../../../domain/models/label-models";
   import type { SectionDesignation } from "../../../domain/models/section-models";
   import type { StepPairRelationship } from "../../../domain/models/steppair-models";
-  import type { AxisAlternatingPattern } from "../../../services/contracts/ILOOPDetector";
+  import type { AxisAlternatingPattern } from "../../../services/ILOOPDetector";
   import DesignationItem from "./DesignationItem.svelte";
   import { formatSectionSteps, formatDesignation } from "../../../services/label-formatter";
 

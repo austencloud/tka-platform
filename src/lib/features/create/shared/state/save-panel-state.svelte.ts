@@ -5,8 +5,9 @@ import { computeHash as computeSequenceHash } from "$lib/shared/library/services
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
 import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
-import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/implementations/HallOfShameSubmitter";
-import type { LibrarySaveService } from "$lib/features/library/services/implementations/LibrarySaveService";
+import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/HallOfShameSubmitter";
+import type { LibrarySaveService } from "$lib/features/library/services/LibrarySaveService";
+import type { SaveProgress } from "$lib/shared/library/domain/library-contract-types";
 import type { CreateModuleContext } from "../context/create-module-context";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
@@ -78,7 +79,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
   // Content moderation state
   let moderationResult = $state<ContentModerationResult | null>(null);
   let showAppealModal = $state(false);
-  let savedSequenceIdForAppeal = $state<string | null>(null);
+  const savedSequenceIdForAppeal = $state<string | null>(null);
 
   // Hall of Shame state
   let showShameGate = $state(false);
@@ -264,7 +265,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
           tags: [],
           notes: notes.trim(),
         },
-        (progress) => {
+        (progress: SaveProgress) => {
           saveStep = progress.step;
           if (progress.renderProgress) {
             renderProgress = progress.renderProgress;

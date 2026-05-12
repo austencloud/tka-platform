@@ -3,7 +3,6 @@ import {
   query,
   where,
   getDocs,
-  getDoc,
   doc,
   setDoc,
   updateDoc,

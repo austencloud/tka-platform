@@ -6,7 +6,7 @@
  * FriendshipManager, and LanSyncCoordinator.
  */
 
-import type { PresenceTracker } from '../implementations/PresenceTracker';
+import type { PresenceTracker } from './PresenceTracker';
 import type { SessionManager } from './SessionManager';
 import type { InviteHandler } from './InviteHandler';
 import type { FriendshipManager } from './FriendshipManager';
@@ -18,7 +18,7 @@ import type {
 	Friend,
 	DisplayPreference,
 	UserSearchResult
-} from '../../domain/models/connect-models';
+} from '../domain/models/connect-models';
 
 export class ConnectOrchestrator {
 	private _displayPreference: DisplayPreference = 'pictograph';

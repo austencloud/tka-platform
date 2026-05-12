@@ -409,8 +409,8 @@ export class FirebaseHMRManager {
    */
   async onHMRAccept(
     firebaseConfig: Record<string, string>,
-    initializeApp: typeof import("firebase/app").initializeApp,
-    getAuth: typeof import("firebase/auth").getAuth
+    initializeApp: typeof import('firebase/app').initializeApp, // eslint-disable-line @typescript-eslint/consistent-type-imports
+    getAuth: typeof import('firebase/auth').getAuth // eslint-disable-line @typescript-eslint/consistent-type-imports
   ): Promise<void> {
     if (this.rotationPromise) {
       await this.rotationPromise;
@@ -449,8 +449,8 @@ export class FirebaseHMRManager {
    */
   private async performRotation(
     firebaseConfig: Record<string, string>,
-    initializeApp: typeof import("firebase/app").initializeApp,
-    getAuth: typeof import("firebase/auth").getAuth
+    initializeApp: typeof import('firebase/app').initializeApp, // eslint-disable-line @typescript-eslint/consistent-type-imports
+    getAuth: typeof import('firebase/auth').getAuth // eslint-disable-line @typescript-eslint/consistent-type-imports
   ): Promise<void> {
     this.state.phase = "rotating";
     this.state.currentAppId++;
@@ -629,7 +629,7 @@ export class FirebaseHMRManager {
 // ============================================================================
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __FIREBASE_HMR_MANAGER__: FirebaseHMRManager | undefined;
 }
 

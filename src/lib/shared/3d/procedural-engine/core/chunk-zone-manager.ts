@@ -51,7 +51,7 @@ export class ChunkZoneManager {
 
     const serialized = serializeZoneForWorker(this.realTerrainZone);
 
-    const message: LoadRealZoneMessage = {
+    const message: LoadRealZoneMessage = { // eslint-disable-line @typescript-eslint/no-unused-vars
       type: "load-real-zone",
       zone: serialized,
     };
@@ -141,7 +141,7 @@ export class ChunkZoneManager {
 
     for (const key of chunksToRegenerate) {
       const state = this.deps.chunks.get(key);
-      if (state && state.loadState === "loaded") {
+      if (state?.loadState === "loaded") {
         state.loadState = "pending";
         state.meshData = null;
         this.deps.loadQueue.push(key);

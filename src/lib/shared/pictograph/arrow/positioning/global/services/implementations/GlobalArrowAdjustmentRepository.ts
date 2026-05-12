@@ -5,7 +5,8 @@
  * Provides the main interface for the rendering pipeline and UI.
  */
 
-import { Point } from "fabric";
+import type { Point } from "fabric";
+import type { Timestamp } from "firebase/firestore";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import {
   generateAdjustmentKeyString,
@@ -254,7 +255,7 @@ export class GlobalArrowAdjustmentRepository {
       toDate: () => new Date(),
       toMillis: () => Date.now(),
       isEqual: () => false,
-    } as any;
+    } as unknown as Timestamp;
 
     const adjustment: GlobalArrowAdjustment = {
       gridMode: input.gridMode,

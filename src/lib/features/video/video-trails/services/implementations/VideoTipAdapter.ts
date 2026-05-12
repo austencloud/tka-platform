@@ -62,8 +62,8 @@ export class VideoTipAdapter {
 
   mapToLedTips(
     endpoints: DetectedEndpoint[],
-    currentTime: number,
-    ledConfig: LedOverlayConfig,
+    _currentTime: number,
+    _ledConfig: LedOverlayConfig,
   ): LedTipData[] {
     // Velocity is not needed for the LED renderer, which relies on position and
     // the pattern engine for color. We pass white (1, 1, 1) and let the renderer

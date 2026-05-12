@@ -8,7 +8,7 @@
  * - Destination metadata
  */
 
-import { DESTINATIONS, getDestination } from "./definitions";
+import { getDestination } from "./definitions";
 import type { Destination } from "./types";
 
 /**
@@ -22,7 +22,7 @@ export function createDestinationManager() {
 	let history = $state<string[]>([]);
 
 	// Loading state
-	let isTransitioning = $state(false);
+	const isTransitioning = $state(false);
 
 	// Optional parameters for the active destination (e.g., userId for museum visiting)
 	let navigationParams = $state<Record<string, string>>({});

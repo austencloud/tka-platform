@@ -7,7 +7,7 @@
  * Uses MIT-licensed Timeline implementation instead of GSAP.
  */
 
-import * as THREE from "three";
+import type * as THREE from "three";
 import { Timeline, type TweenOptions } from "../../animation/Timeline";
 import type { AnimationPlaybackState, AnimationProgressCallback } from "../contracts/types";
 import type {
@@ -166,7 +166,7 @@ export class PromoAnimationController {
       const duration = endTime - startTime;
 
       // Check if this is a "cut" - same time as previous keyframe means instant transition
-      const isCut = prevKeyframe && prevKeyframe.time === keyframe.time;
+      const isCut = prevKeyframe?.time === keyframe.time;
 
       if (duration <= 0 && !isCut) continue;
 
@@ -180,7 +180,7 @@ export class PromoAnimationController {
       if (keyframe.device?.position && this.device) {
         if (isCut) {
           this.timeline.set(
-            this.device.position as any,
+            this.device.position as unknown as Record<string, unknown>,
             {
               x: keyframe.device.position[0],
               y: keyframe.device.position[1],
@@ -207,7 +207,7 @@ export class PromoAnimationController {
       if (keyframe.device?.rotation && this.device) {
         if (isCut) {
           this.timeline.set(
-            this.device.rotation as any,
+            this.device.rotation as unknown as Record<string, unknown>,
             {
               x: keyframe.device.rotation[0],
               y: keyframe.device.rotation[1],
@@ -234,7 +234,7 @@ export class PromoAnimationController {
       if (keyframe.device?.scale !== undefined && this.device) {
         if (isCut) {
           this.timeline.set(
-            this.device.scale as any,
+            this.device.scale as unknown as Record<string, unknown>,
             {
               x: keyframe.device.scale,
               y: keyframe.device.scale,
@@ -262,7 +262,7 @@ export class PromoAnimationController {
         const scale = this.cameraDistanceScale;
         if (isCut) {
           this.timeline.set(
-            this.camera.position as any,
+            this.camera.position as unknown as Record<string, unknown>,
             {
               x: keyframe.camera.position[0] * scale,
               y: keyframe.camera.position[1] * scale,
@@ -289,7 +289,7 @@ export class PromoAnimationController {
       if (keyframe.camera?.fov !== undefined && this.camera) {
         const camera = this.camera;
         if (isCut) {
-          this.timeline.set(this.camera as any, { fov: keyframe.camera.fov }, startTime);
+          this.timeline.set(this.camera as unknown as Record<string, unknown>, { fov: keyframe.camera.fov }, startTime);
           // Need to update projection matrix after set
           this.timeline.call(() => camera.updateProjectionMatrix(), [], startTime);
         } else {

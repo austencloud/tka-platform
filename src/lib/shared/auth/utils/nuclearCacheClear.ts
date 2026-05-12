@@ -35,21 +35,21 @@ export async function diagnoseCacheState(): Promise<CacheDiagnostics> {
       diagnostics.indexedDBDatabases = ["indexedDB.databases not supported"];
     }
 
-  } catch (error) {
+  } catch {
     // IndexedDB listing failed
   }
 
   // 2. List ALL localStorage keys
   try {
     diagnostics.localStorageKeys = Object.keys(localStorage);
-  } catch (error) {
+  } catch {
     // localStorage listing failed
   }
 
   // 3. List ALL sessionStorage keys
   try {
     diagnostics.sessionStorageKeys = Object.keys(sessionStorage);
-  } catch (error) {
+  } catch {
     // sessionStorage listing failed
   }
 
@@ -59,7 +59,7 @@ export async function diagnoseCacheState(): Promise<CacheDiagnostics> {
       .split(";")
       .map((c) => c.trim().split("=")[0])
       .filter((name): name is string => !!name);
-  } catch (error) {
+  } catch {
     // cookie listing failed
   }
 
@@ -101,12 +101,12 @@ export async function nuclearCacheClear(): Promise<void> {
               resolve();
             };
           });
-        } catch (error) {
+        } catch {
           // Continue with other databases
         }
       }
     }
-  } catch (error) {
+  } catch {
     // IndexedDB listing failed
   }
 
@@ -115,7 +115,7 @@ export async function nuclearCacheClear(): Promise<void> {
   // ============================================================================
   try {
     localStorage.clear();
-  } catch (error) {
+  } catch {
     // localStorage clear failed
   }
 
@@ -124,7 +124,7 @@ export async function nuclearCacheClear(): Promise<void> {
   // ============================================================================
   try {
     sessionStorage.clear();
-  } catch (error) {
+  } catch {
     // sessionStorage clear failed
   }
 
@@ -142,7 +142,7 @@ export async function nuclearCacheClear(): Promise<void> {
       document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
       document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
     }
-  } catch (error) {
+  } catch {
     // cookie deletion failed
   }
 
@@ -157,7 +157,7 @@ export async function nuclearCacheClear(): Promise<void> {
         await caches.delete(cacheName);
       }
     }
-  } catch (error) {
+  } catch {
     // cache storage clear failed
   }
 }

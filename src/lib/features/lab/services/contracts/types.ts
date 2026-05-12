@@ -6,7 +6,6 @@
  * MediaItem type (uses tags: string[]) expected by @austencloud/media-tagging-* components.
  */
 
-import type { MediaItem } from "@austencloud/media-tagging-types";
 export interface GalleryItem {
   id: string;
   filename: string;

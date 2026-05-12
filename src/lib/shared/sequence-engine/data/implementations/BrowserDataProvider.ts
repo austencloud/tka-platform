@@ -10,7 +10,6 @@ import type { LetterMappingsJson } from "../../domain/models/SequenceEngineTypes
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
 /**
  * Browser-specific data provider.

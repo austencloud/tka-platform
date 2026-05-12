@@ -21,6 +21,7 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { getSvgImageCache, type DrawableImage } from "$lib/shared/render/services/implementations/SvgImageCache";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
 // The canonical viewBox size used throughout the TKA rendering system
 const VIEWBOX_SIZE = 950;
@@ -51,7 +52,7 @@ export abstract class EraRendererBase {
 
 		return {
 			id: `retro_${data.letter}_${Date.now()}`,
-			letter: data.letter as any,
+			letter: data.letter as unknown as Letter,
 			motions: {
 				[MotionColor.BLUE]: blueMotion,
 				[MotionColor.RED]: redMotion,

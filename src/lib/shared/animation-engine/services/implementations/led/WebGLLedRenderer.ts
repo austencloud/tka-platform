@@ -199,7 +199,7 @@ export class WebGLLedRenderer {
 	// Nuclear blast diagnostic flags — set from console:
 	// window.__tka_led_blast = { noTrail: true }  etc.
 	private getBlastFlags(): { noTrail: boolean; noBloom: boolean; noBloomUpsample: boolean; spritesOnly: boolean } {
-		const w = typeof window !== "undefined" ? (window as any).__tka_led_blast : undefined;
+		const w = typeof window !== "undefined" ? (window as unknown as Record<string, unknown>).__tka_led_blast as Record<string, boolean> | undefined : undefined;
 		return {
 			noTrail: w?.noTrail === true,
 			noBloom: w?.noBloom === true,

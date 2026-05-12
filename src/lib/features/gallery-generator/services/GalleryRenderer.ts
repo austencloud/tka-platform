@@ -15,7 +15,7 @@ import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/service
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/SequenceExportOptions";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { BatchRenderResult } from "../../domain/gallery-models";
+import type { BatchRenderResult } from "../domain/gallery-models";
 
 export interface RenderOptions {
   lightMode: boolean;

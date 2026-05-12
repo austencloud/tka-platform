@@ -6,7 +6,7 @@
  * computes absolute positions from a coarse grid assignment.
  */
 
-import type { FloorMaterial, Direction, WingTheme, MuseumGrid } from "./museum-grid-types";
+import type { FloorMaterial, Direction, WingTheme } from "./museum-grid-types";
 import type { WallDefinition } from "./wall-segment-types";
 
 // ── Room Graph (input) ──

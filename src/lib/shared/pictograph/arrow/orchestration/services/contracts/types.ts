@@ -6,13 +6,7 @@
  * Separates concerns from components and provides clean coordination.
  */
 
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type {
-  ArrowAssets,
-  ArrowLifecycleResult,
-  ArrowPosition,
-  ArrowState,
 } from "../../domain/arrow-models";
 import type { ThemeMode } from "../../../../../utils/svg-color-utils";
 import type { GridMode } from "../../../../grid/domain/enums/grid-enums";

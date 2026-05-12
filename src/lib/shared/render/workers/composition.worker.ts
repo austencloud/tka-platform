@@ -14,6 +14,10 @@ import type {
   GlyphTransferEntry,
 } from "../services/implementations/CompositionDispatcher";
 import type { CompositionProgressCallback, RenderCanvas } from "../services/contracts/types";
+import type { ImageComposer } from '../services/implementations/ImageComposer';
+import type { PictographBlobCache } from '../services/implementations/PictographBlobCache';
+import type { PictographMemoryCache } from '../services/implementations/PictographMemoryCache';
+import type { TextRenderer } from '../services/implementations/TextRenderer';
 
 // ---------------------------------------------------------------------------
 // Worker-safe cache stubs
@@ -60,10 +64,10 @@ const activeRenders = new Map<number, { cancelled: boolean }>();
 
 // Pipeline singletons — created lazily at init
 let imageComposer: InstanceType<
-  typeof import("../services/implementations/ImageComposer").ImageComposer
+  typeof ImageComposer
 > | null = null;
 let workerTextRenderer: InstanceType<
-  typeof import("../services/implementations/TextRenderer").TextRenderer
+  typeof TextRenderer
 > | null = null;
 
 // ---------------------------------------------------------------------------
@@ -125,9 +129,9 @@ async function handleInit(
 
   imageComposer = new ImageComposer(
     workerTextRenderer,
-    blobCache as any,         // satisfies PictographBlobCache interface
+    blobCache as unknown as PictographBlobCache,         // satisfies PictographBlobCache interface
     keyHasher,
-    memoryCache as any,       // satisfies PictographMemoryCache interface
+    memoryCache as unknown as PictographMemoryCache,       // satisfies PictographMemoryCache interface
     canvas2DRenderer,
     layerCompositor,
   );

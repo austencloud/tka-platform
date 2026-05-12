@@ -1,5 +1,5 @@
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import type { LOOPDesignation, SectionDesignation } from "./contracts/types";
+import type { LOOPDesignation, SectionDesignation } from "./types";
 
 /**
  * Base LOOP components for reference

@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { GeocodingService } from './services/implementations/GeocodingService';
+import { GeocodingService } from './services/GeocodingService';
 import { env } from '$env/dynamic/public';
 
 let instance: GeocodingService | null = null;

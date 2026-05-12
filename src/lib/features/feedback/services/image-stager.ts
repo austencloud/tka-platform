@@ -11,6 +11,7 @@
 
 import { getStorageInstance } from "$lib/shared/auth/firebase";
 import type { StagedUploadHandle, StagedProgressCallback } from "$lib/shared/feedback/domain/feedback-contract-types";
+import type { UploadTask } from 'firebase/storage';
 
 export function stageImage(
   file: File,
@@ -22,9 +23,16 @@ export function stageImage(
   const storagePath = `feedback-staging/${userId}/${timestamp}_${sanitizedFilename}`;
 
   let cancelled = false;
-  let uploadTask: import("firebase/storage").UploadTask | null = null;
+  let uploadTask: UploadTask | null = null;
 
-  const promise = new Promise<string>(async (resolve, reject) => {
+  let resolve!: (value: string) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<string>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  (async () => {
     try {
       const { ref, uploadBytesResumable, getDownloadURL, deleteObject } =
         await import("firebase/storage");
@@ -50,7 +58,6 @@ export function stageImage(
         },
         async () => {
           if (cancelled) {
-            // Upload finished but we were cancelled - clean up the file
             try {
               await deleteObject(storageRef);
             } catch {
@@ -78,7 +85,7 @@ export function stageImage(
       onProgress({ status: "failed", fraction: 0, storagePath });
       reject(error);
     }
-  });
+  })();
 
   return {
     promise,

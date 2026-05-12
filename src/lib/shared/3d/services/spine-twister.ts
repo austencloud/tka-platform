@@ -5,7 +5,8 @@
  * turn toward the reaching direction.
  */
 
-import { Vector3, Quaternion, Euler } from "three";
+import type { Vector3} from "three";
+import { Quaternion, Euler } from "three";
 
 export interface SpineTwistResult {
   spine1: Quaternion;

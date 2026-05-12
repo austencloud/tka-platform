@@ -1,5 +1,5 @@
 
-import { LibrarySaveService } from './services/implementations/LibrarySaveService';
+import { LibrarySaveService } from './services/LibrarySaveService';
 import { getSharer } from '$lib/shared/share/getSharer';
 import { getVideoUploader } from '$lib/shared/share/getVideoUploader';
 import { getLibraryRepository } from '$lib/shared/library/getLibraryRepository';

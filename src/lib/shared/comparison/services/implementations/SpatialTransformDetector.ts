@@ -29,7 +29,7 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
 /**
  * Reverse map: angle to location
  */
-const ANGLE_TO_LOCATION: GridLocation[] = [
+const ANGLE_TO_LOCATION: GridLocation[] = [ // eslint-disable-line @typescript-eslint/no-unused-vars
   GridLocation.NORTH,
   GridLocation.NORTHEAST,
   GridLocation.EAST,
@@ -154,7 +154,7 @@ export class SpatialTransformDetector {
     const toAngle = LOCATION_TO_ANGLE[to];
 
     // Calculate clockwise distance
-    let cwDistance = (toAngle - fromAngle + 8) % 8;
+    const cwDistance = (toAngle - fromAngle + 8) % 8;
 
     // Return the shorter of clockwise or counter-clockwise
     return Math.min(cwDistance, 8 - cwDistance);

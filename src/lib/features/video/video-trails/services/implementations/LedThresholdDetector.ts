@@ -160,7 +160,7 @@ export class LedThresholdDetector implements IEndpointDetector {
     let centroid0 = { x: clusters[c1Idx]!.x, y: clusters[c1Idx]!.y };
     let centroid1 = { x: clusters[c2Idx]!.x, y: clusters[c2Idx]!.y };
 
-    let assignments: number[] = new Array(clusters.length).fill(0);
+    const assignments: number[] = new Array(clusters.length).fill(0);
     // 5 iterations is plenty for the small cluster counts we deal with here.
     for (let iter = 0; iter < 5; iter++) {
       for (let i = 0; i < clusters.length; i++) {

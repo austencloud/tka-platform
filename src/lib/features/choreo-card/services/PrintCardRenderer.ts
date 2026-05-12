@@ -10,10 +10,10 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ImageComposer } from "../../../../shared/render/services/implementations/ImageComposer";
-import type { PrintRenderOptions } from "../contracts/types";
-import { renderCardBack } from "../card-back-dom-renderer";
-import { renderInfoCardFront, renderInfoCardBack } from "../info-card-canvas-renderer";
+import type { ImageComposer } from "../../../shared/render/services/implementations/ImageComposer";
+import type { PrintRenderOptions } from "./types";
+import { renderCardBack } from "./card-back-dom-renderer";
+import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-renderer";
 
 
 // MPC poker card defaults
@@ -21,7 +21,7 @@ const MPC_WIDTH = 822;
 const MPC_HEIGHT = 1122;
 const MPC_BLEED = 36;
 const CONTENT_WIDTH = MPC_WIDTH - MPC_BLEED * 2;   // 750
-const CONTENT_HEIGHT = MPC_HEIGHT - MPC_BLEED * 2;  // 1050
+const _CONTENT_HEIGHT = MPC_HEIGHT - MPC_BLEED * 2;  // 1050
 
 // Standard playing card corner radius: ~3mm on 63.5mm width = 4.72%
 // Applied to MPC canvas width for realistic proportions

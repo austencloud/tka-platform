@@ -1,7 +1,7 @@
 /**
  * Persists video curator data to Firestore
  */
-import type { VideoUpdateData } from "./contracts/types";
+import type { VideoUpdateData } from "./types";
 import type { VideoCategory, UserProfile } from "../types";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 

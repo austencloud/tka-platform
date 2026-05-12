@@ -1,5 +1,6 @@
 import type { VegetationData } from "../workers/chunk-worker-messages";
 import type { DrainageData } from "../generation/gpu/terrain-compute-types";
+import type { Object3D } from 'three';
 
 export interface ChunkEntity {
   chunk: {
@@ -12,7 +13,7 @@ export interface ChunkEntity {
     lastAccessTime: number;
   };
   mesh?: {
-    object3D: import("three").Object3D;
+    object3D: Object3D;
     visible: boolean;
     castShadow: boolean;
     receiveShadow: boolean;

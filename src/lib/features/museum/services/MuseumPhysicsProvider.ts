@@ -13,7 +13,7 @@
  */
 
 import type { PhysicsProvider, Vector3 } from "$lib/shared/3d/camera/types";
-import type { MuseumGrid } from "../../domain/museum-grid-types";
+import type { MuseumGrid } from "../domain/museum-grid-types";
 
 export const SOLID_TYPES = new Set([
 	"wall",

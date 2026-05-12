@@ -1,7 +1,7 @@
 /**
  * ActManager - Implementation for Write tab Act operations
  */
-import type { ActSummary } from "../contracts/types";
+import type { ActSummary } from "./types";
 
 export class ActManager {
   private acts: Map<string, ActSummary> = new Map();

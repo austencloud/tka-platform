@@ -113,7 +113,7 @@ export class Octree {
 
   private subdivide(nodeId: number): void {
     const node = this.getNode(nodeId);
-    if (!node || !node.isLeaf) return;
+    if (!node?.isLeaf) return;
 
     const { bounds, depth } = node;
     const midX = (bounds.minX + bounds.maxX) / 2;

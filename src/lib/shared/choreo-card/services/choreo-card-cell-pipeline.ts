@@ -10,6 +10,8 @@ import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/servi
 import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
 import type { MandalaLayoutOverride } from "$lib/shared/sequence-viewer/services/getMandalaPlacements";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+import type { PropType } from '$lib/shared/pictograph/prop/domain/enums/PropType';
+import type { BrowseViewMode } from '$lib/shared/browse/domain/BrowseViewMode';
 
 // ============================================================================
 // GLOBAL CELL URL CACHE
@@ -169,8 +171,8 @@ export function detectMixedDurations(steps: readonly { duration?: number }[]): b
  */
 export function buildRenderOptions(params: {
   cellSize: number;
-  bluePropType: import("$lib/shared/pictograph/prop/domain/enums/PropType").PropType | undefined;
-  redPropType: import("$lib/shared/pictograph/prop/domain/enums/PropType").PropType | undefined;
+  bluePropType: PropType | undefined;
+  redPropType: PropType | undefined;
   catDogModeEnabled: boolean;
   showNonRadial: boolean;
   handPointVis: "all" | "active";
@@ -181,7 +183,7 @@ export function buildRenderOptions(params: {
   showPositions: boolean;
   isSoloMode: boolean;
   handPathMode: boolean;
-  browseViewMode: import("$lib/shared/browse/domain/BrowseViewMode").BrowseViewMode | undefined;
+  browseViewMode: BrowseViewMode | undefined;
   showBlueMotion: boolean;
   showRedMotion: boolean;
 }): PreviewCellRenderOptions {

@@ -11,7 +11,7 @@ import {
   type EcologicalPattern,
   type RenderedTree,
 } from "@austencloud/backgrounds";
-import type { PreviewStats, PlacementConfig } from "../contracts/types";
+import type { PreviewStats, PlacementConfig } from "./types";
 
 export class PreviewAnimationController {
   private canvas: HTMLCanvasElement | null = null;

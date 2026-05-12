@@ -20,8 +20,9 @@ import {
   type ChunkMeshData,
   type ChunkKey,
 } from "./chunk-manager";
+import type {
+  GPUChunkGenerator} from "../generation/gpu/gpu-chunk-generator";
 import {
-  GPUChunkGenerator,
   createGPUChunkGenerator,
 } from "../generation/gpu/gpu-chunk-generator";
 import type { VegetationData } from "../workers/chunk-generator.worker";

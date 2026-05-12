@@ -7,7 +7,6 @@
 
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
 import type {
-  IGlyphTextureLoader,
   GlyphTextureState,
   PendingGlyph,
 } from "../contracts/IGlyphTextureLoader";

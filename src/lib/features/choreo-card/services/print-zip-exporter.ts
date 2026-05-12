@@ -7,7 +7,7 @@
  * card face images.
  */
 
-import type { ZipCardPair } from "./contracts/types";
+import type { ZipCardPair } from "./types";
 
 export async function exportDeckZIP(
   pairs: ZipCardPair[],
@@ -25,7 +25,7 @@ export async function exportDeckZIP(
   for (let i = 0; i < pairs.length; i++) {
     const pair = pairs[i]!;
     const index = String(i + 1).padStart(3, "0");
-    const safeName = pair.label.replace(/[^a-zA-Z0-9_\-]/g, "_");
+    const safeName = pair.label.replace(/[^a-zA-Z0-9_-]/g, "_");
 
     const frontBlob = await canvasToBlob(pair.front);
     fronts.file(`${index}_${safeName}_front.png`, frontBlob);

@@ -6,8 +6,6 @@
  */
 
 import type {
-	TikaValidator,
-	ValidationResult,
 	ValidationContext,
 	ValidationViolation
 } from './types';

@@ -13,28 +13,28 @@
  * 9. Run validation
  */
 
-import type { MuseumGridBuildResult } from "../contracts/types";
-import type { RoomNode, RoomEdge, GridConfig, PlacedRoom, CorridorSegment } from "../../domain/layout-types";
+import type { MuseumGridBuildResult } from "./types";
+import type { RoomNode, RoomEdge, GridConfig, PlacedRoom, CorridorSegment } from "../domain/layout-types";
 import type {
   MuseumGrid,
   MuseumTile,
   ExhibitDefinition,
   PerformerDefinition,
   FurnitureDefinition,
-} from "../../domain/museum-grid-types";
-import { tileKey } from "../../domain/museum-grid-types";
-import { isWalkable } from "../../domain/tile-registry";
-import { computeLayout } from "../graph-layout-engine";
-import { routeCorridor } from "../corridor-router";
-import { validate as validateLayout } from "../layout-validator";
-import { stampRoom } from "../wall-segment-stamper";
-import { ROOM_CONTENT } from "../../data/museum-room-content";
+} from "../domain/museum-grid-types";
+import { tileKey } from "../domain/museum-grid-types";
+import { isWalkable } from "../domain/tile-registry";
+import { computeLayout } from "./graph-layout-engine";
+import { routeCorridor } from "./corridor-router";
+import { validate as validateLayout } from "./layout-validator";
+import { stampRoom } from "./wall-segment-stamper";
+import { ROOM_CONTENT } from "../data/museum-room-content";
 
 export class MuseumGridBuilder {
   build(rooms: RoomNode[], edges: RoomEdge[], config: GridConfig): MuseumGridBuildResult {
     // Step 1: Compute room positions
     const layout = computeLayout(rooms, edges, config);
-    const roomLookup = new Map(layout.rooms.map((r) => [r.id, r]));
+    const roomLookup = new Map(layout.rooms.map((r: PlacedRoom) => [r.id, r]));
 
     const tiles = new Map<string, MuseumTile>();
     const exhibits: ExhibitDefinition[] = [];
@@ -97,7 +97,7 @@ export class MuseumGridBuilder {
       height: layout.gridHeight,
       tileScale: 0.5,
       tiles,
-      wings: layout.rooms.map((r) => ({
+      wings: layout.rooms.map((r: PlacedRoom) => ({
         id: r.id,
         name: r.name,
         bounds: { x: r.x, y: r.y, width: r.w, height: r.h },

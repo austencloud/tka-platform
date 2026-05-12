@@ -16,7 +16,6 @@ import {
 } from "../generation/real-terrain-zone";
 import {
   getBiomeType,
-  getBlendedBiomeWeights,
   BIOME_CHARACTERISTICS,
   DEFAULT_BIOME_CONFIG,
   getBiomeColor,
@@ -38,9 +37,6 @@ import type {
   RealZoneLoadedMessage,
   VegetationData,
   WorkerMessage,
-  LoadRealZoneMessage,
-  SetStageZoneMessage,
-  SetSpawnClearingMessage,
 } from "./chunk-worker-messages";
 
 export type {
@@ -59,7 +55,7 @@ export type {
   WorkerResponse,
 } from "./chunk-worker-messages";
 
-let drainageConfig: DrainageConfig = {
+const drainageConfig: DrainageConfig = {
   ...DEFAULT_DRAINAGE_CONFIG,
   enabled: true,
   minPoolSize: 50,
@@ -99,7 +95,7 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   const effectiveResolution = Math.max(4, Math.floor(resolution / Math.pow(2, lod)));
 
   const noise = new SeededNoise(worldSeed);
-  const rng = createChunkRNG(worldSeed, chunkX, chunkY, chunkZ);
+  const rng = createChunkRNG(worldSeed, chunkX, chunkY, chunkZ); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   const originX = Math.round(chunkX * chunkSize);
   const originZ = Math.round(chunkZ * chunkSize);
@@ -524,7 +520,7 @@ function calculateBlendWeights(
   return { grass, rock, dirt, sand, snow };
 }
 
-function calculateSlopeFromNormal(nx: number, ny: number, nz: number): number {
+function calculateSlopeFromNormal(nx: number, ny: number, _nz: number): number {
   return 1 - Math.abs(ny);
 }
 

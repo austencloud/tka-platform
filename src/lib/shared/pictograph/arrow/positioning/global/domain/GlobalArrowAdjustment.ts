@@ -150,12 +150,12 @@ export function parseAdjustmentKeyString(
 
   // Layer 2+: include propType if present
   if (propType) {
-    (key as any).propType = propType;
+    (key as { propType?: string }).propType = propType;
   }
 
   // Layer 3: include otherPropType if present
   if (otherPropType) {
-    (key as any).otherPropType = otherPropType;
+    (key as { otherPropType?: string }).otherPropType = otherPropType;
   }
 
   return key;

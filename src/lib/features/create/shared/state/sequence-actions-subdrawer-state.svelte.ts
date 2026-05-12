@@ -23,7 +23,7 @@ export function createSequenceActionsSubdrawerState() {
   let spotlightSequence = $state<SequenceData | null>(null);
 
   let showConfirmDialog = $state(false);
-  let pendingSequenceTransfer = $state<any>(null);
+  let pendingSequenceTransfer = $state<unknown>(null);
   let showShiftConfirmDialog = $state(false);
   let pendingShiftStepNumber = $state<number | null>(null);
 
@@ -88,7 +88,7 @@ export function createSequenceActionsSubdrawerState() {
     get showConfirmDialog() { return showConfirmDialog; },
     set showConfirmDialog(v: boolean) { showConfirmDialog = v; },
     get pendingSequenceTransfer() { return pendingSequenceTransfer; },
-    set pendingSequenceTransfer(v: any) { pendingSequenceTransfer = v; },
+    set pendingSequenceTransfer(v: unknown) { pendingSequenceTransfer = v; },
     get showShiftConfirmDialog() { return showShiftConfirmDialog; },
     set showShiftConfirmDialog(v: boolean) { showShiftConfirmDialog = v; },
     get pendingShiftStepNumber() { return pendingShiftStepNumber; },

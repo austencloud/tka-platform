@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { CoralSceneRenderer } from './services/implementations/CoralSceneRenderer';
+import { CoralSceneRenderer } from './services/CoralSceneRenderer';
 import { getCoralAssetLoader } from './getCoralAssetLoader';
 
 let instance: CoralSceneRenderer | null = null;

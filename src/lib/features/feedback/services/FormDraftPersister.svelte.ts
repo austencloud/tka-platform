@@ -8,7 +8,7 @@ import {
   loadDraft as loadFromStorage,
   clearDraft as clearFromStorage,
   hasDraft as hasStoredDraft,
-} from "../../utils/draft-persistence";
+} from "../utils/draft-persistence";
 
 /**
  * Manages auto-saving feedback form drafts with debouncing.

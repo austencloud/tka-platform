@@ -27,7 +27,6 @@ import {
   TextureLoader,
   RepeatWrapping,
   type Texture,
-  UniformsLib,
   UniformsUtils,
 } from "three";
 import type { DrainageData } from "../generation/gpu/terrain-compute-types";
@@ -642,7 +641,7 @@ export class DrainageWaterManager {
     geometry.setAttribute("normal", new Float32BufferAttribute(normals, 3));
     geometry.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
     geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
-    geometry.setIndex(new Uint32BufferAttribute(new Uint32Array(indices), 1) as any);
+    geometry.setIndex(new Uint32BufferAttribute(new Uint32Array(indices), 1));
 
     return geometry;
   }

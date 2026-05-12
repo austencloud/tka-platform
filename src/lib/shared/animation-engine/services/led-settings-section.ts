@@ -1,4 +1,4 @@
-import { findPreset, validatePreset, type LedColorPreset } from "../domain/types/LedColorPresets";
+import { findPreset, type LedColorPreset } from "../domain/types/LedColorPresets";
 
 export interface LedSettings {
   ledBrightness: number;

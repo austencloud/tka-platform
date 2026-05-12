@@ -1,7 +1,6 @@
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
-import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
+import type { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
 import { getSvgImageCache, type DrawableImage } from "./SvgImageCache";
 import { getSvgAssetLoader } from "./SvgAssetLoader";
 import { getLetterImagePath, isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
@@ -13,7 +12,7 @@ import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn
 import { calculateVTGFromPictograph } from "../../../pictograph/shared/domain/utils/vtg-calculator";
 import { calculateReversalPositions } from "../../core";
 import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import { GridPosition } from "../../../pictograph/grid/domain/enums/grid-enums";
+import type { GridPosition } from "../../../pictograph/grid/domain/enums/grid-enums";
 
 const VIEWBOX_SIZE = 950;
 
@@ -30,8 +29,8 @@ const VTG_GLYPH_WIDTH = 201.24;
 const VTG_GLYPH_HEIGHT = 133.6;
 const VTG_OFFSET_PERCENTAGE = 0.04;
 
-const ELEMENTAL_GLYPH_WIDTH = 95;
-const ELEMENTAL_GLYPH_HEIGHT = 125;
+const _ELEMENTAL_GLYPH_WIDTH = 95;
+const _ELEMENTAL_GLYPH_HEIGHT = 125;
 
 const POSITION_GLYPH_Y = 50;
 const POSITION_SCALE_FACTOR = 0.75;
@@ -259,7 +258,7 @@ export async function drawTurnsColumn(
 
           drawColoredImage(ctx, topImg, drawX, drawY, drawWidth, drawHeight, turnColors.top);
         }
-      } catch (error) {
+      } catch {
         drawTurnText(ctx, parsed.top, turnColors.top, baseX + positions.top.x * scale, baseY + positions.top.y * scale, scale);
       }
     }
@@ -280,7 +279,7 @@ export async function drawTurnsColumn(
 
           drawColoredImage(ctx, bottomImg, drawX, drawY, drawWidth, drawHeight, turnColors.bottom);
         }
-      } catch (error) {
+      } catch {
         drawTurnText(ctx, parsed.bottom, turnColors.bottom, baseX + positions.bottom.x * scale, baseY + positions.bottom.y * scale, scale);
       }
     }
@@ -341,7 +340,7 @@ export async function drawElementalGlyph(
   pictograph: PictographData,
   gridMode: GridMode,
   size: number,
-  isDarkMode: boolean
+  _isDarkMode: boolean
 ): Promise<void> {
   if (!pictograph.letter) return;
 

@@ -1,4 +1,4 @@
-import { FeedSnapDetector } from './services/implementations/FeedSnapDetector';
+import { FeedSnapDetector } from './services/FeedSnapDetector';
 
 let instance: FeedSnapDetector | null = null;
 export function getFeedSnapDetector(): FeedSnapDetector {

@@ -1,4 +1,5 @@
 import type { RequestHandler } from '@sveltejs/kit';
+import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/PictographData';
 import { dev } from '$app/environment';
 import fs from 'fs';
 import path from 'path';
@@ -24,7 +25,7 @@ export const GET: RequestHandler = async (event) => {
 
   try {
     // Dynamically import so Node.js canvas works server-side
-    const { createCanvas } = await import('canvas');
+    const { createCanvas: _createCanvas } = await import('canvas');
     const { canvas2DDirectRenderer } = await import('$lib/shared/render/services/implementations/Canvas2DDirectRenderer');
 
     // Load CSV data
@@ -91,7 +92,7 @@ export const GET: RequestHandler = async (event) => {
     await renderer.initialize();
 
     // Render using real Canvas2DDirectRenderer with Node.js canvas
-    const canvas = await renderer.renderPictograph(pictographData as any, {
+    const canvas = await renderer.renderPictograph(pictographData as unknown as PictographData, {
       size: 950,
       visibility: {
         showTKA: true,

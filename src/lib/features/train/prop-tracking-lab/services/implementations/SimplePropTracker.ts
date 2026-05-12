@@ -248,7 +248,7 @@ export class SimplePropTracker {
 		}
 
 		const avgBrightness = totalBrightness / pixelCount;
-		const threshold = avgBrightness * 0.8; // Prop is likely darker/brighter than background
+		const _threshold = avgBrightness * 0.8; // Prop is likely darker/brighter than background
 
 		// Find furthest point that differs from background
 		for (let y = startY; y < endY; y++) {

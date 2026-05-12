@@ -27,7 +27,7 @@ export function createVideoTrailsState(
   const SESSION_PREFIX = "video-trails-";
 
   function sessionSave(key: string, value: unknown): void {
-    try { sessionStorage.setItem(SESSION_PREFIX + key, JSON.stringify(value)); } catch { }
+    try { sessionStorage.setItem(SESSION_PREFIX + key, JSON.stringify(value)); } catch { /* ignore */ }
   }
 
   function sessionLoad<T>(key: string): T | null {
@@ -55,7 +55,7 @@ export function createVideoTrailsState(
   let corrections = $state<Record<number, EndpointCorrection[]>>(
     sessionLoad<Record<number, EndpointCorrection[]>>("corrections") ?? {},
   );
-  let correctionCount = $derived(Object.keys(corrections).length);
+  const correctionCount = $derived(Object.keys(corrections).length);
 
   let effectConfig = $state<EffectConfig>({ ...DEFAULT_EFFECT_CONFIG });
 
@@ -65,12 +65,12 @@ export function createVideoTrailsState(
 
   let exportState = $state<ExportState>({ phase: "idle" });
 
-  let currentEndpoints = $derived.by(() => {
+  const currentEndpoints = $derived.by(() => {
     const detected = frameDetections[currentFrame] ?? [];
     return corrector.applyCorrections(currentFrame, detected, corrections);
   });
 
-  let lowConfidenceFrames = $derived.by(() => {
+  const lowConfidenceFrames = $derived.by(() => {
     const frames: number[] = [];
     for (const [frame, endpoints] of Object.entries(frameDetections)) {
       if (endpoints.some((ep) => ep.confidence < 0.6)) frames.push(Number(frame));

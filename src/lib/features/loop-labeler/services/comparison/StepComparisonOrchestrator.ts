@@ -1,19 +1,19 @@
 import type {
   ExtractedStep,
   InternalStepPair,
-} from "../../../domain/models/internal-step-models";
+} from "../../domain/models/internal-step-models";
 import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
 import {
   ROTATE_90_CCW,
   ROTATE_90_CW,
-} from "../../../domain/constants/transformation-maps";
-import { checkRotations } from "../../../services/comparison/rotation-comparer";
-import { checkReflections } from "../../../services/comparison/reflection-comparer";
+} from "../../domain/constants/transformation-maps";
+import { checkRotations } from "./rotation-comparer";
+import { checkReflections } from "./reflection-comparer";
 import {
   checkRepeated,
   checkSwapInvert,
-} from "../../../services/comparison/swap-invert-comparer";
-import { formatBeatPairTransformations } from "../../candidate-formatter";
+} from "./swap-invert-comparer";
+import { formatBeatPairTransformations } from "../candidate-formatter";
 
 /**
  * Orchestrator that combines comparison services and manages beat pair generation.

@@ -68,7 +68,7 @@ export class VariationExplorationOrchestrator {
           const prevLetter = expandedLetters[expandedLetters.length - 1];
           if (prevLetter) {
             // Get ALL bridge options (not just a random one)
-            let bridgeLetters = graph.findAllBridgeOptions(prevLetter, letter);
+            const bridgeLetters = graph.findAllBridgeOptions(prevLetter, letter);
 
             // Select from available options based on dash preference
             if (bridgeLetters.length > 0) {

@@ -73,20 +73,20 @@ export function createEditorState(initialWidth = 40, initialHeight = 40) {
 
 	// ── Derived ──
 
-	let canUndo = $derived(undoStack.length > 0);
-	let canRedo = $derived(redoStack.length > 0);
+	const canUndo = $derived(undoStack.length > 0);
+	const canRedo = $derived(redoStack.length > 0);
 
-	let selectedTile = $derived.by(() => {
+	const selectedTile = $derived.by(() => {
 		if (!selectedTilePos) return null;
 		return grid.tiles.get(tileKey(selectedTilePos.x, selectedTilePos.y)) ?? null;
 	});
 
-	let selectedWing = $derived.by(() => {
+	const selectedWing = $derived.by(() => {
 		if (!selectedWingId) return null;
 		return grid.wings.find((w) => w.id === selectedWingId) ?? null;
 	});
 
-	let selectedExhibit = $derived.by(() => {
+	const selectedExhibit = $derived.by(() => {
 		if (!selectedTilePos) return null;
 		return (
 			grid.exhibits.find(
@@ -95,7 +95,7 @@ export function createEditorState(initialWidth = 40, initialHeight = 40) {
 		);
 	});
 
-	let selectedPerformer = $derived.by(() => {
+	const selectedPerformer = $derived.by(() => {
 		if (!selectedTilePos) return null;
 		return (
 			grid.performers.find(
@@ -105,7 +105,7 @@ export function createEditorState(initialWidth = 40, initialHeight = 40) {
 	});
 
 	// The rectangle preview region, normalized so x1 <= x2 and y1 <= y2
-	let rectanglePreview = $derived.by(() => {
+	const rectanglePreview = $derived.by(() => {
 		if (!rectStart || !rectEnd) return null;
 		return {
 			x1: Math.min(rectStart.x, rectEnd.x),

@@ -7,7 +7,7 @@
  * - Uses 30px threshold for snappier response
  */
 
-import type { FeedScrollState } from "../../state/feed-scroll-state.svelte";
+import type { FeedScrollState } from "../state/feed-scroll-state.svelte";
 
 /** Minimum scroll delta to trigger direction detection */
 const SCROLL_THRESHOLD = 30;

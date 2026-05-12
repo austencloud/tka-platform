@@ -280,7 +280,7 @@ export class VegetationManager {
             metalness: 0.1,
           }),
         };
-      case "bush":
+      case "bush": {
         const bushGeom = this.createTreeGeometry();
         bushGeom.scale(0.3, 0.4, 0.3);
         return {
@@ -292,6 +292,7 @@ export class VegetationManager {
             metalness: 0.0,
           }),
         };
+      }
       case "grass":
         return {
           geometry: this.createGrassGeometry(),

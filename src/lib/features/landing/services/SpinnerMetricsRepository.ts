@@ -5,18 +5,19 @@
  * Uses atomic increment() for concurrent safety across all users.
  */
 
+import type {
+  Timestamp} from "firebase/firestore";
 import {
   doc,
   updateDoc,
   increment,
   onSnapshot,
-  type Unsubscribe,
-  Timestamp,
+  type Unsubscribe
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreGet, firestoreSet } from "$lib/shared/firestore";
-import { SpinnerMetricsSchema } from "../../domain/models/spinner-metrics-schemas";
-import type { SpinnerMetrics } from "../../domain/models/spinner-models";
+import { SpinnerMetricsSchema } from "../domain/models/spinner-metrics-schemas";
+import type { SpinnerMetrics } from "../domain/models/spinner-models";
 
 const METRICS_COLLECTION = "appMetrics";
 const METRICS_DOC_ID = "spinner";

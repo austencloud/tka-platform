@@ -23,6 +23,7 @@ import type {
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+import { DEFAULT_BROWSE_VIEW_MODE, type BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 import type { SectionConfig, SequenceSection } from "$lib/shared/browse/domain/models/browse-models";
 
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -43,7 +44,6 @@ import {
 	onLibraryMutated,
 	onLibrarySequenceAdded,
 } from "$lib/shared/library/library-events";
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -157,6 +157,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 	let activeFilters = $state<Map<string, ActiveFilter>>(buildInitialFilters());
 
+	// View mode (compositional browsing)
+	let _viewMode = $state<BrowseViewMode>(
+		persisted?.viewMode ?? { ...DEFAULT_BROWSE_VIEW_MODE }
+	);
+
 	// Search state
 	let _searchQuery = $state("");
 
@@ -185,7 +190,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			// Cast to the service's ActiveFilter type (it only reads `type` and `value`)
 			result = multiFilterService.applyFilters(
 				result,
-				activeFilters as unknown as Map<string, import("$lib/shared/browse/domain/multi-filter-models").ActiveFilter>
+				activeFilters as unknown as Map<string, ActiveFilter>
 			);
 		}
 
@@ -310,6 +315,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		const _sortDirection = sortDirection;
 		const _filters = activeFilters;
 		const _columns = columns;
+		const viewMode = _viewMode;
 
 		if (!config.persistKey) return;
 
@@ -327,6 +333,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			sortDirection: _sortDirection,
 			activeFilters: userFilters,
 			columns: _columns,
+			viewMode,
 		});
 	});
 
@@ -510,6 +517,10 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			return _sectionGroupBy;
 		},
 
+		get viewMode() {
+			return _viewMode;
+		},
+
 		get availableLengths() {
 			return availableLengths;
 		},
@@ -610,7 +621,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 				allSequences,
 				candidateType,
 				candidateValue,
-				activeFilters as unknown as Map<string, import("$lib/shared/browse/domain/multi-filter-models").ActiveFilter>
+				activeFilters as unknown as Map<string, ActiveFilter>
 			);
 		},
 
@@ -670,6 +681,10 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 		setSectionGroupBy(groupBy: SectionGroupBy): void {
 			_sectionGroupBy = groupBy;
+		},
+
+		setViewMode(mode: BrowseViewMode): void {
+			_viewMode = mode;
 		},
 
 		// --- Cache ---

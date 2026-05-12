@@ -205,8 +205,8 @@ export class SampledCurlGrid2D {
     const n = this.size;
     const step = this.domain / n;
     // Wrap into [0, domain)
-    let u = ((x % this.domain) + this.domain) % this.domain;
-    let v = ((y % this.domain) + this.domain) % this.domain;
+    const u = ((x % this.domain) + this.domain) % this.domain;
+    const v = ((y % this.domain) + this.domain) % this.domain;
     const gx = u / step;
     const gy = v / step;
     const i0 = Math.floor(gx) % n;

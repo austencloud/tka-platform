@@ -4,7 +4,6 @@
 
 import type {
   VoiceSession,
-  VoiceSessionEvent,
   ResolutionTier,
   LLMResolutionDetails,
   ChatResponseDetails,

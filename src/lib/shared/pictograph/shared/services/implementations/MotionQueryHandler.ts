@@ -9,7 +9,7 @@ import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModel
 import type { CsvLoader } from "../../../../foundation/services/implementations/data/CsvLoader";
 import type { IMotionQueryHandler } from "../../../../foundation/services/contracts/data/data-contracts";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { Orientation } from "../../domain/enums/pictograph-enums";
+import type { Orientation } from "../../domain/enums/pictograph-enums";
 
 interface ICSVParser {
   parseCSV(csvText: string): { rows: ParsedCsvRow[] };

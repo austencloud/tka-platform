@@ -25,7 +25,7 @@
   const sortingService = getFeedbackSorter();
 
   // Get claim status deriver for UI indicators
-  import { FeedbackSorter } from "../../services/implementations/FeedbackSorter";
+  import { FeedbackSorter } from "../../services/FeedbackSorter";
   const claimStatusDeriver = sortingService instanceof FeedbackSorter
     ? sortingService.getClaimStatusDeriver()
     : undefined;

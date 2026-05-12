@@ -30,7 +30,7 @@ const WAKE_PHRASES = [
 ];
 
 /** Max restart attempts before giving up (resets on successful start) */
-const MAX_RESTART_ATTEMPTS = 5;
+const _MAX_RESTART_ATTEMPTS = 5;
 
 /** Base delay for restart backoff (ms) - used when start() itself fails */
 const RESTART_BASE_DELAY_MS = 300;
@@ -377,7 +377,7 @@ export class WakeWordDetector {
     if (this.audioContext) return; // Already created
 
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext || (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext)();
     } catch {
       return; // AudioContext not available
     }
@@ -387,7 +387,7 @@ export class WakeWordDetector {
 
     // Register a one-time gesture handler to resume the context
     this.gestureHandler = () => {
-      if (this.audioContext && this.audioContext.state === "suspended") {
+      if (this.audioContext?.state === "suspended") {
         this.audioContext.resume();
       }
       // Clean up all listeners after first gesture
@@ -410,7 +410,7 @@ export class WakeWordDetector {
   private playCommandModeChime(): void {
     try {
       const ctx = this.audioContext;
-      if (!ctx || ctx.state !== "running") return;
+      if (ctx?.state !== "running") return;
 
       const now = ctx.currentTime;
 

@@ -7,8 +7,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getPostHogUserAnalytics } from "$lib/features/admin/getPostHogUserAnalytics";
-  import type { UserEngagementSummary, ModuleActivityBreakdown, ContentMetrics, PostHogSessionSummary, TimePeriod } from "../services/contracts/types";
-import type { PostHogUserAnalytics } from "../services/implementations/PostHogUserAnalytics";
+  import type { UserEngagementSummary, ModuleActivityBreakdown, ContentMetrics, PostHogSessionSummary, TimePeriod } from "../services/types";
+import type { PostHogUserAnalytics } from "../services/PostHogUserAnalytics";
 
   interface Props {
     userId: string;

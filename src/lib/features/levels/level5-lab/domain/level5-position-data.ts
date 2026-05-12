@@ -113,7 +113,7 @@ export function getGridModeForPosition(position: GridPosition): GridMode {
 /** Format a GridPosition enum value to display label (e.g. "tau1" -> "Tau1") */
 export function formatPosition(pos: GridPosition): string {
   const match = pos.match(/^(tau|terra)(\d+)$/i);
-  if (match && match[1] && match[2]) {
+  if (match?.[1] && match[2]) {
     return `${match[1].charAt(0).toUpperCase()}${match[1].slice(1)}${match[2]}`;
   }
   return pos.toUpperCase();

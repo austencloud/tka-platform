@@ -27,8 +27,7 @@ import type {
 	PaginatedShameResult,
 	ShameCategoryCounts,
 	ShameCategory,
-	SHAME_CATEGORIES
-} from '../../domain/models/hall-of-shame-models';
+} from '../domain/models/hall-of-shame-models';
 
 export class HallOfShameLoader {
 	private readonly COLLECTION = 'hallOfShame';

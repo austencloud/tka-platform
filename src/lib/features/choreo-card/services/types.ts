@@ -3,7 +3,7 @@ import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { SkewDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { ElementalTheme } from "../../domain/elemental-theme";
+import type { ElementalTheme } from "../domain/elemental-theme";
 
 export interface CardBackDomRenderOptions {
   width: number;
@@ -99,9 +99,9 @@ export interface PrintRenderOptions {
   redPropType?: PropType;
   /** VTG elemental theme for front frame coloring. Omit for neutral gray. */
   elementTheme?: ElementalTheme;
-  /** Left-side footer label (e.g. "QS 1:1" for deck cards) */
+  /** Left-side barter label (e.g. "QS 1:1" for deck cards) */
   leftLabel?: string;
-  /** Pre-loaded elemental icon image for footer */
+  /** Pre-loaded elemental icon image for barter */
   elementIcon?: CanvasImageSource;
 }
 

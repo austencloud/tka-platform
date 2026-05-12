@@ -8,8 +8,8 @@ export const load: PageServerLoad = ({ params, url }) => {
   const parsed = parseSequenceRouteId(params.id);
 
   let word: string | null = url.searchParams.get("word");
-  let creator: string | null = url.searchParams.get("creator");
-  let difficulty: string | null = url.searchParams.get("difficulty");
+  const creator: string | null = url.searchParams.get("creator");
+  const difficulty: string | null = url.searchParams.get("difficulty");
   let stepCount: number | null = null;
 
   if (parsed.encoded) {

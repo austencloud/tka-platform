@@ -6,20 +6,16 @@ import {
   Fn,
   float,
   vec3,
-  vec4,
   instanceIndex,
   storage,
   uniform,
   sin,
-  cos,
   floor,
   fract,
   mix,
-  abs,
   max,
   min,
   clamp,
-  sqrt,
   normalize,
 } from "three/tsl";
 import type {
@@ -28,7 +24,7 @@ import type {
   GPUVegetationData,
   ChunkGenerateRequest,
 } from "./terrain-compute-types";
-import { DEFAULT_TERRAIN_CONFIG, DEFAULT_EROSION_CONFIG } from "./terrain-compute-types";
+import { DEFAULT_TERRAIN_CONFIG } from "./terrain-compute-types";
 import {
   getBiomeType,
   BIOME_CHARACTERISTICS,
@@ -40,7 +36,6 @@ import {
   generateVegetationScatter,
   toLegacyFormat,
   type TerrainSample,
-  type LegacyVegetationType,
 } from "../vegetation-scatter";
 import { buildTerrainGeometry, addSkirtGeometry } from "../terrain-mesh-builder";
 import { generateChunkCPU } from "../terrain-cpu-generator";
@@ -246,22 +241,22 @@ export class TerrainComputeGenerator {
     return computeFn().compute(this.heightBuffer!.count);
   }
 
-  private createNormalCompute(heights: Float32Array) {
+  private createNormalCompute(_heights: Float32Array) {
     const normalStorage = storage(this.normalBuffer!, "vec3", this.normalBuffer!.count / 3);
 
     const computeFn = Fn(() => {
       const idx = instanceIndex;
       const res = this.resolution;
 
-      const x = idx.mod(res);
-      const z = floor(idx.div(res));
+      const x = idx.mod(res); // eslint-disable-line @typescript-eslint/no-unused-vars
+      const z = floor(idx.div(res)); // eslint-disable-line @typescript-eslint/no-unused-vars
 
       const step = this.chunkSize.div(res.sub(1));
 
-      const leftIdx = max(idx.sub(1), float(0));
-      const rightIdx = min(idx.add(1), res.mul(res).sub(1));
-      const downIdx = max(idx.sub(res), float(0));
-      const upIdx = min(idx.add(res), res.mul(res).sub(1));
+      const leftIdx = max(idx.sub(1), float(0)); // eslint-disable-line @typescript-eslint/no-unused-vars
+      const rightIdx = min(idx.add(1), res.mul(res).sub(1)); // eslint-disable-line @typescript-eslint/no-unused-vars
+      const downIdx = max(idx.sub(res), float(0)); // eslint-disable-line @typescript-eslint/no-unused-vars
+      const upIdx = min(idx.add(res), res.mul(res).sub(1)); // eslint-disable-line @typescript-eslint/no-unused-vars
 
       const heightLeft = float(0);
       const heightRight = float(0);
@@ -279,7 +274,7 @@ export class TerrainComputeGenerator {
     return computeFn().compute(this.normalBuffer!.count / 3);
   }
 
-  private createColorCompute(heights: Float32Array) {
+  private createColorCompute(_heights: Float32Array) {
     const colorStorage = storage(this.colorBuffer!, "vec3", this.colorBuffer!.count / 3);
 
     const computeFn = Fn(() => {
@@ -294,9 +289,9 @@ export class TerrainComputeGenerator {
       const mountainColor = vec3(0.6, 0.6, 0.65);
       const snowColor = vec3(0.9, 0.9, 0.95);
 
-      const heightNorm = clamp(height.div(50), float(-1), float(1));
+      const heightNorm = clamp(height.div(50), float(-1), float(1)); // eslint-disable-line @typescript-eslint/no-unused-vars
 
-      let color: any = plainsColor;
+      let color: ReturnType<typeof mix> = plainsColor as unknown as ReturnType<typeof mix>;
 
       const isOcean = height.lessThan(oceanLevel);
       color = mix(color, oceanColor, isOcean.toFloat());
@@ -316,10 +311,10 @@ export class TerrainComputeGenerator {
   private fbmNoise(x: ReturnType<typeof float>, z: ReturnType<typeof float>, seed: ReturnType<typeof uniform>) {
     const { octaves, lacunarity, persistence } = this.config.noise;
 
-    let value: any = float(0);
-    let amplitude: any = float(1);
-    let frequency: any = float(1);
-    let maxValue: any = float(0);
+    let value: ReturnType<typeof float> = float(0);
+    let amplitude: ReturnType<typeof float> = float(1);
+    let frequency: ReturnType<typeof float> = float(1);
+    let maxValue: ReturnType<typeof float> = float(0);
 
     for (let i = 0; i < octaves; i++) {
       const nx = x.mul(frequency);

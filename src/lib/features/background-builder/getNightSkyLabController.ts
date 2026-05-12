@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { NightSkyLabController } from './services/implementations/NightSkyLabController';
+import { NightSkyLabController } from './services/NightSkyLabController';
 
 let instance: NightSkyLabController | null = null;
 

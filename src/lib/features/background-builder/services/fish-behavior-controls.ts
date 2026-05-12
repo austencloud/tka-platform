@@ -56,7 +56,7 @@ export function triggerMood(
 
   f.mood = mood;
   f.moodTimer = 0;
-  (f as any)._manualMoodSetAt = performance.now();
+  (f as unknown as Record<string, unknown>)._manualMoodSetAt = performance.now();
   return true;
 }
 

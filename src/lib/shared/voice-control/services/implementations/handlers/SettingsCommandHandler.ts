@@ -7,6 +7,7 @@ import { getAnimationVisibilityManager } from "../../../../animation-engine/stat
 import { getVisibilityStateManager } from "../../../../pictograph/shared/state/visibility-state.svelte";
 import { settingsService } from "../../../../settings/state/SettingsState.svelte";
 import type { IVoiceCommandHandler } from "../../contracts/types";
+import type { EffectType } from '../../../../animation-engine/domain/types/TipEffectTypes';
 
 type SettingOwner = "animVis" | "pictVis" | "appSettings";
 
@@ -71,7 +72,7 @@ export class SettingsCommandHandler implements IVoiceCommandHandler {
   }
 
   private handleEffectCommand(command: VoiceCommand): CommandResult {
-    const effectName = command.target.slice("effect:".length) as import("../../../../animation-engine/domain/types/TipEffectTypes").EffectType;
+    const effectName = command.target.slice("effect:".length) as EffectType;
     const mgr = getAnimationVisibilityManager();
     const displayName = effectName.charAt(0).toUpperCase() + effectName.slice(1);
 
@@ -101,10 +102,10 @@ export class SettingsCommandHandler implements IVoiceCommandHandler {
 
     if (owner === "animVis") {
       const mgr = getAnimationVisibilityManager();
-      (mgr as any)[property] = value;
+      (mgr as unknown as Record<string, unknown>)[property] = value;
     } else if (owner === "pictVis") {
       const mgr = getVisibilityStateManager();
-      (mgr as any)[property] = value;
+      (mgr as unknown as Record<string, unknown>)[property] = value;
     } else if (owner === "appSettings") {
       settingsService.updateSettings({ [property]: value });
     }
@@ -118,12 +119,12 @@ export class SettingsCommandHandler implements IVoiceCommandHandler {
 
     if (owner === "animVis") {
       const mgr = getAnimationVisibilityManager();
-      return (mgr as any)[property] as boolean;
+      return (mgr as unknown as Record<string, unknown>)[property] as boolean;
     } else if (owner === "pictVis") {
       const mgr = getVisibilityStateManager();
-      return (mgr as any)[property] as boolean;
+      return (mgr as unknown as Record<string, unknown>)[property] as boolean;
     } else if (owner === "appSettings") {
-      return (settingsService.settings as any)[property] as boolean;
+      return (settingsService.settings as unknown as Record<string, unknown>)[property] as boolean;
     }
 
     return false;

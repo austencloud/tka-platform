@@ -10,7 +10,7 @@ import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
 import { getSvgImageCache } from "./SvgImageCache";
 import { getSvgAssetLoader } from "./SvgAssetLoader";
 import { isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
-import { Letter } from "../../../foundation/domain/models/Letter";
+import type { Letter } from "../../../foundation/domain/models/Letter";
 import type { PictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
 import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import {
@@ -186,7 +186,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     pictograph: PreparedPictographData,
     options: DirectRenderOptions
   ): Promise<void> {
-    const totalStart = performance.now();
+    const _totalStart = performance.now();
     const { size, visibility } = options;
     const isDarkMode = visibility.darkMode ?? true;
     const scale = size / VIEWBOX_SIZE;
@@ -195,7 +195,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     const prepareStart = performance.now();
     const preparedPictograph = await this.ensurePrepared(pictograph, options);
     const prepared = preparedPictograph._prepared;
-    const prepareTime = performance.now() - prepareStart;
+    const _prepareTime = performance.now() - prepareStart;
 
     // 1. Draw background
     ctx.fillStyle = isDarkMode ? "#0a0a0f" : "#ffffff";
@@ -211,14 +211,14 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       // Full mode: draw complete grid with all points
       await this.drawGrid(ctx, size, gridMode, isDarkMode, visibility.showNonRadialPoints ?? false);
     }
-    const gridTime = performance.now() - gridStart;
+    const _gridTime = performance.now() - gridStart;
 
     // 3. Draw props (if prepared data exists)
     let propsTime = 0;
     if (prepared) {
       const propsStart = performance.now();
       await this.drawProps(ctx, prepared, size, preparedPictograph, options);
-      propsTime = performance.now() - propsStart;
+      propsTime = performance.now() - propsStart; // eslint-disable-line @typescript-eslint/no-unused-vars
     }
 
     // 4. Draw arrows (if prepared data exists)
@@ -226,7 +226,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     if (prepared) {
       const arrowsStart = performance.now();
       await this.drawArrows(ctx, prepared, size, options);
-      arrowsTime = performance.now() - arrowsStart;
+      arrowsTime = performance.now() - arrowsStart; // eslint-disable-line @typescript-eslint/no-unused-vars
     }
 
     // 5. Draw TKA glyph (letter)
@@ -240,7 +240,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         size,
         isDarkMode
       );
-      glyphTime = performance.now() - glyphStart;
+      glyphTime = performance.now() - glyphStart; // eslint-disable-line @typescript-eslint/no-unused-vars
 
       if (isDashLetter(preparedPictograph.letter)) {
         drawDash(ctx, letterDimensions, scale, isDarkMode);
@@ -287,7 +287,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   ): Promise<void> {
     const assetLoader = getSvgAssetLoader();
     const gridType = gridMode === GridMode.BOX ? "box" : "diamond";
-    const scale = size / VIEWBOX_SIZE;
+    const _scale = size / VIEWBOX_SIZE;
 
     // For box mode, we need to rotate the diamond grid 45 degrees
     const needsRotation = gridMode === GridMode.BOX;

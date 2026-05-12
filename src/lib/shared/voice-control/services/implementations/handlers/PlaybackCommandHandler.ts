@@ -60,12 +60,12 @@ export class PlaybackCommandHandler implements IVoiceCommandHandler {
         return { success: true, message: `${visMgr.getBpm()} BPM` };
       }
 
-      case "loop":
-        // Toggle the playback mode between continuous and step
+      case "loop": {
         const currentMode = visMgr.getPlaybackMode();
         const newMode = currentMode === "continuous" ? "step" : "continuous";
         visMgr.setPlaybackMode(newMode);
         return { success: true, message: `Loop: ${newMode === "continuous" ? "ON" : "OFF"}` };
+      }
 
       case "set_bpm": {
         const bpm = parseInt(command.target, 10);

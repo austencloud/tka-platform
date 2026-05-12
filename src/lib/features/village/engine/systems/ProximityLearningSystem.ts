@@ -75,7 +75,7 @@ export class ProximityLearningSystem {
 		for (const key of this.absorptionProgress.keys()) {
 			const entityId = key.split(":")[0];
 			const entity = world.entities.find((e) => e.id === entityId);
-			if (!entity || entity.lifecycle.phase !== "youth") {
+			if (entity?.lifecycle.phase !== "youth") {
 				this.absorptionProgress.delete(key);
 			}
 		}

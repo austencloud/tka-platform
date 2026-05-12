@@ -12,6 +12,7 @@
   import { onMount, onDestroy } from "svelte";
   import type { BrowseEngine } from "../engine/types";
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+  import ViewModeToggle from "$lib/features/browse/shared/components/ViewModeToggle.svelte";
   import ExpandableSearchBar from "$lib/shared/browse/components/ExpandableSearchBar.svelte";
   import LevelFilterChip from "$lib/shared/browse/components/filter-chips/LevelFilterChip.svelte";
   import FavoritesFilterChip from "$lib/shared/browse/components/filter-chips/FavoritesFilterChip.svelte";
@@ -251,7 +252,13 @@
     </div>
   {/if}
 
-  <!-- 2. Sort dropdown -->
+  <!-- 2. View mode toggle (compositional browsing) -->
+  <ViewModeToggle
+    viewMode={engine.viewMode}
+    onViewModeChange={(mode) => engine.setViewMode(mode)}
+  />
+
+  <!-- 3. Sort dropdown -->
   <div class="sort-dropdown-wrapper">
     <button
       type="button"
@@ -308,7 +315,7 @@
     {/if}
   </div>
 
-  <!-- 3. Inline filter chips (wide screens only) -->
+  <!-- 4. Inline filter chips (wide screens only) -->
   <span class="toolbar-divider" aria-hidden="true"></span>
   <div class="inline-filters" role="toolbar" aria-label="Filter options">
     <LevelFilterChip
@@ -335,7 +342,7 @@
     />
   </div>
 
-  <!-- 4. ExpandableSearchBar -->
+  <!-- 5. ExpandableSearchBar -->
   <div class="search-slot">
     <ExpandableSearchBar
       onSearch={(q) => engine.setSearch(q)}
@@ -345,7 +352,7 @@
     />
   </div>
 
-  <!-- 5. Result count -->
+  <!-- 6. Result count -->
   <span class="result-count" aria-live="polite" aria-atomic="true">
     {engine.resultCount} {engine.resultCount === 1 ? "sequence" : "sequences"}
   </span>

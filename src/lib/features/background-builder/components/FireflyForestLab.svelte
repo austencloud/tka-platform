@@ -4,7 +4,7 @@
   import {
     getFireflyForestSettings, updateFireflyForestSettings, } from "../state/background-builder-state.svelte";
   import { getPreviewAnimationController } from "../getPreviewAnimationController";
-  import type { PreviewStats } from "../services/contracts/types";
+  import type { PreviewStats } from "../services/types";
 
   // Child components
   import PreviewControls from "./PreviewControls.svelte";

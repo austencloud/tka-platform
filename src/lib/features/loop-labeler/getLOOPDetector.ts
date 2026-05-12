@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import type { ILOOPDetector } from './services/contracts/ILOOPDetector';
-import { LOOPDetector } from './services/implementations/LOOPDetector';
+import type { ILOOPDetector } from './services/ILOOPDetector';
+import { LOOPDetector } from './services/LOOPDetector';
 import { getStepComparisonOrchestrator } from './getStepComparisonOrchestrator';
 import { getTransformationAnalyzer } from './getTransformationAnalyzer';
 import * as polyrhythmicDetectorModule from './services/polyrhythmic-detector';

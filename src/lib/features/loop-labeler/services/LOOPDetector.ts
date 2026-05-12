@@ -3,21 +3,21 @@ import type {
   ILOOPDetector,
   LOOPDetectionResult,
   ModularPattern,
-} from "../../services/contracts/ILOOPDetector";
-import type { TransformationIntervals } from "../../domain/models/label-models";
+} from "./ILOOPDetector";
+import type { TransformationIntervals } from "../domain/models/label-models";
 import type { StepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
-import type { PolyrhythmicLOOPResult } from "../polyrhythmic-detector";
+import type { PolyrhythmicLOOPResult } from "./polyrhythmic-detector";
 import type {
   InternalStepPair,
   ExtractedStep,
-} from "../../domain/models/internal-step-models";
-import type { ComponentId } from "../../domain/constants/loop-components";
+} from "../domain/models/internal-step-models";
+import type { ComponentId } from "../domain/constants/loop-components";
 import {
   LOOPComponent,
   type DetectedComponent,
   type LOOPDomain,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import { detectOrientationPass } from "../loop-orientation-detector";
+import { detectOrientationPass } from "./loop-orientation-detector";
 import { detectUniformPattern } from "./detection";
 
 function componentIdToLOOPComponent(id: ComponentId): LOOPComponent | null {
@@ -586,10 +586,10 @@ export class LOOPDetector implements ILOOPDetector {
 
 import { stepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
 import { transformationAnalyzer } from "./TransformationAnalyzer";
-import { toPublicStepPairs, deriveComponentsFromPattern } from "../candidate-formatter";
-import * as polyrhythmicDetectorModule from "../polyrhythmic-detector";
-import * as layeredPathDetectorModule from "../layered-path-detector";
-import type { LayeredPathResult } from "../contracts/types";
+import { toPublicStepPairs, deriveComponentsFromPattern } from "./candidate-formatter";
+import * as polyrhythmicDetectorModule from "./polyrhythmic-detector";
+import * as layeredPathDetectorModule from "./layered-path-detector";
+import type { LayeredPathResult } from "./types";
 import type { TransformationAnalyzer } from "./TransformationAnalyzer";
 
 export const loopDetector = new LOOPDetector(

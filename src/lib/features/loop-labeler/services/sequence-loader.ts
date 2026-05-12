@@ -8,9 +8,9 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
-import type { SequenceEntry, RawStepData, RawMotionAttributes } from "./contracts/types";
-import type { LabeledSequence } from "./contracts/types";
-import type { FilterMode, SequenceStats } from "./contracts/types";
+import type { SequenceEntry, RawStepData, RawMotionAttributes } from "./types";
+import type { LabeledSequence } from "./types";
+import type { FilterMode, SequenceStats } from "./types";
 
 /**
  * Loads lightweight index from publicSequences for fast browsing,

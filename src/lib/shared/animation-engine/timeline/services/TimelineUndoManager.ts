@@ -134,7 +134,7 @@ export class TimelineUndoManager {
 
   redo(): TimelineProjectSnapshot | null {
     const entry = this.redoStack.pop();
-    if (!entry || !entry.afterState) {
+    if (!entry?.afterState) {
       return null;
     }
 

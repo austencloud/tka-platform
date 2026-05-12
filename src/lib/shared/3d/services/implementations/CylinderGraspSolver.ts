@@ -17,7 +17,6 @@
  *   - ASME Finger Kinematic Models for Cylindrical Grasps
  */
 
-import { Vector3 } from "three";
 import type { Bone } from "three";
 import type { FingerBoneName } from "../../domain/models/GripPose";
 

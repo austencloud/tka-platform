@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { SvgPropAnimator } from './services/implementations/SvgPropAnimator';
+import { SvgPropAnimator } from './services/SvgPropAnimator';
 
 let instance: SvgPropAnimator | null = null;
 

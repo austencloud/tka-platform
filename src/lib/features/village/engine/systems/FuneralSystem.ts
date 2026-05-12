@@ -3,7 +3,6 @@ import type { VillageEntity } from "../../domain/village-types";
 import type { VillageEventEmitter } from "../VillageEventEmitter";
 import {
 	FUNERAL_RADIUS,
-	INTERACTION_COOLDOWN_BASE,
 } from "../../domain/village-constants";
 
 export class FuneralSystem {
@@ -35,7 +34,7 @@ export class FuneralSystem {
 			const learner = world.entities.find(
 				(e) => e.id === deceased.social.partner,
 			);
-			if (learner && learner.social.sequenceBeingTransferred) {
+			if (learner?.social.sequenceBeingTransferred) {
 				const seqId = learner.social.sequenceBeingTransferred;
 				const teacherKnowledge =
 					deceased.knowledge.knownSequences.get(seqId);

@@ -3,7 +3,7 @@
  * Kept for backward-compatible DI injection across existing consumers.
  */
 
-import { GridLocation, GridPosition } from "../../domain/enums/grid-enums";
+import type { GridLocation, GridPosition } from "../../domain/enums/grid-enums";
 import {
   getGridLocationsFromPosition as _getGridLocations,
   getGridPositionFromLocations as _getGridPosition,

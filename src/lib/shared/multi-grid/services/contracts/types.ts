@@ -1,5 +1,5 @@
-import type { GridTopology, PointRef, Vec2, GridPlacement } from "../../domain/models/GridTopology";
-import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
+import type { PointRef, Vec2 } from "../../domain/models/GridTopology";
+import type { GridMode } from "$lib/shared/render/core/types";
 import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
 
 // --- From TopologyBetaSeparator ---

@@ -8,7 +8,6 @@
 import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
 // propInterpolator / sequenceConverter are now module-level functions
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { VillageOrchestrator } from "../engine/VillageOrchestrator";
 import * as sequenceMutator from "../services/sequence-mutator";
 import type { VillageConfig } from "../engine/VillageConfig";
@@ -18,9 +17,7 @@ import type {
 	PopulationStats,
 } from "../domain/village-types";
 
-export interface RendererDeps {
-	// propInterpolator and sequenceConverter are now module-level functions
-}
+export type RendererDeps = Record<string, unknown>;
 
 export interface AvatarRenderState {
 	entityId: string;
@@ -88,7 +85,7 @@ export function createVillageState(
 		const seq = seedSequences[i];
 		const entity = entities[i];
 		if (!seq || !entity) continue;
-		console.log(`[Village] Seeded "${seq.word ?? seq.id}" (${(seq as any).steps?.length ?? 0} steps) into ${entity.identity.name}`);
+		console.log(`[Village] Seeded "${seq.word ?? seq.id}" (${seq.steps?.length ?? 0} steps) into ${entity.identity.name}`);
 		entity.knowledge.knownSequences.set(seq.id ?? `seed-${i}`, {
 			sequenceId: seq.id ?? `seed-${i}`,
 			sequenceData: seq,

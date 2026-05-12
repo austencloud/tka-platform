@@ -11,7 +11,8 @@
  * is always ~0. All direction math uses XY, not XZ.
  */
 
-import { Vector3, Quaternion, Object3D, PointLight } from "three";
+import type { Object3D} from "three";
+import { Vector3, Quaternion, PointLight } from "three";
 import { VolumetricFireMesh } from "./VolumetricFireMesh";
 import { type FireColorPreset } from "./FireColorCurve3D";
 import { QualityTier } from "../types";

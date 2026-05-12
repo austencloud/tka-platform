@@ -52,6 +52,8 @@
     return variationMap.get(word.trim()) ?? [sequence];
   }
 
+  const handPathMode = $derived(engine.viewMode.subject === "hands");
+
   // Prop settings
   const propSettings = $derived({
     bluePropType: settingsService.settings.bluePropType,
@@ -105,6 +107,7 @@
     {onAction}
     pinchColumnOverride={engine.columnCount}
     {onGridReady}
+    {handPathMode}
   />
 {:else if engine.sectionsEnabled && engine.sections.length > 0}
   <!-- Sectioned: group by section with headers -->
@@ -131,6 +134,7 @@
                 catDogModeEnabled={isCatDog}
                 {lightMode}
                 {eager}
+                {handPathMode}
               />
             {/each}
           </div>
@@ -157,6 +161,7 @@
         catDogModeEnabled={isCatDog}
         {lightMode}
         {eager}
+        {handPathMode}
       />
     {/each}
   </div>

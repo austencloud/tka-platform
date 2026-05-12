@@ -806,7 +806,7 @@ export class WebGPUOverlayEffectsExecutor {
   private ensureAccum(name: "ink" | "silk" | "frost", w: number, h: number): void {
     const field = `${name}Accum` as const;
     const existing = this[field];
-    if (existing && existing.width === w && existing.height === h) return;
+    if (existing?.width === w && existing.height === h) return;
     if (existing) this.destroyAccum(existing);
 
     const makeAccumTex = (): AccumTex => {

@@ -72,7 +72,7 @@ export class TouchLookProvider implements IInputProvider {
 		return false; // Touch sprint would be a button
 	}
 
-	update(deltaTime: number): void {
+	update(_deltaTime: number): void {
 		if (!this.isActive) {
 			// Apply inertia decay when not touching
 			this.velocity.yaw *= this.config.inertiaDecay;
@@ -177,7 +177,7 @@ export class TouchLookProvider implements IInputProvider {
 
 	private handlePointerMove = (e: PointerEvent): void => {
 		if (!this.enabled) return;
-		if (!this.activeTouch || e.pointerId !== this.activeTouch.id) return;
+		if (e.pointerId !== this.activeTouch?.id) return;
 
 		const deltaX = e.clientX - this.activeTouch.lastX;
 		const deltaY = e.clientY - this.activeTouch.lastY;
@@ -198,7 +198,7 @@ export class TouchLookProvider implements IInputProvider {
 	};
 
 	private handlePointerUp = (e: PointerEvent): void => {
-		if (!this.activeTouch || e.pointerId !== this.activeTouch.id) return;
+		if (e.pointerId !== this.activeTouch?.id) return;
 
 		// Release capture
 		if (this.element.hasPointerCapture(e.pointerId)) {

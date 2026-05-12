@@ -5,7 +5,7 @@
  * Bridges services with Svelte's reactivity system.
  */
 
-import type { ConnectOrchestrator } from '../services/implementations/ConnectOrchestrator';
+import type { ConnectOrchestrator } from '../services/ConnectOrchestrator';
 import type {
 	SyncSession,
 	SessionParticipant,

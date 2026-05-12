@@ -15,6 +15,7 @@ import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-
 import type { TunnelLayerConfig } from "$lib/shared/animation-engine/domain/compose-types";
 import { gridCellsToComposition } from "./arrange-composition-converter";
 import { saveComposition as dexieSaveComposition } from "../../../services/dexie-composition-repository";
+import type { GridCell } from '../state/arrange-grid-state.svelte';
 
 const STORAGE_KEY = "compose-arrange-grid-v7";
 const STORAGE_KEY_V6 = "compose-arrange-grid-v6";
@@ -40,7 +41,7 @@ interface SavedComposition {
   id: string;
   name: string;
   createdAt: number;
-  cells: import("../state/arrange-grid-state.svelte").GridCell[];
+  cells: GridCell[];
   bpm: number;
   skipStartPosition: boolean;
   gridRows: number;

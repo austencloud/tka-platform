@@ -10,7 +10,7 @@ import {
 import {
   hasRotationData,
   areRotDirsInvertedForRotation,
-} from "../implementations/comparison/rotation-direction-helpers";
+} from "../comparison/rotation-direction-helpers";
 
 /**
  * Detect rotation transformations between beat pairs.

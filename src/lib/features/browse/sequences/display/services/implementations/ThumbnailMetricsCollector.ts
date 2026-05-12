@@ -300,7 +300,7 @@ export class ThumbnailMetricsCollector {
       return;
     }
 
-    const sessionMins = (summary.sessionDuration / 60000).toFixed(1);
+    const _sessionMins = (summary.sessionDuration / 60000).toFixed(1);
 
 
 

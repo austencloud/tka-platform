@@ -14,7 +14,7 @@ import type { PlacedRoom, RoomEdge } from "../domain/layout-types";
 import type { WallDefinition, WallSegment } from "../domain/wall-segment-types";
 import { computeSegmentWidth } from "../domain/wall-segment-types";
 import { ROOM_CONTENT } from "../data/museum-room-content";
-import type { StampResult, DoorPosition } from "./contracts/types";
+import type { StampResult, DoorPosition } from "./types";
 
 type WallName = "north" | "south" | "east" | "west";
 

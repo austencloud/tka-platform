@@ -25,7 +25,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
-import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import type { GalleryOfflineCache } from "$lib/shared/offline/services/implementations/GalleryOfflineCache";
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 

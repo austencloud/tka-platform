@@ -7,6 +7,7 @@ import type {
   ErrorMessage,
 } from "../../workers/pictograph-render.worker";
 import { supportsWorkerRendering } from "./RenderFactory";
+import type { LayerCompositor } from './LayerCompositor';
 
 interface PendingRender {
   resolve: (blob: Blob) => void;
@@ -28,7 +29,7 @@ export class WorkerRenderPool {
   private useWorkers: boolean;
   private terminated = false;
 
-  private fallbackCompositor: InstanceType<typeof import("./LayerCompositor").LayerCompositor> | null = null;
+  private fallbackCompositor: InstanceType<typeof LayerCompositor> | null = null;
 
   constructor() {
     this.useWorkers = supportsWorkerRendering();

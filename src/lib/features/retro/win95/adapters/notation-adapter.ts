@@ -9,7 +9,6 @@
  * Domain: Retro SCRIBE App
  */
 
-import type { GenerationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
 import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import {
   DifficultyLevel, GenerationMode, } from "$lib/shared/foundation/domain/models/generation/generate-models";

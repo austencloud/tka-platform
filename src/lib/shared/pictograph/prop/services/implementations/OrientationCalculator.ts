@@ -3,7 +3,7 @@
  * Kept for backward-compatible DI injection across existing consumers.
  */
 
-import { MotionColor, Orientation } from "../../../shared/domain/enums/pictograph-enums";
+import type { MotionColor, Orientation } from "../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";

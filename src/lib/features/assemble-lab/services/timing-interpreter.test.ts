@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   computeDurations,
-  type CaptureMode,
-  type InterpretMode,
   type TimedStepRecord,
 } from "./timing-interpreter";
 

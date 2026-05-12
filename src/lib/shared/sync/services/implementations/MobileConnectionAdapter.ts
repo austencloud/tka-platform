@@ -164,7 +164,7 @@ export class MobileConnectionAdapter {
 		this.cancelReconnect();
 	}
 
-	notifyDisconnected(reason?: string): void {
+	notifyDisconnected(_reason?: string): void {
 		if (this._recoveryState === 'connected' || this._recoveryState === 'disconnected') {
 			this.setRecoveryState('disconnected');
 		}
@@ -363,7 +363,7 @@ export class MobileConnectionAdapter {
 	private updateNetworkType(): void {
 		const connection = this.getNetworkConnection();
 
-		if (!connection || !connection.type) {
+		if (!connection?.type) {
 			this._networkType = this._isOnline ? 'unknown' : 'none';
 			return;
 		}

@@ -17,7 +17,7 @@ type DocumentWithViewTransition = Document & {
   startViewTransition?: (callback: () => void | Promise<void>) => ViewTransition;
 };
 
-import type { ModuleId, Section } from "../navigation/domain/types";
+import type { ModuleId } from "../navigation/domain/types";
 import {
   MODULE_DEFINITIONS,
   ENABLED_MODULE_DEFINITIONS,
@@ -361,7 +361,7 @@ const TAB_ORDERS: Record<string, string[]> = {
 
 // Debug flag - enable via: window.__DEBUG_NAV__ = true
 function navDebug(...args: unknown[]) {
-  if (typeof window !== "undefined" && (window as any).__DEBUG_NAV__) {
+  if (typeof window !== "undefined" && (window as unknown as Record<string, unknown>).__DEBUG_NAV__) {
     console.log("[NavCoord]", ...args);
   }
 }
@@ -477,7 +477,7 @@ export function getModuleDefinitions() {
   return ENABLED_MODULE_DEFINITIONS.filter((module) => {
     // Library module is now integrated into Gallery via Community/My Library toggle
     // (Note: "library" is not in ModuleId type but may exist in legacy data)
-    if (module.id === ("library" as any)) {
+    if (module.id === ("library" as unknown)) {
       return false;
     }
 
@@ -575,7 +575,7 @@ function parsePathNavigation(): {
 
     // Redirect legacy module URLs to their new locations
     // (Note: these IDs are not in ModuleId type but may exist in legacy URLs)
-    if (moduleId === ("library" as any)) {
+    if (moduleId === ("library" as unknown)) {
       // Library is now integrated into Gallery via Community/My Library toggle
       moduleId = "browse" as ModuleId;
       try {
@@ -583,7 +583,7 @@ function parsePathNavigation(): {
       } catch {
         // Ignore storage errors
       }
-    } else if (moduleId === ("dashboard" as any)) {
+    } else if (moduleId === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       moduleId = "create" as ModuleId;
     }
@@ -616,14 +616,14 @@ function parsePathNavigation(): {
 
     // Redirect legacy hash URLs to their new locations
     // (Note: these IDs are not in ModuleId type but may exist in legacy hash URLs)
-    if (moduleId === ("library" as any)) {
+    if (moduleId === ("library" as unknown)) {
       moduleId = "browse" as ModuleId;
       try {
         localStorage.setItem("tka-gallery-source", "my-library");
       } catch {
         // Ignore storage errors
       }
-    } else if (moduleId === ("dashboard" as any)) {
+    } else if (moduleId === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       moduleId = "create" as ModuleId;
     }
@@ -697,7 +697,7 @@ export function initializeNavigationHistory() {
     let targetSection = state.sectionId;
     let needsHistoryUpdate = false;
 
-    if (targetModule === ("library" as any)) {
+    if (targetModule === ("library" as unknown)) {
       targetModule = "browse" as ModuleId;
       targetSection = undefined;
       needsHistoryUpdate = true;
@@ -706,7 +706,7 @@ export function initializeNavigationHistory() {
       } catch {
         // Ignore storage errors
       }
-    } else if (targetModule === ("dashboard" as any)) {
+    } else if (targetModule === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       targetModule = "create" as ModuleId;
       targetSection = undefined;

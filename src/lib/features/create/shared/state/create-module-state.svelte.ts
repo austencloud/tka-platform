@@ -25,7 +25,7 @@ import type { ConstructTabState } from "./construct-tab-state.svelte";
 import type { AssembleTabState } from "./assemble-tab-state.svelte";
 import type { UndoController } from "./create-module/undo-controller.svelte";
 import type { UndoMetadata } from "../services/implementations/UndoManager";
-import { UndoOperationType } from "../services/implementations/UndoManager";
+import type { UndoOperationType } from "../services/implementations/UndoManager";
 
 /**
  * Creates the main Create Module state orchestrator

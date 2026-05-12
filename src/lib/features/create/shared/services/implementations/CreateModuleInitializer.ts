@@ -41,7 +41,7 @@ import type { DeepLinker } from "$lib/shared/navigation/services/implementations
 import type { ICreateModuleState } from "../../types/create-module-types";
 import type { PanelPersister } from "./PanelPersister.svelte";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import { UndoOperationType } from "./UndoManager";
+import type { UndoOperationType } from "./UndoManager";
 import type { UndoMetadata } from "./UndoManager";
 import type { Sharer } from "$lib/shared/share/services/implementations/Sharer";
 import type { ConstructTabState } from "../../state/construct-tab-state.svelte";

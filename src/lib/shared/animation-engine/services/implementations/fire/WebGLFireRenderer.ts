@@ -57,7 +57,7 @@ import {
 import { BASE_COLOR_CURVE } from "../../../domain/types/FireTypes";
 
 const MAX_DPR = 2;
-const DEFAULT_JACOBI_ITERATIONS = 12;
+const _DEFAULT_JACOBI_ITERATIONS = 12;
 
 // ============================================================
 // Active instance tracking for adaptive quality
@@ -698,7 +698,7 @@ export class WebGLFireRenderer {
       cacheState: this.frameCache
         ? {
             state: this.frameCache.isWarm() ? "warm" : this.frameCache.isRecording() ? "recording" : "idle",
-            totalFrames: (this.frameCache as any).totalFrames ?? 0,
+            totalFrames: (this.frameCache as unknown as Record<string, number>).totalFrames ?? 0,
           }
         : null,
       contextLost: this.gl?.isContextLost() ?? null,

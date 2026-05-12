@@ -36,20 +36,7 @@ import type { InkOverlayRenderer } from '$lib/shared/animation-engine/services/i
 import type { FrostOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/FrostOverlayRenderer'
 import type { SilkOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SilkOverlayRenderer'
 import type { PulseOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/PulseOverlayRenderer'
-import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
-import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
-import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
-import type { BloomTipInput } from "$lib/shared/effects/renderers/Bloom2DRenderer";
-import type { WaterTipInput } from "$lib/shared/effects/renderers/Water2DRenderer";
-import type { BubblesTipInput } from "$lib/shared/effects/renderers/Bubbles2DRenderer";
-import type { PetalsTipInput } from "$lib/shared/effects/renderers/Petals2DRenderer";
-import type { SmokeTipInput } from "$lib/shared/effects/renderers/Smoke2DRenderer";
-import type { InkTipInput } from "$lib/shared/effects/renderers/Ink2DRenderer";
-import type { FrostTipInput } from "$lib/shared/effects/renderers/Frost2DRenderer";
-import type { SilkTipInput } from "$lib/shared/effects/renderers/Silk2DRenderer";
-import type { PulseTipInput } from "$lib/shared/effects/renderers/Pulse2DRenderer";
 import type {
-  IAnimationRenderLoop,
   RenderLoopConfig,
   RenderFrameParams,
 } from "../contracts/IAnimationRenderLoop";
@@ -57,6 +44,8 @@ import { QualityTier } from "../../domain/types/QualityTypes";
 import { effectErrorSignal } from "../../state/effect-error-signal.svelte";
 import { resolveEffect } from "../../domain/types/TipEffectTypes";
 import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
+import type { FireTipUpdateResult } from './FireTipTracker';
+import type { FireFrameInput } from '../../domain/types/FireTypes';
 
 // ============================================================================
 // Longtask observer singleton - one PerformanceObserver shared across every
@@ -127,14 +116,16 @@ interface EffectDispatchContext {
  * Each entry defines how to get the renderer, build the tip input,
  * and invoke the renderer's renderFrame method.
  */
+type EffectRenderer = { isInitialized(): boolean; clear(): void; renderFrame: (...args: unknown[]) => void };
+
 interface EffectDispatchEntry {
   effect: EffectType;
   configKey: keyof RenderFrameParams;
-  getRenderer: (loop: AnimationRenderLoop) => { isInitialized(): boolean; clear(): void; renderFrame: Function } | null;
+  getRenderer: (loop: AnimationRenderLoop) => EffectRenderer | null;
   needsDt: boolean;
   resetTimeOnInactive: boolean;
   buildInput: (ctx: EffectDispatchContext, dt: number) => unknown;
-  render: (renderer: any, config: any, input: unknown, dt: number, ctx: EffectDispatchContext) => void;
+  render: (renderer: EffectRenderer, config: unknown, input: unknown, dt: number, ctx: EffectDispatchContext) => void;
 }
 
 export class AnimationRenderLoop {
@@ -398,8 +389,8 @@ export class AnimationRenderLoop {
       charcoalRendererInitialized: this.charcoalRenderer?.isInitialized() ?? false,
       ledRendererInitialized: this.ledRenderer?.isInitialized() ?? false,
       hasTrailOverlay: !!this.trailOverlay,
-      fireTipDiagnostics: (this.fireTipTracker as any)?.getDiagnostics?.() ?? null,
-      fireRendererDiagnostics: (this.fireRenderer as any)?.getDiagnostics?.() ?? null,
+      fireTipDiagnostics: this.fireTipTracker?.getDiagnostics?.() ?? null,
+      fireRendererDiagnostics: this.fireRenderer?.getDiagnostics?.() ?? null,
     };
   }
 
@@ -560,7 +551,7 @@ export class AnimationRenderLoop {
     {
       effect: "zap",
       configKey: "zapConfig",
-      getRenderer: (l) => l.zapRenderer as any,
+      getRenderer: (l) => l.zapRenderer as EffectRenderer | null,
       needsDt: false,
       resetTimeOnInactive: false,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "zap"),
@@ -570,7 +561,7 @@ export class AnimationRenderLoop {
     {
       effect: "sparkles",
       configKey: "sparklesConfig",
-      getRenderer: (l) => l.sparklesRenderer as any,
+      getRenderer: (l) => l.sparklesRenderer as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: false,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "sparkles"),
@@ -580,7 +571,7 @@ export class AnimationRenderLoop {
     {
       effect: "echo",
       configKey: "echoConfig",
-      getRenderer: (l) => l.echoRenderer as any,
+      getRenderer: (l) => l.echoRenderer as EffectRenderer | null,
       needsDt: false,
       resetTimeOnInactive: false,
       buildInput: (ctx) => ({
@@ -595,7 +586,7 @@ export class AnimationRenderLoop {
     {
       effect: "bloom",
       configKey: "bloomConfig",
-      getRenderer: (l) => l.bloomRenderer as any,
+      getRenderer: (l) => l.bloomRenderer as EffectRenderer | null,
       needsDt: false,
       resetTimeOnInactive: false,
       buildInput: (ctx) => AnimationRenderLoop.buildArrayTips(ctx.sharedTips, ctx.tipMap, "bloom", ctx.params, ctx.renderedTransforms),
@@ -605,7 +596,7 @@ export class AnimationRenderLoop {
     {
       effect: "water",
       configKey: "waterConfig",
-      getRenderer: (l) => l.waterRenderer as any,
+      getRenderer: (l) => l.waterRenderer as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "water"),
@@ -615,7 +606,7 @@ export class AnimationRenderLoop {
     {
       effect: "bubbles",
       configKey: "bubblesConfig",
-      getRenderer: (l) => l.bubblesRenderer as any,
+      getRenderer: (l) => l.bubblesRenderer as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "bubbles"),
@@ -625,7 +616,7 @@ export class AnimationRenderLoop {
     {
       effect: "petals",
       configKey: "petalsConfig",
-      getRenderer: (l) => l.petalsRenderer as any,
+      getRenderer: (l) => l.petalsRenderer as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "petals"),
@@ -635,7 +626,7 @@ export class AnimationRenderLoop {
     {
       effect: "smoke",
       configKey: "smokeConfig",
-      getRenderer: (l) => l.smokeRenderer as any,
+      getRenderer: (l) => l.smokeRenderer as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "smoke"),
@@ -645,7 +636,7 @@ export class AnimationRenderLoop {
     {
       effect: "ink",
       configKey: "inkConfig",
-      getRenderer: (l) => l.inkRenderer as any,
+      getRenderer: (l) => l.inkRenderer as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "ink"),
@@ -655,7 +646,7 @@ export class AnimationRenderLoop {
     {
       effect: "frost",
       configKey: "frostConfig",
-      getRenderer: (l) => l.frostRenderer as any,
+      getRenderer: (l) => l.frostRenderer as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "frost"),
@@ -665,7 +656,7 @@ export class AnimationRenderLoop {
     {
       effect: "silk",
       configKey: "silkConfig",
-      getRenderer: (l) => l.silkRenderer as any,
+      getRenderer: (l) => l.silkRenderer as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "silk"),
@@ -675,7 +666,7 @@ export class AnimationRenderLoop {
     {
       effect: "pulse",
       configKey: "pulseConfig",
-      getRenderer: (l) => l.pulseRenderer as any,
+      getRenderer: (l) => l.pulseRenderer as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildArrayTips(ctx.sharedTips, ctx.tipMap, "pulse", ctx.params, ctx.renderedTransforms),
@@ -697,7 +688,7 @@ export class AnimationRenderLoop {
     const renderer = entry.getRenderer(this);
     if (!renderer?.isInitialized()) return;
 
-    const config = (ctx.params as any)[entry.configKey];
+    const config = ctx.params[entry.configKey];
     const hasOverlay = this.fireTipTracker && config != null;
 
     if (hasOverlay && !this.effectDisabled.get(entry.effect)) {
@@ -1009,7 +1000,7 @@ export class AnimationRenderLoop {
       }
       // Clear trail overlay (Canvas2D)
       if (this.trailOverlay) {
-        const trailCanvas = (this.trailOverlay as any).canvas as HTMLCanvasElement | undefined;
+        const trailCanvas = (this.trailOverlay as ITrailOverlayCanvas & { canvas?: HTMLCanvasElement }).canvas;
         if (trailCanvas) {
           const ctx = trailCanvas.getContext("2d");
           if (ctx) ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
@@ -1113,11 +1104,11 @@ export class AnimationRenderLoop {
     );
     const hasAnyRegistryOverlay = this.fireTipTracker && this.effectDispatchRegistry.some(entry => {
       const renderer = entry.getRenderer(this);
-      return renderer?.isInitialized() && (params as any)[entry.configKey] != null;
+      return renderer?.isInitialized() && params[entry.configKey] != null;
     });
     const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasAnyRegistryOverlay;
 
-    let sharedTipResult: import("./FireTipTracker").FireTipUpdateResult | null = null;
+    let sharedTipResult: FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
       // Reset tip tracker on loop to prevent velocity spike from position teleport.
       // Without this, the position delta (end-of-sequence → start-of-sequence) produces
@@ -1155,7 +1146,7 @@ export class AnimationRenderLoop {
         const fireTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) === 'fire');
         const charcoalTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) === 'charcoal');
 
-        const fireInput: import("../../domain/types/FireTypes").FireFrameInput = {
+        const fireInput: FireFrameInput = {
           tips: allTips,
           currentTime,
           canvasWidth: this.canvasSize,

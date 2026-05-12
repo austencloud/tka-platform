@@ -10,7 +10,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceCreateRequest } from "$lib/shared/create/domain/sequence-models";

@@ -9,7 +9,7 @@ import {
 	getAllExactTerms
 } from '../data/profanity-wordlist';
 
-const exactTerms: Set<string> = getAllExactTerms();
+const exactTerms: Set<string> = getAllExactTerms(); // eslint-disable-line @typescript-eslint/no-unused-vars
 
 /**
  * Normalize input by lowercasing, stripping separators, and applying l33tspeak conversions.
@@ -18,7 +18,7 @@ export function normalize(input: string): string {
 	let result = input.toLowerCase();
 
 	// Remove common separators
-	result = result.replace(/[\s\-_\.]/g, '');
+	result = result.replace(/[\s\-_.]/g, '');
 
 	// Apply l33tspeak conversions
 	for (const [leet, normal] of Object.entries(LEET_MAPPINGS)) {

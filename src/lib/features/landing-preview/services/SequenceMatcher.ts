@@ -1,7 +1,7 @@
 /**
  * Searches for sequences with fuzzy matching, name search, smart ranking, and VTG aliases
  */
-import type { MatchedSequence } from "../../types";
+import type { MatchedSequence } from "../types";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 
 // Known user ID for Austen (primary sequence creator)

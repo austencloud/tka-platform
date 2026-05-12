@@ -12,8 +12,6 @@
 import type {
   ParticlePassPayload,
   ParticleTipState,
-  ParticleEmitter,
-  ParticleBlendMode,
 } from "../../domain/ParticlePass";
 
 const MAX_PARTICLES = 2048;
@@ -289,7 +287,7 @@ export class WebGPUParticleExecutor {
       new Float32Array([canvasW, canvasH]),
     );
 
-    const blendMode = payload.tips.length > 0 ? payload.tips[0]!.blendMode : "alpha";
+    const blendMode = payload.tips.length > 0 ? payload.tips[0]!.blendMode : "alpha"; // eslint-disable-line @typescript-eslint/no-unused-vars
     // Blend mode is baked into pipeline at creation; for runtime switching
     // we'd need multiple pipelines. Using premultiplied alpha for now.
 

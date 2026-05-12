@@ -7,9 +7,8 @@
  */
 
 import type { FeedItem } from "../domain/models/feed-models";
-import type { FeedLoader } from "../services/implementations/FeedLoader";
+import type { FeedLoader } from "../services/FeedLoader";
 
-import { getFeedLoader } from "$lib/features/watch/getFeedLoader";
 
 export type FeedStatus = "idle" | "loading" | "loaded" | "error";
 

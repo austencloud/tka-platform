@@ -20,7 +20,7 @@ import { reversalDetector, type ReversalDetector } from "$lib/shared/create/serv
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { UndoMetadata } from "../services/implementations/UndoManager";
-import { UndoOperationType } from "../services/implementations/UndoManager";
+import type { UndoOperationType } from "../services/implementations/UndoManager";
 import { createUndoController } from "./create-module/undo-controller.svelte";
 import { undoManager } from "../services/implementations/UndoManager";
 

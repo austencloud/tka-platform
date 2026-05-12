@@ -27,7 +27,6 @@ import {
   TrailEffect,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type {
-  AdditionalLayerProps,
   TrailCapturePropStates,
   PropDimensions,
   TrailCaptureConfig,
@@ -576,7 +575,7 @@ export class TrailCapturer {
         });
       } else {
         const distance = Math.hypot(worldX - lastPoint.x, worldY - lastPoint.y);
-        const timeSinceLastPoint = currentTime - lastPoint.timestamp;
+        const timeSinceLastPoint = currentTime - lastPoint.timestamp; // eslint-disable-line @typescript-eslint/no-unused-vars
         const isInitialJump = distance > INITIAL_JUMP_DISTANCE_THRESHOLD;
 
         if (isInitialJump) {
@@ -783,7 +782,7 @@ export class TrailCapturer {
             worldX - lastPoint.x,
             worldY - lastPoint.y
           );
-          const timeSinceLastPoint = currentTime - lastPoint.timestamp;
+          const timeSinceLastPoint = currentTime - lastPoint.timestamp; // eslint-disable-line @typescript-eslint/no-unused-vars
 
           // Detect initial jump (from default position to first beat position)
           const isInitialJump = distance > INITIAL_JUMP_DISTANCE_THRESHOLD;

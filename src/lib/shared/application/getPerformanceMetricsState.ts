@@ -3,7 +3,7 @@ import { createPerformanceMetricsState } from './state/PerformanceMetricsState.s
 type PerformanceMetricsState = ReturnType<typeof createPerformanceMetricsState>;
 
 const hmrData = import.meta.hot?.data as { performanceMetricsState?: PerformanceMetricsState } | undefined;
-let instance: PerformanceMetricsState = hmrData?.performanceMetricsState ?? createPerformanceMetricsState();
+const instance: PerformanceMetricsState = hmrData?.performanceMetricsState ?? createPerformanceMetricsState();
 
 if (import.meta.hot) {
 	import.meta.hot.dispose((data) => {

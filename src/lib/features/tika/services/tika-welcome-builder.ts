@@ -10,7 +10,7 @@
  * 4. Explore (static fallback) - purple
  */
 
-import type { TikaTopicInteraction } from "./implementations/TikaInteractionTracker";
+import type { TikaTopicInteraction } from "./TikaInteractionTracker";
 import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
 
 export interface WelcomeSuggestion {

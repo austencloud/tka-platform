@@ -68,7 +68,7 @@ export function createCompositionLabState(initialPresetId?: string) {
   let exportStatus = $state<"idle" | "copied" | "error">("idle");
 
   // ── Undo/Redo stacks (not reactive — plain arrays) ──
-  let undoStack: ConstraintCell[][] = [];
+  const undoStack: ConstraintCell[][] = [];
   let redoStack: ConstraintCell[][] = [];
 
   // ── Derived values ──

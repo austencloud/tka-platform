@@ -1,10 +1,11 @@
+import type {
+  ShaderMaterial} from "three";
 import {
   Vector3,
   BufferGeometry,
   BufferAttribute,
   Mesh,
-  Color,
-  ShaderMaterial,
+  Color
 } from "three";
 import { createTrailMaterial } from "./TrailMaterial3D";
 import type { QualityTier } from "../types";

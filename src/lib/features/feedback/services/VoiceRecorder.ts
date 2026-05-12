@@ -97,7 +97,7 @@ export class VoiceRecorder {
 
 	stop(): Promise<VoiceRecordingResult> {
 		return new Promise((resolve, reject) => {
-			if (!this.recorder || this.recorder.state !== "recording") {
+			if (this.recorder?.state !== "recording") {
 				reject(new Error("Not recording"));
 				return;
 			}
@@ -108,7 +108,7 @@ export class VoiceRecorder {
 	}
 
 	cancel(): void {
-		if (this.recorder && this.recorder.state === "recording") {
+		if (this.recorder?.state === "recording") {
 			// Clear the onstop handler so finalizeRecording doesn't fire
 			this.recorder.onstop = null;
 			this.recorder.stop();

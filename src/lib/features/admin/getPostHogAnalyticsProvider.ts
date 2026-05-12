@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { PostHogAnalyticsProvider } from './services/implementations/PostHogAnalyticsProvider';
+import { PostHogAnalyticsProvider } from './services/PostHogAnalyticsProvider';
 
 let instance: PostHogAnalyticsProvider | null = null;
 

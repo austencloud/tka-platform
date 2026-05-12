@@ -20,7 +20,7 @@ export async function getMyFavorite(userId: string): Promise<FavoriteConfig | nu
     if (!userDoc) return null;
 
     const fav = userDoc.favoriteConfig;
-    if (!fav || !fav.config) return null;
+    if (!fav?.config) return null;
 
     return {
       config: fav.config as unknown as UIGenerationConfig,

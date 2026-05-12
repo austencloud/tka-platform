@@ -2,7 +2,7 @@
  * TIKA Markdown Parser
  *
  * Converts markdown text to HTML for display in TIKA chat responses.
- * Handles tables, links (as footnote references), and standard markdown.
+ * Handles tables, links (as bartnote references), and standard markdown.
  */
 
 import DOMPurify from 'dompurify';
@@ -10,7 +10,7 @@ import DOMPurify from 'dompurify';
 export interface ParsedMarkdown {
 	/** The HTML-rendered content */
 	html: string;
-	/** Extracted links for footnote-style display */
+	/** Extracted links for bartnote-style display */
 	links: Array<{ text: string; url: string }>;
 }
 
@@ -59,14 +59,14 @@ export function parseMarkdown(markdown: string): ParsedMarkdown {
 		}
 	);
 
-	// Extract links and convert to footnote references
-	// Links become superscript numbers, actual links go in footer index
+	// Extract links and convert to bartnote references
+	// Links become superscript numbers, actual links go in barter index
 	const linkIndex: Array<{ text: string; url: string }> = [];
 	processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
 		// Check if this URL already exists in the index
 		const existingIndex = linkIndex.findIndex((l) => l.url === url);
 		if (existingIndex >= 0) {
-			// Reuse existing footnote number
+			// Reuse existing bartnote number
 			return `${text}__FOOTNOTE_${existingIndex + 1}__`;
 		}
 		// Add new link to index
@@ -90,9 +90,9 @@ export function parseMarkdown(markdown: string): ParsedMarkdown {
 		.replace(/\n\n+/g, '</p><p>')
 		.replace(/\n/g, '<br>');
 
-	// Convert footnote placeholders to superscript numbers
+	// Convert bartnote placeholders to superscript numbers
 	processed = processed.replace(/__FOOTNOTE_(\d+)__/g, (_, num) => {
-		return `<sup class="footnote-ref">${num}</sup>`;
+		return `<sup class="bartnote-ref">${num}</sup>`;
 	});
 
 	// Restore tables

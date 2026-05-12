@@ -1,4 +1,4 @@
-import type { VideoPerformer, LinkedSequence, VideoCropData, VideoSnipData } from "../../types";
+import type { VideoPerformer, LinkedSequence, VideoCropData, VideoSnipData } from "../types";
 
 /**
  * Interface for persisting video curator data to Firestore

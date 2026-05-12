@@ -31,7 +31,6 @@ import type {
   VegetationCategory,
   ManifestBiome,
   VegetationManifest,
-  ManifestModel,
 } from "../../domain/vegetation-categories";
 import {
   CATEGORY_SCALE_RANGES,
@@ -209,7 +208,7 @@ export class ModelRegistry {
   }
 
   private async loadGLB(info: ModelInfo): Promise<CachedModel | undefined> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       this.loader.load(
         info.path,
         (gltf: GLTF) => {

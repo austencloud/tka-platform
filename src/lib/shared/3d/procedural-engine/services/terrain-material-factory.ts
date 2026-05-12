@@ -1,8 +1,9 @@
+import type {
+  MeshStandardMaterial} from "three";
 import {
   BufferGeometry,
   BufferAttribute,
   Mesh,
-  MeshStandardMaterial,
   type Material,
   type Scene,
 } from "three";

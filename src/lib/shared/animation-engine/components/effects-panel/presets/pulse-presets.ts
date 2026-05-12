@@ -22,7 +22,7 @@ export const PULSE_PRESETS = [
     id: "pulse-sonar",
     name: "Sonar",
     previewColor: "#38bdf8",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyPulse(state, "pulse-sonar", {
         trigger: "beat",
         style: "stroke",
@@ -38,7 +38,7 @@ export const PULSE_PRESETS = [
     id: "pulse-shockwave",
     name: "Shockwave",
     previewColor: "#ff6000",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyPulse(state, "pulse-shockwave", {
         trigger: "velocity",
         style: "glow",
@@ -54,7 +54,7 @@ export const PULSE_PRESETS = [
     id: "pulse-heartbeat",
     name: "Heartbeat",
     previewColor: "#f0abfc",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyPulse(state, "pulse-heartbeat", {
         trigger: "continuous",
         style: "glow",
@@ -69,7 +69,7 @@ export const PULSE_PRESETS = [
     id: "pulse-radar",
     name: "Radar",
     previewColor: "#a855f7",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyPulse(state, "pulse-radar", {
         trigger: "beat",
         style: "stroke",
@@ -85,7 +85,7 @@ export const PULSE_PRESETS = [
     id: "pulse-ripple",
     name: "Ripple",
     previewColor: "#93c5fd",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyPulse(state, "pulse-ripple", {
         trigger: "continuous",
         style: "glow",
@@ -100,7 +100,7 @@ export const PULSE_PRESETS = [
     id: "pulse-void",
     name: "Void",
     previewColor: "#404060",
-    apply: (_vm: any, state: EffectsConfigState | null) =>
+    apply: (_vm: unknown, state: EffectsConfigState | null) =>
       applyPulse(state, "pulse-void", {
         trigger: "velocity",
         style: "stroke",

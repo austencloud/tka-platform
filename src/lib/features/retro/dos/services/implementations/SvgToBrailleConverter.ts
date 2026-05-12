@@ -79,7 +79,7 @@ const CSS_BLUE = "dos-blue";
 const CSS_RED = "dos-red";
 const CSS_WHITE = "dos-white";
 
-function colorIdToCss(colorId: number): string {
+function _colorIdToCss(colorId: number): string {
 	switch (colorId) {
 		case COLOR_BLUE: return CSS_BLUE;
 		case COLOR_RED: return CSS_RED;

@@ -4,10 +4,11 @@
   import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
   import { loadDecks, loadDeckSequencesPage, getCachedDecks } from "$lib/features/choreo-card/services/deck-loader";
   import { getStickerLabContext } from "../context/sticker-lab-context";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { cachePrimitivePaths } from "../state/mandala-paths-cache.svelte";
   import type { Deck } from "$lib/features/choreo-card/domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { MandalaPaths, MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
+  import type { MandalaPaths, MandalaPalette, SVGPathData } from "$lib/shared/mandala/domain/mandala-types";
   import type { QueryDocumentSnapshot } from "firebase/firestore";
 
   const stickerState = getStickerLabContext();
@@ -33,17 +34,41 @@
 
   const FETCH_PAGE = 200;
 
-  // --- Path-type classification fingerprinting ---
-  // Each prop tip path is classified by its radial behavior:
-  //   DASH:   sweeps from center to edge (minR < 5, range > 20)
-  //   ARC:    sweeps near-center to edge (minR >= 5, range > 20)
-  //   CIRCLE: constant at outer edge (range < 20, maxR > 100)
-  //   DOT:    constant at center (range < 20, maxR <= 100)
-  //
-  // Staff props have 2 tips each, 2 props = 4 paths total (blue+red only, not purple).
-  // Props always produce tip-pairs: 2 DASH, 2 ARC, or CIRCLE+DOT.
-  // Fingerprint = count of each type → exactly 6 possible shapes.
+  // --- Solo prop path extraction ---
+  interface SoloEntry {
+    paths: SVGPathData[];
+    word: string;
+    prop: "blue" | "red";
+    seq: SequenceData;
+    fullPaths: MandalaPaths;
+  }
 
+  function extractSolos(seq: SequenceData, paths: MandalaPaths): SoloEntry[] {
+    return [
+      { paths: paths.blue, word: seq.word ?? seq.id, prop: "blue" as const, seq, fullPaths: paths },
+      { paths: paths.red, word: seq.word ?? seq.id, prop: "red" as const, seq, fullPaths: paths },
+    ].filter(s => s.paths.length > 0);
+  }
+
+  // Render one solo as mono SVG — put solo paths in blue slot
+  function renderSolo(solo: SoloEntry, key: string): string {
+    const cached = svgCache.get(key);
+    if (cached) return cached;
+    const asMandala: MandalaPaths = { blue: solo.paths, red: [], purple: [] };
+    const svg = renderMandalaSVG(asMandala, {
+      size: 300,
+      style: "stroke",
+      showGridDots: false,
+      show: "both",
+      strokeWidth: 2.5,
+      transparentBackground: true,
+      palette: MONO_PALETTE,
+    });
+    svgCache.set(key, svg);
+    return svg;
+  }
+
+  // --- Fingerprint: rotation-invariant sample-point matching ---
   function samplePathPoints(d: string): [number, number][] {
     const pts: [number, number][] = [];
     let cx = 0, cy = 0;
@@ -70,89 +95,64 @@
     return pts;
   }
 
-  type PathType = "DASH" | "ARC" | "CIRCLE" | "DOT";
-
-  function classifyPath(d: string): PathType {
-    const pts = samplePathPoints(d);
-    if (pts.length < 2) return "DOT";
-    const radii = pts.map(([x, y]) => Math.sqrt(x * x + y * y));
-    const minR = Math.min(...radii);
-    const maxR = Math.max(...radii);
-    if (maxR - minR < 20) return maxR > 100 ? "CIRCLE" : "DOT";
-    return minR < 5 ? "DASH" : "ARC";
+  function subsample(pts: [number, number][], target: number): [number, number][] {
+    if (pts.length <= target) return pts;
+    const step = (pts.length - 1) / (target - 1);
+    const out: [number, number][] = [];
+    for (let i = 0; i < target; i++) out.push(pts[Math.round(i * step)]!);
+    return out;
   }
 
-  function fpLabel(fp: string): string {
-    const m = fp.match(/D(\d+)A(\d+)C(\d+)P(\d+)/);
-    if (!m) return fp;
-    const parts: string[] = [];
-    if (Number(m[1]) > 0) parts.push("dash");
-    if (Number(m[2]) > 0) parts.push("arc");
-    if (Number(m[3]) > 0 || Number(m[4]) > 0) parts.push("circle");
-    return parts.join(" + ") || "unknown";
+  // Fingerprint: radii signature per tip, sorted. Rotation-invariant.
+  // Two solos with same radial profile at same sample positions = same shape regardless of rotation.
+  function soloFingerprint(solo: SoloEntry): string {
+    const tipSigs = solo.paths
+      .map(p => {
+        const pts = samplePathPoints(p.d);
+        const radii = pts.map(([x, y]) => Math.round(Math.sqrt(x * x + y * y)));
+        const sub = subsample(radii.map((r, i) => [r, i] as [number, number]), 16)
+          .map(([r]) => r);
+        return sub.join(",");
+      })
+      .sort();
+    return tipSigs.join("|");
   }
 
-  function mandalaFingerprint(paths: MandalaPaths): string {
-    let nD = 0, nA = 0, nC = 0, nP = 0;
-    for (const group of [paths.blue, paths.red]) {
-      for (const p of group) {
-        const t = classifyPath(p.d);
-        if (t === "DASH") nD++;
-        else if (t === "ARC") nA++;
-        else if (t === "CIRCLE") nC++;
-        else nP++;
-      }
-    }
-    return `D${nD}A${nA}C${nC}P${nP}`;
-  }
-
-  // --- Types ---
-  interface ShapeGroup {
+  interface SoloGroup {
     fp: string;
-    repPaths: MandalaPaths;
-    repSeq: SequenceData;
-    count: number;
-    sequences: Array<{ seq: SequenceData }>;
+    repSolo: SoloEntry;
+    members: SoloEntry[];
   }
 
-  type View = { kind: "decks" } | { kind: "shapes"; deck: Deck } | { kind: "variants"; deck: Deck; group: ShapeGroup };
+  type View =
+    | { kind: "decks" }
+    | { kind: "solos"; deck: Deck }
+    | { kind: "members"; deck: Deck; group: SoloGroup };
 
-  // --- State ---
   let decks = $state<Deck[]>([]);
   let loading = $state(true);
   let view = $state<View>({ kind: "decks" });
-  let shapes = $state<ShapeGroup[]>([]);
+  let groups = $state<SoloGroup[]>([]);
   let scanProgress = $state("");
 
   const copiesMap = $derived(
     new Map(stickerState.sheet.stickers.map((s) => [s.primitiveRef.shapeHash, s.copies])),
   );
 
-  function isQuarteredRotatedLoop(deck: Deck): boolean {
-    return (
-      deck.collection === "LOOPs" &&
-      deck.loopType === "rotated" &&
-      deck.sliceType === "quartered" &&
-      (!deck.reversalPattern || deck.reversalPattern === "continuous")
-    );
-  }
-
   onMount(async () => {
     const cached = getCachedDecks();
-    if (cached && cached.length > 0) {
-      decks = cached.filter(isQuarteredRotatedLoop);
-    }
+    if (cached && cached.length > 0) decks = cached;
     const fresh = await loadDecks();
-    decks = fresh.filter(isQuarteredRotatedLoop);
+    decks = fresh;
     loading = false;
   });
 
   async function openDeck(deck: Deck) {
-    view = { kind: "shapes", deck };
-    shapes = [];
+    view = { kind: "solos", deck };
+    groups = [];
     scanProgress = "Loading...";
 
-    const shapeMap = new Map<string, ShapeGroup>();
+    const groupMap = new Map<string, SoloGroup>();
     let lastDoc: QueryDocumentSnapshot | null = null;
     let hasMore = true;
     let loaded = 0;
@@ -162,18 +162,20 @@
       for (const seq of page.sequences) {
         if (!seq.steps || seq.steps.length === 0) continue;
         const paths = calc.calculate(seq.steps, "staff", "staff");
-        const fp = mandalaFingerprint(paths);
-        const existing = shapeMap.get(fp);
-        if (existing) {
-          existing.count++;
-          existing.sequences.push({ seq });
-        } else {
-          shapeMap.set(fp, { fp, repPaths: paths, repSeq: seq, count: 1, sequences: [{ seq }] });
+        const solos = extractSolos(seq, paths);
+        for (const solo of solos) {
+          const fp = soloFingerprint(solo);
+          const existing = groupMap.get(fp);
+          if (existing) {
+            existing.members.push(solo);
+          } else {
+            groupMap.set(fp, { fp, repSolo: solo, members: [solo] });
+          }
         }
       }
       loaded += page.sequences.length;
-      scanProgress = `${loaded} sequences → ${shapeMap.size} shapes`;
-      shapes = [...shapeMap.values()].sort((a, b) => b.count - a.count);
+      scanProgress = `${loaded} sequences, ${groupMap.size} solo shapes`;
+      groups = [...groupMap.values()].sort((a, b) => b.members.length - a.members.length);
       lastDoc = page.lastDoc;
       hasMore = page.sequences.length === FETCH_PAGE;
       await new Promise((r) => setTimeout(r, 0));
@@ -181,8 +183,8 @@
     scanProgress = "";
   }
 
-  function openVariants(group: ShapeGroup, deck: Deck) {
-    view = { kind: "variants", deck, group };
+  function openMembers(group: SoloGroup, deck: Deck) {
+    view = { kind: "members", deck, group };
   }
 
   function addToSheet(seq: SequenceData, paths: MandalaPaths) {
@@ -199,26 +201,9 @@
     });
   }
 
-  // --- SVG rendering ---
   const svgCache = new Map<string, string>();
 
-  function renderMono(paths: MandalaPaths, key: string): string {
-    const cached = svgCache.get(key);
-    if (cached) return cached;
-    const svg = renderMandalaSVG(paths, {
-      size: 300,
-      style: "stroke",
-      showGridDots: false,
-      show: "both",
-      strokeWidth: 2.5,
-      transparentBackground: true,
-      palette: MONO_PALETTE,
-    });
-    svgCache.set(key, svg);
-    return svg;
-  }
-
-  function renderColor(seq: SequenceData): { svg: string; paths: MandalaPaths } | null {
+  function renderCombined(seq: SequenceData): { svg: string; paths: MandalaPaths } | null {
     const key = `c_${seq.id}`;
     const cached = svgCache.get(key);
     if (cached) {
@@ -243,103 +228,141 @@
   function deckLabel(deck: Deck): string {
     return deck.name ?? `${deck.turnPattern ?? ""}`.replace("uniform-", "").replace("t", " Turn");
   }
+
+  // --- Diagnostic ---
+  function buildDiagnostic(solo: SoloEntry): string {
+    const lines: string[] = [`SOLO: ${solo.word} [${solo.prop}]`];
+    for (const p of solo.paths) {
+      const allPts = samplePathPoints(p.d);
+      const pts = subsample(allPts, 12);
+      const radii = allPts.map(([x, y]) => Math.sqrt(x * x + y * y));
+      const minR = Math.round(Math.min(...radii));
+      const maxR = Math.round(Math.max(...radii));
+      const coords = pts.map(([x, y]) => `${Math.round(x)},${Math.round(y)}`).join(" ");
+      lines.push(`tip${p.tipIndex} r:[${minR}..${maxR}]: ${coords}`);
+    }
+    lines.push(`FP: ${soloFingerprint(solo)}`);
+    return lines.join("\n");
+  }
+
+  let copiedKey = $state<string | null>(null);
+
+  async function copyDiagnostic(key: string, solo: SoloEntry) {
+    const text = buildDiagnostic(solo);
+    await navigator.clipboard.writeText(text);
+    toast.success("Diagnostic copied");
+    copiedKey = key;
+    setTimeout(() => { if (copiedKey === key) copiedKey = null; }, 800);
+  }
 </script>
 
 <div class="shape-browser">
-  {#if view.kind === "variants"}
-    <header class="sb-header">
-      <button class="back-btn" onclick={() => view = { kind: "shapes", deck: view.kind === "variants" ? view.deck : decks[0]! }}>
-        <i class="fas fa-arrow-left" aria-hidden="true"></i> Shapes
+  {#if view.kind === "members"}
+    <nav class="sb-nav">
+      <button class="back-btn" onclick={() => view = { kind: "solos", deck: view.kind === "members" ? view.deck : decks[0]! }}>
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Solos
       </button>
-      <span class="deck-title">{fpLabel(view.group.fp)} — {view.group.count} color variants</span>
-    </header>
+      <span class="sep" aria-hidden="true">/</span>
+      <span class="current">{view.group.members.length} members</span>
+      <span class="hint">right-click = diagnostic</span>
+    </nav>
 
-    <div class="shape-grid">
-      {#each view.group.sequences as entry, i (i)}
-        {@const result = renderColor(entry.seq)}
-        {#if result}
-          {@const copies = copiesMap.get(entry.seq.id) ?? 0}
-          <button
-            class="shape-tile"
-            class:on-sheet={copies > 0}
-            onclick={() => addToSheet(entry.seq, result.paths)}
-            aria-label="{entry.seq.word ?? entry.seq.id} — {copies > 0 ? `${copies} on sheet` : 'Add to sheet'}"
-          >
-            <div class="tile-art">
-              {@html result.svg}
-            </div>
-            <span class="tile-word">{entry.seq.word ?? entry.seq.id}</span>
-            {#if copies > 0}
-              <span class="tile-badge">{copies}</span>
-            {/if}
-          </button>
-        {/if}
+    <div class="grid">
+      {#each view.group.members as solo, i (i)}
+        {@const key = `m_${solo.word}_${solo.prop}_${i}`}
+        <button
+          class="tile"
+          class:copied={copiedKey === key}
+          oncontextmenu={(e) => { e.preventDefault(); copyDiagnostic(key, solo); }}
+          onclick={() => {
+            const result = renderCombined(solo.seq);
+            if (result) addToSheet(solo.seq, result.paths);
+          }}
+        >
+          <div class="art">{@html renderSolo(solo, `solo_${solo.word}_${solo.prop}`)}</div>
+          <span class="label">{solo.word} <span class="prop-tag">{solo.prop}</span></span>
+        </button>
       {/each}
     </div>
 
-  {:else if view.kind === "shapes"}
-    <header class="sb-header">
-      <button class="back-btn" onclick={() => { view = { kind: "decks" }; shapes = []; }}>
-        <i class="fas fa-arrow-left" aria-hidden="true"></i> Decks
+  {:else if view.kind === "solos"}
+    <nav class="sb-nav">
+      <button class="back-btn" onclick={() => { view = { kind: "decks" }; groups = []; }}>
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Decks
       </button>
-      <span class="deck-title">{deckLabel(view.deck)}</span>
+      <span class="sep" aria-hidden="true">/</span>
+      <span class="current">{deckLabel(view.deck)}</span>
       {#if scanProgress}
-        <span class="stat-pill dim">
-          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-          {scanProgress}
-        </span>
+        <span class="status"><i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> {scanProgress}</span>
+      {:else}
+        <span class="hint">{groups.length} solo shapes — right-click = diagnostic</span>
       {/if}
-    </header>
+    </nav>
 
-    <div class="section-shapes">
-      {#each shapes as group (group.fp)}
+    <div class="grid">
+      {#each groups as group (group.fp)}
         <button
-          class="shape-tile"
-          onclick={() => { if (view.kind === "shapes") openVariants(group, view.deck); }}
-          aria-label="{group.count} variant{group.count === 1 ? '' : 's'}"
+          class="tile"
+          class:copied={copiedKey === `s_${group.fp}`}
+          onclick={() => { if (view.kind === "solos") openMembers(group, view.deck); }}
+          oncontextmenu={(e) => { e.preventDefault(); copyDiagnostic(`s_${group.fp}`, group.repSolo); }}
         >
-          <div class="tile-art">
-            {@html renderMono(group.repPaths, group.fp)}
-          </div>
-          <span class="tile-word">{fpLabel(group.fp)}</span>
-          {#if group.count > 1}
-            <span class="shape-count">{group.count}</span>
-          {/if}
+          <div class="art">{@html renderSolo(group.repSolo, group.fp)}</div>
+          <span class="label">{group.repSolo.word}</span>
+          {#if group.members.length > 1}<span class="count">{group.members.length}</span>{/if}
         </button>
       {/each}
 
-      {#if shapes.length === 0 && !scanProgress}
-        <div class="empty-state">
-          <p>No sequences in this deck</p>
-        </div>
+      {#if groups.length === 0 && !scanProgress}
+        <p class="empty">No sequences in this deck</p>
       {/if}
     </div>
 
   {:else}
-    <header class="sb-header">
-      <span class="deck-title">Mandala Shapes</span>
+    <div class="sb-header">
+      <span class="title">Solo Mandala Shapes</span>
       {#if loading}
-        <span class="stat-pill dim">
-          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-          Loading decks...
-        </span>
+        <span class="status"><i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Loading</span>
       {:else}
-        <span class="stat-pill">{decks.length} decks</span>
+        <span class="status">{decks.length} decks</span>
       {/if}
-    </header>
+    </div>
+
+    {@const loopDecks = decks.filter(d => d.collection === 'LOOPs')}
+    {@const vtgDecks = decks.filter(d => d.collection !== 'LOOPs')}
 
     <div class="deck-list">
-      {#each decks as deck (deck.id)}
-        <button class="deck-row" onclick={() => openDeck(deck)}>
-          <span class="deck-row-name">{deckLabel(deck)}</span>
-          <i class="fas fa-chevron-right deck-row-arrow" aria-hidden="true"></i>
-        </button>
-      {/each}
+      {#if loopDecks.length > 0}
+        <section>
+          <h3 class="section-label">LOOP Decks <span class="dim">({loopDecks.length})</span></h3>
+          <div class="deck-grid">
+            {#each loopDecks as deck (deck.id)}
+              <button class="deck-card" onclick={() => openDeck(deck)}>
+                <span class="deck-name">{deckLabel(deck)}</span>
+                <span class="deck-meta">{deck.totalSequences.toLocaleString()} seq</span>
+              </button>
+            {/each}
+          </div>
+        </section>
+      {/if}
+      {#if vtgDecks.length > 0}
+        <section>
+          <h3 class="section-label">VTG Decks <span class="dim">({vtgDecks.length})</span></h3>
+          <div class="deck-grid">
+            {#each vtgDecks as deck (deck.id)}
+              <button class="deck-card" onclick={() => openDeck(deck)}>
+                <span class="deck-name">{deckLabel(deck)}</span>
+                <span class="deck-meta">{deck.totalSequences.toLocaleString()} seq</span>
+              </button>
+            {/each}
+          </div>
+        </section>
+      {/if}
 
       {#if !loading && decks.length === 0}
-        <div class="empty-state">
-          <p>No quartered rotated LOOP decks found</p>
-        </div>
+        <p class="empty">No decks found</p>
       {/if}
     </div>
   {/if}
@@ -353,228 +376,181 @@
     overflow: hidden;
   }
 
+  .sb-nav {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap: wrap;
+  }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 6px 12px;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.7);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .back-btn:hover { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+  .back-btn:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
+
+  .sep { color: rgba(255, 255, 255, 0.2); font-size: 13px; }
+  .current { font-size: 13px; font-weight: 600; color: #fff; }
+  .hint { margin-left: auto; font-size: 11px; color: rgba(255, 255, 255, 0.25); }
+  .status { margin-left: auto; font-size: 11px; color: rgba(255, 255, 255, 0.4); display: flex; align-items: center; gap: 6px; }
+
   .sb-header {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.6rem 0.75rem;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
+  .title { font-size: 14px; font-weight: 600; color: #fff; }
 
-  .deck-title {
-    flex: 1;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--theme-text, white);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .stat-pill {
-    font-size: 0.65rem;
-    font-variant-numeric: tabular-nums;
-    padding: 2px 7px;
-    border-radius: 4px;
-    background: rgba(168, 85, 246, 0.12);
-    color: #c4b5fd;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
-
-  .stat-pill.dim {
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-  }
-
-  .back-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 5px 12px;
-    border: 1px solid rgba(168, 85, 246, 0.2);
-    border-radius: 6px;
-    background: rgba(168, 85, 246, 0.08);
-    color: #c4b5fd;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    flex-shrink: 0;
-  }
-
-  .back-btn:hover {
-    background: rgba(168, 85, 246, 0.18);
-    border-color: rgba(168, 85, 246, 0.4);
-  }
-
-  /* --- Deck list --- */
   .deck-list {
     flex: 1;
     overflow-y: auto;
-    padding: 0.5rem 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(168, 85, 246, 0.15) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
   }
 
-  .deck-row {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 0.65rem 0.75rem;
-    border: none;
-    background: transparent;
-    color: var(--theme-text, white);
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: background 0.15s;
-    text-align: left;
-  }
-
-  .deck-row:hover {
-    background: rgba(168, 85, 246, 0.08);
-  }
-
-  .deck-row-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .deck-row-arrow {
-    font-size: 0.6rem;
-    opacity: 0.3;
-    flex-shrink: 0;
-  }
-
-  /* --- Shape tiles --- */
-  .section-shapes {
-    flex: 1;
-    display: flex;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-    padding: 0.75rem;
-    overflow-y: auto;
-    align-content: start;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(168, 85, 246, 0.15) transparent;
-  }
-
-  .shape-tile {
-    position: relative;
-    display: grid;
-    grid-template-rows: 1fr auto;
-    gap: 0.25rem;
-    padding: 0.5rem;
-    width: 140px;
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    border-radius: 10px;
-    background: rgba(13, 13, 26, 0.5);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow: hidden;
-  }
-
-  .shape-tile:hover {
-    border-color: rgba(168, 85, 246, 0.25);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  }
-
-  .shape-tile.on-sheet {
-    border-color: rgba(168, 85, 246, 0.4);
-    background: rgba(168, 85, 246, 0.06);
-  }
-
-  .tile-art {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .tile-art :global(svg) {
-    width: 100%;
-    height: 100%;
-  }
-
-  .tile-word {
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    opacity: 0.5;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .shape-count {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    min-width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 6px;
-    border-radius: 12px;
-    background: rgba(168, 85, 246, 0.4);
-    color: #e0d8ff;
-    font-size: 0.65rem;
+  .section-label {
+    margin: 0 0 8px;
+    font-size: 12px;
     font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    border: 1px solid rgba(168, 85, 246, 0.2);
-    backdrop-filter: blur(4px);
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .dim { font-weight: 400; }
+
+  .deck-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
   }
 
-  .tile-badge {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    min-width: 20px;
-    height: 20px;
+  .deck-card {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 5px;
-    border-radius: 10px;
-    background: var(--theme-accent, #8b5cf6);
-    color: white;
-    font-size: 0.55rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    cursor: pointer;
+    color: #fff;
+    text-align: left;
+    font: inherit;
   }
+  .deck-card:hover { border-color: var(--accent, #63b7cd); }
+  .deck-card:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
+  .deck-name { font-size: 13px; font-weight: 600; }
+  .deck-meta { font-size: 11px; color: rgba(255, 255, 255, 0.4); }
 
-  .shape-grid {
+  .grid {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     grid-auto-rows: min-content;
-    gap: 0.6rem;
-    padding: 0.75rem;
+    gap: 8px;
+    padding: 16px;
     overflow-y: auto;
     align-content: start;
     scrollbar-width: thin;
-    scrollbar-color: rgba(168, 85, 246, 0.15) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
   }
 
-  .empty-state {
-    flex: 1;
+  .tile {
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    opacity: 0.5;
-    padding: 2rem;
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    color: #fff;
+    font: inherit;
+    text-align: left;
+  }
+  .tile:hover { border-color: var(--accent, #63b7cd); }
+  .tile:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
+  .tile.copied { border-color: #22c55e; box-shadow: 0 0 0 1px #22c55e; }
+
+  .art {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .art :global(svg) { width: 100%; height: 100%; }
+
+  .label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .empty-state p {
-    font-size: 0.8rem;
+  .prop-tag {
+    font-size: 10px;
+    opacity: 0.5;
+  }
+
+  .count {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    border-radius: 11px;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 48px 24px;
+    margin: 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    .deck-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); padding: 12px; }
+    .deck-list { padding: 12px; gap: 16px; }
+    .sb-nav, .sb-header { padding: 10px 12px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tile, .deck-card, .back-btn { transition: none; }
   }
 </style>

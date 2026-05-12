@@ -300,7 +300,7 @@ export class SpotlightGestureHandler {
     }
   }
 
-  private onTouchEnd(e: TouchEvent) {
+  private onTouchEnd(_e: TouchEvent) {
     if (!this.isGestureActive) {
       return;
     }

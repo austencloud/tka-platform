@@ -39,7 +39,7 @@ export interface TikaTopicInteraction {
 import {
   getUserTikaInteractionsPath,
   getUserTikaInteractionPath,
-} from "../../data/firestore-paths";
+} from "../data/firestore-paths";
 
 const DEFAULT_HISTORY_LIMIT = 20;
 

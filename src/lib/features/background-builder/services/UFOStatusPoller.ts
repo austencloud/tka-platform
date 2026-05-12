@@ -1,5 +1,5 @@
 import type { NightSkyBackgroundSystem } from "@austencloud/backgrounds";
-import type { UFOStatusSnapshot } from "../contracts/types";
+import type { UFOStatusSnapshot } from "./types";
 
 const DEFAULT_POLL_INTERVAL_MS = 100; // 10Hz polling
 

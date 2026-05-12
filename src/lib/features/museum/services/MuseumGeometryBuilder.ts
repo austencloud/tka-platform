@@ -1,20 +1,20 @@
 import {
   Object3D,
   BoxGeometry,
-  CylinderGeometry,
   MeshStandardMaterial,
   BatchedMesh,
   TextureLoader,
   RepeatWrapping,
 } from "three";
-import type { Texture } from "three";
-import type { MuseumGrid, MuseumTile, FloorMaterial, TileType } from "../../domain/museum-grid-types";
-import type { WingTheme } from "../../domain/museum-grid-types";
-import { parseTileKey, tileKey } from "../../domain/museum-grid-types";
-import type { PlaqueContent, PlaqueSize } from "../contracts/types";
-import { MANUAL_PLACEMENTS } from '../../data/museum-manual-placements';
-import { getPlaceableObject } from '../../domain/placeable-object-registry';
-import type { BatchTransfer } from "../../workers/geometry-worker-protocol";
+import type { Texture ,
+  CylinderGeometry} from "three";
+import type { MuseumGrid, MuseumTile, FloorMaterial, TileType } from "../domain/museum-grid-types";
+import type { WingTheme } from "../domain/museum-grid-types";
+import { parseTileKey, tileKey } from "../domain/museum-grid-types";
+import type { PlaqueContent, PlaqueSize } from "./types";
+import { MANUAL_PLACEMENTS } from '../data/museum-manual-placements';
+import { getPlaceableObject } from '../domain/placeable-object-registry';
+import type { BatchTransfer } from "../workers/geometry-worker-protocol";
 
 // ── Constants ──
 
@@ -351,7 +351,7 @@ export function bucketMuseumTiles(grid: MuseumGrid): MuseumGeometryDryRun {
         ];
         for (const n of neighbors) {
           const neighborTile = grid.tiles.get(`${tileX + n.dx},${tileY + n.dy}`);
-          if (neighborTile && neighborTile.type === "wall") {
+          if (neighborTile?.type === "wall") {
             wallOffsetX = -n.ox * TILE_SIZE * 0.35;
             wallOffsetZ = -n.oz * TILE_SIZE * 0.35;
             break;
@@ -636,7 +636,7 @@ export async function buildRoomChunk(
   // Sunlight shafts (for outdoor wings) - warm directional pools of light
   // simulating sunlight streaming down through open sky
   const sunlightPositions: LightPosition[] = [];
-  if (wing && wing.theme === "outdoor") {
+  if (wing?.theme === "outdoor") {
     const b = wing.bounds;
     let nextId = 0;
     // Place sunlight pools in a scattered pattern across the room
@@ -692,7 +692,7 @@ export async function buildRoomChunk(
     let nextManualId = torchPositions.length;
     for (const mp of manualPlacements) {
       const objDef = getPlaceableObject(mp.objectDefId);
-      if (!objDef || objDef.category !== 'fixture') continue;
+      if (objDef?.category !== 'fixture') continue;
 
       const worldX = mp.tileX * TILE_SIZE;
       const worldZ = mp.tileY * TILE_SIZE;

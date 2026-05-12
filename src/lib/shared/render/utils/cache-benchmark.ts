@@ -336,10 +336,10 @@ async function loadRealSequences(count: number): Promise<SequenceData[]> {
       if (loadedSequences.length >= count) break;
       if (!name) continue;
 
-      loadAttempts++;
+      loadAttempts++; // eslint-disable-line @typescript-eslint/no-unused-vars
       try {
         const fullSeq = await browseLoader.loadFullSequenceData(name);
-        if (fullSeq && fullSeq.steps && fullSeq.steps.length > 0) {
+        if (fullSeq?.steps && fullSeq.steps.length > 0) {
           // Just accept sequences with steps - the renderer will show what works
           loadedSequences.push(fullSeq);
           console.log(`[CacheBenchmark] ✓ Loaded "${name}" (${fullSeq.steps.length} steps)`);

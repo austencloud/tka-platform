@@ -15,11 +15,12 @@
  * pelvis to seated height.
  */
 
+import type {
+  Bone,
+  KeyframeTrack} from "three";
 import {
   AnimationClip,
-  Bone,
   BufferGeometry,
-  KeyframeTrack,
   Skeleton,
   SkinnedMesh,
   type Object3D,

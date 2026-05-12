@@ -1,4 +1,4 @@
-import type { PopulationStats, VillageEntity } from "../../domain/village-types";
+import type { PopulationStats, VillageEntity } from "../domain/village-types";
 
 export class LineageTracker {
 	private everKnownSequences = new Set<string>();

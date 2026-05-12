@@ -8,7 +8,6 @@ import {
   generateVegetationScatter,
   toLegacyFormat,
   type TerrainSample,
-  type LegacyVegetationType,
 } from "./vegetation-scatter";
 import {
   getBiomeType,

@@ -1,7 +1,5 @@
 // --- From CSVPictographParser ---
 
-import type { PictographData } from "../../../../pictograph/shared/domain/models/PictographData";
-import type { GridMode } from "../../../../pictograph/grid/domain/enums/grid-enums";
 
 export interface CSVRow {
   letter: string;

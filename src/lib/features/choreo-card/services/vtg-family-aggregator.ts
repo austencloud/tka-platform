@@ -1,6 +1,6 @@
 import type { Deck } from "../domain/models/Deck";
 import { loadSequencesByIds } from "./deck-loader";
-import type { FamilyRatioGroup } from "./contracts/types";
+import type { FamilyRatioGroup } from "./types";
 import { VTG_RATIO_TURNS_MAP } from "../domain/elemental-theme";
 
 export async function aggregateFamilySequences(

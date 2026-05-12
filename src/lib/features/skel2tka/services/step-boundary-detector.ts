@@ -54,11 +54,12 @@ function groupByPosition(
     const blue = getValidLocation(frame, "blue", minConfidence);
     const red = getValidLocation(frame, "red", minConfidence);
 
-    if (
-      !currentGroup ||
-      blue !== currentGroup.blueLocation ||
-      red !== currentGroup.redLocation
-    ) {
+    const samePosition =
+      currentGroup != null &&
+      blue === currentGroup.blueLocation &&
+      red === currentGroup.redLocation;
+
+    if (!samePosition) {
       // Start a new group
       currentGroup = {
         frames: [frame],
@@ -67,7 +68,7 @@ function groupByPosition(
       };
       groups.push(currentGroup);
     } else {
-      currentGroup.frames.push(frame);
+      currentGroup!.frames.push(frame);
     }
   }
 

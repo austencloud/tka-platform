@@ -28,8 +28,8 @@ import type {
 	DisplayPreference,
 	SessionFirebaseData,
 	ParticipantFirebaseData
-} from '../../domain/models/connect-models';
-import { SESSION_CONFIG, FIREBASE_PATHS } from '../../domain/models/connect-constants';
+} from '../domain/models/connect-models';
+import { SESSION_CONFIG, FIREBASE_PATHS } from '../domain/models/connect-constants';
 
 export class SessionManager {
 	private _currentSession: SyncSession | null = null;

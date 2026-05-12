@@ -3,7 +3,7 @@
  * Uses Google Geocoding API to convert coordinates to city/country
  */
 
-import type { CityLocation } from "../contracts/types";
+import type { CityLocation } from "./types";
 
 export class GeocodingService {
   constructor(private apiKey: string) {}

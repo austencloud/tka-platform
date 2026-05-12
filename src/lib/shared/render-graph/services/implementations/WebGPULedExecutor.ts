@@ -8,14 +8,14 @@
  * accumulation (max blend) → bloom downsample/upsample → display.
  */
 
-import type { LedPassPayload, LedSegment } from "../../domain/LedPass";
+import type { LedPassPayload } from "../../domain/LedPass";
 
 const MAX_LEDS = 64;
 const INSTANCE_STRIDE_FLOATS = 9;
-const BLOOM_MIP_COUNT = 5;
+const _BLOOM_MIP_COUNT = 5;
 const MAX_STREAK_DISTANCE_SQ = 400 * 400;
 const DEFAULT_GLOW_FACTOR = 0.06;
-const DEFAULT_FADE_RATE = 0.9;
+const _DEFAULT_FADE_RATE = 0.9;
 
 const LED_SPRITE_VERT_WGSL = /* wgsl */ `
 struct Instance {
@@ -302,7 +302,7 @@ export class WebGPULedExecutor {
   }
 
   private ensureSpriteTexture(w: number, h: number): void {
-    if (this.spriteTexture && this.spriteTexture.width === w && this.spriteTexture.height === h) {
+    if (this.spriteTexture?.width === w && this.spriteTexture.height === h) {
       return;
     }
     this.spriteTexture?.texture.destroy();

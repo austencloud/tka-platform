@@ -10,7 +10,7 @@
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
-import type { PhaseVerdict, UserCorrection } from "./verification-models";
+import type { UserCorrection } from "./verification-models";
 
 /** Reference to the source video */
 export interface VideoReference {

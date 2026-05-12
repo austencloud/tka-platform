@@ -112,7 +112,7 @@ export class ExportFrameCompositor {
     playbackPosition: number,
     steps: readonly { duration?: number }[],
     stepDurations: number[],
-    frameIndex: number
+    _frameIndex: number
   ): void {
     const {
       headerHeight,
@@ -240,7 +240,7 @@ export class ExportFrameCompositor {
     isCompositeMode: boolean,
     compositeStepIndex: number,
     offscreenCanvas: HTMLCanvasElement,
-    frameIndex: number
+    _frameIndex: number
   ): void {
     const { headerHeight, outputCanvasSize } = this.config;
 

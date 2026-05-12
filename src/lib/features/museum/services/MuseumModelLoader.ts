@@ -11,7 +11,7 @@
 
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { Group } from "three";
-import type { MuseumModelDefinition, MuseumModelRole } from "../contracts/types";
+import type { MuseumModelDefinition, MuseumModelRole } from "./types";
 
 // ── Role-to-model mapping ──
 // These are the 5 proof-of-concept models chosen from the 140-model

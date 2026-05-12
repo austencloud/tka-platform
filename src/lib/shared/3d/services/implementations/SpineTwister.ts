@@ -27,7 +27,8 @@
  * - We use ~60° max yaw, ~25° max tilt - within safe range
  */
 
-import { Vector3, Quaternion, Euler } from "three";
+import type { Vector3} from "three";
+import { Quaternion, Euler } from "three";
 export interface SpineTwistResult {
   spine1: Quaternion;
   spine2: Quaternion;

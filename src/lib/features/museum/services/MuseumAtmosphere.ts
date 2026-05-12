@@ -1,5 +1,5 @@
 import { Color, FogExp2 } from "three";
-import type { WingTheme } from "../../domain/museum-grid-types";
+import type { WingTheme } from "../domain/museum-grid-types";
 
 const WING_FOG: Record<WingTheme, { density: number; color: string }> = {
   cave: { density: 0.06, color: "#1a1008" },

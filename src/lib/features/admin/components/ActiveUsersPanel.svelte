@@ -9,7 +9,7 @@
   import UserDetailModal from "./UserDetailModal.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-import type { UserActivityTracker } from "../services/implementations/UserActivityTracker";
+import type { UserActivityTracker } from "../services/UserActivityTracker";
 
   // Services
   let userActivityService: UserActivityTracker | null = null;

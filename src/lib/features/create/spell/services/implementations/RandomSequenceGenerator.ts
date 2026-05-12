@@ -782,7 +782,7 @@ export class RandomSequenceGenerator {
     }
 
     // Score each candidate based on soft constraints
-    const scored = candidates.map((candidate, index) => {
+    const scored = candidates.map((candidate, _index) => {
       const candidatePictograph = this.pictographToConstraintPictograph(candidate);
       const previousPictographs = previousSteps.map((step) =>
         this.constraintStepToConstraintPictograph(step)

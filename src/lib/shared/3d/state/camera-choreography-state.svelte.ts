@@ -7,7 +7,6 @@
 
 import type {
   CameraChoreography,
-  CameraKeyframe,
   CameraState,
   CameraPosition,
 } from "../domain/camera-choreography";

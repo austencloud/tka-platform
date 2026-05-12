@@ -8,9 +8,6 @@
  * Domain: Export Panel - Export Orchestration
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ExportSettings } from "../../domain/models/ExportSettings";
-import type { VideoExportProgress } from '$lib/shared/compose/domain/video-export-types';
 import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/implementations/AnimationPlaybackController';
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 

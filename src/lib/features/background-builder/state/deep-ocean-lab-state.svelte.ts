@@ -5,7 +5,7 @@ import type {
   DeepOceanLayers,
   QualityLevel,
 } from "@austencloud/backgrounds";
-import type { CoralSceneRenderer } from "../services/implementations/CoralSceneRenderer";
+import type { CoralSceneRenderer } from "../services/CoralSceneRenderer";
 
 export interface DeepOceanLabDeps {
   getBackgroundSystem: () => DeepOceanBackgroundOrchestrator;
@@ -44,16 +44,16 @@ export function createDeepOceanLabState() {
   let activeWobbleTrigger = $state<string | null>(null);
   let activeRareTrigger = $state<string | null>(null);
 
-  let selectedFish = $derived(fishList[selectedFishIndex] ?? null);
+  const selectedFish = $derived(fishList[selectedFishIndex] ?? null);
 
-  let statusCounters = $derived([
+  const statusCounters = $derived([
     { icon: "fa-fish", value: stats.fish, label: "Fish" },
     { icon: "fa-disease", value: stats.jellyfish, label: "Jellyfish" },
     { icon: "fa-circle", value: stats.bubbles, label: "Bubbles" },
     ...(showCoral ? [{ icon: "fa-seedling", value: coralCount, label: "Coral" }] : []),
   ]);
 
-  let statusChips = $derived(() => {
+  const statusChips = $derived(() => {
     if (!selectedFish) return [];
     return [
       { label: selectedFish.behavior, color: getBehaviorChipColor(selectedFish.behavior) },
@@ -61,7 +61,7 @@ export function createDeepOceanLabState() {
     ];
   });
 
-  let huntStats = $derived(() => {
+  const huntStats = $derived(() => {
     const fishAnimator = backgroundSystem?.getFishAnimator?.();
     if (!fishAnimator) return { activeHunts: 0, totalHunts: 0, successfulCatches: 0, escapes: 0 };
     const huntingHandler = fishAnimator.getHuntingHandler?.();

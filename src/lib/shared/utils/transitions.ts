@@ -210,8 +210,8 @@ export function safeSlide(
   const primary_property_value = parseFloat(style[primary_property]);
 
   // Secondary properties for padding/margin/border
-  const startProp = isVertical ? "Top" : "Left";
-  const endProp = isVertical ? "Bottom" : "Right";
+  const _startProp = isVertical ? "Top" : "Left";
+  const _endProp = isVertical ? "Bottom" : "Right";
   const startPropLower = isVertical ? "top" : "left";
   const endPropLower = isVertical ? "bottom" : "right";
 

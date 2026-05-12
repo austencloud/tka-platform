@@ -311,7 +311,7 @@ function getOrientationAngle(
 	}
 }
 
-function getOrientationChar(
+function _getOrientationChar(
 	orientation: Orientation,
 	location: GridLocation,
 ): string {
@@ -478,7 +478,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 
 		const buffer = this.createBuffer(BUFFER_WIDTH, height);
 
-		if (!layers || layers.grid !== false) {
+		if (layers?.grid !== false) {
 			if (isBox) {
 				this.drawBoxGrid(buffer, height);
 			} else {
@@ -490,17 +490,17 @@ export class AsciiRenderer implements IAsciiRenderer {
 			this.placeHandPointDots(buffer, handCoords, isBox);
 		}
 
-		const stavesOn = !layers || layers.staves !== false;
+		const stavesOn = layers?.staves !== false;
 
 		// Hand markers (B/R/X) are redundant when staves are visible -
 		// the staff color already identifies which hand is which.
-		if ((!layers || layers.hands !== false) && !stavesOn) {
+		if ((layers?.hands !== false) && !stavesOn) {
 			this.placeHand(buffer, data.blueHand, handCoords);
 			this.placeHand(buffer, data.redHand, handCoords);
 			this.markOverlaps(buffer, data, handCoords);
 		}
 
-		if (!layers || layers.arrows !== false) {
+		if (layers?.arrows !== false) {
 			if (data.blueHand.motionType !== MotionType.STATIC) {
 				this.drawMotionPath(buffer, data.blueHand, outerCoords);
 			}
@@ -509,7 +509,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 			}
 		}
 
-		if (!layers || layers.staves !== false) {
+		if (layers?.staves !== false) {
 			const isBeta = data.blueHand.endLocation === data.redHand.endLocation;
 			if (isBeta) {
 				const betaMap = isBox ? BOX_BETA : DIAMOND_BETA;

@@ -214,7 +214,7 @@ export class TextRenderer {
     const glyphImages = this.buildGlyphMap(word ?? "");
     const segments = word ? compressWord(word) : undefined;
     const hasCompression =
-      segments && segments.some((s: CompressedSegment) => s.repeat > 1);
+      segments?.some((s: CompressedSegment) => s.repeat > 1);
 
     renderHeader(ctx, {
       canvasWidth: canvas.width,

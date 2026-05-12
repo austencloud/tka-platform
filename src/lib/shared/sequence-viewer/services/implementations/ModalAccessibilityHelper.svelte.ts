@@ -54,7 +54,7 @@ export function createModalAccessibilityHelper() {
       }
     },
 
-    announce(message: string, priority: "polite" | "assertive" = "polite"): void {
+    announce(message: string, _priority: "polite" | "assertive" = "polite"): void {
       // Clear first to ensure repeated announcements are read
       announcement = "";
 

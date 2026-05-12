@@ -31,7 +31,7 @@ import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/servic
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
 import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
 
-import type { VideoExportFormat, VideoExportProgress, VideoResolution, VideoEffectOverrides, IVideoExportOrchestrator, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
+import type { VideoExportFormat, VideoExportProgress, VideoEffectOverrides, IVideoExportOrchestrator, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 export type { VideoExportFormat, VideoExportProgress, VideoResolution, VideoEffectOverrides, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 import type { BackgroundVideoEncoder } from "$lib/shared/animation-engine/services/implementations/BackgroundVideoEncoder";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -39,9 +39,10 @@ import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-i
 import { getExportDimensions, calculateBitrate } from "$lib/shared/animation-engine/domain/video-export-calculations";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+import type { TipEffectMap } from '$lib/shared/animation-engine/domain/types/TipEffectTypes';
 
 export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private _isExporting = false;
@@ -250,8 +251,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       }
 
       // Enable fire renderer diagnostics
-      if (typeof window !== 'undefined' && (window as any).__tka_fire_diag) {
-        (window as any).__tka_fire_diag.enable();
+      const fireDiag = typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>).__tka_fire_diag as { enable(): void; reset(): void; disable(): void } | undefined : undefined;
+      if (fireDiag) {
+        fireDiag.enable();
         console.log('[export-diag] fire diagnostics enabled');
       }
 
@@ -279,8 +281,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         fireCacheInvalidation.triggerThermalClear();
         await this.waitForAnimationFrame();
         // Reset fire diagnostic counter so export frames get logged (warmup consumed the first 5)
-        if (typeof window !== 'undefined' && (window as any).__tka_fire_diag) {
-          (window as any).__tka_fire_diag.reset();
+        if (fireDiag) {
+          fireDiag.reset();
           console.log('[export-diag] fire diag counter reset after warmup');
         }
       }
@@ -528,9 +530,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
         // --- LED EXPORT DIAGNOSTIC ---
         const isDiagFrame = i < 5 || (i >= 28 && i <= 32);
-        if (isDiagFrame && typeof window !== 'undefined' && (window as any).__tka_led_diag) {
+        const ledDiag = isDiagFrame && typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>).__tka_led_diag as { stats(): Record<string, unknown> } | undefined : undefined;
+        if (ledDiag) {
           try {
-            const diag = (window as any).__tka_led_diag.stats();
+            const diag = ledDiag.stats();
             if (diag) {
               console.log(`[led-export-diag] frame=${i} step=${stepIndex} beat=${playbackPosition.toFixed(2)} ledPixels: maxR=${diag.maxR} maxA=${diag.maxA} nonZero=${diag.nonZero}/${diag.total}`);
             }
@@ -654,8 +657,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       throw error;
     } finally {
       // --- EXPORT DIAGNOSTIC cleanup ---
-      if (typeof window !== 'undefined' && (window as any).__tka_fire_diag) {
-        (window as any).__tka_fire_diag.disable();
+      const fireDiagCleanup = typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>).__tka_fire_diag as { disable(): void } | undefined : undefined;
+      if (fireDiagCleanup) {
+        fireDiagCleanup.disable();
       }
 
       this.restoreEffectState(visibilityManager, savedEffectState);
@@ -765,7 +769,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private applyEffectOverrides(
     visibilityManager: ReturnType<typeof getAnimationVisibilityManager>,
     overrides?: VideoEffectOverrides
-  ): import("$lib/shared/animation-engine/domain/types/TipEffectTypes").TipEffectMap | null {
+  ): TipEffectMap | null {
     if (!overrides) return null;
 
     const saved = { ...visibilityManager.getTipEffectMap() };
@@ -792,7 +796,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
    */
   private restoreEffectState(
     visibilityManager: ReturnType<typeof getAnimationVisibilityManager>,
-    saved: import("$lib/shared/animation-engine/domain/types/TipEffectTypes").TipEffectMap | null
+    saved: TipEffectMap | null
   ): void {
     if (!saved) return;
     visibilityManager.setTipEffectMap(saved);

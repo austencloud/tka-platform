@@ -106,7 +106,7 @@ export class Viewer3DUndoManager {
     // but completeEntry is safe to call on any in-flight entry.
     for (let i = this._undoHistory.length - 1; i >= 0; i--) {
       const entry = this._undoHistory[i];
-      if (entry && entry.id === id) {
+      if (entry?.id === id) {
         entry.afterState = afterState;
         return;
       }

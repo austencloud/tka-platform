@@ -1,4 +1,4 @@
-import { PresenceTracker } from './services/implementations/PresenceTracker';
+import { PresenceTracker } from './services/PresenceTracker';
 
 let instance: PresenceTracker | null = null;
 export function getConnectPresenceTracker(): PresenceTracker {

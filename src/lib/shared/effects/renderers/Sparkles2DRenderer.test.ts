@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { Sparkles2DRenderer } from "./Sparkles2DRenderer";
 import type { Sparkles2DParams } from "../translators/canvas2d-types";
 

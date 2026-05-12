@@ -5,9 +5,6 @@
  * Generates composite keys for global arrow adjustment lookup.
  */
 
-import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { GlobalAdjustmentKey } from "../../domain/GlobalArrowAdjustment";
 
 /**
  * Options for including prop types in the generated key.
@@ -30,8 +27,6 @@ export interface KeyGeneratorPropOptions {
 
 import type { Point } from "fabric";
 import type {
-  GlobalArrowAdjustment,
-  GlobalArrowAdjustmentInput,
 } from "../../domain/GlobalArrowAdjustment";
 
 /**

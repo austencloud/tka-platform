@@ -114,7 +114,7 @@ export class SocialSystem {
 		this.rollIdleDecision(entity, world);
 	}
 
-	private rollIdleDecision(entity: VillageEntity, world: World<VillageEntity>): void {
+	private rollIdleDecision(entity: VillageEntity, _world: World<VillageEntity>): void {
 		const roll = Math.random();
 		const hasSequences = entity.knowledge.knownSequences.size > 0;
 		const canInvent = entity.knowledge.knownSequences.size >= 2;
@@ -133,7 +133,7 @@ export class SocialSystem {
 		}
 	}
 
-	private applyIdleDecision(entity: VillageEntity, action: string, world: World<VillageEntity>): void {
+	private applyIdleDecision(entity: VillageEntity, action: string, _world: World<VillageEntity>): void {
 		switch (action) {
 			case "seek":
 				entity.social.state = "seeking";

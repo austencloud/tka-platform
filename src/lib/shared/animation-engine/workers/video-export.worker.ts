@@ -148,8 +148,8 @@ let encoderErrored = false;
 let frameDurationMicros = 0;
 let encoderWidth = 0;
 let encoderHeight = 0;
-let sourceWidth = 0;
-let sourceHeight = 0;
+let sourceWidth = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
+let sourceHeight = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -256,7 +256,9 @@ export class SwipeToDismiss {
     this.pendingMouseDrag = false;
     this.hasMoved = false;
     this.startedOnInteractive = false;
-    this.justDragged = false;
+    // justDragged is intentionally NOT cleared here — it has its own 100ms timeout.
+    // Clearing it in reset() causes a race: the drawer close effect calls reset()
+    // before the click event fires, allowing the click through to buttons.
     this.delegatingToTopDrawer = false;
     this.startY = 0;
     this.currentY = 0;
@@ -318,7 +320,7 @@ export class SwipeToDismiss {
       target.tagName === "CANVAS"
         ? (target as HTMLCanvasElement)
         : (target.closest("canvas") as HTMLCanvasElement | null);
-    if (canvasEl && canvasEl.closest("[data-swipe-block]")) {
+    if (canvasEl?.closest("[data-swipe-block]")) {
       return;
     }
 

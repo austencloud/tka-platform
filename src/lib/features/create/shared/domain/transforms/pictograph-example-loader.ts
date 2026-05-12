@@ -105,7 +105,7 @@ async function enhancePictographForInvert(pictograph: PictographData): Promise<P
 
   // Only dash motions at 0 turns need enhancement
   const isDashAt0 = (m: MotionData | undefined) =>
-    m && m.motionType === MotionType.DASH && (typeof m.turns !== 'number' || m.turns === 0);
+    m?.motionType === MotionType.DASH && (typeof m.turns !== 'number' || m.turns === 0);
   const blueNeedsEnhancement = isDashAt0(blue);
   const redNeedsEnhancement = isDashAt0(red);
 

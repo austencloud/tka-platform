@@ -1,4 +1,4 @@
-// src/lib/features/assemble-lab/services/implementations/SvgPropAnimator.ts
+// src/lib/features/assemble-lab/services/SvgPropAnimator.ts
 
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {

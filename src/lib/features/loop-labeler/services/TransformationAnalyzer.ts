@@ -1,10 +1,10 @@
-import type { InternalStepPair } from "../../domain/models/internal-step-models";
-import type { StepPairGroups } from "../../domain/models/label-models";
-import { TRANSFORMATION_PRIORITY } from "../../domain/constants/transformation-priority";
+import type { InternalStepPair } from "../domain/models/internal-step-models";
+import type { StepPairGroups } from "../domain/models/label-models";
+import { TRANSFORMATION_PRIORITY } from "../domain/constants/transformation-priority";
 import {
   TRANSFORMATION_FAMILIES,
   RELATED_TRANSFORMATION_GROUPS,
-} from "../../domain/constants/transformation-families";
+} from "../domain/constants/transformation-families";
 
 // Suppressing unused import - keeping for future use
 void TRANSFORMATION_PRIORITY;
@@ -618,7 +618,7 @@ export class TransformationAnalyzer {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 
-import { formatSingleTransformation } from "../candidate-formatter";
-import type { AxisAlternatingResult, ModularAnalysisResult, ColumnBehavior, SwapRhythmPattern } from "../contracts/types";
+import { formatSingleTransformation } from "./candidate-formatter";
+import type { AxisAlternatingResult, ModularAnalysisResult, ColumnBehavior, SwapRhythmPattern } from "./types";
 
 export const transformationAnalyzer = new TransformationAnalyzer();

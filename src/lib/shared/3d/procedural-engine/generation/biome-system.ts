@@ -477,7 +477,7 @@ export function getBlendedBiomeWeights(
   const characteristics = BIOME_CHARACTERISTICS[biome];
 
   // Start with primary biome weights
-  let weights = { ...characteristics.blendWeights };
+  const weights = { ...characteristics.blendWeights };
 
   // Add noise variation for natural look
   const variation = (noise.fbm(worldX * 0.05, 0, worldZ * 0.05, 3) + 1) / 2;

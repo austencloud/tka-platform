@@ -1,4 +1,4 @@
-import { ConnectOrchestrator } from './services/implementations/ConnectOrchestrator';
+import { ConnectOrchestrator } from './services/ConnectOrchestrator';
 import { getConnectPresenceTracker } from './getConnectPresenceTracker';
 import { getConnectSessionManager } from './getConnectSessionManager';
 import { getConnectInviteHandler } from './getConnectInviteHandler';

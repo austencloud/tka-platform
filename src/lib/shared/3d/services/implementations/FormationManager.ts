@@ -105,7 +105,7 @@ export function createFormationManager(
   /**
    * Get all performer positions from a formation
    */
-  function getAllPositionsFromFormation(
+  function _getAllPositionsFromFormation(
     formation: Formation
   ): PerformerFormationState[] {
     return formation.slots.map((slot) => ({

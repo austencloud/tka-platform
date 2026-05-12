@@ -7,7 +7,7 @@
 
 import type { GridData } from "../../domain/models/grid-models";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
-import { GridMode } from "../../domain/enums/grid-enums";
+import type { GridMode } from "../../domain/enums/grid-enums";
 import {
   deriveGridMode as _deriveGridMode,
   usesDiamondLocations as _usesDiamondLocations,

@@ -361,7 +361,7 @@ export function getStepTimes(
 export function snapToBeat(
   time: TimeSeconds,
   bpm: number,
-  timeSignature: TimeSignatureKey
+  _timeSignature: TimeSignatureKey
 ): TimeSeconds {
   if (bpm <= 0) return time;
 

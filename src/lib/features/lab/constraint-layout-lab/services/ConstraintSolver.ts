@@ -14,7 +14,6 @@ import type {
   ConstraintCell,
   ContainerBounds,
   Constraint,
-  SizeConstraint,
 } from "../domain/types";
 
 interface SolvedBounds {

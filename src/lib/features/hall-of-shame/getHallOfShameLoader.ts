@@ -1,4 +1,4 @@
-import { HallOfShameLoader } from './services/implementations/HallOfShameLoader';
+import { HallOfShameLoader } from './services/HallOfShameLoader';
 import { getAgeVerifier } from './getAgeVerifier';
 
 let instance: HallOfShameLoader | null = null;

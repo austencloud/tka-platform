@@ -8,7 +8,7 @@
  * after first render.
  */
 
-import type { InfoCardCanvasOptions } from "./contracts/types";
+import type { InfoCardCanvasOptions } from "./types";
 import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
 
 // Scale factor: info cards were designed at 500x700. Content area is 750x1050.
@@ -169,10 +169,10 @@ export async function renderInfoCardFront(options: InfoCardCanvasOptions): Promi
   ctx.fillText("Scan a card's QR code to see it animated in the app", innerX + innerW / 2, qrY);
 
   // Footer
-  const footerY = innerY + innerH - padY - 8 * REF_SCALE;
+  const barterY = innerY + innerH - padY - 8 * REF_SCALE;
   ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
   ctx.font = `400 ${11 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
-  ctx.fillText("tkaflowarts.com", innerX + innerW / 2, footerY);
+  ctx.fillText("tkaflowarts.com", innerX + innerW / 2, barterY);
 
   cachedFront = canvas;
   cachedTheme = options.theme;
@@ -466,12 +466,12 @@ export async function renderInfoCardBack(options: InfoCardCanvasOptions): Promis
   ctx.fillText("...", chainX + chainGap, curY + chainBadgeR);
 
   // Footer
-  const footerY = innerY + innerH - padY;
+  const barterY = innerY + innerH - padY;
   ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
   ctx.font = `400 ${11 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
-  ctx.fillText("Choreo Card · The Kinetic Alphabet", innerX + innerW / 2, footerY);
+  ctx.fillText("Choreo Card · The Kinetic Alphabet", innerX + innerW / 2, barterY);
 
   cachedBack = canvas;
   cachedTheme = options.theme;

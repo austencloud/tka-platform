@@ -12,9 +12,10 @@ import type {
   StepComparisonResult,
   MotionSignature,
 } from "../../domain/models/signatures";
+import type {
+  GridPosition} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   GridLocation,
-  GridPosition,
   GridPositionGroup,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

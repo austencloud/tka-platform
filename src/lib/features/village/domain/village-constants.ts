@@ -1,3 +1,4 @@
+import type { EffectAffinity, Season, WearProfile } from './village-types';
 export const AVATAR_NAMES = [
 	"Ember",
 	"Soot",
@@ -89,7 +90,7 @@ export const PROP_WEAR_VISUAL_THRESHOLD = 0.8;
 
 export const PROP_WEAR_PROFILES: Record<
 	string,
-	import("./village-types").WearProfile
+	WearProfile
 > = {
 	staff: { wearRate: 0.0005, failureMode: "crack", repairTicks: 20 },
 	fan: { wearRate: 0.0008, failureMode: "fabric-tear", repairTicks: 30 },
@@ -111,13 +112,13 @@ export const STYLE_INCOMPATIBILITY_REFUSE_CHANCE = 0.1;
 export const STYLE_INCOMPATIBILITY_THRESHOLD = 0.3;
 
 // Effect circles
-export const EFFECT_AFFINITIES: import("./village-types").EffectAffinity[] = ["fire", "led", "charcoal", "trails", "pure"];
+export const EFFECT_AFFINITIES: EffectAffinity[] = ["fire", "led", "charcoal", "trails", "pure"];
 export const CIRCLE_RADIUS = 4;
 export const CIRCLE_MIN_MEMBERS = 3;
 export const AFFINITY_TRANSFER_STRENGTH = 0.6;
 export const AFFINITY_EXPOSURE_THRESHOLD = 5;
 
-export const CIRCLE_COLORS: Record<import("./village-types").EffectAffinity, string> = {
+export const CIRCLE_COLORS: Record<EffectAffinity, string> = {
 	fire: "#f97316",
 	led: "#3b82f6",
 	charcoal: "#6b7280",
@@ -127,4 +128,4 @@ export const CIRCLE_COLORS: Record<import("./village-types").EffectAffinity, str
 
 // Seasons
 export const SEASON_DURATION = 300;
-export const SEASON_CYCLE: import("./village-types").Season[] = ["normal", "festival", "normal", "winter", "normal", "migration"];
+export const SEASON_CYCLE: Season[] = ["normal", "festival", "normal", "winter", "normal", "migration"];

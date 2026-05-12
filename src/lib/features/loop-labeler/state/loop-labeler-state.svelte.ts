@@ -3,7 +3,7 @@ import type {
   LabeledSequence,
   FilterMode,
 } from "../domain/models/label-models";
-import type { LOOPDetectionResult } from "../services/contracts/ILOOPDetector";
+import type { LOOPDetectionResult } from "../services/ILOOPDetector";
 import { LOOPLabelerServiceLocator } from "./LOOPLabelerServiceLocator";
 import type { LabelingMode, SyncStatus } from "../domain/types/labeler-types";
 

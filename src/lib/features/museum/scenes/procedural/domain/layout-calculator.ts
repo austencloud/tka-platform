@@ -40,7 +40,7 @@ const RADIUS_PER_PAVILION = 6;
  * Pavilion sequence for expanding capacity.
  * Index 0 = primary (always placed first), subsequent entries added as needed.
  */
-const PAVILION_SEQUENCE: PavilionTemplate[] = [
+const PAVILION_SEQUENCE: PavilionTemplate[] = [ // eslint-disable-line @typescript-eslint/no-unused-vars
   "alcove",
   "corridor",
   "courtyard",
@@ -174,7 +174,7 @@ function generateSlots(
   maxSlots: number
 ): ExhibitSlot[] {
   const slots: ExhibitSlot[] = [];
-  const { slotHeight, slotSpacing, platformOffset } = MUSEUM_DEFAULTS;
+  const { slotHeight, slotSpacing: _slotSpacing, platformOffset } = MUSEUM_DEFAULTS;
 
   // Distribute slot budget across walls proportionally by wall length.
   const wallLengths = walls.map((w) => segmentLength(w));

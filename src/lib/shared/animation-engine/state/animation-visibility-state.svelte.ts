@@ -12,8 +12,7 @@ import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
 import { findPreset, validatePreset, type LedColorPreset } from "../domain/types/LedColorPresets";
 import type { EffectLayerMode } from "../services/effect-layer";
-import { migrateStoredSettings } from "../services/animation-visibility-migrations";
-import type { LedSettingsAccessor } from "../services/led-settings-section";
+import type { PropFlameColor } from '../domain/types/FireTypes';
 
 type VisibilityObserver = () => void;
 
@@ -56,10 +55,10 @@ interface AnimationVisibilitySettings {
   fireIntensity: number; // User intensity slider value (0.0-1.0)
   fireTurbulence: number; // Curl noise turbulence strength (0.0-1.0), how much idle fire flickers
   fireColorCurve: FireColorCurve | null; // Custom 4-stop color gradient (null = use default)
-  firePropColors: [import("../domain/types/FireTypes").PropFlameColor, import("../domain/types/FireTypes").PropFlameColor] | null; // Per-hand flame colors (null = default blue/red)
+  firePropColors: [PropFlameColor, PropFlameColor] | null; // Per-hand flame colors (null = default blue/red)
 
   // Charcoal Effect tuning
-  charcoalParams: import("../domain/types/CharcoalSparkTypes").CharcoalSparkParams; // Charcoal spark tuning params
+  charcoalParams: CharcoalSparkParams; // Charcoal spark tuning params
 
   // LED Effect tuning
   ledBrightness: number; // 1-5 discrete level (maps to 0.2-1.0 float)
@@ -668,11 +667,11 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
-  getFirePropColors(): [import("../domain/types/FireTypes").PropFlameColor, import("../domain/types/FireTypes").PropFlameColor] | null {
+  getFirePropColors(): [PropFlameColor, PropFlameColor] | null {
     return this.settings.firePropColors;
   }
 
-  setFirePropColors(colors: [import("../domain/types/FireTypes").PropFlameColor, import("../domain/types/FireTypes").PropFlameColor] | null): void {
+  setFirePropColors(colors: [PropFlameColor, PropFlameColor] | null): void {
     this.settings.firePropColors = colors;
     this.saveToStorage();
     this.notifyObservers();

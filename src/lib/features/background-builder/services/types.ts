@@ -2,8 +2,6 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { CoralDepthLayer } from "../../domain/coral-types";
-import type { NightSkyBackgroundSystem, QualityLevel } from "@austencloud/backgrounds";
 
 // === From ICoralSceneRenderer ===
 

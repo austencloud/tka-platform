@@ -19,7 +19,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { EndState } from '$lib/shared/landing/domain/types';
-  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
+  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";

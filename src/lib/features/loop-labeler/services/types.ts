@@ -3,7 +3,7 @@
  */
 
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import type { TransformationIntervals } from "../../domain/models/label-models";
+import type { TransformationIntervals } from "../domain/models/label-models";
 
 // === From ITransformationAnalyzer ===
 

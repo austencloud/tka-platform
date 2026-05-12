@@ -11,7 +11,7 @@
  */
 
 import type { QuizAnswerEvent } from "../quiz/domain/models/quiz-models";
-import { QuizType } from "../quiz/domain/enums/quiz-enums";
+import type { QuizType } from "../quiz/domain/enums/quiz-enums";
 import type { DetectedGap, MisconceptionPattern } from "./contracts/types";
 import { getTypeNodeId } from "./letter-to-concept-mapper";
 import {
@@ -164,7 +164,7 @@ export async function getRecurringMisconceptions(
  */
 function extractLetter(
   content: unknown,
-  quizType: QuizType
+  _quizType: QuizType
 ): string | null {
   if (typeof content === "string") return content;
 
@@ -182,7 +182,7 @@ function extractLetter(
  */
 function extractLetterFromContent(
   content: unknown,
-  quizType: string
+  _quizType: string
 ): string | null {
   if (typeof content === "string") return content;
 

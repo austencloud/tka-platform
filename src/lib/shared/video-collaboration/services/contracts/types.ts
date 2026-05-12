@@ -8,7 +8,6 @@
 
 import type {
   CollaborativeVideo,
-  StepMap,
 } from "../../domain/CollaborativeVideo";
 
 /**

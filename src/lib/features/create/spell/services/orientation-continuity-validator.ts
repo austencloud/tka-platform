@@ -12,11 +12,11 @@ import type { OrientationContinuityError, TransitionValidationResult } from "./c
  * Consumers that previously held a class instance can use this type.
  */
 export interface OrientationContinuityValidator {
-  validateSequence: (sequence: import("$lib/shared/foundation/domain/models/SequenceData").SequenceData) => OrientationContinuityError[];
+  validateSequence: (sequence: SequenceData) => OrientationContinuityError[];
   validateTransition: (
-    lastStep: import("$lib/shared/foundation/domain/models/StepData").StepData,
-    nextPictograph: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData,
-    orientationCalculator: import("$lib/shared/pictograph/prop/services/implementations/OrientationCalculator").OrientationCalculator
+    lastStep: StepData,
+    nextPictograph: PictographData,
+    orientationCalculator: OrientationCalculator
   ) => TransitionValidationResult;
 }
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
@@ -74,7 +74,7 @@ export function validateSequence(sequence: SequenceData): OrientationContinuityE
 export function validateTransition(
   lastStep: StepData,
   nextPictograph: PictographData,
-  orientationCalculator: OrientationCalculator
+  _orientationCalculator: OrientationCalculator
 ): TransitionValidationResult {
   const errors: OrientationContinuityError[] = [];
 

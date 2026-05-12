@@ -1,10 +1,10 @@
 import { PDFDocument, rgb } from "pdf-lib";
-import type { StickerSheet, StickerUnit, SheetSize } from "../../domain/sticker-types";
+import type { StickerSheet, StickerUnit } from "../domain/sticker-types";
 import {
-  SHEET_DIMENSIONS_IN, STICKER_GAP_IN, STICKER_TILE_SIZE_PX, STICKER_DPI, } from "../../domain/sticker-constants";
-import { renderStickerUnitSVG } from "../sticker-unit-renderer";
+  SHEET_DIMENSIONS_IN, STICKER_GAP_IN, STICKER_TILE_SIZE_PX, STICKER_DPI, } from "../domain/sticker-constants";
+import { renderStickerUnitSVG } from "./sticker-unit-renderer";
 import { rasterizeSvgToPng } from "./rasterizeSvg";
-import type { StickerMandalaLookup } from "../contracts/types";
+import type { StickerMandalaLookup } from "./types";
 
 const PDF_POINTS_PER_INCH = 72;
 

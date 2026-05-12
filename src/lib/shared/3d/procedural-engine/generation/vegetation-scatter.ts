@@ -18,9 +18,8 @@
 import { hashCoordinates, mulberry32 } from "./seed-generator";
 import { BiomeType } from "./biome-system";
 import type { VegetationCategory } from "../vegetation/domain/vegetation-categories";
-import { SCATTER_CATEGORIES, getCategorySpacing, getCategoryScaleRange } from "../vegetation/domain/vegetation-categories";
-import { getBiomeVegetationConfig, getCategoryRulesForBiome, biomeTypeToManifestBiome } from "../vegetation/config/biome-vegetation-rules";
-import type { CategorySpawnRule } from "../vegetation/config/biome-vegetation-rules";
+import { getCategorySpacing, getCategoryScaleRange } from "../vegetation/domain/vegetation-categories";
+import { getBiomeVegetationConfig, getCategoryRulesForBiome } from "../vegetation/config/biome-vegetation-rules";
 
 /**
  * Biome type for vegetation placement (uses legacy string format)

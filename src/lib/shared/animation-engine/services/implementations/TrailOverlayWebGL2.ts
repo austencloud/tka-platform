@@ -30,7 +30,6 @@ import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DVisibilityFadeManager";
 import { resolveEffect } from "../../domain/types/TipEffectTypes";
-import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 import type { RenderBackend } from "$lib/shared/render-graph/domain/Backend";
 import type { FrameGraph } from "$lib/shared/render-graph/domain/FrameGraph";

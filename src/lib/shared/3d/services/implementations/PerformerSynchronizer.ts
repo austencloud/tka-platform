@@ -419,7 +419,7 @@ export function createPerformerSynchronizer(
       syncAllFollowers(masterStep, totalSteps);
     },
 
-    onMasterPlayStateChange(isPlaying: boolean): void {
+    onMasterPlayStateChange(_isPlaying: boolean): void {
       // Currently just for notification - could be extended to pause/play followers
       // This hook exists for future expansion (e.g., pausing all when master pauses)
     },

@@ -14,7 +14,7 @@ export class SeasonSystem {
 		private emitter: VillageEventEmitter,
 	) {}
 
-	tick(world: World<VillageEntity>, currentTick: number): void {
+	tick(world: World<VillageEntity>, _currentTick: number): void {
 		this.ticksInSeason++;
 
 		if (this.ticksInSeason >= SEASON_DURATION) {
@@ -28,7 +28,7 @@ export class SeasonSystem {
 
 	private applySeasonEffects(world: World<VillageEntity>): void {
 		switch (this.currentSeason) {
-			case "migration":
+			case "migration": {
 				const entities = world.entities.filter(
 					(e) => e.social.state !== "passing" && e.identity.role !== "maker",
 				);
@@ -42,6 +42,7 @@ export class SeasonSystem {
 					entity.social.state = "wandering";
 				}
 				break;
+			}
 		}
 	}
 

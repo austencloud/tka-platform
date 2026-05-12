@@ -6,13 +6,13 @@
  * prefers-reduced-motion by disabling sway when the user requests it.
  */
 
-import type { CoralAssetLoader } from "../implementations/CoralAssetLoader";
+import type { CoralAssetLoader } from "./CoralAssetLoader";
 import type {
   CoralDepthLayer,
   PlacedCoral,
   TintedCoralAsset,
-} from "../../domain/coral-types";
-import type { CoralSceneConfig } from "../contracts/types";
+} from "../domain/coral-types";
+import type { CoralSceneConfig } from "./types";
 
 // --------------------------------------------------------------------------
 // Constants

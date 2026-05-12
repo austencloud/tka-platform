@@ -13,7 +13,7 @@
 import type { PlacedRoom, RoomEdge } from "../domain/layout-types";
 import type { MuseumGrid, Direction } from "../domain/museum-grid-types";
 import { tileKey } from "../domain/museum-grid-types";
-import type { DesignViolation } from "./contracts/types";
+import type { DesignViolation } from "./types";
 import type { ExhibitSegment } from "../domain/wall-segment-types";
 import {
   DEV_WHITEBOARDS_ENABLED,

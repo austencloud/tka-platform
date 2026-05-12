@@ -1,4 +1,4 @@
-import type { LayeredPathResult, HandPathCycle, ZoneCoverageAnalysis, PositionalCategory } from "./contracts/types";
+import type { LayeredPathResult, HandPathCycle, ZoneCoverageAnalysis, PositionalCategory } from "./types";
 
 function getProperFactors(n: number): number[] {
   const factors: number[] = [];

@@ -9,7 +9,6 @@ import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animat
 import type { ISVGGenerator as SVGGenerator } from "$lib/shared/animation-engine/services/contracts/ISVGGenerator";
 import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
 import type {
-  IPropTextureLoader,
   PropTextureState,
 } from "../contracts/IPropTextureLoader";
 import {

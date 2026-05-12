@@ -296,7 +296,7 @@ export class LanSyncCoordinator {
 		}
 	}
 
-	private handleRequestFullState(requesterId: string): void {
+	private handleRequestFullState(_requesterId: string): void {
 		// Only host responds to full state requests
 		if (!this.connectionState.isHost) return;
 

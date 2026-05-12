@@ -516,11 +516,8 @@ export class RoomGeometryBuilder {
 			const [wall1, wall2] = placement.walls;
 
 			// Corner point (inner face intersection)
-			let cx: number;
-			let cz: number;
-
-			cx = wall2 === "east" || wall1 === "east" ? W - T : T;
-			cz = wall2 === "south" || wall1 === "south" ? D - T : T;
+			const cx = wall2 === "east" || wall1 === "east" ? W - T : T;
+			const cz = wall2 === "south" || wall1 === "south" ? D - T : T;
 
 			// Push inward along diagonal (45 degrees)
 			const diagFactor = dist / Math.SQRT2;

@@ -1,4 +1,3 @@
-import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
 // --- From IEffectPointsPersister ---
 /**

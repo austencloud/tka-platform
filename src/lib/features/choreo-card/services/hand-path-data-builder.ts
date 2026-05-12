@@ -30,7 +30,7 @@ import {
   HandPath,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { HandPathTrace, HandSkew } from "./contracts/types";
+import type { HandPathTrace, HandSkew } from "./types";
 
 // ============================================================================
 // DIRECTION LOOKUP

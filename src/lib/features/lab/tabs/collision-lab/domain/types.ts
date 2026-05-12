@@ -6,6 +6,7 @@
  */
 
 import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import type { SimResult } from '../services/contracts/types';
 
 export type DiamondPosition = "N" | "E" | "S" | "W";
 export type HandOrientation = "in" | "out"; // radial | antiradial
@@ -141,7 +142,7 @@ export interface StanceCandidate {
    * collision depths, balance margin, and joint violations so the
    * thumbnail can show a status pill without re-running the sim.
    */
-  simResult: import("../services/contracts/types").SimResult;
+  simResult: SimResult;
 }
 
 /**

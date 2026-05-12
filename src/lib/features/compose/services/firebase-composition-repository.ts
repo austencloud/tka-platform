@@ -21,7 +21,6 @@ import {
 import { CompositionSchema } from "../compose/domain/composition-schemas";
 import {
   getUserCompositionsPath,
-  getUserCompositionPath,
 } from "../data/firestore-paths";
 import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
 
@@ -48,7 +47,7 @@ export async function saveComposition(composition: Composition): Promise<void> {
   const userId = getUserId();
   if (!userId) return;
 
-  const { createdAt, updatedAt, ...rest } = composition;
+  const { createdAt, updatedAt, ...rest } = composition; // eslint-disable-line @typescript-eslint/no-unused-vars
 
   await firestoreSet(
     getUserCompositionsPath(userId),

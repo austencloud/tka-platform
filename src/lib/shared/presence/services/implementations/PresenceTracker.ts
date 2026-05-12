@@ -110,7 +110,7 @@ export class PresenceTracker {
     if (this.presenceRef) {
       try {
         await remove(this.presenceRef);
-      } catch (err) {
+      } catch {
         // Could not remove presence
       }
     }

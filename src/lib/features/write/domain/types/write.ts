@@ -101,7 +101,7 @@ export function createEmptyAct(name: string = "Untitled Act"): ActData {
  * (stub implementation - actual rendering handled by thumbnail services)
  */
 export async function generateSequenceThumbnail(
-  sequence: SequenceData
+  _sequence: SequenceData
 ): Promise<string | null> {
   // Return null to use default thumbnail rendering
   return null;
