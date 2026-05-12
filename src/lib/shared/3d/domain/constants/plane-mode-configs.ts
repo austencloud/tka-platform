@@ -11,14 +11,13 @@ const LATERAL_OFFSET = 0.40;
 /**
  * Forward offset from body center to grid/prop circle center.
  * Wall mode: grid is in front of the performer (standard offset).
- * Dual wheel: grid is at the performer's solar plexus (zero offset)
- * because the arms extend sideways, not forward.
+ * Dual wheel: grid is 10cm forward to give shoulders room (0.10).
  */
 export const GRID_OFFSETS: Record<PlaneMode, number> = {
   [PlaneMode.WALL]: 0.3,
-  [PlaneMode.DUAL_WHEEL]: 0,
+  [PlaneMode.DUAL_WHEEL]: 0.10,
   [PlaneMode.CUSTOM]: 0.3,
-  [PlaneMode.CONJOINED_WHEEL]: 0,
+  [PlaneMode.CONJOINED_WHEEL]: 0.10,
 };
 
 export interface PlaneModeConfig {
