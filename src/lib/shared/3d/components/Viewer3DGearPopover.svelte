@@ -25,6 +25,11 @@
   import { createViewer3DKeyboardHandler } from "../keyboard/Viewer3DKeyboardHandler";
   import { onMount } from "svelte";
   import SceneFeatureTiles from "../scene-features/components/SceneFeatureTiles.svelte";
+  import { tryGetSceneFeatureContext } from "../scene-features/context/scene-feature-context";
+  import { userProportionsState } from "../state/user-proportions-state.svelte";
+  import { inchesToCm } from "../config/user-proportions";
+
+  const hasSceneFeatures = tryGetSceneFeatureContext() !== undefined;
 
   type TabId = "camera" | "planes" | "scene";
 
@@ -248,7 +253,63 @@
       <!-- Scene tab -->
       {#if activeTab === "scene"}
         <div class="tab-panel" id="tab-panel-scene" role="tabpanel">
-          <SceneFeatureTiles />
+          {#if hasSceneFeatures}
+            <SceneFeatureTiles />
+          {/if}
+
+          <div class="scene-control">
+            <div class="scene-control-header">
+              <span class="scene-control-label">Prop size</span>
+              <span class="scene-control-value">{userProportionsState.staffLengthDisplay}</span>
+            </div>
+            <input
+              type="range"
+              class="scene-slider"
+              min={inchesToCm(24)}
+              max={inchesToCm(60)}
+              step="1"
+              value={userProportionsState.staffLengthCm}
+              oninput={(e) => userProportionsState.setStaffLengthCm(Number(e.currentTarget.value))}
+              aria-label="Prop size"
+            />
+          </div>
+
+          <div class="scene-control">
+            <div class="scene-control-header">
+              <span class="scene-control-label">Body freedom</span>
+              <span class="scene-control-value">{userProportionsState.bodyFreedomDisplay}</span>
+            </div>
+            <div class="preset-row">
+              <button
+                class="preset-btn"
+                class:active={userProportionsState.bodyFreedom <= 0.01}
+                onclick={(e) => { e.stopPropagation(); userProportionsState.setBodyFreedom(0); }}
+                aria-pressed={userProportionsState.bodyFreedom <= 0.01}
+              >Square</button>
+              <button
+                class="preset-btn"
+                class:active={Math.abs(userProportionsState.bodyFreedom - 0.5) < 0.01}
+                onclick={(e) => { e.stopPropagation(); userProportionsState.setBodyFreedom(0.5); }}
+                aria-pressed={Math.abs(userProportionsState.bodyFreedom - 0.5) < 0.01}
+              >Natural</button>
+              <button
+                class="preset-btn"
+                class:active={userProportionsState.bodyFreedom >= 0.99}
+                onclick={(e) => { e.stopPropagation(); userProportionsState.setBodyFreedom(1); }}
+                aria-pressed={userProportionsState.bodyFreedom >= 0.99}
+              >Expressive</button>
+            </div>
+            <input
+              type="range"
+              class="scene-slider"
+              min="0"
+              max="1"
+              step="0.01"
+              value={userProportionsState.bodyFreedom}
+              oninput={(e) => userProportionsState.setBodyFreedom(Number(e.currentTarget.value))}
+              aria-label="Body freedom"
+            />
+          </div>
         </div>
       {/if}
 
@@ -501,6 +562,93 @@
     border-radius: 50%;
     background: #f59e0b;
     border: 1.5px solid rgba(14, 14, 24, 1);
+  }
+
+  /* Scene controls (prop size, body freedom) */
+  .scene-control {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .scene-control-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .scene-control-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .scene-control-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .scene-slider {
+    width: 100%;
+    height: 4px;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .scene-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #60a5fa;
+    border: 2px solid rgba(14, 14, 24, 1);
+    cursor: pointer;
+  }
+
+  .scene-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #60a5fa;
+    border: 2px solid rgba(14, 14, 24, 1);
+    cursor: pointer;
+  }
+
+  .preset-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .preset-btn {
+    flex: 1;
+    padding: 4px 0;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .preset-btn:hover {
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .preset-btn.active {
+    background: rgba(96, 165, 250, 0.2);
+    border-color: rgba(96, 165, 250, 0.5);
+    color: #60a5fa;
   }
 
   /* Stage bridge footer - gradient CTA that links to Stage destination */
