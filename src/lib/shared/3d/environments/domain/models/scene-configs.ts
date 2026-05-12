@@ -151,6 +151,69 @@ export interface WinterSceneConfig {
 }
 
 // ============================================================================
+// Ocean scene
+// ============================================================================
+
+export interface OceanSceneConfig {
+  sky: SkyGradientConfig;
+  fog: FogConfig;
+  ground: GroundConfig;
+
+  coral: {
+    enabled: boolean;
+    count: number;
+    clearingRadius: number;
+    glowColor: string;
+    glowBlend: number;
+  };
+
+  kelp: {
+    enabled: boolean;
+    rings: TreeRingConfig[];
+    clearingRadius: number;
+    swaySpeed: number;
+    swayAmplitude: number;
+  };
+
+  rockCount: number;
+  rockTintColor: string;
+  rockTintBlend: number;
+
+  bubbles: FallingParticlesConfig;
+  dust: FallingParticlesConfig | null;
+  plankton: FallingParticlesConfig | null;
+
+  jellyfish: {
+    enabled: boolean;
+    count: number;
+    glowColor: string;
+    driftSpeed: number;
+    pulseRate: number;
+    lightIntensity: number;
+    lightDistance: number;
+    spawnRadius: number;
+    heightRange: [number, number];
+  } | null;
+
+  godRays: {
+    enabled: boolean;
+    color: string;
+    intensity: number;
+    position: [number, number, number];
+  } | null;
+
+  caustics: {
+    enabled: boolean;
+    intensity: number;
+    speed: number;
+    scale: number;
+    color: string;
+  } | null;
+
+  hemisphereLight: HemisphereLightConfig;
+}
+
+// ============================================================================
 // Cosmic scene
 // ============================================================================
 
@@ -485,6 +548,207 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
       color: "#d8e4f4",
       intensity: 0.8,
       position: [-20, 25, 15],
+    },
+  };
+}
+
+// ----- Ocean -----
+
+const OCEAN_KELP_RINGS: TreeRingConfig[] = [
+  { radius: 12, count: 14, scaleBase: 1.2, scaleVariation: 0.4, radiusJitter: 1.0 },
+  { radius: 16, count: 20, scaleBase: 1.0, scaleVariation: 0.3, radiusJitter: 1.5 },
+  { radius: 20, count: 26, scaleBase: 0.8, scaleVariation: 0.25, radiusJitter: 2.0 },
+];
+
+const OCEAN_FLOOR_TEXTURES = {
+  diffuseMap: "/textures/ocean-floor/diffuse.jpg",
+  normalMap: "/textures/ocean-floor/normal.jpg",
+  roughnessMap: "/textures/ocean-floor/roughness.jpg",
+};
+
+export function createDefaultOceanDeepConfig(): OceanSceneConfig {
+  return {
+    sky: {
+      topColor: "#001a2e",
+      midColor: "#003366",
+      bottomColor: "#000a14",
+    },
+    fog: { color: "#002244", density: 0.035 },
+    ground: {
+      color: "#1a3a4a",
+      size: 50,
+      textured: true,
+      ...OCEAN_FLOOR_TEXTURES,
+      normalScale: 1.2,
+      textureRepeat: 30,
+    },
+    coral: {
+      enabled: true,
+      count: 12,
+      clearingRadius: 10,
+      glowColor: "#40a0c0",
+      glowBlend: 0.25,
+    },
+    kelp: {
+      enabled: true,
+      rings: OCEAN_KELP_RINGS,
+      clearingRadius: 10,
+      swaySpeed: 0.8,
+      swayAmplitude: 0.15,
+    },
+    rockCount: 8,
+    rockTintColor: "#1a3a4a",
+    rockTintBlend: 0.30,
+    bubbles: {
+      type: "bubbles",
+      count: 80,
+      area: { width: 6, height: 4, depth: 6 },
+      speed: 0.075,
+      colors: ["#60c0e0", "#80d0f0", "#40a0c0", "#a0e0ff"],
+      sizeRange: [0.03, 0.09],
+      spin: false,
+    },
+    dust: {
+      type: "dust",
+      count: 120,
+      area: { width: 15, height: 6, depth: 15 },
+      speed: 0.015,
+      colors: ["#406080", "#506878", "#385868"],
+      sizeRange: [0.02, 0.06],
+      spin: false,
+    },
+    plankton: {
+      type: "fireflies",
+      count: 60,
+      area: { width: 10, height: 4, depth: 10 },
+      speed: 0.005,
+      colors: ["#60e0ff", "#40c0ff", "#80ffff"],
+      sizeRange: [0.1, 0.25],
+      spin: false,
+    },
+    jellyfish: {
+      enabled: true,
+      count: 4,
+      glowColor: "#a064ff",
+      driftSpeed: 0.3,
+      pulseRate: 0.5,
+      lightIntensity: 8,
+      lightDistance: 8,
+      spawnRadius: 8,
+      heightRange: [2, 6],
+    },
+    godRays: {
+      enabled: true,
+      color: "#4090b0",
+      intensity: 0.6,
+      position: [5, 25, 5],
+    },
+    caustics: {
+      enabled: true,
+      intensity: 0.12,
+      speed: 0.02,
+      scale: 4.0,
+      color: "#60c0e0",
+    },
+    hemisphereLight: {
+      skyColor: "#1a3a5a",
+      groundColor: "#0a1a2a",
+      intensity: 0.4,
+    },
+  };
+}
+
+export function createDefaultOceanReefConfig(): OceanSceneConfig {
+  return {
+    sky: {
+      topColor: "#003355",
+      midColor: "#006688",
+      bottomColor: "#001a33",
+    },
+    fog: { color: "#004466", density: 0.018 },
+    ground: {
+      color: "#2a4a5a",
+      size: 50,
+      textured: true,
+      ...OCEAN_FLOOR_TEXTURES,
+      normalScale: 1.0,
+      textureRepeat: 30,
+    },
+    coral: {
+      enabled: true,
+      count: 16,
+      clearingRadius: 10,
+      glowColor: "#ff8080",
+      glowBlend: 0.15,
+    },
+    kelp: {
+      enabled: true,
+      rings: [
+        { radius: 14, count: 12, scaleBase: 1.0, scaleVariation: 0.35, radiusJitter: 1.0 },
+        { radius: 18, count: 18, scaleBase: 0.8, scaleVariation: 0.25, radiusJitter: 1.5 },
+      ],
+      clearingRadius: 12,
+      swaySpeed: 1.0,
+      swayAmplitude: 0.12,
+    },
+    rockCount: 10,
+    rockTintColor: "#2a4a5a",
+    rockTintBlend: 0.20,
+    bubbles: {
+      type: "bubbles",
+      count: 120,
+      area: { width: 8, height: 4, depth: 8 },
+      speed: 0.09,
+      colors: ["#60c0e0", "#80d0f0", "#40a0c0", "#a0e0ff"],
+      sizeRange: [0.02, 0.07],
+      spin: false,
+    },
+    dust: {
+      type: "dust",
+      count: 80,
+      area: { width: 12, height: 5, depth: 12 },
+      speed: 0.02,
+      colors: ["#608090", "#708898", "#587888"],
+      sizeRange: [0.015, 0.04],
+      spin: false,
+    },
+    plankton: {
+      type: "fireflies",
+      count: 30,
+      area: { width: 8, height: 3, depth: 8 },
+      speed: 0.008,
+      colors: ["#40e0c0", "#60ffd0"],
+      sizeRange: [0.08, 0.18],
+      spin: false,
+    },
+    jellyfish: {
+      enabled: true,
+      count: 3,
+      glowColor: "#64c0ff",
+      driftSpeed: 0.4,
+      pulseRate: 0.6,
+      lightIntensity: 6,
+      lightDistance: 6,
+      spawnRadius: 10,
+      heightRange: [1.5, 5],
+    },
+    godRays: {
+      enabled: true,
+      color: "#80c0e0",
+      intensity: 1.2,
+      position: [5, 20, 5],
+    },
+    caustics: {
+      enabled: true,
+      intensity: 0.25,
+      speed: 0.03,
+      scale: 3.0,
+      color: "#80d0f0",
+    },
+    hemisphereLight: {
+      skyColor: "#4080b0",
+      groundColor: "#1a3040",
+      intensity: 0.7,
     },
   };
 }
