@@ -151,6 +151,107 @@ export interface WinterSceneConfig {
 }
 
 // ============================================================================
+// Cosmic scene
+// ============================================================================
+
+export interface PlatformConfig {
+  shape: "circle" | "hexagon" | "octagon";
+  /** Platform radius (meters). */
+  radius: number;
+  /** Platform height/thickness (meters). */
+  height: number;
+  metallic: number;
+  roughness: number;
+  baseColor: string;
+  emissiveColor: string;
+  emissiveIntensity: number;
+  /** Width of the glowing edge rim (meters). */
+  edgeGlowWidth: number;
+  /** Pulse animation speed (Hz). */
+  pulseSpeed: number;
+}
+
+export interface EarthConfig {
+  enabled: boolean;
+  position: [number, number, number];
+  /** Sphere radius (meters). */
+  radius: number;
+  rimColor: string;
+  rimIntensity: number;
+  /** Y-axis rotation speed (rad/s). */
+  rotationSpeed: number;
+}
+
+export interface NebulaConfig {
+  enabled: boolean;
+  color1: string;
+  color2: string;
+  opacity: number;
+  scale: number;
+  animationSpeed: number;
+}
+
+export interface EnergyParticlesConfig {
+  enabled: boolean;
+  count: number;
+  /** Upward drift speed (m/s). */
+  riseSpeed: number;
+  colors: string[];
+  sizeRange: [number, number];
+  /** Spawn area radius around platform (meters). */
+  spawnRadius: number;
+  /** Maximum height before recycling (meters). */
+  maxHeight: number;
+}
+
+export interface MeteorStreaksConfig {
+  enabled: boolean;
+  /** Average interval between meteors (seconds). */
+  frequency: number;
+  /** Travel speed (m/s). */
+  speed: number;
+  colors: string[];
+  /** Trail length (meters). */
+  trailLength: number;
+}
+
+export interface CosmicSceneConfig {
+  sky: SkyGradientConfig;
+  fog: FogConfig;
+  ground: GroundConfig;
+  platform: PlatformConfig;
+  earth: EarthConfig;
+  nebula: NebulaConfig;
+  particles: {
+    /** Slow-drifting star field. */
+    starDrift: FallingParticlesConfig;
+    /** Optional cosmic dust layer. */
+    cosmicDust: FallingParticlesConfig | null;
+    /** Optional rising energy motes near platform. */
+    energyParticles: EnergyParticlesConfig | null;
+    /** Optional meteor streaks across the sky. */
+    meteorStreaks: MeteorStreaksConfig | null;
+  };
+  lighting: {
+    ambient: HemisphereLightConfig;
+    coldDirectional: {
+      enabled: boolean;
+      color: string;
+      intensity: number;
+      position: [number, number, number];
+    };
+    warmStation: PointLightConfig & { enabled: boolean };
+    accentEmissive: {
+      enabled: boolean;
+      color: string;
+      intensity: number;
+      /** Pulse animation speed (Hz). */
+      pulseSpeed: number;
+    };
+  };
+}
+
+// ============================================================================
 // Default configs - preserve current baked values
 // ============================================================================
 
@@ -383,6 +484,236 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
       color: "#d8e4f4",
       intensity: 0.8,
       position: [-20, 25, 15],
+    },
+  };
+}
+
+// ----- Cosmic -----
+
+const LUNAR_TEXTURES = {
+  diffuseMap: "/textures/terrain/rock/diffuse.jpg",
+  normalMap: "/textures/terrain/rock/normal.jpg",
+  roughnessMap: "/textures/terrain/rock/roughness.jpg",
+};
+
+export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
+  return {
+    sky: {
+      topColor: "#050510",
+      midColor: "#0d0d2a",
+      bottomColor: "#1a1040",
+    },
+    fog: { color: "#080818", density: 0.008 },
+    ground: {
+      color: "#1a1a2e",
+      size: 60,
+      textured: true,
+      ...LUNAR_TEXTURES,
+      normalScale: 2.0,
+      textureRepeat: 30,
+      opacity: 0.9,
+    },
+    platform: {
+      shape: "octagon",
+      radius: 2.5,
+      height: 0.15,
+      metallic: 0.8,
+      roughness: 0.2,
+      baseColor: "#0a0a1a",
+      emissiveColor: "#4488ff",
+      emissiveIntensity: 0.6,
+      edgeGlowWidth: 0.04,
+      pulseSpeed: 0.5,
+    },
+    earth: {
+      enabled: true,
+      position: [-40, 12, -60],
+      radius: 8,
+      rimColor: "#6ab4ff",
+      rimIntensity: 1.2,
+      rotationSpeed: 0.02,
+    },
+    nebula: {
+      enabled: false,
+      color1: "#000000",
+      color2: "#000000",
+      opacity: 0,
+      scale: 1,
+      animationSpeed: 0,
+    },
+    particles: {
+      starDrift: {
+        type: "stars",
+        count: 200,
+        area: { width: 80, height: 50, depth: 80 },
+        speed: 0.005,
+        colors: ["#ffffff", "#aaccff", "#ccbbee", "#8877cc"],
+        sizeRange: [0.02, 0.12],
+        spin: false,
+      },
+      cosmicDust: {
+        type: "dust",
+        count: 100,
+        area: { width: 40, height: 20, depth: 40 },
+        speed: 0.015,
+        colors: ["#4466aa", "#3355aa", "#2244aa", "#5577cc"],
+        sizeRange: [0.01, 0.06],
+        spin: false,
+      },
+      energyParticles: {
+        enabled: true,
+        count: 50,
+        riseSpeed: 0.3,
+        colors: ["#4488ff", "#66aaff", "#88ccff", "#aaddff"],
+        sizeRange: [0.03, 0.08],
+        spawnRadius: 2.5,
+        maxHeight: 6,
+      },
+      meteorStreaks: {
+        enabled: true,
+        frequency: 8,
+        speed: 15,
+        colors: ["#ffffff", "#aaccff", "#88aaee"],
+        trailLength: 4,
+      },
+    },
+    lighting: {
+      ambient: {
+        skyColor: "#1a1a40",
+        groundColor: "#0a0a18",
+        intensity: 0.3,
+      },
+      coldDirectional: {
+        enabled: true,
+        color: "#6688cc",
+        intensity: 0.6,
+        position: [-30, 20, -40],
+      },
+      warmStation: {
+        enabled: true,
+        color: "#4466aa",
+        intensity: 15,
+        distance: 8,
+        decay: 1.5,
+        heightOffset: 0.5,
+      },
+      accentEmissive: {
+        enabled: true,
+        color: "#4488ff",
+        intensity: 0.4,
+        pulseSpeed: 0.5,
+      },
+    },
+  };
+}
+
+export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
+  return {
+    sky: {
+      topColor: "#030810",
+      midColor: "#0a2a2a",
+      bottomColor: "#102030",
+    },
+    fog: { color: "#061818", density: 0.006 },
+    ground: {
+      color: "#0a1a1a",
+      size: 60,
+      textured: true,
+      ...LUNAR_TEXTURES,
+      normalScale: 2.0,
+      textureRepeat: 30,
+      opacity: 0.9,
+    },
+    platform: {
+      shape: "octagon",
+      radius: 2.5,
+      height: 0.15,
+      metallic: 0.8,
+      roughness: 0.2,
+      baseColor: "#0a1a1a",
+      emissiveColor: "#00ccaa",
+      emissiveIntensity: 0.6,
+      edgeGlowWidth: 0.04,
+      pulseSpeed: 0.4,
+    },
+    earth: {
+      enabled: true,
+      position: [-40, 12, -60],
+      radius: 8,
+      rimColor: "#44ddcc",
+      rimIntensity: 1.4,
+      rotationSpeed: 0.02,
+    },
+    nebula: {
+      enabled: true,
+      color1: "#00aaaa",
+      color2: "#aa44aa",
+      opacity: 0.2,
+      scale: 1.5,
+      animationSpeed: 0.02,
+    },
+    particles: {
+      starDrift: {
+        type: "stars",
+        count: 200,
+        area: { width: 80, height: 50, depth: 80 },
+        speed: 0.005,
+        colors: ["#44ffee", "#ff66cc", "#33ddbb", "#ee88aa"],
+        sizeRange: [0.02, 0.12],
+        spin: false,
+      },
+      cosmicDust: {
+        type: "dust",
+        count: 120,
+        area: { width: 40, height: 20, depth: 40 },
+        speed: 0.02,
+        colors: ["#00aa88", "#aa44aa", "#00ccaa", "#cc66cc"],
+        sizeRange: [0.01, 0.06],
+        spin: false,
+      },
+      energyParticles: {
+        enabled: true,
+        count: 60,
+        riseSpeed: 0.25,
+        colors: ["#00ccaa", "#44eedd", "#00ffbb", "#66ffcc"],
+        sizeRange: [0.03, 0.08],
+        spawnRadius: 2.5,
+        maxHeight: 6,
+      },
+      meteorStreaks: {
+        enabled: true,
+        frequency: 6,
+        speed: 18,
+        colors: ["#44ffee", "#ff66cc", "#88ffdd"],
+        trailLength: 5,
+      },
+    },
+    lighting: {
+      ambient: {
+        skyColor: "#0a2a2a",
+        groundColor: "#061212",
+        intensity: 0.35,
+      },
+      coldDirectional: {
+        enabled: true,
+        color: "#44cccc",
+        intensity: 0.5,
+        position: [-30, 20, -40],
+      },
+      warmStation: {
+        enabled: true,
+        color: "#22aa88",
+        intensity: 18,
+        distance: 8,
+        decay: 1.5,
+        heightOffset: 0.5,
+      },
+      accentEmissive: {
+        enabled: true,
+        color: "#00ccaa",
+        intensity: 0.5,
+        pulseSpeed: 0.4,
+      },
     },
   };
 }
