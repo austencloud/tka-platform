@@ -13,7 +13,7 @@
   import LocationSharingConsentSheet from "./components/LocationSharingConsentSheet.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { UserLocationWithProfile } from "./domain/models/user-location";
-  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
+  import { env } from "$env/dynamic/public";
 
   let locations: UserLocationWithProfile[] = $state([]);
   let userLocation: { lat: number; lng: number } | null = $state(null);
@@ -155,12 +155,12 @@
   </div>
 
   <div class="map-section">
-    {#if !PUBLIC_GOOGLE_MAPS_API_KEY || PUBLIC_GOOGLE_MAPS_API_KEY === "your-google-maps-api-key"}
+    {#if !env.PUBLIC_GOOGLE_MAPS_API_KEY || env.PUBLIC_GOOGLE_MAPS_API_KEY === "your-google-maps-api-key"}
       <div class="api-key-warning">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         <h2>{t('community_api_key_required')}</h2>
         <p>
-          Add <code>PUBLIC_GOOGLE_MAPS_API_KEY</code> to your <code>.env</code> file to enable the community map.
+          Add <code>env.PUBLIC_GOOGLE_MAPS_API_KEY</code> to your <code>.env</code> file to enable the community map.
         </p>
         <p class="subtext">
           Get your API key from the
@@ -182,7 +182,7 @@
       <GlobalUserMap
         {locations}
         {userLocation}
-        apiKey={PUBLIC_GOOGLE_MAPS_API_KEY}
+        apiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY}
       />
     {/if}
   </div>

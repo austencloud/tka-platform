@@ -14,11 +14,7 @@
 
 import posthog from "posthog-js";
 import { browser } from "$app/environment";
-import {
-  PUBLIC_POSTHOG_KEY,
-  PUBLIC_POSTHOG_HOST,
-  PUBLIC_POSTHOG_PROJECT_ID,
-} from "$env/static/public";
+import { env } from "$env/dynamic/public";
 
 let initialized = false;
 
@@ -30,13 +26,13 @@ export function initPostHog(): void {
   if (!browser) return;
   if (initialized) return;
 
-  if (!PUBLIC_POSTHOG_KEY) {
+  if (!env.PUBLIC_POSTHOG_KEY) {
     console.warn("[PostHog] No API key found. Analytics disabled.");
     return;
   }
 
-  posthog.init(PUBLIC_POSTHOG_KEY, {
-    api_host: PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+  posthog.init(env.PUBLIC_POSTHOG_KEY, {
+    api_host: env.PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
 
     // Capture pageviews automatically
     capture_pageview: true,
@@ -206,9 +202,9 @@ export function getSessionReplayUrl(): string | null {
   const sessionId = posthog.get_session_id();
   if (!sessionId) return null;
 
-  if (!PUBLIC_POSTHOG_PROJECT_ID) return null;
+  if (!env.PUBLIC_POSTHOG_PROJECT_ID) return null;
 
-  return `https://us.posthog.com/project/${PUBLIC_POSTHOG_PROJECT_ID}/replay/${sessionId}`;
+  return `https://us.posthog.com/project/${env.PUBLIC_POSTHOG_PROJECT_ID}/replay/${sessionId}`;
 }
 
 /**

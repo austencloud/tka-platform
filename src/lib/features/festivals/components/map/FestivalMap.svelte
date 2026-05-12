@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
+  import { env } from "$env/dynamic/public";
   import { MarkerClusterer } from "@googlemaps/markerclusterer";
   import { getFestivalContext } from "../../context/festival-context";
   import FestivalMapPopup from "./FestivalMapPopup.svelte";
@@ -32,7 +32,7 @@
 
     return new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=marker&loading=async`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${env.PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=marker&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => resolve();
