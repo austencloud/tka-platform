@@ -17,6 +17,7 @@ import { computeClavicleRotation } from "../clavicle-raiser";
 import { computeSpineTwist } from "../spine-twister";
 import { constrainShoulderCone } from "../swing-twist-constraint";
 import type { GripType } from '../../domain/models/GripPose';
+import { userProportionsState } from "../../state/user-proportions-state.svelte";
 
 const FREE_AXIS_WALL = new Vector3(0, 0, 1);
 const FREE_AXIS_WHEEL = new Vector3(1, 0, 0);
@@ -113,6 +114,8 @@ export class AvatarAnimator {
 
   readonly leftPropSlide = new Vector3();
   readonly rightPropSlide = new Vector3();
+  leftDetachDistance = 0;
+  rightDetachDistance = 0;
 
   private leftClavicleQuat = new Quaternion();
   private rightClavicleQuat = new Quaternion();
@@ -127,6 +130,7 @@ export class AvatarAnimator {
   private rightShoulderRestY = 0;
   private shoulderRestCached = false;
   private spineTwistQuats = {
+    spine: new Quaternion(),
     spine1: new Quaternion(),
     spine2: new Quaternion(),
     neck: new Quaternion(),
@@ -134,6 +138,7 @@ export class AvatarAnimator {
     hips: new Quaternion(),
   };
   private spineTwistRestQuats = {
+    spine: new Quaternion(),
     spine1: new Quaternion(),
     spine2: new Quaternion(),
     neck: new Quaternion(),
@@ -478,7 +483,7 @@ export class AvatarAnimator {
     // Works with whatever bones are available (some models lack Spine2/upper_chest).
     if (!this.spineRestCached) {
       let anyFound = false;
-      const cacheSpineBone = (boneName: BoneName, key: "spine1" | "spine2" | "neck" | "head" | "hips") => {
+      const cacheSpineBone = (boneName: BoneName, key: "spine" | "spine1" | "spine2" | "neck" | "head" | "hips") => {
         const bone = state.bones.get(boneName);
         if (bone) {
           this.spineTwistRestQuats[key].copy(bone.quaternion);
@@ -486,6 +491,7 @@ export class AvatarAnimator {
           anyFound = true;
         }
       };
+      cacheSpineBone("Spine", "spine");
       cacheSpineBone("Spine1", "spine1");
       cacheSpineBone("Spine2", "spine2");
       cacheSpineBone("Neck", "neck");
@@ -508,6 +514,7 @@ export class AvatarAnimator {
         pose.leftHand?.targetPosition ?? null,
         pose.rightHand?.targetPosition ?? null,
         bodyCenter,
+        userProportionsState.bodyFreedom,
         this.availableSpineBones
       );
 
@@ -515,7 +522,7 @@ export class AvatarAnimator {
       // Each bone gets its own weighted quaternion from SpineTwister.
       const applySpineTwist = (
         boneName: BoneName,
-        key: "spine1" | "spine2" | "neck" | "head" | "hips",
+        key: "spine" | "spine1" | "spine2" | "neck" | "head" | "hips",
         twistQuat: Quaternion
       ) => {
         const bone = state.bones.get(boneName);
@@ -529,6 +536,7 @@ export class AvatarAnimator {
           .multiply(this.spineTwistQuats[key]);
       };
 
+      applySpineTwist("Spine", "spine", twistResult.spine);
       applySpineTwist("Spine1", "spine1", twistResult.spine1);
       applySpineTwist("Spine2", "spine2", twistResult.spine2);
       applySpineTwist("Neck", "neck", twistResult.neck);
@@ -645,6 +653,7 @@ export class AvatarAnimator {
         // Free-axis slide: move prop to where the hand can actually reach.
         // Runs regardless of constraint — arm may be at max extension.
         this.leftPropSlide.set(0, 0, 0);
+        this.leftDetachDistance = 0;
         if (leftHand.plane) {
           const handWorld = new Vector3();
           leftChain.effector.getWorldPosition(handWorld);
@@ -654,6 +663,9 @@ export class AvatarAnimator {
           if (Math.abs(slideAmount) > 0.001) {
             this.leftPropSlide.copy(freeAxis).multiplyScalar(slideAmount);
           }
+          // Residual after slide = total error minus the free-axis component
+          const residual = error.clone().sub(freeAxis.clone().multiplyScalar(slideAmount));
+          this.leftDetachDistance = residual.length();
         }
 
         // Save IK results BEFORE blending - .copy() would overwrite them
@@ -718,7 +730,6 @@ export class AvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(rightChain, target);
 
-        this.rightPropSlide.set(0, 0, 0);
         if (this._anatomicalConstraintsEnabled) {
           const constrained = constrainShoulderCone(rightChain.root.quaternion, rightChain.rootRestDir, "right");
           if (constrained.dot(rightChain.root.quaternion) < 0.9999) {
@@ -734,16 +745,22 @@ export class AvatarAnimator {
             const localForearmDir = forearmDir.clone().transformDirection(elbowParentInverse);
             rightChain.middle.quaternion.setFromUnitVectors(rightChain.middleRestDir.clone(), localForearmDir);
             rightChain.root.updateMatrixWorld(true);
-
-            if (rightHand.plane) {
-              const handWorld = new Vector3();
-              rightChain.effector.getWorldPosition(handWorld);
-              const error = handWorld.clone().sub(rightTarget);
-              const freeAxis = getFreeAxis(rightHand.plane);
-              const slideAmount = error.dot(freeAxis);
-              this.rightPropSlide.copy(freeAxis).multiplyScalar(slideAmount);
-            }
           }
+        }
+
+        this.rightPropSlide.set(0, 0, 0);
+        this.rightDetachDistance = 0;
+        if (rightHand.plane) {
+          const handWorld = new Vector3();
+          rightChain.effector.getWorldPosition(handWorld);
+          const error = handWorld.clone().sub(rightTarget);
+          const freeAxis = getFreeAxis(rightHand.plane);
+          const slideAmount = error.dot(freeAxis);
+          if (Math.abs(slideAmount) > 0.001) {
+            this.rightPropSlide.copy(freeAxis).multiplyScalar(slideAmount);
+          }
+          const residual = error.clone().sub(freeAxis.clone().multiplyScalar(slideAmount));
+          this.rightDetachDistance = residual.length();
         }
 
         // Save IK results BEFORE blending - .copy() would overwrite them
@@ -842,6 +859,7 @@ export class AvatarAnimator {
   setSpineTwistEnabled(enabled: boolean): void {
     this._spineTwistEnabled = enabled;
     if (!enabled) {
+      this.spineTwistQuats.spine.identity();
       this.spineTwistQuats.spine1.identity();
       this.spineTwistQuats.spine2.identity();
       this.spineTwistQuats.neck.identity();
