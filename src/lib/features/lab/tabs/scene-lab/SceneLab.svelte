@@ -8,7 +8,6 @@
    */
 
   import { SCENE_OPTIONS } from "./domain/scene-lab-types";
-  import type { SceneId } from "./domain/scene-lab-types";
   import { createSceneLabState } from "./state/scene-lab-state.svelte";
   import { setSceneLabContext } from "./context/scene-lab-context";
   import ScenePreview from "./components/ScenePreview.svelte";
@@ -43,10 +42,17 @@
 <div class="scene-lab">
   <header class="header">
     <h1>Scene Lab</h1>
-    <p class="subtitle">
-      Tune 3D environment scenes with live sliders. Copy the config back into
-      <code>scene-configs.ts</code> once it looks right.
-    </p>
+    <div class="scene-strip">
+      {#each SCENE_OPTIONS as option}
+        <button
+          class:active={sceneState.sceneId === option.id}
+          onclick={() => sceneState.setSceneId(option.id)}
+          title={option.description}
+        >
+          {option.label}
+        </button>
+      {/each}
+    </div>
   </header>
 
   <div class="layout">
@@ -55,21 +61,6 @@
     </div>
 
     <aside class="controls-pane">
-      <div class="scene-picker">
-        <label class="picker-label" for="scene-select">Scene</label>
-        <select
-          id="scene-select"
-          class="scene-select"
-          value={sceneState.sceneId}
-          onchange={(e) =>
-            sceneState.setSceneId(e.currentTarget.value as SceneId)}
-        >
-          {#each SCENE_OPTIONS as option}
-            <option value={option.id}>{option.label}</option>
-          {/each}
-        </select>
-      </div>
-
       <div class="actions">
         <button class="action-btn" onclick={handleReset} title="Reset to defaults">
           <i class="fas fa-undo"></i> Reset
@@ -121,26 +112,77 @@
 
   .header {
     margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
   }
 
   .header h1 {
     font-size: 1.35rem;
     font-weight: 700;
     color: var(--theme-text, white);
-    margin: 0 0 2px;
-  }
-
-  .subtitle {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
     margin: 0;
+    white-space: nowrap;
   }
 
-  .subtitle code {
-    font-family: ui-monospace, "SF Mono", monospace;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 1px 6px;
-    border-radius: 4px;
+  .scene-strip {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    background: rgba(10, 14, 26, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .scene-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scene-strip button {
+    display: flex;
+    align-items: center;
+    padding: 7px 14px;
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .scene-strip button:hover {
+    color: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .scene-strip button:active {
+    transform: scale(0.97);
+    transition: transform 80ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .scene-strip button.active {
+    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 22%, transparent);
+    color: var(--theme-accent-text, #7dd3fc);
+    box-shadow:
+      0 0 12px color-mix(in srgb, var(--theme-accent, #38bdf8) 18%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .scene-strip button:focus-visible {
+    outline: 2px solid var(--theme-accent, #38bdf8);
+    outline-offset: 2px;
   }
 
   .layout {
@@ -167,36 +209,6 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     padding: 14px;
-  }
-
-  .scene-picker {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 10px;
-  }
-
-  .picker-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  .scene-select {
-    padding: 8px 10px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
-    cursor: pointer;
-  }
-
-  .scene-select:focus {
-    outline: none;
-    border-color: var(--theme-accent, #38bdf8);
   }
 
   .actions {
