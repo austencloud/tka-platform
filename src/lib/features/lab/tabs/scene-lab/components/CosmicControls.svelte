@@ -48,6 +48,14 @@
   <ParamSlider label="Emissive intensity" value={cfg.platform.emissiveIntensity} min={0} max={3} step={0.05} onChange={(v) => (mut().platform.emissiveIntensity = v)} />
   <ParamSlider label="Edge glow width" value={cfg.platform.edgeGlowWidth} min={0} max={0.5} step={0.01} onChange={(v) => (mut().platform.edgeGlowWidth = v)} />
   <ParamSlider label="Pulse speed" value={cfg.platform.pulseSpeed} min={0} max={3} step={0.1} onChange={(v) => (mut().platform.pulseSpeed = v)} />
+  <ParamSlider label="Grid density" value={cfg.platform.gridDensity} min={0} max={20} step={1} onChange={(v) => (mut().platform.gridDensity = v)} />
+  <ParamSlider label="Grid intensity" value={cfg.platform.gridIntensity} min={0} max={1} step={0.05} onChange={(v) => (mut().platform.gridIntensity = v)} />
+  <ParamSlider label="Accent lights" value={cfg.platform.accentLightCount} min={0} max={16} step={1} onChange={(v) => (mut().platform.accentLightCount = v)} />
+  <ParamSlider label="Light intensity" value={cfg.platform.accentLightIntensity} min={0} max={30} step={1} onChange={(v) => (mut().platform.accentLightIntensity = v)} />
+  <ParamSlider label="Light distance" value={cfg.platform.accentLightDistance} min={1} max={15} step={1} onChange={(v) => (mut().platform.accentLightDistance = v)} />
+  <ParamSlider label="Seating" value={cfg.platform.seatingEnabled ? 1 : 0} min={0} max={1} step={1} onChange={(v) => (mut().platform.seatingEnabled = v > 0.5)} />
+  <ParamSlider label="Seat rows" value={cfg.platform.seatingRows} min={1} max={5} step={1} onChange={(v) => (mut().platform.seatingRows = v)} />
+  <ParamColor label="Seat accent" value={cfg.platform.seatingAccentColor} onChange={(v) => (mut().platform.seatingAccentColor = v)} />
 </ParamPanel>
 
 <ParamPanel title="Earth" defaultOpen={false}>

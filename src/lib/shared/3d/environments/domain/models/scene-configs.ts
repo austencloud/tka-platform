@@ -233,6 +233,22 @@ export interface PlatformConfig {
   edgeGlowWidth: number;
   /** Pulse animation speed (Hz). */
   pulseSpeed: number;
+  /** Hexagonal grid line density on top surface. 0 = no grid. */
+  gridDensity: number;
+  /** Grid line emissive intensity (separate from edge glow). */
+  gridIntensity: number;
+  /** Number of accent lights around platform edge. 0 = disabled. */
+  accentLightCount: number;
+  /** Intensity of each accent light. */
+  accentLightIntensity: number;
+  /** Falloff distance of each accent light (meters). */
+  accentLightDistance: number;
+  /** Audience seating enabled. */
+  seatingEnabled: boolean;
+  /** Number of seating rows. */
+  seatingRows: number;
+  /** Seating emissive accent color. Falls back to emissiveColor if empty. */
+  seatingAccentColor: string;
 }
 
 export interface EarthConfig {
@@ -781,8 +797,8 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
     platform: {
       enabled: true,
       shape: "octagon",
-      radius: 2.5,
-      height: 0.15,
+      radius: 3.5,
+      height: 0.4,
       metallic: 0.8,
       roughness: 0.2,
       baseColor: "#0a0a1a",
@@ -790,6 +806,14 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
       emissiveIntensity: 0.6,
       edgeGlowWidth: 0.04,
       pulseSpeed: 0.5,
+      gridDensity: 8,
+      gridIntensity: 0.3,
+      accentLightCount: 8,
+      accentLightIntensity: 15,
+      accentLightDistance: 6,
+      seatingEnabled: true,
+      seatingRows: 3,
+      seatingAccentColor: "#4488ff",
     },
     earth: {
       enabled: true,
@@ -893,8 +917,8 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
     platform: {
       enabled: true,
       shape: "octagon",
-      radius: 2.5,
-      height: 0.15,
+      radius: 3.5,
+      height: 0.4,
       metallic: 0.8,
       roughness: 0.2,
       baseColor: "#0a1a1a",
@@ -902,6 +926,14 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
       emissiveIntensity: 0.6,
       edgeGlowWidth: 0.04,
       pulseSpeed: 0.4,
+      gridDensity: 8,
+      gridIntensity: 0.3,
+      accentLightCount: 8,
+      accentLightIntensity: 15,
+      accentLightDistance: 6,
+      seatingEnabled: true,
+      seatingRows: 3,
+      seatingAccentColor: "#00ccaa",
     },
     earth: {
       enabled: true,
