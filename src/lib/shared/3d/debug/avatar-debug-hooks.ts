@@ -7,12 +7,14 @@ type ToggleAnimator = AvatarAnimator & {
   togglePoleVectors?: () => boolean;
   toggleClavicleRaise?: () => boolean;
   toggleSpineTwist?: () => boolean;
+  toggleAnatomicalConstraints?: () => boolean;
 };
 
 interface AvatarDebugHooks {
   __togglePoleVectors?: () => boolean;
   __toggleClavicleRaise?: () => boolean;
   __toggleSpineTwist?: () => boolean;
+  __toggleConstraints?: () => boolean;
   __dumpShoulders?: () => unknown;
 }
 
@@ -47,6 +49,14 @@ export function installAvatarDebugHooks(args: {
     const enabled = animator.toggleSpineTwist?.() ?? false;
     console.log(
       `Spine twist: ${enabled ? "ON (torso/head rotate)" : "OFF (spine static)"}`,
+    );
+    return enabled;
+  };
+
+  w.__toggleConstraints = () => {
+    const enabled = animator.toggleAnatomicalConstraints?.() ?? false;
+    console.log(
+      `Anatomical constraints: ${enabled ? "ON (cone + hinge)" : "OFF (unconstrained)"}`,
     );
     return enabled;
   };
@@ -94,6 +104,7 @@ export function installAvatarDebugHooks(args: {
       delete w.__togglePoleVectors;
       delete w.__toggleClavicleRaise;
       delete w.__toggleSpineTwist;
+      delete w.__toggleConstraints;
       delete w.__dumpShoulders;
     },
   };
