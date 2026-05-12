@@ -28,6 +28,8 @@ const EXPRESSIVE_WEIGHTS: Record<string, BoneParams> = {
 const SINGLE_HAND_WEIGHT_SCALE = 0.65;
 const HIP_COUNTER_SQUARE = -0.20;
 const HIP_COUNTER_EXPRESSIVE = -0.10;
+const MAX_PITCH = 25 * DEG;
+const PITCH_ATTENUATION = 0.15;
 
 export interface SpineTwistResult {
   spine: Quaternion;
@@ -120,7 +122,8 @@ export function computeSpineTwist(
 
   let totalYawApplied = 0;
   let residualYaw = yawTwist.clone();
-  let residualPitch = pitchSwing.clone();
+  const clampedPitchTotal = clampQuatAngle(pitchSwing, MAX_PITCH);
+  let residualPitch = new Quaternion().slerp(clampedPitchTotal, PITCH_ATTENUATION);
 
   for (const { key, boneName } of SPINE_CHAIN) {
     if (availableBones && !availableBones.has(boneName)) continue;
