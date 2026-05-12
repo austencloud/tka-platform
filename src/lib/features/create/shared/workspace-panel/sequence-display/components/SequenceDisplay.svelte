@@ -9,9 +9,8 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   import StepGrid from "./StepGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
-  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import LevelInfoModal from "./LevelInfoModal.svelte";
+  import LOOPInfoModal from "./LOOPInfoModal.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { formatLOOPTypeForDisplay } from "$lib/shared/create/services/loop-type-utils";
@@ -283,36 +282,14 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
 />
 
 <!-- LOOP Info Modal -->
-<BaseModal
+<LOOPInfoModal
   open={showLoopInfo}
+  {activeComponents}
+  loopDisplayName={loopDisplayName}
+  sequence={currentSequence}
+  period={loopPeriod}
   onclose={() => (showLoopInfo = false)}
-  size="sm"
->
-  <ModalHeader
-    title="{loopDisplayName} LOOP"
-    subtitle="This sequence repeats with a transformation pattern"
-    icon="fa-infinity"
-    iconColor="#36c3ff"
-    onClose={() => (showLoopInfo = false)}
-  />
-  <div class="info-modal-body">
-    <p>A LOOP (Linked Orbital Offset Pattern) means the second half of this sequence is a transformation of the first half. When played on repeat, it creates a seamless cycle.</p>
-    <div class="loop-components-display">
-      <span class="components-label">Active components:</span>
-      <div class="components-strip">
-        <LOOPIconStrip
-          {activeComponents}
-          {rotationPeriod}
-          {inversionPeriod}
-          period={loopPeriod}
-          size={28}
-          darkMode={true}
-          showFreeformWhenEmpty={false}
-        />
-      </div>
-    </div>
-  </div>
-</BaseModal>
+/>
 
 <style>
   .sequence-container {
@@ -478,43 +455,6 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
 
   .loop-badge-button:active {
     background: rgba(255, 255, 255, 0.12);
-  }
-
-  /* Info modal body */
-  .info-modal-body {
-    padding: 20px;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-dim);
-    line-height: 1.6;
-  }
-
-  .info-modal-body p {
-    margin: 0 0 16px;
-  }
-
-  /* LOOP components display */
-  .loop-components-display {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-  }
-
-  .components-label {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 500;
-  }
-
-  .components-strip {
-    display: flex;
-    justify-content: center;
-    padding: 8px 0;
   }
 
   /* Accessibility: Respect user's motion preferences */
