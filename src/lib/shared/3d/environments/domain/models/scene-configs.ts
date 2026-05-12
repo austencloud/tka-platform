@@ -576,27 +576,19 @@ const OCEAN_KELP_RINGS: TreeRingConfig[] = [
   { radius: 20, count: 26, scaleBase: 0.8, scaleVariation: 0.25, radiusJitter: 2.0 },
 ];
 
-const OCEAN_FLOOR_TEXTURES = {
-  diffuseMap: "/textures/ocean-floor/diffuse.jpg",
-  normalMap: "/textures/ocean-floor/normal.jpg",
-  roughnessMap: "/textures/ocean-floor/roughness.jpg",
-};
-
 export function createDefaultOceanDeepConfig(): OceanSceneConfig {
   return {
     sky: {
-      topColor: "#001a2e",
-      midColor: "#003366",
+      topColor: "#002844",
+      midColor: "#004477",
       bottomColor: "#000a14",
     },
     fog: { color: "#002244", density: 0.035 },
     ground: {
       color: "#1a3a4a",
       size: 50,
-      textured: true,
-      ...OCEAN_FLOOR_TEXTURES,
-      normalScale: 1.2,
-      textureRepeat: 30,
+      textured: false,
+      opacity: 1,
     },
     coral: {
       enabled: true,
@@ -621,7 +613,7 @@ export function createDefaultOceanDeepConfig(): OceanSceneConfig {
       area: { width: 6, height: 4, depth: 6 },
       speed: 0.075,
       colors: ["#60c0e0", "#80d0f0", "#40a0c0", "#a0e0ff"],
-      sizeRange: [0.03, 0.09],
+      sizeRange: [0.04, 0.12],
       spin: false,
     },
     dust: {
@@ -656,7 +648,7 @@ export function createDefaultOceanDeepConfig(): OceanSceneConfig {
     godRays: {
       enabled: true,
       color: "#4090b0",
-      intensity: 0.6,
+      intensity: 1.5,
       position: [5, 25, 5],
     },
     caustics: {
@@ -669,7 +661,7 @@ export function createDefaultOceanDeepConfig(): OceanSceneConfig {
     hemisphereLight: {
       skyColor: "#1a3a5a",
       groundColor: "#0a1a2a",
-      intensity: 0.4,
+      intensity: 0.8,
     },
   };
 }
@@ -683,12 +675,10 @@ export function createDefaultOceanReefConfig(): OceanSceneConfig {
     },
     fog: { color: "#004466", density: 0.018 },
     ground: {
-      color: "#2a4a5a",
+      color: "#3a5a6a",
       size: 50,
-      textured: true,
-      ...OCEAN_FLOOR_TEXTURES,
-      normalScale: 1.0,
-      textureRepeat: 30,
+      textured: false,
+      opacity: 1,
     },
     coral: {
       enabled: true,
@@ -764,7 +754,7 @@ export function createDefaultOceanReefConfig(): OceanSceneConfig {
     hemisphereLight: {
       skyColor: "#4080b0",
       groundColor: "#1a3040",
-      intensity: 0.7,
+      intensity: 1.0,
     },
   };
 }
