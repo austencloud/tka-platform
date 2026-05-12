@@ -8,6 +8,7 @@ type ToggleAnimator = AvatarAnimator & {
   toggleClavicleRaise?: () => boolean;
   toggleSpineTwist?: () => boolean;
   toggleAnatomicalConstraints?: () => boolean;
+  cycleBodyFreedom?: () => string;
 };
 
 interface AvatarDebugHooks {
@@ -15,6 +16,7 @@ interface AvatarDebugHooks {
   __toggleClavicleRaise?: () => boolean;
   __toggleSpineTwist?: () => boolean;
   __toggleConstraints?: () => boolean;
+  __toggleBodyFreedom?: () => string;
   __dumpShoulders?: () => unknown;
 }
 
@@ -61,6 +63,12 @@ export function installAvatarDebugHooks(args: {
     return enabled;
   };
 
+  w.__toggleBodyFreedom = () => {
+    const preset = animator.cycleBodyFreedom?.() ?? "unknown";
+    console.log(`Body freedom: ${preset}`);
+    return preset;
+  };
+
   w.__dumpShoulders = () => {
     const s = skeleton.getState();
     if (!s.isLoaded) return "Skeleton not loaded";
@@ -105,6 +113,7 @@ export function installAvatarDebugHooks(args: {
       delete w.__toggleClavicleRaise;
       delete w.__toggleSpineTwist;
       delete w.__toggleConstraints;
+      delete w.__toggleBodyFreedom;
       delete w.__dumpShoulders;
     },
   };

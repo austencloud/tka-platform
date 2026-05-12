@@ -877,4 +877,18 @@ export class AvatarAnimator {
     this._anatomicalConstraintsEnabled = !this._anatomicalConstraintsEnabled;
     return this._anatomicalConstraintsEnabled;
   }
+
+  cycleBodyFreedom(): string {
+    const current = userProportionsState.bodyFreedom;
+    if (current < 0.25) {
+      userProportionsState.setBodyFreedom(0.5);
+      return "Natural (50%)";
+    } else if (current < 0.75) {
+      userProportionsState.setBodyFreedom(1.0);
+      return "Expressive (100%)";
+    } else {
+      userProportionsState.setBodyFreedom(0.0);
+      return "Square (0%)";
+    }
+  }
 }
