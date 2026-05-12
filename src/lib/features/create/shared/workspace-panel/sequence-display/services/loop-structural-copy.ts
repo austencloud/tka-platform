@@ -186,13 +186,25 @@ function multiComponentCopy(
   };
 }
 
+function extractRepeatingUnit(word: string, period: number): string {
+  if (period <= 1 || word.length < period) return word;
+  const unitLen = Math.floor(word.length / period);
+  if (unitLen === 0) return word;
+  const unit = word.slice(0, unitLen);
+  for (let i = 1; i < period; i++) {
+    if (word.slice(i * unitLen, (i + 1) * unitLen) !== unit) return word;
+  }
+  return unit;
+}
+
 export function generateLoopStructuralCopy(
   sequence: SequenceData,
   activeComponents: Set<LOOPComponent>,
   period: number,
 ): StructuralCopy {
   const beatCount = sequence.steps?.length ?? 0;
-  const word = sequence.word || `${beatCount}-beat sequence`;
+  const fullWord = sequence.word || `${beatCount}-beat sequence`;
+  const word = extractRepeatingUnit(fullWord, period);
   const cc = sequence.orientationCycleCount ?? period;
   const components = [...activeComponents];
 
