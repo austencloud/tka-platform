@@ -15,6 +15,7 @@
   import WinterControls from "./components/WinterControls.svelte";
   import ForestControls from "./components/ForestControls.svelte";
   import CosmicControls from "./components/CosmicControls.svelte";
+  import OceanControls from "./components/OceanControls.svelte";
 
   const sceneState = createSceneLabState();
   setSceneLabContext({ state: sceneState });
@@ -97,6 +98,8 @@
           <CosmicControls variant="night" />
         {:else if sceneState.sceneId === "cosmic-aurora"}
           <CosmicControls variant="aurora" />
+        {:else if sceneState.sceneId.startsWith("ocean")}
+          <OceanControls />
         {:else}
           <ForestControls />
         {/if}

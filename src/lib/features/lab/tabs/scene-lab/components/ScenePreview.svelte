@@ -21,6 +21,7 @@
   import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
   import WinterScene from "$lib/shared/3d/environments/scenes/WinterScene.svelte";
   import CosmicScene from "$lib/shared/3d/environments/scenes/CosmicScene.svelte";
+  import OceanScene from "$lib/shared/3d/environments/scenes/OceanScene.svelte";
   import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import { CameraMode } from "$lib/shared/3d/camera/types";
@@ -224,6 +225,10 @@
         <CosmicScene variant="night" config={labState.cosmicNightConfig} />
       {:else if labState.sceneId === "cosmic-aurora"}
         <CosmicScene variant="aurora" config={labState.cosmicAuroraConfig} />
+      {:else if labState.sceneId === "ocean-deep"}
+        <OceanScene variant="deep" config={labState.oceanDeepConfig} />
+      {:else if labState.sceneId === "ocean-reef"}
+        <OceanScene variant="reef" config={labState.oceanReefConfig} />
       {/if}
 
       {#if camMode === "walk"}
