@@ -3,7 +3,6 @@
   import {
     CylinderGeometry,
     ShaderMaterial,
-    RingGeometry,
     MeshStandardMaterial,
     Color,
     DoubleSide,

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import { BoxGeometry, MeshStandardMaterial, Color } from "three";
-  import { userProportionsState } from "../../../state/user-proportions-state.svelte";
 
   interface Props {
     rows: number;
