@@ -1,7 +1,8 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
+  import { useGltf } from "@threlte/extras";
   import { onMount } from "svelte";
-  import { FogExp2, Color } from "three";
+  import { FogExp2, Color, MeshStandardMaterial } from "three";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import GroundPlane from "../primitives/GroundPlane.svelte";
@@ -67,6 +68,38 @@
     }, 15_000);
     return () => clearTimeout(timer);
   });
+
+  const rockA = useGltf("/models/winter/rock_largeA.glb");
+  const rockB = useGltf("/models/winter/rock_largeB.glb");
+
+  const lunarMat = new MeshStandardMaterial({
+    color: new Color("#3a3a44"),
+    roughness: 0.9,
+    metalness: 0.1,
+  });
+
+  function lunarClone(sourceScene: {
+    clone: () => { traverse: (cb: (obj: unknown) => void) => void };
+  }) {
+    const cloned = sourceScene.clone();
+    cloned.traverse((obj: unknown) => {
+      const mesh = obj as { isMesh?: boolean; material?: unknown };
+      if (!mesh.isMesh) return;
+      mesh.material = lunarMat;
+    });
+    return cloned;
+  }
+
+  const rockPlacements: [number, number, number, number][] = [
+    [5.5, -4.0, 0.6, 0.4],
+    [-4.5, -6.0, 0.5, 1.8],
+    [8.0, 2.5, 0.8, 2.5],
+    [-7.0, 5.0, 0.45, 0.9],
+    [-3.0, 8.5, 0.7, 3.1],
+    [6.5, 7.0, 0.35, 1.2],
+    [-9.0, -2.0, 0.55, 2.0],
+    [3.0, -9.0, 0.5, 4.2],
+  ];
 </script>
 
 <SkyGradient
@@ -93,6 +126,20 @@
     size={activeConfig.ground.size}
     opacity={activeConfig.ground.opacity ?? 1}
   />
+{/if}
+
+{#if $rockA && $rockB}
+  {#each rockPlacements as [x, z, scale, rotY], i}
+    {@const source = i % 2 === 0 ? $rockA : $rockB}
+    <T
+      is={lunarClone(source.scene)}
+      position.x={x}
+      position.y={groundY}
+      position.z={z}
+      scale={scale * 2.0}
+      rotation.y={rotY}
+    />
+  {/each}
 {/if}
 
 <StationPlatform config={activeConfig.platform} />
