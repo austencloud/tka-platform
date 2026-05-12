@@ -80,29 +80,29 @@
 
 <ParamPanel title="Cosmic Dust" defaultOpen={false}>
   {#if cfg.particles.cosmicDust}
-    <ParamSlider label="Count" value={cfg.particles.cosmicDust.count} min={0} max={300} step={10} onChange={(v) => { if (mut().particles.cosmicDust) mut().particles.cosmicDust.count = v; }} />
-    <ParamSlider label="Speed" value={cfg.particles.cosmicDust.speed} min={0} max={0.1} step={0.005} onChange={(v) => { if (mut().particles.cosmicDust) mut().particles.cosmicDust.speed = v; }} />
+    <ParamSlider label="Count" value={cfg.particles.cosmicDust.count} min={0} max={300} step={10} onChange={(v) => { const p = mut().particles.cosmicDust; if (p) p.count = v; }} />
+    <ParamSlider label="Speed" value={cfg.particles.cosmicDust.speed} min={0} max={0.1} step={0.005} onChange={(v) => { const p = mut().particles.cosmicDust; if (p) p.speed = v; }} />
   {/if}
 </ParamPanel>
 
 <ParamPanel title="Energy Particles" defaultOpen={false}>
   {#if cfg.particles.energyParticles}
-    <ParamSlider label="Enabled" value={cfg.particles.energyParticles.enabled ? 1 : 0} min={0} max={1} step={1} onChange={(v) => { if (mut().particles.energyParticles) mut().particles.energyParticles.enabled = v > 0.5; }} />
-    <ParamSlider label="Count" value={cfg.particles.energyParticles.count} min={0} max={200} step={5} onChange={(v) => { if (mut().particles.energyParticles) mut().particles.energyParticles.count = v; }} />
-    <ParamSlider label="Rise speed" value={cfg.particles.energyParticles.riseSpeed} min={0} max={2} step={0.05} onChange={(v) => { if (mut().particles.energyParticles) mut().particles.energyParticles.riseSpeed = v; }} />
-    <ParamSlider label="Max height" value={cfg.particles.energyParticles.maxHeight} min={1} max={10} step={0.5} onChange={(v) => { if (mut().particles.energyParticles) mut().particles.energyParticles.maxHeight = v; }} />
+    <ParamSlider label="Enabled" value={cfg.particles.energyParticles.enabled ? 1 : 0} min={0} max={1} step={1} onChange={(v) => { const p = mut().particles.energyParticles; if (p) p.enabled = v > 0.5; }} />
+    <ParamSlider label="Count" value={cfg.particles.energyParticles.count} min={0} max={200} step={5} onChange={(v) => { const p = mut().particles.energyParticles; if (p) p.count = v; }} />
+    <ParamSlider label="Rise speed" value={cfg.particles.energyParticles.riseSpeed} min={0} max={2} step={0.05} onChange={(v) => { const p = mut().particles.energyParticles; if (p) p.riseSpeed = v; }} />
+    <ParamSlider label="Max height" value={cfg.particles.energyParticles.maxHeight} min={1} max={10} step={0.5} onChange={(v) => { const p = mut().particles.energyParticles; if (p) p.maxHeight = v; }} />
     {#each cfg.particles.energyParticles.colors as _, i}
-      <ParamColor label={`Glow ${i + 1}`} value={cfg.particles.energyParticles.colors[i]!} onChange={(v) => { if (mut().particles.energyParticles) mut().particles.energyParticles.colors[i] = v; }} />
+      <ParamColor label={`Glow ${i + 1}`} value={cfg.particles.energyParticles.colors[i]!} onChange={(v) => { const p = mut().particles.energyParticles; if (p) p.colors[i] = v; }} />
     {/each}
   {/if}
 </ParamPanel>
 
 <ParamPanel title="Meteor Streaks" defaultOpen={false}>
   {#if cfg.particles.meteorStreaks}
-    <ParamSlider label="Enabled" value={cfg.particles.meteorStreaks.enabled ? 1 : 0} min={0} max={1} step={1} onChange={(v) => { if (mut().particles.meteorStreaks) mut().particles.meteorStreaks.enabled = v > 0.5; }} />
-    <ParamSlider label="Frequency" value={cfg.particles.meteorStreaks.frequency} min={1} max={30} step={1} onChange={(v) => { if (mut().particles.meteorStreaks) mut().particles.meteorStreaks.frequency = v; }} />
-    <ParamSlider label="Speed" value={cfg.particles.meteorStreaks.speed} min={5} max={40} step={1} onChange={(v) => { if (mut().particles.meteorStreaks) mut().particles.meteorStreaks.speed = v; }} />
-    <ParamSlider label="Trail length" value={cfg.particles.meteorStreaks.trailLength} min={0.5} max={10} step={0.5} onChange={(v) => { if (mut().particles.meteorStreaks) mut().particles.meteorStreaks.trailLength = v; }} />
+    <ParamSlider label="Enabled" value={cfg.particles.meteorStreaks.enabled ? 1 : 0} min={0} max={1} step={1} onChange={(v) => { const p = mut().particles.meteorStreaks; if (p) p.enabled = v > 0.5; }} />
+    <ParamSlider label="Frequency" value={cfg.particles.meteorStreaks.frequency} min={1} max={30} step={1} onChange={(v) => { const p = mut().particles.meteorStreaks; if (p) p.frequency = v; }} />
+    <ParamSlider label="Speed" value={cfg.particles.meteorStreaks.speed} min={5} max={40} step={1} onChange={(v) => { const p = mut().particles.meteorStreaks; if (p) p.speed = v; }} />
+    <ParamSlider label="Trail length" value={cfg.particles.meteorStreaks.trailLength} min={0.5} max={10} step={0.5} onChange={(v) => { const p = mut().particles.meteorStreaks; if (p) p.trailLength = v; }} />
   {/if}
 </ParamPanel>
 

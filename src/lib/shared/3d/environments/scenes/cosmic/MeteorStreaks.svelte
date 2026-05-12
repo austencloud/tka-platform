@@ -111,12 +111,12 @@
       const m = pool[i]!;
       const geo = geometries[i]!;
       const mat = materials[i]!;
-      const posArr = geo.attributes.position.array as Float32Array;
-      const alphaArr = geo.attributes.aAlpha.array as Float32Array;
+      const posArr = geo.attributes.position!.array as Float32Array;
+      const alphaArr = geo.attributes.aAlpha!.array as Float32Array;
 
       if (!m.active) {
         for (let j = 0; j < TRAIL_SEGMENTS; j++) alphaArr[j] = 0;
-        geo.attributes.aAlpha.needsUpdate = true;
+        geo.attributes.aAlpha!.needsUpdate = true;
         continue;
       }
 
@@ -124,7 +124,7 @@
       if (m.life >= m.maxLife) {
         m.active = false;
         for (let j = 0; j < TRAIL_SEGMENTS; j++) alphaArr[j] = 0;
-        geo.attributes.aAlpha.needsUpdate = true;
+        geo.attributes.aAlpha!.needsUpdate = true;
         continue;
       }
 
@@ -142,9 +142,9 @@
         }
       }
 
-      mat.uniforms.uColor.value = colorArr[m.colorIndex % colorArr.length] || colorArr[0];
-      geo.attributes.position.needsUpdate = true;
-      geo.attributes.aAlpha.needsUpdate = true;
+      mat.uniforms.uColor!.value = colorArr[m.colorIndex % colorArr.length] || colorArr[0];
+      geo.attributes.position!.needsUpdate = true;
+      geo.attributes.aAlpha!.needsUpdate = true;
     }
   });
 </script>

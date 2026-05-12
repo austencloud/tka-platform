@@ -92,19 +92,19 @@
   useTask((delta) => {
     if (!material || config.pulseSpeed === 0) return;
     pulseTime += delta * config.pulseSpeed * Math.PI * 2;
-    material.uniforms.uPulse.value = pulseTime;
+    material.uniforms.uPulse!.value = pulseTime;
   });
 
   $effect(() => {
     if (!material) return;
-    material.uniforms.uBaseColor.value = new Color(config.baseColor);
-    material.uniforms.uEmissiveColor.value = new Color(config.emissiveColor);
-    material.uniforms.uEmissiveIntensity.value = config.emissiveIntensity;
-    material.uniforms.uEdgeGlowWidth.value = config.edgeGlowWidth;
-    material.uniforms.uRadius.value = config.radius;
-    material.uniforms.uHeight.value = config.height;
-    material.uniforms.uMetallic.value = config.metallic;
-    material.uniforms.uRoughness.value = config.roughness;
+    material.uniforms.uBaseColor!.value = new Color(config.baseColor);
+    material.uniforms.uEmissiveColor!.value = new Color(config.emissiveColor);
+    material.uniforms.uEmissiveIntensity!.value = config.emissiveIntensity;
+    material.uniforms.uEdgeGlowWidth!.value = config.edgeGlowWidth;
+    material.uniforms.uRadius!.value = config.radius;
+    material.uniforms.uHeight!.value = config.height;
+    material.uniforms.uMetallic!.value = config.metallic;
+    material.uniforms.uRoughness!.value = config.roughness;
   });
 </script>
 

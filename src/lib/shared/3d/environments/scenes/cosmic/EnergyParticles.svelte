@@ -111,10 +111,10 @@
   useTask((delta) => {
     if (!geometry || !material || !config.enabled) return;
 
-    const posArr = geometry.attributes.position.array as Float32Array;
-    const sizeArr = geometry.attributes.aSize.array as Float32Array;
-    const alphaArr = geometry.attributes.aAlpha.array as Float32Array;
-    const colorArr = geometry.attributes.aColorIndex.array as Float32Array;
+    const posArr = geometry.attributes.position!.array as Float32Array;
+    const sizeArr = geometry.attributes.aSize!.array as Float32Array;
+    const alphaArr = geometry.attributes.aAlpha!.array as Float32Array;
+    const colorArr = geometry.attributes.aColorIndex!.array as Float32Array;
 
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i]!;
@@ -143,10 +143,10 @@
       colorArr[i] = p.colorIndex;
     }
 
-    geometry.attributes.position.needsUpdate = true;
-    geometry.attributes.aSize.needsUpdate = true;
-    geometry.attributes.aAlpha.needsUpdate = true;
-    geometry.attributes.aColorIndex.needsUpdate = true;
+    geometry.attributes.position!.needsUpdate = true;
+    geometry.attributes.aSize!.needsUpdate = true;
+    geometry.attributes.aAlpha!.needsUpdate = true;
+    geometry.attributes.aColorIndex!.needsUpdate = true;
     geometry.computeBoundingSphere();
   });
 </script>

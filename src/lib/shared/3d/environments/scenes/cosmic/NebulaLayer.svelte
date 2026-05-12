@@ -123,15 +123,15 @@
   useTask((delta) => {
     if (!material) return;
     time += delta * config.animationSpeed;
-    material.uniforms.uTime.value = time;
+    material.uniforms.uTime!.value = time;
   });
 
   $effect(() => {
     if (!material) return;
-    material.uniforms.uColor1.value = new Color(config.color1);
-    material.uniforms.uColor2.value = new Color(config.color2);
-    material.uniforms.uOpacity.value = config.opacity;
-    material.uniforms.uScale.value = config.scale;
+    material.uniforms.uColor1!.value = new Color(config.color1);
+    material.uniforms.uColor2!.value = new Color(config.color2);
+    material.uniforms.uOpacity!.value = config.opacity;
+    material.uniforms.uScale!.value = config.scale;
   });
 </script>
 
