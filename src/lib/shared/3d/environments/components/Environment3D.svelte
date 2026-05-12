@@ -27,7 +27,7 @@
     | { scene: "forest"; variant: "autumn" | "firefly" }
     | { scene: "cosmic"; variant: "night" | "aurora" }
     | { scene: "winter" }
-    | { scene: "ocean" }
+    | { scene: "ocean"; variant: "deep" | "reef" }
     | { scene: "ember" }
     | { scene: "cherryBlossom" }
     | { scene: "none" };
@@ -43,7 +43,7 @@
       case BackgroundType.SNOWFALL:
         return { scene: "winter" };
       case BackgroundType.DEEP_OCEAN:
-        return { scene: "ocean" };
+        return { scene: "ocean", variant: "deep" };
       case BackgroundType.EMBER_GLOW:
         return { scene: "ember" };
       case BackgroundType.CHERRY_BLOSSOM:
@@ -64,7 +64,7 @@
 {:else if config.scene === "winter"}
   <WinterScene />
 {:else if config.scene === "ocean"}
-  <OceanScene />
+  <OceanScene variant={config.variant} />
 {:else if config.scene === "ember"}
   <EmberScene />
 {:else if config.scene === "cherryBlossom"}
