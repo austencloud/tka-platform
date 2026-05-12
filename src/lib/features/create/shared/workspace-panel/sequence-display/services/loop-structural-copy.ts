@@ -1,0 +1,219 @@
+import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { explainLOOP } from "$lib/features/choreo-card/services/loop-explainer";
+
+export interface StructuralCopyPart {
+  text: string;
+  bold: boolean;
+}
+
+export interface StructuralCopy {
+  lead: string;
+  parts: StructuralCopyPart[];
+}
+
+const COMPONENT_VERB: Record<string, string> = {
+  rotated: "rotates positions on the grid",
+  mirrored: "mirrors east and west",
+  flipped: "flips north and south",
+  swapped: "swaps blue and red",
+  inverted: "swaps pro and anti",
+  rewound: "plays the beats in reverse order",
+};
+
+function cycleText(cycleCount: number): string {
+  if (cycleCount === 1) return "One pass and you're back where you started.";
+  return `Play it ${cycleCount} times and you're back where you started.`;
+}
+
+function structureText(beatCount: number, word: string, period: number): string {
+  const half = beatCount / 2;
+  if (period === 4) {
+    return `${beatCount} beats. ${word} repeats four times. `;
+  }
+  return `${beatCount} beats. ${word} repeats twice — beats 1–${half} and ${half + 1}–${beatCount} use the same letters. `;
+}
+
+function singleComponentCopy(
+  component: LOOPComponent,
+  beatCount: number,
+  word: string,
+  period: number,
+  cc: number,
+): StructuralCopy {
+  const structure = structureText(beatCount, word, period);
+
+  if (period === 4) {
+    return quarteredSingleCopy(component, structure, cc);
+  }
+
+  switch (component) {
+    case "rotated":
+      return {
+        lead: structure,
+        parts: [
+          { text: "The positions rotate", bold: true },
+          { text: ": where the first half places your hands, the second half continues around the grid. ", bold: false },
+          { text: cycleText(cc), bold: false },
+        ],
+      };
+    case "mirrored":
+      return {
+        lead: structure,
+        parts: [
+          { text: "Same letters, but every position ", bold: false },
+          { text: "flips left-to-right", bold: true },
+          { text: ". The second half is the mirror image of the first. ", bold: false },
+          { text: cycleText(cc), bold: false },
+        ],
+      };
+    case "flipped":
+      return {
+        lead: structure,
+        parts: [
+          { text: "Same letters, but every position ", bold: false },
+          { text: "flips top-to-bottom", bold: true },
+          { text: ". The second half inverts the vertical axis. ", bold: false },
+          { text: cycleText(cc), bold: false },
+        ],
+      };
+    case "swapped":
+      return {
+        lead: structure,
+        parts: [
+          { text: "Same positions, same motions, but ", bold: false },
+          { text: "blue and red trade roles", bold: true },
+          { text: ". What one hand did in the first half, the other does in the second. ", bold: false },
+          { text: cycleText(cc), bold: false },
+        ],
+      };
+    case "inverted":
+      return {
+        lead: structure,
+        parts: [
+          { text: "Same positions, but ", bold: false },
+          { text: "pro motions become anti and vice versa", bold: true },
+          { text: ". The rotation direction reverses while the path stays the same. ", bold: false },
+          { text: cycleText(cc), bold: false },
+        ],
+      };
+    case "rewound":
+      return {
+        lead: structure,
+        parts: [
+          { text: "The second half ", bold: false },
+          { text: "plays the first in reverse", bold: true },
+          { text: ". A temporal mirror that loops back to start.", bold: false },
+        ],
+      };
+    default:
+      return {
+        lead: structure,
+        parts: [{ text: cycleText(cc), bold: false }],
+      };
+  }
+}
+
+function quarteredSingleCopy(
+  component: LOOPComponent,
+  structure: string,
+  cc: number,
+): StructuralCopy {
+  switch (component) {
+    case "rotated":
+      return {
+        lead: structure,
+        parts: [
+          { text: "Each pass ", bold: false },
+          { text: "rotates positions 90° further", bold: true },
+          { text: " around the grid. ", bold: false },
+          { text: cycleText(cc), bold: false },
+        ],
+      };
+    case "mirrored":
+      return {
+        lead: structure,
+        parts: [
+          { text: "Positions ", bold: false },
+          { text: "mirror every two passes", bold: true },
+          { text: "; orientations take all four to complete their cycle. ", bold: false },
+          { text: cycleText(cc), bold: false },
+        ],
+      };
+    case "swapped":
+      return {
+        lead: structure,
+        parts: [
+          { text: "Blue and red ", bold: false },
+          { text: "exchange roles every other pass", bold: true },
+          { text: ". ", bold: false },
+          { text: cycleText(cc), bold: false },
+        ],
+      };
+    default:
+      return {
+        lead: structure,
+        parts: [
+          { text: cycleText(cc), bold: false },
+        ],
+      };
+  }
+}
+
+function multiComponentCopy(
+  components: LOOPComponent[],
+  beatCount: number,
+  word: string,
+  period: number,
+  cc: number,
+): StructuralCopy {
+  const structure = structureText(beatCount, word, period);
+  const verbs = components
+    .map((c) => COMPONENT_VERB[c])
+    .filter(Boolean);
+
+  const verbText = verbs.join(" and ");
+  const subject = period === 4 ? "Each pass " : "The second half ";
+
+  return {
+    lead: structure,
+    parts: [
+      { text: subject, bold: false },
+      { text: verbText, bold: true },
+      { text: ". ", bold: false },
+      { text: cycleText(cc), bold: false },
+    ],
+  };
+}
+
+export function generateLoopStructuralCopy(
+  sequence: SequenceData,
+  activeComponents: Set<LOOPComponent>,
+  period: number,
+): StructuralCopy {
+  const beatCount = sequence.steps?.length ?? 0;
+  const word = sequence.word || `${beatCount}-beat sequence`;
+  const cc = sequence.orientationCycleCount ?? period;
+  const components = [...activeComponents];
+
+  if (beatCount === 0 || components.length === 0) {
+    return {
+      lead: "This sequence loops ",
+      parts: [{ text: "back to its starting position.", bold: false }],
+    };
+  }
+
+  const modular = explainLOOP(sequence, activeComponents);
+  if (modular.type === "modular" && modular.seeds.length > 1) {
+    return {
+      lead: `${beatCount} beats. `,
+      parts: [{ text: modular.summary, bold: false }],
+    };
+  }
+
+  if (components.length === 1) {
+    return singleComponentCopy(components[0]!, beatCount, word, period, cc);
+  }
+
+  return multiComponentCopy(components, beatCount, word, period, cc);
+}
