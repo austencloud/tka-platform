@@ -16,3 +16,8 @@ export type ForestVariant = "autumn" | "firefly";
  * Cosmic scene color variants
  */
 export type CosmicVariant = "night" | "aurora";
+
+/**
+ * Ocean scene color variants
+ */
+export type OceanVariant = "deep" | "reef";
