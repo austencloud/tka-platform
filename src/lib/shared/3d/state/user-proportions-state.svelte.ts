@@ -24,7 +24,7 @@ class UserProportionsState {
   private _build = $state<UserProportions["build"]>(
     DEFAULT_USER_PROPORTIONS.build
   );
-
+  private _bodyFreedom = $state(0.5);
   // Derived dimensions (automatically recalculated)
   private _dimensions = $derived(
     calculateSceneDimensions({
@@ -45,6 +45,10 @@ class UserProportionsState {
 
   get build(): UserProportions["build"] {
     return this._build;
+  }
+
+  get bodyFreedom(): number {
+    return this._bodyFreedom;
   }
 
   get dimensions(): DerivedSceneDimensions {
@@ -97,6 +101,10 @@ class UserProportionsState {
     this._build = build;
   }
 
+  setBodyFreedom(value: number): void {
+    this._bodyFreedom = Math.max(0, Math.min(1, value));
+  }
+
   // Set all at once
   setProportions(props: Partial<UserProportions>): void {
     if (props.heightCm !== undefined) this.setHeightCm(props.heightCm);
@@ -110,6 +118,7 @@ class UserProportionsState {
     this._heightCm = DEFAULT_USER_PROPORTIONS.heightCm;
     this._staffLengthCm = DEFAULT_USER_PROPORTIONS.staffLengthCm;
     this._build = DEFAULT_USER_PROPORTIONS.build;
+    this._bodyFreedom = 0.5;
   }
 
   // Get current proportions as object (for persistence)
@@ -132,6 +141,13 @@ class UserProportionsState {
   get staffLengthDisplay(): string {
     const inches = Math.round(this._staffLengthCm / 2.54);
     return `${inches}"`;
+  }
+
+  get bodyFreedomDisplay(): string {
+    if (this._bodyFreedom === 0) return "Square";
+    if (this._bodyFreedom === 0.5) return "Natural";
+    if (this._bodyFreedom === 1) return "Expressive";
+    return `${Math.round(this._bodyFreedom * 100)}%`;
   }
 }
 
