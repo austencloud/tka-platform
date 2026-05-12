@@ -4,7 +4,12 @@
  * Scene identifier union - add new IDs here as we build new scenes.
  */
 
-export type SceneId = "winter" | "forest-firefly" | "forest-autumn";
+export type SceneId =
+  | "winter"
+  | "forest-firefly"
+  | "forest-autumn"
+  | "cosmic-night"
+  | "cosmic-aurora";
 
 export interface SceneOption {
   id: SceneId;
@@ -27,5 +32,15 @@ export const SCENE_OPTIONS: SceneOption[] = [
     id: "forest-autumn",
     label: "Forest (Autumn)",
     description: "Golden-hour forest clearing with falling leaves",
+  },
+  {
+    id: "cosmic-night",
+    label: "Cosmic (Night)",
+    description: "Deep space with lunar surface, station platform, and Earth rise",
+  },
+  {
+    id: "cosmic-aurora",
+    label: "Cosmic (Aurora)",
+    description: "Aurora-lit space with nebula wash and teal-green accents",
   },
 ];

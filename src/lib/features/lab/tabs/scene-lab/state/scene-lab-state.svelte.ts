@@ -9,9 +9,12 @@
 import {
   type ForestSceneConfig,
   type WinterSceneConfig,
+  type CosmicSceneConfig,
   createDefaultForestAutumnConfig,
   createDefaultForestFireflyConfig,
   createDefaultWinterConfig,
+  createDefaultCosmicNightConfig,
+  createDefaultCosmicAuroraConfig,
 } from "$lib/shared/3d/environments/domain/models/scene-configs";
 import type { SceneId } from "../domain/scene-lab-types";
 
@@ -24,6 +27,12 @@ export function createSceneLabState() {
   let forestAutumnConfig = $state<ForestSceneConfig>(
     createDefaultForestAutumnConfig()
   );
+  let cosmicNightConfig = $state<CosmicSceneConfig>(
+    createDefaultCosmicNightConfig()
+  );
+  let cosmicAuroraConfig = $state<CosmicSceneConfig>(
+    createDefaultCosmicAuroraConfig()
+  );
 
   function resetCurrent() {
     if (sceneId === "winter") winterConfig = createDefaultWinterConfig();
@@ -31,12 +40,18 @@ export function createSceneLabState() {
       forestFireflyConfig = createDefaultForestFireflyConfig();
     else if (sceneId === "forest-autumn")
       forestAutumnConfig = createDefaultForestAutumnConfig();
+    else if (sceneId === "cosmic-night")
+      cosmicNightConfig = createDefaultCosmicNightConfig();
+    else if (sceneId === "cosmic-aurora")
+      cosmicAuroraConfig = createDefaultCosmicAuroraConfig();
   }
 
   function currentConfigSnapshot(): unknown {
     if (sceneId === "winter") return $state.snapshot(winterConfig);
     if (sceneId === "forest-firefly") return $state.snapshot(forestFireflyConfig);
-    return $state.snapshot(forestAutumnConfig);
+    if (sceneId === "forest-autumn") return $state.snapshot(forestAutumnConfig);
+    if (sceneId === "cosmic-night") return $state.snapshot(cosmicNightConfig);
+    return $state.snapshot(cosmicAuroraConfig);
   }
 
   function currentDefaultFnName(): string {
@@ -47,11 +62,17 @@ export function createSceneLabState() {
         return "createDefaultForestFireflyConfig";
       case "forest-autumn":
         return "createDefaultForestAutumnConfig";
+      case "cosmic-night":
+        return "createDefaultCosmicNightConfig";
+      case "cosmic-aurora":
+        return "createDefaultCosmicAuroraConfig";
     }
   }
 
   function currentConfigTypeName(): string {
-    return sceneId === "winter" ? "WinterSceneConfig" : "ForestSceneConfig";
+    if (sceneId === "winter") return "WinterSceneConfig";
+    if (sceneId.startsWith("forest")) return "ForestSceneConfig";
+    return "CosmicSceneConfig";
   }
 
   async function copyCurrentToClipboard(): Promise<void> {
@@ -75,6 +96,12 @@ export function createSceneLabState() {
     },
     get forestAutumnConfig() {
       return forestAutumnConfig;
+    },
+    get cosmicNightConfig() {
+      return cosmicNightConfig;
+    },
+    get cosmicAuroraConfig() {
+      return cosmicAuroraConfig;
     },
     resetCurrent,
     copyCurrentToClipboard,
