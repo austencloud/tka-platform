@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useThrelte } from "@threlte/core";
+  import { T, useThrelte, useTask } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
   import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
   import GroundPlane from "../primitives/GroundPlane.svelte";
@@ -13,7 +13,7 @@
   } from "../domain/models/scene-configs";
   import { onMount } from "svelte";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
-  import { FogExp2, Color } from "three";
+  import { FogExp2, Color, ShaderMaterial, AdditiveBlending, DoubleSide } from "three";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
   interface Props {
@@ -142,6 +142,105 @@
     return cloned;
   }
 
+  // ---- Caustic shader ----
+  function createCausticMaterial(color: string, intensity: number, speed: number, scale: number): ShaderMaterial {
+    return new ShaderMaterial({
+      transparent: true,
+      blending: AdditiveBlending,
+      side: DoubleSide,
+      depthWrite: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uColor: { value: new Color(color) },
+        uIntensity: { value: intensity },
+        uScale: { value: scale },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        uniform vec3 uColor;
+        uniform float uIntensity;
+        uniform float uScale;
+        varying vec2 vUv;
+
+        float causticLayer(vec2 p, float t) {
+          float a = sin(p.x * 3.0 + t * 0.7) * sin(p.y * 2.5 + t * 0.5);
+          float b = sin(p.x * 2.0 - t * 0.6) * sin(p.y * 3.5 - t * 0.4);
+          float c = sin((p.x + p.y) * 2.8 + t * 0.8);
+          return (a + b + c) / 3.0;
+        }
+
+        void main() {
+          vec2 scaledUv = (vUv - 0.5) * uScale;
+          float c1 = causticLayer(scaledUv, uTime);
+          float c2 = causticLayer(scaledUv * 1.3 + 0.5, uTime * 1.2);
+          float pattern = smoothstep(0.0, 0.8, (c1 + c2) * 0.5 + 0.5);
+          float alpha = pattern * uIntensity;
+          gl_FragColor = vec4(uColor * alpha, alpha);
+        }
+      `,
+    });
+  }
+
+  let causticMaterial = $state<ShaderMaterial | null>(null);
+
+  $effect(() => {
+    const c = activeConfig.caustics;
+    if (!c?.enabled) {
+      causticMaterial = null;
+      return;
+    }
+    causticMaterial = createCausticMaterial(c.color, c.intensity, c.speed, c.scale);
+  });
+
+  $effect(() => {
+    if (!causticMaterial || !activeConfig.caustics) return;
+    causticMaterial.uniforms.uColor!.value = new Color(activeConfig.caustics.color);
+    causticMaterial.uniforms.uIntensity!.value = activeConfig.caustics.intensity;
+    causticMaterial.uniforms.uScale!.value = activeConfig.caustics.scale;
+  });
+
+  // ---- Jellyfish animation (drift + pulse) ----
+  let jellyfishOffsets = $state<{ dx: number; dy: number; dz: number }[]>([]);
+
+  $effect(() => {
+    const jf = activeConfig.jellyfish;
+    if (!jf?.enabled) {
+      jellyfishOffsets = [];
+      return;
+    }
+    jellyfishOffsets = Array.from({ length: jf.count }, () => ({ dx: 0, dy: 0, dz: 0 }));
+  });
+
+  let jellyfishTime = 0;
+
+  useTask((delta) => {
+    // Animate caustic uniforms
+    if (causticMaterial) {
+      causticMaterial.uniforms.uTime!.value += delta * (activeConfig.caustics?.speed ?? 0.02) * 10;
+    }
+
+    // Animate jellyfish drift
+    const jf = activeConfig.jellyfish;
+    if (jf?.enabled && jellyfishOffsets.length > 0) {
+      jellyfishTime += delta * jf.driftSpeed;
+      for (let i = 0; i < jellyfishOffsets.length; i++) {
+        const phase = i * 2.3;
+        jellyfishOffsets[i] = {
+          dx: Math.sin(jellyfishTime * 0.7 + phase) * 1.5,
+          dy: Math.sin(jellyfishTime * 0.4 + phase * 1.3) * 0.5,
+          dz: Math.cos(jellyfishTime * 0.5 + phase * 0.8) * 1.5,
+        };
+      }
+    }
+  });
+
   // ---- Fog ----
   $effect(() => {
     if (!scene.current) return;
@@ -198,6 +297,17 @@
     size={activeConfig.ground.size}
     opacity={activeConfig.ground.opacity ?? 1}
   />
+{/if}
+
+<!-- Caustic light ripples -->
+{#if activeConfig.caustics?.enabled && causticMaterial}
+  <T.Mesh
+    position.y={groundY + 0.02}
+    rotation.x={-Math.PI / 2}
+    material={causticMaterial}
+  >
+    <T.PlaneGeometry args={[activeConfig.ground.size * 0.8, activeConfig.ground.size * 0.8]} />
+  </T.Mesh>
 {/if}
 
 <!-- Bubbles -->
@@ -289,17 +399,22 @@
   {/each}
 {/if}
 
-<!-- Jellyfish with point lights -->
+<!-- Jellyfish with animated drift + pulsing glow -->
 {#if activeConfig.jellyfish?.enabled && $jellyfishModel}
-  {#each jellyfishPlacements as jf}
-    <T.Group position.x={jf.x} position.y={groundY + jf.y} position.z={jf.z}>
+  {#each jellyfishPlacements as jf, i}
+    {@const offset = jellyfishOffsets[i] ?? { dx: 0, dy: 0, dz: 0 }}
+    <T.Group
+      position.x={jf.x + offset.dx}
+      position.y={groundY + jf.y + offset.dy}
+      position.z={jf.z + offset.dz}
+    >
       <T
         is={underwaterClone($jellyfishModel.scene, activeConfig.jellyfish.glowColor, 0.4)}
         scale={0.5}
       />
       <T.PointLight
         color={activeConfig.jellyfish.glowColor}
-        intensity={activeConfig.jellyfish.lightIntensity}
+        intensity={activeConfig.jellyfish.lightIntensity * (0.7 + 0.3 * Math.sin(jellyfishTime * activeConfig.jellyfish.pulseRate * Math.PI * 2 + i * 1.7))}
         distance={activeConfig.jellyfish.lightDistance}
         decay={2}
       />
