@@ -209,6 +209,21 @@ vi.mock("firebase/firestore", () => ({
   persistentMultipleTabManager: vi.fn(() => ({})),
 }));
 
+vi.mock("firebase/database", () => ({
+	getDatabase: vi.fn(() => ({ type: "database" })),
+	ref: vi.fn(),
+	get: vi.fn(),
+	set: vi.fn(),
+	onValue: vi.fn(),
+	off: vi.fn(),
+}));
+
+vi.mock("firebase/functions", () => ({
+	getFunctions: vi.fn(() => ({ type: "functions" })),
+	httpsCallable: vi.fn(() => vi.fn()),
+	connectFunctionsEmulator: vi.fn(),
+}));
+
 vi.mock("firebase/analytics", () => ({
   getAnalytics: vi.fn(),
   logEvent: vi.fn(),
