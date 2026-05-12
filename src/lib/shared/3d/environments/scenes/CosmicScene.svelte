@@ -1,76 +1,169 @@
 <script lang="ts">
-  /**
-   * CosmicScene
-   *
-   * A cosmic space environment with drifting stars.
-   * Supports night sky and aurora color variants.
-   */
-
+  import { T, useThrelte } from "@threlte/core";
+  import { onMount } from "svelte";
+  import { FogExp2, Color } from "three";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import GroundPlane from "../primitives/GroundPlane.svelte";
+  import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
+  import StationPlatform from "./cosmic/StationPlatform.svelte";
+  import EarthSphere from "./cosmic/EarthSphere.svelte";
+  import NebulaLayer from "./cosmic/NebulaLayer.svelte";
+  import EnergyParticles from "./cosmic/EnergyParticles.svelte";
+  import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
   import type { CosmicVariant } from "../domain/enums/environment-enums";
+  import {
+    type CosmicSceneConfig,
+    createDefaultCosmicNightConfig,
+    createDefaultCosmicAuroraConfig,
+  } from "../domain/models/scene-configs";
+  import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
-  // Scene feature readiness - synchronous scene, report on mount so the
-  // loading curtain can lift. Without this, the "environment" feature stays
-  // enabled-but-not-ready forever and allEnabledReady never flips true.
-  const sceneFeatures = getSceneFeatureContext();
-  $effect(() => {
-    sceneFeatures?.reportReady("environment");
-  });
-
   interface Props {
-    /** Color variant: night (purple/indigo) or aurora (green/cyan) */
     variant?: CosmicVariant;
+    config?: CosmicSceneConfig;
   }
 
-  let { variant = "night" }: Props = $props();
+  let { variant = "night", config }: Props = $props();
 
-  // Color palettes from background themeColors
-  const palettes = {
-    night: {
-      // From NIGHT_SKY: deep purples and indigos
-      sky: {
-        topColor: "#0a0a1a",
-        midColor: "#1e1b4b",
-        bottomColor: "#050510",
-      },
-      stars: ["#ffffff", "#e0e7ff", "#c7d2fe", "#818cf8"],
-      asteroid: "#2a2a35", // Dark rocky surface
-    },
-    aurora: {
-      // From AURORA: greens, cyans, magentas
-      sky: {
-        topColor: "#0a1a1a",
-        midColor: "#064e3b",
-        bottomColor: "#050a0a",
-      },
-      stars: ["#22d3ee", "#a855f7", "#0d9488", "#f0abfc"],
-      asteroid: "#1a2a2a", // Teal-tinted rock
-    },
+  const defaultConfigs = {
+    night: createDefaultCosmicNightConfig,
+    aurora: createDefaultCosmicAuroraConfig,
   };
 
-  const palette = $derived(palettes[variant]);
+  const activeConfig = $derived(config ?? defaultConfigs[variant]());
+
+  const { scene } = useThrelte();
+  const groundY = $derived(userProportionsState.groundY);
+
+  $effect(() => {
+    if (!scene.current) return;
+    const fog = activeConfig.fog;
+    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
+    return () => {
+      if (scene.current) scene.current.fog = null;
+    };
+  });
+
+  const sceneFeatures = getSceneFeatureContext();
+  let earthReady = $state(false);
+
+  $effect(() => {
+    if (!sceneFeatures) return;
+    if (earthReady || !activeConfig.earth.enabled) {
+      sceneFeatures.reportReady("environment");
+    } else {
+      sceneFeatures.reportProgress("environment", 0.5);
+    }
+  });
+
+  onMount(() => {
+    const timer = setTimeout(() => {
+      if (sceneFeatures && !sceneFeatures.isReady("environment")) {
+        console.warn("[CosmicScene] texture loading timed out — lifting curtain");
+        sceneFeatures.reportReady("environment");
+      }
+    }, 15_000);
+    return () => clearTimeout(timer);
+  });
 </script>
 
-<!-- Sky gradient background -->
 <SkyGradient
-  topColor={palette.sky.topColor}
-  midColor={palette.sky.midColor}
-  bottomColor={palette.sky.bottomColor}
+  topColor={activeConfig.sky.topColor}
+  midColor={activeConfig.sky.midColor}
+  bottomColor={activeConfig.sky.bottomColor}
 />
 
-<!-- Asteroid platform - small rocky surface at avatar feet level (1.25m radius) -->
-<GroundPlane color={palette.asteroid} opacity={1} size={1.25} />
+<NebulaLayer config={activeConfig.nebula} />
 
-<!-- Drifting stars - larger and more numerous for cosmic feel (area in meters) -->
-<FallingParticles
-  type="stars"
-  count={200}
-  area={{ width: 7.5, height: 6, depth: 7.5 }}
-  speed={0.025}
-  colors={palette.stars}
-  sizeRange={[0.03, 0.09]}
-  spin={false}
+{#if activeConfig.ground.textured && activeConfig.ground.diffuseMap}
+  <TexturedGroundPlane
+    color={activeConfig.ground.color}
+    size={activeConfig.ground.size}
+    diffuseMap={activeConfig.ground.diffuseMap}
+    normalMap={activeConfig.ground.normalMap}
+    roughnessMap={activeConfig.ground.roughnessMap}
+    normalScale={activeConfig.ground.normalScale ?? 1.0}
+    textureRepeat={activeConfig.ground.textureRepeat ?? 8}
+  />
+{:else}
+  <GroundPlane
+    color={activeConfig.ground.color}
+    size={activeConfig.ground.size}
+    opacity={activeConfig.ground.opacity ?? 1}
+  />
+{/if}
+
+<StationPlatform config={activeConfig.platform} />
+
+<EarthSphere
+  config={activeConfig.earth}
+  onReady={() => (earthReady = true)}
 />
+
+{#if activeConfig.lighting.warmStation.enabled}
+  <T.PointLight
+    position.x={0}
+    position.y={groundY + activeConfig.lighting.warmStation.heightOffset}
+    position.z={0}
+    color={activeConfig.lighting.warmStation.color}
+    intensity={activeConfig.lighting.warmStation.intensity}
+    distance={activeConfig.lighting.warmStation.distance}
+    decay={activeConfig.lighting.warmStation.decay}
+  />
+{/if}
+
+{#if activeConfig.lighting.coldDirectional.enabled}
+  <T.DirectionalLight
+    color={activeConfig.lighting.coldDirectional.color}
+    intensity={activeConfig.lighting.coldDirectional.intensity}
+    position.x={activeConfig.lighting.coldDirectional.position[0]}
+    position.y={activeConfig.lighting.coldDirectional.position[1]}
+    position.z={activeConfig.lighting.coldDirectional.position[2]}
+  />
+{/if}
+
+<T.HemisphereLight
+  color={activeConfig.lighting.ambient.skyColor}
+  groundColor={activeConfig.lighting.ambient.groundColor}
+  intensity={activeConfig.lighting.ambient.intensity}
+/>
+
+{#if activeConfig.particles.starDrift}
+  {#key `stars-${activeConfig.particles.starDrift.count}`}
+    <FallingParticles
+      type={activeConfig.particles.starDrift.type}
+      count={activeConfig.particles.starDrift.count}
+      area={activeConfig.particles.starDrift.area}
+      speed={activeConfig.particles.starDrift.speed}
+      colors={activeConfig.particles.starDrift.colors}
+      sizeRange={activeConfig.particles.starDrift.sizeRange}
+      spin={activeConfig.particles.starDrift.spin ?? false}
+    />
+  {/key}
+{/if}
+
+{#if activeConfig.particles.cosmicDust}
+  {#key `dust-${activeConfig.particles.cosmicDust.count}`}
+    <FallingParticles
+      type={activeConfig.particles.cosmicDust.type}
+      count={activeConfig.particles.cosmicDust.count}
+      area={activeConfig.particles.cosmicDust.area}
+      speed={activeConfig.particles.cosmicDust.speed}
+      colors={activeConfig.particles.cosmicDust.colors}
+      sizeRange={activeConfig.particles.cosmicDust.sizeRange}
+      spin={activeConfig.particles.cosmicDust.spin ?? false}
+    />
+  {/key}
+{/if}
+
+{#if activeConfig.particles.energyParticles}
+  {#key `energy-${activeConfig.particles.energyParticles.count}`}
+    <EnergyParticles config={activeConfig.particles.energyParticles} />
+  {/key}
+{/if}
+
+{#if activeConfig.particles.meteorStreaks}
+  <MeteorStreaks config={activeConfig.particles.meteorStreaks} />
+{/if}
