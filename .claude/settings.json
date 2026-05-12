@@ -30,6 +30,17 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node .claude/hooks/bulk-replace-guard.js",
+            "timeout": 10,
+            "statusMessage": "Bulk replace guard..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "node .claude/hooks/pre-commit-check.cjs",
             "timeout": 120,
             "statusMessage": "Pre-commit type check..."

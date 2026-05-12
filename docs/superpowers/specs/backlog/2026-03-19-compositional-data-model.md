@@ -2,11 +2,11 @@
 status: backlog
 value: 3
 effort: M
-remaining: "Infrastructure 90% done (ViewModeToggle, BrowseDataSource, BrowseViewMode, CompositionBreakdown all exist). Gap: ViewModeToggle removed from BrowseLayout in bef243f23 simplification. Re-integrate toggle into browse UI and wire to state."
+remaining: "Phase 2 complete — toggle wired end-to-end (ViewModeToggle → BrowseEngine.viewMode → BrowseGrid → ChoreoCardThumbnail → PropAwareThumbnail → ThumbnailRenderer handPathMode). Remaining: Phase 1 save-side artifact extraction (ArtifactExtractor in LibrarySaveService), Phase 3 solo prop save from Assemble Lab, Phase 4 CompositionBreakdown detail view, Phase 5 hand path builder save integration."
 depends_on: ""
 plan_path: plans/backlog/2026-03-19-compositional-data-model.md
 tags: []
-last_triaged: 2026-05-04
+last_triaged: 2026-05-12
 ---
 # Compositional Data Model: Browsing, Saving, and Progressive Disclosure
 
