@@ -1,6 +1,6 @@
 {
   "name": "@tka/composer",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
@@ -38,6 +38,7 @@
     "css:rtl": "node scripts/audit-css-rtl.cjs",
     "css:rtl:summary": "node scripts/audit-css-rtl.cjs --summary",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --compiler-warnings \"state_referenced_locally:ignore\"",
+    "check:fast": "svelte-kit sync && svelte-fast-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --compiler-warnings \"state_referenced_locally:ignore\" --watch",
     "type-check": "tsc --noEmit",
     "test": "vitest --config tests/config/vitest.config.ts",
@@ -162,6 +163,7 @@
     "svelte": "^5.46.1",
     "svelte-check": "^4.3.5",
     "svelte-confetti": "^2.3.2",
+    "svelte-fast-check": "0.4.5",
     "svg-path-commander": "^2.1.11",
     "ts-morph": "^28.0.0",
     "tsconfig-paths": "^4.2.0",
