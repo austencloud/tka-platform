@@ -2,7 +2,7 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginSvelte from "eslint-plugin-svelte";
-import checkFile from "eslint-plugin-check-file";
+
 import globals from "globals";
 
 export default tseslint.config(
@@ -21,6 +21,7 @@ export default tseslint.config(
       "*.config.ts",
       "*.config.js",
       "*.shims.d.ts",
+      "src/lib/shared/sequence-engine/**/*.d.ts",
       "static/",
       "temp-scripts/",
       "**/*.old.*",
@@ -153,28 +154,12 @@ export default tseslint.config(
     },
   },
 
-  // Enforce kebab-case filenames for .ts files
-  {
-    files: ["**/*.ts"],
-    ignores: ["src/routes/**"],
-    plugins: {
-      "check-file": checkFile,
-    },
-    rules: {
-      "check-file/filename-naming-convention": [
-        "warn",
-        {
-          "**/*.ts": "KEBAB_CASE",
-          "**/*.svelte.ts": "KEBAB_CASE",
-        },
-        { ignoreMiddleExtensions: true },
-      ],
-    },
-  },
+  // Filename convention disabled — codebase uses PascalCase (classes),
+  // camelCase (getters), and kebab-case (modules) by established convention.
 
   // Test files override
   {
-    files: ["tests/**/*.ts", "tests/**/*.js"],
+    files: ["tests/**/*.ts", "tests/**/*.js", "**/*.test.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
     },
