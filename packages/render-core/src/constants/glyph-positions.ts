@@ -5,8 +5,6 @@
  * are placed within the 950x950 viewbox.
  */
 
-import { VIEWBOX_SIZE } from "./viewbox.js";
-
 
 export const TKA_GLYPH = {
   X: 50,

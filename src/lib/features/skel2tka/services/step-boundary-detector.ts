@@ -56,8 +56,8 @@ function groupByPosition(
 
     const samePosition =
       currentGroup != null &&
-      blue === currentGroup.blueLocation &&
-      red === currentGroup.redLocation;
+      blue === currentGroup?.blueLocation &&
+      red === currentGroup?.redLocation;
 
     if (!samePosition) {
       // Start a new group

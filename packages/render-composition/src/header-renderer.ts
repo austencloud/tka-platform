@@ -274,7 +274,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
 
   // Word: compressed glyphs → flat glyphs → styled text → plain text
   if (word?.trim()) {
-    const hasCompression = compressedSegments && compressedSegments.some(s => s.repeat > 1);
+    const hasCompression = compressedSegments?.some(s => s.repeat > 1);
     if (hasCompression && glyphImages && glyphImages.size > 0) {
       renderCompressedGlyphWord(ctx, compressedSegments!, glyphImages, canvasWidth, headerHeight, darkMode);
     } else if (glyphImages && glyphImages.size > 0) {

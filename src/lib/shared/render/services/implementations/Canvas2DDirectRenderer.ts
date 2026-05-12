@@ -167,6 +167,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
           themeMode: options.visibility.darkMode ? "dark" : "light",
           bluePropType: options.visibility.bluePropType,
           redPropType: options.visibility.redPropType,
+          handPathMode: options.visibility.handPathMode ?? false,
         });
         return prepared;
       } catch (error) {

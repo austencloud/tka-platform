@@ -8,7 +8,7 @@
  * Arrow adjustment JSON values were calibrated against these strict coordinates.
  */
 
-import type { Coordinates, GridLocation, GridMode } from "../types.js";
+import type { Coordinates, GridLocation } from "../types.js";
 
 
 /**
