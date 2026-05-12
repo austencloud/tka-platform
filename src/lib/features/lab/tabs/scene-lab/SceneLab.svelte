@@ -14,6 +14,7 @@
   import ScenePreview from "./components/ScenePreview.svelte";
   import WinterControls from "./components/WinterControls.svelte";
   import ForestControls from "./components/ForestControls.svelte";
+  import CosmicControls from "./components/CosmicControls.svelte";
 
   const sceneState = createSceneLabState();
   setSceneLabContext({ state: sceneState });
@@ -92,6 +93,10 @@
       <div class="controls-scroll">
         {#if sceneState.sceneId === "winter"}
           <WinterControls />
+        {:else if sceneState.sceneId === "cosmic-night"}
+          <CosmicControls variant="night" />
+        {:else if sceneState.sceneId === "cosmic-aurora"}
+          <CosmicControls variant="aurora" />
         {:else}
           <ForestControls />
         {/if}

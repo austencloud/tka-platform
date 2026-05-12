@@ -20,6 +20,7 @@
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
   import WinterScene from "$lib/shared/3d/environments/scenes/WinterScene.svelte";
+  import CosmicScene from "$lib/shared/3d/environments/scenes/CosmicScene.svelte";
   import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import { CameraMode } from "$lib/shared/3d/camera/types";
@@ -219,6 +220,10 @@
         <ForestScene variant="firefly" config={labState.forestFireflyConfig} />
       {:else if labState.sceneId === "forest-autumn"}
         <ForestScene variant="autumn" config={labState.forestAutumnConfig} />
+      {:else if labState.sceneId === "cosmic-night"}
+        <CosmicScene variant="night" config={labState.cosmicNightConfig} />
+      {:else if labState.sceneId === "cosmic-aurora"}
+        <CosmicScene variant="aurora" config={labState.cosmicAuroraConfig} />
       {/if}
 
       {#if camMode === "walk"}
@@ -230,6 +235,7 @@
           bluePropState={null}
           redPropState={null}
           visible={true}
+          isActive={false}
           position={player.avatarState.position}
           facingAngle={player.avatarState.facingAngle}
           isMoving={player.avatarState.isMoving}
