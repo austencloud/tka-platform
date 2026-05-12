@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
 	MuseumPhysicsProvider,
 	SOLID_TYPES,
-} from "$lib/features/museum/services/implementations/MuseumPhysicsProvider";
+} from "$lib/features/museum/services/MuseumPhysicsProvider";
 import type { MuseumGrid, MuseumTile } from "$lib/features/museum/domain/museum-grid-types";
 
 const TILE_SIZE = 0.5;

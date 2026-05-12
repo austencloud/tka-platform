@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 import { createViewer3DStateForTest } from "../../3d-viewer/viewer3d-test-helpers.svelte";
-import type { PropStateInterpolator } from "$lib/shared/3d/services/implementations/PropStateInterpolator";
-import type { ISequenceConverter } from "$lib/shared/3d/services/contracts/ISequenceConverter";
 import { __resetWebGL2CapabilityForTests } from "$lib/shared/3d/capabilities/webgl-capabilities";
 
 beforeAll(() => {
@@ -16,18 +14,8 @@ beforeAll(() => {
   __resetWebGL2CapabilityForTests();
 });
 
-function stubDeps(): {
-  propInterpolator: PropStateInterpolator;
-  sequenceConverter: ISequenceConverter;
-} {
-  return {
-    propInterpolator: {
-      interpolate: vi.fn(),
-    } as unknown as PropStateInterpolator,
-    sequenceConverter: {
-      convertSequence: vi.fn().mockReturnValue([]),
-    } as unknown as ISequenceConverter,
-  };
+function stubDeps() {
+  return {};
 }
 
 const cleanups: Array<() => void> = [];

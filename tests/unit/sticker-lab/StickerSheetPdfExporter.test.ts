@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PDFDocument } from "pdf-lib";
-import { StickerSheetPdfExporter } from "$lib/features/sticker-lab/services/implementations/StickerSheetPdfExporter";
+import { StickerSheetPdfExporter } from "$lib/features/sticker-lab/services/StickerSheetPdfExporter";
 import {
   createDefaultStickerSheet,
   createDefaultStickerUnit,
@@ -18,7 +18,7 @@ const ONE_PX_PNG = new Uint8Array([
   0xae, 0x42, 0x60, 0x82,
 ]);
 
-vi.mock("$lib/features/sticker-lab/services/implementations/rasterizeSvg", () => ({
+vi.mock("$lib/features/sticker-lab/services/rasterizeSvg", () => ({
   rasterizeSvgToPng: vi.fn(async () => ONE_PX_PNG),
 }));
 

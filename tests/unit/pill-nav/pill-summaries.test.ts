@@ -105,9 +105,9 @@ describe("computePlaybackSummary", () => {
     // Upstream corruption must surface as a visible "something is wrong"
     // signal, not a literal "NaN BPM" that blends into the UI.
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(computePlaybackSummary(Number.NaN, "continuous")).toBe("— BPM • Cont.");
-    expect(computePlaybackSummary(0, "step")).toBe("— BPM • Step");
-    expect(computePlaybackSummary(-1, "continuous")).toBe("— BPM • Cont.");
+    expect(computePlaybackSummary(Number.NaN, "continuous")).toBe("- BPM • Cont.");
+    expect(computePlaybackSummary(0, "step")).toBe("- BPM • Step");
+    expect(computePlaybackSummary(-1, "continuous")).toBe("- BPM • Cont.");
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -144,20 +144,20 @@ describe("computeExportSummary", () => {
     ).toBe("720p • 30 fps • 3×");
   });
 
-  it("returns '— • — fps' for non-canonical resolution / invalid fps (silent-failure guard)", () => {
+  it("returns '— • - fps' for non-canonical resolution / invalid fps (silent-failure guard)", () => {
     // Resolutions outside {720,1080,2160,4320} are either a state bug or an
     // untested configuration. Render a visible fallback instead of a
     // plausible-looking "0p • 60 fps".
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(
       computeExportSummary({ resolution: 0, fps: 60, loopCount: 1, renderMode: "2d" }),
-    ).toBe("— • — fps");
+    ).toBe("- • - fps");
     expect(
       computeExportSummary({ resolution: 999, fps: 60, loopCount: 1, renderMode: "2d" }),
-    ).toBe("— • — fps");
+    ).toBe("- • - fps");
     expect(
       computeExportSummary({ resolution: 1080, fps: Number.NaN, loopCount: 1, renderMode: "2d" }),
-    ).toBe("— • — fps");
+    ).toBe("- • - fps");
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });

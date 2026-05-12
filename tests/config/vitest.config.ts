@@ -17,8 +17,9 @@ export default defineConfig({
     ],
     exclude: [
       "legacy_app/**/*",
-      "node_modules/**/*",
-      "tests/e2e/**/*", // E2E tests run with Playwright
+      "**/node_modules/**/*",
+      "tests/e2e/**/*",
+      "tests/screenshots/**/*",
     ],
 
     alias: {

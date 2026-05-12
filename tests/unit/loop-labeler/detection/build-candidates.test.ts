@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { buildCandidates } from "$lib/features/loop-labeler/services/implementations/detection/build-candidates";
+import { buildCandidates } from "$lib/features/loop-labeler/services/detection/build-candidates";
 import { LOOP_TYPE_DEFINITIONS } from "$lib/features/loop-labeler/domain/constants/loop-type-definitions";
-import type { MergedMatch, RewoundResult } from "$lib/features/loop-labeler/services/implementations/detection/types";
+import type { MergedMatch, RewoundResult } from "$lib/features/loop-labeler/services/detection/types";
 
 const rotatedDef = LOOP_TYPE_DEFINITIONS.find(d => d.id === "rotated")!;
 const mirSwapDef = LOOP_TYPE_DEFINITIONS.find(d => d.id === "mirrored_swapped")!;

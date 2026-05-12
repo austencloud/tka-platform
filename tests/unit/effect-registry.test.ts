@@ -7,7 +7,7 @@ import {
 } from "../../src/lib/shared/animation-engine/components/effects-panel/effect-registry";
 
 describe("effect-registry", () => {
-  it("has all 13 effects in stable order", () => {
+  it("has all 16 effects in stable order", () => {
     const ids = EFFECTS.map((e) => e.id);
     expect(ids).toEqual([
       "trails",
@@ -23,6 +23,9 @@ describe("effect-registry", () => {
       "petals",
       "smoke",
       "ink",
+      "frost",
+      "silk",
+      "pulse",
     ]);
   });
 

@@ -69,15 +69,15 @@ describe("StickerUnitRenderer", () => {
     expect(svg).toContain("M0 0 L20 20");
   });
 
-  it("variant=full renders blue, red, and purple paths", () => {
+  it("variant=full renders blue and red paths with purple overlap mask", () => {
     const unit = createDefaultStickerUnit({ primitiveRef: testRef, variant: "full" });
     const svg = renderStickerUnitSVG(unit, {
       blue: [{ d: "M0 0 L10 10", tipIndex: 0 }],
       red: [{ d: "M0 0 L20 20", tipIndex: 0 }],
-      purple: [{ d: "M0 0 L30 30", tipIndex: 0 }],
+      purple: [],
     });
     expect(svg).toContain("M0 0 L10 10");
     expect(svg).toContain("M0 0 L20 20");
-    expect(svg).toContain("M0 0 L30 30");
+    expect(svg).toContain("<mask");
   });
 });

@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 import { createViewer3DStateForTest } from "./viewer3d-test-helpers.svelte";
 import { Viewer3DUndoManager } from "$lib/shared/3d/services/implementations/Viewer3DUndoManager";
-import type { PropStateInterpolator } from "$lib/shared/3d/services/implementations/PropStateInterpolator";
-import type { ISequenceConverter } from "$lib/shared/3d/services/contracts/ISequenceConverter";
 import { __resetWebGL2CapabilityForTests } from "$lib/shared/3d/capabilities/webgl-capabilities";
 
 // The jsdom test environment doesn't implement canvas.getContext. Patch
@@ -23,12 +21,6 @@ beforeAll(() => {
 
 function stubDeps() {
   return {
-    propInterpolator: {
-      interpolate: vi.fn(),
-    } as unknown as PropStateInterpolator,
-    sequenceConverter: {
-      convertSequence: vi.fn().mockReturnValue([]),
-    } as unknown as ISequenceConverter,
     viewer3DUndoManager: new Viewer3DUndoManager(),
   };
 }

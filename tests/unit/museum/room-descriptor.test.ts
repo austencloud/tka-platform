@@ -5,7 +5,7 @@ import {
   deserializeDescriptor,
   type RoomDescriptor,
 } from "$lib/features/museum/domain/room-descriptor";
-import type { MuseumGeometryDryRun } from "$lib/features/museum/services/implementations/MuseumGeometryBuilder";
+import type { MuseumGeometryDryRun } from "$lib/features/museum/services/MuseumGeometryBuilder";
 
 // ── Test fixture ──
 

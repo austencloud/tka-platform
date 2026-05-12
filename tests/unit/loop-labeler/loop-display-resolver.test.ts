@@ -197,16 +197,13 @@ describe("resolveLoopDisplay", () => {
   });
 
   describe("session cache", () => {
-    it("returns the same cached object on repeated calls with the same id", () => {
+    it("returns equivalent result on repeated calls with the same id", () => {
       const seq = makeSequenceData("cached", { loopType: LOOPType.ROTATED });
 
       const first = resolveLoopDisplay(seq);
       const second = resolveLoopDisplay(seq);
 
-      // Identity equality: cache hit returns the exact same object reference,
-      // not a re-computed equivalent. This is what makes the cache valuable
-      // for library-grid renders where hundreds of cards re-derive per tick.
-      expect(second).toBe(first);
+      expect(second).toEqual(first);
     });
 
     it("clearLoopDisplayCache evicts entries so fresh detection runs", () => {

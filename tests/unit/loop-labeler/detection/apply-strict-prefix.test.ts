@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { applyStrictPrefix } from "$lib/features/loop-labeler/services/implementations/detection/apply-strict-prefix";
+import { applyStrictPrefix } from "$lib/features/loop-labeler/services/detection/apply-strict-prefix";
 import { LOOP_TYPE_DEFINITIONS } from "$lib/features/loop-labeler/domain/constants/loop-type-definitions";
-import type { MergedMatch } from "$lib/features/loop-labeler/services/implementations/detection/types";
+import type { MergedMatch } from "$lib/features/loop-labeler/services/detection/types";
 
 const rotatedDef = LOOP_TYPE_DEFINITIONS.find(d => d.id === "rotated")!;
 const swappedDef = LOOP_TYPE_DEFINITIONS.find(d => d.id === "swapped")!;

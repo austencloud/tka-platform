@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { LocalStickerSheetRepository } from "$lib/features/sticker-lab/services/implementations/LocalStickerSheetRepository";
+import { LocalStickerSheetRepository } from "$lib/features/sticker-lab/services/LocalStickerSheetRepository";
 import {
   createDefaultStickerSheet,
   createDefaultStickerUnit,

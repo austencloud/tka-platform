@@ -5,7 +5,7 @@ import {
 	createAvatarEntity,
 } from "$lib/features/village/engine/VillageWorld";
 import * as personalityGenerator from "$lib/features/village/services/personality-generator";
-import { LineageTracker } from "$lib/features/village/services/implementations/LineageTracker";
+import { LineageTracker } from "$lib/features/village/services/LineageTracker";
 import { createDefaultConfig } from "$lib/features/village/engine/VillageConfig";
 import {
 	PASSING_DURATION_TICKS,

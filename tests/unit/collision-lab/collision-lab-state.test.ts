@@ -10,10 +10,9 @@ import type {
   PoseLabel,
   CollisionSnapshot,
 } from "$lib/features/lab/tabs/collision-lab/domain/types";
-import type { IPoseLabelRepository } from "$lib/features/lab/tabs/collision-lab/services/contracts/IPoseLabelRepository";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 
-class InMemoryLabelRepo implements IPoseLabelRepository {
+class InMemoryLabelRepo {
   store: Record<string, PoseLabel> = {};
   async loadAll() {
     return { ...this.store };
