@@ -17,7 +17,7 @@
 import type { RequestHandler } from "@sveltejs/kit";
 import { json, error } from "@sveltejs/kit";
 import { requireAdmin } from "$lib/server/auth/requireAdmin";
-import { POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID } from "$env/static/private";
+import { env } from "$env/dynamic/private";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
 import { withRateLimit } from "$lib/server/security/withRateLimit";
 import { logAdminAction } from "$lib/server/security/audit-logger";
@@ -25,20 +25,20 @@ import { logAdminAction } from "$lib/server/security/audit-logger";
 const POSTHOG_API_BASE = "https://us.i.posthog.com/api";
 
 function getPostHogHeaders() {
-  if (!POSTHOG_PERSONAL_API_KEY) {
+  if (!env.POSTHOG_PERSONAL_API_KEY) {
     throw error(500, "POSTHOG_PERSONAL_API_KEY not configured");
   }
   return {
-    Authorization: `Bearer ${POSTHOG_PERSONAL_API_KEY}`,
+    Authorization: `Bearer ${env.POSTHOG_PERSONAL_API_KEY}`,
     "Content-Type": "application/json",
   };
 }
 
 function getProjectId(): string {
-  if (!POSTHOG_PROJECT_ID) {
+  if (!env.POSTHOG_PROJECT_ID) {
     throw error(500, "POSTHOG_PROJECT_ID not configured");
   }
-  return POSTHOG_PROJECT_ID;
+  return env.POSTHOG_PROJECT_ID;
 }
 
 /**

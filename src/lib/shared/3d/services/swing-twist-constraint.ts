@@ -4,7 +4,7 @@ const SHOULDER_LIMITS = {
   forward: (160 * Math.PI) / 180,
   backward: (60 * Math.PI) / 180,
   abduction: (170 * Math.PI) / 180,
-  adduction: (45 * Math.PI) / 180,
+  adduction: (75 * Math.PI) / 180,
 };
 
 const SHOULDER_TWIST_MIN = (-90 * Math.PI) / 180;

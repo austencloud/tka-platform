@@ -145,6 +145,7 @@
      *  rotations from the sampled turn clip between locomotion and root
      *  motion in the animation pipeline. Null means no turn is active. */
     turnRequest?: TurnRequest | null;
+    onPropSlide?: (blueSlide: { x: number; y: number; z: number }, redSlide: { x: number; y: number; z: number }) => void;
   }
 
   let {
@@ -169,6 +170,7 @@
     isJumpRequested = false,
     enableRootMotion = false,
     onRootMotion,
+    onPropSlide,
     bluePropAnchorRef,
     redPropAnchorRef,
     disableSpineTwist = false,
@@ -742,6 +744,10 @@
     // before the animator runs IK so the arms solve against the leaned torso.
     animationService.setExternalSpinePitch(spinePitchOffset);
     animationService.update(delta);
+
+    if (onPropSlide) {
+      onPropSlide(animationService.leftPropSlide, animationService.rightPropSlide);
+    }
 
     // 2b. Collision detection - run after IK so bones are at final positions
     if (collisionDetector.enabled && skeletonService) {

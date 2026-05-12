@@ -6,7 +6,7 @@ import { PlaneMode } from "../enums/PlaneMode";
  * Should be wide enough to clear the torso and let arms extend
  * naturally without clipping.
  */
-const LATERAL_OFFSET = 0.40;
+const LATERAL_OFFSET = 0.55;
 
 /**
  * Forward offset from body center to grid/prop circle center.

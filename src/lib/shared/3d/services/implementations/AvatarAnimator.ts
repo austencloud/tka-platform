@@ -6,7 +6,7 @@
  */
 
 import { Vector3, Quaternion, Matrix4 } from "three";
-import type { Plane } from "../../domain/enums/Plane";
+import { Plane } from "../../domain/enums/Plane";
 import type { IKTarget } from "./IKSolver";
 import type { BoneName } from "./AvatarSkeletonBuilder";
 import type { IKSolver } from "./IKSolver";
@@ -17,6 +17,19 @@ import { computeClavicleRotation } from "../clavicle-raiser";
 import { computeSpineTwist } from "../spine-twister";
 import { constrainShoulderCone } from "../swing-twist-constraint";
 import type { GripType } from '../../domain/models/GripPose';
+
+const FREE_AXIS_WALL = new Vector3(0, 0, 1);
+const FREE_AXIS_WHEEL = new Vector3(1, 0, 0);
+const FREE_AXIS_FLOOR = new Vector3(0, 1, 0);
+
+function getFreeAxis(plane: Plane): Vector3 {
+  switch (plane) {
+    case Plane.WALL: return FREE_AXIS_WALL;
+    case Plane.WHEEL: return FREE_AXIS_WHEEL;
+    case Plane.FLOOR: return FREE_AXIS_FLOOR;
+    default: return FREE_AXIS_WALL;
+  }
+}
 
 export interface HandPose {
   /** Target position in world space */
@@ -97,6 +110,9 @@ export class AvatarAnimator {
   private rightPoleVector = new Vector3(0, 0, 1);
   private _poleVectorsEnabled = true;
   private _anatomicalConstraintsEnabled = true;
+
+  readonly leftPropSlide = new Vector3();
+  readonly rightPropSlide = new Vector3();
 
   private leftClavicleQuat = new Quaternion();
   private rightClavicleQuat = new Quaternion();
@@ -607,14 +623,12 @@ export class AvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(leftChain, target);
 
-        // Anatomical constraints: clamp shoulder to cone, then re-solve elbow to reach target
+        // Anatomical constraints: clamp shoulder to cone, then re-solve elbow to reach target.
         if (this._anatomicalConstraintsEnabled) {
           const constrained = constrainShoulderCone(leftChain.root.quaternion, leftChain.rootRestDir, "left");
           if (constrained.dot(leftChain.root.quaternion) < 0.9999) {
             leftChain.root.quaternion.copy(constrained);
             leftChain.root.updateMatrixWorld(true);
-            // Re-derive forearm: shoulder moved, so elbow is in a new position.
-            // Recompute elbow rotation to point at the original target.
             const elbowWorld = new Vector3();
             leftChain.middle.getWorldPosition(elbowWorld);
             const forearmDir = leftTarget.clone().sub(elbowWorld).normalize();
@@ -625,6 +639,20 @@ export class AvatarAnimator {
             const localForearmDir = forearmDir.clone().transformDirection(elbowParentInverse);
             leftChain.middle.quaternion.setFromUnitVectors(leftChain.middleRestDir.clone(), localForearmDir);
             leftChain.root.updateMatrixWorld(true);
+          }
+        }
+
+        // Free-axis slide: move prop to where the hand can actually reach.
+        // Runs regardless of constraint — arm may be at max extension.
+        this.leftPropSlide.set(0, 0, 0);
+        if (leftHand.plane) {
+          const handWorld = new Vector3();
+          leftChain.effector.getWorldPosition(handWorld);
+          const error = handWorld.clone().sub(leftTarget);
+          const freeAxis = getFreeAxis(leftHand.plane);
+          const slideAmount = error.dot(freeAxis);
+          if (Math.abs(slideAmount) > 0.001) {
+            this.leftPropSlide.copy(freeAxis).multiplyScalar(slideAmount);
           }
         }
 
@@ -690,7 +718,7 @@ export class AvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(rightChain, target);
 
-        // Anatomical constraints: clamp shoulder to cone, then re-solve elbow to reach target
+        this.rightPropSlide.set(0, 0, 0);
         if (this._anatomicalConstraintsEnabled) {
           const constrained = constrainShoulderCone(rightChain.root.quaternion, rightChain.rootRestDir, "right");
           if (constrained.dot(rightChain.root.quaternion) < 0.9999) {
@@ -706,6 +734,15 @@ export class AvatarAnimator {
             const localForearmDir = forearmDir.clone().transformDirection(elbowParentInverse);
             rightChain.middle.quaternion.setFromUnitVectors(rightChain.middleRestDir.clone(), localForearmDir);
             rightChain.root.updateMatrixWorld(true);
+
+            if (rightHand.plane) {
+              const handWorld = new Vector3();
+              rightChain.effector.getWorldPosition(handWorld);
+              const error = handWorld.clone().sub(rightTarget);
+              const freeAxis = getFreeAxis(rightHand.plane);
+              const slideAmount = error.dot(freeAxis);
+              this.rightPropSlide.copy(freeAxis).multiplyScalar(slideAmount);
+            }
           }
         }
 

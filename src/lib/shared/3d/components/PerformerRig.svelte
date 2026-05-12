@@ -238,22 +238,30 @@
   });
 
   // HandAnchor positions in rig-local space.
-  // Wall mode: both hands at z=gridOffset (grid center is forward of body).
-  // Dual-wheel: hands at half staff length laterally so endpoints touch
-  // when staves are held out horizontally. z=0 (grid at solar plexus).
-  const dualWheelOffset = $derived(staffHalfLength);
+  // All modes use modeConfig lateral offsets and gridOffset for forward position.
   const blueHandPos = $derived({
-    x: isDualWheel ? dualWheelOffset : modeConfig.blueLateralOffset,
-    z: isDualWheel ? 0 : gridOffset,
+    x: modeConfig.blueLateralOffset,
+    z: gridOffset,
   });
   const redHandPos = $derived({
-    x: isDualWheel ? -dualWheelOffset : modeConfig.redLateralOffset,
-    z: isDualWheel ? 0 : gridOffset,
+    x: modeConfig.redLateralOffset,
+    z: gridOffset,
   });
 
   // PropAnchor refs - Avatar3D reads world positions from these for IK targeting.
   let bluePropAnchorRef = $state<Group | undefined>(undefined);
   let redPropAnchorRef = $state<Group | undefined>(undefined);
+
+  let bluePropSlide = $state({ x: 0, y: 0, z: 0 });
+  let redPropSlide = $state({ x: 0, y: 0, z: 0 });
+
+  function handlePropSlide(
+    blueSlide: { x: number; y: number; z: number },
+    redSlide: { x: number; y: number; z: number },
+  ) {
+    bluePropSlide = { x: blueSlide.x, y: blueSlide.y, z: blueSlide.z };
+    redPropSlide = { x: redSlide.x, y: redSlide.y, z: redSlide.z };
+  }
 
   // Effects group ref - imperative renderers add meshes here so they
   // inherit the rig's transform.
@@ -286,6 +294,7 @@
       turnRequest={turnRequest}
       bluePropAnchorRef={bluePropAnchorRef}
       redPropAnchorRef={redPropAnchorRef}
+      onPropSlide={handlePropSlide}
       disableSpineTwist={isDualWheel}
       stepNumber={avatarState.currentStepIndex}
       beatProgress={avatarState.progress}
@@ -303,7 +312,11 @@
   <!-- Grid -->
   {#if showGrid}
     {#if isDualWheel}
-      <T.Group position.x={modeConfig.blueLateralOffset}>
+      <T.Group
+        position.x={modeConfig.blueLateralOffset + bluePropSlide.x}
+        position.y={bluePropSlide.y}
+        position.z={gridOffset + bluePropSlide.z}
+      >
         <Grid3D
           visiblePlanes={WHEEL_ONLY}
           planeOpacity={0.10}
@@ -311,7 +324,11 @@
           {gridMode}
         />
       </T.Group>
-      <T.Group position.x={modeConfig.redLateralOffset}>
+      <T.Group
+        position.x={modeConfig.redLateralOffset + redPropSlide.x}
+        position.y={redPropSlide.y}
+        position.z={gridOffset + redPropSlide.z}
+      >
         <Grid3D
           visiblePlanes={WHEEL_ONLY}
           planeOpacity={0.10}
@@ -320,7 +337,11 @@
         />
       </T.Group>
     {:else}
-      <T.Group position.z={gridOffset}>
+      <T.Group
+        position.x={(bluePropSlide.x + redPropSlide.x) / 2}
+        position.y={(bluePropSlide.y + redPropSlide.y) / 2}
+        position.z={gridOffset + (bluePropSlide.z + redPropSlide.z) / 2}
+      >
         <Grid3D
           {visiblePlanes}
           planeOpacity={0.12}
@@ -339,9 +360,9 @@
     {#if bluePropState && blueVisible}
       <T.Group
         bind:ref={bluePropAnchorRef}
-        position.x={bluePropState.worldPosition.x}
-        position.y={bluePropState.worldPosition.y}
-        position.z={bluePropState.worldPosition.z}
+        position.x={bluePropState.worldPosition.x + bluePropSlide.x}
+        position.y={bluePropState.worldPosition.y + bluePropSlide.y}
+        position.z={bluePropState.worldPosition.z + bluePropSlide.z}
       >
         {#if showProps}
           <Prop3D
@@ -362,9 +383,9 @@
     {#if redPropState && redVisible}
       <T.Group
         bind:ref={redPropAnchorRef}
-        position.x={redPropState.worldPosition.x}
-        position.y={redPropState.worldPosition.y}
-        position.z={redPropState.worldPosition.z}
+        position.x={redPropState.worldPosition.x + redPropSlide.x}
+        position.y={redPropState.worldPosition.y + redPropSlide.y}
+        position.z={redPropState.worldPosition.z + redPropSlide.z}
       >
         {#if showProps}
           <Prop3D

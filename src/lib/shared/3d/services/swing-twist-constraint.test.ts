@@ -76,10 +76,10 @@ describe("constrainShoulderCone", () => {
     expect(diff).toBeGreaterThan(0.01);
   });
 
-  it("clamps adduction past 45 degrees", () => {
+  it("clamps adduction past 75 degrees", () => {
     const q = new Quaternion().setFromAxisAngle(
       new Vector3(0, 1, 0),
-      (70 * Math.PI) / 180
+      (90 * Math.PI) / 180
     );
     const restDir = new Vector3(1, 0, 0);
     const result = constrainShoulderCone(q, restDir, "left");
