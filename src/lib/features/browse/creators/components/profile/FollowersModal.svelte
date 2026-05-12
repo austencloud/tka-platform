@@ -65,7 +65,7 @@
             aria-label="View profile of {user.displayName}"
           >
             <div class="user-avatar">
-              <AvatarImage src={user.avatar} alt={user.displayName} size={48} />
+              <AvatarImage src={user.avatar} alt={user.displayName} name={user.displayName} size={48} />
             </div>
             <div class="user-info">
               <h4 class="user-name">{user.displayName}</h4>

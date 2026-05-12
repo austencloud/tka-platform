@@ -460,6 +460,7 @@ import type { ViewingContext } from "$lib/shared/sequence-viewer/services/presen
         <AvatarImage
           src={sequence.ownerAvatarUrl}
           alt={sequence.ownerDisplayName || t('browse_creator_default')}
+          name={sequence.ownerDisplayName}
           size={48}
         />
       </button>

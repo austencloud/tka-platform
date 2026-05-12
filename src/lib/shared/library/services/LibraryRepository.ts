@@ -832,8 +832,8 @@ export class LibraryRepository {
     try {
       const userProfile = await firestoreGet("users", userId, UserProfileDocSchema);
       if (userProfile) {
-        ownerDisplayName = userProfile.displayName;
-        ownerAvatarUrl = userProfile.photoURL;
+        ownerDisplayName = userProfile.displayName ?? undefined;
+        ownerAvatarUrl = userProfile.photoURL ?? undefined;
       }
     } catch (err) {
       console.warn(

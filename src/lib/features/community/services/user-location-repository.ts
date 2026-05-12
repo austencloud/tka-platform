@@ -26,12 +26,12 @@ const PreferencesSchema = z
 /** Passthrough schema for user profiles used in the join */
 const UserProfileJoinSchema = z
   .object({
-    username: z.string().optional(),
-    displayName: z.string().optional(),
-    avatar: z.string().optional(),
-    totalXP: z.number().optional(),
-    currentLevel: z.number().optional(),
-    sequenceCount: z.number().optional(),
+    username: z.string().nullish(),
+    displayName: z.string().nullish(),
+    avatar: z.string().nullish(),
+    totalXP: z.number().nullish(),
+    currentLevel: z.number().nullish(),
+    sequenceCount: z.number().nullish(),
   })
   .passthrough();
 

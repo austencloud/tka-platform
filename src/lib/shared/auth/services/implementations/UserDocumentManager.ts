@@ -13,6 +13,7 @@ import { generateUniqueUsername, claimUsername } from '../username-validator';
 import { formatUsername } from "../../domain/models/UsernameValidation";
 
 import { getAttributionPersister } from "$lib/shared/attribution/getAttributionPersister";
+import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
 
 /**
  * Capitalize each word in a name (e.g., "brendan freaney" -> "Brendan Freaney")
@@ -84,12 +85,14 @@ export class UserDocumentManager {
         // Create user document first
         // NOTE: Email deliberately NOT stored here - user documents are publicly readable
         // Email is available via Firebase Auth for the user themselves
+        const fallbackAvatar = generateAvatarUrl(displayName, 256);
+
         await setDoc(userDocRef, {
           displayName,
           username,
           usernameLowercase,
-          photoURL: user.photoURL || null,
-          avatar: user.photoURL || null,
+          photoURL: user.photoURL || fallbackAvatar,
+          avatar: user.photoURL || fallbackAvatar,
           // Store provider IDs and original photo URLs for reliable restoration
           googleId: providerIds.googleId || null,
           googlePhotoURL: googlePhotoURL,
@@ -156,13 +159,22 @@ export class UserDocumentManager {
         // NOTE: Email deliberately NOT stored - user documents are publicly readable
         const updateData: Record<string, unknown> = {
           displayName,
-          photoURL: user.photoURL || null,
-          avatar: user.photoURL || null,
           googleId: providerIds.googleId || null,
           facebookId: providerIds.facebookId || null,
           updatedAt: serverTimestamp(),
           lastActivityDate: serverTimestamp(),
         };
+
+        // Only overwrite avatar fields when Auth provides a real URL.
+        // Prevents nulling out a generated or custom avatar on re-login.
+        if (user.photoURL) {
+          updateData.photoURL = user.photoURL;
+          updateData.avatar = user.photoURL;
+        } else if (!existingData?.photoURL) {
+          const fallback = generateAvatarUrl(displayName, 256);
+          updateData.photoURL = fallback;
+          updateData.avatar = fallback;
+        }
 
         // Only update googlePhotoURL if we have a fresh one from the provider.
         // Don't null it out - the provider's photoURL becomes null after the

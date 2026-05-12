@@ -46,6 +46,7 @@
       <AvatarImage
         src={userProfile.avatar}
         alt={userProfile.displayName}
+        name={userProfile.displayName}
         size={120}
         className="avatar"
       />

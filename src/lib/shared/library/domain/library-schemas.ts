@@ -107,7 +107,7 @@ export const LibrarySequenceDocSchema = z
 export const UserProfileDocSchema = z
   .object({
     id: z.string(),
-    displayName: z.string().optional(),
-    photoURL: z.string().optional(),
+    displayName: z.string().nullish(),
+    photoURL: z.string().nullish(),
   })
   .passthrough();
