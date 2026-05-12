@@ -155,6 +155,7 @@ export interface WinterSceneConfig {
 // ============================================================================
 
 export interface PlatformConfig {
+  enabled: boolean;
   shape: "circle" | "hexagon" | "octagon";
   /** Platform radius (meters). */
   radius: number;
@@ -514,6 +515,7 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
       opacity: 0.9,
     },
     platform: {
+      enabled: true,
       shape: "octagon",
       radius: 2.5,
       height: 0.15,
@@ -625,6 +627,7 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
       opacity: 0.9,
     },
     platform: {
+      enabled: true,
       shape: "octagon",
       radius: 2.5,
       height: 0.15,

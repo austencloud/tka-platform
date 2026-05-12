@@ -108,8 +108,10 @@
   });
 </script>
 
-<T.Mesh
-  {geometry}
-  {material}
-  position.y={groundY + config.height / 2}
-/>
+{#if config.enabled}
+  <T.Mesh
+    {geometry}
+    {material}
+    position.y={groundY + config.height / 2}
+  />
+{/if}
