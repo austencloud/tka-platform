@@ -15,6 +15,7 @@ import type { PropState3D } from "../../domain/models/PropState3D";
 import { computePoleVector } from "../elbow-pole-computer";
 import { computeClavicleRotation } from "../clavicle-raiser";
 import { computeSpineTwist } from "../spine-twister";
+import { constrainShoulderCone, constrainElbowHinge } from "../swing-twist-constraint";
 import type { GripType } from '../../domain/models/GripPose';
 
 export interface HandPose {
@@ -95,6 +96,7 @@ export class AvatarAnimator {
   private leftPoleVector = new Vector3(0, 0, 1);
   private rightPoleVector = new Vector3(0, 0, 1);
   private _poleVectorsEnabled = true;
+  private _anatomicalConstraintsEnabled = true;
 
   private leftClavicleQuat = new Quaternion();
   private rightClavicleQuat = new Quaternion();
@@ -605,6 +607,22 @@ export class AvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(leftChain, target);
 
+        // Anatomical constraints: clamp shoulder cone + elbow hinge
+        if (this._anatomicalConstraintsEnabled) {
+          leftChain.root.quaternion.copy(
+            constrainShoulderCone(leftChain.root.quaternion, leftChain.rootRestDir, "left")
+          );
+          leftChain.root.updateMatrixWorld(true);
+          const bendAxis = new Vector3().crossVectors(
+            leftChain.rootRestDir,
+            leftChain.middleRestDir
+          ).normalize();
+          leftChain.middle.quaternion.copy(
+            constrainElbowHinge(leftChain.middle.quaternion, bendAxis, leftChain.middleRestDir)
+          );
+          leftChain.root.updateMatrixWorld(true);
+        }
+
         // Save IK results BEFORE blending - .copy() would overwrite them
         const ikRootQuat = leftChain.root.quaternion.clone();
         const ikMiddleQuat = leftChain.middle.quaternion.clone();
@@ -666,6 +684,22 @@ export class AvatarAnimator {
 
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(rightChain, target);
+
+        // Anatomical constraints: clamp shoulder cone + elbow hinge
+        if (this._anatomicalConstraintsEnabled) {
+          rightChain.root.quaternion.copy(
+            constrainShoulderCone(rightChain.root.quaternion, rightChain.rootRestDir, "right")
+          );
+          rightChain.root.updateMatrixWorld(true);
+          const bendAxis = new Vector3().crossVectors(
+            rightChain.rootRestDir,
+            rightChain.middleRestDir
+          ).normalize();
+          rightChain.middle.quaternion.copy(
+            constrainElbowHinge(rightChain.middle.quaternion, bendAxis, rightChain.middleRestDir)
+          );
+          rightChain.root.updateMatrixWorld(true);
+        }
 
         // Save IK results BEFORE blending - .copy() would overwrite them
         const ikRootQuat = rightChain.root.quaternion.clone();
@@ -774,5 +808,10 @@ export class AvatarAnimator {
   toggleSpineTwist(): boolean {
     this.setSpineTwistEnabled(!this._spineTwistEnabled);
     return this._spineTwistEnabled;
+  }
+
+  toggleAnatomicalConstraints(): boolean {
+    this._anatomicalConstraintsEnabled = !this._anatomicalConstraintsEnabled;
+    return this._anatomicalConstraintsEnabled;
   }
 }
