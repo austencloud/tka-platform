@@ -9,7 +9,9 @@ export type SceneId =
   | "forest-firefly"
   | "forest-autumn"
   | "cosmic-night"
-  | "cosmic-aurora";
+  | "cosmic-aurora"
+  | "ocean-deep"
+  | "ocean-reef";
 
 export interface SceneOption {
   id: SceneId;
@@ -42,5 +44,15 @@ export const SCENE_OPTIONS: SceneOption[] = [
     id: "cosmic-aurora",
     label: "Cosmic (Aurora)",
     description: "Aurora-lit space with nebula wash and teal-green accents",
+  },
+  {
+    id: "ocean-deep",
+    label: "Ocean (Deep)",
+    description: "Dark underwater with bioluminescent life and kelp forest",
+  },
+  {
+    id: "ocean-reef",
+    label: "Ocean (Coral Reef)",
+    description: "Bright tropical reef with vivid coral and warm god rays",
   },
 ];

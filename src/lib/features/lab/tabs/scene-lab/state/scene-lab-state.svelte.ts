@@ -10,11 +10,14 @@ import {
   type ForestSceneConfig,
   type WinterSceneConfig,
   type CosmicSceneConfig,
+  type OceanSceneConfig,
   createDefaultForestAutumnConfig,
   createDefaultForestFireflyConfig,
   createDefaultWinterConfig,
   createDefaultCosmicNightConfig,
   createDefaultCosmicAuroraConfig,
+  createDefaultOceanDeepConfig,
+  createDefaultOceanReefConfig,
 } from "$lib/shared/3d/environments/domain/models/scene-configs";
 import type { SceneId } from "../domain/scene-lab-types";
 
@@ -33,6 +36,8 @@ export function createSceneLabState() {
   let cosmicAuroraConfig = $state<CosmicSceneConfig>(
     createDefaultCosmicAuroraConfig()
   );
+  let oceanDeepConfig = $state<OceanSceneConfig>(createDefaultOceanDeepConfig());
+  let oceanReefConfig = $state<OceanSceneConfig>(createDefaultOceanReefConfig());
 
   function resetCurrent() {
     if (sceneId === "winter") winterConfig = createDefaultWinterConfig();
@@ -44,6 +49,10 @@ export function createSceneLabState() {
       cosmicNightConfig = createDefaultCosmicNightConfig();
     else if (sceneId === "cosmic-aurora")
       cosmicAuroraConfig = createDefaultCosmicAuroraConfig();
+    else if (sceneId === "ocean-deep")
+      oceanDeepConfig = createDefaultOceanDeepConfig();
+    else if (sceneId === "ocean-reef")
+      oceanReefConfig = createDefaultOceanReefConfig();
   }
 
   function currentConfigSnapshot(): unknown {
@@ -51,6 +60,8 @@ export function createSceneLabState() {
     if (sceneId === "forest-firefly") return $state.snapshot(forestFireflyConfig);
     if (sceneId === "forest-autumn") return $state.snapshot(forestAutumnConfig);
     if (sceneId === "cosmic-night") return $state.snapshot(cosmicNightConfig);
+    if (sceneId === "ocean-deep") return $state.snapshot(oceanDeepConfig);
+    if (sceneId === "ocean-reef") return $state.snapshot(oceanReefConfig);
     return $state.snapshot(cosmicAuroraConfig);
   }
 
@@ -66,12 +77,17 @@ export function createSceneLabState() {
         return "createDefaultCosmicNightConfig";
       case "cosmic-aurora":
         return "createDefaultCosmicAuroraConfig";
+      case "ocean-deep":
+        return "createDefaultOceanDeepConfig";
+      case "ocean-reef":
+        return "createDefaultOceanReefConfig";
     }
   }
 
   function currentConfigTypeName(): string {
     if (sceneId === "winter") return "WinterSceneConfig";
     if (sceneId.startsWith("forest")) return "ForestSceneConfig";
+    if (sceneId.startsWith("ocean")) return "OceanSceneConfig";
     return "CosmicSceneConfig";
   }
 
@@ -102,6 +118,12 @@ export function createSceneLabState() {
     },
     get cosmicAuroraConfig() {
       return cosmicAuroraConfig;
+    },
+    get oceanDeepConfig() {
+      return oceanDeepConfig;
+    },
+    get oceanReefConfig() {
+      return oceanReefConfig;
     },
     resetCurrent,
     copyCurrentToClipboard,
