@@ -5,7 +5,7 @@
  * Bridges TKA prop states to skeleton IK targets.
  */
 
-import { Vector3, Quaternion } from "three";
+import { Vector3, Quaternion, Matrix4 } from "three";
 import type { Plane } from "../../domain/enums/Plane";
 import type { IKTarget } from "./IKSolver";
 import type { BoneName } from "./AvatarSkeletonBuilder";
@@ -15,7 +15,7 @@ import type { PropState3D } from "../../domain/models/PropState3D";
 import { computePoleVector } from "../elbow-pole-computer";
 import { computeClavicleRotation } from "../clavicle-raiser";
 import { computeSpineTwist } from "../spine-twister";
-import { constrainShoulderCone, constrainElbowHinge } from "../swing-twist-constraint";
+import { constrainShoulderCone } from "../swing-twist-constraint";
 import type { GripType } from '../../domain/models/GripPose';
 
 export interface HandPose {
@@ -607,20 +607,25 @@ export class AvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(leftChain, target);
 
-        // Anatomical constraints: clamp shoulder cone + elbow hinge
+        // Anatomical constraints: clamp shoulder to cone, then re-solve elbow to reach target
         if (this._anatomicalConstraintsEnabled) {
-          leftChain.root.quaternion.copy(
-            constrainShoulderCone(leftChain.root.quaternion, leftChain.rootRestDir, "left")
-          );
-          leftChain.root.updateMatrixWorld(true);
-          const bendAxis = new Vector3().crossVectors(
-            leftChain.rootRestDir,
-            leftChain.middleRestDir
-          ).normalize();
-          leftChain.middle.quaternion.copy(
-            constrainElbowHinge(leftChain.middle.quaternion, bendAxis, leftChain.middleRestDir)
-          );
-          leftChain.root.updateMatrixWorld(true);
+          const constrained = constrainShoulderCone(leftChain.root.quaternion, leftChain.rootRestDir, "left");
+          if (constrained.dot(leftChain.root.quaternion) < 0.9999) {
+            leftChain.root.quaternion.copy(constrained);
+            leftChain.root.updateMatrixWorld(true);
+            // Re-derive forearm: shoulder moved, so elbow is in a new position.
+            // Recompute elbow rotation to point at the original target.
+            const elbowWorld = new Vector3();
+            leftChain.middle.getWorldPosition(elbowWorld);
+            const forearmDir = leftTarget.clone().sub(elbowWorld).normalize();
+            const elbowParentInverse = new Matrix4();
+            if (leftChain.middle.parent) {
+              elbowParentInverse.copy(leftChain.middle.parent.matrixWorld).invert();
+            }
+            const localForearmDir = forearmDir.clone().transformDirection(elbowParentInverse);
+            leftChain.middle.quaternion.setFromUnitVectors(leftChain.middleRestDir.clone(), localForearmDir);
+            leftChain.root.updateMatrixWorld(true);
+          }
         }
 
         // Save IK results BEFORE blending - .copy() would overwrite them
@@ -685,20 +690,23 @@ export class AvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(rightChain, target);
 
-        // Anatomical constraints: clamp shoulder cone + elbow hinge
+        // Anatomical constraints: clamp shoulder to cone, then re-solve elbow to reach target
         if (this._anatomicalConstraintsEnabled) {
-          rightChain.root.quaternion.copy(
-            constrainShoulderCone(rightChain.root.quaternion, rightChain.rootRestDir, "right")
-          );
-          rightChain.root.updateMatrixWorld(true);
-          const bendAxis = new Vector3().crossVectors(
-            rightChain.rootRestDir,
-            rightChain.middleRestDir
-          ).normalize();
-          rightChain.middle.quaternion.copy(
-            constrainElbowHinge(rightChain.middle.quaternion, bendAxis, rightChain.middleRestDir)
-          );
-          rightChain.root.updateMatrixWorld(true);
+          const constrained = constrainShoulderCone(rightChain.root.quaternion, rightChain.rootRestDir, "right");
+          if (constrained.dot(rightChain.root.quaternion) < 0.9999) {
+            rightChain.root.quaternion.copy(constrained);
+            rightChain.root.updateMatrixWorld(true);
+            const elbowWorld = new Vector3();
+            rightChain.middle.getWorldPosition(elbowWorld);
+            const forearmDir = rightTarget.clone().sub(elbowWorld).normalize();
+            const elbowParentInverse = new Matrix4();
+            if (rightChain.middle.parent) {
+              elbowParentInverse.copy(rightChain.middle.parent.matrixWorld).invert();
+            }
+            const localForearmDir = forearmDir.clone().transformDirection(elbowParentInverse);
+            rightChain.middle.quaternion.setFromUnitVectors(rightChain.middleRestDir.clone(), localForearmDir);
+            rightChain.root.updateMatrixWorld(true);
+          }
         }
 
         // Save IK results BEFORE blending - .copy() would overwrite them
