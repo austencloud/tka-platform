@@ -7,7 +7,7 @@
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { AvatarId } from "../../config/avatar-definitions";
+  import type { AvatarId } from "@austencloud/scene-3d";
   import EffectsSettingsPanel from "../controls/EffectsSettingsPanel.svelte";
   import EnvironmentSettingsPanel from "../controls/EnvironmentSettingsPanel.svelte";
   import AvatarSettingsPanel from "../controls/AvatarSettingsPanel.svelte";

@@ -24,7 +24,7 @@ import type {
   HandOrientation,
   HandState,
 } from "../domain/types";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 
 const PLANES: readonly Plane[] = [Plane.WALL, Plane.WHEEL, Plane.FLOOR];
 const POSITIONS: readonly DiamondPosition[] = ["N", "E", "S", "W"];

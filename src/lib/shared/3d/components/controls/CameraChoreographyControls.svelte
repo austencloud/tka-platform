@@ -7,7 +7,7 @@
    */
 
   import type { CameraChoreographyState } from "../../state/camera-choreography-state.svelte";
-  import type { CameraPosition } from "../../domain/camera-choreography";
+  import type { CameraPosition } from "@austencloud/scene-3d";
 
   interface Props {
     /** Camera choreography state */

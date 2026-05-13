@@ -17,7 +17,7 @@
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
   import TelekineticFormation3D from "./TelekineticFormation3D.svelte";
-  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
+  import { Avatar3D } from "@austencloud/scene-3d";
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
   import MuseumVillageEmbed from "./MuseumVillageEmbed.svelte";

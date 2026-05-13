@@ -1,6 +1,6 @@
 import type { PointRef, Vec2 } from "../../domain/models/GridTopology";
 import type { GridMode } from "$lib/shared/render/core/types";
-import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import type { Plane } from "@austencloud/scene-3d";
 
 // --- From TopologyBetaSeparator ---
 

@@ -43,7 +43,7 @@ import type {
   TimelineTrack,
   TimelineClip,
 } from "$lib/shared/animation-engine/domain/timeline-types";
-import type { FormationPreset } from "../../domain/formation";
+import type { FormationPreset } from "@austencloud/scene-3d";
 
 export type TimeSeconds = number;
 

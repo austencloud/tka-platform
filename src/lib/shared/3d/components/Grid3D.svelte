@@ -14,9 +14,9 @@
 
   import { T } from "@threlte/core";
   import GridPlane from "./GridPlane.svelte";
-  import { Plane, PLANE_COLORS } from "../domain/enums/Plane";
-  import type { GridMode } from "../domain/constants/grid-layout";
-  import { userProportionsState } from "../state/user-proportions-state.svelte";
+  import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
+  import type { GridMode } from "@austencloud/scene-3d";
+  import { userProportionsState } from "@austencloud/scene-3d";
 
   interface Props {
     /** Which planes to show */

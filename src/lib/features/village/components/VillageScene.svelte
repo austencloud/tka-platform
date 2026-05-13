@@ -14,7 +14,7 @@
 	import VillagePropWall from "./VillagePropWall.svelte";
 	import VillageEffectCircle from "./VillageEffectCircle.svelte";
 	import { getVillageContext, getVillageVisualContext } from "../state/village-context";
-	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
+	import { userProportionsState } from "@austencloud/scene-3d";
 
 	const villageState = getVillageContext();
 

@@ -39,11 +39,11 @@
 
 
   // Avatar components
-  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
-  import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
+  import { Avatar3D } from "@austencloud/scene-3d";
+  import { Prop3D } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import Grid3D from "$lib/shared/3d/components/Grid3D.svelte";
-  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+  import { Plane } from "@austencloud/scene-3d";
 
   // World systems
   import { type ChunkState } from "../core/chunk-manager";

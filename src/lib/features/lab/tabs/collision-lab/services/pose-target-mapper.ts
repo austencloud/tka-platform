@@ -1,7 +1,7 @@
 import type { OptimizerBounds, OptimizerInput } from "../services/contracts/types";
 import type { SimPropTarget } from "../services/contracts/types";
 import type { DiamondPosition, PoseDefinition } from "../domain/types";
-import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import type { Plane } from "@austencloud/scene-3d";
 import {
   gridLocationToPosition3D,
   calculatePropRotation,
@@ -10,7 +10,7 @@ import { mapOrientationToAngle } from "$lib/shared/3d/services/orientation-mappe
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
-import { STAGE } from "$lib/shared/3d/scale/scale-constants";
+import { STAGE } from "@austencloud/scene-3d";
 import { STANCE_BOUNDS } from "../domain/types";
 import { Vector3, Quaternion, Euler } from "three";
 import type { HandOrientation } from "../domain/types";

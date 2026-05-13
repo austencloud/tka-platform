@@ -276,7 +276,7 @@ export function checkGrounded(
 // STAGE-SPECIFIC HELPERS
 // ============================================================================
 
-import { STAGE } from "../scale/scale-constants";
+import { STAGE } from "@austencloud/scene-3d";
 
 /**
  * Create a flat ground plane for the Stage

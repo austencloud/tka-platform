@@ -4,7 +4,7 @@
  * Adds plane information to the existing MotionData model.
  */
 
-import type { Plane } from "../enums/Plane";
+import type { Plane } from "@austencloud/scene-3d";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,

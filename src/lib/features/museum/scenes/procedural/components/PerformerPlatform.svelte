@@ -11,12 +11,12 @@
   import * as THREE from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import PerformerRig from "$lib/shared/3d/components/PerformerRig.svelte";
-  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
-  import { PlaneMode } from "$lib/shared/3d/domain/enums/PlaneMode";
+  import { PerformerRig } from "@austencloud/scene-3d";
+  import { Plane } from "@austencloud/scene-3d";
+  import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-  import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
   interface Props {
     slot: ExhibitSlot;
     isPopulated: boolean;

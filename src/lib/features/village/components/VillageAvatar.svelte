@@ -9,13 +9,13 @@
 	import { T, useTask } from "@threlte/core";
 	import { untrack } from "svelte";
 	import { HTML } from "@threlte/extras";
-	import PerformerRig from "$lib/shared/3d/components/PerformerRig.svelte";
-	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
-	import { PlaneMode } from "$lib/shared/3d/domain/enums/PlaneMode";
+	import { PerformerRig } from "@austencloud/scene-3d";
+	import { userProportionsState } from "@austencloud/scene-3d";
+	import { PlaneMode } from "@austencloud/scene-3d";
 	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 	import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 	import type { AvatarRenderState } from "../state/village-state.svelte";
-	import type { AvatarId } from "$lib/shared/3d/config/avatar-definitions";
+	import type { AvatarId } from "@austencloud/scene-3d";
 
 	interface Props {
 		renderState: AvatarRenderState;

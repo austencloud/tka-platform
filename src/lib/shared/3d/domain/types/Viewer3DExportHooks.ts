@@ -1,5 +1,5 @@
 import type { WebGLRenderer, Scene } from "three";
-import type { CameraStateSnapshot } from "./CameraStateSnapshot";
+import type { CameraStateSnapshot } from "@austencloud/scene-3d";
 
 export interface Viewer3DExportHooks {
   getRenderer(): WebGLRenderer | null;

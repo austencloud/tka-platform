@@ -15,7 +15,7 @@
     type MeshStandardMaterial as MeshStandardMaterialType,
     type Texture,
   } from "three";
-  import { userProportionsState } from "../../state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
 
   interface Props {
     /** Color tint applied over texture */

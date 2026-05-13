@@ -29,8 +29,8 @@
   import { T } from "@threlte/core";
   import { Group } from "three";
   import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
-  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
-  import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
+  import { Avatar3D } from "@austencloud/scene-3d";
+  import { Prop3D } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import {
     gridLocationToPosition3D,
@@ -41,10 +41,10 @@
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { STAGE } from "$lib/shared/3d/scale/scale-constants";
-  import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
-  import type { CollisionEvent } from "$lib/shared/3d/services/implementations/CollisionDetector";
-  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+  import { STAGE } from "@austencloud/scene-3d";
+  import type { PropState3D } from "@austencloud/scene-3d";
+  import type { CollisionEvent } from "@austencloud/scene-3d";
+  import { Plane } from "@austencloud/scene-3d";
   import type {
     DiamondPosition,
     CollisionSnapshot,

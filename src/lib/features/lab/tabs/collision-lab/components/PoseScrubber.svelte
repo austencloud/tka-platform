@@ -9,7 +9,7 @@
    */
 
   import { getCollisionLabContext } from "../context/collision-lab-context";
-  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+  import { Plane } from "@austencloud/scene-3d";
   import type { HandOrientation } from "../domain/types";
 
   const { state } = getCollisionLabContext();

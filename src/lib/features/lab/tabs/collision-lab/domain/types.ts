@@ -5,7 +5,7 @@
  * See docs/superpowers/specs/2026-04-10-collision-lab-design.md.
  */
 
-import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import type { Plane } from "@austencloud/scene-3d";
 import type { SimResult } from '../services/contracts/types';
 
 export type DiamondPosition = "N" | "E" | "S" | "W";

@@ -22,7 +22,7 @@
   import { Vector3, Raycaster, Mesh, PerspectiveCamera } from "three";
   import { CameraMode, getNextCameraMode, isGameMode, type PhysicsProvider, type AvatarState } from "./types";
   import { cameraPreferences } from "./camera-preferences.svelte";
-  import { SCALE } from "../scale/scale-constants";
+  import { SCALE } from "@austencloud/scene-3d";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
 
   interface Props {

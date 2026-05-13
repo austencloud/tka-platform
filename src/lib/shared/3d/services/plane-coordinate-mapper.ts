@@ -3,7 +3,7 @@
  */
 
 import type { Vector3, Quaternion } from "three";
-import type { Plane } from "../domain/enums/Plane";
+import type { Plane } from "@austencloud/scene-3d";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   GRID_RADIUS_3D,

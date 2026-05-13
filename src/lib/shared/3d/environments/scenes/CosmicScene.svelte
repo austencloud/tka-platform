@@ -18,7 +18,7 @@
     createDefaultCosmicNightConfig,
     createDefaultCosmicAuroraConfig,
   } from "../domain/models/scene-configs";
-  import { userProportionsState } from "../../state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
   interface Props {

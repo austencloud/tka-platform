@@ -7,11 +7,11 @@
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { userProportionsState } from "../../state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import {
     COMMON_HEIGHTS,
     COMMON_STAFF_LENGTHS,
-  } from "../../config/user-proportions";
+  } from "@austencloud/scene-3d";
 
   interface Props {
     compact?: boolean;

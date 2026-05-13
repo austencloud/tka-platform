@@ -2,16 +2,16 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
   import { onMount, onDestroy } from "svelte";
-  import PerformerRig from "./PerformerRig.svelte";
+  import { PerformerRig } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "../environments/components/Environment3D.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
-  import { STAGE } from "../scale/scale-constants";
+  import { STAGE } from "@austencloud/scene-3d";
   import Stage3D from "./Stage3D.svelte";
   import SeatedAudience3D from "./SeatedAudience3D.svelte";
-  import { Plane } from "../domain/enums/Plane";
+  import { Plane } from "@austencloud/scene-3d";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
@@ -318,7 +318,7 @@
       planeMode={performer.planeMode}
       avatarState={performer}
       visiblePlanes={gridVisiblePlanes}
-      gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
+      gridMode={(sequenceData?.gridMode ?? "diamond") as import("@austencloud/scene-3d").GridMode}
       bluePropType={resolvePerformerProp(performer, bluePropType)}
       redPropType={resolvePerformerProp(performer, redPropType)}
       bluePropState={performer.bluePropState}

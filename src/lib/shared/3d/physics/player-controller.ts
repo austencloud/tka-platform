@@ -14,7 +14,7 @@ import type {
 } from "./types";
 import { DEFAULT_PLAYER_CONFIG } from "./types";
 import { castRay } from "./rapier-world";
-import { SCALE } from "../scale/scale-constants";
+import { SCALE } from "@austencloud/scene-3d";
 
 // ============================================================================
 // PLAYER CONTROLLER CREATION

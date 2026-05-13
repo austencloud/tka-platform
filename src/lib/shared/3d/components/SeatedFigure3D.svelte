@@ -12,7 +12,7 @@
   import { T, useTask } from "@threlte/core";
   import { onDestroy, onMount } from "svelte";
   import { AnimationMixer, LoopRepeat, type Object3D } from "three";
-  import { seatedAudienceLoader } from "../services/implementations/SeatedAudienceLoader";
+  import { seatedAudienceLoader } from "@austencloud/scene-3d";
 
   interface Props {
     modelUrl: string;

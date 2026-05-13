@@ -11,9 +11,9 @@
    */
 
   import { getViewer3DContext } from "../context/viewer-3d-context";
-  import { PlaneMode } from "../domain/enums/PlaneMode";
-  import { GRID_OFFSETS } from "../domain/constants/plane-mode-configs";
-  import { userProportionsState } from "../state/user-proportions-state.svelte";
+  import { PlaneMode } from "@austencloud/scene-3d";
+  import { GRID_OFFSETS } from "@austencloud/scene-3d";
+  import { userProportionsState } from "@austencloud/scene-3d";
 
   const { compact = false, flat = false, grid = false }: { compact?: boolean; flat?: boolean; grid?: boolean } = $props();
 

@@ -12,16 +12,16 @@
   import { untrack } from "svelte";
   import { T } from "@threlte/core";
   import * as THREE from "three";
-  import PerformerRig from "$lib/shared/3d/components/PerformerRig.svelte";
-  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
-  import { PlaneMode } from "$lib/shared/3d/domain/enums/PlaneMode";
+  import { PerformerRig } from "@austencloud/scene-3d";
+  import { Plane } from "@austencloud/scene-3d";
+  import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
-  import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { GridMode } from "$lib/shared/3d/domain/constants/grid-layout";
+  import type { GridMode } from "@austencloud/scene-3d";
   import { MUSEUM_EXHIBIT_SEQUENCES, type MuseumSequenceData } from "../../data/museum-exhibit-sequences";
 
   interface Props {

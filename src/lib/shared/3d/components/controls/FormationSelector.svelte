@@ -6,8 +6,8 @@
    * Shows active state and triggers transitions on selection.
    */
 
-  import type { FormationPreset } from "../../domain/formation";
-  import { FORMATION_PRESET_INFO } from "../../config/formation-presets";
+  import type { FormationPreset } from "@austencloud/scene-3d";
+  import { FORMATION_PRESET_INFO } from "@austencloud/scene-3d";
 
   interface Props {
     /** Currently active preset */

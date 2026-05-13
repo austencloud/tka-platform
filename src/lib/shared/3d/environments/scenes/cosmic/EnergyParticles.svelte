@@ -9,7 +9,7 @@
     Color,
   } from "three";
   import type { EnergyParticlesConfig } from "../../domain/models/scene-configs";
-  import { userProportionsState } from "../../../state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
 
   interface Props {
     config: EnergyParticlesConfig;

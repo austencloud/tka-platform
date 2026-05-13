@@ -8,7 +8,7 @@
    */
 
   import { T } from "@threlte/core";
-  import { userProportionsState } from "../../state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
 
   interface Props {
     /** Ground color (hex string) */

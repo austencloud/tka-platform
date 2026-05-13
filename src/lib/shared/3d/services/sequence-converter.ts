@@ -8,7 +8,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionConfig3D } from "../domain/models/MotionData3D";
-import { Plane } from "../domain/enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 import {
   MotionColor,
   MotionType,
@@ -16,7 +16,7 @@ import {
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { PlaneModeConfig } from "../domain/constants/plane-mode-configs";
+import type { PlaneModeConfig } from "@austencloud/scene-3d";
 
 export interface StepMotionConfigs {
   stepNumber: number;

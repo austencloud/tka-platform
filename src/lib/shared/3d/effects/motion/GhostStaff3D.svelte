@@ -14,7 +14,7 @@
 
   import { T } from "@threlte/core";
   import { Vector3, Quaternion, Euler } from "three";
-  import type { PropState3D } from "../../domain/models/PropState3D";
+  import type { PropState3D } from "@austencloud/scene-3d";
 
   interface Props {
     /** Live prop state - read at beat onsets to capture a phantom. */

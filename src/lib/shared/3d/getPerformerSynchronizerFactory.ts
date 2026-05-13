@@ -1,4 +1,4 @@
-import { createPerformerSynchronizer } from './services/implementations/PerformerSynchronizer';
+import { createPerformerSynchronizer } from "@austencloud/scene-3d";
 
 /**
  * Factory function - creates a new PerformerSynchronizer instance each call (not a singleton).

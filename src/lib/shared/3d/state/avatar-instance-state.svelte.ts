@@ -7,9 +7,9 @@
 
 import type { MotionConfig3D } from "../domain/models/MotionData3D";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { Plane } from "../domain/enums/Plane";
-import { PlaneMode } from "../domain/enums/PlaneMode";
-import { PLANE_MODE_CONFIGS, type PlaneModeConfig } from "../domain/constants/plane-mode-configs";
+import { Plane } from "@austencloud/scene-3d";
+import { PlaneMode } from "@austencloud/scene-3d";
+import { PLANE_MODE_CONFIGS, type PlaneModeConfig } from "@austencloud/scene-3d";
 import { createPlaybackState } from "./playback-state.svelte";
 import { calculatePropState } from "../services/prop-state-interpolator";
 import {
@@ -17,8 +17,8 @@ import {
   getStartPositionConfigs,
 } from "../services/sequence-converter";
 import type { StepMotionConfigs } from "../services/sequence-converter";
-import type { AvatarId } from "../config/avatar-definitions";
-import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
+import type { AvatarId } from "@austencloud/scene-3d";
+import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { EffortTimeline } from "$lib/shared/effort/domain/effort-timeline-types";

@@ -14,7 +14,7 @@
   import type CameraControls from "camera-controls";
   import OrbitControls from "./OrbitControls.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
-  import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
+  import type { CameraStateSnapshot } from "@austencloud/scene-3d";
   import UnifiedCameraController from "../camera/UnifiedCameraController.svelte";
   import { CameraMode } from "../camera/types";
   import type { AvatarState, PhysicsProvider } from "../camera/types";

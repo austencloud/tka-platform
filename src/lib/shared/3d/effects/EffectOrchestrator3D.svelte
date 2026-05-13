@@ -36,7 +36,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
     type EffectType,
   } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import { TIER_CONFIGS, type QualityTierConfig } from "./types";
-  import type { PropState3D } from "../domain/models/PropState3D";
+  import type { PropState3D } from "@austencloud/scene-3d";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import {
@@ -46,7 +46,7 @@ import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/getQualit
   import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
   import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
   import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/LedTypes";
-  import { PROP_COLORS } from "../components/props/Prop3DProps";
+  import { PROP_COLORS } from "@austencloud/scene-3d";
 
   interface TipDatum {
     position: Vector3 | null;

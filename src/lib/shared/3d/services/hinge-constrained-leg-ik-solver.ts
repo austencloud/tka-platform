@@ -1,7 +1,7 @@
 // src/lib/shared/3d/services/hinge-constrained-leg-ik-solver.ts
 
 import { Vector3, Quaternion, Matrix4 } from "three";
-import type { LegIKInput } from "./implementations/HingeConstrainedLegIKSolver";
+import type { LegIKInput } from "@austencloud/scene-3d";
 
 /**
  * Two-bone analytic IK where the knee is constrained to rotate only

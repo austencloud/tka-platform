@@ -30,7 +30,7 @@
   import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
+  import type { CameraStateSnapshot } from "@austencloud/scene-3d";
 
   interface Props {
     sequenceData: SequenceData | null;

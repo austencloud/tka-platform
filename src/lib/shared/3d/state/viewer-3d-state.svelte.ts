@@ -11,20 +11,16 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
-import type { Viewer3DUndoManager } from "../services/implementations/Viewer3DUndoManager";
-import type {
-  PerformerSnapshot,
-  ViewerSnapshot,
-} from "../services/implementations/Viewer3DUndoManager";
-import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
-import { Plane } from "../domain/enums/Plane";
+import type { Viewer3DUndoManager, PerformerSnapshot, ViewerSnapshot } from "@austencloud/scene-3d";
+import type { CameraStateSnapshot } from "@austencloud/scene-3d";
+import { Plane } from "@austencloud/scene-3d";
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
 import { createPerformerManager, type PerformerManager } from "./performer-manager.svelte";
-import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
-import { STAGE } from "$lib/shared/3d/scale/scale-constants";
-import type { FormationPreset } from "../domain/formation";
-import { calculateFacingAngle } from "../domain/formation";
-import { PRESET_VALID_COUNTS, createFormationFromPreset } from "../config/formation-presets";
+import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
+import { STAGE } from "@austencloud/scene-3d";
+import type { FormationPreset } from "@austencloud/scene-3d";
+import { calculateFacingAngle } from "@austencloud/scene-3d";
+import { PRESET_VALID_COUNTS, createFormationFromPreset } from "@austencloud/scene-3d";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
 import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
 

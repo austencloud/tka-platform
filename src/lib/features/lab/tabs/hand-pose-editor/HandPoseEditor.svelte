@@ -19,15 +19,15 @@
     MeshStandardMaterial,
   } from "three";
   import type { Bone } from "three";
-  import { AvatarSkeletonBuilder } from "$lib/shared/3d/services/implementations/AvatarSkeletonBuilder";
-  import { FINGER_BONES, GripType } from "$lib/shared/3d/domain/models/GripPose";
-  import { solveCylinderGrasp } from "$lib/shared/3d/services/implementations/CylinderGraspSolver";
-  import { STAFF_GRIP_POSES } from "$lib/shared/3d/data/grip-poses/staff-grip-poses";
+  import { AvatarSkeletonBuilder } from "@austencloud/scene-3d";
+  import { FINGER_BONES, GripType } from "@austencloud/scene-3d";
+  import { solveCylinderGrasp } from "@austencloud/scene-3d";
+  import { STAFF_GRIP_POSES } from "@austencloud/scene-3d";
   import FingerSliderGroup from "./FingerSliderGroup.svelte";
   import SkeletonUpdater from "./SkeletonUpdater.svelte";
   import TaxonomyGallery from "./TaxonomyGallery.svelte";
-  import { AVATAR_DEFINITIONS } from "$lib/shared/3d/config/avatar-definitions";
-  import { cmToUnits } from "$lib/shared/3d/config/avatar-proportions";
+  import { AVATAR_DEFINITIONS } from "@austencloud/scene-3d";
+  import { cmToUnits } from "@austencloud/scene-3d";
 
   type TabMode = "browse" | "edit";
   const FINGERS = ["Thumb", "Index", "Middle", "Ring", "Pinky"] as const;

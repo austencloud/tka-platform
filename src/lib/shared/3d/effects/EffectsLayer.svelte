@@ -11,12 +11,12 @@
 
   import { Vector3, Quaternion, Euler } from "three";
   import { useTask } from "@threlte/core";
-  import type { PropState3D } from "../domain/models/PropState3D";
+  import type { PropState3D } from "@austencloud/scene-3d";
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D, resolveTrails3D, resolveFire3D } from "$lib/shared/effects/translators/webgl3d-translator";
-  import { AUSTEN_STAFF } from "../config/avatar-proportions";
+  import { AUSTEN_STAFF } from "@austencloud/scene-3d";
 
   // Effect components
   import TrailRenderer from "./trails/TrailRenderer.svelte";

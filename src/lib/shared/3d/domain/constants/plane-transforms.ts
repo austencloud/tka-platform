@@ -11,7 +11,7 @@
  */
 
 import { Vector3, Euler, Quaternion } from "three";
-import { Plane } from "../enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 
 /**
  * Scale: 1 unit = 1 meter (unified meters scale)

@@ -11,7 +11,7 @@
   import {
     AVATAR_DEFINITIONS,
     type AvatarId,
-  } from "../../config/avatar-definitions";
+  } from "@austencloud/scene-3d";
 
   interface Props {
     /** Whether avatar is visible */

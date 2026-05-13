@@ -15,9 +15,9 @@
 
   import { T, useThrelte } from "@threlte/core";
   import { Quaternion, Euler, Vector3 } from "three";
-  import type { PropState3D } from "../domain/models/PropState3D";
-  import { userProportionsState } from "../state/user-proportions-state.svelte";
-  import { LAYER_VIEWMODEL } from "$lib/shared/3d/layers/layer-constants";
+  import type { PropState3D } from "@austencloud/scene-3d";
+  import { userProportionsState } from "@austencloud/scene-3d";
+  import { LAYER_VIEWMODEL } from "@austencloud/scene-3d";
   import { CameraMode } from "$lib/shared/3d/camera/types";
 
   interface Props {

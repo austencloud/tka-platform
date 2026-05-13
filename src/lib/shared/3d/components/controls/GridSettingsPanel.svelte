@@ -6,8 +6,8 @@
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { Plane, PLANE_LABELS, PLANE_COLORS } from "../../domain/enums/Plane";
-  import type { GridMode } from "../../domain/constants/grid-layout";
+  import { Plane, PLANE_LABELS, PLANE_COLORS } from "@austencloud/scene-3d";
+  import type { GridMode } from "@austencloud/scene-3d";
 
   interface Props {
     /** Current grid mode */

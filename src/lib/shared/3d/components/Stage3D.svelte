@@ -26,8 +26,8 @@
    */
 
   import { T } from "@threlte/core";
-  import { userProportionsState } from "../state/user-proportions-state.svelte";
-  import { STAGE } from "../scale/scale-constants";
+  import { userProportionsState } from "@austencloud/scene-3d";
+  import { STAGE } from "@austencloud/scene-3d";
 
   interface Props {
     /** Width of the stage along the X axis in meters. Default 6m. */

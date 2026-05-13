@@ -12,7 +12,7 @@
   import { T } from "@threlte/core";
   import { Text } from "@threlte/extras";
   import { DoubleSide } from "three";
-  import { Plane, PLANE_LABELS } from "../domain/enums/Plane";
+  import { Plane, PLANE_LABELS } from "@austencloud/scene-3d";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
   import { planeAngleToWorldPosition } from "../domain/constants/plane-transforms";
@@ -24,7 +24,7 @@
     getHandPoints,
     getOuterPoints,
   } from "../domain/constants/grid-layout";
-  import { userProportionsState } from "../state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
 
   interface Props {
     plane: Plane;

@@ -16,7 +16,7 @@
    * PlaneMode is derived from the hand assignments in setHandPlane.
    */
 
-  import { Plane, PLANE_COLORS } from "../domain/enums/Plane";
+  import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import { scale } from "svelte/transition";
@@ -26,8 +26,8 @@
   import { onMount } from "svelte";
   import SceneFeatureTiles from "../scene-features/components/SceneFeatureTiles.svelte";
   import { tryGetSceneFeatureContext } from "../scene-features/context/scene-feature-context";
-  import { userProportionsState } from "../state/user-proportions-state.svelte";
-  import { inchesToCm } from "../config/user-proportions";
+  import { userProportionsState } from "@austencloud/scene-3d";
+  import { inchesToCm } from "@austencloud/scene-3d";
 
   const hasSceneFeatures = tryGetSceneFeatureContext() !== undefined;
 

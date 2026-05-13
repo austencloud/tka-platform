@@ -8,7 +8,7 @@
     DoubleSide,
   } from "three";
   import type { PlatformConfig } from "../../domain/models/scene-configs";
-  import { userProportionsState } from "../../../state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import AudienceSeating from "./AudienceSeating.svelte";
 
   interface Props {

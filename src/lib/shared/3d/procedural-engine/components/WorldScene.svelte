@@ -46,7 +46,7 @@
   import {
     DEFAULT_AVATAR_ID,
     type AvatarId,
-  } from "$lib/shared/3d/config/avatar-definitions";
+  } from "@austencloud/scene-3d";
   import DuetOrchestrator from "$lib/shared/3d/components/DuetOrchestrator.svelte";
 
   // ============================================================================

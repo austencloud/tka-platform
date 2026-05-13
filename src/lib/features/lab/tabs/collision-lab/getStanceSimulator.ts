@@ -1,6 +1,6 @@
 
 import { StanceSimulator, restPoseFromHeight } from './services/implementations/StanceSimulator';
-import { userProportionsState } from '$lib/shared/3d/state/user-proportions-state.svelte';
+import { userProportionsState } from "@austencloud/scene-3d";
 
 let instance: StanceSimulator | null = null;
 export function getStanceSimulator(): StanceSimulator {

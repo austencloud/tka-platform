@@ -23,10 +23,10 @@
   import CosmicScene from "$lib/shared/3d/environments/scenes/CosmicScene.svelte";
   import OceanScene from "$lib/shared/3d/environments/scenes/OceanScene.svelte";
   import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
-  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
+  import { Avatar3D } from "@austencloud/scene-3d";
   import { CameraMode } from "$lib/shared/3d/camera/types";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
-  import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneLabContext } from "../context/scene-lab-context";
   import { createSceneLabPlayerState } from "../state/scene-lab-player-state.svelte";
 

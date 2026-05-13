@@ -17,8 +17,8 @@
 
   import { T } from "@threlte/core";
   import { onMount } from "svelte";
-  import { userProportionsState } from "../state/user-proportions-state.svelte";
-  import { seatedAudienceLoader } from "../services/implementations/SeatedAudienceLoader";
+  import { userProportionsState } from "@austencloud/scene-3d";
+  import { seatedAudienceLoader } from "@austencloud/scene-3d";
   import SeatedFigure3D from "./SeatedFigure3D.svelte";
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
 

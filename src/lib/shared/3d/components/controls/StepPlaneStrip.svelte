@@ -8,7 +8,7 @@
    * Clicking a cell navigates to that beat.
    */
 
-  import { Plane, PLANE_COLORS } from "../../domain/enums/Plane";
+  import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
 
   interface Props {
     totalSteps: number;

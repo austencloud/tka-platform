@@ -14,7 +14,7 @@
 import { createVillageState, type VillageState } from "$lib/features/village/state/village-state.svelte";
 import { createVillageVisualState, type VillageVisualState } from "$lib/features/village/state/village-visual-state.svelte";
 import { MUSEUM_EXHIBIT_SEQUENCES } from "../data/museum-exhibit-sequences";
-import { getAvatarModelPath } from "$lib/shared/3d/config/avatar-definitions";
+import { getAvatarModelPath } from "@austencloud/scene-3d";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 

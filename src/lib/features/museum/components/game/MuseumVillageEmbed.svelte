@@ -15,7 +15,7 @@
 	import VillageDroppedProp from "$lib/features/village/components/VillageDroppedProp.svelte";
 	import { setVillageContext, setVillageVisualContext } from "$lib/features/village/state/village-context";
 	import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
-	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
+	import { userProportionsState } from "@austencloud/scene-3d";
 	import {
 		getMuseumVillageManager,
 		setMuseumVillageVisible,

@@ -30,7 +30,7 @@ import type {
   StancePose,
   CandidateSet,
 } from "../domain/types";
-import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import type { Plane } from "@austencloud/scene-3d";
 import { poseToOptimizerInput, OPTIMIZER_BOUNDS } from "../services/pose-target-mapper";
 import { buildDiagnosticReport } from "../services/collision-lab-diagnostic";
 type PlaneFilter = Plane | "all";

@@ -9,20 +9,14 @@ import type {
   CameraChoreography,
   CameraState,
   CameraPosition,
-} from "../domain/camera-choreography";
+  PerformerPositionProvider,
+} from "@austencloud/scene-3d";
 
 import {
   createCameraChoreography,
   createDefaultCameraState,
-} from "../domain/camera-choreography";
-
-import {
   createCameraChoreographer,
-} from "../services/implementations/CameraChoreographer";
-
-import type {
-  PerformerPositionProvider,
-} from "../services/implementations/CameraChoreographer";
+} from "@austencloud/scene-3d";
 
 /**
  * Create camera choreography state with Svelte 5 reactivity

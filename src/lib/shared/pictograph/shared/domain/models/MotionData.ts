@@ -21,7 +21,7 @@
 // IMPORTANT: Import directly from specific files to avoid circular dependencies
 // DO NOT import from barrel exports (../../../arrow, ../../../prop) as they import MotionData
 import { type ArrowPlacementData } from "../../../arrow/positioning/placement/domain/ArrowPlacementData";
-import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import type { Plane } from "@austencloud/scene-3d";
 import { createArrowPlacementData } from "../../../arrow/positioning/placement/domain/createArrowPlacementData";
 import { GridLocation, GridMode } from "../../../grid/domain/enums/grid-enums";
 import { type PropPlacementData } from "../../../prop/domain/models/PropPlacementData";

@@ -6,7 +6,7 @@
  */
 
 import { Vector3 } from "three";
-import { Plane } from "../domain/enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 
 const SHOULDER_HALF_WIDTH = 0.2;
 

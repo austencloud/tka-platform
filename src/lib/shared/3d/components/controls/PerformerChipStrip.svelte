@@ -18,7 +18,7 @@
    */
 
   import { getViewer3DContext } from "../../context/viewer-3d-context";
-  import { STAGE } from "$lib/shared/3d/scale/scale-constants";
+  import { STAGE } from "@austencloud/scene-3d";
 
   const viewer3DState = getViewer3DContext();
   const performers = $derived(viewer3DState.performerManager.performers);

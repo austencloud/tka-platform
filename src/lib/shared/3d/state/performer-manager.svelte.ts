@@ -16,13 +16,12 @@ import {
 import {
   getDefaultPositions,
   MAX_PERFORMERS,
-} from "../domain/constants/performer-positions";
+} from "@austencloud/scene-3d";
 // propInterpolator / sequenceConverter injected as module functions; no imports needed here
-import type { AvatarId } from "../config/avatar-definitions";
-import type { FormationPreset } from "../domain/formation";
+import type { AvatarId, FormationPreset } from "@austencloud/scene-3d";
 import {
   createFormationManager,
-} from "../services/implementations/FormationManager";
+} from "@austencloud/scene-3d";
 // FormationManager type inferred from createFormationManager return
 
 /**

@@ -12,7 +12,7 @@
     createDefaultOceanReefConfig,
   } from "../domain/models/scene-configs";
   import { onMount } from "svelte";
-  import { userProportionsState } from "../../state/user-proportions-state.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import {
     FogExp2,
     Color,
