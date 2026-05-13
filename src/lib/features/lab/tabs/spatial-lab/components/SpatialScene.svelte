@@ -8,6 +8,7 @@
   import { Vector3 } from "three";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
+  import { STAGE } from "@austencloud/scene-3d";
 
   interface Props {
     state: SpatialLabState;
@@ -78,7 +79,7 @@
       <Avatar3D
         bluePropState={labState.bluePropState}
         redPropState={labState.redPropState}
-        position={{ x: 0, y: 0, z: 0 }}
+        position={{ x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0 }}
         facingAngle={labState.facingAngle}
       />
     {/snippet}
