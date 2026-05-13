@@ -6,6 +6,8 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { snapToNearestGridLocation } from "../services/grid-snap";
   import { Vector3 } from "three";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { BackgroundType } from "@austencloud/backgrounds";
 
   interface Props {
     state: SpatialLabState;
@@ -13,6 +15,10 @@
 
   let { state: labState }: Props = $props();
   let rafId: number;
+
+  const backgroundType = $derived(
+    settingsService.settings.backgroundType ?? BackgroundType.SOLID_COLOR,
+  );
 
   function handleMeshClick(meshName: string, _point: { x: number; y: number; z: number }) {
     if (labState.mode === "sequence") return;
@@ -51,6 +57,7 @@
     showLabels={labState.showLabels}
     showStage={labState.showStage}
     visiblePlanes={labState.visiblePlanes}
+    {backgroundType}
     disableOrbitControls={labState.draggingSide !== null}
     isDragging={labState.draggingSide !== null}
     onMeshClick={handleMeshClick}
