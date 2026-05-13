@@ -28,6 +28,7 @@
   }
 
   function startDrag(side: "left" | "right", e: MouseEvent) {
+    if (state.mode === "sequence") return;
     dragging = side;
     const pos = getMousePos(e);
     const prop = side === "left" ? state.leftProp : state.rightProp;

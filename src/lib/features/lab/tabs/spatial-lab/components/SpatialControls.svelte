@@ -4,6 +4,8 @@
   import VisualizationToggles from "./controls/VisualizationToggles.svelte";
   import InfoPanel from "./controls/InfoPanel.svelte";
   import PresetGrid from "./controls/PresetGrid.svelte";
+  import SequenceSelector from "./controls/SequenceSelector.svelte";
+  import BeatTransport from "./controls/BeatTransport.svelte";
 
   interface Props {
     state: SpatialLabState;
@@ -18,7 +20,12 @@
   <div class="divider"></div>
   <InfoPanel state={labState} />
   <div class="divider"></div>
-  <PresetGrid state={labState} />
+  <SequenceSelector state={labState} />
+  <BeatTransport state={labState} />
+  {#if labState.mode === "sandbox"}
+    <div class="divider"></div>
+    <PresetGrid state={labState} />
+  {/if}
 </div>
 
 <style>

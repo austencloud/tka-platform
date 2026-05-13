@@ -24,6 +24,9 @@ import {
   MAX_ROTATION_SPEED,
   type Preset,
 } from "./spatial-lab-constants";
+import { DEMO_SEQUENCES, type DemoSequence, type SequenceBeat } from "../services/demo-sequences";
+
+export type LabMode = "sandbox" | "sequence";
 
 export class SpatialLabState {
   leftProp3D = $state<Point3D>({ x: 0.95, y: 0, z: 0 });
@@ -34,6 +37,14 @@ export class SpatialLabState {
   showArmLines = $state(true);
   showCrossingAlert = $state(true);
   viewProjection = $state<ViewProjection>("floor");
+
+  // Sequence mode
+  mode = $state<LabMode>("sandbox");
+  activeSequence = $state<DemoSequence | null>(null);
+  beatIndex = $state(0);
+  playing = $state(false);
+  playbackBpm = $state(60);
+  private _playElapsed = 0;
 
   private _targetRotation = 0;
 
@@ -116,6 +127,58 @@ export class SpatialLabState {
     else this.rightProp3D = pt3D;
   }
 
+  readonly demoSequences = DEMO_SEQUENCES;
+
+  currentBeat = $derived<SequenceBeat | null>(
+    this.activeSequence ? this.activeSequence.beats[this.beatIndex] ?? null : null,
+  );
+
+  totalBeats = $derived(this.activeSequence?.beats.length ?? 0);
+
+  loadSequence(seq: DemoSequence): void {
+    this.mode = "sequence";
+    this.activeSequence = seq;
+    this.beatIndex = 0;
+    this.playing = false;
+    this._playElapsed = 0;
+    this.bodyLocked = false;
+    const first = seq.beats[0];
+    if (first) this._applyBeat(first);
+  }
+
+  exitSequenceMode(): void {
+    this.mode = "sandbox";
+    this.activeSequence = null;
+    this.playing = false;
+    this.beatIndex = 0;
+    this._playElapsed = 0;
+  }
+
+  setBeat(index: number): void {
+    if (!this.activeSequence) return;
+    const clamped = Math.max(0, Math.min(index, this.activeSequence.beats.length - 1));
+    this.beatIndex = clamped;
+    this._playElapsed = 0;
+    const beat = this.activeSequence.beats[clamped];
+    if (beat) this._applyBeat(beat);
+  }
+
+  togglePlayback(): void {
+    this.playing = !this.playing;
+    this._playElapsed = 0;
+  }
+
+  private _applyBeat(beat: SequenceBeat): void {
+    this.leftProp3D = { ...beat.left };
+    this.rightProp3D = { ...beat.right };
+    const floorL = project3Dto2D(this.leftProp3D, "floor");
+    const floorR = project3Dto2D(this.rightProp3D, "floor");
+    this._targetRotation =
+      computeTargetRotation(floorL, floorR, BODY_CENTER, BEHIND_THRESHOLD) ??
+      this.bodyRotation;
+    this.bodyRotation = this._targetRotation;
+  }
+
   snapProp(side: "left" | "right"): void {
     const pos = side === "left" ? this.leftProp : this.rightProp;
     let best: ProjectedGridPoint | null = null;
@@ -133,6 +196,18 @@ export class SpatialLabState {
   }
 
   tick(): void {
+    if (this.playing && this.activeSequence) {
+      this._playElapsed++;
+      const framesPerBeat = Math.round(60 / (this.playbackBpm / 60));
+      if (this._playElapsed >= framesPerBeat) {
+        this._playElapsed = 0;
+        const next = (this.beatIndex + 1) % this.activeSequence.beats.length;
+        this.beatIndex = next;
+        const nextBeat = this.activeSequence.beats[next];
+        if (nextBeat) this._applyBeat(nextBeat);
+      }
+    }
+
     if (this.bodyLocked) return;
 
     const target = computeTargetRotation(

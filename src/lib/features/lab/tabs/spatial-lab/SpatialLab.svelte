@@ -11,7 +11,7 @@
   <div class="lab-header">
     <div class="header-left">
       <span class="lab-title">Spatial Lab</span>
-      <span class="lab-subtitle">Bird's Eye Exploration</span>
+      <span class="lab-subtitle">{state.mode === "sequence" ? "Sequence Playback" : "Sandbox Mode"}</span>
     </div>
     <span class="header-hint">Drag props · Click body to lock/unlock rotation</span>
   </div>
