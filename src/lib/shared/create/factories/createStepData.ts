@@ -26,5 +26,7 @@ export function createStepData(data: Partial<StepData> = {}): StepData {
     isBlank: data.isBlank ?? false,
     // Conditionally include isSelected only if it's defined
     ...(data.isSelected !== undefined && { isSelected: data.isSelected }),
+    // Beta offset swap — preserve if set
+    ...(data.betaSwapped !== undefined && { betaSwapped: data.betaSwapped }),
   };
 }

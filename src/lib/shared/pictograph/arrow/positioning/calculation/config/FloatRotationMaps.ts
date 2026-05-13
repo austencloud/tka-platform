@@ -10,6 +10,55 @@ import { GridLocation } from "../../../../grid/domain/enums/grid-enums.ts";
  * Counter-clockwise handpath: W→S, N→W, E→N, S→E, NE→NW, NW→SW, SW→SE, SE→NE
  */
 
+/**
+ * Grid location positions in screen coordinates (x-right, y-down).
+ * Used to compute geometric angles for skewed/cross-grid float arrows.
+ */
+const GRID_SCREEN_COORDS: Record<GridLocation, { x: number; y: number }> = {
+  [GridLocation.NORTH]: { x: 0, y: -1 },
+  [GridLocation.NORTHEAST]: { x: 1, y: -1 },
+  [GridLocation.EAST]: { x: 1, y: 0 },
+  [GridLocation.SOUTHEAST]: { x: 1, y: 1 },
+  [GridLocation.SOUTH]: { x: 0, y: 1 },
+  [GridLocation.SOUTHWEST]: { x: -1, y: 1 },
+  [GridLocation.WEST]: { x: -1, y: 0 },
+  [GridLocation.NORTHWEST]: { x: -1, y: -1 },
+  [GridLocation.CENTER]: { x: 0, y: 0 },
+};
+
+/**
+ * Compute the geometric float arrow rotation for a skewed/cross-grid shift.
+ *
+ * For non-adjacent, non-opposite start/end pairs (e.g. N→SE, W→NE, S→NE),
+ * the standard CW/CCW handpath maps don't cover the pair. This function
+ * computes the angle from start position to end position in screen coordinates,
+ * matching the float arrow SVG's base orientation (0° = pointing East).
+ *
+ * @returns Rotation angle in degrees (0-360), or null if positions are identical
+ *          or a position isn't recognized.
+ */
+export function calculateSkewedFloatRotation(
+  startLocation: GridLocation,
+  endLocation: GridLocation
+): number | null {
+  const startCoord = GRID_SCREEN_COORDS[startLocation];
+  const endCoord = GRID_SCREEN_COORDS[endLocation];
+
+  if (!startCoord || !endCoord) return null;
+
+  const dx = endCoord.x - startCoord.x;
+  const dy = endCoord.y - startCoord.y;
+
+  if (dx === 0 && dy === 0) return null;
+
+  // atan2(dy, dx) gives angle in radians with 0° = East, increasing CW in screen coords
+  const radians = Math.atan2(dy, dx);
+  const degrees = (radians * 180) / Math.PI;
+
+  // Normalize to 0-360
+  return ((degrees % 360) + 360) % 360;
+}
+
 export const floatClockwiseHandpathMap: Record<GridLocation, number> = {
   [GridLocation.NORTH]: 315,
   [GridLocation.EAST]: 45,

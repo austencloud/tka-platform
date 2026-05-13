@@ -203,7 +203,13 @@ export class PropPlacer {
       redBuugengFlipped: settings.redBuugengFlipped,
     };
 
-    return calculateBetaOffset(input, targetMotionInput);
+    const offset = calculateBetaOffset(input, targetMotionInput);
+
+    if (pictographData.betaSwapped) {
+      return { x: -offset.x, y: -offset.y };
+    }
+
+    return offset;
   }
 }
 

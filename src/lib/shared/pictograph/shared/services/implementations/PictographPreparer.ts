@@ -13,7 +13,7 @@ import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../../prop/domain/enums/PropType";
-import { MotionType, HandPath, type Orientation } from "../../domain/enums/pictograph-enums";
+import { MotionType, HandPath, RotationDirection, type Orientation } from "../../domain/enums/pictograph-enums";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
 export class PictographPreparer {
@@ -149,6 +149,7 @@ export class PictographPreparer {
       options?.handPathMode ? "hp" : "",
       options?.showBlueMotion === false ? "hideBlue" : "",
       options?.showRedMotion === false ? "hideRed" : "",
+      pictograph.betaSwapped ? "bs" : "",
     ];
 
     return parts.join("|");
@@ -276,19 +277,52 @@ export class PictographPreparer {
       const isShift =
         motion.motionType === MotionType.PRO ||
         motion.motionType === MotionType.ANTI;
+      const isDash = motion.motionType === MotionType.DASH;
+      const isStatic = motion.motionType === MotionType.STATIC;
 
-      const handPath = this.deriveHandPath(
-        motion.startLocation,
-        motion.endLocation
-      );
+      if (isShift) {
+        const handPath = this.deriveHandPath(
+          motion.startLocation,
+          motion.endLocation
+        );
+        const handpathRotDir =
+          handPath === HandPath.CLOCKWISE
+            ? RotationDirection.CLOCKWISE
+            : handPath === HandPath.COUNTER_CLOCKWISE
+              ? RotationDirection.COUNTER_CLOCKWISE
+              : RotationDirection.NO_ROTATION;
+
+        return {
+          ...motion,
+          motionType: MotionType.FLOAT,
+          turns: "fl" as const,
+          handPath,
+          rotationDirection: handpathRotDir,
+          startOrientation: undefined as unknown as Orientation,
+          endOrientation: undefined as unknown as Orientation,
+          propType: PropType.HAND,
+        };
+      }
+
+      if (isDash) {
+        return {
+          ...motion,
+          turns: 0,
+          rotationDirection: RotationDirection.NO_ROTATION,
+          propType: PropType.HAND,
+        };
+      }
+
+      if (isStatic) {
+        return {
+          ...motion,
+          propType: PropType.HAND,
+          arrowPlacementData: undefined as unknown as typeof motion.arrowPlacementData,
+        };
+      }
 
       return {
         ...motion,
-        motionType: isShift ? MotionType.FLOAT : motion.motionType,
-        turns: isShift ? ("fl" as const) : motion.turns,
-        handPath: isShift ? handPath : (motion.handPath ?? null),
-        startOrientation: undefined as unknown as Orientation,
-        endOrientation: undefined as unknown as Orientation,
         propType: PropType.HAND,
       };
     };
@@ -327,6 +361,25 @@ export class PictographPreparer {
     if (CCW_PAIRS.some(([a, b]) => a === s && b === e))
       return HandPath.COUNTER_CLOCKWISE;
     if (DASH_PAIRS.some(([a, b]) => a === s && b === e)) return HandPath.DASH;
+
+    // Skewed / cross-grid pairs (e.g. N→SE, W→NE, cardinal→intercardinal).
+    // Determine CW vs CCW by comparing the shorter arc on the position circle.
+    // Order: N=0, NE=1, E=2, SE=3, S=4, SW=5, W=6, NW=7 (CW around the grid)
+    const POSITION_ORDER: Record<string, number> = {
+      n: 0, ne: 1, e: 2, se: 3, s: 4, sw: 5, w: 6, nw: 7,
+    };
+    const startIdx = POSITION_ORDER[s];
+    const endIdx = POSITION_ORDER[e];
+    if (startIdx !== undefined && endIdx !== undefined) {
+      // CW delta: how many steps CW from start to end
+      const cwDelta = ((endIdx - startIdx) % 8 + 8) % 8;
+      // If CW path is shorter (1-3 steps), it's CW; if longer (5-7), it's CCW;
+      // 4 steps = opposite = DASH (already handled above for same-grid)
+      if (cwDelta > 0 && cwDelta < 4) return HandPath.CLOCKWISE;
+      if (cwDelta > 4) return HandPath.COUNTER_CLOCKWISE;
+      // cwDelta === 4 means opposite (DASH)
+      return HandPath.DASH;
+    }
 
     return null;
   }

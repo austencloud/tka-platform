@@ -15,6 +15,7 @@ import {
   selectDashMap,
   selectFloatMap,
 } from "../../utils/rotation-map-selector";
+import { calculateSkewedFloatRotation } from "../../config/FloatRotationMaps";
 import { checkAndApplyOverride } from "../../utils/rotation-override-checker";
 import { isNoRotation } from "../../utils/RotationDirectionUtils";
 import { calculateHandpathDirection } from "../handpath-direction-calculator";
@@ -201,6 +202,11 @@ export class ArrowRotationCalculator {
      *
      * IMPORTANT: Float rotation is based on HANDPATH DIRECTION, not prop rotation direction!
      * Handpath direction is determined by the motion from start location to end location.
+     *
+     * For adjacent pairs (CW/CCW), uses predefined rotation maps.
+     * For skewed/cross-grid pairs (e.g. N→SE, W→NE), computes the geometric angle
+     * from start to end position since the handpath direction maps only cover
+     * adjacent same-grid pairs.
      */
     const handpathDirection = calculateHandpathDirection(
       motion.startLocation,
@@ -213,7 +219,21 @@ export class ArrowRotationCalculator {
       return rotationMap[location] || 0.0;
     }
 
-    // Fallback for static/dash movements (shouldn't happen for float)
+    // For skewed/cross-grid shifts (start !== end but not in CW/CCW maps),
+    // compute geometric angle from start position toward end position.
+    // This handles cardinal→intercardinal (N→NE), intercardinal→cardinal (NE→S),
+    // and non-adjacent same-grid pairs (N→SE, W→NE, etc.).
+    if (handpathDirection === "dash" && motion.startLocation !== motion.endLocation) {
+      const skewedAngle = calculateSkewedFloatRotation(
+        motion.startLocation,
+        motion.endLocation
+      );
+      if (skewedAngle !== null) {
+        return skewedAngle;
+      }
+    }
+
+    // Fallback for truly static movements (start === end)
     return 0.0;
   }
 

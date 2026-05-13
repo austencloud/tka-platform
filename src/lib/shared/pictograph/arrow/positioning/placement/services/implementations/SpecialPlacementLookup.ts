@@ -212,15 +212,17 @@ export class SpecialPlacementLookup {
     let colorKey = "";
 
     if (arrowColor) {
-      // Use provided arrow color directly
       colorKey = arrowColor;
     } else if (pictographData.motions.blue === motionData) {
       colorKey = "blue";
     } else if (pictographData.motions.red === motionData) {
       colorKey = "red";
     } else {
-      // Fallback: try to determine from motion data
-      colorKey = "blue"; // Default fallback
+      colorKey = "blue";
+    }
+
+    if (pictographData.betaSwapped) {
+      colorKey = colorKey === "blue" ? "red" : "blue";
     }
 
     if (colorKey in turnData) {

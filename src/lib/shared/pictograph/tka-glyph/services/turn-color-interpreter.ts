@@ -32,8 +32,8 @@ type LetterType =
   | "TYPE5"
   | "TYPE6";
 
-const BLUE_HEX: TurnNumberColor = getMotionColor(MotionColor.BLUE, "dark");
-const RED_HEX: TurnNumberColor = getMotionColor(MotionColor.RED, "dark");
+export const BLUE_HEX: TurnNumberColor = getMotionColor(MotionColor.BLUE, "dark");
+export const RED_HEX: TurnNumberColor = getMotionColor(MotionColor.RED, "dark");
 
 function determineLetterType(letter: string): LetterType {
   if (["Φ-", "Ψ-", "Λ-"].includes(letter)) return "TYPE5";
