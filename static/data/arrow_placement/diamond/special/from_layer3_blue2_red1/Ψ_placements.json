@@ -9,6 +9,12 @@
     },
     "(s, 1, 2.5)": {
       "static_to_layer2_rot_angle_override": true
+    },
+    "(1, fl)": {
+      "float_from_layer1": [
+        50,
+        -35
+      ]
     }
   }
 }

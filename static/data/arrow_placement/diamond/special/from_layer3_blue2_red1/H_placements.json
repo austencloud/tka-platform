@@ -1,20 +1,38 @@
 {
   "H": {
     "(0.5, 0)": {
-      "red": [25, -80]
+      "red": [
+        25,
+        -80
+      ]
     },
     "(0, 1.5)": {
-      "blue": [40, -70]
+      "blue": [
+        40,
+        -70
+      ]
     },
     "(0, 2.5)": {
-      "blue": [25, -55]
+      "blue": [
+        25,
+        -55
+      ]
     },
     "(0.5, 1.5)": {
-      "red": [-20, 105],
-      "blue": [-110, 20]
+      "red": [
+        -20,
+        105
+      ],
+      "blue": [
+        -110,
+        20
+      ]
     },
     "(1, 0)": {
-      "red": [-10, 0]
+      "red": [
+        -10,
+        0
+      ]
     },
     "(1, 0.5)": {
       "swap_beta_e_nonradial_blue_anti_ne_red_anti_ne": true,
@@ -23,7 +41,10 @@
       "swap_beta_s_nonradial_blue_anti_sw_red_anti_sw": true
     },
     "(1, 1)": {
-      "red": [95, -110]
+      "red": [
+        95,
+        -110
+      ]
     },
     "(1, 1.5)": {
       "swap_beta_w_nonradial_blue_anti_nw_red_anti_nw": true,
@@ -32,7 +53,10 @@
       "swap_beta_n_nonradial_blue_anti_nw_red_anti_nw": true
     },
     "(1, 2)": {
-      "red": [105, -100]
+      "red": [
+        105,
+        -100
+      ]
     },
     "(1, 2.5)": {
       "swap_beta_e_nonradial_blue_anti_ne_red_anti_ne": true,
@@ -41,7 +65,10 @@
       "swap_beta_s_nonradial_blue_anti_sw_red_anti_sw": true
     },
     "(1, 3)": {
-      "red": [105, -90]
+      "red": [
+        105,
+        -90
+      ]
     },
     "(1.5, 0)": {
       "swap_beta_e_radial_blue_anti_ne_red_anti_ne": true,
@@ -54,8 +81,14 @@
       "swap_beta_s_radial_blue_anti_sw_red_anti_sw": true
     },
     "(1.5, 0.5)": {
-      "red": [-110, 110],
-      "blue": [-90, 100]
+      "red": [
+        -110,
+        110
+      ],
+      "blue": [
+        -90,
+        100
+      ]
     },
     "(1.5, 1)": {
       "swap_beta_e_radial_blue_anti_ne_red_anti_ne": true,
@@ -68,8 +101,14 @@
       "swap_beta_e_radial_blue_anti_se_red_anti_se": true
     },
     "(1.5, 1.5)": {
-      "blue": [-125, 105],
-      "red": [15, 40]
+      "blue": [
+        -125,
+        105
+      ],
+      "red": [
+        15,
+        40
+      ]
     },
     "(1.5, 2)": {
       "swap_beta_e_radial_blue_anti_ne_red_anti_ne": true,
@@ -82,8 +121,14 @@
       "swap_beta_s_radial_blue_anti_sw_red_anti_sw": true
     },
     "(1.5, 2.5)": {
-      "blue": [-75, 130],
-      "red": [-65, 50]
+      "blue": [
+        -75,
+        130
+      ],
+      "red": [
+        -65,
+        50
+      ]
     },
     "(1.5, 3)": {
       "swap_beta_e_radial_blue_anti_ne_red_anti_ne": true,
@@ -96,10 +141,16 @@
       "swap_beta_s_radial_blue_anti_sw_red_anti_sw": true
     },
     "(2, 3)": {
-      "red": [100, -105]
+      "red": [
+        100,
+        -105
+      ]
     },
     "(2, 0)": {
-      "red": [-10, -5]
+      "red": [
+        -10,
+        -5
+      ]
     },
     "(2, 0.5)": {
       "swap_beta_n_nonradial_blue_anti_ne_red_anti_ne": true,
@@ -108,7 +159,10 @@
       "swap_beta_e_nonradial_blue_anti_ne_red_anti_ne": true
     },
     "(2, 1)": {
-      "red": [100, -125]
+      "red": [
+        100,
+        -125
+      ]
     },
     "(2, 1.5)": {
       "swap_beta_w_nonradial_blue_anti_nw_red_anti_nw": true,
@@ -117,7 +171,10 @@
       "swap_beta_n_nonradial_blue_anti_nw_red_anti_nw": true
     },
     "(2, 2)": {
-      "red": [90, -115]
+      "red": [
+        90,
+        -115
+      ]
     },
     "(2, 2.5)": {
       "swap_beta_e_nonradial_blue_anti_ne_red_anti_ne": true,
@@ -126,21 +183,42 @@
       "swap_beta_s_nonradial_blue_anti_sw_red_anti_sw": true
     },
     "(2.5, 0)": {
-      "red": [25, -80]
+      "red": [
+        25,
+        -80
+      ]
     },
     "(2.5, 0.5)": {
-      "blue": [-90, 65]
+      "blue": [
+        -90,
+        65
+      ]
     },
     "(2.5, 1.5)": {
-      "blue": [-55, 35],
-      "red": [-30, 90]
+      "blue": [
+        -55,
+        35
+      ],
+      "red": [
+        -30,
+        90
+      ]
     },
     "(2.5, 2.5)": {
-      "blue": [-60, 70],
-      "red": [-65, 55]
+      "blue": [
+        -60,
+        70
+      ],
+      "red": [
+        -65,
+        55
+      ]
     },
     "(3, 0)": {
-      "red": [-10, -5]
+      "red": [
+        -10,
+        -5
+      ]
     },
     "(3, 0.5)": {
       "swap_beta_e_nonradial_blue_anti_ne_red_anti_ne": true,
@@ -149,7 +227,10 @@
       "swap_beta_s_nonradial_blue_anti_sw_red_anti_sw": true
     },
     "(3, 1)": {
-      "red": [115, -110]
+      "red": [
+        115,
+        -110
+      ]
     },
     "(3, 1.5)": {
       "swap_beta_w_nonradial_blue_anti_nw_red_anti_nw": true,
@@ -158,7 +239,10 @@
       "swap_beta_n_nonradial_blue_anti_nw_red_anti_nw": true
     },
     "(3, 2)": {
-      "red": [100, -115]
+      "red": [
+        100,
+        -115
+      ]
     },
     "(3, 2.5)": {
       "swap_beta_e_nonradial_blue_anti_ne_red_anti_ne": true,
@@ -167,19 +251,102 @@
       "swap_beta_s_nonradial_blue_anti_sw_red_anti_sw": true
     },
     "(3, 3)": {
-      "red": [85, -115]
+      "red": [
+        85,
+        -115
+      ]
     },
     "(fl, 0)": {
-      "float_from_layer2": [70, -120]
+      "float_from_layer2": [
+        70,
+        -120
+      ],
+      "float_from_layer1": [
+        130,
+        -135
+      ]
     },
     "(fl, fl)": {
-      "red": [95, -95]
+      "red": [
+        95,
+        -95
+      ]
     },
     "(1, fl)": {
-      "float_from_layer1": [110, -90]
+      "float_from_layer1": [
+        110,
+        -90
+      ],
+      "float_from_layer2": [
+        110,
+        -90
+      ]
     },
     "(3, fl)": {
-      "anti_from_layer2": [85, -105]
+      "anti_from_layer2": [
+        85,
+        -105
+      ],
+      "anti": [
+        85,
+        -100
+      ]
+    },
+    "(fl, 1)": {
+      "float_from_layer1": [
+        95,
+        -110
+      ],
+      "anti": [
+        45,
+        -55
+      ]
+    },
+    "(0, fl)": {
+      "float_from_layer1": [
+        130,
+        -135
+      ]
+    },
+    "(fl, 1.5)": {
+      "float_from_layer1": [
+        50,
+        -70
+      ]
+    },
+    "(fl, 3)": {
+      "float_from_layer1": [
+        -30,
+        -30
+      ],
+      "anti": [
+        85,
+        -100
+      ]
+    },
+    "(2, fl)": {
+      "anti": [
+        90,
+        -100
+      ]
+    },
+    "(fl, 2)": {
+      "anti": [
+        90,
+        -100
+      ]
+    },
+    "(1.5, fl)": {
+      "float_from_layer1": [
+        50,
+        -70
+      ]
+    },
+    "(fl, 0.5)": {
+      "float_from_layer2": [
+        50,
+        -50
+      ]
     }
   }
 }

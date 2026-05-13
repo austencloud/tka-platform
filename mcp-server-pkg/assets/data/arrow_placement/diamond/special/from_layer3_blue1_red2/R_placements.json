@@ -1,20 +1,56 @@
 {
   "R": {
     "(1, 0.5)": {
-      "pro_from_layer1": [-5, 0],
-      "anti_from_layer2": [-90, 75]
+      "pro_from_layer1": [
+        -5,
+        0
+      ],
+      "anti_from_layer2": [
+        -90,
+        75
+      ]
     },
     "(0.5, 0)": {
-      "anti_from_layer1": [80, -65]
+      "anti_from_layer1": [
+        80,
+        -65
+      ]
     },
     "(1, fl)": {
-      "float_from_layer2": [30, -50]
+      "float_from_layer2": [
+        30,
+        -50
+      ]
     },
     "(0, fl)": {
-      "pro_from_layer1": [80, -65]
+      "pro_from_layer1": [
+        80,
+        -65
+      ]
     },
     "(0, 2)": {
-      "anti_from_layer2": [5, -55]
+      "anti_from_layer2": [
+        5,
+        -55
+      ]
+    },
+    "(fl, 0)": {
+      "pro_from_layer1": [
+        80,
+        -55
+      ]
+    },
+    "(fl, 2)": {
+      "float_from_layer1": [
+        115,
+        -90
+      ]
+    },
+    "(0.5, fl)": {
+      "float_from_layer1": [
+        70,
+        -50
+      ]
     }
   }
 }

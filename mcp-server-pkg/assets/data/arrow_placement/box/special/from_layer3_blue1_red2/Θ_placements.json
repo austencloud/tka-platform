@@ -1,10 +1,16 @@
 {
   "Θ": {
-    "null": {
-      "float_from_layer1": {}
+    "(s, fl, 0.5)": {
+      "static": [
+        -140,
+        0
+      ]
     },
-    "null": {
-      "float_from_layer1": {}
+    "(o, fl, 0.5)": {
+      "static": [
+        -140,
+        0
+      ]
     }
   }
 }

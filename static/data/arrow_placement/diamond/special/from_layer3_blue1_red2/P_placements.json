@@ -1,7 +1,72 @@
 {
   "P": {
     "(fl, 0)": {
-      "float_from_layer1": {}
+      "pro_from_layer1": [
+        80,
+        -65
+      ]
+    },
+    "(fl, 1)": {
+      "float_from_layer1": [
+        65,
+        -50
+      ]
+    },
+    "(1, fl)": {
+      "float_from_layer1": [
+        -50,
+        65
+      ]
+    },
+    "(0, fl)": {
+      "pro_from_layer1": [
+        80,
+        -65
+      ]
+    },
+    "(fl, fl)": {
+      "red": [
+        70,
+        -75
+      ]
+    },
+    "(fl, 3)": {
+      "float_from_layer1": [
+        110,
+        -70
+      ],
+      "pro_from_layer1": [
+        35,
+        5
+      ]
+    },
+    "(3, fl)": {
+      "float_from_layer1": [
+        110,
+        -70
+      ],
+      "pro_from_layer1": [
+        35,
+        5
+      ]
+    },
+    "(fl, 2.5)": {
+      "float_from_layer1": [
+        110,
+        -70
+      ]
+    },
+    "(2.5, fl)": {
+      "float_from_layer1": [
+        110,
+        -70
+      ]
+    },
+    "(0.5, fl)": {
+      "float_from_layer1": [
+        70,
+        -50
+      ]
     }
   }
 }
