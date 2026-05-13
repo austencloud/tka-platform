@@ -5,7 +5,7 @@
  * Loaded via requestIdleCallback after the critical path completes.
  *
  * Moved out of index.ts to cut ~3s off composition-root import time:
- * - VideoExportOrchestrator pulls mp4-muxer + WebCodecs at import
+ * - VideoExportOrchestrator pulls mediabunny + WebCodecs at import
  * - EndlessSpinnerOrchestrator pulls @tka/sequence-engine generation at import
  * - PublicIndexSyncer pulls content-moderator profanity wordlist at import
  * - FeedbackTesterWorkflow pulls Firestore + notification services

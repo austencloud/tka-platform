@@ -3,7 +3,7 @@
  * Promo Video Exporter Contract
  *
  * Handles rendering the 3D scene animation to video format.
- * Uses h264-mp4-encoder/mp4-muxer for high-quality MP4 output.
+ * Uses h264-mp4-encoder/mediabunny for high-quality MP4 output.
  */
 
 /**

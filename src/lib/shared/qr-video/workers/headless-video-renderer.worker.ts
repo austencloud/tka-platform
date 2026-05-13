@@ -9,10 +9,10 @@
  * Animation orchestration happens on the main thread (where SvelteKit
  * imports are available). This worker only does: load SVG assets →
  * render each frame on OffscreenCanvas → encode via WebCodecs +
- * mp4-muxer → return MP4.
+ * mediabunny → return MP4.
  */
 
-import { Muxer, ArrayBufferTarget } from "mp4-muxer";
+import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
 import { renderScene } from "../services/worker-scene-renderer";
 import { loadAssets } from "../services/WorkerAssetLoader";
 import type {
@@ -87,7 +87,8 @@ async function handleRender(msg: RenderRequest): Promise<void> {
   const keyframeInterval = fps * 2;
   const frameDurationMicros = Math.round(1_000_000 / fps);
 
-  let muxer: Muxer<ArrayBufferTarget> | null = null;
+  let mbOutput: Output | null = null;
+  let videoSource: EncodedVideoPacketSource | null = null;
   let encoder: VideoEncoder | null = null;
   let encoderErrored = false;
 
@@ -108,15 +109,20 @@ async function handleRender(msg: RenderRequest): Promise<void> {
   let wasmEncoder: WasmEncoder | null = null;
 
   if (hasWebCodecs) {
-    muxer = new Muxer({
-      target: new ArrayBufferTarget(),
-      video: { codec: "avc", width: encWidth, height: encHeight },
-      fastStart: "in-memory",
+    videoSource = new EncodedVideoPacketSource("avc");
+    mbOutput = new Output({
+      format: new Mp4OutputFormat({ fastStart: "in-memory" }),
+      target: new BufferTarget(),
     });
+    mbOutput.addVideoTrack(videoSource, { frameRate: fps });
+    await mbOutput.start();
 
-    const localMuxer = muxer;
+    const localVideoSource = videoSource;
     encoder = new VideoEncoder({
-      output: (chunk, meta) => localMuxer.addVideoChunk(chunk, meta),
+      output: async (chunk, meta) => {
+        const packet = EncodedPacket.fromEncodedChunk(chunk);
+        await localVideoSource.add(packet, meta);
+      },
       error: (e) => {
         encoderErrored = true;
         post({ type: "error", message: `VideoEncoder error: ${e.message}` });
@@ -208,11 +214,12 @@ async function handleRender(msg: RenderRequest): Promise<void> {
 
   let mp4Buffer: ArrayBuffer;
 
-  if (hasWebCodecs && encoder && muxer && !encoderErrored) {
+  if (hasWebCodecs && encoder && mbOutput && !encoderErrored) {
     await encoder.flush();
     encoder.close();
-    muxer.finalize();
-    mp4Buffer = muxer.target.buffer;
+    videoSource?.close();
+    await mbOutput!.finalize();
+    mp4Buffer = (mbOutput!.target as BufferTarget).buffer!;
   } else if (wasmEncoder) {
     wasmEncoder.finalize();
     const rawBuffer = wasmEncoder.FS.readFile(wasmEncoder.outputFilename);

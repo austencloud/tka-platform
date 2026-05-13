@@ -8,7 +8,7 @@
  *
  * Two encoding paths:
  *   1. WebCodecs (Chrome, Edge, Safari 16.4+) -- hardware-accelerated H.264
- *      via VideoEncoder + mp4-muxer.
+ *      via VideoEncoder + mediabunny.
  *   2. WASM fallback (Firefox, older browsers) -- h264-mp4-encoder provides
  *      a pure-WASM H.264 encoder that produces MP4 directly.
  *
@@ -17,7 +17,7 @@
  * the main thread (ready, progress, complete, error).
  */
 
-import { Muxer, ArrayBufferTarget } from "mp4-muxer";
+import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
 import type { CapturedFrame } from "$lib/shared/video-export/domain/CapturedFrame";
 
 // ---------------------------------------------------------------------------
@@ -131,7 +131,8 @@ export interface ExportConfig {
 // ---------------------------------------------------------------------------
 
 let encoder: VideoEncoder | null = null;
-let muxer: Muxer<ArrayBufferTarget> | null = null;
+let output: Output | null = null;
+let videoSource: EncodedVideoPacketSource | null = null;
 
 // ---------------------------------------------------------------------------
 // Worker state -- WASM fallback path
@@ -252,7 +253,8 @@ function cleanup(): void {
     }
     encoder = null;
   }
-  muxer = null;
+  output = null;
+  videoSource = null;
 
   // WASM cleanup
   if (wasmEncoder) {
@@ -277,18 +279,16 @@ function cleanup(): void {
 // ---------------------------------------------------------------------------
 
 async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
-  // Create MP4 muxer with in-memory fast-start for instant playback
-  muxer = new Muxer({
-    target: new ArrayBufferTarget(),
-    video: {
-      codec: "avc",
-      width: encoderWidth,
-      height: encoderHeight,
-    },
-    fastStart: "in-memory",
+  // Create mediabunny MP4 output with in-memory fast-start
+  videoSource = new EncodedVideoPacketSource("avc");
+  output = new Output({
+    format: new Mp4OutputFormat({ fastStart: "in-memory" }),
+    target: new BufferTarget(),
   });
+  output.addVideoTrack(videoSource, { frameRate: config.fps });
+  await output.start();
 
-  const localMuxer = muxer;
+  const localVideoSource = videoSource;
 
   // Create WebCodecs VideoEncoder.
   //
@@ -305,8 +305,9 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
   // error when the internal queue overflows - seeing "queueSize=N" in the
   // error tells us exactly which failure mode we hit.
   encoder = new VideoEncoder({
-    output: (chunk, meta) => {
-      localMuxer.addVideoChunk(chunk, meta);
+    output: async (chunk, meta) => {
+      const packet = EncodedPacket.fromEncodedChunk(chunk);
+      await localVideoSource.add(packet, meta);
     },
     error: (e) => {
       encoderErrored = true;
@@ -465,7 +466,7 @@ function handleFrameCapturedWasm(msg: FrameMessageCaptured): void {
 }
 
 async function handleFinishWebCodecs(): Promise<void> {
-  if (!encoder || !muxer) {
+  if (!encoder || !output) {
     post({ type: "error", error: "Cannot finish: encoder not active" });
     return;
   }
@@ -496,10 +497,11 @@ async function handleFinishWebCodecs(): Promise<void> {
   await encoder.flush();
 
   // Finalize the MP4 container (writes moov atom)
-  muxer.finalize();
+  videoSource?.close();
+  await output.finalize();
 
   // Extract the completed buffer
-  const buffer = muxer.target.buffer;
+  const buffer = (output.target as BufferTarget).buffer!;
 
   // Clean up encoder/muxer state before posting
   cleanup();

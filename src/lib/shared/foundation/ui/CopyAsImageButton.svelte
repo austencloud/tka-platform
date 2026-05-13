@@ -4,11 +4,11 @@
   Captures an HTML element's FULL scrollable content as a PNG image
   and copies it to clipboard. Uses an off-screen clone technique
   so the capture is completely non-obtrusive (user sees nothing).
-  Uses dom-to-image-more for the actual rendering.
+  Uses modern-screenshot for the actual rendering.
 -->
 <script lang="ts">
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import domtoimage from "dom-to-image-more";
+  import { domToBlob } from "modern-screenshot";
 
   interface Props {
     /** The HTML element to capture */
@@ -121,8 +121,8 @@
 
     try {
       // Capture the fully expanded clone
-      const blob = await domtoimage.toBlob(clone, {
-        bgcolor: "#12121c",
+      const blob = await domToBlob(clone, {
+        backgroundColor: "#12121c",
         quality: 1.0,
       });
       return blob;

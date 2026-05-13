@@ -9,7 +9,7 @@
  * specify exact timestamps for each frame, just like gif.js does for GIFs.
  */
 
-import { Muxer, ArrayBufferTarget } from "mp4-muxer";
+import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
 
 export interface WebCodecsEncoderOptions {
   width: number;
@@ -20,7 +20,8 @@ export interface WebCodecsEncoderOptions {
 
 export class WebCodecsVideoEncoder {
   private encoder: VideoEncoder | null = null;
-  private muxer: Muxer<ArrayBufferTarget> | null = null;
+  private output: Output | null = null;
+  private videoSource: EncodedVideoPacketSource | null = null;
   private frameIndex = 0;
   private frameDurationUs: number;
   private width: number;
@@ -53,21 +54,22 @@ export class WebCodecsVideoEncoder {
       throw new Error("WebCodecs API is not supported in this browser");
     }
 
-    // Create muxer for MP4 container with even dimensions
-    this.muxer = new Muxer({
-      target: new ArrayBufferTarget(),
-      video: {
-        codec: "avc",
-        width: this.encoderWidth,
-        height: this.encoderHeight,
-      },
-      fastStart: "in-memory",
+    // Create mediabunny output for MP4 container
+    this.videoSource = new EncodedVideoPacketSource("avc");
+    this.output = new Output({
+      format: new Mp4OutputFormat({ fastStart: "in-memory" }),
+      target: new BufferTarget(),
     });
+    this.output.addVideoTrack(this.videoSource, {
+      frameRate: this.options.fps,
+    });
+    await this.output.start();
 
     // Create encoder
     this.encoder = new VideoEncoder({
-      output: (chunk, meta) => {
-        this.muxer?.addVideoChunk(chunk, meta);
+      output: async (chunk, meta) => {
+        const packet = EncodedPacket.fromEncodedChunk(chunk);
+        await this.videoSource?.add(packet, meta);
       },
       error: (e) => {
         console.error("VideoEncoder error:", e);
@@ -156,7 +158,7 @@ export class WebCodecsVideoEncoder {
   }
 
   async finish(): Promise<Blob> {
-    if (!this.encoder || !this.muxer || this.isFinished) {
+    if (!this.encoder || !this.output || this.isFinished) {
       throw new Error("Encoder not initialized or already finished");
     }
 
@@ -165,16 +167,18 @@ export class WebCodecsVideoEncoder {
     // Flush remaining frames
     await this.encoder.flush();
 
-    // Finalize muxer
-    this.muxer.finalize();
+    // Finalize output
+    this.videoSource?.close();
+    await this.output.finalize();
 
     // Get the buffer
-    const buffer = this.muxer.target.buffer;
+    const buffer = (this.output.target as BufferTarget).buffer!;
 
     // Clean up
     this.encoder.close();
     this.encoder = null;
-    this.muxer = null;
+    this.output = null;
+    this.videoSource = null;
     this.resizeCanvas = null;
     this.resizeCtx = null;
 
@@ -190,7 +194,8 @@ export class WebCodecsVideoEncoder {
       }
     }
     this.encoder = null;
-    this.muxer = null;
+    this.output = null;
+    this.videoSource = null;
     this.resizeCanvas = null;
     this.resizeCtx = null;
     this.isFinished = true;

@@ -4,7 +4,7 @@
  * Coordinates frame capture, encoding, and final delivery for MP4/WebM exports.
  *
  * Supports two encoding paths:
- *   1. Background encoder (preferred) - uses a Web Worker with WebCodecs + mp4-muxer
+ *   1. Background encoder (preferred) - uses a Web Worker with WebCodecs + mediabunny
  *      for off-main-thread encoding. Captures ImageData per frame, transfers zero-copy
  *      to the worker, and receives the finished MP4 blob.
  *   2. Inline encoder (fallback) - uses the legacy VideoExporter on the main thread.

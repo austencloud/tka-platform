@@ -2,10 +2,10 @@
  * Promo Video Exporter Implementation
  *
  * Handles rendering the 3D scene animation to video format.
- * Uses WebCodecs VideoEncoder and mp4-muxer for high-quality MP4 output.
+ * Uses WebCodecs VideoEncoder and mediabunny for high-quality MP4 output.
  */
 
-import { Muxer, ArrayBufferTarget } from "mp4-muxer";
+import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
 import type * as THREE from "three";
 import type {
   ExportProgressCallback,
@@ -99,24 +99,22 @@ export class PromoVideoExporter {
         config.bitrate ||
         this.calculateBitrate(config.resolution, config.fps);
 
-      // Set up MP4 muxer
-      const muxer = new Muxer({
-        target: new ArrayBufferTarget(),
-        video: {
-          codec: "avc",
-          width,
-          height,
-        },
-        fastStart: "in-memory",
+      // Set up mediabunny MP4 output
+      const videoSource = new EncodedVideoPacketSource("avc");
+      const output = new Output({
+        format: new Mp4OutputFormat({ fastStart: "in-memory" }),
+        target: new BufferTarget(),
       });
+      output.addVideoTrack(videoSource, { frameRate: config.fps });
+      await output.start();
 
       // Set up video encoder
-      const encodedChunks: EncodedVideoChunk[] = []; // eslint-disable-line @typescript-eslint/no-unused-vars
       let encodedFrameCount = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
 
       const encoder = new VideoEncoder({
-        output: (chunk, meta) => {
-          muxer.addVideoChunk(chunk, meta);
+        output: async (chunk, meta) => {
+          const packet = EncodedPacket.fromEncodedChunk(chunk);
+          await videoSource.add(packet, meta);
           encodedFrameCount++;
         },
         error: (error) => {
@@ -186,10 +184,10 @@ export class PromoVideoExporter {
 
       onProgress?.(95, "finalizing");
 
-      // Finalize muxer
-      muxer.finalize();
-      const target = muxer.target as ArrayBufferTarget;
-      const videoBuffer = target.buffer;
+      // Finalize output
+      videoSource.close();
+      await output.finalize();
+      const videoBuffer = (output.target as BufferTarget).buffer!;
 
       // Create blob
       const blob = new Blob([videoBuffer], { type: "video/mp4" });

@@ -43,7 +43,7 @@ if (typeof window !== 'undefined' && isBootProfileVerbose()) {
 }
 
 // ── Deferred registrations: video export, generation engine, library sync, etc. ──
-// These pull heavy deps (mp4-muxer, @tka/sequence-engine, content-moderator)
+// These pull heavy deps (mediabunny, @tka/sequence-engine, content-moderator)
 // that aren't needed for first render. Load after browser is idle.
 if (typeof window !== 'undefined') {
   const load = () => import("./deferred-registrations");
