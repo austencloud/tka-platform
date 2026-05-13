@@ -687,22 +687,8 @@ export default defineConfig(({ mode }) => ({
         // Strategic chunking for your actual dependencies
         manualChunks: (id) => {
           if (id.includes("node_modules")) {
-            // Heavy 3D libraries - Three.js ecosystem all in one chunk to avoid circular deps.
-            // globe.gl depends on three; if it lands in `vendor` alongside svelte while
-            // three lands here, the vendor ↔ vendor-three cycle (threlte → svelte + globe.gl → three)
-            // triggers a TDZ error at runtime ("Cannot access 'WY' before initialization").
-            if (
-              id.includes("three") ||
-              id.includes("@threlte") ||
-              id.includes("troika") ||
-              id.includes("postprocessing") ||
-              id.includes("three-perf") ||
-              id.includes("@dimforge/rapier") ||
-              id.includes("globe.gl") ||
-              id.includes("camera-controls") ||
-              id.includes("@austencloud/scene-3d")
-            )
-              return "vendor-three";
+            // Three.js + Threlte bridge svelte ↔ three, creating circular chunks
+            // if split from vendor. Keep them together in vendor to avoid TDZ errors.
             if (id.includes("fabric")) return "vendor-fabric";
             if (id.includes("pdfjs-dist")) return "vendor-pdf";
             // CSP-sensitive libs (use `new Function` — no unsafe-eval allowed).
