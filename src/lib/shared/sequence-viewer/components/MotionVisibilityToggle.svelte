@@ -3,10 +3,8 @@
 
   Per-viewer motion visibility control.
 
-  - Wide viewports (≥768px): two inline chips (Left / Right) for one-tap
-    toggles with direct state readability.
-  - Narrow viewports: icon button + popover, so the header doesn't blow
-    past its horizontal budget on phones.
+  - Wide viewports (>=768px): inline Left/Right chips via MotionColorChips.
+  - Narrow viewports: icon button + popover with the same chips.
 
   Reads/writes SequenceViewerVisibilityState via context.
 -->
@@ -14,6 +12,7 @@
   import { scale } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";
   import { getViewerVisibilityContext } from "../context/viewer-visibility-context";
+  import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
 
   const visibility = getViewerVisibilityContext();
   let open = $state(false);
@@ -39,8 +38,6 @@
     open = false;
   }
 
-  // Backdrop absorbs the dismiss click so it can't reach the choreo
-  // card, canvas, or any other control beneath.
   function onBackdropPointerDown(e: PointerEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -98,60 +95,26 @@
         in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
         out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
       >
-        <button
-          type="button"
-          class="chip blue"
-          class:active={visibility.blueMotion}
-          onclick={() => visibility.toggleBlue()}
-          aria-pressed={visibility.blueMotion}
-        >
-          Left
-        </button>
-        <button
-          type="button"
-          class="chip red"
-          class:active={visibility.redMotion}
-          onclick={() => visibility.toggleRed()}
-          aria-pressed={visibility.redMotion}
-        >
-          Right
-        </button>
+        <MotionColorChips
+          showBlue={visibility.blueMotion}
+          showRed={visibility.redMotion}
+          onToggleBlue={() => visibility.toggleBlue()}
+          onToggleRed={() => visibility.toggleRed()}
+        />
       </div>
     {/if}
   {:else}
-    <div class="motion-vis-inline" role="group" aria-label="Motion visibility">
-      <button
-        type="button"
-        class="chip blue"
-        class:active={visibility.blueMotion}
-        onclick={() => visibility.toggleBlue()}
-        aria-pressed={visibility.blueMotion}
-        aria-label={visibility.blueMotion ? "Hide left motion" : "Show left motion"}
-      >
-        Left
-      </button>
-      <button
-        type="button"
-        class="chip red"
-        class:active={visibility.redMotion}
-        onclick={() => visibility.toggleRed()}
-        aria-pressed={visibility.redMotion}
-        aria-label={visibility.redMotion ? "Hide right motion" : "Show right motion"}
-      >
-        Right
-      </button>
-    </div>
+    <MotionColorChips
+      showBlue={visibility.blueMotion}
+      showRed={visibility.redMotion}
+      onToggleBlue={() => visibility.toggleBlue()}
+      onToggleRed={() => visibility.toggleRed()}
+    />
   {/if}
 </div>
 
 <style>
   .motion-vis-root { position: relative; }
-
-  .motion-vis-inline {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
 
   .motion-vis-btn {
     width: var(--min-touch-target, 44px);
@@ -201,38 +164,14 @@
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-    display: flex;
-    gap: 6px;
     z-index: 20;
   }
 
-  .chip {
-    padding: 6px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: transparent;
-    color: rgba(255, 255, 255, 0.62);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
-    /* Accessibility: respect the project's minimum touch target so a
-       finger or assistive pointer can reliably hit the chip. */
-    min-width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-  }
   /* Popover chips stretch to fill the popover width evenly. */
-  .motion-vis-popover .chip { flex: 1; }
-
-  .chip:hover { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.95); }
-  .chip.blue.active {
-    background: color-mix(in srgb, var(--prop-blue, #2196f3) 22%, transparent);
-    border-color: var(--prop-blue, #2196f3);
-    color: #fff;
+  .motion-vis-popover :global(.motion-color-chips) {
+    gap: 6px;
   }
-  .chip.red.active {
-    background: color-mix(in srgb, var(--prop-red, #f44336) 22%, transparent);
-    border-color: var(--prop-red, #f44336);
-    color: #fff;
+  .motion-vis-popover :global(.chip) {
+    flex: 1;
   }
 </style>

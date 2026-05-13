@@ -31,6 +31,8 @@ export interface OpenSequenceViewerOptions {
 	variations?: SequenceData[];
 	/** Controls how props are resolved: "notation" uses viewer settings, "creator-expression" uses creator's intent. */
 	viewingContext?: ViewingContext;
+	/** When true, renders hand path visualization (HAND props, float arrows, no TKA). */
+	handPathMode?: boolean;
 }
 
 /**
@@ -85,5 +87,6 @@ export function openSequenceViewer(
 		initialStep: options.initialStep,
 		variations: options.variations,
 		viewingContext: options.viewingContext,
+		handPathMode: options.handPathMode,
 	});
 }

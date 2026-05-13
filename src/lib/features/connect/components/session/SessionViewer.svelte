@@ -262,7 +262,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="session-viewer-overlay" transition:fade={{ duration: 200 }}>
 	<div class="session-viewer" transition:fly={{ y: 50, duration: 300 }}>

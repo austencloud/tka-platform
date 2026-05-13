@@ -588,7 +588,10 @@ const packageJson = JSON.parse(
   fs.readFileSync(path.resolve(dirname, "package.json"), "utf-8")
 );
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  esbuild: {
+    pure: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
+  },
   define: {
     __DEFINES__: JSON.stringify({}),
     __APP_VERSION__: JSON.stringify(packageJson.version),
@@ -950,4 +953,4 @@ export default defineConfig({
     strictPort: true,
     host: "0.0.0.0",
   },
-});
+}));

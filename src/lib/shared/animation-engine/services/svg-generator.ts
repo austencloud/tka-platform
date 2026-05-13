@@ -40,10 +40,10 @@ function getCurrentThemeMode(): ThemeMode {
  * @param gridMode - Type of grid to generate (GridMode.DIAMOND or GridMode.BOX)
  * @param useStrictPoints - Whether to enable strict mode (for animation viewer)
  */
-export function generateGridSvg(
+export async function generateGridSvg(
   gridMode: GridMode = GridMode.DIAMOND,
   useStrictPoints: boolean = true
-): string {
+): Promise<string> {
   // For animation viewer, always use strict mode
   // Load from actual grid SVG files to get the complete grid with all point layers
   let gridFileName: string;
@@ -53,10 +53,6 @@ export function generateGridSvg(
     default: gridFileName = "8point_grid.svg"; break;
   }
 
-  // Note: This is a synchronous method but ideally should be async
-  // For now, we'll fetch synchronously using XMLHttpRequest
-  // In production, consider making this async
-
   try {
     const cacheKey = `/images/grid/${gridFileName}`;
     let svgContent: string;
@@ -65,15 +61,13 @@ export function generateGridSvg(
     if (svgCache.has(cacheKey)) {
       svgContent = svgCache.get(cacheKey)!;
     } else {
-      const xhr = new XMLHttpRequest();
-      xhr.open("GET", cacheKey, false); // Synchronous request
-      xhr.send();
+      const response = await fetch(cacheKey);
 
-      if (xhr.status !== 200) {
-        console.error(`Failed to load grid SVG: ${xhr.status}`);
+      if (!response.ok) {
+        console.error(`Failed to load grid SVG: ${response.status}`);
         return getFallbackGridSvg(gridMode);
       }
-      svgContent = xhr.responseText;
+      svgContent = await response.text();
       svgCache.set(cacheKey, svgContent);
     }
 

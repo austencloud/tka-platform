@@ -8,33 +8,31 @@
    * Domain: Create module - Session management
    */
 
-  import { createEventDispatcher } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   interface Props {
     show: boolean;
     title?: string;
     message?: string;
+    onSave?: () => void;
+    onCancel?: () => void;
   }
 
   let {
     show = $bindable(false),
     title = "Save Sequence First?",
     message = "This sequence needs to be saved to your library before you can proceed. This allows you to view recordings and shared content later.",
+    onSave,
+    onCancel,
   }: Props = $props();
 
-  const dispatch = createEventDispatcher<{
-    save: void;
-    cancel: void;
-  }>();
-
   function handleSave() {
-    dispatch("save");
+    onSave?.();
     show = false;
   }
 
   function handleCancel() {
-    dispatch("cancel");
+    onCancel?.();
     show = false;
   }
 </script>

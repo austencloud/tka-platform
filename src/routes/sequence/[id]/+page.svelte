@@ -14,6 +14,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { parsePropsFromURL, parseSequenceRouteId, decodeSequenceWithCompression, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
+  import { decodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
@@ -88,6 +89,17 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   // URL prop params (from QR codes with prop info)
   const urlBlueProp = $derived($page.url.searchParams.get("bp"));
   const urlRedProp = $derived($page.url.searchParams.get("rp"));
+
+  // URL view mode param (from QR codes with browse view mode)
+  const urlViewModeParam = $derived($page.url.searchParams.get("vm"));
+  const decodedBrowseViewMode = $derived(urlViewModeParam ? decodeViewMode(urlViewModeParam) : null);
+  const urlHandPathMode = $derived(decodedBrowseViewMode?.subject === "hands");
+  const urlInitialBlueVisible = $derived(
+    decodedBrowseViewMode?.granularity === "solo" ? decodedBrowseViewMode.color === "blue" : true
+  );
+  const urlInitialRedVisible = $derived(
+    decodedBrowseViewMode?.granularity === "solo" ? decodedBrowseViewMode.color === "red" : true
+  );
 
   // Guest preview mode - forces unauthenticated view for debugging shared link UX
   const forceGuest = $derived($page.url.searchParams.get("guest") === "1");
@@ -503,6 +515,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     initialStep={handoffData?.playbackState?.currentStep || 0}
     initialViewMode={urlViewMode || undefined}
     initialRenderMode={urlRenderMode || undefined}
+    handPathMode={urlHandPathMode}
+    initialBlueVisible={urlInitialBlueVisible}
+    initialRedVisible={urlInitialRedVisible}
     onBack={handleBack}
     onUrlParamChange={updateUrlParam}
     blockClicks={swipeDismiss.state.blockClicks}

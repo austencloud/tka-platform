@@ -36,6 +36,7 @@
 		initialMediaType = "image" as MediaType,
 		controlsLevel = "standard" as ControlsLevel,
 		showVisibilitySettings = true,
+		handPathMode = false,
 		onCanvasReady,
 		onMediaTypeChange,
 	}: {
@@ -44,6 +45,8 @@
 		controlsLevel?: ControlsLevel;
 		/** Show visibility chips and dark mode toggle. False = use global settings (browse mode). */
 		showVisibilitySettings?: boolean;
+		/** Render as hand path visualization (HAND props, float arrows, no TKA). */
+		handPathMode?: boolean;
 		onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 		onMediaTypeChange?: (type: MediaType) => void;
 	} = $props();
@@ -346,6 +349,7 @@
 							{showNotes}
 							{showBirthday}
 							{showLoopGlyph}
+							{handPathMode}
 							{darkMode}
 							{userName}
 							{bluePropType}

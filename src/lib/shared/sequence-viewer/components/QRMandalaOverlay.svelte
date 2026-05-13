@@ -12,6 +12,8 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getQRCodeGenerator } from "$lib/shared/qr/getQRCodeGenerator";
   import { getMandalaPlacements } from "../services/getMandalaPlacements";
+  import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
+  import { encodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 
   interface MandalaPlacement {
     row: number;
@@ -37,6 +39,7 @@
     redPropType: PropType | undefined;
     showBlueMotion: boolean;
     showRedMotion: boolean;
+    browseViewMode?: BrowseViewMode;
     baseColumns: number;
     baseRows: number;
     startPositionLayout: "row" | "column";
@@ -58,6 +61,7 @@
     redPropType,
     showBlueMotion,
     showRedMotion,
+    browseViewMode,
     baseColumns,
     baseRows,
     startPositionLayout,
@@ -71,10 +75,12 @@
   let lastQrKey = "";
 
   // Derive a stable cache key from the values that actually matter for QR content.
+  const encodedViewMode = $derived(browseViewMode ? encodeViewMode(browseViewMode) : undefined);
+
   const qrCacheKey = $derived.by(() => {
     if (!showQRCode || !sequence) return "";
     const seqId = sequence.id ?? sequence.word ?? "unknown";
-    return `${seqId}:${darkMode}`;
+    return `${seqId}:${darkMode}${encodedViewMode ? `:${encodedViewMode}` : ""}`;
   });
 
   $effect(() => {
@@ -98,12 +104,11 @@
       return;
     }
 
-    // Generate async - read prop values outside the async callback
-    // to avoid tracking additional reactive dependencies
     const seq = sequence;
     const isDark = darkMode;
     const bProp = bluePropType ? String(bluePropType) : undefined;
     const rProp = redPropType ? String(redPropType) : undefined;
+    const vm = encodedViewMode;
     const qrGenerator = getQRCodeGenerator();
     if (!qrGenerator || !seq) return;
 
@@ -116,6 +121,7 @@
         offline: false,
         bluePropType: bProp,
         redPropType: rProp,
+        viewMode: vm,
       })
       .then((result) => {
         qrCacheMap.set(key, result.dataUrl);

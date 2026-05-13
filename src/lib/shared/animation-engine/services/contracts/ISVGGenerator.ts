@@ -14,7 +14,7 @@ export interface ISVGGenerator {
    * Generate grid SVG
    * @param gridMode - Type of grid to generate (GridMode.DIAMOND or GridMode.BOX)
    */
-  generateGridSvg(gridMode?: GridMode): string;
+  generateGridSvg(gridMode?: GridMode): Promise<string>;
 
   /**
    * Generate prop SVG with custom color

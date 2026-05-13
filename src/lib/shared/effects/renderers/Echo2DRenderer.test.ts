@@ -216,6 +216,55 @@ describe("Echo2DRenderer", () => {
     expect((r as any).phantomsRed.length).toBe(0);
     expect((r as any).lastStepIndex).toBe(-1);
   });
+
+  it("clears phantoms and resets lastStepIndex when animation loops (currentStep jumps backward)", () => {
+    const r = new Echo2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({ interval: 1, decay: 10 });
+
+    // Build up phantoms across several beats
+    for (let step = 0; step < 5; step++) {
+      r.render(ctx, params, makeTips({
+        bluePosA: { x: step, y: 0 },
+        bluePosB: { x: step + 1, y: 0 },
+        currentStep: step,
+      }));
+    }
+    expect((r as any).phantomsBlue.length).toBe(5);
+    expect((r as any).lastStepIndex).toBe(4);
+
+    // Simulate animation loop: currentStep jumps back to 0
+    r.render(ctx, params, makeTips({
+      bluePosA: { x: 0, y: 0 },
+      bluePosB: { x: 1, y: 0 },
+      currentStep: 0,
+    }));
+
+    // Old phantoms cleared, new one captured at step 0
+    expect((r as any).phantomsBlue.length).toBe(1);
+    expect((r as any).phantomsBlue[0].capturedStep).toBe(0);
+    // lastStepIndex reset to allow new captures
+    expect((r as any).lastStepIndex).toBe(0);
+  });
+
+  it("does not leak phantoms across multiple animation loops", () => {
+    const r = new Echo2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({ interval: 1, decay: 10 });
+
+    // Simulate 5 full loops of a 4-beat sequence
+    for (let loop = 0; loop < 5; loop++) {
+      for (let step = 0; step < 4; step++) {
+        r.render(ctx, params, makeTips({
+          bluePosA: { x: step, y: 0 },
+          bluePosB: { x: step + 1, y: 0 },
+          currentStep: step,
+        }));
+      }
+    }
+    // Should only have phantoms from the last loop (4), not 20
+    expect((r as any).phantomsBlue.length).toBeLessThanOrEqual(4);
+  });
 });
 
 describe("Echo2DRenderer scale", () => {

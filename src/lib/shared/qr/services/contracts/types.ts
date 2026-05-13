@@ -110,6 +110,8 @@ export interface QRCodeOptions {
    * When set, the scanned viewer will use this prop type instead of user's default.
    */
   redPropType?: string;
+  /** Encoded BrowseViewMode string (e.g., "hsb" = hands-solo-blue). */
+  viewMode?: string;
 }
 
 /**
@@ -174,6 +176,8 @@ export interface ShortCodeURLOptions {
   bluePropType?: string;
   /** Red prop type to append to URL (encoded as single char) */
   redPropType?: string;
+  /** View mode to encode in URL (e.g., "hsb" = hands-solo-blue) */
+  viewMode?: string;
   /** Force-embed the full sequenceData in the shortcode record even when
    *  ownerId is set. Use this for URL-sync flows where the sequence may
    *  never be persisted (e.g., playing a generated-but-unsaved sequence);

@@ -25,6 +25,7 @@ export interface ImageCompositionProps {
   showQRCode: boolean;
   showMandala?: boolean;
   showLoopGlyph?: boolean;
+  handPathMode?: boolean;
   darkMode: boolean;
   columnCount: number | null;
   forceContain: boolean;

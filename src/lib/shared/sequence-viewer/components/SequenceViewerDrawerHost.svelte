@@ -266,6 +266,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
       initialBpm={overlay.initialBpm}
       initialStep={overlay.initialStep}
       viewingContext={overlay.viewingContext}
+      handPathMode={overlay.handPathMode}
       onBack={handleDismiss}
     >
       {#snippet children(ctx)}

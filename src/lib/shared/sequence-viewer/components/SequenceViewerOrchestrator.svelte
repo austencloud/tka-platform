@@ -216,8 +216,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     onUrlParamChange?: (key: string, value: string) => void;
     blockClicks?: boolean;
     viewingContext?: ViewingContext;
+    handPathMode?: boolean;
     forceGuest?: boolean;
     initialRenderMode?: '2d' | '3d';
+    initialBlueVisible?: boolean;
+    initialRedVisible?: boolean;
     children: Snippet<[OrchestratorContext]>;
   }
 
@@ -231,8 +234,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     onUrlParamChange,
     blockClicks = false,
     viewingContext = "notation",
+    handPathMode = false,
     forceGuest = false,
     initialRenderMode,
+    initialBlueVisible = true,
+    initialRedVisible = true,
     children,
   }: Props = $props();
 
@@ -318,6 +324,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   $effect(() => {
     void sequence?.id;
     viewerVisibility.reset();
+    untrack(() => {
+      if (!initialBlueVisible) viewerVisibility.setBlueMotion(false);
+      if (!initialRedVisible) viewerVisibility.setRedMotion(false);
+    });
   });
 
   const animationVisibility = getAnimationVisibilityManager();
@@ -355,7 +365,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     );
   });
 
-  const isHandPath = $derived(Boolean(sequence?.metadata?.isHandPathVisualization));
+  const isHandPath = $derived(handPathMode || Boolean(sequence?.metadata?.isHandPathVisualization));
   const activeBlueProp = $derived(isHandPath ? PropType.HAND : presentation.bluePropType);
   const activeRedProp = $derived(isHandPath ? PropType.HAND : presentation.redPropType);
   const activeCatDog = $derived(isHandPath ? false : presentation.catDogMode);
@@ -1114,6 +1124,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       showQRCode: imgComp.imgShowQRCode,
       showMandala: imgComp.imgShowMandala,
       showLoopGlyph: !isHandPath && imgComp.imgShowLoopGlyph,
+      handPathMode: isHandPath,
       darkMode: imgComp.imgDarkMode,
       columnCount: imgComp.imgColumnCount,
       forceContain: false,

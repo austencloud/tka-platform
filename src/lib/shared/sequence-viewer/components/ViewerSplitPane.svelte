@@ -384,6 +384,7 @@
           showMandala={imageComposition.showMandala ?? false}
           showBirthday={imageComposition.showBirthday}
           showLoopGlyph={imageComposition.showLoopGlyph ?? true}
+          handPathMode={imageComposition.handPathMode}
           darkMode={imageComposition.darkMode}
           columnCount={imageComposition.columnCount}
           forceContain={imageComposition.forceContain}
@@ -457,6 +458,7 @@
             showMandala={imageComposition.showMandala ?? false}
             showBirthday={imageComposition.showBirthday}
             showLoopGlyph={imageComposition.showLoopGlyph ?? true}
+            handPathMode={imageComposition.handPathMode}
             darkMode={imageComposition.darkMode}
             columnCount={imageComposition.columnCount}
             forceContain={imageComposition.forceContain}

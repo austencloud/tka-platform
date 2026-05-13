@@ -113,13 +113,15 @@ export class ShortCodeManager {
   private buildUrlWithOptions(baseUrl: string, code: string, options?: ShortCodeURLOptions): string {
     let url = `${baseUrl}/${code}`;
 
-    // Add prop type query params if provided
     const params = new URLSearchParams();
     if (options?.bluePropType) {
       params.set("bp", options.bluePropType);
     }
     if (options?.redPropType) {
       params.set("rp", options.redPropType);
+    }
+    if (options?.viewMode) {
+      params.set("vm", options.viewMode);
     }
 
     const query = params.toString();

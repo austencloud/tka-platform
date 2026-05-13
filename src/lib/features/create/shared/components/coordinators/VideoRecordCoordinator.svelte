@@ -202,8 +202,8 @@ import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
 
 <SavePromptDialog
   bind:show={showSavePrompt}
-  on:save={handleSavePromptConfirm}
-  on:cancel={handleSavePromptCancel}
+  onSave={handleSavePromptConfirm}
+  onCancel={handleSavePromptCancel}
 />
 
 <SaveToLibraryDialog

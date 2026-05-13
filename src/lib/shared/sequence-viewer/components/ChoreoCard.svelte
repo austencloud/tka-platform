@@ -27,6 +27,7 @@
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import { getQRCodeGenerator } from "$lib/shared/qr/getQRCodeGenerator";
+  import { encodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { renderCell, deleteCellCache } from "../services/preview-cell-renderer";
   import { cellCacheKeyDeriver } from "../services/implementations/CellCacheKeyDeriver";
@@ -206,7 +207,6 @@
   let containerElement: HTMLDivElement | undefined = $state();
   let containedWidth = $state<number | null>(null);
   let containedHeight = $state<number | null>(null);
-  let heightGrowing = $state(false);
 
   let gridScrollRef: HTMLDivElement | undefined = $state();
 
@@ -265,12 +265,12 @@
   const qrCacheMap = new Map<string, string>();
   let lastQrKey = "";
 
-  // Derive a stable cache key from the values that actually matter for QR content.
-  // This prevents re-generation when unrelated reactive values change.
+  const encodedViewMode = $derived(browseViewMode ? encodeViewMode(browseViewMode) : undefined);
+
   const qrCacheKey = $derived.by(() => {
     if (!showQRCode || !sequence) return "";
     const seqId = sequence.id ?? sequence.word ?? "unknown";
-    return `${seqId}:${darkMode}`;
+    return `${seqId}:${darkMode}${encodedViewMode ? `:${encodedViewMode}` : ""}`;
   });
 
   $effect(() => {
@@ -298,6 +298,7 @@
     const isDark = darkMode;
     const bProp = bluePropType ? String(bluePropType) : undefined;
     const rProp = redPropType ? String(redPropType) : undefined;
+    const vm = encodedViewMode;
     const qrGenerator = getQRCodeGenerator();
     if (!qrGenerator || !seq) return;
 
@@ -310,6 +311,7 @@
         offline: false,
         bluePropType: bProp,
         redPropType: rProp,
+        viewMode: vm,
       })
       .then((result) => {
         qrCacheMap.set(key, result.dataUrl);
@@ -357,16 +359,17 @@
       (isMotionSoloMode ? (showBlueMotion ? "blue" : "red") : undefined)
   );
 
-  // When a motion is hidden the sequence becomes a hand-path view: letters
-  // are undefined, so the word (which is concatenated letters) must hide too.
-  const wordVisible = $derived(showWord && !!sequence.word && allMotionsVisible);
+  const isHandsMode = $derived(browseViewMode?.subject === "hands");
 
-  // Show header when difficulty, LOOP glyph, or word is enabled.
-  // The "Blue Prop Path" style header belongs to browse-solo; motion-solo
-  // just hides the word and doesn't inject a replacement title.
+  // Word requires both props visible — meaningless in hands mode or solo mode.
+  const wordVisible = $derived(showWord && !!sequence.word && !isSoloMode && !isHandsMode);
+
+  // Level irrelevant without props or in solo mode.
+  const effectiveShowDifficulty = $derived(showDifficultyLevel && !isHandsMode && !isSoloMode);
+
   const showHeader = $derived(
     (isBrowseSoloMode && !hideSoloHeader) ||
-    showDifficultyLevel || (showLoopGlyph && !!loopComponents) || wordVisible
+    effectiveShowDifficulty || (showLoopGlyph && !!loopComponents) || wordVisible
   );
 
   // Show footer when any footer element is enabled
@@ -833,33 +836,21 @@
 
       // PHASE 2: for cells that missed IDB, render via the worker pool in
       // parallel. Each cell updates independently as it completes, so the user
-      // sees progressive fill-in for genuinely cold sequences. Scheduling at
-      // background priority keeps 3D's main-thread budget unstarved.
+      // sees progressive fill-in for genuinely cold sequences.
       if (missedTasks.length > 0) {
-        const scheduleRender = async (task: CellTask, cellArrayIndex: number) => {
-          const run = async () => {
-            try {
-              const imageUrl = await renderCell(task.data, task.stepNumber, isDark, task.options);
-              // Only apply if the cell is still the placeholder we queued - a
-              // later renderAllCells() may have replaced it with a newer render.
-              const current = cells[cellArrayIndex];
-              if (current && current.index === task.cellIndex && !current.isLoaded) {
-                cells[cellArrayIndex] = { ...current, imageUrl, isLoaded: true };
-                loadedCount++;
-                onRenderProgress?.(loadedCount, totalCellCount);
-              }
-            } catch (err) {
-              console.warn("[ChoreoCard] worker render failed for cell", task.cellIndex, err);
+        await Promise.allSettled(missedTasks.map(async ({ task, cellArrayIndex }) => {
+          try {
+            const imageUrl = await renderCell(task.data, task.stepNumber, isDark, task.options);
+            const current = cells[cellArrayIndex];
+            if (current && current.index === task.cellIndex && !current.isLoaded) {
+              cells[cellArrayIndex] = { ...current, imageUrl, isLoaded: true };
+              loadedCount++;
+              onRenderProgress?.(loadedCount, totalCellCount);
             }
-          };
-          const scheduler = (globalThis as { scheduler?: { postTask?: (cb: () => unknown, opts: { priority: string }) => Promise<unknown> } }).scheduler;
-          if (scheduler?.postTask) {
-            await scheduler.postTask(run, { priority: "background" });
-          } else {
-            await run();
+          } catch (err) {
+            console.warn("[ChoreoCard] worker render failed for cell", task.cellIndex, err);
           }
-        };
-        await Promise.allSettled(missedTasks.map(m => scheduleRender(m.task, m.cellArrayIndex)));
+        }));
       }
 
       // Store in global cache for reuse across component remounts
@@ -1168,15 +1159,6 @@
     const widthChanged = newWidth !== containedWidth && (newWidth === null || containedWidth === null || Math.abs(newWidth - containedWidth) > 0.5);
     const heightChanged = newHeight !== containedHeight && (newHeight === null || containedHeight === null || Math.abs(newHeight - containedHeight) > 0.5);
 
-    // Track growth direction for CSS transition: smooth when growing, instant when shrinking.
-    // Growing = focus-in (card expands into larger container). The 250ms height transition
-    // creates a pleasing smooth growth. Shrinking = unfocus (card must shrink to fit smaller
-    // container). The transition would cause the card to lag behind, making it too tall for
-    // the container and displacing it upward via centering.
-    if (heightChanged && newHeight !== null && containedHeight !== null) {
-      heightGrowing = newHeight > containedHeight;
-    }
-
     if (widthChanged) containedWidth = newWidth;
     if (heightChanged) containedHeight = newHeight;
   }
@@ -1237,13 +1219,12 @@
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
 
     // Image key: props that affect the actual pictograph images (NOT grid positions).
-    // effectiveColumns is included here so column count changes trigger a full
-    // re-render (not just relayout) - the grid structure, pass dividers, and
-    // cell sizes all change when columns change.
+    // Cell images are rendered at a fixed CELL_SIZE (240px) regardless of column
+    // count, so column changes only need relayoutCells() (instant grid repositioning).
     const gv = `${svtg ? "1" : "0"}${selm ? "1" : "0"}${spos ? "1" : "0"}`;
-    const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}-cols:${effCols}-mv:${sbm ? "1" : "0"}${srm ? "1" : "0"}-gv:${gv}`;
-    // Layout key: props that only affect grid positions (start position toggle).
-    const layoutKey = `${isp}`;
+    const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}-mv:${sbm ? "1" : "0"}${srm ? "1" : "0"}-gv:${gv}`;
+    // Layout key: props that only affect grid positions (column count, start position toggle).
+    const layoutKey = `${isp}-cols:${effCols}`;
     // Full content key combines both
     const contentKey = `${imageKey}-${layoutKey}`;
     const renderKey = `${contentKey}-${dm}`;
@@ -1386,8 +1367,8 @@
     const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const stepCount = sequence?.steps?.length ?? 0;
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    const initImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-cols:${effectiveColumns}-mv:${showBlueMotion ? "1" : "0"}${showRedMotion ? "1" : "0"}-gv:${showVTG ? "1" : "0"}${showElemental ? "1" : "0"}${showPositions ? "1" : "0"}`;
-    const initContentKey = `${initImageKey}-${includeStartPosition}`;
+    const initImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-mv:${showBlueMotion ? "1" : "0"}${showRedMotion ? "1" : "0"}-gv:${showVTG ? "1" : "0"}${showElemental ? "1" : "0"}${showPositions ? "1" : "0"}`;
+    const initContentKey = `${initImageKey}-${includeStartPosition}-cols:${effectiveColumns}`;
     const initGridStableKey = `${stepCount}-${durationKey}-cols:${effectiveColumns}-isp:${includeStartPosition}`;
     crossfader.updateKeys({ contentKey: initContentKey, imageKey: initImageKey, gridStableKey: initGridStableKey });
     lastEffectRenderKey = `${initContentKey}-${darkMode}`;
@@ -1477,9 +1458,7 @@
     <div
       class="preview-stack"
       class:scroll-mode={needsScroll}
-      class:smooth-resize={hasMounted}
-      class:height-growing={heightGrowing}
-      style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};`}
+      style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};${containedWidth === null ? ' visibility: hidden;' : ''}`}
       bind:this={previewStackElement}
     >
       <!-- Header section -->
@@ -1489,7 +1468,7 @@
         {isBrowseSoloMode}
         {soloColor}
         {browseViewMode}
-        {showDifficultyLevel}
+        showDifficultyLevel={effectiveShowDifficulty}
         {difficultyLevel}
         {currentLevelStyle}
         {wordVisible}
@@ -1615,14 +1594,6 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-  }
-
-  /* Smooth width transition only AFTER initial render is complete.
-     During initial cell loading, width transitions cause visible jumps
-     as the contain dimensions settle. */
-  .preview-stack.smooth-resize {
-    transition: width 250ms cubic-bezier(0.2, 0, 0, 1),
-                height 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   /* In scroll mode, fill the parent edge-to-edge instead of using

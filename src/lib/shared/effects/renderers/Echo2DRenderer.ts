@@ -51,6 +51,10 @@ export class Echo2DRenderer {
   private phantomsBlue: Phantom[] = [];
   private phantomsRed: Phantom[] = [];
   private lastStepIndex: number = -1;
+  private previousStep: number = -1;
+
+  private static readonly MAX_PHANTOMS = 200;
+  private static readonly LOOP_DETECTION_THRESHOLD = 0.5;
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -58,6 +62,19 @@ export class Echo2DRenderer {
     tips: EchoTipInput,
     scale: number = 1,
   ): void {
+    // Detect animation loop (currentStep jumps backward). Without this,
+    // phantoms from the previous iteration get negative age and are never
+    // culled — unbounded growth that eventually crashes the tab.
+    if (
+      this.previousStep >= 0 &&
+      this.previousStep - tips.currentStep > Echo2DRenderer.LOOP_DETECTION_THRESHOLD
+    ) {
+      this.phantomsBlue.length = 0;
+      this.phantomsRed.length = 0;
+      this.lastStepIndex = -1;
+    }
+    this.previousStep = tips.currentStep;
+
     // 1. Beat-onset detection. floor() places every sub-step within one
     //    beat cell; the transition from one cell to the next is the onset.
     const stepNumber = Math.floor(tips.currentStep / params.interval);
@@ -77,6 +94,15 @@ export class Echo2DRenderer {
         });
       }
       this.lastStepIndex = stepNumber;
+
+      // Hard cap: drop oldest phantoms if arrays grow past safety limit.
+      const cap = Echo2DRenderer.MAX_PHANTOMS;
+      if (this.phantomsBlue.length > cap) {
+        this.phantomsBlue.splice(0, this.phantomsBlue.length - cap);
+      }
+      if (this.phantomsRed.length > cap) {
+        this.phantomsRed.splice(0, this.phantomsRed.length - cap);
+      }
     }
 
     // 2. Cull aged-out phantoms (in-place compaction - zero allocation).
@@ -202,5 +228,6 @@ export class Echo2DRenderer {
     this.phantomsBlue = [];
     this.phantomsRed = [];
     this.lastStepIndex = -1;
+    this.previousStep = -1;
   }
 }

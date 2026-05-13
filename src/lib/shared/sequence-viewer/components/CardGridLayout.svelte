@@ -111,6 +111,8 @@
     shortOrientation,
   }: Props = $props();
 
+  const scaleDuration = $derived(flipDuration > 0 ? 200 : 0);
+
   // Bind helper: forward the scroll ref to the parent
   function bindGridScrollRef(node: HTMLDivElement) {
     onGridScrollRefChange(node);
@@ -130,7 +132,7 @@
     <div class="grid-scroll-container themed-scrollbar" use:bindGridScrollRef>
       <div class="duration-layout" class:dark-mode={activeDarkMode} style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
         {#if includeStartPosition && startCell}
-          <div class="duration-start-col" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 200 }}>
+          <div class="duration-start-col" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
             <div
               class="pictograph-cell"
               class:dark-mode={activeDarkMode}
@@ -154,7 +156,7 @@
               />
             </div>
             {#if showQRCode}
-              <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 200 }}>
+              <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
                 {#if qrDataUrl}
                   <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
                 {/if}
@@ -256,7 +258,7 @@
             />
           </div>
           {#if showQRCode && qrDataUrl}
-            <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 200 }}>
+            <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
               <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
             </div>
           {/if}
@@ -342,7 +344,7 @@
         <div
           class="cell-flip-wrapper"
           style="grid-column: 1; grid-row: 1;"
-          transition:scale|local={{ duration: 200, easing: cubicOut }}
+          transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
         >
           <div class="pictograph-cell" class:dark-mode={activeDarkMode}>
             <CellRenderer
@@ -428,7 +430,7 @@
         <div
           class="cell-flip-wrapper qr-cell-wrapper"
           style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
-          transition:scale|local={{ duration: 200, easing: cubicOut }}
+          transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
         >
           <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode}>
             <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
@@ -439,7 +441,7 @@
         <div
           class="cell-flip-wrapper mandala-cell-wrapper"
           style="grid-column: {placement.col}; grid-row: {placement.row};"
-          transition:fade|local={{ duration: 200 }}
+          transition:fade|local={{ duration: scaleDuration }}
         >
           <div class="pictograph-cell mandala-cell">
             <SequenceMandala
@@ -469,7 +471,7 @@
       <div
         class="cell-flip-wrapper"
         style="grid-column: 1; grid-row: 1;"
-        transition:scale|local={{ duration: 200, easing: cubicOut }}
+        transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
       >
         <div class="pictograph-cell" class:dark-mode={activeDarkMode}>
           <CellRenderer
@@ -555,7 +557,7 @@
       <div
         class="cell-flip-wrapper qr-cell-wrapper"
         style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
-        transition:scale|local={{ duration: 200, easing: cubicOut }}
+        transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
       >
         <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode}>
           <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
@@ -566,7 +568,7 @@
       <div
         class="cell-flip-wrapper mandala-cell-wrapper"
         style="grid-column: {placement.col}; grid-row: {placement.row};"
-        transition:fade|local={{ duration: 200 }}
+        transition:fade|local={{ duration: scaleDuration }}
       >
         <div class="pictograph-cell mandala-cell">
           <SequenceMandala
@@ -712,7 +714,6 @@
 
   .cell-flip-wrapper > .pictograph-cell {
     width: 100%;
-    height: 100%;
   }
 
   /* Individual pictograph cell */

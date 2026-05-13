@@ -219,7 +219,7 @@ export class Canvas2DImageLoader {
           GridMode.DIAMOND;
       }
 
-      const gridSvg = generateGridSvg(gridModeEnum);
+      const gridSvg = await generateGridSvg(gridModeEnum);
 
       // Create new image
       const newImage = await this.createImageFromSVG(

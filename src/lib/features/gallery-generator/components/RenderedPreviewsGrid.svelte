@@ -27,7 +27,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="column preview-column">
   <h2>{t('gallery_gen_rendered_heading', { count: String(state.renderedImages.length) })}</h2>
@@ -40,7 +40,7 @@
         <button
           class="preview-card"
           class:written={img.written}
-          on:click={() => handleCardClick(img)}
+          onclick={() => handleCardClick(img)}
         >
           <img src={img.imageUrl} alt={img.name} loading="lazy" />
           <span class="card-label">{img.name}</span>
@@ -57,10 +57,10 @@
 {#if state.viewingImage}
   <button
     class="lightbox-overlay"
-    on:click={closeLightbox}
+    onclick={closeLightbox}
     aria-label={t('gallery_gen_close_lightbox')}
   >
-    <div class="lightbox-content" on:click|stopPropagation role="presentation">
+    <div class="lightbox-content" onclick={(e) => e.stopPropagation()} role="presentation">
       <img src={state.viewingImage.url} alt={state.viewingImage.name} />
       <p class="lightbox-title">{state.viewingImage.name}</p>
       <span class="lightbox-close" aria-hidden="true">×</span>

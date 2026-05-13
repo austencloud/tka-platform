@@ -51,6 +51,7 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 	if (!mandalaEnabled) return EMPTY;
 	if (!includeStartPosition) return EMPTY;
 	if (!blueVisible && !redVisible) return EMPTY;
+	if (stepCount <= 4) return EMPTY;
 
 	// 4-count horizontal metadata row: column layout only (row layout handles it generically below).
 	if (stepCount === 4 && showQRCode && startPositionLayout === "column") {

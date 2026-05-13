@@ -200,9 +200,6 @@ importers:
       ai:
         specifier: ^6.0.0
         version: 6.0.70(zod@4.3.6)
-      animate-css-grid:
-        specifier: ^1.5.1
-        version: 1.5.1
       bits-ui:
         specifier: ^2.14.4
         version: 2.15.5(@internationalized/date@3.11.0)(@sveltejs/kit@2.50.2(@opentelemetry/api@1.9.0)(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.49.2)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)))(svelte@5.49.2)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)))(svelte@5.49.2)
@@ -230,6 +227,9 @@ importers:
       fabric:
         specifier: ^7.0.0
         version: 7.1.0
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.2
       file-saver:
         specifier: ^2.0.5
         version: 2.0.5
@@ -254,18 +254,12 @@ importers:
       html2canvas:
         specifier: ^1.4.1
         version: 1.4.1
-      interactjs:
-        specifier: ^1.10.27
-        version: 1.10.27
       isomorphic-dompurify:
         specifier: ^3.0.0-rc.2
         version: 3.0.0(canvas@3.2.1)
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
-      lz-string:
-        specifier: ^1.5.0
-        version: 1.5.0
       miniplex:
         specifier: ^2.0.0
         version: 2.0.0
@@ -366,9 +360,6 @@ importers:
       '@testing-library/jest-dom':
         specifier: ^6.9.1
         version: 6.9.1
-      '@types/dompurify':
-        specifier: ^3.0.5
-        version: 3.2.0
       '@types/file-saver':
         specifier: ^2.0.7
         version: 2.0.7
@@ -1842,9 +1833,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@interactjs/types@1.10.27':
-    resolution: {integrity: sha512-BUdv0cvs4H5ODuwft2Xp4eL8Vmi3LcihK42z0Ft/FbVJZoRioBsxH+LlsBdK4tAie7PqlKGy+1oyOncu1nQ6eA==}
-
   '@internationalized/date@3.11.0':
     resolution: {integrity: sha512-BOx5huLAWhicM9/ZFs84CzP+V3gBW6vlpM02yzsdYC7TGlZJX1OJiEEHcSayF00Z+3jLlm4w79amvSt6RqKN3Q==}
 
@@ -2154,12 +2142,6 @@ packages:
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
-
-  '@popmotion/easing@1.0.2':
-    resolution: {integrity: sha512-IkdW0TNmRnWTeWI7aGQIVDbKXPWHVEYdGgd5ZR4SH/Ty/61p63jCjrPxX1XrR7IGkl08bjhJROStD7j+RKgoIw==}
-
-  '@popmotion/popcorn@0.4.4':
-    resolution: {integrity: sha512-jYO/8319fKoNLMlY4ZJPiPu8Ea8occYwRZhxpaNn/kZsK4QG2E7XFlXZMJBsTWDw7I1i0uaqyC4zn1nwEezLzg==}
 
   '@poppinss/colors@4.1.6':
     resolution: {integrity: sha512-H9xkIdFswbS8n1d6vmRd8+c10t2Qe+rZITbbDHHkQixH5+2x1FDGmi/0K+WgWiqQFKPSlIYB7jlH6Kpfn6Fleg==}
@@ -2923,10 +2905,6 @@ packages:
   '@types/dom-webcodecs@0.1.18':
     resolution: {integrity: sha512-vAvE8C9DGWR+tkb19xyjk1TSUlJ7RUzzp4a9Anu7mwBT+fpyePWK1UxmH14tMO5zHmrnrRIMg5NutnnDztLxgg==}
 
-  '@types/dompurify@3.2.0':
-    resolution: {integrity: sha512-Fgg31wv9QbLDA0SpTOXO3MaxySc4DKGLi8sna4/Utjo4r3ZRPdCt4UQee8BWr+Q5z21yifghREPJGYaEOEIACg==}
-    deprecated: This is a stub types definition. dompurify provides its own type definitions, so you do not need this installed.
-
   '@types/draco3d@1.4.10':
     resolution: {integrity: sha512-AX22jp8Y7wwaBgAixaSvkoG4M/+PlAcm3Qs4OW8yT9DM4xUpWKeFhLueTAyZF39pviAdcDdeJoACapiAceqNcw==}
 
@@ -2950,12 +2928,6 @@ packages:
 
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
-
-  '@types/lodash.throttle@4.1.9':
-    resolution: {integrity: sha512-PCPVfpfueguWZQB7pJQK890F2scYKoDUL3iM522AptHWn7d5NQmeS/LTEHIcLr5PaTzl3dK2Z0xSUHHTHwaL5g==}
-
-  '@types/lodash@4.17.23':
-    resolution: {integrity: sha512-RDvF6wTulMPjrNdCoYRC8gNR880JNGT8uB+REUpC2Ns4pRqQJhGz90wh7rgdXDPpCczF3VGktDuFGVnz8zP7HA==}
 
   '@types/long@4.0.2':
     resolution: {integrity: sha512-MqTGEo5bj5t157U6fA/BiDynNkn0YknVdh48CMPkTSpFTVmvao5UQmm7uEF6xBEo7qIMAlY/JSleYaE6VOdpaA==}
@@ -3255,9 +3227,6 @@ packages:
 
   ajv@8.17.1:
     resolution: {integrity: sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==}
-
-  animate-css-grid@1.5.1:
-    resolution: {integrity: sha512-Bw48dm3kjJshSO8TY6PtWJ7gvXluh2ad97zPiNu1jTRyRywAzsbKlwG45byL9cJ/x9N126rkU5U9y1jzHK8ttQ==}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -4256,12 +4225,6 @@ packages:
   frame-ticker@1.0.3:
     resolution: {integrity: sha512-E0X2u2JIvbEMrqEg5+4BpTqaD22OwojJI63K7MdKHdncjtAhGRbCR8nJCr2vwEt9NWBPCPcu70X9smPviEBy8Q==}
 
-  framesync@4.1.0:
-    resolution: {integrity: sha512-MmgZ4wCoeVxNbx2xp5hN/zPDCbLSKiDt4BbbslK7j/pM2lg5S0vhTNv1v8BCVb99JPIo6hXBFdwzU7Q4qcAaoQ==}
-
-  framesync@6.1.2:
-    resolution: {integrity: sha512-jBTqhX6KaQVDyus8muwZbBeGGP0XgujBRbQ7gM7BRdS3CadCZIHiawyzYLnafYcvZIh5j8WE7cxZKFn7dXhu9g==}
-
   fresh@2.0.0:
     resolution: {integrity: sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==}
     engines: {node: '>= 0.8'}
@@ -4425,9 +4388,6 @@ packages:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
 
-  hey-listen@1.0.8:
-    resolution: {integrity: sha512-COpmrF2NOg4TBWUJ5UVyaCU2A88wEMkUPK4hNqyCkqHbxT92BbvfjoSozkAIIm6XhicGlJHhFdullInrdhwU8Q==}
-
   hono@4.11.7:
     resolution: {integrity: sha512-l7qMiNee7t82bH3SeyUCt9UF15EVmaBvsppY2zQtrbIhl/yzBTny+YUxsVjSjQ6gaqaeVtZmGocom8TzBlA4Yw==}
     engines: {node: '>=16.9.0'}
@@ -4523,9 +4483,6 @@ packages:
 
   inline-style-parser@0.2.7:
     resolution: {integrity: sha512-Nb2ctOyNR8DqQoR0OwRG95uNWIC0C1lCgf5Naz5H6Ji72KZ8OcFZLz2P5sNgwlyoJ8Yif11oMuYs5pBQa86csA==}
-
-  interactjs@1.10.27:
-    resolution: {integrity: sha512-y/8RcCftGAF24gSp76X2JS3XpHiUvDQyhF8i7ujemBz77hwiHDuJzftHx7thY8cxGogwGiPJ+o97kWB6eAXnsA==}
 
   internmap@2.0.3:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
@@ -4880,9 +4837,6 @@ packages:
 
   lodash.once@4.1.1:
     resolution: {integrity: sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==}
-
-  lodash.throttle@4.1.1:
-    resolution: {integrity: sha512-wIkUCfVKpVsWo3JSZlc+8MB5it+2AN5W8J7YVMST30UrvcQNZ1Okbj+rbVniijTWE6FGYy4XJq/rHkas8qJMLQ==}
 
   long@5.3.2:
     resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
@@ -5283,9 +5237,6 @@ packages:
   polished@4.3.1:
     resolution: {integrity: sha512-OBatVyC/N7SCW/FaDHrSd+vn0o5cS855TOmYi4OkdWUMSJCET/xip//ch8xGUvtr3i44X9LVyWwQlRMTN3pwSA==}
     engines: {node: '>=10'}
-
-  popmotion@8.7.6:
-    resolution: {integrity: sha512-gzU0mRAik8FIEOP4Nk5yqYptJIvHLoq/IRU+rANmKjDZ7tynAivYQ9cIJAxVaoS9h0zfXvN0cFBAg93ncmHHkA==}
 
   postcss-load-config@3.1.4:
     resolution: {integrity: sha512-6DiM4E7v4coTE4uzA8U//WhtPwyhiim3eyjEMFCnUpzbrkK9wJHgKDT2mR+HbtSrd/NubVaYTOpSpjUl8NQeRg==}
@@ -5940,12 +5891,6 @@ packages:
   style-to-object@1.0.14:
     resolution: {integrity: sha512-LIN7rULI0jBscWQYaSswptyderlarFkjQ+t79nzty8tcIAceVomEVlLzH5VP4Cmsv6MtKhs7qaAiwlcp+Mgaxw==}
 
-  style-value-types@3.2.0:
-    resolution: {integrity: sha512-ih0mGsrYYmVvdDi++/66O6BaQPRPRMQHoZevNNdMMcPlP/cH28Rnfsqf1UEba/Bwfuw9T8BmIMwbGdzsPwQKrQ==}
-
-  stylefire@7.0.3:
-    resolution: {integrity: sha512-Q0l7NSeFz/OkX+o6/7Zg3VZxSAZeQzQpYomWmIpOehFM/rJNMSLVX5fgg6Q48ut2ETNKwdhm97mPNU643EBCoQ==}
-
   supercluster@8.0.1:
     resolution: {integrity: sha512-IiOea5kJ9iqzD2t7QJq/cREyLHTtSmUT6gQsweojg9WH2sYJqZK9SswTu6jrscO6D1G5v5vYZ9ru/eq85lXeZQ==}
 
@@ -6258,9 +6203,6 @@ packages:
 
   tslib@1.14.1:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
-
-  tslib@2.4.0:
-    resolution: {integrity: sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -7874,8 +7816,6 @@ snapshots:
   '@img/sharp-win32-x64@0.34.5':
     optional: true
 
-  '@interactjs/types@1.10.27': {}
-
   '@internationalized/date@3.11.0':
     dependencies:
       '@swc/helpers': 0.5.18
@@ -8219,16 +8159,6 @@ snapshots:
       playwright: 1.58.1
 
   '@polka/url@1.0.0-next.29': {}
-
-  '@popmotion/easing@1.0.2': {}
-
-  '@popmotion/popcorn@0.4.4':
-    dependencies:
-      '@popmotion/easing': 1.0.2
-      framesync: 4.1.0
-      hey-listen: 1.0.8
-      style-value-types: 3.2.0
-      tslib: 1.14.1
 
   '@poppinss/colors@4.1.6':
     dependencies:
@@ -9036,10 +8966,6 @@ snapshots:
 
   '@types/dom-webcodecs@0.1.18': {}
 
-  '@types/dompurify@3.2.0':
-    dependencies:
-      dompurify: 3.3.3
-
   '@types/draco3d@1.4.10': {}
 
   '@types/estree@1.0.8': {}
@@ -9060,12 +8986,6 @@ snapshots:
       '@types/node': 25.2.0
 
   '@types/linkify-it@5.0.0': {}
-
-  '@types/lodash.throttle@4.1.9':
-    dependencies:
-      '@types/lodash': 4.17.23
-
-  '@types/lodash@4.17.23': {}
 
   '@types/long@4.0.2':
     optional: true
@@ -9434,14 +9354,6 @@ snapshots:
       fast-uri: 3.1.0
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
-
-  animate-css-grid@1.5.1:
-    dependencies:
-      '@popmotion/easing': 1.0.2
-      '@types/lodash.throttle': 4.1.9
-      framesync: 6.1.2
-      lodash.throttle: 4.1.1
-      popmotion: 8.7.6
 
   ansi-regex@5.0.1: {}
 
@@ -10540,14 +10452,6 @@ snapshots:
     dependencies:
       simplesignal: 2.1.7
 
-  framesync@4.1.0:
-    dependencies:
-      hey-listen: 1.0.8
-
-  framesync@6.1.2:
-    dependencies:
-      tslib: 2.4.0
-
   fresh@2.0.0: {}
 
   fs-constants@1.0.0: {}
@@ -10772,8 +10676,6 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  hey-listen@1.0.8: {}
-
   hono@4.11.7: {}
 
   html-encoding-sniffer@4.0.0:
@@ -10873,10 +10775,6 @@ snapshots:
   ini@4.1.3: {}
 
   inline-style-parser@0.2.7: {}
-
-  interactjs@1.10.27:
-    dependencies:
-      '@interactjs/types': 1.10.27
 
   internmap@2.0.3: {}
 
@@ -11254,8 +11152,6 @@ snapshots:
   lodash.merge@4.6.2: {}
 
   lodash.once@4.1.1: {}
-
-  lodash.throttle@4.1.1: {}
 
   long@5.3.2: {}
 
@@ -11652,16 +11548,6 @@ snapshots:
   polished@4.3.1:
     dependencies:
       '@babel/runtime': 7.28.6
-
-  popmotion@8.7.6:
-    dependencies:
-      '@popmotion/easing': 1.0.2
-      '@popmotion/popcorn': 0.4.4
-      framesync: 4.1.0
-      hey-listen: 1.0.8
-      style-value-types: 3.2.0
-      stylefire: 7.0.3
-      tslib: 1.14.1
 
   postcss-load-config@3.1.4(postcss@8.5.6):
     dependencies:
@@ -12450,19 +12336,6 @@ snapshots:
     dependencies:
       inline-style-parser: 0.2.7
 
-  style-value-types@3.2.0:
-    dependencies:
-      hey-listen: 1.0.8
-      tslib: 1.14.1
-
-  stylefire@7.0.3:
-    dependencies:
-      '@popmotion/popcorn': 0.4.4
-      framesync: 4.1.0
-      hey-listen: 1.0.8
-      style-value-types: 3.2.0
-      tslib: 1.14.1
-
   supercluster@8.0.1:
     dependencies:
       kdbush: 4.0.2
@@ -12884,8 +12757,6 @@ snapshots:
       strip-bom: 3.0.0
 
   tslib@1.14.1: {}
-
-  tslib@2.4.0: {}
 
   tslib@2.8.1: {}
 

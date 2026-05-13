@@ -120,7 +120,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="history-drawer" role="dialog" aria-label="Chat History">
   <DrawerHeader title="Chat History" {onClose} />

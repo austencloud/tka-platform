@@ -154,10 +154,10 @@ export class QRCodeGenerator {
     sequence: SequenceData,
     options?: QRCodeOptions
   ): Promise<QRCodeResult> {
-    // Build prop options to pass to short code manager
     const propOptions = {
       bluePropType: options?.bluePropType,
       redPropType: options?.redPropType,
+      viewMode: options?.viewMode,
     };
 
     // Check if offline mode is requested
