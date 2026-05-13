@@ -154,13 +154,13 @@
       <ChipToggle label="Bands" icon="fa-rainbow" active={layers.bands} color="rose" onclick={() => toggleLayer("bands")} />
       <ChipToggle label="Shimmer" icon="fa-sparkle" active={layers.shimmer} color="rose" onclick={() => toggleLayer("shimmer")} />
       <ChipToggle label="Bokeh" icon="fa-circle" active={layers.bokeh} color="rose" onclick={() => toggleLayer("bokeh")} />
-      <ChipToggle label="Sparkles" icon="fa-sparkles" active={layers.sparkles} color="rose" onclick={() => toggleLayer("sparkles")} />
+      <ChipToggle label="Sparkles" icon="fa-wand-magic-sparkles" active={layers.sparkles} color="rose" onclick={() => toggleLayer("sparkles")} />
       <ChipToggle label="Hearts" icon="fa-heart" active={layers.hearts} color="rose" onclick={() => toggleLayer("hearts")} />
     </ChipGroup>
 
     <!-- Regenerate -->
     <button class="action-btn" onclick={regenerate}>
-      <i class="fas fa-sparkles"></i>
+      <i class="fas fa-wand-magic-sparkles"></i>
       Regenerate
     </button>
 

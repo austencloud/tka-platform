@@ -7,7 +7,7 @@
   float directly on the card back's gradient - no box/container.
 
   Uses PictographPreparer + PictographRenderer directly (no PictographContainer)
-  so it works both in live Svelte rendering and offscreen html2canvas capture.
+  so it works both in live Svelte rendering and offscreen DOM capture.
 -->
 <script lang="ts">
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";

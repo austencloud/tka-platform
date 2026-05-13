@@ -82,15 +82,21 @@ export class PictographPreparer {
   ): Promise<PreparedRenderData> {
     const gridMode = this.deriveGridMode(pictograph);
 
-    const effectivePictograph = options?.handPathMode
-      ? this.transformForHandPath(pictograph)
-      : pictograph;
-
     const globalSettings = getSettings();
     const settings = {
       bluePropType: globalSettings.bluePropType,
       redPropType: globalSettings.redPropType,
     };
+
+    // Auto-enable hand path mode when both props are HAND (global settings or explicit)
+    const effectiveBlueProp = options?.bluePropType ?? settings.bluePropType;
+    const effectiveRedProp = options?.redPropType ?? settings.redPropType;
+    const useHandPath = options?.handPathMode ||
+      (effectiveBlueProp === PropType.HAND && effectiveRedProp === PropType.HAND);
+
+    const effectivePictograph = useHandPath
+      ? this.transformForHandPath(pictograph)
+      : pictograph;
     const overriddenMotions = this.getMotionsWithOverrides(effectivePictograph, settings, options);
     const pictographWithPropOverrides: PictographData = {
       ...effectivePictograph,
@@ -146,7 +152,7 @@ export class PictographPreparer {
       red?.arrowPlacementData?.manualAdjustmentY ?? 0,
       options?.themeMode ?? "dark",
       (options?.useGridVersion ?? false) ? "grid" : "thumbnail",
-      options?.handPathMode ? "hp" : "",
+      (options?.handPathMode || ((options?.bluePropType ?? globalSettings.bluePropType) === PropType.HAND && (options?.redPropType ?? globalSettings.redPropType) === PropType.HAND)) ? "hp" : "",
       options?.showBlueMotion === false ? "hideBlue" : "",
       options?.showRedMotion === false ? "hideRed" : "",
       pictograph.betaSwapped ? "bs" : "",
@@ -244,10 +250,6 @@ export class PictographPreparer {
     return Object.entries(pictograph.motions || {})
       .filter((entry): entry is [string, MotionData] => entry[1] !== undefined)
       .map(([color, motion]) => {
-        if (motion.propType === PropType.HAND) {
-          return [color, motion] as [string, MotionData];
-        }
-
         const explicitPropType =
           color === "blue" ? options?.bluePropType : options?.redPropType;
         if (explicitPropType !== undefined) {

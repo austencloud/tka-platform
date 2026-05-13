@@ -134,14 +134,12 @@
   const pillSpecs = $derived(
     buildPillSpecs({
       grid: { icon: "fa-th", label: "GRID", summary: gridSummary },
-      ...(cell ? {
-        layers: { icon: "fa-layer-group", label: "LAYERS", summary: layersSummary },
-        effects: { icon: "fa-wand-magic-sparkles", label: "EFFECTS", summary: effectsSummary },
-        effort: { label: "STYLE", summary: styleSummary, accentColor: effortAccent },
-        playback: { icon: "fa-play", label: "PLAYBACK", summary: playbackSummary },
-        display: { icon: "fa-eye", label: "DISPLAY", summary: displaySummary },
-        export: { icon: "fa-download", label: "EXPORT", summary: exportSummary },
-      } : {}),
+      layers: { icon: "fa-layer-group", label: "LAYERS", summary: layersSummary },
+      effects: { icon: "fa-wand-magic-sparkles", label: "EFFECTS", summary: effectsSummary },
+      effort: { label: "STYLE", summary: styleSummary, accentColor: effortAccent },
+      playback: { icon: "fa-play", label: "PLAYBACK", summary: playbackSummary },
+      display: { icon: "fa-eye", label: "DISPLAY", summary: displaySummary },
+      export: { icon: "fa-download", label: "EXPORT", summary: exportSummary },
     })
   );
 

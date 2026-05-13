@@ -101,8 +101,6 @@ export interface PrintRenderOptions {
   elementTheme?: ElementalTheme;
   /** Left-side barter label (e.g. "QS 1:1" for deck cards) */
   leftLabel?: string;
-  /** Pre-loaded elemental icon image for barter */
-  elementIcon?: CanvasImageSource;
 }
 
 export interface CardPair {

@@ -5,7 +5,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/types";
   import type { PrintRenderOptions } from "../../services/types";
-  import { type ElementalTheme, VTG_ELEMENTAL_THEMES } from "../../domain/elemental-theme";
+  import type { ElementalTheme } from "../../domain/elemental-theme";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -24,8 +24,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     elementTheme?: ElementalTheme;
     /** Left-side footer label (e.g. "QS 1:1" for deck cards) */
     leftLabel?: string;
-    /** VTG family ID for elemental icon loading (e.g. "quarter-same") */
-    elementFamilyId?: string;
+    /** Per-sequence label callback. When provided, called for each sequence to compute
+     *  the left footer label instead of using the uniform `leftLabel`. */
+    getLeftLabel?: (seq: SequenceData) => string | undefined;
     /** Use deck layout policy instead of user composition settings */
     deckMode?: boolean;
     /** Bump to force a full re-render of all cards */
@@ -50,7 +51,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     handPointsVisible = true,
     elementTheme,
     leftLabel,
-    elementFamilyId,
+    getLeftLabel,
     deckMode = false,
     rerenderKey = 0,
     onCardContextMenu,
@@ -71,18 +72,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   let renderTotal = $state(0);
   let isRendering = $state(false);
 
-  // Pre-load elemental icon for footer rendering
-  let loadedElementIcon: HTMLImageElement | null = $state(null);
-  $effect(() => {
-    if (!elementFamilyId) { loadedElementIcon = null; return; }
-    const theme = VTG_ELEMENTAL_THEMES.find(t => t.familyId === elementFamilyId);
-    if (!theme) { loadedElementIcon = null; return; }
-    const img = new Image();
-    img.src = theme.iconPath;
-    img.onload = () => { loadedElementIcon = img; };
-    img.onerror = () => { loadedElementIcon = null; };
-  });
-
   let layout = $derived(getPageLayout(cardSize));
   let sizeSpec = $derived(CARD_SIZES[cardSize]);
   let cardAspect = $derived(sizeSpec.widthInches / sizeSpec.heightInches);
@@ -97,7 +86,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     return result;
   });
 
-  function buildRenderOptions(stepCount?: number): PrintRenderOptions {
+  function buildRenderOptions(stepCount?: number, overrideLeftLabel?: string): PrintRenderOptions {
     const imageComposition = getImageCompositionManager();
     return {
       showGrid,
@@ -116,8 +105,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       elementTheme,
       bluePropType: settingsService.settings.bluePropType,
       redPropType: settingsService.settings.redPropType,
-      leftLabel,
-      elementIcon: loadedElementIcon ?? undefined,
+      leftLabel: overrideLeftLabel ?? leftLabel,
     };
   }
 
@@ -139,7 +127,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   const cardCache = new Map<string, CachedCard>();
   let lastRerenderKey = 0;
 
-  function buildCacheKey(seq: SequenceData, stepCount: number | undefined): string {
+  function buildCacheKey(seq: SequenceData, stepCount: number | undefined, seqLeftLabel?: string): string {
     const seqId = seq.id ?? seq.word ?? seq.name ?? "";
     const optsPart = [
       cardSize, theme, showGrid, showTKA, showWord,
@@ -149,8 +137,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       settingsService.settings.redPropType,
       settingsService.settings.backgroundType ?? "",
       stepCount,
-      leftLabel ?? "",
-      elementFamilyId ?? "",
+      seqLeftLabel ?? leftLabel ?? "",
     ].join("|");
     return `${seqId}::${optsPart}`;
   }
@@ -216,7 +203,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
     // Fast path: check if every card is already cached
     const allCached = seqs.every((seq) => {
-      const key = buildCacheKey(seq, seq.steps?.length);
+      const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
+      const key = buildCacheKey(seq, seq.steps?.length, seqLabel);
       return cardCache.has(key);
     });
 
@@ -225,7 +213,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       const cards: RenderedCard[] = [];
       const pairs: CardPair[] = [];
       for (const seq of seqs) {
-        const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length))!;
+        const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
+        const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, seqLabel))!;
         cards.push(cached.rendered);
         pairs.push(cached.pair);
       }
@@ -252,14 +241,15 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
       const seq = seqs[i]!;
       const stepCount = seq.steps?.length;
-      const cacheKey = buildCacheKey(seq, stepCount);
+      const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
+      const cacheKey = buildCacheKey(seq, stepCount, seqLabel);
       const cached = cardCache.get(cacheKey);
 
       if (cached) {
         cards.push(cached.rendered);
         pairs.push(cached.pair);
       } else {
-        const options = buildRenderOptions(stepCount);
+        const options = buildRenderOptions(stepCount, seqLabel);
         const frontCanvas = await renderer.renderFront(seq, options);
         const backCanvas = await renderer.renderBack(seq, options);
 
@@ -295,10 +285,11 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
     const renderer = getPrintCardRenderer();
     const stepCount = seq.steps?.length;
-    const options = buildRenderOptions(stepCount);
+    const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
+    const options = buildRenderOptions(stepCount, seqLabel);
 
     // Invalidate cache for this card
-    const cacheKey = buildCacheKey(seq, stepCount);
+    const cacheKey = buildCacheKey(seq, stepCount, seqLabel);
     cardCache.delete(cacheKey);
 
     const frontCanvas = await renderer.renderFront(seq, options);

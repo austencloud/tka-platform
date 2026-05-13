@@ -47,6 +47,7 @@
      * "popover": tap BPM opens a popover with numeric presets, custom input, and tap-tempo.
      */
     presetsMode?: "inline" | "popover";
+    vertical?: boolean;
   }
 
   let {
@@ -58,6 +59,7 @@
     onPracticeStart,
     onPracticeStop,
     presetsMode = "inline",
+    vertical = false,
   }: Props = $props();
 
   // Tap tempo state
@@ -198,7 +200,7 @@
 </script>
 
 <div class="tempo-wrapper">
-<div class="tempo-control">
+<div class="tempo-control" class:vertical>
   <!-- +/- with BPM display -->
   <div class="bpm-adjuster">
     <button
@@ -275,7 +277,7 @@
 </div>
 
 {#if showPopover && presetsMode === "popover"}
-  <div class="bpm-popover" role="region" aria-label={t("compose_custom_bpm")}>
+  <div class="bpm-popover" role="region" aria-label={t("compose_custom_bpm")} onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); closePopover(); } }}>
     <div class="bpm-popover-presets">
       {#each NUMERIC_PRESETS as preset}
         <button
@@ -313,6 +315,33 @@
     justify-content: center;
     gap: 12px;
     width: 100%;
+  }
+
+  .tempo-control.vertical {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .tempo-control.vertical .bpm-adjuster {
+    gap: 14px;
+  }
+
+  .tempo-control.vertical .bpm-display {
+    min-width: 88px;
+    padding: 10px 20px;
+  }
+
+  .tempo-control.vertical .bpm-value {
+    font-size: 1.6rem;
+  }
+
+  .tempo-control.vertical .presets {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tempo-control.vertical .preset-btn {
+    flex: 1;
   }
 
   /* ===========================
@@ -566,7 +595,8 @@
     .adjust-btn,
     .bpm-display,
     .preset-btn,
-    .practice-btn {
+    .practice-btn,
+    .practice-btn.active {
       transition: none;
       animation: none;
     }

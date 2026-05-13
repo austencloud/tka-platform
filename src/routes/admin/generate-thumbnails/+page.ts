@@ -1,2 +1,2 @@
-// Client-side only - uses Firebase and html2canvas
+// Client-side only - uses Firebase and modern-screenshot
 export const ssr = false;

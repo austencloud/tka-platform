@@ -7,7 +7,6 @@
 -->
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import { fade } from "svelte/transition";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type {
     ViewerPlaybackState,
@@ -236,10 +235,9 @@
 
 <div
   class="split-view view-container"
-  data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
+data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
   data-landscape={layout.isLandscapeMobile || undefined}
   data-focused={layout.focusedPane}
-  in:fade={{ duration: 200 }}
 >
   <!-- Animation pane -->
   <div
@@ -365,7 +363,7 @@
            The hover-scale effect is applied to .media-pane so the rail
            sits in a non-scaling layer. Keeps chip positions stable as
            the user moves the cursor toward them (Fitts's Law). -->
-      <RightRail {sequence} {renderMode} {bpm} {onBpmChange} />
+      <RightRail {renderMode} {bpm} {onBpmChange} />
     {:else if splitConfig.leftPane === 'card'}
       <div class="media-pane preview-pane">
         <ChoreoCard
@@ -532,9 +530,8 @@
     height: 100%;
     width: 100%;
     position: relative;
-    will-change: grid-template-rows, grid-template-columns;
-    transition: grid-template-rows 250ms cubic-bezier(0.2, 0, 0, 1),
-                grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
+    /* No grid transition — animated grid-template-columns causes ChoreoCard's
+       ResizeObserver to fire on every frame, producing a tiny→expand resize cascade. */
   }
 
   /* Split columns - tappable focus targets */
@@ -554,18 +551,13 @@
        column edge. .media-pane keeps its own overflow:hidden to clip canvas
        content inside the scaled rectangle. */
     overflow: visible;
-    transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Hover outline - desktop pointer devices only.
-     Subtle outline on hover signals "click to expand" without the
-     disorienting scale pop. No outline at rest or when focused. */
   @media (hover: hover) and (pointer: fine) {
     .split-column:not(.focused) {
       outline: 2px solid transparent;
       outline-offset: -2px;
-      transition: outline-color 120ms cubic-bezier(0.2, 0, 0, 1),
-                  opacity 250ms cubic-bezier(0.2, 0, 0, 1);
+      transition: outline-color 120ms cubic-bezier(0.2, 0, 0, 1);
     }
     .split-column:hover:not(.focused) {
       outline-color: var(--theme-accent, #6366f1);
@@ -584,8 +576,6 @@
   .preview-column {
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    transition: border-color 250ms cubic-bezier(0.2, 0, 0, 1),
-                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   .preview-column-inner {

@@ -72,7 +72,7 @@
 </ChipGroup>
 
 <!-- Regenerate -->
-<ActionButton label="Regenerate" icon="fa-sparkles" fullWidth onclick={onRegenerate} />
+<ActionButton label="Regenerate" icon="fa-wand-magic-sparkles" fullWidth onclick={onRegenerate} />
 
 <!-- Progress Pills -->
 <div class="progress-section">

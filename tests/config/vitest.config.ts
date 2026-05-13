@@ -45,11 +45,4 @@ export default defineConfig({
     conditions: ["browser"],
   },
 
-  optimizeDeps: {
-    include: ["inversify", "reflect-metadata"],
-  },
-
-  ssr: {
-    noExternal: ["inversify", "reflect-metadata"],
-  },
 });

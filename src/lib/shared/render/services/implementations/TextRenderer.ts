@@ -249,8 +249,7 @@ export class TextRenderer {
     customNotesText?: string,
     backgroundColor?: string,
     borderColor?: string,
-    leftLabel?: string,
-    elementIcon?: CanvasImageSource
+    leftLabel?: string
   ): void {
     const showCreatorName = showFlags?.showCreatorName ?? true;
     const showNotes = showFlags?.showNotes ?? true;
@@ -290,7 +289,6 @@ export class TextRenderer {
       backgroundColor,
       borderColor,
       leftLabel,
-      elementIcon,
     });
   }
 

@@ -226,7 +226,7 @@
   // ── Pill specs ──
   const pillSpecs = $derived(
     buildPillSpecs({
-      effects:  { icon: "fa-sparkles",  label: "Effects",  summary: effectsSummary },
+      effects:  { icon: "fa-wand-magic-sparkles",  label: "Effects",  summary: effectsSummary },
       effort:   { label: "Effort",   summary: effortSummary, accentColor: effortAccent },
       playback: { icon: "fa-play",      label: "Playback", summary: playbackSummary },
       display:  { icon: "fa-eye",       label: "Display",  summary: displaySummary },
@@ -262,7 +262,10 @@
     {/if}
   {:else if activePill === "effort"}
     <div class="section-pad">
-      <EffortPanel />
+      {#if layout === "sidebar"}
+        <p class="section-hint">How each beat speeds up and slows down.</p>
+      {/if}
+      <EffortPanel columns={layout === "sidebar" ? 2 : 4} showSubtitles={layout === "sidebar"} />
     </div>
   {:else if activePill === "playback"}
     <div class="section-pad">
@@ -271,9 +274,10 @@
         <TempoControl
           {bpm}
           onBpmChange={onBpmChange ?? (() => {})}
-          showPresets={false}
+          showPresets={layout === "sidebar"}
           showPractice={false}
-          presetsMode="popover"
+          presetsMode={layout === "sidebar" ? "inline" : "popover"}
+          vertical={layout === "sidebar"}
         />
       </div>
       {#if onPlaybackModeChange}
@@ -284,6 +288,7 @@
             {isPlaying}
             {onPlaybackModeChange}
             onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+            showDescriptions={layout === "sidebar"}
           />
         </div>
       {/if}
@@ -292,7 +297,7 @@
     <div class="section-pad">
       <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
         <span class="rt-section-label" id="display-visibility-label">Visibility</span>
-        <DisplayPanel />
+        <DisplayPanel variant={layout === "sidebar" ? "rows" : "chips"} />
       </div>
       <div class="rt-section" role="region" aria-labelledby="display-paths-label">
         <span class="rt-section-label" id="display-paths-label">Motion paths</span>
@@ -321,7 +326,7 @@
 
       <div class="rt-section">
         <span class="rt-section-label">Resolution</span>
-        <div class="rt-chip-row">
+        <div class="rt-chip-row resolution-grid">
           <button type="button" class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 720}
             onclick={() => exportOptions.setVideoResolution(720)}
@@ -392,16 +397,20 @@
         </div>
       </div>
 
-      {#if timeEstimateLabel}
-        <div class="video-duration-line">
-          <i class="fas fa-clock" aria-hidden="true"></i>
-          {timeEstimateLabel}
-        </div>
-      {/if}
-      {#if totalVideoDuration}
-        <div class="video-duration-line">
-          <i class="fas fa-film" aria-hidden="true"></i>
-          Video length: {totalVideoDuration}
+      {#if timeEstimateLabel || totalVideoDuration}
+        <div class="export-summary-card">
+          {#if totalVideoDuration}
+            <div class="video-duration-line">
+              <i class="fas fa-film" aria-hidden="true"></i>
+              Video length: {totalVideoDuration}
+            </div>
+          {/if}
+          {#if timeEstimateLabel}
+            <div class="video-duration-line">
+              <i class="fas fa-clock" aria-hidden="true"></i>
+              Export time: {timeEstimateLabel}
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
@@ -512,9 +521,12 @@
           class="panel-scroll"
           bind:this={panelScrollEl}
         >
-          {#if activePill}
-            {@render pillBody()}
-          {/if}
+          <div class="panel-content-center">
+            {#if activePill}
+              <h2 class="panel-title">{activePillLabel}</h2>
+              {@render pillBody()}
+            {/if}
+          </div>
         </div>
 
         <div class="panel-footer">
@@ -597,6 +609,16 @@
     padding: 4px 16px 16px;
   }
 
+  .sidebar .section-pad {
+    gap: 16px;
+    padding: 8px 16px 20px;
+  }
+
+  .sidebar .resolution-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
   /* ============================================================
    * MOBILE BOTTOM CONTAINER
    * ============================================================ */
@@ -648,6 +670,32 @@
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-content-center {
+    margin: auto 0;
+  }
+
+  .section-hint {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0 8px;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    padding: 12px 16px 4px;
   }
 
   .panel-scroll::-webkit-scrollbar { width: 5px; }
@@ -661,6 +709,16 @@
    * Shared: duration lines, footer, export button, progress
    * ============================================================ */
 
+  .export-summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+  }
+
   .video-duration-line {
     display: flex;
     align-items: center;
@@ -668,12 +726,14 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
-    padding: 4px 0;
+    padding: 2px 0;
   }
 
   .video-duration-line i {
     font-size: 11px;
     opacity: 0.6;
+    width: 14px;
+    text-align: center;
   }
 
   .panel-footer {

@@ -9,6 +9,19 @@
   import { fade, scale } from "svelte/transition";
   import { flip } from "svelte/animate";
   import { cubicOut } from "svelte/easing";
+  import type { AnimationConfig } from "svelte/animate";
+
+  function safeFlip(
+    node: Element,
+    animation: { from: DOMRect; to: DOMRect },
+    params: Parameters<typeof flip>[2]
+  ): AnimationConfig {
+    if (!animation.from.width || !animation.from.height ||
+        !animation.to.width || !animation.to.height) {
+      return { duration: 0 };
+    }
+    return flip(node, animation, params);
+  }
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
@@ -370,7 +383,7 @@
         <div
           class="cell-flip-wrapper"
           style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-          animate:flip={{ duration: flipDuration, easing: cubicOut }}
+          animate:safeFlip={{ duration: flipDuration, easing: cubicOut }}
         >
         {#if onStepClick && cell.index >= 0}
           <button
@@ -497,7 +510,7 @@
       <div
         class="cell-flip-wrapper"
         style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-        animate:flip={{ duration: flipDuration, easing: cubicOut }}
+        animate:safeFlip={{ duration: flipDuration, easing: cubicOut }}
       >
       {#if onStepClick && cell.index >= 0}
         <button

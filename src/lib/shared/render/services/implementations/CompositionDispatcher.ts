@@ -23,7 +23,6 @@ export type CompositionWorkerInMessage =
       sequence: SequenceData;
       options: Partial<SequenceExportOptions>;
       qrBitmap: ImageBitmap | null;
-      elementIconBitmap: ImageBitmap | null;
     }
   | { type: "cancel"; id: number };
 
@@ -122,7 +121,6 @@ export class CompositionDispatcher {
     worker.pendingCount++;
 
     const qrBitmap: ImageBitmap | null = null;
-    const elementIconBitmap: ImageBitmap | null = null;
 
     return new Promise<Blob>((resolve, reject) => {
       const pending: PendingRequest = { resolve, reject, onProgress, signal, workerEntry: worker };
@@ -141,7 +139,6 @@ export class CompositionDispatcher {
 
       const transferList: Transferable[] = [];
       if (qrBitmap) transferList.push(qrBitmap);
-      if (elementIconBitmap) transferList.push(elementIconBitmap);
 
       const message: CompositionWorkerInMessage = {
         type: "compose",
@@ -149,7 +146,6 @@ export class CompositionDispatcher {
         sequence: plainSequence,
         options: plainOptions,
         qrBitmap,
-        elementIconBitmap,
       };
 
       worker.worker.postMessage(message, transferList);

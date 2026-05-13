@@ -65,16 +65,18 @@
 
 <nav
   class="icon-rail"
-  role="group"
+  role="tablist"
+  aria-orientation="vertical"
   aria-label="Editor sections"
   bind:this={navEl}
 >
   {#each pills as pill (pill.id)}
     <button
       type="button"
+      role="tab"
       class="rail-btn"
       data-pill-id={pill.id}
-      aria-pressed={activeId === pill.id}
+      aria-selected={activeId === pill.id}
       aria-label={pill.label}
       title="{pill.label}{pill.summary ? ` — ${pill.summary}` : ''}"
       style:--pill-accent={pill.accentColor ?? null}
@@ -102,6 +104,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     padding: 8px 0;
     gap: 2px;
   }
@@ -123,7 +126,7 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .rail-btn:hover:not([aria-pressed="true"]) {
+  .rail-btn:hover:not([aria-selected="true"]) {
     background: rgba(255, 255, 255, 0.04);
     color: rgba(255, 255, 255, 0.8);
   }
@@ -133,15 +136,15 @@
     outline-offset: -2px;
   }
 
-  .rail-btn[aria-pressed="true"] {
+  .rail-btn[aria-selected="true"] {
     background: color-mix(in srgb, var(--pill-accent, #8b5cf6) 15%, transparent);
     border-left-color: color-mix(in srgb, var(--pill-accent, #a855f7) 100%, transparent);
     color: color-mix(in srgb, var(--pill-accent, #d4b4ff) 100%, white);
   }
 
   .effort-dot {
-    width: 7px;
-    height: 7px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
   }
 
@@ -155,7 +158,7 @@
     .rail-btn {
       border: 1px solid rgba(255, 255, 255, 0.3);
     }
-    .rail-btn[aria-pressed="true"] {
+    .rail-btn[aria-selected="true"] {
       background: #1a1a2e;
       border-color: white;
       color: white;

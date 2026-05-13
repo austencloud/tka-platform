@@ -22,7 +22,7 @@ export interface PillSpec {
   id: PillId;
   /** Uppercase short label (≤8 chars), e.g. "EFFECTS". */
   label: string;
-  /** FontAwesome class, e.g. "fa-sparkles". Optional - Effort uses a color dot instead. */
+  /** FontAwesome class, e.g. "fa-wand-magic-sparkles". Optional - Effort uses a color dot instead. */
   icon?: string;
   /** Live one-line summary of the section's current state, ≤24 chars (truncated with ellipsis if longer). */
   summary: string;

@@ -131,7 +131,6 @@ export class PrintCardRenderer {
       showNotes: true,
       showBirthday: true,
       leftLabel: options.leftLabel,
-      elementIcon: options.elementIcon,
       loopType: sequence.loopType ?? undefined,
       showLoopGlyph: !!sequence.loopType,
       ...(options.bluePropType && { bluePropTypeOverride: options.bluePropType }),

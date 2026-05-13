@@ -23,8 +23,6 @@ export interface SequenceExportOptions {
   customNotesText?: string; 
   /** Left-side label override (e.g. "QS 1:1" for deck cards) */
   leftLabel?: string;
-  /** Pre-loaded elemental icon image to draw in footer before the left label */
-  elementIcon?: CanvasImageSource;
 
   propTypeOverride?: PropType;
 

@@ -37,6 +37,9 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     groupByFamily as groupSeqsByFamily,
     formatCount as fmtCount,
   } from "../state/deck-interior-state.svelte";
+  import { calculateVTG } from "$lib/shared/pictograph/shared/domain/utils/vtg-calculator";
+  import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   interface Props {
     decks: Deck[];
@@ -294,6 +297,42 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     }
     return abbr;
   });
+
+  /**
+   * Per-sequence VTG label for deck cards. Calculates the actual VTG mode
+   * for each sequence's first step so cards show their correct family
+   * (e.g. "TS 1:1") instead of the uniform deck-level label.
+   */
+  function getSequenceLeftLabel(seq: SequenceData): string | undefined {
+    if (!resolvedVtgFamilyId) return undefined; // Only for VTG decks
+
+    // Get first step's letter and start position
+    const firstStep = seq.steps?.[0];
+    if (!firstStep?.letter || !firstStep?.startPosition) return deckLeftLabel ?? undefined;
+
+    // Get grid mode from sequence or deck
+    const gm = (seq.gridMode ?? selectedDeck?.gridMode) === "box" ? GridMode.BOX : GridMode.DIAMOND;
+
+    // Calculate VTG for this specific sequence
+    const result = calculateVTG(firstStep.letter as Letter, gm, firstStep.startPosition as GridPosition);
+    if (!result.vtgMode) return deckLeftLabel ?? undefined;
+
+    // VTGMode enum values are already the abbreviations ("SS", "SO", etc.)
+    const abbr = result.vtgMode;
+
+    // Append ratio from deck turn pattern
+    const turn = selectedDeck?.turnPattern;
+    if (turn) {
+      if (/^\d+:\d+$/.test(turn)) return `${abbr} ${turn}`;
+      const uniformMatch = turn.match(/^uniform[- ](\d+)t$/i);
+      if (uniformMatch) {
+        const turns = parseInt(uniformMatch[1] ?? "0", 10);
+        const ratio = TURNS_TO_RATIO[turns] ?? `${turns}t`;
+        return `${abbr} ${ratio}`;
+      }
+    }
+    return abbr;
+  }
 
   // ── Level 2: Deck Interior State ──
 
@@ -631,7 +670,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             {includeStartPosition}
             deckMode={true}
             leftLabel={deckLeftLabel}
-            elementFamilyId={resolvedVtgFamilyId}
+            getLeftLabel={resolvedVtgFamilyId ? getSequenceLeftLabel : undefined}
             onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
             onCardClick={(seq, frontUrl, rerender) => {
               inspectedFrontImageUrl = frontUrl ?? null;

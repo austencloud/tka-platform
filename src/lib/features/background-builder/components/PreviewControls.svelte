@@ -73,7 +73,7 @@
   <ChipToggle label="Shooting Stars" icon="fa-meteor" active={layers.shootingStars} color="lime" onclick={() => onLayerToggle("shootingStars")} />
   <ChipToggle label="Trees" icon="fa-tree" active={layers.trees} color="lime" onclick={() => onLayerToggle("trees")} />
   <ChipToggle label="Grass" icon="fa-seedling" active={layers.grass} color="lime" onclick={() => onLayerToggle("grass")} />
-  <ChipToggle label="Dust Motes" icon="fa-sparkles" active={layers.ambientParticles} color="lime" onclick={() => onLayerToggle("ambientParticles")} />
+  <ChipToggle label="Dust Motes" icon="fa-wand-magic-sparkles" active={layers.ambientParticles} color="lime" onclick={() => onLayerToggle("ambientParticles")} />
   <ChipToggle label="Campfire" icon="fa-fire" active={layers.campfire} color="red" onclick={() => onLayerToggle("campfire")} />
   <ChipToggle label="Fireflies" icon="fa-lightbulb" active={layers.fireflies} color="lime" onclick={() => onLayerToggle("fireflies")} />
 </ChipGroup>

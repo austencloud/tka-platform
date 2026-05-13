@@ -87,19 +87,9 @@
     if (copyImageState === "copying" || !stackEl) return;
     copyImageState = "copying";
     try {
-      // html2canvas is lazy-loaded - eagerly importing it violates CSP
-      // (uses new Function for CSS parsing) and adds 200KB to the main chunk.
-      const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(stackEl, {
-        backgroundColor: null,
+      const { domToBlob } = await import("modern-screenshot");
+      const blob = await domToBlob(stackEl, {
         scale: 2,
-        useCORS: true,
-      });
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (b) => b ? resolve(b) : reject(new Error("toBlob returned null")),
-          "image/png",
-        );
       });
       await navigator.clipboard.write([
         new ClipboardItem({ "image/png": blob }),

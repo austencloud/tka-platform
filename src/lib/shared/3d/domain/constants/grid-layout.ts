@@ -11,7 +11,7 @@
  */
 
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { DEFAULT_SCENE_DIMENSIONS } from "../../config/user-proportions";
+import { DEFAULT_SCENE_DIMENSIONS } from "@austencloud/scene-3d";
 
 // Base radius for hand points (comfortable arm extension)
 // Default: ~76cm for 6'3" person (40% of height)

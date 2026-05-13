@@ -32,18 +32,12 @@ export async function renderCardBack(sequence: SequenceData, options: CardBackDo
       requestAnimationFrame(() => setTimeout(resolve, 200))
     ));
 
-    // html2canvas is lazy-loaded - it's ~200KB and violates CSP if eagerly
-    // imported into the main chunk (uses new Function for CSS parsing).
-    const { default: html2canvas } = await import("html2canvas");
+    const { domToCanvas } = await import("modern-screenshot");
 
-    // Capture the rendered DOM to canvas
-    const capturedCanvas = await html2canvas(container, {
+    const capturedCanvas = await domToCanvas(container, {
       width: contentW,
       height: contentH,
       scale: 1,
-      useCORS: true,
-      backgroundColor: null,
-      logging: false,
     });
 
     // Unmount the Svelte component

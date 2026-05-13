@@ -77,23 +77,3 @@ export interface ExportResult {
   };
 }
 
-// ============================================================================
-// HTML2CANVAS INTEGRATION TYPES
-// ============================================================================
-
-/**
- * Html2Canvas function type for dynamic loading
- */
-export interface Html2CanvasFunction {
-  (
-    element: HTMLElement,
-    options?: Record<string, unknown>
-  ): Promise<HTMLCanvasElement>;
-}
-
-/**
- * Window object extended with html2canvas
- */
-export interface WindowWithHtml2Canvas extends Window {
-  html2canvas: Html2CanvasFunction;
-}

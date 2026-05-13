@@ -5,11 +5,11 @@ import type { SequenceData } from "../../../foundation/domain/models/SequenceDat
 import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
-import { getLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
+import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
   RESERVED_ORIENTATION_PRIMITIVES,
-  type LOOPComponent,
+  LOOPComponent,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
@@ -479,12 +479,13 @@ export class ImageComposer {
     const loopTypeOverride = options.loopType;
     let loopComponents: Set<LOOPComponent> | undefined;
 
-    const display = getLoopDisplayResolver()(sequence);
-    const rotationPeriod = display.rotationPeriod;
-    const inversionPeriod = display.inversionPeriod;
-    const loopPeriod = display.period;
+    const resolver = tryGetLoopDisplayResolver();
+    const display = resolver?.(sequence);
+    const rotationPeriod = display?.rotationPeriod;
+    const inversionPeriod = display?.inversionPeriod;
+    const loopPeriod = display?.period ?? 1;
 
-    if (display.components.size > 0) {
+    if (display && display.components.size > 0) {
       loopComponents = display.components;
     } else if (loopTypeOverride) {
       const parsed = parseLoopComponents(loopTypeOverride);
@@ -493,6 +494,20 @@ export class ImageComposer {
         if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) filtered.add(c);
       }
       loopComponents = filtered.size > 0 ? filtered : undefined;
+    }
+
+    // Filter LOOP components by view mode:
+    // - Swapped requires two hands (meaningless for single-hand view)
+    // - Inverted requires props (meaningless in hand-path mode)
+    if (loopComponents) {
+      const isHandPath = visibilitySettings.handPathMode ?? false;
+      const isSolo = visibilitySettings.showBlueMotion === false || visibilitySettings.showRedMotion === false;
+      if (isHandPath || isSolo) {
+        const filtered = new Set(loopComponents);
+        if (isSolo) filtered.delete(LOOPComponent.SWAPPED);
+        if (isHandPath) filtered.delete(LOOPComponent.INVERTED);
+        loopComponents = filtered.size > 0 ? filtered : undefined;
+      }
     }
     const showLoopGlyph =
       options.showLoopGlyph !== false &&
@@ -564,8 +579,7 @@ export class ImageComposer {
         options.customNotesText,
         options.deckCard ? DECK_HEADER_BG : undefined,
         options.deckCard ? DECK_BORDER_COLOR : undefined,
-        options.leftLabel,
-        options.elementIcon
+        options.leftLabel
       );
     }
 

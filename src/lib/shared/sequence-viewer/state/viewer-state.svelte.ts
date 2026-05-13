@@ -12,7 +12,7 @@ import {
 export type { ViewerMode, ExportContext, ContentType, SplitConfig };
 
 function deriveInitialExportContext(mode: ViewerMode): ExportContext {
-	if (mode === 'animation') return 'animation-export';
+	if (mode === 'animation' || mode === 'animation-3d') return 'animation-export';
 	if (mode === 'card') return 'image-export';
 	return null;
 }

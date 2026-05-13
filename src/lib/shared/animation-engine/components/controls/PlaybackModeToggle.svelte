@@ -14,11 +14,13 @@
     isPlaying = false,
     onPlaybackModeChange = () => {},
     onPlaybackToggle = () => {},
+    showDescriptions = false,
   }: {
     playbackMode?: PlaybackMode;
     isPlaying?: boolean;
     onPlaybackModeChange?: (mode: PlaybackMode) => void;
     onPlaybackToggle?: () => void;
+    showDescriptions?: boolean;
   } = $props();
 
   let nextTickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -45,7 +47,7 @@
   });
 </script>
 
-<div class="mode-toggle">
+<div class="mode-toggle" class:with-desc={showDescriptions}>
   <button
     class="mode-btn"
     class:active={playbackMode === "continuous"}
@@ -54,8 +56,13 @@
     aria-pressed={playbackMode === "continuous"}
     aria-label="Continuous playback mode"
   >
-    <i class="fas fa-play" aria-hidden="true"></i>
-    <span>{t("compose_continuous")}</span>
+    <div class="mode-btn-content">
+      <i class="fas fa-play" aria-hidden="true"></i>
+      <span>{t("compose_continuous")}</span>
+    </div>
+    {#if showDescriptions}
+      <span class="mode-desc">Loops the full sequence</span>
+    {/if}
   </button>
   <button
     class="mode-btn"
@@ -65,8 +72,13 @@
     aria-pressed={playbackMode === "step"}
     aria-label="Step-by-step playback mode"
   >
-    <i class="fas fa-shoe-prints" aria-hidden="true"></i>
-    <span>{t("compose_step_by_step")}</span>
+    <div class="mode-btn-content">
+      <i class="fas fa-shoe-prints" aria-hidden="true"></i>
+      <span>{t("compose_step_by_step")}</span>
+    </div>
+    {#if showDescriptions}
+      <span class="mode-desc">One beat at a time</span>
+    {/if}
   </button>
 </div>
 
@@ -78,12 +90,33 @@
     width: 100%;
   }
 
+  .mode-toggle.with-desc {
+    gap: 6px;
+  }
+
+  .mode-btn-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mode-desc {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1;
+  }
+
+  .mode-btn.active .mode-desc {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
   .mode-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 36px;
+    min-height: var(--min-touch-target, 44px);
     padding: 6px 10px;
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
@@ -94,6 +127,13 @@
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .with-desc .mode-btn {
+    flex-direction: column;
+    gap: 4px;
+    min-height: 52px;
+    padding: 10px 12px;
   }
 
   .mode-btn i {

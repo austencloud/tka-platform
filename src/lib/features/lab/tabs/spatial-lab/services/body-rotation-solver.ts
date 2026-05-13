@@ -28,6 +28,7 @@ export function computeTargetRotation(
 
   const dx = mx - bodyCenter.x;
   const dy = my - bodyCenter.y;
+  if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return 0;
   const angle = Math.atan2(dx, -dy) * (180 / Math.PI);
   return Math.max(-90, Math.min(90, angle));
 }

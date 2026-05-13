@@ -39,3 +39,7 @@ export function getLoopDisplayResolver(): ResolveLoopDisplayFn {
   }
   return resolver;
 }
+
+export function tryGetLoopDisplayResolver(): ResolveLoopDisplayFn | null {
+  return resolver;
+}

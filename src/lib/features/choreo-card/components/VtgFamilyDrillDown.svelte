@@ -253,7 +253,6 @@ import type { CardPair } from "../services/types";
       sequences={allSequences}
       {cardSize}
       theme={selectedTheme}
-      elementTheme={theme}
       {rerenderKey}
       isLoading={loading}
       {handPointsVisible}

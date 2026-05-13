@@ -72,7 +72,7 @@
 
       <section class="card sequences">
         <div class="card-icon">
-          <i class="fas fa-sparkles" aria-hidden="true"></i>
+          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         </div>
         <h2>Your Sequences</h2>
         <ul>

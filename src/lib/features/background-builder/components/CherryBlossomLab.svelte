@@ -322,7 +322,7 @@
         Trigger Gust
       </button>
       <button class="action-btn" onclick={regenerate}>
-        <i class="fas fa-sparkles"></i>
+        <i class="fas fa-wand-magic-sparkles"></i>
         Regenerate
       </button>
     </div>

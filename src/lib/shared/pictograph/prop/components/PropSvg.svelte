@@ -139,21 +139,15 @@ even when Svelte recreates the component instance.
     const settings = getSettings();
 
     // Determine the actual prop type being rendered.
-    // If motionData explicitly says HAND, trust it - the preparer preserves HAND
-    // when the source data uses it (e.g. PositionVisualizer, Assembly mode).
-    // Otherwise, settings prop type takes precedence over stored prop type.
-    let actualPropType: PropType | string | undefined;
-    if (motionData.propType === PropType.HAND) {
-      actualPropType = PropType.HAND;
-    } else {
-      const settingsPropType =
-        motionData.color === MotionColor.BLUE
-          ? settings.bluePropType
-          : motionData.color === MotionColor.RED
-            ? settings.redPropType
-            : undefined;
-      actualPropType = settingsPropType ?? motionData.propType;
-    }
+    // Settings prop type takes precedence — it's what the user chose to display.
+    const settingsPropType =
+      motionData.color === MotionColor.BLUE
+        ? settings.bluePropType
+        : motionData.color === MotionColor.RED
+          ? settings.redPropType
+          : undefined;
+    const actualPropType: PropType | string | undefined =
+      settingsPropType ?? motionData.propType;
 
     // Red hand is always mirrored
     if (

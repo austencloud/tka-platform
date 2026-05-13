@@ -2,13 +2,13 @@
   import { onMount, onDestroy } from "svelte";
   import type { SpatialLabState } from "../state/spatial-lab-state.svelte";
   import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
-  import { Avatar3D, Prop3D } from "@austencloud/scene-3d";
+  import { Avatar3D, Prop3D, STAGE } from "@austencloud/scene-3d";
+  import { T } from "@threlte/core";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { snapToNearestGridLocation } from "../services/grid-snap";
   import { Vector3 } from "three";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { STAGE } from "@austencloud/scene-3d";
 
   interface Props {
     state: SpatialLabState;
@@ -58,6 +58,7 @@
     showLabels={labState.showLabels}
     showStage={labState.showStage}
     visiblePlanes={labState.visiblePlanes}
+    avatarPositions={[{ x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0 }]}
     {backgroundType}
     disableOrbitControls={labState.draggingSide !== null}
     isDragging={labState.draggingSide !== null}
@@ -66,22 +67,36 @@
     onPointerUp={handlePointerUp}
   >
     {#snippet children()}
-      <Prop3D
-        propType={PropType.STAFF}
-        propState={labState.bluePropState}
-        color="blue"
-      />
-      <Prop3D
-        propType={PropType.STAFF}
-        propState={labState.redPropState}
-        color="red"
-      />
-      <Avatar3D
-        bluePropState={labState.bluePropState}
-        redPropState={labState.redPropState}
-        position={{ x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0 }}
-        facingAngle={labState.facingAngle}
-      />
+      <T.Group position.y={STAGE.STAGE_DECK_HEIGHT}>
+        <T.Group position={[
+          labState.bluePropState.worldPosition.x,
+          labState.bluePropState.worldPosition.y,
+          labState.bluePropState.worldPosition.z,
+        ]}>
+          <Prop3D
+            propType={PropType.STAFF}
+            propState={labState.bluePropState}
+            color="blue"
+          />
+        </T.Group>
+        <T.Group position={[
+          labState.redPropState.worldPosition.x,
+          labState.redPropState.worldPosition.y,
+          labState.redPropState.worldPosition.z,
+        ]}>
+          <Prop3D
+            propType={PropType.STAFF}
+            propState={labState.redPropState}
+            color="red"
+          />
+        </T.Group>
+        <Avatar3D
+          bluePropState={labState.bluePropState}
+          redPropState={labState.redPropState}
+          position={{ x: 0, y: 0, z: 0 }}
+          facingAngle={labState.facingAngle}
+        />
+      </T.Group>
     {/snippet}
   </Scene3D>
 </div>

@@ -1,29 +1,24 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getViewer3DContext, type PopoverId } from "$lib/shared/3d/context/viewer-3d-context";
   import TempoPopover from "./TempoPopover.svelte";
   import ExportPopover from "./ExportPopover.svelte";
   import PerformerPopover from "./PerformerPopover.svelte";
   import Viewer3DGearPopover from "$lib/shared/3d/components/Viewer3DGearPopover.svelte";
-  import RenderModeToggle from "./RenderModeToggle.svelte";
-
   const viewer = getViewer3DContext();
 
   interface Props {
-    sequence: SequenceData | null;
     renderMode: "2d" | "3d";
     bpm?: number;
     onBpmChange?: (bpm: number) => void;
   }
-  let { sequence, renderMode, bpm = 60, onBpmChange = () => {} }: Props = $props();
+  let { renderMode, bpm = 60, onBpmChange = () => {} }: Props = $props();
 
   let rootEl = $state<HTMLDivElement | null>(null);
 
   interface Chip { id: PopoverId; icon: string; tooltip: string; }
-  // Only rendered in 3D mode. The render-mode toggle (chip #1) lives in
-  // both modes and is rendered separately above this loop.
+  // Only rendered in 3D mode.
   const CHIPS_3D: Chip[] = [
     { id: "performers", icon: "fa-users", tooltip: "Performers" },
     { id: "tempo",      icon: "fa-drum",  tooltip: "Tempo" },
@@ -34,14 +29,6 @@
   function onChipClick(e: MouseEvent, id: PopoverId) {
     e.stopPropagation();
     viewer.openPopover(viewer.activePopover === id ? null : id);
-  }
-
-  function handleRenderModeChange(mode: "2d" | "3d") {
-    if (mode === "3d") {
-      if (sequence) viewer.enter3D(sequence);
-    } else {
-      viewer.exit3D();
-    }
   }
 
   onMount(() => {
@@ -69,10 +56,6 @@
   role="toolbar"
   aria-label="Viewer controls"
 >
-  <div class="chip-wrap">
-    <RenderModeToggle {renderMode} onchange={handleRenderModeChange} />
-  </div>
-
   {#if renderMode === "3d"}
     {#each CHIPS_3D as chip (chip.id)}
       <div class="chip-wrap" transition:slide|local={{ duration: 220, axis: "y" }}>

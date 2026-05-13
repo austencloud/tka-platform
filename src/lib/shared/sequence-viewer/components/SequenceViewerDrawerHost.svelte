@@ -385,11 +385,21 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 >
                   {#if showRail}
                     <ViewerContentRail
-                      activeMode={ctx.viewerState.viewerMode === 'split' ? 'animation' : ctx.viewerState.viewerMode}
+                      activeMode={(() => {
+                        const base = ctx.viewerState.viewerMode === 'split' ? 'animation' : ctx.viewerState.viewerMode;
+                        if ((base === 'animation' || base === 'animation-3d') && ctx.renderMode === '3d') return 'animation-3d';
+                        if (base === 'animation-3d' && ctx.renderMode === '2d') return 'animation';
+                        return base;
+                      })()}
                       {videoCount}
+                      webgl2Available={ctx.viewer3DState.webgl2Available}
                       onBack={handleBackToSplit}
                       onSelectMode={(mode) => {
                         if (mode === 'animation') {
+                          if (ctx.renderMode === '3d') ctx.viewer3DState.exit3D();
+                          ctx.viewerState.enterExport('animation-export');
+                        } else if (mode === 'animation-3d') {
+                          if (ctx.renderMode !== '3d' && overlay.sequence) ctx.viewer3DState.enter3D(overlay.sequence);
                           ctx.viewerState.enterExport('animation-export');
                         } else if (mode === 'card') {
                           ctx.viewerState.enterExport('image-export');
@@ -870,7 +880,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   }
 
   .viewer-and-export.export-active.desktop.has-rail {
-    grid-template-columns: 1fr 4fr var(--export-sidebar-width);
+    grid-template-columns: auto 1fr var(--export-sidebar-width);
   }
 
   .viewer-and-export.export-active.desktop.sidebar-collapsed {
@@ -878,11 +888,11 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   }
 
   .viewer-and-export.export-active.desktop.has-rail.sidebar-collapsed {
-    grid-template-columns: 1fr 4fr 0px;
+    grid-template-columns: auto 1fr 0px;
   }
 
   .viewer-and-export.desktop.has-rail:not(.export-active) {
-    grid-template-columns: 1fr 4fr;
+    grid-template-columns: auto 1fr;
   }
 
 

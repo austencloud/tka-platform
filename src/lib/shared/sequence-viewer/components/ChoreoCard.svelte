@@ -23,6 +23,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
@@ -336,9 +337,17 @@
   // sequence was edited and its stored loopType might be stale), plus
   // caching keyed by sequence id.
   const loopDisplay = $derived.by(() => getLoopDisplayResolver()(sequence));
-  const loopComponents = $derived(
+  const loopComponentsRaw = $derived(
     loopDisplay.components.size > 0 ? loopDisplay.components : null
   );
+  const loopComponents = $derived.by(() => {
+    if (!loopComponentsRaw) return null;
+    if (!isSoloMode && !isHandsMode) return loopComponentsRaw;
+    const filtered = new Set(loopComponentsRaw);
+    if (isSoloMode) filtered.delete(LOOPComponent.SWAPPED);
+    if (isHandsMode || handPathMode) filtered.delete(LOOPComponent.INVERTED);
+    return filtered.size > 0 ? filtered : null;
+  });
   const loopRotationPeriod = $derived(loopDisplay.rotationPeriod);
   const loopInversionPeriod = $derived(loopDisplay.inversionPeriod);
   const loopPeriod = $derived(loopDisplay.period);
@@ -883,8 +892,12 @@
       // Run them once now that all cells are loaded.
       updateCellWidth();
       updateContainedDimensions();
-      // Re-enable flip after the dimension adjustment settles
-      requestAnimationFrame(() => { suppressFlip = false; });
+      hasMounted = true;
+      // Re-enable flip after layout settles
+      requestAnimationFrame(() => {
+        suppressFlip = false;
+        flipEnabled = true;
+      });
       // If a render was requested while we were busy, run it now
       if (renderQueued) {
         renderQueued = false;
@@ -1180,11 +1193,12 @@
     }
   }
 
-  // Track if initial render is complete
+  // Track if initial render is complete (controls visibility gate)
   let hasMounted = $state(false);
-  // Flip animation duration: 0 during initial mount or column count changes
-  // (container resize transition handles the visual smoothness instead)
-  const flipDuration = $derived(hasMounted && !suppressFlip ? 250 : 0);
+  // Separate flag for FLIP — enabled one frame AFTER hasMounted so the
+  // visibility reflow doesn't trigger FLIP with duration > 0.
+  let flipEnabled = $state(false);
+  const flipDuration = $derived(flipEnabled && !suppressFlip ? 250 : 0);
   let lastEffectRenderKey = "";
 
   // Re-render when relevant props or visibility settings change.
@@ -1389,14 +1403,17 @@
         durationRows = cached.durationRows ?? [];
         durationColCount = cached.durationColCount ?? 0;
         isLoading = false;
+        updateCellWidth();
+        updateContainedDimensions();
         hasMounted = true;
+        requestAnimationFrame(() => {
+          flipEnabled = true;
+        });
         return;
       }
     }
 
-    renderAllCells().then(() => {
-      hasMounted = true;
-    });
+    renderAllCells();
   });
 
   onDestroy(() => {
@@ -1458,7 +1475,7 @@
     <div
       class="preview-stack"
       class:scroll-mode={needsScroll}
-      style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};${containedWidth === null ? ' visibility: hidden;' : ''}`}
+      style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};`}
       bind:this={previewStackElement}
     >
       <!-- Header section -->

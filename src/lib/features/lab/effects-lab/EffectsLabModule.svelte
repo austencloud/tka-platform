@@ -92,7 +92,7 @@
   <header class="header">
     <div class="title-row">
       <h1>
-        <i class="fas fa-sparkles" aria-hidden="true"></i>
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         Effects Lab
       </h1>
       <span class="badge">Experimental</span>

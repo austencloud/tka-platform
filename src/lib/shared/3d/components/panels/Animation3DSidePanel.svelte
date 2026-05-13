@@ -175,7 +175,7 @@
         aria-expanded={expandedSections.has("effects")}
         aria-label={expandedSections.has("effects") ? "Collapse effects settings" : "Expand effects settings"}
       >
-        <i class="fas fa-sparkles" aria-hidden="true"></i>
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         <span>{t("viewer3d_effects")}</span>
         <i
           class="fas fa-chevron-down chevron"

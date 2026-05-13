@@ -35,21 +35,21 @@
 
   function toggleBlue(): void {
     if (showBlue && showRed) {
-      onViewModeChange({ ...viewMode, granularity: "solo", color: "red" });
-    } else if (showBlue && !showRed) {
-      onViewModeChange({ ...viewMode, granularity: "combined", color: "blue" });
-    } else {
+      // Both on → isolate blue (hide red)
       onViewModeChange({ ...viewMode, granularity: "solo", color: "blue" });
+    } else {
+      // Blue is either the solo one or the inactive one → show both
+      onViewModeChange({ ...viewMode, granularity: "combined", color: "blue" });
     }
   }
 
   function toggleRed(): void {
     if (showBlue && showRed) {
-      onViewModeChange({ ...viewMode, granularity: "solo", color: "blue" });
-    } else if (!showBlue && showRed) {
-      onViewModeChange({ ...viewMode, granularity: "combined", color: "blue" });
-    } else {
+      // Both on → isolate red (hide blue)
       onViewModeChange({ ...viewMode, granularity: "solo", color: "red" });
+    } else {
+      // Red is either the solo one or the inactive one → show both
+      onViewModeChange({ ...viewMode, granularity: "combined", color: "blue" });
     }
   }
 </script>

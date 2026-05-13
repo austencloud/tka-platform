@@ -167,10 +167,6 @@ async function handleCompose(
     }
 
     const effectiveOptions = { ...options };
-    if (msg.elementIconBitmap) {
-      (effectiveOptions as Record<string, unknown>).elementIcon =
-        msg.elementIconBitmap;
-    }
 
     // Pseudo AbortSignal that checks the local cancelled flag.
     // ImageComposer checks signal?.aborted between beats.
