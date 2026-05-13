@@ -39,6 +39,7 @@
     "pov-pattern": () => import("./tabs/PovPatternLab.svelte"),
     "collision-lab": () => import("./tabs/collision-lab/CollisionLab.svelte"),
     "scene-lab": () => import("./tabs/scene-lab/SceneLab.svelte"),
+    "spatial-lab": () => import("./tabs/spatial-lab/SpatialLab.svelte"),
     stickers: () => import("$lib/features/sticker-lab/StickerLab.svelte"),
     "path-mandalas": () => import("./tabs/PathMandalaLab.svelte"),
     // hand-path-explorer, hand-path-builder graduated to Hand Paths module (Mar 2026)

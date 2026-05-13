@@ -968,6 +968,14 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%)",
   },
   {
+    id: "spatial-lab",
+    label: "Spatial Lab",
+    icon: '<i class="fas fa-eye" style="color: #6a6aff;" aria-hidden="true"></i>',
+    description: "Bird's eye exploration of body rotation and arm reachability",
+    color: "#6a6aff",
+    gradient: "linear-gradient(135deg, #8888ff 0%, #6a6aff 100%)",
+  },
+  {
     id: "stickers",
     label: "Stickers",
     icon: '<i class="fas fa-circle" aria-hidden="true"></i>',
