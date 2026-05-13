@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 /**
- * Remove files larger than Cloudflare Pages' 25 MiB limit from the build output.
- * These assets must be served from R2 or another CDN.
+ * Trim the Cloudflare Pages build output:
+ * 1. Remove entire directories that are dev-only or served from R2/CDN
+ * 2. Remove individual files larger than the 25 MiB per-file limit
  */
-import { readdirSync, statSync, unlinkSync } from "fs";
+import { readdirSync, statSync, unlinkSync, rmSync, existsSync } from "fs";
 import { join } from "path";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 const OUTPUT_DIR = ".svelte-kit/cloudflare";
+
+const DIRS_TO_REMOVE = [
+  "screenshots",
+  "thumbnails",
+  "guides",
+];
 
 function walk(dir) {
   const entries = readdirSync(dir, { withFileTypes: true });
@@ -25,6 +32,17 @@ function walk(dir) {
   }
 }
 
-console.log(`Trimming files > 25 MiB from ${OUTPUT_DIR}...`);
+console.log(`Trimming deploy output in ${OUTPUT_DIR}...`);
+
+for (const dir of DIRS_TO_REMOVE) {
+  const fullPath = join(OUTPUT_DIR, dir);
+  if (existsSync(fullPath)) {
+    const files = readdirSync(fullPath, { recursive: true });
+    rmSync(fullPath, { recursive: true, force: true });
+    console.log(`  Removed ${fullPath}/ (${files.length} entries)`);
+  }
+}
+
+console.log("Trimming files > 25 MiB...");
 walk(OUTPUT_DIR);
 console.log("Done.");
