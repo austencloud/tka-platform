@@ -117,8 +117,15 @@ const devCachePlugin = () => ({
           return;
         }
 
-        // Disable caching for ALL dev server responses (aggressive approach)
-        // Every request goes through here — no-store ensures HMR always gets fresh modules
+        // Skip Vite's pre-bundled deps — they use content-hashed URLs for
+        // cache busting. Stripping cache headers causes 504 "Outdated Optimize
+        // Dep" errors when Vite re-optimizes and the hash changes mid-session.
+        if (req.url?.includes(".vite/deps")) {
+          next();
+          return;
+        }
+
+        // Disable caching for all other dev server responses
         {
           const originalWriteHead = res.writeHead;
           res.writeHead = function (...args: any[]) {
@@ -691,7 +698,9 @@ export default defineConfig(({ mode }) => ({
               id.includes("postprocessing") ||
               id.includes("three-perf") ||
               id.includes("@dimforge/rapier") ||
-              id.includes("globe.gl")
+              id.includes("globe.gl") ||
+              id.includes("camera-controls") ||
+              id.includes("@austencloud/scene-3d")
             )
               return "vendor-three";
             if (id.includes("fabric")) return "vendor-fabric";
@@ -746,12 +755,6 @@ export default defineConfig(({ mode }) => ({
       "@tka/sequence-engine/core",
       "@tka/sequence-engine/loop",
       "@tka/sequence-engine/analysis",
-      "reflect-metadata", // Often has CJS issues
-      "gif.js", // May contain CJS code
-      "file-saver", // Often has CJS exports
-      "@tsparticles/basic",
-      "@tsparticles/engine",
-      "@tsparticles/preset-snow",
       // Threlte packages need svelte export condition, keep bundled
       "@threlte/core",
       "@threlte/extras",
@@ -814,8 +817,7 @@ export default defineConfig(({ mode }) => ({
   // ============================================================================
   optimizeDeps: {
     include: [
-      // Core DI & validation (lightweight, needed immediately)
-      "reflect-metadata",
+      // Validation (lightweight, needed immediately)
       "zod",
 
       // Firebase: pre-bundle every subpath used at boot to prevent the
@@ -830,15 +832,13 @@ export default defineConfig(({ mode }) => ({
       "firebase/messaging",
       "firebase/analytics",
 
-      // ITI: legacy — was used by dissolved DI container, retained for compat
-      "iti",
 
       // UI components (lightweight)
       "bits-ui",
       "embla-carousel-svelte",
 
       // Small utilities
-      "file-saver",
+      "fflate",
 
       // ⚡ PERFORMANCE FIX: Pre-bundle dexie for proper ESM handling
       // Needs Vite transformation despite being in dataModule (Tier 1)
@@ -849,18 +849,26 @@ export default defineConfig(({ mode }) => ({
       // WebGPU renderer: pre-bundle to avoid 504 "Outdated Optimize Dep" errors
       "three/webgpu",
 
-      // Prevent mid-session optimization reloads (lightweight deps browseed late)
-      "animate-css-grid",
+      // Prevent mid-session optimization reloads (lightweight deps discovered late)
       "@tanstack/svelte-virtual",
       "threlte-postprocessing",
       "threlte-postprocessing/effects",
       "three/examples/jsm/controls/PointerLockControls.js",
+      "@austencloud/backgrounds",
+      "@austencloud/backgrounds/card",
+      "@capacitor/core",
+      "@capgo/capacitor-updater",
+      "qr-code-styling",
+      "posthog-js",
+      "mediabunny",
     ],
     exclude: [
       "pdfjs-dist",
       // Workspace packages: exclude from prebundling so changes are
       // picked up by HMR without restarting the dev server
       "@tka/sequence-engine",
+      // file: linked Svelte package — esbuild can't parse .svelte exports
+      "@austencloud/scene-3d",
       // ⚡ Lazy-load these heavy libraries on-demand
       "fabric", // ~500KB canvas library (loads when user uses animator)
       "page-flip", // PDF flipbook (loads in learn module)
