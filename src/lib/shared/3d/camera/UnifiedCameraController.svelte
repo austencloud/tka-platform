@@ -233,10 +233,15 @@
       return;
     }
 
-    // ESC returns to orbit mode
+    // ESC returns to orbit mode (or just releases pointer lock when orbit
+    // is excluded from allowedModes — e.g., Scene Lab walk mode)
     if (e.code === "Escape" && mode !== CameraMode.ORBIT) {
       e.preventDefault();
-      returnToOrbit();
+      if (allowedModes && !allowedModes.includes(CameraMode.ORBIT)) {
+        if (isPointerLocked) document.exitPointerLock();
+      } else {
+        returnToOrbit();
+      }
       return;
     }
 
@@ -344,10 +349,16 @@
     isPointerLocked = document.pointerLockElement === canvas;
     console.log(`[CameraCtrl] POINTERLOCK CHANGE: wasLocked=${wasLocked} isLocked=${isPointerLocked} mode=${mode} element=${document.pointerLockElement?.tagName ?? 'NONE'}`);
 
-    // If we lost pointer lock (e.g., ESC pressed), return to orbit
+    // If we lost pointer lock, return to orbit — unless orbit is excluded
+    // from allowedModes (e.g., Scene Lab walk mode). In that case stay in
+    // the current game mode; the "click to look around" hint reappears.
     if (wasLocked && !isPointerLocked && mode !== CameraMode.ORBIT) {
-      console.log(`[CameraCtrl] LOST POINTER LOCK → returnToOrbit()`);
-      returnToOrbit();
+      if (!allowedModes || allowedModes.includes(CameraMode.ORBIT)) {
+        console.log(`[CameraCtrl] LOST POINTER LOCK → returnToOrbit()`);
+        returnToOrbit();
+      } else {
+        console.log(`[CameraCtrl] LOST POINTER LOCK — orbit excluded from allowedModes, staying in ${mode}`);
+      }
     }
   }
 

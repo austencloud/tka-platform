@@ -1,8 +1,12 @@
 /**
  * Scene Lab Player State
  *
- * Minimal AvatarState stub for driving UnifiedCameraController in fly mode.
- * No physics - the controller's kinematic branch writes directly to
+ * Reactive AvatarState for driving UnifiedCameraController in walk/fly mode.
+ * Uses $state so Avatar3D picks up position/facing/locomotion changes each
+ * frame — plain mutable objects caused the avatar mesh to stay at spawn
+ * and the locomotion animator to never leave IDLE.
+ *
+ * No physics — the controller's kinematic branch writes directly to
  * position.x/y/z each frame, clamped to its built-in SCENE_BOUNDS (±50m).
  */
 
@@ -17,14 +21,14 @@ export function createSceneLabPlayerState(): {
   // position.y is the avatar's FEET. The camera controller adds its own eye
   // offset (1.6m in first-person) on top, and renders the avatar body from
   // the feet up. Spawning at y=0 puts feet on the snow, eye at 1.6m.
-  // Plain mutable object - UnifiedCameraController writes .x/.y/.z directly
-  // via `avatarState.position.x = newX`. The flycam physics provider shares
-  // this same reference so its movePlayer() also mutates it.
-  const position = { x: 0, y: 0, z: 10 };
-  let facingAngle = 0;
-  let targetYaw = 0;
-  let isMoving = false;
-  let moveDir = { x: 0, z: 0 };
+  //
+  // $state so UCC's per-frame mutations propagate to Avatar3D's template.
+  let position = $state({ x: 0, y: 0, z: 10 });
+  let facingAngle = $state(0);
+  let targetYaw = $state(0);
+  let isMoving = $state(false);
+  let moveDir = $state({ x: 0, z: 0 });
+  let isCrouching = $state(false);
   const ROTATION_SPEED = 8;
 
   const avatarState: AvatarState = {
@@ -40,12 +44,18 @@ export function createSceneLabPlayerState(): {
     get moveDirection() {
       return moveDir;
     },
+    get isCrouching() {
+      return isCrouching;
+    },
+    set isCrouching(v: boolean) {
+      isCrouching = v;
+    },
     setMoveInput(input: { x: number; z: number }) {
       moveDir = input;
       isMoving = input.x !== 0 || input.z !== 0;
     },
     updateMovement(_delta: number, _cameraAngle: number) {
-      // No-op - the controller's kinematic branch writes position directly
+      // No-op — the controller's kinematic branch writes position directly
       // when physicsProvider is null.
     },
     setFacingAngle(angle: number) {
@@ -77,6 +87,7 @@ export function createSceneLabPlayerState(): {
     targetYaw = 0;
     isMoving = false;
     moveDir = { x: 0, z: 0 };
+    isCrouching = false;
   }
 
   const physicsProvider = createFlycamPhysicsProvider(position);

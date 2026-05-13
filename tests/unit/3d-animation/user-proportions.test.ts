@@ -118,44 +118,45 @@ describe("User Proportions Calculations", () => {
       );
     });
 
-    it("should keep gridSize constant regardless of height (staff-only)", () => {
+    it("should scale handPointRadius with height (anatomical arm reach)", () => {
       const results = testHeights.map(({ feet, inches }) => {
+        const heightCm = feetInchesToCm(feet, inches);
         const props: UserProportions = {
-          heightCm: feetInchesToCm(feet, inches),
+          heightCm,
           staffLengthCm: standardStaffCm,
           build: "average",
         };
-        return calculateSceneDimensions(props);
+        return { heightCm, dims: calculateSceneDimensions(props) };
       });
 
-      // All gridSize values should be identical (staff-based only)
-      const firstGridSize = results[0].gridSize;
-      for (const result of results) {
-        expect(result.gridSize).toBe(firstGridSize);
+      // Taller person should have larger hand point radius
+      for (let i = 1; i < results.length; i++) {
+        expect(results[i].dims.handPointRadius).toBeGreaterThan(
+          results[i - 1].dims.handPointRadius
+        );
       }
 
-      console.log(`Grid size: ${firstGridSize.toFixed(1)} scene units`);
+      // Verify it's proportional to height (ratio should be constant)
+      const ratios = results.map(
+        (r) => r.dims.handPointRadius / (r.heightCm * 0.01)
+      );
+      for (const ratio of ratios) {
+        expect(ratio).toBeCloseTo(ratios[0], 4);
+      }
     });
 
-    it("should keep handPointRadius constant regardless of height (now staff-based)", () => {
-      const results = testHeights.map(({ feet, inches }) => {
-        const props: UserProportions = {
-          heightCm: feetInchesToCm(feet, inches),
-          staffLengthCm: standardStaffCm,
-          build: "average",
-        };
-        return calculateSceneDimensions(props);
-      });
+    it("should keep handPointRadius constant when only staff length changes", () => {
+      const heightCm = feetInchesToCm(6, 3);
+      const staffLengths = [inchesToCm(30), inchesToCm(34), inchesToCm(42), inchesToCm(54)];
 
-      // All handPointRadius values should be identical (now staff-based)
+      const results = staffLengths.map((staffLengthCm) =>
+        calculateSceneDimensions({ heightCm, staffLengthCm, build: "average" })
+      );
+
       const firstHandRadius = results[0].handPointRadius;
       for (const result of results) {
         expect(result.handPointRadius).toBe(firstHandRadius);
       }
-
-      console.log(
-        `Hand point radius: ${firstHandRadius.toFixed(1)} scene units`
-      );
     });
 
     it("should produce smooth groundY transitions for 1-inch height changes", () => {

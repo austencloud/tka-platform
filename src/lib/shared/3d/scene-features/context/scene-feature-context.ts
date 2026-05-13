@@ -10,3 +10,7 @@ export function setSceneFeatureContext(state: SceneFeatureState) {
 export function getSceneFeatureContext(): SceneFeatureState {
   return getContext<SceneFeatureState>(KEY);
 }
+
+export function tryGetSceneFeatureContext(): SceneFeatureState | undefined {
+  return getContext<SceneFeatureState | undefined>(KEY);
+}

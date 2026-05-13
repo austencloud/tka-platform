@@ -157,6 +157,9 @@
   const gridOffset = $derived(GRID_OFFSETS[planeMode]);
   const isDualWheel = $derived(planeMode === PlaneMode.DUAL_WHEEL);
 
+  // Show exactly the planes the current mode uses — the mode is authoritative.
+  const effectiveVisiblePlanes = $derived(new Set([modeConfig.bluePlane, modeConfig.redPlane]));
+
   // ── Turn scheduling ──
   // Derive per-beat heading from the avatar's plane mode configuration.
   // When consecutive beats have different headings (from per-beat plane
@@ -343,7 +346,7 @@
         position.z={gridOffset + (bluePropSlide.z + redPropSlide.z) / 2}
       >
         <Grid3D
-          {visiblePlanes}
+          visiblePlanes={effectiveVisiblePlanes}
           planeOpacity={0.12}
           showLabels={false}
           {gridMode}

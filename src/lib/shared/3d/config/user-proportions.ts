@@ -51,15 +51,19 @@ export interface DerivedSceneDimensions {
 const BASE_MODEL_HEIGHT_CM = 188; // 6'2" (current X-Bot scaling)
 
 /**
- * Hand point radius as fraction of staff length
- * This determines where the CENTER of the prop appears in the grid
- * Using staff-based ratio keeps the grid visualization independent of user height
+ * Arm reach as fraction of height.
+ * Anatomically, shoulder-to-fingertip ≈ 44% of standing height.
+ * Comfortable spinning uses ~65% of full extension — the performer
+ * keeps elbows slightly bent and doesn't lock out the shoulder.
  *
- * Rationale: When holding a staff at its center, the hand traces a path
- * whose radius depends on comfortable arm extension. We use 0.6 * staffLength
- * as a reasonable approximation that looks correct for most staff sizes.
+ * handPointRadius = heightCm * ARM_REACH_HEIGHT_RATIO * COMFORTABLE_EXTENSION
+ *
+ * This decouples grid layout (anatomy) from prop size (equipment).
+ * Changing staff length only changes the visual prop and outer point
+ * radius, not where the hand points sit on the grid.
  */
-const HAND_RADIUS_STAFF_RATIO = 0.6;
+const ARM_REACH_HEIGHT_RATIO = 0.44;
+const COMFORTABLE_EXTENSION = 0.65;
 
 /**
  * Shoulder height as percentage of total height
@@ -102,19 +106,16 @@ export function calculateSceneDimensions(
   const staffLength = staffLengthCm * CM_TO_UNITS;
   const staffRadius = (STAFF_DIAMETER_CM / 2) * CM_TO_UNITS;
 
-  // Hand point radius is staff-based (not height-based)
-  // This is where the CENTER of the prop appears on the grid
-  const handPointRadius = staffLength * HAND_RADIUS_STAFF_RATIO;
+  // Hand point radius from anatomy — where the performer's hand orbits.
+  // Independent of staff length so the grid stays fixed when prop size changes.
+  const armReachCm = heightCm * ARM_REACH_HEIGHT_RATIO;
+  const handPointRadius = armReachCm * CM_TO_UNITS * COMFORTABLE_EXTENSION;
 
   // Outer point = hand + half staff (where staff tip reaches)
   const outerPointRadius = handPointRadius + staffLength / 2;
 
-  // Grid size is determined ONLY by staff length
-  // Full staff length + padding for visual comfort (25cm = 0.25m)
-  const gridSize = staffLength + 0.25;
-
-  // Arm reach for reference/display (kept for backward compatibility)
-  const armReachCm = staffLengthCm * HAND_RADIUS_STAFF_RATIO;
+  // Grid size must show the outer points with padding
+  const gridSize = outerPointRadius + 0.15;
 
   // Ground Y position (negative, below grid center)
   // Grid center (Y=0) is at shoulder level
