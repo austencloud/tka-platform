@@ -16,6 +16,9 @@
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
   import DurationResizeHandle from "./DurationResizeHandle.svelte";
+  import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+
+  const MANDALA_CELL_SCALE = 0.78;
 
   const hapticService = getHapticFeedback();
 
@@ -122,6 +125,30 @@
     }
     return getTimelineWidthMultiplier(baseDuration);
   }
+
+  type MandalaShow = "blue" | "red" | "both";
+
+  const startColumnMandalas = $derived.by(() => {
+    const rowCount = timelineRows.length;
+    if (rowCount < 2 || steps.length === 0) return [];
+
+    const cells: Array<{ index: number; show: MandalaShow }> = [];
+    for (let i = 1; i < rowCount; i++) {
+      cells.push({ index: i, show: "both" });
+    }
+
+    if (cells.length === 2) {
+      cells[0]!.show = "blue";
+      cells[1]!.show = "red";
+    } else if (cells.length >= 3) {
+      cells[0]!.show = "blue";
+      cells[cells.length - 1]!.show = "red";
+    }
+
+    return cells;
+  });
+
+  const mandalaSize = $derived(Math.round(timelineUnitSize * MANDALA_CELL_SCALE));
 </script>
 
 <div
@@ -157,6 +184,17 @@
             isTimelineMode={true}
           />
         </div>
+        {#each startColumnMandalas as cell (cell.index)}
+          <div class="timeline-cell mandala-cell" style:--duration-multiplier={1}>
+            <SequenceMandala
+              sequence={{ steps }}
+              mode="card-back"
+              style="stroke"
+              show={cell.show}
+              size={mandalaSize}
+            />
+          </div>
+        {/each}
       </div>
     {/if}
 
@@ -393,6 +431,11 @@
       filter: blur(3px);
       pointer-events: none;
     }
+  }
+
+  .mandala-cell {
+    pointer-events: none;
+    background: transparent;
   }
 
   @keyframes slideIntoPlace {

@@ -22,9 +22,8 @@
   import WinterScene from "$lib/shared/3d/environments/scenes/WinterScene.svelte";
   import CosmicScene from "$lib/shared/3d/environments/scenes/CosmicScene.svelte";
   import OceanScene from "$lib/shared/3d/environments/scenes/OceanScene.svelte";
-  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
+  import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
   import { Avatar3D } from "@austencloud/scene-3d";
-  import { CameraMode } from "$lib/shared/3d/camera/types";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneLabContext } from "../context/scene-lab-context";
@@ -182,6 +181,7 @@
       <UnifiedCameraController
         destinationId="scene-lab-walk"
         avatarState={player.avatarState}
+        {cameraPreferences}
         enabled={true}
         allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
         onModeChange={(m) => {
@@ -201,6 +201,7 @@
         destinationId="scene-lab-fly"
         avatarState={player.avatarState}
         physicsProvider={player.physicsProvider}
+        {cameraPreferences}
         enabled={true}
         allowedModes={[CameraMode.FIRST_PERSON]}
         disableModeToggle={true}

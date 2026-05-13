@@ -161,11 +161,6 @@ function getLetterGHDirection(
 ): VectorDirection | null {
   const loc = endLocation.toLowerCase();
 
-  if (loc === "s") {
-    const baseDirection: VectorDirection = "right";
-    return color === "red" ? baseDirection : getOppositeDirection(baseDirection);
-  }
-
   const isBox = !isCardinal(loc);
 
   let map: Record<GridLocation, Record<"blue" | "red", VectorDirection>>;

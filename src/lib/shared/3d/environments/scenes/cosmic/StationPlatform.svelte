@@ -9,7 +9,7 @@
   } from "three";
   import type { PlatformConfig } from "../../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
-  import AudienceSeating from "./AudienceSeating.svelte";
+  import SeatedAudience3D from "../../../components/SeatedAudience3D.svelte";
 
   interface Props {
     config: PlatformConfig;
@@ -219,12 +219,12 @@
     </T.Mesh>
   {/each}
 
-  <!-- Audience seating -->
+  <!-- Audience avatars -->
   {#if config.seatingEnabled}
-    <AudienceSeating
-      rows={config.seatingRows}
-      accentColor={config.seatingAccentColor || config.emissiveColor}
-      groundY={groundY}
+    <SeatedAudience3D
+      count={config.seatingRows * 3}
+      arcRadius={config.radius + 2.5}
+      arcSpread={Math.PI * 0.55}
     />
   {/if}
 {/if}

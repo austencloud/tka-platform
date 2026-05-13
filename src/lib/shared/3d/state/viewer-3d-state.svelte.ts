@@ -28,7 +28,7 @@ import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camer
 // Popover Stack
 // ============================================
 
-export type PopoverId = "performers" | "tempo" | "export" | "gear" | "info";
+export type PopoverId = "performers" | "tempo" | "export" | "gear" | "info" | "scene";
 
 // ============================================
 // Persistence

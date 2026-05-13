@@ -1991,7 +1991,7 @@ Create `src/lib/shared/3d/components/controls/PerformerChipStrip.svelte` with:
   }
 
   .chip-performer {
-    width: 28px;
+    width: 44px;
     padding: 0;
     border-color: var(--chip-color, rgba(255, 255, 255, 0.18));
   }

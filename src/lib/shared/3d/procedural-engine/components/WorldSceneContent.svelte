@@ -34,8 +34,8 @@
   import type { PhysicsProvider, AvatarState } from "$lib/shared/3d/camera/types";
 
   // Unified camera system
-  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
-  import { CameraMode } from "$lib/shared/3d/camera/types";
+  import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
+  import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
 
 
   // Avatar components
@@ -901,6 +901,7 @@
     destinationId={isArchiveRealm ? "archive" : "realm"}
     {avatarState}
     {physicsProvider}
+    {cameraPreferences}
     enabled={true}
     initialYaw={playerYaw}
     onModeChange={(mode) => {

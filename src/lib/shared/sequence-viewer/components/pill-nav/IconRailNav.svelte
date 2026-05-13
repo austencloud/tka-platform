@@ -63,7 +63,7 @@
   }
 </script>
 
-<nav
+<div
   class="icon-rail"
   role="tablist"
   aria-orientation="vertical"
@@ -93,7 +93,7 @@
       {/if}
     </button>
   {/each}
-</nav>
+</div>
 
 <style>
   .icon-rail {

@@ -30,9 +30,9 @@
   import { createRapierPhysicsProvider } from "$lib/shared/3d/physics/RapierPhysicsProvider";
 
   // Camera - use the SAME controller as Museum/Realm
-  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
-  import { CameraMode } from "$lib/shared/3d/camera/types";
-  import type { AvatarState, PhysicsProvider } from "$lib/shared/3d/camera/types";
+  import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
+  import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
+  import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
 
   // Room types and materials
@@ -229,6 +229,7 @@
     destinationId="archive"
     {avatarState}
     {physicsProvider}
+    {cameraPreferences}
     enabled={true}
     initialYaw={props.room.spawnFacing}
     onModeChange={(mode) => {

@@ -6,6 +6,7 @@
  * - tkaflowarts.com/create, /browse, etc.: The app (module paths at root)
  * - Future: tkaflowarts.com/embed, tkaflowarts.com/kiosk, etc.
  */
+import { Capacitor } from "@capacitor/core";
 
 /**
  * Site mode determines which experience to render.
@@ -53,6 +54,9 @@ const PUBLIC_PATH_PREFIXES = [
 
 export function detectSiteMode(): SiteMode {
   if (typeof window !== "undefined") {
+    // Native (Capacitor) apps always run in app mode — no landing page
+    if (Capacitor.isNativePlatform()) return "app";
+
     const params = new URLSearchParams(window.location.search);
     const modeOverride = params.get("mode") as SiteMode | null;
     if (modeOverride && ["app", "landing"].includes(modeOverride)) {

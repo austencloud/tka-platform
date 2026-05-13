@@ -853,8 +853,9 @@ export default defineConfig(({ mode }) => ({
       // Workspace packages: exclude from prebundling so changes are
       // picked up by HMR without restarting the dev server
       "@tka/sequence-engine",
-      // file: linked Svelte package — esbuild can't parse .svelte exports
+      // file: linked Svelte packages — esbuild can't parse .svelte exports
       "@austencloud/scene-3d",
+      "@austencloud/camera-3d",
       // ⚡ Lazy-load these heavy libraries on-demand
       "fabric", // ~500KB canvas library (loads when user uses animator)
       "page-flip", // PDF flipbook (loads in learn module)

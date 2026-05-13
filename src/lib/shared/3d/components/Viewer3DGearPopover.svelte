@@ -1,21 +1,4 @@
 <script lang="ts">
-  /**
-   * Viewer3DGearPopover
-   *
-   * Gear tab of the sequence-viewer RightRail. Gated on
-   * viewer3DState.activePopover === "gear" - the rail owns the chip button
-   * and outside-click behavior. This component only renders the panel
-   * contents when the gear popover is active.
-   *
-   * Tabs:
-   * - Camera: viewing angle presets (front, back, left, right, top, 3/4)
-   * - Planes: which plane each hand is on, plus force-show visibility
-   * - Scene: scene-feature toggles
-   *
-   * Sequence-wide only - per-beat plane overrides are not editable here.
-   * PlaneMode is derived from the hand assignments in setHandPlane.
-   */
-
   import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
@@ -31,21 +14,18 @@
 
   const hasSceneFeatures = tryGetSceneFeatureContext() !== undefined;
 
-  type TabId = "camera" | "planes" | "scene";
+  interface Tab { id: "camera" | "planes" | "scene"; label: string; icon: string; }
 
-  const TABS: { id: TabId; label: string }[] = [
-    { id: "camera", label: "Camera" },
-    { id: "planes", label: "Planes" },
-    { id: "scene", label: "Scene" },
+  const TABS: Tab[] = [
+    { id: "camera", label: "Camera", icon: "fa-video" },
+    { id: "planes", label: "Planes", icon: "fa-layer-group" },
+    { id: "scene",  label: "Scene",  icon: "fa-mountain-sun" },
   ];
 
   const viewer3DState = getViewer3DContext();
   const open = $derived(viewer3DState.activePopover === "gear");
-  let activeTab = $state<TabId>("camera");
+  let activeTab = $state<Tab["id"]>("camera");
 
-  // Bind Ctrl+Z / Ctrl+Shift+Z to viewer undo/redo while the component
-  // is mounted. The handler ignores events inside editable fields so it
-  // won't conflict with text inputs elsewhere in the viewer.
   onMount(() => {
     return createViewer3DKeyboardHandler({
       undo: () => viewer3DState.undo(),
@@ -53,9 +33,6 @@
     });
   });
 
-  // Reads performer 0 for the Planes tab's current-state display. Plane
-  // edits are routed through setHandPlaneScoped so they respect the current
-  // selection scope (see handleHandSlotClick / handleResetPlanesClick).
   const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
 
   const PLANES: { plane: Plane; label: string }[] = [
@@ -64,26 +41,21 @@
     { plane: Plane.FLOOR, label: "Floor" },
   ];
 
-  // Sequence-wide hand plane assignments (falls back to Wall if no avatar)
   const bluePlane = $derived(avatarState?.customBluePlane ?? Plane.WALL);
   const redPlane = $derived(avatarState?.customRedPlane ?? Plane.WALL);
 
-  // A plane is "implicit" when a hand is on it - visibility is locked on
   function isImplicit(plane: Plane): boolean {
     return bluePlane === plane || redPlane === plane;
   }
 
-  // A plane is "force-shown" when it's in visiblePlanes but no hand is on it
   function isForceShown(plane: Plane): boolean {
     return viewer3DState.visiblePlanes.has(plane) && !isImplicit(plane);
   }
 
-  // A plane is visually "visible" if it's either implicit or force-shown
   function isVisible(plane: Plane): boolean {
     return isImplicit(plane) || isForceShown(plane);
   }
 
-  // Reset is only offered when any state deviates from defaults
   const isPlaneStateNonDefault = $derived(
     (avatarState?.customBluePlane ?? Plane.WALL) !== Plane.WALL ||
     (avatarState?.customRedPlane ?? Plane.WALL) !== Plane.WALL ||
@@ -93,14 +65,13 @@
 
   const hasStepOverrides = $derived(avatarState?.hasStepOverrides ?? false);
 
-  function selectTab(e: MouseEvent, tabId: TabId) {
+  function selectTab(e: MouseEvent, tabId: Tab["id"]) {
     e.stopPropagation();
     activeTab = tabId;
   }
 
   function handlePlaneToggleClick(e: MouseEvent, plane: Plane) {
     e.stopPropagation();
-    // Locked when a hand is on the plane
     if (isImplicit(plane)) return;
     viewer3DState.togglePlane(plane);
   }
@@ -109,7 +80,6 @@
     e.stopPropagation();
     if (!avatarState) return;
     const currentPlane = hand === "blue" ? bluePlane : redPlane;
-    // No-op if this hand is already on this plane
     if (currentPlane === plane) return;
     viewer3DState.setHandPlaneScoped(hand, plane);
   }
@@ -117,21 +87,17 @@
   function handleResetPlanesClick(e: MouseEvent) {
     e.stopPropagation();
     if (!avatarState) return;
-    // Reset sequence-wide planes to Wall on every performer in scope.
     viewer3DState.setHandPlaneScoped("blue", Plane.WALL);
     viewer3DState.setHandPlaneScoped("red", Plane.WALL);
-    // Clear per-beat overrides on every performer in scope.
     for (const p of viewer3DState.scopedPerformers()) {
       p.clearBeatPlaneOverrides();
     }
-    // Clear any force-shown planes
     for (const { plane } of PLANES) {
       if (isForceShown(plane)) {
         viewer3DState.togglePlane(plane);
       }
     }
   }
-
 </script>
 
 {#if open}
@@ -149,9 +115,11 @@
     in:scale={{ duration: 250, start: 0.9, opacity: 0, easing: backOut }}
     out:scale={{ duration: 180, start: 0.95, opacity: 0, easing: cubicOut }}
   >
+    <div class="pop-header">
       <PerformerChipStrip />
+    </div>
 
-      <!-- Tab bar -->
+    <div class="pop-body">
       <div class="tab-bar" role="tablist">
         {#each TABS as tab}
           <button
@@ -163,19 +131,18 @@
             aria-controls="tab-panel-{tab.id}"
             title={tab.label}
           >
-            {tab.label}
+            <i class="fas {tab.icon}"></i>
+            <span>{tab.label}</span>
           </button>
         {/each}
       </div>
 
-      <!-- Camera tab -->
       {#if activeTab === "camera"}
         <div class="tab-panel" id="tab-panel-camera" role="tabpanel">
           <Viewer3DViewPresets grid />
         </div>
       {/if}
 
-      <!-- Planes tab -->
       {#if activeTab === "planes"}
         <div class="tab-panel" id="tab-panel-planes" role="tabpanel">
           <div class="plane-matrix">
@@ -250,7 +217,6 @@
         </div>
       {/if}
 
-      <!-- Scene tab -->
       {#if activeTab === "scene"}
         <div class="tab-panel" id="tab-panel-scene" role="tabpanel">
           {#if hasSceneFeatures}
@@ -312,18 +278,18 @@
           </div>
         </div>
       {/if}
+    </div>
 
-      <!-- Stage bridge footer -->
-      <button
-        class="bridge-btn"
-        onclick={(e) => { e.stopPropagation(); console.log("[stub] Stage destination not yet built"); }}
-      >
-        <span class="bridge-text">
-          <span class="bridge-title">Stage this scene</span>
-          <span class="bridge-sub">Multi-sequence · timeline · audio</span>
-        </span>
-        <span class="bridge-arrow"><i class="fas fa-arrow-right"></i></span>
-      </button>
+    <button
+      class="bridge-btn"
+      onclick={(e) => { e.stopPropagation(); console.log("[stub] Stage destination not yet built"); }}
+    >
+      <span class="bridge-text">
+        <span class="bridge-title">Stage this scene</span>
+        <span class="bridge-sub">Multi-sequence · timeline · audio</span>
+      </span>
+      <span class="bridge-arrow"><i class="fas fa-arrow-right"></i></span>
+    </button>
   </div>
 {/if}
 
@@ -334,53 +300,79 @@
     top: 0;
     z-index: 100;
     width: 340px;
-    border-radius: 10px;
+    border-radius: 18px;
     transform-origin: top right;
-    background: rgba(14, 14, 24, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    padding: 8px;
+    background: rgba(20, 22, 32, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(24px) saturate(150%);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
   }
 
-  /* Tab bar - segmented pill at the top of the popover */
+  .pop-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .pop-body {
+    padding: 12px 14px 14px;
+  }
+
+  /* --- Tab bar --- */
   .tab-bar {
     display: flex;
     gap: 2px;
     padding: 3px;
-    border-radius: 8px;
+    border-radius: 10px;
     background: rgba(0, 0, 0, 0.45);
-    overflow-x: auto;
-    scrollbar-width: none;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
 
   .tab-btn {
-    flex: 0 0 auto;
-    padding: 6px 10px;
-    min-height: 32px;
+    flex: 1;
+    padding: 8px 10px;
+    min-height: var(--min-touch-target, 44px);
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: 8px;
     background: transparent;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.42);
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.04em;
     cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+  }
+
+  .tab-btn i {
+    font-size: 12px;
+    opacity: 0.6;
+    transition: opacity 180ms;
   }
 
   .tab-btn:hover:not(:disabled):not(.active) {
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.75);
     background: rgba(255, 255, 255, 0.06);
   }
 
+  .tab-btn:hover:not(:disabled):not(.active) i {
+    opacity: 0.8;
+  }
+
   .tab-btn.active {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #fff;
+    background: color-mix(in srgb, #4a9eff 15%, transparent);
+    border-color: color-mix(in srgb, #4a9eff 35%, transparent);
+    color: #cfe4ff;
+    box-shadow: 0 2px 8px color-mix(in srgb, #4a9eff 15%, transparent);
+  }
+
+  .tab-btn.active i {
+    opacity: 1;
+    color: #8fc3ff;
   }
 
   .tab-btn:disabled {
@@ -388,27 +380,33 @@
     cursor: not-allowed;
   }
 
-  /* Tab panels - the content area below the tab bar */
+  /* --- Tab panels --- */
   .tab-panel {
-    padding: 4px 0 0 0;
+    padding: 2px 0 0 0;
   }
 
-  /* Plane matrix */
+  /* --- Plane matrix --- */
   .plane-matrix {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
 
   .plane-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 3px 10px;
-    min-height: 40px;
-    border-radius: 8px;
+    padding: 6px 12px;
+    min-height: 44px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+  }
+
+  .plane-row:hover {
     background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .plane-row.with-hand {
@@ -431,21 +429,20 @@
   .plane-right {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     flex-shrink: 0;
   }
 
-  /* Plane toggle - round 32px color dot that doubles as visibility control */
   .plane-toggle {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     cursor: pointer;
     border: 2px solid;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
     background: transparent;
     flex-shrink: 0;
     padding: 0;
@@ -461,7 +458,7 @@
   .plane-toggle.visible {
     background: var(--dot-color);
     border-color: var(--dot-color);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--dot-color) 50%, transparent);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--dot-color) 45%, transparent);
     color: #fff;
   }
 
@@ -476,12 +473,12 @@
   }
 
   .plane-toggle:hover:not(.implicit) {
-    transform: scale(1.08);
+    transform: scale(1.1);
   }
 
   .plane-label {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     color: rgba(255, 255, 255, 0.88);
   }
 
@@ -489,15 +486,14 @@
     color: rgba(255, 255, 255, 0.55);
   }
 
-  /* Hand slots - 32px round dashed/filled circles */
   .hand-slot {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     border: 2px dashed;
     cursor: pointer;
     background: transparent;
-    transition: border-color 0.15s ease;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
     flex-shrink: 0;
     padding: 0;
   }
@@ -505,52 +501,57 @@
   .hand-slot.blue { border-color: rgba(74, 144, 217, 0.4); }
   .hand-slot.red { border-color: rgba(217, 74, 74, 0.4); }
 
+  .hand-slot:hover:not(.filled).blue {
+    border-color: rgba(74, 144, 217, 0.7);
+    box-shadow: 0 0 10px rgba(74, 144, 217, 0.2);
+  }
+
+  .hand-slot:hover:not(.filled).red {
+    border-color: rgba(217, 74, 74, 0.7);
+    box-shadow: 0 0 10px rgba(217, 74, 74, 0.2);
+  }
+
   .hand-slot.filled.blue {
     background: #4a90d9;
     border: 2px solid #4a90d9;
-    box-shadow: 0 0 10px rgba(74, 144, 217, 0.6);
+    box-shadow: 0 0 12px rgba(74, 144, 217, 0.5);
   }
 
   .hand-slot.filled.red {
     background: #d94a4a;
     border: 2px solid #d94a4a;
-    box-shadow: 0 0 10px rgba(217, 74, 74, 0.6);
+    box-shadow: 0 0 12px rgba(217, 74, 74, 0.5);
   }
 
-  .hand-slot:hover:not(.filled) {
-    border-color: rgba(255, 255, 255, 0.5);
-  }
-
-  /* Tab footer - right-aligned action area below the panel content */
+  /* --- Tab footer --- */
   .tab-footer {
     display: flex;
     justify-content: flex-end;
-    margin-top: 8px;
+    margin-top: 10px;
   }
 
-  /* Reset button - labeled icon-text button in the panel footer.
-     Only rendered when state is non-default. */
   .reset-btn {
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 5px 10px;
-    min-height: 28px;
-    border-radius: 6px;
-    background: transparent;
+    padding: 6px 12px;
+    min-height: 30px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.55);
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     position: relative;
-    transition: all 0.15s ease;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
 
   .reset-btn:hover {
     color: rgba(255, 255, 255, 0.95);
     border-color: rgba(255, 255, 255, 0.25);
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
   }
 
   .reset-btn.with-overrides .override-badge {
@@ -561,127 +562,150 @@
     height: 7px;
     border-radius: 50%;
     background: #f59e0b;
-    border: 1.5px solid rgba(14, 14, 24, 1);
+    border: 1.5px solid rgba(20, 22, 32, 1);
   }
 
-  /* Scene controls (prop size, body freedom) */
+  /* --- Scene controls --- */
   .scene-control {
-    margin-top: 10px;
-    padding: 10px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: border-color 180ms;
+  }
+
+  .scene-control:hover {
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .scene-control-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 
   .scene-control-label {
     font-size: 12px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.75);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
   }
 
   .scene-control-value {
     font-size: 12px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    font-weight: 700;
+    color: #cfe4ff;
+    font-variant-numeric: tabular-nums;
   }
 
   .scene-slider {
     width: 100%;
-    height: 4px;
+    height: 6px;
     appearance: none;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
     outline: none;
     cursor: pointer;
+    transition: background 180ms;
+  }
+
+  .scene-slider:hover {
+    background: rgba(255, 255, 255, 0.15);
   }
 
   .scene-slider::-webkit-slider-thumb {
     appearance: none;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: #60a5fa;
-    border: 2px solid rgba(14, 14, 24, 1);
+    border: 2.5px solid rgba(20, 22, 32, 1);
     cursor: pointer;
+    box-shadow: 0 0 10px rgba(96, 165, 250, 0.35);
+    transition: box-shadow 180ms, transform 180ms;
+  }
+
+  .scene-slider::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 16px rgba(96, 165, 250, 0.55);
+    transform: scale(1.1);
   }
 
   .scene-slider::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: #60a5fa;
-    border: 2px solid rgba(14, 14, 24, 1);
+    border: 2.5px solid rgba(20, 22, 32, 1);
     cursor: pointer;
+    box-shadow: 0 0 10px rgba(96, 165, 250, 0.35);
   }
 
   .preset-row {
     display: flex;
     gap: 4px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   .preset-btn {
     flex: 1;
-    padding: 4px 0;
-    border-radius: 5px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.55);
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
 
   .preset-btn:hover {
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.9);
     background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
   }
 
   .preset-btn.active {
-    background: rgba(96, 165, 250, 0.2);
-    border-color: rgba(96, 165, 250, 0.5);
-    color: #60a5fa;
+    background: color-mix(in srgb, #60a5fa 22%, transparent);
+    border-color: color-mix(in srgb, #60a5fa 50%, transparent);
+    color: #cfe4ff;
+    box-shadow: 0 2px 10px color-mix(in srgb, #60a5fa 20%, transparent);
   }
 
-  /* Stage bridge footer - gradient CTA that links to Stage destination */
+  /* --- Bridge CTA --- */
   .bridge-btn {
-    margin-top: 14px;
+    margin: 10px 14px 14px;
     min-height: var(--min-touch-target);
-    padding: 12px 14px;
+    padding: 14px 16px;
     background: linear-gradient(
       135deg,
       color-mix(in srgb, #a855f7 18%, transparent),
       color-mix(in srgb, #4a9eff 18%, transparent)
     );
-    border: 1px solid color-mix(in srgb, #a855f7 45%, transparent);
-    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, #a855f7 40%, transparent);
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 14px;
     color: rgba(255, 255, 255, 0.95);
     cursor: pointer;
-    width: 100%;
+    width: calc(100% - 28px);
     text-align: left;
-    transition: filter 0.15s ease;
+    transition: all 220ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
 
   .bridge-btn:hover {
-    filter: brightness(1.12);
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px color-mix(in srgb, #a855f7 25%, transparent);
   }
 
   .bridge-text {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
   }
 
   .bridge-title {
@@ -697,5 +721,10 @@
   .bridge-arrow {
     color: #c89aff;
     font-size: 16px;
+    transition: transform 220ms;
+  }
+
+  .bridge-btn:hover .bridge-arrow {
+    transform: translateX(3px);
   }
 </style>

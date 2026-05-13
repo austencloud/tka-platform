@@ -24,7 +24,7 @@
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
   import SceneLoadingCurtain from "../scene-features/components/SceneLoadingCurtain.svelte";
-  import { createViewerCameraPlayerState } from "../state/viewer-camera-player-state.svelte";
+  import { createViewerCameraPlayerState } from "@austencloud/camera-3d";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
@@ -87,7 +87,7 @@
   // Camera-player state for fly mode. This is the VIEWER's avatar (what WASD
   // moves), not the performer. Created once per canvas mount so fly-mode
   // position survives mode toggles within the same session.
-  const cameraPlayer = createViewerCameraPlayerState();
+  const cameraPlayer = createViewerCameraPlayerState({ spawnY: -1.5 });
 
   // Fly mode only makes sense when the canvas owns the full viewport AND the
   // user has a mouse + keyboard. Side-by-side with the choreo card: pointer

@@ -157,14 +157,12 @@
   }
 
   .chip-add {
-    /* Pinned to the right edge so the add button stays in the same
-       viewport position as performers are spawned. Without this the button
-       shifts right by one chip-width per click and the user has to chase
-       it with their cursor. */
     margin-left: auto;
-    width: 28px;
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
     padding: 0;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1;
   }
 

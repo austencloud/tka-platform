@@ -11,7 +11,7 @@
   Sections: Effects → Effort → Playback → Display → Export.
 -->
 <script lang="ts">
-  import { fade } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
@@ -83,11 +83,17 @@
 
   // ── Active pill state ──
   let activePill = $state<PillId | null>("effects");
+  let panelDirection = $state(1);
 
   function handlePillSelect(id: PillId): void {
     if (layout === "bottom") {
       activePill = activePill === id ? null : id;
     } else {
+      const prevIdx = pillSpecs.findIndex((p) => p.id === activePill);
+      const nextIdx = pillSpecs.findIndex((p) => p.id === id);
+      if (prevIdx !== -1 && nextIdx !== -1) {
+        panelDirection = nextIdx > prevIdx ? 1 : -1;
+      }
       activePill = id;
     }
   }
@@ -523,8 +529,16 @@
         >
           <div class="panel-content-center">
             {#if activePill}
-              <h2 class="panel-title">{activePillLabel}</h2>
-              {@render pillBody()}
+              {#key activePill}
+                <div
+                  class="panel-transition"
+                  in:fly={{ y: reduceMotion ? 0 : panelDirection * 24, duration: reduceMotion ? 0 : 200, delay: 60 }}
+                  out:fly={{ y: reduceMotion ? 0 : panelDirection * -12, duration: reduceMotion ? 0 : 120 }}
+                >
+                  <h2 class="panel-title">{activePillLabel}</h2>
+                  {@render pillBody()}
+                </div>
+              {/key}
             {/if}
           </div>
         </div>
@@ -675,7 +689,21 @@
   }
 
   .panel-content-center {
-    margin: auto 0;
+    flex: 1;
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .panel-transition {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    will-change: opacity, transform;
+    backface-visibility: hidden;
   }
 
   .section-hint {

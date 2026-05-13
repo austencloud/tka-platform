@@ -23,7 +23,7 @@
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
-  import { createViewerCameraPlayerState } from "../state/viewer-camera-player-state.svelte";
+  import { createViewerCameraPlayerState } from "@austencloud/camera-3d";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
@@ -74,7 +74,7 @@
   setSceneFeatureContext(sceneFeatureState);
 
   const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
-  const cameraPlayer = createViewerCameraPlayerState();
+  const cameraPlayer = createViewerCameraPlayerState({ spawnY: -1.5 });
 
   let canvasMountReady = $state(false);
 

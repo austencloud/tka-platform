@@ -176,12 +176,24 @@
 	.resize-handle {
 		position: absolute;
 		top: 0;
-		right: -3px;
-		width: 6px;
+		right: -5px;
+		width: 10px;
 		height: 100%;
 		cursor: col-resize;
 		z-index: 10;
 		touch-action: none;
+	}
+
+	.resize-handle::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 1px;
+		height: 100%;
+		background: rgba(255, 255, 255, 0.08);
+		transition: background 150ms ease, width 150ms ease;
 	}
 
 	.resize-handle::after {
@@ -190,17 +202,29 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
+		width: 4px;
+		height: 40px;
+		border-radius: 2px;
+		background: rgba(255, 255, 255, 0.15);
+		box-shadow:
+			inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
+			0 0 4px rgba(0, 0, 0, 0.3);
+		transition: background 150ms ease, height 150ms ease, box-shadow 150ms ease;
+	}
+
+	.resize-handle:hover::before,
+	.dragging .resize-handle::before {
+		background: var(--theme-accent, #6366f1);
 		width: 2px;
-		height: 32px;
-		border-radius: 1px;
-		background: rgba(255, 255, 255, 0);
-		transition: background 150ms ease, height 150ms ease;
 	}
 
 	.resize-handle:hover::after,
 	.dragging .resize-handle::after {
-		background: var(--theme-accent, #6366f1);
-		height: 48px;
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
+		height: 56px;
+		box-shadow:
+			inset 0 0 0 0.5px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent),
+			0 0 8px color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
 	}
 
 	.rail-back-btn {

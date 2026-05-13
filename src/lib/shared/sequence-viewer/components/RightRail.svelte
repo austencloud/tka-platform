@@ -6,6 +6,7 @@
   import ExportPopover from "./ExportPopover.svelte";
   import PerformerPopover from "./PerformerPopover.svelte";
   import Viewer3DGearPopover from "$lib/shared/3d/components/Viewer3DGearPopover.svelte";
+  import SceneSelectorPopover from "$lib/shared/3d/components/SceneSelectorPopover.svelte";
   const viewer = getViewer3DContext();
 
   interface Props {
@@ -20,10 +21,11 @@
   interface Chip { id: PopoverId; icon: string; tooltip: string; }
   // Only rendered in 3D mode.
   const CHIPS_3D: Chip[] = [
-    { id: "performers", icon: "fa-users", tooltip: "Performers" },
-    { id: "tempo",      icon: "fa-drum",  tooltip: "Tempo" },
-    { id: "export",     icon: "fa-film",  tooltip: "Export" },
-    { id: "gear",       icon: "fa-gear",  tooltip: "Settings" },
+    { id: "performers", icon: "fa-users",                 tooltip: "Performers" },
+    { id: "tempo",      icon: "fa-gauge",                 tooltip: "Speed" },
+    { id: "gear",       icon: "fa-gear",                  tooltip: "Scene" },
+    { id: "export",     icon: "fa-arrow-up-from-bracket", tooltip: "Export" },
+    { id: "scene",      icon: "fa-mountain-sun",          tooltip: "Background" },
   ];
 
   function onChipClick(e: MouseEvent, id: PopoverId) {
@@ -76,6 +78,8 @@
           <ExportPopover />
         {:else if chip.id === "gear"}
           <Viewer3DGearPopover />
+        {:else if chip.id === "scene"}
+          <SceneSelectorPopover />
         {/if}
       </div>
     {/each}

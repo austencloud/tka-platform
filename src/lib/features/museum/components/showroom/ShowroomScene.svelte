@@ -53,9 +53,8 @@
     RepeatWrapping,
     type Group,
   } from "three";
-  import type { AvatarState } from "$lib/shared/3d/camera/types";
-  import { CameraMode } from "$lib/shared/3d/camera/types";
-  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
+  import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
+  import type { AvatarState } from "@austencloud/camera-3d";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumMirror from "../game/MuseumMirror.svelte";
 
@@ -180,6 +179,7 @@
 <UnifiedCameraController
   destinationId="showroom"
   {avatarState}
+  {cameraPreferences}
   enabled={true}
   moveSpeed={4}
 />

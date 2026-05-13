@@ -10,6 +10,9 @@
   import { calculateStepPosition } from "$lib/shared/create/utils/grid-calculations";
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
+  import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+
+  const MANDALA_CELL_SCALE = 0.78;
 
   let {
     steps,
@@ -56,6 +59,40 @@
     redPropTypeOverride?: PropType;
     scrollContainerRef?: HTMLElement;
   }>();
+
+  type MandalaShow = "blue" | "red" | "both";
+
+  const emptyCells = $derived.by(() => {
+    if (steps.length === 0) return [];
+
+    const cells: Array<{ row: number; column: number; show: MandalaShow }> = [];
+
+    // Start-column empties (column 1, rows 2+)
+    for (let r = 2; r <= gridLayout.rows; r++) {
+      cells.push({ row: r, column: 1, show: "both" });
+    }
+
+    // Last-row trailing empties
+    const stepsInLastRow = steps.length % gridLayout.columns;
+    if (stepsInLastRow > 0) {
+      for (let c = stepsInLastRow + 2; c <= gridLayout.totalColumns; c++) {
+        cells.push({ row: gridLayout.rows, column: c, show: "both" });
+      }
+    }
+
+    // Variant cycling: blue (first), full (middle), red (last)
+    if (cells.length === 2) {
+      cells[0]!.show = "blue";
+      cells[1]!.show = "red";
+    } else if (cells.length >= 3) {
+      cells[0]!.show = "blue";
+      cells[cells.length - 1]!.show = "red";
+    }
+
+    return cells;
+  });
+
+  const mandalaSize = $derived(Math.round(gridLayout.cellSize * MANDALA_CELL_SCALE));
 </script>
 
 <div
@@ -121,6 +158,25 @@
           animationEpoch={displayState.animationEpoch}
           {bluePropTypeOverride}
           {redPropTypeOverride}
+        />
+      </div>
+    {/each}
+
+    <!-- Mandala fill cells -->
+    {#each emptyCells as cell (cell.row + "-" + cell.column)}
+      <div
+        class="mandala-cell-wrapper"
+        style:grid-row={cell.row}
+        style:grid-column={cell.column}
+      >
+        <SequenceMandala
+          sequence={{ steps }}
+          mode="card-back"
+          style="stroke"
+          show={cell.show}
+          size={mandalaSize}
+          bluePropType={bluePropTypeOverride}
+          redPropType={redPropTypeOverride}
         />
       </div>
     {/each}
@@ -249,6 +305,14 @@
       filter: blur(3px);
       pointer-events: none;
     }
+  }
+
+  .mandala-cell-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: transparent;
   }
 
   @keyframes slideIntoPlace {

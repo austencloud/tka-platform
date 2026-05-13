@@ -50,8 +50,8 @@
   }
 
   .effort-btn {
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px;
+    min-height: 56px;
+    padding: 12px 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -80,7 +80,8 @@
   }
 
   .effort-btn.with-sub {
-    padding: 10px 8px;
+    padding: 14px 8px;
+    gap: 4px;
   }
 
   .effort-label {

@@ -4,7 +4,7 @@ export class NativeInitializer {
 	async initialize(): Promise<void> {
 		if (!isNative()) return;
 
-		await Promise.all([
+		await Promise.allSettled([
 			this.initStatusBar(),
 			this.initKeyboard(),
 			this.initSplashScreen(),
@@ -51,20 +51,35 @@ export class NativeInitializer {
 			});
 		}
 
-		// When a user taps an App Link / Universal Link (e.g. a QR code targeting
-		// tkaflowarts.com/q/ABC123), Android hands us the full URL. Route to
-		// the matching in-app path via SvelteKit's client navigation so we keep the
-		// app alive - a full reload would drop state and flash the splash screen.
+		// Handle deep links from both cold start and warm resume.
+		// Cold start: getLaunchUrl() returns the URL that opened the app.
+		// Warm resume: appUrlOpen fires when a new URL arrives while running.
+		const launchUrl = await App.getLaunchUrl();
+		if (launchUrl?.url) {
+			await this.handleDeepLink(launchUrl.url);
+		}
+
 		await App.addListener("appUrlOpen", async ({ url }) => {
-			try {
-				const parsed = new URL(url);
-				const target = parsed.pathname + parsed.search + parsed.hash;
-				if (!target || target === "/") return;
-				const { goto } = await import("$app/navigation");
-				await goto(target);
-			} catch {
-				// Malformed URL - ignore. The OS shouldn't hand us one, but don't crash.
-			}
+			await this.handleDeepLink(url);
 		});
+	}
+
+	private async handleDeepLink(url: string): Promise<void> {
+		try {
+			const parsed = new URL(url);
+			let target = parsed.pathname + parsed.search + parsed.hash;
+			if (!target || target === "/") return;
+
+			// /q/{code} = QR scan. Open in-app sequence viewer, not landing page.
+			const qMatch = parsed.pathname.match(/^\/q\/([^/?#]+)/);
+			if (qMatch?.[1]) {
+				target = `/browse/gallery?v=${encodeURIComponent(qMatch[1])}`;
+			}
+
+			const { goto } = await import("$app/navigation");
+			await goto(target);
+		} catch {
+			// Malformed URL — ignore.
+		}
 	}
 }

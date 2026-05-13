@@ -98,8 +98,9 @@ async function staleWhileRevalidate(request) {
   const cached = await caches.match(request);
   const fetchPromise = fetch(request)
     .then((response) => {
-      if (response.ok || response.type === "opaque") {
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+      if ((response.ok || response.type === "opaque") && !response.bodyUsed) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
       }
       return response;
     })
