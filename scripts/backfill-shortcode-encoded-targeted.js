@@ -112,9 +112,13 @@ function encodeSequence(sourceData) {
   return parts.join("|");
 }
 
-function compressString(str) {
-  // LZString compatible compression via dynamic import
-  return null; // We'll handle this differently
+async function loadFflate() {
+  try {
+    return await import("fflate");
+  } catch {
+    console.error("fflate not available. Run: pnpm add fflate");
+    process.exit(1);
+  }
 }
 
 async function main() {
@@ -124,14 +128,7 @@ async function main() {
     process.exit(1);
   }
 
-  // Dynamic import of lz-string
-  let LZString;
-  try {
-    LZString = (await import("lz-string")).default;
-  } catch {
-    console.error("lz-string not available, install it or use npx tsx with the TS backfill script");
-    process.exit(1);
-  }
+  const fflate = await loadFflate();
 
   const { db } = await initFirestore();
   console.log(`Backfilling encoded field for ${codes.length} shortcodes\n`);
@@ -197,9 +194,20 @@ async function main() {
       continue;
     }
 
-    // Compress with LZString
-    const compressed = LZString.compressToEncodedURIComponent(pipeEncoded);
-    const encoded = `s~z:${compressed}`;
+    // Compress with fflate (deflate-raw + base64url)
+    const raw = new TextEncoder().encode(pipeEncoded);
+    const compressed = fflate.deflateSync(raw);
+    let encoded;
+    if (compressed.length >= raw.length) {
+      encoded = `s~raw:${pipeEncoded}`;
+    } else {
+      let binary = "";
+      for (let i = 0; i < compressed.length; i++) {
+        binary += String.fromCharCode(compressed[i]);
+      }
+      const b64 = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      encoded = `s~d1:${b64}`;
+    }
 
     // Output the encoded value (update via Firebase MCP if client SDK lacks write perms)
     console.log(`ENCODED (${encoded.length} chars)`);

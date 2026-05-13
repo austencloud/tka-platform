@@ -1,4 +1,4 @@
-import LZString from "lz-string";
+import { compressForURL, decompressFromURL, compressForQR, decompressFromQR } from "./sequence-codec";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
@@ -128,13 +128,6 @@ const INLINE_PREFIX = "s~";
 // PRIVATE HELPERS
 // ============================================================================
 
-function compressString(str: string): string {
-  return LZString.compressToEncodedURIComponent(str);
-}
-
-function decompressString(compressed: string): string | null {
-  return LZString.decompressFromEncodedURIComponent(compressed);
-}
 
 function encodeMotion(motion: MotionData | undefined): string {
   if (!motion) return "";
@@ -521,33 +514,20 @@ export function decodeSequence(encoded: string): SequenceData {
 
 export function encodeSequenceWithCompression(sequence: SequenceData): CompressionResult {
   const rawEncoded = encodeSequence(sequence);
-  const compressed = compressString(rawEncoded);
-
-  if (compressed.length < rawEncoded.length) {
-    return {
-      encoded: `z:${compressed}`,
-      compressed: true,
-      originalLength: rawEncoded.length,
-      finalLength: compressed.length + 2,
-    };
-  }
+  const compressed = compressForURL(rawEncoded);
+  const isCompressed = compressed.startsWith("d1:");
 
   return {
-    encoded: rawEncoded,
-    compressed: false,
+    encoded: compressed,
+    compressed: isCompressed,
     originalLength: rawEncoded.length,
-    finalLength: rawEncoded.length,
+    finalLength: compressed.length,
   };
 }
 
 export function decodeSequenceWithCompression(encoded: string): SequenceData {
-  if (encoded.startsWith("z:")) {
-    const compressed = encoded.slice(2);
-    const decompressed = decompressString(compressed);
-    if (!decompressed) {
-      throw new Error("Failed to decompress sequence data");
-    }
-    return decodeSequence(decompressed);
+  if (encoded.startsWith("d1:") || encoded.startsWith("raw:")) {
+    return decodeSequence(decompressFromURL(encoded));
   }
 
   return decodeSequence(encoded);
@@ -660,7 +640,6 @@ export function parseSequenceRouteId(id: string): SequenceRouteIdParseResult {
 
 export async function encodeSequenceForQR(sequence: SequenceData): Promise<string> {
   const flatEncoded = encodeSequence(sequence);
-  const { encoded: compressedFlat } = encodeSequenceWithCompression(sequence);
 
   try {
     const { CompositionalEncoder } = await import(
@@ -669,7 +648,7 @@ export async function encodeSequenceForQR(sequence: SequenceData): Promise<strin
     const encoder = new CompositionalEncoder(
       { encode: (s) => encodeSequence(s) },
       { decode: (s) => decodeSequence(s) },
-      { compressString: (s) => compressString(s) }
+      { compressString: (s) => compressForQR(s) }
     );
     const recipe = await encoder.tryEncode(flatEncoded, sequence);
     if (recipe) {
@@ -679,7 +658,8 @@ export async function encodeSequenceForQR(sequence: SequenceData): Promise<strin
     console.warn("[QR] Compositional encoding error:", err);
   }
 
-  return `${INLINE_PREFIX}${compressedFlat}`;
+  const compressed = compressForQR(flatEncoded);
+  return `${INLINE_PREFIX}${compressed}`;
 }
 
 export function isInlineEncoded(code: string): boolean {
@@ -691,17 +671,21 @@ export async function decodeSequenceFromQR(encoded: string): Promise<SequenceDat
     ? encoded.slice(INLINE_PREFIX.length)
     : encoded;
 
-  if (data.startsWith("r:")) {
+  if (data.startsWith("r1:")) {
     const { CompositionalDecoder } = await import(
       "$lib/shared/qr/services/implementations/CompositionalDecoder"
     );
     const decoder = new CompositionalDecoder(
       { encode: (s) => encodeSequence(s) },
       { decode: (s) => decodeSequence(s) },
-      { decompressString: (s) => decompressString(s) }
+      { decompressString: (s) => decompressFromQR(s) }
     );
     const flatEncoded = await decoder.decode(data);
     return decodeSequence(flatEncoded);
+  }
+
+  if (data.startsWith("q1:") || data.startsWith("raw:")) {
+    return decodeSequence(decompressFromQR(data));
   }
 
   return decodeSequenceWithCompression(data);

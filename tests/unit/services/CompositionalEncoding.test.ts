@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import LZString from "lz-string";
+import { compressForQR, decompressFromQR } from "$lib/shared/navigation/services/sequence-codec";
 import { encodeSequence, decodeSequence, encodeSequenceForQR, decodeSequenceFromQR, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
 import { CompositionalDecoder } from "$lib/shared/qr/services/implementations/CompositionalDecoder";
 import {
@@ -181,19 +181,22 @@ describe("CompositionalEncoding", () => {
   });
 
   describe("RECIPE_PREFIX", () => {
-    it("is 'r:'", () => {
-      expect(RECIPE_PREFIX).toBe("r:");
+    it("is 'r1:'", () => {
+      expect(RECIPE_PREFIX).toBe("r1:");
     });
   });
 
   describe("encodeForQR/decodeFromQR: flat encoding still works", () => {
-    it("non-LOOP sequences use flat encoding (s~z: format)", async () => {
+    it("non-LOOP sequences use flat encoding (s~q1: or s~d1: or s~raw: format)", async () => {
       const seq = buildSimple3StepSequence();
       const encoded = await encodeSequenceForQR(seq);
 
       expect(encoded.startsWith("s~")).toBe(true);
-      expect(encoded.startsWith("s~r:")).toBe(false);
-      expect(encoded.startsWith("s~z:")).toBe(true);
+      expect(encoded.startsWith("s~r1:")).toBe(false);
+      const payload = encoded.slice(2);
+      expect(
+        payload.startsWith("q1:") || payload.startsWith("d1:") || payload.startsWith("raw:")
+      ).toBe(true);
     });
 
     it("round-trips non-LOOP sequences through encodeForQR/decodeFromQR", async () => {
@@ -221,11 +224,11 @@ describe("CompositionalEncoding", () => {
         { decode: (s) => decodeSequence(s) },
         {
           decompressString: (s) =>
-            LZString.decompressFromEncodedURIComponent(s),
+            decompressFromQR(s),
         }
       );
 
-      expect(decoder.isRecipeEncoded("r:sr:abc12345:data")).toBe(true);
+      expect(decoder.isRecipeEncoded("r1:sr:abc12345:data")).toBe(true);
       expect(decoder.isRecipeEncoded("z:compressed")).toBe(false);
       expect(decoder.isRecipeEncoded("raw|data")).toBe(false);
     });
@@ -240,7 +243,7 @@ describe("CompositionalEncoding", () => {
       );
 
       await expect(
-        decoder.decode("r:xx:abc12345:data")
+        decoder.decode("r1:xx:abc12345:data")
       ).rejects.toThrow('Unknown LOOP type tag: "xx"');
     });
 
@@ -251,7 +254,7 @@ describe("CompositionalEncoding", () => {
         { decompressString: () => null }
       );
 
-      await expect(decoder.decode("r:sr")).rejects.toThrow(
+      await expect(decoder.decode("r1:sr")).rejects.toThrow(
         "Invalid recipe format"
       );
     });
@@ -276,7 +279,7 @@ describe("CompositionalEncoding", () => {
       );
 
       await expect(
-        decoder.decode("r:sr:abc12345:corruptdata")
+        decoder.decode("r1:sr:abc12345:corruptdata")
       ).rejects.toThrow("Failed to decompress seed data");
     });
   });
@@ -303,13 +306,14 @@ describe("CompositionalEncoding", () => {
 
   describe("isInlineEncoded", () => {
     it("detects s~ prefix", () => {
-      expect(isInlineEncoded("s~z:compressed")).toBe(true);
-      expect(isInlineEncoded("s~r:sr:abc:data")).toBe(true);
+      expect(isInlineEncoded("s~d1:compressed")).toBe(true);
+      expect(isInlineEncoded("s~q1:compressed")).toBe(true);
+      expect(isInlineEncoded("s~r1:sr:abc:data")).toBe(true);
     });
 
     it("rejects non-inline codes", () => {
       expect(isInlineEncoded("abc123")).toBe(false);
-      expect(isInlineEncoded("r:sr:abc:data")).toBe(false);
+      expect(isInlineEncoded("r1:sr:abc:data")).toBe(false);
     });
   });
 });

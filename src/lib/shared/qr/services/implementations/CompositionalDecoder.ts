@@ -4,10 +4,10 @@
  * Decodes recipe-encoded sequences by reconstructing the full sequence
  * from a seed + LOOP executor. Verifies integrity via SHA-256 hash.
  *
- * Format: r:{tag}:{hash}:{compressed seed}
+ * Format: r1:{tag}:{hash}:{compressed seed}
  * - tag identifies the LOOP type (sr = rotated, etc.)
  * - hash is 8-char truncated SHA-256 of the full flat encoding
- * - compressed seed is LZString-compressed flat encoding of just the seed beats
+ * - compressed seed is deflate+base45 encoded flat encoding of just the seed beats
  *
  * Domain: QR - Compositional Encoding
  */
@@ -42,7 +42,7 @@ export class CompositionalDecoder implements ICompositionalDecoder {
       throw new Error("Not a recipe-encoded string");
     }
 
-    // Parse: r:{tag}:{hash}:{compressed seed}
+    // Parse: r1:{tag}:{hash}:{compressed seed}
     const withoutPrefix = recipeEncoded.slice(RECIPE_PREFIX.length);
     const firstColon = withoutPrefix.indexOf(":");
     const secondColon = withoutPrefix.indexOf(":", firstColon + 1);

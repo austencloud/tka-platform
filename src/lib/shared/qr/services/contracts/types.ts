@@ -15,7 +15,7 @@ export const TAG_TO_LOOP_TYPE: Record<string, string> = Object.fromEntries(
 );
 
 /** Recipe prefix that signals compositional encoding (after the s~ inline prefix) */
-export const RECIPE_PREFIX = "r:";
+export const RECIPE_PREFIX = "r1:";
 
 
 export interface ICompositionalDecoder {
