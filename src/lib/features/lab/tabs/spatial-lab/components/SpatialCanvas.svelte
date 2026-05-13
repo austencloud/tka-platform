@@ -40,8 +40,7 @@
     const pos = getMousePos(e);
     const nx = Math.max(80, Math.min(520, pos.x + dragOffset.x));
     const ny = Math.max(60, Math.min(540, pos.y + dragOffset.y));
-    if (dragging === "left") state.leftProp = { x: nx, y: ny };
-    else state.rightProp = { x: nx, y: ny };
+    state.setPropPosition(dragging, { x: nx, y: ny });
   }
 
   function handleMouseUp() {
@@ -92,16 +91,14 @@
 
     <rect width={CANVAS_SIZE} height={CANVAS_SIZE} fill="#0a0a18" />
 
-    <!-- Subtle radial grid -->
     {#each [60, 120, 180, 240] as r}
       <circle cx={BODY_CENTER.x} cy={BODY_CENTER.y} {r} fill="none" stroke="#151525" stroke-width="0.5" />
     {/each}
 
-    <!-- Audience -->
     <line x1={120} y1={55} x2={480} y2={55} stroke="#333" stroke-width="1" />
     <text x={300} y={45} text-anchor="middle" fill="#555" font-size="12" font-family="system-ui">AUDIENCE</text>
 
-    <PlaneLines planeSplitActive={state.planeSplitActive} />
+    <PlaneLines gridPoints={state.gridPoints} planeSplitActive={state.planeSplitActive} />
 
     <ReachEnvelope
       cx={state.leftShoulder.x} cy={state.leftShoulder.y}
@@ -131,6 +128,8 @@
       cx={BODY_CENTER.x} cy={BODY_CENTER.y}
       rotation={state.bodyRotation}
       locked={state.bodyLocked}
+      rx={state.bodyEllipse.rx}
+      ry={state.bodyEllipse.ry}
       onclick={() => state.toggleBodyLock()}
     />
 
@@ -144,7 +143,7 @@
     </g>
 
     <text x={300} y={585} text-anchor="middle" fill="#444" font-size="11" font-family="system-ui">
-      Floor View (Bird's Eye) — X and Z visible, Y hidden
+      {state.viewConfig.label}
     </text>
   </svg>
 </div>

@@ -10,11 +10,10 @@
   }
 
   let { state: labState }: Props = $props();
-  let activeView: "wall" | "wheel" | "floor" = $state("floor");
 </script>
 
 <div class="side-panel">
-  <ViewSwitcher active={activeView} onchange={(v) => activeView = v} />
+  <ViewSwitcher active={labState.viewProjection} onchange={(v) => labState.setView(v)} />
   <VisualizationToggles state={labState} />
   <div class="divider"></div>
   <InfoPanel state={labState} />

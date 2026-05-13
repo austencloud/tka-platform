@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { SpatialLabState } from "../../state/spatial-lab-state.svelte";
-  import { GRID_POINTS_P1, GRID_POINTS_P2, PLANE_1_Y, PLANE_2_Y } from "../../state/spatial-lab-constants";
 
   interface Props {
     state: SpatialLabState;
@@ -8,15 +7,13 @@
 
   let { state }: Props = $props();
 
-  function gridName(x: number, y: number): string {
-    const plane = y < (PLANE_1_Y + PLANE_2_Y) / 2 ? 1 : 2;
-    const pts = plane === 1 ? GRID_POINTS_P1 : GRID_POINTS_P2;
+  function gridName(propX: number, propY: number): string {
     let best = "?", bestD = 999;
-    for (const p of pts) {
-      const d = Math.hypot(x - p.x, y - p.y);
-      if (d < bestD) { bestD = d; best = p.name; }
+    for (const pt of state.gridPoints) {
+      const d = Math.hypot(propX - pt.x, propY - pt.y);
+      if (d < bestD) { bestD = d; best = pt.name; }
     }
-    return `${best} · Plane ${plane}`;
+    return best;
   }
 
   function reachClass(pct: number): string {
