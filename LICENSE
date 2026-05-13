@@ -76,7 +76,9 @@ Everything in src/ and the following packages are licensed under the
 Elastic License 2.0. See licenses/ELv2.txt for the full text.
 
   - The full Composer application (src/)
-  - @tka/render-composition (packages/render-composition/)
+  - @tka/render-composition   (packages/render-composition/)
+  - @tka/animation-renderer   (packages/animation-renderer/)
+  - @tka/pictograph            (packages/pictograph/)
 
 This includes but is not limited to:
   - The 55+ feature modules (src/lib/features/)
@@ -98,9 +100,10 @@ See licenses/ELv2.txt for the legally binding terms.
 4. MCP Servers (Elastic License 2.0)
 --------------------------------------
 
-  - flow-arts-knowledge-mcp (mcp-server/)
-  - @tka/mcp-game-controller (packages/mcp-game-controller/)
-  - @tka/mcp-tika-talk      (packages/mcp-tika-talk/)
+  - flow-arts-knowledge-mcp    (mcp-server/)
+  - flow-arts-knowledge-mcp    (mcp-server-pkg/ — npm-published build)
+  - @tka/mcp-game-controller   (packages/mcp-game-controller/)
+  - @tka/mcp-tika-talk         (packages/mcp-tika-talk/)
 
 The MCP domain knowledge server and related tooling are part of the
 commercial platform.
