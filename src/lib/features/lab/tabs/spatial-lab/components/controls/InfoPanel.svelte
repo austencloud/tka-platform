@@ -86,6 +86,28 @@
   </div>
 </div>
 
+{#if !state.leftDiagnosis.reachable || !state.rightDiagnosis.reachable}
+<div class="panel-section">
+  <span class="panel-label">Diagnosis</span>
+  <div class="info-card diagnosis">
+    {#if !state.leftDiagnosis.reachable}
+      <div class="diag-item">
+        <span class="diag-side blue">Left</span>
+        <span class="diag-reasons">{state.leftDiagnosis.reasons.join(", ")}</span>
+        <span class="diag-suggestion">{state.leftDiagnosis.suggestion}</span>
+      </div>
+    {/if}
+    {#if !state.rightDiagnosis.reachable}
+      <div class="diag-item">
+        <span class="diag-side red">Right</span>
+        <span class="diag-reasons">{state.rightDiagnosis.reasons.join(", ")}</span>
+        <span class="diag-suggestion">{state.rightDiagnosis.suggestion}</span>
+      </div>
+    {/if}
+  </div>
+</div>
+{/if}
+
 <style>
   .panel-section { display: flex; flex-direction: column; gap: 8px; }
   .panel-label {
@@ -109,4 +131,12 @@
   .info-value.warn { color: #ff6644; }
   .spacer { height: 4px; }
   .hint { font-size: 10px; color: #555; text-align: center; margin-top: 2px; }
+  .diagnosis { border-color: #4a2a2a; background: #1a1520; }
+  .diag-item { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; }
+  .diag-item + .diag-item { border-top: 1px solid #2a2a3a; padding-top: 6px; }
+  .diag-side { font-size: 11px; font-weight: 600; }
+  .diag-side.blue { color: #4a9eff; }
+  .diag-side.red { color: #ff4a4a; }
+  .diag-reasons { font-size: 10px; color: #ff8844; }
+  .diag-suggestion { font-size: 10px; color: #aaa; font-style: italic; }
 </style>

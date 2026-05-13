@@ -25,6 +25,7 @@ import {
   type Preset,
 } from "./spatial-lab-constants";
 import { DEMO_SEQUENCES, type DemoSequence, type SequenceBeat } from "../services/demo-sequences";
+import { diagnoseReachability, type ReachabilityDiagnosis } from "../services/reachability-taxonomy";
 
 export type LabMode = "sandbox" | "sequence";
 
@@ -86,6 +87,20 @@ export class SpatialLabState {
 
   leftReachable = $derived(this.leftReachPct <= 100);
   rightReachable = $derived(this.rightReachPct <= 100);
+
+  leftDiagnosis: ReachabilityDiagnosis = $derived(
+    diagnoseReachability(
+      "left", this.leftProp, this.leftShoulder, this.rightShoulder,
+      this.rightProp, BODY_CENTER, MAX_REACH, SHOULDER_DIST, BEHIND_THRESHOLD,
+    ),
+  );
+
+  rightDiagnosis: ReachabilityDiagnosis = $derived(
+    diagnoseReachability(
+      "right", this.rightProp, this.rightShoulder, this.leftShoulder,
+      this.leftProp, BODY_CENTER, MAX_REACH, SHOULDER_DIST, BEHIND_THRESHOLD,
+    ),
+  );
 
   gridPoints = $derived(
     getProjectedGridPoints(this.viewProjection, this.planeSplitActive),
