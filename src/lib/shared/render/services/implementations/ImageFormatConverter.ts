@@ -147,8 +147,12 @@ export class ImageFormatConverter {
     if (typeof window === 'undefined') {
       throw new Error('downloadBlob is only available in browser context');
     }
-    const { saveAs } = await import('file-saver');
-    saveAs(blob, filename);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async optimizeForUseCase(
