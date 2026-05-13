@@ -5,15 +5,15 @@
     state: SpatialLabState;
   }
 
-  let { state }: Props = $props();
+  let { state: labState }: Props = $props();
 
-  function gridName(propX: number, propY: number): string {
-    let best = "?", bestD = 999;
-    for (const pt of state.gridPoints) {
-      const d = Math.hypot(propX - pt.x, propY - pt.y);
-      if (d < bestD) { bestD = d; best = pt.name; }
-    }
-    return best;
+  const locationLabels: Record<string, string> = {
+    n: "North", e: "East", s: "South", w: "West",
+    ne: "NE", se: "SE", sw: "SW", nw: "NW",
+  };
+
+  function locName(loc: string): string {
+    return locationLabels[loc] ?? loc;
   }
 
   function reachClass(pct: number): string {
@@ -32,76 +32,69 @@
 <div class="panel-section">
   <span class="panel-label">
     Body
-    <span class="badge" class:locked={state.bodyLocked} class:auto={!state.bodyLocked}>
-      {state.bodyLocked ? "locked" : "auto"}
+    <span class="badge" class:locked={labState.bodyLocked} class:auto={!labState.bodyLocked}>
+      {labState.bodyLocked ? "locked" : "auto"}
     </span>
   </span>
   <div class="info-card">
     <div class="info-row">
       <span class="info-label">Rotation</span>
-      <span class="info-value {rotClass(state.bodyRotation)}">{state.bodyRotation.toFixed(1)}°</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Mode</span>
-      <span class="info-value {state.bodyLocked ? 'yellow' : 'green'}">
-        {state.bodyLocked ? "Locked" : "Auto-tracking"}
-      </span>
+      <span class="info-value {rotClass(labState.bodyRotation)}">{labState.bodyRotation.toFixed(1)}°</span>
     </div>
     <div class="info-row">
       <span class="info-label">Plane split</span>
-      <span class="info-value {state.planeSplitActive ? 'yellow' : 'green'}">
-        {state.planeSplitActive ? "Yes" : "No"}
+      <span class="info-value {labState.planeSplitActive ? 'yellow' : 'green'}">
+        {labState.planeSplitActive ? "Yes" : "No"}
       </span>
     </div>
     <div class="info-row">
       <span class="info-label">Arms crossing</span>
-      <span class="info-value {state.crossing ? 'warn' : 'green'}">
-        {state.crossing ? "Yes!" : "No"}
+      <span class="info-value {labState.crossing ? 'warn' : 'green'}">
+        {labState.crossing ? "Yes!" : "No"}
       </span>
     </div>
   </div>
-  <div class="hint">Click body to lock/unlock</div>
 </div>
 
 <div class="panel-section">
   <span class="panel-label">Props</span>
   <div class="info-card">
     <div class="info-row">
-      <span class="info-label">Left</span>
-      <span class="info-value blue">{gridName(state.leftProp.x, state.leftProp.y)}</span>
+      <span class="info-label">Blue (L)</span>
+      <span class="info-value blue">{locName(labState.leftLocation)}</span>
     </div>
     <div class="info-row">
       <span class="info-label">L reach</span>
-      <span class="info-value {reachClass(state.leftReachPct)}">{state.leftReachPct}%</span>
+      <span class="info-value {reachClass(labState.leftReachPct)}">{labState.leftReachPct}%</span>
     </div>
     <div class="spacer"></div>
     <div class="info-row">
-      <span class="info-label">Right</span>
-      <span class="info-value red">{gridName(state.rightProp.x, state.rightProp.y)}</span>
+      <span class="info-label">Red (R)</span>
+      <span class="info-value red">{locName(labState.rightLocation)}</span>
     </div>
     <div class="info-row">
       <span class="info-label">R reach</span>
-      <span class="info-value {reachClass(state.rightReachPct)}">{state.rightReachPct}%</span>
+      <span class="info-value {reachClass(labState.rightReachPct)}">{labState.rightReachPct}%</span>
     </div>
   </div>
 </div>
 
-{#if !state.leftDiagnosis.reachable || !state.rightDiagnosis.reachable}
+{#if !labState.leftDiagnosis.reachable || !labState.rightDiagnosis.reachable}
 <div class="panel-section">
   <span class="panel-label">Diagnosis</span>
   <div class="info-card diagnosis">
-    {#if !state.leftDiagnosis.reachable}
+    {#if !labState.leftDiagnosis.reachable}
       <div class="diag-item">
-        <span class="diag-side blue">Left</span>
-        <span class="diag-reasons">{state.leftDiagnosis.reasons.join(", ")}</span>
-        <span class="diag-suggestion">{state.leftDiagnosis.suggestion}</span>
+        <span class="diag-side blue">Blue (L)</span>
+        <span class="diag-reasons">{labState.leftDiagnosis.reasons.join(", ")}</span>
+        <span class="diag-suggestion">{labState.leftDiagnosis.suggestion}</span>
       </div>
     {/if}
-    {#if !state.rightDiagnosis.reachable}
+    {#if !labState.rightDiagnosis.reachable}
       <div class="diag-item">
-        <span class="diag-side red">Right</span>
-        <span class="diag-reasons">{state.rightDiagnosis.reasons.join(", ")}</span>
-        <span class="diag-suggestion">{state.rightDiagnosis.suggestion}</span>
+        <span class="diag-side red">Red (R)</span>
+        <span class="diag-reasons">{labState.rightDiagnosis.reasons.join(", ")}</span>
+        <span class="diag-suggestion">{labState.rightDiagnosis.suggestion}</span>
       </div>
     {/if}
   </div>
@@ -130,7 +123,6 @@
   .info-value.yellow { color: #ffcc00; }
   .info-value.warn { color: #ff6644; }
   .spacer { height: 4px; }
-  .hint { font-size: 10px; color: #555; text-align: center; margin-top: 2px; }
   .diagnosis { border-color: #4a2a2a; background: #1a1520; }
   .diag-item { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; }
   .diag-item + .diag-item { border-top: 1px solid #2a2a3a; padding-top: 6px; }

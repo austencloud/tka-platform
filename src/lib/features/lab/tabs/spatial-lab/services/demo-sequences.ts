@@ -1,8 +1,10 @@
-import type { Point3D } from "./projection";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { Plane } from "@austencloud/scene-3d";
 
 export interface SequenceBeat {
-  left: Point3D;
-  right: Point3D;
+  left: GridLocation;
+  right: GridLocation;
+  plane?: Plane;
   label?: string;
 }
 
@@ -17,70 +19,64 @@ export const DEMO_SEQUENCES: DemoSequence[] = [
     name: "Mirror Sweep",
     description: "Symmetric east-west sweep — no body turn needed",
     beats: [
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "L:W R:E" },
-      { left: { x: -1, y: 1, z: 0 }, right: { x: 1, y: 1, z: 0 }, label: "L:NW R:NE" },
-      { left: { x: 0, y: 1, z: 0 }, right: { x: 0, y: 1, z: 0 }, label: "Both N" },
-      { left: { x: 1, y: 1, z: 0 }, right: { x: -1, y: 1, z: 0 }, label: "L:NE R:NW" },
-      { left: { x: 1, y: 0, z: 0 }, right: { x: -1, y: 0, z: 0 }, label: "L:E R:W" },
-      { left: { x: 1, y: -1, z: 0 }, right: { x: -1, y: -1, z: 0 }, label: "L:SE R:SW" },
-      { left: { x: 0, y: -1, z: 0 }, right: { x: 0, y: -1, z: 0 }, label: "Both S" },
-      { left: { x: -1, y: -1, z: 0 }, right: { x: 1, y: -1, z: 0 }, label: "L:SW R:SE" },
-    ],
-  },
-  {
-    name: "Plane Split",
-    description: "Right prop peels behind — triggers plane split + body turn",
-    beats: [
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "L:W R:E (front)" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0.5 }, label: "R drifts back" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 1 }, label: "R fully behind" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 0, y: 0, z: 1 }, label: "R moves to center-back" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: -1, y: 0, z: 1 }, label: "R at W-back" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: -1, y: 0, z: 0.5 }, label: "R returns" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: -1, y: 0, z: 0 }, label: "Both W (front)" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "Back to start" },
+      { left: GridLocation.WEST, right: GridLocation.EAST, label: "L:W R:E" },
+      { left: GridLocation.NORTHWEST, right: GridLocation.NORTHEAST, label: "L:NW R:NE" },
+      { left: GridLocation.NORTH, right: GridLocation.NORTH, label: "Both N" },
+      { left: GridLocation.NORTHEAST, right: GridLocation.NORTHWEST, label: "L:NE R:NW" },
+      { left: GridLocation.EAST, right: GridLocation.WEST, label: "L:E R:W" },
+      { left: GridLocation.SOUTHEAST, right: GridLocation.SOUTHWEST, label: "L:SE R:SW" },
+      { left: GridLocation.SOUTH, right: GridLocation.SOUTH, label: "Both S" },
+      { left: GridLocation.SOUTHWEST, right: GridLocation.SOUTHEAST, label: "L:SW R:SE" },
     ],
   },
   {
     name: "Crossing",
     description: "Arms cross center — crossing detector fires",
     beats: [
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "L:W R:E" },
-      { left: { x: -0.5, y: 0, z: 0 }, right: { x: 0.5, y: 0, z: 0 }, label: "Moving in" },
-      { left: { x: 0, y: 0, z: 0 }, right: { x: 0, y: 0, z: 0 }, label: "Center — crossing!" },
-      { left: { x: 0.5, y: 0, z: 0 }, right: { x: -0.5, y: 0, z: 0 }, label: "Crossed!" },
-      { left: { x: 1, y: 0, z: 0 }, right: { x: -1, y: 0, z: 0 }, label: "L:E R:W" },
-      { left: { x: 0.5, y: 0, z: 0 }, right: { x: -0.5, y: 0, z: 0 }, label: "Returning" },
-      { left: { x: 0, y: 0, z: 0 }, right: { x: 0, y: 0, z: 0 }, label: "Center — crossing!" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "Back to start" },
+      { left: GridLocation.WEST, right: GridLocation.EAST, label: "L:W R:E" },
+      { left: GridLocation.SOUTHWEST, right: GridLocation.SOUTHEAST, label: "Inward" },
+      { left: GridLocation.SOUTH, right: GridLocation.SOUTH, label: "Both S — close" },
+      { left: GridLocation.EAST, right: GridLocation.WEST, label: "Crossed! L:E R:W" },
+      { left: GridLocation.NORTHEAST, right: GridLocation.NORTHWEST, label: "Still crossed" },
+      { left: GridLocation.WEST, right: GridLocation.EAST, label: "Back to start" },
     ],
   },
   {
     name: "Body Turn 90°",
     description: "Both props shift east — body auto-turns to face stage-right",
     beats: [
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "L:W R:E (neutral)" },
-      { left: { x: 0, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "L moves center" },
-      { left: { x: 0.5, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "L to mid-E" },
-      { left: { x: 1, y: 0, z: -0.5 }, right: { x: 1, y: 0, z: 0.5 }, label: "Split at E" },
-      { left: { x: 1, y: 0, z: -1 }, right: { x: 1, y: 0, z: 1 }, label: "Turned 90° east" },
-      { left: { x: 1, y: 0, z: -0.5 }, right: { x: 1, y: 0, z: 0.5 }, label: "Closing back" },
-      { left: { x: 0.5, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "Returning" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "Back to neutral" },
+      { left: GridLocation.WEST, right: GridLocation.EAST, label: "L:W R:E (neutral)" },
+      { left: GridLocation.SOUTH, right: GridLocation.EAST, label: "L moves S" },
+      { left: GridLocation.SOUTHEAST, right: GridLocation.NORTHEAST, label: "Both E side" },
+      { left: GridLocation.EAST, right: GridLocation.EAST, label: "Both E" },
+      { left: GridLocation.SOUTHEAST, right: GridLocation.NORTHEAST, label: "Returning" },
+      { left: GridLocation.WEST, right: GridLocation.EAST, label: "Back to neutral" },
     ],
   },
   {
     name: "Height Sweep",
-    description: "Props sweep vertically — visible in wall/wheel views",
+    description: "Props sweep north-south — visible body reaction",
     beats: [
-      { left: { x: -1, y: -1, z: 0 }, right: { x: 1, y: -1, z: 0 }, label: "Both low (S)" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "Both mid (E/W)" },
-      { left: { x: -1, y: 1, z: 0 }, right: { x: 1, y: 1, z: 0 }, label: "Both high (N)" },
-      { left: { x: 0, y: 1, z: 0 }, right: { x: 0, y: 1, z: 0 }, label: "Both center-high" },
-      { left: { x: 0, y: 0, z: 0 }, right: { x: 0, y: 0, z: 0 }, label: "Both center" },
-      { left: { x: 0, y: -1, z: 0 }, right: { x: 0, y: -1, z: 0 }, label: "Both center-low" },
-      { left: { x: -1, y: -1, z: 0 }, right: { x: 1, y: -1, z: 0 }, label: "Spread low" },
-      { left: { x: -1, y: 0, z: 0 }, right: { x: 1, y: 0, z: 0 }, label: "Back to E/W" },
+      { left: GridLocation.SOUTHWEST, right: GridLocation.SOUTHEAST, label: "Both low" },
+      { left: GridLocation.WEST, right: GridLocation.EAST, label: "Both mid" },
+      { left: GridLocation.NORTHWEST, right: GridLocation.NORTHEAST, label: "Both high" },
+      { left: GridLocation.NORTH, right: GridLocation.NORTH, label: "Both top" },
+      { left: GridLocation.NORTHWEST, right: GridLocation.NORTHEAST, label: "Descending" },
+      { left: GridLocation.WEST, right: GridLocation.EAST, label: "Back to mid" },
+    ],
+  },
+  {
+    name: "Full Rotation",
+    description: "Left prop circles the grid — body tracks it",
+    beats: [
+      { left: GridLocation.EAST, right: GridLocation.WEST, label: "Start: L:E R:W" },
+      { left: GridLocation.NORTHEAST, right: GridLocation.WEST, label: "L → NE" },
+      { left: GridLocation.NORTH, right: GridLocation.WEST, label: "L → N" },
+      { left: GridLocation.NORTHWEST, right: GridLocation.WEST, label: "L → NW" },
+      { left: GridLocation.WEST, right: GridLocation.WEST, label: "L → W (same!)" },
+      { left: GridLocation.SOUTHWEST, right: GridLocation.WEST, label: "L → SW" },
+      { left: GridLocation.SOUTH, right: GridLocation.WEST, label: "L → S" },
+      { left: GridLocation.SOUTHEAST, right: GridLocation.WEST, label: "L → SE" },
     ],
   },
 ];

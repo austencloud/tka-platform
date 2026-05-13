@@ -6,40 +6,54 @@ import {
 import { getShoulderPosition, computeReachPercentage } from "../services/reach-calculator";
 import { detectCrossing } from "../services/crossing-detector";
 import { detectPlaneSplit } from "../services/plane-split-detector";
-import {
-  project3Dto2D,
-  unproject2Dto3D,
-  getProjectedGridPoints,
-  getViewConfig,
-  getBodyEllipseParams,
-  type Point3D,
-  type ViewProjection,
-  type ProjectedGridPoint,
-} from "../services/projection";
+import type { ViewProjection } from "../services/projection";
 import {
   BODY_CENTER,
   SHOULDER_DIST,
   MAX_REACH,
   BEHIND_THRESHOLD,
   MAX_ROTATION_SPEED,
+  VIEW_TO_CAMERA,
+  VIEW_TO_PLANE,
   type Preset,
 } from "./spatial-lab-constants";
 import { DEMO_SEQUENCES, type DemoSequence, type SequenceBeat } from "../services/demo-sequences";
 import { diagnoseReachability, type ReachabilityDiagnosis } from "../services/reachability-taxonomy";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { Plane } from "@austencloud/scene-3d";
+import type { PropState3D } from "@austencloud/scene-3d";
+import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
+import {
+  gridLocationToPosition3D,
+  calculatePropRotation,
+} from "$lib/shared/3d/services/plane-coordinate-mapper";
 
 export type LabMode = "sandbox" | "sequence";
 
+const GRID_SCALE = 160;
+
+function makePropState(location: GridLocation, plane: Plane): PropState3D {
+  const angle = LOCATION_ANGLES[location] ?? 0;
+  return {
+    centerPathAngle: angle,
+    staffRotationAngle: 0,
+    plane,
+    worldPosition: gridLocationToPosition3D(plane, location),
+    worldRotation: calculatePropRotation(plane, 0),
+  };
+}
+
 export class SpatialLabState {
-  leftProp3D = $state<Point3D>({ x: 0.95, y: 0, z: 0 });
-  rightProp3D = $state<Point3D>({ x: 1, y: 0, z: 0 });
+  leftLocation = $state<GridLocation>(GridLocation.WEST);
+  rightLocation = $state<GridLocation>(GridLocation.EAST);
+  activePlane = $state<Plane>(Plane.WALL);
   bodyRotation = $state(0);
   bodyLocked = $state(false);
-  showReachEnvelopes = $state(true);
-  showArmLines = $state(true);
-  showCrossingAlert = $state(true);
-  viewProjection = $state<ViewProjection>("floor");
+  showGrid = $state(true);
+  showStage = $state(true);
+  showLabels = $state(false);
+  viewProjection = $state<ViewProjection>("wall");
 
-  // Sequence mode
   mode = $state<LabMode>("sandbox");
   activeSequence = $state<DemoSequence | null>(null);
   beatIndex = $state(0);
@@ -47,19 +61,38 @@ export class SpatialLabState {
   playbackBpm = $state(60);
   private _playElapsed = 0;
 
+  draggingSide = $state<"blue" | "red" | null>(null);
+
   private _targetRotation = 0;
 
-  readonly bodyCenter = BODY_CENTER;
-  readonly shoulderDist = SHOULDER_DIST;
-  readonly maxReach = MAX_REACH;
+  bluePropState: PropState3D = $derived(makePropState(this.leftLocation, this.activePlane));
+  redPropState: PropState3D = $derived(makePropState(this.rightLocation, this.activePlane));
 
-  // Projected 2D positions for display
-  leftProp = $derived(project3Dto2D(this.leftProp3D, this.viewProjection));
-  rightProp = $derived(project3Dto2D(this.rightProp3D, this.viewProjection));
+  cameraPreset = $derived(VIEW_TO_CAMERA[this.viewProjection] ?? "front");
+  visiblePlanes = $derived(new Set([VIEW_TO_PLANE[this.viewProjection] ?? Plane.WALL]));
 
-  // Floor-projected positions for body rotation (always bird's eye logic)
-  private leftPropFloor = $derived(project3Dto2D(this.leftProp3D, "floor"));
-  private rightPropFloor = $derived(project3Dto2D(this.rightProp3D, "floor"));
+  private leftPos3D = $derived(this.bluePropState.worldPosition);
+  private rightPos3D = $derived(this.redPropState.worldPosition);
+
+  private leftProp2D: Point2D = $derived({
+    x: BODY_CENTER.x + this.leftPos3D.x * GRID_SCALE,
+    y: BODY_CENTER.y - this.leftPos3D.y * GRID_SCALE,
+  });
+
+  private rightProp2D: Point2D = $derived({
+    x: BODY_CENTER.x + this.rightPos3D.x * GRID_SCALE,
+    y: BODY_CENTER.y - this.rightPos3D.y * GRID_SCALE,
+  });
+
+  private leftPropFloor: Point2D = $derived({
+    x: BODY_CENTER.x + this.leftPos3D.x * GRID_SCALE,
+    y: BODY_CENTER.y + this.leftPos3D.z * GRID_SCALE,
+  });
+
+  private rightPropFloor: Point2D = $derived({
+    x: BODY_CENTER.x + this.rightPos3D.x * GRID_SCALE,
+    y: BODY_CENTER.y + this.rightPos3D.z * GRID_SCALE,
+  });
 
   leftShoulder = $derived(
     getShoulderPosition("left", this.bodyRotation, BODY_CENTER, SHOULDER_DIST),
@@ -74,15 +107,15 @@ export class SpatialLabState {
   );
 
   crossing = $derived(
-    detectCrossing(this.leftShoulder, this.leftProp, this.rightShoulder, this.rightProp),
+    detectCrossing(this.leftShoulder, this.leftProp2D, this.rightShoulder, this.rightProp2D),
   );
 
   leftReachPct = $derived(
-    computeReachPercentage(this.leftShoulder, this.leftProp, MAX_REACH),
+    computeReachPercentage(this.leftShoulder, this.leftProp2D, MAX_REACH),
   );
 
   rightReachPct = $derived(
-    computeReachPercentage(this.rightShoulder, this.rightProp, MAX_REACH),
+    computeReachPercentage(this.rightShoulder, this.rightProp2D, MAX_REACH),
   );
 
   leftReachable = $derived(this.leftReachPct <= 100);
@@ -90,24 +123,19 @@ export class SpatialLabState {
 
   leftDiagnosis: ReachabilityDiagnosis = $derived(
     diagnoseReachability(
-      "left", this.leftProp, this.leftShoulder, this.rightShoulder,
-      this.rightProp, BODY_CENTER, MAX_REACH, SHOULDER_DIST, BEHIND_THRESHOLD,
+      "left", this.leftProp2D, this.leftShoulder, this.rightShoulder,
+      this.rightProp2D, BODY_CENTER, MAX_REACH, SHOULDER_DIST, BEHIND_THRESHOLD,
     ),
   );
 
   rightDiagnosis: ReachabilityDiagnosis = $derived(
     diagnoseReachability(
-      "right", this.rightProp, this.rightShoulder, this.leftShoulder,
-      this.leftProp, BODY_CENTER, MAX_REACH, SHOULDER_DIST, BEHIND_THRESHOLD,
+      "right", this.rightProp2D, this.rightShoulder, this.leftShoulder,
+      this.leftProp2D, BODY_CENTER, MAX_REACH, SHOULDER_DIST, BEHIND_THRESHOLD,
     ),
   );
 
-  gridPoints = $derived(
-    getProjectedGridPoints(this.viewProjection, this.planeSplitActive),
-  );
-
-  viewConfig = $derived(getViewConfig(this.viewProjection));
-  bodyEllipse = $derived(getBodyEllipseParams(this.viewProjection));
+  facingAngle = $derived(this.bodyRotation * (Math.PI / 180));
 
   toggleBodyLock(): void {
     this.bodyLocked = !this.bodyLocked;
@@ -115,31 +143,19 @@ export class SpatialLabState {
 
   setView(view: ViewProjection): void {
     this.viewProjection = view;
+    this.activePlane = VIEW_TO_PLANE[view] ?? Plane.WALL;
+  }
+
+  setLocation(side: "blue" | "red", location: GridLocation): void {
+    if (side === "blue") this.leftLocation = location;
+    else this.rightLocation = location;
   }
 
   applyPreset(preset: Preset): void {
     this.bodyLocked = false;
-    this.leftProp3D = { ...preset.left };
-    this.rightProp3D = { ...preset.right };
-    const floorL = project3Dto2D(this.leftProp3D, "floor");
-    const floorR = project3Dto2D(this.rightProp3D, "floor");
-    this._targetRotation =
-      computeTargetRotation(floorL, floorR, BODY_CENTER, BEHIND_THRESHOLD) ??
-      this.bodyRotation;
-    this.bodyRotation = this._targetRotation;
-  }
-
-  setPropPosition(side: "left" | "right", svgPos: Point2D): void {
-    const freeAxis = side === "left" ? this.leftProp3D : this.rightProp3D;
-    let freeAxisValue: number;
-    switch (this.viewProjection) {
-      case "floor": freeAxisValue = freeAxis.y; break;
-      case "wall": freeAxisValue = freeAxis.z; break;
-      case "wheel": freeAxisValue = freeAxis.x; break;
-    }
-    const pt3D = unproject2Dto3D(svgPos, this.viewProjection, freeAxisValue);
-    if (side === "left") this.leftProp3D = pt3D;
-    else this.rightProp3D = pt3D;
+    this.leftLocation = preset.left;
+    this.rightLocation = preset.right;
+    this._syncBodyRotation();
   }
 
   readonly demoSequences = DEMO_SEQUENCES;
@@ -184,30 +200,17 @@ export class SpatialLabState {
   }
 
   private _applyBeat(beat: SequenceBeat): void {
-    this.leftProp3D = { ...beat.left };
-    this.rightProp3D = { ...beat.right };
-    const floorL = project3Dto2D(this.leftProp3D, "floor");
-    const floorR = project3Dto2D(this.rightProp3D, "floor");
-    this._targetRotation =
-      computeTargetRotation(floorL, floorR, BODY_CENTER, BEHIND_THRESHOLD) ??
-      this.bodyRotation;
-    this.bodyRotation = this._targetRotation;
+    this.leftLocation = beat.left;
+    this.rightLocation = beat.right;
+    if (beat.plane) this.activePlane = beat.plane;
+    this._syncBodyRotation();
   }
 
-  snapProp(side: "left" | "right"): void {
-    const pos = side === "left" ? this.leftProp : this.rightProp;
-    let best: ProjectedGridPoint | null = null;
-    let bestDist = 45;
-    for (const pt of this.gridPoints) {
-      const d = Math.hypot(pos.x - pt.x, pos.y - pt.y);
-      if (d < bestDist) {
-        bestDist = d;
-        best = pt;
-      }
-    }
-    if (best) {
-      this.setPropPosition(side, { x: best.x, y: best.y });
-    }
+  private _syncBodyRotation(): void {
+    this._targetRotation =
+      computeTargetRotation(this.leftPropFloor, this.rightPropFloor, BODY_CENTER, BEHIND_THRESHOLD) ??
+      this.bodyRotation;
+    this.bodyRotation = this._targetRotation;
   }
 
   tick(): void {

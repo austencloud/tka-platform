@@ -5,12 +5,12 @@
     state: SpatialLabState;
   }
 
-  let { state }: Props = $props();
+  let { state: labState }: Props = $props();
 
   const toggles = [
-    { key: "showReachEnvelopes" as const, label: "Reach envelopes" },
-    { key: "showArmLines" as const, label: "Arm lines" },
-    { key: "showCrossingAlert" as const, label: "Crossing alert" },
+    { key: "showGrid" as const, label: "Grid planes" },
+    { key: "showStage" as const, label: "Stage" },
+    { key: "showLabels" as const, label: "Grid labels" },
   ];
 </script>
 
@@ -21,10 +21,10 @@
       <span class="toggle-label">{t.label}</span>
       <button
         class="toggle-btn"
-        class:on={state[t.key]}
-        aria-pressed={state[t.key]}
+        class:on={labState[t.key]}
+        aria-pressed={labState[t.key]}
         aria-label={t.label}
-        onclick={() => { state[t.key] = !state[t.key]; }}
+        onclick={() => { labState[t.key] = !labState[t.key]; }}
       ></button>
     </div>
   {/each}

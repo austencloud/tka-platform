@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createSpatialLabState } from "./state/spatial-lab-state.svelte";
-  import SpatialCanvas from "./components/SpatialCanvas.svelte";
+  import SpatialScene from "./components/SpatialScene.svelte";
   import SpatialControls from "./components/SpatialControls.svelte";
   import SpatialStatusBar from "./components/SpatialStatusBar.svelte";
 
@@ -13,10 +13,10 @@
       <span class="lab-title">Spatial Lab</span>
       <span class="lab-subtitle">{state.mode === "sequence" ? "Sequence Playback" : "Sandbox Mode"}</span>
     </div>
-    <span class="header-hint">Drag props · Click body to lock/unlock rotation</span>
+    <span class="header-hint">Drag props · Click body to lock/unlock · Orbit with mouse</span>
   </div>
   <div class="lab-body">
-    <SpatialCanvas {state} />
+    <SpatialScene {state} />
     <SpatialControls {state} />
   </div>
   <SpatialStatusBar {state} />
