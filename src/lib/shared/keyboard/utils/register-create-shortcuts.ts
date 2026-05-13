@@ -13,6 +13,7 @@ import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
 import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clearSequenceWorkflow";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
 import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
@@ -649,12 +650,12 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+R - Rotate sequence clockwise (45°)
+  // Alt+] - Rotate sequence clockwise (45°)
   service.register({
     id: "create.transform-rotate-cw",
     label: "Rotate Clockwise",
     description: "Rotate the sequence 45° clockwise",
-    key: "r",
+    key: "]",
     modifiers: ["alt"],
     context: "create",
     scope: "sequence-management",
@@ -672,16 +673,17 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       if (!sequenceState?.hasSequence()) return;
 
+      setGridRotationDirection(1);
       await sequenceState.rotateSequence("clockwise");
     },
   });
 
-  // Alt+L - Rotate sequence counter-clockwise (45°)
+  // Alt+[ - Rotate sequence counter-clockwise (45°)
   service.register({
     id: "create.transform-rotate-ccw",
     label: "Rotate Counter-Clockwise",
     description: "Rotate the sequence 45° counter-clockwise",
-    key: "l",
+    key: "[",
     modifiers: ["alt"],
     context: "create",
     scope: "sequence-management",
@@ -699,6 +701,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       if (!sequenceState?.hasSequence()) return;
 
+      setGridRotationDirection(-1);
       await sequenceState.rotateSequence("counterclockwise");
     },
   });

@@ -30,4 +30,8 @@ export interface PictographData {
   // 3 = skewed→skewed (future)
   // 4 = skewed→normal (future)
   readonly category?: number | null;
+
+  // Beta offset swap — flips which hand gets which side when both end at same location.
+  // Legacy Python app feature ported to web. Toggle via B key in step editor.
+  readonly betaSwapped?: boolean;
 }

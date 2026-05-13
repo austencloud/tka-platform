@@ -45,13 +45,19 @@
   const displayTurns = $derived(turns === "fl" ? "fl" : turns);
 
   const directionIcon = $derived(
-    rotationDirection === RotationDirection.CLOCKWISE
-      ? "fa-rotate-right"
-      : "fa-rotate-left"
+    rotationDirection === RotationDirection.NO_ROTATION
+      ? "fa-minus"
+      : rotationDirection === RotationDirection.CLOCKWISE
+        ? "fa-rotate-right"
+        : "fa-rotate-left"
   );
 
   const directionLabel = $derived(
-    rotationDirection === RotationDirection.CLOCKWISE ? "CW" : "CCW"
+    rotationDirection === RotationDirection.NO_ROTATION
+      ? ""
+      : rotationDirection === RotationDirection.CLOCKWISE
+        ? "CW"
+        : "CCW"
   );
 
   function handleTurnsChangeClick(e: MouseEvent, delta: number) {
@@ -105,17 +111,18 @@
     </button>
   </div>
 
-  <!-- Rotation direction toggle -->
-  <button
-    class="invert-btn"
-    class:compact
-    aria-label="Toggle {color} rotation (currently {directionLabel})"
-    onclick={handleInvert}
-    disabled={!showRotation}
-  >
-    <i class="fas {directionIcon}" aria-hidden="true"></i>
-    <span class="invert-label">{directionLabel}</span>
-  </button>
+  <!-- Rotation direction toggle — hidden for dash/static at 0 turns -->
+  {#if showRotation}
+    <button
+      class="invert-btn"
+      class:compact
+      aria-label="Toggle {color} rotation (currently {directionLabel})"
+      onclick={handleInvert}
+    >
+      <i class="fas {directionIcon}" aria-hidden="true"></i>
+      <span class="invert-label">{directionLabel}</span>
+    </button>
+  {/if}
 
   <!-- Path shape override (only for motions that traverse the grid) -->
   {#if onPathShapeChange && onPathShapeClear && isShift}
@@ -282,11 +289,6 @@
 
   .invert-btn:active:not(:disabled) {
     transform: scale(0.95);
-  }
-
-  .invert-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
 
   .invert-label {

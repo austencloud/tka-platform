@@ -46,8 +46,8 @@
   ] as const;
 
   const rotateButtons = [
-    { direction: "counterclockwise" as const, label: "CCW", icon: "fa-rotate-left", key: "L" },
-    { direction: "clockwise" as const, label: "CW", icon: "fa-rotate-right", key: "R" },
+    { direction: "counterclockwise" as const, label: "CCW", icon: "fa-rotate-left", key: "[" },
+    { direction: "clockwise" as const, label: "CW", icon: "fa-rotate-right", key: "]" },
   ];
 
   function isInputFocused(): boolean {

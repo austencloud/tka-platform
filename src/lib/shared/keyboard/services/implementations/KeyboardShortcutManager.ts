@@ -18,6 +18,7 @@ import { NormalizedKeyboardEvent } from "../../domain/models/KeyboardEvent";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
 import { hasOpenDrawers, dismissTopDrawer } from "$lib/shared/foundation/ui/drawer/DrawerStack";
+import { getActiveModule } from "$lib/shared/application/state/ui/ui-state.svelte";
 
 const debug = createComponentLogger("KeyboardShortcutManager");
 
@@ -195,6 +196,15 @@ export class KeyboardShortcutManager {
     if (selectedArrowState.selectedArrow && ["w", "a", "s", "d"].includes(key)) {
       // Arrow is selected, let ArrowAdjustmentPanel handle WASD
       return;
+    }
+
+    // Recover context from active module if still at default "global"
+    // due to module-init race condition (MainInterface "Module null after init")
+    if (this.currentContext === "global") {
+      const module = getActiveModule();
+      if (module) {
+        this.currentContext = module as ShortcutContext;
+      }
     }
 
     // Normalize the event

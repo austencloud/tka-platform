@@ -30,6 +30,7 @@ import {
   persistBeatWithAdjustments,
 } from "./step-operations/ArrowAdjustmentHandler";
 import { updateStepDuration } from "./step-operations/DurationHandler";
+import { toggleBetaSwap } from "./step-operations/BetaSwapHandler";
 import {
   setPathShape,
   clearPathShape,
@@ -154,6 +155,13 @@ export class StepOperator {
     createModuleState: ICreateModuleState
   ): void {
     clearPathShape(stepNumber, color, createModuleState);
+  }
+
+  toggleBetaSwap(
+    stepNumber: number,
+    createModuleState: ICreateModuleState
+  ): void {
+    toggleBetaSwap(stepNumber, createModuleState);
   }
 }
 

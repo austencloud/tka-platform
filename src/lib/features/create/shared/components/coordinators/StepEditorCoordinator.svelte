@@ -24,6 +24,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
   import {
     MotionColor,
+    MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PathShapeValue } from "../../services/implementations/step-operations/PathShapeHandler";
@@ -156,9 +157,15 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
       UndoOperationType.MODIFY_BEAT_PROPERTIES
     );
 
+    const motion =
+      color === MotionColor.BLUE ? blueMotion : redMotion;
     const currentTurns =
       color === MotionColor.BLUE ? currentBlueTurns : currentRedTurns;
-    const newNumericTurns = Math.min(3, Math.max(-0.5, currentTurns + delta));
+    const isShift =
+      motion?.motionType === MotionType.PRO ||
+      motion?.motionType === MotionType.ANTI;
+    const minTurns = isShift ? -0.5 : 0;
+    const newNumericTurns = Math.min(3, Math.max(minTurns, currentTurns + delta));
     const newTurns: number | "fl" =
       newNumericTurns === -0.5 ? "fl" : newNumericTurns;
 
@@ -291,6 +298,13 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
     StepOperator.clearStepPathShape(selectedStepNumber, color, CreateModuleState);
   }
 
+  function handleBetaSwapToggle() {
+    if (selectedStepNumber === null || selectedStepNumber === 0 || !StepOperator) return;
+    hapticService?.trigger("selection");
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.MODIFY_BEAT_PROPERTIES);
+    StepOperator.toggleBetaSwap(selectedStepNumber, CreateModuleState);
+  }
+
   function handleStepBeatDataUpdate(updatedStepData: typeof selectedStepData) {
     if (selectedStepNumber === null || !updatedStepData) return;
 
@@ -346,6 +360,7 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   onDurationChange={handleDurationChange}
   onPathShapeChange={handlePathShapeChange}
   onPathShapeClear={handlePathShapeClear}
+  onBetaSwapToggle={handleBetaSwapToggle}
 />
 
 <!-- Prop Selection Sheet - rendered as sibling to StepEditorPanel -->

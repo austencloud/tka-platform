@@ -169,6 +169,8 @@ export interface PictographInput {
   blueReversal?: boolean;
   /** Whether red motion has a reversal (direction change from previous step) */
   redReversal?: boolean;
+  /** Whether beta offset is swapped (blue↔red sides) */
+  betaSwapped?: boolean;
 }
 
 export interface RenderVisibilityOptions {
@@ -427,7 +429,13 @@ ${svgParts.join("\n")}
       propType: targetPropType || undefined,
     };
 
-    return calculateBetaOffset(betaInput, targetMotion);
+    const offset = calculateBetaOffset(betaInput, targetMotion);
+
+    if (pictograph.betaSwapped) {
+      return { x: -offset.x, y: -offset.y };
+    }
+
+    return offset;
   }
 
   private renderProp(

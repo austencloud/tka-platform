@@ -36,6 +36,22 @@
     }
     return beats;
   });
+
+  const hasOrientationCycling = $derived(
+    !!sequence?.orientationCycleCount && sequence.orientationCycleCount > 1
+  );
+
+  const orientationNote = $derived.by(() => {
+    if (!hasOrientationCycling || !sequence) return null;
+    const cc = sequence.orientationCycleCount!;
+    return (
+      `The arrows look slightly different across passes. Half turns shift the orientation each time — ` +
+      `some passes start radial, others nonradial. ` +
+      (cc === period
+        ? `The orientations cycle back home together with the positions.`
+        : `Orientations take ${cc} passes to return home, even though the positions repeat every ${period}.`)
+    );
+  });
 </script>
 
 <BaseModal {open} {onclose} size="lg" class="loop-info-modal">
@@ -79,6 +95,12 @@
       <p class="explanation">
         {structuralCopy.lead}{#each structuralCopy.parts as part}{#if part.bold}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}
       </p>
+    {/if}
+    {#if orientationNote}
+      <div class="orientation-note">
+        <i class="fas fa-info-circle note-icon" aria-hidden="true"></i>
+        <p class="note-text">{orientationNote}</p>
+      </div>
     {/if}
   </div>
 </BaseModal>
@@ -135,5 +157,30 @@
     line-height: 1.6;
     color: var(--theme-text, #c5c9d2);
     text-align: center;
+  }
+
+  .orientation-note {
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(6px, 1vw, 10px);
+    margin: clamp(12px, 2vw, 20px) clamp(8px, 2vw, 24px) 0;
+    padding: clamp(8px, 1.5vw, 14px) clamp(10px, 2vw, 16px);
+    background: rgba(54, 195, 255, 0.08);
+    border-left: 2px solid rgba(54, 195, 255, 0.4);
+    border-radius: 0 6px 6px 0;
+  }
+
+  .note-icon {
+    color: rgba(54, 195, 255, 0.6);
+    font-size: clamp(12px, 0.8vw + 0.4rem, 14px);
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .note-text {
+    margin: 0;
+    font-size: clamp(11px, 0.7vw + 0.4rem, 13px);
+    line-height: 1.5;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 </style>

@@ -31,6 +31,7 @@
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
+  import { onMount } from "svelte";
 
   interface Props {
     isOpen: boolean;
@@ -53,6 +54,7 @@
     onDurationChange?: (newDuration: number) => void;
     onPathShapeChange?: (color: MotionColor, shape: PathShapeValue) => void;
     onPathShapeClear?: (color: MotionColor) => void;
+    onBetaSwapToggle?: () => void;
   }
 
   let {
@@ -73,6 +75,7 @@
     onDurationChange,
     onPathShapeChange,
     onPathShapeClear,
+    onBetaSwapToggle,
   }: Props = $props();
 
   // Track if an arrow is selected for showing adjustment panel
@@ -253,6 +256,33 @@
       : "none",
   );
 
+  // Beta swap state — both hands end at same location
+  const isBetaPosition = $derived.by(() => {
+    if (!displayedStepData || isStartPositionSelected) return false;
+    const blue = displayedStepData.motions?.[MotionColor.BLUE];
+    const red = displayedStepData.motions?.[MotionColor.RED];
+    return !!(blue && red && blue.endLocation === red.endLocation);
+  });
+  const isBetaSwapped = $derived(!!displayedStepData?.betaSwapped);
+
+  // Keyboard handler for B key beta swap toggle
+  function handleBetaSwapKeydown(event: KeyboardEvent) {
+    if (event.key.toLowerCase() !== "b") return;
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    if (!isOpen || !hasSelection || isStartPositionSelected) return;
+    if (!isBetaPosition) return;
+    if (hasArrowSelected) return;
+    const target = event.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
+    event.preventDefault();
+    onBetaSwapToggle?.();
+  }
+
+  onMount(() => {
+    window.addEventListener("keydown", handleBetaSwapKeydown);
+    return () => window.removeEventListener("keydown", handleBetaSwapKeydown);
+  });
+
   // Inspect modal state (admin-only)
   let showInspectModal = $state(false);
 
@@ -307,6 +337,23 @@
             <span class="cascade-indicator" class:pulse={showCascadePulse}>
               → +{cascadeCount} step{cascadeCount === 1 ? "" : "s"}
             </span>
+          {/if}
+          {#if isBetaPosition && isBetaSwapped}
+            <button
+              class="beta-swap-badge active"
+              onclick={() => onBetaSwapToggle?.()}
+              title="Beta offset swapped (B to toggle)"
+              aria-label="Beta offset swapped — press B to toggle"
+              aria-pressed="true"
+            >β⇄</button>
+          {:else if isBetaPosition}
+            <button
+              class="beta-swap-badge"
+              onclick={() => onBetaSwapToggle?.()}
+              title="Swap beta offset (B)"
+              aria-label="Swap beta offset — press B to toggle"
+              aria-pressed="false"
+            >β⇄</button>
           {/if}
         </span>
       </div>
@@ -519,6 +566,35 @@
 
   .cascade-indicator.pulse {
     animation: cascade-pulse 300ms ease-out;
+  }
+
+  .beta-swap-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: rgba(168, 85, 247, 0.1);
+    color: rgba(168, 85, 247, 0.6);
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+    line-height: 1.2;
+  }
+
+  .beta-swap-badge:hover {
+    background: rgba(168, 85, 247, 0.2);
+    color: rgba(168, 85, 247, 0.9);
+  }
+
+  .beta-swap-badge.active {
+    background: rgba(168, 85, 247, 0.3);
+    border-color: rgba(168, 85, 247, 0.5);
+    color: #d8b4fe;
+  }
+
+  .beta-swap-badge.active:hover {
+    background: rgba(168, 85, 247, 0.4);
+    color: #ede9fe;
   }
 
   @keyframes cascade-pulse {

@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { findPreviousRotationDirection } from "./TurnsHandler";
+import { describe, it, expect, vi } from "vitest";
+import { findPreviousRotationDirection, updateStepTurns } from "./TurnsHandler";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
   MotionColor,
@@ -7,16 +7,41 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { ICreateModuleState } from "../../../types/create-module-types";
+
+vi.mock(
+  "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator",
+  () => ({
+    orientationCalculator: {
+      calculateEndOrientation: () => "in",
+    },
+  })
+);
+
+vi.mock("$lib/shared/create/services/reversal-detector", () => ({
+  reversalDetector: {
+    processReversals: (seq: unknown) => seq,
+  },
+}));
+
+vi.mock("./OrientationHandler", () => ({
+  calculatePropagatedSteps: (
+    _stepNum: number,
+    _color: string,
+    seq: { steps: StepData[] }
+  ) => seq.steps,
+}));
 
 function makeStep(
   overrides: {
-    blue?: { motionType?: MotionType; rotationDirection?: RotationDirection };
-    red?: { motionType?: MotionType; rotationDirection?: RotationDirection };
+    stepNumber?: number;
+    blue?: { motionType?: MotionType; rotationDirection?: RotationDirection; turns?: number | "fl" };
+    red?: { motionType?: MotionType; rotationDirection?: RotationDirection; turns?: number | "fl" };
   } = {}
 ): StepData {
   return {
     id: "test",
-    stepNumber: 1,
+    stepNumber: overrides.stepNumber ?? 1,
     duration: 1,
     blueReversal: false,
     redReversal: false,
@@ -26,11 +51,13 @@ function makeStep(
         motionType: overrides.blue?.motionType ?? MotionType.DASH,
         rotationDirection:
           overrides.blue?.rotationDirection ?? RotationDirection.NO_ROTATION,
+        turns: overrides.blue?.turns ?? 0,
       }),
       [MotionColor.RED]: createMotionData({
         motionType: overrides.red?.motionType ?? MotionType.DASH,
         rotationDirection:
           overrides.red?.rotationDirection ?? RotationDirection.NO_ROTATION,
+        turns: overrides.red?.turns ?? 0,
       }),
     },
   } as StepData;
@@ -200,5 +227,176 @@ describe("findPreviousRotationDirection", () => {
     expect(
       findPreviousRotationDirection(steps, 2, MotionColor.RED)
     ).toBe(RotationDirection.COUNTER_CLOCKWISE);
+  });
+});
+
+function makeMockState(steps: StepData[]): ICreateModuleState {
+  let captured: unknown = null;
+  const sequence = {
+    id: "test",
+    name: "test",
+    word: "",
+    steps,
+    gridMode: "diamond",
+    difficulty: 1,
+    metadata: {},
+  };
+  return {
+    sequenceState: {
+      currentSequence: sequence,
+      selectedStartPosition: null,
+      setCurrentSequence: (seq: unknown) => {
+        captured = seq;
+      },
+      get _captured() {
+        return captured;
+      },
+    },
+    pushUndoSnapshot: () => {},
+  } as unknown as ICreateModuleState;
+}
+
+function getCapturedStep(
+  state: ICreateModuleState,
+  stepIndex: number,
+  color: MotionColor
+) {
+  const captured = (
+    state.sequenceState as unknown as { _captured: { steps: StepData[] } }
+  )._captured;
+  return captured.steps[stepIndex]!.motions[color]!;
+}
+
+describe("updateStepTurns integration", () => {
+  it("assigns ccw when previous step has ccw rotation (feedback scenario)", () => {
+    const steps = [
+      makeStep({
+        stepNumber: 1,
+        blue: {
+          motionType: MotionType.DASH,
+          rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        },
+        red: {
+          motionType: MotionType.DASH,
+          rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        },
+      }),
+      makeStep({
+        stepNumber: 2,
+        blue: {
+          motionType: MotionType.STATIC,
+          rotationDirection: RotationDirection.NO_ROTATION,
+        },
+        red: {
+          motionType: MotionType.STATIC,
+          rotationDirection: RotationDirection.NO_ROTATION,
+        },
+      }),
+    ];
+
+    const state = makeMockState(steps);
+    updateStepTurns(2, MotionColor.BLUE, 0.5, state);
+
+    expect(getCapturedStep(state, 1, MotionColor.BLUE).rotationDirection).toBe(
+      RotationDirection.COUNTER_CLOCKWISE
+    );
+  });
+
+  it("assigns cw when previous step has cw rotation", () => {
+    const steps = [
+      makeStep({
+        stepNumber: 1,
+        blue: {
+          motionType: MotionType.DASH,
+          rotationDirection: RotationDirection.CLOCKWISE,
+        },
+      }),
+      makeStep({
+        stepNumber: 2,
+        blue: {
+          motionType: MotionType.STATIC,
+          rotationDirection: RotationDirection.NO_ROTATION,
+        },
+      }),
+    ];
+
+    const state = makeMockState(steps);
+    updateStepTurns(2, MotionColor.BLUE, 0.5, state);
+
+    expect(getCapturedStep(state, 1, MotionColor.BLUE).rotationDirection).toBe(
+      RotationDirection.CLOCKWISE
+    );
+  });
+
+  it("falls back to cw when no previous step has rotation", () => {
+    const steps = [
+      makeStep({
+        stepNumber: 1,
+        blue: {
+          motionType: MotionType.STATIC,
+          rotationDirection: RotationDirection.NO_ROTATION,
+        },
+      }),
+      makeStep({
+        stepNumber: 2,
+        blue: {
+          motionType: MotionType.STATIC,
+          rotationDirection: RotationDirection.NO_ROTATION,
+        },
+      }),
+    ];
+
+    const state = makeMockState(steps);
+    updateStepTurns(2, MotionColor.BLUE, 0.5, state);
+
+    expect(getCapturedStep(state, 1, MotionColor.BLUE).rotationDirection).toBe(
+      RotationDirection.CLOCKWISE
+    );
+  });
+
+  it("clears rotation when turns go to zero", () => {
+    const steps = [
+      makeStep({
+        stepNumber: 1,
+        blue: {
+          motionType: MotionType.DASH,
+          rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+          turns: 1,
+        },
+      }),
+    ];
+
+    const state = makeMockState(steps);
+    updateStepTurns(1, MotionColor.BLUE, 0, state);
+
+    expect(getCapturedStep(state, 0, MotionColor.BLUE).rotationDirection).toBe(
+      RotationDirection.NO_ROTATION
+    );
+  });
+
+  it("does not auto-assign rotation for PRO motion type", () => {
+    const steps = [
+      makeStep({
+        stepNumber: 1,
+        blue: {
+          motionType: MotionType.PRO,
+          rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        },
+      }),
+      makeStep({
+        stepNumber: 2,
+        blue: {
+          motionType: MotionType.PRO,
+          rotationDirection: RotationDirection.NO_ROTATION,
+        },
+      }),
+    ];
+
+    const state = makeMockState(steps);
+    updateStepTurns(2, MotionColor.BLUE, 0.5, state);
+
+    expect(getCapturedStep(state, 1, MotionColor.BLUE).rotationDirection).toBe(
+      RotationDirection.NO_ROTATION
+    );
   });
 });
