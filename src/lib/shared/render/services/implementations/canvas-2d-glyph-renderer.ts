@@ -7,12 +7,15 @@ import { getLetterImagePath, isDashLetter } from "../../../pictograph/tka-glyph/
 import { Letter, getLetterType } from "../../../foundation/domain/models/Letter";
 import { LetterType } from "../../../foundation/domain/models/LetterType";
 import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../../pictograph/tka-glyph/utils/turn-tuple-parser";
-import { interpretTurnColors } from "../../../pictograph/tka-glyph/services/turn-color-interpreter";
+import { interpretTurnColors, BLUE_HEX, RED_HEX } from "../../../pictograph/tka-glyph/services/turn-color-interpreter";
 import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn-position-calculator";
 import { calculateVTGFromPictograph } from "../../../pictograph/shared/domain/utils/vtg-calculator";
 import { calculateReversalPositions } from "../../core";
 import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { GridPosition } from "../../../pictograph/grid/domain/enums/grid-enums";
+import type { MotionData } from "../../../pictograph/shared/domain/models/MotionData";
+import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-enums";
+import { getMotionColor } from "../../../utils/svg-color-utils";
 
 const VIEWBOX_SIZE = 950;
 
@@ -204,7 +207,8 @@ export async function drawTurnsColumn(
   letterDimensions: { width: number; height: number },
   scale: number,
   isDarkMode: boolean,
-  turnsTupleGeneratorGetter?: () => TurnsTupleGenerator | undefined
+  turnsTupleGeneratorGetter?: () => TurnsTupleGenerator | undefined,
+  motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
 ): Promise<void> {
   let turnsTuple = "(s, 0, 0)";
   try {
@@ -229,6 +233,12 @@ export async function drawTurnsColumn(
     pictograph
   );
 
+  const isColorHidden = (color: string) => {
+    if (color === BLUE_HEX && motionVisibility?.showBlueMotion === false) return true;
+    if (color === RED_HEX && motionVisibility?.showRedMotion === false) return true;
+    return false;
+  };
+
   const hasDash = isDashLetter(pictograph.letter);
 
   const positions = calculateTurnPositions(letterDimensions, TURN_NUMBER_HEIGHT, hasDash);
@@ -243,7 +253,7 @@ export async function drawTurnsColumn(
 
   const assetLoader = getSvgAssetLoader();
 
-  if (showTop) {
+  if (showTop && !isColorHidden(turnColors.top)) {
     const topPath = getTurnNumberImagePath(parsed.top);
     if (topPath) {
       try {
@@ -264,7 +274,7 @@ export async function drawTurnsColumn(
     }
   }
 
-  if (showBottom) {
+  if (showBottom && !isColorHidden(turnColors.bottom)) {
     const bottomPath = getTurnNumberImagePath(parsed.bottom);
     if (bottomPath) {
       try {
@@ -494,6 +504,100 @@ export async function drawPositionGlyph(
   }
 }
 
+const LOCATION_LABELS: Record<string, string> = {
+  n: "N", e: "E", s: "S", w: "W",
+  ne: "NE", se: "SE", sw: "SW", nw: "NW", c: "C",
+};
+
+const SOLO_GLYPH_Y = 50;
+const SOLO_GLYPH_FONT_SIZE = 70;
+const SOLO_ARROW_FONT_SIZE = 50;
+const SOLO_ROTATION_FONT_SIZE = 45;
+const SOLO_SPACING = 15;
+
+export function drawSoloMotionGlyph(
+  ctx: CanvasRenderingContext2D,
+  pictograph: PictographData,
+  size: number,
+  isDarkMode: boolean,
+  showBlueMotion: boolean,
+  showRedMotion: boolean,
+  isHandPathMode: boolean
+): void {
+  const visibleMotion: MotionData | null =
+    showBlueMotion ? pictograph.motions?.blue ?? null :
+    showRedMotion ? pictograph.motions?.red ?? null :
+    null;
+
+  if (!visibleMotion) return;
+
+  const startLoc = LOCATION_LABELS[visibleMotion.startLocation] ?? visibleMotion.startLocation;
+  const endLoc = LOCATION_LABELS[visibleMotion.endLocation] ?? visibleMotion.endLocation;
+  if (!startLoc || !endLoc) return;
+
+  const motionColor = showBlueMotion ? MotionColor.BLUE : MotionColor.RED;
+  const colorHex = getMotionColor(motionColor, isDarkMode ? "dark" : "light");
+
+  const scale = size / VIEWBOX_SIZE;
+  const fontSize = SOLO_GLYPH_FONT_SIZE * scale;
+  const arrowFontSize = SOLO_ARROW_FONT_SIZE * scale;
+  const rotFontSize = SOLO_ROTATION_FONT_SIZE * scale;
+
+  ctx.save();
+  ctx.textBaseline = "top";
+
+  const locationFont = `bold ${fontSize}px Georgia, serif`;
+  const arrowFont = `${arrowFontSize}px Georgia, serif`;
+  const rotFont = `${rotFontSize}px Georgia, serif`;
+
+  ctx.font = locationFont;
+  const startWidth = ctx.measureText(startLoc).width;
+  const endWidth = ctx.measureText(endLoc).width;
+
+  ctx.font = arrowFont;
+  const arrowText = "→";
+  const arrowWidth = ctx.measureText(arrowText).width;
+
+  const spacing = SOLO_SPACING * scale;
+  let totalWidth = startWidth + spacing + arrowWidth + spacing + endWidth;
+
+  const rotDir = visibleMotion.rotationDirection;
+  const showRotation = !isHandPathMode && rotDir && rotDir !== "noRotation";
+  let rotText = "";
+  let rotWidth = 0;
+
+  if (showRotation) {
+    rotText = rotDir === "cw" ? " ↻" : " ↺";
+    ctx.font = rotFont;
+    rotWidth = ctx.measureText(rotText).width;
+    totalWidth += rotWidth;
+  }
+
+  const baseX = (VIEWBOX_SIZE * scale - totalWidth) / 2;
+  const baseY = SOLO_GLYPH_Y * scale;
+
+  const arrowYShift = (fontSize - arrowFontSize) / 2;
+
+  ctx.fillStyle = colorHex;
+
+  ctx.font = locationFont;
+  ctx.fillText(startLoc, baseX, baseY);
+
+  ctx.font = arrowFont;
+  ctx.fillText(arrowText, baseX + startWidth + spacing, baseY + arrowYShift);
+
+  ctx.font = locationFont;
+  ctx.fillText(endLoc, baseX + startWidth + spacing + arrowWidth + spacing, baseY);
+
+  if (showRotation) {
+    ctx.font = rotFont;
+    const rotX = baseX + startWidth + spacing + arrowWidth + spacing + endWidth;
+    ctx.fillText(rotText, rotX, baseY + (fontSize - rotFontSize) / 2);
+  }
+
+  ctx.restore();
+}
+
 async function loadPositionImage(
   svgPath: string,
   cacheKey: string,
@@ -513,14 +617,15 @@ export function drawReversalIndicators(
   ctx: CanvasRenderingContext2D,
   pictograph: PictographData | StepData,
   size: number,
-  isDarkMode: boolean
+  isDarkMode: boolean,
+  motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
 ): void {
   let blueReversal = false;
   let redReversal = false;
 
   if (isStepData(pictograph)) {
-    blueReversal = pictograph.blueReversal ?? false;
-    redReversal = pictograph.redReversal ?? false;
+    blueReversal = (pictograph.blueReversal ?? false) && (motionVisibility?.showBlueMotion ?? true);
+    redReversal = (pictograph.redReversal ?? false) && (motionVisibility?.showRedMotion ?? true);
   }
 
   const { dots } = calculateReversalPositions(blueReversal, redReversal, isDarkMode);

@@ -19,6 +19,7 @@ import {
   drawDirectionDot,
   drawElementalGlyph,
   drawPositionGlyph,
+  drawSoloMotionGlyph,
   drawReversalIndicators,
 } from "./canvas-2d-glyph-renderer";
 import {
@@ -250,7 +251,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
     // 6. Draw turn numbers (TurnsColumn - to the RIGHT of letter)
     if (visibility.showTKA && preparedPictograph.motions) {
-      await drawTurnsColumn(ctx, preparedPictograph, letterDimensions, scale, isDarkMode, Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter);
+      await drawTurnsColumn(ctx, preparedPictograph, letterDimensions, scale, isDarkMode, Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter, visibility);
     }
 
     // 7. Draw direction dot (same/opp indicator)
@@ -263,14 +264,23 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       await drawElementalGlyph(ctx, preparedPictograph, gridMode, size, isDarkMode);
     }
 
-    // 11. Draw Position glyph (top center)
-    if (visibility.showPositions) {
+    // 11. Draw Position glyph or Solo motion glyph (top center)
+    const singleColor =
+      visibility.showBlueMotion === false || visibility.showRedMotion === false;
+    if (singleColor) {
+      drawSoloMotionGlyph(
+        ctx, preparedPictograph, size, isDarkMode,
+        visibility.showBlueMotion ?? true,
+        visibility.showRedMotion ?? true,
+        visibility.handPathMode ?? false
+      );
+    } else if (visibility.showPositions) {
       await drawPositionGlyph(ctx, preparedPictograph, size, isDarkMode);
     }
 
     // 12. Draw reversal indicators
     if (visibility.showReversals) {
-      drawReversalIndicators(ctx, preparedPictograph, size, isDarkMode);
+      drawReversalIndicators(ctx, preparedPictograph, size, isDarkMode, visibility);
     }
 
 

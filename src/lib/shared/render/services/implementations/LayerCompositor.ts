@@ -5,7 +5,7 @@ import { deriveBaseLayerKey, deriveGridPointsLayerKey, deriveTKALayerKey, derive
 import { turnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { Letter } from "../../../foundation/domain/models/Letter";
 import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
-import { interpretTurnColors } from "../../../pictograph/tka-glyph/services/turn-color-interpreter";
+import { interpretTurnColors, BLUE_HEX, RED_HEX } from "../../../pictograph/tka-glyph/services/turn-color-interpreter";
 import {
   parseTurnsTuple,
   shouldDisplayTurn,
@@ -140,13 +140,18 @@ export class LayerCompositor {
     timing.gridPointsLayerMs = performance.now() - gridPointsStart;
     cacheStats.gridPointsFromCache = gridPointsResult.fromCache;
 
+    const motionVisibility = {
+      showBlueMotion: options.showBlueMotion,
+      showRedMotion: options.showRedMotion,
+    };
+
     let tkaResult: LayerRenderResult | null = null;
     if (visibility.showTKA && pictograph.letter) {
       const tkaStart = performance.now();
       tkaResult = await this.renderTKAOverlay(pictograph, {
         size: options.size,
         darkMode: options.darkMode,
-      });
+      }, motionVisibility);
       timing.tkaLayerMs = performance.now() - tkaStart;
       if (tkaResult) {
         cacheStats.tkaFromCache = tkaResult.fromCache;
@@ -157,7 +162,7 @@ export class LayerCompositor {
     const stepData = pictograph as StepData;
     if (visibility.showReversals && this.isStepData(pictograph)) {
       const reversalStart = performance.now();
-      reversalResult = await this.renderReversalOverlay(stepData, options.size, options.darkMode);
+      reversalResult = await this.renderReversalOverlay(stepData, options.size, options.darkMode, motionVisibility);
       timing.reversalLayerMs = performance.now() - reversalStart;
       if (reversalResult) {
         cacheStats.reversalFromCache = reversalResult.fromCache;
@@ -275,14 +280,18 @@ export class LayerCompositor {
 
   async renderTKAOverlay(
     pictograph: PreparedPictographData,
-    options: Pick<LayerRenderOptions, "size" | "darkMode">
+    options: Pick<LayerRenderOptions, "size" | "darkMode">,
+    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
   ): Promise<LayerRenderResult | null> {
     if (!pictograph.letter) return null;
 
     const startTime = performance.now();
 
     const turnsTuple = this.getTurnsTuple(pictograph);
-    const cacheKey = deriveTKALayerKey(pictograph, turnsTuple, options);
+    const visKeySuffix = motionVisibility
+      ? `:b${motionVisibility.showBlueMotion ?? true}:r${motionVisibility.showRedMotion ?? true}`
+      : "";
+    const cacheKey = deriveTKALayerKey(pictograph, turnsTuple, options) + visKeySuffix;
 
     const cached = this.tkaCache.get(cacheKey);
     if (cached) {
@@ -299,7 +308,7 @@ export class LayerCompositor {
 
     this.stats.tkaCacheMisses++;
 
-    const canvas = await this.renderTKAOverlayInternal(pictograph, options);
+    const canvas = await this.renderTKAOverlayInternal(pictograph, options, motionVisibility);
 
     if (this.tkaCache.size >= TKA_CACHE_LIMIT) {
       const firstKey = this.tkaCache.keys().next().value;
@@ -318,12 +327,16 @@ export class LayerCompositor {
   async renderReversalOverlay(
     stepData: StepData,
     size: number,
-    darkMode: boolean = false
+    darkMode: boolean = false,
+    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
   ): Promise<LayerRenderResult | null> {
     if (!stepData.blueReversal && !stepData.redReversal) return null;
 
     const startTime = performance.now();
-    const cacheKey = `${deriveReversalLayerKey(stepData, size)}:${darkMode ? "dark" : "light"}`;
+    const visKey = motionVisibility
+      ? `:b${motionVisibility.showBlueMotion ?? true}:r${motionVisibility.showRedMotion ?? true}`
+      : "";
+    const cacheKey = `${deriveReversalLayerKey(stepData, size)}:${darkMode ? "dark" : "light"}${visKey}`;
 
     const cached = this.reversalCache.get(cacheKey);
     if (cached) {
@@ -337,7 +350,7 @@ export class LayerCompositor {
       };
     }
 
-    const canvas = this.renderReversalOverlayInternal(stepData, size, darkMode);
+    const canvas = this.renderReversalOverlayInternal(stepData, size, darkMode, motionVisibility);
 
     if (this.reversalCache.size >= REVERSAL_CACHE_LIMIT) {
       const firstKey = this.reversalCache.keys().next().value;
@@ -441,6 +454,7 @@ export class LayerCompositor {
         showVTG: options.showVTG,
         showElemental: options.showElemental,
         showPositions: options.showPositions,
+        handPathMode: options.handPathMode,
       },
     });
 
@@ -449,7 +463,8 @@ export class LayerCompositor {
 
   private async renderTKAOverlayInternal(
     pictograph: PreparedPictographData,
-    options: Pick<LayerRenderOptions, "size" | "darkMode">
+    options: Pick<LayerRenderOptions, "size" | "darkMode">,
+    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
   ): Promise<RenderCanvas> {
     const canvas = createCanvas(options.size, options.size);
     const ctx = canvas.getContext("2d")! as RenderContext2D;
@@ -468,7 +483,7 @@ export class LayerCompositor {
     }
 
     if (pictograph.motions) {
-      await this.drawTurnsColumn(ctx, pictograph, letterDimensions, scale, options.darkMode);
+      await this.drawTurnsColumn(ctx, pictograph, letterDimensions, scale, options.darkMode, motionVisibility);
     }
 
     if (pictograph.letter && pictograph.motions) {
@@ -547,15 +562,23 @@ export class LayerCompositor {
     return activeLocations;
   }
 
-  private renderReversalOverlayInternal(stepData: StepData, size: number, darkMode: boolean): RenderCanvas {
+  private renderReversalOverlayInternal(
+    stepData: StepData,
+    size: number,
+    darkMode: boolean,
+    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
+  ): RenderCanvas {
     const canvas = createCanvas(size, size);
     const ctx = canvas.getContext("2d")! as RenderContext2D;
 
     ctx.clearRect(0, 0, size, size);
 
+    const blueReversal = (stepData.blueReversal ?? false) && (motionVisibility?.showBlueMotion ?? true);
+    const redReversal = (stepData.redReversal ?? false) && (motionVisibility?.showRedMotion ?? true);
+
     const { dots } = calculateReversalPositions(
-      stepData.blueReversal ?? false,
-      stepData.redReversal ?? false,
+      blueReversal,
+      redReversal,
       darkMode
     );
 
@@ -672,7 +695,8 @@ export class LayerCompositor {
     pictograph: PreparedPictographData,
     letterDimensions: { width: number; height: number },
     scale: number,
-    _darkMode: boolean
+    _darkMode: boolean,
+    motionVisibility?: { showBlueMotion?: boolean; showRedMotion?: boolean }
   ): Promise<void> {
     const turnsTuple = this.getTurnsTuple(pictograph);
 
@@ -686,6 +710,12 @@ export class LayerCompositor {
       pictograph.letter,
       pictograph
     );
+
+    const isColorHidden = (color: string) => {
+      if (color === BLUE_HEX && motionVisibility?.showBlueMotion === false) return true;
+      if (color === RED_HEX && motionVisibility?.showRedMotion === false) return true;
+      return false;
+    };
 
     const hasDash = isDashLetter(pictograph.letter);
 
@@ -702,7 +732,7 @@ export class LayerCompositor {
     const { getSvgAssetLoader } = await import("./SvgAssetLoader");
     const assetLoader = getSvgAssetLoader();
 
-    if (showTop) {
+    if (showTop && !isColorHidden(turnColors.top)) {
       const topPath = getTurnNumberImagePath(parsed.top);
       if (topPath) {
         try {
@@ -723,7 +753,7 @@ export class LayerCompositor {
       }
     }
 
-    if (showBottom) {
+    if (showBottom && !isColorHidden(turnColors.bottom)) {
       const bottomPath = getTurnNumberImagePath(parsed.bottom);
       if (bottomPath) {
         try {

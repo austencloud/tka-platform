@@ -53,6 +53,19 @@
   }
 
   const handPathMode = $derived(engine.viewMode.subject === "hands");
+  const isSoloMode = $derived(engine.viewMode.granularity === "solo");
+
+  // Motion visibility: in "combined" mode show both, in "solo" mode show only the selected color
+  const showBlueMotion = $derived(
+    engine.viewMode.granularity === "combined" || engine.viewMode.color === "blue"
+  );
+  const showRedMotion = $derived(
+    engine.viewMode.granularity === "combined" || engine.viewMode.color === "red"
+  );
+
+  // Word/difficulty only meaningful with both props visible
+  const addWord = $derived(!handPathMode && !isSoloMode);
+  const addDifficultyLevel = $derived(!handPathMode && !isSoloMode);
 
   // Prop settings
   const propSettings = $derived({
@@ -108,6 +121,10 @@
     pinchColumnOverride={engine.columnCount}
     {onGridReady}
     {handPathMode}
+    {showBlueMotion}
+    {showRedMotion}
+    {addWord}
+    {addDifficultyLevel}
   />
 {:else if engine.sectionsEnabled && engine.sections.length > 0}
   <!-- Sectioned: group by section with headers -->
@@ -135,6 +152,10 @@
                 {lightMode}
                 {eager}
                 {handPathMode}
+                {showBlueMotion}
+                {showRedMotion}
+                {addWord}
+                {addDifficultyLevel}
               />
             {/each}
           </div>
@@ -162,6 +183,8 @@
         {lightMode}
         {eager}
         {handPathMode}
+        {showBlueMotion}
+        {showRedMotion}
       />
     {/each}
   </div>

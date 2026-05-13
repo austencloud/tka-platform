@@ -684,7 +684,13 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 		},
 
 		setViewMode(mode: BrowseViewMode): void {
+			const wasHands = _viewMode.subject === "hands";
 			_viewMode = mode;
+			if (mode.subject === "hands" && _sectionGroupBy === "letter") {
+				_sectionGroupBy = "length";
+			} else if (wasHands && mode.subject === "props" && _sectionGroupBy === "length") {
+				_sectionGroupBy = "letter";
+			}
 		},
 
 		// --- Cache ---

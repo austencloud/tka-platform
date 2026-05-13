@@ -41,6 +41,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     pinchColumnOverride,
     onGridReady,
     handPathMode = false,
+    showBlueMotion = true,
+    showRedMotion = true,
+    addWord,
+    addDifficultyLevel,
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: BrowseThumbnailProvider | null;
@@ -48,6 +52,12 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     pinchColumnOverride?: number;
     onGridReady?: (api: VirtualGridApi) => void;
     handPathMode?: boolean;
+    /** Show blue motion (prop + arrow) in thumbnails. Default: true */
+    showBlueMotion?: boolean;
+    /** Show red motion (prop + arrow) in thumbnails. Default: true */
+    showRedMotion?: boolean;
+    addWord?: boolean;
+    addDifficultyLevel?: boolean;
   }>();
 
   const variationGrouper = getVariationGrouper();
@@ -326,6 +336,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
               catDogModeEnabled={isCatDog}
               {lightMode}
               {handPathMode}
+              {showBlueMotion}
+              {showRedMotion}
+              {addWord}
+              {addDifficultyLevel}
             />
           </div>
         {/each}

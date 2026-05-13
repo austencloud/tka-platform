@@ -125,6 +125,7 @@
       returnPath: "/browse/gallery",
       returnLabel: "Browse",
       scrollY: browseScrollState.lastScrollY,
+      handPathMode: engine.viewMode.subject === "hands",
     });
   }
 

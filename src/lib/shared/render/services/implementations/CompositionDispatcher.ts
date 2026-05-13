@@ -136,6 +136,9 @@ export class CompositionDispatcher {
 
       this.pendingRequests.set(id, pending);
 
+      const plainSequence = JSON.parse(JSON.stringify(sequence));
+      const plainOptions = JSON.parse(JSON.stringify(options));
+
       const transferList: Transferable[] = [];
       if (qrBitmap) transferList.push(qrBitmap);
       if (elementIconBitmap) transferList.push(elementIconBitmap);
@@ -143,8 +146,8 @@ export class CompositionDispatcher {
       const message: CompositionWorkerInMessage = {
         type: "compose",
         id,
-        sequence,
-        options,
+        sequence: plainSequence,
+        options: plainOptions,
         qrBitmap,
         elementIconBitmap,
       };

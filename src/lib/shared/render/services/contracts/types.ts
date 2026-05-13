@@ -95,6 +95,8 @@ export interface LayerRenderOptions {
   showElemental?: boolean;
   /** Start/end position letters (alpha/beta/gamma). */
   showPositions?: boolean;
+  /** Hand path mode — affects solo motion glyph display. */
+  handPathMode?: boolean;
 }
 
 /**

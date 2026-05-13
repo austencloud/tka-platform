@@ -53,6 +53,10 @@
     visibility?: ThumbnailVisibilitySettings;
     // Render as hand-path visualization (float arrows for shifts, zero-turn dash for dashes)
     handPathMode?: boolean;
+    /** Show blue motion (prop + arrow). Default: true */
+    showBlueMotion?: boolean;
+    /** Show red motion (prop + arrow). Default: true */
+    showRedMotion?: boolean;
     // Skip IntersectionObserver and load immediately (use in modals/pickers)
     eager?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from lightMode/printMode) */
@@ -79,6 +83,8 @@
     customNotesText,
     visibility,
     handPathMode = false,
+    showBlueMotion = true,
+    showRedMotion = true,
     eager = false,
     cardMode = false,
   }: Props = $props();
@@ -110,14 +116,17 @@
   );
 
   // Merge composition manager's QR/mandala settings into visibility when no explicit visibility passed
+  // Also merges showBlueMotion/showRedMotion from props into the visibility object
   const effectiveVisibility = $derived.by<ThumbnailVisibilitySettings | undefined>(() => {
+    const needsMotionFilter = showBlueMotion !== true || showRedMotion !== true;
+    const motionOverrides = needsMotionFilter ? { showBlueMotion, showRedMotion } : {};
     if (visibility) {
-      return handPathMode ? { ...visibility, handPathMode: true } : visibility;
+      return (handPathMode || needsMotionFilter) ? { ...visibility, ...(handPathMode && { handPathMode: true }), ...motionOverrides } : visibility;
     }
     const qr = compositionManager.showQRCode;
     const mandala = compositionManager.showMandala;
-    if (!qr && !mandala && !handPathMode) return undefined;
-    return { showQRCode: qr, showMandala: mandala, ...(handPathMode && { handPathMode: true }) };
+    if (!qr && !mandala && !handPathMode && !needsMotionFilter) return undefined;
+    return { showQRCode: qr, showMandala: mandala, ...(handPathMode && { handPathMode: true }), ...motionOverrides };
   });
 
   // Derived: sequence name (raw)

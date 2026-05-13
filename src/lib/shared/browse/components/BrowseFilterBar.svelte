@@ -31,6 +31,8 @@ Reads from / writes to a headless BrowseEngine instance.
 
   let { engine }: Props = $props();
 
+  const isHandsMode = $derived(engine.viewMode.subject === "hands");
+
   let hapticService: HapticFeedback | null = null;
 
   onMount(() => {
@@ -111,11 +113,13 @@ Reads from / writes to a headless BrowseEngine instance.
 <div class="browse-filter-bar">
   <!-- Chip row: level, favorites, length selectors -->
   <div class="filter-chip-row" role="toolbar" aria-label={t('browse_filter_options')}>
-    <LevelFilterChip
-      activeLevel={activeLevel}
-      onSelect={handleLevelSelect}
-      getFilteredCount={engine.getFilteredCount.bind(engine)}
-    />
+    {#if !isHandsMode}
+      <LevelFilterChip
+        activeLevel={activeLevel}
+        onSelect={handleLevelSelect}
+        getFilteredCount={engine.getFilteredCount.bind(engine)}
+      />
+    {/if}
 
     <FavoritesFilterChip
       active={isFavoritesActive}

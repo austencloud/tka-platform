@@ -90,6 +90,7 @@ export class BrowseEventHandler {
   }
 
   handleViewDetail(sequence: SequenceData, variations?: SequenceData[]): void {
+    const isHandsMode = this.params?.engine.viewMode.subject === "hands";
     if (variations && variations.length > 1) {
       openVariationPicker(variations);
     } else {
@@ -97,6 +98,7 @@ export class BrowseEventHandler {
         returnPath: "/browse/gallery",
         returnLabel: "Browse",
         scrollY: browseScrollState.lastScrollY,
+        handPathMode: isHandsMode,
       });
     }
   }

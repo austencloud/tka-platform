@@ -22,6 +22,7 @@ export interface BaseLayerKeyComponents {
   showVTG: boolean;
   showElemental: boolean;
   showPositions: boolean;
+  handPathMode: boolean;
 }
 
 export interface GridPointsLayerKeyComponents {
@@ -107,6 +108,7 @@ export function getBaseLayerComponents(
     showVTG: options.showVTG ?? false,
     showElemental: options.showElemental ?? false,
     showPositions: options.showPositions ?? false,
+    handPathMode: options.handPathMode ?? false,
   };
 }
 

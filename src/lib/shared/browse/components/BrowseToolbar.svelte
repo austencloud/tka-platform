@@ -54,13 +54,19 @@
 
   const EXIT_ANIMATION_MS = 180;
 
+  const isHandsMode = $derived(engine.viewMode.subject === "hands");
+
+  const visibleSortOptions = $derived(
+    isHandsMode ? SORT_OPTIONS.filter((o) => o.id !== BrowseSortMethod.DIFFICULTY_LEVEL) : SORT_OPTIONS
+  );
+
   const currentSortOption = $derived.by((): SortOption => {
-    return SORT_OPTIONS.find((o) => o.id === engine.sortMethod) ?? SORT_OPTIONS[0]!;
+    return visibleSortOptions.find((o) => o.id === engine.sortMethod) ?? visibleSortOptions[0]!;
   });
 
   function openSort() {
     sortOpen = true;
-    focusedIndex = SORT_OPTIONS.findIndex((o) => o.id === engine.sortMethod);
+    focusedIndex = visibleSortOptions.findIndex((o) => o.id === engine.sortMethod);
     if (focusedIndex < 0) focusedIndex = 0;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -104,14 +110,14 @@
         break;
       case "ArrowDown": {
         event.preventDefault();
-        const next = (focusedIndex + 1) % SORT_OPTIONS.length;
+        const next = (focusedIndex + 1) % visibleSortOptions.length;
         focusedIndex = next;
         focusSortOptionAt(next);
         break;
       }
       case "ArrowUp": {
         event.preventDefault();
-        const prev = (focusedIndex - 1 + SORT_OPTIONS.length) % SORT_OPTIONS.length;
+        const prev = (focusedIndex - 1 + visibleSortOptions.length) % visibleSortOptions.length;
         focusedIndex = prev;
         focusSortOptionAt(prev);
         break;
@@ -123,12 +129,12 @@
         break;
       case "End":
         event.preventDefault();
-        focusedIndex = SORT_OPTIONS.length - 1;
+        focusedIndex = visibleSortOptions.length - 1;
         focusSortOptionAt(focusedIndex);
         break;
       case "Enter":
       case " ": {
-        const focused = SORT_OPTIONS[focusedIndex];
+        const focused = visibleSortOptions[focusedIndex];
         if (focused) {
           event.preventDefault();
           handleSortSelect(focused.id);
@@ -291,7 +297,7 @@
         onkeydown={handleSortKeydown}
         tabindex="-1"
       >
-        {#each SORT_OPTIONS as option, i}
+        {#each visibleSortOptions as option, i}
           <button
             id="sort-opt-{i}"
             type="button"
@@ -318,11 +324,13 @@
   <!-- 4. Inline filter chips (wide screens only) -->
   <span class="toolbar-divider" aria-hidden="true"></span>
   <div class="inline-filters" role="toolbar" aria-label="Filter options">
-    <LevelFilterChip
-      {activeLevel}
-      onSelect={handleLevelSelect}
-      getFilteredCount={engine.getFilteredCount.bind(engine)}
-    />
+    {#if !isHandsMode}
+      <LevelFilterChip
+        {activeLevel}
+        onSelect={handleLevelSelect}
+        getFilteredCount={engine.getFilteredCount.bind(engine)}
+      />
+    {/if}
     <FavoritesFilterChip
       active={isFavoritesActive}
       onToggle={handleFavoritesToggle}

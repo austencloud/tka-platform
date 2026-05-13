@@ -4,8 +4,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { slide } from "svelte/transition";
   import { onMount, onDestroy } from "svelte";
-  // NOTE: animate-css-grid disabled - causes layout chaos with async thumbnail loading
-  // import { wrapGrid } from "animate-css-grid";
   import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
   import type { VariationGrouper } from "$lib/shared/browse/services/VariationGrouper";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
@@ -23,7 +21,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
    * 🚀 PERFORMANCE: Virtualization threshold
    * Lists with more than this many items use virtual scrolling
    * to avoid rendering 100+ DOM nodes at once.
-   * Below this threshold, we use animate-css-grid for smooth FLIP animations.
+   * Below this threshold, we use simple CSS transitions for smooth animations.
    */
   const VIRTUALIZATION_THRESHOLD = 50;
 

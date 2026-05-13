@@ -220,6 +220,13 @@ export class ImageComposer {
       options.visibilityOverrides
     );
 
+    if (options.blueVisible === false) visibilitySettings.showBlueMotion = false;
+    if (options.redVisible === false) visibilitySettings.showRedMotion = false;
+
+    if (visibilitySettings.showBlueMotion === false || visibilitySettings.showRedMotion === false) {
+      visibilitySettings.showTKA = false;
+    }
+
     const stepCount = sequence.steps.length;
     let columns: number;
     let rows: number;
@@ -1011,6 +1018,8 @@ export class ImageComposer {
       bluePropType: visibilitySettings.bluePropType,
       redPropType: visibilitySettings.redPropType,
       handPathMode: visibilitySettings.handPathMode ?? false,
+      showBlueMotion: visibilitySettings.showBlueMotion,
+      showRedMotion: visibilitySettings.showRedMotion,
     });
 
     const rawHandVisibility = visibilitySettings.handPointVisibility ?? "all";
@@ -1023,6 +1032,10 @@ export class ImageComposer {
       handPointVisibility: handVisibility,
       bluePropType: visibilitySettings.bluePropType,
       redPropType: visibilitySettings.redPropType,
+      showBlueMotion: visibilitySettings.showBlueMotion,
+      showRedMotion: visibilitySettings.showRedMotion,
+      showPositions: visibilitySettings.showPositions ?? false,
+      handPathMode: visibilitySettings.handPathMode ?? false,
     };
 
     const layerVisibility = {

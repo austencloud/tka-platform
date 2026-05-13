@@ -111,9 +111,7 @@ export class ThumbnailRenderer {
         ...renderOptions,
         birthday,
         loopType: resolvedLoopType ?? undefined,
-        // Suppress LOOP glyph: hand path mode (no LOOP patterns) or when difficulty badge
-        // is off (both are sorting metadata that lives on the card back, not front)
-        showLoopGlyph: (renderOptions.visibilityOverrides?.handPathMode || input.addDifficultyLevel === false) ? false : undefined,
+        showLoopGlyph: undefined,
         // Card mode: use 5:7 playing card layout for physical card export
         cardMode: input.cardMode ?? false,
       },
@@ -242,6 +240,10 @@ export class ThumbnailRenderer {
       // sequence was created), while the cache key says "staff" (from
       // ThumbnailKeyDeriver's identical fallback). This mismatch causes wrong-prop
       // images to be cached and served.
+      // Motion visibility - controls which hand's motion (prop + arrow) is rendered
+      blueVisible: input.visibility?.showBlueMotion ?? true,
+      redVisible: input.visibility?.showRedMotion ?? true,
+
       propTypeOverride: isHandPath ? undefined : (isCatDog ? undefined : (input.bluePropType || input.redPropType || PropType.STAFF)),
       bluePropTypeOverride: isHandPath ? undefined : (isCatDog ? (input.bluePropType || PropType.STAFF) : undefined),
       redPropTypeOverride: isHandPath ? undefined : (isCatDog ? (input.redPropType || PropType.STAFF) : undefined),

@@ -1,14 +1,18 @@
 <!--
   ViewModeToggle - Segmented controls for switching browse view mode.
 
-  Two rows of toggle chips:
+  Two control groups:
   1. Subject: Props / Hands (what layer to view)
-  2. Granularity: Both / One (combined pair or single hand/prop)
+  2. Left/Right color chips (which motion(s) to show)
 
-  When granularity is "solo", a third row appears to pick which color (Blue / Red).
+  The color chips map to BrowseViewMode's granularity + color fields:
+  - Both active  -> granularity: "combined"
+  - One active   -> granularity: "solo", color: active chip's color
+  - Last deactivated -> reactivate both (combined)
 -->
 <script lang="ts">
   import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
+  import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
 
   interface Props {
     viewMode: BrowseViewMode;
@@ -17,19 +21,36 @@
 
   let { viewMode, onViewModeChange }: Props = $props();
 
+  const showBlue = $derived(
+    viewMode.granularity === "combined" || viewMode.color === "blue"
+  );
+  const showRed = $derived(
+    viewMode.granularity === "combined" || viewMode.color === "red"
+  );
+
   function setSubject(subject: BrowseViewMode["subject"]): void {
     if (subject === viewMode.subject) return;
     onViewModeChange({ ...viewMode, subject });
   }
 
-  function setGranularity(granularity: BrowseViewMode["granularity"]): void {
-    if (granularity === viewMode.granularity) return;
-    onViewModeChange({ ...viewMode, granularity });
+  function toggleBlue(): void {
+    if (showBlue && showRed) {
+      onViewModeChange({ ...viewMode, granularity: "solo", color: "red" });
+    } else if (showBlue && !showRed) {
+      onViewModeChange({ ...viewMode, granularity: "combined", color: "blue" });
+    } else {
+      onViewModeChange({ ...viewMode, granularity: "solo", color: "blue" });
+    }
   }
 
-  function setColor(color: BrowseViewMode["color"]): void {
-    if (color === viewMode.color) return;
-    onViewModeChange({ ...viewMode, color });
+  function toggleRed(): void {
+    if (showBlue && showRed) {
+      onViewModeChange({ ...viewMode, granularity: "solo", color: "blue" });
+    } else if (!showBlue && showRed) {
+      onViewModeChange({ ...viewMode, granularity: "combined", color: "blue" });
+    } else {
+      onViewModeChange({ ...viewMode, granularity: "solo", color: "red" });
+    }
   }
 </script>
 
@@ -56,51 +77,13 @@
     </button>
   </div>
 
-  <!-- Granularity toggle: Both / One -->
-  <div class="toggle-group" role="radiogroup" aria-label="Granularity">
-    <button
-      class="toggle-chip"
-      class:active={viewMode.granularity === "combined"}
-      role="radio"
-      aria-checked={viewMode.granularity === "combined"}
-      onclick={() => setGranularity("combined")}
-    >
-      Both
-    </button>
-    <button
-      class="toggle-chip"
-      class:active={viewMode.granularity === "solo"}
-      role="radio"
-      aria-checked={viewMode.granularity === "solo"}
-      onclick={() => setGranularity("solo")}
-    >
-      One
-    </button>
-  </div>
-
-  <!-- Color toggle: Blue / Red (only when solo mode) -->
-  {#if viewMode.granularity === "solo"}
-    <div class="toggle-group" role="radiogroup" aria-label="Color">
-      <button
-        class="toggle-chip color-chip blue-chip"
-        class:active={viewMode.color === "blue"}
-        role="radio"
-        aria-checked={viewMode.color === "blue"}
-        onclick={() => setColor("blue")}
-      >
-        Blue
-      </button>
-      <button
-        class="toggle-chip color-chip red-chip"
-        class:active={viewMode.color === "red"}
-        role="radio"
-        aria-checked={viewMode.color === "red"}
-        onclick={() => setColor("red")}
-      >
-        Red
-      </button>
-    </div>
-  {/if}
+  <!-- Left/Right color chips -->
+  <MotionColorChips
+    {showBlue}
+    {showRed}
+    onToggleBlue={toggleBlue}
+    onToggleRed={toggleRed}
+  />
 </div>
 
 <style>
@@ -143,24 +126,11 @@
     color: var(--theme-accent, #6366f1);
   }
 
-  /* Color chips use prop colors for their active state */
-  .color-chip.blue-chip.active {
-    background: color-mix(in srgb, var(--prop-blue, #2e8bf0) 20%, transparent);
-    color: var(--prop-blue, #2e8bf0);
-  }
-
-  .color-chip.red-chip.active {
-    background: color-mix(in srgb, var(--prop-red, #ed1c24) 20%, transparent);
-    color: var(--prop-red, #ed1c24);
-  }
-
-  /* Focus indicators */
   .toggle-chip:focus-visible {
     outline: 2px solid var(--theme-text, #ffffff);
     outline-offset: 2px;
   }
 
-  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .toggle-chip {
       transition: none;

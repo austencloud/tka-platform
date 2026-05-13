@@ -21,6 +21,10 @@ export interface ThumbnailVisibilitySettings {
   handPathMode?: boolean;
   /** Render LOOP mandalas in empty cells */
   showMandala?: boolean;
+  /** Show blue motion (prop + arrow). Default: true */
+  showBlueMotion?: boolean;
+  /** Show red motion (prop + arrow). Default: true */
+  showRedMotion?: boolean;
 }
 
 export interface ThumbnailRenderInput {
@@ -246,6 +250,10 @@ function checkInputUsesDefaults(
       return false;
     if (input.visibility.showMandala !== undefined && input.visibility.showMandala !== defaultVisibility.showMandala)
       return false;
+    if (input.visibility.showBlueMotion !== undefined && input.visibility.showBlueMotion !== true)
+      return false;
+    if (input.visibility.showRedMotion !== undefined && input.visibility.showRedMotion !== true)
+      return false;
   }
 
   return true;
@@ -289,6 +297,9 @@ function buildFullHashInput(input: ThumbnailRenderInput): object {
     handPathMode: input.visibility?.handPathMode,
     // LOOP mandalas in empty cells
     showMandala: input.visibility?.showMandala,
+    // Motion visibility (blue/red hand filtering)
+    showBlueMotion: input.visibility?.showBlueMotion,
+    showRedMotion: input.visibility?.showRedMotion,
     // LOOP badge
     loop: input.loopType ?? null,
     // EXCLUDED: showTKA, showReversals - these are canonical (always ON)

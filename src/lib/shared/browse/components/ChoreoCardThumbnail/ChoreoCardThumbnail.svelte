@@ -48,6 +48,10 @@ Variation support:
     lightMode = false,
     eager = false,
     handPathMode = false,
+    showBlueMotion = true,
+    showRedMotion = true,
+    addWord,
+    addDifficultyLevel,
   }: {
     sequence: SequenceData;
     variations?: SequenceData[];
@@ -62,6 +66,12 @@ Variation support:
     /** Skip lazy loading - load thumbnails immediately (use in modals/pickers) */
     eager?: boolean;
     handPathMode?: boolean;
+    /** Show blue motion (prop + arrow) in thumbnail. Default: true */
+    showBlueMotion?: boolean;
+    /** Show red motion (prop + arrow) in thumbnail. Default: true */
+    showRedMotion?: boolean;
+    addWord?: boolean;
+    addDifficultyLevel?: boolean;
   } = $props();
 
   // Track which variation is currently displayed.
@@ -258,6 +268,10 @@ Variation support:
       {lightMode}
       {eager}
       {handPathMode}
+      {showBlueMotion}
+      {showRedMotion}
+      {addWord}
+      {addDifficultyLevel}
       userName={displayedSequence.ownerDisplayName}
     />
   </div>
