@@ -6,11 +6,18 @@
   import {
     SphereGeometry,
     CircleGeometry,
+    RingGeometry,
+    CylinderGeometry,
     ShaderMaterial,
+    MeshPhysicalMaterial,
+    MeshStandardMaterial,
     AdditiveBlending,
     BackSide,
+    DoubleSide,
     FogExp2,
     Color,
+    Group,
+    Mesh,
   } from "three";
   import { onDestroy, untrack } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
@@ -27,7 +34,7 @@
 
   $effect(() => {
     if (!scene.current) return;
-    scene.current.fog = new FogExp2(new Color("#08001a"), 0.010);
+    scene.current.fog = new FogExp2(new Color("#08001a"), 0.008);
     return () => {
       if (scene.current) scene.current.fog = null;
     };
@@ -126,7 +133,6 @@
         vec3 dir=normalize(vWorldPosition);
         float h=dir.y;
 
-        // Only render above horizon
         float horizonMask=smoothstep(-0.02,0.10,h);
         if(horizonMask<0.001) discard;
 
@@ -134,33 +140,26 @@
 
         vec3 totalColor=vec3(0.0);
 
-        // 3 curtain layers at different scales
         for(int layer=0;layer<3;layer++){
           float fl=float(layer);
 
-          // Each layer: different fold count
           float freq=3.0+fl*1.5;
 
-          // Horizontal ripple via 3D noise
           float ripple=snoise(vec3(
             angle*1.5+fl*7.0,
             h*2.0+uTime*(0.08+fl*0.03),
             uTime*0.05+fl*3.0
           ));
 
-          // Curtain band shape — sharp peaks
           float curtainAngle=angle*freq+ripple*1.2+fl*2.3;
           float band=sin(curtainAngle);
           band=pow(max(band,0.0),5.0);
 
-          // Height profile: bright near horizon, fade toward zenith
           float heightProfile=exp(-h*2.8)*smoothstep(0.0,0.08,h);
 
-          // Vertical ray striations within each curtain
           float rays=0.6+0.4*sin(h*25.0+angle*5.0+uTime*0.4+fl*4.0);
           rays*=rays;
 
-          // Rainbow color: spatial + per-layer offset + time drift
           float colorT=fract(
             (angle+3.14159)/(2.0*3.14159)
             +fl*0.33
@@ -169,7 +168,6 @@
           );
           vec3 color=getRainbow(colorT);
 
-          // Layer contribution (farther layers slightly fainter)
           float layerAlpha=band*heightProfile*rays*(0.85-fl*0.15);
           totalColor+=color*layerAlpha;
         }
@@ -209,21 +207,19 @@
         vec2 p=vWorldPos.xz;
         float dist=length(p);
 
-        // Three-directional wave interference → caustic shape
         float caustic1=0.0;
         for(int i=0;i<3;i++){
           float fi=float(i);
-          float a=fi*2.094395; // 120 deg apart
+          float a=fi*2.094395;
           vec2 d=vec2(cos(a),sin(a));
           caustic1+=sin(dot(p,d)*3.5+uTime*(0.3+fi*0.15));
         }
         caustic1=pow(abs(caustic1)/3.0,1.5);
 
-        // Second layer offset for richer interference
         float caustic2=0.0;
         for(int i=0;i<3;i++){
           float fi=float(i);
-          float a=fi*2.094395+0.523; // 30 deg offset
+          float a=fi*2.094395+0.523;
           vec2 d=vec2(cos(a),sin(a));
           caustic2+=sin(dot(p*0.7,d)*4.2+uTime*(0.22+fi*0.12)+5.0);
         }
@@ -231,7 +227,6 @@
 
         float caustic=caustic1*0.6+caustic2*0.4;
 
-        // Rainbow color: radial angle + time drift + caustic variation
         float angle=atan(p.y,p.x);
         float colorT=fract(
           (angle+3.14159)/(2.0*3.14159)
@@ -240,26 +235,232 @@
         );
         vec3 rainbow=getRainbow(colorT);
 
-        // Dark obsidian base
         vec3 base=vec3(0.025,0.005,0.05);
 
-        // Caustic overlay — fade near edges, concentrate near center
         float centerFade=smoothstep(20.0,4.0,dist);
         vec3 color=base+rainbow*caustic*0.40*centerFade;
 
-        // Edge fade out
         float edgeAlpha=smoothstep(22.0,18.0,dist);
 
         gl_FragColor=vec4(color,edgeAlpha*0.95);
       }
     `,
         transparent: true,
-        side: 2, // DoubleSide
+        side: DoubleSide,
         depthWrite: false,
       })
   );
 
-  // ── Rainbow point lights ─────────────────────────────────────────────
+  // ── Ground accent ring ───────────────────────────────────────────────
+
+  const accentRingGeometry = untrack(() => new RingGeometry(4.8, 5.3, 128));
+
+  const accentRingMaterial = untrack(
+    () =>
+      new ShaderMaterial({
+        uniforms: { uTime: { value: 0 } },
+        vertexShader: /* glsl */ `
+      varying vec2 vUv;
+      varying vec3 vWorldPos;
+      void main(){
+        vUv = uv;
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        vWorldPos = wp.xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+        fragmentShader: /* glsl */ `
+      uniform float uTime;
+      varying vec2 vUv;
+      varying vec3 vWorldPos;
+      ${RAINBOW_GLSL}
+
+      void main(){
+        float angle = atan(vWorldPos.z, vWorldPos.x);
+        float t = fract((angle + 3.14159) / (2.0 * 3.14159) + uTime * 0.04);
+        vec3 color = getRainbow(t);
+
+        // Pulse brightness
+        float pulse = 0.7 + 0.3 * sin(uTime * 1.5 + angle * 3.0);
+
+        // Ring cross-section falloff (brighter at center of ring width)
+        float ringFade = 1.0 - abs(vUv.y - 0.5) * 2.0;
+        ringFade = pow(ringFade, 0.5);
+
+        gl_FragColor = vec4(color * pulse * 1.8, ringFade * 0.85);
+      }
+    `,
+        transparent: true,
+        side: DoubleSide,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      })
+  );
+
+  // ── Accent ring dot lights ───────────────────────────────────────────
+
+  const RING_COLORS = [
+    "#ff1744", "#ff9100", "#ffea00", "#00e676",
+    "#2979ff", "#651fff", "#d500f9",
+  ];
+
+  const RING_RADIUS = 5.05;
+
+  const ringDotLights = RING_COLORS.map((color, i) => {
+    const angle = (i / RING_COLORS.length) * Math.PI * 2;
+    return {
+      color,
+      x: Math.cos(angle) * RING_RADIUS,
+      z: Math.sin(angle) * RING_RADIUS,
+    };
+  });
+
+  // ── Floating prismatic orbs ──────────────────────────────────────────
+
+  interface PrismaticOrb {
+    group: Group;
+    baseY: number;
+    baseX: number;
+    baseZ: number;
+    speed: number;
+    phase: number;
+    bobAmplitude: number;
+    driftRadius: number;
+    color: string;
+  }
+
+  const ORB_CONFIGS = [
+    { color: "#ff4466", angle: 0.3, radius: 6, height: 2.8, scale: 0.18 },
+    { color: "#ffaa22", angle: 1.1, radius: 7.5, height: 3.5, scale: 0.22 },
+    { color: "#44ff66", angle: 2.0, radius: 5.5, height: 1.8, scale: 0.15 },
+    { color: "#4488ff", angle: 2.9, radius: 8, height: 4.2, scale: 0.20 },
+    { color: "#aa44ff", angle: 3.7, radius: 6.5, height: 2.2, scale: 0.16 },
+    { color: "#ff44aa", angle: 4.5, radius: 7, height: 3.0, scale: 0.19 },
+    { color: "#ffee44", angle: 5.3, radius: 5.8, height: 3.8, scale: 0.14 },
+  ];
+
+  function createPrismaticOrb(color: string, scale: number): Group {
+    const group = new Group();
+
+    const coreGeo = new SphereGeometry(scale, 24, 24);
+    const coreMat = new MeshPhysicalMaterial({
+      color: new Color(color),
+      roughness: 0.05,
+      metalness: 0.1,
+      transmission: 0.6,
+      transparent: true,
+      opacity: 0.8,
+      emissive: new Color(color),
+      emissiveIntensity: 0.8,
+      side: DoubleSide,
+    });
+    const core = new Mesh(coreGeo, coreMat);
+    group.add(core);
+
+    const glowGeo = new SphereGeometry(scale * 2.2, 16, 16);
+    const glowMat = new MeshStandardMaterial({
+      color: new Color(color),
+      transparent: true,
+      opacity: 0.12,
+      emissive: new Color(color),
+      emissiveIntensity: 1.2,
+      side: BackSide,
+      depthWrite: false,
+    });
+    const glow = new Mesh(glowGeo, glowMat);
+    group.add(glow);
+
+    return group;
+  }
+
+  const prismaticOrbs: PrismaticOrb[] = untrack(() =>
+    ORB_CONFIGS.map((cfg, i) => ({
+      group: createPrismaticOrb(cfg.color, cfg.scale),
+      baseX: Math.cos(cfg.angle) * cfg.radius,
+      baseZ: Math.sin(cfg.angle) * cfg.radius,
+      baseY: cfg.height,
+      speed: 0.15 + i * 0.04,
+      phase: i * 1.3,
+      bobAmplitude: 0.4 + i * 0.08,
+      driftRadius: 0.6 + i * 0.1,
+      color: cfg.color,
+    }))
+  );
+
+  // ── Light shafts ─────────────────────────────────────────────────────
+
+  const SHAFT_COUNT = 5;
+
+  interface LightShaft {
+    angle: number;
+    color: string;
+    height: number;
+    radius: number;
+    topRadius: number;
+  }
+
+  const lightShafts: LightShaft[] = [
+    { angle: 0.4, color: "#ff2255", height: 12, radius: 0.3, topRadius: 1.2 },
+    { angle: 1.6, color: "#ffcc00", height: 14, radius: 0.25, topRadius: 1.0 },
+    { angle: 2.8, color: "#00dd66", height: 11, radius: 0.28, topRadius: 1.1 },
+    { angle: 4.0, color: "#3366ff", height: 13, radius: 0.22, topRadius: 0.9 },
+    { angle: 5.2, color: "#9933ff", height: 12, radius: 0.26, topRadius: 1.0 },
+  ];
+
+  const shaftGeometries = untrack(() =>
+    lightShafts.map((s) => new CylinderGeometry(s.topRadius, s.radius, s.height, 12, 1, true))
+  );
+
+  const shaftMaterials = untrack(() =>
+    lightShafts.map(
+      (s) =>
+        new ShaderMaterial({
+          uniforms: {
+            uTime: { value: 0 },
+            uColor: { value: new Color(s.color) },
+          },
+          vertexShader: /* glsl */ `
+        varying vec2 vUv;
+        varying vec3 vPos;
+        void main(){
+          vUv = uv;
+          vPos = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+          fragmentShader: /* glsl */ `
+        uniform float uTime;
+        uniform vec3 uColor;
+        varying vec2 vUv;
+        varying vec3 vPos;
+
+        void main(){
+          // Fade from bottom (bright) to top (dim)
+          float heightFade = pow(1.0 - vUv.y, 1.5);
+          // Fade at edges of cylinder
+          float edgeFade = 1.0 - abs(vUv.x - 0.5) * 2.0;
+          edgeFade = pow(max(edgeFade, 0.0), 2.0);
+
+          float shimmer = 0.7 + 0.3 * sin(vPos.y * 3.0 + uTime * 2.0);
+
+          float alpha = heightFade * edgeFade * shimmer * 0.18;
+          gl_FragColor = vec4(uColor * 2.0, alpha);
+        }
+      `,
+          transparent: true,
+          side: DoubleSide,
+          depthWrite: false,
+          blending: AdditiveBlending,
+        })
+    )
+  );
+
+  const shaftPositions = lightShafts.map((s) => ({
+    x: Math.cos(s.angle) * 8,
+    z: Math.sin(s.angle) * 8 - 2,
+  }));
+
+  // ── Rainbow point lights (semicircle behind performer) ───────────────
 
   const RAINBOW_LIGHTS: { color: string; angle: number }[] = [
     { color: "#ff1744", angle: 0 },
@@ -276,9 +477,27 @@
 
   // ── Animation ────────────────────────────────────────────────────────
 
+  let elapsed = 0;
+
   useTask((delta) => {
+    elapsed += delta;
     auroraMaterial.uniforms.uTime!.value += delta;
     groundMaterial.uniforms.uTime!.value += delta;
+    accentRingMaterial.uniforms.uTime!.value += delta;
+
+    for (const mat of shaftMaterials) {
+      mat.uniforms.uTime!.value += delta;
+    }
+
+    for (const orb of prismaticOrbs) {
+      const t = elapsed * orb.speed + orb.phase;
+      orb.group.position.set(
+        orb.baseX + Math.sin(t * 0.7) * orb.driftRadius,
+        orb.baseY + Math.sin(t) * orb.bobAmplitude,
+        orb.baseZ + Math.cos(t * 0.5) * orb.driftRadius,
+      );
+      orb.group.rotation.y = t * 0.3;
+    }
   });
 
   // ── Cleanup ──────────────────────────────────────────────────────────
@@ -288,6 +507,24 @@
     auroraMaterial.dispose();
     groundGeometry.dispose();
     groundMaterial.dispose();
+    accentRingGeometry.dispose();
+    accentRingMaterial.dispose();
+
+    for (const geo of shaftGeometries) geo.dispose();
+    for (const mat of shaftMaterials) mat.dispose();
+
+    for (const orb of prismaticOrbs) {
+      orb.group.traverse((child) => {
+        if (child instanceof Mesh) {
+          child.geometry.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m) => m.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      });
+    }
   });
 </script>
 
@@ -310,6 +547,70 @@
     material={groundMaterial}
   />
 </T.Group>
+
+<!-- Ground accent ring — rainbow gradient emissive halo -->
+<T.Group position={[0, groundY + 0.02, 0]}>
+  <T.Mesh
+    rotation.x={-Math.PI / 2}
+    geometry={accentRingGeometry}
+    material={accentRingMaterial}
+  />
+</T.Group>
+
+<!-- Accent ring dot lights — 7 rainbow colors around the ring -->
+{#each ringDotLights as dot}
+  <T.PointLight
+    color={dot.color}
+    intensity={8}
+    distance={6}
+    decay={2}
+    position.x={dot.x}
+    position.y={groundY + 0.15}
+    position.z={dot.z}
+  />
+  <T.Mesh
+    position.x={dot.x}
+    position.y={groundY + 0.05}
+    position.z={dot.z}
+  >
+    <T.SphereGeometry args={[0.05, 8, 8]} />
+    <T.MeshStandardMaterial
+      color={dot.color}
+      emissive={dot.color}
+      emissiveIntensity={3}
+    />
+  </T.Mesh>
+{/each}
+
+<!-- Floating prismatic orbs — 7 rainbow-colored emissive spheres -->
+{#each prismaticOrbs as orb}
+  <T
+    is={orb.group}
+    position.x={orb.baseX}
+    position.y={orb.baseY}
+    position.z={orb.baseZ}
+  />
+  <T.PointLight
+    color={orb.color}
+    intensity={12}
+    distance={8}
+    decay={2}
+    position.x={orb.group.position.x}
+    position.y={orb.group.position.y}
+    position.z={orb.group.position.z}
+  />
+{/each}
+
+<!-- Light shafts — colored volumetric beams from sky to ground -->
+{#each lightShafts as shaft, i}
+  <T.Mesh
+    geometry={shaftGeometries[i]}
+    material={shaftMaterials[i]}
+    position.x={shaftPositions[i]?.x ?? 0}
+    position.y={groundY + (shaft.height / 2)}
+    position.z={shaftPositions[i]?.z ?? 0}
+  />
+{/each}
 
 <!-- 7 rainbow point lights — semicircle behind performer for color wash -->
 {#each RAINBOW_LIGHTS as light}
@@ -336,6 +637,15 @@
   position.z={10}
 />
 
+<!-- Warm directional from below-right for orb rim lighting -->
+<T.DirectionalLight
+  color="#ff6644"
+  intensity={0.25}
+  position.x={10}
+  position.y={-5}
+  position.z={-8}
+/>
+
 <!-- Rainbow glow orbs drifting lazily -->
 <FallingParticles
   type="fireflies"
@@ -350,21 +660,32 @@
 <!-- Rising prismatic embers -->
 <FallingParticles
   type="embers"
-  count={50}
-  area={{ width: 6, height: 4, depth: 6 }}
+  count={60}
+  area={{ width: 8, height: 5, depth: 8 }}
   speed={0.06}
-  colors={["#ff2255", "#ff8800", "#ffee00", "#00cc55"]}
-  sizeRange={[0.015, 0.045]}
+  colors={["#ff2255", "#ff8800", "#ffee00", "#00cc55", "#4466ff", "#aa44ff"]}
+  sizeRange={[0.015, 0.05]}
   spin={false}
 />
 
 <!-- Distant rainbow star sparkles -->
 <FallingParticles
   type="stars"
-  count={150}
-  area={{ width: 25, height: 12, depth: 25 }}
+  count={180}
+  area={{ width: 30, height: 15, depth: 30 }}
   speed={0.004}
-  colors={["#ff6688", "#ffcc44", "#44ffaa", "#8866ff"]}
-  sizeRange={[0.012, 0.055]}
+  colors={["#ff6688", "#ffcc44", "#44ffaa", "#8866ff", "#ff44cc"]}
+  sizeRange={[0.012, 0.06]}
+  spin={false}
+/>
+
+<!-- Low-level dust motes catching rainbow light -->
+<FallingParticles
+  type="dust"
+  count={100}
+  area={{ width: 14, height: 3, depth: 14 }}
+  speed={0.008}
+  colors={["#ff88aa", "#ffdd66", "#88ffcc", "#aabbff"]}
+  sizeRange={[0.008, 0.025]}
   spin={false}
 />
