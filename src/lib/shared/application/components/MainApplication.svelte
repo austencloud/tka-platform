@@ -656,7 +656,6 @@ import type { SheetType } from "../../navigation/services/contracts/types";
   .tka-app {
     display: flex;
     flex-direction: column;
-    height: 100vh;
     height: 100dvh;
     width: 100%;
     position: relative;
@@ -675,7 +674,7 @@ import type { SheetType } from "../../navigation/services/contracts/types";
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
+    min-height: 100dvh;
     gap: 16px;
     color: rgba(255, 255, 255, 0.8);
     font-size: var(--font-size-sm);
