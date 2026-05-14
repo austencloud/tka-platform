@@ -1,17 +1,18 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
-  import { useGltf } from "@threlte/extras";
   import { onMount } from "svelte";
-  import { FogExp2, Color, MeshStandardMaterial } from "three";
+  import { FogExp2, Color } from "three";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
-  import GroundPlane from "../primitives/GroundPlane.svelte";
-  import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
   import StationPlatform from "./cosmic/StationPlatform.svelte";
   import EarthSphere from "./cosmic/EarthSphere.svelte";
   import NebulaLayer from "./cosmic/NebulaLayer.svelte";
   import EnergyParticles from "./cosmic/EnergyParticles.svelte";
   import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
+  import LunarCrystals from "./cosmic/LunarCrystals.svelte";
+  import EarthGodRays from "./cosmic/EarthGodRays.svelte";
+  import LunarGroundPlane from "./cosmic/LunarGroundPlane.svelte";
+  import Starfield from "./cosmic/Starfield.svelte";
   import type { CosmicVariant } from "../domain/enums/environment-enums";
   import {
     type CosmicSceneConfig,
@@ -69,37 +70,6 @@
     return () => clearTimeout(timer);
   });
 
-  const rockA = useGltf("/models/winter/rock_largeA.glb");
-  const rockB = useGltf("/models/winter/rock_largeB.glb");
-
-  const lunarMat = new MeshStandardMaterial({
-    color: new Color("#3a3a44"),
-    roughness: 0.9,
-    metalness: 0.1,
-  });
-
-  function lunarClone(sourceScene: {
-    clone: () => { traverse: (cb: (obj: unknown) => void) => void };
-  }) {
-    const cloned = sourceScene.clone();
-    cloned.traverse((obj: unknown) => {
-      const mesh = obj as { isMesh?: boolean; material?: unknown };
-      if (!mesh.isMesh) return;
-      mesh.material = lunarMat;
-    });
-    return cloned;
-  }
-
-  const rockPlacements: [number, number, number, number][] = [
-    [5.5, -4.0, 0.6, 0.4],
-    [-4.5, -6.0, 0.5, 1.8],
-    [8.0, 2.5, 0.8, 2.5],
-    [-7.0, 5.0, 0.45, 0.9],
-    [-3.0, 8.5, 0.7, 3.1],
-    [6.5, 7.0, 0.35, 1.2],
-    [-9.0, -2.0, 0.55, 2.0],
-    [3.0, -9.0, 0.5, 4.2],
-  ];
 </script>
 
 <SkyGradient
@@ -110,37 +80,9 @@
 
 <NebulaLayer config={activeConfig.nebula} />
 
-{#if activeConfig.ground.textured && activeConfig.ground.diffuseMap}
-  <TexturedGroundPlane
-    color={activeConfig.ground.color}
-    size={activeConfig.ground.size}
-    diffuseMap={activeConfig.ground.diffuseMap}
-    normalMap={activeConfig.ground.normalMap}
-    roughnessMap={activeConfig.ground.roughnessMap}
-    normalScale={activeConfig.ground.normalScale ?? 1.0}
-    textureRepeat={activeConfig.ground.textureRepeat ?? 8}
-  />
-{:else}
-  <GroundPlane
-    color={activeConfig.ground.color}
-    size={activeConfig.ground.size}
-    opacity={activeConfig.ground.opacity ?? 1}
-  />
-{/if}
+<LunarGroundPlane veins={activeConfig.lunarGround} groundConfig={activeConfig.ground} />
 
-{#if $rockA && $rockB}
-  {#each rockPlacements as [x, z, scale, rotY], i}
-    {@const source = i % 2 === 0 ? $rockA : $rockB}
-    <T
-      is={lunarClone(source.scene)}
-      position.x={x}
-      position.y={groundY}
-      position.z={z}
-      scale={scale * 2.0}
-      rotation.y={rotY}
-    />
-  {/each}
-{/if}
+<LunarCrystals config={activeConfig.crystals} />
 
 <StationPlatform config={activeConfig.platform} />
 
@@ -177,19 +119,9 @@
   intensity={activeConfig.lighting.ambient.intensity}
 />
 
-{#if activeConfig.particles.starDrift}
-  {#key `stars-${activeConfig.particles.starDrift.count}`}
-    <FallingParticles
-      type={activeConfig.particles.starDrift.type}
-      count={activeConfig.particles.starDrift.count}
-      area={activeConfig.particles.starDrift.area}
-      speed={activeConfig.particles.starDrift.speed}
-      colors={activeConfig.particles.starDrift.colors}
-      sizeRange={activeConfig.particles.starDrift.sizeRange}
-      spin={activeConfig.particles.starDrift.spin ?? false}
-    />
-  {/key}
-{/if}
+<Starfield config={activeConfig.starfield} />
+
+<EarthGodRays config={activeConfig.godRays} earthConfig={activeConfig.earth} />
 
 {#if activeConfig.particles.cosmicDust}
   {#key `dust-${activeConfig.particles.cosmicDust.count}`}
