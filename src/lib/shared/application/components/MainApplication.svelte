@@ -656,7 +656,8 @@ import type { SheetType } from "../../navigation/services/contracts/types";
   .tka-app {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
     width: 100%;
     position: relative;
     z-index: 2; /* Above body::after transition layer (z-index: 1) */
@@ -726,8 +727,7 @@ import type { SheetType } from "../../navigation/services/contracts/types";
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .tka-app {
-      /* Dynamic viewport height for mobile app */
-      min-height: 100dvh;
+      height: 100dvh;
     }
   }
 
