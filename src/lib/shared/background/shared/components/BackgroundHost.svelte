@@ -33,11 +33,34 @@
 	const controller = browser ? getBackgroundController() : null;
 	let mounted = $state(false);
 
-	// Mount synchronously - don't await setBackground.
-	// Let the $effect below handle the initial setBackground call.
+	// The @austencloud/backgrounds package caps canvas at 960×540 for perf,
+	// but that makes 2D backgrounds look zoomed/blurry on modern displays.
+	// Patch the controller to use full viewport resolution (capped at 1x DPR).
+	// The @austencloud/backgrounds package caps canvas at 960×540 for perf,
+	// but that makes 2D backgrounds look zoomed/blurry on modern displays.
+	// Patch the controller to use full viewport resolution (capped at 1x DPR).
+	function patchCanvasResolution(ctrl: NonNullable<typeof controller>) {
+		const c = ctrl as any;
+		c.updateCanvasDimensions = function (this: any) {
+			const cA = this.canvasA as HTMLCanvasElement | null;
+			const cB = this.canvasB as HTMLCanvasElement | null;
+			const cont = this.container as HTMLElement | null;
+			if (!cA || !cB || !cont) return;
+			const rect = cont.getBoundingClientRect();
+			const w = Math.max(1, Math.floor(rect.width));
+			const h = Math.max(1, Math.floor(rect.height));
+			cA.width = w;
+			cA.height = h;
+			cB.width = w;
+			cB.height = h;
+		};
+	}
+
 	onMount(() => {
 		if (!browser || !containerRef || !controller) return;
 		controller.mount(containerRef);
+		patchCanvasResolution(controller);
+		(controller as any).updateCanvasDimensions();
 		mounted = true;
 		onReady?.();
 	});
