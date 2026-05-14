@@ -9,6 +9,7 @@
   import { T } from "@threlte/core";
   import * as THREE from "three";
   import type { Snippet } from "svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
 
   interface Props {
     /** Current position */
@@ -31,7 +32,7 @@
 <!-- Selection ring on ground (visible when active or dragging) -->
 {#if isActive || isDragging}
   <T.Group position.x={position.x} position.z={position.z}>
-    <T.Mesh rotation.x={-Math.PI / 2} position.y={0.01}>
+    <T.Mesh rotation.x={-Math.PI / 2} position.y={userProportionsState.groundY + 0.01}>
       <T.RingGeometry args={[RING_RADIUS - RING_THICKNESS, RING_RADIUS + RING_THICKNESS, 32]} />
       <T.MeshBasicMaterial
         color={isDragging ? "#4caf50" : "#64b5f6"}

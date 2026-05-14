@@ -19,6 +19,7 @@
   import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
   import { Raycaster, Vector2 } from "three";
   import type { Object3D, Scene } from "three";
+  import { userProportionsState } from "@austencloud/scene-3d";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -39,9 +40,12 @@
   const { renderer, camera, scene } = useThrelte();
   const { scheduler, resetFrameInvalidation } = useScheduler();
 
-  // When the stage is visible, lift performers onto the deck surface
+  const COSMIC_PLATFORM_HEIGHT = 0.4;
+
   const stageGroundOffset = $derived(
-    sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0
+    hasOwnPlatform
+      ? COSMIC_PLATFORM_HEIGHT
+      : sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0
   );
 
   // Reconstructs Threlte's default setAnimationLoop callback. We restore
@@ -270,6 +274,8 @@
     backgroundType === BackgroundType.DEEP_OCEAN
   );
 
+  const hasOwnPlatform = $derived(backgroundType === BackgroundType.NIGHT_SKY);
+
   // When the background type doesn't produce a 3D environment (solid color,
   // gradient), Environment3D never mounts - so nothing will ever call
   // reportReady("environment"). Report it immediately so the curtain lifts.
@@ -285,8 +291,7 @@
   <Environment3D {backgroundType} />
 {/if}
 
-<!-- Performance stage (gated by scene feature toggle) -->
-{#if sceneFeatures.isEnabled("stage")}
+{#if sceneFeatures.isEnabled("stage") && !hasOwnPlatform}
   <Stage3D />
 {/if}
 
@@ -333,7 +338,7 @@
       <!-- Ground-disc selection indicator. Gray when scope is "All",
            lavender when this specific performer is selected. -->
       <T.Mesh
-        position={[performer.position.x, 0.01, performer.position.z]}
+        position={[performer.position.x, userProportionsState.groundY + stageGroundOffset + 0.01, performer.position.z]}
         rotation={[-Math.PI / 2, 0, 0]}
       >
         <T.CircleGeometry args={[0.45, 32]} />
