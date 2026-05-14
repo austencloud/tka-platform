@@ -212,7 +212,7 @@
     "@ai-sdk/deepseek": "^1.0.33",
     "@ai-sdk/openai": "^1.3.24",
     "@ai-sdk/svelte": "^4.0.27",
-    "@austencloud/backgrounds": "^0.2.0",
+    "@austencloud/backgrounds": "^0.3.0",
     "@austencloud/camera-3d": "workspace:*",
     "@austencloud/chip-toggle": "^0.1.0",
     "@austencloud/code-quality": "^1.0.0",
