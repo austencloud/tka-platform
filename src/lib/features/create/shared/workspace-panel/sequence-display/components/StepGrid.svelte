@@ -60,6 +60,7 @@
     timeSignature = undefined,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    sequenceWord = "",
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
     startPosition?: StartPositionData | StepData | null;
@@ -89,6 +90,7 @@
     bluePropTypeOverride?: PropType;
     /** Override prop type for red hand. Used by demos/previews to bypass global settings. */
     redPropTypeOverride?: PropType;
+    sequenceWord?: string;
   }>();
 
   // State management
@@ -490,6 +492,7 @@
       {onDurationChange}
       {getStepKey}
       {getDurationDisplay}
+      {sequenceWord}
       bind:scrollContainerRef
     />
   {:else}
@@ -514,6 +517,7 @@
       {getDurationDisplay}
       {bluePropTypeOverride}
       {redPropTypeOverride}
+      {sequenceWord}
       bind:scrollContainerRef
     />
   {/if}

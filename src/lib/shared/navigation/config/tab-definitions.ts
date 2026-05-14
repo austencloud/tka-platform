@@ -878,6 +878,14 @@ export const LAB_TABS: Section[] = [
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
   },
+  {
+    id: "mandala-collection",
+    label: "Mandala Collection",
+    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
+    description: "Saved sequence mandalas",
+    color: "#e879f9",
+    gradient: "linear-gradient(135deg, #e879f9 0%, #c084fc 100%)",
+  },
   // mandala-drawing removed (Apr 2026) - was just a placeholder notes tab
   // ml-training removed (Mar 2026)
   // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)

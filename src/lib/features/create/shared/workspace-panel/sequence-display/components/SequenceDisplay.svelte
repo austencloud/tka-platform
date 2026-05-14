@@ -268,6 +268,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
           {isTimelineMode}
           onDurationChange={handleDurationChange}
           manualColumnCount={loopAlignedColumnCount}
+          sequenceWord={currentDisplayWord}
         />
       </div>
     </div>

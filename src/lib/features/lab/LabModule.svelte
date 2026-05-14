@@ -19,6 +19,8 @@
     // level4, level5, level6, level7, poi graduated to Levels module (Mar 2026)
     mandala: () =>
       import("$lib/features/mandala-generator/components/MandalaGeneratorModule.svelte"),
+    "mandala-collection": () =>
+      import("$lib/features/mandala-collection/components/MandalaCollectionGallery.svelte"),
     backgrounds: () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
     composition: () => import("$lib/features/lab/constraint-layout-lab/CompositionLab.svelte"),

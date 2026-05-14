@@ -17,6 +17,12 @@
   import StartTile from "./StartTile.svelte";
   import DurationResizeHandle from "./DurationResizeHandle.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
+  import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
+  import { mandalaCollectionState } from "$lib/features/mandala-collection/state/mandala-collection-state.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+
 
   const MANDALA_CELL_SCALE = 0.78;
 
@@ -44,6 +50,7 @@
     onDurationChange,
     getStepKey,
     getDurationDisplay,
+    sequenceWord = "",
     scrollContainerRef = $bindable(),
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
@@ -67,6 +74,7 @@
     onDurationChange?: (stepNumber: number, newDuration: number) => void;
     getStepKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
+    sequenceWord?: string;
     scrollContainerRef?: HTMLElement;
   }>();
 
@@ -149,6 +157,34 @@
   });
 
   const mandalaSize = $derived(Math.round(timelineUnitSize * MANDALA_CELL_SCALE));
+
+  let mandalaMenuState = $state<ContextMenuState>({ open: false });
+  let mandalaMenuVariant = $state<"blue" | "red" | "both">("both");
+
+  function handleMandalaContextMenu(event: MouseEvent, variant: "blue" | "red" | "both") {
+    event.preventDefault();
+    mandalaMenuVariant = variant;
+    mandalaMenuState = { open: true, x: event.clientX, y: event.clientY };
+  }
+
+  const mandalaMenuItems = $derived<ContextMenuEntry[]>([
+    {
+      id: "save-to-collection",
+      label: "Save to Collection",
+      icon: "fa-bookmark",
+      action: () => {
+        const name = sequenceWord || `Mandala #${mandalaCollectionState.count + 1}`;
+        mandalaCollectionState.add({
+          name,
+          steps: [...steps],
+          variant: mandalaMenuVariant,
+          bluePropType: settingsService.settings.bluePropType ?? "staff",
+          redPropType: settingsService.settings.redPropType ?? "staff",
+        });
+        toast.success(`Saved "${name}" to collection`);
+      },
+    },
+  ]);
 </script>
 
 <div
@@ -185,7 +221,13 @@
           />
         </div>
         {#each startColumnMandalas as cell (cell.index)}
-          <div class="timeline-cell mandala-cell" style:--duration-multiplier={1}>
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="timeline-cell mandala-cell"
+            style:--duration-multiplier={1}
+
+            oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
+          >
             <SequenceMandala
               sequence={{ steps }}
               mode="card-back"
@@ -254,6 +296,11 @@
       {/each}
     </div>
   </div>
+  <ContextMenu
+    menuState={mandalaMenuState}
+    items={mandalaMenuItems}
+    onClose={() => (mandalaMenuState = { open: false })}
+  />
 </div>
 
 <style>
@@ -434,8 +481,8 @@
   }
 
   .mandala-cell {
-    pointer-events: none;
-    background: transparent;
+    cursor: context-menu;
+    background: color-mix(in srgb, var(--dm-pictograph-bg, #0a0a0f) 50%, transparent);
   }
 
   @keyframes slideIntoPlace {
