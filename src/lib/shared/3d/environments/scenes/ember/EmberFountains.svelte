@@ -19,33 +19,47 @@
   const groundY = $derived(userProportionsState.groundY);
 
   interface FountainParticle {
-    angle: number;
-    radius: number;
+    x: number;
     y: number;
-    speed: number;
+    z: number;
+    vx: number;
+    vy: number;
+    vz: number;
     size: number;
     colorIndex: number;
     phase: number;
-    lateralDrift: number;
+    life: number;
+    maxLife: number;
+    isBurst: boolean;
   }
 
   let particles: FountainParticle[] = [];
   let geometry = $state<BufferGeometry | null>(null);
   let material = $state<ShaderMaterial | null>(null);
+  let burstTimer = 0;
 
-  function spawnParticle(): FountainParticle {
+  function spawnParticle(isBurst: boolean): FountainParticle {
     const angle = Math.random() * Math.PI * 2;
+    const spreadRadius = Math.random() * config.spawnRadius * 0.3;
+    const speedMult = isBurst
+      ? 1.5 + Math.random() * 0.5
+      : 0.6 + Math.random() * 0.8;
+    const lateralSpeed = isBurst ? 0.8 : 0.3;
     return {
-      angle,
-      radius: Math.random() * config.spawnRadius * 0.3,
+      x: Math.cos(angle) * spreadRadius,
       y: 0,
-      speed: config.riseSpeed * (0.6 + Math.random() * 0.8),
+      z: Math.sin(angle) * spreadRadius,
+      vx: Math.cos(angle) * lateralSpeed * (Math.random() * 0.5 + 0.5),
+      vy: config.riseSpeed * speedMult,
+      vz: Math.sin(angle) * lateralSpeed * (Math.random() * 0.5 + 0.5),
       size:
         config.sizeRange[0] +
         Math.random() * (config.sizeRange[1] - config.sizeRange[0]),
       colorIndex: Math.floor(Math.random() * config.colors.length),
       phase: Math.random() * Math.PI * 2,
-      lateralDrift: (Math.random() - 0.5) * 0.4,
+      life: 0,
+      maxLife: (config.maxHeight / (config.riseSpeed * speedMult)) * 1.5,
+      isBurst,
     };
   }
 
@@ -74,9 +88,8 @@
       if (glow < 0.01) discard;
       int idx = int(floor(vColorIndex));
       vec3 color = uColors[min(idx, 3)];
-      // Hot center, darker edge
-      float core = 1.0 - smoothstep(0.0, 0.25, dist);
-      vec3 finalColor = mix(color, color * 2.5, core);
+      float core = 1.0 - smoothstep(0.0, 0.2, dist);
+      vec3 finalColor = mix(color, color * 3.0, core);
       gl_FragColor = vec4(finalColor, glow * vAlpha);
     }
   `;
@@ -117,8 +130,14 @@
     });
 
     for (let i = 0; i < count; i++) {
-      const p = spawnParticle();
-      p.y = Math.random() * config.maxHeight;
+      const p = spawnParticle(false);
+      // Stagger initial life so particles don't all spawn at ground simultaneously
+      p.life = Math.random() * p.maxLife;
+      const t = p.life / p.maxLife;
+      p.x += p.vx * p.life;
+      p.y += p.vy * p.life - 0.5 * config.gravity * p.life * p.life;
+      p.z += p.vz * p.life;
+      p.vy -= config.gravity * p.life;
       particles.push(p);
     }
   });
@@ -137,42 +156,48 @@
     const alphaArr = geometry.attributes.aAlpha!.array as Float32Array;
     const colorArr = geometry.attributes.aColorIndex!.array as Float32Array;
 
+    // Burst eruption mechanic
+    burstTimer += delta;
+    if (burstTimer >= config.burstInterval) {
+      burstTimer -= config.burstInterval;
+      for (let j = 0; j < config.burstCount && j < particles.length; j++) {
+        const idx = Math.floor(Math.random() * particles.length);
+        Object.assign(particles[idx]!, spawnParticle(true));
+      }
+    }
+
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i]!;
-      p.y += p.speed * delta;
 
-      if (p.y > config.maxHeight) {
-        const fresh = spawnParticle();
-        p.angle = fresh.angle;
-        p.radius = fresh.radius;
-        p.y = 0;
-        p.speed = fresh.speed;
-        p.size = fresh.size;
-        p.colorIndex = fresh.colorIndex;
-        p.phase = fresh.phase;
-        p.lateralDrift = fresh.lateralDrift;
+      // Apply gravity
+      p.vy -= config.gravity * delta;
+      p.x += p.vx * delta;
+      p.y += p.vy * delta;
+      p.z += p.vz * delta;
+
+      // Advance life
+      p.life += delta;
+      const t = p.life / p.maxLife;
+
+      // Recycle dead particles (fallen below ground or expired)
+      if (p.y < -0.5 || p.life > p.maxLife) {
+        Object.assign(p, spawnParticle(false));
+        continue;
       }
 
-      // Fast initial burst, then decelerate and drift
-      const progress = p.y / config.maxHeight;
-      const decel = 1.0 - progress * 0.6;
-      p.y += (p.speed * decel - p.speed) * delta;
+      // Life-based fade: quick fade in, smooth quadratic fade out
+      const fadeIn = Math.min(t * 5.0, 1.0);
+      const fadeOut = 1.0 - Math.pow(Math.max(t - 0.5, 0.0) * 2.0, 2.0);
+      const alpha = fadeIn * fadeOut;
 
-      const fadeIn = Math.min(p.y / 0.3, 1.0);
-      const fadeOut = 1.0 - Math.max(
-        (p.y - config.maxHeight * 0.6) / (config.maxHeight * 0.4),
-        0,
-      );
-      const sway = Math.sin(p.y * 2 + p.phase) * 0.2 * progress;
+      // Shrink as they cool
+      const size = p.size * (1.0 - t * 0.4);
 
-      // Expanding cone as particles rise
-      const expandedRadius = p.radius + progress * config.spawnRadius * 0.5;
-
-      posArr[i * 3] = Math.cos(p.angle + sway + p.lateralDrift * progress) * expandedRadius;
+      posArr[i * 3] = p.x;
       posArr[i * 3 + 1] = p.y;
-      posArr[i * 3 + 2] = Math.sin(p.angle + sway + p.lateralDrift * progress) * expandedRadius;
-      sizeArr[i] = p.size * (1.0 - progress * 0.3);
-      alphaArr[i] = fadeIn * fadeOut;
+      posArr[i * 3 + 2] = p.z;
+      sizeArr[i] = size;
+      alphaArr[i] = alpha;
       colorArr[i] = p.colorIndex;
     }
 

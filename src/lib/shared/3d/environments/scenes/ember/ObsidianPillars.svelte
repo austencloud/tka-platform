@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T } from "@threlte/core";
+  import { T, useTask } from "@threlte/core";
   import { onDestroy } from "svelte";
   import {
     Group,
@@ -20,10 +20,89 @@
   let { config }: Props = $props();
   const groundY = $derived(userProportionsState.groundY);
 
+  const VERTEX_SHADER = `
+    varying vec3 vPosition;
+    varying vec3 vNormal;
+    varying vec2 vUv;
+    void main() {
+      vPosition = position;
+      vNormal = normalize(normalMatrix * normal);
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const FRAGMENT_SHADER = `
+    uniform vec3 uBaseColor;
+    uniform vec3 uVeinColor;
+    uniform float uVeinIntensity;
+    uniform float uSeed;
+    uniform float uTime;
+    uniform float uPulseSpeed;
+    uniform vec3 uPulseColor;
+
+    varying vec3 vPosition;
+    varying vec3 vNormal;
+    varying vec2 vUv;
+
+    float hash(vec2 p) {
+      return fract(sin(dot(p + uSeed, vec2(127.1, 311.7))) * 43758.5453);
+    }
+
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      float a = hash(i);
+      float b = hash(i + vec2(1.0, 0.0));
+      float c = hash(i + vec2(0.0, 1.0));
+      float d = hash(i + vec2(1.0, 1.0));
+      return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+
+    void main() {
+      // Vertical vein pattern using position + UV
+      vec2 veinUv = vec2(vUv.x * 8.0 + uSeed, vPosition.y * 3.0);
+      float n1 = noise(veinUv * 2.0);
+      float n2 = noise(veinUv * 4.0 + 50.0);
+      float veinPattern = n1 * 0.6 + n2 * 0.4;
+
+      // Thin bright veins
+      float vein = smoothstep(0.55, 0.62, veinPattern);
+
+      // Wider glow around veins
+      float glow = smoothstep(0.45, 0.65, veinPattern) * 0.3;
+
+      // Veins brighten toward base (heat from below)
+      float heightFade = 1.0 - smoothstep(0.0, 0.8, vUv.y);
+      float veinStrength = (vein + glow) * heightFade * uVeinIntensity;
+
+      // Upward-traveling pulse wave
+      float pulseWave = sin(vPosition.y * 3.0 - uTime * uPulseSpeed * 6.0) * 0.5 + 0.5;
+      pulseWave = pow(pulseWave, 4.0); // sharpen the wave
+
+      // Amplify vein brightness during pulse
+      float pulsedVeinStrength = veinStrength * (1.0 + pulseWave * 2.0);
+
+      // Faceted crystal shading
+      float facetShade = abs(dot(vNormal, vec3(0.3, 0.8, 0.4)));
+      vec3 baseShaded = uBaseColor * (0.4 + facetShade * 0.6);
+
+      vec3 finalColor = mix(baseShaded, uVeinColor * 2.0, pulsedVeinStrength);
+
+      // Mix in pulse color at peak
+      finalColor = mix(finalColor, uPulseColor * 3.0, vein * pulseWave * heightFade * 0.5);
+
+      gl_FragColor = vec4(finalColor, 1.0);
+    }
+  `;
+
   function createPillarMaterial(
     baseColor: string,
     veinColor: string,
     veinIntensity: number,
+    pulseSpeed: number,
+    pulseColor: string,
     seed: number,
   ): ShaderMaterial {
     return new ShaderMaterial({
@@ -33,67 +112,12 @@
         uVeinColor: { value: new Color(veinColor) },
         uVeinIntensity: { value: veinIntensity },
         uSeed: { value: seed },
+        uTime: { value: 0 },
+        uPulseSpeed: { value: pulseSpeed },
+        uPulseColor: { value: new Color(pulseColor) },
       },
-      vertexShader: `
-        varying vec3 vPosition;
-        varying vec3 vNormal;
-        varying vec2 vUv;
-        void main() {
-          vPosition = position;
-          vNormal = normalize(normalMatrix * normal);
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uBaseColor;
-        uniform vec3 uVeinColor;
-        uniform float uVeinIntensity;
-        uniform float uSeed;
-        varying vec3 vPosition;
-        varying vec3 vNormal;
-        varying vec2 vUv;
-
-        float hash(vec2 p) {
-          return fract(sin(dot(p + uSeed, vec2(127.1, 311.7))) * 43758.5453);
-        }
-        float noise(vec2 p) {
-          vec2 i = floor(p);
-          vec2 f = fract(p);
-          f = f * f * (3.0 - 2.0 * f);
-          float a = hash(i);
-          float b = hash(i + vec2(1.0, 0.0));
-          float c = hash(i + vec2(0.0, 1.0));
-          float d = hash(i + vec2(1.0, 1.0));
-          return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-        }
-
-        void main() {
-          // Vertical vein pattern using position + UV
-          vec2 veinUv = vec2(vUv.x * 8.0 + uSeed, vPosition.y * 3.0);
-          float n1 = noise(veinUv * 2.0);
-          float n2 = noise(veinUv * 4.0 + 50.0);
-          float veinPattern = n1 * 0.6 + n2 * 0.4;
-
-          // Thin bright veins
-          float vein = smoothstep(0.55, 0.62, veinPattern);
-
-          // Wider glow around veins
-          float glow = smoothstep(0.45, 0.65, veinPattern) * 0.3;
-
-          // Veins brighten toward base (heat from below)
-          float heightFade = 1.0 - smoothstep(0.0, 0.8, vUv.y);
-          float veinStrength = (vein + glow) * heightFade * uVeinIntensity;
-
-          // Faceted crystal shading
-          float facetShade = abs(dot(vNormal, vec3(0.3, 0.8, 0.4)));
-          vec3 baseShaded = uBaseColor * (0.4 + facetShade * 0.6);
-
-          vec3 finalColor = mix(baseShaded, uVeinColor * 2.0, veinStrength);
-
-          gl_FragColor = vec4(finalColor, 1.0);
-        }
-      `,
+      vertexShader: VERTEX_SHADER,
+      fragmentShader: FRAGMENT_SHADER,
     });
   }
 
@@ -107,10 +131,19 @@
     baseColor: string,
     veinColor: string,
     veinIntensity: number,
+    pulseSpeed: number,
+    pulseColor: string,
     seed: number,
   ): PillarInstance {
     const group = new Group();
-    const material = createPillarMaterial(baseColor, veinColor, veinIntensity, seed);
+    const material = createPillarMaterial(
+      baseColor,
+      veinColor,
+      veinIntensity,
+      pulseSpeed,
+      pulseColor,
+      seed,
+    );
 
     // Main shaft — low-segment cylinder for faceted crystal look
     const shaftGeo = new CylinderGeometry(0.25, 0.35, height, 5, 1);
@@ -179,12 +212,22 @@
           config.baseColor,
           config.veinColor,
           config.veinIntensity,
+          config.pulseSpeed,
+          config.pulseColor,
           seed,
         );
         result.push({ instance, x, z, scale, rotY });
       }
     });
     return result;
+  });
+
+  // Animate uTime on all pillar materials each frame
+  useTask((delta) => {
+    if (!config.enabled || pillars.length === 0) return;
+    for (const p of pillars) {
+      p.instance.material.uniforms.uTime!.value += delta;
+    }
   });
 
   onDestroy(() => {

@@ -32,9 +32,12 @@
     uniform float uOpacity;
     uniform float uScale;
     uniform float uTime;
+    uniform float uLightningInterval;
+    uniform float uLightningIntensity;
+    uniform vec3 uInnerGlowColor;
     varying vec3 vWorldPosition;
 
-    // Simplex noise (same as NebulaLayer)
+    // 3D Simplex noise implementation
     vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
     vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
     vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
@@ -85,26 +88,59 @@
 
     void main() {
       vec3 dir = normalize(vWorldPosition);
-      vec3 samplePos = dir * uScale + vec3(uTime * 0.08, 0.0, uTime * 0.04);
 
-      float n1 = snoise(samplePos * 1.2) * 0.5 + 0.5;
-      float n2 = snoise(samplePos * 2.5 + 100.0) * 0.5 + 0.5;
-      float combined = n1 * 0.6 + n2 * 0.4;
-      combined = pow(combined, 1.8);
+      // === Multi-layer parallax ===
+      // Layer 1: slow-moving deep clouds
+      vec3 samplePos1 = dir * uScale + vec3(uTime * 0.06, 0.0, uTime * 0.03);
+      float n1 = snoise(samplePos1 * 1.0) * 0.5 + 0.5;
+
+      // Layer 2: faster mid-level detail
+      vec3 samplePos2 = dir * uScale * 1.8 + vec3(uTime * 0.12, uTime * 0.02, uTime * 0.08);
+      float n2 = snoise(samplePos2 * 1.5) * 0.5 + 0.5;
+
+      // Layer 3: fine turbulence overlay
+      vec3 samplePos3 = dir * uScale * 3.0 + vec3(-uTime * 0.04, uTime * 0.06, -uTime * 0.03);
+      float n3 = snoise(samplePos3 * 2.5) * 0.5 + 0.5;
+
+      // Combine with depth-weighted blending
+      float combined = n1 * 0.5 + n2 * 0.35 + n3 * 0.15;
+      combined = pow(combined, 1.6);
 
       vec3 color = mix(uColor1, uColor2, n2);
 
-      // Lit from below — bottom hemisphere glows, top stays dark
-      float bottomGlow = smoothstep(0.0, -0.5, dir.y);
-      float topFade = smoothstep(0.2, -0.1, dir.y);
+      // === Volcanic hemisphere glow ===
+      // Lit from below — bottom hemisphere glows warmly
+      float bottomGlow = smoothstep(0.1, -0.6, dir.y);
+      float topFade = smoothstep(0.3, -0.15, dir.y);
       float alpha = combined * uOpacity * topFade;
 
-      // Extra brightness near horizon (volcanic glow on haze)
-      float horizonBoost = exp(-abs(dir.y) * 4.0) * 0.4;
+      // Horizon boost — volcanic glow at eye level
+      float horizonBoost = exp(-abs(dir.y) * 3.5) * 0.5;
       alpha += horizonBoost * uOpacity;
 
-      // Add warm underglow
-      color = mix(color, vec3(0.4, 0.1, 0.0), bottomGlow * 0.5);
+      // Warm underglow
+      color = mix(color, vec3(0.5, 0.12, 0.0), bottomGlow * 0.6);
+
+      // === Lightning flashes ===
+      float flashCycle = mod(uTime / uLightningInterval, 1.0);
+      float flash = 0.0;
+      if (flashCycle < 0.03) {
+        // Sharp flash — quick bright pulse
+        flash = pow(1.0 - flashCycle / 0.03, 4.0) * uLightningIntensity;
+        // Localize to a random-ish area using noise seeded by flash index
+        float flashSeed = floor(uTime / uLightningInterval);
+        float flashNoise = snoise(dir * 2.0 + vec3(flashSeed * 73.7, flashSeed * 41.3, flashSeed * 97.1));
+        flash *= smoothstep(-0.2, 0.3, flashNoise);
+      } else if (flashCycle < 0.08) {
+        // Secondary afterglow — dimmer, broader
+        float afterglow = pow(1.0 - (flashCycle - 0.03) / 0.05, 2.0) * uLightningIntensity * 0.3;
+        float flashSeed = floor(uTime / uLightningInterval);
+        float flashNoise = snoise(dir * 1.5 + vec3(flashSeed * 73.7, flashSeed * 41.3, flashSeed * 97.1));
+        flash = afterglow * smoothstep(-0.3, 0.2, flashNoise);
+      }
+
+      color += uInnerGlowColor * flash;
+      alpha = clamp(alpha + flash * 0.3, 0.0, 1.0);
 
       gl_FragColor = vec4(color, alpha);
     }
@@ -119,6 +155,9 @@
         uOpacity: { value: config.opacity },
         uScale: { value: config.scale },
         uTime: { value: 0 },
+        uLightningInterval: { value: config.lightningInterval },
+        uLightningIntensity: { value: config.lightningIntensity },
+        uInnerGlowColor: { value: new Color(config.innerGlowColor) },
       },
       vertexShader,
       fragmentShader,
@@ -141,6 +180,9 @@
     material.uniforms.uColor2!.value = new Color(config.color2);
     material.uniforms.uOpacity!.value = config.opacity;
     material.uniforms.uScale!.value = config.scale;
+    material.uniforms.uLightningInterval!.value = config.lightningInterval;
+    material.uniforms.uLightningIntensity!.value = config.lightningIntensity;
+    material.uniforms.uInnerGlowColor!.value = new Color(config.innerGlowColor);
   });
 </script>
 
