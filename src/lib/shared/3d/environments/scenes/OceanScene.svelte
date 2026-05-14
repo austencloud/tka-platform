@@ -31,6 +31,7 @@
     MeshPhysicalMaterial,
     InstancedMesh,
     Object3D,
+    Vector3,
   } from "three";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
@@ -255,13 +256,20 @@
     rotY: number;
   }
 
+  const CORAL_GLB_NORMALIZE = [
+    0.5 / 821,
+    0.5 / 3995,
+    0.5 / 2597,
+    0.5 / 4769,
+  ];
+
   const CORAL_COLORS = [
-    { color: "#e06060", emissive: "#ff8888" },  // brain coral — warm red
-    { color: "#f0a050", emissive: "#ffcc88" },  // fan coral — orange
-    { color: "#d070d0", emissive: "#ff99ff" },  // tube coral — purple
-    { color: "#50c0a0", emissive: "#88ffcc" },  // brain coral — teal
-    { color: "#e0e060", emissive: "#ffff88" },  // fan coral — yellow
-    { color: "#6080e0", emissive: "#88aaff" },  // tube coral — blue
+    { color: "#e06060", emissive: "#ff8888" },
+    { color: "#f0a050", emissive: "#ffcc88" },
+    { color: "#d070d0", emissive: "#ff99ff" },
+    { color: "#50c0a0", emissive: "#88ffcc" },
+    { color: "#e0e060", emissive: "#ffff88" },
+    { color: "#6080e0", emissive: "#88aaff" },
   ];
 
   const coralInstances = $derived.by(() => {
@@ -481,8 +489,8 @@
     const count = ($fishClown && $fishButterfly && $fishCommon) ? GLB_FISH_COUNT : FISH_COUNT;
     return Array.from({ length: count }, (_, i) => ({
       angle: (i / count) * Math.PI * 2,
-      radius: 4 + Math.random() * 8,
-      height: 1.5 + Math.random() * 4,
+      radius: 8 + Math.random() * 6,
+      height: 2.5 + Math.random() * 3,
       speed: 0.3 + Math.random() * 0.5,
       phase: Math.random() * Math.PI * 2,
     }));
@@ -698,6 +706,26 @@
 
   $effect(() => {
     if (!scene.current) return;
+
+    // DEBUG: log all meshes > 1 unit — remove after diagnosis
+    const s = scene.current;
+    s.traverse((obj) => {
+      const m = obj as Mesh;
+      if (!m.isMesh || !m.geometry) return;
+      m.geometry.computeBoundingBox();
+      const bb = m.geometry.boundingBox;
+      if (!bb) return;
+      const ws = m.getWorldScale(new Vector3());
+      const sz = new Vector3();
+      bb.getSize(sz);
+      sz.multiply(ws);
+      const maxDim = Math.max(sz.x, sz.y, sz.z);
+      if (maxDim > 1) {
+        const wp = m.getWorldPosition(new Vector3());
+        console.warn(`[OceanDebug] BIG MESH: "${m.name || m.parent?.name || '?'}" maxDim=${maxDim.toFixed(2)} size=[${sz.x.toFixed(2)},${sz.y.toFixed(2)},${sz.z.toFixed(2)}] pos=[${wp.x.toFixed(1)},${wp.y.toFixed(1)},${wp.z.toFixed(1)}] ws=[${ws.x.toFixed(4)},${ws.y.toFixed(4)},${ws.z.toFixed(4)}]`);
+      }
+    });
+
     const fog = activeConfig.fog;
     scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
     return () => {
@@ -778,13 +806,14 @@
   {#if $coralGlb0 && $coralGlb1 && $coralGlb2 && $coralGlb3}
     {#each coralPlacements as placement, i}
       {@const coralModels = [$coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3]}
-      {@const source = coralModels[i % coralModels.length]!}
+      {@const modelIdx = i % coralModels.length}
+      {@const source = coralModels[modelIdx]!}
       <T
         is={underwaterClone(source.scene, activeConfig.coral.glowColor, activeConfig.coral.glowBlend)}
         position.x={placement.x}
         position.y={groundY}
         position.z={placement.z}
-        scale={placement.scale * 0.5}
+        scale={placement.scale * CORAL_GLB_NORMALIZE[modelIdx]!}
         rotation.y={placement.rotY}
       />
     {/each}
@@ -866,7 +895,7 @@
       position.y={fish.y}
       position.z={fish.z}
       rotation.y={fish.rotY}
-      scale={0.3}
+      scale={0.015}
     />
   {/each}
 {:else}
@@ -887,7 +916,7 @@
         position.y={groundY + jf.y + offset.dy}
         position.z={jf.z + offset.dz}
       >
-        <T is={$jellyfishGlb.scene.clone()} scale={0.4} />
+        <T is={$jellyfishGlb.scene.clone()} scale={0.06} />
         <T.PointLight
           color={activeConfig.jellyfish.glowColor}
           intensity={activeConfig.jellyfish.lightIntensity * (0.7 + 0.3 * Math.sin(jellyfishTime * activeConfig.jellyfish.pulseRate * Math.PI * 2 + i * 1.7))}
