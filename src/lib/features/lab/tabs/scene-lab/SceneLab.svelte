@@ -91,7 +91,7 @@
           <CosmicControls variant="aurora" />
         {:else if sceneState.sceneId.startsWith("ocean")}
           <OceanControls />
-        {:else}
+        {:else if sceneState.sceneId.startsWith("forest")}
           <ForestControls />
         {/if}
       </div>

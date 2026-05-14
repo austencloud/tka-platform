@@ -20,7 +20,6 @@
   import {
     type ForestSceneConfig,
     createDefaultForestFireflyConfig,
-    createDefaultForestAutumnConfig,
   } from "../domain/models/scene-configs";
   import { onMount } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
@@ -35,14 +34,10 @@
     config?: ForestSceneConfig;
   }
 
-  let { variant = "autumn", config }: Props = $props();
+  let { variant = "firefly", config }: Props = $props();
 
-  // When no explicit config, fall back to the variant's baked defaults.
   const activeConfig = $derived(
-    config ??
-      (variant === "firefly"
-        ? createDefaultForestFireflyConfig()
-        : createDefaultForestAutumnConfig())
+    config ?? createDefaultForestFireflyConfig()
   );
 
   /** R2 CDN base URL for large assets */

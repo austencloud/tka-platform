@@ -13,16 +13,10 @@
 
   const { state } = getSceneLabContext();
 
-  const cfg = $derived(
-    state.sceneId === "forest-firefly"
-      ? state.forestFireflyConfig
-      : state.forestAutumnConfig
-  );
+  const cfg = $derived(state.forestFireflyConfig);
 
   function mutable() {
-    return state.sceneId === "forest-firefly"
-      ? state.forestFireflyConfig
-      : state.forestAutumnConfig;
+    return state.forestFireflyConfig;
   }
 </script>
 

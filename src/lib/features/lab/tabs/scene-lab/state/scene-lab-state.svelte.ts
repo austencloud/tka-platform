@@ -8,10 +8,11 @@
 
 import {
   type ForestSceneConfig,
+  type AutumnSceneConfig,
   type WinterSceneConfig,
   type CosmicSceneConfig,
   type OceanSceneConfig,
-  createDefaultForestAutumnConfig,
+  createDefaultAutumnConfig,
   createDefaultForestFireflyConfig,
   createDefaultWinterConfig,
   createDefaultCosmicNightConfig,
@@ -27,8 +28,8 @@ export function createSceneLabState() {
   let forestFireflyConfig = $state<ForestSceneConfig>(
     createDefaultForestFireflyConfig()
   );
-  let forestAutumnConfig = $state<ForestSceneConfig>(
-    createDefaultForestAutumnConfig()
+  let forestAutumnConfig = $state<AutumnSceneConfig>(
+    createDefaultAutumnConfig()
   );
   let cosmicNightConfig = $state<CosmicSceneConfig>(
     createDefaultCosmicNightConfig()
@@ -44,7 +45,7 @@ export function createSceneLabState() {
     else if (sceneId === "forest-firefly")
       forestFireflyConfig = createDefaultForestFireflyConfig();
     else if (sceneId === "forest-autumn")
-      forestAutumnConfig = createDefaultForestAutumnConfig();
+      forestAutumnConfig = createDefaultAutumnConfig();
     else if (sceneId === "cosmic-night")
       cosmicNightConfig = createDefaultCosmicNightConfig();
     else if (sceneId === "cosmic-aurora")
@@ -72,7 +73,7 @@ export function createSceneLabState() {
       case "forest-firefly":
         return "createDefaultForestFireflyConfig";
       case "forest-autumn":
-        return "createDefaultForestAutumnConfig";
+        return "createDefaultAutumnConfig";
       case "cosmic-night":
         return "createDefaultCosmicNightConfig";
       case "cosmic-aurora":
@@ -86,7 +87,8 @@ export function createSceneLabState() {
 
   function currentConfigTypeName(): string {
     if (sceneId === "winter") return "WinterSceneConfig";
-    if (sceneId.startsWith("forest")) return "ForestSceneConfig";
+    if (sceneId === "forest-firefly") return "ForestSceneConfig";
+    if (sceneId === "forest-autumn") return "AutumnSceneConfig";
     if (sceneId.startsWith("ocean")) return "OceanSceneConfig";
     return "CosmicSceneConfig";
   }

@@ -111,6 +111,55 @@ export interface ForestSceneConfig {
 }
 
 // ============================================================================
+// Autumn scene (standalone — replaces the ForestScene "autumn" variant)
+// ============================================================================
+
+export interface AutumnStreamConfig {
+  enabled: boolean;
+  color: string;
+  width: number;
+}
+
+export interface AutumnMushroomConfig {
+  enabled: boolean;
+  count: number;
+  ringRadius: number;
+  capColors: string[];
+  stemColor: string;
+  glowColor: string;
+  glowIntensity: number;
+}
+
+export interface AutumnMistConfig {
+  enabled: boolean;
+  count: number;
+  area: number;
+  color: string;
+  opacity: number;
+  speed: number;
+}
+
+export interface AutumnSceneConfig {
+  sky: SkyGradientConfig;
+  fog: FogConfig;
+  ground: GroundConfig;
+  leaves: FallingParticlesConfig;
+  distantLeaves: FallingParticlesConfig | null;
+  treeRings: TreeRingConfig[];
+  clearingRadius: number;
+  stream: AutumnStreamConfig;
+  mushrooms: AutumnMushroomConfig;
+  mist: AutumnMistConfig;
+  sunLight: {
+    enabled: boolean;
+    color: string;
+    intensity: number;
+    position: [number, number, number];
+  } | null;
+  hemisphereLight: HemisphereLightConfig;
+}
+
+// ============================================================================
 // Winter scene
 // ============================================================================
 
@@ -295,6 +344,41 @@ export interface MeteorStreaksConfig {
   trailLength: number;
 }
 
+export interface LunarCrystalsConfig {
+  enabled: boolean;
+  clusterCount: number;
+  ringRadius: number;
+  color: string;
+  glowColor: string;
+  glowIntensity: number;
+  heightRange: [number, number];
+  opacity: number;
+}
+
+export interface EarthGodRaysConfig {
+  enabled: boolean;
+  color: string;
+  intensity: number;
+  count: number;
+  speed: number;
+}
+
+export interface LunarGroundConfig {
+  enabled: boolean;
+  veinColor: string;
+  veinIntensity: number;
+  veinPulseSpeed: number;
+  veinDensity: number;
+}
+
+export interface StarfieldConfig {
+  enabled: boolean;
+  count: number;
+  radius: number;
+  sizeRange: [number, number];
+  twinkleSpeed: number;
+}
+
 export interface CosmicSceneConfig {
   sky: SkyGradientConfig;
   fog: FogConfig;
@@ -329,6 +413,10 @@ export interface CosmicSceneConfig {
       pulseSpeed: number;
     };
   };
+  crystals: LunarCrystalsConfig;
+  godRays: EarthGodRaysConfig;
+  lunarGround: LunarGroundConfig;
+  starfield: StarfieldConfig;
 }
 
 // ============================================================================
@@ -473,6 +561,84 @@ export function createDefaultForestAutumnConfig(): ForestSceneConfig {
       skyColor: "#ff8844",
       groundColor: "#221100",
       intensity: 0.4,
+    },
+  };
+}
+
+// ----- Autumn (standalone scene) -----
+
+const AUTUMN_TREE_RINGS: TreeRingConfig[] = [
+  { radius: 10, count: 8, scaleBase: 1.2, scaleVariation: 0.3, radiusJitter: 1.0 },
+  { radius: 14, count: 14, scaleBase: 1.0, scaleVariation: 0.25, radiusJitter: 1.5 },
+  { radius: 18, count: 20, scaleBase: 0.85, scaleVariation: 0.2, radiusJitter: 1.75 },
+  { radius: 23, count: 28, scaleBase: 0.7, scaleVariation: 0.2, radiusJitter: 2.0 },
+];
+
+export function createDefaultAutumnConfig(): AutumnSceneConfig {
+  return {
+    sky: {
+      topColor: "#1a0f30",
+      midColor: "#c45a2a",
+      bottomColor: "#d4903a",
+    },
+    fog: { color: "#1a1008", density: 0.022 },
+    ground: {
+      color: "#2a1f15",
+      size: 50,
+      textured: false,
+    },
+    leaves: {
+      type: "leaves",
+      count: 300,
+      area: { width: 30, height: 6, depth: 30 },
+      speed: 0.1,
+      colors: ["#d4a030", "#d97706", "#c2410c", "#b91c1c", "#92400e"],
+      sizeRange: [0.1, 0.25],
+      spin: true,
+    },
+    distantLeaves: {
+      type: "leaves",
+      count: 120,
+      area: { width: 50, height: 8, depth: 50 },
+      speed: 0.06,
+      colors: ["#d4a030", "#d97706", "#c2410c", "#7c2d12"],
+      sizeRange: [0.05, 0.12],
+      spin: true,
+    },
+    treeRings: AUTUMN_TREE_RINGS,
+    clearingRadius: 10,
+    stream: {
+      enabled: true,
+      color: "#1a3a4a",
+      width: 1.8,
+    },
+    mushrooms: {
+      enabled: true,
+      count: 8,
+      ringRadius: 7,
+      capColors: ["#b5651d", "#8b4513", "#cd853f", "#a0522d"],
+      stemColor: "#e8dcc8",
+      glowColor: "#d4a040",
+      glowIntensity: 0.15,
+    },
+    mist: {
+      enabled: true,
+      count: 25,
+      area: 30,
+      color: "#c8b8a0",
+      opacity: 0.06,
+      speed: 0.15,
+    },
+    sunLight: {
+      enabled: true,
+      color: "#ffb060",
+      intensity: 0.8,
+      position: [-20, 8, -15],
+    },
+    hemisphereLight: {
+      skyColor: "#ff9944",
+      groundColor: "#331a08",
+      intensity: 0.5,
     },
   };
 }
@@ -814,12 +980,12 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
       rotationSpeed: 0.02,
     },
     nebula: {
-      enabled: false,
-      color1: "#000000",
-      color2: "#000000",
-      opacity: 0,
-      scale: 1,
-      animationSpeed: 0,
+      enabled: true,
+      color1: "#1a1040",
+      color2: "#2a1555",
+      opacity: 0.15,
+      scale: 2.5,
+      animationSpeed: 0.08,
     },
     particles: {
       starDrift: {
@@ -883,6 +1049,37 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
         intensity: 0.4,
         pulseSpeed: 0.5,
       },
+    },
+    crystals: {
+      enabled: true,
+      clusterCount: 8,
+      ringRadius: 6.5,
+      color: "#334466",
+      glowColor: "#4488ff",
+      glowIntensity: 0.8,
+      heightRange: [0.8, 2.5],
+      opacity: 0.6,
+    },
+    godRays: {
+      enabled: true,
+      color: "#4488ff",
+      intensity: 0.15,
+      count: 5,
+      speed: 0.3,
+    },
+    lunarGround: {
+      enabled: true,
+      veinColor: "#4488ff",
+      veinIntensity: 0.4,
+      veinPulseSpeed: 0.5,
+      veinDensity: 3.0,
+    },
+    starfield: {
+      enabled: true,
+      count: 1500,
+      radius: 75,
+      sizeRange: [0.5, 3.0],
+      twinkleSpeed: 0.8,
     },
   };
 }
@@ -1078,6 +1275,37 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
         pulseSpeed: 0.4,
       },
     },
+    crystals: {
+      enabled: true,
+      clusterCount: 10,
+      ringRadius: 6.5,
+      color: "#2a4455",
+      glowColor: "#00ccaa",
+      glowIntensity: 1.0,
+      heightRange: [1.0, 3.0],
+      opacity: 0.55,
+    },
+    godRays: {
+      enabled: true,
+      color: "#44ddcc",
+      intensity: 0.12,
+      count: 4,
+      speed: 0.25,
+    },
+    lunarGround: {
+      enabled: true,
+      veinColor: "#00ccaa",
+      veinIntensity: 0.5,
+      veinPulseSpeed: 0.4,
+      veinDensity: 2.5,
+    },
+    starfield: {
+      enabled: true,
+      count: 1500,
+      radius: 75,
+      sizeRange: [0.5, 3.0],
+      twinkleSpeed: 0.6,
+    },
   };
 }
 
@@ -1096,6 +1324,9 @@ export interface LavaPoolConfig {
   lightIntensity: number;
   lightDistance: number;
   pulseSpeed: number;
+  warpIntensity: number;
+  craterDepth?: number;
+  craterWallColor?: string;
 }
 
 export interface LavaCracksConfig {
@@ -1104,6 +1335,26 @@ export interface LavaCracksConfig {
   intensity: number;
   speed: number;
   scale: number;
+  pulseSpeed: number;
+  pulseIntensity: number;
+}
+
+export interface LavaRiverChannelConfig {
+  angle: number;
+  length: number;
+  curvature: number;
+  widthScale: number;
+}
+
+export interface LavaRiversConfig {
+  enabled: boolean;
+  channels: LavaRiverChannelConfig[];
+  baseColor: string;
+  hotColor: string;
+  crustColor: string;
+  flowSpeed: number;
+  width: number;
+  warpIntensity: number;
 }
 
 export interface ObsidianPillarsConfig {
@@ -1114,6 +1365,8 @@ export interface ObsidianPillarsConfig {
   veinIntensity: number;
   baseColor: string;
   heightRange: [number, number];
+  pulseSpeed: number;
+  pulseColor: string;
 }
 
 export interface FireWispsConfig {
@@ -1136,6 +1389,9 @@ export interface EmberFountainsConfig {
   sizeRange: [number, number];
   spawnRadius: number;
   maxHeight: number;
+  gravity: number;
+  burstInterval: number;
+  burstCount: number;
 }
 
 export interface VolcanicHazeConfig {
@@ -1145,6 +1401,9 @@ export interface VolcanicHazeConfig {
   opacity: number;
   scale: number;
   animationSpeed: number;
+  lightningInterval: number;
+  lightningIntensity: number;
+  innerGlowColor: string;
 }
 
 export interface EmberSceneConfig {
@@ -1154,6 +1413,7 @@ export interface EmberSceneConfig {
 
   lavaCracks: LavaCracksConfig;
   lavaPool: LavaPoolConfig;
+  lavaRivers: LavaRiversConfig | null;
   obsidianPillars: ObsidianPillarsConfig;
 
   fireVent: CampfireConfig | null;
@@ -1182,9 +1442,8 @@ export interface EmberSceneConfig {
 }
 
 const EMBER_PILLAR_RINGS: TreeRingConfig[] = [
-  { radius: 10, count: 6, scaleBase: 1.0, scaleVariation: 0.3, radiusJitter: 1.0 },
-  { radius: 15, count: 10, scaleBase: 0.8, scaleVariation: 0.25, radiusJitter: 1.5 },
-  { radius: 20, count: 14, scaleBase: 0.6, scaleVariation: 0.2, radiusJitter: 2.0 },
+  { radius: 8, count: 5, scaleBase: 1.2, scaleVariation: 0.3, radiusJitter: 0.8 },
+  { radius: 14, count: 8, scaleBase: 0.9, scaleVariation: 0.25, radiusJitter: 1.2 },
 ];
 
 export function createDefaultEmberGlowConfig(): EmberSceneConfig {
@@ -1207,70 +1466,59 @@ export function createDefaultEmberGlowConfig(): EmberSceneConfig {
       intensity: 0.35,
       speed: 0.015,
       scale: 3.0,
+      pulseSpeed: 0.4,
+      pulseIntensity: 0.6,
     },
     lavaPool: {
-      enabled: true,
+      enabled: false,
       position: { x: -5, z: 4.5 },
-      radius: 3.5,
+      radius: 5.0,
       baseColor: "#cc2200",
       hotColor: "#ff6600",
-      crustColor: "#1a0a08",
+      crustColor: "#3a1208",
       flowSpeed: 0.08,
-      lightIntensity: 40,
-      lightDistance: 18,
+      lightIntensity: 50,
+      lightDistance: 22,
       pulseSpeed: 0.3,
+      warpIntensity: 4.0,
+      craterDepth: 0.6,
+      craterWallColor: "#1a0806",
     },
+    lavaRivers: null,
     obsidianPillars: {
       enabled: true,
       rings: EMBER_PILLAR_RINGS,
-      clearingRadius: 10,
+      clearingRadius: 8,
       veinColor: "#ff4400",
       veinIntensity: 0.6,
       baseColor: "#0a0808",
-      heightRange: [1.5, 4.5],
+      heightRange: [2.0, 6.0],
+      pulseSpeed: 0.8,
+      pulseColor: "#ff6600",
     },
-    fireVent: {
-      enabled: true,
-      position: { x: 5.5, z: -3.5 },
-      modelScale: 2.5,
-      fireScale: 1.2,
-      fireHeight: 2.5,
-      primaryLight: {
-        color: "#ff4400",
-        intensity: 60,
-        distance: 22,
-        decay: 1.2,
-        heightOffset: 1.8,
-      },
-      fillLight: {
-        color: "#ff6622",
-        intensity: 35,
-        distance: 15,
-        decay: 1.5,
-        heightOffset: 0.3,
-      },
-      smokeColors: ["#1a0a0a", "#110808", "#0a0505"],
-      smokeCount: 50,
-    },
+    fireVent: null,
     fireWisps: {
       enabled: true,
-      count: 5,
-      spawnRadius: 8,
-      heightRange: [1.0, 4.0],
+      count: 3,
+      spawnRadius: 7,
+      heightRange: [1.5, 4.5],
       driftSpeed: 0.25,
       pulseSpeed: 0.8,
-      colors: ["#ff6600", "#ff4400", "#ffaa00", "#ff8800"],
+      colors: ["#ff6600", "#ff4400", "#ffaa00"],
       lightIntensity: 12,
       lightDistance: 6,
     },
     emberFountains: {
-      enabled: true,
+      enabled: false,
       count: 40,
-      riseSpeed: 0.5,
+      riseSpeed: 0.6,
       colors: ["#ff4400", "#ff6600", "#ffaa00", "#ff2200"],
       sizeRange: [0.03, 0.08],
       spawnRadius: 3,
       maxHeight: 8,
+      gravity: 0.3,
+      burstInterval: 3.5,
+      burstCount: 12,
     },
     volcanicHaze: {
       enabled: true,
@@ -1279,6 +1527,9 @@ export function createDefaultEmberGlowConfig(): EmberSceneConfig {
       opacity: 0.12,
       scale: 2.0,
       animationSpeed: 0.01,
+      lightningInterval: 6.0,
+      lightningIntensity: 0.8,
+      innerGlowColor: "#ff4400",
     },
     embers: {
       type: "embers",
@@ -1301,23 +1552,15 @@ export function createDefaultEmberGlowConfig(): EmberSceneConfig {
     smoke: {
       type: "smoke",
       count: 40,
-      area: { width: 6, height: 5, depth: 6 },
+      area: { width: 8, height: 5, depth: 8 },
       speed: 0.03,
       colors: ["#1a0a0a", "#110808", "#0a0505", "#220e0e"],
       sizeRange: [0.15, 0.5],
       spin: false,
     },
-    cinders: {
-      type: "fireflies",
-      count: 30,
-      area: { width: 10, height: 3, depth: 10 },
-      speed: 0.008,
-      colors: ["#ff6600", "#ff4400", "#ffaa00"],
-      sizeRange: [0.12, 0.28],
-      spin: false,
-    },
-    rockCount: 12,
-    clearingRadius: 12,
+    cinders: null,
+    rockCount: 8,
+    clearingRadius: 10,
     rockTintColor: "#1a0a08",
     rockTintBlend: 0.4,
     hemisphereLight: {
@@ -1337,9 +1580,10 @@ export function createDefaultEmberGlowConfig(): EmberSceneConfig {
 // ----- Cherry Blossom -----
 
 const CHERRY_BLOSSOM_TREE_RINGS: TreeRingConfig[] = [
-  { radius: 8, count: 6, scaleBase: 1.5, scaleVariation: 0.35, radiusJitter: 0.8 },
-  { radius: 12, count: 10, scaleBase: 1.2, scaleVariation: 0.3, radiusJitter: 1.2 },
-  { radius: 17, count: 16, scaleBase: 1.0, scaleVariation: 0.25, radiusJitter: 1.5 },
+  { radius: 8, count: 5, scaleBase: 1.5, scaleVariation: 0.35, radiusJitter: 0.8 },
+  { radius: 13, count: 8, scaleBase: 1.3, scaleVariation: 0.3, radiusJitter: 1.2 },
+  { radius: 19, count: 12, scaleBase: 1.1, scaleVariation: 0.25, radiusJitter: 1.5 },
+  { radius: 28, count: 14, scaleBase: 2.0, scaleVariation: 0.4, radiusJitter: 2.5 },
 ];
 
 export function createDefaultCherryBlossomConfig(): CherryBlossomSceneConfig {
@@ -1358,7 +1602,7 @@ export function createDefaultCherryBlossomConfig(): CherryBlossomSceneConfig {
     },
     petals: {
       type: "petals",
-      count: 200,
+      count: 120,
       area: { width: 18, height: 5, depth: 18 },
       speed: 0.07,
       colors: ["#ffb7c5", "#ffc0cb", "#ff69b4", "#fff0f5"],
@@ -1367,7 +1611,7 @@ export function createDefaultCherryBlossomConfig(): CherryBlossomSceneConfig {
     },
     distantPetals: {
       type: "petals",
-      count: 120,
+      count: 60,
       area: { width: 40, height: 8, depth: 40 },
       speed: 0.035,
       colors: ["#e8a0b0", "#d090a0", "#c08090", "#f0c0d0"],
@@ -1376,7 +1620,7 @@ export function createDefaultCherryBlossomConfig(): CherryBlossomSceneConfig {
     },
     fireflies: {
       type: "fireflies",
-      count: 30,
+      count: 20,
       area: { width: 10, height: 3, depth: 10 },
       speed: 0.004,
       colors: ["#ffddaa"],
@@ -1394,7 +1638,13 @@ export function createDefaultCherryBlossomConfig(): CherryBlossomSceneConfig {
       color: "#d4a0b8",
       roughness: 0.1,
     },
-    steppingStones: [],
+    steppingStones: [
+      { x: -1.5, z: 1.0, radius: 0.2, rotationY: 0.3 },
+      { x: -2.2, z: 1.8, radius: 0.22, rotationY: -0.2 },
+      { x: -2.8, z: 2.7, radius: 0.18, rotationY: 0.5 },
+      { x: -3.5, z: 3.3, radius: 0.2, rotationY: -0.1 },
+      { x: -4.2, z: 3.8, radius: 0.19, rotationY: 0.4 },
+    ],
     lanterns: [
       { position: { x: 4, z: 5 }, scale: 0.9, lightColor: "#ffaa66", lightIntensity: 10, lightDistance: 8 },
       { position: { x: -4, z: -5 }, scale: 0.85, lightColor: "#ffaa66", lightIntensity: 10, lightDistance: 8 },
@@ -1424,6 +1674,178 @@ export function createDefaultCherryBlossomConfig(): CherryBlossomSceneConfig {
       color: "#c0b0e0",
       intensity: 0.5,
       position: [-15, 20, 10],
+    },
+  };
+}
+
+// ============================================================================
+// Celestial scene
+// ============================================================================
+
+export interface CloudDomeConfig {
+  enabled: boolean;
+  density: number;
+  coverage: number;
+  driftSpeed: number;
+  sunDirection: [number, number, number];
+  litColor: string;
+  shadowColor: string;
+  opacity: number;
+}
+
+export interface CelestialGodRaysConfig {
+  enabled: boolean;
+  color: string;
+  intensity: number;
+  count: number;
+  speed: number;
+}
+
+export interface CloudPlatformConfig {
+  enabled: boolean;
+  radius: number;
+  glowColor: string;
+  glowIntensity: number;
+  noiseScale: number;
+  driftSpeed: number;
+}
+
+export interface CloudIslandsConfig {
+  enabled: boolean;
+  count: number;
+  driftSpeed: number;
+  bobSpeed: number;
+  heightRange: [number, number];
+  spawnRadius: number;
+  sizeRange: [number, number];
+  color: string;
+}
+
+export interface CelestialPillarsConfig {
+  enabled: boolean;
+  rings: TreeRingConfig[];
+  clearingRadius: number;
+  glowColor: string;
+  glowIntensity: number;
+  baseColor: string;
+  heightRange: [number, number];
+}
+
+export interface CelestialSceneConfig {
+  sky: SkyGradientConfig;
+  fog: FogConfig;
+  ground: GroundConfig;
+
+  cloudDome: CloudDomeConfig;
+  godRays: CelestialGodRaysConfig;
+  cloudPlatform: CloudPlatformConfig;
+  cloudIslands: CloudIslandsConfig;
+  celestialPillars: CelestialPillarsConfig;
+
+  motes: FallingParticlesConfig;
+  wisps: FallingParticlesConfig | null;
+
+  hemisphereLight: HemisphereLightConfig;
+
+  sunLight: {
+    enabled: boolean;
+    color: string;
+    intensity: number;
+    position: [number, number, number];
+  } | null;
+}
+
+const CELESTIAL_PILLAR_RINGS: TreeRingConfig[] = [
+  { radius: 10, count: 5, scaleBase: 1.0, scaleVariation: 0.3, radiusJitter: 1.0 },
+  { radius: 16, count: 8, scaleBase: 0.7, scaleVariation: 0.2, radiusJitter: 1.5 },
+];
+
+export function createDefaultCelestialConfig(): CelestialSceneConfig {
+  return {
+    sky: {
+      topColor: "#0a1a4a",
+      midColor: "#b89050",
+      bottomColor: "#e8dcc8",
+    },
+    fog: { color: "#c8bca8", density: 0.012 },
+    ground: {
+      color: "#e8dcc8",
+      size: 50,
+      textured: false,
+      opacity: 0.3,
+    },
+    cloudDome: {
+      enabled: true,
+      density: 0.6,
+      coverage: 0.4,
+      driftSpeed: 0.02,
+      sunDirection: [0.5, 0.8, 0.3],
+      litColor: "#ffffff",
+      shadowColor: "#8090c0",
+      opacity: 0.85,
+    },
+    godRays: {
+      enabled: true,
+      color: "#ffcc66",
+      intensity: 0.35,
+      count: 5,
+      speed: 0.008,
+    },
+    cloudPlatform: {
+      enabled: true,
+      radius: 6,
+      glowColor: "#d4a050",
+      glowIntensity: 0.6,
+      noiseScale: 2.0,
+      driftSpeed: 0.015,
+    },
+    cloudIslands: {
+      enabled: true,
+      count: 5,
+      driftSpeed: 0.1,
+      bobSpeed: 0.3,
+      heightRange: [4, 12],
+      spawnRadius: 15,
+      sizeRange: [1.5, 3.5],
+      color: "#f0e8e0",
+    },
+    celestialPillars: {
+      enabled: true,
+      rings: CELESTIAL_PILLAR_RINGS,
+      clearingRadius: 10,
+      glowColor: "#ffd080",
+      glowIntensity: 0.8,
+      baseColor: "#e8e0d8",
+      heightRange: [2.0, 5.0],
+    },
+    motes: {
+      type: "fireflies",
+      count: 60,
+      area: { width: 12, height: 6, depth: 12 },
+      speed: 0.008,
+      colors: ["#ffd080", "#ffffff", "#d0e8ff", "#ffe0a0"],
+      sizeRange: [0.1, 0.25],
+      spin: false,
+    },
+    wisps: {
+      type: "smoke",
+      count: 50,
+      area: { width: 15, height: 2, depth: 15 },
+      speed: 0.015,
+      colors: ["#ffffff", "#f0e8d8", "#e0d8c8", "#d8d0c0"],
+      sizeRange: [0.2, 0.6],
+      spin: false,
+    },
+    hemisphereLight: {
+      skyColor: "#ffe0a0",
+      groundColor: "#8090c0",
+      intensity: 0.9,
+    },
+    sunLight: {
+      enabled: true,
+      color: "#ffd080",
+      intensity: 1.2,
+      position: [-10, 25, 15],
     },
   };
 }

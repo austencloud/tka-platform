@@ -18,6 +18,7 @@ const BACKGROUND_GRADIENTS: Record<string, string> = {
   cherryBlossom: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
   fireflyForest: "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
   autumnDrift: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
+  celestial: "linear-gradient(135deg, #0a1a4a 0%, #b89050 40%, #e8dcc8 100%)",
   solidColor: "",
   linearGradient: "",
 };
@@ -31,6 +32,7 @@ const BACKGROUND_ANIMATIONS: Record<string, string> = {
   cherryBlossom: "cherry-blossom",
   fireflyForest: "firefly-forest",
   autumnDrift: "autumn-drift",
+  celestial: "",
   solidColor: "",
   linearGradient: "",
 };

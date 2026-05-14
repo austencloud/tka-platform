@@ -19,6 +19,7 @@
   import type CameraControls from "camera-controls";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
+  import AutumnScene from "$lib/shared/3d/environments/scenes/AutumnScene.svelte";
   import WinterScene from "$lib/shared/3d/environments/scenes/WinterScene.svelte";
   import CosmicScene from "$lib/shared/3d/environments/scenes/CosmicScene.svelte";
   import OceanScene from "$lib/shared/3d/environments/scenes/OceanScene.svelte";
@@ -221,7 +222,7 @@
       {:else if labState.sceneId === "forest-firefly"}
         <ForestScene variant="firefly" config={labState.forestFireflyConfig} />
       {:else if labState.sceneId === "forest-autumn"}
-        <ForestScene variant="autumn" config={labState.forestAutumnConfig} />
+        <AutumnScene config={labState.forestAutumnConfig} />
       {:else if labState.sceneId === "cosmic-night"}
         <CosmicScene variant="night" config={labState.cosmicNightConfig} />
       {:else if labState.sceneId === "cosmic-aurora"}

@@ -10,7 +10,7 @@
 /**
  * Forest scene color variants
  */
-export type ForestVariant = "autumn" | "firefly";
+export type ForestVariant = "firefly";
 
 /**
  * Cosmic scene color variants

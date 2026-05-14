@@ -159,6 +159,7 @@ export const THEME_TO_FAMILY: Record<BackgroundType, string> = {
   [BackgroundType.AUTUMN_DRIFT]: "warm",
   [BackgroundType.SOLID_COLOR]: "dark",
   [BackgroundType.LINEAR_GRADIENT]: "vibrant",
+  [BackgroundType.CELESTIAL]: "warm",
 };
 
 export const THEME_TO_GRADIENT: Record<BackgroundType, string> = {
@@ -172,6 +173,7 @@ export const THEME_TO_GRADIENT: Record<BackgroundType, string> = {
   [BackgroundType.AUTUMN_DRIFT]: "autumn",
   [BackgroundType.SOLID_COLOR]: "void",
   [BackgroundType.LINEAR_GRADIENT]: "cosmic",
+  [BackgroundType.CELESTIAL]: "celestial",
 };
 
 export function getGradientsByFamily(familyId: string): GradientOption[] {

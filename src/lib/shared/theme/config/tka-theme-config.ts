@@ -34,6 +34,7 @@ const BACKGROUND_THEME_COLORS: Record<BackgroundType, string[]> = {
   // Solid/gradient: dark backgrounds but vibrant indigo accent for visibility
   [BackgroundType.SOLID_COLOR]: ["#18181b", "#6366f1", "#818cf8"],
   [BackgroundType.LINEAR_GRADIENT]: ["#0d1117", "#6366f1", "#a78bfa"],
+  [BackgroundType.CELESTIAL]: ["#0a1a4a", "#b89050", "#ffd080", "#ffe0a0"],
 };
 
 /**

@@ -21,6 +21,7 @@ export const ANIMATED_BACKGROUNDS = [
   { type: BackgroundType.FIREFLY_FOREST, icon: "fa-tree", label: "Firefly Forest" },
   { type: BackgroundType.AUTUMN_DRIFT, icon: "fa-leaf", label: "Autumn" },
   { type: BackgroundType.PRIDE, icon: "fa-rainbow", label: "Pride" },
+  { type: BackgroundType.CELESTIAL, icon: "fa-cloud-sun", label: "Celestial" },
 ] as const;
 
 export type AnimatedBackground = (typeof ANIMATED_BACKGROUNDS)[number];
