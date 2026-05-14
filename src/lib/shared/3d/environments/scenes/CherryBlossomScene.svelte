@@ -1,7 +1,6 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
-  import { useGltf } from "@threlte/extras";
-  import { onMount, untrack } from "svelte";
+  import { untrack } from "svelte";
   import {
     FogExp2,
     Color,
@@ -10,11 +9,14 @@
     type Material,
   } from "three";
   import { Reflector } from "three/examples/jsm/objects/Reflector.js";
-  import GroundPlane from "../primitives/GroundPlane.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import ProceduralCherryTree from "./cherry-blossom/ProceduralCherryTree.svelte";
+  import ProceduralGround from "./cherry-blossom/ProceduralGround.svelte";
   import StoneLantern from "./cherry-blossom/StoneLantern.svelte";
+  import WoodenBridge from "./cherry-blossom/WoodenBridge.svelte";
+  import GrassTufts from "./cherry-blossom/GrassTufts.svelte";
+  import LilyPads from "./cherry-blossom/LilyPads.svelte";
   import {
     type CherryBlossomSceneConfig,
     createDefaultCherryBlossomConfig,
@@ -163,10 +165,9 @@
   bottomColor={activeConfig.sky.bottomColor}
 />
 
-<GroundPlane
-  color={activeConfig.ground.color}
+<ProceduralGround
   size={activeConfig.ground.size}
-  opacity={activeConfig.ground.opacity ?? 1}
+  baseColor={activeConfig.ground.color}
 />
 
 <!-- Fallen petal layer — subtle pink wash over the ground -->
@@ -259,6 +260,37 @@
     lightDistance={lantern.lightDistance}
   />
 {/each}
+
+<!-- Stepping stones — flat discs along a path -->
+{#each activeConfig.steppingStones as stone}
+  <T.Group position.x={stone.x} position.y={groundY + 0.02} position.z={stone.z}>
+    <T.Mesh rotation.y={stone.rotationY}>
+      <T.CylinderGeometry args={[stone.radius, stone.radius, 0.03, 8]} />
+      <T.MeshStandardMaterial color="#3a3530" roughness={0.95} />
+    </T.Mesh>
+  </T.Group>
+{/each}
+
+<!-- Arched wooden bridge spanning across the pond -->
+{#if activeConfig.pond?.enabled}
+  <WoodenBridge
+    position={activeConfig.pond.position}
+    rotationY={Math.PI * 0.3}
+    scale={0.9}
+    length={activeConfig.pond.radius * 1.8}
+  />
+{/if}
+
+<!-- Lily pads on the pond surface -->
+{#if activeConfig.pond?.enabled}
+  <LilyPads
+    pondPosition={activeConfig.pond.position}
+    pondRadius={activeConfig.pond.radius}
+  />
+{/if}
+
+<!-- Ground cover — scattered moss/grass tufts -->
+<GrassTufts />
 
 <T.HemisphereLight
   color={activeConfig.hemisphereLight.skyColor}
