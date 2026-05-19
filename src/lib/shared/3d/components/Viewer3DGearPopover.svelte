@@ -11,8 +11,18 @@
   import { tryGetSceneFeatureContext } from "../scene-features/context/scene-feature-context";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { inchesToCm } from "@austencloud/scene-3d";
+  import { BackgroundType } from "@austencloud/backgrounds";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import type { OceanVariant } from "../environments/domain/enums/environment-enums";
 
   const hasSceneFeatures = tryGetSceneFeatureContext() !== undefined;
+  const isOceanActive = $derived(settingsService.settings.backgroundType === BackgroundType.DEEP_OCEAN);
+  const OCEAN_VIBES: { id: OceanVariant; label: string; icon: string }[] = [
+    { id: "abyss", label: "Abyss", icon: "fa-water" },
+    { id: "reef", label: "Reef", icon: "fa-fish" },
+    { id: "mystical", label: "Mystical", icon: "fa-wand-sparkles" },
+    { id: "cinematic", label: "Cinematic", icon: "fa-film" },
+  ];
 
   interface Tab { id: "camera" | "planes" | "scene"; label: string; icon: string; }
 
@@ -223,6 +233,27 @@
             <SceneFeatureTiles />
           {/if}
 
+          {#if isOceanActive}
+            <div class="scene-control">
+              <div class="scene-control-header">
+                <span class="scene-control-label">Ocean vibe</span>
+              </div>
+              <div class="preset-row">
+                {#each OCEAN_VIBES as vibe}
+                  <button
+                    class="preset-btn"
+                    class:active={viewer3DState.oceanVariant === vibe.id}
+                    onclick={(e) => { e.stopPropagation(); viewer3DState.setOceanVariant(vibe.id); }}
+                    aria-pressed={viewer3DState.oceanVariant === vibe.id}
+                  >
+                    <i class="fas {vibe.icon}" aria-hidden="true" style="margin-right:4px;font-size:10px"></i>
+                    {vibe.label}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
           <div class="scene-control">
             <div class="scene-control-header">
               <span class="scene-control-label">Prop size</span>
@@ -275,6 +306,20 @@
               oninput={(e) => userProportionsState.setBodyFreedom(Number(e.currentTarget.value))}
               aria-label="Body freedom"
             />
+          </div>
+
+          <div class="scene-control perf-toggle-row">
+            <button
+              class="perf-toggle-btn"
+              aria-pressed={viewer3DState.showPerf}
+              onclick={(e) => { e.stopPropagation(); viewer3DState.togglePerf(); }}
+            >
+              <i class="fas fa-chart-line" aria-hidden="true"></i>
+              <span>Performance</span>
+              <span class="perf-indicator" class:on={viewer3DState.showPerf}>
+                {viewer3DState.showPerf ? "ON" : "OFF"}
+              </span>
+            </button>
           </div>
         </div>
       {/if}
@@ -671,6 +716,67 @@
     border-color: color-mix(in srgb, #60a5fa 50%, transparent);
     color: #cfe4ff;
     box-shadow: 0 2px 10px color-mix(in srgb, #60a5fa 20%, transparent);
+  }
+
+  /* --- Perf toggle --- */
+  .perf-toggle-row {
+    padding: 0 !important;
+  }
+
+  .perf-toggle-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+  }
+
+  .perf-toggle-btn:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .perf-toggle-btn[aria-pressed="true"] {
+    border-color: color-mix(in srgb, #4ade80 35%, transparent);
+    background: color-mix(in srgb, #4ade80 8%, transparent);
+  }
+
+  .perf-toggle-btn i {
+    font-size: 14px;
+    opacity: 0.6;
+  }
+
+  .perf-toggle-btn[aria-pressed="true"] i {
+    color: #4ade80;
+    opacity: 1;
+  }
+
+  .perf-toggle-btn span:first-of-type {
+    flex: 1;
+    text-align: left;
+  }
+
+  .perf-indicator {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .perf-indicator.on {
+    background: color-mix(in srgb, #4ade80 20%, transparent);
+    color: #4ade80;
   }
 
   /* --- Bridge CTA --- */
