@@ -8,10 +8,16 @@
   import type { OceanVariant } from "../domain/enums/environment-enums";
   import {
     type OceanSceneConfig,
-    createDefaultOceanDeepConfig,
+    createDefaultOceanAbyssConfig,
     createDefaultOceanReefConfig,
+    createDefaultOceanMysticalConfig,
+    createDefaultOceanCinematicConfig,
   } from "../domain/models/scene-configs";
-  import { onMount } from "svelte";
+  import VoronoiCaustics from "./ocean/VoronoiCaustics.svelte";
+  import GodRayShafts from "./ocean/GodRayShafts.svelte";
+  import WaterSurface from "./ocean/WaterSurface.svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { disposeSceneGraph } from "../utils/dispose-scene";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
     FogExp2,
@@ -41,14 +47,16 @@
     config?: OceanSceneConfig;
   }
 
-  let { variant = "deep", config }: Props = $props();
+  let { variant = "abyss", config }: Props = $props();
 
-  const activeConfig = $derived(
-    config ??
-      (variant === "reef"
-        ? createDefaultOceanReefConfig()
-        : createDefaultOceanDeepConfig())
-  );
+  const VARIANT_CONFIGS: Record<OceanVariant, () => OceanSceneConfig> = {
+    abyss: createDefaultOceanAbyssConfig,
+    reef: createDefaultOceanReefConfig,
+    mystical: createDefaultOceanMysticalConfig,
+    cinematic: createDefaultOceanCinematicConfig,
+  };
+
+  const activeConfig = $derived(config ?? VARIANT_CONFIGS[variant]());
 
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
 
@@ -490,15 +498,15 @@
     return Math.max(size.x, size.y, size.z);
   }
 
+  const MAX_CREATURE_SCALE = 0.5;
+
   const fishScales = $derived.by((): [number, number, number] => {
     if (!$fishClown || !$fishButterfly || !$fishCommon) return [0.015, 0.015, 0.015];
     const target = activeConfig.fish.targetSize;
-    const names = ["clownfish", "butterfly", "common"];
-    return [$fishClown, $fishButterfly, $fishCommon].map((model, i) => {
+    return [$fishClown, $fishButterfly, $fishCommon].map((model) => {
       const extent = glbMaxExtent(model.scene);
-      const scale = extent > 0 ? target / extent : 0.0003;
-      console.log(`[FishScale] ${names[i]}: extent=${extent.toFixed(2)}, target=${target}, scale=${scale.toFixed(6)}`);
-      return scale;
+      const scale = extent > 0.01 ? target / extent : 0.015;
+      return Math.min(scale, MAX_CREATURE_SCALE);
     }) as [number, number, number];
   });
 
@@ -506,14 +514,16 @@
   const jellyfishScale = $derived.by((): number => {
     if (!$jellyfishGlb) return 0.06;
     const extent = glbMaxExtent($jellyfishGlb.scene);
-    return extent > 0 ? JELLYFISH_TARGET_SIZE / extent : 0.001;
+    const scale = extent > 0.01 ? JELLYFISH_TARGET_SIZE / extent : 0.06;
+    return Math.min(scale, MAX_CREATURE_SCALE);
   });
 
   function decorationScale(glb: { scene: { updateMatrixWorld: (force: boolean) => void } } | undefined): number {
     const target = activeConfig.decorations.targetSize;
     if (!glb) return target;
     const extent = glbMaxExtent(glb.scene);
-    return extent > 0 ? target / extent : 0.005;
+    const scale = extent > 0.01 ? target / extent : 0.005;
+    return Math.min(scale, MAX_CREATURE_SCALE);
   }
 
   const fishData = $derived.by((): FishInstance[] => {
@@ -662,7 +672,7 @@
   // Jellyfish animation (drift + pulse)
   // ============================================================================
 
-  let jellyfishOffsets = $state<{ dx: number; dy: number; dz: number }[]>([]);
+  let jellyfishOffsets = $state<{ dx: number; dy: number; dz: number; pulse: number }[]>([]);
 
   $effect(() => {
     const jf = activeConfig.jellyfish;
@@ -670,7 +680,7 @@
       jellyfishOffsets = [];
       return;
     }
-    jellyfishOffsets = Array.from({ length: jf.count }, () => ({ dx: 0, dy: 0, dz: 0 }));
+    jellyfishOffsets = Array.from({ length: jf.count }, () => ({ dx: 0, dy: 0, dz: 0, pulse: 1.0 }));
   });
 
   let jellyfishTime = $state(0);
@@ -686,16 +696,21 @@
       causticMaterial.uniforms.uTime!.value += delta * (activeConfig.caustics?.speed ?? 0.02) * 10;
     }
 
-    // Animate jellyfish drift
+    // Animate jellyfish drift + bell pulse
     const jf = activeConfig.jellyfish;
     if (jf?.enabled && jellyfishOffsets.length > 0) {
       jellyfishTime += delta * jf.driftSpeed;
+      const pulseAmp = jf.pulseAmplitude ?? 0.15;
       for (let i = 0; i < jellyfishOffsets.length; i++) {
         const phase = i * 2.3;
+        const pulsePhase = jellyfishTime * jf.pulseRate * Math.PI * 2 + i * 1.7;
+        const bellPulse = 1.0 + Math.sin(pulsePhase) * pulseAmp;
         jellyfishOffsets[i] = {
           dx: Math.sin(jellyfishTime * 0.7 + phase) * 1.5,
-          dy: Math.sin(jellyfishTime * 0.4 + phase * 1.3) * 0.5,
+          dy: Math.sin(jellyfishTime * 0.4 + phase * 1.3) * 0.5 +
+              Math.sin(pulsePhase) * 0.15,
           dz: Math.cos(jellyfishTime * 0.5 + phase * 0.8) * 1.5,
+          pulse: bellPulse,
         };
       }
     }
@@ -741,13 +756,20 @@
   // Fog
   // ============================================================================
 
+  let fogInstance: FogExp2 | null = null;
   $effect(() => {
     if (!scene.current) return;
-
     const fog = activeConfig.fog;
-    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
+    if (!fogInstance) {
+      fogInstance = new FogExp2(fog.color, fog.density);
+      scene.current.fog = fogInstance;
+    } else {
+      fogInstance.color.set(fog.color);
+      fogInstance.density = fog.density;
+    }
     return () => {
       if (scene.current) scene.current.fog = null;
+      fogInstance = null;
     };
   });
 
@@ -780,6 +802,58 @@
     }, 3_000);
     return () => clearTimeout(timer);
   });
+
+  // ── Clone caching — clone once per GLB load, not per render ─────────
+
+  const coralClones = $derived.by(() => {
+    if (!$coralGlb0 || !$coralGlb1 || !$coralGlb2 || !$coralGlb3) return [];
+    const models = [$coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3];
+    return coralPlacements.map((_, i) =>
+      underwaterClone(models[i % models.length]!.scene, activeConfig.coral.glowColor, activeConfig.coral.glowBlend)
+    );
+  });
+
+  const kelpClones = $derived.by(() => {
+    if (!$seaweedGlb) return [];
+    return kelpPlacements.map(() => underwaterClone($seaweedGlb!.scene, "#0d3a1a", 0.2));
+  });
+
+  const oceanRockClones = $derived.by(() => {
+    if (!$rockA || !$rockB) return [];
+    return rockPlacements.map((_, i) =>
+      underwaterClone((i % 2 === 0 ? $rockA : $rockB)!.scene, activeConfig.rockTintColor, activeConfig.rockTintBlend)
+    );
+  });
+
+  const fishClones = $derived.by(() => {
+    if (!$fishClown || !$fishButterfly || !$fishCommon) return [];
+    const models = [$fishClown, $fishButterfly, $fishCommon];
+    return fishData.map((_, i) => models[i % 3]!.scene.clone());
+  });
+
+  const jellyfishClones = $derived.by(() => {
+    if (!$jellyfishGlb) return [];
+    return jellyfishPlacements.map(() => $jellyfishGlb!.scene.clone());
+  });
+
+  const decorationClones = $derived.by(() => {
+    return decorationPlacements.map((dec) => {
+      if (dec.type === "starfish" && $starfishGlb) return $starfishGlb.scene.clone();
+      if (dec.type === "urchin" && $seaUrchinGlb) return $seaUrchinGlb.scene.clone();
+      if (dec.type === "shell" && $shellGlb) return $shellGlb.scene.clone();
+      if (dec.type === "anemone" && $anemoneGlb) return underwaterClone($anemoneGlb.scene, "#cc3366", 0.25);
+      return null;
+    });
+  });
+
+  onDestroy(() => {
+    for (const c of coralClones) disposeSceneGraph(c as Object3D);
+    for (const c of kelpClones) disposeSceneGraph(c as Object3D);
+    for (const c of oceanRockClones) disposeSceneGraph(c as Object3D);
+    for (const c of fishClones) disposeSceneGraph(c);
+    for (const c of jellyfishClones) disposeSceneGraph(c);
+    for (const c of decorationClones) if (c) disposeSceneGraph(c as Object3D);
+  });
 </script>
 
 <!-- Sky gradient -->
@@ -808,32 +882,52 @@
   />
 {/if}
 
-<!-- Caustic light ripples -->
-{#if activeConfig.caustics?.enabled && causticMaterial}
-  <T.Mesh
-    position.y={groundY + 0.02}
-    rotation.x={-Math.PI / 2}
-    material={causticMaterial}
-  >
-    <T.PlaneGeometry args={[activeConfig.ground.size * 0.8, activeConfig.ground.size * 0.8]} />
-  </T.Mesh>
+<!-- Caustic light ripples — Voronoi or legacy -->
+{#if activeConfig.caustics?.enabled}
+  {#if activeConfig.caustics.voronoi}
+    <VoronoiCaustics
+      intensity={activeConfig.caustics.intensity}
+      speed={activeConfig.caustics.speed}
+      scale={activeConfig.caustics.scale}
+      color={activeConfig.caustics.color}
+      groundSize={activeConfig.ground.size}
+    />
+  {:else if causticMaterial}
+    <T.Mesh
+      position.y={groundY + 0.02}
+      rotation.x={-Math.PI / 2}
+      material={causticMaterial}
+    >
+      <T.PlaneGeometry args={[activeConfig.ground.size * 0.8, activeConfig.ground.size * 0.8]} />
+    </T.Mesh>
+  {/if}
+{/if}
+
+<!-- Volumetric god ray shafts -->
+{#if activeConfig.godRayShafts?.enabled}
+  <GodRayShafts config={activeConfig.godRayShafts} />
+{/if}
+
+<!-- Water surface -->
+{#if activeConfig.waterSurface?.enabled}
+  <WaterSurface config={activeConfig.waterSurface} size={activeConfig.ground.size} />
 {/if}
 
 <!-- Coral formations — GLB with procedural fallback -->
 {#if activeConfig.coral.enabled}
-  {#if $coralGlb0 && $coralGlb1 && $coralGlb2 && $coralGlb3}
-    {#each coralPlacements as placement, i}
-      {@const coralModels = [$coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3]}
-      {@const modelIdx = i % coralModels.length}
-      {@const source = coralModels[modelIdx]!}
-      <T
-        is={underwaterClone(source.scene, activeConfig.coral.glowColor, activeConfig.coral.glowBlend)}
-        position.x={placement.x}
-        position.y={groundY}
-        position.z={placement.z}
-        scale={placement.scale * CORAL_GLB_NORMALIZE[modelIdx]!}
-        rotation.y={placement.rotY}
-      />
+  {#if coralClones.length > 0}
+    {#each coralClones as clone, i}
+      {@const placement = coralPlacements[i]}
+      {#if placement}
+        <T
+          is={clone}
+          position.x={placement.x}
+          position.y={groundY}
+          position.z={placement.z}
+          scale={placement.scale * CORAL_GLB_NORMALIZE[i % 4]!}
+          rotation.y={placement.rotY}
+        />
+      {/if}
     {/each}
   {:else}
     {#each coralInstances as coral}
@@ -851,16 +945,19 @@
 
 <!-- Kelp forest — GLB seaweed with procedural fallback -->
 {#if activeConfig.kelp.enabled}
-  {#if $seaweedGlb}
-    {#each kelpPlacements as placement}
-      <T
-        is={underwaterClone($seaweedGlb.scene, "#0d3a1a", 0.2)}
-        position.x={placement.x}
-        position.y={groundY}
-        position.z={placement.z}
-        scale={placement.scale * 0.8}
-        rotation.y={placement.rotY}
-      />
+  {#if kelpClones.length > 0}
+    {#each kelpClones as clone, i}
+      {@const placement = kelpPlacements[i]}
+      {#if placement}
+        <T
+          is={clone}
+          position.x={placement.x}
+          position.y={groundY}
+          position.z={placement.z}
+          scale={placement.scale * 0.8}
+          rotation.y={placement.rotY}
+        />
+      {/if}
     {/each}
   {:else}
     {#each kelpInstances as kelp}
@@ -877,17 +974,10 @@
 {/if}
 
 <!-- Seabed rocks — GLB with procedural fallback -->
-{#if $rockA && $rockB}
-  {#each rockPlacements as [x, z, scale, rotY], i}
-    {@const source = i % 2 === 0 ? $rockA : $rockB}
-    <T
-      is={underwaterClone(source.scene, activeConfig.rockTintColor, activeConfig.rockTintBlend)}
-      position.x={x}
-      position.y={groundY}
-      position.z={z}
-      {scale}
-      rotation.y={rotY}
-    />
+{#if oceanRockClones.length > 0}
+  {#each oceanRockClones as clone, i}
+    {@const [x, z, scale, rotY] = rockPlacements[i] ?? [0, 0, 1, 0]}
+    <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
   {/each}
 {:else}
   {#each proceduralRockInstances as rock}
@@ -904,18 +994,18 @@
 
 <!-- Schooling fish — GLB models with InstancedMesh fallback -->
 {#if activeConfig.fish.enabled}
-  {#if $fishClown && $fishButterfly && $fishCommon}
-    {#each fishStates as fish}
-      {@const models = [$fishClown, $fishButterfly, $fishCommon]}
-      {@const model = models[fish.variety]!}
-      <T
-        is={model.scene.clone()}
-        position.x={fish.x}
-        position.y={fish.y}
-        position.z={fish.z}
-        rotation.y={fish.rotY}
-        scale={fishScales[fish.variety]}
-      />
+  {#if fishClones.length > 0}
+    {#each fishStates as fish, i}
+      {#if fishClones[i]}
+        <T
+          is={fishClones[i]}
+          position.x={fish.x}
+          position.y={fish.y}
+          position.z={fish.z}
+          rotation.y={fish.rotY}
+          scale={fishScales[fish.variety]}
+        />
+      {/if}
     {/each}
   {:else}
     <T.InstancedMesh
@@ -926,17 +1016,20 @@
   {/if}
 {/if}
 
-<!-- Jellyfish — GLB model with procedural fallback -->
+<!-- Jellyfish — GLB model with procedural fallback + bell pulse -->
 {#if activeConfig.jellyfish?.enabled}
-  {#if $jellyfishGlb}
+  {#if jellyfishClones.length > 0}
     {#each jellyfishPlacements as jf, i}
-      {@const offset = jellyfishOffsets[i] ?? { dx: 0, dy: 0, dz: 0 }}
+      {@const offset = jellyfishOffsets[i] ?? { dx: 0, dy: 0, dz: 0, pulse: 1.0 }}
+      {@const pulseScale = jellyfishScale * (offset.pulse ?? 1.0)}
       <T.Group
         position.x={jf.x + offset.dx}
         position.y={groundY + jf.y + offset.dy}
         position.z={jf.z + offset.dz}
       >
-        <T is={$jellyfishGlb.scene.clone()} scale={jellyfishScale} />
+        {#if jellyfishClones[i]}
+          <T is={jellyfishClones[i]} scale={pulseScale} />
+        {/if}
         <T.PointLight
           color={activeConfig.jellyfish.glowColor}
           intensity={activeConfig.jellyfish.lightIntensity * (0.7 + 0.3 * Math.sin(jellyfishTime * activeConfig.jellyfish.pulseRate * Math.PI * 2 + i * 1.7))}
@@ -947,13 +1040,14 @@
     {/each}
   {:else}
     {#each jellyfishInstances as jf, i}
-      {@const offset = jellyfishOffsets[i] ?? { dx: 0, dy: 0, dz: 0 }}
+      {@const offset = jellyfishOffsets[i] ?? { dx: 0, dy: 0, dz: 0, pulse: 1.0 }}
+      {@const pulseS = 0.5 * (offset.pulse ?? 1.0)}
       <T.Group
         position.x={jf.x + offset.dx}
         position.y={groundY + jf.y + offset.dy}
         position.z={jf.z + offset.dz}
       >
-        <T is={jf.mesh} scale={0.5} />
+        <T is={jf.mesh} scale={pulseS} />
         <T.PointLight
           color={activeConfig.jellyfish.glowColor}
           intensity={activeConfig.jellyfish.lightIntensity * (0.7 + 0.3 * Math.sin(jellyfishTime * activeConfig.jellyfish.pulseRate * Math.PI * 2 + i * 1.7))}
@@ -967,41 +1061,20 @@
 
 <!-- Ocean floor decorations (starfish, sea urchins, shells, anemones) -->
 {#if activeConfig.decorations.enabled}
-{#each decorationPlacements as dec}
-  {#if dec.type === "starfish" && $starfishGlb}
+{#each decorationClones as clone, i}
+  {@const dec = decorationPlacements[i]}
+  {#if clone && dec}
     <T
-      is={$starfishGlb.scene.clone()}
+      is={clone}
       position.x={dec.x}
       position.y={groundY}
       position.z={dec.z}
-      scale={dec.scale * decorationScale($starfishGlb)}
-      rotation.y={dec.rotY}
-    />
-  {:else if dec.type === "urchin" && $seaUrchinGlb}
-    <T
-      is={$seaUrchinGlb.scene.clone()}
-      position.x={dec.x}
-      position.y={groundY}
-      position.z={dec.z}
-      scale={dec.scale * decorationScale($seaUrchinGlb)}
-      rotation.y={dec.rotY}
-    />
-  {:else if dec.type === "shell" && $shellGlb}
-    <T
-      is={$shellGlb.scene.clone()}
-      position.x={dec.x}
-      position.y={groundY}
-      position.z={dec.z}
-      scale={dec.scale * decorationScale($shellGlb)}
-      rotation.y={dec.rotY}
-    />
-  {:else if dec.type === "anemone" && $anemoneGlb}
-    <T
-      is={underwaterClone($anemoneGlb.scene, "#cc3366", 0.25)}
-      position.x={dec.x}
-      position.y={groundY}
-      position.z={dec.z}
-      scale={dec.scale * decorationScale($anemoneGlb)}
+      scale={dec.scale * decorationScale(
+        dec.type === "starfish" ? $starfishGlb :
+        dec.type === "urchin" ? $seaUrchinGlb :
+        dec.type === "shell" ? $shellGlb :
+        $anemoneGlb
+      )}
       rotation.y={dec.rotY}
     />
   {/if}
@@ -1009,7 +1082,7 @@
 {/if}
 
 <!-- Bubbles -->
-{#key `bubbles|${activeConfig.bubbles.count}|${activeConfig.bubbles.sizeRange[0]}|${activeConfig.bubbles.area.width}|${activeConfig.bubbles.speed}`}
+{#key activeConfig.bubbles.count}
   <FallingParticles
     type={activeConfig.bubbles.type}
     count={activeConfig.bubbles.count}
@@ -1023,7 +1096,7 @@
 
 <!-- Dust motes -->
 {#if activeConfig.dust}
-  {#key `dust|${activeConfig.dust.count}|${activeConfig.dust.sizeRange[0]}|${activeConfig.dust.area.width}|${activeConfig.dust.speed}`}
+  {#key activeConfig.dust.count}
     <FallingParticles
       type={activeConfig.dust.type}
       count={activeConfig.dust.count}
@@ -1038,7 +1111,7 @@
 
 <!-- Bioluminescent plankton -->
 {#if activeConfig.plankton}
-  {#key `plankton|${activeConfig.plankton.count}|${activeConfig.plankton.sizeRange[0]}|${activeConfig.plankton.area.width}`}
+  {#key activeConfig.plankton.count}
     <FallingParticles
       type={activeConfig.plankton.type}
       count={activeConfig.plankton.count}

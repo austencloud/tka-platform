@@ -10,8 +10,10 @@ export type SceneId =
   | "forest-autumn"
   | "cosmic-night"
   | "cosmic-aurora"
-  | "ocean-deep"
-  | "ocean-reef";
+  | "ocean-abyss"
+  | "ocean-reef"
+  | "ocean-mystical"
+  | "ocean-cinematic";
 
 export interface SceneOption {
   id: SceneId;
@@ -46,13 +48,23 @@ export const SCENE_OPTIONS: SceneOption[] = [
     description: "Aurora-lit space with nebula wash and teal-green accents",
   },
   {
-    id: "ocean-deep",
-    label: "Ocean (Deep)",
-    description: "Dark underwater with bioluminescent life and kelp forest",
+    id: "ocean-abyss",
+    label: "Ocean (Abyss)",
+    description: "Dark deep-sea with bioluminescent jellyfish, pulsing plankton, and faint god rays",
   },
   {
     id: "ocean-reef",
-    label: "Ocean (Coral Reef)",
-    description: "Bright tropical reef with vivid coral and warm god rays",
+    label: "Ocean (Reef)",
+    description: "Sun-drenched coral reef with warm golden caustics and colorful fish schools",
+  },
+  {
+    id: "ocean-mystical",
+    label: "Ocean (Mystical)",
+    description: "Fantasy underwater with aurora caustics, glowing kelp, and ethereal jellyfish",
+  },
+  {
+    id: "ocean-cinematic",
+    label: "Ocean (Cinematic)",
+    description: "Documentary-quality ocean with realistic caustics, volumetric god rays, and muted tones",
   },
 ];

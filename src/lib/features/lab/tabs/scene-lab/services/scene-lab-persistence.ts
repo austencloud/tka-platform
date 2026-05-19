@@ -16,8 +16,11 @@ export interface PersistedSceneLabConfigs {
 	forestAutumn: AutumnSceneConfig;
 	cosmicNight: CosmicSceneConfig;
 	cosmicAurora: CosmicSceneConfig;
-	oceanDeep: OceanSceneConfig;
+	oceanDeep?: OceanSceneConfig;
+	oceanAbyss?: OceanSceneConfig;
 	oceanReef: OceanSceneConfig;
+	oceanMystical?: OceanSceneConfig;
+	oceanCinematic?: OceanSceneConfig;
 }
 
 export interface PersistedSceneLabState {

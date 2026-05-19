@@ -6,11 +6,19 @@
 
   const { state } = getSceneLabContext();
 
-  const isDeep = $derived(state.sceneId === "ocean-deep");
-  const cfg = $derived(isDeep ? state.oceanDeepConfig : state.oceanReefConfig);
+  const OCEAN_CONFIGS = {
+    "ocean-abyss": () => state.oceanAbyssConfig,
+    "ocean-reef": () => state.oceanReefConfig,
+    "ocean-mystical": () => state.oceanMysticalConfig,
+    "ocean-cinematic": () => state.oceanCinematicConfig,
+  } as const;
+
+  const cfg = $derived(
+    (OCEAN_CONFIGS[state.sceneId as keyof typeof OCEAN_CONFIGS] ?? OCEAN_CONFIGS["ocean-abyss"])()
+  );
 
   function mutate() {
-    return isDeep ? state.oceanDeepConfig : state.oceanReefConfig;
+    return (OCEAN_CONFIGS[state.sceneId as keyof typeof OCEAN_CONFIGS] ?? OCEAN_CONFIGS["ocean-abyss"])();
   }
 </script>
 

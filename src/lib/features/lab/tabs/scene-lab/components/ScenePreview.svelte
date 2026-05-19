@@ -227,10 +227,14 @@
         <CosmicScene variant="night" config={labState.cosmicNightConfig} />
       {:else if labState.sceneId === "cosmic-aurora"}
         <CosmicScene variant="aurora" config={labState.cosmicAuroraConfig} />
-      {:else if labState.sceneId === "ocean-deep"}
-        <OceanScene variant="deep" config={labState.oceanDeepConfig} />
+      {:else if labState.sceneId === "ocean-abyss"}
+        <OceanScene variant="abyss" config={labState.oceanAbyssConfig} />
       {:else if labState.sceneId === "ocean-reef"}
         <OceanScene variant="reef" config={labState.oceanReefConfig} />
+      {:else if labState.sceneId === "ocean-mystical"}
+        <OceanScene variant="mystical" config={labState.oceanMysticalConfig} />
+      {:else if labState.sceneId === "ocean-cinematic"}
+        <OceanScene variant="cinematic" config={labState.oceanCinematicConfig} />
       {/if}
 
       {#if camMode === "walk"}
