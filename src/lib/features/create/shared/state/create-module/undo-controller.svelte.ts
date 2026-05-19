@@ -12,8 +12,8 @@ import type { UndoMetadata } from "../../services/implementations/UndoManager";
 import { UndoOperationType } from "../../services/implementations/UndoManager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { clearPropPositionCache } from "$lib/shared/pictograph/prop/components/PropSvg.svelte";
-import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/components/ArrowSvg.svelte";
+import { clearPropPositionCache } from "$lib/shared/pictograph/prop/prop-position-cache";
+import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/arrow-position-cache";
 import { setSuppressNextAnimation } from "../../workspace-panel/sequence-display/state/step-grid-display-state.svelte";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 

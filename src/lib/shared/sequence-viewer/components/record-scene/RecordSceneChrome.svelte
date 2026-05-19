@@ -49,13 +49,13 @@
     align-items: flex-start;
     gap: 8px;
     pointer-events: auto;
-    bottom: 16px;
+    bottom: 68px;
     right: 16px;
   }
 
   @media (max-width: 600px) {
     .bottom-right {
-      bottom: 12px;
+      bottom: 60px;
       right: 12px;
     }
   }

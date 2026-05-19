@@ -26,6 +26,7 @@
   import { EffectComposer } from "threlte-postprocessing";
   import * as THREE from "three";
   import Grid3D from "./Grid3D.svelte";
+  import PerfMonitor from "./PerfMonitor.svelte";
   import Stage3D from "./Stage3D.svelte";
   import SeatedAudience3D from "./SeatedAudience3D.svelte";
   import ManualRaycaster from "./ManualRaycaster.svelte";
@@ -128,6 +129,8 @@
     isDragging?: boolean;
     /** Children content (props, etc.) */
     children?: Snippet;
+    /** Show performance monitor overlay (FPS, draw calls, triangles, memory) */
+    showPerf?: boolean;
     /** Enable procedural terrain around the stage */
     enableTerrain?: boolean;
     /** Physics state for terrain colliders (required if enableTerrain is true) */
@@ -165,6 +168,7 @@
     onDrag,
     isDragging = false,
     children,
+    showPerf = false,
     enableTerrain = false,
     physicsState = null,
     terrainCameraPosition = { x: 0, y: 0, z: 0 },
@@ -348,6 +352,8 @@
 
 <div class="scene-container" role="application">
   <Canvas>
+    <PerfMonitor visible={showPerf} />
+
     <!-- Manual raycasting for click detection (bypasses broken Threlte interactivity) -->
     <ManualRaycaster
       onMeshClick={handleMeshClick}

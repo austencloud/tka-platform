@@ -51,12 +51,6 @@
 
   const hasOwnPlatform = $derived(backgroundType === BackgroundType.NIGHT_SKY);
 
-  const stageGroundOffset = $derived(
-    hasOwnPlatform
-      ? COSMIC_PLATFORM_HEIGHT
-      : sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0
-  );
-
   // Reconstructs Threlte's default setAnimationLoop callback. We restore
   // this after the offline export pauses the loop.
   const autoLoopCallback = (time: number) => {
@@ -274,6 +268,27 @@
     backgroundType === BackgroundType.DEEP_OCEAN
   );
 
+  const stageGroundOffset = $derived(
+    hasOwnPlatform
+      ? COSMIC_PLATFORM_HEIGHT
+      : sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0
+  );
+
+  const PERFORMER_BODY_PADDING = 1.5;
+
+  const requiredStageRadius = $derived.by(() => {
+    const performers = performerManager.performers;
+    if (performers.length <= 1) return 0;
+    let maxDist = 0;
+    for (const p of performers) {
+      const dist = Math.sqrt(p.position.x ** 2 + p.position.z ** 2);
+      maxDist = Math.max(maxDist, dist);
+    }
+    return maxDist + PERFORMER_BODY_PADDING;
+  });
+
+  const stageWidth = $derived(Math.max(6.0, requiredStageRadius * 2));
+  const stageDepth = $derived(Math.max(4.5, requiredStageRadius * 2));
   // When the background type doesn't produce a 3D environment (solid color,
   // gradient), Environment3D never mounts - so nothing will ever call
   // reportReady("environment"). Report it immediately so the curtain lifts.
@@ -286,11 +301,11 @@
 
 <!-- Environment (gated by scene feature toggle) -->
 {#if hasEnvironment && sceneFeatures.isEnabled("environment")}
-  <Environment3D {backgroundType} />
+  <Environment3D {backgroundType} minPlatformRadius={requiredStageRadius} oceanVariant={viewer3DState.oceanVariant} />
 {/if}
 
 {#if sceneFeatures.isEnabled("stage") && !hasOwnPlatform}
-  <Stage3D />
+  <Stage3D width={stageWidth} depth={stageDepth} />
 {/if}
 
 <!-- Seated audience (gated by scene feature toggle) -->

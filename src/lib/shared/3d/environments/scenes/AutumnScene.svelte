@@ -72,12 +72,20 @@
 
   const groundY = $derived(userProportionsState.groundY);
 
+  let fogInstance: FogExp2 | null = null;
   $effect(() => {
     if (!scene.current) return;
     const fog = activeConfig.fog;
-    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
+    if (!fogInstance) {
+      fogInstance = new FogExp2(fog.color, fog.density);
+      scene.current.fog = fogInstance;
+    } else {
+      fogInstance.color.set(fog.color);
+      fogInstance.density = fog.density;
+    }
     return () => {
       if (scene.current) scene.current.fog = null;
+      fogInstance = null;
     };
   });
 
@@ -133,7 +141,7 @@
 {/each}
 
 <!-- Dense falling leaves — close layer -->
-{#key `leaves|${activeConfig.leaves.count}|${activeConfig.leaves.area.width}|${activeConfig.leaves.speed}`}
+{#key activeConfig.leaves.count}
   <FallingParticles
     type={activeConfig.leaves.type}
     count={activeConfig.leaves.count}
@@ -147,7 +155,7 @@
 
 <!-- Distant leaves — smaller, slower, wider for depth -->
 {#if activeConfig.distantLeaves}
-  {#key `far|${activeConfig.distantLeaves.count}|${activeConfig.distantLeaves.area.width}`}
+  {#key activeConfig.distantLeaves.count}
     <FallingParticles
       type={activeConfig.distantLeaves.type}
       count={activeConfig.distantLeaves.count}

@@ -315,8 +315,36 @@ export async function initializeAuthListener() {
           const idTokenResult = await user.getIdTokenResult(false);
           isAdmin = idTokenResult.claims.admin === true;
           role = (idTokenResult.claims.role as UserRole) || "user";
+
+          // Persist role for offline fallback — when the token expires and
+          // can't refresh (no network), we restore the last verified role
+          // so admin modules remain accessible at festivals etc.
+          try {
+            localStorage.setItem("tka-offline-auth-cache", JSON.stringify({
+              uid: user.uid,
+              role,
+              isAdmin,
+              timestamp: Date.now(),
+            }));
+          } catch { /* quota exceeded or private browsing — non-critical */ }
         } catch (_error) {
           console.warn("⚠️ [authState] Failed to read cached token:", _error);
+
+          // Offline fallback: restore last-known role from localStorage.
+          // The user identity is already verified by Firebase Auth persistence;
+          // we're just carrying forward the role that was last confirmed from
+          // a valid token. Scoped to the same UID to prevent cross-user leaks.
+          try {
+            const cached = localStorage.getItem("tka-offline-auth-cache");
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (parsed.uid === user.uid) {
+                isAdmin = parsed.isAdmin === true;
+                role = parsed.role || "user";
+                console.info("📴 [authState] Using offline-cached role:", role);
+              }
+            }
+          } catch { /* corrupted cache — proceed with default role */ }
         }
       }
 

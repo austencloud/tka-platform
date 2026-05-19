@@ -1,10 +1,10 @@
 /**
  * Unified Choreo Card Context Menu Builder
  *
- * Includes inline column picker, card settings, and optional actions.
+ * Column picker lives in a submenu. Top-level shows Re-render, Send to, and Send to Sticker Lab.
  */
 
-import type { ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
+import type { ContextMenuEntry, ContextMenuItem } from "$lib/shared/components/context-menu/context-menu-types";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
 export interface ChoreoCardContextMenuDeps {
@@ -12,6 +12,7 @@ export interface ChoreoCardContextMenuDeps {
   onOpenSettings?: () => void;
   onRerender?: () => void;
   onSendTo?: () => void;
+  onSendToStickerLab?: () => void;
   /** Step count of the current sequence (enables column picker) */
   stepCount?: number;
   /** Called after column count changes so the menu can rebuild */
@@ -26,13 +27,12 @@ export function buildChoreoCardContextMenuItems(
 ): ContextMenuEntry[] {
   const items: ContextMenuEntry[] = [];
 
-  // Column picker (inline, only for 4+ steps)
+  // Column picker as submenu (only for 4+ steps)
   if (deps.stepCount && deps.stepCount >= 4) {
     const composition = getImageCompositionManager();
     const currentCols = composition.getColumnCountForStepCount(deps.stepCount);
     const stepCount = deps.stepCount;
 
-    // Even column counts only: 2, 4, 6, 8... up to stepCount
     const maxCols = Math.min(stepCount, 8);
     const columnChoices: number[] = [];
     for (let n = 2; n <= maxCols; n += 2) {
@@ -40,21 +40,18 @@ export function buildChoreoCardContextMenuItems(
     }
 
     if (columnChoices.length > 0) {
-      items.push({ type: "header" as const, label: `${stepCount}-Count Columns` });
-
-      items.push({
-        id: "cols-auto",
-        label: "Auto",
-        checked: currentCols === null,
-        keepOpen: true,
-        action: () => {
-          composition.setColumnCountForStepCount(stepCount, null);
-          deps.onColumnCountChange?.();
+      const children: ContextMenuItem[] = [
+        {
+          id: "cols-auto",
+          label: "Auto",
+          checked: currentCols === null,
+          keepOpen: true,
+          action: () => {
+            composition.setColumnCountForStepCount(stepCount, null);
+            deps.onColumnCountChange?.();
+          },
         },
-      });
-
-      for (const n of columnChoices) {
-        items.push({
+        ...columnChoices.map((n) => ({
           id: `cols-${n}`,
           label: `${n} columns`,
           checked: currentCols === n,
@@ -63,17 +60,22 @@ export function buildChoreoCardContextMenuItems(
             composition.setColumnCountForStepCount(stepCount, n);
             deps.onColumnCountChange?.();
           },
-        });
-      }
+        })),
+      ];
 
-      items.push({ type: "separator" as const });
+      items.push({
+        id: "columns-submenu",
+        label: `${stepCount}-Count Columns`,
+        icon: "fa-columns",
+        children,
+      });
     }
   }
 
   if (deps.onOpenSettings) {
     items.push({
       id: "open-card-settings",
-      label: "Card Settings\u2026",
+      label: "Card Settings…",
       icon: "fa-sliders",
       action: () => deps.onOpenSettings?.(),
     });
@@ -93,9 +95,18 @@ export function buildChoreoCardContextMenuItems(
   if (deps.onSendTo) {
     actions.push({
       id: "send-to",
-      label: "Send to\u2026",
+      label: "Send to…",
       icon: "fa-paper-plane",
       action: deps.onSendTo,
+    });
+  }
+
+  if (deps.onSendToStickerLab) {
+    actions.push({
+      id: "send-to-sticker-lab",
+      label: "Send to Sticker Lab",
+      icon: "fa-sticky-note",
+      action: deps.onSendToStickerLab,
     });
   }
 

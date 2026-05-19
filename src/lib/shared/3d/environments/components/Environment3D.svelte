@@ -17,13 +17,18 @@
   import CherryBlossomScene from "../scenes/CherryBlossomScene.svelte";
   import RainbowScene from "../scenes/RainbowScene.svelte";
   import CelestialScene from "../scenes/CelestialScene.svelte";
+  import type { OceanVariant } from "../domain/enums/environment-enums";
 
   interface Props {
     /** Background type from settings */
     backgroundType: BackgroundType;
+    /** Minimum platform radius to fit all performers. 0 = use scene default. */
+    minPlatformRadius?: number;
+    /** Ocean sub-variant selection */
+    oceanVariant?: OceanVariant;
   }
 
-  let { backgroundType }: Props = $props();
+  let { backgroundType, minPlatformRadius = 0, oceanVariant }: Props = $props();
 
   // Map BackgroundType to scene type and variant
   type SceneConfig =
@@ -31,7 +36,7 @@
     | { scene: "autumn" }
     | { scene: "cosmic"; variant: "night" | "aurora" }
     | { scene: "winter" }
-    | { scene: "ocean"; variant: "deep" | "reef" }
+    | { scene: "ocean"; variant: "abyss" | "reef" | "mystical" | "cinematic" }
     | { scene: "ember" }
     | { scene: "cherryBlossom" }
     | { scene: "rainbow" }
@@ -49,7 +54,7 @@
       case BackgroundType.SNOWFALL:
         return { scene: "winter" };
       case BackgroundType.DEEP_OCEAN:
-        return { scene: "ocean", variant: "deep" };
+        return { scene: "ocean", variant: (oceanVariant ?? "abyss") as "abyss" | "reef" | "mystical" | "cinematic" };
       case BackgroundType.EMBER_GLOW:
         return { scene: "ember" };
       case BackgroundType.CHERRY_BLOSSOM:
@@ -72,7 +77,7 @@
 {:else if config.scene === "autumn"}
   <AutumnScene />
 {:else if config.scene === "cosmic"}
-  <CosmicScene variant={config.variant} />
+  <CosmicScene variant={config.variant} {minPlatformRadius} />
 {:else if config.scene === "winter"}
   <WinterScene />
 {:else if config.scene === "ocean"}

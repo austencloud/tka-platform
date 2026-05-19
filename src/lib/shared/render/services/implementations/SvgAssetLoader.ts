@@ -30,15 +30,10 @@ export interface LoadedAssets {
   turnNumbers: Map<string, DrawableImage>;
 }
 
-// HMR-aware singleton storage (only in main thread with Vite dev)
-const hmrAssetLoader: { instance: SvgAssetLoader | null } =
-  import.meta.hot?.data?.assetLoader ?? { instance: null };
-
-if (import.meta.hot) {
-  import.meta.hot.dispose((data) => {
-    data.assetLoader = hmrAssetLoader;
-  });
-}
+// Plain singleton — no import.meta.hot here. HMR in a worker pulls in
+// SvelteKit's fetcher.js which accesses window.fetch at module scope,
+// crashing the composition worker (workers have self, not window).
+let singletonInstance: SvgAssetLoader | null = null;
 
 export class SvgAssetLoader {
   private assets: LoadedAssets = {
@@ -256,8 +251,8 @@ export class SvgAssetLoader {
  * Get the singleton SvgAssetLoader instance
  */
 export function getSvgAssetLoader(): SvgAssetLoader {
-  if (!hmrAssetLoader.instance) {
-    hmrAssetLoader.instance = new SvgAssetLoader();
+  if (!singletonInstance) {
+    singletonInstance = new SvgAssetLoader();
   }
-  return hmrAssetLoader.instance;
+  return singletonInstance;
 }

@@ -23,6 +23,7 @@ import { calculateFacingAngle } from "@austencloud/scene-3d";
 import { PRESET_VALID_COUNTS, createFormationFromPreset } from "@austencloud/scene-3d";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
 import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
+import type { OceanVariant } from "../environments/domain/enums/environment-enums";
 
 // ============================================
 // Popover Stack
@@ -255,6 +256,14 @@ export function createViewer3DState(deps: {
   // where they were. The orchestrator still fires enter3D() once the sequence
   // is available so the primary performer gets its sequence data loaded.
   let renderMode = $state<"2d" | "3d">(_persistedMode);
+  let showPerf = $state(false);
+
+  const _persistedOceanVariant = (() => {
+    try {
+      return (localStorage.getItem("tka-viewer3d-oceanVariant") ?? "abyss") as OceanVariant;
+    } catch { return "abyss" as OceanVariant; }
+  })();
+  let oceanVariant = $state<OceanVariant>(_persistedOceanVariant);
 
   // Exclusive popover stack: only one popover can be open at a time.
   // Used to prevent "popover stomping" where multiple rail popovers and the
@@ -322,6 +331,7 @@ export function createViewer3DState(deps: {
    * The viewer's "change sequence for this performer" control routes here.
    */
   function loadSequenceScoped(sequenceData: SequenceData): void {
+    _currentSequenceData = sequenceData;
     for (const p of scopedPerformers()) {
       p.loadSequence(sequenceData);
     }
@@ -381,6 +391,9 @@ export function createViewer3DState(deps: {
       p.setFacingAngle(ps.facingAngle);
       p.setHandPlane("blue", ps.customBluePlane);
       p.setHandPlane("red", ps.customRedPlane);
+      if (_currentSequenceData && !p.totalSteps) {
+        p.loadSequence(_currentSequenceData);
+      }
     });
 
     // 3. Restore top-level viewer state.
@@ -415,6 +428,9 @@ export function createViewer3DState(deps: {
     if (newPerf && source && source !== newPerf) {
       newPerf.setHandPlane("blue", source.customBluePlane);
       newPerf.setHandPlane("red", source.customRedPlane);
+    }
+    if (newPerf && _currentSequenceData) {
+      newPerf.loadSequence(_currentSequenceData);
     }
 
     selectedPerformerIndex = newIndex;
@@ -529,6 +545,8 @@ export function createViewer3DState(deps: {
     restoreViewerSnapshot(entry.afterState);
     lastSpatialEntryId = null;
   }
+
+  let _currentSequenceData = $state<SequenceData | null>(null);
 
   const effectToggles = $state<Record<string, boolean>>({
     fire: false,
@@ -683,6 +701,7 @@ export function createViewer3DState(deps: {
 
     // Load sequence onto every restored performer. (v1: all performers
     // share the same source sequence; per-performer offsets come later.)
+    _currentSequenceData = sequenceData;
     for (const p of performerManager.performers) {
       p.loadSequence(sequenceData);
     }
@@ -765,6 +784,13 @@ export function createViewer3DState(deps: {
     },
     get renderMode() {
       return renderMode;
+    },
+    get oceanVariant() {
+      return oceanVariant;
+    },
+    setOceanVariant(v: OceanVariant) {
+      oceanVariant = v;
+      try { localStorage.setItem("tka-viewer3d-oceanVariant", v); } catch {}
     },
     get activePopover() {
       return _activePopover;
@@ -950,6 +976,12 @@ export function createViewer3DState(deps: {
     },
     get cameraChoreography() {
       return cameraChoreography;
+    },
+    get showPerf() {
+      return showPerf;
+    },
+    togglePerf() {
+      showPerf = !showPerf;
     },
     enter3D,
     exit3D,

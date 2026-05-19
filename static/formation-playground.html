@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formation Preset Visualizer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0f0f1a;
+    color: #e0e0e0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .header {
+    text-align: center;
+    padding: 24px 16px 0;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .header p {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 16px;
+  }
+
+  .count-bar {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 16px 20px;
+    flex-wrap: wrap;
+  }
+  .count-btn {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    border: 2px solid #2a2a40;
+    background: #1a1a2e;
+    color: #aaa;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .count-btn:hover { border-color: #4488ff; color: #fff; }
+  .count-btn.active {
+    background: #4488ff;
+    border-color: #4488ff;
+    color: #fff;
+    box-shadow: 0 0 12px rgba(68,136,255,0.4);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    padding: 0 16px 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #1a1a2e;
+    border: 2px solid #2a2a40;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .card:hover { border-color: #4488ff55; transform: translateY(-2px); }
+  .card.selected { border-color: #4488ff; box-shadow: 0 0 16px rgba(68,136,255,0.25); }
+  .card.disabled { opacity: 0.35; pointer-events: none; }
+  .card.disabled .na-overlay { display: flex; }
+
+  .na-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(15,15,26,0.7);
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #555;
+    letter-spacing: 2px;
+    z-index: 2;
+    border-radius: 12px;
+  }
+
+  .card-header {
+    padding: 10px 12px 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-header .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ddd;
+  }
+  .card-header .radius {
+    font-size: 11px;
+    color: #666;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .stage-view {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 8px;
+  }
+  .stage-view canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .card-footer {
+    padding: 2px 12px 8px;
+    text-align: center;
+  }
+  .card-footer .desc {
+    font-size: 11px;
+    color: #666;
+  }
+
+  .prompt-section {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 16px 32px;
+  }
+  .prompt-box {
+    background: #12121f;
+    border: 1px solid #2a2a40;
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+  }
+  .prompt-box .label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .prompt-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #ccc;
+    white-space: pre-wrap;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    min-height: 40px;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #2a2a40;
+    border: 1px solid #3a3a55;
+    color: #aaa;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: #3a3a55; color: #fff; }
+  .copy-btn.copied { background: #22c55e33; border-color: #22c55e; color: #22c55e; }
+
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 0 16px 16px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #777;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .legend-line {
+    width: 20px;
+    height: 2px;
+    border-radius: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Formation Preset Visualizer</h1>
+  <p>Pick a performer count, then click a formation to select it. Top-down stage view — audience at the bottom (+Z). All formations are centered as a group.</p>
+</div>
+
+<div class="count-bar" id="countBar"></div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot" style="border: 2px solid #555; background: transparent;"></div>
+    <span>Stage boundary</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background: #3b82f6;"></div>
+    <span>Performer</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-line" style="background: #fff;"></div>
+    <span>Facing direction</span>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="prompt-section">
+  <div class="prompt-box">
+    <div class="label">Prompt Output</div>
+    <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy</button>
+    <div class="prompt-text" id="promptText"></div>
+  </div>
+</div>
+
+<script>
+// Constants — match @austencloud/scene-3d exactly
+const SPACING = 2.0;          // DEFAULT_FORMATION_SPACING
+const WALL_OFFSET = -0.3;     // FORMATION_WALL_OFFSET
+const DEFAULT_PLATFORM_RADIUS = 3.5;
+const BODY_PADDING = 1.5;
+
+const COLORS = ['#3b82f6','#ef4444','#8b5cf6','#f97316','#10b981','#ec4899','#06b6d4','#eab308'];
+
+const PRESETS = [
+  { id: 'grid-2x2',           name: 'Grid 2x2',            validCounts: [1,2,3,4] },
+  { id: 'line',               name: 'Line',                 validCounts: [1,2,3,4,5,6,7,8] },
+  { id: 'side-by-side',       name: 'Side-by-Side',         validCounts: [2,3,4,5,6,7,8] },
+  { id: 'circle',             name: 'Circle',               validCounts: [1,2,3,4,5,6,7,8] },
+  { id: 'v-shape',            name: 'V-Shape',              validCounts: [1,2,3,4,5,6,7,8] },
+  { id: 'diagonal',           name: 'Diagonal',             validCounts: [1,2,3,4,5,6,7,8] },
+  { id: 'tunnel-stack',       name: 'Tunnel Stack',         validCounts: [2,3,4,5,6,7,8] },
+  { id: 'back-to-back',       name: 'Back-to-Back',         validCounts: [2] },
+  { id: 'facing-each-other',  name: 'Facing Each Other',    validCounts: [2] },
+  { id: 'stage-lr',           name: 'Stage L/R',            validCounts: [2] },
+  { id: 'solo',               name: 'Solo',                 validCounts: [1] },
+];
+
+// ═══════════════════════════════════════════════════════════
+// Slot generators — exact reproduction of formation-presets.ts
+// (raw positions before centering, using WALL_OFFSET)
+// ═══════════════════════════════════════════════════════════
+
+function genGrid2x2(count) {
+  const s = SPACING, o = WALL_OFFSET;
+  if (count === 1) return [{ x: 0, z: o }];
+  if (count === 2) return [{ x: -s/2, z: o }, { x: s/2, z: o }];
+  if (count === 3) return [{ x: -s/2, z: o }, { x: s/2, z: o }, { x: 0, z: -s + o }];
+  return [{ x: -s/2, z: o }, { x: s/2, z: o }, { x: -s/2, z: -s + o }, { x: s/2, z: -s + o }];
+}
+
+function genLine(count) {
+  const s = SPACING, o = WALL_OFFSET;
+  const totalW = (count - 1) * s;
+  const startX = -totalW / 2;
+  return Array.from({ length: count }, (_, i) => ({ x: startX + i * s, z: o }));
+}
+
+function genCircle(count) {
+  const radius = SPACING * 0.75, o = WALL_OFFSET;
+  if (count === 1) return [{ x: 0, z: o }];
+  if (count === 2) return [
+    { x: -radius, z: o, facing: Math.PI / 2 },
+    { x: radius, z: o, facing: -Math.PI / 2 },
+  ];
+  return Array.from({ length: count }, (_, i) => {
+    const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+    return {
+      x: Math.cos(angle) * radius,
+      z: Math.sin(angle) * radius + o,
+      facing: angle + Math.PI / 2,
+    };
+  });
+}
+
+function genVShape(count) {
+  const o = WALL_OFFSET;
+  if (count === 1) return [{ x: 0, z: o }];
+  if (count === 2) return [{ x: -SPACING/2, z: o }, { x: SPACING/2, z: o }];
+  const vSpacing = SPACING * 0.7;
+  const vDepth = SPACING * 0.6;
+  const slots = [{ x: 0, z: o }];
+  const bodyCount = count - 1;
+  const fullPairs = Math.floor(bodyCount / 2);
+  const hasTail = bodyCount % 2 === 1;
+  for (let row = 1; row <= fullPairs; row++) {
+    const hw = vSpacing * row;
+    const rz = -vDepth * row + o;
+    slots.push({ x: -hw, z: rz });
+    slots.push({ x: hw, z: rz });
+  }
+  if (hasTail) {
+    slots.push({ x: 0, z: -vDepth * (fullPairs + 1) + o });
+  }
+  return slots;
+}
+
+function genDiagonal(count) {
+  const s = SPACING * 0.6, o = WALL_OFFSET;
+  const totalOff = ((count - 1) * s) / 2;
+  return Array.from({ length: count }, (_, i) => ({
+    x: -totalOff + i * s,
+    z: -i * s * 0.8 + o,
+  }));
+}
+
+function genSolo() {
+  return [{ x: 0, z: WALL_OFFSET }];
+}
+
+function genTunnelStack(count) {
+  const depth = SPACING * 0.6;
+  return Array.from({ length: count }, (_, i) => ({
+    x: 0, z: WALL_OFFSET + i * -depth,
+  }));
+}
+
+function genBackToBack(count) {
+  if (count < 2) return genSolo();
+  return [
+    { x: 0, z: WALL_OFFSET, facing: 0 },
+    { x: 0, z: WALL_OFFSET, facing: Math.PI },
+  ];
+}
+
+function genFacingEachOther(count) {
+  if (count < 2) return genSolo();
+  return [
+    { x: -0.5, z: WALL_OFFSET, facing: Math.PI / 2 },
+    { x: 0.5, z: WALL_OFFSET, facing: -Math.PI / 2 },
+  ];
+}
+
+function genStageLR(count) {
+  if (count < 2) return genSolo();
+  return [
+    { x: -2.5, z: WALL_OFFSET },
+    { x: 2.5, z: WALL_OFFSET },
+  ];
+}
+
+function genSideBySide(count) {
+  const s = 1.8;
+  return Array.from({ length: count }, (_, i) => ({
+    x: (i - (count - 1) / 2) * s,
+    z: WALL_OFFSET,
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════
+// Centering — matches centerSlots() in formation-presets.ts
+// ═══════════════════════════════════════════════════════════
+
+function centerSlots(slots) {
+  if (slots.length <= 1) return slots;
+  let cx = 0, cz = 0;
+  for (const s of slots) { cx += s.x; cz += s.z; }
+  cx /= slots.length;
+  cz /= slots.length;
+  if (Math.abs(cx) < 0.001 && Math.abs(cz) < 0.001) return slots;
+  return slots.map(s => ({
+    ...s,
+    x: s.x - cx,
+    z: s.z - cz,
+  }));
+}
+
+function getSlots(presetId, count) {
+  let raw;
+  switch (presetId) {
+    case 'grid-2x2': raw = genGrid2x2(Math.min(count, 4)); break;
+    case 'line': raw = genLine(count); break;
+    case 'circle': raw = genCircle(count); break;
+    case 'v-shape': raw = genVShape(count); break;
+    case 'diagonal': raw = genDiagonal(count); break;
+    case 'solo': raw = genSolo(); break;
+    case 'tunnel-stack': raw = genTunnelStack(count); break;
+    case 'back-to-back': raw = genBackToBack(count); break;
+    case 'facing-each-other': raw = genFacingEachOther(count); break;
+    case 'stage-lr': raw = genStageLR(count); break;
+    case 'side-by-side': raw = genSideBySide(count); break;
+    default: raw = genGrid2x2(count); break;
+  }
+  return centerSlots(raw);
+}
+
+function computeStageRadius(slots) {
+  if (slots.length <= 1) return DEFAULT_PLATFORM_RADIUS;
+  let maxDist = 0;
+  for (const s of slots) {
+    const d = Math.sqrt(s.x * s.x + s.z * s.z);
+    if (d > maxDist) maxDist = d;
+  }
+  return Math.max(DEFAULT_PLATFORM_RADIUS, maxDist + BODY_PADDING);
+}
+
+// ═══════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════
+const state = {
+  count: 2,
+  selected: 'grid-2x2',
+};
+
+// ═══════════════════════════════════════════════════════════
+// Canvas drawing
+// ═══════════════════════════════════════════════════════════
+
+function drawFormation(canvas, presetId, count, isValid) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  if (!isValid) return;
+
+  const slots = getSlots(presetId, count);
+  const stageRadius = computeStageRadius(slots);
+
+  const viewRadius = stageRadius + 1.2;
+  const scale = (Math.min(w, h) * 0.40) / viewRadius;
+  const cxC = w / 2;
+  const cyC = h / 2 - 6;
+
+  // World to screen: +X=right, +Z=down (audience at bottom)
+  const toSx = (wx) => cxC + wx * scale;
+  const toSy = (wz) => cyC + wz * scale;
+
+  // Stage boundary
+  ctx.beginPath();
+  ctx.arc(cxC, cyC, stageRadius * scale, 0, Math.PI * 2);
+  ctx.strokeStyle = '#333348';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.beginPath();
+  ctx.arc(cxC, cyC, stageRadius * scale, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(68, 136, 255, 0.04)';
+  ctx.fill();
+
+  // Axis crosshair
+  ctx.strokeStyle = '#222238';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(cxC - stageRadius * scale, cyC);
+  ctx.lineTo(cxC + stageRadius * scale, cyC);
+  ctx.moveTo(cxC, cyC - stageRadius * scale);
+  ctx.lineTo(cxC, cyC + stageRadius * scale);
+  ctx.stroke();
+
+  // Audience label at bottom
+  const audY = cyC + stageRadius * scale + 14;
+  ctx.fillStyle = '#555';
+  ctx.font = '9px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('▼ audience (+Z)', cxC, Math.min(audY, h - 2));
+
+  // Upstage label at top
+  const upY = cyC - stageRadius * scale - 5;
+  ctx.fillStyle = '#444';
+  ctx.fillText('upstage', cxC, Math.max(upY, 10));
+
+  // Performers
+  const dotR = Math.max(9, Math.min(14, 12 * (scale / 35)));
+
+  slots.forEach((slot, i) => {
+    const sx = toSx(slot.x);
+    const sy = toSy(slot.z);
+    const color = COLORS[i % COLORS.length];
+
+    // Glow
+    const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, dotR * 2.5);
+    grad.addColorStop(0, color + '33');
+    grad.addColorStop(1, color + '00');
+    ctx.beginPath();
+    ctx.arc(sx, sy, dotR * 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Dot
+    ctx.beginPath();
+    ctx.arc(sx, sy, dotR, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // Border
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Number
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${Math.round(dotR * 0.85)}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(i + 1), sx, sy + 0.5);
+
+    // Facing arrow
+    // facing=0 means toward audience (+Z) = down on screen
+    const facing = slot.facing !== undefined ? slot.facing : 0;
+    const arrowLen = dotR + 7;
+    const adx = Math.sin(facing) * arrowLen;
+    const ady = Math.cos(facing) * arrowLen;
+
+    ctx.beginPath();
+    ctx.moveTo(sx + Math.sin(facing) * (dotR + 1), sy + Math.cos(facing) * (dotR + 1));
+    ctx.lineTo(sx + adx, sy + ady);
+    ctx.strokeStyle = '#ffffffcc';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Arrowhead
+    const ha = Math.atan2(ady, adx);
+    const hl = 4;
+    ctx.beginPath();
+    ctx.moveTo(sx + adx, sy + ady);
+    ctx.lineTo(sx + adx - hl * Math.cos(ha - 0.5), sy + ady - hl * Math.sin(ha - 0.5));
+    ctx.moveTo(sx + adx, sy + ady);
+    ctx.lineTo(sx + adx - hl * Math.cos(ha + 0.5), sy + ady - hl * Math.sin(ha + 0.5));
+    ctx.strokeStyle = '#ffffffcc';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════
+
+function buildCountBar() {
+  const bar = document.getElementById('countBar');
+  bar.innerHTML = '';
+  for (let n = 1; n <= 8; n++) {
+    const btn = document.createElement('button');
+    btn.className = 'count-btn' + (n === state.count ? ' active' : '');
+    btn.textContent = n;
+    btn.onclick = () => { state.count = n; updateAll(); };
+    bar.appendChild(btn);
+  }
+}
+
+function buildGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  for (const preset of PRESETS) {
+    const isValid = preset.validCounts.includes(state.count);
+    const isSelected = state.selected === preset.id;
+
+    const card = document.createElement('div');
+    card.className = 'card' + (isSelected ? ' selected' : '') + (!isValid ? ' disabled' : '');
+    card.onclick = () => {
+      if (isValid) {
+        state.selected = preset.id;
+        updateAll();
+      }
+    };
+
+    const na = document.createElement('div');
+    na.className = 'na-overlay';
+    na.textContent = 'N/A';
+    card.appendChild(na);
+
+    const header = document.createElement('div');
+    header.className = 'card-header';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'name';
+    nameEl.textContent = preset.name;
+
+    const radiusEl = document.createElement('span');
+    radiusEl.className = 'radius';
+    if (isValid) {
+      const slots = getSlots(preset.id, state.count);
+      const r = computeStageRadius(slots);
+      radiusEl.textContent = `r=${r.toFixed(1)}m`;
+    }
+    header.appendChild(nameEl);
+    header.appendChild(radiusEl);
+    card.appendChild(header);
+
+    const view = document.createElement('div');
+    view.className = 'stage-view';
+    const canvas = document.createElement('canvas');
+    view.appendChild(canvas);
+    card.appendChild(view);
+
+    grid.appendChild(card);
+
+    requestAnimationFrame(() => {
+      drawFormation(canvas, preset.id, state.count, isValid);
+    });
+  }
+}
+
+function updatePrompt() {
+  const el = document.getElementById('promptText');
+  const preset = PRESETS.find(p => p.id === state.selected);
+  if (!preset) return;
+
+  const isValid = preset.validCounts.includes(state.count);
+  if (!isValid) {
+    el.textContent = `"${preset.name}" doesn't support ${state.count} performer${state.count > 1 ? 's' : ''}. Pick a different formation or count.`;
+    return;
+  }
+
+  const slots = getSlots(state.selected, state.count);
+  const radius = computeStageRadius(slots);
+  const needsLarger = radius > DEFAULT_PLATFORM_RADIUS;
+
+  let text = `Use the "${preset.name}" formation for ${state.count} performer${state.count > 1 ? 's' : ''}.`;
+
+  if (needsLarger) {
+    text += ` Stage grows to ${radius.toFixed(1)}m radius (default ${DEFAULT_PLATFORM_RADIUS}m).`;
+  }
+
+  const descriptions = {
+    'grid-2x2': state.count <= 2 ? 'Performers side by side, centered.' : `${Math.min(2, state.count)} in front, ${state.count - 2} behind, centered as a group.`,
+    'line': `All ${state.count} in a single row, ${SPACING}m apart, centered.`,
+    'side-by-side': `All ${state.count} in a single row, 1.8m apart (tighter than Line), centered.`,
+    'circle': state.count === 2 ? 'Two performers facing each other, centered.' : `${state.count} performers in a circle facing the center.`,
+    'v-shape': state.count <= 2 ? 'Side by side, centered.' : `Leader at front, ${state.count - 1} forming a widening V behind, centered as a group.`,
+    'diagonal': `Staggered diagonal from front-left to back-right, centered.`,
+    'tunnel-stack': `Conga line — all ${state.count} in a column, centered on stage.`,
+    'back-to-back': 'Both at center, facing opposite directions.',
+    'facing-each-other': 'Side by side, facing inward (1m apart), centered.',
+    'stage-lr': 'One at stage-left, one at stage-right (5m apart).',
+    'solo': 'Single performer, centered.',
+  };
+
+  text += ' ' + (descriptions[state.selected] || '');
+
+  el.textContent = text;
+}
+
+function updateAll() {
+  const currentPreset = PRESETS.find(p => p.id === state.selected);
+  if (currentPreset && !currentPreset.validCounts.includes(state.count)) {
+    const fallback = PRESETS.find(p => p.validCounts.includes(state.count));
+    if (fallback) state.selected = fallback.id;
+  }
+
+  buildCountBar();
+  buildGrid();
+  updatePrompt();
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(updateAll, 100);
+});
+
+updateAll();
+</script>
+</body>
+</html>

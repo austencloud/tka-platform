@@ -13,7 +13,12 @@ import {
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { AppSettings, PropPreset } from "../domain/AppSettings";
-import { logSettingChange } from "$lib/shared/analytics/services/posthog-activity-logger";
+// Dynamic import: posthog-activity-logger → posthog → $env/dynamic/public.
+// Static import crashes the composition worker (no globalThis.__sveltekit_dev).
+async function logSettingChange(key: string, oldValue: string | number | boolean, newValue: string | number | boolean): Promise<void> {
+  const mod = await import("$lib/shared/analytics/services/posthog-activity-logger");
+  return mod.logSettingChange(key, oldValue, newValue);
+}
 import type { FirebaseSettingsPersister } from "../services/implementations/FirebaseSettingsPersister";
 import { auth } from "../../auth/firebase";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";

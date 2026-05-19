@@ -35,29 +35,28 @@
     // May render outside scene feature system
   }
 
-  // Fog
+  // Fog — reuse instance, mutate properties instead of reallocating
+  let fogInstance: FogExp2 | null = null;
   $effect(() => {
     if (!scene.current) return;
     const fog = activeConfig.fog;
-    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
+    if (!fogInstance) {
+      fogInstance = new FogExp2(fog.color, fog.density);
+      scene.current.fog = fogInstance;
+    } else {
+      fogInstance.color.set(fog.color);
+      fogInstance.density = fog.density;
+    }
     return () => {
       if (scene.current) scene.current.fog = null;
+      fogInstance = null;
     };
   });
 
-  // No GLBs to load — report ready immediately
-  $effect(() => {
+  // Report ready once on mount
+  onMount(() => {
     sceneFeatures?.reportProgress("environment", 1);
     sceneFeatures?.reportReady("environment");
-  });
-
-  onMount(() => {
-    const timer = setTimeout(() => {
-      if (sceneFeatures && !sceneFeatures.isReady("environment")) {
-        sceneFeatures.reportReady("environment");
-      }
-    }, 5_000);
-    return () => clearTimeout(timer);
   });
 </script>
 
@@ -99,7 +98,7 @@
 {/if}
 
 <!-- Ascending golden motes -->
-{#key `motes|${activeConfig.motes.count}|${activeConfig.motes.sizeRange[0]}|${activeConfig.motes.area.width}|${activeConfig.motes.speed}`}
+{#key activeConfig.motes.count}
   <FallingParticles
     type={activeConfig.motes.type}
     count={activeConfig.motes.count}
@@ -113,7 +112,7 @@
 
 <!-- Ground-level cloud wisps -->
 {#if activeConfig.wisps}
-  {#key `wisps|${activeConfig.wisps.count}|${activeConfig.wisps.sizeRange[0]}|${activeConfig.wisps.area.width}`}
+  {#key activeConfig.wisps.count}
     <FallingParticles
       type={activeConfig.wisps.type}
       count={activeConfig.wisps.count}

@@ -43,6 +43,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { EFFORTS, type EffortId as EffortPresetId } from "$lib/shared/effort/domain/effort-types";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { toCompactDebug } from "$lib/features/landing/services/sequence-data-serializer";
 
   // ── Effect definitions ──────────────────────────────────────────────────────
   type EffectId = "clean" | "trails" | "fire" | "leds" | "charcoal";
@@ -158,6 +159,51 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     visibilityManager.registerObserver(onVisibilityChange);
     return () => visibilityManager.unregisterObserver(onVisibilityChange);
   });
+
+  // ── Sequence history & copy ──────────────────────────────────────────────
+  const HISTORY_CAP = 20;
+
+  interface HistoryEntry {
+    sequence: SequenceData;
+    timestamp: Date;
+    word: string;
+    loopType: string | null;
+    stepCount: number;
+  }
+
+  let sequenceHistory = $state<HistoryEntry[]>([]);
+  let showHistory = $state(false);
+  let copyFeedback = $state<string | null>(null);
+  let copyFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function pushToHistory(sequence: SequenceData) {
+    const entry: HistoryEntry = {
+      sequence,
+      timestamp: new Date(),
+      word: sequence.intendedWord ?? sequence.word ?? "?",
+      loopType: sequence.loopType ?? null,
+      stepCount: sequence.steps?.length ?? 0,
+    };
+    sequenceHistory = [entry, ...sequenceHistory].slice(0, HISTORY_CAP);
+  }
+
+  async function copySequenceData(sequence: SequenceData) {
+    try {
+      const text = toCompactDebug(sequence);
+      await navigator.clipboard.writeText(text);
+      showCopyFeedback("Copied!");
+    } catch {
+      showCopyFeedback("Copy failed");
+    }
+  }
+
+  function showCopyFeedback(msg: string) {
+    copyFeedback = msg;
+    if (copyFeedbackTimeout) clearTimeout(copyFeedbackTimeout);
+    copyFeedbackTimeout = setTimeout(() => {
+      copyFeedback = null;
+    }, 1500);
+  }
 
   // ── Derived values for AnimatorCanvas ───────────────────────────────────────
   let derivedStartPosition = $derived.by(() => {
@@ -437,6 +483,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   function hotSwapSequence(sequenceData: SequenceData) {
     if (!playbackController) return;
     currentSequence = sequenceData;
+    pushToHistory(sequenceData);
     lastStep = -1;
 
     const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
@@ -459,6 +506,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       }
       animationState.reset();
       currentSequence = sequenceData;
+      pushToHistory(sequenceData);
       lastStep = -1;
 
       const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
@@ -675,6 +723,35 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       <div class="tb-group bpm-group">
         <TempoControl {bpm} onBpmChange={handleBpmChange} showPresets={true} showPractice={false} />
       </div>
+
+      <div class="tb-group">
+        <span class="tb-label">Debug</span>
+        <div class="tb-pills">
+          <button
+            class="tb-pill"
+            class:copied={copyFeedback === "Copied!"}
+            onclick={() => currentSequence && copySequenceData(currentSequence)}
+            disabled={isDisabled || !currentSequence}
+            aria-label="Copy current sequence data to clipboard"
+            style="--chip-color: #22c55e;"
+          >
+            <i class={copyFeedback ? "fas fa-check" : "fas fa-clipboard"} aria-hidden="true"></i>
+            <span class="pill-text">{copyFeedback ?? "Copy"}</span>
+          </button>
+          <button
+            class="tb-pill"
+            class:active={showHistory}
+            onclick={() => showHistory = !showHistory}
+            disabled={sequenceHistory.length === 0}
+            aria-label={showHistory ? "Hide sequence history" : "Show sequence history"}
+            aria-expanded={showHistory}
+            style="--chip-color: #a78bfa;"
+          >
+            <i class="fas fa-history" aria-hidden="true"></i>
+            <span class="pill-text">History ({sequenceHistory.length})</span>
+          </button>
+        </div>
+      </div>
     </div>
     <div class="canvas-area">
       {#if animationReady && !isLoading}
@@ -736,6 +813,42 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
             <div class="beat-cell beat-cell-placeholder" aria-hidden="true"></div>
           {/if}
         {/each}
+      </div>
+    {/if}
+
+    <!-- History panel -->
+    {#if showHistory && sequenceHistory.length > 0}
+      <div class="history-panel">
+        <div class="history-header">
+          <span class="history-title">Recent Sequences ({sequenceHistory.length})</span>
+          <button class="history-close" onclick={() => showHistory = false} aria-label="Close history">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="history-list">
+          {#each sequenceHistory as entry, i (entry.timestamp.getTime())}
+            {@const isCurrent = i === 0}
+            <div class="history-row" class:current={isCurrent}>
+              <div class="history-info">
+                <span class="history-word">{entry.word}</span>
+                {#if entry.loopType}
+                  <span class="history-loop">{entry.loopType}</span>
+                {/if}
+                <span class="history-steps">{entry.stepCount} beats</span>
+                <span class="history-time">
+                  {entry.timestamp.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}
+                </span>
+              </div>
+              <button
+                class="history-copy-btn"
+                onclick={() => copySequenceData(entry.sequence)}
+                aria-label="Copy sequence data for {entry.word}"
+              >
+                <i class="fas fa-clipboard" aria-hidden="true"></i>
+              </button>
+            </div>
+          {/each}
+        </div>
       </div>
     {/if}
   </div>
@@ -940,6 +1053,145 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     pointer-events: none;
   }
 
+  /* ── Copy feedback ──────────────────────────────────────────────────── */
+  .tb-pill.copied {
+    background: color-mix(in srgb, #22c55e 20%, transparent);
+    border-color: color-mix(in srgb, #22c55e 50%, transparent);
+    color: #22c55e;
+  }
+
+  /* ── History panel ────────────────────────────────────────────────────── */
+  .history-panel {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.3);
+    max-height: 260px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .history-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .history-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .history-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .history-list {
+    overflow-y: auto;
+    flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  }
+
+  .history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.1s ease;
+  }
+
+  .history-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .history-row.current {
+    background: rgba(167, 139, 250, 0.06);
+    border-left: 2px solid #a78bfa;
+  }
+
+  .history-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .history-word {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  }
+
+  .history-loop {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(167, 139, 250, 0.15);
+    border: 1px solid rgba(167, 139, 250, 0.25);
+    color: #a78bfa;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .history-steps {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.35);
+    white-space: nowrap;
+  }
+
+  .history-time {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.25);
+    white-space: nowrap;
+    margin-left: auto;
+  }
+
+  .history-copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-left: 8px;
+    transition: all 0.15s ease;
+  }
+
+  .history-copy-btn:hover {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+  }
+
   /* ── Responsive ────────────────────────────────────────────────────────── */
   @media (max-width: 600px) {
     .showcase {
@@ -979,11 +1231,26 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       width: 56px;
       height: 56px;
     }
+
+    .history-panel {
+      max-height: 200px;
+    }
+
+    .history-info {
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .history-time {
+      display: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .tb-pill,
-    .step-cell {
+    .step-cell,
+    .history-row,
+    .history-copy-btn {
       transition: none;
     }
   }

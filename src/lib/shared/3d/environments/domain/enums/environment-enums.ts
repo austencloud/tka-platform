@@ -20,4 +20,4 @@ export type CosmicVariant = "night" | "aurora";
 /**
  * Ocean scene color variants
  */
-export type OceanVariant = "deep" | "reef";
+export type OceanVariant = "abyss" | "reef" | "mystical" | "cinematic";

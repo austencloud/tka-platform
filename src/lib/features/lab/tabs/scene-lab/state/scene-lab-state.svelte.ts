@@ -4,6 +4,9 @@
  * Factory that holds the currently-previewed scene and a live mutable config
  * for each scene type. Param sliders mutate nested fields directly; Svelte 5's
  * deep $state reactivity propagates changes into the scene components.
+ *
+ * All configs and the active scene selection persist to localStorage so tweaks
+ * survive refresh. Saves are debounced at 500ms to handle slider scrubbing.
  */
 
 import {
@@ -17,28 +20,73 @@ import {
   createDefaultWinterConfig,
   createDefaultCosmicNightConfig,
   createDefaultCosmicAuroraConfig,
-  createDefaultOceanDeepConfig,
+  createDefaultOceanAbyssConfig,
   createDefaultOceanReefConfig,
+  createDefaultOceanMysticalConfig,
+  createDefaultOceanCinematicConfig,
 } from "$lib/shared/3d/environments/domain/models/scene-configs";
 import type { SceneId } from "../domain/scene-lab-types";
+import { loadSceneLabState } from "../services/scene-lab-persistence";
 
 export function createSceneLabState() {
-  let sceneId = $state<SceneId>("winter");
-  let winterConfig = $state<WinterSceneConfig>(createDefaultWinterConfig());
+  const persisted = loadSceneLabState();
+
+  let sceneId = $state<SceneId>(persisted?.sceneId ?? "winter");
+  let winterConfig = $state<WinterSceneConfig>(
+    persisted?.configs.winter ?? createDefaultWinterConfig()
+  );
   let forestFireflyConfig = $state<ForestSceneConfig>(
-    createDefaultForestFireflyConfig()
+    persisted?.configs.forestFirefly ?? createDefaultForestFireflyConfig()
   );
   let forestAutumnConfig = $state<AutumnSceneConfig>(
-    createDefaultAutumnConfig()
+    persisted?.configs.forestAutumn ?? createDefaultAutumnConfig()
   );
   let cosmicNightConfig = $state<CosmicSceneConfig>(
-    createDefaultCosmicNightConfig()
+    persisted?.configs.cosmicNight ?? createDefaultCosmicNightConfig()
   );
   let cosmicAuroraConfig = $state<CosmicSceneConfig>(
-    createDefaultCosmicAuroraConfig()
+    persisted?.configs.cosmicAurora ?? createDefaultCosmicAuroraConfig()
   );
-  let oceanDeepConfig = $state<OceanSceneConfig>(createDefaultOceanDeepConfig());
-  let oceanReefConfig = $state<OceanSceneConfig>(createDefaultOceanReefConfig());
+  let oceanAbyssConfig = $state<OceanSceneConfig>(
+    persisted?.configs.oceanAbyss ?? persisted?.configs.oceanDeep ?? createDefaultOceanAbyssConfig()
+  );
+  let oceanReefConfig = $state<OceanSceneConfig>(
+    persisted?.configs.oceanReef ?? createDefaultOceanReefConfig()
+  );
+  let oceanMysticalConfig = $state<OceanSceneConfig>(
+    persisted?.configs.oceanMystical ?? createDefaultOceanMysticalConfig()
+  );
+  let oceanCinematicConfig = $state<OceanSceneConfig>(
+    persisted?.configs.oceanCinematic ?? createDefaultOceanCinematicConfig()
+  );
+
+  // JSON.stringify reads through Svelte's reactive proxies, setting up deep
+  // tracking so any nested slider change triggers a debounced save.
+  $effect(() => {
+    const serialized = JSON.stringify({
+      version: 1,
+      sceneId,
+      configs: {
+        winter: winterConfig,
+        forestFirefly: forestFireflyConfig,
+        forestAutumn: forestAutumnConfig,
+        cosmicNight: cosmicNightConfig,
+        cosmicAurora: cosmicAuroraConfig,
+        oceanAbyss: oceanAbyssConfig,
+        oceanReef: oceanReefConfig,
+        oceanMystical: oceanMysticalConfig,
+        oceanCinematic: oceanCinematicConfig,
+      },
+    });
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem("scene-lab-state", serialized);
+      } catch {
+        // noop
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  });
 
   function resetCurrent() {
     if (sceneId === "winter") winterConfig = createDefaultWinterConfig();
@@ -50,10 +98,14 @@ export function createSceneLabState() {
       cosmicNightConfig = createDefaultCosmicNightConfig();
     else if (sceneId === "cosmic-aurora")
       cosmicAuroraConfig = createDefaultCosmicAuroraConfig();
-    else if (sceneId === "ocean-deep")
-      oceanDeepConfig = createDefaultOceanDeepConfig();
+    else if (sceneId === "ocean-abyss")
+      oceanAbyssConfig = createDefaultOceanAbyssConfig();
     else if (sceneId === "ocean-reef")
       oceanReefConfig = createDefaultOceanReefConfig();
+    else if (sceneId === "ocean-mystical")
+      oceanMysticalConfig = createDefaultOceanMysticalConfig();
+    else if (sceneId === "ocean-cinematic")
+      oceanCinematicConfig = createDefaultOceanCinematicConfig();
   }
 
   function currentConfigSnapshot(): unknown {
@@ -61,8 +113,10 @@ export function createSceneLabState() {
     if (sceneId === "forest-firefly") return $state.snapshot(forestFireflyConfig);
     if (sceneId === "forest-autumn") return $state.snapshot(forestAutumnConfig);
     if (sceneId === "cosmic-night") return $state.snapshot(cosmicNightConfig);
-    if (sceneId === "ocean-deep") return $state.snapshot(oceanDeepConfig);
+    if (sceneId === "ocean-abyss") return $state.snapshot(oceanAbyssConfig);
     if (sceneId === "ocean-reef") return $state.snapshot(oceanReefConfig);
+    if (sceneId === "ocean-mystical") return $state.snapshot(oceanMysticalConfig);
+    if (sceneId === "ocean-cinematic") return $state.snapshot(oceanCinematicConfig);
     return $state.snapshot(cosmicAuroraConfig);
   }
 
@@ -78,10 +132,14 @@ export function createSceneLabState() {
         return "createDefaultCosmicNightConfig";
       case "cosmic-aurora":
         return "createDefaultCosmicAuroraConfig";
-      case "ocean-deep":
-        return "createDefaultOceanDeepConfig";
+      case "ocean-abyss":
+        return "createDefaultOceanAbyssConfig";
       case "ocean-reef":
         return "createDefaultOceanReefConfig";
+      case "ocean-mystical":
+        return "createDefaultOceanMysticalConfig";
+      case "ocean-cinematic":
+        return "createDefaultOceanCinematicConfig";
     }
   }
 
@@ -121,11 +179,17 @@ export function createSceneLabState() {
     get cosmicAuroraConfig() {
       return cosmicAuroraConfig;
     },
-    get oceanDeepConfig() {
-      return oceanDeepConfig;
+    get oceanAbyssConfig() {
+      return oceanAbyssConfig;
     },
     get oceanReefConfig() {
       return oceanReefConfig;
+    },
+    get oceanMysticalConfig() {
+      return oceanMysticalConfig;
+    },
+    get oceanCinematicConfig() {
+      return oceanCinematicConfig;
     },
     resetCurrent,
     copyCurrentToClipboard,

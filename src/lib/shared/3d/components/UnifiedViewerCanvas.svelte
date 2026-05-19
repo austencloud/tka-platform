@@ -16,6 +16,7 @@
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
+  import PerfMonitor from "./PerfMonitor.svelte";
   import Viewer2DCamera from "./Viewer2DCamera.svelte";
   import Viewer2DScene from "./Viewer2DScene.svelte";
   import SceneLoadingCurtain from "../scene-features/components/SceneLoadingCurtain.svelte";
@@ -110,6 +111,7 @@
           return renderer;
         }}
       >
+        <PerfMonitor visible={viewer3DState.showPerf} />
         {#if is2D}
           <Viewer2DCamera />
           <Viewer2DScene

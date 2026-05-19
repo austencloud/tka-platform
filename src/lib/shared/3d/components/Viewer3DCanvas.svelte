@@ -19,6 +19,7 @@
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
+  import PerfMonitor from "./PerfMonitor.svelte";
   import StepPlaneStrip from "./controls/StepPlaneStrip.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
@@ -45,6 +46,8 @@
     onExitFullScreen?: () => void;
     onRendererReady?: (renderer: unknown) => void;
     onCameraStateChange?: (state: CameraStateSnapshot) => void;
+    onPlaybackToggle?: () => void;
+    onProgressBarSeek?: (targetStep: number) => void;
   }
 
   let {
@@ -57,11 +60,20 @@
     fullScreen = false,
     onExitFullScreen,
     onCameraStateChange,
+    onPlaybackToggle,
+    onProgressBarSeek,
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
   const playbackAdapter = createAvatarPlaybackAdapter(
     () => viewer3DState.performerManager.performers[0] ?? null,
+    onPlaybackToggle && onProgressBarSeek
+      ? {
+          onPlaybackToggle,
+          onProgressBarSeek,
+          getIsPlaying: () => isPlaying,
+        }
+      : undefined,
   );
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
@@ -142,6 +154,7 @@
       <Canvas
         createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
       >
+        <PerfMonitor visible={viewer3DState.showPerf} />
         <Viewer3DCanvasRef />
         <Viewer3DCamera
           cameraPlayerAvatar={cameraPlayer.avatarState}
@@ -157,7 +170,9 @@
     {/if}
     <SceneLoadingCurtain />
     {#if !hideOverlays}
-      <UnifiedTimeline playback={playbackAdapter} />
+      <div class="timeline-anchor">
+        <UnifiedTimeline playback={playbackAdapter} />
+      </div>
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
         <div class="beat-strip-container">
           <StepPlaneStrip
@@ -180,6 +195,15 @@
     height: 100%;
     position: relative;
     background: #1a1a2e;
+  }
+
+  .timeline-anchor {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    pointer-events: auto;
   }
 
   .beat-strip-container {

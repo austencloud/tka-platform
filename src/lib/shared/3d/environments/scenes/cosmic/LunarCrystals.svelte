@@ -1,6 +1,6 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import {
     ConeGeometry,
     MeshPhysicalMaterial,
@@ -45,8 +45,24 @@
     baseHeight: number;
   }
 
-  const clusters = $derived.by(() => {
-    if (!config.enabled) return [];
+  function disposeClusters(list: ClusterData[]) {
+    for (const cluster of list) {
+      for (const shard of cluster.shards) {
+        shard.geometry.dispose();
+        shard.material.dispose();
+      }
+    }
+  }
+
+  let clusters = $state<ClusterData[]>([]);
+
+  $effect(() => {
+    if (!config.enabled) {
+      const old = untrack(() => clusters);
+      disposeClusters(old);
+      clusters = [];
+      return;
+    }
 
     const rng = makeRng(42);
     const crystalColor = new Color(config.color);
@@ -59,14 +75,13 @@
       const cx = Math.cos(angle) * (config.ringRadius + radiusJitter);
       const cz = Math.sin(angle) * (config.ringRadius + radiusJitter);
 
-      const shardCount = 2 + Math.floor(rng() * 3); // 2–4 shards
+      const shardCount = 2 + Math.floor(rng() * 3);
       const group = new Group();
       const shards: ShardData[] = [];
 
       for (let j = 0; j < shardCount; j++) {
         const [minH, maxH] = config.heightRange;
         const height = minH + rng() * (maxH - minH);
-        const radiusTop = 0.01 + rng() * 0.04; // near-zero for pointed tip
         const radiusBottom = 0.06 + rng() * 0.1;
 
         const geometry = new ConeGeometry(radiusBottom, height, 6, 1, false, rng() * Math.PI * 2);
@@ -103,7 +118,11 @@
       result.push({ group, shards, x: cx, z: cz, baseHeight: 0 });
     }
 
-    return result;
+    const old = untrack(() => clusters);
+    disposeClusters(old);
+    clusters = result;
+
+    return () => disposeClusters(result);
   });
 
   let time = $state(0);

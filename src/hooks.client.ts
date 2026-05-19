@@ -31,6 +31,23 @@ if (browser && dev && "serviceWorker" in navigator) {
     });
 }
 
+// Production: auto-recover from stale chunks after a deploy.
+// When the SW serves an old HTML shell that references chunk hashes the server
+// no longer has, dynamic imports fail. A single reload fetches the new manifest.
+if (browser && !dev) {
+  window.addEventListener("vite:preloadError", (event) => {
+    event.preventDefault();
+    const reloaded = sessionStorage.getItem("tka-chunk-reload");
+    if (!reloaded) {
+      sessionStorage.setItem("tka-chunk-reload", "1");
+      window.location.reload();
+    }
+  });
+
+  // Clear the reload guard on successful page load (no stale chunks)
+  sessionStorage.removeItem("tka-chunk-reload");
+}
+
 // Production: register the minimal hand-written service worker
 if (browser && !dev && "serviceWorker" in navigator) {
   navigator.serviceWorker

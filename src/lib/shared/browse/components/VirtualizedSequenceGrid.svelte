@@ -206,8 +206,29 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   // Scroll event listeners for the sidebar
   let scrollListeners = new Set<() => void>();
+  let scrollIdleTimer: ReturnType<typeof setTimeout> | null = null;
 
   function handleScrollEvent() {
+    // Cancel background pre-warming during active scroll to free main thread
+    cellPreWarmer.cancelAll();
+    if (preWarmTimer) {
+      clearTimeout(preWarmTimer);
+      preWarmTimer = null;
+    }
+
+    // Restart pre-warming after scroll settles
+    if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = setTimeout(() => {
+      scrollIdleTimer = null;
+      const rows = virtualRows;
+      for (const row of rows) {
+        const rowSequences = getRowSequences(row.index);
+        for (const seq of rowSequences) {
+          cellPreWarmer.preWarmSequence(seq, "background");
+        }
+      }
+    }, 200);
+
     for (const cb of scrollListeners) cb();
   }
 
@@ -216,15 +237,23 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
     createAndSubscribe(rowCount);
 
-    // ResizeObserver for responsive column count
+    // ResizeObserver for responsive column count — debounced to prevent
+    // cascading remeasurements on iOS (address bar show/hide triggers
+    // rapid resize events that freeze mobile devices).
+    let resizeRaf: number | null = null;
     const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const width = entry.contentRect.width;
-        if (width > 0) {
-          containerWidth = width;
-          if (currentVirtualizer) currentVirtualizer.measure();
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = null;
+        for (const entry of entries) {
+          const width = entry.contentRect.width;
+          if (width > 0 && Math.abs(width - containerWidth) > 1) {
+            containerWidth = width;
+            gridZoomManager.updateContainerWidth(width);
+            if (currentVirtualizer) currentVirtualizer.measure();
+          }
         }
-      }
+      });
     });
 
     resizeObserver.observe(scrollElement);
@@ -266,6 +295,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     return () => {
       storeUnsub?.();
       resizeObserver.disconnect();
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      if (preWarmTimer) clearTimeout(preWarmTimer);
+      if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
       scrollElement?.removeEventListener("scroll", handleScrollEvent);
       scrollListeners.clear();
     };
@@ -284,18 +316,26 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     });
   });
 
-  // Pre-warm pictograph cells for visible sequences
+  // Pre-warm pictograph cells for visible sequences — debounced to avoid
+  // firing on every scroll frame. Waits 150ms after scroll settles before
+  // queuing background work, preventing mobile freeze from effect thrashing.
+  let preWarmTimer: ReturnType<typeof setTimeout> | null = null;
+
   $effect(() => {
     const rows = virtualRows;
     if (!rows.length) return;
 
     untrack(() => {
-      for (const row of rows) {
-        const rowSequences = getRowSequences(row.index);
-        for (const seq of rowSequences) {
-          cellPreWarmer.preWarmSequence(seq, "background");
+      if (preWarmTimer) clearTimeout(preWarmTimer);
+      preWarmTimer = setTimeout(() => {
+        preWarmTimer = null;
+        for (const row of rows) {
+          const rowSequences = getRowSequences(row.index);
+          for (const seq of rowSequences) {
+            cellPreWarmer.preWarmSequence(seq, "background");
+          }
         }
-      }
+      }, 150);
     });
   });
 </script>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
+  import { onDestroy, untrack } from "svelte";
   import {
     CylinderGeometry,
     ShaderMaterial,
@@ -18,36 +19,52 @@
   let { config }: Props = $props();
   const groundY = $derived(userProportionsState.groundY);
 
-  const mainGeometry = $derived.by(() => {
+  let mainGeometry = $state<CylinderGeometry | null>(null);
+  let borderGeometry = $state<CylinderGeometry | null>(null);
+  let borderMaterial = $state<MeshStandardMaterial | null>(null);
+
+  $effect(() => {
     const segments =
       config.shape === "hexagon" ? 6 : config.shape === "octagon" ? 8 : 64;
-    return new CylinderGeometry(
+    const geo = new CylinderGeometry(
       config.radius,
       config.radius,
       config.height,
       segments
     );
+    const old = untrack(() => mainGeometry);
+    old?.dispose();
+    mainGeometry = geo;
+    return () => geo.dispose();
   });
 
-  const borderGeometry = $derived.by(() => {
+  $effect(() => {
     const segments =
       config.shape === "hexagon" ? 6 : config.shape === "octagon" ? 8 : 64;
-    return new CylinderGeometry(
+    const geo = new CylinderGeometry(
       config.radius + 0.15,
       config.radius + 0.15,
       config.height * 0.4,
       segments
     );
+    const old = untrack(() => borderGeometry);
+    old?.dispose();
+    borderGeometry = geo;
+    return () => geo.dispose();
   });
 
-  const borderMaterial = $derived.by(() => {
-    return new MeshStandardMaterial({
+  $effect(() => {
+    const mat = new MeshStandardMaterial({
       color: new Color(config.baseColor).multiplyScalar(1.3),
       metalness: config.metallic,
       roughness: config.roughness,
       emissive: new Color(config.emissiveColor),
       emissiveIntensity: config.emissiveIntensity * 0.4,
     });
+    const old = untrack(() => borderMaterial);
+    old?.dispose();
+    borderMaterial = mat;
+    return () => mat.dispose();
   });
 
   const vertexShader = /* glsl */ `
@@ -123,8 +140,12 @@
 
   let pulseTime = 0;
 
-  const material = $derived.by(() => {
-    return new ShaderMaterial({
+  let material = $state<ShaderMaterial | null>(null);
+
+  $effect(() => {
+    // Only read config fields that determine ShaderMaterial structure (none — it's always the same structure).
+    // Uniform values are synced in the separate $effect below, so we only create once.
+    const mat = new ShaderMaterial({
       uniforms: {
         uBaseColor: { value: new Color(config.baseColor) },
         uEmissiveColor: { value: new Color(config.emissiveColor) },
@@ -142,6 +163,10 @@
       fragmentShader,
       side: DoubleSide,
     });
+    const old = untrack(() => material);
+    old?.dispose();
+    material = mat;
+    return () => mat.dispose();
   });
 
   useTask((delta) => {
@@ -178,7 +203,7 @@
   });
 </script>
 
-{#if config.enabled}
+{#if config.enabled && mainGeometry && material && borderGeometry && borderMaterial}
   <!-- Main platform surface -->
   <T.Mesh
     geometry={mainGeometry}

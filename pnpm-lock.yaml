@@ -75,8 +75,8 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0(svelte@5.49.2)
       '@austencloud/scene-3d':
-        specifier: ^0.1.1
-        version: 0.1.1(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
+        specifier: ^0.1.2
+        version: 0.1.2(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
       '@austencloud/sidebar':
         specifier: ^0.1.0
         version: 0.1.0(svelte@5.49.2)
@@ -841,8 +841,8 @@ packages:
     peerDependencies:
       svelte: ^5.0.0
 
-  '@austencloud/scene-3d@0.1.1':
-    resolution: {integrity: sha512-GKPaQyCrq4Oo/khDL7QoWgChaFrCUfk0FhNns+4Hl0Cvj/g1OEAAXbS8v5NOqmzoy+hOdzaH6i3m6+3OqbKNcQ==}
+  '@austencloud/scene-3d@0.1.2':
+    resolution: {integrity: sha512-dvbJ4bIWv3mAEKAJm20Kbx0MriuhM+9pmJDwp6gVyHtV4Dsj7l0qwRq6x758ODmIeN1PpdyiHq2ELnwi7Uba6w==}
     peerDependencies:
       '@threlte/core': '>=8.0.0'
       '@threlte/extras': '>=9.0.0'
@@ -7092,7 +7092,7 @@ snapshots:
       '@austencloud/media-tagging-types': 0.1.0
       svelte: 5.49.2
 
-  '@austencloud/scene-3d@0.1.1(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
+  '@austencloud/scene-3d@0.1.2(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
     dependencies:
       '@threlte/core': 8.3.1(svelte@5.49.2)(three@0.182.0)
       '@threlte/extras': 9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0)

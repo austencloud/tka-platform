@@ -20,6 +20,8 @@
   } from "three";
   import type { ParticleType } from "../domain/models/environment-models";
 
+  const _tempVel = new Vector3();
+
   interface Props {
     /** Particle behavior type */
     type?: ParticleType;
@@ -445,7 +447,7 @@
       }
 
       // Update position
-      p.position.add(p.velocity.clone().multiplyScalar(delta));
+      p.position.add(_tempVel.copy(p.velocity).multiplyScalar(delta));
 
       // Update rotation
       p.rotation += p.rotationSpeed * delta;
@@ -509,8 +511,6 @@
     rotAttr.needsUpdate = true;
     colorAttr.needsUpdate = true;
 
-    // Compute bounding sphere for proper culling
-    geometry.computeBoundingSphere();
   });
 </script>
 

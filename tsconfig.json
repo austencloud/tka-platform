@@ -7,6 +7,7 @@
     "exactOptionalPropertyTypes": false, // Disabled: Too pedantic for Svelte 5 (causes false positives with optional props)
 
     "moduleResolution": "Bundler", // 2026: Bundler mode for Vite/SvelteKit
+    "customConditions": ["svelte"],
     "module": "ESNext",
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
