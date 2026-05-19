@@ -1,5 +1,4 @@
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-import { settingsService as settingsServiceSingleton } from "../../settings/state/SettingsState.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 
 // ============================================================================
@@ -22,11 +21,12 @@ if (import.meta.hot) {
 export async function initializeAppServices(): Promise<void> {
   if (isInitialized) return;
 
-  settingsService = settingsServiceSingleton;
+  const { settingsService: singleton } = await import(
+    "../../settings/state/SettingsState.svelte"
+  );
+  settingsService = singleton;
   isInitialized = true;
 
-  // Sync darkMode from AppSettings to animation visibility manager
-  // This ensures animations render correctly with the user's persisted setting
   syncDarkModeToAnimationManager();
 }
 
@@ -57,7 +57,10 @@ export function getSettingsServiceSync(): SettingsState {
 
 export async function getSettingsService(): Promise<SettingsState> {
   if (!settingsService) {
-    settingsService = settingsServiceSingleton;
+    const { settingsService: singleton } = await import(
+      "../../settings/state/SettingsState.svelte"
+    );
+    settingsService = singleton;
   }
   if (!settingsService) {
     throw new Error("Settings service is null after resolution");
