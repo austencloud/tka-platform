@@ -4,6 +4,9 @@
  * Factory that holds the currently-previewed scene and a live mutable config
  * for each scene type. Param sliders mutate nested fields directly; Svelte 5's
  * deep $state reactivity propagates changes into the scene components.
+ *
+ * All configs and the active scene selection persist to localStorage so tweaks
+ * survive refresh. Saves are debounced at 500ms to handle slider scrubbing.
  */
 
 import {
@@ -21,24 +24,59 @@ import {
   createDefaultOceanReefConfig,
 } from "$lib/shared/3d/environments/domain/models/scene-configs";
 import type { SceneId } from "../domain/scene-lab-types";
+import { loadSceneLabState } from "../services/scene-lab-persistence";
 
 export function createSceneLabState() {
-  let sceneId = $state<SceneId>("winter");
-  let winterConfig = $state<WinterSceneConfig>(createDefaultWinterConfig());
+  const persisted = loadSceneLabState();
+
+  let sceneId = $state<SceneId>(persisted?.sceneId ?? "winter");
+  let winterConfig = $state<WinterSceneConfig>(
+    persisted?.configs.winter ?? createDefaultWinterConfig()
+  );
   let forestFireflyConfig = $state<ForestSceneConfig>(
-    createDefaultForestFireflyConfig()
+    persisted?.configs.forestFirefly ?? createDefaultForestFireflyConfig()
   );
   let forestAutumnConfig = $state<AutumnSceneConfig>(
-    createDefaultAutumnConfig()
+    persisted?.configs.forestAutumn ?? createDefaultAutumnConfig()
   );
   let cosmicNightConfig = $state<CosmicSceneConfig>(
-    createDefaultCosmicNightConfig()
+    persisted?.configs.cosmicNight ?? createDefaultCosmicNightConfig()
   );
   let cosmicAuroraConfig = $state<CosmicSceneConfig>(
-    createDefaultCosmicAuroraConfig()
+    persisted?.configs.cosmicAurora ?? createDefaultCosmicAuroraConfig()
   );
-  let oceanDeepConfig = $state<OceanSceneConfig>(createDefaultOceanDeepConfig());
-  let oceanReefConfig = $state<OceanSceneConfig>(createDefaultOceanReefConfig());
+  let oceanDeepConfig = $state<OceanSceneConfig>(
+    persisted?.configs.oceanDeep ?? createDefaultOceanDeepConfig()
+  );
+  let oceanReefConfig = $state<OceanSceneConfig>(
+    persisted?.configs.oceanReef ?? createDefaultOceanReefConfig()
+  );
+
+  // JSON.stringify reads through Svelte's reactive proxies, setting up deep
+  // tracking so any nested slider change triggers a debounced save.
+  $effect(() => {
+    const serialized = JSON.stringify({
+      version: 1,
+      sceneId,
+      configs: {
+        winter: winterConfig,
+        forestFirefly: forestFireflyConfig,
+        forestAutumn: forestAutumnConfig,
+        cosmicNight: cosmicNightConfig,
+        cosmicAurora: cosmicAuroraConfig,
+        oceanDeep: oceanDeepConfig,
+        oceanReef: oceanReefConfig,
+      },
+    });
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem("scene-lab-state", serialized);
+      } catch {
+        // noop
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  });
 
   function resetCurrent() {
     if (sceneId === "winter") winterConfig = createDefaultWinterConfig();

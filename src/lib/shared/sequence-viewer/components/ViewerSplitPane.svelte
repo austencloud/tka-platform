@@ -17,7 +17,6 @@
   import type { ContentType, SplitConfig } from '../services/viewer-state-persistence';
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
-  import UnifiedViewerCanvas from "$lib/shared/3d/components/UnifiedViewerCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
   import PaneContentSelector from './PaneContentSelector.svelte';
@@ -168,13 +167,6 @@
     onVideoUpload,
   }: Props = $props();
 
-  // Feature flag: set window.__TKA_UNIFIED_VIEWER = true to enable the
-  // orthographic Threlte scene as the 2D renderer (Phase 3 of GPU pipeline).
-  const useUnifiedViewer = $derived(
-    typeof window !== "undefined" &&
-    (window as unknown as Record<string, unknown>).__TKA_UNIFIED_VIEWER === true
-  );
-
   onMount(() => {
     startSceneAssetPreload();
   });
@@ -211,8 +203,10 @@
     onFocusPane("animation");
   }
 
-  function handlePreviewClick() {
+  function handlePreviewClick(e: MouseEvent) {
     if (isExporting) return;
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('.pane-selector')) return;
     if (layout.focusedPane === "image") return;
     onFocusPane("image");
   }
@@ -287,50 +281,9 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             <span>{playback.animationState.error}</span>
           </div>
         {:else}
-          <!-- Both canvases always mounted. Crossfade via opacity transition. -->
-          <div
-            class="canvas-layer canvas-3d-layer"
-            style="opacity:{renderMode === '3d' && !useUnifiedViewer ? 1 : 0};pointer-events:{renderMode === '3d' && !useUnifiedViewer ? 'auto' : 'none'};"
-          >
-            <Viewer3DCanvas
-              sequenceData={playback.animationState.sequenceData}
-              currentStep={playback.currentStep}
-              isPlaying={playback.isPlaying}
-              {bpm}
-              {onBpmChange}
-              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-              hideOverlays={false}
-              fullScreen={layout.focusedPane === "animation"}
-              onExitFullScreen={onUnfocusPane}
-            />
-          </div>
-          {#if useUnifiedViewer}
-            <div
-              class="canvas-layer canvas-unified-layer"
-              style="opacity:1;pointer-events:auto;"
-            >
-              <UnifiedViewerCanvas
-                cameraMode={renderMode === '3d' ? 'perspective-3d' : 'orthographic-2d'}
-                sequenceData={playback.animationState.sequenceData}
-                currentStep={playback.currentStep}
-                isPlaying={playback.isPlaying}
-                {bpm}
-                {onBpmChange}
-                bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-                redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-                bluePropState={playback.animationState.bluePropState}
-                redPropState={playback.animationState.redPropState}
-                gridMode={sequence?.gridMode?.toString()}
-                fullScreen={layout.focusedPane === "animation"}
-                onExitFullScreen={onUnfocusPane}
-                {onCanvasReady}
-              />
-            </div>
-          {/if}
           <div
             class="canvas-layer canvas-2d-layer"
-            style="opacity:{renderMode === '3d' || useUnifiedViewer ? 0 : 1};pointer-events:{renderMode === '3d' || useUnifiedViewer ? 'none' : 'auto'};"
+            style="opacity:1;pointer-events:auto;"
           >
             <AnimatorCanvas
               sequenceData={playback.animationState.sequenceData}
@@ -351,19 +304,61 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
               onProgressBarScrubStart={onProgressBarScrubStart ?? null}
               onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
               focused={layout.focusedPane === "animation"}
-              suppress2DOverlays={renderMode === '3d' || useUnifiedViewer}
-              hideProgressBar={renderMode === '3d' || useUnifiedViewer}
+              suppress2DOverlays={false}
+              hideProgressBar={false}
             />
           </div>
         {/if}
 
       </div>
 
-      <!-- Unified control rail - sibling of .media-pane, NOT inside it.
-           The hover-scale effect is applied to .media-pane so the rail
-           sits in a non-scaling layer. Keeps chip positions stable as
-           the user moves the cursor toward them (Fitts's Law). -->
-      <RightRail {renderMode} {bpm} {onBpmChange} />
+      <RightRail renderMode="2d" {bpm} {onBpmChange} />
+    {:else if splitConfig.leftPane === 'animation-3d'}
+      <div class="media-pane animation-pane">
+        {#if layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
+          <div
+            class="pane-close-btn"
+            role="button"
+            tabindex="0"
+            onclick={handleCloseClick}
+            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") handleCloseClick(e); }}
+            aria-label="Exit focus mode"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </div>
+        {/if}
+
+        {#if playback.animationLoading}
+          <div class="loading-state">
+            <ProgressRing percent={-1} size={32} strokeWidth={3} />
+          </div>
+        {:else if playback.animationState.error}
+          <div class="error-state">
+            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+            <span>{playback.animationState.error}</span>
+          </div>
+        {:else}
+          <div
+            class="canvas-layer canvas-3d-layer"
+            style="opacity:1;pointer-events:auto;"
+          >
+            <Viewer3DCanvas
+              sequenceData={playback.animationState.sequenceData}
+              currentStep={playback.currentStep}
+              isPlaying={playback.isPlaying}
+              {bpm}
+              {onBpmChange}
+              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+              hideOverlays={false}
+              fullScreen={layout.focusedPane === "animation"}
+              onExitFullScreen={onUnfocusPane}
+            />
+          </div>
+        {/if}
+      </div>
+
+      <RightRail renderMode="3d" {bpm} {onBpmChange} />
     {:else if splitConfig.leftPane === 'card'}
       <div class="media-pane preview-pane">
         <ChoreoCard
@@ -497,6 +492,26 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             />
           </div>
         </div>
+      {:else if splitConfig.rightPane === 'animation-3d'}
+        <div class="media-pane animation-pane">
+          <div
+            class="canvas-layer canvas-3d-layer"
+            style="opacity:1;pointer-events:auto;"
+          >
+            <Viewer3DCanvas
+              sequenceData={playback.animationState.sequenceData}
+              currentStep={playback.currentStep}
+              isPlaying={playback.isPlaying}
+              {bpm}
+              {onBpmChange}
+              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+              hideOverlays={false}
+              fullScreen={false}
+              onExitFullScreen={onUnfocusPane}
+            />
+          </div>
+        </div>
       {:else if splitConfig.rightPane === 'videos'}
         <div class="media-pane">
           <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
@@ -607,13 +622,6 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     position: absolute;
     inset: 0;
     z-index: 2;
-    transition: opacity 250ms ease;
-  }
-
-  .canvas-unified-layer {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
     transition: opacity 250ms ease;
   }
 

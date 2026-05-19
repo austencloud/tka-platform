@@ -32,6 +32,7 @@
     InstancedMesh,
     Object3D,
     Vector3,
+    Box3,
   } from "three";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
@@ -453,8 +454,9 @@
   }
 
   const decorationPlacements = $derived.by((): DecorationPlacement[] => {
+    if (!activeConfig.decorations.enabled) return [];
     const clearingRadius = activeConfig.coral.clearingRadius;
-    const count = 12;
+    const count = activeConfig.decorations.count;
     const types: DecorationPlacement["type"][] = ["starfish", "urchin", "shell", "anemone"];
     return Array.from({ length: count }, (_, i) => {
       const angle = (i / count) * Math.PI * 2 + 1.1;
@@ -481,17 +483,52 @@
     phase: number;
   }
 
-  const GLB_FISH_COUNT = 15;
-  const FISH_COUNT = 40;
+  function glbMaxExtent(root: { updateMatrixWorld: (force: boolean) => void }): number {
+    root.updateMatrixWorld(true);
+    const box = new Box3().setFromObject(root as Object3D);
+    const size = box.getSize(new Vector3());
+    return Math.max(size.x, size.y, size.z);
+  }
+
+  const fishScales = $derived.by((): [number, number, number] => {
+    if (!$fishClown || !$fishButterfly || !$fishCommon) return [0.015, 0.015, 0.015];
+    const target = activeConfig.fish.targetSize;
+    const names = ["clownfish", "butterfly", "common"];
+    return [$fishClown, $fishButterfly, $fishCommon].map((model, i) => {
+      const extent = glbMaxExtent(model.scene);
+      const scale = extent > 0 ? target / extent : 0.0003;
+      console.log(`[FishScale] ${names[i]}: extent=${extent.toFixed(2)}, target=${target}, scale=${scale.toFixed(6)}`);
+      return scale;
+    }) as [number, number, number];
+  });
+
+  const JELLYFISH_TARGET_SIZE = 0.4;
+  const jellyfishScale = $derived.by((): number => {
+    if (!$jellyfishGlb) return 0.06;
+    const extent = glbMaxExtent($jellyfishGlb.scene);
+    return extent > 0 ? JELLYFISH_TARGET_SIZE / extent : 0.001;
+  });
+
+  function decorationScale(glb: { scene: { updateMatrixWorld: (force: boolean) => void } } | undefined): number {
+    const target = activeConfig.decorations.targetSize;
+    if (!glb) return target;
+    const extent = glbMaxExtent(glb.scene);
+    return extent > 0 ? target / extent : 0.005;
+  }
 
   const fishData = $derived.by((): FishInstance[] => {
-    // Use fewer fish when GLBs are loaded (heavier meshes)
-    const count = ($fishClown && $fishButterfly && $fishCommon) ? GLB_FISH_COUNT : FISH_COUNT;
+    if (!activeConfig.fish.enabled) return [];
+    const fishCfg = activeConfig.fish;
+    const useGlb = !!($fishClown && $fishButterfly && $fishCommon);
+    const count = useGlb ? fishCfg.count : Math.min(fishCfg.count * 3, 40);
+    const [rMin, rMax] = fishCfg.swimRadius;
+    const [hMin, hMax] = fishCfg.swimHeight;
+    const [sMin, sMax] = fishCfg.speed;
     return Array.from({ length: count }, (_, i) => ({
       angle: (i / count) * Math.PI * 2,
-      radius: 8 + Math.random() * 6,
-      height: 2.5 + Math.random() * 3,
-      speed: 0.3 + Math.random() * 0.5,
+      radius: rMin + Math.random() * (rMax - rMin),
+      height: hMin + Math.random() * (hMax - hMin),
+      speed: sMin + Math.random() * (sMax - sMin),
       phase: Math.random() * Math.PI * 2,
     }));
   });
@@ -707,25 +744,6 @@
   $effect(() => {
     if (!scene.current) return;
 
-    // DEBUG: log all meshes > 1 unit — remove after diagnosis
-    const s = scene.current;
-    s.traverse((obj) => {
-      const m = obj as Mesh;
-      if (!m.isMesh || !m.geometry) return;
-      m.geometry.computeBoundingBox();
-      const bb = m.geometry.boundingBox;
-      if (!bb) return;
-      const ws = m.getWorldScale(new Vector3());
-      const sz = new Vector3();
-      bb.getSize(sz);
-      sz.multiply(ws);
-      const maxDim = Math.max(sz.x, sz.y, sz.z);
-      if (maxDim > 1) {
-        const wp = m.getWorldPosition(new Vector3());
-        console.warn(`[OceanDebug] BIG MESH: "${m.name || m.parent?.name || '?'}" maxDim=${maxDim.toFixed(2)} size=[${sz.x.toFixed(2)},${sz.y.toFixed(2)},${sz.z.toFixed(2)}] pos=[${wp.x.toFixed(1)},${wp.y.toFixed(1)},${wp.z.toFixed(1)}] ws=[${ws.x.toFixed(4)},${ws.y.toFixed(4)},${ws.z.toFixed(4)}]`);
-      }
-    });
-
     const fog = activeConfig.fog;
     scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
     return () => {
@@ -885,25 +903,27 @@
 {/if}
 
 <!-- Schooling fish — GLB models with InstancedMesh fallback -->
-{#if $fishClown && $fishButterfly && $fishCommon}
-  {#each fishStates as fish}
-    {@const models = [$fishClown, $fishButterfly, $fishCommon]}
-    {@const model = models[fish.variety]!}
-    <T
-      is={model.scene.clone()}
-      position.x={fish.x}
-      position.y={fish.y}
-      position.z={fish.z}
-      rotation.y={fish.rotY}
-      scale={0.015}
+{#if activeConfig.fish.enabled}
+  {#if $fishClown && $fishButterfly && $fishCommon}
+    {#each fishStates as fish}
+      {@const models = [$fishClown, $fishButterfly, $fishCommon]}
+      {@const model = models[fish.variety]!}
+      <T
+        is={model.scene.clone()}
+        position.x={fish.x}
+        position.y={fish.y}
+        position.z={fish.z}
+        rotation.y={fish.rotY}
+        scale={fishScales[fish.variety]}
+      />
+    {/each}
+  {:else}
+    <T.InstancedMesh
+      args={[fishGeometry, fishMaterial, fishData.length || 1]}
+      frustumCulled={false}
+      oncreate={handleFishMeshCreated}
     />
-  {/each}
-{:else}
-  <T.InstancedMesh
-    args={[fishGeometry, fishMaterial, FISH_COUNT]}
-    frustumCulled={false}
-    oncreate={handleFishMeshCreated}
-  />
+  {/if}
 {/if}
 
 <!-- Jellyfish — GLB model with procedural fallback -->
@@ -916,7 +936,7 @@
         position.y={groundY + jf.y + offset.dy}
         position.z={jf.z + offset.dz}
       >
-        <T is={$jellyfishGlb.scene.clone()} scale={0.06} />
+        <T is={$jellyfishGlb.scene.clone()} scale={jellyfishScale} />
         <T.PointLight
           color={activeConfig.jellyfish.glowColor}
           intensity={activeConfig.jellyfish.lightIntensity * (0.7 + 0.3 * Math.sin(jellyfishTime * activeConfig.jellyfish.pulseRate * Math.PI * 2 + i * 1.7))}
@@ -946,6 +966,7 @@
 {/if}
 
 <!-- Ocean floor decorations (starfish, sea urchins, shells, anemones) -->
+{#if activeConfig.decorations.enabled}
 {#each decorationPlacements as dec}
   {#if dec.type === "starfish" && $starfishGlb}
     <T
@@ -953,7 +974,7 @@
       position.x={dec.x}
       position.y={groundY}
       position.z={dec.z}
-      scale={dec.scale}
+      scale={dec.scale * decorationScale($starfishGlb)}
       rotation.y={dec.rotY}
     />
   {:else if dec.type === "urchin" && $seaUrchinGlb}
@@ -962,7 +983,7 @@
       position.x={dec.x}
       position.y={groundY}
       position.z={dec.z}
-      scale={dec.scale}
+      scale={dec.scale * decorationScale($seaUrchinGlb)}
       rotation.y={dec.rotY}
     />
   {:else if dec.type === "shell" && $shellGlb}
@@ -971,7 +992,7 @@
       position.x={dec.x}
       position.y={groundY}
       position.z={dec.z}
-      scale={dec.scale}
+      scale={dec.scale * decorationScale($shellGlb)}
       rotation.y={dec.rotY}
     />
   {:else if dec.type === "anemone" && $anemoneGlb}
@@ -980,11 +1001,12 @@
       position.x={dec.x}
       position.y={groundY}
       position.z={dec.z}
-      scale={dec.scale}
+      scale={dec.scale * decorationScale($anemoneGlb)}
       rotation.y={dec.rotY}
     />
   {/if}
 {/each}
+{/if}
 
 <!-- Bubbles -->
 {#key `bubbles|${activeConfig.bubbles.count}|${activeConfig.bubbles.sizeRange[0]}|${activeConfig.bubbles.area.width}|${activeConfig.bubbles.speed}`}

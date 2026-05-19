@@ -224,6 +224,21 @@ export interface OceanSceneConfig {
     swayAmplitude: number;
   };
 
+  fish: {
+    enabled: boolean;
+    count: number;
+    targetSize: number;
+    swimRadius: [number, number];
+    swimHeight: [number, number];
+    speed: [number, number];
+  };
+
+  decorations: {
+    enabled: boolean;
+    count: number;
+    targetSize: number;
+  };
+
   rockCount: number;
   rockTintColor: string;
   rockTintBlend: number;
@@ -770,6 +785,19 @@ export function createDefaultOceanDeepConfig(): OceanSceneConfig {
       swaySpeed: 0.8,
       swayAmplitude: 0.15,
     },
+    fish: {
+      enabled: true,
+      count: 15,
+      targetSize: 0.25,
+      swimRadius: [8, 14],
+      swimHeight: [2.5, 5.5],
+      speed: [0.3, 0.8],
+    },
+    decorations: {
+      enabled: true,
+      count: 12,
+      targetSize: 0.2,
+    },
     rockCount: 8,
     rockTintColor: "#1a3a4a",
     rockTintBlend: 0.30,
@@ -862,6 +890,19 @@ export function createDefaultOceanReefConfig(): OceanSceneConfig {
       clearingRadius: 12,
       swaySpeed: 1.0,
       swayAmplitude: 0.12,
+    },
+    fish: {
+      enabled: true,
+      count: 20,
+      targetSize: 0.3,
+      swimRadius: [6, 12],
+      swimHeight: [2, 5],
+      speed: [0.3, 0.8],
+    },
+    decorations: {
+      enabled: true,
+      count: 16,
+      targetSize: 0.25,
     },
     rockCount: 10,
     rockTintColor: "#2a4a5a",

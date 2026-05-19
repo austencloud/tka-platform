@@ -52,6 +52,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
 
   interface Props {
     data: {
@@ -157,6 +158,12 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     const propType = seq.intendedProp?.bluePropType ?? settingsService.settings.bluePropType ?? "staff";
     const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, String(propType), false);
     openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
+  }
+
+  function handleSendToStickerLab() {
+    const seq = sequence;
+    if (!seq) return;
+    sendToStickerLab(seq);
   }
 
   onMount(async () => {
@@ -646,6 +653,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
                 isExportMode={isImageExportActive}
                 exportOptions={ctx.exportOptions}
                 onSendTo={sequence ? handleSendTo : undefined}
+                onSendToStickerLab={sequence ? handleSendToStickerLab : undefined}
                 stepCount={sequence?.steps?.length ?? 0}
               />
               {#if isAnyExportActive}

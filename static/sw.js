@@ -1,9 +1,9 @@
 /**
- * Minimal service worker — caches app shell, fonts, and viewed content.
- * No Workbox. No precache manifest. Browser HTTP cache handles hashed chunks.
+ * Minimal service worker — caches app shell, fonts, immutable assets, and viewed content.
+ * No Workbox. No precache manifest. Hashed immutable assets are cached on first visit.
  */
 
-const CACHE_NAME = "tka-v1";
+const CACHE_NAME = "tka-v2";
 const APP_SHELL_URLS = ["/app"];
 
 self.addEventListener("install", (event) => {
@@ -52,21 +52,44 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // SvelteKit immutable assets (JS/CSS chunks with content hashes): cache-first.
+  // These filenames contain a hash — once built they never change, so caching is safe.
+  // This is the critical fix for offline: without this, the app can't load when
+  // the browser HTTP cache is evicted.
+  if (url.pathname.startsWith("/_app/immutable/")) {
+    event.respondWith(cacheFirst(event.request));
+    return;
+  }
+
   // Viewed sequences and QR pages: network-first (offline festival use)
   if (url.pathname.startsWith("/sequence/") || url.pathname.startsWith("/q/")) {
     event.respondWith(networkFirst(event.request));
     return;
   }
 
-  // SPA navigation fallback: serve cached /app for app routes
-  if (event.request.mode === "navigate" && url.pathname.startsWith("/app")) {
-    event.respondWith(
-      caches.match("/app").then((cached) => cached || fetch(event.request))
-    );
-    return;
+  // SPA navigation fallback: serve cached /app for any app navigation.
+  // Public/prerendered routes (guide, landing) try network first, but all
+  // in-app routes (/create, /browse, /train, etc.) get the cached shell
+  // so the client-side router can handle them offline.
+  if (event.request.mode === "navigate") {
+    // Static public routes that have their own prerendered HTML — skip SPA fallback
+    const isPublicRoute =
+      url.pathname === "/" ||
+      url.pathname.startsWith("/guide/") ||
+      url.pathname.startsWith("/landing/") ||
+      url.pathname.startsWith("/auth/");
+
+    if (!isPublicRoute) {
+      event.respondWith(
+        fetch(event.request).catch(() =>
+          caches.match("/app").then((cached) => cached || new Response("Offline", { status: 503 }))
+        )
+      );
+      return;
+    }
   }
 
-  // Everything else: network only (JS chunks use browser HTTP cache via hashed filenames)
+  // Everything else: network only (non-immutable assets use standard HTTP cache)
 });
 
 async function cacheFirst(request) {

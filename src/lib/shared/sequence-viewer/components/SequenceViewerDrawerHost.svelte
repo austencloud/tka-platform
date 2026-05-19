@@ -47,6 +47,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
   import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
 
   const overlay = getSequenceOverlayState();
 
@@ -56,6 +57,12 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     const propType = seq.intendedProp?.bluePropType ?? settingsService.settings.bluePropType ?? "staff";
     const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, String(propType), false);
     openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
+  }
+
+  function handleSendToStickerLab() {
+    const seq = overlay.sequence;
+    if (!seq) return;
+    sendToStickerLab(seq);
   }
 
   let videoCount = $state(0);
@@ -474,6 +481,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     isExportMode={isImageExportActive}
                     exportOptions={ctx.exportOptions}
                     onSendTo={overlay.sequence ? handleSendTo : undefined}
+                    onSendToStickerLab={overlay.sequence ? handleSendToStickerLab : undefined}
                     stepCount={overlay.sequence?.steps?.length ?? 0}
                   />
                   {#if isRecordSceneActive && ctx.effectiveSequence}

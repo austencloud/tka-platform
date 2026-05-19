@@ -55,6 +55,24 @@
   {/each}
 </ParamPanel>
 
+<ParamPanel title="Fish" defaultOpen={false}>
+  <ParamSlider label="Enabled" value={cfg.fish.enabled ? 1 : 0} min={0} max={1} step={1} onChange={(v) => (mutate().fish.enabled = v > 0.5)} />
+  <ParamSlider label="Count" value={cfg.fish.count} min={0} max={30} step={1} onChange={(v) => (mutate().fish.count = v)} />
+  <ParamSlider label="Target size" value={cfg.fish.targetSize} min={0.05} max={1} step={0.01} unit="m" onChange={(v) => (mutate().fish.targetSize = v)} />
+  <ParamSlider label="Min radius" value={cfg.fish.swimRadius[0]} min={2} max={20} step={0.5} unit="m" onChange={(v) => (mutate().fish.swimRadius[0] = v)} />
+  <ParamSlider label="Max radius" value={cfg.fish.swimRadius[1]} min={4} max={30} step={0.5} unit="m" onChange={(v) => (mutate().fish.swimRadius[1] = v)} />
+  <ParamSlider label="Min height" value={cfg.fish.swimHeight[0]} min={0.5} max={8} step={0.25} unit="m" onChange={(v) => (mutate().fish.swimHeight[0] = v)} />
+  <ParamSlider label="Max height" value={cfg.fish.swimHeight[1]} min={1} max={12} step={0.25} unit="m" onChange={(v) => (mutate().fish.swimHeight[1] = v)} />
+  <ParamSlider label="Min speed" value={cfg.fish.speed[0]} min={0.05} max={2} step={0.05} onChange={(v) => (mutate().fish.speed[0] = v)} />
+  <ParamSlider label="Max speed" value={cfg.fish.speed[1]} min={0.1} max={3} step={0.05} onChange={(v) => (mutate().fish.speed[1] = v)} />
+</ParamPanel>
+
+<ParamPanel title="Decorations" defaultOpen={false}>
+  <ParamSlider label="Enabled" value={cfg.decorations.enabled ? 1 : 0} min={0} max={1} step={1} onChange={(v) => (mutate().decorations.enabled = v > 0.5)} />
+  <ParamSlider label="Count" value={cfg.decorations.count} min={0} max={24} step={1} onChange={(v) => (mutate().decorations.count = v)} />
+  <ParamSlider label="Target size" value={cfg.decorations.targetSize} min={0.05} max={1} step={0.01} unit="m" onChange={(v) => (mutate().decorations.targetSize = v)} />
+</ParamPanel>
+
 <ParamPanel title="Rocks" defaultOpen={false}>
   <ParamSlider label="Count" value={cfg.rockCount} min={0} max={20} step={1} onChange={(v) => (mutate().rockCount = v)} />
   <ParamColor label="Tint color" value={cfg.rockTintColor} onChange={(v) => (mutate().rockTintColor = v)} />
