@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T } from "@threlte/core";
+  import { onDestroy, untrack } from "svelte";
   import { BoxGeometry, MeshStandardMaterial, Color } from "three";
 
   interface Props {
@@ -18,25 +19,40 @@
   const ARC_SPAN = Math.PI * 0.7;
 
   const seatGeometry = new BoxGeometry(SEAT_WIDTH, SEAT_HEIGHT, SEAT_DEPTH);
+  const accentGeometry = new BoxGeometry(SEAT_WIDTH * 0.9, 0.02, 0.01);
 
-  const seatMaterial = $derived.by(() => {
-    return new MeshStandardMaterial({
+  let seatMaterial = $state<MeshStandardMaterial | null>(null);
+  let accentMaterial = $state<MeshStandardMaterial | null>(null);
+
+  $effect(() => {
+    const mat = new MeshStandardMaterial({
       color: new Color("#0c0c1e"),
       metalness: 0.7,
       roughness: 0.3,
       emissive: new Color(accentColor),
       emissiveIntensity: 0.08,
     });
+    const old = untrack(() => seatMaterial);
+    old?.dispose();
+    seatMaterial = mat;
+    return () => mat.dispose();
   });
 
-  const accentGeometry = new BoxGeometry(SEAT_WIDTH * 0.9, 0.02, 0.01);
-
-  const accentMaterial = $derived.by(() => {
-    return new MeshStandardMaterial({
+  $effect(() => {
+    const mat = new MeshStandardMaterial({
       color: new Color(accentColor),
       emissive: new Color(accentColor),
       emissiveIntensity: 0.6,
     });
+    const old = untrack(() => accentMaterial);
+    old?.dispose();
+    accentMaterial = mat;
+    return () => mat.dispose();
+  });
+
+  onDestroy(() => {
+    seatGeometry.dispose();
+    accentGeometry.dispose();
   });
 
   interface SeatPosition {
@@ -69,23 +85,25 @@
   });
 </script>
 
-{#each seats as row}
-  {#each row as seat}
-    <T.Mesh
-      geometry={seatGeometry}
-      material={seatMaterial}
-      position.x={seat.x}
-      position.y={seat.y}
-      position.z={seat.z}
-      rotation.y={seat.rotY}
-    />
-    <T.Mesh
-      geometry={accentGeometry}
-      material={accentMaterial}
-      position.x={seat.x + Math.sin(seat.rotY) * (SEAT_DEPTH / 2 + 0.005)}
-      position.y={seat.y - SEAT_HEIGHT * 0.3}
-      position.z={seat.z + Math.cos(seat.rotY) * (SEAT_DEPTH / 2 + 0.005)}
-      rotation.y={seat.rotY}
-    />
+{#if seatMaterial && accentMaterial}
+  {#each seats as row}
+    {#each row as seat}
+      <T.Mesh
+        geometry={seatGeometry}
+        material={seatMaterial}
+        position.x={seat.x}
+        position.y={seat.y}
+        position.z={seat.z}
+        rotation.y={seat.rotY}
+      />
+      <T.Mesh
+        geometry={accentGeometry}
+        material={accentMaterial}
+        position.x={seat.x + Math.sin(seat.rotY) * (SEAT_DEPTH / 2 + 0.005)}
+        position.y={seat.y - SEAT_HEIGHT * 0.3}
+        position.z={seat.z + Math.cos(seat.rotY) * (SEAT_DEPTH / 2 + 0.005)}
+        rotation.y={seat.rotY}
+      />
+    {/each}
   {/each}
-{/each}
+{/if}

@@ -25,6 +25,8 @@
   import { userProportionsState } from "@austencloud/scene-3d";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
   import { Vector3, FogExp2, Color } from "three";
+  import { onDestroy } from "svelte";
+  import { disposeSceneGraph } from "../utils/dispose-scene";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
   interface Props {
@@ -133,6 +135,45 @@
 
   const groundY = $derived(userProportionsState.groundY);
 
+  // ── Clone caching — clone once per GLB load, not per render ─────────
+
+  const treeClones = $derived.by(() => {
+    if (!$tree1 || !$tree2 || !$tree3) return [];
+    const models = [$tree1, $tree2, $tree3];
+    return treePlacements.map((_, i) => models[i % 3]!.scene.clone());
+  });
+
+  const rockClones = $derived.by(() => {
+    if (!$rock1 || !$rock2) return [];
+    const models = [$rock1, $rock2];
+    return rockPlacements.map((_, i) => models[i % 2]!.scene.clone());
+  });
+
+  const bushClones = $derived.by(() => {
+    if (!$bush1 || !$bush2) return [];
+    const models = [$bush1, $bush2];
+    return bushPlacements.map((_, i) => models[i % 2]!.scene.clone());
+  });
+
+  const logClones = $derived.by(() => {
+    if (!$fallenLog || !$fallenLogSmall) return [];
+    return fallenLogPlacements.map(([, , , , isLarge]) =>
+      (isLarge ? $fallenLog : $fallenLogSmall)!.scene.clone()
+    );
+  });
+
+  const campfireClone = $derived($campfire ? $campfire.scene.clone() : null);
+  const tentClone = $derived($tent ? $tent.scene.clone() : null);
+
+  onDestroy(() => {
+    for (const c of treeClones) disposeSceneGraph(c);
+    for (const c of rockClones) disposeSceneGraph(c);
+    for (const c of bushClones) disposeSceneGraph(c);
+    for (const c of logClones) disposeSceneGraph(c);
+    if (campfireClone) disposeSceneGraph(campfireClone);
+    if (tentClone) disposeSceneGraph(tentClone);
+  });
+
   // Fire emitter position (reactive to config + groundY)
   const firePosition = $derived.by(() => {
     const cf = activeConfig.campfire;
@@ -141,13 +182,21 @@
     return new Vector3(cf.position.x, groundY + fireHalfHeight, cf.position.z);
   });
 
-  // Apply fog reactively
+  // Apply fog reactively — reuse instance, mutate instead of reallocating
+  let fogInstance: FogExp2 | null = null;
   $effect(() => {
     if (!scene.current) return;
     const fog = activeConfig.fog;
-    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
+    if (!fogInstance) {
+      fogInstance = new FogExp2(fog.color, fog.density);
+      scene.current.fog = fogInstance;
+    } else {
+      fogInstance.color.set(fog.color);
+      fogInstance.density = fog.density;
+    }
     return () => {
       if (scene.current) scene.current.fog = null;
+      fogInstance = null;
     };
   });
 
@@ -200,7 +249,7 @@
   />
 {/if}
 
-{#key `${activeConfig.leaves.count}|${activeConfig.leaves.sizeRange[0]}|${activeConfig.leaves.sizeRange[1]}|${activeConfig.leaves.area.width}|${activeConfig.leaves.speed}|${activeConfig.leaves.spin}`}
+{#key activeConfig.leaves.count}
   <FallingParticles
     type={activeConfig.leaves.type}
     count={activeConfig.leaves.count}
@@ -213,7 +262,7 @@
 {/key}
 
 {#if activeConfig.fireflies}
-  {#key `${activeConfig.fireflies.count}|${activeConfig.fireflies.sizeRange[0]}|${activeConfig.fireflies.sizeRange[1]}|${activeConfig.fireflies.area.width}`}
+  {#key activeConfig.fireflies.count}
     <FallingParticles
       type={activeConfig.fireflies.type}
       count={activeConfig.fireflies.count}
@@ -226,66 +275,30 @@
   {/key}
 {/if}
 
-{#if $tree1 && $tree2 && $tree3}
-  {#each treePlacements as [x, z, scale, rotY], i}
-    {@const treeModel = i % 3 === 0 ? $tree1 : i % 3 === 1 ? $tree2 : $tree3}
-    <T
-      is={treeModel.scene.clone()}
-      position.x={x}
-      position.y={groundY}
-      position.z={z}
-      {scale}
-      rotation.y={rotY}
-    />
-  {/each}
-{/if}
+{#each treeClones as clone, i}
+  {@const [x, z, scale, rotY] = treePlacements[i] ?? [0, 0, 1, 0]}
+  <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
+{/each}
 
-{#if $rock1 && $rock2}
-  {#each rockPlacements as [x, z, scale, rotY], i}
-    {@const rockModel = i % 2 === 0 ? $rock1 : $rock2}
-    <T
-      is={rockModel.scene.clone()}
-      position.x={x}
-      position.y={groundY}
-      position.z={z}
-      {scale}
-      rotation.y={rotY}
-    />
-  {/each}
-{/if}
+{#each rockClones as clone, i}
+  {@const [x, z, scale, rotY] = rockPlacements[i] ?? [0, 0, 1, 0]}
+  <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
+{/each}
 
-{#if $bush1 && $bush2}
-  {#each bushPlacements as [x, z, scale, rotY], i}
-    {@const bushModel = i % 2 === 0 ? $bush1 : $bush2}
-    <T
-      is={bushModel.scene.clone()}
-      position.x={x}
-      position.y={groundY}
-      position.z={z}
-      {scale}
-      rotation.y={rotY}
-    />
-  {/each}
-{/if}
+{#each bushClones as clone, i}
+  {@const [x, z, scale, rotY] = bushPlacements[i] ?? [0, 0, 1, 0]}
+  <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
+{/each}
 
-{#if $fallenLog && $fallenLogSmall}
-  {#each fallenLogPlacements as [x, z, scale, rotY, isLarge]}
-    {@const logModel = isLarge ? $fallenLog : $fallenLogSmall}
-    <T
-      is={logModel.scene.clone()}
-      position.x={x}
-      position.y={groundY}
-      position.z={z}
-      {scale}
-      rotation.y={rotY}
-    />
-  {/each}
-{/if}
+{#each logClones as clone, i}
+  {@const [x, z, scale, rotY] = fallenLogPlacements[i] ?? [0, 0, 1, 0, true]}
+  <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
+{/each}
 
-{#if activeConfig.campfire?.enabled && $campfire && (sceneFeatures?.isEnabled("campfire") ?? true)}
+{#if activeConfig.campfire?.enabled && campfireClone && (sceneFeatures?.isEnabled("campfire") ?? true)}
   {@const cf = activeConfig.campfire}
   <T
-    is={$campfire.scene.clone()}
+    is={campfireClone}
     position.x={cf.position.x}
     position.y={groundY}
     position.z={cf.position.z}
@@ -342,9 +355,9 @@
   intensity={activeConfig.hemisphereLight.intensity}
 />
 
-{#if activeConfig.tent.enabled && $tent && (sceneFeatures?.isEnabled("tent") ?? true)}
+{#if activeConfig.tent.enabled && tentClone && (sceneFeatures?.isEnabled("tent") ?? true)}
   <T
-    is={$tent.scene.clone()}
+    is={tentClone}
     position.x={activeConfig.tent.position.x}
     position.y={groundY}
     position.z={activeConfig.tent.position.z}

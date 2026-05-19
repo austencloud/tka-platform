@@ -32,11 +32,16 @@
 
   // ── Fog ───────────────────────────────────────────────────────────────
 
+  let fogInstance: FogExp2 | null = null;
   $effect(() => {
     if (!scene.current) return;
-    scene.current.fog = new FogExp2(new Color("#08001a"), 0.008);
+    if (!fogInstance) {
+      fogInstance = new FogExp2("#08001a", 0.008);
+      scene.current.fog = fogInstance;
+    }
     return () => {
       if (scene.current) scene.current.fog = null;
+      fogInstance = null;
     };
   });
 
@@ -306,6 +311,8 @@
 
   const RING_RADIUS = 5.05;
 
+  const dotGeometry = untrack(() => new SphereGeometry(0.05, 8, 8));
+
   const ringDotLights = RING_COLORS.map((color, i) => {
     const angle = (i / RING_COLORS.length) * Math.PI * 2;
     return {
@@ -463,13 +470,10 @@
   // ── Rainbow point lights (semicircle behind performer) ───────────────
 
   const RAINBOW_LIGHTS: { color: string; angle: number }[] = [
-    { color: "#ff1744", angle: 0 },
-    { color: "#ff9100", angle: Math.PI / 6 },
-    { color: "#ffea00", angle: Math.PI / 3 },
-    { color: "#00e676", angle: Math.PI / 2 },
-    { color: "#2979ff", angle: (Math.PI * 2) / 3 },
-    { color: "#651fff", angle: (Math.PI * 5) / 6 },
-    { color: "#d500f9", angle: Math.PI },
+    { color: "#ff3333", angle: Math.PI / 8 },
+    { color: "#ffdd00", angle: (Math.PI * 3) / 8 },
+    { color: "#00cc66", angle: (Math.PI * 5) / 8 },
+    { color: "#6633ff", angle: (Math.PI * 7) / 8 },
   ];
 
   const LIGHT_RADIUS = 7;
@@ -509,6 +513,7 @@
     groundMaterial.dispose();
     accentRingGeometry.dispose();
     accentRingMaterial.dispose();
+    dotGeometry.dispose();
 
     for (const geo of shaftGeometries) geo.dispose();
     for (const mat of shaftMaterials) mat.dispose();
@@ -572,8 +577,8 @@
     position.x={dot.x}
     position.y={groundY + 0.05}
     position.z={dot.z}
+    geometry={dotGeometry}
   >
-    <T.SphereGeometry args={[0.05, 8, 8]} />
     <T.MeshStandardMaterial
       color={dot.color}
       emissive={dot.color}
@@ -589,16 +594,14 @@
     position.x={orb.baseX}
     position.y={orb.baseY}
     position.z={orb.baseZ}
-  />
-  <T.PointLight
-    color={orb.color}
-    intensity={12}
-    distance={8}
-    decay={2}
-    position.x={orb.group.position.x}
-    position.y={orb.group.position.y}
-    position.z={orb.group.position.z}
-  />
+  >
+    <T.PointLight
+      color={orb.color}
+      intensity={12}
+      distance={8}
+      decay={2}
+    />
+  </T>
 {/each}
 
 <!-- Light shafts — colored volumetric beams from sky to ground -->
@@ -612,11 +615,11 @@
   />
 {/each}
 
-<!-- 7 rainbow point lights — semicircle behind performer for color wash -->
+<!-- 4 rainbow point lights — semicircle behind performer for color wash -->
 {#each RAINBOW_LIGHTS as light}
   <T.PointLight
     color={light.color}
-    intensity={15}
+    intensity={22}
     distance={20}
     decay={1.6}
     position.x={Math.cos(light.angle) * LIGHT_RADIUS}

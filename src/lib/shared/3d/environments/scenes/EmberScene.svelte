@@ -1,7 +1,8 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { disposeSceneGraph } from "../utils/dispose-scene";
   import {
     Vector3,
     FogExp2,
@@ -118,14 +119,50 @@
     return new Vector3(fv.position.x, groundY + fireHalfHeight, fv.position.z);
   });
 
+  // ── Clone caching — clone + tint once per GLB/config change, not per render
+
+  const rockClones = $derived.by(() => {
+    if (!$rockA || !$rockB) return [];
+    return rockPlacements.map((_, i) =>
+      volcanicClone(
+        (i % 2 === 0 ? $rockA : $rockB)!.scene,
+        activeConfig.rockTintColor,
+        activeConfig.rockTintBlend,
+      )
+    );
+  });
+
+  const logClones = $derived.by(() => {
+    if (!$logModel || !$logSmall || !activeConfig.fireVent?.enabled) return [];
+    return logPlacements.map((log) =>
+      volcanicClone((log.large ? $logModel : $logSmall)!.scene, "#0a0505", 0.6)
+    );
+  });
+
+  const campfireClone = $derived($campfire ? $campfire.scene.clone() : null);
+
+  onDestroy(() => {
+    for (const c of rockClones) disposeSceneGraph(c as import("three").Object3D);
+    for (const c of logClones) disposeSceneGraph(c as import("three").Object3D);
+    if (campfireClone) disposeSceneGraph(campfireClone as import("three").Object3D);
+  });
+
   // ── Fog ────────────────────────────────────────────────────────────────
 
+  let fogInstance: FogExp2 | null = null;
   $effect(() => {
     if (!scene.current) return;
     const fog = activeConfig.fog;
-    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
+    if (!fogInstance) {
+      fogInstance = new FogExp2(fog.color, fog.density);
+      scene.current.fog = fogInstance;
+    } else {
+      fogInstance.color.set(fog.color);
+      fogInstance.density = fog.density;
+    }
     return () => {
       if (scene.current) scene.current.fog = null;
+      fogInstance = null;
     };
   });
 
@@ -204,10 +241,10 @@
 <ObsidianPillars config={activeConfig.obsidianPillars} />
 
 <!-- Fire vent with volumetric fire -->
-{#if activeConfig.fireVent?.enabled && $campfire}
+{#if activeConfig.fireVent?.enabled && campfireClone}
   {@const fv = activeConfig.fireVent}
   <T
-    is={$campfire.scene.clone()}
+    is={campfireClone}
     position.x={fv.position.x}
     position.y={groundY}
     position.z={fv.position.z}
@@ -275,37 +312,23 @@
 {/if}
 
 <!-- Volcanic rock formations -->
-{#if $rockA && $rockB}
-  {#each rockPlacements as rock, i}
-    {@const source = i % 2 === 0 ? $rockA : $rockB}
-    <T
-      is={volcanicClone(source.scene, activeConfig.rockTintColor, activeConfig.rockTintBlend)}
-      position.x={rock.x}
-      position.y={groundY}
-      position.z={rock.z}
-      scale={rock.scale * 2.2}
-      rotation.y={rock.rotY}
-    />
-  {/each}
-{/if}
+{#each rockClones as clone, i}
+  {@const rock = rockPlacements[i]}
+  {#if rock}
+    <T is={clone} position.x={rock.x} position.y={groundY} position.z={rock.z} scale={rock.scale * 2.2} rotation.y={rock.rotY} />
+  {/if}
+{/each}
 
 <!-- Charred fallen logs (only with fire vent) -->
-{#if activeConfig.fireVent?.enabled && $logModel && $logSmall}
-  {#each logPlacements as log}
-    {@const source = log.large ? $logModel : $logSmall}
-    <T
-      is={volcanicClone(source.scene, "#0a0505", 0.6)}
-      position.x={log.x}
-      position.y={groundY}
-      position.z={log.z}
-      scale={log.scale * 0.5}
-      rotation.y={log.rotY}
-    />
-  {/each}
-{/if}
+{#each logClones as clone, i}
+  {@const log = logPlacements[i]}
+  {#if log}
+    <T is={clone} position.x={log.x} position.y={groundY} position.z={log.z} scale={log.scale * 0.5} rotation.y={log.rotY} />
+  {/if}
+{/each}
 
 <!-- Rising embers — main field -->
-{#key `${activeConfig.embers.count}|${activeConfig.embers.sizeRange[0]}|${activeConfig.embers.sizeRange[1]}|${activeConfig.embers.area.width}|${activeConfig.embers.speed}`}
+{#key activeConfig.embers.count}
   <FallingParticles
     type={activeConfig.embers.type}
     count={activeConfig.embers.count}
@@ -319,7 +342,7 @@
 
 <!-- Falling ash -->
 {#if activeConfig.ash}
-  {#key `ash|${activeConfig.ash.count}|${activeConfig.ash.sizeRange[0]}|${activeConfig.ash.area.width}|${activeConfig.ash.speed}`}
+  {#key activeConfig.ash.count}
     <FallingParticles
       type={activeConfig.ash.type}
       count={activeConfig.ash.count}
@@ -334,7 +357,7 @@
 
 <!-- Ambient smoke layer -->
 {#if activeConfig.smoke}
-  {#key `smoke|${activeConfig.smoke.count}|${activeConfig.smoke.sizeRange[0]}|${activeConfig.smoke.area.width}`}
+  {#key activeConfig.smoke.count}
     <FallingParticles
       type={activeConfig.smoke.type}
       count={activeConfig.smoke.count}
@@ -349,7 +372,7 @@
 
 <!-- Floating glowing cinders -->
 {#if activeConfig.cinders}
-  {#key `cinders|${activeConfig.cinders.count}|${activeConfig.cinders.sizeRange[0]}|${activeConfig.cinders.area.width}`}
+  {#key activeConfig.cinders.count}
     <FallingParticles
       type={activeConfig.cinders.type}
       count={activeConfig.cinders.count}

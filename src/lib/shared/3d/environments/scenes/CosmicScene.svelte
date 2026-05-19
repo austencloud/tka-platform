@@ -25,16 +25,27 @@
   interface Props {
     variant?: CosmicVariant;
     config?: CosmicSceneConfig;
+    minPlatformRadius?: number;
   }
 
-  let { variant = "night", config }: Props = $props();
+  let { variant = "night", config, minPlatformRadius = 0 }: Props = $props();
 
   const defaultConfigs = {
     night: createDefaultCosmicNightConfig,
     aurora: createDefaultCosmicAuroraConfig,
   };
 
-  const activeConfig = $derived(config ?? defaultConfigs[variant]());
+  const baseConfig = $derived(config ?? defaultConfigs[variant]());
+
+  const activeConfig = $derived.by(() => {
+    if (minPlatformRadius <= 0 || minPlatformRadius <= baseConfig.platform.radius) {
+      return baseConfig;
+    }
+    return {
+      ...baseConfig,
+      platform: { ...baseConfig.platform, radius: minPlatformRadius },
+    };
+  });
 
   const { scene } = useThrelte();
   const groundY = $derived(userProportionsState.groundY);
@@ -124,7 +135,7 @@
 <EarthGodRays config={activeConfig.godRays} earthConfig={activeConfig.earth} />
 
 {#if activeConfig.particles.cosmicDust}
-  {#key `dust-${activeConfig.particles.cosmicDust.count}`}
+  {#key activeConfig.particles.cosmicDust.count}
     <FallingParticles
       type={activeConfig.particles.cosmicDust.type}
       count={activeConfig.particles.cosmicDust.count}
@@ -138,7 +149,7 @@
 {/if}
 
 {#if activeConfig.particles.energyParticles}
-  {#key `energy-${activeConfig.particles.energyParticles.count}`}
+  {#key activeConfig.particles.energyParticles.count}
     <EnergyParticles config={activeConfig.particles.energyParticles} />
   {/key}
 {/if}

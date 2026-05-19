@@ -208,7 +208,7 @@
 {/each}
 
 <!-- Dense cherry blossom petals — close layer -->
-{#key `petals|${activeConfig.petals.count}|${activeConfig.petals.area.width}|${activeConfig.petals.speed}`}
+{#key activeConfig.petals.count}
   <FallingParticles
     type={activeConfig.petals.type}
     count={activeConfig.petals.count}
@@ -222,7 +222,7 @@
 
 <!-- Distant petals — smaller, slower, wider for depth -->
 {#if activeConfig.distantPetals}
-  {#key `far|${activeConfig.distantPetals.count}|${activeConfig.distantPetals.area.width}`}
+  {#key activeConfig.distantPetals.count}
     <FallingParticles
       type={activeConfig.distantPetals.type}
       count={activeConfig.distantPetals.count}
@@ -237,7 +237,7 @@
 
 <!-- Fireflies — twilight warmth -->
 {#if activeConfig.fireflies}
-  {#key `fireflies|${activeConfig.fireflies.count}|${activeConfig.fireflies.area.width}`}
+  {#key activeConfig.fireflies.count}
     <FallingParticles
       type={activeConfig.fireflies.type}
       count={activeConfig.fireflies.count}

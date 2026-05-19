@@ -34,6 +34,7 @@
   }));
 
   let timeSinceSpawn = 0;
+  const colorCache = $derived(config.colors.map(c => new Color(c)));
 
   function spawnMeteor(m: Meteor) {
     const angle = Math.random() * Math.PI * 2;
@@ -105,8 +106,6 @@
       if (idle) spawnMeteor(idle);
     }
 
-    const colorArr = config.colors.map(c => new Color(c));
-
     for (let i = 0; i < POOL_SIZE; i++) {
       const m = pool[i]!;
       const geo = geometries[i]!;
@@ -142,7 +141,7 @@
         }
       }
 
-      mat.uniforms.uColor!.value = colorArr[m.colorIndex % colorArr.length] || colorArr[0];
+      mat.uniforms.uColor!.value = colorCache[m.colorIndex % colorCache.length] || colorCache[0];
       geo.attributes.position!.needsUpdate = true;
       geo.attributes.aAlpha!.needsUpdate = true;
     }

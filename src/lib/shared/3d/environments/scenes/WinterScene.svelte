@@ -13,7 +13,8 @@
 
   import { T, useThrelte } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
-  import { onMount, untrack } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
+  import { disposeSceneGraph } from "../utils/dispose-scene";
   import {
     Vector3,
     FogExp2,
@@ -228,12 +229,49 @@
     return new Vector3(cf.position.x, groundY + fireHalfHeight, cf.position.z);
   });
 
+  // ── Clone caching — clone + tint once per GLB load, not per render ───
+
+  const treeClones = $derived.by(() => {
+    if (!$pineTallA || !$pineTallC || !$pineDefault || !$pineRound || !$pineSmall) return [];
+    const variants = [$pineTallA, $pineTallC, $pineDefault, $pineRound, $pineSmall];
+    return treePlacements.map((_, i) => snowyClone(variants[i % variants.length]!.scene));
+  });
+
+  const rockClones = $derived.by(() => {
+    if (!$rockA || !$rockB) return [];
+    return rockPlacements.map((_, i) => snowyClone((i % 2 === 0 ? $rockA : $rockB)!.scene));
+  });
+
+  const logClones = $derived.by(() => {
+    if (!$logModel || !$logLarge) return [];
+    return fallenLogPlacements.map(([, , , , isLarge]) =>
+      snowyClone((isLarge ? $logLarge : $logModel)!.scene)
+    );
+  });
+
+  const campfireClone = $derived($campfire ? $campfire.scene.clone() : null);
+
+  onDestroy(() => {
+    for (const c of treeClones) disposeSceneGraph(c as import("three").Object3D);
+    for (const c of rockClones) disposeSceneGraph(c as import("three").Object3D);
+    for (const c of logClones) disposeSceneGraph(c as import("three").Object3D);
+    if (campfireClone) disposeSceneGraph(campfireClone as import("three").Object3D);
+  });
+
+  let fogInstance: FogExp2 | null = null;
   $effect(() => {
     if (!scene.current) return;
     const fog = activeConfig.fog;
-    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
+    if (!fogInstance) {
+      fogInstance = new FogExp2(fog.color, fog.density);
+      scene.current.fog = fogInstance;
+    } else {
+      fogInstance.color.set(fog.color);
+      fogInstance.density = fog.density;
+    }
     return () => {
       if (scene.current) scene.current.fog = null;
+      fogInstance = null;
     };
   });
 
@@ -295,10 +333,9 @@
   />
 {/if}
 
-<!-- Falling snow - #key forces remount when count/size/area/speed change so
-     the Scene Lab sliders take effect immediately (FallingParticles sizes
-     its GPU buffers once at mount). -->
-{#key `${activeConfig.snow.count}|${activeConfig.snow.sizeRange[0]}|${activeConfig.snow.sizeRange[1]}|${activeConfig.snow.area.width}|${activeConfig.snow.area.height}|${activeConfig.snow.area.depth}|${activeConfig.snow.speed}|${activeConfig.snow.spin}`}
+<!-- Falling snow - #key forces remount when count changes (GPU buffers
+     are sized to count at mount). Other props update reactively. -->
+{#key activeConfig.snow.count}
   <FallingParticles
     type={activeConfig.snow.type}
     count={activeConfig.snow.count}
@@ -310,53 +347,25 @@
   />
 {/key}
 
-{#if $pineTallA && $pineTallC && $pineDefault && $pineRound && $pineSmall}
-  {#each treePlacements as [x, z, scale, rotY], i}
-    {@const pineVariants = [$pineTallA, $pineTallC, $pineDefault, $pineRound, $pineSmall]}
-    {@const source = pineVariants[i % pineVariants.length]!}
-    <T
-      is={snowyClone(source.scene)}
-      position.x={x}
-      position.y={groundY}
-      position.z={z}
-      scale={scale * 2.4}
-      rotation.y={rotY}
-    />
-  {/each}
-{/if}
+{#each treeClones as clone, i}
+  {@const [x, z, scale, rotY] = treePlacements[i] ?? [0, 0, 1, 0]}
+  <T is={clone} position.x={x} position.y={groundY} position.z={z} scale={scale * 2.4} rotation.y={rotY} />
+{/each}
 
-{#if $rockA && $rockB}
-  {#each rockPlacements as [x, z, scale, rotY], i}
-    {@const source = i % 2 === 0 ? $rockA : $rockB}
-    <T
-      is={snowyClone(source.scene)}
-      position.x={x}
-      position.y={groundY}
-      position.z={z}
-      scale={scale * 2.2}
-      rotation.y={rotY}
-    />
-  {/each}
-{/if}
+{#each rockClones as clone, i}
+  {@const [x, z, scale, rotY] = rockPlacements[i] ?? [0, 0, 1, 0]}
+  <T is={clone} position.x={x} position.y={groundY} position.z={z} scale={scale * 2.2} rotation.y={rotY} />
+{/each}
 
-{#if $logModel && $logLarge}
-  {#each fallenLogPlacements as [x, z, scale, rotY, isLarge]}
-    {@const source = isLarge ? $logLarge : $logModel}
-    <T
-      is={snowyClone(source.scene)}
-      position.x={x}
-      position.y={groundY}
-      position.z={z}
-      scale={scale * 0.55}
-      rotation.y={rotY}
-    />
-  {/each}
-{/if}
+{#each logClones as clone, i}
+  {@const [x, z, scale, rotY] = fallenLogPlacements[i] ?? [0, 0, 1, 0, true]}
+  <T is={clone} position.x={x} position.y={groundY} position.z={z} scale={scale * 0.55} rotation.y={rotY} />
+{/each}
 
-{#if activeConfig.campfire?.enabled && $campfire}
+{#if activeConfig.campfire?.enabled && campfireClone}
   {@const cf = activeConfig.campfire}
   <T
-    is={$campfire.scene.clone()}
+    is={campfireClone}
     position.x={cf.position.x}
     position.y={groundY}
     position.z={cf.position.z}
