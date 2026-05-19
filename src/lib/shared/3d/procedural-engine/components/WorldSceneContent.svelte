@@ -904,11 +904,11 @@
     {cameraPreferences}
     enabled={true}
     initialYaw={playerYaw}
-    onModeChange={(mode) => {
+    onModeChange={(mode: CameraMode) => {
       cameraMode = mode;
       onModeChange(mode);
     }}
-    onRotationChange={(newYaw, _pitch) => {
+    onRotationChange={(newYaw: number, _pitch: number) => {
       playerYaw = newYaw;
     }}
   />

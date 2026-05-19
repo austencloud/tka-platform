@@ -42,6 +42,15 @@
 
   const COSMIC_PLATFORM_HEIGHT = 0.4;
 
+  const backgroundType = $derived.by((): BackgroundType => {
+    try {
+      const settings = settingsService;
+      return (settings as any)?.settings?.backgroundType ?? BackgroundType.SOLID_COLOR;
+    } catch { return BackgroundType.SOLID_COLOR; }
+  });
+
+  const hasOwnPlatform = $derived(backgroundType === BackgroundType.NIGHT_SKY);
+
   const stageGroundOffset = $derived(
     hasOwnPlatform
       ? COSMIC_PLATFORM_HEIGHT
@@ -254,27 +263,16 @@
   // the enum - we do the conversion here at the scene boundary.
   const gridVisiblePlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
 
-  // Read background type from settings for themed 3D environment
-  const backgroundType = $derived.by((): BackgroundType => {
-    try {
-      const settings = settingsService;
-      return (settings as any)?.settings?.backgroundType ?? BackgroundType.SOLID_COLOR;
-    } catch { return BackgroundType.SOLID_COLOR; }
-  });
-
   const hasEnvironment = $derived(
     backgroundType !== BackgroundType.SOLID_COLOR &&
     backgroundType !== BackgroundType.LINEAR_GRADIENT
   );
 
-  // Night environments need reduced default lighting since the environment provides its own
   const isNightEnvironment = $derived(
     backgroundType === BackgroundType.FIREFLY_FOREST ||
     backgroundType === BackgroundType.NIGHT_SKY ||
     backgroundType === BackgroundType.DEEP_OCEAN
   );
-
-  const hasOwnPlatform = $derived(backgroundType === BackgroundType.NIGHT_SKY);
 
   // When the background type doesn't produce a 3D environment (solid color,
   // gradient), Environment3D never mounts - so nothing will ever call

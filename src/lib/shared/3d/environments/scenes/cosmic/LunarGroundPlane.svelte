@@ -152,6 +152,36 @@
       return r1 + r2 * 0.45;
     }
 
+    // ── Procedural craters ──────────────────────────────────────────────────
+    // Seeded hash for deterministic crater placement.
+    vec2 hash2(vec2 p) {
+      p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+      return fract(sin(p) * 43758.5453);
+    }
+
+    // Returns (interior darkening, rim brightness) for all craters combined.
+    vec2 craterField(vec2 p) {
+      float interior = 0.0;
+      float rim = 0.0;
+      // 12 craters at seeded positions, varying radius
+      for (int i = 0; i < 12; i++) {
+        vec2 seed = hash2(vec2(float(i) * 73.17, float(i) * 41.31));
+        float angle = seed.x * 6.2831;
+        float dist = 6.0 + seed.y * 18.0;
+        vec2 center = vec2(cos(angle), sin(angle)) * dist;
+        float radius = 0.8 + seed.x * seed.y * 2.5;
+        float d = length(p - center);
+        float normalizedD = d / radius;
+        // Bowl interior — darkens toward center
+        float bowl = 1.0 - smoothstep(0.0, 0.85, normalizedD);
+        interior = max(interior, bowl * 0.35);
+        // Rim highlight — bright ring at the crater edge
+        float rimRing = smoothstep(0.75, 0.92, normalizedD) * (1.0 - smoothstep(0.92, 1.15, normalizedD));
+        rim = max(rim, rimRing);
+      }
+      return vec2(interior, rim);
+    }
+
     void main() {
       // ── Sample base texture or solid color ──────────────────────────────────
       vec4 baseColor;
@@ -170,12 +200,22 @@
       float edgeFade   = 1.0 - smoothstep(22.0, uGroundRadius, r);
       float zoneMask   = centerFade * edgeFade;
 
+      // ── Craters ────────────────────────────────────────────────────────────
+      vec2 crater = craterField(vWorldPos.xz);
+      float craterDarken = crater.x;
+      float craterRim    = crater.y;
+
+      // Darken base in crater bowls, brighten at rims
+      baseColor.rgb *= (1.0 - craterDarken);
+      baseColor.rgb += vec3(0.08, 0.08, 0.12) * craterRim;
+
       // ── Animated vein network ───────────────────────────────────────────────
-      // Scale world-space XZ by veinDensity. Slow drift on time axis.
       vec2 noiseCoord = vWorldPos.xz * uVeinDensity * 0.08 + vec2(uTime * 0.04, uTime * 0.03);
       float vein = veinPattern(noiseCoord) * zoneMask;
 
-      // Gentle sinusoidal pulse (never goes dark, just breathes 30 %)
+      // Veins glow brighter along crater rims
+      vein += craterRim * 0.4 * zoneMask;
+
       const float PI = 3.14159265358979;
       float pulse = 1.0 + sin(uTime * PI) * 0.3;
 

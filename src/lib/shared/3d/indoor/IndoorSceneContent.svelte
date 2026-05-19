@@ -232,10 +232,10 @@
     {cameraPreferences}
     enabled={true}
     initialYaw={props.room.spawnFacing}
-    onModeChange={(mode) => {
+    onModeChange={(mode: CameraMode) => {
       cameraMode = mode;
     }}
-    onRotationChange={(newYaw, _pitch) => {
+    onRotationChange={(newYaw: number, _pitch: number) => {
       playerYaw = newYaw;
     }}
   />

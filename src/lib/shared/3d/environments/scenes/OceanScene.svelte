@@ -709,7 +709,7 @@
 
     // DEBUG: log all meshes > 1 unit — remove after diagnosis
     const s = scene.current;
-    s.traverse((obj) => {
+    s.traverse((obj: Object3D) => {
       const m = obj as Mesh;
       if (!m.isMesh || !m.geometry) return;
       m.geometry.computeBoundingBox();

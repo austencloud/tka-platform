@@ -185,7 +185,7 @@
         {cameraPreferences}
         enabled={true}
         allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
-        onModeChange={(m) => {
+        onModeChange={(m: CameraMode) => {
           console.log("[SceneLab] UCC mode →", m);
           if (m === CameraMode.ORBIT) {
             camMode = "orbit";

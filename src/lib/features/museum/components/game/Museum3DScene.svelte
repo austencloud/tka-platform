@@ -986,7 +986,7 @@
   initialPitch={fpsInitialPitch}
   allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
   disableModeToggle={true}
-  onModeChange={(mode) => {
+  onModeChange={(mode: CameraMode) => {
     // Remember the user's preferred 3D mode so flipping back from 2D restores it.
     if (mode === CameraMode.FIRST_PERSON || mode === CameraMode.THIRD_PERSON) {
       lastCameraMode = mode;
@@ -997,7 +997,7 @@
       props.onViewModeChange?.(mode === CameraMode.THIRD_PERSON ? "third-person" : "first-person");
     }
   }}
-  onRotationChange={(newYaw, newPitch) => {
+  onRotationChange={(newYaw: number, newPitch: number) => {
     playerYaw = newYaw;
     playerPitch = newPitch;
   }}
