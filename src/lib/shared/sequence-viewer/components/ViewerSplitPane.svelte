@@ -353,6 +353,8 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
               hideOverlays={false}
               fullScreen={layout.focusedPane === "animation"}
               onExitFullScreen={onUnfocusPane}
+              {onPlaybackToggle}
+              {onProgressBarSeek}
             />
           </div>
         {/if}
@@ -509,6 +511,8 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
               hideOverlays={false}
               fullScreen={false}
               onExitFullScreen={onUnfocusPane}
+              {onPlaybackToggle}
+              {onProgressBarSeek}
             />
           </div>
         </div>

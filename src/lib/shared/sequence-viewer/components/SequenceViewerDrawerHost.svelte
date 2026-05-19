@@ -283,7 +283,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         {@const isAnyExportActive = ctx.editingPane !== null}
         {@const isRecordSceneActive = isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl}
         {@const isSidebarExportActive = isAnyExportActive && !isRecordSceneActive}
-        {@const showRail = ctx.viewerState.viewerMode !== 'split' && !isMobileWidth}
+        {@const showRail = !isMobileWidth}
         {@const handleBackToSplit = () => {
           ctx.viewerState.backToSplit();
           setTimeout(() => rerenderTrigger++, 280);
@@ -392,22 +392,17 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 >
                   {#if showRail}
                     <ViewerContentRail
-                      activeMode={(() => {
-                        const base = ctx.viewerState.viewerMode === 'split' ? 'animation' : ctx.viewerState.viewerMode;
-                        if ((base === 'animation' || base === 'animation-3d') && ctx.renderMode === '3d') return 'animation-3d';
-                        if (base === 'animation-3d' && ctx.renderMode === '2d') return 'animation';
-                        return base;
-                      })()}
+                      activeMode={ctx.viewerState.viewerMode}
                       {videoCount}
                       webgl2Available={ctx.viewer3DState.webgl2Available}
-                      onBack={handleBackToSplit}
+                      onSelectSplit={handleBackToSplit}
                       onSelectMode={(mode) => {
                         if (mode === 'animation') {
                           if (ctx.renderMode === '3d') ctx.viewer3DState.exit3D();
-                          ctx.viewerState.enterExport('animation-export');
+                          ctx.viewerState.enterExport('animation-export', 'animation');
                         } else if (mode === 'animation-3d') {
                           if (ctx.renderMode !== '3d' && overlay.sequence) ctx.viewer3DState.enter3D(overlay.sequence);
-                          ctx.viewerState.enterExport('animation-export');
+                          ctx.viewerState.enterExport('animation-export', 'animation-3d');
                         } else if (mode === 'card') {
                           ctx.viewerState.enterExport('image-export');
                         } else {
@@ -458,7 +453,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onProgressBarSeek={ctx.handleProgressBarSeek}
                       onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
                       onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
-                      splitConfig={ctx.viewerState.splitConfig}
+                      splitConfig={ctx.viewerState.viewerMode !== 'split' && (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d')
+                        ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
+                        : ctx.viewerState.splitConfig}
                       onSplitConfigChange={(pane, content) => ctx.viewerState.setSplitPaneContent(pane, content)}
                       isLoggedIn={ctx.isLoggedIn}
                       onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}

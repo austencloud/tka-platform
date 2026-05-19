@@ -651,7 +651,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     hapticService?.trigger("selection");
 
     if (pane === 'animation') {
-      viewerState.enterExport('animation-export');
+      const contentType = viewer3DState.renderMode === '3d' ? 'animation-3d' as const : 'animation' as const;
+      viewerState.enterExport('animation-export', contentType);
       if (!playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
       }

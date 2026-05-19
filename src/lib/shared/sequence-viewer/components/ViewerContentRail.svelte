@@ -1,22 +1,25 @@
 <script lang="ts">
-	import type { ContentType } from '../state/viewer-state.svelte';
+	import type { ContentType, ViewerMode } from '../state/viewer-state.svelte';
 
 	const RAIL_WIDTH_KEY = 'tka-viewer-rail-width';
 	const DEFAULT_WIDTH = 180;
 	const MIN_WIDTH = 72;
 	const MAX_WIDTH = 300;
 
+	type RailMode = ViewerMode;
+
 	interface Props {
-		activeMode: ContentType;
+		activeMode: RailMode;
 		videoCount?: number;
 		webgl2Available?: boolean;
-		onBack: () => void;
 		onSelectMode: (mode: ContentType) => void;
+		onSelectSplit: () => void;
 	}
 
-	let { activeMode, videoCount = 0, webgl2Available = true, onBack, onSelectMode }: Props = $props();
+	let { activeMode, videoCount = 0, webgl2Available = true, onSelectMode, onSelectSplit }: Props = $props();
 
-	const allModes: { id: ContentType; icon: string; label: string }[] = [
+	const allModes: { id: RailMode; icon: string; label: string }[] = [
+		{ id: 'split', icon: 'fa-columns', label: 'Side by Side' },
 		{ id: 'animation', icon: 'fa-play', label: '2D Animation' },
 		{ id: 'animation-3d', icon: 'fa-cube', label: '3D Animation' },
 		{ id: 'card', icon: 'fa-grip', label: 'Card' },
@@ -109,23 +112,36 @@
 	bind:this={navEl}
 	style:width="{railWidth}px"
 >
-	<button type="button" class="rail-back-btn" onclick={onBack} aria-label="Back to split view">
-		<i class="fas fa-chevron-left" aria-hidden="true"></i>
-		{#if !collapsed}
-			<span class="rail-back-label">Back</span>
-		{/if}
-	</button>
-
 	<div class="rail-modes">
-		{#each modes as mode, i (mode.id)}
+		<button
+			type="button"
+			class="rail-mode-btn split-btn"
+			class:active={activeMode === 'split'}
+			aria-pressed={activeMode === 'split'}
+			aria-label="Side by Side"
+			onclick={onSelectSplit}
+			onkeydown={(e) => handleKeydown(e, 0)}
+		>
+			<i class="fas fa-columns" aria-hidden="true"></i>
+			{#if !collapsed}
+				<span class="rail-mode-label">Side by Side</span>
+			{/if}
+		</button>
+
+		<div class="rail-divider"></div>
+		{#if !collapsed}
+			<div class="rail-section-label">Focus</div>
+		{/if}
+
+		{#each modes.filter(m => m.id !== 'split') as mode, i (mode.id)}
 			<button
 				type="button"
 				class="rail-mode-btn"
 				class:active={activeMode === mode.id}
 				aria-pressed={activeMode === mode.id}
 				aria-label={mode.label}
-				onclick={() => onSelectMode(mode.id)}
-				onkeydown={(e) => handleKeydown(e, i)}
+				onclick={() => onSelectMode(mode.id as ContentType)}
+				onkeydown={(e) => handleKeydown(e, i + 1)}
 			>
 				<i class="fas {mode.icon}" aria-hidden="true"></i>
 				{#if !collapsed}
@@ -138,7 +154,7 @@
 		{/each}
 	</div>
 
-	<!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_tabindex -->
+	<!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
 	<div
 		class="resize-handle"
 		onpointerdown={onPointerDown}
@@ -227,47 +243,33 @@
 			0 0 8px color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
 	}
 
-	.rail-back-btn {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		padding: 16px 8px;
-		background: none;
-		border: none;
-		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		cursor: pointer;
-		transition:
-			background 120ms cubic-bezier(0.2, 0, 0, 1),
-			color 120ms cubic-bezier(0.2, 0, 0, 1);
-	}
-
-	.rail-back-btn:hover {
-		background: color-mix(in srgb, var(--theme-panel-bg, #0a0a14) 85%, white);
-		color: var(--theme-text, #ffffff);
-	}
-
-	.rail-back-btn:focus-visible {
-		outline: 2px solid var(--theme-accent, #f43f5e);
-		outline-offset: -2px;
-	}
-
-	.rail-back-btn i {
-		font-size: 18px;
-	}
-
-	.rail-back-label {
-		font-size: var(--font-size-xs, 11px);
-		font-weight: 500;
-		letter-spacing: 0.03em;
-	}
-
 	.rail-modes {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.rail-divider {
+		height: 1px;
+		background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+		margin: 0 12px;
+		flex-shrink: 0;
+	}
+
+	.rail-section-label {
+		padding: 8px 0 4px;
+		text-align: center;
+		font-size: 9px;
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: rgba(255, 255, 255, 0.2);
+		flex-shrink: 0;
+	}
+
+	.rail-mode-btn.split-btn {
+		flex: 0 0 auto;
+		padding: 14px 8px;
 	}
 
 	.rail-mode-btn {
@@ -337,7 +339,6 @@
 		.content-rail {
 			transition: none;
 		}
-		.rail-back-btn,
 		.rail-mode-btn {
 			transition: none;
 		}

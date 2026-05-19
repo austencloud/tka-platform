@@ -41,11 +41,14 @@ export function createViewerState() {
 		persistSplitConfig(splitConfig);
 	}
 
-	function enterExport(type: 'animation-export' | 'image-export') {
-		const mode: ViewerMode = type === 'animation-export' ? 'animation' : 'card';
-		viewerMode = mode;
+	function enterExport(type: 'animation-export' | 'image-export', contentType?: 'animation' | 'animation-3d') {
+		if (type === 'animation-export') {
+			viewerMode = contentType ?? 'animation';
+		} else {
+			viewerMode = 'card';
+		}
 		exportContext = type;
-		persistViewerMode(mode);
+		persistViewerMode(viewerMode);
 	}
 
 	function exitExport() {
@@ -53,6 +56,10 @@ export function createViewerState() {
 	}
 
 	function backToSplit() {
+		if (viewerMode === 'animation' || viewerMode === 'animation-3d') {
+			splitConfig = { ...splitConfig, leftPane: viewerMode as ContentType };
+			persistSplitConfig(splitConfig);
+		}
 		viewerMode = 'split';
 		exportContext = null;
 		persistViewerMode('split');

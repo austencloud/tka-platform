@@ -36,10 +36,22 @@ export interface AvatarPlaybackHandle {
 	goToStep(index: number): void;
 }
 
+// ── Orchestrator bridge (optional) ────────────────────────────────────
+// When provided, seek/play/pause route through the parent orchestrator
+// so the useTask frame loop in Viewer3DScene reads the correct
+// currentStep prop instead of fighting the adapter.
+
+export interface OrchestratorCallbacks {
+	onPlaybackToggle: () => void;
+	onProgressBarSeek: (targetStep: number) => void;
+	getIsPlaying: () => boolean;
+}
+
 // ── Adapter factory ────────────────────────────────────────────────────
 
 export function createAvatarPlaybackAdapter(
 	getAvatar: () => AvatarPlaybackHandle | null,
+	orchestrator?: OrchestratorCallbacks,
 ): UnifiedPlaybackContext {
 	return {
 		get overallProgress() {
@@ -60,6 +72,7 @@ export function createAvatarPlaybackAdapter(
 			return getAvatar()?.totalSteps ?? 0;
 		},
 		get isPlaying() {
+			if (orchestrator) return orchestrator.getIsPlaying();
 			return getAvatar()?.isPlaying ?? false;
 		},
 		get isLooping() {
@@ -87,11 +100,20 @@ export function createAvatarPlaybackAdapter(
 		seek(progress: number) {
 			const av = getAvatar();
 			if (!av) return;
+			if (orchestrator) {
+				const clamped = Math.max(0, Math.min(1, progress));
+				orchestrator.onProgressBarSeek(clamped * av.totalSteps);
+				return;
+			}
 			const { stepIndex, stepProgress } = computeSeek3D(progress, av.totalSteps);
 			av.goToStep(stepIndex);
 			av.setProgress(stepProgress);
 		},
 		togglePlay() {
+			if (orchestrator) {
+				orchestrator.onPlaybackToggle();
+				return;
+			}
 			getAvatar()?.togglePlay();
 		},
 		toggleLoop() {
