@@ -49,6 +49,15 @@ export interface ScanEventRow {
   userId: string | null;
 }
 
+function toISOString(val: unknown): string | null {
+  if (!val) return null;
+  if (typeof val === "string") return val;
+  if (typeof (val as { toDate?: unknown }).toDate === "function")
+    return (val as { toDate: () => Date }).toDate().toISOString();
+  if (val instanceof Date) return val.toISOString();
+  return String(val);
+}
+
 class ScanActivityState {
   codes = $state<CodeEntry[]>([]);
   recentEvents = $state<ScanEventRow[]>([]);
@@ -163,7 +172,7 @@ class ScanActivityState {
             const data = d.data();
             rows.push({
               code,
-              timestamp: data.timestamp ?? "",
+              timestamp: toISOString(data.timestamp) ?? "",
               city: data.city ?? null,
               country: data.country ?? null,
               deviceId: data.deviceId ?? null,
@@ -201,10 +210,10 @@ class ScanActivityState {
       code,
       word: data.sequence ?? "",
       ownerId: data.ownerId ?? null,
-      createdAt: data.createdAt ?? "",
+      createdAt: toISOString(data.createdAt) ?? "",
       encoded,
       scanCount: Number(data.scanCount ?? 0),
-      lastScannedAt: data.lastScannedAt ?? null,
+      lastScannedAt: toISOString(data.lastScannedAt) ?? null,
       lastCity: data.lastCity ?? null,
       lastCountry: data.lastCountry ?? null,
       decoded: null,
