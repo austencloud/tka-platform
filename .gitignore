@@ -8,6 +8,8 @@
 
 # Debug artifacts
 debug-screenshots/
+feedback-images/
+tmp-shared-packages/
 
 # Moved out of repo — kept as comments for reference
 # assets-staging/ → E:\tka-assets-staging\
