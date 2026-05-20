@@ -549,6 +549,14 @@ export async function signOut() {
       // Settings service may not be loaded - that's ok
     }
 
+    try {
+      const { mandalaCollectionState } =
+        await import("$lib/features/mandala-collection/state/mandala-collection-state.svelte");
+      mandalaCollectionState.teardown();
+    } catch {
+      // Mandala collection may not be loaded - that's ok
+    }
+
     // Sign out from Firebase
     await firebaseSignOut(auth);
     // State will be updated automatically by onAuthStateChanged

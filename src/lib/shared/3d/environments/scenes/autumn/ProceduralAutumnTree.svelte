@@ -137,9 +137,9 @@
 
   // Gentle sway animation — slightly slower than cherry blossom
   let rootRef = $state<Group | undefined>();
-  const swaySpeed = 0.2 + hash(seed * 30) * 0.2;
-  const swayPhase = hash(seed * 31) * Math.PI * 2;
-  const swayAmplitude = 0.012 + hash(seed * 32) * 0.012;
+  const swaySpeed = $derived(0.2 + hash(seed * 30) * 0.2);
+  const swayPhase = $derived(hash(seed * 31) * Math.PI * 2);
+  const swayAmplitude = $derived(0.012 + hash(seed * 32) * 0.012);
   let swayTime = 0;
 
   useTask((delta) => {

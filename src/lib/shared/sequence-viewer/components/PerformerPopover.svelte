@@ -1,10 +1,13 @@
 <script lang="ts">
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import PerformerChipStrip from "$lib/shared/3d/components/controls/PerformerChipStrip.svelte";
+  import FormationSelector from "$lib/shared/3d/components/controls/FormationSelector.svelte";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
   import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PRESET_VALID_COUNTS } from "@austencloud/scene-3d";
+  import type { FormationPreset } from "@austencloud/scene-3d";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import { scale } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";
@@ -15,8 +18,23 @@
   const viewer = getViewer3DContext();
   const open = $derived(viewer.activePopover === "performers");
 
-  type TabId = "prop" | "effects" | "effort";
-  let activeTab = $state<TabId>("effort");
+  type TabId = "formation" | "prop" | "effects" | "effort";
+  const performerCount = $derived(viewer.performerManager.performers.length);
+  let activeTab = $state<TabId>(viewer.performerManager.performers.length >= 2 ? "formation" : "effort");
+
+  const disabledPresets = $derived.by(() => {
+    const disabled = new Set<FormationPreset>();
+    for (const [preset, validCounts] of Object.entries(PRESET_VALID_COUNTS)) {
+      if (!validCounts.includes(performerCount)) {
+        disabled.add(preset as FormationPreset);
+      }
+    }
+    return disabled;
+  });
+
+  function handleFormationChange(preset: FormationPreset) {
+    viewer.applyFormationFromUI(preset);
+  }
 
   // "All" chip selected = no individual target for prop/effort/effects.
   // The sub-tabs each mutate a single performer's settings, so falling back
@@ -65,6 +83,14 @@
 
     <div class="pop-body">
       <div class="tabbar" role="tablist">
+        {#if performerCount >= 2}
+          <button
+            class="tab"
+            role="tab"
+            aria-selected={activeTab === "formation"}
+            onclick={() => (activeTab = "formation")}>Formation</button
+          >
+        {/if}
         <button
           class="tab"
           role="tab"
@@ -87,7 +113,16 @@
         >
       </div>
 
-      {#if activeTab === "effects"}
+      {#if activeTab === "formation"}
+        <div class="formation-host">
+          <FormationSelector
+            value={viewer.activeFormation === "manual" ? "grid-2x2" : viewer.activeFormation}
+            {performerCount}
+            {disabledPresets}
+            onchange={handleFormationChange}
+          />
+        </div>
+      {:else if activeTab === "effects"}
         <!-- Effects are scene-wide (shared with the export Effects panel).
              Per-performer scoping is Phase 2.5 work. -->
         <div class="effects-host"><MobileEffectsPanel layout="grid" /></div>
@@ -184,6 +219,19 @@
     text-align: center;
     font-size: 12px;
     color: rgba(255, 255, 255, 0.42);
+  }
+  .formation-host {
+    --theme-panel-bg: rgba(0, 0, 0, 0.3);
+    --theme-stroke: rgba(255, 255, 255, 0.08);
+    --theme-text-dim: rgba(255, 255, 255, 0.5);
+    --theme-text: rgba(255, 255, 255, 0.9);
+    --theme-card-hover-bg: rgba(255, 255, 255, 0.08);
+    --theme-accent: color-mix(in srgb, #60a5fa 30%, transparent);
+  }
+  .formation-host :global(.formation-btn.active) {
+    background: color-mix(in srgb, #60a5fa 25%, transparent);
+    border: 1px solid color-mix(in srgb, #60a5fa 45%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, #60a5fa 18%, transparent);
   }
   .effects-host {
     /* PerformerPopover is 420px wide; the grid layout fits all 11 tiles

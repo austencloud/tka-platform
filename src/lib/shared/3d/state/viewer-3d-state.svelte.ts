@@ -29,7 +29,7 @@ import type { OceanVariant } from "../environments/domain/enums/environment-enum
 // Popover Stack
 // ============================================
 
-export type PopoverId = "performers" | "tempo" | "export" | "gear" | "info" | "scene";
+export type PopoverId = "performers" | "tempo" | "export" | "camera" | "planes" | "info" | "scene";
 
 // ============================================
 // Persistence
@@ -569,6 +569,7 @@ export function createViewer3DState(deps: {
   // grid for the first time, we auto-select only the planes the sequence uses.
   let visiblePlanes = $state<Set<Plane>>(loadPersistedPlanes() ?? new Set());
   let webglCanvas = $state<HTMLCanvasElement | null>(null);
+  let stageGroundOffset = $state(0);
 
   // Threlte scene internals - registered by Viewer3DScene so the offline
   // exporter can drive rendering without coupling to Threlte's reactive layer.
@@ -609,7 +610,7 @@ export function createViewer3DState(deps: {
   let updateEffectsCallback = $state<((dt: number) => void) | null>(null);
 
   // Camera snap callback - registered by Viewer3DCamera, called by Viewer3DViewPresets
-  let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
+  let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }) => void) | null = null;
 
   // When a hand is assigned to a non-wall plane, automatically add that
   // plane's grid circle to visiblePlanes so the plane actually renders.
@@ -756,7 +757,7 @@ export function createViewer3DState(deps: {
    * can animate the camera without direct coupling to Three.js objects.
    */
   function registerSnapTo(
-    fn: (position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void
+    fn: (position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }) => void
   ) {
     _snapToFn = fn;
   }
@@ -767,9 +768,10 @@ export function createViewer3DState(deps: {
    */
   function snapCameraTo(
     position: { x: number; y: number; z: number },
-    target: { x: number; y: number; z: number }
+    target: { x: number; y: number; z: number },
+    spherical?: { azimuth: number; polar: number },
   ) {
-    _snapToFn?.(position, target);
+    _snapToFn?.(position, target, spherical);
   }
 
   return {
@@ -908,6 +910,12 @@ export function createViewer3DState(deps: {
     },
     setWebglCanvas(canvas: HTMLCanvasElement | null) {
       webglCanvas = canvas;
+    },
+    get stageGroundOffset() {
+      return stageGroundOffset;
+    },
+    setStageGroundOffset(v: number) {
+      stageGroundOffset = v;
     },
     // Threlte scene internals for offline export
     get threlteRenderer() {

@@ -1,0 +1,21 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["*"],
+        "methods": ["GET", "HEAD"],
+        "headers": ["Content-Type", "Content-Length"]
+      }
+    },
+    {
+      "allowed": {
+        "origins": [
+          "https://tkaflowarts.com",
+          "https://www.tkaflowarts.com"
+        ],
+        "methods": ["PUT", "GET", "HEAD"],
+        "headers": ["Content-Type", "Content-Length"]
+      }
+    }
+  ]
+}

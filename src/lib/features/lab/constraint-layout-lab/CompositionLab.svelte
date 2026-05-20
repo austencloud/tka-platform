@@ -31,7 +31,7 @@
   let containerEl: HTMLDivElement | null = $state(null);
 
   // Create lab state (owns cells, selection, undo/redo, persistence effects)
-  const lab = createCompositionLabState(initialPresetId);
+  const lab = $derived(createCompositionLabState(initialPresetId));
 
   // Observe container size and forward to lab state
   $effect(() => {

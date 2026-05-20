@@ -116,9 +116,9 @@
 
   // Gentle sway animation
   let rootRef = $state<Group | undefined>();
-  const swaySpeed = 0.3 + hash(seed * 30) * 0.25;
-  const swayPhase = hash(seed * 31) * Math.PI * 2;
-  const swayAmplitude = 0.015 + hash(seed * 32) * 0.015;
+  const swaySpeed = $derived(0.3 + hash(seed * 30) * 0.25);
+  const swayPhase = $derived(hash(seed * 31) * Math.PI * 2);
+  const swayAmplitude = $derived(0.015 + hash(seed * 32) * 0.015);
   let swayTime = 0;
 
   useTask((delta) => {

@@ -5,8 +5,10 @@
   import TempoPopover from "./TempoPopover.svelte";
   import ExportPopover from "./ExportPopover.svelte";
   import PerformerPopover from "./PerformerPopover.svelte";
-  import Viewer3DGearPopover from "$lib/shared/3d/components/Viewer3DGearPopover.svelte";
+  import CameraPopover from "$lib/shared/3d/components/CameraPopover.svelte";
+  import PlanesPopover from "$lib/shared/3d/components/PlanesPopover.svelte";
   import SceneSelectorPopover from "$lib/shared/3d/components/SceneSelectorPopover.svelte";
+  import { createViewer3DKeyboardHandler } from "$lib/shared/3d/keyboard/Viewer3DKeyboardHandler";
   const viewer = getViewer3DContext();
 
   interface Props {
@@ -19,13 +21,13 @@
   let rootEl = $state<HTMLDivElement | null>(null);
 
   interface Chip { id: PopoverId; icon: string; tooltip: string; }
-  // Only rendered in 3D mode.
   const CHIPS_3D: Chip[] = [
     { id: "performers", icon: "fa-users",                 tooltip: "Performers" },
     { id: "tempo",      icon: "fa-gauge",                 tooltip: "Speed" },
-    { id: "gear",       icon: "fa-gear",                  tooltip: "Scene" },
+    { id: "camera",     icon: "fa-video",                 tooltip: "Camera" },
+    { id: "planes",     icon: "fa-layer-group",           tooltip: "Planes" },
     { id: "export",     icon: "fa-arrow-up-from-bracket", tooltip: "Export" },
-    { id: "scene",      icon: "fa-mountain-sun",          tooltip: "Background" },
+    { id: "scene",      icon: "fa-mountain-sun",          tooltip: "Scene" },
   ];
 
   function onChipClick(e: MouseEvent, id: PopoverId) {
@@ -34,6 +36,11 @@
   }
 
   onMount(() => {
+    const cleanupKeyboard = createViewer3DKeyboardHandler({
+      undo: () => viewer.undo(),
+      redo: () => viewer.redo(),
+    });
+
     function onDocClick(e: MouseEvent) {
       if (!viewer.activePopover) return;
       const target = e.target as Node | null;
@@ -46,7 +53,10 @@
       viewer.closePopover();
     }
     document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
+    return () => {
+      document.removeEventListener("click", onDocClick);
+      cleanupKeyboard();
+    };
   });
 </script>
 
@@ -76,8 +86,10 @@
           <TempoPopover {bpm} {onBpmChange} />
         {:else if chip.id === "export"}
           <ExportPopover />
-        {:else if chip.id === "gear"}
-          <Viewer3DGearPopover />
+        {:else if chip.id === "camera"}
+          <CameraPopover />
+        {:else if chip.id === "planes"}
+          <PlanesPopover />
         {:else if chip.id === "scene"}
           <SceneSelectorPopover />
         {/if}

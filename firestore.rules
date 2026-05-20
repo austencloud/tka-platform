@@ -570,6 +570,14 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // MANDALA COLLECTION (Saved mandala designs)
+      // -------------------------------------------------------------------------
+      match /mandala-collection/{mandalaId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
       // FCM PUSH TOKENS (Device registration for push notifications)
       // -------------------------------------------------------------------------
       match /fcmTokens/{tokenId} {

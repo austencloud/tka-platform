@@ -77,9 +77,9 @@
     depthWrite: false,
     uniforms: {
       uTime: { value: 0 },
-      uColor: { value: new Color(color) },
-      uIntensity: { value: intensity },
-      uScale: { value: scale },
+      uColor: { value: new Color() },
+      uIntensity: { value: 0 },
+      uScale: { value: 0 },
     },
     vertexShader,
     fragmentShader,

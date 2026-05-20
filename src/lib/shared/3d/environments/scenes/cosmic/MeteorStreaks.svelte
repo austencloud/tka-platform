@@ -81,7 +81,7 @@
     geometries.push(geo);
 
     materials.push(new ShaderMaterial({
-      uniforms: { uColor: { value: new Color(config.colors[0] ?? "#ffffff") } },
+      uniforms: { uColor: { value: new Color() } },
       vertexShader,
       fragmentShader,
       transparent: true,
@@ -89,6 +89,13 @@
       depthWrite: false,
     }));
   }
+
+  $effect(() => {
+    const c = new Color(config.colors[0] ?? "#ffffff");
+    for (const mat of materials) {
+      mat.uniforms.uColor!.value = c;
+    }
+  });
 
   onDestroy(() => {
     geometries.forEach(g => g.dispose());

@@ -11,7 +11,9 @@
   import { STAGE } from "@austencloud/scene-3d";
   import Stage3D from "./Stage3D.svelte";
   import SeatedAudience3D from "./SeatedAudience3D.svelte";
-  import { Plane } from "@austencloud/scene-3d";
+  import { Plane, GRID_OFFSETS } from "@austencloud/scene-3d";
+  import type { GridMode } from "@austencloud/scene-3d";
+  import Grid3D from "./Grid3D.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
@@ -252,10 +254,7 @@
     } catch { return PropType.STAFF; }
   });
 
-  // Convert string-keyed Set from state into the typed Plane Set that Grid3D expects.
-  // The state layer uses Plane enum values as strings so it doesn't need to import
-  // the enum - we do the conversion here at the scene boundary.
-  const gridVisiblePlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
+  const explicitPlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
 
   const hasEnvironment = $derived(
     backgroundType !== BackgroundType.SOLID_COLOR &&
@@ -289,6 +288,10 @@
 
   const stageWidth = $derived(Math.max(6.0, requiredStageRadius * 2));
   const stageDepth = $derived(Math.max(4.5, requiredStageRadius * 2));
+  $effect(() => {
+    viewer3DState.setStageGroundOffset(stageGroundOffset);
+  });
+
   // When the background type doesn't produce a 3D environment (solid color,
   // gradient), Environment3D never mounts - so nothing will ever call
   // reportReady("environment"). Report it immediately so the curtain lifts.
@@ -329,14 +332,19 @@
      so the scene raycaster can resolve which performer was clicked. -->
 {#each performerManager.performers as performer, i (performer.id)}
   <T.Group userData={{ performerIndex: i }}>
+    {@const performerGridMode = (sequenceData?.gridMode ?? "diamond") as GridMode}
+    {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
+    {@const implicitBlue = performer.customBluePlane ?? Plane.WALL}
+    {@const implicitRed = performer.customRedPlane ?? Plane.WALL}
+    {@const mergedPlanes = new Set([...explicitPlanes, implicitBlue, implicitRed])}
     <PerformerRig
       position={performer.position}
       groundOffset={stageGroundOffset}
       facingAngle={performer.facingAngle}
       planeMode={performer.planeMode}
       avatarState={performer}
-      visiblePlanes={gridVisiblePlanes}
-      gridMode={(sequenceData?.gridMode ?? "diamond") as import("@austencloud/scene-3d").GridMode}
+      visiblePlanes={mergedPlanes}
+      gridMode={performerGridMode}
       bluePropType={resolvePerformerProp(performer, bluePropType)}
       redPropType={resolvePerformerProp(performer, redPropType)}
       bluePropState={performer.bluePropState}
@@ -345,7 +353,16 @@
       {isPlaying}
       enableLocomotion={true}
       enableFootPlanting={true}
-    />
+    >
+      {#snippet gridSlot()}
+        <T.Group position.z={performerGridOffset}>
+          <Grid3D
+            visiblePlanes={mergedPlanes}
+            gridMode={performerGridMode}
+          />
+        </T.Group>
+      {/snippet}
+    </PerformerRig>
 
     {#if viewer3DState.selectedPerformerIndex === i || viewer3DState.selectedPerformerIndex === null}
       <!-- Ground-disc selection indicator. Gray when scope is "All",

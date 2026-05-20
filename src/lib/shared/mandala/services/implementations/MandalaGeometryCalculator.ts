@@ -31,7 +31,7 @@ import type {
 	SVGPathData,
 	MandalaPoint,
 } from "../../domain/mandala-types";
-import type { StepLike, MotionLike } from "../contracts/types";
+import type { StepLike, MotionLike, MandalaPathOptions } from "../contracts/types";
 
 // ─── Internal types ─────────────────────────────────────────────────────────
 
@@ -207,6 +207,24 @@ function calculateMotionEndpoints(motion: {
 	};
 }
 
+// ─── Path shape resolution ──────────────────────────────────────────────────
+
+type PathShape = "arc" | "linear" | "concave";
+
+function resolvePathShape(
+	motionType: string,
+	motionPathShape: PathShape | undefined,
+	options: MandalaPathOptions | undefined
+): PathShape {
+	if (motionPathShape) return motionPathShape;
+	if (options?.motionAware) {
+		if (motionType === "pro") return "arc";
+		if (motionType === "anti") return "concave";
+		return "arc";
+	}
+	return options?.pathShape ?? "arc";
+}
+
 // ─── Interpolation ──────────────────────────────────────────────────────────
 
 // lerpAngle: shortest-path angular interpolation
@@ -215,9 +233,47 @@ function lerpAngle(a: number, b: number, t: number): number {
 	return normalizeAnglePositive(a + d * t);
 }
 
+function interpolateLinear(
+	startAngle: number,
+	endAngle: number,
+	t: number,
+	staffAngle: number
+): InterpolatedPosition {
+	const startX = Math.cos(startAngle);
+	const startY = Math.sin(startAngle);
+	const endX = Math.cos(endAngle);
+	const endY = Math.sin(endAngle);
+	const x = startX + (endX - startX) * t;
+	const y = startY + (endY - startY) * t;
+	return { x, y, staffAngle };
+}
+
+function interpolateConcave(
+	startAngle: number,
+	endAngle: number,
+	t: number,
+	staffAngle: number
+): InterpolatedPosition {
+	const arcAngle = lerpAngle(startAngle, endAngle, t);
+	const circleX = Math.cos(arcAngle);
+	const circleY = Math.sin(arcAngle);
+
+	const startX = Math.cos(startAngle);
+	const startY = Math.sin(startAngle);
+	const endX = Math.cos(endAngle);
+	const endY = Math.sin(endAngle);
+	const straightX = startX + (endX - startX) * t;
+	const straightY = startY + (endY - startY) * t;
+
+	const x = 2 * straightX - circleX;
+	const y = 2 * straightY - circleY;
+	return { x, y, staffAngle };
+}
+
 function interpolate(
 	endpoints: MotionEndpoints,
-	t: number
+	t: number,
+	pathShape: PathShape = "arc"
 ): InterpolatedPosition {
 	const {
 		startCenterAngle,
@@ -232,28 +288,28 @@ function interpolate(
 	);
 
 	if (motionType === "dash") {
-		// Cartesian lerp (straight line through center)
-		const startX = Math.cos(startCenterAngle);
-		const startY = Math.sin(startCenterAngle);
-		const endX = Math.cos(targetCenterAngle);
-		const endY = Math.sin(targetCenterAngle);
-		const x = startX + (endX - startX) * t;
-		const y = startY + (endY - startY) * t;
-		return { x, y, staffAngle };
+		return interpolateLinear(startCenterAngle, targetCenterAngle, t, staffAngle);
 	}
 
 	if (motionType === "static") {
-		// Hand stays at start position
 		const x = Math.cos(startCenterAngle);
 		const y = Math.sin(startCenterAngle);
 		return { x, y, staffAngle };
 	}
 
-	// Arc interpolation (PRO, ANTI, FLOAT - all shift-family motions)
-	const centerAngle = lerpAngle(startCenterAngle, targetCenterAngle, t);
-	const x = Math.cos(centerAngle);
-	const y = Math.sin(centerAngle);
-	return { x, y, staffAngle };
+	switch (pathShape) {
+		case "linear":
+			return interpolateLinear(startCenterAngle, targetCenterAngle, t, staffAngle);
+		case "concave":
+			return interpolateConcave(startCenterAngle, targetCenterAngle, t, staffAngle);
+		case "arc":
+		default: {
+			const centerAngle = lerpAngle(startCenterAngle, targetCenterAngle, t);
+			const x = Math.cos(centerAngle);
+			const y = Math.sin(centerAngle);
+			return { x, y, staffAngle };
+		}
+	}
 }
 
 // ─── Tip position transform ─────────────────────────────────────────────────
@@ -345,7 +401,8 @@ function generatePathPoints(
 	hand: "blue" | "red",
 	tipOffset: TipOffset,
 	gridRadius: number,
-	samplesPerBeat: number
+	samplesPerBeat: number,
+	options?: MandalaPathOptions
 ): MandalaPoint[] {
 	const points: MandalaPoint[] = [];
 
@@ -412,9 +469,11 @@ function generatePathPoints(
 			samplesPerBeat * Math.ceil(Math.max(1, turnCount))
 		);
 
+		const pathShape = resolvePathShape(motion.motionType, rawMotion?.pathShape, options);
+
 		for (let i = 0; i <= samples; i++) {
 			const t = i / samples;
-			const handPos = interpolate(endpoints, t);
+			const handPos = interpolate(endpoints, t, pathShape);
 			const tip = computeTipPosition(handPos, tipOffset, gridRadius);
 			points.push(tip);
 		}
@@ -469,7 +528,8 @@ export class MandalaGeometryCalculator {
 	private buildCacheKey(
 		steps: readonly StepLike[],
 		bluePropType?: string,
-		redPropType?: string
+		redPropType?: string,
+		options?: MandalaPathOptions
 	): string {
 		const parts: string[] = [];
 		for (const step of steps) {
@@ -485,16 +545,19 @@ export class MandalaGeometryCalculator {
 				);
 		}
 		parts.push(bluePropType ?? "staff", redPropType ?? "staff");
+		if (options?.pathShape) parts.push("ps:" + options.pathShape);
+		if (options?.motionAware) parts.push("ma:1");
 		return parts.join("|");
 	}
 
 	calculate(
 		steps: readonly StepLike[],
 		_bluePropType?: string,
-		_redPropType?: string
+		_redPropType?: string,
+		options?: MandalaPathOptions
 	): MandalaPaths {
 		// Check cache first
-		const key = this.buildCacheKey(steps, _bluePropType, _redPropType);
+		const key = this.buildCacheKey(steps, _bluePropType, _redPropType, options);
 		const cached = this.cache.get(key);
 		if (cached) {
 			// Move to end (most recently used) by deleting and re-inserting
@@ -528,13 +591,13 @@ export class MandalaGeometryCalculator {
 
 		for (const tip of blueTips) {
 			bluePointSets.push(
-				generatePathPoints(stepsWithMotions, "blue", tip, gridRadius, samplesPerBeat)
+				generatePathPoints(stepsWithMotions, "blue", tip, gridRadius, samplesPerBeat, options)
 			);
 		}
 
 		for (const tip of redTips) {
 			redPointSets.push(
-				generatePathPoints(stepsWithMotions, "red", tip, gridRadius, samplesPerBeat)
+				generatePathPoints(stepsWithMotions, "red", tip, gridRadius, samplesPerBeat, options)
 			);
 		}
 

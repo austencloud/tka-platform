@@ -31,12 +31,15 @@
 
   const geometry = new PlaneGeometry(3, 3);
   const material = new MeshStandardMaterial({
-    color: new Color(color),
     transparent: true,
-    opacity,
     depthWrite: false,
     side: DoubleSide,
     roughness: 1,
+  });
+
+  $effect(() => {
+    material.color.set(color);
+    material.opacity = opacity;
   });
 
   const dummy = new Object3D();
@@ -56,19 +59,21 @@
     phase: number;
   }
 
-  const patches: MistPatch[] = Array.from({ length: count }, (_, i) => ({
-    x: (hash(i * 3.1 + 7) - 0.5) * area,
-    y: groundY + 0.05 + hash(i * 5.3 + 13) * 0.35,
-    z: (hash(i * 7.7 + 19) - 0.5) * area,
-    vx: (hash(i * 11.3 + 29) - 0.5) * 2,
-    vz: (hash(i * 13.7 + 37) - 0.5) * 2,
-    scale: 1.5 + hash(i * 17.1 + 43) * 2.5,
-    phase: hash(i * 19.3 + 53) * Math.PI * 2,
-  }));
+  let patches: MistPatch[] = [];
 
   let mesh = $state<InstancedMesh | null>(null);
 
   $effect(() => {
+    patches = Array.from({ length: count }, (_, i) => ({
+      x: (hash(i * 3.1 + 7) - 0.5) * area,
+      y: groundY + 0.05 + hash(i * 5.3 + 13) * 0.35,
+      z: (hash(i * 7.7 + 19) - 0.5) * area,
+      vx: (hash(i * 11.3 + 29) - 0.5) * 2,
+      vz: (hash(i * 13.7 + 37) - 0.5) * 2,
+      scale: 1.5 + hash(i * 17.1 + 43) * 2.5,
+      phase: hash(i * 19.3 + 53) * Math.PI * 2,
+    }));
+
     const inst = new InstancedMesh(geometry, material, count);
     for (let i = 0; i < count; i++) {
       const p = patches[i]!;

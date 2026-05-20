@@ -18,6 +18,7 @@
   import WaterSurface from "./ocean/WaterSurface.svelte";
   import { onDestroy, onMount } from "svelte";
   import { disposeSceneGraph } from "../utils/dispose-scene";
+  import { clone as cloneWithSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
     FogExp2,
@@ -38,7 +39,6 @@
     InstancedMesh,
     Object3D,
     Vector3,
-    Box3,
   } from "three";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
@@ -491,39 +491,71 @@
     phase: number;
   }
 
-  function glbMaxExtent(root: { updateMatrixWorld: (force: boolean) => void }): number {
+  function measureModelExtent(root: Object3D): number {
     root.updateMatrixWorld(true);
-    const box = new Box3().setFromObject(root as Object3D);
-    const size = box.getSize(new Vector3());
-    return Math.max(size.x, size.y, size.z);
+    const v = new Vector3();
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    let found = false;
+    root.traverse((child) => {
+      const mesh = child as Mesh;
+      if (!mesh.isMesh || !mesh.geometry) return;
+      const pos = mesh.geometry.getAttribute("position");
+      if (!pos) return;
+      found = true;
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        v.applyMatrix4(mesh.matrixWorld);
+        if (v.x < minX) minX = v.x;
+        if (v.y < minY) minY = v.y;
+        if (v.z < minZ) minZ = v.z;
+        if (v.x > maxX) maxX = v.x;
+        if (v.y > maxY) maxY = v.y;
+        if (v.z > maxZ) maxZ = v.z;
+      }
+    });
+    if (!found) return 0;
+    const extent = Math.max(maxX - minX, maxY - minY, maxZ - minZ);
+    return isFinite(extent) && extent > 0 ? extent : 0;
   }
 
   const MAX_CREATURE_SCALE = 0.5;
 
   const fishScales = $derived.by((): [number, number, number] => {
-    if (!$fishClown || !$fishButterfly || !$fishCommon) return [0.015, 0.015, 0.015];
+    if (!$fishClown || !$fishButterfly || !$fishCommon) return [0.0002, 0.0002, 0.0002];
     const target = activeConfig.fish.targetSize;
-    return [$fishClown, $fishButterfly, $fishCommon].map((model) => {
-      const extent = glbMaxExtent(model.scene);
-      const scale = extent > 0.01 ? target / extent : 0.015;
-      return Math.min(scale, MAX_CREATURE_SCALE);
+    const names = ["clownfish", "butterfly", "common"];
+    return [$fishClown, $fishButterfly, $fishCommon].map((model, idx) => {
+      const extent = measureModelExtent(model.scene as Object3D);
+      const scale = extent < 0.001 ? 0.0002 : Math.min(target / extent, MAX_CREATURE_SCALE);
+      console.log(`[OceanDiag] fish ${names[idx]}: extent=${extent.toFixed(4)}, target=${target}, scale=${scale.toFixed(6)}`);
+      // Dump scene graph
+      (model.scene as Object3D).traverse((child) => {
+        const m = child as Mesh;
+        if (m.isMesh && m.geometry) {
+          const pos = m.geometry.getAttribute("position");
+          console.log(`  [mesh] name="${child.name}", vertexCount=${pos?.count ?? 0}, worldScale=[${child.scale.x.toFixed(2)},${child.scale.y.toFixed(2)},${child.scale.z.toFixed(2)}]`);
+        }
+      });
+      return scale;
     }) as [number, number, number];
   });
 
   const JELLYFISH_TARGET_SIZE = 0.4;
   const jellyfishScale = $derived.by((): number => {
-    if (!$jellyfishGlb) return 0.06;
-    const extent = glbMaxExtent($jellyfishGlb.scene);
-    const scale = extent > 0.01 ? JELLYFISH_TARGET_SIZE / extent : 0.06;
-    return Math.min(scale, MAX_CREATURE_SCALE);
+    if (!$jellyfishGlb) return 0.0002;
+    const extent = measureModelExtent($jellyfishGlb.scene as Object3D);
+    const scale = extent < 0.001 ? 0.0002 : Math.min(JELLYFISH_TARGET_SIZE / extent, MAX_CREATURE_SCALE);
+    console.log(`[OceanDiag] jellyfish: extent=${extent.toFixed(4)}, scale=${scale.toFixed(6)}`);
+    return scale;
   });
 
-  function decorationScale(glb: { scene: { updateMatrixWorld: (force: boolean) => void } } | undefined): number {
+  function decorationScale(glb: { scene: Object3D } | undefined): number {
     const target = activeConfig.decorations.targetSize;
     if (!glb) return target;
-    const extent = glbMaxExtent(glb.scene);
-    const scale = extent > 0.01 ? target / extent : 0.005;
-    return Math.min(scale, MAX_CREATURE_SCALE);
+    const extent = measureModelExtent(glb.scene);
+    if (extent < 0.001) return 0.0002;
+    return Math.min(target / extent, MAX_CREATURE_SCALE);
   }
 
   const fishData = $derived.by((): FishInstance[] => {
@@ -793,7 +825,6 @@
   });
 
   onMount(() => {
-    // Fallback in case the effect above doesn't fire (e.g. no sceneFeatures)
     const timer = setTimeout(() => {
       if (sceneFeatures && !sceneFeatures.isReady("environment")) {
         console.warn("[OceanScene] Lifting curtain via timeout");
@@ -828,7 +859,7 @@
   const fishClones = $derived.by(() => {
     if (!$fishClown || !$fishButterfly || !$fishCommon) return [];
     const models = [$fishClown, $fishButterfly, $fishCommon];
-    return fishData.map((_, i) => models[i % 3]!.scene.clone());
+    return fishData.map((_, i) => cloneWithSkeleton(models[i % 3]!.scene));
   });
 
   const jellyfishClones = $derived.by(() => {

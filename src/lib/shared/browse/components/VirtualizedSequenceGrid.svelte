@@ -249,7 +249,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
           const width = entry.contentRect.width;
           if (width > 0 && Math.abs(width - containerWidth) > 1) {
             containerWidth = width;
-            gridZoomManager.updateContainerWidth(width);
             if (currentVirtualizer) currentVirtualizer.measure();
           }
         }

@@ -14,6 +14,12 @@ export interface MotionLike {
 	turns?: number | string;
 	startOrientation?: string;
 	endOrientation?: string;
+	pathShape?: "arc" | "linear" | "concave";
+}
+
+export interface MandalaPathOptions {
+	pathShape?: "arc" | "linear" | "concave";
+	motionAware?: boolean;
 }
 
 

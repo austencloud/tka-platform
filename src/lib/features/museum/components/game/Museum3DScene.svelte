@@ -365,8 +365,13 @@
   // The root motion infrastructure is preserved for future A/B testing.
   // To re-enable: set rootMotionEnabled = fpsActive and enableRootMotion={true} on Avatar3D.
 
-  // Initialize FPS target at spawn (must be after physicsProvider is created)
-  cameraFlip.syncFpsFromPlayer(physicsProvider.getPlayerPosition(), playerYaw, playerPitch, camera);
+  // Initialize FPS target at spawn (must be after physicsProvider is created).
+  // untrack prevents reactive tracking — this is a one-shot init, not a live binding.
+  $effect(() => {
+    untrack(() => {
+      cameraFlip.syncFpsFromPlayer(physicsProvider.getPlayerPosition(), playerYaw, playerPitch, camera);
+    });
+  });
 
   // Simple wing theme lookup - used once per frame for atmosphere transitions.
   // Not performance-critical (the hot path tile→theme lookup is in MuseumGeometryBuilder).

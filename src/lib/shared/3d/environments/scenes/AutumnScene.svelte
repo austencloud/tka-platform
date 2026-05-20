@@ -1,9 +1,9 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
-  import { FogExp2, Color } from "three";
+  import { FogExp2 } from "three";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
-  import ProceduralAutumnTree from "./autumn/ProceduralAutumnTree.svelte";
+  import AutumnForest from "./autumn/AutumnForest.svelte";
   import AutumnGround from "./autumn/AutumnGround.svelte";
   import WoodlandStream from "./autumn/WoodlandStream.svelte";
   import MushroomCluster from "./autumn/MushroomCluster.svelte";
@@ -23,7 +23,7 @@
 
   const activeConfig = $derived(config ?? createDefaultAutumnConfig());
 
-  const { scene } = useThrelte();
+  const { scene, renderer, camera } = useThrelte();
 
   const sceneFeatures = getSceneFeatureContext();
 
@@ -90,6 +90,9 @@
   });
 
   $effect(() => {
+    if (!scene.current || !renderer.current || !camera.current) return;
+
+    renderer.current.compile(scene.current, camera.current);
     sceneFeatures?.reportReady("environment");
   });
 </script>
@@ -127,18 +130,8 @@
   />
 {/if}
 
-<!-- Procedural autumn trees -->
-{#each treePlacements as tree}
-  <T.Group
-    position.x={tree.x}
-    position.y={groundY}
-    position.z={tree.z}
-    scale={tree.scale}
-    rotation.y={tree.rotation}
-  >
-    <ProceduralAutumnTree seed={tree.seed} />
-  </T.Group>
-{/each}
+<!-- Batched procedural trees (InstancedMesh) -->
+<AutumnForest placements={treePlacements} {groundY} />
 
 <!-- Dense falling leaves — close layer -->
 {#key activeConfig.leaves.count}

@@ -1,16 +1,6 @@
 <script lang="ts">
-  /**
-   * GridPlane Component
-   *
-   * Renders a single grid plane with:
-   * - Semi-transparent plane surface
-   * - Center point (largest, white)
-   * - Hand points (medium, plane color)
-   * - Outer points (smallest, dimmer)
-   */
-
   import { T } from "@threlte/core";
-  import { Text } from "@threlte/extras";
+  import { HTML } from "@threlte/extras";
   import { DoubleSide } from "three";
   import { Plane, PLANE_LABELS } from "@austencloud/scene-3d";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -32,7 +22,6 @@
     opacity?: number;
     showLabels?: boolean;
     size?: number;
-    /** Grid mode: diamond (N/E/S/W as hands) or box (NE/SE/SW/NW as hands) */
     gridMode?: GridMode;
   }
 
@@ -41,20 +30,17 @@
     color = "var(--theme-accent-strong)",
     opacity = 0.15,
     showLabels = true,
-    size, // Will use user proportions if not provided
+    size,
     gridMode = "diamond",
   }: Props = $props();
 
-  // Use user proportions for radii (reactive to user changes)
   const handPointRadius = $derived(userProportionsState.handPointRadius);
   const outerPointRadius = $derived(userProportionsState.outerPointRadius);
   const effectiveSize = $derived(size ?? userProportionsState.gridSize);
 
-  // Get points based on current mode
   const handPoints = $derived(getHandPoints(gridMode));
   const outerPoints = $derived(getOuterPoints(gridMode));
 
-  // Get position for a grid location on this plane at a given radius
   function getGridPointPosition(
     location: GridLocation,
     radius: number
@@ -64,7 +50,6 @@
     return [pos.x, pos.y, pos.z];
   }
 
-  // Get rotation based on plane
   function getPlaneRotation(): [number, number, number] {
     switch (plane) {
       case Plane.WALL:
@@ -78,7 +63,6 @@
     }
   }
 
-  // Short labels for grid locations
   const locationLabels: Record<GridLocation, string> = {
     [GridLocation.NORTH]: "N",
     [GridLocation.NORTHEAST]: "NE",
@@ -91,7 +75,6 @@
     [GridLocation.CENTER]: "C",
   };
 
-  // Get label position for the plane title (uses effectiveSize for consistency)
   const planeLabelPosition = $derived.by((): [number, number, number] => {
     switch (plane) {
       case Plane.WALL:
@@ -158,14 +141,11 @@
   </T.Mesh>
 
   {#if showLabels}
-    <Text
-      text={locationLabels[location]}
-      position={[pos[0] * 1.12, pos[1] * 1.12, pos[2] * 1.12]}
-      fontSize={0.05}
-      color="white"
-      anchorX="center"
-      anchorY="middle"
-    />
+    <T.Group position={[pos[0] * 1.12, pos[1] * 1.12, pos[2] * 1.12]}>
+      <HTML center sprite>
+        <span class="grid-label hand">{locationLabels[location]}</span>
+      </HTML>
+    </T.Group>
   {/if}
 {/each}
 
@@ -178,25 +158,46 @@
   </T.Mesh>
 
   {#if showLabels}
-    <Text
-      text={locationLabels[location]}
-      position={[pos[0] * 1.08, pos[1] * 1.08, pos[2] * 1.08]}
-      fontSize={0.04}
-      color="#9ca3af"
-      anchorX="center"
-      anchorY="middle"
-    />
+    <T.Group position={[pos[0] * 1.08, pos[1] * 1.08, pos[2] * 1.08]}>
+      <HTML center sprite>
+        <span class="grid-label outer">{locationLabels[location]}</span>
+      </HTML>
+    </T.Group>
   {/if}
 {/each}
 
 <!-- Plane label -->
 {#if showLabels}
-  <Text
-    text={PLANE_LABELS[plane]}
-    position={planeLabelPosition}
-    fontSize={0.06}
-    {color}
-    anchorX="center"
-    anchorY="middle"
-  />
+  <T.Group position={planeLabelPosition}>
+    <HTML center sprite>
+      <span class="grid-label plane" style="color: {color}">
+        {PLANE_LABELS[plane]}
+      </span>
+    </HTML>
+  </T.Group>
 {/if}
+
+<style>
+  .grid-label {
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    text-shadow:
+      -1px -1px 0 rgba(0, 0, 0, 0.5),
+      1px -1px 0 rgba(0, 0, 0, 0.5),
+      -1px 1px 0 rgba(0, 0, 0, 0.5),
+      1px 1px 0 rgba(0, 0, 0, 0.5);
+  }
+  .grid-label.hand {
+    color: #ffffff;
+  }
+  .grid-label.outer {
+    color: #9ca3af;
+    font-size: 8px;
+  }
+  .grid-label.plane {
+    font-size: 12px;
+  }
+</style>

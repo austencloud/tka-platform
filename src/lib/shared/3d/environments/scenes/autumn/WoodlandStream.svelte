@@ -47,8 +47,8 @@
 
     const next = new Reflector(geom, {
       clipBias: 0.003,
-      textureWidth: 1024,
-      textureHeight: 1024,
+      textureWidth: 512,
+      textureHeight: 512,
       color: new Color(color),
     });
     next.rotateX(-Math.PI / 2);

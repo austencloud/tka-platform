@@ -277,7 +277,7 @@
 </div>
 
 {#if showPopover && presetsMode === "popover"}
-  <div class="bpm-popover" role="region" aria-label={t("compose_custom_bpm")} onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); closePopover(); } }}>
+  <div class="bpm-popover" role="dialog" tabindex="-1" aria-label={t("compose_custom_bpm")} onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); closePopover(); } }}>
     <div class="bpm-popover-presets">
       {#each NUMERIC_PRESETS as preset}
         <button

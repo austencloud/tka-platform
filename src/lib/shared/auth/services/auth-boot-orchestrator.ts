@@ -102,4 +102,15 @@ export async function initializeChildServices(
       console.warn("⚠️ [authState] System collections init failed:", error);
     }
   })();
+
+  // Initialize mandala collection Firebase sync (non-blocking)
+  import("$lib/features/mandala-collection/state/mandala-collection-state.svelte")
+    .then(async ({ mandalaCollectionState }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await mandalaCollectionState.init(user.uid);
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Mandala collection sync failed:", error);
+    });
 }

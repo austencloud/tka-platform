@@ -859,12 +859,6 @@ export default defineConfig(({ mode }) => ({
       // ⚡ Lazy-load these heavy libraries on-demand
       "fabric", // ~500KB canvas library (loads when user uses animator)
       "page-flip", // PDF flipbook (loads in learn module)
-      // Troika's worker system uses Function.toString() + importScripts()
-      // in a classic blob worker. Pre-bundling rewrites module scope vars,
-      // breaking the serialized functions inside the worker and causing
-      // "failed to rehydrate" / NetworkError on importScripts blob URLs.
-      "troika-three-text",
-      "troika-worker-utils",
     ],
   },
   // ============================================================================

@@ -23,13 +23,13 @@
 
   const gridCenter = $derived({
     x: 0,
-    y: 0,
+    y: viewer3DState.stageGroundOffset,
     z: isDualWheel ? 0 : (GRID_OFFSETS[PlaneMode.WALL] ?? 0.3),
   });
 
   const FOV_DEG = 50;
   const GRID_RADIUS = 0.52;
-  const GRID_FILL_FRACTION = 0.46;
+  const GRID_FILL_FRACTION = 0.20;
   const dualWheelOffset = $derived(userProportionsState.staffLength / 2);
 
   function computeDistanceForWidth(sceneWidth: number): number {
@@ -65,10 +65,10 @@
     const gy = gridCenter.y;
     const positions: Record<string, { x: number; y: number; z: number }> = {
       main:         { x: 0,          y: gy,           z: gz + D },
-      back:         { x: 0,          y: gy,           z: gz - D },
+      back:         { x: 0,          y: gy,           z: gz - D * 1.3 },
       left:         { x: S,          y: gy,           z: gz },
       right:        { x: -S,         y: gy,           z: gz },
-      top:          { x: 0,          y: gy + D,       z: gz - 0.05 },
+      top:          { x: 0,          y: gy + D,       z: gz },
       threequarter: { x: D * 0.55,   y: gy + D * 0.4, z: gz - D * 0.75 },
     };
     return positions;
@@ -97,7 +97,10 @@
     if (!pos) return;
 
     viewer3DState.setActiveCameraPreset(presetId);
-    viewer3DState.snapCameraTo(pos, getLookTarget(presetId));
+    const spherical = presetId === "top"
+      ? { azimuth: 0, polar: 0 }
+      : undefined;
+    viewer3DState.snapCameraTo(pos, getLookTarget(presetId), spherical);
   }
 </script>
 

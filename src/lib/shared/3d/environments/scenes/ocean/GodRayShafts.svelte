@@ -50,8 +50,8 @@
     depthWrite: false,
     uniforms: {
       uTime: { value: 0 },
-      uColor: { value: new Color(config.color) },
-      uIntensity: { value: config.intensity },
+      uColor: { value: new Color() },
+      uIntensity: { value: 0 },
     },
     vertexShader,
     fragmentShader,

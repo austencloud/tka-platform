@@ -65,7 +65,7 @@
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
-  const playbackAdapter = createAvatarPlaybackAdapter(
+  const playbackAdapter = $derived.by(() => createAvatarPlaybackAdapter(
     () => viewer3DState.performerManager.performers[0] ?? null,
     onPlaybackToggle && onProgressBarSeek
       ? {
@@ -74,7 +74,7 @@
           getIsPlaying: () => isPlaying,
         }
       : undefined,
-  );
+  ));
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
   // Primary performer - gates the Canvas on performer[0] existing. Multi-

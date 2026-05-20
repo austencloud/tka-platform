@@ -206,10 +206,9 @@
   function snapTo(
     targetPos: { x: number; y: number; z: number },
     targetLookAt: { x: number; y: number; z: number },
+    spherical?: { azimuth: number; polar: number },
   ) {
     if (!controlsInstance) return;
-    // camera-controls handles the smoothing internally via smoothTime.
-    // Passing enableTransition=true interpolates from the current pose.
     controlsInstance.setLookAt(
       targetPos.x,
       targetPos.y,
@@ -219,6 +218,9 @@
       targetLookAt.z,
       true,
     );
+    if (spherical) {
+      controlsInstance.rotateTo(spherical.azimuth, spherical.polar, true);
+    }
   }
 
   onMount(() => {
