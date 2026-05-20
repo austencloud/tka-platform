@@ -2,10 +2,10 @@
   import { fly } from "svelte/transition";
   import type { SpinnerStats } from '$lib/shared/landing/domain/types';
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { SequenceHistoryEntry } from "./SequenceHistoryPanel.svelte";
+  import type { PlaybackHistoryEntry } from "$lib/shared/animation-engine/domain/chaining-types";
 
   interface Props {
-    sequenceHistory: SequenceHistoryEntry[];
+    sequenceHistory: readonly PlaybackHistoryEntry[];
     stats: SpinnerStats;
     gridMode: GridMode | null;
     isChainingEnabled: boolean;
@@ -24,7 +24,7 @@
     <h3>Sequence Chain</h3>
     <div class="history-list">
       {#each sequenceHistory as entry, i}
-        <div class="history-item" class:current={i === 0}>{entry.sequence.word || "Generated"}</div>
+        <div class="history-item" class:current={i === 0}>{entry.word ?? entry.sequence.word ?? "Generated"}</div>
       {/each}
     </div>
   </div>
@@ -53,10 +53,14 @@
 
   <div class="debug-section">
     <h3>Controls</h3>
-    <label class="toggle-row">
-      <input type="checkbox" bind:checked={isChainingEnabled} />
+    <button
+      class="toggle-row"
+      aria-pressed={isChainingEnabled}
+      onclick={() => (isChainingEnabled = !isChainingEnabled)}
+    >
+      <span class="toggle-indicator" class:active={isChainingEnabled}></span>
       <span>Auto-chain sequences</span>
-    </label>
+    </button>
   </div>
 </aside>
 
@@ -137,10 +141,52 @@
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
+    background: none;
+    border: none;
+    padding: 6px 4px;
+    width: 100%;
+    text-align: left;
   }
 
-  .toggle-row input {
-    accent-color: #6366f1;
+  .toggle-row:hover {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .toggle-row:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .toggle-indicator {
+    width: 32px;
+    height: 18px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.15);
+    position: relative;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+
+  .toggle-indicator::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transition: transform 0.15s;
+  }
+
+  .toggle-indicator.active {
+    background: rgba(99, 102, 241, 0.6);
+  }
+
+  .toggle-indicator.active::after {
+    transform: translateX(14px);
+    background: #fff;
   }
 
   @media (max-width: 600px) {

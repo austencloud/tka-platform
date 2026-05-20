@@ -1,24 +1,19 @@
 <script lang="ts">
-  import { onMount, onDestroy, tick } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-  import type { EndState, SpinnerStats } from '$lib/shared/landing/domain/types';
+  import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
+  import type { SourceMode, PlaybackHistoryEntry } from "$lib/shared/animation-engine/domain/chaining-types";
+  import type { SpinnerStats } from '$lib/shared/landing/domain/types';
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
-  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
-import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
-
+  import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
+  import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
+  import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
+  import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
 
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
     animationSettings,
     TrackingMode,
@@ -26,9 +21,8 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-  // New imports for mode toggle and infinite generation
+  // Mode toggle and infinite generation
   import type { SpinnerMode, SpinnerMetrics, GeneratedSequenceInfo } from "$lib/features/landing/domain/models/spinner-models";
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/InfiniteSequenceGenerator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/SpinnerMetricsRepository";
@@ -39,25 +33,19 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import LiveModeInfo from "$lib/features/landing/components/LiveModeInfo.svelte";
   import SpinnerStatsBar from "$lib/features/landing/components/SpinnerStatsBar.svelte";
 
-  // Broadcast imports
+  // Broadcast imports — kept locally for LiveModeInfo display and step sync
   import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
   import { BroadcastRepository } from "$lib/features/landing/services/BroadcastRepository";
   import * as broadcastSequenceConverter from "$lib/features/landing/services/broadcast-sequence-converter";
-  import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
 
   // Local extracted components
   import SpinnerControls from "./components/SpinnerControls.svelte";
   import EndlessSpinnerDebugPanel from "./components/EndlessSpinnerDebugPanel.svelte";
-  import SequenceHistoryPanel from "./components/SequenceHistoryPanel.svelte";
-  import type { SequenceHistoryEntry } from "./components/SequenceHistoryPanel.svelte";
-  import * as sequenceDataSerializer from "$lib/features/landing/services/sequence-data-serializer";
 
-  // Animation state
-  const animationState = createAnimationPanelState();
-  let playbackController: AnimationPlaybackController | null = null;
-  let browseLoader: PublicSequencesLoader | null = null;
-  let spinnerOrchestrator: EndlessSpinnerOrchestrator | null = null;
-  let servicesReady = $state(false);
+  const visibilityManager = getAnimationVisibilityManager();
+
+  // Factory state
+  let playback = $state<EndlessPlaybackState | null>(null);
   let animationReady = $state(false);
   let animationError = $state(false);
   let isChainingEnabled = $state(true);
@@ -67,15 +55,6 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   let showStepGrid = $state(true);
   let showHistory = $state(false);
 
-  // Sequence state
-  let currentSequence = $state<SequenceData | null>(null);
-  let sequenceHistory = $state<SequenceHistoryEntry[]>([]);
-  let lastStep = $state(-1);
-  let preloadedSequence = $state<SequenceData | null>(null);
-  let isPreloading = $state(false);
-  let isChainingNow = $state(false);
-  let transitionCount = $state(0);
-
   // Stats
   let stats = $state<SpinnerStats>({
     sequencesPlayed: 0,
@@ -84,130 +63,34 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     rotatedMatches: 0,
     bridgesGenerated: 0,
   });
-
-  // Mode state (Library vs Infinite vs Live)
   let spinnerMode = $state<SpinnerMode>("library");
-  let infiniteGenerator = $state<InfiniteSequenceGenerator | null>(null);
-  let metricsRepository: SpinnerMetricsRepository | null = null;
   let globalMetrics = $state<SpinnerMetrics | null>(null);
   let currentGeneratedInfo = $state<GeneratedSequenceInfo | null>(null);
-  let metricsUnsubscribe: (() => void) | null = null;
+  let transitionCount = $state(0);
 
-  // Broadcast (Live) mode state
+  // Keep references needed for stats and mode info
+  let metricsRepository: SpinnerMetricsRepository | null = null;
+  let metricsUnsubscribe: (() => void) | null = null;
+  let spinnerOrchestrator: EndlessSpinnerOrchestrator | null = null;
+  let infiniteGen = $state<InfiniteSequenceGenerator | null>(null);
+
+  // Broadcast (Live) mode — kept locally for LiveModeInfo display + step sync
   let broadcastRepository: BroadcastRepository | null = null;
   let broadcastState = $state<BroadcastStateClient | null>(null);
   let serverTimeOffset = $state(0);
   let broadcastUnsubscribe: (() => void) | null = null;
   let stepSyncInterval: ReturnType<typeof setInterval> | null = null;
 
-  const visibilityManager = getAnimationVisibilityManager();
-
-  // Derived values
-  let derivedStartPosition = $derived.by(() => {
-    if (!animationState.sequenceData || !startPositionDeriver) return null;
-    return startPositionDeriver.getOrDeriveStartPosition(
-      animationState.sequenceData
-    );
-  });
-
-  let currentLetter = $derived.by(() => {
-    if (!animationState.sequenceData) return null;
-    const currentStep = animationState.currentStep;
-
-    if (currentStep < 1) {
-      return derivedStartPosition?.letter || null;
-    }
-
-    if (animationState.sequenceData.steps?.length > 0) {
-      const stepIndex = Math.floor(currentStep) - 1;
-      const clampedIndex = Math.max(
-        0,
-        Math.min(stepIndex, animationState.sequenceData.steps.length - 1)
-      );
-      return animationState.sequenceData.steps[clampedIndex]?.letter || null;
-    }
-
-    return null;
-  });
-
-  let currentStepData = $derived.by(() => {
-    if (!animationState.sequenceData) return null;
-    const currentStep = animationState.currentStep;
-
-    if (currentStep < 1) {
-      return derivedStartPosition || null;
-    }
-
-    if (animationState.sequenceData.steps?.length > 0) {
-      const stepIndex = Math.floor(currentStep) - 1;
-      const clampedIndex = Math.max(
-        0,
-        Math.min(stepIndex, animationState.sequenceData.steps.length - 1)
-      );
-      return animationState.sequenceData.steps[clampedIndex] || null;
-    }
-
-    return null;
-  });
-
-  let gridMode = $derived(animationState.sequenceData?.gridMode ?? null);
-  let currentStepNumber = $derived(Math.floor(animationState.currentStep));
-
-  // Pre-load next sequence (only in library mode)
-  $effect(() => {
-    // Skip preloading in infinite or live mode
-    if (spinnerMode === "infinite" || spinnerMode === "live") return;
-
-    const currentStep = Math.floor(animationState.currentStep);
-    const totalSteps = animationState.totalSteps;
-
-    const shouldPreload =
-      isChainingEnabled &&
-      servicesReady &&
-      animationReady &&
-      !isPreloading &&
-      !preloadedSequence &&
-      currentSequence &&
-      totalSteps > 2 &&
-      currentStep >= 2 &&
-      currentStep < totalSteps - 1;
-
-    if (shouldPreload) {
-      preloadNextSequence();
-    }
-  });
-
-  // Watch for sequence completion (skip in live mode - broadcast controls transitions)
-  $effect(() => {
-    // In live mode, the broadcast subscription handles sequence transitions
-    if (spinnerMode === "live") return;
-
-    const currentStep = Math.floor(animationState.currentStep);
-    const totalSteps = animationState.totalSteps;
-
-    if (
-      isChainingEnabled &&
-      servicesReady &&
-      !isChainingNow &&
-      animationReady &&
-      lastStep >= totalSteps - 1 &&
-      currentStep <= 1 &&
-      totalSteps > 0
-    ) {
-      chainToNextSequence();
-    }
-
-    lastStep = currentStep;
-  });
+  // Derived
+  let currentStepNumber = $derived(Math.floor(playback?.animationState?.currentStep ?? 0));
 
   onMount(async () => {
     try {
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
       visibilityManager.setDarkMode(true);
 
-      browseLoader = getBrowseLoader();
-      playbackController = getAnimationPlaybackController();
-
+      const browseLoader = getBrowseLoader();
+      const pc = getAnimationPlaybackController();
       const generationOrchestrator = getGenerationOrchestrator();
       const sequenceTransformer = getSequenceTransformer();
 
@@ -220,26 +103,26 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
         gridPositionDeriver
       );
 
-      // Initialize infinite mode services
       metricsRepository = new SpinnerMetricsRepository();
-      infiniteGenerator = new InfiniteSequenceGenerator(
+      infiniteGen = new InfiniteSequenceGenerator(
         generationOrchestrator,
         metricsRepository,
         orientationCycleExtender
       );
 
-      // Initialize broadcast repository for live mode
       broadcastRepository = new BroadcastRepository();
 
-      await spinnerOrchestrator.initialize();
-      servicesReady = true;
+      playback = createEndlessPlayback({
+        modes: ["library", "infinite", "live"],
+        defaultMode: "library",
+        spinnerOrchestrator,
+        infiniteGenerator: infiniteGen,
+        broadcastProvider: broadcastRepository,
+        playbackController: pc,
+      });
 
-      const initialSequence = await spinnerOrchestrator.getInitialSequence();
-      if (initialSequence) {
-        await loadSequence(initialSequence);
-      } else {
-        animationError = true;
-      }
+      await playback.initialize();
+      animationReady = true;
     } catch (err) {
       console.error("Initialization failed:", err);
       animationError = true;
@@ -247,110 +130,13 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   });
 
   onDestroy(() => {
-    playbackController?.dispose();
-    animationState.dispose();
+    playback?.dispose();
     metricsUnsubscribe?.();
     broadcastUnsubscribe?.();
     if (stepSyncInterval) {
       clearInterval(stepSyncInterval);
     }
   });
-
-  function extractEndState(sequence: SequenceData): EndState {
-    const finalStep = sequence.steps?.[sequence.steps.length - 1];
-    let position = finalStep?.endPosition ?? null;
-
-    if (!position && gridPositionDeriver && finalStep?.motions) {
-      const blueMotion = finalStep.motions[MotionColor.BLUE];
-      const redMotion = finalStep.motions[MotionColor.RED];
-
-      if (blueMotion?.endLocation && redMotion?.endLocation) {
-        try {
-          position = gridPositionDeriver.getGridPositionFromLocations(
-            blueMotion.endLocation,
-            redMotion.endLocation
-          );
-        } catch {
-          // Silently fail
-        }
-      }
-    }
-
-    return {
-      position,
-      blueOrientation: (finalStep?.motions?.blue?.endOrientation ?? null) as Orientation | null,
-      redOrientation: (finalStep?.motions?.red?.endOrientation ?? null) as Orientation | null,
-    };
-  }
-
-  async function preloadNextSequence() {
-    if (!spinnerOrchestrator || !currentSequence || isPreloading) return;
-
-    isPreloading = true;
-
-    try {
-      const endState = extractEndState(currentSequence);
-      const nextSeq = await spinnerOrchestrator.getNextSequence(endState);
-      preloadedSequence = nextSeq ?? (await spinnerOrchestrator.getInitialSequence());
-    } catch (err) {
-      console.error("Pre-load failed:", err);
-    } finally {
-      isPreloading = false;
-    }
-  }
-
-  async function chainToNextSequence() {
-    if (!playbackController || isChainingNow) return;
-
-    isChainingNow = true;
-    transitionCount++;
-
-    try {
-      if (spinnerMode === "infinite" && infiniteGenerator) {
-        // Infinite mode: generate novel sequences
-        const endState = currentSequence ? extractEndState(currentSequence) : null;
-        const generated = endState
-          ? await infiniteGenerator.generateFromEndState(endState)
-          : await infiniteGenerator.generateInitial();
-
-        if (generated) {
-          currentGeneratedInfo = generated;
-          hotSwapSequence(generated.sequence);
-          sequenceHistory = [
-            { sequence: generated.sequence, settings: generated.settings, timestamp: new Date() },
-            ...sequenceHistory.slice(0, 19),
-          ];
-        }
-      } else if (spinnerOrchestrator) {
-        // Library mode: use curated sequences
-        let nextSeq = preloadedSequence;
-        if (!nextSeq && currentSequence) {
-          const endState = extractEndState(currentSequence);
-          nextSeq = await spinnerOrchestrator.getNextSequence(endState);
-          if (!nextSeq) {
-            nextSeq = await spinnerOrchestrator.getInitialSequence();
-          }
-        }
-
-        if (nextSeq) {
-          currentGeneratedInfo = null; // Clear any generated info
-          hotSwapSequence(nextSeq);
-          sequenceHistory = [
-            { sequence: nextSeq, settings: null, timestamp: new Date() },
-            ...sequenceHistory.slice(0, 19),
-          ];
-          const orchestratorStats = spinnerOrchestrator.getStats();
-          stats = { ...orchestratorStats };
-        }
-      }
-
-      preloadedSequence = null;
-    } catch (err) {
-      console.error("Chain failed:", err);
-    } finally {
-      isChainingNow = false;
-    }
-  }
 
   async function handleModeChange(newMode: SpinnerMode) {
     const previousMode = spinnerMode;
@@ -367,17 +153,17 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       }
     }
 
+    // Tell the factory to switch modes
+    await playback?.setSourceMode(newMode as SourceMode);
+
     // Subscribe to metrics updates when switching to infinite mode
     if (newMode === "infinite" && metricsRepository && !metricsUnsubscribe) {
       metricsUnsubscribe = metricsRepository.subscribe((metrics) => {
         globalMetrics = metrics;
       });
-      // Also fetch initial metrics
       metricsRepository.getMetrics().then((metrics) => {
         globalMetrics = metrics;
       });
-      // Clear any preloaded library sequence so infinite mode generates fresh
-      preloadedSequence = null;
     }
 
     // Reset generated info when switching to library mode
@@ -385,28 +171,18 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       currentGeneratedInfo = null;
     }
 
-    // Subscribe to broadcast when switching to live mode
+    // Subscribe to broadcast locally for LiveModeInfo display + step sync
     if (newMode === "live" && broadcastRepository) {
-      // Calculate server time offset first
       serverTimeOffset = await broadcastRepository.calculateServerTimeOffset();
 
-      // Subscribe to broadcast state
       broadcastUnsubscribe = broadcastRepository.subscribeToBroadcast((state) => {
         if (state) {
-          const previousSequenceNumber = broadcastState?.sequenceNumber;
           broadcastState = state;
-
-          // If sequence changed, load the new one
-          if (state.sequenceNumber !== previousSequenceNumber) {
-            const sequenceData = broadcastSequenceConverter.convertSequence(state.currentSequence);
-            loadBroadcastSequence(sequenceData, state);
-          }
         } else {
           broadcastState = null;
         }
       });
 
-      // Start beat synchronization interval
       startStepSync();
     }
   }
@@ -421,7 +197,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     }
 
     stepSyncInterval = setInterval(() => {
-      if (spinnerMode !== "live" || !broadcastState || !broadcastRepository) {
+      if (spinnerMode !== "live" || !broadcastState || !broadcastRepository || !playback) {
         return;
       }
 
@@ -433,160 +209,48 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       );
 
       // If drift is more than 0.5 steps, resync
-      const currentStep = animationState.currentStep;
+      const currentStep = playback.animationState.currentStep;
       if (Math.abs(currentStep - targetStep) > 0.5) {
-        animationState.setCurrentStep(targetStep);
+        playback.animationState.setCurrentStep(targetStep);
       }
-    }, 100); // Check every 100ms
-  }
-
-  /**
-   * Load a broadcast sequence with synchronized beat position.
-   */
-  function loadBroadcastSequence(sequenceData: SequenceData, state: BroadcastStateClient) {
-    if (!playbackController || !broadcastRepository) return;
-
-    currentSequence = sequenceData;
-    lastStep = -1;
-    currentGeneratedInfo = null;
-
-    const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
-
-    animationState.setShouldLoop(true);
-    const success = playbackController.initialize(sequence, animationState);
-
-    if (!success) return;
-
-    animationState.setPlaybackMode("continuous");
-
-    // Set initial beat position based on server time
-    const currentStep = broadcastRepository.getCurrentStepPosition(
-      state.startedAtMs,
-      state.durationMs,
-      state.currentSequence.totalSteps,
-      state.beatsPerMinute
-    );
-    animationState.setCurrentStep(currentStep);
-
-    if (!animationState.isPlaying) {
-      playbackController.togglePlayback();
-    }
-
-    animationReady = true;
-  }
-
-  function hotSwapSequence(sequenceData: SequenceData) {
-    if (!playbackController) return;
-
-    currentSequence = sequenceData;
-    lastStep = -1;
-
-    const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
-
-    animationState.setShouldLoop(true);
-    const success = playbackController.initialize(sequence, animationState);
-
-    if (!success) return;
-
-    animationState.setPlaybackMode("continuous");
-    animationState.setCurrentStep(1);
-
-    if (!animationState.isPlaying) {
-      playbackController.togglePlayback();
-    }
-  }
-
-  async function loadSequence(sequenceData: SequenceData) {
-    if (!playbackController) return;
-
-    animationReady = false;
-
-    try {
-      if (animationState.isPlaying) {
-        playbackController.togglePlayback();
-      }
-      animationState.reset();
-
-      currentSequence = sequenceData;
-      lastStep = -1;
-      sequenceHistory = [
-        { sequence: sequenceData, settings: null, timestamp: new Date() },
-        ...sequenceHistory.slice(0, 19),
-      ];
-
-      const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
-
-      animationState.setShouldLoop(true);
-      const success = playbackController.initialize(sequence, animationState);
-
-      if (!success) {
-        throw new Error("Failed to initialize playback");
-      }
-
-      animationReady = true;
-
-      await tick();
-
-      animationState.setPlaybackMode("continuous");
-      animationState.setCurrentStep(1);
-      playbackController?.togglePlayback();
-    } catch (err) {
-      console.error("Load failed:", err);
-      animationError = true;
-    }
+    }, 100);
   }
 
   function handleSkip() {
-    if (!spinnerOrchestrator || !currentSequence) return;
-    chainToNextSequence();
+    playback?.skip();
   }
 
-  async function handleCopy(full: boolean) {
-    if (!currentSequence) return;
-    const text = full
-      ? sequenceDataSerializer.toFullJson(currentSequence, currentGeneratedInfo?.settings ?? null)
-      : sequenceDataSerializer.toCompactDebug(currentSequence, currentGeneratedInfo?.settings ?? null);
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Fallback for non-secure contexts
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    }
+  async function handleCopy(_full: boolean) {
+    if (!playback) return;
+    await playback.copyForAI();
   }
 
   function handleTogglePause() {
-    if (!playbackController) return;
-    playbackController.togglePlayback();
+    playback?.playbackController?.togglePlayback();
   }
 
   function handleProgressBarSeek(targetStep: number) {
-    if (!animationState) return;
-    animationState.setCurrentStep(targetStep);
+    playback?.animationState?.setCurrentStep(targetStep);
   }
 
   async function handleRetry() {
     animationError = false;
     animationReady = false;
-
     try {
-      if (spinnerOrchestrator) {
-        const initialSequence = await spinnerOrchestrator.getInitialSequence();
-        if (initialSequence) {
-          await loadSequence(initialSequence);
-          return;
-        }
+      if (playback) {
+        await playback.initialize();
+        animationReady = true;
+      } else {
+        animationError = true;
       }
-      animationError = true;
     } catch {
       animationError = true;
     }
+  }
+
+  async function copyHistoryEntry(index: number) {
+    if (!playback) return;
+    await playback.copyHistoryEntry(index);
   }
 </script>
 
@@ -614,8 +278,8 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
 
     <!-- Screen reader announcements -->
     <div class="sr-only" aria-live="polite" aria-atomic="true">
-      {#if currentSequence}
-        Now playing: {currentSequence.word}
+      {#if playback?.currentSequence}
+        Now playing: {playback.currentSequence.word}
       {/if}
     </div>
 
@@ -624,7 +288,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       <!-- Mode-specific info display -->
       <div class="mode-info">
         {#if spinnerMode === "library"}
-          <LibraryModeInfo sequence={currentSequence} />
+          <LibraryModeInfo sequence={playback?.currentSequence ?? null} />
         {:else if spinnerMode === "infinite"}
           <InfiniteModeInfo sequenceInfo={currentGeneratedInfo} />
         {:else if spinnerMode === "live"}
@@ -637,19 +301,19 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
         <div class="canvas-container">
           {#if animationReady}
             <AnimatorCanvas
-              blueProp={animationState.bluePropState}
-              redProp={animationState.redPropState}
+              blueProp={playback?.animationState?.bluePropState ?? null}
+              redProp={playback?.animationState?.redPropState ?? null}
               gridVisible={true}
-              {gridMode}
-              letter={currentLetter}
-              stepData={currentStepData}
-              sequenceData={animationState.sequenceData}
-              currentStep={animationState.currentStep}
-              isPlaying={animationState.isPlaying}
+              gridMode={playback?.gridMode ?? null}
+              letter={playback?.currentLetter ?? null}
+              stepData={playback?.currentStepData ?? null}
+              sequenceData={playback?.animationState?.sequenceData}
+              currentStep={playback?.animationState?.currentStep ?? 0}
+              isPlaying={playback?.animationState?.isPlaying ?? false}
               trailSettings={animationSettings.trail}
               bluePropType={PropType.STAFF}
               redPropType={PropType.STAFF}
-              word={currentSequence?.word || currentSequence?.name || ""}
+              word={playback?.currentSequence?.word || playback?.currentSequence?.name || ""}
               progressBarVariant="minimal"
               previewDarkMode={true}
               onProgressBarSeek={handleProgressBarSeek}
@@ -670,11 +334,11 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
           {/if}
         </div>
 
-        {#if showStepGrid && animationState.sequenceData}
+        {#if showStepGrid && playback?.animationState?.sequenceData}
           <div class="beat-grid-container" in:fly={{ x: 50, duration: 300 }}>
             <StepGrid
-              steps={animationState.sequenceData.steps}
-              startPosition={derivedStartPosition}
+              steps={playback.animationState.sequenceData.steps}
+              startPosition={playback.derivedStartPosition}
               selectedStepNumber={currentStepNumber}
             />
           </div>
@@ -683,7 +347,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
 
       <!-- Controls -->
       <SpinnerControls
-        isPlaying={animationState.isPlaying}
+        isPlaying={playback?.animationState?.isPlaying ?? false}
         {animationReady}
         {showStepGrid}
         {showHistory}
@@ -695,11 +359,31 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       />
 
       <!-- Sequence history panel -->
-      {#if showHistory}
-        <SequenceHistoryPanel
-          entries={sequenceHistory}
-          serializer={sequenceDataSerializer}
-        />
+      {#if showHistory && (playback?.history ?? []).length > 0}
+        <div class="history-panel" transition:fly={{ y: 100, duration: 250 }}>
+          <div class="panel-header">
+            <span class="panel-title">Recent Sequences</span>
+            <span class="entry-count">{(playback?.history ?? []).length}</span>
+          </div>
+          <div class="entries">
+            {#each playback?.history ?? [] as entry, i (entry.timestamp)}
+              <div class="entry" class:current={i === 0}>
+                <div class="entry-info">
+                  <span class="entry-index">#{(playback?.history ?? []).length - i}</span>
+                  <span class="entry-word">{entry.word ?? entry.sequence.word ?? "Generated"}</span>
+                  <span class="entry-mode">{entry.sourceMode}</span>
+                  <span class="entry-steps">{entry.sequence.steps?.length ?? 0} beats</span>
+                </div>
+                <div class="entry-actions">
+                  <button
+                    class="history-copy-btn"
+                    onclick={() => copyHistoryEntry(i)}
+                  >Copy</button>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
       {/if}
 
       <!-- Stats bar -->
@@ -708,7 +392,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
         libraryStats={stats}
         {transitionCount}
         {globalMetrics}
-        sessionGeneratedCount={infiniteGenerator?.getSessionCount() ?? 0}
+        sessionGeneratedCount={infiniteGen?.getSessionCount() ?? 0}
       />
     </main>
 
@@ -723,9 +407,9 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     <!-- Debug panel -->
     {#if showDebugPanel}
       <EndlessSpinnerDebugPanel
-        {sequenceHistory}
+        sequenceHistory={playback?.history ?? []}
         {stats}
-        {gridMode}
+        gridMode={playback?.gridMode ?? null}
         bind:isChainingEnabled
       />
     {/if}
@@ -891,6 +575,133 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     outline-offset: 2px;
   }
 
+  /* History panel (inline replacement for SequenceHistoryPanel) */
+  .history-panel {
+    width: 100%;
+    max-width: 520px;
+    max-height: 320px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 10, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .panel-title {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .entry-count {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .entries {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+  }
+
+  .entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    gap: 8px;
+  }
+
+  .entry.current {
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  .entry:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .entry-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .entry-index {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(255, 255, 255, 0.3);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  .entry-word {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .entry-mode {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(139, 92, 246, 0.8);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .entry-steps {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(255, 255, 255, 0.25);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  .entry-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .history-copy-btn {
+    padding: 4px 10px;
+    min-height: 28px;
+    font-size: var(--font-size-compact, 12px);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .history-copy-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .history-copy-btn:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+  }
+
   /* Screen reader only */
   .sr-only {
     position: absolute;
@@ -960,11 +771,19 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       width: min(90vw, 360px);
     }
 
+    .entry-mode,
+    .entry-steps {
+      display: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .loading-spinner {
       animation: none;
+    }
+
+    .history-copy-btn {
+      transition: none;
     }
   }
 </style>
