@@ -1,6 +1,7 @@
 import { getEnabledFeaturesDefineMap } from "./src/config/feature-flags";
 import { featureGatePlugin } from "./src/config/vite-plugin-feature-gate";
 import { museumPlacementPlugin } from './src/lib/features/museum/dev/museum-placement-plugin';
+import { composerPlacementPlugin } from './src/lib/shared/3d/scene-composer/persistence/composer-placement-plugin';
 import { sveltekit } from "@sveltejs/kit/vite";
 // Paraglide removed - using lightweight JSON-based i18n in $lib/shared/i18n/
 import { spawn, type ChildProcess } from "child_process";
@@ -647,6 +648,7 @@ export default defineConfig(({ mode }) => ({
     webpWasmDevPlugin(),
     webpStaticCopyPlugin(),
     museumPlacementPlugin(), // Dev-only: writes placement data to disk via POST /__museum-placements
+    composerPlacementPlugin(), // Dev-only: writes scene placements to disk via POST /__composer-placements
     // 📊 Bundle analyzer - generates stats.html when ANALYZE=true
     process.env.ANALYZE === "true" &&
       visualizer({
