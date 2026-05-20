@@ -250,9 +250,12 @@ const COLORS = ['#3b82f6','#ef4444','#8b5cf6','#f97316','#10b981','#ec4899','#06
 const PRESETS = [
   { id: 'grid-2x2',           name: 'Grid 2x2',            validCounts: [1,2,3,4] },
   { id: 'line',               name: 'Line',                 validCounts: [1,2,3,4,5,6,7,8] },
-  { id: 'side-by-side',       name: 'Side-by-Side',         validCounts: [2,3,4,5,6,7,8] },
   { id: 'circle',             name: 'Circle',               validCounts: [1,2,3,4,5,6,7,8] },
   { id: 'v-shape',            name: 'V-Shape',              validCounts: [1,2,3,4,5,6,7,8] },
+  { id: 'arc',                name: 'Arc',                  validCounts: [3,4,5,6,7,8] },
+  { id: 'triangle',           name: 'Triangle',             validCounts: [3,4,5,6,7,8] },
+  { id: 'diamond',            name: 'Diamond',              validCounts: [3,4,5,6,7,8] },
+  { id: 'staggered',          name: 'Staggered',            validCounts: [4,5,6,7,8] },
   { id: 'diagonal',           name: 'Diagonal',             validCounts: [1,2,3,4,5,6,7,8] },
   { id: 'tunnel-stack',       name: 'Tunnel Stack',         validCounts: [2,3,4,5,6,7,8] },
   { id: 'back-to-back',       name: 'Back-to-Back',         validCounts: [2] },
@@ -293,7 +296,7 @@ function genCircle(count) {
     return {
       x: Math.cos(angle) * radius,
       z: Math.sin(angle) * radius + o,
-      facing: angle + Math.PI / 2,
+      facing: angle - Math.PI / 2,
     };
   });
 }
@@ -364,12 +367,86 @@ function genStageLR(count) {
   ];
 }
 
-function genSideBySide(count) {
-  const s = 1.8;
-  return Array.from({ length: count }, (_, i) => ({
-    x: (i - (count - 1) / 2) * s,
-    z: WALL_OFFSET,
-  }));
+function genArc(count) {
+  const spread = SPACING * 1.1;
+  const depth = spread * 0.4;
+  const o = WALL_OFFSET;
+  if (count < 3) return genSolo();
+  return Array.from({ length: count }, (_, i) => {
+    const angle = (i / (count - 1)) * Math.PI;
+    return {
+      x: -Math.cos(angle) * spread,
+      z: -Math.sin(angle) * depth + o,
+    };
+  });
+}
+
+function genTriangle(count) {
+  const o = WALL_OFFSET;
+  const rowSpacing = SPACING * 0.7;
+  const colSpacing = SPACING * 0.65;
+  const rowDists = {
+    3: [1, 2],
+    4: [1, 3],
+    5: [2, 3],
+    6: [1, 2, 3],
+    7: [1, 2, 4],
+    8: [1, 3, 4],
+  };
+  const rows = rowDists[count] || [count];
+  const slots = [];
+  let idx = 0;
+  for (let r = 0; r < rows.length; r++) {
+    const n = rows[r];
+    const rowZ = -rowSpacing * r + o;
+    const totalW = (n - 1) * colSpacing;
+    for (let c = 0; c < n; c++) {
+      slots.push({ x: -totalW / 2 + c * colSpacing, z: rowZ });
+      idx++;
+    }
+  }
+  return slots;
+}
+
+function genDiamond(count) {
+  const o = WALL_OFFSET;
+  const s = SPACING * 0.8;
+  if (count < 3) return genSolo();
+  if (count === 3) return [
+    { x: 0, z: s * 0.6 + o },
+    { x: -s * 0.7, z: -s * 0.4 + o },
+    { x: s * 0.7, z: -s * 0.4 + o },
+  ];
+  const core = [
+    { x: 0, z: s + o },
+    { x: -s, z: o },
+    { x: s, z: o },
+    { x: 0, z: -s + o },
+  ];
+  if (count === 4) return core;
+  if (count === 5) return [...core, { x: 0, z: o }];
+  if (count === 6) return [...core, { x: -s * 0.5, z: s * 0.5 + o }, { x: s * 0.5, z: s * 0.5 + o }];
+  if (count === 7) return [...core, { x: 0, z: o }, { x: -s * 0.5, z: s * 0.5 + o }, { x: s * 0.5, z: s * 0.5 + o }];
+  return [...core, { x: 0, z: o }, { x: -s * 0.5, z: s * 0.5 + o }, { x: s * 0.5, z: s * 0.5 + o }, { x: 0, z: -s * 0.5 + o }];
+}
+
+function genStaggered(count) {
+  const o = WALL_OFFSET;
+  const colSpacing = 1.8;
+  const rowDepth = 1.5;
+  const frontCount = Math.ceil(count / 2);
+  const backCount = Math.floor(count / 2);
+  const slots = [];
+  const frontW = (frontCount - 1) * colSpacing;
+  for (let i = 0; i < frontCount; i++) {
+    slots.push({ x: -frontW / 2 + i * colSpacing, z: o });
+  }
+  const backW = (backCount - 1) * colSpacing;
+  const backOffset = colSpacing / 2;
+  for (let i = 0; i < backCount; i++) {
+    slots.push({ x: -backW / 2 + i * colSpacing + backOffset, z: -rowDepth + o });
+  }
+  return slots;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -403,7 +480,10 @@ function getSlots(presetId, count) {
     case 'back-to-back': raw = genBackToBack(count); break;
     case 'facing-each-other': raw = genFacingEachOther(count); break;
     case 'stage-lr': raw = genStageLR(count); break;
-    case 'side-by-side': raw = genSideBySide(count); break;
+    case 'arc': raw = genArc(count); break;
+    case 'triangle': raw = genTriangle(count); break;
+    case 'diamond': raw = genDiamond(count); break;
+    case 'staggered': raw = genStaggered(count); break;
     default: raw = genGrid2x2(count); break;
   }
   return centerSlots(raw);
@@ -649,9 +729,12 @@ function updatePrompt() {
   const descriptions = {
     'grid-2x2': state.count <= 2 ? 'Performers side by side, centered.' : `${Math.min(2, state.count)} in front, ${state.count - 2} behind, centered as a group.`,
     'line': `All ${state.count} in a single row, ${SPACING}m apart, centered.`,
-    'side-by-side': `All ${state.count} in a single row, 1.8m apart (tighter than Line), centered.`,
     'circle': state.count === 2 ? 'Two performers facing each other, centered.' : `${state.count} performers in a circle facing the center.`,
     'v-shape': state.count <= 2 ? 'Side by side, centered.' : `Leader at front, ${state.count - 1} forming a widening V behind, centered as a group.`,
+    'arc': `${state.count} performers in a front-facing semi-circle (crescent toward audience).`,
+    'triangle': `Filled pyramid — front row narrow, back row wide. ${state.count} performers centered.`,
+    'diamond': state.count === 4 ? 'Classic diamond — front, left, right, back.' : `Diamond core with ${state.count - 4} extras filling gaps.`,
+    'staggered': `Checkerboard — two offset rows (${Math.ceil(state.count/2)} front, ${Math.floor(state.count/2)} back).`,
     'diagonal': `Staggered diagonal from front-left to back-right, centered.`,
     'tunnel-stack': `Conga line — all ${state.count} in a column, centered on stage.`,
     'back-to-back': 'Both at center, facing opposite directions.',
