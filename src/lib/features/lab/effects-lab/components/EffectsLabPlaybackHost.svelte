@@ -15,8 +15,10 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
-  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -37,8 +39,8 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-  import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
-  import type { SourceMode } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
+  import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
+  import type { SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";
 
   import { getEffectDescriptor } from "../domain/EffectDescriptor";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -93,7 +95,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   // ─── Shared playback state ────────────────────────────────────────────
   let sequenceService: SequenceRepository | null = null;
   let playbackController: AnimationPlaybackController | null = null;
-  let chainingOrchestrator = $state<SequenceChainingOrchestrator | null>(null);
+  let playback = $state<EndlessPlaybackState | null>(null);
   let servicesReady = $state(false);
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -128,8 +130,8 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     vmActiveMode === "none" ? "trails" : vmActiveMode
   ));
 
-  // ─── Animation state ──────────────────────────────────────────────────
-  const animationState = createAnimationPanelState();
+  // ─── Animation state (provided by the factory) ────────────────────────
+  let animationState = $derived(playback?.animationState ?? null);
 
   // Save global effect states so we can restore them when leaving the Effects Lab.
   const savedEffectMap = { ...visibilityManager.getTipEffectMap() };
@@ -137,7 +139,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   // Playback state polling
   $effect(() => {
     const check = () => {
-      const current = animationState.isPlaying;
+      const current = animationState?.isPlaying ?? false;
       if (current !== isPlaying) isPlaying = current;
     };
     check();
@@ -145,40 +147,10 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     return () => clearInterval(interval);
   });
 
-  let currentLetter = $derived.by(() => {
-    if (!animationState.sequenceData) return null;
-    const step = animationState.currentStep;
-    if (step < 1 && sequence?.startingPositionGroup) {
-      const group = sequence.startingPositionGroup.toLowerCase();
-      if (group === "alpha") return Letter.ALPHA;
-      if (group === "beta") return Letter.BETA;
-      if (group === "gamma") return Letter.GAMMA;
-    }
-    if (animationState.sequenceData.steps?.length > 0) {
-      const idx = Math.max(0, Math.floor(step) - 1);
-      const clamped = Math.min(idx, animationState.sequenceData.steps.length - 1);
-      return animationState.sequenceData.steps[clamped]?.letter || null;
-    }
-    return null;
-  });
-
-  let currentStepData = $derived.by(() => {
-    if (!animationState.sequenceData) return null;
-    const step = animationState.currentStep;
-    if (step < 1 && animationState.sequenceData.startPosition) {
-      return animationState.sequenceData.startPosition;
-    }
-    if (animationState.sequenceData.steps?.length > 0) {
-      const idx = Math.max(0, Math.floor(step) - 1);
-      const clamped = Math.min(idx, animationState.sequenceData.steps.length - 1);
-      return animationState.sequenceData.steps[clamped] || null;
-    }
-    return null;
-  });
-
-  let gridMode = $derived(
-    sequence?.gridMode ?? animationState.sequenceData?.gridMode
-  );
+  // Derived values from factory
+  let currentLetter = $derived((playback?.currentLetter ?? null) as Letter | null);
+  let currentStepData = $derived((playback?.currentStepData ?? null) as StepData | StartPositionData | null);
+  let gridMode = $derived((playback?.gridMode ?? null) as GridMode | null);
 
   // ─── Persistence ──────────────────────────────────────────────────────
   $effect(() => {
@@ -188,27 +160,17 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     untrack(() => savePersistedState());
   });
 
-  // ─── Auto-chaining ────────────────────────────────────────────────────
-  $effect(() => {
-    if (sourceMode === "pick" || !chainingOrchestrator) return;
-    chainingOrchestrator.checkAndChain(
-      Math.floor(animationState.currentStep),
-      animationState.totalSteps,
-      sourceMode,
-      servicesReady,
-      !!sequence
-    );
-  });
+  // Auto-chaining is handled internally by the createEndlessPlayback factory.
 
+  // Sync sequence from factory for local state (history, persistence, UI)
   $effect(() => {
-    if (sourceMode === "pick" || !chainingOrchestrator) return;
-    chainingOrchestrator.checkAndPreload(
-      Math.floor(animationState.currentStep),
-      animationState.totalSteps,
-      sourceMode,
-      servicesReady,
-      !!sequence
-    );
+    if (playback) {
+      const seq = playback.currentSequence;
+      if (seq && seq !== sequence) {
+        sequence = seq;
+        pushHistory(seq);
+      }
+    }
   });
 
   // ─── Initialization ───────────────────────────────────────────────────
@@ -246,11 +208,15 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
         orientationCycleExtender
       );
 
-      chainingOrchestrator = new SequenceChainingOrchestrator(spinnerOrch, infiniteGen);
-      chainingOrchestrator.onSequenceSwapped((seq) => { sequence = seq; pushHistory(seq); });
-      chainingOrchestrator.onError((msg) => { error = msg; });
-      await chainingOrchestrator.initialize(playbackController, animationState);
+      playback = createEndlessPlayback({
+        modes: ["pick", "library", "infinite"],
+        defaultMode: sourceMode,
+        spinnerOrchestrator: spinnerOrch,
+        infiniteGenerator: infiniteGen,
+        playbackController,
+      });
 
+      await playback.initialize();
       servicesReady = true;
 
       if (sourceMode === "pick") {
@@ -258,8 +224,6 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
         if (savedId && sequenceService) {
           restoreSequence(savedId);
         }
-      } else {
-        chainingOrchestrator.startAutoMode(sourceMode);
       }
     } catch (err) {
       console.error("Effects Lab: failed to initialize:", err);
@@ -288,9 +252,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   onDestroy(() => {
     window.removeEventListener("keydown", handleKeydown);
     if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
-    chainingOrchestrator?.dispose();
-    playbackController?.dispose();
-    animationState.dispose();
+    playback?.dispose();
 
     // Restore global effect states that were active before the Effects Lab took over
     visibilityManager.setTipEffectMap(savedEffectMap);
@@ -305,7 +267,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   }
 
   async function loadAnimation() {
-    if (!sequenceService || !playbackController || !sequence) return;
+    if (!sequenceService || !playbackController || !sequence || !animationState) return;
     loading = true;
     error = null;
 
@@ -365,17 +327,17 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     if (mode === sourceMode) return;
     sourceMode = mode;
     if (mode === "pick") return;
-    chainingOrchestrator?.startAutoMode(mode);
+    playback?.setSourceMode(mode);
   }
 
   function handleSkip() {
     if (sourceMode === "pick") return;
-    chainingOrchestrator?.skip();
+    playback?.skip();
   }
 
   async function handleShuffle() {
     if (sourceMode === "pick") return;
-    await chainingOrchestrator?.shuffle();
+    await playback?.shuffle();
   }
 
   // ─── Copy / Save / History ─────────────────────────────────────
@@ -404,7 +366,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   }
 
   async function getDebugData(): Promise<string> {
-    const seqData = animationState.sequenceData;
+    const seqData = animationState?.sequenceData;
     if (!seqData) return "No sequence loaded";
     return copier.generatePrompt(seqData);
   }
@@ -414,7 +376,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   }
 
   async function saveCurrentSequence() {
-    const seqData = animationState.sequenceData;
+    const seqData = animationState?.sequenceData;
     if (!seqData) {
       toast.error("No sequence to save");
       return;
@@ -505,14 +467,14 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       {:else}
         <div class="canvas-wrapper">
           <AnimatorCanvas
-            blueProp={animationState.bluePropState}
-            redProp={animationState.redPropState}
+            blueProp={animationState?.bluePropState ?? null}
+            redProp={animationState?.redPropState ?? null}
             gridVisible={true}
             {gridMode}
             letter={currentLetter}
             stepData={currentStepData}
-            sequenceData={animationState.sequenceData}
-            currentStep={animationState.currentStep}
+            sequenceData={animationState?.sequenceData}
+            currentStep={animationState?.currentStep ?? 0}
             {isPlaying}
             onPlaybackToggle={togglePlayback}
             onProgressBarSeek={(step) => playbackController?.seekToStep(step)}
@@ -533,7 +495,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       <SourceControls
         {sourceMode}
         {sequence}
-        isChainingNow={chainingOrchestrator?.isChainingNow ?? false}
+        isChainingNow={playback?.isChainingNow ?? false}
         onSourceChange={handleSourceChange}
         onPick={() => (showPicker = true)}
         onSkip={handleSkip}
