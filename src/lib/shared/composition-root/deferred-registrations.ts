@@ -6,7 +6,6 @@
  *
  * Moved out of index.ts to cut ~3s off composition-root import time:
  * - VideoExportOrchestrator pulls mediabunny + WebCodecs at import
- * - EndlessSpinnerOrchestrator pulls @tka/sequence-engine generation at import
  * - PublicIndexSyncer pulls content-moderator profanity wordlist at import
  * - FeedbackTesterWorkflow pulls Firestore + notification services
  * - TagMigrator pulls tag-manager
@@ -28,15 +27,6 @@ import { getExportGlyphPrerenderer } from "../animation-engine/getExportGlyphPre
 import { getBackgroundVideoEncoder } from "../animation-engine/getBackgroundVideoEncoder";
 import { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 
-import { registerEndlessSpinnerOrchestratorFactory } from "../animation-engine/getEndlessSpinnerOrchestrator";
-import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
-import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-import { getSequenceTransformer } from "../create/getSequenceTransformer";
-import { generationOrchestrator } from "../create/services/GenerationOrchestrator";
-import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-
 import { getQRCodeGenerator } from "../qr/getQRCodeGenerator";
 import { getImageComposer } from "../render/getImageComposer";
 
@@ -50,17 +40,6 @@ registerVideoExportOrchestratorFactory(() =>
     getCompositeVideoRenderer(),
     getExportGlyphPrerenderer(),
     getBackgroundVideoEncoder()
-  )
-);
-
-registerEndlessSpinnerOrchestratorFactory(() =>
-  new EndlessSpinnerOrchestrator(
-    getBrowseLoader(),
-    generationOrchestrator,
-    getSequenceTransformer(),
-    startPositionDeriver,
-    orientationCalculator,
-    gridPositionDeriver
   )
 );
 
