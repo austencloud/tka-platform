@@ -6,11 +6,13 @@
 
 import { getContext, setContext } from "svelte";
 import type { SceneLabState } from "../state/scene-lab-state.svelte";
+import type { ComposerEditorState } from "$lib/shared/3d/scene-composer/composer-editor-state.svelte";
 
 const KEY = Symbol("scene-lab-context");
 
 export interface SceneLabContext {
   readonly state: SceneLabState;
+  readonly composerState: ComposerEditorState;
 }
 
 export function setSceneLabContext(ctx: SceneLabContext): void {

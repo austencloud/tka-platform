@@ -27,17 +27,60 @@
   import { Avatar3D } from "@austencloud/scene-3d";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import GenericSceneEditor from "$lib/shared/3d/scene-composer/GenericSceneEditor.svelte";
+  import ComposerGhost from "$lib/shared/3d/scene-composer/ComposerGhost.svelte";
+  import ComposedObject from "$lib/shared/3d/scene-composer/ComposedObject.svelte";
+  import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
+  import { FilePersistence } from "$lib/shared/3d/scene-composer/persistence/file-persistence";
+  import type { ComposerPlacement } from "$lib/shared/3d/scene-composer/types";
+  import type { Command } from "$lib/shared/3d/scene-composer/command-stack.svelte";
   import { getSceneLabContext } from "../context/scene-lab-context";
   import { createSceneLabPlayerState } from "../state/scene-lab-player-state.svelte";
 
-  const { state: labState } = getSceneLabContext();
+  const { state: labState, composerState } = getSceneLabContext();
 
   // Player state - shared by walk + fly modes so position persists across toggles.
   const player = createSceneLabPlayerState();
 
-  type CamMode = "orbit" | "walk" | "fly";
+  type CamMode = "orbit" | "walk" | "fly" | "compose";
   let camMode = $state<CamMode>("orbit");
   let pointerLocked = $state(false);
+
+  // ── Compose mode helpers ──
+  const composePersistence = new FilePersistence();
+  const activePlugin = $derived(composerRegistry.get(labState.sceneId));
+  const canCompose = $derived(!!activePlugin);
+
+  $effect(() => {
+    if (camMode === "compose" && activePlugin) {
+      composerState.setActive(true);
+      composerState.setPlacements([...activePlugin.getDefaults()]);
+    } else if (camMode !== "compose") {
+      composerState.setActive(false);
+    }
+  });
+
+  // When user clicks "Controls" in SceneLab (sets active=false), sync camMode back
+  $effect(() => {
+    if (!composerState.active && camMode === "compose") {
+      camMode = "orbit";
+    }
+  });
+
+  async function handleComposeSave() {
+    if (!activePlugin) return;
+    await composePersistence.save(activePlugin.sceneId, composerState.placements);
+    composerState.markClean();
+  }
+
+  function handlePlaceObject(placement: ComposerPlacement) {
+    const cmd: Command = {
+      label: `Place ${placement.objectKey}`,
+      execute() { composerState.addPlacement(placement); },
+      undo() { composerState.removePlacement(placement.id); },
+    };
+    composerState.commands.execute(cmd);
+  }
 
   // The UnifiedCameraController tracks FIRST_PERSON vs THIRD_PERSON internally
   // (toggled by V). We mirror it here so the avatar body can hide itself in
@@ -77,6 +120,13 @@
   // Keep the camera from slipping underground while orbiting.
   const MIN_CAMERA_Y = 0.1;
   let controlsRef = $state<CameraControls | null>(null);
+
+  $effect(() => {
+    if (camMode === "compose" && controlsRef) {
+      composerState.setOrbitControls(controlsRef);
+    }
+  });
+
   let clamping = false;
   const _clampPos = new Vector3();
   const _clampTgt = new Vector3();
@@ -155,7 +205,7 @@
       near={0.1}
       far={200}
     >
-      {#if camMode === "orbit"}
+      {#if camMode === "orbit" || camMode === "compose"}
         <OrbitControls
           bind:ref={controlsRef}
           enableDamping
@@ -255,6 +305,28 @@
         />
       {/if}
     </T.Group>
+
+    {#if camMode === "compose" && activePlugin}
+      <GenericSceneEditor editorState={composerState} onSave={handleComposeSave} />
+
+      {#each composerState.placements as placement (placement.id)}
+        {@const def = activePlugin.catalog.getDefinition(placement.objectKey)}
+        {#if def}
+          <ComposedObject {placement} definition={def} />
+        {/if}
+      {/each}
+
+      {#if composerState.activeCatalogItem && activePlugin}
+        <ComposerGhost
+          definition={composerState.activeCatalogItem}
+          surfaceRules={activePlugin.surfaceRules}
+          constraints={activePlugin.constraints}
+          existingPlacements={composerState.placements}
+          onPlace={handlePlaceObject}
+          onCancel={() => composerState.stopPlacement()}
+        />
+      {/if}
+    {/if}
   </Canvas>
 
   <!-- Mode toggle, top-left of the preview -->
@@ -286,6 +358,15 @@
     >
       <i class="fas fa-feather"></i> Fly
     </button>
+    {#if canCompose}
+      <button
+        class:active={camMode === "compose"}
+        onclick={() => (camMode = "compose")}
+        title="Compose - place and arrange objects"
+      >
+        <i class="fas fa-cubes"></i> Compose
+      </button>
+    {/if}
   </div>
 
   <!-- First/third-person pill, shown only in walk mode -->

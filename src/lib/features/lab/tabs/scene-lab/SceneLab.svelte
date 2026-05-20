@@ -15,9 +15,17 @@
   import ForestControls from "./components/ForestControls.svelte";
   import CosmicControls from "./components/CosmicControls.svelte";
   import OceanControls from "./components/OceanControls.svelte";
+  import ComposerPickerPanel from "$lib/shared/3d/scene-composer/ComposerPickerPanel.svelte";
+  import { createComposerEditorState } from "$lib/shared/3d/scene-composer/composer-editor-state.svelte";
+  import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
+  import { FilePersistence } from "$lib/shared/3d/scene-composer/persistence/file-persistence";
+  import "$lib/shared/3d/environments/scenes/autumn/autumn-composer-plugin";
 
   const sceneState = createSceneLabState();
-  setSceneLabContext({ state: sceneState });
+  const composerState = createComposerEditorState();
+  setSceneLabContext({ state: sceneState, composerState });
+
+  const persistence = new FilePersistence();
 
   let copyStatus = $state<"idle" | "copied" | "error">("idle");
 
@@ -62,28 +70,60 @@
 
     <aside class="controls-pane">
       <div class="actions">
-        <button class="action-btn" onclick={handleReset} title="Reset to defaults">
-          <i class="fas fa-undo"></i> Reset
-        </button>
-        <button
-          class="action-btn primary"
-          class:success={copyStatus === "copied"}
-          class:error={copyStatus === "error"}
-          onclick={handleCopy}
-          title="Copy TypeScript config to clipboard"
-        >
-          {#if copyStatus === "copied"}
-            <i class="fas fa-check"></i> Copied
-          {:else if copyStatus === "error"}
-            <i class="fas fa-xmark"></i> Failed
-          {:else}
-            <i class="fas fa-copy"></i> Copy config
-          {/if}
-        </button>
+        {#if composerState.active}
+          <button class="action-btn" onclick={() => composerState.setActive(false)}>
+            <i class="fas fa-arrow-left"></i> Controls
+          </button>
+          <button
+            class="action-btn primary"
+            onclick={async () => {
+              const plugin = composerRegistry.get(sceneState.sceneId);
+              if (plugin) {
+                await persistence.save(plugin.sceneId, composerState.placements);
+                composerState.markClean();
+              }
+            }}
+          >
+            <i class="fas fa-save"></i> Save
+            {#if composerState.dirty}<span class="dirty-dot"></span>{/if}
+          </button>
+        {:else}
+          <button class="action-btn" onclick={handleReset} title="Reset to defaults">
+            <i class="fas fa-undo"></i> Reset
+          </button>
+          <button
+            class="action-btn primary"
+            class:success={copyStatus === "copied"}
+            class:error={copyStatus === "error"}
+            onclick={handleCopy}
+            title="Copy TypeScript config to clipboard"
+          >
+            {#if copyStatus === "copied"}
+              <i class="fas fa-check"></i> Copied
+            {:else if copyStatus === "error"}
+              <i class="fas fa-xmark"></i> Failed
+            {:else}
+              <i class="fas fa-copy"></i> Copy config
+            {/if}
+          </button>
+        {/if}
       </div>
 
       <div class="controls-scroll">
-        {#if sceneState.sceneId === "winter"}
+        {#if composerState.active}
+          {@const plugin = composerRegistry.get(sceneState.sceneId)}
+          {#if plugin}
+            <ComposerPickerPanel
+              catalog={plugin.catalog}
+              sceneName={plugin.displayName}
+              placedCount={composerState.placements.length}
+              activeItemKey={composerState.activeCatalogItem?.key ?? null}
+              onSelectItem={(def) => composerState.startPlacement(def)}
+              onDeselectItem={() => composerState.stopPlacement()}
+              onClose={() => composerState.setActive(false)}
+            />
+          {/if}
+        {:else if sceneState.sceneId === "winter"}
           <WinterControls />
         {:else if sceneState.sceneId === "cosmic-night"}
           <CosmicControls variant="night" />
@@ -273,6 +313,15 @@
     min-height: 0;
     overflow-y: auto;
     padding-right: 4px;
+  }
+
+  .dirty-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+    margin-left: 4px;
   }
 
   @media (max-width: 900px) {
