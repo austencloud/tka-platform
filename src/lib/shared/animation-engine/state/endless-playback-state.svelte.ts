@@ -13,6 +13,10 @@ import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/servi
 import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 
 export interface EndlessPlaybackConfig {
   modes: SourceMode[];
@@ -32,9 +36,9 @@ export interface EndlessPlaybackState {
   readonly isChainingNow: boolean;
   readonly isPreloading: boolean;
   readonly derivedStartPosition: ReturnType<typeof startPositionDeriver.getOrDeriveStartPosition>;
-  readonly currentLetter: string | null;
-  readonly currentStepData: unknown | null;
-  readonly gridMode: string | null;
+  readonly currentLetter: Letter | null;
+  readonly currentStepData: StepData | StartPositionData | null;
+  readonly gridMode: GridMode | null;
   readonly totalSteps: number;
   readonly animationState: AnimationPanelState;
   readonly playbackController: AnimationPlaybackController;
@@ -80,26 +84,26 @@ export function createEndlessPlayback(config: EndlessPlaybackConfig): EndlessPla
     return startPositionDeriver.getOrDeriveStartPosition(animationState.sequenceData);
   });
 
-  const currentLetter = $derived.by(() => {
+  const currentLetter = $derived.by((): Letter | null => {
     if (!animationState.sequenceData) return null;
     const step = animationState.currentStep;
     if (step < 1) {
       const startPos = derivedStartPosition;
-      if (startPos && "letter" in startPos) return startPos.letter || null;
+      if (startPos && "letter" in startPos) return (startPos.letter as Letter) || null;
       return null;
     }
     const steps = animationState.sequenceData.steps;
     if (steps?.length) {
       const idx = Math.max(0, Math.min(Math.floor(step) - 1, steps.length - 1));
-      return steps[idx]?.letter || null;
+      return (steps[idx]?.letter as Letter) || null;
     }
     return null;
   });
 
-  const currentStepData = $derived.by(() => {
+  const currentStepData = $derived.by((): StepData | StartPositionData | null => {
     if (!animationState.sequenceData) return null;
     const step = animationState.currentStep;
-    if (step < 1) return derivedStartPosition || null;
+    if (step < 1) return (derivedStartPosition as StartPositionData | null) || null;
     const steps = animationState.sequenceData.steps;
     if (steps?.length) {
       const idx = Math.max(0, Math.min(Math.floor(step) - 1, steps.length - 1));
@@ -108,7 +112,7 @@ export function createEndlessPlayback(config: EndlessPlaybackConfig): EndlessPla
     return null;
   });
 
-  const gridMode = $derived(
+  const gridMode: GridMode | null = $derived(
     _currentSequence?.gridMode ?? animationState.sequenceData?.gridMode ?? null
   );
 
