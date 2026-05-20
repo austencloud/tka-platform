@@ -30,12 +30,14 @@ export interface PlacedObject {
 	userId: string;
 }
 
-export type PlacedObjectType =
-	| "tent" // Camping structures
-	| "marker" // Points of interest
-	| "prop" // Decorative items
-	| "zone" // Area markers (art car, sound camp)
-	| "path"; // Walking paths
+export type CampObjectType =
+	| "tent"
+	| "marker"
+	| "prop"
+	| "zone"
+	| "path";
+
+export type PlacedObjectType = CampObjectType | (string & {});
 
 /**
  * Create a new PlacedObject with default values
