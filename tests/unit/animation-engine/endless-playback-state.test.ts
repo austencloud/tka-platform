@@ -1,0 +1,93 @@
+import { describe, it, expect, vi } from "vitest";
+
+// ── Block transitive imports that crash in jsdom ──────────────────────────────
+vi.mock("$lib/shared/di", () => ({ container: {} }));
+vi.mock("$lib/shared/di/containers/core-container", () => ({}));
+vi.mock("@firebase/firestore", () => ({}));
+vi.mock("@firebase/firestore/lite", () => ({}));
+vi.mock("$lib/shared/application/state/app-state.svelte", () => ({
+  getSettings: vi.fn(() => ({})),
+}));
+vi.mock("$lib/shared/settings/services/implementations/FirebaseSettingsPersister", () => ({
+  FirebaseSettingsPersister: class {},
+}));
+vi.mock("$lib/shared/animation-engine/state/animation-visibility-state.svelte", () => ({
+  getAnimationVisibilityManager: vi.fn(() => ({ getEffortPreset: () => "linear" })),
+}));
+vi.mock("$lib/features/compose/utils/animation-panel-persistence", () => ({
+  loadTrailSettings: vi.fn(() => ({})),
+}));
+vi.mock("$lib/features/compose/services/implementations/Canvas2DAnimationRenderer", () => ({
+  Canvas2DAnimationRenderer: class {},
+}));
+vi.mock("$lib/shared/animation-engine/services/animator-loader", () => ({
+  loadAnimatorServices: vi.fn(),
+}));
+vi.mock("$lib/shared/landing/services/prop-type-applier", () => ({
+  applyToSequence: vi.fn((seq: unknown) => seq),
+}));
+vi.mock("$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver", () => ({
+  gridPositionDeriver: { getGridPositionFromLocations: vi.fn() },
+}));
+vi.mock("$lib/shared/browse/getClaudeCodeCopier", () => ({
+  getClaudeCodeCopier: vi.fn(() => ({
+    copyForClaude: vi.fn(async () => ({ success: true })),
+  })),
+}));
+vi.mock("$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver", () => ({
+  startPositionDeriver: { getOrDeriveStartPosition: vi.fn(() => null) },
+  StartPositionDeriver: class {},
+}));
+
+import { createEndlessPlayback } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
+
+describe("createEndlessPlayback", () => {
+  it("module exports createEndlessPlayback function", () => {
+    expect(typeof createEndlessPlayback).toBe("function");
+  });
+
+  it("creates state with expected shape", () => {
+    const mockSpinner = {
+      initialize: vi.fn(async () => {}),
+      getInitialSequence: vi.fn(async () => null),
+      getNextSequence: vi.fn(async () => null),
+    };
+    const mockGenerator = {
+      generateInitial: vi.fn(async () => null),
+      generateFromEndState: vi.fn(async () => null),
+      getSessionCount: vi.fn(() => 0),
+    };
+    const mockPlaybackController = {
+      initialize: vi.fn(() => true),
+      togglePlayback: vi.fn(),
+      seekToStep: vi.fn(),
+      dispose: vi.fn(),
+    };
+
+    const state = createEndlessPlayback({
+      modes: ["library", "infinite"],
+      defaultMode: "library",
+      spinnerOrchestrator: mockSpinner,
+      infiniteGenerator: mockGenerator,
+      playbackController: mockPlaybackController as any,
+    });
+
+    expect(state.currentSequence).toBeNull();
+    expect(state.sourceMode).toBe("library");
+    expect(state.history).toEqual([]);
+    expect(state.isChainingNow).toBe(false);
+    expect(state.isPreloading).toBe(false);
+    expect(state.servicesReady).toBe(false);
+    expect(typeof state.initialize).toBe("function");
+    expect(typeof state.setSourceMode).toBe("function");
+    expect(typeof state.setPropType).toBe("function");
+    expect(typeof state.skip).toBe("function");
+    expect(typeof state.shuffle).toBe("function");
+    expect(typeof state.copyForAI).toBe("function");
+    expect(typeof state.copyHistoryEntry).toBe("function");
+    expect(typeof state.hotSwapSequence).toBe("function");
+    expect(typeof state.dispose).toBe("function");
+
+    state.dispose();
+  });
+});
