@@ -9,7 +9,36 @@ const config = {
     adapter: adapter({
       routes: {
         include: ['/*'],
-        exclude: ['<all>']
+        exclude: [
+          '/_app/*',
+          '/.well-known/*',
+          '/animations/*',
+          '/assets/*',
+          '/branding/*',
+          '/data/*',
+          '/fonts/*',
+          '/gallery/*',
+          '/guide/*',
+          '/guides/*',
+          '/images/*',
+          '/models/*',
+          '/pictographs/*',
+          '/pwa/*',
+          '/retro-eras/*',
+          '/screenshots/*',
+          '/sounds/*',
+          '/textures/*',
+          '/thumbnails/*',
+          '/favicon.png',
+          '/firebase-messaging-handler.js',
+          '/firebase-messaging-sw.js',
+          '/legacy-sw.js',
+          '/manifest.webmanifest',
+          '/og-default.png',
+          '/robots.txt',
+          '/sitemap.xml',
+          '/sw.js',
+        ]
       }
     }),
 
