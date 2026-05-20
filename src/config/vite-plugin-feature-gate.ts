@@ -12,7 +12,7 @@
 import type { Plugin, ResolvedConfig } from "vite";
 import { getDisabledFeatureModulePaths } from "./feature-flags";
 
-const STUB_SVELTE_ID = "\0feature-gate-stub.svelte";
+const STUB_ID = "\0feature-gate-stub.js";
 const STUB_EXPORT = "export default null;\n";
 
 function normalize(p: string): string {
@@ -67,14 +67,14 @@ export function featureGatePlugin(): Plugin {
 
       const resolvedPath = normalize(resolved.id);
       if (resolvedPath.endsWith(".svelte")) {
-        return STUB_SVELTE_ID;
+        return STUB_ID;
       }
 
       return null;
     },
 
     load(id: string) {
-      if (id === STUB_SVELTE_ID) {
+      if (id === STUB_ID) {
         return STUB_EXPORT;
       }
       return null;
