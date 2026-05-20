@@ -20,6 +20,7 @@
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import PerfMonitor from "./PerfMonitor.svelte";
+  import ScenePostProcessing from "../effects/post-processing/ScenePostProcessing.svelte";
   import StepPlaneStrip from "./controls/StepPlaneStrip.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
@@ -156,16 +157,18 @@
       >
         <PerfMonitor visible={viewer3DState.showPerf} />
         <Viewer3DCanvasRef />
-        <Viewer3DCamera
-          cameraPlayerAvatar={cameraPlayer.avatarState}
-          cameraPlayerPhysics={cameraPlayer.physicsProvider}
-        />
-        <Viewer3DScene
-          {sequenceData}
-          {currentStep}
-          {isPlaying}
-          {avatarState}
-        />
+        <ScenePostProcessing>
+          <Viewer3DCamera
+            cameraPlayerAvatar={cameraPlayer.avatarState}
+            cameraPlayerPhysics={cameraPlayer.physicsProvider}
+          />
+          <Viewer3DScene
+            {sequenceData}
+            {currentStep}
+            {isPlaying}
+            {avatarState}
+          />
+        </ScenePostProcessing>
       </Canvas>
     {/if}
     <SceneLoadingCurtain />

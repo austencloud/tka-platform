@@ -96,10 +96,11 @@
     const pos = positions[presetId];
     if (!pos) return;
 
-    viewer3DState.setActiveCameraPreset(presetId);
     const spherical = presetId === "top"
-      ? { azimuth: 0, polar: 0 }
+      ? { azimuth: Math.PI, polar: 0 }
       : undefined;
+
+    viewer3DState.setActiveCameraPreset(presetId);
     viewer3DState.snapCameraTo(pos, getLookTarget(presetId), spherical);
   }
 </script>

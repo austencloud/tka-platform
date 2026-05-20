@@ -154,7 +154,6 @@
 		{/each}
 	</div>
 
-	<!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
 	<div
 		class="resize-handle"
 		onpointerdown={onPointerDown}
@@ -162,7 +161,7 @@
 		onpointerup={onPointerUp}
 		onpointercancel={onPointerUp}
 		ondblclick={onHandleDoubleClick}
-		role="separator"
+		role="slider"
 		aria-orientation="vertical"
 		aria-valuenow={railWidth}
 		aria-valuemin={MIN_WIDTH}
