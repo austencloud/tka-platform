@@ -10,9 +10,9 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { EndState } from "$lib/shared/landing/domain/types";
-import type { IInfiniteSequenceGenerator, IEndlessSpinnerOrchestrator } from "$lib/shared/animation-engine/domain/chaining-types";
-
-export type SourceMode = "pick" | "library" | "infinite";
+import type { IInfiniteSequenceGenerator, IEndlessSpinnerOrchestrator, SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";
+// re-export for existing consumers
+export type { SourceMode };
 
 import * as propTypeApplierModule from "$lib/shared/landing/services/prop-type-applier";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

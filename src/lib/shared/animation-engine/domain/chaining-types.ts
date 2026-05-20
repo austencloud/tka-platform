@@ -7,6 +7,21 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { EndState } from "$lib/shared/landing/domain/types";
+import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
+
+export type SourceMode = "pick" | "library" | "infinite" | "live";
+
+export interface IBroadcastProvider {
+  subscribeToBroadcast(callback: (state: BroadcastStateClient | null) => void): () => void;
+  calculateServerTimeOffset(): Promise<number>;
+}
+
+export interface PlaybackHistoryEntry {
+  sequence: SequenceData;
+  timestamp: number;
+  sourceMode: SourceMode;
+  word?: string;
+}
 
 /**
  * Minimal result shape returned by the infinite generator.
