@@ -10,7 +10,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { EndState } from "$lib/shared/landing/domain/types";
-import type { IInfiniteSequenceGenerator, IEndlessSpinnerOrchestrator, SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";
+import type { IInfiniteSequenceGenerator, IEndlessSpinnerOrchestrator, IBroadcastProvider, PlaybackHistoryEntry, SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";
 // re-export for existing consumers
 export type { SourceMode };
 
@@ -34,10 +34,25 @@ export class SequenceChainingOrchestrator {
   private swapCallback: ((seq: SequenceData) => void) | null = null;
   private errorCallback: ((message: string) => void) | null = null;
 
+  // --- Configurable propType ---
+  private _propType: PropType = PropType.STAFF;
+
+  // --- History tracking ---
+  private _history: PlaybackHistoryEntry[] = [];
+  private _historyCapacity: number;
+
+  // --- Live mode ---
+  private broadcastUnsubscribe: (() => void) | null = null;
+  private _sourceMode: SourceMode = "library";
+
   constructor(
     private readonly spinnerOrchestrator: IEndlessSpinnerOrchestrator,
-    private readonly infiniteGenerator: IInfiniteSequenceGenerator
-  ) {}
+    private readonly infiniteGenerator: IInfiniteSequenceGenerator,
+    private readonly broadcastProvider?: IBroadcastProvider,
+    options?: { historyCapacity?: number }
+  ) {
+    this._historyCapacity = options?.historyCapacity ?? 30;
+  }
 
   get isChainingNow(): boolean {
     return this._isChainingNow;
@@ -45,6 +60,22 @@ export class SequenceChainingOrchestrator {
 
   get isPreloading(): boolean {
     return this._isPreloading;
+  }
+
+  get propType(): PropType {
+    return this._propType;
+  }
+
+  setPropType(type: PropType): void {
+    this._propType = type;
+  }
+
+  get historyCapacity(): number {
+    return this._historyCapacity;
+  }
+
+  getHistory(): readonly PlaybackHistoryEntry[] {
+    return this._history;
   }
 
   async initialize(
@@ -57,6 +88,7 @@ export class SequenceChainingOrchestrator {
   }
 
   async startAutoMode(mode: SourceMode): Promise<void> {
+    this._sourceMode = mode;
     this.preloadedSequence = null;
     this.lastStep = -1;
 
@@ -72,6 +104,16 @@ export class SequenceChainingOrchestrator {
         this.doHotSwap(generated.sequence);
         this.preloadNext(mode);
       }
+    } else if (mode === "live") {
+      if (!this.broadcastProvider) {
+        this.errorCallback?.("Live mode requires a broadcast provider");
+        return;
+      }
+      this.broadcastUnsubscribe = this.broadcastProvider.subscribeToBroadcast((state) => {
+        if (state?.currentSequence) {
+          this.doHotSwap(state.currentSequence as unknown as SequenceData);
+        }
+      });
     }
   }
 
@@ -104,7 +146,7 @@ export class SequenceChainingOrchestrator {
     servicesReady: boolean,
     hasSequence: boolean
   ): void {
-    if (sourceMode === "pick") return;
+    if (sourceMode === "pick" || sourceMode === "live") return;
 
     const floored = Math.floor(currentStep);
 
@@ -129,7 +171,7 @@ export class SequenceChainingOrchestrator {
     servicesReady: boolean,
     hasSequence: boolean
   ): void {
-    if (sourceMode === "pick") return;
+    if (sourceMode === "pick" || sourceMode === "live") return;
 
     const floored = Math.floor(currentStep);
     const shouldPreload =
@@ -153,11 +195,14 @@ export class SequenceChainingOrchestrator {
   }
 
   dispose(): void {
+    this.broadcastUnsubscribe?.();
+    this.broadcastUnsubscribe = null;
     this.playbackController = null;
     this.animationState = null;
     this.preloadedSequence = null;
     this.swapCallback = null;
     this.errorCallback = null;
+    this._history = [];
   }
 
   // --- Private helpers ---
@@ -165,10 +210,21 @@ export class SequenceChainingOrchestrator {
   private doHotSwap(sequenceData: SequenceData): void {
     if (!this.playbackController || !this.animationState) return;
 
+    // Push to history before swapping
+    this._history = [
+      {
+        sequence: sequenceData,
+        timestamp: Date.now(),
+        sourceMode: this._sourceMode,
+        word: sequenceData.word ?? sequenceData.name,
+      },
+      ...this._history,
+    ].slice(0, this._historyCapacity);
+
     this.currentSequence = sequenceData;
     this.lastStep = -1;
 
-    const applied = this.propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
+    const applied = this.propTypeApplier.applyToSequence(sequenceData, this._propType);
 
     this.animationState.setShouldLoop(true);
     const ok = this.playbackController.initialize(applied, this.animationState);
@@ -290,7 +346,7 @@ export class SequenceChainingOrchestrator {
    * the mode parameter directly (e.g. after a synchronous chain swap).
    */
   private inferCurrentMode(): SourceMode {
-    // If infinite generator has session activity, assume infinite mode
+    if (this._sourceMode !== "library") return this._sourceMode;
     if (this.infiniteGenerator.getSessionCount() > 0) return "infinite";
     return "library";
   }
