@@ -408,9 +408,8 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery"
   .main-interface {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    height: var(--viewport-height, 100vh);
-    height: 100dvh;
+    flex: 1;
+    min-height: 0;
     width: 100%;
     overflow: hidden;
     position: relative;
