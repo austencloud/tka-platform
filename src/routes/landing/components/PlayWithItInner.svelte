@@ -10,26 +10,18 @@
 
 import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
 import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
-  import { onMount, onDestroy, tick } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-  import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import type { EndState } from '$lib/shared/landing/domain/types';
+  import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
+  import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
-  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { orientationCalculator as orientationCalculatorInstance } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
     animationSettings,
     TrackingMode,
@@ -42,8 +34,6 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { EFFORTS, type EffortId as EffortPresetId } from "$lib/shared/effort/domain/effort-types";
-  import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { toCompactDebug } from "$lib/features/landing/services/sequence-data-serializer";
 
   // ── Effect definitions ──────────────────────────────────────────────────────
   type EffectId = "clean" | "trails" | "fire" | "leds" | "charcoal";
@@ -73,53 +63,14 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     [PropType.MINIHOOP]: "Mini Hoop",
   };
 
-  // ── Apply prop type to all motions in sequence data ─────────────────────────
-  function applyPropTypeToSequence(
-    sequence: SequenceData,
-    propType: PropType
-  ): SequenceData {
-    const applyToMotions = (data: StepData | StartPositionData) => {
-      if (!data.motions) return data;
-      return {
-        ...data,
-        motions: {
-          blue: data.motions.blue
-            ? { ...data.motions.blue, propType }
-            : undefined,
-          red: data.motions.red ? { ...data.motions.red, propType } : undefined,
-        },
-      };
-    };
-
-    return {
-      ...sequence,
-      startPosition: sequence.startPosition
-        ? (applyToMotions(sequence.startPosition) as StartPositionData)
-        : undefined,
-      steps:
-        sequence.steps?.map((step) => applyToMotions(step) as StepData) ?? [],
-    };
-  }
-
-  // ── Animation state ─────────────────────────────────────────────────────────
-  const animationState = createAnimationPanelState();
-  let playbackController: AnimationPlaybackController | null = null;
-  let browseLoader: PublicSequencesLoader | null = null;
-  let startPositionDeriver: StartPositionDeriver | null = null;
-  let gridPositionDeriver: GridPositionDeriver | null = null;
-  let spinnerOrchestrator: EndlessSpinnerOrchestrator | null = null;
-  let servicesReady = $state(false);
+  // ── Factory state ──────────────────────────────────────────────────────────
+  let playback = $state<EndlessPlaybackState | null>(null);
   let animationReady = $state(false);
   let animationError = $state(false);
   let isLoading = $state(false);
 
-  // Sequence state
-  let currentSequence = $state<SequenceData | null>(null);
+  // Prop state
   let currentPropType = $state<PropType>(PropType.STAFF);
-  let lastStep = $state(-1);
-  let preloadedSequence = $state<SequenceData | null>(null);
-  let isPreloading = $state(false);
-  let isChainingNow = $state(false);
 
   // Effect state
   let activeEffect = $state<EffectId>("trails");
@@ -161,40 +112,20 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   });
 
   // ── Sequence history & copy ──────────────────────────────────────────────
-  const HISTORY_CAP = 20;
-
-  interface HistoryEntry {
-    sequence: SequenceData;
-    timestamp: Date;
-    word: string;
-    loopType: string | null;
-    stepCount: number;
-  }
-
-  let sequenceHistory = $state<HistoryEntry[]>([]);
   let showHistory = $state(false);
   let copyFeedback = $state<string | null>(null);
   let copyFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  function pushToHistory(sequence: SequenceData) {
-    const entry: HistoryEntry = {
-      sequence,
-      timestamp: new Date(),
-      word: sequence.intendedWord ?? sequence.word ?? "?",
-      loopType: sequence.loopType ?? null,
-      stepCount: sequence.steps?.length ?? 0,
-    };
-    sequenceHistory = [entry, ...sequenceHistory].slice(0, HISTORY_CAP);
+  async function copySequenceData() {
+    if (!playback) return;
+    const result = await playback.copyForAI();
+    showCopyFeedback(result.success ? "Copied!" : "Copy failed");
   }
 
-  async function copySequenceData(sequence: SequenceData) {
-    try {
-      const text = toCompactDebug(sequence);
-      await navigator.clipboard.writeText(text);
-      showCopyFeedback("Copied!");
-    } catch {
-      showCopyFeedback("Copy failed");
-    }
+  async function copyHistoryEntry(index: number) {
+    if (!playback) return;
+    const result = await playback.copyHistoryEntry(index);
+    showCopyFeedback(result.success ? "Copied!" : "Copy failed");
   }
 
   function showCopyFeedback(msg: string) {
@@ -205,112 +136,8 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     }, 1500);
   }
 
-  // ── Derived values for AnimatorCanvas ───────────────────────────────────────
-  let derivedStartPosition = $derived.by(() => {
-    if (!animationState.sequenceData || !startPositionDeriver) return null;
-    return startPositionDeriver.getOrDeriveStartPosition(
-      animationState.sequenceData
-    );
-  });
-
-  let currentLetter = $derived.by(() => {
-    if (!animationState.sequenceData) return null;
-    const step = animationState.currentStep;
-    if (step < 1) return derivedStartPosition?.letter || null;
-    if (animationState.sequenceData.steps?.length > 0) {
-      const idx = Math.max(
-        0,
-        Math.min(
-          Math.floor(step) - 1,
-          animationState.sequenceData.steps.length - 1
-        )
-      );
-      return animationState.sequenceData.steps[idx]?.letter || null;
-    }
-    return null;
-  });
-
-  let currentStepData = $derived.by(() => {
-    if (!animationState.sequenceData) return null;
-    const step = animationState.currentStep;
-    if (step < 1) return derivedStartPosition || null;
-    if (animationState.sequenceData.steps?.length > 0) {
-      const idx = Math.max(
-        0,
-        Math.min(
-          Math.floor(step) - 1,
-          animationState.sequenceData.steps.length - 1
-        )
-      );
-      return animationState.sequenceData.steps[idx] || null;
-    }
-    return null;
-  });
-
-  // Derive gridMode from actual motion locations rather than the stored field.
-  // The stored field may be stale (e.g. "box" for a diamond sequence published
-  // before gridMode tracking was consistent). Motion locations are the ground truth.
-  let gridMode = $derived.by((): GridMode => {
-    const seq = animationState.sequenceData;
-    if (!seq) return GridMode.DIAMOND;
-
-    // Inspect start position first, then first beat
-    const candidates = [seq.startPosition, ...(seq.steps ?? [])];
-    for (const candidate of candidates) {
-      if (!candidate) continue;
-      const blue = candidate.motions?.[MotionColor.BLUE];
-      const red = candidate.motions?.[MotionColor.RED];
-      if (!blue || !red) continue;
-      if (!blue.startLocation || !blue.endLocation || !red.startLocation || !red.endLocation) continue;
-      try {
-        return gridModeDeriver.deriveGridMode(blue, red);
-      } catch {
-        continue;
-      }
-    }
-
-    // No usable motion data - fall back to stored field
-    return seq.gridMode ?? GridMode.DIAMOND;
-  });
-  let currentStepNumber = $derived(Math.floor(animationState.currentStep));
-
-  // ── Pre-load next sequence partway through current one ──────────────────────
-  $effect(() => {
-    const step = Math.floor(animationState.currentStep);
-    const total = animationState.totalSteps;
-    const shouldPreload =
-      servicesReady &&
-      animationReady &&
-      !isPreloading &&
-      !preloadedSequence &&
-      currentSequence &&
-      total > 2 &&
-      step >= 2 &&
-      step < total - 1;
-
-    if (shouldPreload) {
-      preloadNextSequence();
-    }
-  });
-
-  // ── Chain to next sequence on completion ────────────────────────────────────
-  $effect(() => {
-    const step = Math.floor(animationState.currentStep);
-    const total = animationState.totalSteps;
-
-    if (
-      servicesReady &&
-      !isChainingNow &&
-      animationReady &&
-      lastStep >= total - 1 &&
-      step <= 1 &&
-      total > 0
-    ) {
-      chainToNextSequence();
-    }
-
-    lastStep = step;
-  });
+  // ── Derived values ─────────────────────────────────────────────────────────
+  let currentStepNumber = $derived(Math.floor(playback?.animationState?.currentStep ?? 0));
 
   // ── Initialize animation engine ─────────────────────────────────────────────
   onMount(async () => {
@@ -324,14 +151,11 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       // Trails on by default (matches "trails" active chip)
       visibilityManager.setActiveEffect("trails");
 
-      browseLoader = getBrowseLoader();
-      playbackController = createAnimationPlaybackController();
-      startPositionDeriver = startPositionDeriverInstance;
-      gridPositionDeriver = gridPositionDeriverInstance;
-
+      const browseLoader = getBrowseLoader();
+      const pc = createAnimationPlaybackController();
       const sequenceTransformer = getSequenceTransformer();
 
-      spinnerOrchestrator = new EndlessSpinnerOrchestrator(
+      const spinnerOrch = new EndlessSpinnerOrchestrator(
         browseLoader as any,
         generationOrchestrator,
         sequenceTransformer as any,
@@ -340,15 +164,24 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
         gridPositionDeriverInstance as any
       );
 
-      await spinnerOrchestrator.initialize();
-      servicesReady = true;
+      // Noop infinite generator (this surface is library-only)
+      const noopInfinite = {
+        generateInitial: async () => null,
+        generateFromEndState: async () => null,
+        getSessionCount: () => 0,
+      };
 
-      const initialSequence = await spinnerOrchestrator.getInitialSequence();
-      if (initialSequence) {
-        await loadSequence(initialSequence);
-      } else {
-        animationError = true;
-      }
+      playback = createEndlessPlayback({
+        modes: ["library"],
+        defaultMode: "library",
+        propType: currentPropType,
+        spinnerOrchestrator: spinnerOrch,
+        infiniteGenerator: noopInfinite,
+        playbackController: pc,
+      });
+
+      await playback.initialize();
+      animationReady = true;
     } catch (err) {
       console.error("[PlayWithIt] Failed to load animation:", err);
       animationError = true;
@@ -356,8 +189,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   });
 
   onDestroy(() => {
-    playbackController?.dispose();
-    animationState.dispose();
+    playback?.dispose();
   });
 
   // ── Effect switching ────────────────────────────────────────────────────────
@@ -390,14 +222,16 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       newProp = RANDOM_PROPS[Math.floor(Math.random() * RANDOM_PROPS.length)]!;
     }
     currentPropType = newProp;
+    playback?.setPropType(newProp);
 
     // Hot-swap prop in the running animation
-    if (animationState.sequenceData) {
-      const updated = applyPropTypeToSequence(
-        animationState.sequenceData,
+    const animState = playback?.animationState;
+    if (animState?.sequenceData) {
+      const updated = propTypeApplier.applyToSequence(
+        animState.sequenceData,
         newProp
       );
-      animationState.setSequenceData(updated);
+      animState.setSequenceData(updated);
     }
   }
 
@@ -411,8 +245,8 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
 
   // ── Play / Pause ────────────────────────────────────────────────────────────
   function togglePlayPause() {
-    if (!playbackController) return;
-    playbackController.togglePlayback();
+    if (!playback?.playbackController) return;
+    playback.playbackController.togglePlayback();
   }
 
   // ── BPM control ─────────────────────────────────────────────────────────────
@@ -420,119 +254,11 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     animationSettings.setBpm(newBpm);
   }
 
-  // ── Sequence loading ────────────────────────────────────────────────────────
-  function extractEndState(sequence: SequenceData): EndState {
-    const last = sequence.steps?.[sequence.steps.length - 1];
-    let position = last?.endPosition ?? null;
-
-    if (!position && gridPositionDeriver && last?.motions) {
-      const blue = last.motions[MotionColor.BLUE];
-      const red = last.motions[MotionColor.RED];
-      if (blue?.endLocation && red?.endLocation) {
-        try {
-          position = gridPositionDeriver.getGridPositionFromLocations(
-            blue.endLocation,
-            red.endLocation
-          );
-        } catch {
-          // position stays null
-        }
-      }
-    }
-
-    return {
-      position,
-      blueOrientation: (last?.motions?.blue?.endOrientation as Orientation) ?? null,
-      redOrientation: (last?.motions?.red?.endOrientation as Orientation) ?? null,
-    };
-  }
-
-  async function preloadNextSequence() {
-    if (!spinnerOrchestrator || !currentSequence || isPreloading) return;
-    isPreloading = true;
-    try {
-      const endState = extractEndState(currentSequence);
-      const next = await spinnerOrchestrator.getNextSequence(endState);
-      preloadedSequence = next || (await spinnerOrchestrator.getInitialSequence());
-    } catch (err) {
-      console.error("[PlayWithIt] Preload failed:", err);
-    } finally {
-      isPreloading = false;
-    }
-  }
-
-  async function chainToNextSequence() {
-    if (!spinnerOrchestrator || !playbackController || isChainingNow) return;
-    isChainingNow = true;
-    try {
-      let next = preloadedSequence;
-      if (!next && currentSequence) {
-        const endState = extractEndState(currentSequence);
-        next = await spinnerOrchestrator.getNextSequence(endState);
-        if (!next) next = await spinnerOrchestrator.getInitialSequence();
-      }
-      if (next) hotSwapSequence(next);
-      preloadedSequence = null;
-    } catch (err) {
-      console.error("[PlayWithIt] Chain failed:", err);
-    } finally {
-      isChainingNow = false;
-    }
-  }
-
-  function hotSwapSequence(sequenceData: SequenceData) {
-    if (!playbackController) return;
-    currentSequence = sequenceData;
-    pushToHistory(sequenceData);
-    lastStep = -1;
-
-    const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
-    animationState.setShouldLoop(true);
-    playbackController.updateSequenceData(sequence);
-    playbackController.seekToStep(1);
-    animationState.setPlaybackMode("continuous");
-    if (!animationState.isPlaying) {
-      playbackController.togglePlayback();
-    }
-  }
-
-  async function loadSequence(sequenceData: SequenceData) {
-    if (!playbackController) return;
-    animationReady = false;
-
-    try {
-      if (animationState.isPlaying) {
-        playbackController.togglePlayback();
-      }
-      animationState.reset();
-      currentSequence = sequenceData;
-      pushToHistory(sequenceData);
-      lastStep = -1;
-
-      const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
-      animationState.setShouldLoop(true);
-      const success = playbackController.initialize(sequence, animationState);
-      if (!success) throw new Error("Playback init failed");
-
-      animationReady = true;
-      isLoading = false;
-      await tick();
-
-      animationState.setPlaybackMode("continuous");
-      animationState.setCurrentStep(1);
-      playbackController.togglePlayback();
-    } catch (err) {
-      console.error("[PlayWithIt] Load sequence failed:", err);
-      animationError = true;
-      isLoading = false;
-    }
-  }
-
   // ── Derived display values ──────────────────────────────────────────────────
   let propLabel = $derived(PROP_LABELS[currentPropType] ?? "Staff");
   let effortLabel = $derived(EFFORTS.find((e) => e.id === activeEffort)?.label ?? "Linear");
   let effortColor = $derived(EFFORT_COLORS[activeEffort] ?? "#94a3b8");
-  let isDisabled = $derived(!servicesReady || isLoading);
+  let isDisabled = $derived(!playback?.servicesReady || isLoading);
 
   // ── Notation panel cells ──────────────────────────────────────────────────
   // Build an array of cells: start position (index 0) + each beat step.
@@ -546,7 +272,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   }
 
   let notationCells = $derived.by((): NotationCell[] => {
-    const seq = animationState.sequenceData;
+    const seq = playback?.animationState?.sequenceData;
     if (!seq?.steps?.length) return [];
 
     const cells: NotationCell[] = [];
@@ -582,7 +308,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   let beatStripEl = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
-    if (!beatStripEl || !animationState.isPlaying) return;
+    if (!beatStripEl || !playback?.animationState?.isPlaying) return;
     const activeCell = beatStripEl.querySelector('.step-cell.active') as HTMLElement | null;
     if (activeCell) {
       activeCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
@@ -650,18 +376,18 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
         <div class="tb-pills">
           <button
             class="tb-pill"
-            class:active={animationState.isPlaying}
+            class:active={playback?.animationState?.isPlaying}
             onclick={togglePlayPause}
             disabled={isDisabled || !animationReady}
-            aria-label={animationState.isPlaying ? "Pause animation" : "Play animation"}
+            aria-label={playback?.animationState?.isPlaying ? "Pause animation" : "Play animation"}
             style="--chip-color: #d4813a;"
           >
-            {#if animationState.isPlaying}
+            {#if playback?.animationState?.isPlaying}
               <span class="playback-icon" aria-hidden="true">⏸</span>
             {:else}
               <span class="playback-icon" aria-hidden="true">▶</span>
             {/if}
-            <span class="pill-text">{animationState.isPlaying ? "Pause" : "Play"}</span>
+            <span class="pill-text">{playback?.animationState?.isPlaying ? "Pause" : "Play"}</span>
           </button>
         </div>
       </div>
@@ -730,8 +456,8 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
           <button
             class="tb-pill"
             class:copied={copyFeedback === "Copied!"}
-            onclick={() => currentSequence && copySequenceData(currentSequence)}
-            disabled={isDisabled || !currentSequence}
+            onclick={() => copySequenceData()}
+            disabled={isDisabled || !playback?.currentSequence}
             aria-label="Copy current sequence data to clipboard"
             style="--chip-color: #22c55e;"
           >
@@ -742,13 +468,13 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
             class="tb-pill"
             class:active={showHistory}
             onclick={() => showHistory = !showHistory}
-            disabled={sequenceHistory.length === 0}
+            disabled={(playback?.history ?? []).length === 0}
             aria-label={showHistory ? "Hide sequence history" : "Show sequence history"}
             aria-expanded={showHistory}
             style="--chip-color: #a78bfa;"
           >
             <i class="fas fa-history" aria-hidden="true"></i>
-            <span class="pill-text">History ({sequenceHistory.length})</span>
+            <span class="pill-text">History ({(playback?.history ?? []).length})</span>
           </button>
         </div>
       </div>
@@ -757,19 +483,19 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
       {#if animationReady && !isLoading}
         <div class="canvas-wrapper">
           <AnimatorCanvas
-            blueProp={animationState.bluePropState}
-            redProp={animationState.redPropState}
+            blueProp={playback?.animationState?.bluePropState ?? null}
+            redProp={playback?.animationState?.redPropState ?? null}
             gridVisible={true}
-            {gridMode}
-            letter={currentLetter}
-            stepData={currentStepData}
-            sequenceData={animationState.sequenceData}
-            currentStep={animationState.currentStep}
-            isPlaying={animationState.isPlaying}
+            gridMode={playback?.gridMode ?? null}
+            letter={playback?.currentLetter ?? null}
+            stepData={playback?.currentStepData}
+            sequenceData={playback?.animationState?.sequenceData}
+            currentStep={playback?.animationState?.currentStep ?? 0}
+            isPlaying={playback?.animationState?.isPlaying ?? false}
             trailSettings={animationSettings.trail}
             bluePropType={currentPropType}
             redPropType={currentPropType}
-            word={animationState.sequenceData?.intendedWord ?? animationState.sequenceData?.word ?? null}
+            word={playback?.animationState?.sequenceData?.intendedWord ?? playback?.animationState?.sequenceData?.word ?? null}
             previewDarkMode={true}
             visibilityManagerOverride={visibilityManager}
           />
@@ -788,10 +514,10 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     </div>
 
     <!-- Beat strip below the canvas -->
-    {#if animationState.sequenceData && notationCells.length > 0}
+    {#if playback?.animationState?.sequenceData && notationCells.length > 0}
       <div class="beat-strip" bind:this={beatStripEl}>
         {#each notationCells as cell, i (cell.key)}
-          {@const isActive = animationState.isPlaying && (
+          {@const isActive = (playback?.animationState?.isPlaying ?? false) && (
             cell.isStart
               ? currentStepNumber === 0
               : currentStepNumber === cell.stepNumber
@@ -817,32 +543,32 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     {/if}
 
     <!-- History panel -->
-    {#if showHistory && sequenceHistory.length > 0}
+    {#if showHistory && (playback?.history ?? []).length > 0}
       <div class="history-panel">
         <div class="history-header">
-          <span class="history-title">Recent Sequences ({sequenceHistory.length})</span>
+          <span class="history-title">Recent Sequences ({(playback?.history ?? []).length})</span>
           <button class="history-close" onclick={() => showHistory = false} aria-label="Close history">
             <i class="fas fa-times" aria-hidden="true"></i>
           </button>
         </div>
         <div class="history-list">
-          {#each sequenceHistory as entry, i (entry.timestamp.getTime())}
+          {#each playback?.history ?? [] as entry, i (entry.timestamp)}
             {@const isCurrent = i === 0}
             <div class="history-row" class:current={isCurrent}>
               <div class="history-info">
-                <span class="history-word">{entry.word}</span>
-                {#if entry.loopType}
-                  <span class="history-loop">{entry.loopType}</span>
+                <span class="history-word">{entry.word ?? entry.sequence.word ?? "?"}</span>
+                {#if entry.sequence.loopType}
+                  <span class="history-loop">{entry.sequence.loopType}</span>
                 {/if}
-                <span class="history-steps">{entry.stepCount} beats</span>
+                <span class="history-steps">{entry.sequence.steps?.length ?? 0} beats</span>
                 <span class="history-time">
-                  {entry.timestamp.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}
+                  {new Date(entry.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}
                 </span>
               </div>
               <button
                 class="history-copy-btn"
-                onclick={() => copySequenceData(entry.sequence)}
-                aria-label="Copy sequence data for {entry.word}"
+                onclick={() => copyHistoryEntry(i)}
+                aria-label="Copy sequence data for {entry.word ?? entry.sequence.word ?? '?'}"
               >
                 <i class="fas fa-clipboard" aria-hidden="true"></i>
               </button>
