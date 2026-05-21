@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { slide } from "svelte/transition";
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { getPerformerColor } from "$lib/shared/3d/constants/performer-colors";
   import ViewerPopover from "$lib/shared/3d/components/controls/ViewerPopover.svelte";
@@ -26,22 +25,24 @@
   let { renderMode, bpm = 60, onBpmChange = () => {} }: Props = $props();
 
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
-  const hasPerformerSelected = $derived(renderMode === "3d" && selectedIndex !== null);
-  const performerColor = $derived(getPerformerColor(selectedIndex ?? 0));
+  const isIndividualMode = $derived(renderMode === "3d" && selectedIndex !== null);
+  const performerColor = $derived(isIndividualMode ? getPerformerColor(selectedIndex ?? 0) : undefined);
   const selectedPerformer = $derived.by(() => {
     if (selectedIndex === null) return null;
     return viewer.performerManager.performers[selectedIndex] ?? null;
   });
+
+  const propOverride = $derived(selectedPerformer?.hasOverride.prop ?? false);
+  const effectsOverride = $derived(selectedPerformer?.hasOverride.effects ?? false);
+  const effortOverride = $derived(selectedPerformer?.hasOverride.effort ?? false);
+  const planesOverride = $derived(selectedPerformer?.hasOverride.planes ?? false);
 
   onMount(() => {
     const cleanupKeyboard = createViewer3DKeyboardHandler({
       undo: () => viewer.undo(),
       redo: () => viewer.redo(),
     });
-
-    return () => {
-      cleanupKeyboard();
-    };
+    return () => cleanupKeyboard();
   });
 </script>
 
@@ -65,10 +66,6 @@
       <CameraPopover />
     </ViewerPopover>
 
-    <ViewerPopover id="planes" title="Planes" icon="fa-layer-group" tooltip="Planes" width={320}>
-      <PlanesPopover />
-    </ViewerPopover>
-
     <ViewerPopover id="export" title="Export" icon="fa-arrow-up-from-bracket" tooltip="Export" width={340}>
       <ExportPopover />
     </ViewerPopover>
@@ -77,59 +74,63 @@
       <SceneSelectorPopover />
     </ViewerPopover>
 
-    {#if hasPerformerSelected}
-      <div
-        class="performer-separator"
-        transition:slide|local={{ duration: 220, axis: "y" }}
-        aria-hidden="true"
-      >
-        <div class="separator-line"></div>
-      </div>
+    <div class="performer-separator" aria-hidden="true">
+      <div class="separator-line"></div>
+    </div>
 
-      <div transition:slide|local={{ duration: 220, axis: "y" }}>
-        <ViewerPopover
-          id="effects"
-          title={`Performer ${(selectedIndex ?? 0) + 1}`}
-          icon="fa-wand-magic-sparkles"
-          tooltip="Effects"
-          accentColor={performerColor}
-          performerScoped
-        >
-          <EffectsPopover />
-        </ViewerPopover>
-      </div>
+    <ViewerPopover
+      id="planes"
+      title={isIndividualMode ? `Performer ${(selectedIndex ?? 0) + 1}` : "All Performers"}
+      icon="fa-layer-group"
+      tooltip="Planes"
+      width={320}
+      accentColor={performerColor}
+      performerScoped={isIndividualMode}
+      hasOverride={planesOverride}
+    >
+      <PlanesPopover />
+    </ViewerPopover>
 
-      <div transition:slide|local={{ duration: 220, axis: "y" }}>
-        <ViewerPopover
-          id="prop"
-          title={`Performer ${(selectedIndex ?? 0) + 1}`}
-          icon="fa-staff-snake"
-          tooltip="Prop"
-          accentColor={performerColor}
-          performerScoped
-        >
-          <PropPopover />
-          {#snippet footer()}
-            {#if selectedPerformer}
-              <PerformerPropSizeSlider performer={selectedPerformer} />
-            {/if}
-          {/snippet}
-        </ViewerPopover>
-      </div>
+    <ViewerPopover
+      id="effects"
+      title={isIndividualMode ? `Performer ${(selectedIndex ?? 0) + 1}` : "All Performers"}
+      icon="fa-wand-magic-sparkles"
+      tooltip="Effects"
+      accentColor={performerColor}
+      performerScoped={isIndividualMode}
+      hasOverride={effectsOverride}
+    >
+      <EffectsPopover />
+    </ViewerPopover>
 
-      <div transition:slide|local={{ duration: 220, axis: "y" }}>
-        <ViewerPopover
-          id="effort"
-          title={`Performer ${(selectedIndex ?? 0) + 1}`}
-          icon="fa-wave-square"
-          tooltip="Effort"
-          accentColor={performerColor}
-          performerScoped
-        >
-          <EffortPopover />
-        </ViewerPopover>
-      </div>
-    {/if}
+    <ViewerPopover
+      id="prop"
+      title={isIndividualMode ? `Performer ${(selectedIndex ?? 0) + 1}` : "All Performers"}
+      icon="fa-staff-snake"
+      tooltip="Prop"
+      accentColor={performerColor}
+      performerScoped={isIndividualMode}
+      hasOverride={propOverride}
+    >
+      <PropPopover />
+      {#snippet footer()}
+        {#if selectedPerformer}
+          <PerformerPropSizeSlider performer={selectedPerformer} />
+        {/if}
+      {/snippet}
+    </ViewerPopover>
+
+    <ViewerPopover
+      id="effort"
+      title={isIndividualMode ? `Performer ${(selectedIndex ?? 0) + 1}` : "All Performers"}
+      icon="fa-wave-square"
+      tooltip="Effort"
+      accentColor={performerColor}
+      performerScoped={isIndividualMode}
+      hasOverride={effortOverride}
+    >
+      <EffortPopover />
+    </ViewerPopover>
   {/if}
 </div>
 
