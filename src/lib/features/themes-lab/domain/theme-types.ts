@@ -57,7 +57,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
   },
   {
     id: "pride",
-    label: "Pride",
+    label: "Rainbow",
     icon: "fa-rainbow",
     color: "#f59e0b",
     backgroundType: "pride" as BackgroundType,

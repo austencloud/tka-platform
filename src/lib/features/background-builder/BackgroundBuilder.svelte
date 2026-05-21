@@ -26,7 +26,7 @@
     { id: "cosmic", label: "Cosmic", icon: "fa-moon" },
     { id: "forest", label: "Forest", icon: "fa-tree" },
     { id: "blossom", label: "Blossom", icon: "fa-spa" },
-    { id: "pride", label: "Pride", icon: "fa-rainbow" },
+    { id: "pride", label: "Rainbow", icon: "fa-rainbow" },
     { id: "ember", label: "Ember", icon: "fa-fire" },
     { id: "winter", label: "Winter", icon: "fa-snowflake" },
     { id: "autumn", label: "Autumn", icon: "fa-leaf" },
