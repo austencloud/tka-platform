@@ -486,6 +486,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       isExporting={ctx.isExporting}
                       canvasReady={ctx.canvasReady}
                       onExport={ctx.handleExport}
+                      choreography={ctx.viewer3DState.cameraChoreography}
                     />
                   {/if}
                   {#if isSidebarExportActive}
