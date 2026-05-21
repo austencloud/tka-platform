@@ -11,7 +11,7 @@
   import { STAGE } from "@austencloud/scene-3d";
   import Stage3D from "./Stage3D.svelte";
   import SeatedAudience3D from "./SeatedAudience3D.svelte";
-  import { Plane, GRID_OFFSETS } from "@austencloud/scene-3d";
+  import { Plane, GRID_OFFSETS, cmToUnits } from "@austencloud/scene-3d";
   import type { GridMode } from "@austencloud/scene-3d";
   import Grid3D from "./Grid3D.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -334,22 +334,22 @@
   <T.Group userData={{ performerIndex: i }}>
     {@const performerGridMode = (sequenceData?.gridMode ?? "diamond") as GridMode}
     {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
-    {@const implicitBlue = performer.customBluePlane ?? Plane.WALL}
-    {@const implicitRed = performer.customRedPlane ?? Plane.WALL}
-    {@const mergedPlanes = new Set([...explicitPlanes, implicitBlue, implicitRed])}
+    {@const perfStaffCm = performer.settings.staffLengthCm}
+    {@const propLength = perfStaffCm != null ? cmToUnits(perfStaffCm) : undefined}
     <PerformerRig
       position={performer.position}
       groundOffset={stageGroundOffset}
       facingAngle={performer.facingAngle}
       planeMode={performer.planeMode}
       avatarState={performer}
-      visiblePlanes={mergedPlanes}
+      visiblePlanes={explicitPlanes}
       gridMode={performerGridMode}
       bluePropType={resolvePerformerProp(performer, bluePropType)}
       redPropType={resolvePerformerProp(performer, redPropType)}
       bluePropState={performer.bluePropState}
       redPropState={performer.redPropState}
       tipEffectMap={globalTipEffectMap}
+      {propLength}
       {isPlaying}
       enableLocomotion={true}
       enableFootPlanting={true}
@@ -357,8 +357,9 @@
       {#snippet gridSlot()}
         <T.Group position.z={performerGridOffset}>
           <Grid3D
-            visiblePlanes={mergedPlanes}
+            visiblePlanes={explicitPlanes}
             gridMode={performerGridMode}
+            showLabels={viewer3DState.showGridLabels}
           />
         </T.Group>
       {/snippet}
