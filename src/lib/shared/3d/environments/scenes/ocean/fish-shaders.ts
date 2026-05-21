@@ -79,6 +79,7 @@ uniform float uMaxSteer;
 uniform float uCurrentStrength;
 uniform float uPerceptionCos;
 uniform sampler2D tTraits;
+uniform sampler2D textureState;
 
 uniform vec3 uSchoolCenters[${MAX_SPECIES}];
 uniform float uSchoolRadius;
@@ -199,13 +200,41 @@ void main() {
     steer += away * uScatterForce * proximity * proximity;
   }
 
+  float adjMax = uMaxSpeed * speedMult;
+  float adjMin = uMinSpeed * speedMult;
+
+  vec4 stateData = texture2D(textureState, uv);
+  float state = stateData.x;
+  vec3 threatDir = vec3(stateData.z, 0.0, stateData.w);
+
+  if (state > 0.5 && state < 1.5) {
+    steer = normalize(threatDir + vec3(0.001)) * 2.0 + sep * 0.3;
+    adjMax *= 2.0;
+  }
+  if (state > 1.5 && state < 2.5) {
+    steer = normalize(threatDir + vec3(0.001)) * 1.5;
+    adjMax *= 1.5;
+  }
+  if (state > 2.5 && state < 3.5) {
+    steer *= 0.1;
+    adjMax *= 0.2;
+  }
+  if (state > 5.5 && state < 6.5) {
+    int si = int(floor(posData.w));
+    vec3 home = uSchoolCenters[si];
+    float dHome = distance(pos, home);
+    if (dHome < uSchoolRadius) {
+      steer = normalize(threatDir + vec3(0.001)) * 1.5;
+    } else {
+      steer = normalize(home - pos) * 1.0;
+    }
+  }
+
   float steerLen = length(steer);
   if (steerLen > uMaxSteer) steer = steer / steerLen * uMaxSteer;
 
   vel = vel * 0.94 + steer * uDelta;
 
-  float adjMax = uMaxSpeed * speedMult;
-  float adjMin = uMinSpeed * speedMult;
   float spd = length(vel);
   if (spd > adjMax) vel = vel / spd * adjMax;
   if (spd > 0.001 && spd < adjMin) vel = vel / spd * adjMin;

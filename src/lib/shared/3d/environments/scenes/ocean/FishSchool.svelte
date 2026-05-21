@@ -17,9 +17,10 @@
   import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
   import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
   import { FishEventSystem, type FishEventUniforms } from './FishEventSystem';
-  import { RESIDENT_SPECIES, RESIDENT_FISH_COUNT, type FishSpeciesConfig } from './fish-species-config';
+  import { RESIDENT_SPECIES, RESIDENT_FISH_COUNT, THREAT_MATRIX, HUNT_MATRIX, type FishSpeciesConfig } from './fish-species-config';
   import { LOCOMOTION_PARAMS, LocomotionMode, type LocomotionModeParams } from './fish-locomotion-params';
   import { velocityShader, positionShader, renderVertexShader, renderFragmentShader } from './fish-shaders';
+  import { stateShader } from './fish-behavior-shader';
   import { userProportionsState } from '@austencloud/scene-3d';
 
   interface Props {
@@ -49,7 +50,7 @@
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
-  const { renderer: rendererRef } = useThrelte();
+  const { renderer } = useThrelte();
 
   const CLUSTER_SPREAD = 2.5;
   const VISITOR_RESERVE = 100;
@@ -110,6 +111,7 @@
   let gpuCompute: GPUComputationRenderer | null = null;
   let posVar: any = null;
   let velVar: any = null;
+  let stateVar: any = null;
   let materials: ShaderMaterial[] = [];
   let materialSizeMults: number[] = [];
   let materialLocoModes: number[] = [];
@@ -117,7 +119,7 @@
   let eventSystem: FishEventSystem | null = null;
 
   $effect(() => {
-    const ren = rendererRef.current;
+    const ren = renderer.current;
     const gy = groundY;
     if (!ren) return;
 
@@ -151,7 +153,13 @@
     Promise.all(loadPromises).then((results) => {
       if (cancelled) return;
 
+      const failed = results.filter((r) => r.model === null);
+      if (failed.length > 0) {
+        console.warn(`[FishSchool] ${failed.length}/${results.length} models failed to load:`, failed.map(f => f.species.modelFile));
+      }
+
       const loaded = results.filter((r) => r.model !== null);
+      console.log(`[FishSchool] ${loaded.length}/${results.length} species loaded, building GPU system...`);
       if (loaded.length === 0) return;
 
       const gpu = new GPUComputationRenderer(texSize, texSize, ren);
@@ -239,8 +247,20 @@
 
       posVar = gpu.addVariable('texturePosition', positionShader, posTex);
       velVar = gpu.addVariable('textureVelocity', velocityShader, velTex);
+
+      const stateTex = gpu.createTexture();
+      const stateArr = stateTex.image.data as Float32Array;
+      for (let i = 0; i < texSize * texSize; i++) {
+        stateArr[i * 4 + 0] = 0;
+        stateArr[i * 4 + 1] = 0;
+        stateArr[i * 4 + 2] = 0;
+        stateArr[i * 4 + 3] = 0;
+      }
+      stateVar = gpu.addVariable('textureState', stateShader, stateTex);
+
       gpu.setVariableDependencies(posVar, [posVar, velVar]);
-      gpu.setVariableDependencies(velVar, [posVar, velVar]);
+      gpu.setVariableDependencies(velVar, [posVar, velVar, stateVar]);
+      gpu.setVariableDependencies(stateVar, [stateVar, posVar, velVar]);
 
       const schoolCenterVecs = clusterCenters.map((c) => new Vector3(c.x, c.y, c.z));
       while (schoolCenterVecs.length < 50) schoolCenterVecs.push(new Vector3(0, 0, 0));
@@ -275,6 +295,26 @@
       velU.uExcursionBias = { value: new Float32Array(4) };
 
       posVar.material.uniforms.uDelta = { value: 0 };
+
+      const trophicRoles = new Int32Array(50);
+      for (let s = 0; s < loaded.length; s++) {
+        trophicRoles[s] = loaded[s]!.species.trophicRole;
+      }
+
+      const stU = stateVar.material.uniforms;
+      stU.uDelta = { value: 0 };
+      stU.uTime = { value: 0 };
+      stU.uFleeRange = { value: 5.0 };
+      stU.uHuntRange = { value: 8.0 };
+      stU.uPanicRadius = { value: 3.0 };
+      stU.uHomeRadius = { value: 4.0 };
+      stU.uPerceptionCos = { value: Math.cos((perceptionAngle * Math.PI) / 180) };
+      stU.uTrophicRole = { value: trophicRoles };
+      stU.uThreatMatrix = { value: THREAT_MATRIX };
+      stU.uHuntMatrix = { value: HUNT_MATRIX };
+      stU.uSchoolCenters = velU.uSchoolCenters;
+      stU.uScatterOrigin = velU.uScatterOrigin;
+      stU.uScatterRadius = { value: scatterRadius };
 
       const err = gpu.init();
       if (err !== null) {
@@ -388,13 +428,14 @@
       gpuCompute = null;
       posVar = null;
       velVar = null;
+      stateVar = null;
     };
   });
 
   let elapsed = 0;
 
   useTask((delta) => {
-    if (!gpuCompute || !posVar || !velVar || materials.length === 0) return;
+    if (!gpuCompute || !posVar || !velVar || !stateVar || materials.length === 0) return;
 
     const dt = Math.min(delta, 0.05);
     elapsed += dt;
@@ -407,6 +448,10 @@
     );
     velVar.material.uniforms.uScatterRadius.value = scatterRadius;
     posVar.material.uniforms.uDelta.value = dt;
+
+    stateVar.material.uniforms.uDelta.value = dt;
+    stateVar.material.uniforms.uTime.value = elapsed;
+    stateVar.material.uniforms.uScatterRadius.value = scatterRadius;
 
     if (eventSystem) {
       eventSystem.tick(dt, velVar.material.uniforms as unknown as FishEventUniforms, rayPosition);
