@@ -323,8 +323,13 @@ export function createViewer3DState(deps: {
    * Out-of-bounds indices are allowed - scopedPerformers() will return []
    * so individual write helpers no-op cleanly.
    */
+  const PERFORMER_POPOVERS: Set<PopoverId> = new Set(["effects", "prop", "effort"]);
+
   function selectPerformerScope(index: number | null): void {
     selectedPerformerIndex = index;
+    if (index === null && _activePopover && PERFORMER_POPOVERS.has(_activePopover)) {
+      _activePopover = null;
+    }
   }
 
   /**
