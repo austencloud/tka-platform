@@ -19,6 +19,7 @@
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
+  import PerformerRail from "$lib/shared/3d/components/controls/PerformerRail.svelte";
   import PaneContentSelector from './PaneContentSelector.svelte';
   import VideoGallery from './VideoGallery.svelte';
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -361,6 +362,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
       </div>
 
       <RightRail renderMode="3d" {bpm} {onBpmChange} />
+      <PerformerRail />
     {:else if splitConfig.leftPane === 'card'}
       <div class="media-pane preview-pane">
         <ChoreoCard
