@@ -35,8 +35,7 @@ export type BackgroundBuilderTab =
   | "pride"
   | "ember"
   | "winter"
-  | "autumn"
-  | "gradient";
+  | "autumn";
 
 const VALID_TABS: BackgroundBuilderTab[] = [
   "ocean",
@@ -47,7 +46,6 @@ const VALID_TABS: BackgroundBuilderTab[] = [
   "ember",
   "winter",
   "autumn",
-  "gradient",
 ];
 const DEFAULT_TAB: BackgroundBuilderTab = "ocean";
 
@@ -61,7 +59,6 @@ const TAB_TO_BACKGROUND_TYPE: Record<BackgroundBuilderTab, BackgroundType | null
   "ember": BackgroundType.EMBER,
   "winter": BackgroundType.WINTER,
   "autumn": BackgroundType.AUTUMN,
-  "gradient": BackgroundType.LINEAR_GRADIENT,
 };
 
 function isValidTab(value: string): value is BackgroundBuilderTab {
@@ -94,9 +91,7 @@ export const backgroundBuilderState = {
     // Also update the user's active background setting
     const backgroundType = TAB_TO_BACKGROUND_TYPE[tab];
     if (backgroundType) {
-      const isSimple = backgroundType === BackgroundType.LINEAR_GRADIENT ||
-                       backgroundType === BackgroundType.SOLID_COLOR;
-      void settingsService.updateSetting("backgroundCategory", isSimple ? "simple" : "animated");
+      void settingsService.updateSetting("backgroundCategory", "animated");
       void settingsService.updateSetting("backgroundType", backgroundType);
     }
   },

@@ -406,26 +406,12 @@ export function registerGlobalShortcuts(
         const bgType = bg.type as BackgroundType;
 
         // Apply theme colors for UI
-        if (bgType === BackgroundType.SOLID_COLOR) {
-          applyThemeFromColors("#000000");
-          void updateSettings({
-            backgroundType: bgType,
-            backgroundColor: "#000000",
-          });
-        } else if (bgType === BackgroundType.LINEAR_GRADIENT) {
-          const defaultColors = ["#0d1117", "#161b22", "#21262d"];
-          applyThemeFromColors(undefined, defaultColors);
-          void updateSettings({
-            backgroundType: bgType,
-            gradientColors: defaultColors,
-            gradientDirection: 135,
-          });
-        } else if (bg.themeColors) {
+        if (bg.themeColors) {
           applyThemeFromColors(undefined, bg.themeColors);
-          void updateSettings({
-            backgroundType: bgType,
-          });
         }
+        void updateSettings({
+          backgroundType: bgType,
+        });
 
         toast.info(`Theme: ${bg.label}`, 1500);
       },

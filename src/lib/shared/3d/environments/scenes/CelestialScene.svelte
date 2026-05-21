@@ -18,11 +18,24 @@
 
   interface Props {
     config?: CelestialSceneConfig;
+    stageWidth?: number;
+    stageDepth?: number;
+    stageZOffset?: number;
   }
 
-  let { config }: Props = $props();
+  let { config, stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
 
-  const activeConfig = $derived(config ?? createDefaultCelestialConfig());
+  const baseConfig = $derived(config ?? createDefaultCelestialConfig());
+
+  const activeConfig = $derived.by(() => {
+    const neededRadius = Math.max(stageWidth, stageDepth) / 2;
+    const r = Math.max(baseConfig.cloudPlatform.radius, neededRadius);
+    if (r <= baseConfig.cloudPlatform.radius) return baseConfig;
+    return {
+      ...baseConfig,
+      cloudPlatform: { ...baseConfig.cloudPlatform, radius: r },
+    };
+  });
 
   const { scene } = useThrelte();
 

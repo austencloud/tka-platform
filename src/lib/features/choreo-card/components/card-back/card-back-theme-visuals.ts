@@ -61,16 +61,6 @@ const THEMES: Record<string, CardBackThemeVisuals> = {
     // Full diagonal rainbow shimmer across the card, not just the border
     background: "linear-gradient(135deg, rgba(255,0,0,0.12) 0%, rgba(255,128,0,0.1) 14%, rgba(255,255,0,0.08) 28%, rgba(0,255,0,0.1) 42%, rgba(0,128,255,0.12) 56%, rgba(128,0,255,0.1) 70%, rgba(255,0,128,0.08) 85%, rgba(255,0,0,0.1) 100%), linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
   },
-  solidColor: {
-    borderGradient: "linear-gradient(135deg, var(--theme-accent, #6366f1), var(--theme-stroke-strong, #444), var(--theme-accent, #6366f1))",
-    accentColor: "var(--theme-accent, #6366f1)",
-    background: "var(--theme-panel-bg, #18181b)",
-  },
-  linearGradient: {
-    borderGradient: "linear-gradient(135deg, var(--theme-accent, #6366f1), var(--theme-stroke-strong, #444), var(--theme-accent, #6366f1))",
-    accentColor: "var(--theme-accent, #6366f1)",
-    background: "var(--theme-panel-bg, #18181b)",
-  },
 };
 
 export function getCardBackThemeVisuals(backgroundType: string | undefined): CardBackThemeVisuals {

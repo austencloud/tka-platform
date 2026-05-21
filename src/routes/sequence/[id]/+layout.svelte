@@ -35,7 +35,7 @@
 <div class="sequence-route-layout">
   {#if settings.backgroundEnabled}
     <BackgroundHost
-      backgroundType={settings.backgroundType || BackgroundType.SOLID_COLOR}
+      backgroundType={settings.backgroundType || BackgroundType.COSMIC}
       backgroundColor={settings.backgroundColor || "#000000"}
       {...settings.gradientColors
         ? { gradientColors: settings.gradientColors }

@@ -20,7 +20,7 @@
   let redPropAnchorRef = $state<Group | undefined>(undefined);
 
   const backgroundType = $derived(
-    settingsService.settings.backgroundType ?? BackgroundType.SOLID_COLOR,
+    settingsService.settings.backgroundType ?? BackgroundType.COSMIC,
   );
 
   const gridOffset = -WALL_OFFSET;

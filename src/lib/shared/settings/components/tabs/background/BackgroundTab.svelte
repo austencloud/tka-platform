@@ -50,15 +50,7 @@
       const meta = getCardMetadata(type);
 
       // Apply theme colors before updating background type (ensures crossfade has correct options)
-      if (type === BackgroundType.SOLID_COLOR) {
-        onUpdate?.({ key: "backgroundColor", value: "#000000" });
-        applyThemeFromColors("#000000");
-      } else if (type === BackgroundType.LINEAR_GRADIENT) {
-        const defaultColors = ["#0d1117", "#161b22", "#21262d"];
-        onUpdate?.({ key: "gradientColors", value: defaultColors });
-        onUpdate?.({ key: "gradientDirection", value: 135 });
-        applyThemeFromColors(undefined, defaultColors);
-      } else if (meta?.themeColors) {
+      if (meta?.themeColors) {
         applyThemeFromColors(undefined, meta.themeColors);
       }
 

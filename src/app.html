@@ -475,8 +475,6 @@
             blossom: ["#831843", "#db2777", "#f9a8d4"],
             forest: ["#0d3320", "#166534", "#22c55e", "#bef264"],
             autumn: ["#92400e", "#d97706", "#dc2626", "#78350f"],
-            solidColor: ["#18181b", "#6366f1", "#818cf8"],
-            linearGradient: ["#0d1117", "#6366f1", "#a78bfa"],
           };
 
           // Calculate relative luminance (WCAG formula)
@@ -523,7 +521,7 @@
 
           // Apply ALL theme CSS variables
           function applyTheme(bgType, settings) {
-            var themeColors = BACKGROUND_THEME_COLORS[bgType] || BACKGROUND_THEME_COLORS.solidColor;
+            var themeColors = BACKGROUND_THEME_COLORS[bgType] || BACKGROUND_THEME_COLORS.cosmic;
             var luminance = calculateGradientLuminance(themeColors);
             var mode = luminance > 0.4 ? "light" : "dark";
             var accent = extractAccent(themeColors);
@@ -588,8 +586,6 @@
 
           // Background gradients mapping - MUST match BackgroundGradients.ts
           var backgroundGradients = {
-            solidColor: "#000000",
-            linearGradient: "linear-gradient(135deg, #0d1117, #161b22, #21262d)",
             pride: "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
             winter: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
             cosmic: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
@@ -602,8 +598,6 @@
 
           // Background animation mapping
           var backgroundAnimations = {
-            solidColor: "",
-            linearGradient: "",
             pride: "rainbow-flow",
             winter: "winter",
             cosmic: "star-twinkle",
@@ -632,7 +626,9 @@
               emberGlow: "ember",
               snowfall: "winter",
               autumnDrift: "autumn",
-              pureBlack: "void"
+              pureBlack: "void",
+              solidColor: "void",
+              linearGradient: "cosmic"
             };
             if (legacyThemeMap[backgroundType]) {
               backgroundType = legacyThemeMap[backgroundType];

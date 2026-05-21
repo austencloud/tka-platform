@@ -18,9 +18,12 @@
 
   interface Props {
     config?: AutumnSceneConfig;
+    stageWidth?: number;
+    stageDepth?: number;
+    stageZOffset?: number;
   }
 
-  let { config }: Props = $props();
+  let { config, stageWidth = 6, stageDepth = 4.5, stageZOffset = 0 }: Props = $props();
 
   const activeConfig = $derived(config ?? createDefaultAutumnConfig());
 
@@ -203,4 +206,6 @@
   />
 {/if}
 
-<Stage3D />
+<T.Group position.z={stageZOffset}>
+  <Stage3D width={stageWidth} depth={stageDepth} />
+</T.Group>

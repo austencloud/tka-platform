@@ -14,7 +14,7 @@
 	import { BackgroundType, getBackgroundController } from '@austencloud/backgrounds';
 
 	const {
-		backgroundType = BackgroundType.SOLID_COLOR,
+		backgroundType = BackgroundType.COSMIC,
 		backgroundColor = '#000000',
 		gradientColors,
 		gradientDirection,

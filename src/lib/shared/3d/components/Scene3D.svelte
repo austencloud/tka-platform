@@ -159,7 +159,7 @@
     bloomIntensity = 1.5,
     bloomThreshold = 0.8,
     bloomRadius = 0.4,
-    backgroundType = BackgroundType.SOLID_COLOR,
+    backgroundType = BackgroundType.COSMIC,
     avatarPositions = [],
     disableCamera = false,
     disableOrbitControls = false,

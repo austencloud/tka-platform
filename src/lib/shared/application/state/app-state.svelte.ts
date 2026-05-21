@@ -57,7 +57,7 @@ const DEFAULT_PROP_PRESETS: PropPreset[] = [
 // Default settings returned when services aren't initialized
 const DEFAULT_SETTINGS: AppSettings = {
   gridMode: GridMode.DIAMOND,
-  backgroundType: BackgroundType.SOLID_COLOR,
+  backgroundType: BackgroundType.COSMIC,
   backgroundQuality: "medium",
   backgroundEnabled: true,
   backgroundColor: "#000000",

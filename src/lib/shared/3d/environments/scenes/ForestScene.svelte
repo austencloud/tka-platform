@@ -35,9 +35,12 @@
     variant?: ForestVariant;
     /** Full scene config (overrides variant defaults). Used by Scene Lab. */
     config?: ForestSceneConfig;
+    stageWidth?: number;
+    stageDepth?: number;
+    stageZOffset?: number;
   }
 
-  let { variant = "firefly", config }: Props = $props();
+  let { variant = "firefly", config, stageWidth = 6, stageDepth = 4.5, stageZOffset = 0 }: Props = $props();
 
   const activeConfig = $derived(
     config ?? createDefaultForestFireflyConfig()
@@ -367,4 +370,6 @@
   />
 {/if}
 
-<Stage3D />
+<T.Group position.z={stageZOffset}>
+  <Stage3D width={stageWidth} depth={stageDepth} />
+</T.Group>

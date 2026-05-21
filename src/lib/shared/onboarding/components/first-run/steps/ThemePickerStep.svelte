@@ -36,9 +36,7 @@
 
   const animatedBackgrounds = $derived(
     BACKGROUND_CARD_REGISTRY.filter(
-      (bg) =>
-        bg.type !== BackgroundType.SOLID_COLOR &&
-        bg.type !== BackgroundType.LINEAR_GRADIENT
+      (bg) => bg.type !== BackgroundType.VOID
     )
   );
 
@@ -85,9 +83,9 @@
     <span class="minimalist-label">Prefer something simpler?</span>
     <button
       class="minimalist-card"
-      class:selected={selectedTheme === BackgroundType.SOLID_COLOR}
-      onclick={() => handleSelect(BackgroundType.SOLID_COLOR)}
-      aria-pressed={selectedTheme === BackgroundType.SOLID_COLOR}
+      class:selected={selectedTheme === BackgroundType.VOID}
+      onclick={() => handleSelect(BackgroundType.VOID)}
+      aria-pressed={selectedTheme === BackgroundType.VOID}
       aria-label="Select Pure Black minimalist theme"
     >
       <div class="minimalist-preview"></div>

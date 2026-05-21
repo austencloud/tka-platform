@@ -160,7 +160,7 @@ export const ALL_GRADIENTS: GradientOption[] = [
   },
 ];
 
-export const THEME_TO_FAMILY: Record<BackgroundType, string> = {
+export const THEME_TO_FAMILY: Partial<Record<BackgroundType, string>> = {
   [BackgroundType.PRIDE]: "vibrant",
   [BackgroundType.WINTER]: "cool",
   [BackgroundType.COSMIC]: "cool",
@@ -169,13 +169,11 @@ export const THEME_TO_FAMILY: Record<BackgroundType, string> = {
   [BackgroundType.BLOSSOM]: "earth",
   [BackgroundType.FOREST]: "earth",
   [BackgroundType.AUTUMN]: "warm",
-  [BackgroundType.SOLID_COLOR]: "dark",
-  [BackgroundType.LINEAR_GRADIENT]: "vibrant",
   [BackgroundType.CELESTIAL]: "warm",
   [BackgroundType.VOID]: "dark",
 };
 
-export const THEME_TO_GRADIENT: Record<BackgroundType, string> = {
+export const THEME_TO_GRADIENT: Partial<Record<BackgroundType, string>> = {
   [BackgroundType.PRIDE]: "rainbow",
   [BackgroundType.WINTER]: "arctic",
   [BackgroundType.COSMIC]: "twilight",
@@ -184,8 +182,6 @@ export const THEME_TO_GRADIENT: Record<BackgroundType, string> = {
   [BackgroundType.BLOSSOM]: "blossom",
   [BackgroundType.FOREST]: "forest",
   [BackgroundType.AUTUMN]: "autumn",
-  [BackgroundType.SOLID_COLOR]: "void",
-  [BackgroundType.LINEAR_GRADIENT]: "cosmic",
   [BackgroundType.CELESTIAL]: "celestial",
   [BackgroundType.VOID]: "void",
 };

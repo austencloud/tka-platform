@@ -9,11 +9,24 @@
 
   interface Props {
     config?: VoidSceneConfig;
+    stageWidth?: number;
+    stageDepth?: number;
+    stageZOffset?: number;
   }
 
-  let { config }: Props = $props();
+  let { config, stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
 
-  const activeConfig = $derived(config ?? createDefaultVoidConfig());
+  const baseConfig = $derived(config ?? createDefaultVoidConfig());
+
+  const activeConfig = $derived.by(() => {
+    const neededRadius = Math.max(stageWidth, stageDepth) / 2;
+    const r = Math.max(baseConfig.platform.radius, neededRadius);
+    if (r <= baseConfig.platform.radius) return baseConfig;
+    return {
+      ...baseConfig,
+      platform: { ...baseConfig.platform, radius: r },
+    };
+  });
 
   const sceneFeatures = getSceneFeatureContext();
   $effect(() => {

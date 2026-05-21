@@ -46,8 +46,8 @@
   const backgroundType = $derived.by((): BackgroundType => {
     try {
       const settings = settingsService;
-      return (settings as any)?.settings?.backgroundType ?? BackgroundType.SOLID_COLOR;
-    } catch { return BackgroundType.SOLID_COLOR; }
+      return (settings as any)?.settings?.backgroundType ?? BackgroundType.COSMIC;
+    } catch { return BackgroundType.COSMIC; }
   });
 
   function getStageGroundOffset(bg: BackgroundType): number {
@@ -280,8 +280,7 @@
   const explicitPlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
 
   const hasEnvironment = $derived(
-    backgroundType !== BackgroundType.SOLID_COLOR &&
-    backgroundType !== BackgroundType.LINEAR_GRADIENT
+    backgroundType !== BackgroundType.VOID
   );
 
   const isNightEnvironment = $derived(
@@ -294,13 +293,32 @@
 
   const performerCount = $derived(performerManager.performers.length);
 
+  const BASE_STAGE_WIDTH = 6;
   const BASE_STAGE_DEPTH = 6;
-  const stageDepthForCount = $derived.by(() => {
-    if (performerCount <= 4) return BASE_STAGE_DEPTH;
-    if (performerCount <= 6) return 8;
-    return 10;
+  const PERFORMER_BODY_PADDING = 1.5;
+
+  const stageDimensions = $derived.by(() => {
+    const performers = performerManager.performers;
+    if (performers.length <= 1) return { width: BASE_STAGE_WIDTH, depth: BASE_STAGE_DEPTH, zOffset: 0 };
+
+    let minX = Infinity, maxX = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (const p of performers) {
+      if (p.position.x < minX) minX = p.position.x;
+      if (p.position.x > maxX) maxX = p.position.x;
+      if (p.position.z < minZ) minZ = p.position.z;
+      if (p.position.z > maxZ) maxZ = p.position.z;
+    }
+
+    const neededWidth = (maxX - minX) + PERFORMER_BODY_PADDING * 2;
+    const neededDepth = (maxZ - minZ) + PERFORMER_BODY_PADDING * 2;
+    const width = Math.max(BASE_STAGE_WIDTH, neededWidth);
+    const depth = Math.max(BASE_STAGE_DEPTH, neededDepth);
+    const zOffset = -(depth - BASE_STAGE_DEPTH) / 2;
+    return { width, depth, zOffset };
   });
-  const stageZOffset = $derived(-(stageDepthForCount - BASE_STAGE_DEPTH) / 2);
+
+  const stageZOffset = $derived(stageDimensions.zOffset);
 
   $effect(() => {
     viewer3DState.setStageGroundOffset(stageGroundOffset);
@@ -328,7 +346,7 @@
 
 <!-- Environment (gated by scene feature toggle) -->
 {#if hasEnvironment && sceneFeatures.isEnabled("environment")}
-  <Environment3D {backgroundType} {performerCount} {stageZOffset} oceanVariant={viewer3DState.oceanVariant} />
+  <Environment3D {backgroundType} {performerCount} stageWidth={stageDimensions.width} stageDepth={stageDimensions.depth} {stageZOffset} oceanVariant={viewer3DState.oceanVariant} />
 {/if}
 
 <!-- Seated audience (gated by scene feature toggle) -->

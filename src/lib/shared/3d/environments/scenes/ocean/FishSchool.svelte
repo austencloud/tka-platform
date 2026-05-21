@@ -421,6 +421,12 @@
     scene.traverse((child: any) => {
       if (child.isMesh && !found) found = child.geometry.clone();
     });
+    if (found) {
+      // Strip morph targets — we do our own vertex animation via GPU compute.
+      // Leaving them causes Three.js to access undefined morphTargetInfluences.
+      (found as BufferGeometry).morphAttributes = {};
+      (found as BufferGeometry).morphTargetsRelative = false;
+    }
     return found;
   }
 
@@ -654,6 +660,15 @@
       createdMaterials.push(mat);
       createdSizeMults.push(speciesSizeMult);
       fishOffset += mCount;
+    }
+
+    // Run initial compute pass so texture targets exist before meshes enter scene
+    gpu.compute();
+    const initPosTex = gpu.getCurrentRenderTarget(posVar).texture;
+    const initVelTex = gpu.getCurrentRenderTarget(velVar).texture;
+    for (const mat of createdMaterials) {
+      mat.uniforms.tPosition!.value = initPosTex;
+      mat.uniforms.tVelocity!.value = initVelTex;
     }
 
     meshes = createdMeshes;

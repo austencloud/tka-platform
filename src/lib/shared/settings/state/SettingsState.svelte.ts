@@ -3,11 +3,9 @@ import { browser } from "$app/environment";
 import { BackgroundType } from "@austencloud/backgrounds";
 import {
   updateBodyBackground,
-  type CustomBackgroundOptions,
 } from "../utils/background-preloader";
 import { updateTheme as updateThemeService } from "../../theme/services/theme-service";
 import {
-  applyThemeFromColors,
   applyThemeForBackground,
 } from "../../settings/utils/background-theme-calculator";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
@@ -51,6 +49,8 @@ const LEGACY_THEME_MAP: Record<string, BackgroundType> = {
   snowfall: BackgroundType.WINTER,
   autumnDrift: BackgroundType.AUTUMN,
   pureBlack: BackgroundType.VOID,
+  solidColor: BackgroundType.VOID,
+  linearGradient: BackgroundType.COSMIC,
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -83,16 +83,6 @@ const initialSettings = (() => {
 
 const settingsState = $state<AppSettings>(initialSettings);
 
-function getCustomBackgroundOptions(
-  settings: Partial<AppSettings>
-): CustomBackgroundOptions {
-  return {
-    color: settings.backgroundColor,
-    colors: settings.gradientColors,
-    direction: settings.gradientDirection,
-  };
-}
-
 class SettingsState {
   private firebasePersistence: FirebaseSettingsPersister | null = null;
   private unsubscribeFirebaseSync: (() => void) | null = null;
@@ -104,7 +94,7 @@ class SettingsState {
   private static readonly FIREBASE_SAVE_DEBOUNCE_MS = 300;
 
   constructor() {
-    if (browser) {
+    if (browser && typeof window !== "undefined") {
       this.processOfflineQueue();
 
       this.onlineHandler = () => {
@@ -160,28 +150,10 @@ class SettingsState {
           this.applyRemoteSettings(firebaseSettings);
 
           const localBackground = settingsState.backgroundType;
-          const isUsingDefault =
-            localBackground === BackgroundType.COSMIC ||
-            localBackground === BackgroundType.SOLID_COLOR;
+          const isUsingDefault = localBackground === BackgroundType.COSMIC;
 
           if (firebaseSettings.backgroundType && isUsingDefault) {
-            const isOldDefault =
-              firebaseSettings.backgroundType === BackgroundType.SOLID_COLOR &&
-              (!firebaseSettings.backgroundColor || firebaseSettings.backgroundColor === "#000000");
-
-            if (isOldDefault) {
-              debug.success("Firebase has old default (solidColor/#000000), migrating to cosmic");
-              settingsState.backgroundType = BackgroundType.COSMIC;
-              delete settingsState.backgroundColor;
-              updateBodyBackground(BackgroundType.COSMIC);
-              applyThemeForBackground(BackgroundType.COSMIC);
-              updateThemeService(BackgroundType.COSMIC);
-              this.saveSettingsToStorage(settingsState);
-              await this.firebasePersistence.saveSettings(
-                this.getSettingsForPersistence()
-              );
-              debug.success("Migrated Firebase background from solidColor to cosmic");
-            } else if (LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]) {
+            if (LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]) {
               const migratedType = LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]!;
               debug.success(`Firebase has old "${firebaseSettings.backgroundType}", migrating to "${migratedType}"`);
               settingsState.backgroundType = migratedType;
@@ -209,17 +181,8 @@ class SettingsState {
                   firebaseSettings.gradientDirection;
               }
 
-              updateBodyBackground(
-                firebaseSettings.backgroundType,
-                getCustomBackgroundOptions(firebaseSettings)
-              );
-              if (firebaseSettings.backgroundType === BackgroundType.SOLID_COLOR && firebaseSettings.backgroundColor) {
-                applyThemeFromColors(firebaseSettings.backgroundColor);
-              } else if (firebaseSettings.backgroundType === BackgroundType.LINEAR_GRADIENT && firebaseSettings.gradientColors) {
-                applyThemeFromColors(undefined, firebaseSettings.gradientColors);
-              } else {
-                applyThemeForBackground(firebaseSettings.backgroundType);
-              }
+              updateBodyBackground(firebaseSettings.backgroundType);
+              applyThemeForBackground(firebaseSettings.backgroundType);
               updateThemeService(firebaseSettings.backgroundType);
               this.saveSettingsToStorage(settingsState);
               debug.success("Applied background from Firebase on initial login");
@@ -319,7 +282,7 @@ class SettingsState {
     this.syncInitialized = false;
     this.firebasePersistence = null;
 
-    if (browser && this.onlineHandler) {
+    if (browser && typeof window !== "undefined" && this.onlineHandler) {
       window.removeEventListener("online", this.onlineHandler);
       this.onlineHandler = null;
     }
@@ -349,14 +312,8 @@ class SettingsState {
 
     if (key === "backgroundType") {
       const bgType = value as BackgroundType;
-      updateBodyBackground(bgType, getCustomBackgroundOptions(settingsState));
-      if (bgType === BackgroundType.SOLID_COLOR && settingsState.backgroundColor) {
-        applyThemeFromColors(settingsState.backgroundColor);
-      } else if (bgType === BackgroundType.LINEAR_GRADIENT && settingsState.gradientColors) {
-        applyThemeFromColors(undefined, settingsState.gradientColors);
-      } else {
-        applyThemeForBackground(bgType);
-      }
+      updateBodyBackground(bgType);
+      applyThemeForBackground(bgType);
       updateThemeService(bgType);
     }
 
@@ -391,18 +348,9 @@ class SettingsState {
 
     if (newBackgroundType) {
       if (backgroundTypeChanged) {
-        updateBodyBackground(
-          newBackgroundType,
-          getCustomBackgroundOptions(newSettings)
-        );
+        updateBodyBackground(newBackgroundType);
       }
-      if (newBackgroundType === BackgroundType.SOLID_COLOR && settingsState.backgroundColor) {
-        applyThemeFromColors(settingsState.backgroundColor);
-      } else if (newBackgroundType === BackgroundType.LINEAR_GRADIENT && settingsState.gradientColors) {
-        applyThemeFromColors(undefined, settingsState.gradientColors);
-      } else {
-        applyThemeForBackground(newBackgroundType);
-      }
+      applyThemeForBackground(newBackgroundType);
       updateThemeService(newBackgroundType);
     }
 
@@ -565,15 +513,6 @@ class SettingsState {
 
       if (!merged.propPresets || merged.propPresets.length === 0) {
         merged.propPresets = DEFAULT_PROP_PRESETS;
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
-      }
-
-      if (
-        merged.backgroundType === BackgroundType.SOLID_COLOR &&
-        merged.backgroundColor === "#000000"
-      ) {
-        merged.backgroundType = BackgroundType.COSMIC;
-        delete merged.backgroundColor;
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       }
 

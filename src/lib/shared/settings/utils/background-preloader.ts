@@ -20,8 +20,6 @@ const BACKGROUND_GRADIENTS: Record<string, string> = {
   autumn: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
   celestial: "linear-gradient(135deg, #0a1a4a 0%, #b89050 40%, #e8dcc8 100%)",
   void: "#000000",
-  solidColor: "",
-  linearGradient: "",
 };
 
 const BACKGROUND_ANIMATIONS: Record<string, string> = {
@@ -35,24 +33,7 @@ const BACKGROUND_ANIMATIONS: Record<string, string> = {
   autumn: "autumn",
   celestial: "",
   void: "",
-  solidColor: "",
-  linearGradient: "",
 };
-
-export interface CustomBackgroundOptions {
-  color?: string;
-  colors?: string[];
-  direction?: number;
-}
-
-function buildGradientString(options: CustomBackgroundOptions): string {
-  if (options.color) return options.color;
-  if (options.colors && options.colors.length > 0) {
-    const direction = options.direction ?? 135;
-    return `linear-gradient(${direction}deg, ${options.colors.join(", ")})`;
-  }
-  return "";
-}
 
 function applyBackground(newGradient: string, newAnimation: string): void {
   const body = document.body;
@@ -77,24 +58,14 @@ function applyBackground(newGradient: string, newAnimation: string): void {
  * The BackgroundHost component handles the visual crossfade transition.
  */
 export function updateBodyBackground(
-  backgroundType: BackgroundType,
-  customOptions?: CustomBackgroundOptions
+  backgroundType: BackgroundType
 ): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
   try {
     let newGradient: string;
 
-    if (backgroundType === BackgroundType.SOLID_COLOR && customOptions?.color) {
-      newGradient = customOptions.color;
-    } else if (
-      backgroundType === BackgroundType.LINEAR_GRADIENT &&
-      customOptions?.colors
-    ) {
-      newGradient = buildGradientString(customOptions);
-    } else {
-      newGradient = BACKGROUND_GRADIENTS[backgroundType] ?? "";
-    }
+    newGradient = BACKGROUND_GRADIENTS[backgroundType] ?? "";
 
     if (!newGradient) return;
 
@@ -155,29 +126,15 @@ export function ensureBackgroundApplied(): void {
       snowfall: BackgroundType.WINTER,
       autumnDrift: BackgroundType.AUTUMN,
       pureBlack: BackgroundType.VOID,
+      solidColor: BackgroundType.VOID,
+      linearGradient: BackgroundType.COSMIC,
     };
     const legacyMapped = legacyMap[backgroundType as string];
     if (legacyMapped) {
       backgroundType = legacyMapped;
     }
 
-    // Migration: treat old default (solidColor + black) as cosmic
-    if (
-      backgroundType === BackgroundType.SOLID_COLOR &&
-      (!settings.backgroundColor || settings.backgroundColor === "#000000")
-    ) {
-      backgroundType = BackgroundType.COSMIC;
-    }
-
-    const customOptions: CustomBackgroundOptions = {};
-    if (backgroundType === BackgroundType.SOLID_COLOR && settings.backgroundColor) {
-      customOptions.color = settings.backgroundColor;
-    } else if (backgroundType === BackgroundType.LINEAR_GRADIENT) {
-      if (settings.gradientColors) customOptions.colors = settings.gradientColors;
-      if (settings.gradientDirection !== undefined) customOptions.direction = settings.gradientDirection;
-    }
-
-    updateBodyBackground(backgroundType, customOptions);
+    updateBodyBackground(backgroundType);
   } catch (error) {
     console.warn("[Background] Failed to ensure background applied:", error);
     updateBodyBackground(BackgroundType.COSMIC);

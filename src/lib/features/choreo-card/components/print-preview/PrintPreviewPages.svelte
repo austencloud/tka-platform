@@ -10,6 +10,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getDeckLayoutPolicy } from "../../domain/deck-layout-policy";
+  import { cardCache, lastRerenderKey, setLastRerenderKey, type RenderedCard, type CachedCard } from "./print-preview-cache";
 
   interface Props {
     sequences: SequenceData[];
@@ -60,13 +61,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onRenderStateChange,
   }: Props = $props();
 
-  // Rendered card data: front and back as data URLs, plus label
-  interface RenderedCard {
-    frontUrl: string;
-    backUrl: string;
-    label: string;
-  }
-
   let renderedCards: RenderedCard[] = $state([]);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
@@ -112,20 +106,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   function canvasToDataUrl(canvas: HTMLCanvasElement): string {
     return canvas.toDataURL("image/png");
   }
-
-  // ── Card render cache ──────────────────────────────────────────────────
-  // Module-level singleton cache keyed by (sequence identity + render options).
-  // Survives component unmount/remount so navigating away from a deck and
-  // returning doesn't re-render all cards. Invalidated when render options
-  // change (different cache key) or explicitly via rerenderKey.
-  interface CachedCard {
-    rendered: RenderedCard;
-    pair: CardPair;
-  }
-
-  // Module-level: persists across component instances
-  const cardCache = new Map<string, CachedCard>();
-  let lastRerenderKey = 0;
 
   function buildCacheKey(seq: SequenceData, stepCount: number | undefined, seqLeftLabel?: string): string {
     const seqId = seq.id ?? seq.word ?? seq.name ?? "";
@@ -196,7 +176,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     // If rerenderKey changed, flush the cache to force fresh renders
     if (rerenderKey !== lastRerenderKey) {
       cardCache.clear();
-      lastRerenderKey = rerenderKey;
+      setLastRerenderKey(rerenderKey);
     }
 
     renderTotal = seqs.length;

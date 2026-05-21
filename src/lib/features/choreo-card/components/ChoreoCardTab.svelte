@@ -192,6 +192,10 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   let isDeckLoading = $state(!!_initDeckId);
   let deckErrorMessage = $state<string | null>(null);
 
+  // In-memory cache of loaded deck sequences so returning to a previously-visited
+  // deck is instant instead of refetching from Firestore and showing a loading skeleton.
+  const deckSequenceCache = new Map<string, SequenceData[]>();
+
   // ── Browser history (back/forward) for deck navigation ──
 
   // Prevents re-pushing state when we're already restoring from a popstate event.
@@ -244,11 +248,19 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     try {
       selectedDeckId = state.deckId;
       selectedVtgFamily = state.vtgFamily;
-      deckSequences = [];
       persist(STORAGE_KEY_SELECTED_DECK, state.deckId);
       if (state.deckId) {
-        if (decks.length === 0) await loadDecks();
-        await handleSelectDeckSequences(state.deckId);
+        const cached = deckSequenceCache.get(state.deckId);
+        if (cached) {
+          deckSequences = cached;
+          isDeckLoading = false;
+        } else {
+          deckSequences = [];
+          if (decks.length === 0) await loadDecks();
+          await handleSelectDeckSequences(state.deckId);
+        }
+      } else {
+        deckSequences = [];
       }
     } finally {
       isRestoringFromHistory = false;
@@ -508,6 +520,9 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
       } else {
         deckSequences = await loadDeckSequences(deckId);
       }
+      if (deckSequences.length > 0) {
+        deckSequenceCache.set(deckId, deckSequences);
+      }
     } catch (err) {
       console.warn("Failed to load deck sequences:", err);
       deckErrorMessage = "Failed to load sequences for this deck. Try again.";
@@ -520,10 +535,18 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
     selectedDeckId = deckId;
     selectedVtgFamily = vtgFamily ?? null;
-    deckSequences = [];
     persist(STORAGE_KEY_SELECTED_DECK, deckId);
     persist(STORAGE_KEY_VTG_FAMILY, vtgFamily ?? null);
     pushNavState();
+
+    const cached = deckSequenceCache.get(deckId);
+    if (cached) {
+      deckSequences = cached;
+      isDeckLoading = false;
+      return;
+    }
+
+    deckSequences = [];
     await handleSelectDeckSequences(deckId);
   }
 
@@ -548,6 +571,9 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
         deckSequences = await loadSequencesByIds(selectedDeckId, seqIds);
       } else {
         deckSequences = await loadDeckSequences(selectedDeckId);
+      }
+      if (deckSequences.length > 0) {
+        deckSequenceCache.set(selectedDeckId, deckSequences);
       }
     } catch (err) {
       console.warn("Failed to load family sequences:", err);

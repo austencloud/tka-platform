@@ -26,9 +26,11 @@
     variant?: CosmicVariant;
     config?: CosmicSceneConfig;
     performerCount?: number;
+    stageWidth?: number;
+    stageDepth?: number;
   }
 
-  let { variant = "night", config, performerCount = 1 }: Props = $props();
+  let { variant = "night", config, performerCount = 1, stageWidth = 6, stageDepth = 6 }: Props = $props();
 
   const defaultConfigs = {
     night: createDefaultCosmicNightConfig,
@@ -37,14 +39,9 @@
 
   const baseConfig = $derived(config ?? defaultConfigs[variant]());
 
-  function radiusForCount(count: number, baseRadius: number): number {
-    if (count <= 4) return baseRadius;
-    if (count <= 6) return Math.max(baseRadius, 6);
-    return Math.max(baseRadius, 8);
-  }
-
   const activeConfig = $derived.by(() => {
-    const r = radiusForCount(performerCount, baseConfig.platform.radius);
+    const neededRadius = Math.max(stageWidth, stageDepth) / 2;
+    const r = Math.max(baseConfig.platform.radius, neededRadius);
     if (r <= baseConfig.platform.radius) return baseConfig;
     return {
       ...baseConfig,

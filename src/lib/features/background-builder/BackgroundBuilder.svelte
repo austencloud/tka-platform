@@ -30,7 +30,6 @@
     { id: "ember", label: "Ember", icon: "fa-fire" },
     { id: "winter", label: "Winter", icon: "fa-snowflake" },
     { id: "autumn", label: "Autumn", icon: "fa-leaf" },
-    { id: "gradient", label: "Gradient", icon: "fa-fill-drip" },
   ];
 
   // Map tab IDs to BackgroundType for theme application
@@ -43,7 +42,6 @@
     "ember": BackgroundType.EMBER,
     "winter": BackgroundType.WINTER,
     "autumn": BackgroundType.AUTUMN,
-    "gradient": BackgroundType.LINEAR_GRADIENT,
   };
 
   function applyThemeForTab(tabId: BackgroundBuilderTab) {

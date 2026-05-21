@@ -41,7 +41,7 @@ import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constant
  * - First colors are for luminance calculation
  * - Middle/later colors are extracted as accent for buttons and interactive elements
  */
-export const BACKGROUND_THEME_COLORS: Record<BackgroundType, string[]> = {
+export const BACKGROUND_THEME_COLORS: Partial<Record<BackgroundType, string[]>> = {
   [BackgroundType.PRIDE]: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
   [BackgroundType.WINTER]: ["#1e3a5f", "#3b82f6", "#93c5fd"],
   [BackgroundType.COSMIC]: ["#1e1b4b", "#4338ca", "#818cf8"],
@@ -50,9 +50,6 @@ export const BACKGROUND_THEME_COLORS: Record<BackgroundType, string[]> = {
   [BackgroundType.BLOSSOM]: ["#831843", "#db2777", "#f9a8d4"],
   [BackgroundType.FOREST]: ["#0d3320", "#166534", "#22c55e", "#bef264"],
   [BackgroundType.AUTUMN]: ["#92400e", "#d97706", "#dc2626", "#78350f"],
-  // Solid/gradient: dark backgrounds but vibrant indigo accent for visibility
-  [BackgroundType.SOLID_COLOR]: ["#18181b", "#6366f1", "#818cf8"],
-  [BackgroundType.LINEAR_GRADIENT]: ["#0d1117", "#6366f1", "#a78bfa"],
   [BackgroundType.CELESTIAL]: ["#0a1a4a", "#b89050", "#ffd080", "#ffe0a0"],
   [BackgroundType.VOID]: ["#000000", "#6b7280", "#9ca3af"],
 };
@@ -582,27 +579,22 @@ export function ensureThemeApplied(): void {
     const stored = localStorage.getItem("tka-modern-web-settings");
     if (!stored) {
       // No settings - apply default dark theme
-      applyThemeForBackground(BackgroundType.SOLID_COLOR);
+      applyThemeForBackground(BackgroundType.COSMIC);
       return;
     }
 
     const settings = JSON.parse(stored);
     const bgType = settings.backgroundType as BackgroundType | undefined;
 
-    if (bgType === BackgroundType.SOLID_COLOR && settings.backgroundColor) {
-      applyThemeFromColors(settings.backgroundColor);
-    } else if (bgType === BackgroundType.LINEAR_GRADIENT && settings.gradientColors) {
-      applyThemeFromColors(undefined, settings.gradientColors);
-    } else if (bgType) {
+    if (bgType) {
       applyThemeForBackground(bgType);
     } else {
-      // Fallback to solid color default
-      applyThemeForBackground(BackgroundType.SOLID_COLOR);
+      applyThemeForBackground(BackgroundType.COSMIC);
     }
   } catch (e) {
     console.warn("[Theme] Failed to ensure theme applied:", e);
     // On error, apply default theme
-    applyThemeForBackground(BackgroundType.SOLID_COLOR);
+    applyThemeForBackground(BackgroundType.COSMIC);
   }
 }
 

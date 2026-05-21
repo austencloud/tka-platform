@@ -69,9 +69,9 @@
     },
     // Simple backgrounds don't have 3D scenes
     {
-      type: BackgroundType.SOLID_COLOR,
-      name: "Solid",
-      icon: "fa-square",
+      type: BackgroundType.VOID,
+      name: "Void",
+      icon: "fa-circle",
       has3DScene: false,
     },
   ];

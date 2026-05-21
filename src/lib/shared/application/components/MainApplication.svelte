@@ -285,22 +285,12 @@ import type { SheetType } from "../../navigation/services/contracts/types";
         (window as any).__tkaLoadProgress?.(95, "Applying your theme...");
 
         // Apply background-based theme colors on startup
-        // Must handle SOLID_COLOR and LINEAR_GRADIENT specially to use user's saved colors
-        const { applyThemeForBackground, applyThemeFromColors } =
+        const { applyThemeForBackground } =
           await import("../../settings/utils/background-theme-calculator");
         const currentSettings = settingsService.currentSettings;
         const bgType = currentSettings?.backgroundType;
         if (bgType) {
-          if (bgType === BackgroundType.SOLID_COLOR && currentSettings.backgroundColor) {
-            // Use user's saved solid color, not predefined theme colors
-            applyThemeFromColors(currentSettings.backgroundColor);
-          } else if (bgType === BackgroundType.LINEAR_GRADIENT && currentSettings.gradientColors) {
-            // Use user's saved gradient colors
-            applyThemeFromColors(undefined, currentSettings.gradientColors);
-          } else {
-            // Animated backgrounds use predefined theme colors
-            applyThemeForBackground(bgType);
-          }
+          applyThemeForBackground(bgType);
         }
 
         // Initialize gamification system (authenticated users only - requires Firestore)
@@ -439,23 +429,8 @@ import type { SheetType } from "../../navigation/services/contracts/types";
       // Apply the FULL theme (--theme-* CSS variables) based on background
       // This is the critical fix - we must call the proper theme application functions
       import("../../settings/utils/background-theme-calculator").then(
-        ({ applyThemeForBackground, applyThemeFromColors }) => {
-          if (
-            parsed.type === BackgroundType.SOLID_COLOR &&
-            parsed.bgColor
-          ) {
-            // Use user's solid color
-            applyThemeFromColors(parsed.bgColor);
-          } else if (
-            parsed.type === BackgroundType.LINEAR_GRADIENT &&
-            parsed.gradientColors
-          ) {
-            // Use user's gradient colors
-            applyThemeFromColors(undefined, parsed.gradientColors);
-          } else {
-            // Animated backgrounds use predefined theme colors
-            applyThemeForBackground(parsed.type);
-          }
+        ({ applyThemeForBackground }) => {
+          applyThemeForBackground(parsed.type);
           // Still call legacy dropdown vars update
           updateThemeService(parsed.type);
         }
