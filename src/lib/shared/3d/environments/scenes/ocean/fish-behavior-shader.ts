@@ -8,7 +8,6 @@ uniform float uHuntRange;
 uniform float uPanicRadius;
 uniform float uHomeRadius;
 uniform float uPerceptionCos;
-uniform sampler2D tTraits;
 
 uniform int uTrophicRole[50];
 

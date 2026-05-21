@@ -18,7 +18,7 @@
   import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
   import { FishEventSystem, type FishEventUniforms } from './FishEventSystem';
   import { RESIDENT_SPECIES, RESIDENT_FISH_COUNT, THREAT_MATRIX, HUNT_MATRIX, type FishSpeciesConfig } from './fish-species-config';
-  import { LOCOMOTION_PARAMS, LocomotionMode, type LocomotionModeParams } from './fish-locomotion-params';
+  import { LOCOMOTION_PARAMS, LocomotionMode } from './fish-locomotion-params';
   import { velocityShader, positionShader, renderVertexShader, renderFragmentShader } from './fish-shaders';
   import { stateShader } from './fish-behavior-shader';
   import { userProportionsState } from '@austencloud/scene-3d';
@@ -91,20 +91,19 @@
     return geo ? { geometry: geo, diffuseMap } : null;
   }
 
-  function buildLocoUniformArrays(): Record<string, number[]> {
-    const keys: (keyof LocomotionModeParams)[] = [
-      'swimFreq', 'waveK', 'baseAmplitude', 'stiffness', 'ampExponent',
-      'strideAmp', 'rollAmp', 'pectoralFreq', 'pectoralAmp',
-    ];
-    const result: Record<string, number[]> = {};
-    for (const key of keys) {
-      const arr: number[] = [];
-      for (let m = 0; m < Object.keys(LocomotionMode).length / 2; m++) {
-        arr.push(LOCOMOTION_PARAMS[m as LocomotionMode][key]);
-      }
-      result[key] = arr;
-    }
-    return result;
+  function getLocoUniforms(mode: LocomotionMode): Record<string, { value: number }> {
+    const p = LOCOMOTION_PARAMS[mode];
+    return {
+      uSwimFreq: { value: p.swimFreq },
+      uWaveK: { value: p.waveK },
+      uBaseAmplitude: { value: p.baseAmplitude },
+      uStiffness: { value: p.stiffness },
+      uAmpExponent: { value: p.ampExponent },
+      uStrideAmp: { value: p.strideAmp },
+      uRollAmp: { value: p.rollAmp },
+      uPectoralFreq: { value: p.pectoralFreq },
+      uPectoralAmp: { value: p.pectoralAmp },
+    };
   }
 
   let meshes = $state<InstancedMesh[]>([]);
@@ -114,7 +113,6 @@
   let stateVar: any = null;
   let materials: ShaderMaterial[] = [];
   let materialSizeMults: number[] = [];
-  let materialLocoModes: number[] = [];
   let storedTraitsData: Float32Array | null = null;
   let eventSystem: FishEventSystem | null = null;
 
@@ -322,12 +320,9 @@
         return;
       }
 
-      const locoArrays = buildLocoUniformArrays();
-
       const createdMeshes: InstancedMesh[] = [];
       const createdMaterials: ShaderMaterial[] = [];
       const createdSizeMults: number[] = [];
-      const createdLocoModes: number[] = [];
       const createdGeometries: BufferGeometry[] = [];
 
       let fishOffset = 0;
@@ -360,16 +355,7 @@
             uSize: { value: targetSize * sp.sizeScale },
             uTime: { value: 0 },
             uMaxSpeed: { value: sMax * 2.0 },
-            uLocoMode: { value: sp.locomotionMode },
-            uSwimFreq: { value: locoArrays['swimFreq'] },
-            uWaveK: { value: locoArrays['waveK'] },
-            uBaseAmplitude: { value: locoArrays['baseAmplitude'] },
-            uStiffness: { value: locoArrays['stiffness'] },
-            uAmpExponent: { value: locoArrays['ampExponent'] },
-            uStrideAmp: { value: locoArrays['strideAmp'] },
-            uRollAmp: { value: locoArrays['rollAmp'] },
-            uPectoralFreq: { value: locoArrays['pectoralFreq'] },
-            uPectoralAmp: { value: locoArrays['pectoralAmp'] },
+            ...getLocoUniforms(sp.locomotionMode),
             tAlbedo: { value: diffuse },
             uFallbackColor: { value: new Color('#5599bb') },
             uHasTexture: { value: diffuse ? 1.0 : 0.0 },
@@ -382,7 +368,6 @@
           },
           vertexShader: renderVertexShader,
           fragmentShader: renderFragmentShader,
-          vertexColors: true,
           side: DoubleSide,
         });
 
@@ -392,7 +377,6 @@
         createdMeshes.push(mesh);
         createdMaterials.push(mat);
         createdSizeMults.push(sp.sizeScale);
-        createdLocoModes.push(sp.locomotionMode);
         fishOffset += sCount;
       }
 
@@ -407,7 +391,6 @@
       meshes = createdMeshes;
       materials = createdMaterials;
       materialSizeMults = createdSizeMults;
-      materialLocoModes = createdLocoModes;
       gpuCompute = gpu;
     });
 
@@ -424,7 +407,6 @@
       meshes = [];
       materials = [];
       materialSizeMults = [];
-      materialLocoModes = [];
       gpuCompute = null;
       posVar = null;
       velVar = null;

@@ -1,7 +1,4 @@
-import { LOCOMOTION_MODE_COUNT } from './fish-locomotion-params';
-
 const MAX_SPECIES = 50;
-const MAX_LOCO_MODES = LOCOMOTION_MODE_COUNT;
 
 const NOISE_GLSL = /* glsl */ `
 vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
@@ -79,7 +76,6 @@ uniform float uMaxSteer;
 uniform float uCurrentStrength;
 uniform float uPerceptionCos;
 uniform sampler2D tTraits;
-uniform sampler2D textureState;
 
 uniform vec3 uSchoolCenters[${MAX_SPECIES}];
 uniform float uSchoolRadius;
@@ -279,16 +275,15 @@ uniform float uSize;
 uniform float uTime;
 uniform float uMaxSpeed;
 
-uniform float uSwimFreq[${MAX_LOCO_MODES}];
-uniform float uWaveK[${MAX_LOCO_MODES}];
-uniform float uBaseAmplitude[${MAX_LOCO_MODES}];
-uniform float uStiffness[${MAX_LOCO_MODES}];
-uniform float uAmpExponent[${MAX_LOCO_MODES}];
-uniform float uStrideAmp[${MAX_LOCO_MODES}];
-uniform float uRollAmp[${MAX_LOCO_MODES}];
-uniform float uPectoralFreq[${MAX_LOCO_MODES}];
-uniform float uPectoralAmp[${MAX_LOCO_MODES}];
-uniform int uLocoMode;
+uniform float uSwimFreq;
+uniform float uWaveK;
+uniform float uBaseAmplitude;
+uniform float uStiffness;
+uniform float uAmpExponent;
+uniform float uStrideAmp;
+uniform float uRollAmp;
+uniform float uPectoralFreq;
+uniform float uPectoralAmp;
 
 varying vec3 vNormal;
 varying vec2 vUv;
@@ -314,26 +309,24 @@ void main() {
   float fishScale = uSize * instanceScale;
   vec3 localPos = position;
 
-  float spineMask = color.r;
-  float pectoralMask = color.g;
-  float dorsalMask = color.b;
+  float spineMask = localPos.z * 0.5 + 0.5;
+  float dorsalMask = max(localPos.y, 0.0);
 
-  int mode = uLocoMode;
   float speedMult = length(fishVel) / max(uMaxSpeed * 0.5, 0.001);
   float perInstanceJitter = aReference.x * 2.0;
-  float freq = uSwimFreq[mode] * (0.8 + speedMult * 0.4) + perInstanceJitter;
-  float phase = uTime * freq + localPos.z * uWaveK[mode];
+  float freq = uSwimFreq * (0.8 + speedMult * 0.4) + perInstanceJitter;
+  float phase = uTime * freq + localPos.z * uWaveK;
 
-  float envelope = pow(max(spineMask, 0.001), uAmpExponent[mode]);
-  float stiffMask = mix(1.0, envelope, uStiffness[mode]);
-  float bodyAmp = uBaseAmplitude[mode] * stiffMask * (0.7 + 0.3 * speedMult);
+  float envelope = pow(max(spineMask, 0.001), uAmpExponent);
+  float stiffMask = mix(1.0, envelope, uStiffness);
+  float bodyAmp = uBaseAmplitude * stiffMask * (0.7 + 0.3 * speedMult);
 
   localPos.x += sin(phase) * bodyAmp;
-  localPos.x += sin(uTime * freq * 0.5) * uStrideAmp[mode];
-  localPos.z += sin(phase) * uRollAmp[mode] * spineMask;
+  localPos.x += sin(uTime * freq * 0.5) * uStrideAmp;
+  localPos.z += sin(phase) * uRollAmp * spineMask;
 
-  float pecPhase = uTime * uPectoralFreq[mode] + perInstanceJitter * 3.0;
-  localPos.y += sin(pecPhase) * uPectoralAmp[mode] * pectoralMask;
+  float pecPhase = uTime * uPectoralFreq + perInstanceJitter * 3.0;
+  localPos.y += sin(pecPhase) * uPectoralAmp * dorsalMask;
 
   localPos.y += sin(phase * 1.5) * bodyAmp * 0.3 * dorsalMask;
 
