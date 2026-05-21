@@ -1,7 +1,7 @@
 # Performer Rail — Design Spec
 
 **Date:** 2026-05-21
-**Status:** APPROVED — Bottom center selector + morphing right rail
+**Status:** APPROVED — Bottom center selector + additive right rail
 **Playground:** `playground-performer-rail.html`
 
 ## Goal
@@ -25,9 +25,9 @@ Horizontal chip strip centered at bottom of viewport. Always visible. Answers: "
 
 ### Right Rail (WHAT)
 
-Vertical chip stack at top-right. Already exists. Morphs its chip set based on selection state. Answers: "What can I do right now?"
+Vertical chip stack at top-right. Already exists. **Additive model** — global chips always visible, performer chips appear below a separator when a performer is selected. Never removes chips, only grows.
 
-**Bird's Eye chips** (no performer selected / "All"):
+**Global chips** (always visible in 3D mode):
 
 | Chip | Icon | Popover Content |
 |------|------|-----------------|
@@ -37,17 +37,23 @@ Vertical chip stack at top-right. Already exists. Morphs its chip set based on s
 | Scene | fa-mountain-sun | Environment picker (existing `SceneSelectorPopover`) |
 | Export | fa-arrow-up-from-bracket | Export options (existing `ExportPopover`) |
 
-**Performer Mode chips** (one performer selected):
+**Separator** (visible only when performer selected):
+```
+Width:           32px (centered in rail)
+Height:          1px
+Background:      rgba(255, 255, 255, 0.1)
+Margin:          0 (gap handles spacing)
+```
+
+**Performer chips** (appended below separator when one performer selected):
 
 | Chip | Icon | Popover Content | Tint |
 |------|------|-----------------|------|
 | Effects | fa-wand-magic-sparkles | Effect toggle grid (16 effects) | Performer color |
 | Prop | fa-staff-snake | Prop family grid + size slider + plane selector | Performer color |
 | Effort | fa-wave-square | Effort palette (8 efforts) | Performer color |
-| Camera | fa-video | Camera presets (persists across modes) | Default |
-| Export | fa-arrow-up-from-bracket | Export options (persists across modes) | Default |
 
-**Mode transition**: Chips animate out/in using the existing `slide` transition on `chip-wrap` (220ms, y-axis). Performer-mode chips tint their icon to the selected performer's color as a reinforcement cue.
+**Transition**: Performer chips `slide` in from below (220ms, y-axis, existing transition). Global chips never animate — they're anchored. Performer chips tint their icon to the selected performer's color as a visual grouping cue (white icons above = scene, colored icons below = this performer).
 
 ## Bottom Center Rail Spec
 
@@ -114,18 +120,25 @@ Appear ABOVE chip. Hidden when that chip is pressed.
 - Clicking "All": deselects any individual, enters Bird's Eye
 - Clicking a different performer: switches selection, right rail stays in Performer Mode but scopes to new performer
 
-## Right Rail Morphing Spec
+## Right Rail Additive Spec
 
 ### Current Structure (RightRail.svelte)
 
-The right rail already context-switches between 2D and 3D chip sets via `renderMode`. Adding a third dimension — selection state:
+The right rail already context-switches between 2D and 3D chip sets via `renderMode`. The additive model keeps all 3D chips and conditionally appends performer chips:
 
 ```typescript
-const chips = $derived.by(() => {
+const globalChips = $derived.by(() => {
   if (renderMode === '2d') return CHIPS_2D;
-  if (viewer.selectedPerformerIndex !== null) return CHIPS_PERFORMER;
-  return CHIPS_BIRDS_EYE;
+  return CHIPS_3D_GLOBAL; // Formation, Tempo, Camera, Scene, Export
 });
+
+const performerChips = $derived.by(() => {
+  if (renderMode !== '3d') return [];
+  if (viewer.selectedPerformerIndex === null) return [];
+  return CHIPS_PERFORMER; // Effects, Prop, Effort
+});
+
+const showPerformerSeparator = $derived(performerChips.length > 0);
 ```
 
 ### Chip Tinting in Performer Mode
@@ -141,11 +154,10 @@ Performer-specific chips (Effects, Prop, Effort) get their icon tinted to the se
 }
 ```
 
-### Transition Between Modes
+### Transition
 
-Chips that leave: `slide` out (220ms, y-axis, existing transition)
-Chips that arrive: `slide` in (220ms, y-axis, existing transition)
-Chips that persist (Camera, Export): stay in place, no transition
+Global chips: **never animate** — always anchored in place.
+Separator + performer chips: `slide` in from below (220ms, y-axis, existing transition) when a performer is selected, `slide` out when deselected.
 
 ## Popover Content — Performer Mode
 
@@ -315,14 +327,14 @@ Source: `src/lib/shared/3d/state/viewer-3d-state.svelte.ts`
 
 | File | Change |
 |---|---|
-| `src/lib/shared/sequence-viewer/components/RightRail.svelte` | Add CHIPS_PERFORMER and CHIPS_BIRDS_EYE arrays, derive active chip set from selection state. Remove "performers" chip. Add performer-color tinting for performer-mode chips. |
+| `src/lib/shared/sequence-viewer/components/RightRail.svelte` | Rename CHIPS_3D → CHIPS_3D_GLOBAL, add CHIPS_PERFORMER array (Effects, Prop, Effort). Render both arrays with a separator between them when a performer is selected. Remove "performers" chip. Add performer-color tinting for performer-scoped chips. |
 | New: `src/lib/shared/3d/components/controls/PerformerRail.svelte` | Bottom-center horizontal chip strip |
 | New: `src/lib/shared/3d/components/controls/EffectsPopover.svelte` | Per-performer effects toggle grid |
 | New: `src/lib/shared/3d/components/controls/PropPopover.svelte` | Per-performer prop/size/plane surface |
 | New: `src/lib/shared/3d/components/controls/EffortPopover.svelte` | Per-performer effort palette |
 | `src/lib/shared/3d/components/Viewer3DCanvas.svelte` | Mount PerformerRail in viewport |
 | `src/lib/shared/3d/context/viewer-3d-context.ts` | Extend PopoverId with 'effects' \| 'prop' \| 'effort' \| 'formation' |
-| Retire: `src/lib/shared/sequence-viewer/components/PerformerPopover.svelte` | Absorbed into morphing right rail + bottom rail |
+| Retire: `src/lib/shared/sequence-viewer/components/PerformerPopover.svelte` | Absorbed into additive right rail + bottom rail |
 | Retire: `src/lib/shared/3d/components/controls/PerformerChipStrip.svelte` | Replaced by PerformerRail |
 
 ## Deferred (Phase 2)
