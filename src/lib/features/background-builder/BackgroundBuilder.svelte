@@ -26,7 +26,7 @@
     { id: "cosmic", label: "Cosmic", icon: "fa-moon" },
     { id: "forest", label: "Forest", icon: "fa-tree" },
     { id: "blossom", label: "Blossom", icon: "fa-spa" },
-    { id: "pride", label: "Rainbow", icon: "fa-rainbow" },
+    { id: "rainbow", label: "Rainbow", icon: "fa-rainbow" },
     { id: "ember", label: "Ember", icon: "fa-fire" },
     { id: "winter", label: "Winter", icon: "fa-snowflake" },
     { id: "autumn", label: "Autumn", icon: "fa-leaf" },
@@ -38,7 +38,7 @@
     "cosmic": BackgroundType.COSMIC,
     "forest": BackgroundType.FOREST,
     "blossom": BackgroundType.BLOSSOM,
-    "pride": BackgroundType.PRIDE,
+    "rainbow": BackgroundType.RAINBOW,
     "ember": BackgroundType.EMBER,
     "winter": BackgroundType.WINTER,
     "autumn": BackgroundType.AUTUMN,
@@ -90,7 +90,7 @@
       <ForestLab />
     {:else if backgroundBuilderState.currentTab === "blossom"}
       <BlossomLab />
-    {:else if backgroundBuilderState.currentTab === "pride"}
+    {:else if backgroundBuilderState.currentTab === "rainbow"}
       <PrideLab />
     {:else if backgroundBuilderState.currentTab === "ember"}
       <EmberLab />

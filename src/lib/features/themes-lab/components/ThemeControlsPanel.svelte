@@ -78,7 +78,7 @@
       <BlossomControls />
     {:else if themeId === "celestial"}
       <CelestialControls />
-    {:else if themeId === "pride"}
+    {:else if themeId === "rainbow"}
       <RainbowControls />
     {:else if themeId === "void"}
       <VoidControls />

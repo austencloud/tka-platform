@@ -42,7 +42,7 @@ import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constant
  * - Middle/later colors are extracted as accent for buttons and interactive elements
  */
 export const BACKGROUND_THEME_COLORS: Partial<Record<BackgroundType, string[]>> = {
-  [BackgroundType.PRIDE]: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
+  [BackgroundType.RAINBOW]: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
   [BackgroundType.WINTER]: ["#1e3a5f", "#3b82f6", "#93c5fd"],
   [BackgroundType.COSMIC]: ["#1e1b4b", "#4338ca", "#818cf8"],
   [BackgroundType.OCEAN]: ["#0c4a6e", "#0891b2", "#22d3ee"],
@@ -584,7 +584,8 @@ export function ensureThemeApplied(): void {
     }
 
     const settings = JSON.parse(stored);
-    const bgType = settings.backgroundType as BackgroundType | undefined;
+    let bgType = settings.backgroundType as BackgroundType | undefined;
+    if (bgType === ("pride" as BackgroundType)) bgType = BackgroundType.RAINBOW;
 
     if (bgType) {
       applyThemeForBackground(bgType);

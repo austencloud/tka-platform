@@ -64,7 +64,7 @@ export const SCENE_OPTIONS: SceneOption[] = [
     id: "rainbow",
     label: "Rainbow",
     icon: "fa-rainbow",
-    description: "Pride celebration with rainbow aurora and colorful particles",
+    description: "Rainbow aurora with flowing color bands and colorful particles",
   },
   {
     id: "celestial",

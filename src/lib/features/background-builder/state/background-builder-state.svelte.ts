@@ -32,7 +32,7 @@ export type BackgroundBuilderTab =
   | "cosmic"
   | "forest"
   | "blossom"
-  | "pride"
+  | "rainbow"
   | "ember"
   | "winter"
   | "autumn";
@@ -42,7 +42,7 @@ const VALID_TABS: BackgroundBuilderTab[] = [
   "cosmic",
   "forest",
   "blossom",
-  "pride",
+  "rainbow",
   "ember",
   "winter",
   "autumn",
@@ -55,7 +55,7 @@ const TAB_TO_BACKGROUND_TYPE: Record<BackgroundBuilderTab, BackgroundType | null
   "cosmic": BackgroundType.COSMIC,
   "forest": BackgroundType.FOREST,
   "blossom": BackgroundType.BLOSSOM,
-  "pride": BackgroundType.PRIDE,
+  "rainbow": BackgroundType.RAINBOW,
   "ember": BackgroundType.EMBER,
   "winter": BackgroundType.WINTER,
   "autumn": BackgroundType.AUTUMN,
@@ -169,24 +169,20 @@ export function updateBlossomSettings(settings: Partial<BlossomLabSettings>): vo
 }
 
 // ============================================================================
-// Pride Lab Settings
+// Rainbow Lab Settings
 // ============================================================================
 
-export function getPrideSettings(): RainbowLabSettings {
+export function getRainbowSettings(): RainbowLabSettings {
   const labSettings = getLabSettings();
   return labSettings.rainbow ?? { ...DEFAULT_RAINBOW_SETTINGS };
 }
 
-export function updatePrideSettings(settings: Partial<RainbowLabSettings>): void {
-  const current = getPrideSettings();
+export function updateRainbowSettings(settings: Partial<RainbowLabSettings>): void {
+  const current = getRainbowSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
   saveLabSettings({ ...labSettings, rainbow: updated });
 }
-
-// Legacy aliases for backwards compatibility
-export const getRainbowSettings = getPrideSettings;
-export const updateRainbowSettings = updatePrideSettings;
 
 // ============================================================================
 // Ember Lab Settings

@@ -161,7 +161,7 @@ export const ALL_GRADIENTS: GradientOption[] = [
 ];
 
 export const THEME_TO_FAMILY: Partial<Record<BackgroundType, string>> = {
-  [BackgroundType.PRIDE]: "vibrant",
+  [BackgroundType.RAINBOW]: "vibrant",
   [BackgroundType.WINTER]: "cool",
   [BackgroundType.COSMIC]: "cool",
   [BackgroundType.OCEAN]: "cool",
@@ -174,7 +174,7 @@ export const THEME_TO_FAMILY: Partial<Record<BackgroundType, string>> = {
 };
 
 export const THEME_TO_GRADIENT: Partial<Record<BackgroundType, string>> = {
-  [BackgroundType.PRIDE]: "rainbow",
+  [BackgroundType.RAINBOW]: "rainbow",
   [BackgroundType.WINTER]: "arctic",
   [BackgroundType.COSMIC]: "twilight",
   [BackgroundType.OCEAN]: "ocean",

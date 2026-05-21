@@ -20,7 +20,7 @@ export const ANIMATED_BACKGROUNDS = [
   { type: BackgroundType.BLOSSOM, icon: "fa-spa", label: "Blossom" },
   { type: BackgroundType.FOREST, icon: "fa-tree", label: "Forest" },
   { type: BackgroundType.AUTUMN, icon: "fa-leaf", label: "Autumn" },
-  { type: BackgroundType.PRIDE, icon: "fa-rainbow", label: "Rainbow" },
+  { type: BackgroundType.RAINBOW, icon: "fa-rainbow", label: "Rainbow" },
   { type: BackgroundType.CELESTIAL, icon: "fa-cloud-sun", label: "Celestial" },
   { type: BackgroundType.VOID, icon: "fa-square", label: "Void" },
 ] as const;

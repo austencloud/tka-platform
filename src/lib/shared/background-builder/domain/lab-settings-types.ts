@@ -101,7 +101,7 @@ export interface BlossomLabSettings {
 // Rainbow Lab
 // ============================================================================
 
-export type RainbowPridePalette =
+export type RainbowPaletteOption =
   | "classic"
   | "progress"
   | "trans"
@@ -123,7 +123,7 @@ export interface RainbowLabLayers {
 
 export interface RainbowLabSettings {
   quality: QualityLevel;
-  palette: RainbowPridePalette;
+  palette: RainbowPaletteOption;
   layers: RainbowLabLayers;
 }
 

@@ -467,7 +467,7 @@
 
           // Theme colors for each background type - MUST match BACKGROUND_THEME_COLORS
           var BACKGROUND_THEME_COLORS = {
-            pride: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
+            rainbow: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
             winter: ["#1e3a5f", "#3b82f6", "#93c5fd"],
             cosmic: ["#1e1b4b", "#4338ca", "#818cf8"],
             ocean: ["#0c4a6e", "#0891b2", "#22d3ee"],
@@ -586,7 +586,7 @@
 
           // Background gradients mapping - MUST match BackgroundGradients.ts
           var backgroundGradients = {
-            pride: "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
+            rainbow: "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
             winter: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
             cosmic: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
             ocean: "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
@@ -598,7 +598,7 @@
 
           // Background animation mapping
           var backgroundAnimations = {
-            pride: "rainbow-flow",
+            rainbow: "rainbow-flow",
             winter: "winter",
             cosmic: "star-twinkle",
             ocean: "ocean-flow",
@@ -628,7 +628,8 @@
               autumnDrift: "autumn",
               pureBlack: "void",
               solidColor: "void",
-              linearGradient: "cosmic"
+              linearGradient: "cosmic",
+              pride: "rainbow"
             };
             if (legacyThemeMap[backgroundType]) {
               backgroundType = legacyThemeMap[backgroundType];

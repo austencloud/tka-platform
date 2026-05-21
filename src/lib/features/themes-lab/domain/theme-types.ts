@@ -6,7 +6,7 @@ export type ThemeId =
   | "cosmic"
   | "forest"
   | "blossom"
-  | "pride"
+  | "rainbow"
   | "ember"
   | "winter"
   | "autumn"
@@ -56,11 +56,11 @@ export const THEME_OPTIONS: ThemeOption[] = [
     sceneId: "blossom",
   },
   {
-    id: "pride",
+    id: "rainbow",
     label: "Rainbow",
     icon: "fa-rainbow",
     color: "#f59e0b",
-    backgroundType: "pride" as BackgroundType,
+    backgroundType: "rainbow" as BackgroundType,
     sceneId: "rainbow",
   },
   {

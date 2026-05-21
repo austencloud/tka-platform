@@ -29,7 +29,7 @@
     cosmic: CosmicLab,
     forest: ForestLab,
     blossom: BlossomLab,
-    pride: PrideLab,
+    rainbow: PrideLab,
     ember: EmberLab,
     winter: WinterLab,
     autumn: AutumnLab,

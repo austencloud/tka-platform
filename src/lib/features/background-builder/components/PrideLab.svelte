@@ -2,8 +2,8 @@
   import { onDestroy } from "svelte";
   import {
     RainbowBackgroundSystem,
-    PRIDE_PALETTES,
-    type PridePalette,
+    RAINBOW_PALETTES,
+    type RainbowPalette,
     type QualityLevel,
   } from "@austencloud/backgrounds";
   import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
@@ -27,7 +27,7 @@
   let isLoading = $state(true);
 
   // Palette selection
-  let currentPalette: PridePalette = $state(savedSettings.palette);
+  let currentPalette: RainbowPalette = $state(savedSettings.palette);
 
   // Layer toggles
   let layers = $state({ ...savedSettings.layers });
@@ -42,7 +42,7 @@
   });
 
   // Palette display names
-  const paletteNames: Record<PridePalette, string> = {
+  const paletteNames: Record<RainbowPalette, string> = {
     classic: "Classic",
     progress: "Progress",
     trans: "Trans",
@@ -98,7 +98,7 @@
     }
   }
 
-  function setPalette(palette: PridePalette) {
+  function setPalette(palette: RainbowPalette) {
     currentPalette = palette;
     updateRainbowSettings({ palette });
     if (backgroundSystem) {
@@ -124,19 +124,19 @@
 <div class="pride-lab">
   <div class="controls themed-scrollbar-accent">
     <div class="header">
-      <h2>Pride Lab</h2>
-      <span class="badge">Pride</span>
+      <h2>Rainbow Lab</h2>
+      <span class="badge">Rainbow</span>
     </div>
 
     <!-- Palette Chips -->
     <ChipGroup>
-      {#each Object.keys(PRIDE_PALETTES) as palette}
+      {#each Object.keys(RAINBOW_PALETTES) as palette}
         <ChipToggle
-          label={paletteNames[palette as PridePalette]}
+          label={paletteNames[palette as RainbowPalette]}
           active={currentPalette === palette}
           color="rose"
           size="sm"
-          onclick={() => setPalette(palette as PridePalette)}
+          onclick={() => setPalette(palette as RainbowPalette)}
         />
       {/each}
     </ChipGroup>
@@ -195,9 +195,9 @@
     <div class="info-section">
       <span class="label">About</span>
       <p class="info-text">
-        A celebration of Pride with flowing rainbow wave bands, dreamy bokeh orbs,
+        Flowing rainbow wave bands, dreamy bokeh orbs,
         twinkling sparkles, shimmer effects, and floating hearts.
-        Choose from 9 different pride flag palettes.
+        Choose from 9 different color palettes.
       </p>
     </div>
 
