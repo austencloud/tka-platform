@@ -8,6 +8,24 @@
 
 # Debug artifacts
 debug-screenshots/
+
+# Test / lint / fix artifacts
+.fast-check/
+eslint-output*.json
+eslint-warnings.json
+fix-*.mjs
+fix_imports.js
+check-output.txt
+svelte-check-unknown-errors.txt
+stats.html
+autumn-scene-plan.html
+E*.txt
+
+# Claude diagnostic artifacts
+.claude/diag/
+
+# Android IDE metadata
+android/.idea/
 feedback-images/
 tmp-shared-packages/
 
@@ -285,6 +303,9 @@ packages/render-core/src/**/*.d.ts
 
 # MCP server test images
 mcp-server/test-*.png
+
+# Reference repos (cloned for study, not our code)
+.reference-repos/
 
 # Prototype explorations (HTML mockups, not production code)
 prototypes/
