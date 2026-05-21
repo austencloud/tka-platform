@@ -90,6 +90,10 @@
   uniform float uPerceptionCos;
   uniform sampler2D tTraits;
 
+  // School anchor uniforms — per-species home positions
+  uniform vec3 uSchoolCenters[8];
+  uniform float uSchoolRadius;
+
   // Scatter uniforms
   uniform vec3 uScatterOrigin;
   uniform float uScatterRadius;
@@ -229,12 +233,27 @@
     }
 
     vec3 steer = vec3(0.0);
-    if (sepN > 0.0) steer += normalize(sep / sepN) * 0.8;
-    if (aliN > 0.0) steer += normalize(ali / aliN - vel) * 0.4 * socialMult;
-    if (cohN > 0.0) steer += normalize(coh / cohN - pos) * 0.3 * socialMult;
 
-    // Curl noise flow field
-    vec3 curlForce = curlNoise(pos * 0.15 + uTime * 0.02) * uCurrentStrength;
+    // Force hierarchy: cohesion > alignment > separation (keeps schools together)
+    if (sepN > 0.0) steer += normalize(sep / sepN) * 0.3;
+    // Un-normalized alignment preserves speed matching (fish converge on same heading + speed)
+    if (aliN > 0.0) steer += (ali / aliN - vel) * 0.6 * socialMult;
+    if (cohN > 0.0) steer += normalize(coh / cohN - pos) * 0.8 * socialMult;
+
+    // School center anchor — pull fish back toward their species' home range
+    int speciesIdx = int(mySpecies);
+    if (speciesIdx >= 0 && speciesIdx < 8) {
+      vec3 toSchool = uSchoolCenters[speciesIdx] - pos;
+      float schoolDist = length(toSchool);
+      if (schoolDist > uSchoolRadius) {
+        float pull = (schoolDist - uSchoolRadius) / uSchoolRadius;
+        steer += normalize(toSchool) * pull * 0.5;
+      }
+    }
+
+    // Curl noise — social fish resist currents (school drifts together, not apart)
+    float curlScale = uCurrentStrength * (1.0 - socialMult * 0.4);
+    vec3 curlForce = curlNoise(pos * 0.15 + uTime * 0.02) * curlScale;
     steer += curlForce;
 
     // Centering — soft pull toward origin
@@ -266,12 +285,12 @@
       steer += away * uScatterForce * proximity * proximity;
     }
 
-    // Clamp max steering force
+    // Clamp max steering force — low value = high inertia = fish can't escape schools
     float steerLen = length(steer);
     if (steerLen > uMaxSteer) steer = steer / steerLen * uMaxSteer;
 
-    // Apply steering with drag
-    vel = vel * 0.97 + steer * uDelta;
+    // Apply steering with heavier drag (0.94 vs 0.97 — faster velocity decay)
+    vel = vel * 0.94 + steer * uDelta;
 
     // Per-fish speed clamp using trait-modulated range
     float adjMax = uMaxSpeed * speedMult;
@@ -495,14 +514,14 @@
     // social: <0.5 = solitary, 0.5-1.0 = loose groups, >1.2 = tight schools
     // bold: <0.6 = nervous/flighty, 0.8-1.0 = moderate, >1.2 = fearless
     const SPECIES = [
-      { name: "common",    fraction: 0.18, sizeMult: 1.0,  speed: [0.8, 1.1] as [number, number], social: [1.3, 1.8] as [number, number], bold: [0.5, 0.8] as [number, number] },
-      { name: "butterfly", fraction: 0.10, sizeMult: 0.9,  speed: [0.5, 0.8] as [number, number], social: [0.8, 1.2] as [number, number], bold: [0.6, 0.9] as [number, number] },
-      { name: "trout",     fraction: 0.10, sizeMult: 1.4,  speed: [1.2, 1.8] as [number, number], social: [0.6, 1.0] as [number, number], bold: [1.0, 1.4] as [number, number] },
-      { name: "clown",     fraction: 0.10, sizeMult: 0.7,  speed: [0.6, 0.9] as [number, number], social: [0.8, 1.2] as [number, number], bold: [0.7, 1.0] as [number, number] },
-      { name: "clownfish", fraction: 0.08, sizeMult: 0.6,  speed: [0.5, 0.8] as [number, number], social: [0.3, 0.5] as [number, number], bold: [0.8, 1.1] as [number, number] },
-      { name: "gray",      fraction: 0.12, sizeMult: 1.1,  speed: [0.9, 1.3] as [number, number], social: [1.0, 1.4] as [number, number], bold: [0.7, 1.0] as [number, number] },
-      { name: "koi",       fraction: 0.08, sizeMult: 2.5,  speed: [0.3, 0.6] as [number, number], social: [0.2, 0.4] as [number, number], bold: [1.2, 1.5] as [number, number] },
-      { name: "small",     fraction: 0.24, sizeMult: 0.4,  speed: [1.3, 2.0] as [number, number], social: [1.5, 2.0] as [number, number], bold: [0.3, 0.5] as [number, number] },
+      { name: "common",    fraction: 0.18, sizeMult: 1.0,  speed: [0.9, 1.1] as [number, number], social: [1.3, 1.8] as [number, number], bold: [0.5, 0.8] as [number, number] },
+      { name: "butterfly", fraction: 0.10, sizeMult: 0.9,  speed: [0.6, 0.75] as [number, number], social: [0.8, 1.2] as [number, number], bold: [0.6, 0.9] as [number, number] },
+      { name: "trout",     fraction: 0.10, sizeMult: 1.4,  speed: [1.3, 1.6] as [number, number], social: [0.6, 1.0] as [number, number], bold: [1.0, 1.4] as [number, number] },
+      { name: "clown",     fraction: 0.10, sizeMult: 0.7,  speed: [0.7, 0.85] as [number, number], social: [0.8, 1.2] as [number, number], bold: [0.7, 1.0] as [number, number] },
+      { name: "clownfish", fraction: 0.08, sizeMult: 0.6,  speed: [0.6, 0.75] as [number, number], social: [0.3, 0.5] as [number, number], bold: [0.8, 1.1] as [number, number] },
+      { name: "gray",      fraction: 0.12, sizeMult: 1.1,  speed: [1.0, 1.2] as [number, number], social: [1.0, 1.4] as [number, number], bold: [0.7, 1.0] as [number, number] },
+      { name: "koi",       fraction: 0.08, sizeMult: 2.5,  speed: [0.4, 0.55] as [number, number], social: [0.2, 0.4] as [number, number], bold: [1.2, 1.5] as [number, number] },
+      { name: "small",     fraction: 0.24, sizeMult: 0.4,  speed: [1.4, 1.7] as [number, number], social: [1.5, 2.0] as [number, number], bold: [0.3, 0.5] as [number, number] },
     ];
 
     // ── Allocate counts per species ────────────────────────────────────
@@ -611,13 +630,17 @@
     gpu.setVariableDependencies(posVar, [posVar, velVar]);
     gpu.setVariableDependencies(velVar, [posVar, velVar]);
 
+    // Pack school center positions for GPU uniform
+    const schoolCenterVecs = speciesClusterCenters.map(c => new Vector3(c.x, c.y, c.z));
+    while (schoolCenterVecs.length < 8) schoolCenterVecs.push(new Vector3(0, 0, 0));
+
     const velUniforms = velVar.material.uniforms;
     velUniforms.uDelta = { value: 0 };
-    velUniforms.uSepDist = { value: 1.5 };
-    velUniforms.uAliDist = { value: 3.5 };
+    velUniforms.uSepDist = { value: 0.8 };
+    velUniforms.uAliDist = { value: 4.0 };
     velUniforms.uMaxSpeed = { value: sMax * 2.0 };
     velUniforms.uMinSpeed = { value: sMin };
-    velUniforms.uMaxSteer = { value: 2.0 };
+    velUniforms.uMaxSteer = { value: 0.1 };
     velUniforms.uGroundY = { value: gy };
     velUniforms.uHeightMin = { value: hMin };
     velUniforms.uHeightMax = { value: hMax };
@@ -628,6 +651,8 @@
     velUniforms.uTime = { value: 0 };
     velUniforms.uCurrentStrength = { value: currentStrength };
     velUniforms.uPerceptionCos = { value: Math.cos(perceptionAngle * Math.PI / 180) };
+    velUniforms.uSchoolCenters = { value: schoolCenterVecs };
+    velUniforms.uSchoolRadius = { value: 6.0 };
     velUniforms.uScatterOrigin = { value: new Vector3(0, 0, 0) };
     velUniforms.uScatterRadius = { value: scatterRadius };
     velUniforms.uScatterForce = { value: 3.0 };
