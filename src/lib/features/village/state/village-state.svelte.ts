@@ -5,7 +5,7 @@
  * each frame and pushes values into AvatarInstanceState wrappers that drive Avatar3D.
  */
 
-import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
 // propInterpolator / sequenceConverter are now module-level functions
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { VillageOrchestrator } from "../engine/VillageOrchestrator";
@@ -125,7 +125,7 @@ export function createVillageState(
 						positionX: entity.transform.x,
 						positionZ: entity.transform.z,
 					},
-					{},
+					makeStandaloneDeps(),
 				);
 
 				renderState = {

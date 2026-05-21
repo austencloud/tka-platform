@@ -7,6 +7,7 @@
 
 import {
   createAvatarInstanceState,
+  makeStandaloneDeps,
   type AvatarInstanceState,
 } from "./avatar-instance-state.svelte";
 import {
@@ -75,7 +76,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
         positionZ: pos.z,
         avatarModelId: initialAvatarId,
       },
-      {}
+      makeStandaloneDeps()
     );
   }
 
@@ -91,7 +92,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
         positionZ: initialPosition.z,
         avatarModelId: initialAvatarId,
       },
-      {}
+      makeStandaloneDeps()
     );
 
     performerStates = [initialPerformer];

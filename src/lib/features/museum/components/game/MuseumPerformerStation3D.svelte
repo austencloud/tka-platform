@@ -16,7 +16,7 @@
   import { Plane } from "@austencloud/scene-3d";
   import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -78,7 +78,7 @@
         positionX: worldX,
         positionZ: worldZ,
       },
-      {}
+      makeStandaloneDeps()
     );
   } catch (err) {
     console.warn(`[MuseumPerformer] Failed to init ${stationId}:`, err);

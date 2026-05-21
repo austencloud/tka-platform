@@ -26,10 +26,15 @@ import { findPhraseAtBeat } from "$lib/shared/effort/domain/effort-timeline-type
 import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 import {
   makeDefaultPerformerSettings,
+  makeStandaloneDefaults,
   type PerformerSettings,
   type EffectId,
+  type DefaultPerformerSettings,
+  type OverrideState,
 } from "./performer-settings-types";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { getSceneUndoManager } from "../undo/getSceneUndoManager";
+import type { PerformerDomainSnapshot } from "../undo/scene-undo-types";
 
 // ============================================
 // Position Constants (all in meters)
@@ -113,7 +118,23 @@ export interface AvatarInstanceConfig {
 /**
  * Dependencies for avatar instance state
  */
-export type AvatarInstanceDeps = Record<string, unknown>;
+export interface AvatarInstanceDeps {
+  getDefaults: () => DefaultPerformerSettings;
+}
+
+/** Standalone deps for call sites without a viewer-level defaults provider */
+const _standaloneDeps: AvatarInstanceDeps = {
+  getDefaults: makeStandaloneDefaults,
+};
+
+/**
+ * Create deps that inherit from standalone defaults.
+ * Use this for museum, village, and other non-viewer avatar consumers.
+ * The main viewer (performer-manager) wires its own getDefaults from viewer state.
+ */
+export function makeStandaloneDeps(): AvatarInstanceDeps {
+  return _standaloneDeps;
+}
 
 /**
  * Create per-avatar animation state
@@ -122,7 +143,7 @@ export function createAvatarInstanceState(
   config: AvatarInstanceConfig,
   deps: AvatarInstanceDeps
 ) {
-  void deps; // deps retained for signature compatibility
+  const getDefaults = deps.getDefaults;
 
   // Avatar identity
   const id = config.id;
@@ -135,6 +156,21 @@ export function createAvatarInstanceState(
   // ============================================
 
   let _settings = $state<PerformerSettings>(makeDefaultPerformerSettings());
+
+  // ============================================
+  // Effective Value Getters (cascade resolution: null → inherit from defaults)
+  // ============================================
+
+  const effectiveProp = $derived(_settings.prop ?? getDefaults().prop);
+  const effectiveEffortId = $derived(_settings.effortId ?? getDefaults().effortId);
+  const effectiveEffects = $derived(_settings.effects ?? getDefaults().effects);
+  // effectivePlaneMode/BluePlane/RedPlane defined after plane state declarations below
+
+  // ============================================
+  // Override Detection
+  // ============================================
+
+  // NOTE: hasOverride for planes is defined after planeMode declaration below
 
   // ============================================
   // Locomotion State
@@ -178,12 +214,14 @@ export function createAvatarInstanceState(
   const PLANE_MODE_KEY = `tka-3d-planeMode-${id}`;
   const ROT_VARIANT_KEY = `tka-3d-rotVariant-${id}`;
 
-  function loadPersistedPlaneMode(): PlaneMode {
+  function loadPersistedPlaneMode(): PlaneMode | null {
     try {
       const v = localStorage.getItem(PLANE_MODE_KEY);
       if (v === PlaneMode.DUAL_WHEEL) return PlaneMode.DUAL_WHEEL;
+      if (v === PlaneMode.WALL) return PlaneMode.WALL;
+      if (v === PlaneMode.CUSTOM) return PlaneMode.CUSTOM;
     } catch { /* ignore */ }
-    return PlaneMode.WALL;
+    return null;
   }
 
   function loadPersistedRotVariant(): number {
@@ -194,9 +232,26 @@ export function createAvatarInstanceState(
     return 1;
   }
 
-  let planeMode = $state<PlaneMode>(loadPersistedPlaneMode());
-  let customBluePlane = $state<Plane>(Plane.WALL);
-  let customRedPlane = $state<Plane>(Plane.WALL);
+  let planeMode = $state<PlaneMode | null>(loadPersistedPlaneMode());
+  let customBluePlane = $state<Plane | null>(null);
+  let customRedPlane = $state<Plane | null>(null);
+
+  // Effective plane getters (cascade resolution: null → inherit from defaults)
+  const effectivePlaneMode = $derived(planeMode ?? getDefaults().planeMode);
+  const effectiveBluePlane = $derived(customBluePlane ?? getDefaults().customBluePlane);
+  const effectiveRedPlane = $derived(customRedPlane ?? getDefaults().customRedPlane);
+
+  // Override detection (all categories)
+  const hasOverride = $derived<OverrideState>({
+    prop: _settings.prop !== null,
+    effects: _settings.effects !== null,
+    effort: _settings.effortId !== null,
+    planes: planeMode !== null,
+  });
+
+  const hasAnyOverride = $derived(
+    hasOverride.prop || hasOverride.effects || hasOverride.effort || hasOverride.planes
+  );
 
   // Per-beat plane overrides. Key = beat index, value = { blue?, red? }
   // Beats without an entry use Plane.WALL (the default).
@@ -294,7 +349,7 @@ export function createAvatarInstanceState(
       return {
         blue: activeBlueConfig,
         red: activeRedConfig,
-        progress: applyEffort(_settings.effortId, rawProgress),
+        progress: applyEffort(effectiveEffortId, rawProgress),
       };
     }
 
@@ -345,7 +400,7 @@ export function createAvatarInstanceState(
   function loadSequence(sequence: SequenceData) {
     loadedSequence = sequence;
     beatPlaneOverrides = new Map(); // Reset per-beat overrides for new sequence
-    const modeConfig = getEffectiveModeConfig(planeMode);
+    const modeConfig = getEffectiveModeConfig(effectivePlaneMode);
 
     // Get motion configs (beats 1+) and prepend start position (beat 0)
     // so the full sequence including initial orientation is available.
@@ -406,8 +461,8 @@ export function createAvatarInstanceState(
     if (mode === PlaneMode.CUSTOM) {
       return {
         facingAngle: 0,
-        bluePlane: customBluePlane,
-        redPlane: customRedPlane,
+        bluePlane: effectiveBluePlane,
+        redPlane: effectiveRedPlane,
         // No rotationPlane - each hand rotates on its own position plane
         blueLateralOffset: 0,
         redLateralOffset: 0,
@@ -449,13 +504,22 @@ export function createAvatarInstanceState(
    * CUSTOM. Re-converts the sequence with the effective config.
    */
   function setHandPlane(hand: "blue" | "red", plane: Plane) {
+    const beforeSnapshot = capturePerformerSnapshot();
     if (hand === "blue") customBluePlane = plane;
     else customRedPlane = plane;
 
-    planeMode = derivePlaneModeFromHands(customBluePlane, customRedPlane);
+    planeMode = derivePlaneModeFromHands(
+      customBluePlane ?? getDefaults().customBluePlane,
+      customRedPlane ?? getDefaults().customRedPlane
+    );
     try { localStorage.setItem(PLANE_MODE_KEY, planeMode); } catch { /* ignore */ }
 
     reconvertWithConfig(getEffectiveModeConfig(planeMode));
+    const afterSnapshot = capturePerformerSnapshot();
+    sceneUndo.pushSelfRestoringEntry("set-hand-plane", `${hand} hand: ${plane}`, {
+      undo: () => restorePerformerSnapshot(beforeSnapshot),
+      redo: () => restorePerformerSnapshot(afterSnapshot),
+    });
   }
 
   /**
@@ -467,10 +531,10 @@ export function createAvatarInstanceState(
    * regardless of what the global hand assignment would derive.
    */
   function setStepHandPlane(stepNumber: number, hand: "blue" | "red", plane: Plane) {
+    const beforeSnapshot = capturePerformerSnapshot();
     const current = beatPlaneOverrides.get(stepNumber) ?? {};
     const updated = { ...current, [hand]: plane };
 
-    // If both hands are WALL (or undefined), remove the entry to keep the map clean
     if ((!updated.blue || updated.blue === Plane.WALL) &&
         (!updated.red || updated.red === Plane.WALL)) {
       beatPlaneOverrides.delete(stepNumber);
@@ -478,16 +542,18 @@ export function createAvatarInstanceState(
       beatPlaneOverrides.set(stepNumber, updated);
     }
 
-    // Trigger reactivity by reassigning
     beatPlaneOverrides = new Map(beatPlaneOverrides);
 
-    // Switch to CUSTOM mode if not already
     if (planeMode !== PlaneMode.CUSTOM) {
       planeMode = PlaneMode.CUSTOM;
     }
 
-    // Re-apply overrides to the step configs
     applyBeatPlaneOverrides();
+    const afterSnapshot = capturePerformerSnapshot();
+    sceneUndo.pushSelfRestoringEntry("set-beat-plane-override", `Beat ${stepNumber} ${hand}: ${plane}`, {
+      undo: () => restorePerformerSnapshot(beforeSnapshot),
+      redo: () => restorePerformerSnapshot(afterSnapshot),
+    });
   }
 
   /**
@@ -542,7 +608,8 @@ export function createAvatarInstanceState(
   function clearBeatPlaneOverrides() {
     beatPlaneOverrides = new Map();
     if (planeMode === PlaneMode.CUSTOM) {
-      setPlaneMode(PlaneMode.WALL);
+      planeMode = null; // Reset to inherit
+      reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
     }
   }
 
@@ -556,7 +623,7 @@ export function createAvatarInstanceState(
   function cycleRotationVariant(): string {
     rotationVariantIndex = (rotationVariantIndex + 1) % ROTATION_VARIANTS.length;
     try { localStorage.setItem(ROT_VARIANT_KEY, String(rotationVariantIndex)); } catch { /* ignore */ }
-    const modeConfig = getEffectiveModeConfig(planeMode);
+    const modeConfig = getEffectiveModeConfig(effectivePlaneMode);
     reconvertWithConfig(modeConfig);
     return ROTATION_LABELS[rotationVariantIndex] ?? "Unknown";
   }
@@ -675,23 +742,148 @@ export function createAvatarInstanceState(
   // Performer Settings (setter functions - _settings declared near top)
   // ============================================
 
+  const sceneUndo = getSceneUndoManager();
+
+  function capturePerformerSnapshot(): PerformerDomainSnapshot {
+    return structuredClone({
+      index: -1, // filled by caller if needed
+      selectedPerformerIndex: null,
+      settings: {
+        prop: _settings.prop,
+        effortId: _settings.effortId,
+        effects: _settings.effects ? new Set(_settings.effects) : null,
+        staffLengthCm: _settings.staffLengthCm,
+      },
+      planes: {
+        customBluePlane,
+        customRedPlane,
+        planeMode,
+        beatPlaneOverrides: new Map(beatPlaneOverrides),
+      },
+    });
+  }
+
+  function restorePerformerSnapshot(snap: PerformerDomainSnapshot): void {
+    _settings = {
+      prop: snap.settings.prop,
+      effortId: snap.settings.effortId,
+      effects: snap.settings.effects ? new Set(snap.settings.effects) : null,
+      staffLengthCm: snap.settings.staffLengthCm,
+    };
+    customBluePlane = snap.planes.customBluePlane;
+    customRedPlane = snap.planes.customRedPlane;
+    planeMode = snap.planes.planeMode;
+    beatPlaneOverrides = new Map(snap.planes.beatPlaneOverrides);
+    reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
+  }
+
+  // Performer undo uses pushSelfRestoringEntry so each performer's closures
+  // are captured in the entry itself, avoiding the "last registration wins"
+  // problem that a shared "performer" domain would have.
+
   function setEffort(effortId: EffortId): void {
+    const before = structuredClone(_settings);
     _settings = { ..._settings, effortId };
+    const after = structuredClone(_settings);
+    sceneUndo.pushSelfRestoringEntry("change-effort", `Effort: ${effortId}`, {
+      undo: () => { _settings = before; },
+      redo: () => { _settings = after; },
+    });
   }
 
   function setProp(prop: PropType): void {
+    const before = structuredClone(_settings);
     _settings = { ..._settings, prop };
+    const after = structuredClone(_settings);
+    sceneUndo.pushSelfRestoringEntry("change-prop", `Prop: ${prop}`, {
+      undo: () => { _settings = before; },
+      redo: () => { _settings = after; },
+    });
   }
 
   function toggleEffect(effect: EffectId): void {
-    const next = new Set(_settings.effects);
+    const before = structuredClone(_settings);
+    const current = _settings.effects ?? new Set(getDefaults().effects);
+    const next = new Set(current);
     if (next.has(effect)) next.delete(effect);
     else next.add(effect);
     _settings = { ..._settings, effects: next };
+    const after = structuredClone(_settings);
+    sceneUndo.pushSelfRestoringEntry("toggle-effect", `Toggle ${effect}`, {
+      undo: () => { _settings = before; },
+      redo: () => { _settings = after; },
+    });
   }
 
   function setStaffLengthCm(cm: number | null): void {
+    const before = structuredClone(_settings);
     _settings = { ..._settings, staffLengthCm: cm };
+    const after = structuredClone(_settings);
+    sceneUndo.pushSelfRestoringEntryCoalescing("change-staff-length", "Staff length", {
+      undo: () => { _settings = before; },
+      redo: () => { _settings = after; },
+    }, "staff-length");
+  }
+
+  // ============================================
+  // Reset Methods (clear overrides → inherit from defaults)
+  // ============================================
+
+  function resetProp(): void {
+    const before = structuredClone(_settings);
+    _settings = { ..._settings, prop: null };
+    const after = structuredClone(_settings);
+    sceneUndo.pushSelfRestoringEntry("change-prop", "Reset prop to default", {
+      undo: () => { _settings = before; },
+      redo: () => { _settings = after; },
+    });
+  }
+
+  function resetEffort(): void {
+    const before = structuredClone(_settings);
+    _settings = { ..._settings, effortId: null };
+    const after = structuredClone(_settings);
+    sceneUndo.pushSelfRestoringEntry("change-effort", "Reset effort to default", {
+      undo: () => { _settings = before; },
+      redo: () => { _settings = after; },
+    });
+  }
+
+  function resetEffects(): void {
+    const before = structuredClone(_settings);
+    _settings = { ..._settings, effects: null };
+    const after = structuredClone(_settings);
+    sceneUndo.pushSelfRestoringEntry("toggle-effect", "Reset effects to default", {
+      undo: () => { _settings = before; },
+      redo: () => { _settings = after; },
+    });
+  }
+
+  function resetPlanes(): void {
+    const beforeSnap = capturePerformerSnapshot();
+    planeMode = null;
+    customBluePlane = null;
+    customRedPlane = null;
+    reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
+    const afterSnap = capturePerformerSnapshot();
+    sceneUndo.pushSelfRestoringEntry("set-hand-plane", "Reset planes to default", {
+      undo: () => restorePerformerSnapshot(beforeSnap),
+      redo: () => restorePerformerSnapshot(afterSnap),
+    });
+  }
+
+  function resetAllOverrides(): void {
+    const beforeSnap = capturePerformerSnapshot();
+    _settings = { prop: null, effortId: null, effects: null, staffLengthCm: _settings.staffLengthCm };
+    planeMode = null;
+    customBluePlane = null;
+    customRedPlane = null;
+    reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
+    const afterSnap = capturePerformerSnapshot();
+    sceneUndo.pushSelfRestoringEntry("change-prop", "Reset all overrides", {
+      undo: () => restorePerformerSnapshot(beforeSnap),
+      redo: () => restorePerformerSnapshot(afterSnap),
+    });
   }
 
   /**
@@ -774,14 +966,17 @@ export function createAvatarInstanceState(
       return loadedSequence;
     },
     get planeMode() {
-      return planeMode;
+      return effectivePlaneMode;
     },
+    get rawPlaneMode() { return planeMode; },
     setPlaneMode,
     setHandPlane,
     setStepHandPlane,
     clearBeatPlaneOverrides,
-    get customBluePlane() { return customBluePlane; },
-    get customRedPlane() { return customRedPlane; },
+    get customBluePlane() { return effectiveBluePlane; },
+    get customRedPlane() { return effectiveRedPlane; },
+    get rawBluePlane() { return customBluePlane; },
+    get rawRedPlane() { return customRedPlane; },
     get currentStepBluePlane() { return currentStepPlanes.blue; },
     get currentStepRedPlane() { return currentStepPlanes.red; },
     get beatPlaneOverrides() { return beatPlaneOverrides; },
@@ -848,7 +1043,7 @@ export function createAvatarInstanceState(
 
     // Effort state (for UI readouts / debugging)
     get effortPreset() {
-      return _settings.effortId;
+      return effectiveEffortId;
     },
     get effortTimeline() {
       return effortTimeline;
@@ -878,6 +1073,25 @@ export function createAvatarInstanceState(
     setProp,
     toggleEffect,
     setStaffLengthCm,
+
+    // Effective values (resolved cascade: null → inherit from viewer defaults)
+    get effectiveProp() { return effectiveProp; },
+    get effectiveEffortId() { return effectiveEffortId; },
+    get effectiveEffects() { return effectiveEffects; },
+    get effectivePlaneMode() { return effectivePlaneMode; },
+    get effectiveBluePlane() { return effectiveBluePlane; },
+    get effectiveRedPlane() { return effectiveRedPlane; },
+
+    // Override detection
+    get hasOverride() { return hasOverride; },
+    get hasAnyOverride() { return hasAnyOverride; },
+
+    // Reset methods (clear overrides → inherit from defaults)
+    resetProp,
+    resetEffort,
+    resetEffects,
+    resetPlanes,
+    resetAllOverrides,
   };
 }
 

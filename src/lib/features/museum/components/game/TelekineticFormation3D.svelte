@@ -24,7 +24,7 @@
   import { Plane } from "@austencloud/scene-3d";
   import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
@@ -121,14 +121,14 @@
     centerInstances = CENTER_PLANES.map((cfg, i) =>
       createAvatarInstanceState(
         { id: `formation-${stationId}-center-${cfg.plane}-${cfg.mirror ? 'mirror' : 'orig'}`, positionX: 0, positionZ: 0 },
-        {}
+        makeStandaloneDeps()
       )
     );
 
     acolyteInstances = ACOLYTE_POSITIONS.map((_, i) =>
       createAvatarInstanceState(
         { id: `formation-${stationId}-acolyte-${i}`, positionX: 0, positionZ: 0 },
-        {}
+        makeStandaloneDeps()
       )
     );
   } catch (err) {

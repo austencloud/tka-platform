@@ -1,6 +1,6 @@
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { Plane, PlaneMode } from "@austencloud/scene-3d";
+import { Plane, PlaneMode } from "@austencloud/scene-3d";
 
 export type EffectId =
   | "trails"
@@ -43,5 +43,22 @@ export function makeDefaultPerformerSettings(): PerformerSettings {
     prop: null,
     effects: null,
     staffLengthCm: null,
+  };
+}
+
+/**
+ * Standalone defaults for call sites that don't have a viewer-level defaults provider.
+ * Used by museum, village, and other standalone avatar consumers.
+ * Task 3 of the settings cascade plan wires up the viewer-level defaults;
+ * this provides the same values as a fallback for standalone usage.
+ */
+export function makeStandaloneDefaults(): DefaultPerformerSettings {
+  return {
+    prop: PropType.STAFF,
+    effects: new Set<EffectId>(),
+    effortId: "linear" as EffortId,
+    planeMode: PlaneMode.WALL,
+    customBluePlane: Plane.WALL,
+    customRedPlane: Plane.WALL,
   };
 }
