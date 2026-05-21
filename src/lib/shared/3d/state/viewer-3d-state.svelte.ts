@@ -30,7 +30,7 @@ import type { OceanVariant } from "../environments/domain/enums/environment-enum
 // Popover Stack
 // ============================================
 
-export type PopoverId = "performers" | "tempo" | "export" | "camera" | "planes" | "info" | "scene";
+export type PopoverId = "formation" | "tempo" | "export" | "camera" | "planes" | "info" | "scene" | "effects" | "prop" | "effort";
 
 // ============================================
 // Persistence
