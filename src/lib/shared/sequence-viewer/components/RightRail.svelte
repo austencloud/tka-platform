@@ -13,6 +13,7 @@
   import EffectsPopover from "$lib/shared/3d/components/controls/EffectsPopover.svelte";
   import PropPopover from "$lib/shared/3d/components/controls/PropPopover.svelte";
   import EffortPopover from "$lib/shared/3d/components/controls/EffortPopover.svelte";
+  import PerformerPropSizeSlider from "$lib/shared/3d/components/controls/PerformerPropSizeSlider.svelte";
   import { createViewer3DKeyboardHandler } from "$lib/shared/3d/keyboard/Viewer3DKeyboardHandler";
 
   const viewer = getViewer3DContext();
@@ -27,6 +28,10 @@
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const hasPerformerSelected = $derived(renderMode === "3d" && selectedIndex !== null);
   const performerColor = $derived(getPerformerColor(selectedIndex ?? 0));
+  const selectedPerformer = $derived.by(() => {
+    if (selectedIndex === null) return null;
+    return viewer.performerManager.performers[selectedIndex] ?? null;
+  });
 
   onMount(() => {
     const cleanupKeyboard = createViewer3DKeyboardHandler({
@@ -34,7 +39,6 @@
       redo: () => viewer.redo(),
     });
 
-    // NOTE: document click handler is REMOVED - Bits UI handles click-outside via onInteractOutside
     return () => {
       cleanupKeyboard();
     };
@@ -82,31 +86,49 @@
         <div class="separator-line"></div>
       </div>
 
-      {#each [
-        { id: "effects" as const, icon: "fa-wand-magic-sparkles", tooltip: "Effects" },
-        { id: "prop" as const, icon: "fa-staff-snake", tooltip: "Prop" },
-        { id: "effort" as const, icon: "fa-wave-square", tooltip: "Effort" },
-      ] as chip (chip.id)}
-        <div class="chip-wrap" transition:slide|local={{ duration: 220, axis: "y" }}>
-          <button
-            class="rail-chip performer-scoped"
-            aria-pressed={viewer.activePopover === chip.id}
-            aria-label={chip.tooltip}
-            data-tooltip={chip.tooltip}
-            style:--chip-tint={performerColor}
-            onclick={(e) => { e.stopPropagation(); viewer.openPopover(viewer.activePopover === chip.id ? null : chip.id); }}
-          >
-            <i class="fas {chip.icon}"></i>
-          </button>
-          {#if chip.id === "effects"}
-            <EffectsPopover />
-          {:else if chip.id === "prop"}
-            <PropPopover />
-          {:else if chip.id === "effort"}
-            <EffortPopover />
-          {/if}
-        </div>
-      {/each}
+      <div transition:slide|local={{ duration: 220, axis: "y" }}>
+        <ViewerPopover
+          id="effects"
+          title={`Performer ${(selectedIndex ?? 0) + 1}`}
+          icon="fa-wand-magic-sparkles"
+          tooltip="Effects"
+          accentColor={performerColor}
+          performerScoped
+        >
+          <EffectsPopover />
+        </ViewerPopover>
+      </div>
+
+      <div transition:slide|local={{ duration: 220, axis: "y" }}>
+        <ViewerPopover
+          id="prop"
+          title={`Performer ${(selectedIndex ?? 0) + 1}`}
+          icon="fa-staff-snake"
+          tooltip="Prop"
+          accentColor={performerColor}
+          performerScoped
+        >
+          <PropPopover />
+          {#snippet footer()}
+            {#if selectedPerformer}
+              <PerformerPropSizeSlider performer={selectedPerformer} />
+            {/if}
+          {/snippet}
+        </ViewerPopover>
+      </div>
+
+      <div transition:slide|local={{ duration: 220, axis: "y" }}>
+        <ViewerPopover
+          id="effort"
+          title={`Performer ${(selectedIndex ?? 0) + 1}`}
+          icon="fa-wave-square"
+          tooltip="Effort"
+          accentColor={performerColor}
+          performerScoped
+        >
+          <EffortPopover />
+        </ViewerPopover>
+      </div>
     {/if}
   {/if}
 </div>
@@ -120,58 +142,6 @@
     flex-direction: column;
     gap: 8px;
     z-index: 9;
-  }
-  .chip-wrap {
-    position: relative;
-  }
-  .rail-chip {
-    width: 56px;
-    height: 56px;
-    background: rgba(20, 22, 32, 0.78);
-    backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-    color: rgba(255, 255, 255, 0.62);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
-  }
-  .rail-chip:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    right: calc(100% + 10px);
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: white;
-    padding: 6px 10px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-    pointer-events: none;
-  }
-  .rail-chip[aria-pressed="true"] {
-    background: color-mix(in srgb, #4a9eff 18%, transparent);
-    border-color: color-mix(in srgb, #4a9eff 50%, transparent);
-    color: #8fc3ff;
-    box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent);
-  }
-  .rail-chip.performer-scoped i {
-    color: var(--chip-tint, rgba(255, 255, 255, 0.62));
-  }
-  .rail-chip.performer-scoped[aria-pressed="true"] {
-    background: color-mix(in srgb, var(--chip-tint) 18%, transparent);
-    border-color: color-mix(in srgb, var(--chip-tint) 50%, transparent);
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--chip-tint) 25%, transparent);
-  }
-  .rail-chip i {
-    font-size: 22px;
   }
   .performer-separator {
     display: flex;
