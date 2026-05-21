@@ -8,6 +8,9 @@
     Vector3,
     InstancedBufferAttribute,
     DoubleSide,
+    DataTexture,
+    FloatType,
+    RGBAFormat,
     type BufferGeometry,
   } from "three";
   import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
@@ -21,6 +24,12 @@
     stageRadius?: number;
     boundRadius?: number;
     baseColor?: string;
+    currentStrength?: number;
+    swimFrequency?: number;
+    waveAmplitude?: number;
+    scatterRadius?: number;
+    perceptionAngle?: number;
+    rayPosition?: Vector3;
   }
 
   let {
@@ -31,6 +40,12 @@
     stageRadius = 5,
     boundRadius = 18,
     baseColor = "#5599bb",
+    currentStrength = 0.3,
+    swimFrequency = 5.0,
+    waveAmplitude = 0.08,
+    scatterRadius = 4.0,
+    perceptionAngle = 135,
+    rayPosition = new Vector3(0, 0, 0),
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
@@ -274,6 +289,7 @@
   let posVar: any = null;
   let velVar: any = null;
   let materials: ShaderMaterial[] = [];
+  let storedTraitsData: Float32Array | null = null;
 
   $effect(() => {
     const ren = renderer as unknown as import("three").WebGLRenderer;
@@ -296,8 +312,16 @@
     const geometries = [geoCommon, geoButterfly, geoTrout];
 
     // ── Divide fish among 3 models ─────────────────────────────────────
-    const perModel = Math.floor(count / 3);
-    const modelCounts = [perModel, perModel, count - perModel * 2];
+    const SPECIES = [
+      { name: "common",    fraction: 0.35,  speed: [0.8, 1.2] as [number, number], social: [0.7, 1.3] as [number, number], bold: [0.6, 1.0] as [number, number] },
+      { name: "butterfly", fraction: 0.325, speed: [0.6, 0.9] as [number, number], social: [1.0, 1.5] as [number, number], bold: [0.5, 0.8] as [number, number] },
+      { name: "trout",     fraction: 0.325, speed: [1.1, 1.6] as [number, number], social: [0.5, 0.9] as [number, number], bold: [0.9, 1.3] as [number, number] },
+    ] as const;
+
+    const commonCount = Math.ceil(count * SPECIES[0].fraction);
+    const butterflyCount = Math.floor(count * SPECIES[1].fraction);
+    const troutCount = count - commonCount - butterflyCount;
+    const modelCounts = [commonCount, butterflyCount, troutCount];
 
     // ── GPUComputationRenderer ─────────────────────────────────────────
     const gpu = new GPUComputationRenderer(texSize, texSize, ren);
@@ -358,6 +382,27 @@
       }
     }
 
+    // ── Traits DataTexture (static, per-fish personality) ─────────────
+    const traitsData = new Float32Array(texSize * texSize * 4);
+    let speciesOffset = 0;
+    for (let s = 0; s < 3; s++) {
+      const sp = SPECIES[s]!;
+      const sCount = modelCounts[s]!;
+      for (let j = 0; j < sCount; j++) {
+        const gi = speciesOffset + j;
+        const idx = gi * 4;
+        const rand = () => Math.random();
+        traitsData[idx + 0] = sp.speed[0] + rand() * (sp.speed[1] - sp.speed[0]);
+        traitsData[idx + 1] = sp.social[0] + rand() * (sp.social[1] - sp.social[0]);
+        traitsData[idx + 2] = sp.bold[0] + rand() * (sp.bold[1] - sp.bold[0]);
+        traitsData[idx + 3] = rand();
+      }
+      speciesOffset += sCount;
+    }
+    const traitsTex = new DataTexture(traitsData, texSize, texSize, RGBAFormat, FloatType);
+    traitsTex.needsUpdate = true;
+    storedTraitsData = traitsData;
+
     posVar = gpu.addVariable("texturePosition", positionShader, posTex);
     velVar = gpu.addVariable("textureVelocity", velocityShader, velTex);
     gpu.setVariableDependencies(posVar, [posVar, velVar]);
@@ -376,6 +421,19 @@
     velUniforms.uStageRadius = { value: stageRadius };
     velUniforms.uBoundRadius = { value: boundRadius };
     velUniforms.uFishCount = { value: count };
+    velUniforms.tTraits = { value: traitsTex };
+    velUniforms.uTime = { value: 0 };
+    velUniforms.uCurrentStrength = { value: currentStrength };
+    velUniforms.uPerceptionCos = { value: Math.cos(perceptionAngle * Math.PI / 180) };
+    velUniforms.uScatterOrigin = { value: new Vector3(0, 0, 0) };
+    velUniforms.uScatterRadius = { value: scatterRadius };
+    velUniforms.uScatterForce = { value: 3.0 };
+    velUniforms.uDartCount = { value: 0 };
+    velUniforms.uDartIndices = { value: new Int32Array(8).fill(-1) };
+    velUniforms.uDartStrength = { value: 2.0 };
+    velUniforms.uExcursionCount = { value: 0 };
+    velUniforms.uExcursionIndices = { value: new Int32Array(4).fill(-1) };
+    velUniforms.uExcursionBias = { value: new Float32Array(4) };
 
     posVar.material.uniforms.uDelta = { value: 0 };
 
@@ -437,6 +495,8 @@
 
     return () => {
       gpu.dispose();
+      traitsTex.dispose();
+      storedTraitsData = null;
       for (const geo of geometries) geo.dispose();
       for (const mat of createdMaterials) mat.dispose();
       for (const mesh of createdMeshes) mesh.dispose();
