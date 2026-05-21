@@ -15,6 +15,10 @@
   import ForestControls from "./components/ForestControls.svelte";
   import CosmicControls from "./components/CosmicControls.svelte";
   import OceanControls from "./components/OceanControls.svelte";
+  import AutumnControls from "./components/AutumnControls.svelte";
+  import EmberControls from "./components/EmberControls.svelte";
+  import CherryBlossomControls from "./components/CherryBlossomControls.svelte";
+  import CelestialControls from "./components/CelestialControls.svelte";
   import ComposerPickerPanel from "$lib/shared/3d/scene-composer/ComposerPickerPanel.svelte";
   import { createComposerEditorState } from "$lib/shared/3d/scene-composer/composer-editor-state.svelte";
   import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
@@ -57,6 +61,7 @@
           onclick={() => sceneState.setSceneId(option.id)}
           title={option.description}
         >
+          <i class="fas {option.icon}"></i>
           {option.label}
         </button>
       {/each}
@@ -131,6 +136,16 @@
           <CosmicControls />
         {:else if sceneState.sceneId === "ocean"}
           <OceanControls />
+        {:else if sceneState.sceneId === "autumn"}
+          <AutumnControls />
+        {:else if sceneState.sceneId === "ember"}
+          <EmberControls />
+        {:else if sceneState.sceneId === "cherry-blossom"}
+          <CherryBlossomControls />
+        {:else if sceneState.sceneId === "celestial"}
+          <CelestialControls />
+        {:else}
+          <p class="no-controls">No tunable parameters</p>
         {/if}
       </div>
     </aside>
@@ -186,6 +201,7 @@
   .scene-strip button {
     display: flex;
     align-items: center;
+    gap: 5px;
     padding: 7px 14px;
     background: transparent;
     border: none;
@@ -320,6 +336,18 @@
     border-radius: 50%;
     background: #f59e0b;
     margin-left: 4px;
+  }
+
+  .scene-strip button i {
+    font-size: 11px;
+  }
+
+  .no-controls {
+    padding: 24px 12px;
+    text-align: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-compact, 12px);
+    font-style: italic;
   }
 
   @media (max-width: 900px) {
