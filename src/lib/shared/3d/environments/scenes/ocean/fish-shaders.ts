@@ -92,9 +92,20 @@ uniform int uExcursionCount;
 uniform int uExcursionIndices[4];
 uniform float uExcursionBias[4];
 
+uniform int uSpawnCount;
+uniform int uSpawnStartIdx;
+uniform vec4 uSpawnVelocities[64];
+
 ${NOISE_GLSL}
 
 void main() {
+  int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);
+
+  if (uSpawnCount > 0 && fishIdx >= uSpawnStartIdx && fishIdx < uSpawnStartIdx + uSpawnCount) {
+    gl_FragColor = uSpawnVelocities[fishIdx - uSpawnStartIdx];
+    return;
+  }
+
   vec2 uv = gl_FragCoord.xy / resolution.xy;
   vec4 posData = texture2D(texturePosition, uv);
   vec3 pos = posData.xyz;
@@ -235,7 +246,6 @@ void main() {
   if (spd > adjMax) vel = vel / spd * adjMax;
   if (spd > 0.001 && spd < adjMin) vel = vel / spd * adjMin;
 
-  int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);
   for (int i = 0; i < 8; i++) {
     if (i >= uDartCount) break;
     if (fishIdx == uDartIndices[i]) {
@@ -256,8 +266,25 @@ void main() {
 
 export const positionShader = /* glsl */ `
 uniform float uDelta;
+uniform int uSpawnCount;
+uniform int uSpawnStartIdx;
+uniform vec4 uSpawnPositions[64];
+uniform int uDespawnCount;
+uniform int uDespawnStartIdx;
 
 void main() {
+  int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);
+
+  if (uDespawnCount > 0 && fishIdx >= uDespawnStartIdx && fishIdx < uDespawnStartIdx + uDespawnCount) {
+    gl_FragColor = vec4(9999.0, 9999.0, 9999.0, 0.0);
+    return;
+  }
+
+  if (uSpawnCount > 0 && fishIdx >= uSpawnStartIdx && fishIdx < uSpawnStartIdx + uSpawnCount) {
+    gl_FragColor = uSpawnPositions[fishIdx - uSpawnStartIdx];
+    return;
+  }
+
   vec2 uv = gl_FragCoord.xy / resolution.xy;
   vec4 posData = texture2D(texturePosition, uv);
   vec3 vel = texture2D(textureVelocity, uv).xyz;

@@ -17,8 +17,9 @@
   import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
   import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
   import { FishEventSystem, type FishEventUniforms } from './FishEventSystem';
-  import { RESIDENT_SPECIES, RESIDENT_FISH_COUNT, THREAT_MATRIX, HUNT_MATRIX, type FishSpeciesConfig } from './fish-species-config';
+  import { RESIDENT_SPECIES, RESIDENT_FISH_COUNT, ALL_SPECIES, THREAT_MATRIX, HUNT_MATRIX, type FishSpeciesConfig } from './fish-species-config';
   import { LOCOMOTION_PARAMS, LocomotionMode } from './fish-locomotion-params';
+  import { SpeciesRotationManager, type VisitorGroup } from './SpeciesRotationManager';
   import { velocityShader, positionShader, renderVertexShader, renderFragmentShader } from './fish-shaders';
   import { stateShader } from './fish-behavior-shader';
   import { userProportionsState } from '@austencloud/scene-3d';
@@ -73,6 +74,18 @@
     return geo;
   }
 
+  function reorientToZ(geo: BufferGeometry): BufferGeometry {
+    geo.computeBoundingBox();
+    const size = new Vector3();
+    geo.boundingBox!.getSize(size);
+    if (size.x > size.z && size.x >= size.y) {
+      geo.rotateY(-Math.PI / 2);
+    } else if (size.y > size.z && size.y > size.x) {
+      geo.rotateX(Math.PI / 2);
+    }
+    return geo;
+  }
+
   function extractModel(scene: import('three').Group): ExtractedModel | null {
     let geo: BufferGeometry | null = null;
     let diffuseMap: Texture | null = null;
@@ -116,19 +129,37 @@
   let storedTraitsData: Float32Array | null = null;
   let eventSystem: FishEventSystem | null = null;
 
+  let rotationManager: SpeciesRotationManager | null = null;
+  const modelCache = new Map<string, ExtractedModel>();
+  let cachedGltfLoader: GLTFLoader | null = null;
+
+  interface ActiveVisitorGroup {
+    group: VisitorGroup;
+    meshes: InstancedMesh[];
+    materials: ShaderMaterial[];
+    speciesIndices: number[];
+  }
+
+  let activeVisitors: ActiveVisitorGroup[] = [];
+  let pendingSpawns: { group: VisitorGroup; speciesIdx: number[] }[] = [];
+  let pendingDespawns: { startIndex: number; count: number }[] = [];
+  let texSize = 0;
+  let loadedSpeciesCount = 0;
+
   $effect(() => {
-    const ren = renderer.current;
     const gy = groundY;
-    if (!ren) return;
+    if (!renderer) return;
 
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
     const gltfLoader = new GLTFLoader();
     gltfLoader.setDRACOLoader(dracoLoader);
+    cachedGltfLoader = gltfLoader;
 
     const species = RESIDENT_SPECIES;
     const totalFish = RESIDENT_FISH_COUNT;
-    const texSize = Math.ceil(Math.sqrt(totalFish + VISITOR_RESERVE));
+    const localTexSize = Math.ceil(Math.sqrt(totalFish + VISITOR_RESERVE));
+    texSize = localTexSize;
 
     const loadPromises = species.map(
       (sp) =>
@@ -137,7 +168,10 @@
             modelBasePath + sp.modelFile,
             (gltf) => {
               const model = extractModel(gltf.scene);
-              if (model) normalizeGeometry(model.geometry);
+              if (model) {
+                normalizeGeometry(model.geometry);
+                reorientToZ(model.geometry);
+              }
               resolve({ species: sp, model });
             },
             undefined,
@@ -151,16 +185,10 @@
     Promise.all(loadPromises).then((results) => {
       if (cancelled) return;
 
-      const failed = results.filter((r) => r.model === null);
-      if (failed.length > 0) {
-        console.warn(`[FishSchool] ${failed.length}/${results.length} models failed to load:`, failed.map(f => f.species.modelFile));
-      }
-
       const loaded = results.filter((r) => r.model !== null);
-      console.log(`[FishSchool] ${loaded.length}/${results.length} species loaded, building GPU system...`);
       if (loaded.length === 0) return;
 
-      const gpu = new GPUComputationRenderer(texSize, texSize, ren);
+      const gpu = new GPUComputationRenderer(texSize, texSize, renderer);
       const posTex = gpu.createTexture();
       const velTex = gpu.createTexture();
       const posArr = posTex.image.data as Float32Array;
@@ -292,7 +320,17 @@
       velU.uExcursionIndices = { value: new Int32Array(4).fill(-1) };
       velU.uExcursionBias = { value: new Float32Array(4) };
 
-      posVar.material.uniforms.uDelta = { value: 0 };
+      const posU = posVar.material.uniforms;
+      posU.uDelta = { value: 0 };
+      posU.uSpawnCount = { value: 0 };
+      posU.uSpawnStartIdx = { value: 0 };
+      posU.uSpawnPositions = { value: new Float32Array(64 * 4) };
+      posU.uDespawnCount = { value: 0 };
+      posU.uDespawnStartIdx = { value: 0 };
+
+      velU.uSpawnCount = { value: 0 };
+      velU.uSpawnStartIdx = { value: 0 };
+      velU.uSpawnVelocities = { value: new Float32Array(64 * 4) };
 
       const trophicRoles = new Int32Array(50);
       for (let s = 0; s < loaded.length; s++) {
@@ -315,10 +353,7 @@
       stU.uScatterRadius = { value: scatterRadius };
 
       const err = gpu.init();
-      if (err !== null) {
-        console.error('[FishSchool] GPUComputationRenderer init failed:', err);
-        return;
-      }
+      if (err !== null) return;
 
       const createdMeshes: InstancedMesh[] = [];
       const createdMaterials: ShaderMaterial[] = [];
@@ -392,6 +427,9 @@
       materials = createdMaterials;
       materialSizeMults = createdSizeMults;
       gpuCompute = gpu;
+      loadedSpeciesCount = loaded.length;
+
+      rotationManager = new SpeciesRotationManager(texSize * texSize, fishOffset);
     });
 
     return () => {
@@ -399,6 +437,14 @@
       if (gpuCompute) gpuCompute.dispose();
       storedTraitsData = null;
       eventSystem = null;
+      rotationManager = null;
+      for (const v of activeVisitors) {
+        for (const mat of v.materials) mat.dispose();
+        for (const m of v.meshes) { m.geometry.dispose(); m.dispose(); }
+      }
+      activeVisitors = [];
+      pendingSpawns = [];
+      pendingDespawns = [];
       for (const mat of materials) mat.dispose();
       for (const m of meshes) {
         m.geometry.dispose();
@@ -414,6 +460,77 @@
     };
   });
 
+  function createVisitorMesh(
+    sp: FishSpeciesConfig,
+    model: ExtractedModel,
+    slotStart: number,
+    slotCount: number,
+    sMax: number,
+  ): { mesh: InstancedMesh; material: ShaderMaterial } {
+    const geo = model.geometry.clone();
+    const refs = new Float32Array(slotCount * 2);
+    for (let i = 0; i < slotCount; i++) {
+      const globalIdx = slotStart + i;
+      const col = globalIdx % texSize;
+      const row = Math.floor(globalIdx / texSize);
+      refs[i * 2 + 0] = (col + 0.5) / texSize;
+      refs[i * 2 + 1] = (row + 0.5) / texSize;
+    }
+    geo.setAttribute('aReference', new InstancedBufferAttribute(refs, 2));
+
+    const diffuse = model.diffuseMap;
+    const roughness = sp.trophicRole <= 1 ? 0.3 : sp.locomotionMode === LocomotionMode.Ostraciiform ? 0.6 : 0.5;
+
+    const mat = new ShaderMaterial({
+      uniforms: {
+        tPosition: { value: gpuCompute ? gpuCompute.getCurrentRenderTarget(posVar).texture : null },
+        tVelocity: { value: gpuCompute ? gpuCompute.getCurrentRenderTarget(velVar).texture : null },
+        uSize: { value: targetSize * sp.sizeScale },
+        uTime: { value: 0 },
+        uMaxSpeed: { value: sMax * 2.0 },
+        ...getLocoUniforms(sp.locomotionMode),
+        tAlbedo: { value: diffuse },
+        uFallbackColor: { value: new Color('#5599bb') },
+        uHasTexture: { value: diffuse ? 1.0 : 0.0 },
+        uLightDir: { value: new Vector3(0.3, 1.0, 0.2).normalize() },
+        uAmbient: { value: 0.55 },
+        uRoughness: { value: roughness },
+        uFogColor: { value: new Color('#1a3040') },
+        uFogNear: { value: 15 },
+        uFogFar: { value: 25 },
+      },
+      vertexShader: renderVertexShader,
+      fragmentShader: renderFragmentShader,
+      side: DoubleSide,
+    });
+
+    const mesh = new InstancedMesh(geo, mat, slotCount);
+    mesh.frustumCulled = false;
+    return { mesh, material: mat };
+  }
+
+  function loadVisitorModel(modelFile: string): Promise<ExtractedModel | null> {
+    if (modelCache.has(modelFile)) return Promise.resolve(modelCache.get(modelFile)!);
+    const loader = cachedGltfLoader;
+    if (!loader) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      loader.load(
+        modelBasePath + modelFile,
+        (gltf) => {
+          const model = extractModel(gltf.scene);
+          if (model) {
+            normalizeGeometry(model.geometry);
+            reorientToZ(model.geometry);
+            modelCache.set(modelFile, model);
+          }
+          resolve(model);
+        },
+        undefined,
+        () => resolve(null),
+      );
+    });
+  }
+
   let elapsed = 0;
 
   useTask((delta) => {
@@ -422,21 +539,158 @@
     const dt = Math.min(delta, 0.05);
     elapsed += dt;
 
-    velVar.material.uniforms.uDelta.value = dt;
-    velVar.material.uniforms.uTime.value = elapsed;
-    velVar.material.uniforms.uCurrentStrength.value = currentStrength;
-    velVar.material.uniforms.uPerceptionCos.value = Math.cos(
-      (perceptionAngle * Math.PI) / 180,
-    );
-    velVar.material.uniforms.uScatterRadius.value = scatterRadius;
-    posVar.material.uniforms.uDelta.value = dt;
+    const posUni = posVar.material.uniforms;
+    const velUni = velVar.material.uniforms;
+    const stUni = stateVar.material.uniforms;
 
-    stateVar.material.uniforms.uDelta.value = dt;
-    stateVar.material.uniforms.uTime.value = elapsed;
-    stateVar.material.uniforms.uScatterRadius.value = scatterRadius;
+    velUni.uDelta.value = dt;
+    velUni.uTime.value = elapsed;
+    velUni.uCurrentStrength.value = currentStrength;
+    velUni.uPerceptionCos.value = Math.cos((perceptionAngle * Math.PI) / 180);
+    velUni.uScatterRadius.value = scatterRadius;
+    posUni.uDelta.value = dt;
+
+    stUni.uDelta.value = dt;
+    stUni.uTime.value = elapsed;
+    stUni.uScatterRadius.value = scatterRadius;
 
     if (eventSystem) {
-      eventSystem.tick(dt, velVar.material.uniforms as unknown as FishEventUniforms, rayPosition);
+      eventSystem.tick(dt, velUni as unknown as FishEventUniforms, rayPosition);
+    }
+
+    // ── Visitor spawn: write positions/velocities into GPU texture via uniforms ──
+    if (pendingSpawns.length > 0) {
+      const spawn = pendingSpawns.shift()!;
+      const { group, speciesIdx } = spawn;
+      const { slots, entryAngle, exitAngle } = group;
+      const totalCount = Math.min(slots.count, 64);
+
+      const posData = posUni.uSpawnPositions.value as Float32Array;
+      const velData = velUni.uSpawnVelocities.value as Float32Array;
+
+      const entryR = boundRadius * 0.85;
+      const entryX = Math.cos(entryAngle) * entryR;
+      const entryZ = Math.sin(entryAngle) * entryR;
+      const exitDirX = Math.cos(exitAngle);
+      const exitDirZ = Math.sin(exitAngle);
+
+      const gy = groundY;
+      let offset = 0;
+      for (let si = 0; si < group.species.length; si++) {
+        const sp = group.species[si]!;
+        const spIdx = speciesIdx[si] ?? 0;
+        for (let j = 0; j < sp.instanceCount && offset < totalCount; j++) {
+          const idx = offset * 4;
+          posData[idx + 0] = entryX + (Math.random() - 0.5) * 3;
+          posData[idx + 1] = gy + 3 + Math.random() * 3;
+          posData[idx + 2] = entryZ + (Math.random() - 0.5) * 3;
+          posData[idx + 3] = spIdx;
+
+          const spd = sp.speed[0] + Math.random() * (sp.speed[1] - sp.speed[0]);
+          velData[idx + 0] = exitDirX * spd;
+          velData[idx + 1] = 0;
+          velData[idx + 2] = exitDirZ * spd;
+          velData[idx + 3] = 0.6 + Math.random() * 0.8;
+          offset++;
+        }
+      }
+
+      posUni.uSpawnCount.value = offset;
+      posUni.uSpawnStartIdx.value = slots.startIndex;
+      velUni.uSpawnCount.value = offset;
+      velUni.uSpawnStartIdx.value = slots.startIndex;
+
+      // Update school centers for visitor species
+      const centers = velUni.uSchoolCenters.value as Vector3[];
+      for (let si = 0; si < group.species.length; si++) {
+        const idx = speciesIdx[si];
+        if (idx !== undefined && idx < centers.length) {
+          centers[idx].set(entryX, gy + 4, entryZ);
+        }
+      }
+
+      // Update trophic roles for visitor species
+      const roles = stUni.uTrophicRole.value as Int32Array;
+      for (let si = 0; si < group.species.length; si++) {
+        const idx = speciesIdx[si];
+        if (idx !== undefined && idx < roles.length) {
+          roles[idx] = group.species[si]!.trophicRole;
+        }
+      }
+    } else {
+      posUni.uSpawnCount.value = 0;
+      velUni.uSpawnCount.value = 0;
+    }
+
+    // ── Visitor despawn: write sentinel positions ──
+    if (pendingDespawns.length > 0) {
+      const despawn = pendingDespawns.shift()!;
+      posUni.uDespawnCount.value = despawn.count;
+      posUni.uDespawnStartIdx.value = despawn.startIndex;
+    } else {
+      posUni.uDespawnCount.value = 0;
+    }
+
+    // ── Rotation manager tick ──
+    if (rotationManager) {
+      const newGroup = rotationManager.tick(dt);
+
+      // Detect despawned groups — remove from scene + queue sentinel write
+      const currentSlots = new Set(rotationManager.activeGroups.map((g) => g.slots.startIndex));
+      const removedMeshSet = new Set<InstancedMesh>();
+      const removedMatSet = new Set<ShaderMaterial>();
+      for (const v of activeVisitors) {
+        if (!currentSlots.has(v.group.slots.startIndex)) {
+          pendingDespawns.push({ startIndex: v.group.slots.startIndex, count: v.group.slots.count });
+          for (const mat of v.materials) { mat.dispose(); removedMatSet.add(mat); }
+          for (const m of v.meshes) { m.geometry.dispose(); m.dispose(); removedMeshSet.add(m); }
+        }
+      }
+      if (removedMeshSet.size > 0) {
+        meshes = meshes.filter((m) => !removedMeshSet.has(m));
+        materials = materials.filter((m) => !removedMatSet.has(m));
+      }
+      activeVisitors = activeVisitors.filter((v) => currentSlots.has(v.group.slots.startIndex));
+
+      // Handle new spawn
+      if (newGroup) {
+        const speciesIdx = newGroup.species.map((sp) => {
+          const allIdx = ALL_SPECIES.indexOf(sp);
+          return allIdx >= 0 ? allIdx : loadedSpeciesCount;
+        });
+
+        const [sMin, sMax] = speed;
+        const loadProms = newGroup.species.map((sp) => loadVisitorModel(sp.modelFile));
+        Promise.all(loadProms).then((models) => {
+          if (!gpuCompute || !posVar || !velVar) return;
+          const visitorMeshes: InstancedMesh[] = [];
+          const visitorMats: ShaderMaterial[] = [];
+
+          let slotOffset = newGroup.slots.startIndex;
+          for (let si = 0; si < newGroup.species.length; si++) {
+            const sp = newGroup.species[si]!;
+            const model = models[si];
+            if (!model) { slotOffset += sp.instanceCount; continue; }
+
+            const { mesh, material } = createVisitorMesh(sp, model, slotOffset, sp.instanceCount, sMax);
+            visitorMeshes.push(mesh);
+            visitorMats.push(material);
+            slotOffset += sp.instanceCount;
+          }
+
+          if (visitorMeshes.length > 0) {
+            activeVisitors.push({
+              group: newGroup,
+              meshes: visitorMeshes,
+              materials: visitorMats,
+              speciesIndices: speciesIdx,
+            });
+            pendingSpawns.push({ group: newGroup, speciesIdx });
+            meshes = [...meshes, ...visitorMeshes];
+            materials = [...materials, ...visitorMats];
+          }
+        });
+      }
     }
 
     gpuCompute.compute();
@@ -450,6 +704,15 @@
       mat.uniforms.tVelocity!.value = velTex;
       mat.uniforms.uTime!.value = elapsed;
       mat.uniforms.uSize!.value = targetSize * (materialSizeMults[mi] ?? 1.0);
+    }
+
+    // Visitor materials also need texture updates
+    for (const v of activeVisitors) {
+      for (const mat of v.materials) {
+        mat.uniforms.tPosition!.value = posTex;
+        mat.uniforms.tVelocity!.value = velTex;
+        mat.uniforms.uTime!.value = elapsed;
+      }
     }
   });
 </script>

@@ -23,6 +23,7 @@
   import RuinsPlatform from "./ocean/RuinsPlatform.svelte";
   import GodRayShafts from "./ocean/GodRayShafts.svelte";
   import FishSchool from "./ocean/FishSchool.svelte";
+  import UnderwaterParticles from "./ocean/UnderwaterParticles.svelte";
   import {
     FogExp2,
     Color,
@@ -77,6 +78,10 @@
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
   const rockA = useGltf(`${R2_CDN}/models/forest/Rock_1_A_Color1.gltf`, opts);
   const rockB = useGltf(`${R2_CDN}/models/forest/Rock_1_B_Color1.gltf`, opts);
+  const rockC = useGltf("/models/vegetation/rock/rock_largeA.glb", opts);
+  const rockD = useGltf("/models/vegetation/rock/rock_largeD.glb", opts);
+  const rockE = useGltf("/models/vegetation/rock/rock_smallD.glb", opts);
+  const rockF = useGltf("/models/vegetation/rock/rock_tallC.glb", opts);
 
   const coralGlb0 = useGltf("/models/ocean/coral_0.glb", opts);
   const coralGlb1 = useGltf("/models/ocean/coral_1.glb", opts);
@@ -89,9 +94,6 @@
 
   const jellyfishGlb = useGltf("/models/ocean/jellyfish.glb", opts);
   const jellyfishSmallGlb = useGltf("/models/ocean/jellyfish_small.glb", opts);
-
-  const octopusGlb = useGltf("/models/ocean/octopus.glb", opts);
-  const rayGlb = useGltf("/models/ocean/ray.glb", opts);
 
   const starfishGlb = useGltf("/models/ocean/starfish.glb", opts);
   const seaUrchinGlb = useGltf("/models/ocean/sea_urchin.glb", opts);
@@ -161,8 +163,8 @@
     const formationCenters = poissonDiscSample({
       innerRadius: zones.clearingRadius + 0.5,
       outerRadius: zones.backgroundRadius - 2,
-      minDistance: 3.5,
-      count: 35,
+      minDistance: 2.5,
+      count: 50,
       seed: 42,
     });
 
@@ -226,6 +228,28 @@
         });
       }
     }
+
+    // Scattered clearing coral — small clusters in the sandy zone
+    const clearingCoral = poissonDiscSample({
+      innerRadius: zones.stageRadius + 0.5,
+      outerRadius: zones.clearingRadius,
+      minDistance: 1.5,
+      count: 25,
+      seed: 150,
+    });
+    const rngClearing = seededRandom(151);
+    for (const s of clearingCoral) {
+      if (results.length >= maxCount) break;
+      results.push({
+        x: s.x, z: s.z,
+        scale: 0.15 + rngClearing() * 0.3,
+        rotY: rngClearing() * Math.PI * 2,
+        hueShift: CORAL_PALETTE_HUES[Math.floor(rngClearing() * 5)]! + (rngClearing() - 0.5) * 0.04,
+        satBoost: 0.9 + rngClearing() * 0.2,
+        speciesIdx: Math.floor(rngClearing() * 5),
+      });
+    }
+
     return results;
   });
 
@@ -292,19 +316,38 @@
       }
     }
 
+    // Clearing rocks — small pebbles/rocks in the sandy zone near stage
+    const clearingSamples = poissonDiscSample({
+      innerRadius: zones.stageRadius + 0.5,
+      outerRadius: zones.clearingRadius,
+      minDistance: 1.2,
+      count: 30,
+      seed: 345,
+    });
+    const rngClearing = seededRandom(346);
+    for (const s of clearingSamples) {
+      if (results.length >= maxCount) break;
+      results.push({
+        x: s.x, z: s.z,
+        scale: 0.08 + rngClearing() * 0.2,
+        rotY: rngClearing() * Math.PI * 2,
+      });
+    }
+
     const scatterSamples = poissonDiscSample({
       innerRadius: zones.clearingRadius,
       outerRadius: zones.backgroundRadius,
-      minDistance: 2.5,
+      minDistance: 1.8,
       count: Math.max(0, maxCount - results.length),
       seed: 350,
     });
     const rng2 = seededRandom(351);
     for (const s of scatterSamples) {
       if (results.length >= maxCount) break;
+      const isLarge = rng2() < 0.2;
       results.push({
         x: s.x, z: s.z,
-        scale: 0.1 + rng2() * 0.3,
+        scale: isLarge ? 0.4 + rng2() * 0.5 : 0.1 + rng2() * 0.35,
         rotY: rng2() * Math.PI * 2,
       });
     }
@@ -319,7 +362,7 @@
 
     const largeFormations = reefFormations.filter(f => f.radius > 2.5 && f.hasAnchorRock);
     for (const formation of largeFormations) {
-      if (results.length >= 12) break;
+      if (results.length >= 20) break;
       results.push({
         x: formation.x + (rng() - 0.5) * 1.0,
         z: formation.z + (rng() - 0.5) * 1.0,
@@ -332,11 +375,11 @@
       innerRadius: zones.forestOuter,
       outerRadius: zones.backgroundRadius,
       minDistance: 5.0,
-      count: Math.max(0, 12 - results.length),
+      count: Math.max(0, 20 - results.length),
       seed: 450,
     });
     for (const s of bgSamples) {
-      if (results.length >= 12) break;
+      if (results.length >= 20) break;
       results.push({
         x: s.x, z: s.z,
         scale: 2.0 + rng() * 3.0,
@@ -351,45 +394,95 @@
   interface DecoPlacement extends Placement {
     type: DecoType;
   }
-  const DECO_TYPES: DecoType[] = ["starfish", "urchin", "shell", "anemone"];
 
   const decorationPlacements = $derived.by((): DecoPlacement[] => {
     if (!activeConfig.decorations.enabled) return [];
-    const samples = poissonDiscSample({
-      innerRadius: zones.stageRadius,
-      outerRadius: zones.clearingRadius,
-      minDistance: 0.8,
-      count: activeConfig.decorations.count,
-      seed: 389,
-    });
     const rng = seededRandom(390);
-    return samples.map((s, i) => ({
-      x: s.x,
-      z: s.z,
-      scale: 0.12 + rng() * 0.25,
-      rotY: rng() * Math.PI * 2,
-      type: DECO_TYPES[i % DECO_TYPES.length]!,
-    }));
+    const results: DecoPlacement[] = [];
+    const maxCount = activeConfig.decorations.count;
+
+    // Anemones — attach to rocks within formations (need hard substrate)
+    for (const rock of rockPlacements) {
+      if (results.length >= maxCount * 0.25) break;
+      if (rng() > 0.4) continue;
+      const angle = rng() * Math.PI * 2;
+      const dist = 0.3 + rng() * 0.6;
+      results.push({
+        x: rock.x + Math.cos(angle) * dist,
+        z: rock.z + Math.sin(angle) * dist,
+        scale: 0.4 + rng() * 0.5,
+        rotY: rng() * Math.PI * 2,
+        type: "anemone",
+      });
+    }
+
+    // Starfish — perch near coral and on rocks
+    for (const coral of coralPlacements) {
+      if (results.length >= maxCount * 0.5) break;
+      if (rng() > 0.12) continue;
+      const angle = rng() * Math.PI * 2;
+      const dist = 0.2 + rng() * 0.8;
+      results.push({
+        x: coral.x + Math.cos(angle) * dist,
+        z: coral.z + Math.sin(angle) * dist,
+        scale: 0.3 + rng() * 0.4,
+        rotY: rng() * Math.PI * 2,
+        type: "starfish",
+      });
+    }
+
+    // Urchins — nestle between rocks in formations
+    for (const formation of reefFormations) {
+      if (results.length >= maxCount * 0.7) break;
+      if (!formation.hasAnchorRock) continue;
+      const urchinCount = Math.floor(1 + rng() * 3);
+      for (let j = 0; j < urchinCount; j++) {
+        const angle = rng() * Math.PI * 2;
+        const dist = 0.5 + rng() * formation.radius * 0.5;
+        results.push({
+          x: formation.x + Math.cos(angle) * dist,
+          z: formation.z + Math.sin(angle) * dist,
+          scale: 0.25 + rng() * 0.35,
+          rotY: rng() * Math.PI * 2,
+          type: "urchin",
+        });
+      }
+    }
+
+    // Shells — scattered on open sand between formations (debris, wave-deposited)
+    const shellSamples = poissonDiscSample({
+      innerRadius: zones.stageRadius,
+      outerRadius: zones.clearingRadius + 3,
+      minDistance: 0.8,
+      count: Math.max(0, maxCount - results.length),
+      seed: 395,
+    });
+    const rng2 = seededRandom(396);
+    for (const s of shellSamples) {
+      if (results.length >= maxCount) break;
+      // Shells avoid formation centers — they're wave-deposited on open sand
+      let nearFormation = false;
+      for (const f of reefFormations) {
+        const dx = s.x - f.x, dz = s.z - f.z;
+        if (dx * dx + dz * dz < f.radius * f.radius) { nearFormation = true; break; }
+      }
+      if (nearFormation) continue;
+      results.push({
+        x: s.x, z: s.z,
+        scale: 0.15 + rng2() * 0.25,
+        rotY: rng2() * Math.PI * 2,
+        type: "shell",
+      });
+    }
+
+    return results;
   });
 
-  const octopusPlacement = $derived.by(() => {
-    const rng = seededRandom(777);
-    const angle = rng() * Math.PI * 2;
-    const r = 7 + rng() * 3;
-    return {
-      x: Math.cos(angle) * r,
-      z: Math.sin(angle) * r,
-      rotY: rng() * Math.PI * 2,
-    };
-  });
 
   let jellyfishOffsets = $state<{ dx: number; dy: number; dz: number; pulse: number }[]>([]);
   let jellyfishTime = $state(0);
   let animTime = 0;
-  let rayAngle = $state(0);
-  const rayWorldPos = $derived(
-    new Vector3(Math.cos(rayAngle) * 10, groundY + 5, Math.sin(rayAngle) * 10)
-  );
+
 
   $effect(() => {
     const jf = activeConfig.jellyfish;
@@ -495,9 +588,6 @@
 
   const jellyfishLargeScale = $derived(mScale($jellyfishGlb, 0.4));
   const jellyfishSmallScale = $derived(mScale($jellyfishSmallGlb, 0.2));
-  const octopusScale = $derived(mScale($octopusGlb, 0.5));
-  const rayScale = $derived(mScale($rayGlb, 0.6));
-
   function decoScale(type: DecoType): number {
     const target = activeConfig.decorations.targetSize;
     if (type === "starfish") return mScale($starfishGlb, target);
@@ -643,11 +733,22 @@
     );
   });
 
+  const rockModels = $derived.by(() => {
+    return [$rockA, $rockB, $rockC, $rockD, $rockE, $rockF].filter(Boolean) as { scene: Object3D }[];
+  });
+
   const rockScales = $derived.by((): number[] => {
-    if (!$rockA || !$rockB) return [];
+    if (rockModels.length === 0) return [];
     return rockPlacements.map((_, i) =>
-      mScale(i % 2 === 0 ? $rockA : $rockB, 0.6),
+      mScale(rockModels[i % rockModels.length]!, 0.6),
     );
+  });
+
+  const rockBaseOffsets = $derived.by((): number[] => {
+    return rockModels.map((m) => {
+      const raw = -measureModelMinY(m.scene as Object3D);
+      return raw * 1.1;
+    });
   });
 
   const kelpClones = $derived.by(() => {
@@ -661,10 +762,10 @@
   });
 
   const rockClones = $derived.by(() => {
-    if (!$rockA || !$rockB) return [];
+    if (rockModels.length === 0) return [];
     return rockPlacements.map((_, i) =>
       underwaterClone(
-        (i % 2 === 0 ? $rockA : $rockB)!.scene as Object3D,
+        rockModels[i % rockModels.length]!.scene as Object3D,
         activeConfig.rocks.tintColor,
         activeConfig.rocks.tintBlend,
       ),
@@ -672,10 +773,10 @@
   });
 
   const boulderClones = $derived.by(() => {
-    if (!$rockA || !$rockB) return [];
+    if (rockModels.length === 0) return [];
     return boulderPlacements.map((_, i) =>
       underwaterClone(
-        (i % 2 === 0 ? $rockA : $rockB)!.scene as Object3D,
+        rockModels[i % rockModels.length]!.scene as Object3D,
         "#0d1a2a",
         0.6,
       ),
@@ -683,9 +784,9 @@
   });
 
   const boulderScales = $derived.by((): number[] => {
-    if (!$rockA || !$rockB) return [];
+    if (rockModels.length === 0) return [];
     return boulderPlacements.map((_, i) =>
-      mScale(i % 2 === 0 ? $rockA : $rockB, 2.0),
+      mScale(rockModels[i % rockModels.length]!, 2.0),
     );
   });
 
@@ -698,13 +799,6 @@
       return large.scene.clone();
     });
   });
-
-  const octopusClone = $derived(
-    $octopusGlb ? $octopusGlb.scene.clone() : null,
-  );
-  const rayClone = $derived(
-    $rayGlb ? cloneWithSkeleton($rayGlb.scene) : null,
-  );
 
   const decorationClones = $derived.by(() => {
     return decorationPlacements.map((dec) => {
@@ -758,8 +852,6 @@
       }
     }
 
-    // Ray: slow graceful orbit
-    rayAngle += delta * 0.15;
   });
 
   // ── Fog ───────────────────────────────────────────────────────────────
@@ -791,8 +883,8 @@
       $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3, $coralLargeGlb,
       $seaweedGlb, $kelpPlantGlb,
       $jellyfishGlb, $jellyfishSmallGlb,
-      $octopusGlb, $rayGlb,
       $starfishGlb, $seaUrchinGlb, $shellGlb, $anemoneGlb,
+      $rockC, $rockD, $rockE, $rockF,
     ];
     const loaded = glbs.filter(Boolean).length;
     sceneFeatures.reportProgress("environment", loaded / glbs.length);
@@ -859,8 +951,7 @@
     for (const c of boulderClones) disposeSceneGraph(c);
     for (const c of jellyfishClones) disposeSceneGraph(c);
     for (const c of decorationClones) if (c) disposeSceneGraph(c as Object3D);
-    if (octopusClone) disposeSceneGraph(octopusClone);
-    if (rayClone) disposeSceneGraph(rayClone);
+
   });
 </script>
 
@@ -933,10 +1024,11 @@
     {@const s = rockScales[i] ?? 0.001}
     {#if p}
       {@const finalScale = p.scale * s}
+      {@const baseY = (rockBaseOffsets[i % rockBaseOffsets.length] ?? 0) * finalScale}
       <T
         is={clone}
         position.x={p.x}
-        position.y={groundY + getTerrainY(p.x, p.z) - finalScale * 0.4}
+        position.y={groundY + getTerrainY(p.x, p.z) + baseY}
         position.z={p.z}
         scale={finalScale}
         rotation.y={p.rotY}
@@ -952,10 +1044,11 @@
     {@const s = boulderScales[i] ?? 0.001}
     {#if p}
       {@const finalScale = p.scale * s}
+      {@const baseY = (rockBaseOffsets[i % rockBaseOffsets.length] ?? 0) * finalScale}
       <T
         is={clone}
         position.x={p.x}
-        position.y={groundY + getTerrainY(p.x, p.z) - finalScale * 0.6}
+        position.y={groundY + getTerrainY(p.x, p.z) + baseY}
         position.z={p.z}
         scale={finalScale}
         rotation.y={p.rotY}
@@ -981,30 +1074,6 @@
   {/each}
 {/if}
 
-<!-- Hero: Octopus (sits on seabed) — gated by decorations -->
-{#if activeConfig.decorations.enabled && octopusClone}
-  <T
-    is={octopusClone}
-    position.x={octopusPlacement.x}
-    position.y={groundY + getTerrainY(octopusPlacement.x, octopusPlacement.z)}
-    position.z={octopusPlacement.z}
-    scale={octopusScale}
-    rotation.y={octopusPlacement.rotY}
-  />
-{/if}
-
-<!-- Hero: Ray (glides in slow orbit above the reef) — gated by fish -->
-{#if activeConfig.fish.enabled && rayClone}
-  <T
-    is={rayClone}
-    position.x={Math.cos(rayAngle) * 10}
-    position.y={groundY + 5}
-    position.z={Math.sin(rayAngle) * 10}
-    scale={rayScale}
-    rotation.y={rayAngle + Math.PI / 2}
-  />
-{/if}
-
 <!-- GPGPU fish school (boids simulation) -->
 {#if activeConfig.fish.enabled}
   <FishSchool
@@ -1016,7 +1085,6 @@
     currentStrength={activeConfig.fish.currentStrength}
     scatterRadius={activeConfig.fish.scatterRadius}
     perceptionAngle={activeConfig.fish.perceptionAngle}
-    rayPosition={rayWorldPos}
   />
 {/if}
 
@@ -1118,5 +1186,19 @@
   groundColor={activeConfig.hemisphereLight.groundColor}
   intensity={activeConfig.hemisphereLight.intensity}
 />
+
+<!-- Warm sun penetration fill — creates golden pool on seabed + performers -->
+<T.PointLight
+  color="#ffd080"
+  intensity={0.6}
+  distance={25}
+  decay={2}
+  position.x={3}
+  position.y={groundY + 12}
+  position.z={2}
+/>
+
+<!-- Marine snow / suspended sediment (GPU-driven, 4000 particles) -->
+<UnderwaterParticles />
 
 <RuinsPlatform config={activeConfig.platform} />

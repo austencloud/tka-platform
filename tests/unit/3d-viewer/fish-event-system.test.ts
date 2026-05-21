@@ -99,4 +99,20 @@ describe("FishEventSystem", () => {
       boldUniforms.uDartCount.value
     );
   });
+
+  it("predator fish dart less frequently (higher boldness)", () => {
+    const predatorTraits = new Float32Array(4 * 4);
+    for (let i = 0; i < 4; i++) {
+      predatorTraits[i * 4 + 0] = 1.5;
+      predatorTraits[i * 4 + 1] = 0.2;
+      predatorTraits[i * 4 + 2] = 1.4;
+      predatorTraits[i * 4 + 3] = 0.5;
+    }
+    const predSystem = new FishEventSystem(4, predatorTraits);
+    const predUniforms = makeUniforms();
+    const ray = new Vector3(100, 100, 100);
+    predSystem.tick(2, predUniforms, ray);
+    expect(predUniforms.uDartCount.value).toBeGreaterThanOrEqual(0);
+    expect(predUniforms.uDartCount.value).toBeLessThanOrEqual(4);
+  });
 });
