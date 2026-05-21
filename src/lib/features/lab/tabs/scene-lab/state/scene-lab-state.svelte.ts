@@ -1,45 +1,40 @@
-/**
- * Scene Lab State
- *
- * Factory that holds the currently-previewed scene and a live mutable config
- * for each scene type. Param sliders mutate nested fields directly; Svelte 5's
- * deep $state reactivity propagates changes into the scene components.
- *
- * All configs and the active scene selection persist to localStorage so tweaks
- * survive refresh. Saves are debounced at 500ms to handle slider scrubbing.
- */
-
 import {
   type ForestSceneConfig,
   type AutumnSceneConfig,
   type WinterSceneConfig,
   type CosmicSceneConfig,
   type OceanSceneConfig,
+  type EmberSceneConfig,
+  type CherryBlossomSceneConfig,
+  type CelestialSceneConfig,
   createDefaultAutumnConfig,
   createDefaultForestFireflyConfig,
   createDefaultWinterConfig,
   createDefaultCosmicNightConfig,
   createDefaultCosmicAuroraConfig,
-  createDefaultOceanAbyssConfig,
   createDefaultOceanReefConfig,
-  createDefaultOceanMysticalConfig,
-  createDefaultOceanCinematicConfig,
+  createDefaultEmberGlowConfig,
+  createDefaultCherryBlossomConfig,
+  createDefaultCelestialConfig,
 } from "$lib/shared/3d/environments/domain/models/scene-configs";
 import type { SceneId } from "../domain/scene-lab-types";
+import type { CosmicVariant } from "../services/scene-lab-persistence";
 import { loadSceneLabState } from "../services/scene-lab-persistence";
 
 export function createSceneLabState() {
   const persisted = loadSceneLabState();
 
   let sceneId = $state<SceneId>(persisted?.sceneId ?? "winter");
+  let cosmicVariant = $state<CosmicVariant>(persisted?.cosmicVariant ?? "night");
+
   let winterConfig = $state<WinterSceneConfig>(
     persisted?.configs.winter ?? createDefaultWinterConfig()
   );
-  let forestFireflyConfig = $state<ForestSceneConfig>(
-    persisted?.configs.forestFirefly ?? createDefaultForestFireflyConfig()
+  let forestConfig = $state<ForestSceneConfig>(
+    persisted?.configs.forest ?? createDefaultForestFireflyConfig()
   );
-  let forestAutumnConfig = $state<AutumnSceneConfig>(
-    persisted?.configs.forestAutumn ?? createDefaultAutumnConfig()
+  let autumnConfig = $state<AutumnSceneConfig>(
+    persisted?.configs.autumn ?? createDefaultAutumnConfig()
   );
   let cosmicNightConfig = $state<CosmicSceneConfig>(
     persisted?.configs.cosmicNight ?? createDefaultCosmicNightConfig()
@@ -47,35 +42,34 @@ export function createSceneLabState() {
   let cosmicAuroraConfig = $state<CosmicSceneConfig>(
     persisted?.configs.cosmicAurora ?? createDefaultCosmicAuroraConfig()
   );
-  let oceanAbyssConfig = $state<OceanSceneConfig>(
-    persisted?.configs.oceanAbyss ?? persisted?.configs.oceanDeep ?? createDefaultOceanAbyssConfig()
+  let oceanConfig = $state<OceanSceneConfig>(
+    persisted?.configs.ocean ?? createDefaultOceanReefConfig()
   );
-  let oceanReefConfig = $state<OceanSceneConfig>(
-    persisted?.configs.oceanReef ?? createDefaultOceanReefConfig()
+  let emberConfig = $state<EmberSceneConfig>(
+    persisted?.configs.ember ?? createDefaultEmberGlowConfig()
   );
-  let oceanMysticalConfig = $state<OceanSceneConfig>(
-    persisted?.configs.oceanMystical ?? createDefaultOceanMysticalConfig()
+  let cherryBlossomConfig = $state<CherryBlossomSceneConfig>(
+    persisted?.configs.cherryBlossom ?? createDefaultCherryBlossomConfig()
   );
-  let oceanCinematicConfig = $state<OceanSceneConfig>(
-    persisted?.configs.oceanCinematic ?? createDefaultOceanCinematicConfig()
+  let celestialConfig = $state<CelestialSceneConfig>(
+    persisted?.configs.celestial ?? createDefaultCelestialConfig()
   );
 
-  // JSON.stringify reads through Svelte's reactive proxies, setting up deep
-  // tracking so any nested slider change triggers a debounced save.
   $effect(() => {
     const serialized = JSON.stringify({
-      version: 1,
+      version: 2,
       sceneId,
+      cosmicVariant,
       configs: {
         winter: winterConfig,
-        forestFirefly: forestFireflyConfig,
-        forestAutumn: forestAutumnConfig,
+        forest: forestConfig,
+        autumn: autumnConfig,
         cosmicNight: cosmicNightConfig,
         cosmicAurora: cosmicAuroraConfig,
-        oceanAbyss: oceanAbyssConfig,
-        oceanReef: oceanReefConfig,
-        oceanMystical: oceanMysticalConfig,
-        oceanCinematic: oceanCinematicConfig,
+        ocean: oceanConfig,
+        ember: emberConfig,
+        cherryBlossom: cherryBlossomConfig,
+        celestial: celestialConfig,
       },
     });
     const timer = setTimeout(() => {
@@ -89,66 +83,61 @@ export function createSceneLabState() {
   });
 
   function resetCurrent() {
-    if (sceneId === "winter") winterConfig = createDefaultWinterConfig();
-    else if (sceneId === "forest-firefly")
-      forestFireflyConfig = createDefaultForestFireflyConfig();
-    else if (sceneId === "forest-autumn")
-      forestAutumnConfig = createDefaultAutumnConfig();
-    else if (sceneId === "cosmic-night")
-      cosmicNightConfig = createDefaultCosmicNightConfig();
-    else if (sceneId === "cosmic-aurora")
-      cosmicAuroraConfig = createDefaultCosmicAuroraConfig();
-    else if (sceneId === "ocean-abyss")
-      oceanAbyssConfig = createDefaultOceanAbyssConfig();
-    else if (sceneId === "ocean-reef")
-      oceanReefConfig = createDefaultOceanReefConfig();
-    else if (sceneId === "ocean-mystical")
-      oceanMysticalConfig = createDefaultOceanMysticalConfig();
-    else if (sceneId === "ocean-cinematic")
-      oceanCinematicConfig = createDefaultOceanCinematicConfig();
+    switch (sceneId) {
+      case "winter": winterConfig = createDefaultWinterConfig(); break;
+      case "forest": forestConfig = createDefaultForestFireflyConfig(); break;
+      case "autumn": autumnConfig = createDefaultAutumnConfig(); break;
+      case "cosmic":
+        if (cosmicVariant === "night") cosmicNightConfig = createDefaultCosmicNightConfig();
+        else cosmicAuroraConfig = createDefaultCosmicAuroraConfig();
+        break;
+      case "ocean": oceanConfig = createDefaultOceanReefConfig(); break;
+      case "ember": emberConfig = createDefaultEmberGlowConfig(); break;
+      case "cherry-blossom": cherryBlossomConfig = createDefaultCherryBlossomConfig(); break;
+      case "celestial": celestialConfig = createDefaultCelestialConfig(); break;
+    }
   }
 
   function currentConfigSnapshot(): unknown {
-    if (sceneId === "winter") return $state.snapshot(winterConfig);
-    if (sceneId === "forest-firefly") return $state.snapshot(forestFireflyConfig);
-    if (sceneId === "forest-autumn") return $state.snapshot(forestAutumnConfig);
-    if (sceneId === "cosmic-night") return $state.snapshot(cosmicNightConfig);
-    if (sceneId === "ocean-abyss") return $state.snapshot(oceanAbyssConfig);
-    if (sceneId === "ocean-reef") return $state.snapshot(oceanReefConfig);
-    if (sceneId === "ocean-mystical") return $state.snapshot(oceanMysticalConfig);
-    if (sceneId === "ocean-cinematic") return $state.snapshot(oceanCinematicConfig);
-    return $state.snapshot(cosmicAuroraConfig);
+    switch (sceneId) {
+      case "winter": return $state.snapshot(winterConfig);
+      case "forest": return $state.snapshot(forestConfig);
+      case "autumn": return $state.snapshot(autumnConfig);
+      case "cosmic": return $state.snapshot(cosmicVariant === "night" ? cosmicNightConfig : cosmicAuroraConfig);
+      case "ocean": return $state.snapshot(oceanConfig);
+      case "ember": return $state.snapshot(emberConfig);
+      case "cherry-blossom": return $state.snapshot(cherryBlossomConfig);
+      case "celestial": return $state.snapshot(celestialConfig);
+      default: return {};
+    }
   }
 
   function currentDefaultFnName(): string {
     switch (sceneId) {
-      case "winter":
-        return "createDefaultWinterConfig";
-      case "forest-firefly":
-        return "createDefaultForestFireflyConfig";
-      case "forest-autumn":
-        return "createDefaultAutumnConfig";
-      case "cosmic-night":
-        return "createDefaultCosmicNightConfig";
-      case "cosmic-aurora":
-        return "createDefaultCosmicAuroraConfig";
-      case "ocean-abyss":
-        return "createDefaultOceanAbyssConfig";
-      case "ocean-reef":
-        return "createDefaultOceanReefConfig";
-      case "ocean-mystical":
-        return "createDefaultOceanMysticalConfig";
-      case "ocean-cinematic":
-        return "createDefaultOceanCinematicConfig";
+      case "winter": return "createDefaultWinterConfig";
+      case "forest": return "createDefaultForestFireflyConfig";
+      case "autumn": return "createDefaultAutumnConfig";
+      case "cosmic": return cosmicVariant === "night" ? "createDefaultCosmicNightConfig" : "createDefaultCosmicAuroraConfig";
+      case "ocean": return "createDefaultOceanReefConfig";
+      case "ember": return "createDefaultEmberGlowConfig";
+      case "cherry-blossom": return "createDefaultCherryBlossomConfig";
+      case "celestial": return "createDefaultCelestialConfig";
+      default: return "createDefaultWinterConfig";
     }
   }
 
   function currentConfigTypeName(): string {
-    if (sceneId === "winter") return "WinterSceneConfig";
-    if (sceneId === "forest-firefly") return "ForestSceneConfig";
-    if (sceneId === "forest-autumn") return "AutumnSceneConfig";
-    if (sceneId.startsWith("ocean")) return "OceanSceneConfig";
-    return "CosmicSceneConfig";
+    switch (sceneId) {
+      case "winter": return "WinterSceneConfig";
+      case "forest": return "ForestSceneConfig";
+      case "autumn": return "AutumnSceneConfig";
+      case "cosmic": return "CosmicSceneConfig";
+      case "ocean": return "OceanSceneConfig";
+      case "ember": return "EmberSceneConfig";
+      case "cherry-blossom": return "CherryBlossomSceneConfig";
+      case "celestial": return "CelestialSceneConfig";
+      default: return "unknown";
+    }
   }
 
   async function copyCurrentToClipboard(): Promise<void> {
@@ -158,39 +147,19 @@ export function createSceneLabState() {
   }
 
   return {
-    get sceneId() {
-      return sceneId;
-    },
-    setSceneId(id: SceneId) {
-      sceneId = id;
-    },
-    get winterConfig() {
-      return winterConfig;
-    },
-    get forestFireflyConfig() {
-      return forestFireflyConfig;
-    },
-    get forestAutumnConfig() {
-      return forestAutumnConfig;
-    },
-    get cosmicNightConfig() {
-      return cosmicNightConfig;
-    },
-    get cosmicAuroraConfig() {
-      return cosmicAuroraConfig;
-    },
-    get oceanAbyssConfig() {
-      return oceanAbyssConfig;
-    },
-    get oceanReefConfig() {
-      return oceanReefConfig;
-    },
-    get oceanMysticalConfig() {
-      return oceanMysticalConfig;
-    },
-    get oceanCinematicConfig() {
-      return oceanCinematicConfig;
-    },
+    get sceneId() { return sceneId; },
+    setSceneId(id: SceneId) { sceneId = id; },
+    get cosmicVariant() { return cosmicVariant; },
+    setCosmicVariant(v: CosmicVariant) { cosmicVariant = v; },
+    get winterConfig() { return winterConfig; },
+    get forestConfig() { return forestConfig; },
+    get autumnConfig() { return autumnConfig; },
+    get cosmicNightConfig() { return cosmicNightConfig; },
+    get cosmicAuroraConfig() { return cosmicAuroraConfig; },
+    get oceanConfig() { return oceanConfig; },
+    get emberConfig() { return emberConfig; },
+    get cherryBlossomConfig() { return cherryBlossomConfig; },
+    get celestialConfig() { return celestialConfig; },
     resetCurrent,
     copyCurrentToClipboard,
   };
