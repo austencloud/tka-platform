@@ -22,6 +22,8 @@
   import { Raycaster, Vector2 } from "three";
   import type { Object3D, Scene } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import PerformerBadge3D from "./PerformerBadge3D.svelte";
+  import { getPerformerColor } from "../constants/performer-colors";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -367,18 +369,33 @@
 
     {#if viewer3DState.selectedPerformerIndex === i || viewer3DState.selectedPerformerIndex === null}
       <!-- Ground-disc selection indicator. Gray when scope is "All",
-           lavender when this specific performer is selected. -->
+           per-performer color when individually selected. -->
       <T.Mesh
         position={[performer.position.x, userProportionsState.groundY + stageGroundOffset + 0.01, performer.position.z]}
         rotation={[-Math.PI / 2, 0, 0]}
       >
         <T.CircleGeometry args={[0.45, 32]} />
         <T.MeshBasicMaterial
-          color={viewer3DState.selectedPerformerIndex === null ? 0x6b7280 : 0x8b8bff}
+          color={viewer3DState.selectedPerformerIndex === null
+            ? 0x6b7280
+            : Number.parseInt(getPerformerColor(i).slice(1), 16)}
           transparent
           opacity={0.35}
         />
       </T.Mesh>
     {/if}
+
+    <!-- Floating numbered badge above performer head -->
+    <T.Group
+      position.x={performer.position.x}
+      position.y={stageGroundOffset}
+      position.z={performer.position.z}
+    >
+      <PerformerBadge3D
+        index={i}
+        selected={viewer3DState.selectedPerformerIndex === i}
+        allMode={viewer3DState.selectedPerformerIndex === null}
+      />
+    </T.Group>
   </T.Group>
 {/each}
