@@ -3,7 +3,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 // propInterpolator and sequenceConverter are now module-level functions injected directly
-import { getViewer3DUndoManager } from "$lib/shared/3d/getViewer3DUndoManager";
 import { getLanSyncCoordinator } from "$lib/shared/lan-sync/getLanSyncCoordinator";
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
@@ -255,9 +254,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   $effect.pre(() => { playback.currentStepLocal = initialStep; playback.bpmLocal = initialBpm; });
 
-  const viewer3DState = createViewer3DState({
-    viewer3DUndoManager: getViewer3DUndoManager(),
-  });
+  const viewer3DState = createViewer3DState();
   setViewer3DContext(viewer3DState);
 
   const accessibilityHelper = createModalAccessibilityHelper();

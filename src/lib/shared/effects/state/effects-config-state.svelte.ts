@@ -31,6 +31,7 @@ import type { EffectsPreset } from "../domain/EffectsPreset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
 import { EFFECTS_CONFIG_VERSION } from "../domain/EffectsConfig";
+import { getSceneUndoManager } from "$lib/shared/3d/undo/getSceneUndoManager";
 
 const STORAGE_KEY = "tka_effects_config";
 
@@ -82,6 +83,19 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
   const stored = loadStoredConfig();
   let config = $state<EffectsConfig>(stored ?? structuredClone(initial));
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  const sceneUndo = getSceneUndoManager();
+
+  sceneUndo.registerDomain("effects", {
+    capture: () => {
+      try { return structuredClone(config); }
+      catch { return JSON.parse(JSON.stringify(config)); }
+    },
+    restore: (snapshot) => {
+      try { config = structuredClone(snapshot); }
+      catch { config = JSON.parse(JSON.stringify(snapshot)); }
+      scheduleSave();
+    },
+  });
 
   function scheduleSave() {
     if (typeof window === "undefined") return;
@@ -94,110 +108,146 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
   }
 
   function updateTrails(patch: Partial<TrailsIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update trails");
     config.trails = { ...config.trails, ...patch };
     config.activePresets.trails = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-trails");
   }
 
   function updateFire(patch: Partial<FireIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update fire");
     config.fire = { ...config.fire, ...patch };
     config.activePresets.fire = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-fire");
   }
 
   function updateLed(patch: Partial<LedIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update LED");
     config.led = { ...config.led, ...patch };
     config.activePresets.led = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-led");
   }
 
   function updateCharcoal(patch: Partial<CharcoalIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update charcoal");
     config.charcoal = { ...config.charcoal, ...patch };
     config.activePresets.charcoal = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-charcoal");
   }
 
   function updateZap(patch: Partial<ZapIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update zap");
     config.zap = { ...config.zap, ...patch };
     config.activePresets.zap = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-zap");
   }
 
   function updateSparkles(patch: Partial<SparklesIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update sparkles");
     config.sparkles = { ...config.sparkles, ...patch };
     config.activePresets.sparkles = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-sparkles");
   }
 
   function updateEcho(patch: Partial<EchoIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update echo");
     config.echo = { ...config.echo, ...patch };
     config.activePresets.echo = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-echo");
   }
 
   function updateBloom(patch: Partial<BloomIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update bloom");
     config.bloom = { ...config.bloom, ...patch };
     config.activePresets.bloom = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-bloom");
   }
 
   function updateWater(patch: Partial<WaterIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update water");
     config.water = { ...config.water, ...patch };
     config.activePresets.water = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-water");
   }
 
   function updateBubbles(patch: Partial<BubblesIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update bubbles");
     config.bubbles = { ...config.bubbles, ...patch };
     config.activePresets.bubbles = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-bubbles");
   }
 
   function updatePetals(patch: Partial<PetalsIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update petals");
     config.petals = { ...config.petals, ...patch };
     config.activePresets.petals = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-petals");
   }
 
   function updateSmoke(patch: Partial<SmokeIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update smoke");
     config.smoke = { ...config.smoke, ...patch };
     config.activePresets.smoke = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-smoke");
   }
 
   function updateInk(patch: Partial<InkIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update ink");
     config.ink = { ...config.ink, ...patch };
     config.activePresets.ink = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-ink");
   }
 
   function updateFrost(patch: Partial<FrostIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update frost");
     config.frost = { ...config.frost, ...patch };
     config.activePresets.frost = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-frost");
   }
 
   function updateSilk(patch: Partial<SilkIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update silk");
     config.silk = { ...config.silk, ...patch };
     config.activePresets.silk = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-silk");
   }
 
   function updatePulse(patch: Partial<PulseIntent>) {
+    sceneUndo.captureState("update-effect-config", "Update pulse");
     config.pulse = { ...config.pulse, ...patch };
     config.activePresets.pulse = null;
     scheduleSave();
+    sceneUndo.commitStateCoalescing("effects-pulse");
   }
 
   function setTipEffectMap(map: TipEffectMap) {
+    sceneUndo.captureState("toggle-effect", "Toggle tip effects");
     config.tipEffectMap = map;
     scheduleSave();
+    sceneUndo.commitState();
   }
 
   function applyPreset(preset: EffectsPreset) {
+    sceneUndo.captureState("apply-effect-preset", `Apply ${preset.effectType} preset`);
     config = mergeConfig(config, preset.patch as Partial<EffectsConfig>);
     config.activePresets[preset.effectType] = preset.id;
     scheduleSave();
+    sceneUndo.commitState();
   }
 
   function updateOverride<K extends keyof EffectsOverrides>(

@@ -24,6 +24,7 @@ import {
 import type { SceneId } from "../domain/scene-lab-types";
 import type { CosmicVariant } from "../services/scene-lab-persistence";
 import { loadSceneLabState } from "../services/scene-lab-persistence";
+import { getSceneUndoManager } from "$lib/shared/3d/undo/getSceneUndoManager";
 
 export function createSceneLabState() {
   const persisted = loadSceneLabState();
@@ -96,6 +97,51 @@ export function createSceneLabState() {
       }
     }, 500);
     return () => clearTimeout(timer);
+  });
+
+  const sceneUndo = getSceneUndoManager();
+
+  function captureAllConfigs(): Record<string, unknown> {
+    return structuredClone({
+      winter: $state.snapshot(winterConfig),
+      forest: $state.snapshot(forestConfig),
+      autumn: $state.snapshot(autumnConfig),
+      cosmicNight: $state.snapshot(cosmicNightConfig),
+      cosmicAurora: $state.snapshot(cosmicAuroraConfig),
+      ocean: $state.snapshot(oceanConfig),
+      ember: $state.snapshot(emberConfig),
+      blossom: $state.snapshot(blossomConfig),
+      celestial: $state.snapshot(celestialConfig),
+      rainbow: $state.snapshot(rainbowConfig),
+      void: $state.snapshot(voidConfig),
+    });
+  }
+
+  function restoreAllConfigs(configs: Record<string, unknown>): void {
+    if (configs.winter) winterConfig = configs.winter as WinterSceneConfig;
+    if (configs.forest) forestConfig = configs.forest as ForestSceneConfig;
+    if (configs.autumn) autumnConfig = configs.autumn as AutumnSceneConfig;
+    if (configs.cosmicNight) cosmicNightConfig = configs.cosmicNight as CosmicSceneConfig;
+    if (configs.cosmicAurora) cosmicAuroraConfig = configs.cosmicAurora as CosmicSceneConfig;
+    if (configs.ocean) oceanConfig = configs.ocean as OceanSceneConfig;
+    if (configs.ember) emberConfig = configs.ember as EmberSceneConfig;
+    if (configs.blossom) blossomConfig = configs.blossom as BlossomSceneConfig;
+    if (configs.celestial) celestialConfig = configs.celestial as CelestialSceneConfig;
+    if (configs.rainbow) rainbowConfig = configs.rainbow as RainbowSceneConfig;
+    if (configs.void) voidConfig = configs.void as VoidSceneConfig;
+  }
+
+  sceneUndo.registerDomain("sceneLab", {
+    capture: () => ({
+      sceneId,
+      cosmicVariant,
+      configs: captureAllConfigs(),
+    }),
+    restore: (snapshot) => {
+      sceneId = snapshot.sceneId;
+      cosmicVariant = snapshot.cosmicVariant;
+      restoreAllConfigs(snapshot.configs);
+    },
   });
 
   function resetCurrent() {
@@ -172,9 +218,17 @@ export function createSceneLabState() {
 
   return {
     get sceneId() { return sceneId; },
-    setSceneId(id: SceneId) { sceneId = id; },
+    setSceneId(id: SceneId) {
+      sceneUndo.captureState("change-scene-lab-scene", `Scene: ${id}`);
+      sceneId = id;
+      sceneUndo.commitState();
+    },
     get cosmicVariant() { return cosmicVariant; },
-    setCosmicVariant(v: CosmicVariant) { cosmicVariant = v; },
+    setCosmicVariant(v: CosmicVariant) {
+      sceneUndo.captureState("change-cosmic-variant", `Cosmic: ${v}`);
+      cosmicVariant = v;
+      sceneUndo.commitState();
+    },
     get winterConfig() { return winterConfig; },
     get forestConfig() { return forestConfig; },
     get autumnConfig() { return autumnConfig; },

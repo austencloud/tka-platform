@@ -1,6 +1,7 @@
 import { getSettingsPersister } from "$lib/shared/settings/getSettingsPersister";
 import { browser } from "$app/environment";
 import { BackgroundType } from "@austencloud/backgrounds";
+import { getSceneUndoManager } from "$lib/shared/3d/undo/getSceneUndoManager";
 import {
   updateBodyBackground,
 } from "../utils/background-preloader";
@@ -51,6 +52,7 @@ const LEGACY_THEME_MAP: Record<string, BackgroundType> = {
   pureBlack: BackgroundType.VOID,
   solidColor: BackgroundType.VOID,
   linearGradient: BackgroundType.COSMIC,
+  pride: BackgroundType.RAINBOW,
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -101,6 +103,18 @@ class SettingsState {
         this.processOfflineQueue();
       };
       window.addEventListener("online", this.onlineHandler);
+
+      const sceneUndo = getSceneUndoManager();
+      sceneUndo.registerDomain("scene", {
+        capture: () => ({
+          backgroundType: settingsState.backgroundType ?? BackgroundType.COSMIC,
+          gridMode: settingsState.gridMode,
+        }),
+        restore: (snapshot) => {
+          this.updateSetting("backgroundType", snapshot.backgroundType);
+          this.updateSetting("gridMode", snapshot.gridMode);
+        },
+      });
     }
   }
 
@@ -306,6 +320,14 @@ class SettingsState {
       return;
     }
 
+    const isSceneUndoable = key === "backgroundType" || key === "gridMode";
+    if (isSceneUndoable) {
+      const sceneUndo = getSceneUndoManager();
+      const opType = key === "backgroundType" ? "change-environment" as const : "change-grid-mode" as const;
+      const desc = key === "backgroundType" ? `Environment: ${value}` : `Grid: ${value}`;
+      sceneUndo.captureState(opType, desc);
+    }
+
     settingsState[key] = value;
 
     settingsState._localTimestamp = Date.now();
@@ -318,6 +340,10 @@ class SettingsState {
     }
 
     this.saveSettings();
+
+    if (isSceneUndoable) {
+      getSceneUndoManager().commitState();
+    }
 
     try {
       void logSettingChange(

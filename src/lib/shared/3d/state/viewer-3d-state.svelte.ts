@@ -11,8 +11,9 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
-import type { Viewer3DUndoManager, PerformerSnapshot, ViewerSnapshot } from "@austencloud/scene-3d";
 import type { CameraStateSnapshot } from "@austencloud/scene-3d";
+import { getSceneUndoManager } from "../undo/getSceneUndoManager";
+import type { PerformerPositionSnapshot, ViewerDomainSnapshot, VisibilityDomainSnapshot } from "../undo/scene-undo-types";
 import { Plane } from "@austencloud/scene-3d";
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
 import { createPerformerManager, type PerformerManager } from "./performer-manager.svelte";
@@ -246,9 +247,8 @@ function migrateLegacyPlanesIfNeeded(): void {
 // Factory
 // ============================================
 
-export function createViewer3DState(deps: {
-  viewer3DUndoManager: Viewer3DUndoManager;
-}) {
+export function createViewer3DState() {
+  const sceneUndo = getSceneUndoManager();
   const _webgl2Available = isWebGL2Available();
   const _persistedMode = _webgl2Available ? loadPersistedMode() : "2d";
   const _persistedCamera = loadPersistedCamera();
@@ -391,40 +391,30 @@ export function createViewer3DState(deps: {
   // record it. Starts as "manual" until the user picks a preset.
   let activeFormation = $state<FormationPreset | "manual">("manual");
 
-  /**
-   * Serialize the current viewer state into a ViewerSnapshot. Used by the
-   * undo manager to capture before/after states around mutations.
-   */
-  function captureViewerSnapshot(): ViewerSnapshot {
-    const performerSnapshots: PerformerSnapshot[] = performerManager.performers.map((p) => ({
+  function captureViewerSnapshot(): ViewerDomainSnapshot {
+    const performerSnapshots: PerformerPositionSnapshot[] = performerManager.performers.map((p) => ({
       id: p.id,
       position: { x: p.position.x, z: p.position.z },
       facingAngle: p.facingAngle,
       customBluePlane: p.customBluePlane,
       customRedPlane: p.customRedPlane,
-      // AvatarInstanceState does not currently expose a sequenceRef on its
-      // public surface. For v1 we snapshot null - undo of a sequence change
-      // is out of scope. The field remains on the snapshot shape for future
-      // expansion.
-      sequenceRef: null,
     }));
 
-    return {
+    return structuredClone({
       performers: performerSnapshots,
       selectedPerformerIndex,
       activeFormation,
-      timestamp: Date.now(),
-    };
+    });
   }
 
-  /**
-   * Restore a snapshot onto the live state. Called by undo/redo.
-   * Handles: performer count (spawn/remove to match), per-performer
-   * position/facing/plane assignments, active formation, selection.
-   * Does NOT restore sequenceRef - out of scope for v1.
-   */
-  function restoreViewerSnapshot(snap: ViewerSnapshot): void {
-    // 1. Match performer count by spawning or removing.
+  function captureVisibilitySnapshot(): VisibilityDomainSnapshot {
+    return structuredClone({
+      visiblePlanes: new Set(visiblePlanes),
+      showGridLabels,
+    });
+  }
+
+  function restoreViewerSnapshot(snap: ViewerDomainSnapshot): void {
     while (performerManager.performers.length < snap.performers.length) {
       performerManager.addPerformer();
     }
@@ -432,7 +422,6 @@ export function createViewer3DState(deps: {
       performerManager.removePerformer();
     }
 
-    // 2. Restore each performer's editable state.
     snap.performers.forEach((ps, i) => {
       const p = performerManager.performers[i];
       if (!p) return;
@@ -446,27 +435,20 @@ export function createViewer3DState(deps: {
       }
     });
 
-    // 3. Restore top-level viewer state.
     activeFormation = snap.activeFormation;
     selectedPerformerIndex = snap.selectedPerformerIndex;
   }
 
-  // Coalescing window for spatial edits (position/facing nudges). A held
-  // numeric spinner shouldn't flood the undo stack with 60 entries/sec.
-  const SPATIAL_COALESCE_WINDOW_MS = 300;
-  let lastSpatialEntryId: string | null = null;
-  let lastSpatialTimestamp: number = 0;
+  function restoreVisibilitySnapshot(snap: VisibilityDomainSnapshot): void {
+    visiblePlanes = new Set(snap.visiblePlanes);
+    showGridLabels = snap.showGridLabels;
+    persistPlanes(visiblePlanes);
+  }
 
-  /**
-   * Spawn a new performer. Copies the currently-selected performer's plane
-   * assignments onto the new one (or performer 0 if scope is "All"). Records
-   * an undo entry of type "spawn".
-   */
   function spawnPerformerFromUI(): void {
     if (performerManager.performers.length >= STAGE.MAX_VIEWER_PERFORMERS) return;
 
-    const before = captureViewerSnapshot();
-    const entryId = deps.viewer3DUndoManager.pushSnapshot("spawn", before);
+    sceneUndo.captureState("spawn-performer", "Add performer");
 
     const sourceIndex = selectedPerformerIndex ?? 0;
     const source = performerManager.performers[sourceIndex];
@@ -484,19 +466,13 @@ export function createViewer3DState(deps: {
     }
 
     selectedPerformerIndex = newIndex;
-    deps.viewer3DUndoManager.completeEntry(entryId, captureViewerSnapshot());
+    sceneUndo.commitState();
   }
 
-  /**
-   * Remove the last performer. PerformerManager only supports removing the
-   * last one today (spec Open Question #6 tracks index-specific remove).
-   * Records an undo entry of type "remove".
-   */
   function removePerformerFromUI(): void {
     if (performerManager.performers.length <= 1) return;
 
-    const before = captureViewerSnapshot();
-    const entryId = deps.viewer3DUndoManager.pushSnapshot("remove", before);
+    sceneUndo.captureState("remove-performer", "Remove performer");
 
     const removedIndex = performerManager.performers.length - 1;
     performerManager.removePerformer();
@@ -505,95 +481,80 @@ export function createViewer3DState(deps: {
       selectedPerformerIndex = Math.max(0, removedIndex - 1);
     }
 
-    deps.viewer3DUndoManager.completeEntry(entryId, captureViewerSnapshot());
+    sceneUndo.commitState();
   }
 
-  /**
-   * Apply a formation preset. No-ops if the preset's valid counts don't
-   * include the current performer count. Records an undo entry of type
-   * "formation". Uses PerformerManager's existing smooth transition.
-   *
-   * `transitionToFormation` kicks off an animated transition - the live
-   * performer positions only reach their targets after ~500ms of frame
-   * updates. To make redo work correctly, we synthesize the afterState
-   * from the target formation slots rather than re-reading live positions.
-   */
   function applyFormationFromUI(preset: FormationPreset): void {
     const count = performerManager.performers.length;
     if (!PRESET_VALID_COUNTS[preset]?.includes(count)) return;
 
-    const before = captureViewerSnapshot();
-    const entryId = deps.viewer3DUndoManager.pushSnapshot("formation", before);
-
-    const targetFormation = createFormationFromPreset(preset, count);
-    const afterPerformers: PerformerSnapshot[] = performerManager.performers.map((p, i) => {
-      const slot = targetFormation.slots.find((s) => s.index === i);
-      const facing = slot ? calculateFacingAngle(slot, targetFormation) : p.facingAngle;
-      return {
-        id: p.id,
-        position: slot
-          ? { x: slot.position.x, z: slot.position.z }
-          : { x: p.position.x, z: p.position.z },
-        facingAngle: facing,
-        customBluePlane: p.customBluePlane,
-        customRedPlane: p.customRedPlane,
-        sequenceRef: null,
-      };
-    });
+    const beforeSnap = captureViewerSnapshot();
 
     performerManager.transitionToFormation(preset, 500);
     activeFormation = preset;
 
-    deps.viewer3DUndoManager.completeEntry(entryId, {
+    const targetFormation = createFormationFromPreset(preset, count);
+    const afterPerformers: PerformerPositionSnapshot[] = performerManager.performers.map((p, i) => {
+      const slot = targetFormation.slots.find((s) => s.index === i);
+      const facing = slot ? calculateFacingAngle(slot, targetFormation) : p.facingAngle;
+      return {
+        id: p.id,
+        position: slot ? { x: slot.position.x, z: slot.position.z } : { x: p.position.x, z: p.position.z },
+        facingAngle: facing,
+        customBluePlane: p.customBluePlane,
+        customRedPlane: p.customRedPlane,
+      };
+    });
+    const afterSnap: ViewerDomainSnapshot = {
       performers: afterPerformers,
       selectedPerformerIndex,
       activeFormation: preset,
-      timestamp: Date.now(),
+    };
+
+    sceneUndo.pushSelfRestoringEntry("apply-formation", `Formation: ${preset}`, {
+      undo: () => restoreViewerSnapshot(beforeSnap),
+      redo: () => restoreViewerSnapshot(afterSnap),
     });
   }
 
-  /**
-   * Record a spatial edit (position or facing nudge). Coalesces consecutive
-   * edits within 300ms onto the same undo entry so a held spinner doesn't
-   * flood the stack.
-   */
-  function recordSpatialEdit(): void {
-    const now = Date.now();
-    const withinWindow =
-      lastSpatialEntryId !== null && now - lastSpatialTimestamp < SPATIAL_COALESCE_WINDOW_MS;
+  let _spatialBeforeSnapshot: ViewerDomainSnapshot | null = null;
 
-    if (withinWindow && lastSpatialEntryId) {
-      deps.viewer3DUndoManager.completeEntry(lastSpatialEntryId, captureViewerSnapshot());
-      lastSpatialTimestamp = now;
-      return;
+  function beginSpatialEdit(): void {
+    if (sceneUndo.isUndoDisabled) return;
+    if (!_spatialBeforeSnapshot) {
+      _spatialBeforeSnapshot = captureViewerSnapshot();
     }
-
-    const before = captureViewerSnapshot();
-    const id = deps.viewer3DUndoManager.pushSnapshot("spatial", before);
-    deps.viewer3DUndoManager.completeEntry(id, before);
-    lastSpatialEntryId = id;
-    lastSpatialTimestamp = now;
   }
 
-  /**
-   * Undo the last mutation. Restores the entry's beforeState.
-   */
-  function undo(): void {
-    const entry = deps.viewer3DUndoManager.undo();
-    if (!entry) return;
-    restoreViewerSnapshot(entry.beforeState);
-    // A fresh undo action closes any spatial coalescing window.
-    lastSpatialEntryId = null;
+  function endSpatialEdit(): void {
+    if (sceneUndo.isUndoDisabled || !_spatialBeforeSnapshot) return;
+    const before = _spatialBeforeSnapshot;
+    const after = captureViewerSnapshot();
+    sceneUndo.pushSelfRestoringEntryCoalescing("spatial-edit", "Move performer", {
+      undo: () => restoreViewerSnapshot(before),
+      redo: () => restoreViewerSnapshot(after),
+    }, "spatial-edit", 300);
+    _spatialBeforeSnapshot = null;
   }
 
-  /**
-   * Redo the most recently undone mutation. Restores the entry's afterState.
-   */
-  function redo(): void {
-    const entry = deps.viewer3DUndoManager.redo();
-    if (!entry?.afterState) return;
-    restoreViewerSnapshot(entry.afterState);
-    lastSpatialEntryId = null;
+  sceneUndo.registerDomain("viewer", {
+    capture: captureViewerSnapshot,
+    restore: restoreViewerSnapshot,
+  });
+
+  sceneUndo.registerDomain("visibility", {
+    capture: captureVisibilitySnapshot,
+    restore: restoreVisibilitySnapshot,
+  });
+
+  function undo(): string | null {
+    const result = sceneUndo.undo();
+    return result?.description ?? null;
+  }
+
+  function redo(): string | null {
+    const result = sceneUndo.redo();
+    return result?.description ?? null;
   }
 
   let _currentSequenceData = $state<SequenceData | null>(null);
@@ -902,10 +863,10 @@ export function createViewer3DState(deps: {
     setHandPlaneScoped,
     loadSequenceScoped,
     get canUndo() {
-      return deps.viewer3DUndoManager.canUndo;
+      return sceneUndo.canUndo;
     },
     get canRedo() {
-      return deps.viewer3DUndoManager.canRedo;
+      return sceneUndo.canRedo;
     },
     get activeFormation() {
       return activeFormation;
@@ -913,7 +874,9 @@ export function createViewer3DState(deps: {
     spawnPerformerFromUI,
     removePerformerFromUI,
     applyFormationFromUI,
-    recordSpatialEdit,
+    beginSpatialEdit,
+    endSpatialEdit,
+    sceneUndo,
     undo,
     redo,
     get effectToggles() {
@@ -932,8 +895,10 @@ export function createViewer3DState(deps: {
       return showGridLabels;
     },
     toggleGridLabels() {
+      sceneUndo.captureState("toggle-grid-labels", "Toggle grid labels");
       showGridLabels = !showGridLabels;
       try { localStorage.setItem(STORAGE_KEY_GRID_LABELS, String(showGridLabels)); } catch {}
+      sceneUndo.commitState();
     },
     get activePreset() {
       return activePreset;
@@ -953,11 +918,13 @@ export function createViewer3DState(deps: {
      * Toggle a single grid plane on or off.
      */
     togglePlane(plane: Plane) {
+      sceneUndo.captureState("toggle-plane-visibility", `Toggle ${plane} plane`);
       const next = new Set(visiblePlanes);
       if (next.has(plane)) next.delete(plane);
       else next.add(plane);
       visiblePlanes = next;
       persistPlanes(visiblePlanes);
+      sceneUndo.commitState();
     },
     /**
      * Show all three grid planes at once.

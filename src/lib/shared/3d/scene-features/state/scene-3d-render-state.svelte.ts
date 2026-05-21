@@ -9,6 +9,8 @@
  * docs/superpowers/specs/2026-04-19-effects-engine-unification-design.md).
  */
 
+import { getSceneUndoManager } from "../../undo/getSceneUndoManager";
+
 export interface MotionRenderConfig {
   /** Enable motion blur pass. */
   blur: boolean;
@@ -41,12 +43,20 @@ export function createScene3DRenderState(
     motion: { ...initial.motion },
   });
 
+  const sceneUndo = getSceneUndoManager();
+  sceneUndo.registerDomain("motion", {
+    capture: () => structuredClone(config),
+    restore: (snapshot) => { config = structuredClone(snapshot); },
+  });
+
   function updateMotion(patch: Partial<MotionRenderConfig>) {
+    sceneUndo.captureState("toggle-motion", "Update motion");
     const next: MotionRenderConfig = { ...config.motion, ...patch };
     if (patch.intensity !== undefined) {
       next.intensity = clamp01(patch.intensity);
     }
     config.motion = next;
+    sceneUndo.commitStateCoalescing("motion-update");
   }
 
   function replace(next: Scene3DRenderConfig) {
