@@ -8,6 +8,6 @@ export function installPerformerEffortResolver(
 ): void {
   engine.setPerformerEffortResolver((id: string): EffortId => {
     const p = performerManager.performers.find((p) => p.id === id);
-    return p?.settings.effortId ?? "linear";
+    return p?.effectiveEffortId ?? "linear";
   });
 }

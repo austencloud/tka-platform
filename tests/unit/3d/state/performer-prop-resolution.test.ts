@@ -3,8 +3,8 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
 
 describe("resolvePerformerProp", () => {
-  it("returns the performer's own prop setting", () => {
-    const performer = { settings: { prop: PropType.FAN } } as any;
+  it("returns the performer's effective prop", () => {
+    const performer = { effectiveProp: PropType.FAN } as any;
     expect(resolvePerformerProp(performer, PropType.STAFF)).toBe(PropType.FAN);
   });
 

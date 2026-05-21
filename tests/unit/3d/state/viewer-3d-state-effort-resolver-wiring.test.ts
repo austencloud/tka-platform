@@ -6,8 +6,8 @@ describe("installPerformerEffortResolver", () => {
     const fakeEngine = { setPerformerEffortResolver: vi.fn() };
     const performerManager = {
       performers: [
-        { id: "p1", settings: { effortId: "linear" } },
-        { id: "p2", settings: { effortId: "glide" } },
+        { id: "p1", effectiveEffortId: "linear" },
+        { id: "p2", effectiveEffortId: "glide" },
       ],
     };
     installPerformerEffortResolver(fakeEngine as any, performerManager as any);
