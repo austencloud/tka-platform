@@ -172,6 +172,8 @@ export interface BackgroundLabSettings {
   rainbow?: RainbowLabSettings;
   emberGlow?: EmberGlowLabSettings;
   deepOcean?: DeepOceanLabSettings;
+  celestial?: CelestialLabSettings;
+  pureBlack?: PureBlackLabSettings;
 }
 
 // ============================================================================
@@ -296,4 +298,56 @@ export const DEFAULT_EMBER_GLOW_SETTINGS: EmberGlowLabSettings = {
   },
   heatIntensity: "warm",
   densityPreset: "normal",
+};
+
+// ============================================================================
+// Celestial Lab
+// ============================================================================
+
+export interface CelestialLabLayers {
+  clouds: boolean;
+  godRays: boolean;
+  islands: boolean;
+  pillars: boolean;
+}
+
+export interface CelestialLabSettings {
+  quality: QualityLevel;
+  layers: CelestialLabLayers;
+}
+
+export const DEFAULT_CELESTIAL_LAB_SETTINGS: CelestialLabSettings = {
+  quality: "high",
+  layers: {
+    clouds: true,
+    godRays: true,
+    islands: true,
+    pillars: false,
+  },
+};
+
+// ============================================================================
+// Pure Black Lab
+// ============================================================================
+
+export interface PureBlackLabLayers {
+  grid: boolean;
+  vignette: boolean;
+}
+
+export interface PureBlackLabSettings {
+  quality: QualityLevel;
+  layers: PureBlackLabLayers;
+  gridOpacity: number;
+  gridSpacing: number;
+}
+
+export const DEFAULT_PURE_BLACK_LAB_SETTINGS: PureBlackLabSettings = {
+  quality: "high",
+  layers: {
+    grid: false,
+    vignette: false,
+  },
+  gridOpacity: 0.15,
+  gridSpacing: 40,
 };

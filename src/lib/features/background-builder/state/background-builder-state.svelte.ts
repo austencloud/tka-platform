@@ -13,11 +13,15 @@ import {
   DEFAULT_CHERRY_BLOSSOM_SETTINGS,
   DEFAULT_RAINBOW_SETTINGS,
   DEFAULT_EMBER_GLOW_SETTINGS,
+  DEFAULT_CELESTIAL_LAB_SETTINGS,
+  DEFAULT_PURE_BLACK_LAB_SETTINGS,
   type NightSkyLabSettings,
   type FireflyForestLabSettings,
   type CherryBlossomLabSettings,
   type RainbowLabSettings,
   type EmberGlowLabSettings,
+  type CelestialLabSettings,
+  type PureBlackLabSettings,
   type BackgroundLabSettings,
 } from "$lib/shared/background-builder/domain/lab-settings-types";
 
@@ -203,4 +207,36 @@ export function updateEmberGlowSettings(settings: Partial<EmberGlowLabSettings>)
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
   saveLabSettings({ ...labSettings, emberGlow: updated });
+}
+
+// ============================================================================
+// Celestial Lab Settings
+// ============================================================================
+
+export function getCelestialLabSettings(): CelestialLabSettings {
+  const labSettings = getLabSettings();
+  return labSettings.celestial ?? { ...DEFAULT_CELESTIAL_LAB_SETTINGS };
+}
+
+export function updateCelestialLabSettings(settings: Partial<CelestialLabSettings>): void {
+  const current = getCelestialLabSettings();
+  const updated = { ...current, ...settings };
+  const labSettings = getLabSettings();
+  saveLabSettings({ ...labSettings, celestial: updated });
+}
+
+// ============================================================================
+// Pure Black Lab Settings
+// ============================================================================
+
+export function getPureBlackLabSettings(): PureBlackLabSettings {
+  const labSettings = getLabSettings();
+  return labSettings.pureBlack ?? { ...DEFAULT_PURE_BLACK_LAB_SETTINGS };
+}
+
+export function updatePureBlackLabSettings(settings: Partial<PureBlackLabSettings>): void {
+  const current = getPureBlackLabSettings();
+  const updated = { ...current, ...settings };
+  const labSettings = getLabSettings();
+  saveLabSettings({ ...labSettings, pureBlack: updated });
 }
