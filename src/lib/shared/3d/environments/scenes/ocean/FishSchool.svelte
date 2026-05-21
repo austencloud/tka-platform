@@ -14,6 +14,7 @@
     type BufferGeometry,
   } from "three";
   import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
+  import { FishEventSystem, type FishEventUniforms } from "./FishEventSystem";
   import { userProportionsState } from "@austencloud/scene-3d";
 
   interface Props {
@@ -426,6 +427,7 @@
   let velVar: any = null;
   let materials: ShaderMaterial[] = [];
   let storedTraitsData: Float32Array | null = null;
+  let eventSystem: FishEventSystem | null = null;
 
   $effect(() => {
     const ren = renderer as unknown as import("three").WebGLRenderer;
@@ -539,6 +541,9 @@
     traitsTex.needsUpdate = true;
     storedTraitsData = traitsData;
 
+    const evtSys = new FishEventSystem(count, traitsData);
+    eventSystem = evtSys;
+
     posVar = gpu.addVariable("texturePosition", positionShader, posTex);
     velVar = gpu.addVariable("textureVelocity", velocityShader, velTex);
     gpu.setVariableDependencies(posVar, [posVar, velVar]);
@@ -637,6 +642,7 @@
       gpu.dispose();
       traitsTex.dispose();
       storedTraitsData = null;
+      eventSystem = null;
       for (const geo of geometries) geo.dispose();
       for (const mat of createdMaterials) mat.dispose();
       for (const mesh of createdMeshes) mesh.dispose();
@@ -661,6 +667,10 @@
     velVar.material.uniforms.uDelta.value = dt;
     velVar.material.uniforms.uTime.value = elapsed;
     posVar.material.uniforms.uDelta.value = dt;
+
+    if (eventSystem) {
+      eventSystem.tick(dt, velVar.material.uniforms as unknown as FishEventUniforms, rayPosition);
+    }
 
     gpuCompute.compute();
 

@@ -38,10 +38,12 @@
     variant?: OceanVariant;
     config?: OceanSceneConfig;
     performerCount?: number;
+    stageWidth?: number;
+    stageDepth?: number;
     stageZOffset?: number;
   }
 
-  let { variant = "abyss", config, performerCount = 1, stageZOffset = 0 }: Props = $props();
+  let { variant = "abyss", config, performerCount = 1, stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
 
   const VARIANT_CONFIGS: Record<OceanVariant, () => OceanSceneConfig> = {
     abyss: createDefaultOceanAbyssConfig,
@@ -52,19 +54,15 @@
 
   const baseConfig = $derived(config ?? VARIANT_CONFIGS[variant]());
 
-  function depthForCount(count: number, baseDepth: number): number {
-    if (count <= 4) return baseDepth;
-    if (count <= 6) return Math.max(baseDepth, 8);
-    return Math.max(baseDepth, 10);
-  }
-
   const activeConfig = $derived.by(() => {
-    const d = depthForCount(performerCount, baseConfig.platform.depth);
-    if (d <= baseConfig.platform.depth) return baseConfig;
+    const w = Math.max(baseConfig.platform.width, stageWidth);
+    const d = Math.max(baseConfig.platform.depth, stageDepth);
+    if (w <= baseConfig.platform.width && d <= baseConfig.platform.depth) return baseConfig;
     return {
       ...baseConfig,
       platform: {
         ...baseConfig.platform,
+        width: w,
         depth: d,
         zOffset: stageZOffset,
       },
@@ -389,6 +387,9 @@
   let jellyfishTime = $state(0);
   let animTime = 0;
   let rayAngle = $state(0);
+  const rayWorldPos = $derived(
+    new Vector3(Math.cos(rayAngle) * 10, groundY + 5, Math.sin(rayAngle) * 10)
+  );
 
   $effect(() => {
     const jf = activeConfig.jellyfish;
@@ -1013,6 +1014,12 @@
     speed={activeConfig.fish.speed}
     stageRadius={zones.clearingRadius}
     boundRadius={zones.forestOuter}
+    currentStrength={activeConfig.fish.currentStrength}
+    swimFrequency={activeConfig.fish.swimFrequency}
+    waveAmplitude={activeConfig.fish.waveAmplitude}
+    scatterRadius={activeConfig.fish.scatterRadius}
+    perceptionAngle={activeConfig.fish.perceptionAngle}
+    rayPosition={rayWorldPos}
   />
 {/if}
 
