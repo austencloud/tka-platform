@@ -1,5 +1,14 @@
 import { PropType } from "./enums/PropType";
 
+export type PropCategory = "staves-clubs" | "curved" | "novelty" | "singles";
+
+export const PROP_CATEGORIES: { id: PropCategory; label: string }[] = [
+  { id: "staves-clubs", label: "Staves & Clubs" },
+  { id: "curved", label: "Curved Props" },
+  { id: "novelty", label: "Novelty" },
+  { id: "singles", label: "Singles" },
+];
+
 /**
  * Display metadata for a prop type
  */
@@ -8,6 +17,7 @@ export interface PropTypeDisplayInfo {
   label: string;
   /** Path to the prop's SVG image */
   image: string;
+  category?: PropCategory;
 }
 
 /**
@@ -17,7 +27,7 @@ export interface PropTypeDisplayInfo {
 export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
   {
     // === STAFF FAMILY ===
-    [PropType.STAFF]: { label: "Staff", image: "/images/props/buttons/staff.svg?v=2" },
+    [PropType.STAFF]: { label: "Staff", image: "/images/props/buttons/staff.svg?v=2", category: "staves-clubs" },
     [PropType.SIMPLESTAFF]: {
       label: "Simple Staff",
       image: "/images/props/buttons/simple_staff.svg?v=2",
@@ -32,18 +42,18 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === CLUB FAMILY ===
-    [PropType.CLUB]: { label: "Club", image: "/images/props/buttons/club.svg" },
+    [PropType.CLUB]: { label: "Club", image: "/images/props/buttons/club.svg", category: "staves-clubs" },
     [PropType.BIGCLUB]: {
       label: "Big Club",
       image: "/images/props/buttons/bigclub.svg",
     },
 
     // === FAN FAMILY ===
-    [PropType.FAN]: { label: "Fan", image: "/images/props/buttons/fan.svg" },
+    [PropType.FAN]: { label: "Fan", image: "/images/props/buttons/fan.svg", category: "staves-clubs" },
     [PropType.BIGFAN]: { label: "Big Fan", image: "/images/props/buttons/bigfan.svg" },
 
     // === TRIAD FAMILY ===
-    [PropType.TRIAD]: { label: "Triad", image: "/images/props/buttons/triad.svg" },
+    [PropType.TRIAD]: { label: "Triad", image: "/images/props/buttons/triad.svg", category: "curved" },
     [PropType.BIGTRIAD]: {
       label: "Big Triad",
       image: "/images/props/buttons/bigtriad.svg",
@@ -53,6 +63,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.MINIHOOP]: {
       label: "Mini Hoop",
       image: "/images/props/buttons/minihoop.svg",
+      category: "curved",
     },
     [PropType.BIGHOOP]: {
       label: "Big Hoop",
@@ -63,6 +74,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.BUUGENG]: {
       label: "Buugeng",
       image: "/images/props/buttons/buugeng.svg",
+      category: "curved",
     },
     [PropType.BIGBUUGENG]: {
       label: "Big Buugeng",
@@ -77,15 +89,17 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.TRIGENG]: {
       label: "Trigeng",
       image: "/images/props/buttons/trigeng.svg",
+      category: "curved",
     },
 
     // === HAND ===
-    [PropType.HAND]: { label: "Hand", image: "/images/props/buttons/hand.svg" },
+    [PropType.HAND]: { label: "Hand", image: "/images/props/buttons/hand.svg", category: "singles" },
 
     // === TRIQUETRA FAMILY ===
     [PropType.TRIQUETRA]: {
       label: "Triquetra",
       image: "/images/props/buttons/triquetra.svg",
+      category: "curved",
     },
     [PropType.TRIQUETRA2]: {
       label: "Triquetra 2",
@@ -93,12 +107,13 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === SWORD ===
-    [PropType.SWORD]: { label: "Sword", image: "/images/props/buttons/sword.svg" },
+    [PropType.SWORD]: { label: "Sword", image: "/images/props/buttons/sword.svg", category: "singles" },
 
     // === CHICKEN FAMILY ===
     [PropType.CHICKEN]: {
       label: "Chicken",
       image: "/images/props/buttons/chicken.svg",
+      category: "novelty",
     },
     [PropType.BIGCHICKEN]: {
       label: "Big Chicken",
@@ -106,7 +121,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === GUITAR FAMILY ===
-    [PropType.GUITAR]: { label: "Guitar", image: "/images/props/buttons/guitar.svg" },
+    [PropType.GUITAR]: { label: "Guitar", image: "/images/props/buttons/guitar.svg", category: "novelty" },
     [PropType.UKULELE]: {
       label: "Ukulele",
       image: "/images/props/buttons/ukulele.svg",
@@ -116,6 +131,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.DOUBLESTAR]: {
       label: "Double Star",
       image: "/images/props/buttons/doublestar.svg",
+      category: "novelty",
     },
     [PropType.BIGDOUBLESTAR]: {
       label: "Big Double Star",
@@ -126,6 +142,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.EIGHTRINGS]: {
       label: "Eight Rings",
       image: "/images/props/buttons/eightrings.svg",
+      category: "novelty",
     },
     [PropType.BIGEIGHTRINGS]: {
       label: "Big Eight Rings",
@@ -133,16 +150,17 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === QUIAD ===
-    [PropType.QUIAD]: { label: "Quiad", image: "/images/props/buttons/quiad.svg" },
+    [PropType.QUIAD]: { label: "Quiad", image: "/images/props/buttons/quiad.svg", category: "singles" },
 
     // === TORCH FAMILY ===
-    [PropType.TORCH]: { label: "Torch", image: "/images/props/buttons/torch.svg" },
+    [PropType.TORCH]: { label: "Torch", image: "/images/props/buttons/torch.svg", category: "novelty" },
     [PropType.BIGTORCH]: { label: "Big Torch", image: "/images/props/buttons/bigtorch.svg" },
 
     // === CONTACT BALL FAMILY ===
     [PropType.CONTACTBALL]: {
       label: "Contact Ball",
       image: "/images/props/buttons/contactball.svg",
+      category: "novelty",
     },
     [PropType.BIGCONTACTBALL]: {
       label: "Big Contact Ball",
@@ -151,6 +169,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.DOUBLECONTACTBALL]: {
       label: "Double Contact Ball",
       image: "/images/props/buttons/doublecontactball.svg",
+      category: "novelty",
     },
     [PropType.BIGDOUBLECONTACTBALL]: {
       label: "Big Double Contact Ball",
@@ -159,7 +178,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
 
     // === POI FAMILY (Momentum-based) ===
     // Uses club.svg as placeholder until proper poi SVG (~175px) is created
-    [PropType.POI]: { label: "Poi", image: "/images/props/buttons/club.svg" },
+    [PropType.POI]: { label: "Poi", image: "/images/props/buttons/club.svg", category: "novelty" },
   } as const;
 
 /**
@@ -401,4 +420,24 @@ export function getTriquetraVariation(propType: PropType): number {
   if (propType === PropType.TRIQUETRA) return 1;
   if (propType === PropType.TRIQUETRA2) return 2;
   return 1;
+}
+
+/**
+ * Returns base props grouped by category, filtered by isPropActive and excluding variants.
+ */
+export function getBasePropsByCategory(): Map<PropCategory, PropType[]> {
+  const result = new Map<PropCategory, PropType[]>();
+  for (const cat of PROP_CATEGORIES) {
+    result.set(cat.id, []);
+  }
+
+  for (const [propTypeStr, info] of Object.entries(PROP_TYPE_DISPLAY_REGISTRY)) {
+    const propType = propTypeStr as PropType;
+    if (!info.category) continue;
+    if (!isPropActive(propType)) continue;
+    if (VARIANT_PROP_TYPES.includes(propType)) continue;
+    result.get(info.category)?.push(propType);
+  }
+
+  return result;
 }
