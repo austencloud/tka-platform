@@ -790,7 +790,7 @@ export function generateCategoryScatter(
       const localBiome = terrain.biomeType ?? primaryBiome;
 
       // Skip water biomes
-      if (localBiome === BiomeType.Ocean || localBiome === BiomeType.DeepOcean) {
+      if (localBiome === BiomeType.Ocean) {
         continue;
       }
 
@@ -866,7 +866,6 @@ export function generateCategoryScatter(
 export function biomeTypeToLegacy(biome: BiomeType): VegetationBiomeType {
   switch (biome) {
     case BiomeType.Ocean:
-    case BiomeType.DeepOcean:
       return "ocean";
 
     case BiomeType.Desert:

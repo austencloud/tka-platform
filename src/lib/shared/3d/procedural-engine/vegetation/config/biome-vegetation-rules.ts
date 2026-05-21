@@ -60,10 +60,6 @@ export const BIOME_VEGETATION_RULES: Record<BiomeType, BiomeVegetationConfig> = 
     densityMultiplier: 0,
     categories: [],
   },
-  [BiomeType.DeepOcean]: {
-    densityMultiplier: 0,
-    categories: [],
-  },
 
   // === COASTAL BIOMES ===
   [BiomeType.Beach]: {
@@ -218,7 +214,6 @@ export function getCategoryRulesForBiome(biome: BiomeType): CategorySpawnRule[] 
 export function biomeTypeToManifestBiome(biome: BiomeType): ManifestBiome {
   switch (biome) {
     case BiomeType.Ocean:
-    case BiomeType.DeepOcean:
       return "plains"; // Fallback, no vegetation anyway
 
     case BiomeType.Desert:

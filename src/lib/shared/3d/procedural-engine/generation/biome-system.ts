@@ -25,7 +25,6 @@ import type { SeededNoise } from "./seed-generator";
 export enum BiomeType {
   // Water
   Ocean = "ocean",
-  DeepOcean = "deep_ocean",
 
   // Coastal
   Beach = "beach",
@@ -135,13 +134,6 @@ export const BIOME_CHARACTERISTICS: Record<BiomeType, BiomeCharacteristics> = {
     vegetationDensity: 0,
     vegetationTypes: [],
     colorTint: { r: 0.1, g: 0.3, b: 0.6 },
-    roughness: 0.2,
-  },
-  [BiomeType.DeepOcean]: {
-    blendWeights: { grass: 0, rock: 0.2, dirt: 0, sand: 0.8, snow: 0 },
-    vegetationDensity: 0,
-    vegetationTypes: [],
-    colorTint: { r: 0.05, g: 0.15, b: 0.4 },
     roughness: 0.2,
   },
   [BiomeType.Beach]: {
@@ -351,9 +343,6 @@ export function getBiomeType(
   config: BiomeSystemConfig = DEFAULT_BIOME_CONFIG
 ): BiomeType {
   // Height-based overrides first
-  if (height < config.oceanLevel - 20) {
-    return BiomeType.DeepOcean;
-  }
   if (height < config.oceanLevel) {
     return BiomeType.Ocean;
   }
@@ -534,7 +523,6 @@ export function getBiomeColorTint(biome: BiomeType): { r: number; g: number; b: 
 export function biomeTypeToLegacy(biome: BiomeType): "ocean" | "plains" | "forest" | "mountains" | "desert" {
   switch (biome) {
     case BiomeType.Ocean:
-    case BiomeType.DeepOcean:
       return "ocean";
 
     case BiomeType.Desert:

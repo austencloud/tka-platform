@@ -38,7 +38,7 @@
     return shape;
   }
 
-  // --- Reflector (same lifecycle pattern as CherryBlossomScene pond) ---
+  // --- Reflector (same lifecycle pattern as BlossomScene pond) ---
   let streamReflector = $state<Reflector | null>(null);
 
   $effect(() => {

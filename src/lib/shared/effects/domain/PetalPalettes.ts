@@ -516,7 +516,7 @@ function drawGinkgo(
 }
 
 /**
- * Blossom 5-petal flower - procedural, port of CherryBlossomPetalSystem
+ * Blossom 5-petal flower - procedural, port of BlossomPetalSystem
  * drawPetal branch (isFlower === true). Paints a glow ring, 5 radial
  * petals with gradients, then a yellow stamen centre.
  */
