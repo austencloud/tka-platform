@@ -1,26 +1,69 @@
 # Performer Rail — Design Spec
 
 **Date:** 2026-05-21
-**Status:** LAYOUT PENDING (user comparing A/B/C in playground)
+**Status:** APPROVED — Bottom center selector + morphing right rail
 **Playground:** `playground-performer-rail.html`
 
 ## Goal
 
-Replace the in-popover PerformerChipStrip with a dedicated performer rail — a set of floating glassmorphic chips (one per performer + "All" + "+") that live outside the right rail. Each chip opens a per-performer editing surface (effects, prop type/size, plane, effort). The Sims-style vision: click a performer, see them highlighted in 3D, edit their properties.
+Two-mode performer editing system:
 
-## Layout Options (Under Exploration)
+1. **Bird's Eye Mode** — Managing the ensemble. Add/remove/move performers, choose formations, control scene and camera. Right rail shows scene-level chips.
+2. **Performer Mode** — Editing one performer. Right rail morphs to show per-performer chips (Effects, Prop, Effort). Selected performer gets a ground ring glow in 3D. Camera orbits to center on them.
 
-Three placement candidates — user comparing in playground:
+The bottom-center performer rail is the mode switch. The right rail adapts to show contextually relevant actions.
 
-| Layout | Position | Popover Direction | Notes |
-|--------|----------|-------------------|-------|
-| **A: Left Bottom** | Vertical stack, bottom-left corner, column-reverse (chips grow upward) | Flies right | Near playback controls. Mirror of right rail but on opposite side. |
-| **B: Left Expanding** | Same position as A | Inline — panel slides out attached to chip's right edge | No floating popover. Chip + panel become one unit. Chip border-radius changes when open. |
-| **C: Bottom Center** | Horizontal strip centered at bottom | Flies upward | Natural toolbar feel. Centered like playback controls. |
+## Architecture: Two Surfaces, One Interaction
 
-## Chip Spec (Identical Across All Layouts)
+### Bottom Center Rail (WHO)
 
-Matches existing right rail chips exactly:
+Horizontal chip strip centered at bottom of viewport. Always visible. Answers: "Which performer(s) am I working with?"
+
+```
+[All] | [1] [2] [3] ... | [+]
+```
+
+### Right Rail (WHAT)
+
+Vertical chip stack at top-right. Already exists. Morphs its chip set based on selection state. Answers: "What can I do right now?"
+
+**Bird's Eye chips** (no performer selected / "All"):
+
+| Chip | Icon | Popover Content |
+|------|------|-----------------|
+| Formation | fa-users | Formation selector grid (existing `FormationSelector`) |
+| Tempo | fa-gauge | BPM control (existing `TempoPopover`) |
+| Camera | fa-video | Camera presets (existing `CameraPopover`) |
+| Scene | fa-mountain-sun | Environment picker (existing `SceneSelectorPopover`) |
+| Export | fa-arrow-up-from-bracket | Export options (existing `ExportPopover`) |
+
+**Performer Mode chips** (one performer selected):
+
+| Chip | Icon | Popover Content | Tint |
+|------|------|-----------------|------|
+| Effects | fa-wand-magic-sparkles | Effect toggle grid (16 effects) | Performer color |
+| Prop | fa-staff-snake | Prop family grid + size slider + plane selector | Performer color |
+| Effort | fa-wave-square | Effort palette (8 efforts) | Performer color |
+| Camera | fa-video | Camera presets (persists across modes) | Default |
+| Export | fa-arrow-up-from-bracket | Export options (persists across modes) | Default |
+
+**Mode transition**: Chips animate out/in using the existing `slide` transition on `chip-wrap` (220ms, y-axis). Performer-mode chips tint their icon to the selected performer's color as a reinforcement cue.
+
+## Bottom Center Rail Spec
+
+### Position & Layout
+
+```
+Position:        absolute
+Bottom:          12px
+Left:            50%
+Transform:       translateX(-50%)
+Display:         flex (row)
+Gap:             8px
+Z-index:         20
+```
+
+### Chip Spec (matches right rail exactly)
 
 ```
 Width:           56px
@@ -40,8 +83,9 @@ Min touch target: 56px (exceeds 44px WCAG requirement)
 2. **Performer chips** — Bold number (1-8), performer-colored dot at top-right (12px)
 3. **"+" chip** — `fa-plus` icon, dashed border, disabled at 8 performers
 
-### Pressed State (Per-Performer)
+### Pressed States
 
+**Per-Performer:**
 ```
 Border-color:    var(--performer-color)
 Box-shadow:      0 4px 20px color-mix(in srgb, var(--performer-color) 30%, transparent)
@@ -49,8 +93,7 @@ Number color:    var(--performer-color)
 Dot glow:        0 0 8px var(--performer-color)
 ```
 
-### Pressed State ("All")
-
+**"All":**
 ```
 Background:      color-mix(in srgb, #4a9eff 18%, transparent)
 Border-color:    color-mix(in srgb, #4a9eff 50%, transparent)
@@ -58,55 +101,57 @@ Border-color:    color-mix(in srgb, #4a9eff 50%, transparent)
 
 ### Tooltips
 
-- Left/Expanding layouts: tooltip appears to the RIGHT of chip
-- Bottom Center layout: tooltip appears ABOVE chip
-- Hidden when popover is open
+Appear ABOVE chip. Hidden when that chip is pressed.
 
 ### Separators
 
-- Vertical layouts: 32px x 1px horizontal line between All/performers and performers/Add
-- Horizontal layout: 1px x 32px vertical line
+1px x 32px vertical lines between All/performers and performers/Add.
 
-## Popover Spec
+### Selection Behavior
 
-Matches existing right rail popovers exactly:
+- Clicking a performer chip: selects that performer (enters Performer Mode), right rail morphs
+- Clicking same chip again: deselects (returns to Bird's Eye), right rail morphs back
+- Clicking "All": deselects any individual, enters Bird's Eye
+- Clicking a different performer: switches selection, right rail stays in Performer Mode but scopes to new performer
 
-```
-Width:           420px
-Background:      rgba(20, 22, 32, 0.82)
-Backdrop-filter: blur(24px) saturate(150%)
-Border:          1px solid rgba(255, 255, 255, 0.18)
-Border-radius:   18px
-Box-shadow:      0 12px 40px rgba(0, 0, 0, 0.55)
-Animation in:    scale 220ms cubic-bezier(0.34, 1.56, 0.64, 1) from 0.92
-Animation out:   scale 160ms cubic-bezier(0.55, 0, 1, 0.45) to 0.95
-```
+## Right Rail Morphing Spec
 
-### Popover Header
+### Current Structure (RightRail.svelte)
 
-```
-Padding:         14px 16px 10px
-Border-bottom:   1px solid rgba(255, 255, 255, 0.1)
-Title:           11px / 700 / uppercase / 0.08em tracking / rgba(255,255,255,0.42)
-Badge:           Performer color dot (8px) + performer name in performer color
+The right rail already context-switches between 2D and 3D chip sets via `renderMode`. Adding a third dimension — selection state:
+
+```typescript
+const chips = $derived.by(() => {
+  if (renderMode === '2d') return CHIPS_2D;
+  if (viewer.selectedPerformerIndex !== null) return CHIPS_PERFORMER;
+  return CHIPS_BIRDS_EYE;
+});
 ```
 
-### Tab Bar
+### Chip Tinting in Performer Mode
 
-Exact match of PerformerPopover tabs:
+Performer-specific chips (Effects, Prop, Effort) get their icon tinted to the selected performer's color:
 
+```css
+.rail-chip.performer-scoped {
+  --chip-tint: var(--selected-performer-color);
+}
+.rail-chip.performer-scoped i {
+  color: var(--chip-tint, rgba(255, 255, 255, 0.62));
+}
 ```
-Container:       3px padding, 8px radius, rgba(0,0,0,0.45) bg, 1px border
-Tab:             flex:1, 8px 10px padding, min-height 44px, 11px/600/0.04em
-Active tab:      rgba(255,255,255,0.12) bg, rgba(255,255,255,0.2) border, white text
-Transition:      140ms cubic-bezier(0.2, 0, 0.13, 1.5)
-```
 
-## Per-Performer Popover Tabs
+### Transition Between Modes
 
-### Effects Tab
+Chips that leave: `slide` out (220ms, y-axis, existing transition)
+Chips that arrive: `slide` in (220ms, y-axis, existing transition)
+Chips that persist (Camera, Export): stay in place, no transition
 
-Grid of 16 effect toggles (4 columns):
+## Popover Content — Performer Mode
+
+### Effects Popover
+
+Grid of 16 effect toggles (4 columns). Each toggle = icon + label. Active state uses effect's own color.
 
 | ID | Label | Icon | Color |
 |---|---|---|---|
@@ -131,9 +176,9 @@ Grid of 16 effect toggles (4 columns):
 
 Source: `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`
 
-### Prop Tab
+### Prop Popover
 
-**Prop Family Grid** (4 columns, sectioned):
+**Prop Family Grid** (4 columns, sectioned with labels):
 
 | Section | Props |
 |---|---|
@@ -142,18 +187,18 @@ Source: `src/lib/shared/animation-engine/components/effects-panel/effect-registr
 | Novelty | Chicken, DoubleStar, EightRings, ContactBall, Torch |
 | Singles | Hand, Sword, Quiad |
 
-Source: `src/lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte` (PROP_FAMILIES)
+Source: `src/lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte`
 
 **Staff Length Slider:**
 - Range: 80–180cm, default 120cm
 - Accent: performer color
 - Label + slider + value readout
 
-**Plane Mode Selector** (3 primary planes, row of buttons):
+**Plane Mode Selector** (3 primary planes):
 - Wall, Wheel, Floor
-- Source: `@austencloud/scene-3d` Plane enum (Wall/Wheel/Floor are L8; fusion planes are L9-only)
+- Source: `@austencloud/scene-3d` Plane enum (L8 planes only; fusion planes are L9)
 
-### Effort Tab
+### Effort Popover
 
 Grid of 8 efforts (4 columns), each showing label + subtitle:
 
@@ -170,13 +215,13 @@ Grid of 8 efforts (4 columns), each showing label + subtitle:
 
 **Active state:** `border-color: effort.color; color: effort.color; background: color-mix(in srgb, effort.color 12%, transparent)`
 
-Source: `src/lib/shared/effort/domain/effort-types.ts` (EFFORTS array)
+Source: `src/lib/shared/effort/domain/effort-types.ts`
 
-## "All" Popover
+## Popover Content — Bird's Eye Mode
 
-- Shows performer color dots for all active performers
-- "Global controls" hint text
-- Formation selector grid (4 columns):
+### Formation Popover
+
+Formation selector grid (replaces the current PerformerPopover's formation tab):
 
 | ID | Label | Icon | Valid Counts |
 |---|---|---|---|
@@ -191,20 +236,47 @@ Source: `src/lib/shared/effort/domain/effort-types.ts` (EFFORTS array)
 | facing-each-other | Facing | fa-people-arrows | 2 |
 | stage-lr | Stage L/R | fa-arrows-alt-h | 2 |
 
-Formations disabled (opacity 0.25, cursor not-allowed) when current performer count isn't in their valid counts list.
+Formations disabled when current performer count isn't in their valid counts list.
 
 Source: `@austencloud/scene-3d` FormationPreset type + PRESET_VALID_COUNTS
+
+## Popover Spec (Shared)
+
+All popovers use the same glass styling:
+
+```
+Width:           420px
+Background:      rgba(20, 22, 32, 0.82)
+Backdrop-filter: blur(24px) saturate(150%)
+Border:          1px solid rgba(255, 255, 255, 0.18)
+Border-radius:   18px
+Box-shadow:      0 12px 40px rgba(0, 0, 0, 0.55)
+Animation in:    scale 220ms cubic-bezier(0.34, 1.56, 0.64, 1) from 0.92
+Animation out:   scale 160ms cubic-bezier(0.55, 0, 1, 0.45) to 0.95
+Position:        left of right rail chips (existing pattern)
+```
+
+### Popover Header (Performer Mode only)
+
+```
+Padding:         14px 16px 10px
+Border-bottom:   1px solid rgba(255, 255, 255, 0.1)
+Title:           "Performer N" — 11px / 700 / uppercase / 0.08em tracking
+Badge:           Performer color dot (8px) + color name in performer color
+```
 
 ## 3D Selection Behavior
 
 When a performer chip is pressed:
-1. **Ground ring** appears under performer (existing `DraggablePerformer.svelte` pattern — `RingGeometry`, performer color, 0.3 opacity)
+1. **Ground ring** appears under performer (existing `DraggablePerformer.svelte` — `RingGeometry`, performer color, 0.3 opacity)
 2. **Camera smooth-orbits** to center on selected performer via `camera-controls` `setTarget()`
-3. **Other performers** remain visible at normal opacity (not dimmed) — formation context preserved
+3. **Other performers** remain visible at normal opacity — formation context preserved
+4. **Right rail** morphs to Performer Mode chips
 
 When "All" or deselected:
-- Ground rings hidden on all performers
+- Ground rings hidden
 - Camera returns to default orbit target (center of formation)
+- Right rail morphs back to Bird's Eye chips
 
 ## Performer Colors (Canonical)
 
@@ -243,16 +315,18 @@ Source: `src/lib/shared/3d/state/viewer-3d-state.svelte.ts`
 
 | File | Change |
 |---|---|
-| `src/lib/shared/sequence-viewer/components/RightRail.svelte` | Remove "performers" chip from CHIPS_3D array |
-| New: `src/lib/shared/3d/components/controls/PerformerRail.svelte` | The new rail component |
-| New: `src/lib/shared/3d/components/controls/PerformerRailPopover.svelte` | Per-performer popover |
-| `src/lib/shared/3d/components/Viewer3DCanvas.svelte` | Mount PerformerRail |
-| `src/lib/shared/3d/context/viewer-3d-context.ts` | Add `selectedPerformerPopover` state if needed |
-| Existing: `src/lib/shared/3d/components/controls/PerformerChipStrip.svelte` | May be retired or repurposed |
+| `src/lib/shared/sequence-viewer/components/RightRail.svelte` | Add CHIPS_PERFORMER and CHIPS_BIRDS_EYE arrays, derive active chip set from selection state. Remove "performers" chip. Add performer-color tinting for performer-mode chips. |
+| New: `src/lib/shared/3d/components/controls/PerformerRail.svelte` | Bottom-center horizontal chip strip |
+| New: `src/lib/shared/3d/components/controls/EffectsPopover.svelte` | Per-performer effects toggle grid |
+| New: `src/lib/shared/3d/components/controls/PropPopover.svelte` | Per-performer prop/size/plane surface |
+| New: `src/lib/shared/3d/components/controls/EffortPopover.svelte` | Per-performer effort palette |
+| `src/lib/shared/3d/components/Viewer3DCanvas.svelte` | Mount PerformerRail in viewport |
+| `src/lib/shared/3d/context/viewer-3d-context.ts` | Extend PopoverId with 'effects' \| 'prop' \| 'effort' \| 'formation' |
+| Retire: `src/lib/shared/sequence-viewer/components/PerformerPopover.svelte` | Absorbed into morphing right rail + bottom rail |
+| Retire: `src/lib/shared/3d/components/controls/PerformerChipStrip.svelte` | Replaced by PerformerRail |
 
-## Open Questions
+## Deferred (Phase 2)
 
-1. **Layout choice** — User comparing A/B/C in playground. Decision pending.
-2. **Chip strip retirement** — Does PerformerChipStrip inside the existing PerformerPopover get removed entirely, or does it remain as a secondary access point?
-3. **Exclusive popover behavior** — Should opening a performer rail popover close any open right rail popover (and vice versa)?
-4. **Mobile / narrow viewport** — Does the rail collapse or move on small screens?
+- **Multi-select** — Select 2+ performers, bulk-edit shared properties. Significant UX challenge (conflicting settings display, visual indication). Not needed for MVP.
+- **Planes popover in Performer Mode** — Currently planes chip exists in Bird's Eye. Per-performer plane editing is handled inside the Prop popover (simpler surface). A dedicated Planes chip in Performer Mode could be added later if the Prop popover feels overloaded.
+- **Mobile layout** — Adaptive rail placement for narrow viewports.
