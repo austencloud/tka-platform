@@ -1,9 +1,16 @@
 <script lang="ts">
   import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../context/viewer-3d-context";
+  import CascadeBadge from "./controls/CascadeBadge.svelte";
 
   const viewer = getViewer3DContext();
-  const avatarState = $derived(viewer.performerManager.performers[0] ?? null);
+  const selectedIndex = $derived(viewer.selectedPerformerIndex);
+  const isAllMode = $derived(selectedIndex === null);
+
+  const selected = $derived.by(() => {
+    if (selectedIndex === null) return null;
+    return viewer.performerManager.performers[selectedIndex] ?? null;
+  });
 
   const PLANES: { plane: Plane; label: string }[] = [
     { plane: Plane.WALL, label: "Wall" },
@@ -11,8 +18,20 @@
     { plane: Plane.FLOOR, label: "Floor" },
   ];
 
-  const bluePlane = $derived(avatarState?.customBluePlane ?? Plane.WALL);
-  const redPlane = $derived(avatarState?.customRedPlane ?? Plane.WALL);
+  const bluePlane = $derived(
+    isAllMode
+      ? viewer.defaultSettings.customBluePlane
+      : (selected?.effectiveBluePlane ?? Plane.WALL)
+  );
+
+  const redPlane = $derived(
+    isAllMode
+      ? viewer.defaultSettings.customRedPlane
+      : (selected?.effectiveRedPlane ?? Plane.WALL)
+  );
+
+  const isOverridden = $derived(!isAllMode && (selected?.hasOverride.planes ?? false));
+  const overrideCount = $derived(isAllMode ? viewer.overrideCountForCategory("planes") : 0);
 
   function hasHandOnPlane(plane: Plane): boolean {
     return bluePlane === plane || redPlane === plane;
@@ -22,14 +41,14 @@
     return viewer.visiblePlanes.has(plane);
   }
 
+  const hasStepOverrides = $derived(selected?.hasStepOverrides ?? false);
+
   const isPlaneStateNonDefault = $derived(
-    (avatarState?.customBluePlane ?? Plane.WALL) !== Plane.WALL ||
-    (avatarState?.customRedPlane ?? Plane.WALL) !== Plane.WALL ||
-    (avatarState?.hasStepOverrides ?? false) ||
+    bluePlane !== Plane.WALL ||
+    redPlane !== Plane.WALL ||
+    hasStepOverrides ||
     viewer.visiblePlanes.size > 0
   );
-
-  const hasStepOverrides = $derived(avatarState?.hasStepOverrides ?? false);
 
   function handlePlaneToggleClick(e: MouseEvent, plane: Plane) {
     e.stopPropagation();
@@ -38,23 +57,38 @@
 
   function handleHandSlotClick(e: MouseEvent, hand: "blue" | "red", plane: Plane) {
     e.stopPropagation();
-    if (!avatarState) return;
     const currentPlane = hand === "blue" ? bluePlane : redPlane;
     if (currentPlane === plane) return;
-    viewer.setHandPlaneScoped(hand, plane);
+
+    if (isAllMode) {
+      viewer.setDefaultHandPlane(hand, plane);
+    } else {
+      viewer.setHandPlaneScoped(hand, plane);
+    }
   }
 
   function handleResetPlanesClick(e: MouseEvent) {
     e.stopPropagation();
-    if (!avatarState) return;
-    viewer.setHandPlaneScoped("blue", Plane.WALL);
-    viewer.setHandPlaneScoped("red", Plane.WALL);
-    for (const p of viewer.scopedPerformers()) {
-      p.clearBeatPlaneOverrides();
+    if (isAllMode) {
+      viewer.setDefaultHandPlane("blue", Plane.WALL);
+      viewer.setDefaultHandPlane("red", Plane.WALL);
+      viewer.hideAllPlanes();
+    } else if (selected) {
+      selected.resetPlanes();
+      for (const p of viewer.scopedPerformers()) {
+        p.clearBeatPlaneOverrides();
+      }
     }
-    viewer.hideAllPlanes();
   }
 </script>
+
+{#if isAllMode && overrideCount > 0}
+  <CascadeBadge mode="overrides" {overrideCount} categoryLabel="planes" onReset={() => viewer.resetAllPerformersPlanes()} />
+{:else if !isAllMode && isOverridden}
+  <CascadeBadge mode="custom" onReset={() => selected?.resetPlanes()} />
+{:else if !isAllMode}
+  <CascadeBadge mode="default" />
+{/if}
 
 <div class="plane-matrix">
   {#each PLANES as { plane, label }}

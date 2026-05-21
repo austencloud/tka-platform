@@ -355,27 +355,27 @@ export function createViewer3DState() {
    * overrides so everyone inherits the global again.
    */
   function togglePropSizeLink(): void {
-    if (propSizeLinked) {
-      // Linked → Unlinked: stamp current global value onto all performers with null
-      const globalCm = userProportionsState.staffLengthCm;
-      for (const p of performerManager.performers) {
-        if (p.settings.staffLengthCm === null) {
-          p.setStaffLengthCm(globalCm);
+    sceneUndo.withoutUndo(() => {
+      if (propSizeLinked) {
+        const globalCm = userProportionsState.staffLengthCm;
+        for (const p of performerManager.performers) {
+          if (p.settings.staffLengthCm === null) {
+            p.setStaffLengthCm(globalCm);
+          }
         }
+        propSizeLinked = false;
+      } else {
+        const sourceIdx = selectedPerformerIndex ?? 0;
+        const source = performerManager.performers[sourceIdx];
+        if (source?.settings.staffLengthCm != null) {
+          userProportionsState.setStaffLengthCm(source.settings.staffLengthCm);
+        }
+        for (const p of performerManager.performers) {
+          p.setStaffLengthCm(null);
+        }
+        propSizeLinked = true;
       }
-      propSizeLinked = false;
-    } else {
-      // Unlinked → Linked: sync global to selected performer's value, clear all
-      const sourceIdx = selectedPerformerIndex ?? 0;
-      const source = performerManager.performers[sourceIdx];
-      if (source?.settings.staffLengthCm != null) {
-        userProportionsState.setStaffLengthCm(source.settings.staffLengthCm);
-      }
-      for (const p of performerManager.performers) {
-        p.setStaffLengthCm(null);
-      }
-      propSizeLinked = true;
-    }
+    });
   }
 
   // ============================================
@@ -436,25 +436,33 @@ export function createViewer3DState() {
 
   function resetAllPerformersProp(): void {
     sceneUndo.captureState("reset-all-overrides", "Reset all prop overrides");
-    for (const p of performerManager.performers) p.resetProp();
+    sceneUndo.withoutUndo(() => {
+      for (const p of performerManager.performers) p.resetProp();
+    });
     sceneUndo.commitState();
   }
 
   function resetAllPerformersEffort(): void {
     sceneUndo.captureState("reset-all-overrides", "Reset all effort overrides");
-    for (const p of performerManager.performers) p.resetEffort();
+    sceneUndo.withoutUndo(() => {
+      for (const p of performerManager.performers) p.resetEffort();
+    });
     sceneUndo.commitState();
   }
 
   function resetAllPerformersEffects(): void {
     sceneUndo.captureState("reset-all-overrides", "Reset all effect overrides");
-    for (const p of performerManager.performers) p.resetEffects();
+    sceneUndo.withoutUndo(() => {
+      for (const p of performerManager.performers) p.resetEffects();
+    });
     sceneUndo.commitState();
   }
 
   function resetAllPerformersPlanes(): void {
     sceneUndo.captureState("reset-all-overrides", "Reset all plane overrides");
-    for (const p of performerManager.performers) p.resetPlanes();
+    sceneUndo.withoutUndo(() => {
+      for (const p of performerManager.performers) p.resetPlanes();
+    });
     sceneUndo.commitState();
   }
 
@@ -463,9 +471,20 @@ export function createViewer3DState() {
    * Used by the Planes tab when "All" is selected or a single performer is picked.
    */
   function setHandPlaneScoped(hand: "blue" | "red", plane: Plane): void {
-    for (const p of scopedPerformers()) {
-      p.setHandPlane(hand, plane);
+    const targets = scopedPerformers();
+    if (targets.length <= 1) {
+      for (const p of targets) p.setHandPlane(hand, plane);
+      return;
     }
+    const beforeSnap = captureViewerSnapshot();
+    sceneUndo.withoutUndo(() => {
+      for (const p of targets) p.setHandPlane(hand, plane);
+    });
+    const afterSnap = captureViewerSnapshot();
+    sceneUndo.pushSelfRestoringEntry("set-hand-plane", `All ${hand}: ${plane}`, {
+      undo: () => restoreViewerSnapshot(beforeSnap),
+      redo: () => restoreViewerSnapshot(afterSnap),
+    });
   }
 
   /**
