@@ -95,3 +95,35 @@ export const RESIDENT_FISH_COUNT = RESIDENT_SPECIES.reduce(
 	(sum, sp) => sum + sp.instanceCount,
 	0,
 );
+
+// 6×6 threat matrix: THREAT_MATRIX[myRole * 6 + neighborRole] = 1.0 means neighborRole threatens myRole
+// prettier-ignore
+export const THREAT_MATRIX = new Float32Array([
+	//          Apex  Meso  Prey  Cruis Terr  Neut
+	/* Apex */  0,    0,    0,    0,    0,    0,
+	/* Meso */  1,    0,    0,    0,    0,    0,
+	/* Prey */  1,    1,    0,    0,    0,    0,
+	/* Crus */  1,    0,    0,    0,    0,    0,
+	/* Terr */  1,    0,    0,    0,    0,    0,
+	/* Neut */  0,    0,    0,    0,    0,    0,
+]);
+
+// 6×6 hunt matrix: HUNT_MATRIX[myRole * 6 + neighborRole] = 1.0 means I hunt neighborRole
+// prettier-ignore
+export const HUNT_MATRIX = new Float32Array([
+	//          Apex  Meso  Prey  Cruis Terr  Neut
+	/* Apex */  0,    0,    1,    1,    0,    0,
+	/* Meso */  0,    0,    1,    0,    0,    0,
+	/* Prey */  0,    0,    0,    0,    0,    0,
+	/* Crus */  0,    0,    0,    0,    0,    0,
+	/* Terr */  0,    0,    0,    0,    0,    0,
+	/* Neut */  0,    0,    0,    0,    0,    0,
+]);
+
+export function isThreat(myRole: TrophicRole, neighborRole: TrophicRole): boolean {
+	return THREAT_MATRIX[myRole * 6 + neighborRole] === 1;
+}
+
+export function isPrey(myRole: TrophicRole, neighborRole: TrophicRole): boolean {
+	return HUNT_MATRIX[myRole * 6 + neighborRole] === 1;
+}
