@@ -142,4 +142,53 @@
     padding: 10px 14px 14px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
+  .rail-chip {
+    width: 56px;
+    height: 56px;
+    background: rgba(20, 22, 32, 0.78);
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    color: rgba(255, 255, 255, 0.62);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+  }
+  .rail-chip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .rail-chip[aria-pressed="true"] {
+    background: color-mix(in srgb, #4a9eff 18%, transparent);
+    border-color: color-mix(in srgb, #4a9eff 50%, transparent);
+    color: #8fc3ff;
+    box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent);
+  }
+  .rail-chip.performer-scoped i {
+    color: var(--chip-tint, rgba(255, 255, 255, 0.62));
+  }
+  .rail-chip.performer-scoped[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--chip-tint) 18%, transparent);
+    border-color: color-mix(in srgb, var(--chip-tint) 50%, transparent);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--chip-tint) 25%, transparent);
+  }
+  .rail-chip i {
+    font-size: 22px;
+  }
 </style>
