@@ -39,7 +39,7 @@ import { onMount } from "svelte";
 <div class="border-frame" style="background: {theme.borderGradient};">
   <!-- Inner: full flex column - header, content, footer all flow naturally -->
   <div class="back" style="background: {theme.background};">
-    <CardBackDecorations theme={settingsService.settings.backgroundType ?? "nightSky"} />
+    <CardBackDecorations theme={settingsService.settings.backgroundType ?? "cosmic"} />
 
     <!-- HEADER: turn glyph | branding | reversal glyph -->
     <header class="card-header">

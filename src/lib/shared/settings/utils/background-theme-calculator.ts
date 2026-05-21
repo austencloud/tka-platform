@@ -43,17 +43,18 @@ import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constant
  */
 export const BACKGROUND_THEME_COLORS: Record<BackgroundType, string[]> = {
   [BackgroundType.PRIDE]: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
-  [BackgroundType.SNOWFALL]: ["#1e3a5f", "#3b82f6", "#93c5fd"],
-  [BackgroundType.NIGHT_SKY]: ["#1e1b4b", "#4338ca", "#818cf8"],
-  [BackgroundType.DEEP_OCEAN]: ["#0c4a6e", "#0891b2", "#22d3ee"],
-  [BackgroundType.EMBER_GLOW]: ["#7c2d12", "#ea580c", "#fb923c"],
-  [BackgroundType.CHERRY_BLOSSOM]: ["#831843", "#db2777", "#f9a8d4"],
-  [BackgroundType.FIREFLY_FOREST]: ["#0d3320", "#166534", "#22c55e", "#bef264"],
-  [BackgroundType.AUTUMN_DRIFT]: ["#92400e", "#d97706", "#dc2626", "#78350f"],
+  [BackgroundType.WINTER]: ["#1e3a5f", "#3b82f6", "#93c5fd"],
+  [BackgroundType.COSMIC]: ["#1e1b4b", "#4338ca", "#818cf8"],
+  [BackgroundType.OCEAN]: ["#0c4a6e", "#0891b2", "#22d3ee"],
+  [BackgroundType.EMBER]: ["#7c2d12", "#ea580c", "#fb923c"],
+  [BackgroundType.BLOSSOM]: ["#831843", "#db2777", "#f9a8d4"],
+  [BackgroundType.FOREST]: ["#0d3320", "#166534", "#22c55e", "#bef264"],
+  [BackgroundType.AUTUMN]: ["#92400e", "#d97706", "#dc2626", "#78350f"],
   // Solid/gradient: dark backgrounds but vibrant indigo accent for visibility
   [BackgroundType.SOLID_COLOR]: ["#18181b", "#6366f1", "#818cf8"],
   [BackgroundType.LINEAR_GRADIENT]: ["#0d1117", "#6366f1", "#a78bfa"],
   [BackgroundType.CELESTIAL]: ["#0a1a4a", "#b89050", "#ffd080", "#ffe0a0"],
+  [BackgroundType.VOID]: ["#000000", "#6b7280", "#9ca3af"],
 };
 
 /**
@@ -392,7 +393,7 @@ export function applyThemeFromColors(
 
   // Set data attribute for CSS-based background luminance awareness
   // "bright" = luminous backgrounds (Aurora, etc.) - cards need deeper colors to pop
-  // "dim" = darker backgrounds (Night Sky, etc.) - standard vibrant colors work well
+  // "dim" = darker backgrounds (Cosmic, etc.) - standard vibrant colors work well
   // NOTE: This is separate from "dark mode" (L key) which controls pictograph rendering
   const luminanceClass = mode === "light" ? "bright" : "dim";
   root.setAttribute("data-theme-luminance", luminanceClass);

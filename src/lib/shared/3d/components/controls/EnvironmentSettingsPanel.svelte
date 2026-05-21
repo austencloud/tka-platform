@@ -25,45 +25,45 @@
   const backgroundOptions: BackgroundOption[] = [
     // With 3D scenes
     {
-      type: BackgroundType.FIREFLY_FOREST,
+      type: BackgroundType.FOREST,
       name: "Forest",
       icon: "fa-tree",
       has3DScene: true,
     },
     {
-      type: BackgroundType.AUTUMN_DRIFT,
+      type: BackgroundType.AUTUMN,
       name: "Autumn",
       icon: "fa-leaf",
       has3DScene: true,
     },
     {
-      type: BackgroundType.NIGHT_SKY,
+      type: BackgroundType.COSMIC,
       name: "Cosmic",
       icon: "fa-moon",
       has3DScene: true,
     },
     // All animated backgrounds have 3D scenes
     {
-      type: BackgroundType.SNOWFALL,
-      name: "Snow",
+      type: BackgroundType.WINTER,
+      name: "Winter",
       icon: "fa-snowflake",
       has3DScene: true,
     },
     {
-      type: BackgroundType.DEEP_OCEAN,
+      type: BackgroundType.OCEAN,
       name: "Ocean",
       icon: "fa-water",
       has3DScene: true,
     },
     {
-      type: BackgroundType.EMBER_GLOW,
+      type: BackgroundType.EMBER,
       name: "Ember",
       icon: "fa-fire",
       has3DScene: true,
     },
     {
-      type: BackgroundType.CHERRY_BLOSSOM,
-      name: "Cherry Blossom",
+      type: BackgroundType.BLOSSOM,
+      name: "Blossom",
       icon: "fa-spa",
       has3DScene: true,
     },

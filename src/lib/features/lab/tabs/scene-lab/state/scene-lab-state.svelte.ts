@@ -5,21 +5,21 @@ import {
   type CosmicSceneConfig,
   type OceanSceneConfig,
   type EmberSceneConfig,
-  type CherryBlossomSceneConfig,
+  type BlossomSceneConfig,
   type CelestialSceneConfig,
   type RainbowSceneConfig,
-  type PureBlackSceneConfig,
+  type VoidSceneConfig,
   createDefaultAutumnConfig,
   createDefaultForestFireflyConfig,
   createDefaultWinterConfig,
   createDefaultCosmicNightConfig,
   createDefaultCosmicAuroraConfig,
   createDefaultOceanReefConfig,
-  createDefaultEmberGlowConfig,
-  createDefaultCherryBlossomConfig,
+  createDefaultEmberConfig,
+  createDefaultBlossomConfig,
   createDefaultCelestialConfig,
   createDefaultRainbowConfig,
-  createDefaultPureBlackConfig,
+  createDefaultVoidConfig,
 } from "$lib/shared/3d/environments/domain/models/scene-configs";
 import type { SceneId } from "../domain/scene-lab-types";
 import type { CosmicVariant } from "../services/scene-lab-persistence";
@@ -54,10 +54,10 @@ export function createSceneLabState() {
       : oceanDefaults
   );
   let emberConfig = $state<EmberSceneConfig>(
-    persisted?.configs.ember ?? createDefaultEmberGlowConfig()
+    persisted?.configs.ember ?? createDefaultEmberConfig()
   );
-  let cherryBlossomConfig = $state<CherryBlossomSceneConfig>(
-    persisted?.configs.cherryBlossom ?? createDefaultCherryBlossomConfig()
+  let blossomConfig = $state<BlossomSceneConfig>(
+    persisted?.configs.blossom ?? createDefaultBlossomConfig()
   );
   let celestialConfig = $state<CelestialSceneConfig>(
     persisted?.configs.celestial ?? createDefaultCelestialConfig()
@@ -65,8 +65,8 @@ export function createSceneLabState() {
   let rainbowConfig = $state<RainbowSceneConfig>(
     persisted?.configs.rainbow ?? createDefaultRainbowConfig()
   );
-  let pureBlackConfig = $state<PureBlackSceneConfig>(
-    persisted?.configs.pureBlack ?? createDefaultPureBlackConfig()
+  let voidConfig = $state<VoidSceneConfig>(
+    persisted?.configs.void ?? createDefaultVoidConfig()
   );
 
   $effect(() => {
@@ -82,10 +82,10 @@ export function createSceneLabState() {
         cosmicAurora: cosmicAuroraConfig,
         ocean: oceanConfig,
         ember: emberConfig,
-        cherryBlossom: cherryBlossomConfig,
+        blossom: blossomConfig,
         celestial: celestialConfig,
         rainbow: rainbowConfig,
-        pureBlack: pureBlackConfig,
+        void: voidConfig,
       },
     });
     const timer = setTimeout(() => {
@@ -108,11 +108,11 @@ export function createSceneLabState() {
         else cosmicAuroraConfig = createDefaultCosmicAuroraConfig();
         break;
       case "ocean": oceanConfig = createDefaultOceanReefConfig(); break;
-      case "ember": emberConfig = createDefaultEmberGlowConfig(); break;
-      case "cherry-blossom": cherryBlossomConfig = createDefaultCherryBlossomConfig(); break;
+      case "ember": emberConfig = createDefaultEmberConfig(); break;
+      case "blossom": blossomConfig = createDefaultBlossomConfig(); break;
       case "celestial": celestialConfig = createDefaultCelestialConfig(); break;
       case "rainbow": rainbowConfig = createDefaultRainbowConfig(); break;
-      case "pure-black": pureBlackConfig = createDefaultPureBlackConfig(); break;
+      case "void": voidConfig = createDefaultVoidConfig(); break;
     }
   }
 
@@ -124,10 +124,10 @@ export function createSceneLabState() {
       case "cosmic": return $state.snapshot(cosmicVariant === "night" ? cosmicNightConfig : cosmicAuroraConfig);
       case "ocean": return $state.snapshot(oceanConfig);
       case "ember": return $state.snapshot(emberConfig);
-      case "cherry-blossom": return $state.snapshot(cherryBlossomConfig);
+      case "blossom": return $state.snapshot(blossomConfig);
       case "celestial": return $state.snapshot(celestialConfig);
       case "rainbow": return $state.snapshot(rainbowConfig);
-      case "pure-black": return $state.snapshot(pureBlackConfig);
+      case "void": return $state.snapshot(voidConfig);
       default: return {};
     }
   }
@@ -139,11 +139,11 @@ export function createSceneLabState() {
       case "autumn": return "createDefaultAutumnConfig";
       case "cosmic": return cosmicVariant === "night" ? "createDefaultCosmicNightConfig" : "createDefaultCosmicAuroraConfig";
       case "ocean": return "createDefaultOceanReefConfig";
-      case "ember": return "createDefaultEmberGlowConfig";
-      case "cherry-blossom": return "createDefaultCherryBlossomConfig";
+      case "ember": return "createDefaultEmberConfig";
+      case "blossom": return "createDefaultBlossomConfig";
       case "celestial": return "createDefaultCelestialConfig";
       case "rainbow": return "createDefaultRainbowConfig";
-      case "pure-black": return "createDefaultPureBlackConfig";
+      case "void": return "createDefaultVoidConfig";
       default: return "createDefaultWinterConfig";
     }
   }
@@ -156,10 +156,10 @@ export function createSceneLabState() {
       case "cosmic": return "CosmicSceneConfig";
       case "ocean": return "OceanSceneConfig";
       case "ember": return "EmberSceneConfig";
-      case "cherry-blossom": return "CherryBlossomSceneConfig";
+      case "blossom": return "BlossomSceneConfig";
       case "celestial": return "CelestialSceneConfig";
       case "rainbow": return "RainbowSceneConfig";
-      case "pure-black": return "PureBlackSceneConfig";
+      case "void": return "VoidSceneConfig";
       default: return "unknown";
     }
   }
@@ -182,10 +182,10 @@ export function createSceneLabState() {
     get cosmicAuroraConfig() { return cosmicAuroraConfig; },
     get oceanConfig() { return oceanConfig; },
     get emberConfig() { return emberConfig; },
-    get cherryBlossomConfig() { return cherryBlossomConfig; },
+    get blossomConfig() { return blossomConfig; },
     get celestialConfig() { return celestialConfig; },
     get rainbowConfig() { return rainbowConfig; },
-    get pureBlackConfig() { return pureBlackConfig; },
+    get voidConfig() { return voidConfig; },
     resetCurrent,
     copyCurrentToClipboard,
   };

@@ -18,20 +18,20 @@
   import GrassTufts from "./cherry-blossom/GrassTufts.svelte";
   import LilyPads from "./cherry-blossom/LilyPads.svelte";
   import {
-    type CherryBlossomSceneConfig,
-    createDefaultCherryBlossomConfig,
+    type BlossomSceneConfig,
+    createDefaultBlossomConfig,
   } from "../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import EngawaPlatform from "./cherry-blossom/EngawaPlatform.svelte";
 
   interface Props {
-    config?: CherryBlossomSceneConfig;
+    config?: BlossomSceneConfig;
   }
 
   let { config }: Props = $props();
 
-  const activeConfig = $derived(config ?? createDefaultCherryBlossomConfig());
+  const activeConfig = $derived(config ?? createDefaultBlossomConfig());
 
   const { scene } = useThrelte();
 

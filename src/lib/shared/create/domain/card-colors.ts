@@ -82,7 +82,7 @@ const DEFAULT_COLORS: CardColors = {
 };
 
 /**
- * Vibrant but darker colors for bright/glowing backgrounds like Aurora, Ember Glow
+ * Vibrant but darker colors for bright/glowing backgrounds like Aurora, Ember
  * These maintain visibility while keeping rich, saturated colors
  */
 const BRIGHT_BACKGROUND_COLORS: CardColors = {
@@ -150,11 +150,11 @@ const BRIGHT_BACKGROUND_COLORS: CardColors = {
 /**
  * Backgrounds that need darker card colors for visibility
  * Pride: Bright colorful flowing bands
- * Ember Glow: Strong warm glow that washes out lighter colors
+ * Ember: Strong warm glow that washes out lighter colors
  */
 const BRIGHT_BACKGROUNDS = new Set<BackgroundType>([
   BackgroundType.PRIDE,
-  BackgroundType.EMBER_GLOW,
+  BackgroundType.EMBER,
 ]);
 
 /**

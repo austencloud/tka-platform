@@ -6,8 +6,10 @@ import type {
   CosmicSceneConfig,
   OceanSceneConfig,
   EmberSceneConfig,
-  CherryBlossomSceneConfig,
+  BlossomSceneConfig,
   CelestialSceneConfig,
+  RainbowSceneConfig,
+  VoidSceneConfig,
 } from "$lib/shared/3d/environments/domain/models/scene-configs";
 
 const STORAGE_KEY = "scene-lab-state";
@@ -21,8 +23,10 @@ export interface PersistedSceneLabConfigs {
   cosmicAurora: CosmicSceneConfig;
   ocean: OceanSceneConfig;
   ember: EmberSceneConfig;
-  cherryBlossom: CherryBlossomSceneConfig;
+  blossom: BlossomSceneConfig;
   celestial: CelestialSceneConfig;
+  rainbow: RainbowSceneConfig;
+  void: VoidSceneConfig;
 }
 
 export type CosmicVariant = "night" | "aurora";
@@ -67,8 +71,10 @@ function migrateV1(raw: Record<string, unknown>): PersistedSceneLabState | null 
       cosmicAurora: configs.cosmicAurora as CosmicSceneConfig,
       ocean: (configs.oceanReef ?? configs.ocean) as OceanSceneConfig,
       ember: configs.ember as EmberSceneConfig,
-      cherryBlossom: configs.cherryBlossom as CherryBlossomSceneConfig,
+      blossom: (configs.blossom ?? configs.cherryBlossom) as BlossomSceneConfig,
       celestial: configs.celestial as CelestialSceneConfig,
+      rainbow: configs.rainbow as RainbowSceneConfig,
+      void: (configs.void ?? configs.pureBlack) as VoidSceneConfig,
     },
   };
 }

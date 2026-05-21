@@ -5,8 +5,8 @@
   import { getSceneLabContext } from "../context/scene-lab-context";
 
   const { state } = getSceneLabContext();
-  const cfg = $derived(state.pureBlackConfig);
-  function mut() { return state.pureBlackConfig; }
+  const cfg = $derived(state.voidConfig);
+  function mut() { return state.voidConfig; }
 </script>
 
 <ParamPanel title="Void grid" enabled={cfg.platform.enabled} onToggle={(v) => (mut().platform.enabled = v)}>

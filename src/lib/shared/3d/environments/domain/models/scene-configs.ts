@@ -102,6 +102,7 @@ export interface RuinsPlatformConfig {
   glowIntensity: number;
   mossIntensity: number;
   columnCount: number;
+  zOffset?: number;
 }
 
 export interface ObsidianPlatformConfig {
@@ -565,7 +566,7 @@ export interface RainbowSceneConfig {
 // Pure Black scene
 // ============================================================================
 
-export interface PureBlackSceneConfig {
+export interface VoidSceneConfig {
   ambientIntensity: number;
   platform: VoidPlatformConfig;
 }
@@ -926,33 +927,33 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
     },
     coral: {
       enabled: true,
-      count: 90,
-      glowColor: "#00ccaa",
-      glowBlend: 0.35,
+      count: 160,
+      glowColor: "#ff6688",
+      glowBlend: 0.55,
     },
     kelp: {
-      enabled: false,
-      count: 72,
+      enabled: true,
+      count: 180,
       swaySpeed: 0.5,
       swayAmplitude: 0.2,
     },
     fish: {
-      enabled: false,
-      count: 30,
-      targetSize: 0.25,
+      enabled: true,
+      count: 80,
+      targetSize: 0.08,
       swimHeight: [2, 7],
-      speed: [0.2, 0.5],
+      speed: [0.5, 1.2],
     },
     decorations: {
-      enabled: false,
-      count: 30,
-      targetSize: 0.2,
+      enabled: true,
+      count: 40,
+      targetSize: 0.25,
     },
     rocks: {
       enabled: true,
-      count: 50,
-      tintColor: "#1a4050",
-      tintBlend: 0.35,
+      count: 80,
+      tintColor: "#2a5565",
+      tintBlend: 0.25,
     },
     bubbles: {
       type: "bubbles",
@@ -1021,10 +1022,10 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       width: 8,
       depth: 6,
       height: 0.5,
-      stoneColor: "#302e28",
-      runeGlowColor: "#268ccc",
-      glowIntensity: 0.8,
-      mossIntensity: 0.4,
+      stoneColor: "#1a2028",
+      runeGlowColor: "#44ddaa",
+      glowIntensity: 0.5,
+      mossIntensity: 0.8,
       columnCount: 6,
     },
   };
@@ -1203,7 +1204,7 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
 }
 
 // ============================================================================
-// Cherry Blossom scene
+// Blossom scene
 // ============================================================================
 
 export interface StoneLanternConfig {
@@ -1245,7 +1246,7 @@ export interface SteppingStoneConfig {
   rotationY: number;
 }
 
-export interface CherryBlossomSceneConfig {
+export interface BlossomSceneConfig {
   sky: SkyGradientConfig;
   fog: FogConfig;
   ground: GroundConfig;
@@ -1566,7 +1567,7 @@ const EMBER_PILLAR_RINGS: TreeRingConfig[] = [
   { radius: 14, count: 8, scaleBase: 0.9, scaleVariation: 0.25, radiusJitter: 1.2 },
 ];
 
-export function createDefaultEmberGlowConfig(): EmberSceneConfig {
+export function createDefaultEmberConfig(): EmberSceneConfig {
   return {
     sky: {
       topColor: "#080204",
@@ -1706,16 +1707,16 @@ export function createDefaultEmberGlowConfig(): EmberSceneConfig {
   };
 }
 
-// ----- Cherry Blossom -----
+// ----- Blossom -----
 
-const CHERRY_BLOSSOM_TREE_RINGS: TreeRingConfig[] = [
+const BLOSSOM_TREE_RINGS: TreeRingConfig[] = [
   { radius: 8, count: 5, scaleBase: 1.5, scaleVariation: 0.35, radiusJitter: 0.8 },
   { radius: 13, count: 8, scaleBase: 1.3, scaleVariation: 0.3, radiusJitter: 1.2 },
   { radius: 19, count: 12, scaleBase: 1.1, scaleVariation: 0.25, radiusJitter: 1.5 },
   { radius: 28, count: 14, scaleBase: 2.0, scaleVariation: 0.4, radiusJitter: 2.5 },
 ];
 
-export function createDefaultCherryBlossomConfig(): CherryBlossomSceneConfig {
+export function createDefaultBlossomConfig(): BlossomSceneConfig {
   return {
     sky: {
       topColor: "#0f0a20",
@@ -1756,7 +1757,7 @@ export function createDefaultCherryBlossomConfig(): CherryBlossomSceneConfig {
       sizeRange: [0.15, 0.28],
       spin: false,
     },
-    treeRings: CHERRY_BLOSSOM_TREE_RINGS,
+    treeRings: BLOSSOM_TREE_RINGS,
     clearingRadius: 7,
     rockCount: 0,
     bushCount: 0,
@@ -2004,7 +2005,7 @@ export function createDefaultRainbowConfig(): RainbowSceneConfig {
   };
 }
 
-export function createDefaultPureBlackConfig(): PureBlackSceneConfig {
+export function createDefaultVoidConfig(): VoidSceneConfig {
   return {
     ambientIntensity: 0.5,
     platform: {

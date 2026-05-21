@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { AutumnDriftBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
+  import { WinterBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
   import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
 
   // Background system
-  let backgroundSystem: AutumnDriftBackgroundSystem | null = $state(null);
+  let backgroundSystem: WinterBackgroundSystem | null = $state(null);
   let canvasDimensions = $state({ width: 800, height: 600 });
 
   // Quality settings
@@ -17,33 +17,35 @@
   // Layer toggles
   let layers = $state({
     gradient: true,
-    leaves: true,
+    snowflakes: true,
+    shootingStars: true,
   });
 
   // Density presets
-  type DensityPreset = "sparse" | "normal" | "dense" | "storm";
+  type DensityPreset = "light" | "normal" | "heavy" | "blizzard";
   let densityPreset: DensityPreset = $state("normal");
 
-  // Wind presets
-  type WindPreset = "calm" | "breezy" | "windy" | "gusty";
-  let windPreset: WindPreset = $state("breezy");
-
   // Stats
-  let stats = $state({ leaves: 0 });
+  let stats = $state({ snowflakes: 0 });
   let lastStatsUpdate = 0;
 
   // Initialize system when canvas is ready
   function handleCanvasReady(dimensions: { width: number; height: number }) {
     canvasDimensions = dimensions;
-    backgroundSystem = new AutumnDriftBackgroundSystem();
-    backgroundSystem.initialize(dimensions, quality);
+    try {
+      backgroundSystem = new WinterBackgroundSystem();
+      backgroundSystem.initialize(dimensions, quality);
 
-    // Apply layer visibility
-    if (backgroundSystem.setLayerVisibility) {
-      backgroundSystem.setLayerVisibility(layers);
+      // Apply layer visibility
+      if (backgroundSystem.setLayerVisibility) {
+        backgroundSystem.setLayerVisibility(layers);
+      }
+
+      isLoading = false;
+    } catch (error) {
+      isLoading = false;
+      console.error("Failed to initialize Winter Lab:", error);
     }
-
-    isLoading = false;
   }
 
   // Update stats on each frame
@@ -59,7 +61,7 @@
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
-    backgroundSystem = new AutumnDriftBackgroundSystem();
+    backgroundSystem = new WinterBackgroundSystem();
     backgroundSystem.initialize(canvasDimensions, quality);
     if (backgroundSystem.setLayerVisibility) {
       backgroundSystem.setLayerVisibility(layers);
@@ -76,11 +78,6 @@
     regenerate();
   }
 
-  function setWindPreset(preset: WindPreset) {
-    windPreset = preset;
-    // Wind presets would be applied via the system if we add that capability
-  }
-
   function toggleLayer(layer: keyof typeof layers) {
     layers = { ...layers, [layer]: !layers[layer] };
     if (backgroundSystem?.setLayerVisibility) {
@@ -95,45 +92,38 @@
   });
 </script>
 
-<div class="autumn-drift-lab">
+<div class="winter-lab">
   <div class="controls themed-scrollbar-accent">
     <div class="header">
-      <h2>Autumn Drift Lab</h2>
-      <span class="badge">Falling Leaves</span>
+      <h2>Winter Lab</h2>
+      <span class="badge">Winter Wonder</span>
     </div>
 
     <!-- Quality Chips -->
     <ChipGroup>
-      <ChipToggle label="High" active={quality === "high"} color="amber" onclick={() => setQuality("high")} />
-      <ChipToggle label="Medium" active={quality === "medium"} color="amber" onclick={() => setQuality("medium")} />
-      <ChipToggle label="Low" active={quality === "low"} color="amber" onclick={() => setQuality("low")} />
+      <ChipToggle label="High" active={quality === "high"} color="cyan" onclick={() => setQuality("high")} />
+      <ChipToggle label="Medium" active={quality === "medium"} color="cyan" onclick={() => setQuality("medium")} />
+      <ChipToggle label="Low" active={quality === "low"} color="cyan" onclick={() => setQuality("low")} />
     </ChipGroup>
 
     <!-- Layer Chips -->
     <ChipGroup>
-      <ChipToggle label="Background" icon="fill-drip" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
-      <ChipToggle label="Leaves" icon="leaf" active={layers.leaves} color="amber" onclick={() => toggleLayer("leaves")} />
+      <ChipToggle label="Sky Gradient" icon="moon" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Snowflakes" icon="snowflake" active={layers.snowflakes} color="cyan" onclick={() => toggleLayer("snowflakes")} />
+      <ChipToggle label="Shooting Stars" icon="meteor" active={layers.shootingStars} color="cyan" onclick={() => toggleLayer("shootingStars")} />
     </ChipGroup>
 
     <!-- Density Chips -->
     <ChipGroup>
-      <ChipToggle label="Sparse" active={densityPreset === "sparse"} color="amber" onclick={() => setDensity("sparse")} />
-      <ChipToggle label="Normal" active={densityPreset === "normal"} color="amber" onclick={() => setDensity("normal")} />
-      <ChipToggle label="Dense" active={densityPreset === "dense"} color="amber" onclick={() => setDensity("dense")} />
-      <ChipToggle label="Storm" active={densityPreset === "storm"} color="amber" onclick={() => setDensity("storm")} />
-    </ChipGroup>
-
-    <!-- Wind Chips -->
-    <ChipGroup>
-      <ChipToggle label="Calm" active={windPreset === "calm"} color="default" onclick={() => setWindPreset("calm")} />
-      <ChipToggle label="Breezy" active={windPreset === "breezy"} color="default" onclick={() => setWindPreset("breezy")} />
-      <ChipToggle label="Windy" active={windPreset === "windy"} color="default" onclick={() => setWindPreset("windy")} />
-      <ChipToggle label="Gusty" active={windPreset === "gusty"} color="default" onclick={() => setWindPreset("gusty")} />
+      <ChipToggle label="Light" active={densityPreset === "light"} color="cyan" onclick={() => setDensity("light")} />
+      <ChipToggle label="Normal" active={densityPreset === "normal"} color="cyan" onclick={() => setDensity("normal")} />
+      <ChipToggle label="Heavy" active={densityPreset === "heavy"} color="cyan" onclick={() => setDensity("heavy")} />
+      <ChipToggle label="Blizzard" active={densityPreset === "blizzard"} color="cyan" onclick={() => setDensity("blizzard")} />
     </ChipGroup>
 
     <!-- Regenerate -->
     <button class="action-btn" onclick={regenerate}>
-      <i class="fas fa-leaf"></i>
+      <i class="fas fa-snowflake"></i>
       Regenerate
     </button>
 
@@ -142,8 +132,8 @@
       <span class="label">Scene Stats</span>
       <div class="stats-grid">
         <div class="stat">
-          <span class="stat-value">{stats.leaves}</span>
-          <span class="stat-label">Leaves</span>
+          <span class="stat-value">{stats.snowflakes}</span>
+          <span class="stat-label">Snowflakes</span>
         </div>
       </div>
     </div>
@@ -152,10 +142,11 @@
     <div class="progress-section">
       <span class="label">Features</span>
       <div class="progress-pills">
-        <span class="pill complete">Sunset Gradient</span>
-        <span class="pill complete">Falling Leaves</span>
-        <span class="pill complete">Wind System</span>
-        <span class="pill complete">Leaf Rotation</span>
+        <span class="pill complete">Night Gradient</span>
+        <span class="pill complete">Crystal Snowflakes</span>
+        <span class="pill complete">Sparkle Effects</span>
+        <span class="pill complete">Depth Layering</span>
+        <span class="pill complete">Shooting Stars</span>
         <span class="pill active">Layer Controls</span>
       </div>
     </div>
@@ -164,15 +155,15 @@
   <LabPreviewCanvas
     system={backgroundSystem}
     {isLoading}
-    accentColor="#f59e0b"
-    backgroundColor="rgba(45, 24, 16, 0.9)"
+    accentColor="#67e8f9"
+    backgroundColor="rgba(10, 22, 40, 0.9)"
     onCanvasReady={handleCanvasReady}
     onFrame={handleFrame}
   />
 </div>
 
 <style>
-  .autumn-drift-lab {
+  .winter-lab {
     display: grid;
     grid-template-columns: 300px 1fr;
     gap: 20px;
@@ -206,12 +197,12 @@
 
   .badge {
     padding: 4px 10px;
-    background: linear-gradient(135deg, rgba(217, 119, 6, 0.3), rgba(245, 158, 11, 0.3));
-    border: 1px solid rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(103, 232, 249, 0.3));
+    border: 1px solid rgba(103, 232, 249, 0.4);
     border-radius: 20px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: #f59e0b;
+    color: #67e8f9;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -230,7 +221,7 @@
     justify-content: center;
     gap: 8px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #d97706, #b45309);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
     border: none;
     border-radius: 12px;
     color: #ffffff;
@@ -242,7 +233,7 @@
 
   .action-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(217, 119, 6, 0.35);
+    box-shadow: 0 8px 20px rgba(6, 182, 212, 0.35);
   }
 
   .action-btn:active {
@@ -250,7 +241,7 @@
   }
 
   .action-btn:focus-visible {
-    outline: 2px solid #fbbf24;
+    outline: 2px solid #67e8f9;
     outline-offset: 2px;
   }
 
@@ -280,7 +271,7 @@
   .stat-value {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #f59e0b;
+    color: #67e8f9;
   }
 
   .stat-label {
@@ -316,8 +307,8 @@
   }
 
   .pill.active {
-    background: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
+    background: rgba(6, 182, 212, 0.2);
+    color: #67e8f9;
     animation: pulse 2s infinite;
   }
 
@@ -327,7 +318,7 @@
   }
 
   @media (max-width: 800px) {
-    .autumn-drift-lab {
+    .winter-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
     }

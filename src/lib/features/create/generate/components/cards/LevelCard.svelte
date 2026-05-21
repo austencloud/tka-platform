@@ -25,8 +25,8 @@ Uses stepper pattern for space-efficient level selection
     headerFontSize?: string;
   }>();
 
-  // Check if we're on a bright background (Aurora, Snowfall, etc.)
-  const useDarkColors = $derived(isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL));
+  // Check if we're on a bright background (Aurora, Winter, etc.)
+  const useDarkColors = $derived(isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.WINTER));
 
   // 🎨 Level display data - default colors from canonical difficulty-styles.ts
   const LEVEL_MAP: Record<DifficultyLevel, number> = {
@@ -66,7 +66,7 @@ Uses stepper pattern for space-efficient level selection
     },
   };
 
-  // 🎨 Vibrant but darker colors for bright/glowing backgrounds (Aurora, Ember Glow)
+  // 🎨 Vibrant but darker colors for bright/glowing backgrounds (Aurora, Ember)
   const brightBgLevelData: Record<
     DifficultyLevel,
     { name: string; number: number; color: string; textColor: string }

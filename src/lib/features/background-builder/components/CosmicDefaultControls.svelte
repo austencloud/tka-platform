@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { QualityLevel } from "@austencloud/backgrounds";
-  import type { NightSkyDensityPreset } from "$lib/shared/background-builder/domain/lab-settings-types";
+  import type { CosmicDensityPreset } from "$lib/shared/background-builder/domain/lab-settings-types";
   import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
 
@@ -17,10 +17,10 @@
   interface Props {
     quality: QualityLevel;
     layers: LayerState;
-    densityPreset: NightSkyDensityPreset;
+    densityPreset: CosmicDensityPreset;
     onQualityChange: (quality: QualityLevel) => void;
     onLayerToggle: (layer: keyof LayerState) => void;
-    onDensityChange: (preset: NightSkyDensityPreset) => void;
+    onDensityChange: (preset: CosmicDensityPreset) => void;
     onTriggerMeteor: () => void;
     onTriggerComet: () => void;
     onRegenerate: () => void;

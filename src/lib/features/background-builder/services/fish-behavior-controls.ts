@@ -1,7 +1,7 @@
 import type {
   FishMarineLife,
   FishMood,
-  DeepOceanBackgroundOrchestrator,
+  OceanBackgroundOrchestrator,
 } from "@austencloud/backgrounds";
 
 export type ColorPreset = "default" | "cyan" | "blue" | "lime" | "amber" | "rose" | "emerald" | "red" | "gray";
@@ -44,7 +44,7 @@ export function getMoodColor(mood: FishMood): string {
 }
 
 export function triggerMood(
-  backgroundSystem: DeepOceanBackgroundOrchestrator | null,
+  backgroundSystem: OceanBackgroundOrchestrator | null,
   selectedFishIndex: number,
   mood: FishMood,
 ): boolean {
@@ -61,7 +61,7 @@ export function triggerMood(
 }
 
 export function triggerWobble(
-  backgroundSystem: DeepOceanBackgroundOrchestrator | null,
+  backgroundSystem: OceanBackgroundOrchestrator | null,
   selectedFishIndex: number,
   wobbleType: FishMarineLife["wobbleType"],
 ): boolean {
@@ -78,7 +78,7 @@ export function triggerWobble(
 }
 
 export function triggerRareBehavior(
-  backgroundSystem: DeepOceanBackgroundOrchestrator | null,
+  backgroundSystem: OceanBackgroundOrchestrator | null,
   selectedFishIndex: number,
   type: string,
 ): boolean {
@@ -108,7 +108,7 @@ export function triggerRareBehavior(
 }
 
 export function forceHuntOnSelected(
-  backgroundSystem: DeepOceanBackgroundOrchestrator | null,
+  backgroundSystem: OceanBackgroundOrchestrator | null,
   selectedFishIndex: number,
 ): void {
   const actualFish = backgroundSystem?.getFish?.();
@@ -137,7 +137,7 @@ export function forceHuntOnSelected(
 }
 
 export function spawnFish(
-  backgroundSystem: DeepOceanBackgroundOrchestrator | null,
+  backgroundSystem: OceanBackgroundOrchestrator | null,
   canvas: HTMLCanvasElement | null,
 ): void {
   if (!backgroundSystem || !canvas) return;
@@ -148,7 +148,7 @@ export function spawnFish(
 }
 
 export function spawnJellyfish(
-  backgroundSystem: DeepOceanBackgroundOrchestrator | null,
+  backgroundSystem: OceanBackgroundOrchestrator | null,
   canvas: HTMLCanvasElement | null,
 ): void {
   if (!backgroundSystem || !canvas) return;

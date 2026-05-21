@@ -468,13 +468,13 @@
           // Theme colors for each background type - MUST match BACKGROUND_THEME_COLORS
           var BACKGROUND_THEME_COLORS = {
             pride: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
-            snowfall: ["#1e3a5f", "#3b82f6", "#93c5fd"],
-            nightSky: ["#1e1b4b", "#4338ca", "#818cf8"],
-            deepOcean: ["#0c4a6e", "#0891b2", "#22d3ee"],
-            emberGlow: ["#7c2d12", "#ea580c", "#fb923c"],
-            cherryBlossom: ["#831843", "#db2777", "#f9a8d4"],
-            fireflyForest: ["#0d3320", "#166534", "#22c55e", "#bef264"],
-            autumnDrift: ["#92400e", "#d97706", "#dc2626", "#78350f"],
+            winter: ["#1e3a5f", "#3b82f6", "#93c5fd"],
+            cosmic: ["#1e1b4b", "#4338ca", "#818cf8"],
+            ocean: ["#0c4a6e", "#0891b2", "#22d3ee"],
+            ember: ["#7c2d12", "#ea580c", "#fb923c"],
+            blossom: ["#831843", "#db2777", "#f9a8d4"],
+            forest: ["#0d3320", "#166534", "#22c55e", "#bef264"],
+            autumn: ["#92400e", "#d97706", "#dc2626", "#78350f"],
             solidColor: ["#18181b", "#6366f1", "#818cf8"],
             linearGradient: ["#0d1117", "#6366f1", "#a78bfa"],
           };
@@ -591,13 +591,13 @@
             solidColor: "#000000",
             linearGradient: "linear-gradient(135deg, #0d1117, #161b22, #21262d)",
             pride: "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
-            snowfall: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-            nightSky: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
-            deepOcean: "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
-            emberGlow: "linear-gradient(135deg, #1a0a0a 0%, #2d1410 30%, #4a1f1a 60%, #3d1814 100%)",
-            cherryBlossom: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
-            fireflyForest: "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
-            autumnDrift: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
+            winter: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+            cosmic: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
+            ocean: "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
+            ember: "linear-gradient(135deg, #1a0a0a 0%, #2d1410 30%, #4a1f1a 60%, #3d1814 100%)",
+            blossom: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
+            forest: "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
+            autumn: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
           };
 
           // Background animation mapping
@@ -605,23 +605,27 @@
             solidColor: "",
             linearGradient: "",
             pride: "rainbow-flow",
-            snowfall: "snow-fall",
-            nightSky: "star-twinkle",
-            deepOcean: "deep-ocean-flow",
-            emberGlow: "ember-glow",
-            cherryBlossom: "cherry-blossom",
-            fireflyForest: "firefly-forest",
-            autumnDrift: "autumn-drift",
+            winter: "winter",
+            cosmic: "star-twinkle",
+            ocean: "ocean-flow",
+            ember: "ember",
+            blossom: "blossom",
+            forest: "forest",
+            autumn: "autumn",
           };
 
           // Apply settings or defaults
-          var backgroundType = "nightSky";
+          var backgroundType = "cosmic";
           if (stored) {
             var settings = JSON.parse(stored);
-            backgroundType = settings.backgroundType || "nightSky";
-            // Migration: treat old default (solidColor + black) as nightSky
+            backgroundType = settings.backgroundType || "cosmic";
+            // Migration: treat old default (solidColor + black) as cosmic
             if (backgroundType === "solidColor" && (!settings.backgroundColor || settings.backgroundColor === "#000000")) {
-              backgroundType = "nightSky";
+              backgroundType = "cosmic";
+            }
+            // Migration: treat old "nightSky" as "cosmic"
+            if (backgroundType === "nightSky") {
+              backgroundType = "cosmic";
             }
           }
 
@@ -629,7 +633,7 @@
           applyTheme(backgroundType, stored ? JSON.parse(stored) : {});
 
           // Apply gradient CSS variable
-          var selectedGradient = backgroundGradients[backgroundType] || backgroundGradients.nightSky;
+          var selectedGradient = backgroundGradients[backgroundType] || backgroundGradients.cosmic;
           root.style.setProperty("--gradient-cosmic", selectedGradient);
 
           // Apply animation class to body when ready
@@ -638,8 +642,8 @@
             var body = document.body;
             if (body) {
               body.classList.remove(
-                "rainbow-flow", "snow-fall", "star-twinkle", "deep-ocean-flow",
-                "ember-glow", "cherry-blossom", "firefly-forest", "autumn-drift"
+                "rainbow-flow", "winter", "star-twinkle", "ocean-flow",
+                "ember", "blossom", "forest", "autumn"
               );
               if (selectedAnimation) {
                 body.classList.add(selectedAnimation);

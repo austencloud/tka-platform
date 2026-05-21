@@ -7,10 +7,10 @@
   import OceanControls from "$lib/features/lab/tabs/scene-lab/components/OceanControls.svelte";
   import AutumnControls from "$lib/features/lab/tabs/scene-lab/components/AutumnControls.svelte";
   import EmberControls from "$lib/features/lab/tabs/scene-lab/components/EmberControls.svelte";
-  import CherryBlossomControls from "$lib/features/lab/tabs/scene-lab/components/CherryBlossomControls.svelte";
+  import BlossomControls from "$lib/features/lab/tabs/scene-lab/components/BlossomControls.svelte";
   import CelestialControls from "$lib/features/lab/tabs/scene-lab/components/CelestialControls.svelte";
   import RainbowControls from "$lib/features/lab/tabs/scene-lab/components/RainbowControls.svelte";
-  import PureBlackControls from "$lib/features/lab/tabs/scene-lab/components/PureBlackControls.svelte";
+  import VoidControls from "$lib/features/lab/tabs/scene-lab/components/VoidControls.svelte";
 
   interface Props {
     themeId: ThemeId;
@@ -75,13 +75,13 @@
     {:else if themeId === "ember"}
       <EmberControls />
     {:else if themeId === "blossom"}
-      <CherryBlossomControls />
+      <BlossomControls />
     {:else if themeId === "celestial"}
       <CelestialControls />
     {:else if themeId === "pride"}
       <RainbowControls />
-    {:else if themeId === "pure-black"}
-      <PureBlackControls />
+    {:else if themeId === "void"}
+      <VoidControls />
     {/if}
   </div>
 </div>

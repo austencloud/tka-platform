@@ -9,28 +9,32 @@
   import ScenePreview from "$lib/features/lab/tabs/scene-lab/components/ScenePreview.svelte";
   import type { ThemeId } from "./domain/theme-types";
 
-  import DeepOceanLab from "$lib/features/background-builder/components/DeepOceanLab.svelte";
-  import NightSkyLab from "$lib/features/background-builder/components/NightSkyLab.svelte";
-  import FireflyForestLab from "$lib/features/background-builder/components/FireflyForestLab.svelte";
-  import CherryBlossomLab from "$lib/features/background-builder/components/CherryBlossomLab.svelte";
+  import OceanLab from "$lib/features/background-builder/components/OceanLab.svelte";
+  import CosmicLab from "$lib/features/background-builder/components/CosmicLab.svelte";
+  import ForestLab from "$lib/features/background-builder/components/ForestLab.svelte";
+  import BlossomLab from "$lib/features/background-builder/components/BlossomLab.svelte";
   import PrideLab from "$lib/features/background-builder/components/PrideLab.svelte";
-  import EmberGlowLab from "$lib/features/background-builder/components/EmberGlowLab.svelte";
-  import SnowfallLab from "$lib/features/background-builder/components/SnowfallLab.svelte";
-  import AutumnDriftLab from "$lib/features/background-builder/components/AutumnDriftLab.svelte";
+  import EmberLab from "$lib/features/background-builder/components/EmberLab.svelte";
+  import WinterLab from "$lib/features/background-builder/components/WinterLab.svelte";
+  import AutumnLab from "$lib/features/background-builder/components/AutumnLab.svelte";
+  import CelestialLab from "$lib/features/background-builder/components/CelestialLab.svelte";
+  import VoidLab from "$lib/features/background-builder/components/VoidLab.svelte";
 
   const state = createThemesLabState();
 
   setSceneLabContext(state.sceneLabContext);
 
   const labComponents: Record<string, any> = {
-    ocean: DeepOceanLab,
-    cosmic: NightSkyLab,
-    forest: FireflyForestLab,
-    blossom: CherryBlossomLab,
+    ocean: OceanLab,
+    cosmic: CosmicLab,
+    forest: ForestLab,
+    blossom: BlossomLab,
     pride: PrideLab,
-    ember: EmberGlowLab,
-    winter: SnowfallLab,
-    autumn: AutumnDriftLab,
+    ember: EmberLab,
+    winter: WinterLab,
+    autumn: AutumnLab,
+    celestial: CelestialLab,
+    void: VoidLab,
   };
 
   const CurrentLabComponent = $derived(labComponents[state.themeId] ?? null);

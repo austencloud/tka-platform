@@ -44,7 +44,7 @@ const DEFAULT_PROP_PRESETS: PropPreset[] = [
 
 const DEFAULT_SETTINGS: AppSettings = {
   gridMode: GridMode.DIAMOND,
-  backgroundType: BackgroundType.NIGHT_SKY,
+  backgroundType: BackgroundType.COSMIC,
   backgroundQuality: "medium",
   backgroundEnabled: true,
   hapticFeedback: true,
@@ -150,7 +150,7 @@ class SettingsState {
 
           const localBackground = settingsState.backgroundType;
           const isUsingDefault =
-            localBackground === BackgroundType.NIGHT_SKY ||
+            localBackground === BackgroundType.COSMIC ||
             localBackground === BackgroundType.SOLID_COLOR;
 
           if (firebaseSettings.backgroundType && isUsingDefault) {
@@ -159,17 +159,28 @@ class SettingsState {
               (!firebaseSettings.backgroundColor || firebaseSettings.backgroundColor === "#000000");
 
             if (isOldDefault) {
-              debug.success("Firebase has old default (solidColor/#000000), migrating to nightSky");
-              settingsState.backgroundType = BackgroundType.NIGHT_SKY;
+              debug.success("Firebase has old default (solidColor/#000000), migrating to cosmic");
+              settingsState.backgroundType = BackgroundType.COSMIC;
               delete settingsState.backgroundColor;
-              updateBodyBackground(BackgroundType.NIGHT_SKY);
-              applyThemeForBackground(BackgroundType.NIGHT_SKY);
-              updateThemeService(BackgroundType.NIGHT_SKY);
+              updateBodyBackground(BackgroundType.COSMIC);
+              applyThemeForBackground(BackgroundType.COSMIC);
+              updateThemeService(BackgroundType.COSMIC);
               this.saveSettingsToStorage(settingsState);
               await this.firebasePersistence.saveSettings(
                 this.getSettingsForPersistence()
               );
-              debug.success("Migrated Firebase background from solidColor to nightSky");
+              debug.success("Migrated Firebase background from solidColor to cosmic");
+            } else if ((firebaseSettings.backgroundType as string) === "nightSky") {
+              // Migration: treat old "nightSky" as "cosmic"
+              debug.success("Firebase has old nightSky, migrating to cosmic");
+              settingsState.backgroundType = BackgroundType.COSMIC;
+              updateBodyBackground(BackgroundType.COSMIC);
+              applyThemeForBackground(BackgroundType.COSMIC);
+              updateThemeService(BackgroundType.COSMIC);
+              this.saveSettingsToStorage(settingsState);
+              await this.firebasePersistence.saveSettings(
+                this.getSettingsForPersistence()
+              );
             } else {
               settingsState.backgroundType = firebaseSettings.backgroundType;
               if (firebaseSettings.backgroundCategory) {
@@ -541,8 +552,14 @@ class SettingsState {
         merged.backgroundType === BackgroundType.SOLID_COLOR &&
         merged.backgroundColor === "#000000"
       ) {
-        merged.backgroundType = BackgroundType.NIGHT_SKY;
+        merged.backgroundType = BackgroundType.COSMIC;
         delete merged.backgroundColor;
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
+      }
+
+      // Migration: treat old "nightSky" as "cosmic"
+      if ((merged.backgroundType as string) === "nightSky") {
+        merged.backgroundType = BackgroundType.COSMIC;
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       }
 

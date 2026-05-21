@@ -30,7 +30,7 @@
   let isVisible = $state(false);
   let gridEl: HTMLDivElement;
 
-  const currentBg = $derived(settings?.backgroundType || BackgroundType.NIGHT_SKY);
+  const currentBg = $derived(settings?.backgroundType || BackgroundType.COSMIC);
 
   onMount(() => {
     hapticService = getHapticFeedback();

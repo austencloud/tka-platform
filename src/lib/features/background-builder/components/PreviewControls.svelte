@@ -1,6 +1,6 @@
 <script lang="ts">
   import type {
-    FireflyForestLayers,
+    ForestLayers,
     TreeTypeVisibility,
     EcologicalPattern,
     QualityLevel,
@@ -16,7 +16,7 @@
 
   interface Props {
     quality: QualityLevel;
-    layers: FireflyForestLayers;
+    layers: ForestLayers;
     treeTypes: TreeTypeVisibility;
     density: number;
     style: number;
@@ -24,7 +24,7 @@
     patterns: EcologicalPattern[];
     currentPatternId: string;
     onQualityChange: (quality: QualityLevel) => void;
-    onLayerToggle: (layer: keyof FireflyForestLayers) => void;
+    onLayerToggle: (layer: keyof ForestLayers) => void;
     onTreeTypeToggle: (type: keyof TreeTypeVisibility) => void;
     onDensityChange: (value: number) => void;
     onStyleChange: (value: number) => void;

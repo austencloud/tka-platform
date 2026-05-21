@@ -24,10 +24,10 @@
   import CosmicScene from "$lib/shared/3d/environments/scenes/CosmicScene.svelte";
   import OceanScene from "$lib/shared/3d/environments/scenes/OceanScene.svelte";
   import EmberScene from "$lib/shared/3d/environments/scenes/EmberScene.svelte";
-  import CherryBlossomScene from "$lib/shared/3d/environments/scenes/CherryBlossomScene.svelte";
+  import BlossomScene from "$lib/shared/3d/environments/scenes/BlossomScene.svelte";
   import RainbowScene from "$lib/shared/3d/environments/scenes/RainbowScene.svelte";
   import CelestialScene from "$lib/shared/3d/environments/scenes/CelestialScene.svelte";
-  import PureBlackScene from "$lib/shared/3d/environments/scenes/PureBlackScene.svelte";
+  import VoidScene from "$lib/shared/3d/environments/scenes/VoidScene.svelte";
   import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
   import { Avatar3D } from "@austencloud/scene-3d";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
@@ -286,14 +286,14 @@
         <OceanScene config={labState.oceanConfig} />
       {:else if labState.sceneId === "ember"}
         <EmberScene config={labState.emberConfig} />
-      {:else if labState.sceneId === "cherry-blossom"}
-        <CherryBlossomScene config={labState.cherryBlossomConfig} />
+      {:else if labState.sceneId === "blossom"}
+        <BlossomScene config={labState.blossomConfig} />
       {:else if labState.sceneId === "rainbow"}
         <RainbowScene config={labState.rainbowConfig} />
       {:else if labState.sceneId === "celestial"}
         <CelestialScene config={labState.celestialConfig} />
-      {:else if labState.sceneId === "pure-black"}
-        <PureBlackScene config={labState.pureBlackConfig} />
+      {:else if labState.sceneId === "void"}
+        <VoidScene config={labState.voidConfig} />
       {/if}
 
       {#if camMode === "walk"}

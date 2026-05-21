@@ -365,7 +365,7 @@ h6 {
   --muted-foreground: #a3a3a3;
 
   /* Option Picker Header Colors - Match Background Types */
-  --header-bg-nightSky: linear-gradient(
+  --header-bg-cosmic: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.92) 0%,
     rgba(240, 242, 247, 0.92) 100%
@@ -375,31 +375,31 @@ h6 {
     rgba(255, 255, 255, 0.92) 0%,
     rgba(240, 242, 247, 0.92) 100%
   );
-  --header-bg-snowfall: linear-gradient(
+  --header-bg-winter: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.92) 0%,
     rgba(240, 242, 247, 0.92) 100%
   );
-  --header-bg-deepOcean: linear-gradient(
+  --header-bg-ocean: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.92) 0%,
     rgba(240, 242, 247, 0.92) 100%
   );
 
-  --header-border-nightSky: 1px solid rgba(99, 102, 241, 0.4);
+  --header-border-cosmic: 1px solid rgba(99, 102, 241, 0.4);
   --header-border-aurora: 1px solid rgba(168, 85, 247, 0.4);
-  --header-border-snowfall: 1px solid rgba(96, 165, 250, 0.4);
-  --header-border-deepOcean: 1px solid rgba(6, 182, 212, 0.4);
+  --header-border-winter: 1px solid rgba(96, 165, 250, 0.4);
+  --header-border-ocean: 1px solid rgba(6, 182, 212, 0.4);
 
-  --header-text-nightSky: #1a1a1a;
+  --header-text-cosmic: #1a1a1a;
   --header-text-aurora: #1a1a1a;
-  --header-text-snowfall: #1a1a1a;
-  --header-text-deepOcean: #1a1a1a;
+  --header-text-winter: #1a1a1a;
+  --header-text-ocean: #1a1a1a;
 
-  /* Current active header theme (defaults to nightSky) */
-  --header-bg-current: var(--header-bg-nightSky);
-  --header-border-current: var(--header-border-nightSky);
-  --header-text-current: var(--header-text-nightSky);
+  /* Current active header theme (defaults to cosmic) */
+  --header-bg-current: var(--header-bg-cosmic);
+  --header-border-current: var(--header-border-cosmic);
+  --header-text-current: var(--header-text-cosmic);
 
   /* ========================================
      ADAPTIVE CONTRAST - Panel/Card/Overlay Styles
@@ -407,102 +407,102 @@ h6 {
      ======================================== */
 
   /* Panel Background Colors (for browse panels, settings, etc.) */
-  --panel-bg-nightSky: rgba(255, 255, 255, 0.05);
+  --panel-bg-cosmic: rgba(255, 255, 255, 0.05);
   --panel-bg-aurora: rgba(
     20,
     10,
     40,
     0.85
   ); /* Dark purple overlay for light aurora bg */
-  --panel-bg-snowfall: rgba(255, 255, 255, 0.05);
-  --panel-bg-deepOcean: rgba(255, 255, 255, 0.05);
+  --panel-bg-winter: rgba(255, 255, 255, 0.05);
+  --panel-bg-ocean: rgba(255, 255, 255, 0.05);
 
-  --panel-border-nightSky: rgba(255, 255, 255, 0.1);
+  --panel-border-cosmic: rgba(255, 255, 255, 0.1);
   --panel-border-aurora: rgba(168, 85, 247, 0.3); /* Purple-tinted border */
-  --panel-border-snowfall: rgba(255, 255, 255, 0.1);
-  --panel-border-deepOcean: rgba(255, 255, 255, 0.1);
+  --panel-border-winter: rgba(255, 255, 255, 0.1);
+  --panel-border-ocean: rgba(255, 255, 255, 0.1);
 
-  --panel-hover-nightSky: rgba(255, 255, 255, 0.08);
+  --panel-hover-cosmic: rgba(255, 255, 255, 0.08);
   --panel-hover-aurora: rgba(30, 15, 60, 0.9); /* Darker on hover */
-  --panel-hover-snowfall: rgba(255, 255, 255, 0.08);
-  --panel-hover-deepOcean: rgba(255, 255, 255, 0.08);
+  --panel-hover-winter: rgba(255, 255, 255, 0.08);
+  --panel-hover-ocean: rgba(255, 255, 255, 0.08);
 
   /* Card Background Colors (for collection cards, sequence cards, etc.) */
-  --card-bg-nightSky: rgba(255, 255, 255, 0.05);
+  --card-bg-cosmic: rgba(255, 255, 255, 0.05);
   --card-bg-aurora: rgba(25, 15, 45, 0.88); /* Deeper dark purple */
-  --card-bg-snowfall: rgba(255, 255, 255, 0.05);
-  --card-bg-deepOcean: rgba(255, 255, 255, 0.05);
+  --card-bg-winter: rgba(255, 255, 255, 0.05);
+  --card-bg-ocean: rgba(255, 255, 255, 0.05);
 
-  --card-border-nightSky: rgba(255, 255, 255, 0.1);
+  --card-border-cosmic: rgba(255, 255, 255, 0.1);
   --card-border-aurora: rgba(168, 85, 247, 0.35);
-  --card-border-snowfall: rgba(255, 255, 255, 0.1);
-  --card-border-deepOcean: rgba(255, 255, 255, 0.1);
+  --card-border-winter: rgba(255, 255, 255, 0.1);
+  --card-border-ocean: rgba(255, 255, 255, 0.1);
 
-  --card-hover-nightSky: rgba(255, 255, 255, 0.08);
+  --card-hover-cosmic: rgba(255, 255, 255, 0.08);
   --card-hover-aurora: rgba(35, 20, 65, 0.92);
-  --card-hover-snowfall: rgba(255, 255, 255, 0.08);
-  --card-hover-deepOcean: rgba(255, 255, 255, 0.08);
+  --card-hover-winter: rgba(255, 255, 255, 0.08);
+  --card-hover-ocean: rgba(255, 255, 255, 0.08);
 
   /* Text Colors - Enhanced contrast for Aurora */
-  --text-primary-nightSky: #ffffff;
+  --text-primary-cosmic: #ffffff;
   --text-primary-aurora: #ffffff; /* Keep white text on dark overlays */
-  --text-primary-snowfall: #ffffff;
-  --text-primary-deepOcean: #ffffff;
+  --text-primary-winter: #ffffff;
+  --text-primary-ocean: #ffffff;
 
-  --text-secondary-nightSky: rgba(255, 255, 255, 0.7);
+  --text-secondary-cosmic: rgba(255, 255, 255, 0.7);
   --text-secondary-aurora: rgba(
     255,
     255,
     255,
     0.85
   ); /* Slightly brighter for readability */
-  --text-secondary-snowfall: rgba(255, 255, 255, 0.7);
-  --text-secondary-deepOcean: rgba(255, 255, 255, 0.7);
+  --text-secondary-winter: rgba(255, 255, 255, 0.7);
+  --text-secondary-ocean: rgba(255, 255, 255, 0.7);
 
   /* Input/Search Field Styles */
-  --input-bg-nightSky: rgba(255, 255, 255, 0.05);
+  --input-bg-cosmic: rgba(255, 255, 255, 0.05);
   --input-bg-aurora: rgba(30, 20, 50, 0.75);
-  --input-bg-snowfall: rgba(255, 255, 255, 0.05);
-  --input-bg-deepOcean: rgba(255, 255, 255, 0.05);
+  --input-bg-winter: rgba(255, 255, 255, 0.05);
+  --input-bg-ocean: rgba(255, 255, 255, 0.05);
 
-  --input-border-nightSky: rgba(255, 255, 255, 0.1);
+  --input-border-cosmic: rgba(255, 255, 255, 0.1);
   --input-border-aurora: rgba(168, 85, 247, 0.4);
-  --input-border-snowfall: rgba(255, 255, 255, 0.1);
-  --input-border-deepOcean: rgba(255, 255, 255, 0.1);
+  --input-border-winter: rgba(255, 255, 255, 0.1);
+  --input-border-ocean: rgba(255, 255, 255, 0.1);
 
-  --input-focus-nightSky: rgba(255, 255, 255, 0.08);
+  --input-focus-cosmic: rgba(255, 255, 255, 0.08);
   --input-focus-aurora: rgba(40, 25, 70, 0.85);
-  --input-focus-snowfall: rgba(255, 255, 255, 0.08);
-  --input-focus-deepOcean: rgba(255, 255, 255, 0.08);
+  --input-focus-winter: rgba(255, 255, 255, 0.08);
+  --input-focus-ocean: rgba(255, 255, 255, 0.08);
 
   /* Active Button/Filter Styles */
-  --button-active-nightSky: rgba(255, 255, 255, 0.15);
+  --button-active-cosmic: rgba(255, 255, 255, 0.15);
   --button-active-aurora: rgba(
     88,
     28,
     135,
     0.75
   ); /* Rich purple for active state */
-  --button-active-snowfall: rgba(255, 255, 255, 0.15);
-  --button-active-deepOcean: rgba(255, 255, 255, 0.15);
+  --button-active-winter: rgba(255, 255, 255, 0.15);
+  --button-active-ocean: rgba(255, 255, 255, 0.15);
 
-  /* Current active theme variables (defaults to nightSky) */
-  --panel-bg-current: var(--panel-bg-nightSky);
-  --panel-border-current: var(--panel-border-nightSky);
-  --panel-hover-current: var(--panel-hover-nightSky);
+  /* Current active theme variables (defaults to cosmic) */
+  --panel-bg-current: var(--panel-bg-cosmic);
+  --panel-border-current: var(--panel-border-cosmic);
+  --panel-hover-current: var(--panel-hover-cosmic);
 
-  --card-bg-current: var(--card-bg-nightSky);
-  --card-border-current: var(--card-border-nightSky);
-  --card-hover-current: var(--card-hover-nightSky);
+  --card-bg-current: var(--card-bg-cosmic);
+  --card-border-current: var(--card-border-cosmic);
+  --card-hover-current: var(--card-hover-cosmic);
 
-  --text-primary-current: var(--text-primary-nightSky);
-  --text-secondary-current: var(--text-secondary-nightSky);
+  --text-primary-current: var(--text-primary-cosmic);
+  --text-secondary-current: var(--text-secondary-cosmic);
 
-  --input-bg-current: var(--input-bg-nightSky);
-  --input-border-current: var(--input-border-nightSky);
-  --input-focus-current: var(--input-focus-nightSky);
+  --input-bg-current: var(--input-bg-cosmic);
+  --input-border-current: var(--input-border-cosmic);
+  --input-focus-current: var(--input-focus-cosmic);
 
-  --button-active-current: var(--button-active-nightSky);
+  --button-active-current: var(--button-active-cosmic);
 
   /* ========================================
      SHEET SYSTEM - Design Tokens
@@ -836,20 +836,20 @@ body.aurora-flow {
   }
 }
 
-/* CSS snowfall removed - now using canvas-based snowfall system with enhanced features:
+/* CSS winter snow removed - now using canvas-based winter system with enhanced features:
    - Mouse parallax effect
    - Wind gusts with organic variation
    - Seasonal intensity variations
    - Snow accumulation effect
    All rendering handled by SnowflakeSystem.ts */
 
-/* Deep Ocean Flow */
-body.deep-ocean-flow {
+/* Ocean Flow */
+body.ocean-flow {
   position: relative;
   overflow: auto;
 }
 
-body.deep-ocean-flow::before {
+body.ocean-flow::before {
   content: "";
   position: fixed;
   top: 0;
@@ -875,18 +875,18 @@ body.deep-ocean-flow::before {
 
 /* Bubble rise animation - disabled for reduced motion users */
 @media (prefers-reduced-motion: no-preference) {
-  body.deep-ocean-flow::before {
+  body.ocean-flow::before {
     animation: bubble-rise 8s ease-in-out infinite;
   }
 }
 
-/* Ember Glow - Canvas handles all embers */
-body.ember-glow {
+/* Ember - Canvas handles all embers */
+body.ember {
   position: relative;
 }
 
-/* Cherry Blossom - Canvas handles all petals */
-body.cherry-blossom {
+/* Blossom - Canvas handles all petals */
+body.blossom {
   position: relative;
 }
 

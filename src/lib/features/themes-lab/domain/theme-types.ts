@@ -11,7 +11,7 @@ export type ThemeId =
   | "winter"
   | "autumn"
   | "celestial"
-  | "pure-black";
+  | "void";
 
 export interface ThemeOption {
   id: ThemeId;
@@ -28,7 +28,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Ocean",
     icon: "fa-water",
     color: "#0ea5e9",
-    backgroundType: "deepOcean" as BackgroundType,
+    backgroundType: "ocean" as BackgroundType,
     sceneId: "ocean",
   },
   {
@@ -36,7 +36,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Cosmic",
     icon: "fa-moon",
     color: "#8b5cf6",
-    backgroundType: "nightSky" as BackgroundType,
+    backgroundType: "cosmic" as BackgroundType,
     sceneId: "cosmic",
   },
   {
@@ -44,7 +44,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Forest",
     icon: "fa-tree",
     color: "#22c55e",
-    backgroundType: "fireflyForest" as BackgroundType,
+    backgroundType: "forest" as BackgroundType,
     sceneId: "forest",
   },
   {
@@ -52,8 +52,8 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Blossom",
     icon: "fa-spa",
     color: "#f472b6",
-    backgroundType: "cherryBlossom" as BackgroundType,
-    sceneId: "cherry-blossom",
+    backgroundType: "blossom" as BackgroundType,
+    sceneId: "blossom",
   },
   {
     id: "pride",
@@ -68,7 +68,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Ember",
     icon: "fa-fire",
     color: "#ef4444",
-    backgroundType: "emberGlow" as BackgroundType,
+    backgroundType: "ember" as BackgroundType,
     sceneId: "ember",
   },
   {
@@ -76,7 +76,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Winter",
     icon: "fa-snowflake",
     color: "#67e8f9",
-    backgroundType: "snowfall" as BackgroundType,
+    backgroundType: "winter" as BackgroundType,
     sceneId: "winter",
   },
   {
@@ -84,7 +84,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Autumn",
     icon: "fa-leaf",
     color: "#d97706",
-    backgroundType: "autumnDrift" as BackgroundType,
+    backgroundType: "autumn" as BackgroundType,
     sceneId: "autumn",
   },
   {
@@ -96,12 +96,12 @@ export const THEME_OPTIONS: ThemeOption[] = [
     sceneId: "celestial",
   },
   {
-    id: "pure-black",
-    label: "Pure Black",
+    id: "void",
+    label: "Void",
     icon: "fa-square",
     color: "#6b7280",
-    backgroundType: "pureBlack" as BackgroundType,
-    sceneId: "pure-black",
+    backgroundType: "void" as BackgroundType,
+    sceneId: "void",
   },
 ];
 

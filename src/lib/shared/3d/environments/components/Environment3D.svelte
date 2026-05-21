@@ -16,23 +16,24 @@
   import WinterScene from "../scenes/WinterScene.svelte";
   import OceanScene from "../scenes/OceanScene.svelte";
   import EmberScene from "../scenes/EmberScene.svelte";
-  import CherryBlossomScene from "../scenes/CherryBlossomScene.svelte";
+  import BlossomScene from "../scenes/BlossomScene.svelte";
   import RainbowScene from "../scenes/RainbowScene.svelte";
   import CelestialScene from "../scenes/CelestialScene.svelte";
+  import VoidScene from "../scenes/VoidScene.svelte";
   import type { OceanVariant } from "../domain/enums/environment-enums";
 
   interface Props {
     /** Background type from settings */
     backgroundType: BackgroundType;
-    /** Minimum platform radius to fit all performers. 0 = use scene default. */
-    minPlatformRadius?: number;
-    /** Minimum platform half-extents (X, Z) for rectangular stages. */
-    minPlatformExtents?: { halfW: number; halfD: number };
+    /** Number of performers on stage. Scenes use this to size platforms. */
+    performerCount?: number;
+    /** Z offset for stage expansion (keeps front edge fixed). */
+    stageZOffset?: number;
     /** Ocean sub-variant selection */
     oceanVariant?: OceanVariant;
   }
 
-  let { backgroundType, minPlatformRadius = 0, minPlatformExtents, oceanVariant }: Props = $props();
+  let { backgroundType, performerCount = 1, stageZOffset = 0, oceanVariant }: Props = $props();
 
   const { scene, renderer } = useThrelte();
 
@@ -44,31 +45,34 @@
     | { scene: "winter" }
     | { scene: "ocean"; variant: "abyss" | "reef" | "mystical" | "cinematic" }
     | { scene: "ember" }
-    | { scene: "cherryBlossom" }
+    | { scene: "blossom" }
     | { scene: "rainbow" }
     | { scene: "celestial" }
+    | { scene: "void" }
     | { scene: "none" };
 
   function getSceneConfig(bg: BackgroundType): SceneConfig {
     switch (bg) {
-      case BackgroundType.AUTUMN_DRIFT:
+      case BackgroundType.AUTUMN:
         return { scene: "autumn" };
-      case BackgroundType.FIREFLY_FOREST:
+      case BackgroundType.FOREST:
         return { scene: "forest", variant: "firefly" };
-      case BackgroundType.NIGHT_SKY:
+      case BackgroundType.COSMIC:
         return { scene: "cosmic", variant: "night" };
-      case BackgroundType.SNOWFALL:
+      case BackgroundType.WINTER:
         return { scene: "winter" };
-      case BackgroundType.DEEP_OCEAN:
+      case BackgroundType.OCEAN:
         return { scene: "ocean", variant: (oceanVariant ?? "abyss") as "abyss" | "reef" | "mystical" | "cinematic" };
-      case BackgroundType.EMBER_GLOW:
+      case BackgroundType.EMBER:
         return { scene: "ember" };
-      case BackgroundType.CHERRY_BLOSSOM:
-        return { scene: "cherryBlossom" };
+      case BackgroundType.BLOSSOM:
+        return { scene: "blossom" };
       case BackgroundType.PRIDE:
         return { scene: "rainbow" };
       case BackgroundType.CELESTIAL:
         return { scene: "celestial" };
+      case BackgroundType.VOID:
+        return { scene: "void" };
       // SOLID_COLOR and LINEAR_GRADIENT show no 3D scene
       default:
         return { scene: "none" };
@@ -91,25 +95,6 @@
   function getRenderer() {
     return (renderer as any)?.current ?? (renderer as any);
   }
-
-  // DEBUG: expose scene globally + log every reactive change
-  $effect(() => {
-    const s = getScene();
-    const r = getRenderer();
-    if (s?.isScene) {
-      (window as any).__tkaScene = s;
-    }
-    if (r?.domElement) {
-      (window as any).__tkaRenderer = r;
-    }
-    const childCount = s?.children?.length ?? -1;
-    const meshCount = childCount > 0 ? s.children.filter((c: any) => c.isMesh || c.isGroup).length : 0;
-    console.warn("[Env3D] bg=%s scene=%s mounted=%s ready=%s children=%d meshes/groups=%d fog=%s",
-      backgroundType, config.scene, mountedScene, ready,
-      childCount, meshCount,
-      s?.fog ? "yes" : "no"
-    );
-  });
 
   $effect(() => {
     const next = config.scene;
@@ -137,19 +122,21 @@
   {:else if config.scene === "autumn"}
     <AutumnScene />
   {:else if config.scene === "cosmic"}
-    <CosmicScene variant={config.variant} {minPlatformRadius} />
+    <CosmicScene variant={config.variant} {performerCount} />
   {:else if config.scene === "winter"}
     <WinterScene />
   {:else if config.scene === "ocean"}
-    <OceanScene variant={config.variant} {minPlatformRadius} {minPlatformExtents} />
+    <OceanScene variant={config.variant} {performerCount} {stageZOffset} />
   {:else if config.scene === "ember"}
     <EmberScene />
-  {:else if config.scene === "cherryBlossom"}
-    <CherryBlossomScene />
+  {:else if config.scene === "blossom"}
+    <BlossomScene />
   {:else if config.scene === "rainbow"}
     <RainbowScene />
   {:else if config.scene === "celestial"}
     <CelestialScene />
+  {:else if config.scene === "void"}
+    <VoidScene />
   {/if}
 {/if}
 

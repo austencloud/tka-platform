@@ -53,7 +53,7 @@
   let displayName = $state("");
   let pronouns = $state("");
   let selectedTheme = $state<BackgroundType>(
-    settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL
+    settingsService.settings.backgroundType ?? BackgroundType.WINTER
   );
   let favoriteProp = $state<PropType>(
     settingsService.settings.bluePropType ?? PropType.STAFF
@@ -176,7 +176,7 @@
   }
 
   function handleThemeSkip() {
-    // Keep default theme (Snowfall)
+    // Keep default theme (Winter)
     handleNext("favoriteProp");
   }
 

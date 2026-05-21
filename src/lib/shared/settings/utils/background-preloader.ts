@@ -11,28 +11,30 @@ import { BackgroundType } from "@austencloud/backgrounds";
 /** CSS fallback gradients per background type (shown before canvas loads) */
 const BACKGROUND_GRADIENTS: Record<string, string> = {
   pride: "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
-  snowfall: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-  nightSky: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
-  deepOcean: "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
-  emberGlow: "linear-gradient(135deg, #1a0a0a 0%, #2d1410 30%, #4a1f1a 60%, #3d1814 100%)",
-  cherryBlossom: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
-  fireflyForest: "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
-  autumnDrift: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
+  winter: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+  cosmic: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
+  ocean: "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
+  ember: "linear-gradient(135deg, #1a0a0a 0%, #2d1410 30%, #4a1f1a 60%, #3d1814 100%)",
+  blossom: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
+  forest: "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
+  autumn: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
   celestial: "linear-gradient(135deg, #0a1a4a 0%, #b89050 40%, #e8dcc8 100%)",
+  void: "#000000",
   solidColor: "",
   linearGradient: "",
 };
 
 const BACKGROUND_ANIMATIONS: Record<string, string> = {
   pride: "rainbow-flow",
-  snowfall: "snow-fall",
-  nightSky: "star-twinkle",
-  deepOcean: "deep-ocean-flow",
-  emberGlow: "ember-glow",
-  cherryBlossom: "cherry-blossom",
-  fireflyForest: "firefly-forest",
-  autumnDrift: "autumn-drift",
+  winter: "winter",
+  cosmic: "star-twinkle",
+  ocean: "ocean-flow",
+  ember: "ember",
+  blossom: "blossom",
+  forest: "forest",
+  autumn: "autumn",
   celestial: "",
+  void: "",
   solidColor: "",
   linearGradient: "",
 };
@@ -57,11 +59,11 @@ function applyBackground(newGradient: string, newAnimation: string): void {
 
   body.classList.remove(
     "aurora-flow",
-    "snow-fall",
+    "winter",
     "star-twinkle",
-    "deep-ocean-flow",
-    "ember-glow",
-    "cherry-blossom"
+    "ocean-flow",
+    "ember",
+    "blossom"
   );
   if (newAnimation) {
     body.classList.add(newAnimation);
@@ -113,7 +115,7 @@ export function preloadBackgroundFromStorage(): void {
     const stored = localStorage.getItem("tka-modern-web-settings");
     if (stored) {
       const settings = JSON.parse(stored) as { backgroundType?: BackgroundType };
-      const backgroundType = (settings.backgroundType ?? BackgroundType.NIGHT_SKY) as BackgroundType;
+      const backgroundType = (settings.backgroundType ?? BackgroundType.COSMIC) as BackgroundType;
       updateBodyBackground(backgroundType);
     }
   } catch (error) {
@@ -131,7 +133,7 @@ export function ensureBackgroundApplied(): void {
     const stored = localStorage.getItem("tka-modern-web-settings");
 
     if (!stored) {
-      updateBodyBackground(BackgroundType.NIGHT_SKY);
+      updateBodyBackground(BackgroundType.COSMIC);
       return;
     }
 
@@ -142,14 +144,19 @@ export function ensureBackgroundApplied(): void {
       gradientDirection?: number;
     };
 
-    let backgroundType = settings.backgroundType ?? BackgroundType.NIGHT_SKY;
+    let backgroundType = settings.backgroundType ?? BackgroundType.COSMIC;
 
-    // Migration: treat old default (solidColor + black) as nightSky
+    // Migration: treat old "nightSky" as "cosmic"
+    if ((backgroundType as string) === "nightSky") {
+      backgroundType = BackgroundType.COSMIC;
+    }
+
+    // Migration: treat old default (solidColor + black) as cosmic
     if (
       backgroundType === BackgroundType.SOLID_COLOR &&
       (!settings.backgroundColor || settings.backgroundColor === "#000000")
     ) {
-      backgroundType = BackgroundType.NIGHT_SKY;
+      backgroundType = BackgroundType.COSMIC;
     }
 
     const customOptions: CustomBackgroundOptions = {};
@@ -163,6 +170,6 @@ export function ensureBackgroundApplied(): void {
     updateBodyBackground(backgroundType, customOptions);
   } catch (error) {
     console.warn("[Background] Failed to ensure background applied:", error);
-    updateBodyBackground(BackgroundType.NIGHT_SKY);
+    updateBodyBackground(BackgroundType.COSMIC);
   }
 }

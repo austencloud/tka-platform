@@ -1,19 +1,19 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import {
-    type PureBlackSceneConfig,
-    createDefaultPureBlackConfig,
+    type VoidSceneConfig,
+    createDefaultVoidConfig,
   } from "../domain/models/scene-configs";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import VoidPlatform from "./pure-black/VoidPlatform.svelte";
 
   interface Props {
-    config?: PureBlackSceneConfig;
+    config?: VoidSceneConfig;
   }
 
   let { config }: Props = $props();
 
-  const activeConfig = $derived(config ?? createDefaultPureBlackConfig());
+  const activeConfig = $derived(config ?? createDefaultVoidConfig());
 
   const sceneFeatures = getSceneFeatureContext();
   $effect(() => {

@@ -26,7 +26,7 @@
 
   const isOcean = $derived.by(() => {
     try {
-      return (settingsService as any)?.settings?.backgroundType === BackgroundType.DEEP_OCEAN;
+      return (settingsService as any)?.settings?.backgroundType === BackgroundType.OCEAN;
     } catch {
       return false;
     }
@@ -89,6 +89,10 @@
     if (composer) {
       composer.dispose();
       composer = null;
+      // The postprocessing EffectComposer sets renderer.autoClear = false on
+      // init and never restores it. Without this, preserveDrawingBuffer keeps
+      // stale frames visible (ghosting) after switching away from Ocean.
+      renderer.autoClear = true;
     }
   }
 

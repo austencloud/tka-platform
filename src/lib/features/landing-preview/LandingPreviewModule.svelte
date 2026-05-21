@@ -55,7 +55,7 @@
 
 
   const STORAGE_KEY = "tka-landing-theme";
-  const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
+  const DEFAULT_BACKGROUND = BackgroundType.COSMIC;
 
   let currentBackground = $state<BackgroundType>(DEFAULT_BACKGROUND);
   let mounted = $state(false);

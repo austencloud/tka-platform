@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { getCoralSceneRenderer } from "../getCoralSceneRenderer";
-  import { getDeepOceanBackgroundSystem } from "../getDeepOceanBackgroundSystem";
+  import { getOceanBackgroundSystem } from "../getOceanBackgroundSystem";
   import {
     type FishMarineLife,
     type FishMood,
-    DeepOceanBackgroundOrchestrator,
-    type DeepOceanLayers,
+    OceanBackgroundOrchestrator,
+    type OceanLayers,
     fishDebugConfig,
     type QualityLevel,
   } from "@austencloud/backgrounds";
@@ -15,7 +15,7 @@
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
   import PersonalityBars from "./PersonalityBars.svelte";
   import type { CoralSceneRenderer } from "../services/CoralSceneRenderer";
-  import { createDeepOceanLabState } from "../state/deep-ocean-lab-state.svelte";
+  import { createOceanLabState } from "../state/deep-ocean-lab-state.svelte";
   import {
     type ColorPreset,
     moodOptions as MOOD_OPTIONS,
@@ -33,7 +33,7 @@
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
   let isLoading = $state(true);
-  let backgroundSystem: DeepOceanBackgroundOrchestrator | null = $state(null);
+  let backgroundSystem: OceanBackgroundOrchestrator | null = $state(null);
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
 
@@ -46,7 +46,7 @@
   let coralCount = $state(0);
 
   // Layer toggles
-  let layers = $state<DeepOceanLayers>({
+  let layers = $state<OceanLayers>({
     gradient: true,
     lightRays: true,
     caustics: true,
@@ -147,7 +147,7 @@
     }
 
     try {
-      const system = getDeepOceanBackgroundSystem();
+      const system = getOceanBackgroundSystem();
       backgroundSystem = system;
 
       if (system) {
@@ -169,7 +169,7 @@
       isLoading = false;
     } catch (error) {
       isLoading = false;
-      console.error("Failed to initialize Deep Ocean Lab:", error);
+      console.error("Failed to initialize Ocean Lab:", error);
     }
   }
 
@@ -440,7 +440,7 @@
     regenerate();
   }
 
-  function toggleLayer(layer: keyof DeepOceanLayers) {
+  function toggleLayer(layer: keyof OceanLayers) {
     layers[layer] = !layers[layer];
     if (backgroundSystem) {
       backgroundSystem.setLayerVisibility(layers);
@@ -610,10 +610,10 @@
   }
 </script>
 
-<div class="deep-ocean-lab">
+<div class="ocean-lab">
   <div class="controls themed-scrollbar-accent">
     <div class="header">
-      <h2>Deep Ocean Lab</h2>
+      <h2>Ocean Lab</h2>
       <span class="badge">Interactive</span>
     </div>
 
@@ -887,7 +887,7 @@
     {#if isLoading}
       <div class="loading-overlay">
         <i class="fas fa-spinner fa-spin"></i>
-        <span>Loading deep ocean...</span>
+        <span>Loading ocean...</span>
       </div>
     {/if}
     <canvas bind:this={canvas}></canvas>
@@ -895,7 +895,7 @@
 </div>
 
 <style>
-  .deep-ocean-lab {
+  .ocean-lab {
     display: grid;
     grid-template-columns: 360px 1fr;
     gap: 20px;
@@ -1140,7 +1140,7 @@
   }
 
   @media (max-width: 800px) {
-    .deep-ocean-lab {
+    .ocean-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
     }

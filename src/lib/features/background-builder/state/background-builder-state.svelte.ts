@@ -8,59 +8,59 @@
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import { BackgroundType } from "@austencloud/backgrounds";
 import {
-  DEFAULT_NIGHT_SKY_SETTINGS,
-  DEFAULT_FIREFLY_FOREST_SETTINGS,
-  DEFAULT_CHERRY_BLOSSOM_SETTINGS,
+  DEFAULT_COSMIC_SETTINGS,
+  DEFAULT_FOREST_SETTINGS,
+  DEFAULT_BLOSSOM_SETTINGS,
   DEFAULT_RAINBOW_SETTINGS,
-  DEFAULT_EMBER_GLOW_SETTINGS,
+  DEFAULT_EMBER_SETTINGS,
   DEFAULT_CELESTIAL_LAB_SETTINGS,
-  DEFAULT_PURE_BLACK_LAB_SETTINGS,
-  type NightSkyLabSettings,
-  type FireflyForestLabSettings,
-  type CherryBlossomLabSettings,
+  DEFAULT_VOID_LAB_SETTINGS,
+  type CosmicLabSettings,
+  type ForestLabSettings,
+  type BlossomLabSettings,
   type RainbowLabSettings,
-  type EmberGlowLabSettings,
+  type EmberLabSettings,
   type CelestialLabSettings,
-  type PureBlackLabSettings,
+  type VoidLabSettings,
   type BackgroundLabSettings,
 } from "$lib/shared/background-builder/domain/lab-settings-types";
 
 const STORAGE_KEY = "tka-background-builder-active-tab";
 
 export type BackgroundBuilderTab =
-  | "deep-ocean"
-  | "night-sky"
-  | "firefly-forest"
-  | "cherry-blossom"
+  | "ocean"
+  | "cosmic"
+  | "forest"
+  | "blossom"
   | "pride"
-  | "ember-glow"
-  | "snowfall"
-  | "autumn-drift"
+  | "ember"
+  | "winter"
+  | "autumn"
   | "gradient";
 
 const VALID_TABS: BackgroundBuilderTab[] = [
-  "deep-ocean",
-  "night-sky",
-  "firefly-forest",
-  "cherry-blossom",
+  "ocean",
+  "cosmic",
+  "forest",
+  "blossom",
   "pride",
-  "ember-glow",
-  "snowfall",
-  "autumn-drift",
+  "ember",
+  "winter",
+  "autumn",
   "gradient",
 ];
-const DEFAULT_TAB: BackgroundBuilderTab = "deep-ocean";
+const DEFAULT_TAB: BackgroundBuilderTab = "ocean";
 
 // Map builder tabs to background types for setting the active background
 const TAB_TO_BACKGROUND_TYPE: Record<BackgroundBuilderTab, BackgroundType | null> = {
-  "deep-ocean": BackgroundType.DEEP_OCEAN,
-  "night-sky": BackgroundType.NIGHT_SKY,
-  "firefly-forest": BackgroundType.FIREFLY_FOREST,
-  "cherry-blossom": BackgroundType.CHERRY_BLOSSOM,
+  "ocean": BackgroundType.OCEAN,
+  "cosmic": BackgroundType.COSMIC,
+  "forest": BackgroundType.FOREST,
+  "blossom": BackgroundType.BLOSSOM,
   "pride": BackgroundType.PRIDE,
-  "ember-glow": BackgroundType.EMBER_GLOW,
-  "snowfall": BackgroundType.SNOWFALL,
-  "autumn-drift": BackgroundType.AUTUMN_DRIFT,
+  "ember": BackgroundType.EMBER,
+  "winter": BackgroundType.WINTER,
+  "autumn": BackgroundType.AUTUMN,
   "gradient": BackgroundType.LINEAR_GRADIENT,
 };
 
@@ -126,51 +126,51 @@ function saveLabSettings(settings: BackgroundLabSettings): void {
 }
 
 // ============================================================================
-// Night Sky Lab Settings
+// Cosmic Lab Settings
 // ============================================================================
 
-export function getNightSkySettings(): NightSkyLabSettings {
+export function getCosmicSettings(): CosmicLabSettings {
   const labSettings = getLabSettings();
-  return labSettings.nightSky ?? { ...DEFAULT_NIGHT_SKY_SETTINGS };
+  return labSettings.cosmic ?? { ...DEFAULT_COSMIC_SETTINGS };
 }
 
-export function updateNightSkySettings(settings: Partial<NightSkyLabSettings>): void {
-  const current = getNightSkySettings();
+export function updateCosmicSettings(settings: Partial<CosmicLabSettings>): void {
+  const current = getCosmicSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
-  saveLabSettings({ ...labSettings, nightSky: updated });
+  saveLabSettings({ ...labSettings, cosmic: updated });
 }
 
 // ============================================================================
-// Firefly Forest Lab Settings
+// Forest Lab Settings
 // ============================================================================
 
-export function getFireflyForestSettings(): FireflyForestLabSettings {
+export function getForestSettings(): ForestLabSettings {
   const labSettings = getLabSettings();
-  return labSettings.fireflyForest ?? { ...DEFAULT_FIREFLY_FOREST_SETTINGS };
+  return labSettings.forest ?? { ...DEFAULT_FOREST_SETTINGS };
 }
 
-export function updateFireflyForestSettings(settings: Partial<FireflyForestLabSettings>): void {
-  const current = getFireflyForestSettings();
+export function updateForestSettings(settings: Partial<ForestLabSettings>): void {
+  const current = getForestSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
-  saveLabSettings({ ...labSettings, fireflyForest: updated });
+  saveLabSettings({ ...labSettings, forest: updated });
 }
 
 // ============================================================================
-// Cherry Blossom Lab Settings
+// Blossom Lab Settings
 // ============================================================================
 
-export function getCherryBlossomSettings(): CherryBlossomLabSettings {
+export function getBlossomSettings(): BlossomLabSettings {
   const labSettings = getLabSettings();
-  return labSettings.cherryBlossom ?? { ...DEFAULT_CHERRY_BLOSSOM_SETTINGS };
+  return labSettings.blossom ?? { ...DEFAULT_BLOSSOM_SETTINGS };
 }
 
-export function updateCherryBlossomSettings(settings: Partial<CherryBlossomLabSettings>): void {
-  const current = getCherryBlossomSettings();
+export function updateBlossomSettings(settings: Partial<BlossomLabSettings>): void {
+  const current = getBlossomSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
-  saveLabSettings({ ...labSettings, cherryBlossom: updated });
+  saveLabSettings({ ...labSettings, blossom: updated });
 }
 
 // ============================================================================
@@ -194,19 +194,19 @@ export const getRainbowSettings = getPrideSettings;
 export const updateRainbowSettings = updatePrideSettings;
 
 // ============================================================================
-// Ember Glow Lab Settings
+// Ember Lab Settings
 // ============================================================================
 
-export function getEmberGlowSettings(): EmberGlowLabSettings {
+export function getEmberSettings(): EmberLabSettings {
   const labSettings = getLabSettings();
-  return labSettings.emberGlow ?? { ...DEFAULT_EMBER_GLOW_SETTINGS };
+  return labSettings.ember ?? { ...DEFAULT_EMBER_SETTINGS };
 }
 
-export function updateEmberGlowSettings(settings: Partial<EmberGlowLabSettings>): void {
-  const current = getEmberGlowSettings();
+export function updateEmberSettings(settings: Partial<EmberLabSettings>): void {
+  const current = getEmberSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
-  saveLabSettings({ ...labSettings, emberGlow: updated });
+  saveLabSettings({ ...labSettings, ember: updated });
 }
 
 // ============================================================================
@@ -226,17 +226,17 @@ export function updateCelestialLabSettings(settings: Partial<CelestialLabSetting
 }
 
 // ============================================================================
-// Pure Black Lab Settings
+// Void Lab Settings
 // ============================================================================
 
-export function getPureBlackLabSettings(): PureBlackLabSettings {
+export function getVoidLabSettings(): VoidLabSettings {
   const labSettings = getLabSettings();
-  return labSettings.pureBlack ?? { ...DEFAULT_PURE_BLACK_LAB_SETTINGS };
+  return labSettings.void ?? { ...DEFAULT_VOID_LAB_SETTINGS };
 }
 
-export function updatePureBlackLabSettings(settings: Partial<PureBlackLabSettings>): void {
-  const current = getPureBlackLabSettings();
+export function updateVoidLabSettings(settings: Partial<VoidLabSettings>): void {
+  const current = getVoidLabSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
-  saveLabSettings({ ...labSettings, pureBlack: updated });
+  saveLabSettings({ ...labSettings, void: updated });
 }

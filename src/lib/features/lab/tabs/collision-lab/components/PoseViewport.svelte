@@ -211,7 +211,7 @@
     showLabels={false}
     {visiblePlanes}
     avatarPositions={gridAnchorPositions}
-    backgroundType={BackgroundType.FIREFLY_FOREST}
+    backgroundType={BackgroundType.FOREST}
   >
     {#snippet children()}
       <!-- Rig root: positions the performer at the stance's footOffset. -->

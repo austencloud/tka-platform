@@ -300,6 +300,12 @@ export function createViewer3DState(deps: {
   // that ends near a performer's body doesn't accidentally select them.
   let isCameraDragging = $state(false);
 
+  // Gate for the performer persistence $effect. Stays false until enter3D()
+  // finishes restoring from localStorage, preventing the effect from
+  // overwriting the saved multi-performer state with an empty array before
+  // restoration has a chance to run.
+  let _performersPersistReady = false;
+
   /**
    * Return the set of performers that should receive scoped writes.
    * - null selection → every performer
@@ -709,6 +715,7 @@ export function createViewer3DState(deps: {
       customBluePlane: p.customBluePlane,
       customRedPlane: p.customRedPlane,
     }));
+    if (!_performersPersistReady) return;
     persistPerformers(snapshots);
   });
 
@@ -774,6 +781,10 @@ export function createViewer3DState(deps: {
 
     renderMode = "3d";
     persistMode("3d");
+
+    // Now that restoration is complete, let the persistence $effect write
+    // future changes back to localStorage.
+    _performersPersistReady = true;
   }
 
   /**

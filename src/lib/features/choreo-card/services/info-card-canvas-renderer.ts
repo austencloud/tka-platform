@@ -512,48 +512,48 @@ function fillBackground(
 }
 
 function getThemeBorderColors(theme: string): Array<{ offset: number; color: string }> {
-  // Hardcoded fallback to nightSky colors for reliability
+  // Hardcoded fallback to cosmic colors for reliability
   const THEMES: Record<string, Array<{ offset: number; color: string }>> = {
-    nightSky: [
+    cosmic: [
       { offset: 0, color: "#1e1b4b" }, { offset: 0.2, color: "#4338ca" },
       { offset: 0.35, color: "#c4b5fd" }, { offset: 0.5, color: "#818cf8" },
       { offset: 0.65, color: "#c4b5fd" }, { offset: 0.8, color: "#4338ca" },
       { offset: 1, color: "#1e1b4b" },
     ],
-    deepOcean: [
+    ocean: [
       { offset: 0, color: "#0c4a6e" }, { offset: 0.2, color: "#0891b2" },
       { offset: 0.38, color: "#a5f3fc" }, { offset: 0.5, color: "#22d3ee" },
       { offset: 0.62, color: "#a5f3fc" }, { offset: 0.8, color: "#0891b2" },
       { offset: 1, color: "#0c4a6e" },
     ],
-    emberGlow: [
+    ember: [
       { offset: 0, color: "#7c2d12" }, { offset: 0.18, color: "#ea580c" },
       { offset: 0.35, color: "#fde68a" }, { offset: 0.5, color: "#fb923c" },
       { offset: 0.65, color: "#fde68a" }, { offset: 0.82, color: "#ea580c" },
       { offset: 1, color: "#7c2d12" },
     ],
   };
-  return THEMES[theme] ?? THEMES.nightSky!;
+  return THEMES[theme] ?? THEMES.cosmic!;
 }
 
 function getThemeBackgroundColors(theme: string): Array<{ offset: number; color: string }> {
   const THEMES: Record<string, Array<{ offset: number; color: string }>> = {
-    nightSky: [
+    cosmic: [
       { offset: 0, color: "#080c24" }, { offset: 0.25, color: "#0e1535" },
       { offset: 0.45, color: "#152050" }, { offset: 0.6, color: "#1a2858" },
       { offset: 0.75, color: "#152545" }, { offset: 0.9, color: "#0d1a38" },
       { offset: 1, color: "#0a1230" },
     ],
-    deepOcean: [
+    ocean: [
       { offset: 0, color: "#001a2e" }, { offset: 0.4, color: "#000c1e" },
       { offset: 0.7, color: "#001122" }, { offset: 1, color: "#000511" },
     ],
-    emberGlow: [
+    ember: [
       { offset: 0, color: "#0f0505" }, { offset: 0.3, color: "#1a0a0a" },
       { offset: 0.6, color: "#2d1410" }, { offset: 1, color: "#1a0a0a" },
     ],
   };
-  return THEMES[theme] ?? THEMES.nightSky!;
+  return THEMES[theme] ?? THEMES.cosmic!;
 }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {

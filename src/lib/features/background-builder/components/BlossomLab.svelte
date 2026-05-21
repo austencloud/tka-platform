@@ -1,23 +1,23 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { CherryBlossomBackgroundSystem, type CherryBlossomLayers, type QualityLevel, type TimeOfDay, getTimeOfDayPreset } from "@austencloud/backgrounds";
+  import { BlossomBackgroundSystem, type BlossomLayers, type QualityLevel, type TimeOfDay, getTimeOfDayPreset } from "@austencloud/backgrounds";
   import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
   import {
-    getCherryBlossomSettings,
-    updateCherryBlossomSettings,
+    getBlossomSettings,
+    updateBlossomSettings,
   } from "../state/background-builder-state.svelte";
   import type {
-    CherryBlossomDensityPreset,
-    CherryBlossomWindPreset,
+    BlossomDensityPreset,
+    BlossomWindPreset,
   } from "$lib/shared/background-builder/domain/lab-settings-types";
 
   // Background system
-  let backgroundSystem: CherryBlossomBackgroundSystem | null = $state(null);
+  let backgroundSystem: BlossomBackgroundSystem | null = $state(null);
   let canvasDimensions = $state({ width: 800, height: 600 });
 
   // Load persisted settings
-  const savedSettings = getCherryBlossomSettings();
+  const savedSettings = getBlossomSettings();
 
   // Quality settings
   let quality: QualityLevel = $state(savedSettings.quality);
@@ -29,13 +29,13 @@
   let timeOfDay: TimeOfDay = $state(savedSettings.timeOfDay);
 
   // Layer toggles - expanded for all features
-  let layers = $state<CherryBlossomLayers>({ ...savedSettings.layers });
+  let layers = $state<BlossomLayers>({ ...savedSettings.layers });
 
   // Density presets
-  let densityPreset: CherryBlossomDensityPreset = $state(savedSettings.densityPreset);
+  let densityPreset: BlossomDensityPreset = $state(savedSettings.densityPreset);
 
   // Wind presets
-  let windPreset: CherryBlossomWindPreset = $state(savedSettings.windPreset);
+  let windPreset: BlossomWindPreset = $state(savedSettings.windPreset);
 
   // Stats
   let stats = $state({ petals: 0, flowers: 0 });
@@ -50,7 +50,7 @@
   // Initialize system when canvas is ready
   function handleCanvasReady(dimensions: { width: number; height: number }) {
     canvasDimensions = dimensions;
-    backgroundSystem = new CherryBlossomBackgroundSystem();
+    backgroundSystem = new BlossomBackgroundSystem();
     backgroundSystem.initialize(dimensions, quality);
 
     // Apply time of day
@@ -77,7 +77,7 @@
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
-    backgroundSystem = new CherryBlossomBackgroundSystem();
+    backgroundSystem = new BlossomBackgroundSystem();
     backgroundSystem.initialize(canvasDimensions, quality);
     backgroundSystem.setTimeOfDay(timeOfDay);
     if (backgroundSystem.setLayerVisibility) {
@@ -87,36 +87,36 @@
 
   function setQuality(q: QualityLevel) {
     quality = q;
-    updateCherryBlossomSettings({ quality: q });
+    updateBlossomSettings({ quality: q });
     regenerate();
   }
 
   function setTimeOfDayMode(mode: TimeOfDay) {
     timeOfDay = mode;
-    updateCherryBlossomSettings({ timeOfDay: mode });
+    updateBlossomSettings({ timeOfDay: mode });
     if (backgroundSystem) {
       backgroundSystem.setTimeOfDay(mode);
       // Sync layers from new preset defaults
       layers = backgroundSystem.getLayerVisibility();
-      updateCherryBlossomSettings({ layers: { ...layers } });
+      updateBlossomSettings({ layers: { ...layers } });
     }
   }
 
-  function setDensity(preset: CherryBlossomDensityPreset) {
+  function setDensity(preset: BlossomDensityPreset) {
     densityPreset = preset;
-    updateCherryBlossomSettings({ densityPreset: preset });
+    updateBlossomSettings({ densityPreset: preset });
     regenerate();
   }
 
-  function setWindPreset(preset: CherryBlossomWindPreset) {
+  function setWindPreset(preset: BlossomWindPreset) {
     windPreset = preset;
-    updateCherryBlossomSettings({ windPreset: preset });
+    updateBlossomSettings({ windPreset: preset });
     // Wind presets could be applied via the system if we add that capability
   }
 
-  function toggleLayer(layer: keyof CherryBlossomLayers) {
+  function toggleLayer(layer: keyof BlossomLayers) {
     layers = { ...layers, [layer]: !layers[layer] };
-    updateCherryBlossomSettings({ layers: { ...layers } });
+    updateBlossomSettings({ layers: { ...layers } });
     if (backgroundSystem?.setLayerVisibility) {
       backgroundSystem.setLayerVisibility(layers);
     }
@@ -171,10 +171,10 @@
   });
 </script>
 
-<div class="cherry-blossom-lab">
+<div class="blossom-lab">
   <div class="controls themed-scrollbar-accent">
     <div class="header">
-      <h2>Cherry Blossom Lab</h2>
+      <h2>Blossom Lab</h2>
       <span class="badge">Petals</span>
     </div>
 
@@ -371,7 +371,7 @@
 </div>
 
 <style>
-  .cherry-blossom-lab {
+  .blossom-lab {
     display: grid;
     grid-template-columns: 320px 1fr;
     gap: 20px;
@@ -635,7 +635,7 @@
   }
 
   @media (max-width: 800px) {
-    .cherry-blossom-lab {
+    .blossom-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
     }

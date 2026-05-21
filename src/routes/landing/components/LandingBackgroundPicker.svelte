@@ -20,7 +20,7 @@
   );
 
   const currentLabel = $derived(
-    backgrounds[currentIndex]?.label || "Night Sky"
+    backgrounds[currentIndex]?.label || "Cosmic"
   );
 
   function cycleBackground() {

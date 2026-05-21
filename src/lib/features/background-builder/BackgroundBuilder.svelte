@@ -1,13 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import NightSkyLab from "./components/NightSkyLab.svelte";
-  import DeepOceanLab from "./components/DeepOceanLab.svelte";
-  import FireflyForestLab from "./components/FireflyForestLab.svelte";
-  import CherryBlossomLab from "./components/CherryBlossomLab.svelte";
+  import CosmicLab from "./components/CosmicLab.svelte";
+  import OceanLab from "./components/OceanLab.svelte";
+  import ForestLab from "./components/ForestLab.svelte";
+  import BlossomLab from "./components/BlossomLab.svelte";
   import PrideLab from "./components/PrideLab.svelte";
-  import EmberGlowLab from "./components/EmberGlowLab.svelte";
-  import SnowfallLab from "./components/SnowfallLab.svelte";
-  import AutumnDriftLab from "./components/AutumnDriftLab.svelte";
+  import EmberLab from "./components/EmberLab.svelte";
+  import WinterLab from "./components/WinterLab.svelte";
+  import AutumnLab from "./components/AutumnLab.svelte";
   import {
     backgroundBuilderState,
     type BackgroundBuilderTab,
@@ -22,27 +22,27 @@
   }
 
   const tabs: Tab[] = [
-    { id: "deep-ocean", label: "Deep Ocean", icon: "fa-water" },
-    { id: "night-sky", label: "Night Sky", icon: "fa-moon" },
-    { id: "firefly-forest", label: "Firefly Forest", icon: "fa-tree" },
-    { id: "cherry-blossom", label: "Cherry Blossom", icon: "fa-spa" },
+    { id: "ocean", label: "Ocean", icon: "fa-water" },
+    { id: "cosmic", label: "Cosmic", icon: "fa-moon" },
+    { id: "forest", label: "Forest", icon: "fa-tree" },
+    { id: "blossom", label: "Blossom", icon: "fa-spa" },
     { id: "pride", label: "Pride", icon: "fa-rainbow" },
-    { id: "ember-glow", label: "Ember Glow", icon: "fa-fire" },
-    { id: "snowfall", label: "Snowfall", icon: "fa-snowflake" },
-    { id: "autumn-drift", label: "Autumn Drift", icon: "fa-leaf" },
+    { id: "ember", label: "Ember", icon: "fa-fire" },
+    { id: "winter", label: "Winter", icon: "fa-snowflake" },
+    { id: "autumn", label: "Autumn", icon: "fa-leaf" },
     { id: "gradient", label: "Gradient", icon: "fa-fill-drip" },
   ];
 
   // Map tab IDs to BackgroundType for theme application
   const tabToBackgroundType: Record<BackgroundBuilderTab, BackgroundType | null> = {
-    "deep-ocean": BackgroundType.DEEP_OCEAN,
-    "night-sky": BackgroundType.NIGHT_SKY,
-    "firefly-forest": BackgroundType.FIREFLY_FOREST,
-    "cherry-blossom": BackgroundType.CHERRY_BLOSSOM,
+    "ocean": BackgroundType.OCEAN,
+    "cosmic": BackgroundType.COSMIC,
+    "forest": BackgroundType.FOREST,
+    "blossom": BackgroundType.BLOSSOM,
     "pride": BackgroundType.PRIDE,
-    "ember-glow": BackgroundType.EMBER_GLOW,
-    "snowfall": BackgroundType.SNOWFALL,
-    "autumn-drift": BackgroundType.AUTUMN_DRIFT,
+    "ember": BackgroundType.EMBER,
+    "winter": BackgroundType.WINTER,
+    "autumn": BackgroundType.AUTUMN,
     "gradient": BackgroundType.LINEAR_GRADIENT,
   };
 
@@ -84,22 +84,22 @@
   </nav>
 
   <main class="content">
-    {#if backgroundBuilderState.currentTab === "deep-ocean"}
-      <DeepOceanLab />
-    {:else if backgroundBuilderState.currentTab === "night-sky"}
-      <NightSkyLab />
-    {:else if backgroundBuilderState.currentTab === "firefly-forest"}
-      <FireflyForestLab />
-    {:else if backgroundBuilderState.currentTab === "cherry-blossom"}
-      <CherryBlossomLab />
+    {#if backgroundBuilderState.currentTab === "ocean"}
+      <OceanLab />
+    {:else if backgroundBuilderState.currentTab === "cosmic"}
+      <CosmicLab />
+    {:else if backgroundBuilderState.currentTab === "forest"}
+      <ForestLab />
+    {:else if backgroundBuilderState.currentTab === "blossom"}
+      <BlossomLab />
     {:else if backgroundBuilderState.currentTab === "pride"}
       <PrideLab />
-    {:else if backgroundBuilderState.currentTab === "ember-glow"}
-      <EmberGlowLab />
-    {:else if backgroundBuilderState.currentTab === "snowfall"}
-      <SnowfallLab />
-    {:else if backgroundBuilderState.currentTab === "autumn-drift"}
-      <AutumnDriftLab />
+    {:else if backgroundBuilderState.currentTab === "ember"}
+      <EmberLab />
+    {:else if backgroundBuilderState.currentTab === "winter"}
+      <WinterLab />
+    {:else if backgroundBuilderState.currentTab === "autumn"}
+      <AutumnLab />
     {:else if backgroundBuilderState.currentTab === "gradient"}
       <div class="placeholder">
         <i class="fas fa-fill-drip"></i>

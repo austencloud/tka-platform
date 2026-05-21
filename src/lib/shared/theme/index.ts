@@ -15,7 +15,7 @@
  * Then use theme functions:
  * ```typescript
  * import { applyThemeForBackground, getThemeMode, isLightMode } from '$lib/shared/theme';
- * applyThemeForBackground(BackgroundType.NIGHT_SKY);
+ * applyThemeForBackground(BackgroundType.COSMIC);
  * if (isLightMode()) { ... }
  * ```
  */

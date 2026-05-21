@@ -79,6 +79,27 @@
       return fract((p3.x + p3.y) * p3.z);
     }
 
+    vec2 hash2(vec2 p) {
+      p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+      return fract(sin(p) * 43758.5453);
+    }
+
+    float voronoiCaustic(vec2 p, float t) {
+      vec2 ci = floor(p);
+      vec2 cf = fract(p);
+      float cd = 1.0;
+      for (int cx = -1; cx <= 1; cx++) {
+        for (int cy = -1; cy <= 1; cy++) {
+          vec2 neighbor = vec2(float(cx), float(cy));
+          vec2 pt = hash2(ci + neighbor);
+          pt = 0.5 + 0.5 * sin(t * 0.8 + 6.2831 * pt);
+          float dd = length(neighbor + pt - cf);
+          cd = min(cd, dd);
+        }
+      }
+      return cd;
+    }
+
     float noise(vec2 p) {
       vec2 i = floor(p);
       vec2 f = fract(p);
@@ -184,6 +205,14 @@
 
       float NdotL = max(dot(finalNormal, uLightDir), 0.0);
       vec3 lit = tintedSand * (uAmbient * ao + NdotL * 0.6);
+
+      // Animated caustic light pattern (two-layer Voronoi, min-blended)
+      float causticTime = uTime * 6.0;
+      float c1 = voronoiCaustic(wp * 0.6, causticTime);
+      float c2 = voronoiCaustic(wp * 0.78 + 3.7, causticTime * 1.1);
+      float caustic = pow(min(c1, c2), 2.0) * 1.5;
+      caustic = clamp(caustic, 0.0, 1.0);
+      lit += vec3(0.55, 0.85, 0.75) * caustic * 0.4;
 
       // Distance fade into fog color
       float dist = length(wp);

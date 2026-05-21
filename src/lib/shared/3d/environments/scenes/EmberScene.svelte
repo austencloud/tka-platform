@@ -24,7 +24,7 @@
   import HeatDistortion from "./ember/HeatDistortion.svelte";
   import {
     type EmberSceneConfig,
-    createDefaultEmberGlowConfig,
+    createDefaultEmberConfig,
   } from "../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
@@ -36,7 +36,7 @@
 
   let { config }: Props = $props();
 
-  const activeConfig = $derived(config ?? createDefaultEmberGlowConfig());
+  const activeConfig = $derived(config ?? createDefaultEmberConfig());
 
   const rockA = useGltf("/models/winter/rock_largeA.glb");
   const rockB = useGltf("/models/winter/rock_largeB.glb");

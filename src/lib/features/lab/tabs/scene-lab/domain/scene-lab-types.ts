@@ -5,10 +5,10 @@ export type SceneId =
   | "cosmic"
   | "ocean"
   | "ember"
-  | "cherry-blossom"
+  | "blossom"
   | "rainbow"
   | "celestial"
-  | "pure-black";
+  | "void";
 
 export interface SceneOption {
   id: SceneId;
@@ -55,7 +55,7 @@ export const SCENE_OPTIONS: SceneOption[] = [
     description: "Volcanic landscape with lava cracks, obsidian pillars, and rising embers",
   },
   {
-    id: "cherry-blossom",
+    id: "blossom",
     label: "Blossom",
     icon: "fa-spa",
     description: "Moonlit cherry blossom grove with falling petals and stone lanterns",
@@ -73,8 +73,8 @@ export const SCENE_OPTIONS: SceneOption[] = [
     description: "Heavenly cloudscape with golden god rays and floating islands",
   },
   {
-    id: "pure-black",
-    label: "Black",
+    id: "void",
+    label: "Void",
     icon: "fa-square",
     description: "Pure black void — isolated performer view",
   },

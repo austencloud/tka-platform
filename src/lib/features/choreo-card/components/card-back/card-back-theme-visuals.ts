@@ -18,13 +18,13 @@ export interface CardBackThemeVisuals {
 // Metallic effect: sharp white/silver highlights between color stops
 // create the illusion of light catching a metal surface.
 const THEMES: Record<string, CardBackThemeVisuals> = {
-  nightSky: {
+  cosmic: {
     borderGradient: "linear-gradient(135deg, #1e1b4b 0%, #4338ca 20%, #c4b5fd 35%, #818cf8 50%, #c4b5fd 65%, #4338ca 80%, #1e1b4b 100%)",
     accentColor: "#818cf8",
     // Rich gradient: deep indigo at top, hint of teal at the horizon, back to deep at bottom
     background: "linear-gradient(180deg, #080c24 0%, #0e1535 25%, #152050 45%, #1a2858 60%, #152545 75%, #0d1a38 90%, #0a1230 100%)",
   },
-  deepOcean: {
+  ocean: {
     borderGradient: "linear-gradient(135deg, #0c4a6e 0%, #0891b2 20%, #a5f3fc 38%, #22d3ee 50%, #a5f3fc 62%, #0891b2 80%, #0c4a6e 100%)",
     accentColor: "#22d3ee",
     background: "linear-gradient(180deg, #001a2e 0%, #000c1e 40%, #001122 70%, #000511 100%)",
@@ -34,22 +34,22 @@ const THEMES: Record<string, CardBackThemeVisuals> = {
     accentColor: "#93c5fd",
     background: "linear-gradient(180deg, #0a0e1a 0%, #16213e 40%, #0f3460 70%, #041426 100%)",
   },
-  emberGlow: {
+  ember: {
     borderGradient: "linear-gradient(135deg, #7c2d12 0%, #ea580c 18%, #fde68a 35%, #fb923c 50%, #fde68a 65%, #ea580c 82%, #7c2d12 100%)",
     accentColor: "#fb923c",
     background: "linear-gradient(180deg, #0f0505 0%, #1a0a0a 30%, #2d1410 60%, #1a0a0a 100%)",
   },
-  cherryBlossom: {
+  blossom: {
     borderGradient: "linear-gradient(135deg, #831843 0%, #db2777 20%, #fce7f3 38%, #f9a8d4 50%, #fce7f3 62%, #db2777 80%, #831843 100%)",
     accentColor: "#f9a8d4",
     background: "linear-gradient(180deg, #1a0a14 0%, #2a1520 40%, #1a0a14 100%)",
   },
-  fireflyForest: {
+  forest: {
     borderGradient: "linear-gradient(135deg, #0d3320 0%, #166534 20%, #bbf7d0 38%, #22c55e 50%, #bbf7d0 62%, #166534 80%, #0d3320 100%)",
     accentColor: "#22c55e",
     background: "linear-gradient(180deg, #0a0e18 0%, #0a1612 50%, #0c1a14 80%, #0a1810 100%)",
   },
-  autumnDrift: {
+  autumn: {
     borderGradient: "linear-gradient(135deg, #78350f 0%, #d97706 18%, #fef3c7 33%, #dc2626 50%, #fef3c7 67%, #d97706 82%, #78350f 100%)",
     accentColor: "#d97706",
     background: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
@@ -74,5 +74,5 @@ const THEMES: Record<string, CardBackThemeVisuals> = {
 };
 
 export function getCardBackThemeVisuals(backgroundType: string | undefined): CardBackThemeVisuals {
-  return (backgroundType ? THEMES[backgroundType] : undefined) ?? THEMES.nightSky!;
+  return (backgroundType ? THEMES[backgroundType] : undefined) ?? THEMES.cosmic!;
 }

@@ -12,7 +12,7 @@ vi.stubGlobal("localStorage", {
 const mockUpdateSetting = vi.fn().mockResolvedValue(undefined);
 vi.mock("$lib/shared/settings/state/SettingsState.svelte", () => ({
   settingsService: {
-    settings: { backgroundType: "deepOcean" },
+    settings: { backgroundType: "ocean" },
     updateSetting: (...args: unknown[]) => mockUpdateSetting(...args),
   },
 }));
@@ -34,10 +34,10 @@ vi.mock(
       cosmicAuroraConfig: {},
       oceanConfig: {},
       emberConfig: {},
-      cherryBlossomConfig: {},
+      blossomConfig: {},
       celestialConfig: {},
       rainbowConfig: {},
-      pureBlackConfig: {},
+      voidConfig: {},
       resetCurrent: vi.fn(),
       copyCurrentToClipboard: vi.fn(),
     }),
@@ -89,7 +89,7 @@ describe("createThemesLabState", () => {
     );
     expect(mockUpdateSetting).toHaveBeenCalledWith(
       "backgroundType",
-      "nightSky"
+      "cosmic"
     );
   });
 
@@ -125,13 +125,13 @@ describe("createThemesLabState", () => {
     expect(state.themeOptions).toHaveLength(10);
   });
 
-  it("setTheme with blossom maps to cherry-blossom sceneId", () => {
+  it("setTheme with blossom maps to blossom sceneId", () => {
     const state = createThemesLabState();
     state.setTheme("blossom");
-    expect(mockSetSceneId).toHaveBeenCalledWith("cherry-blossom");
+    expect(mockSetSceneId).toHaveBeenCalledWith("blossom");
     expect(mockUpdateSetting).toHaveBeenCalledWith(
       "backgroundType",
-      "cherryBlossom"
+      "blossom"
     );
   });
 

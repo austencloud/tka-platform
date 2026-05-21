@@ -111,7 +111,7 @@ import type { CardPair } from "../services/types";
     (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.cardSize') : null) as CardSizeId ?? 'poker'
   );
   let selectedTheme = $state<string>(
-    typeof window !== 'undefined' ? localStorage.getItem('cardPreview.theme') ?? 'nightSky' : 'nightSky'
+    typeof window !== 'undefined' ? localStorage.getItem('cardPreview.theme') ?? 'cosmic' : 'cosmic'
   );
 
   // ── Print preview state ─────────────────────────────────────────────────

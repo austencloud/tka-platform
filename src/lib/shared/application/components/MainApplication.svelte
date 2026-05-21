@@ -477,7 +477,7 @@ import type { SheetType } from "../../navigation/services/contracts/types";
   <!-- Background Host - Uses reactive settings, controller survives HMR -->
   {#if settings.backgroundEnabled}
     <BackgroundHost
-      backgroundType={settings.backgroundType || BackgroundType.NIGHT_SKY}
+      backgroundType={settings.backgroundType || BackgroundType.COSMIC}
       backgroundColor={settings.backgroundColor}
       {...settings.gradientColors
         ? { gradientColors: settings.gradientColors }

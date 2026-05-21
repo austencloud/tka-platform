@@ -8,10 +8,10 @@
 import type { QualityLevel } from "@austencloud/backgrounds";
 
 // ============================================================================
-// Night Sky Lab
+// Cosmic Lab
 // ============================================================================
 
-export interface NightSkyLabLayers {
+export interface CosmicLabLayers {
   stars: boolean;
   nebula: boolean;
   aurora: boolean;
@@ -21,21 +21,21 @@ export interface NightSkyLabLayers {
   ufo: boolean; // Easter egg - intelligent UFO
 }
 
-export type NightSkyDensityPreset = "sparse" | "normal" | "dense" | "ultra";
-export type NightSkyLabMode = "default" | "ufoLab";
+export type CosmicDensityPreset = "sparse" | "normal" | "dense" | "ultra";
+export type CosmicLabMode = "default" | "ufoLab";
 
-export interface NightSkyLabSettings {
+export interface CosmicLabSettings {
   quality: QualityLevel;
-  layers: NightSkyLabLayers;
-  densityPreset: NightSkyDensityPreset;
-  mode: NightSkyLabMode;
+  layers: CosmicLabLayers;
+  densityPreset: CosmicDensityPreset;
+  mode: CosmicLabMode;
 }
 
 // ============================================================================
-// Firefly Forest Lab
+// Forest Lab
 // ============================================================================
 
-export interface FireflyForestLabLayers {
+export interface ForestLabLayers {
   gradient: boolean;
   stars: boolean;
   moon: boolean;
@@ -47,7 +47,7 @@ export interface FireflyForestLabLayers {
   fireflies: boolean;
 }
 
-export interface FireflyForestTreeTypes {
+export interface ForestTreeTypes {
   pine: boolean;
   fir: boolean;
   spruce: boolean;
@@ -58,19 +58,19 @@ export interface FireflyForestTreeTypes {
   dead: boolean;
 }
 
-export interface FireflyForestLabSettings {
+export interface ForestLabSettings {
   quality: QualityLevel;
-  layers: FireflyForestLabLayers;
-  treeTypes: FireflyForestTreeTypes;
+  layers: ForestLabLayers;
+  treeTypes: ForestTreeTypes;
 }
 
 // ============================================================================
-// Cherry Blossom Lab
+// Blossom Lab
 // ============================================================================
 
-export type CherryBlossomTimeOfDay = "twilight" | "goldenHour" | "night";
+export type BlossomTimeOfDay = "twilight" | "goldenHour" | "night";
 
-export interface CherryBlossomLabLayers {
+export interface BlossomLabLayers {
   gradient: boolean;
   petals: boolean;
   petalsFar: boolean;
@@ -86,15 +86,15 @@ export interface CherryBlossomLabLayers {
   reflection: boolean;
 }
 
-export type CherryBlossomDensityPreset = "sparse" | "normal" | "dense" | "ultra";
-export type CherryBlossomWindPreset = "calm" | "gentle" | "breezy" | "gusty";
+export type BlossomDensityPreset = "sparse" | "normal" | "dense" | "ultra";
+export type BlossomWindPreset = "calm" | "gentle" | "breezy" | "gusty";
 
-export interface CherryBlossomLabSettings {
+export interface BlossomLabSettings {
   quality: QualityLevel;
-  timeOfDay: CherryBlossomTimeOfDay;
-  layers: CherryBlossomLabLayers;
-  densityPreset: CherryBlossomDensityPreset;
-  windPreset: CherryBlossomWindPreset;
+  timeOfDay: BlossomTimeOfDay;
+  layers: BlossomLabLayers;
+  densityPreset: BlossomDensityPreset;
+  windPreset: BlossomWindPreset;
 }
 
 // ============================================================================
@@ -128,10 +128,10 @@ export interface RainbowLabSettings {
 }
 
 // ============================================================================
-// Deep Ocean Lab
+// Ocean Lab
 // ============================================================================
 
-export interface DeepOceanLabLayers {
+export interface OceanLabLayers {
   gradient: boolean;
   lightRays: boolean;
   caustics: boolean;
@@ -142,12 +142,12 @@ export interface DeepOceanLabLayers {
   coral: boolean;
 }
 
-export interface DeepOceanLabSettings {
+export interface OceanLabSettings {
   quality: QualityLevel;
-  layers: DeepOceanLabLayers;
+  layers: OceanLabLayers;
 }
 
-export const DEFAULT_DEEP_OCEAN_SETTINGS: DeepOceanLabSettings = {
+export const DEFAULT_OCEAN_SETTINGS: OceanLabSettings = {
   quality: "high",
   layers: {
     gradient: true,
@@ -166,21 +166,21 @@ export const DEFAULT_DEEP_OCEAN_SETTINGS: DeepOceanLabSettings = {
 // ============================================================================
 
 export interface BackgroundLabSettings {
-  nightSky?: NightSkyLabSettings;
-  fireflyForest?: FireflyForestLabSettings;
-  cherryBlossom?: CherryBlossomLabSettings;
+  cosmic?: CosmicLabSettings;
+  forest?: ForestLabSettings;
+  blossom?: BlossomLabSettings;
   rainbow?: RainbowLabSettings;
-  emberGlow?: EmberGlowLabSettings;
-  deepOcean?: DeepOceanLabSettings;
+  ember?: EmberLabSettings;
+  ocean?: OceanLabSettings;
   celestial?: CelestialLabSettings;
-  pureBlack?: PureBlackLabSettings;
+  void?: VoidLabSettings;
 }
 
 // ============================================================================
 // Default Values
 // ============================================================================
 
-export const DEFAULT_NIGHT_SKY_SETTINGS: NightSkyLabSettings = {
+export const DEFAULT_COSMIC_SETTINGS: CosmicLabSettings = {
   quality: "high",
   layers: {
     stars: true,
@@ -195,7 +195,7 @@ export const DEFAULT_NIGHT_SKY_SETTINGS: NightSkyLabSettings = {
   mode: "default",
 };
 
-export const DEFAULT_FIREFLY_FOREST_SETTINGS: FireflyForestLabSettings = {
+export const DEFAULT_FOREST_SETTINGS: ForestLabSettings = {
   quality: "high",
   layers: {
     gradient: true,
@@ -220,7 +220,7 @@ export const DEFAULT_FIREFLY_FOREST_SETTINGS: FireflyForestLabSettings = {
   },
 };
 
-export const DEFAULT_CHERRY_BLOSSOM_SETTINGS: CherryBlossomLabSettings = {
+export const DEFAULT_BLOSSOM_SETTINGS: BlossomLabSettings = {
   quality: "high",
   timeOfDay: "twilight",
   layers: {
@@ -256,10 +256,10 @@ export const DEFAULT_RAINBOW_SETTINGS: RainbowLabSettings = {
 };
 
 // ============================================================================
-// Ember Glow Lab
+// Ember Lab
 // ============================================================================
 
-export interface EmberGlowLabLayers {
+export interface EmberLabLayers {
   gradient: boolean;
   coalBed: boolean; // A+ - glowing heat source at bottom
   smoke: boolean;
@@ -272,17 +272,17 @@ export interface EmberGlowLabLayers {
   breathing: boolean;
 }
 
-export type EmberGlowHeatIntensity = "smolder" | "warm" | "hot" | "blazing";
-export type EmberGlowDensityPreset = "sparse" | "normal" | "dense" | "inferno";
+export type EmberHeatIntensity = "smolder" | "warm" | "hot" | "blazing";
+export type EmberDensityPreset = "sparse" | "normal" | "dense" | "inferno";
 
-export interface EmberGlowLabSettings {
+export interface EmberLabSettings {
   quality: QualityLevel;
-  layers: EmberGlowLabLayers;
-  heatIntensity: EmberGlowHeatIntensity;
-  densityPreset: EmberGlowDensityPreset;
+  layers: EmberLabLayers;
+  heatIntensity: EmberHeatIntensity;
+  densityPreset: EmberDensityPreset;
 }
 
-export const DEFAULT_EMBER_GLOW_SETTINGS: EmberGlowLabSettings = {
+export const DEFAULT_EMBER_SETTINGS: EmberLabSettings = {
   quality: "high",
   layers: {
     gradient: true,
@@ -327,22 +327,22 @@ export const DEFAULT_CELESTIAL_LAB_SETTINGS: CelestialLabSettings = {
 };
 
 // ============================================================================
-// Pure Black Lab
+// Void Lab
 // ============================================================================
 
-export interface PureBlackLabLayers {
+export interface VoidLabLayers {
   grid: boolean;
   vignette: boolean;
 }
 
-export interface PureBlackLabSettings {
+export interface VoidLabSettings {
   quality: QualityLevel;
-  layers: PureBlackLabLayers;
+  layers: VoidLabLayers;
   gridOpacity: number;
   gridSpacing: number;
 }
 
-export const DEFAULT_PURE_BLACK_LAB_SETTINGS: PureBlackLabSettings = {
+export const DEFAULT_VOID_LAB_SETTINGS: VoidLabSettings = {
   quality: "high",
   layers: {
     grid: false,

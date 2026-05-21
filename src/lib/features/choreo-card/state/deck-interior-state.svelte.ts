@@ -36,7 +36,7 @@ export function createDeckInteriorState() {
     (typeof window !== "undefined" ? localStorage.getItem("cardPreview.cardSize") : null) as CardSizeId ?? "poker"
   );
   const selectedTheme = $state(
-    typeof window !== "undefined" ? localStorage.getItem("cardPreview.theme") ?? "nightSky" : "nightSky"
+    typeof window !== "undefined" ? localStorage.getItem("cardPreview.theme") ?? "cosmic" : "cosmic"
   );
   let isExporting = $state(false);
   let renderedPairs = $state<CardPair[]>([]);

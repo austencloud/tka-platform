@@ -13,22 +13,23 @@ import { BackgroundType } from "@austencloud/backgrounds";
  * All public pages use the same list for consistency.
  */
 export const ANIMATED_BACKGROUNDS = [
-  { type: BackgroundType.NIGHT_SKY, icon: "fa-moon", label: "Night Sky" },
-  { type: BackgroundType.SNOWFALL, icon: "fa-snowflake", label: "Snowfall" },
-  { type: BackgroundType.DEEP_OCEAN, icon: "fa-water", label: "Deep Ocean" },
-  { type: BackgroundType.EMBER_GLOW, icon: "fa-fire", label: "Ember Glow" },
-  { type: BackgroundType.CHERRY_BLOSSOM, icon: "fa-spa", label: "Cherry Blossom" },
-  { type: BackgroundType.FIREFLY_FOREST, icon: "fa-tree", label: "Firefly Forest" },
-  { type: BackgroundType.AUTUMN_DRIFT, icon: "fa-leaf", label: "Autumn" },
+  { type: BackgroundType.COSMIC, icon: "fa-moon", label: "Cosmic" },
+  { type: BackgroundType.WINTER, icon: "fa-snowflake", label: "Winter" },
+  { type: BackgroundType.OCEAN, icon: "fa-water", label: "Ocean" },
+  { type: BackgroundType.EMBER, icon: "fa-fire", label: "Ember" },
+  { type: BackgroundType.BLOSSOM, icon: "fa-spa", label: "Blossom" },
+  { type: BackgroundType.FOREST, icon: "fa-tree", label: "Forest" },
+  { type: BackgroundType.AUTUMN, icon: "fa-leaf", label: "Autumn" },
   { type: BackgroundType.PRIDE, icon: "fa-rainbow", label: "Pride" },
   { type: BackgroundType.CELESTIAL, icon: "fa-cloud-sun", label: "Celestial" },
+  { type: BackgroundType.VOID, icon: "fa-square", label: "Void" },
 ] as const;
 
 export type AnimatedBackground = (typeof ANIMATED_BACKGROUNDS)[number];
 
 const STORAGE_KEY = "tka-public-theme-index";
 
-/** Get the saved theme index from localStorage, or 0 (Night Sky) as default */
+/** Get the saved theme index from localStorage, or 0 (Cosmic) as default */
 export function getPublicThemeIndex(): number {
   if (!browser) return 0;
 

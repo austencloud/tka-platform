@@ -128,7 +128,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.cardSize') : null) as CardSizeId ?? 'poker'
   );
 
-  let selectedTheme = $state(typeof window !== 'undefined' ? localStorage.getItem('cardPreview.theme') ?? 'nightSky' : 'nightSky');
+  let selectedTheme = $state(typeof window !== 'undefined' ? localStorage.getItem('cardPreview.theme') ?? 'cosmic' : 'cosmic');
   let isExporting = $state(false);
   let renderedPairs = $state<CardPair[]>([]);
   let isRendering = $state(false);

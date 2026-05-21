@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type { FireflyForestLayers, TreeTypeVisibility, EcologicalPattern, QualityLevel, TreeCategory, RenderedTree, } from "@austencloud/backgrounds";
+  import type { ForestLayers, TreeTypeVisibility, EcologicalPattern, QualityLevel, TreeCategory, RenderedTree, } from "@austencloud/backgrounds";
   import {
-    getFireflyForestSettings, updateFireflyForestSettings, } from "../state/background-builder-state.svelte";
+    getForestSettings, updateForestSettings, } from "../state/background-builder-state.svelte";
   import { getPreviewAnimationController } from "../getPreviewAnimationController";
   import type { PreviewStats } from "../services/types";
 
@@ -27,8 +27,8 @@
   // Preview state
   let canvas: HTMLCanvasElement | null = $state(null);
   let isLoading = $state(true);
-  const savedSettings = getFireflyForestSettings();
-  let layers = $state<FireflyForestLayers>({ ...savedSettings.layers });
+  const savedSettings = getForestSettings();
+  let layers = $state<ForestLayers>({ ...savedSettings.layers });
   let treeTypes = $state<TreeTypeVisibility>({ ...savedSettings.treeTypes });
   let quality: QualityLevel = $state(savedSettings.quality);
   let density = $state(0.5);
@@ -77,20 +77,20 @@
 
   function handleQualityChange(q: QualityLevel) {
     quality = q;
-    updateFireflyForestSettings({ quality: q });
+    updateForestSettings({ quality: q });
     previewController.setQuality(q);
     stats = previewController.getStats();
   }
 
-  function handleLayerToggle(layer: keyof FireflyForestLayers) {
+  function handleLayerToggle(layer: keyof ForestLayers) {
     layers[layer] = !layers[layer];
-    updateFireflyForestSettings({ layers: { ...layers } });
+    updateForestSettings({ layers: { ...layers } });
     previewController.setLayerVisibility(layers);
   }
 
   function handleTreeTypeToggle(type: keyof TreeTypeVisibility) {
     treeTypes[type] = !treeTypes[type];
-    updateFireflyForestSettings({ treeTypes: { ...treeTypes } });
+    updateForestSettings({ treeTypes: { ...treeTypes } });
     previewController.setTreeVisibility(treeTypes);
   }
 
@@ -178,10 +178,10 @@
   });
 </script>
 
-<div class="firefly-forest-lab">
+<div class="forest-lab">
   <div class="controls themed-scrollbar-accent">
     <div class="header">
-      <h2>Firefly Forest Lab</h2>
+      <h2>Forest Lab</h2>
       <span class="badge">Classic</span>
     </div>
 
@@ -224,11 +224,11 @@
 
   <!-- Content Area -->
   {#if mode === "preview"}
-    <div class="preview" onmousemove={handleMouseMove} onmouseleave={handleMouseLeave} role="application" aria-label="Firefly forest preview">
+    <div class="preview" onmousemove={handleMouseMove} onmouseleave={handleMouseLeave} role="application" aria-label="Forest preview">
       {#if isLoading}
         <div class="loading-overlay">
           <i class="fas fa-spinner fa-spin"></i>
-          <span>Loading firefly forest...</span>
+          <span>Loading forest...</span>
         </div>
       {/if}
       <canvas bind:this={canvas}></canvas>
@@ -244,7 +244,7 @@
 </div>
 
 <style>
-  .firefly-forest-lab {
+  .forest-lab {
     display: grid;
     grid-template-columns: 320px 1fr;
     gap: 20px;
@@ -367,7 +367,7 @@
   }
 
   @media (max-width: 900px) {
-    .firefly-forest-lab {
+    .forest-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
     }

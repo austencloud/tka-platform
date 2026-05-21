@@ -109,7 +109,7 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   );
 
   // Get card colors based on current background (reactive to background changes)
-  let cardColors = $derived(getCardColors(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL));
+  let cardColors = $derived(getCardColors(settingsService.settings.backgroundType ?? BackgroundType.WINTER));
 
   // Pre-compute word length including bridges and LOOP multiplication
   let computedWordLength = $state<number | undefined>(undefined);

@@ -1,18 +1,18 @@
 /**
- * Controller for managing the Night Sky Lab canvas and animation lifecycle
+ * Controller for managing the Cosmic Lab canvas and animation lifecycle
  */
 
-import { NightSkyBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
-import type { NightSkyLayers } from "./types";
+import { CosmicBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
+import type { CosmicLayers } from "./types";
 
-export class NightSkyLabController {
+export class CosmicLabController {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
-  private system: NightSkyBackgroundSystem | null = null;
+  private system: CosmicBackgroundSystem | null = null;
   private animationFrame: number | null = null;
   private lastFrameTime = 0;
 
-  initialize(canvas: HTMLCanvasElement, quality: QualityLevel, layers: NightSkyLayers): void {
+  initialize(canvas: HTMLCanvasElement, quality: QualityLevel, layers: CosmicLayers): void {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     if (!this.ctx) return;
@@ -24,7 +24,7 @@ export class NightSkyLabController {
     }
 
     try {
-      this.system = NightSkyBackgroundSystem.create();
+      this.system = CosmicBackgroundSystem.create();
       const dimensions = { width: canvas.width, height: canvas.height };
       this.system.initialize(dimensions, quality);
 
@@ -32,7 +32,7 @@ export class NightSkyLabController {
         this.system.setLayerVisibility(layers);
       }
     } catch (error) {
-      console.error("Failed to initialize Night Sky preview:", error);
+      console.error("Failed to initialize Cosmic preview:", error);
     }
   }
 
@@ -86,7 +86,7 @@ export class NightSkyLabController {
     this.ctx = null;
   }
 
-  regenerate(quality: QualityLevel, layers: NightSkyLayers): void {
+  regenerate(quality: QualityLevel, layers: CosmicLayers): void {
     if (!this.canvas) return;
 
     this.stop();
@@ -98,7 +98,7 @@ export class NightSkyLabController {
     if (!this.ctx) return;
 
     try {
-      this.system = NightSkyBackgroundSystem.create();
+      this.system = CosmicBackgroundSystem.create();
       const dimensions = { width: this.canvas.width, height: this.canvas.height };
       this.system.initialize(dimensions, quality);
 
@@ -108,17 +108,17 @@ export class NightSkyLabController {
 
       this.start();
     } catch (error) {
-      console.error("Failed to regenerate Night Sky preview:", error);
+      console.error("Failed to regenerate Cosmic preview:", error);
     }
   }
 
-  setLayerVisibility(layers: NightSkyLayers): void {
+  setLayerVisibility(layers: CosmicLayers): void {
     if (this.system?.setLayerVisibility) {
       this.system.setLayerVisibility(layers);
     }
   }
 
-  getSystem(): NightSkyBackgroundSystem | null {
+  getSystem(): CosmicBackgroundSystem | null {
     return this.system;
   }
 

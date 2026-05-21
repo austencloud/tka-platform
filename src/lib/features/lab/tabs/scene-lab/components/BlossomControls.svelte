@@ -5,8 +5,8 @@
   import { getSceneLabContext } from "../context/scene-lab-context";
 
   const { state } = getSceneLabContext();
-  const cfg = $derived(state.cherryBlossomConfig);
-  function mut() { return state.cherryBlossomConfig; }
+  const cfg = $derived(state.blossomConfig);
+  function mut() { return state.blossomConfig; }
 </script>
 
 <ParamPanel title="Sky">

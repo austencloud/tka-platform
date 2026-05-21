@@ -90,7 +90,7 @@ export interface PrintRenderOptions {
   includeStartPosition: boolean;
   startPositionLayout?: "row" | "column";
   handPointsVisible: boolean;
-  /** Override the default card back theme (e.g. "nightSky", "deepOcean") */
+  /** Override the default card back theme (e.g. "cosmic", "ocean") */
   theme?: string;
   /** Show QR code in an empty grid cell */
   showQRCode?: boolean;

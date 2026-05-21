@@ -2,7 +2,7 @@
  * Coral Silhouette Types
  *
  * Domain types for the coral formations that sit along the ocean floor
- * in the Deep Ocean background.
+ * in the Ocean background.
  */
 
 /** Category derived from the PNG filename prefix */

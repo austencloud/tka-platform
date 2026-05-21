@@ -1,23 +1,23 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { type QualityLevel, type UFOMood, type WobbleType } from "@austencloud/backgrounds";
-  import type { NightSkyDensityPreset, NightSkyLabMode } from "$lib/shared/background-builder/domain/lab-settings-types";
+  import type { CosmicDensityPreset, CosmicLabMode } from "$lib/shared/background-builder/domain/lab-settings-types";
   import type { UFOStatusSnapshot } from "../services/types";
-  import { getNightSkyLabController } from "../getNightSkyLabController";
+  import { getCosmicLabController } from "../getCosmicLabController";
   import { getUFOStatusPoller } from "../getUFOStatusPoller";
   import {
-    getNightSkySettings,
-    updateNightSkySettings,
+    getCosmicSettings,
+    updateCosmicSettings,
   } from "../state/background-builder-state.svelte";
-  import NightSkyDefaultControls from "./NightSkyDefaultControls.svelte";
+  import CosmicDefaultControls from "./CosmicDefaultControls.svelte";
   import UFOLabControls from "./UFOLabControls.svelte";
 
   // Services from container
-  const controller = getNightSkyLabController();
+  const controller = getCosmicLabController();
   const statusPoller = getUFOStatusPoller();
 
   // Load persisted settings
-  const savedSettings = getNightSkySettings();
+  const savedSettings = getCosmicSettings();
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
@@ -26,10 +26,10 @@
   let isLoading = $state(true);
 
   // Mode and settings state
-  let mode: NightSkyLabMode = $state(savedSettings.mode ?? "default");
+  let mode: CosmicLabMode = $state(savedSettings.mode ?? "default");
   let quality: QualityLevel = $state(savedSettings.quality);
   let layers = $state({ ...savedSettings.layers });
-  let densityPreset: NightSkyDensityPreset = $state(savedSettings.densityPreset);
+  let densityPreset: CosmicDensityPreset = $state(savedSettings.densityPreset);
 
   // UFO status (polled from system)
   let ufoStatus = $state<UFOStatusSnapshot>({
@@ -47,9 +47,9 @@
   type ExitType = "fade" | "warp" | "zoom" | "shootUp";
 
   // --- Mode Management ---
-  function setMode(newMode: NightSkyLabMode) {
+  function setMode(newMode: CosmicLabMode) {
     mode = newMode;
-    updateNightSkySettings({ mode: newMode });
+    updateCosmicSettings({ mode: newMode });
 
     // Start/stop UFO status polling based on mode
     if (newMode === "ufoLab" && controller.isInitialized()) {
@@ -67,19 +67,19 @@
   // --- Settings Handlers ---
   function handleQualityChange(q: QualityLevel) {
     quality = q;
-    updateNightSkySettings({ quality: q });
+    updateCosmicSettings({ quality: q });
     controller.regenerate(quality, layers);
   }
 
-  function handleDensityChange(preset: NightSkyDensityPreset) {
+  function handleDensityChange(preset: CosmicDensityPreset) {
     densityPreset = preset;
-    updateNightSkySettings({ densityPreset: preset });
+    updateCosmicSettings({ densityPreset: preset });
     controller.regenerate(quality, layers);
   }
 
   function handleLayerToggle(layer: keyof typeof layers) {
     layers = { ...layers, [layer]: !layers[layer] };
-    updateNightSkySettings({ layers });
+    updateCosmicSettings({ layers });
     controller.setLayerVisibility(layers);
   }
 
@@ -106,7 +106,7 @@
     // Auto-enable UFO layer
     if (!layers.ufo) {
       layers = { ...layers, ufo: true };
-      updateNightSkySettings({ layers });
+      updateCosmicSettings({ layers });
     }
 
     const entrances: EntranceType[] = ["fade", "warp", "zoom", "descend"];
@@ -123,7 +123,7 @@
 
     if (!layers.ufo) {
       layers = { ...layers, ufo: true };
-      updateNightSkySettings({ layers });
+      updateCosmicSettings({ layers });
     }
     system.triggerUFOWithEntrance(type);
   }
@@ -254,10 +254,10 @@
   });
 </script>
 
-<div class="night-sky-lab">
+<div class="cosmic-lab">
   <div class="controls themed-scrollbar-accent">
     <div class="header">
-      <h2>Night Sky Lab</h2>
+      <h2>Cosmic Lab</h2>
       <span class="badge">2036 Vision</span>
     </div>
 
@@ -274,7 +274,7 @@
     </div>
 
     {#if mode === "default"}
-      <NightSkyDefaultControls
+      <CosmicDefaultControls
         {quality}
         {layers}
         {densityPreset}
@@ -310,7 +310,7 @@
     {#if isLoading}
       <div class="loading-overlay">
         <i class="fas fa-spinner fa-spin"></i>
-        <span>Loading night sky...</span>
+        <span>Loading cosmic scene...</span>
       </div>
     {/if}
     <canvas bind:this={canvas} onclick={handleCanvasClick}></canvas>
@@ -318,7 +318,7 @@
 </div>
 
 <style>
-  .night-sky-lab {
+  .cosmic-lab {
     display: grid;
     grid-template-columns: 360px 1fr;
     gap: 20px;
@@ -439,7 +439,7 @@
   }
 
   @media (max-width: 800px) {
-    .night-sky-lab {
+    .cosmic-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
     }

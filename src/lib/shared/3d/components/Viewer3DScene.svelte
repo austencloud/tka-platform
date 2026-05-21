@@ -52,23 +52,25 @@
 
   function getStageGroundOffset(bg: BackgroundType): number {
     switch (bg) {
-      case BackgroundType.FIREFLY_FOREST:
-      case BackgroundType.AUTUMN_DRIFT:
+      case BackgroundType.FOREST:
+      case BackgroundType.AUTUMN:
         return sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0;
-      case BackgroundType.NIGHT_SKY:
+      case BackgroundType.COSMIC:
         return 0.4;
-      case BackgroundType.SNOWFALL:
+      case BackgroundType.WINTER:
         return 0.45;
-      case BackgroundType.DEEP_OCEAN:
+      case BackgroundType.OCEAN:
         return 0.5;
-      case BackgroundType.EMBER_GLOW:
+      case BackgroundType.EMBER:
         return 0.5;
-      case BackgroundType.CHERRY_BLOSSOM:
+      case BackgroundType.BLOSSOM:
         return 0.35;
       case BackgroundType.PRIDE:
         return 0.4;
       case BackgroundType.CELESTIAL:
         return 0.02;
+      case BackgroundType.VOID:
+        return 0;
       default:
         return 0;
     }
@@ -283,40 +285,22 @@
   );
 
   const isNightEnvironment = $derived(
-    backgroundType === BackgroundType.FIREFLY_FOREST ||
-    backgroundType === BackgroundType.NIGHT_SKY ||
-    backgroundType === BackgroundType.DEEP_OCEAN
+    backgroundType === BackgroundType.FOREST ||
+    backgroundType === BackgroundType.COSMIC ||
+    backgroundType === BackgroundType.OCEAN
   );
 
   const stageGroundOffset = $derived(getStageGroundOffset(backgroundType));
 
-  const PERFORMER_BODY_PADDING = 1.5;
+  const performerCount = $derived(performerManager.performers.length);
 
-  const requiredStageRadius = $derived.by(() => {
-    const performers = performerManager.performers;
-    if (performers.length <= 1) return 0;
-    let maxDist = 0;
-    for (const p of performers) {
-      const dist = Math.sqrt(p.position.x ** 2 + p.position.z ** 2);
-      maxDist = Math.max(maxDist, dist);
-    }
-    return maxDist + PERFORMER_BODY_PADDING;
+  const BASE_STAGE_DEPTH = 6;
+  const stageDepthForCount = $derived.by(() => {
+    if (performerCount <= 4) return BASE_STAGE_DEPTH;
+    if (performerCount <= 6) return 8;
+    return 10;
   });
-
-  const requiredStageExtents = $derived.by(() => {
-    const performers = performerManager.performers;
-    if (performers.length <= 1) return { halfW: 0, halfD: 0 };
-    let maxAbsX = 0;
-    let maxAbsZ = 0;
-    for (const p of performers) {
-      maxAbsX = Math.max(maxAbsX, Math.abs(p.position.x));
-      maxAbsZ = Math.max(maxAbsZ, Math.abs(p.position.z));
-    }
-    return {
-      halfW: maxAbsX + PERFORMER_BODY_PADDING,
-      halfD: maxAbsZ + PERFORMER_BODY_PADDING,
-    };
-  });
+  const stageZOffset = $derived(-(stageDepthForCount - BASE_STAGE_DEPTH) / 2);
 
   $effect(() => {
     viewer3DState.setStageGroundOffset(stageGroundOffset);
@@ -344,7 +328,7 @@
 
 <!-- Environment (gated by scene feature toggle) -->
 {#if hasEnvironment && sceneFeatures.isEnabled("environment")}
-  <Environment3D {backgroundType} minPlatformRadius={requiredStageRadius} minPlatformExtents={requiredStageExtents} oceanVariant={viewer3DState.oceanVariant} />
+  <Environment3D {backgroundType} {performerCount} {stageZOffset} oceanVariant={viewer3DState.oceanVariant} />
 {/if}
 
 <!-- Seated audience (gated by scene feature toggle) -->
@@ -364,8 +348,8 @@
   </T.Mesh>
 {/if}
 
-<!-- One PerformerRig per performer. Each group is tagged with userData.performerIndex
-     so the scene raycaster can resolve which performer was clicked. -->
+<!-- Performer group shifts with stage expansion to stay centered -->
+<T.Group position.z={stageZOffset}>
 {#each performerManager.performers as performer, i (performer.id)}
   <T.Group userData={{ performerIndex: i }}>
     {@const performerGridMode = (sequenceData?.gridMode ?? "diamond") as GridMode}
@@ -433,3 +417,4 @@
     </T.Group>
   </T.Group>
 {/each}
+</T.Group>

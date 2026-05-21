@@ -105,8 +105,8 @@ export const ALL_GRADIENTS: GradientOption[] = [
     family: "earth",
   },
   {
-    id: "cherryBlossom",
-    name: "Cherry Blossom",
+    id: "blossom",
+    name: "Blossom",
     gradient: "linear-gradient(135deg, #831843 0%, #db2777 50%, #fbcfe8 100%)",
     family: "earth",
   },
@@ -146,34 +146,48 @@ export const ALL_GRADIENTS: GradientOption[] = [
     gradient: "linear-gradient(135deg, #0c0a09 0%, #292524 40%, #dc2626 100%)",
     family: "dark",
   },
+  {
+    id: "celestial",
+    name: "Celestial",
+    gradient: "linear-gradient(135deg, #0a1a4a 0%, #b89050 50%, #ffd080 100%)",
+    family: "warm",
+  },
+  {
+    id: "pureBlack",
+    name: "Void",
+    gradient: "linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%)",
+    family: "dark",
+  },
 ];
 
 export const THEME_TO_FAMILY: Record<BackgroundType, string> = {
   [BackgroundType.PRIDE]: "vibrant",
-  [BackgroundType.SNOWFALL]: "cool",
-  [BackgroundType.NIGHT_SKY]: "cool",
-  [BackgroundType.DEEP_OCEAN]: "cool",
-  [BackgroundType.EMBER_GLOW]: "warm",
-  [BackgroundType.CHERRY_BLOSSOM]: "earth",
-  [BackgroundType.FIREFLY_FOREST]: "earth",
-  [BackgroundType.AUTUMN_DRIFT]: "warm",
+  [BackgroundType.WINTER]: "cool",
+  [BackgroundType.COSMIC]: "cool",
+  [BackgroundType.OCEAN]: "cool",
+  [BackgroundType.EMBER]: "warm",
+  [BackgroundType.BLOSSOM]: "earth",
+  [BackgroundType.FOREST]: "earth",
+  [BackgroundType.AUTUMN]: "warm",
   [BackgroundType.SOLID_COLOR]: "dark",
   [BackgroundType.LINEAR_GRADIENT]: "vibrant",
   [BackgroundType.CELESTIAL]: "warm",
+  [BackgroundType.VOID]: "dark",
 };
 
 export const THEME_TO_GRADIENT: Record<BackgroundType, string> = {
   [BackgroundType.PRIDE]: "rainbow",
-  [BackgroundType.SNOWFALL]: "arctic",
-  [BackgroundType.NIGHT_SKY]: "twilight",
-  [BackgroundType.DEEP_OCEAN]: "ocean",
-  [BackgroundType.EMBER_GLOW]: "ember",
-  [BackgroundType.CHERRY_BLOSSOM]: "cherryBlossom",
-  [BackgroundType.FIREFLY_FOREST]: "forest",
-  [BackgroundType.AUTUMN_DRIFT]: "autumn",
+  [BackgroundType.WINTER]: "arctic",
+  [BackgroundType.COSMIC]: "twilight",
+  [BackgroundType.OCEAN]: "ocean",
+  [BackgroundType.EMBER]: "ember",
+  [BackgroundType.BLOSSOM]: "blossom",
+  [BackgroundType.FOREST]: "forest",
+  [BackgroundType.AUTUMN]: "autumn",
   [BackgroundType.SOLID_COLOR]: "void",
   [BackgroundType.LINEAR_GRADIENT]: "cosmic",
   [BackgroundType.CELESTIAL]: "celestial",
+  [BackgroundType.VOID]: "void",
 };
 
 export function getGradientsByFamily(familyId: string): GradientOption[] {

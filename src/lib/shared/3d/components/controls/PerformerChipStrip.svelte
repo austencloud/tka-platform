@@ -45,32 +45,34 @@
 
 {#if visible}
   <div class="chip-strip" role="toolbar" aria-label="Performer selection">
-    <button
-      type="button"
-      class="chip chip-all"
-      class:active={selectedIndex === null}
-      aria-pressed={selectedIndex === null}
-      aria-label="Select all performers"
-      onclick={selectAll}
-    >
-      All
-    </button>
-
-    <span class="separator" aria-hidden="true">·</span>
-
-    {#each performers as _, i (i)}
+    <div class="chips-scroll">
       <button
         type="button"
-        class="chip chip-performer"
-        class:active={selectedIndex === i}
-        aria-pressed={selectedIndex === i}
-        aria-label={`Select performer ${i + 1}`}
-        style="--chip-color: {getPerformerColor(i)}"
-        onclick={() => selectPerformer(i)}
+        class="chip chip-all"
+        class:active={selectedIndex === null}
+        aria-pressed={selectedIndex === null}
+        aria-label="Select all performers"
+        onclick={selectAll}
       >
-        {i + 1}
+        All
       </button>
-    {/each}
+
+      <span class="separator" aria-hidden="true">·</span>
+
+      {#each performers as _, i (i)}
+        <button
+          type="button"
+          class="chip chip-performer"
+          class:active={selectedIndex === i}
+          aria-pressed={selectedIndex === i}
+          aria-label={`Select performer ${i + 1}`}
+          style="--chip-color: {getPerformerColor(i)}"
+          onclick={() => selectPerformer(i)}
+        >
+          {i + 1}
+        </button>
+      {/each}
+    </div>
 
     <button
       type="button"
@@ -86,15 +88,25 @@
 
 <style>
   .chip-strip {
-    /* Flex row with wrap so the strip degrades gracefully at 7-8 performers
-       when the full row overflows. Common counts (1-6) sit on a single row.
-       The pinned add button stays at the right edge regardless. */
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 5px;
     padding: 8px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .chips-scroll {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .chips-scroll::-webkit-scrollbar {
+    display: none;
   }
 
   .chip {
@@ -149,6 +161,7 @@
   }
 
   .chip-add {
+    flex-shrink: 0;
     width: 44px;
     height: 28px;
     border-radius: 14px;

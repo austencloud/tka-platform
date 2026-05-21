@@ -1,12 +1,12 @@
 /**
- * Controller for managing the Firefly Forest preview animation
+ * Controller for managing the Forest preview animation
  */
 
 import {
-  FireflyForestBackgroundSystem,
+  ForestBackgroundSystem,
   ECOLOGICAL_PATTERNS,
   type QualityLevel,
-  type FireflyForestLayers,
+  type ForestLayers,
   type TreeTypeVisibility,
   type EcologicalPattern,
   type RenderedTree,
@@ -16,7 +16,7 @@ import type { PreviewStats, PlacementConfig } from "./types";
 export class PreviewAnimationController {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
-  private system: FireflyForestBackgroundSystem | null = null;
+  private system: ForestBackgroundSystem | null = null;
   private animationFrame: number | null = null;
   private lastFrameTime = 0;
   private lastStatsUpdate = 0;
@@ -30,7 +30,7 @@ export class PreviewAnimationController {
   initialize(
     canvas: HTMLCanvasElement,
     quality: QualityLevel,
-    layers: FireflyForestLayers
+    layers: ForestLayers
   ): void {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
@@ -43,13 +43,13 @@ export class PreviewAnimationController {
     }
 
     try {
-      this.system = new FireflyForestBackgroundSystem();
+      this.system = new ForestBackgroundSystem();
       const dimensions = { width: canvas.width, height: canvas.height };
       this.system.initialize(dimensions, quality);
       this.system.setLayerVisibility(layers);
       this.updateStats();
     } catch (error) {
-      console.error("Failed to initialize Firefly Forest preview:", error);
+      console.error("Failed to initialize Forest preview:", error);
     }
   }
 
@@ -127,7 +127,7 @@ export class PreviewAnimationController {
     if (!this.ctx) return;
 
     try {
-      this.system = new FireflyForestBackgroundSystem();
+      this.system = new ForestBackgroundSystem();
       const dimensions = { width: this.canvas.width, height: this.canvas.height };
       this.system.initialize(dimensions, quality);
       this.system.setLayerVisibility(layers);
@@ -137,7 +137,7 @@ export class PreviewAnimationController {
       this.updateStats();
       this.start();
     } catch (error) {
-      console.error("Failed to regenerate Firefly Forest preview:", error);
+      console.error("Failed to regenerate Forest preview:", error);
     }
   }
 
@@ -148,7 +148,7 @@ export class PreviewAnimationController {
     }
   }
 
-  setLayerVisibility(layers: FireflyForestLayers): void {
+  setLayerVisibility(layers: ForestLayers): void {
     this.system?.setLayerVisibility(layers);
   }
 
@@ -247,7 +247,7 @@ export class PreviewAnimationController {
     }
   }
 
-  private getDefaultLayers(): FireflyForestLayers {
+  private getDefaultLayers(): ForestLayers {
     return {
       gradient: true,
       stars: true,

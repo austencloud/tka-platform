@@ -25,7 +25,7 @@
 
   const { initialValue, onNext, onBack, onSkip, onPreview }: Props = $props();
 
-  let selectedTheme = $state<BackgroundType>(BackgroundType.SNOWFALL);
+  let selectedTheme = $state<BackgroundType>(BackgroundType.WINTER);
   let gridEl: HTMLDivElement;
 
   $effect(() => {

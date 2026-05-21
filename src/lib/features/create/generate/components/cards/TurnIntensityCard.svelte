@@ -27,8 +27,8 @@ Uses stepper pattern for direct increment/decrement interaction
     headerFontSize?: string;
   }>();
 
-  // Check if we're on a bright background (Aurora, Snowfall, etc.)
-  const useDarkColors = $derived(isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL));
+  // Check if we're on a bright background (Aurora, Winter, etc.)
+  const useDarkColors = $derived(isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.WINTER));
 
   // Find current index in allowed values
   const currentIndex = $derived(allowedValues.indexOf(currentIntensity));
@@ -87,7 +87,7 @@ Uses stepper pattern for direct increment/decrement interaction
     }
   }
 
-  // 🎨 Vibrant but darker colors for bright/glowing backgrounds (Aurora, Ember Glow)
+  // 🎨 Vibrant but darker colors for bright/glowing backgrounds (Aurora, Ember)
   function getBrightBgColor(value: number): string {
     if (value <= 0.5) {
       // Rich emerald - vibrant but darker

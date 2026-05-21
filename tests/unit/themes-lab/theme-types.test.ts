@@ -23,15 +23,15 @@ describe("THEME_OPTIONS", () => {
     }
   });
 
-  it("maps ocean ThemeId to DEEP_OCEAN BackgroundType and ocean SceneId", () => {
+  it("maps ocean ThemeId to OCEAN BackgroundType and ocean SceneId", () => {
     const ocean = getThemeOption("ocean");
-    expect(ocean?.backgroundType).toBe("deepOcean" as BackgroundType);
+    expect(ocean?.backgroundType).toBe("ocean" as BackgroundType);
     expect(ocean?.sceneId).toBe("ocean");
   });
 
-  it("maps cosmic ThemeId to NIGHT_SKY BackgroundType and cosmic SceneId", () => {
+  it("maps cosmic ThemeId to COSMIC BackgroundType and cosmic SceneId", () => {
     const cosmic = getThemeOption("cosmic");
-    expect(cosmic?.backgroundType).toBe("nightSky" as BackgroundType);
+    expect(cosmic?.backgroundType).toBe("cosmic" as BackgroundType);
     expect(cosmic?.sceneId).toBe("cosmic");
   });
 

@@ -38,7 +38,7 @@
     id: entry.id,
     header: entry.tourHeader,
     value: entry.tourDefaultValue,
-    gradient: getCardColor(entry.colorKey, BackgroundType.NIGHT_SKY),
+    gradient: getCardColor(entry.colorKey, BackgroundType.COSMIC),
     span: entry.tourSpan,
   }));
 

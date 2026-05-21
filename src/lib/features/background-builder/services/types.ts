@@ -12,9 +12,9 @@ export interface CoralSceneConfig {
   layerCounts?: [number, number, number];
 }
 
-// === From INightSkyLabController ===
+// === From ICosmicLabController ===
 
-export interface NightSkyLayers {
+export interface CosmicLayers {
   stars: boolean;
   nebula: boolean;
   aurora: boolean;
@@ -49,9 +49,9 @@ export interface UFOStatusSnapshot {
   scannedStars: number;
 }
 
-// === From INightSkyLabController ===
+// === From ICosmicLabController ===
 
-export interface NightSkyLayers {
+export interface CosmicLayers {
   stars: boolean;
   nebula: boolean;
   aurora: boolean;

@@ -115,21 +115,25 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
 
     const positions = formationManager.getAllPerformerPositions();
     const defaults = getDefaultPositions(performerStates.length);
+    const coversAll = positions.length >= performerStates.length;
 
     performerStates.forEach((performer, i) => {
-      const pos = positions.find((p) => p.index === i);
-      if (pos) {
-        performer.position.x = pos.position.x;
-        performer.position.z = pos.position.z;
-        performer.setFacingAngle(pos.facingAngle);
-      } else {
-        const fallback = defaults[i];
-        if (fallback) {
-          performer.position.x = fallback.x;
-          performer.position.z = fallback.z;
-          // Leave facing unchanged - the default layout doesn't imply a
-          // specific facing, and new performers already face the audience.
+      if (coversAll) {
+        const pos = positions.find((p) => p.index === i);
+        if (pos) {
+          performer.position.x = pos.position.x;
+          performer.position.z = pos.position.z;
+          performer.setFacingAngle(pos.facingAngle);
+          return;
         }
+      }
+      // Formation doesn't cover all performers — use default grid for
+      // everyone so spacing is consistent (formation and defaults use
+      // different coordinate centering).
+      const fallback = defaults[i];
+      if (fallback) {
+        performer.position.x = fallback.x;
+        performer.position.z = fallback.z;
       }
     });
   }

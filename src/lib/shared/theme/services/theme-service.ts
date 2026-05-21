@@ -3,7 +3,7 @@
  */
 
 const SETTINGS_KEY = "tka-modern-web-settings";
-const DEFAULT_THEME = "nightSky";
+const DEFAULT_THEME = "cosmic";
 
 export function getCurrentTheme(): string {
   if (typeof window === "undefined" || typeof localStorage === "undefined") {

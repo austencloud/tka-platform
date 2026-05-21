@@ -12,7 +12,7 @@
 </script>
 
 <svg class="decorations" viewBox="0 0 500 700" preserveAspectRatio="none">
-  {#if theme === "nightSky"}
+  {#if theme === "cosmic"}
     <defs>
       <filter id="aurora-blur" x="-30%" y="-20%" width="160%" height="140%">
         <feGaussianBlur in="SourceGraphic" stdDeviation="4"/>
@@ -166,7 +166,7 @@
     <ellipse cx="120" cy="200" rx="60" ry="40" fill="#c878ff" opacity="0.015" filter="url(#aurora-blur)"/>
     <ellipse cx="400" cy="500" rx="50" ry="35" fill="#ff6490" opacity="0.01" filter="url(#aurora-blur)"/>
 
-  {:else if theme === "deepOcean"}
+  {:else if theme === "ocean"}
     <defs>
       <!-- Fish body gradients: many soft stops for prismatic rainbow effect -->
       <linearGradient id="f1-body" x1="0" y1="0" x2="0" y2="1">
@@ -334,7 +334,7 @@
     <circle cx="135" cy="470" r="4" fill="none" stroke="#22d3ee" stroke-width="0.4" opacity="0.05"/>
     <circle cx="375" cy="490" r="3.5" fill="none" stroke="#22d3ee" stroke-width="0.4" opacity="0.05"/>
 
-  {:else if theme === "snowfall"}
+  {:else if theme === "winter"}
     <!-- Crystalline 6-pointed snowflakes with side branches -->
     {#each [
       { x: 80, y: 80, s: 18 }, { x: 420, y: 55, s: 14 }, { x: 300, y: 160, s: 11 },
@@ -363,7 +363,7 @@
       </g>
     {/each}
 
-  {:else if theme === "emberGlow"}
+  {:else if theme === "ember"}
     <!-- Coal bed glow at bottom -->
     <ellipse cx="250" cy="680" rx="300" ry="100" fill="#ea580c" opacity="0.06"/>
     <ellipse cx="180" cy="690" rx="150" ry="60" fill="#dc2626" opacity="0.04"/>
@@ -380,8 +380,8 @@
       <circle cx={x} cy={y} r={r} fill={color} opacity={0.08 + s * 0.1}/>
     {/each}
 
-  {:else if theme === "cherryBlossom"}
-    <!-- Cherry blossom petals using dual-ellipse shape from actual renderer -->
+  {:else if theme === "blossom"}
+    <!-- Blossom petals using dual-ellipse shape from actual renderer -->
     {#each Array(20) as _, i}
       {@const s = ((i * 16807 + 31) % 2147483647) / 2147483647}
       {@const s2 = ((i * 48271 + 31) % 2147483647) / 2147483647}
@@ -408,7 +408,7 @@
       </g>
     {/each}
 
-  {:else if theme === "fireflyForest"}
+  {:else if theme === "forest"}
     <!-- Stars in upper sky -->
     {#each Array(25) as _, i}
       {@const s = ((i * 16807 + 53) % 2147483647) / 2147483647}
@@ -455,7 +455,7 @@
       <circle cx={x} cy={y} r="2.5" fill={color} opacity={0.12 + s * 0.1}/>
     {/each}
 
-  {:else if theme === "autumnDrift"}
+  {:else if theme === "autumn"}
     <!-- Real leaf shapes from the background package -->
     {#each [
       { x: 400, y: 120, r: 45, s: 0.18, c: "#D4A017" },

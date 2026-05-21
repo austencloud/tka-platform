@@ -1,19 +1,19 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { EmberGlowBackgroundSystem, type QualityLevel, type HeatIntensity, type DensityPreset } from "@austencloud/backgrounds";
+  import { EmberBackgroundSystem, type QualityLevel, type HeatIntensity, type DensityPreset } from "@austencloud/backgrounds";
   import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
   import {
-    getEmberGlowSettings,
-    updateEmberGlowSettings,
+    getEmberSettings,
+    updateEmberSettings,
   } from "../state/background-builder-state.svelte";
 
   // Background system
-  let backgroundSystem: EmberGlowBackgroundSystem | null = $state(null);
+  let backgroundSystem: EmberBackgroundSystem | null = $state(null);
   let canvasDimensions = $state({ width: 800, height: 600 });
 
   // Load persisted settings
-  const savedSettings = getEmberGlowSettings();
+  const savedSettings = getEmberSettings();
 
   // Quality settings
   let quality: QualityLevel = $state(savedSettings.quality);
@@ -41,7 +41,7 @@
   // Initialize system when canvas is ready
   function handleCanvasReady(dimensions: { width: number; height: number }) {
     canvasDimensions = dimensions;
-    backgroundSystem = new EmberGlowBackgroundSystem();
+    backgroundSystem = new EmberBackgroundSystem();
     backgroundSystem.setHeatIntensity(heatIntensity);
     backgroundSystem.setDensityPreset(densityPreset);
     backgroundSystem.initialize(dimensions, quality);
@@ -66,7 +66,7 @@
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
-    backgroundSystem = new EmberGlowBackgroundSystem();
+    backgroundSystem = new EmberBackgroundSystem();
     backgroundSystem.setHeatIntensity(heatIntensity);
     backgroundSystem.setDensityPreset(densityPreset);
     backgroundSystem.initialize(canvasDimensions, quality);
@@ -76,7 +76,7 @@
 
   function setQuality(q: QualityLevel) {
     quality = q;
-    updateEmberGlowSettings({ quality: q });
+    updateEmberSettings({ quality: q });
     if (backgroundSystem) {
       backgroundSystem.setQuality(q);
       updateStats();
@@ -85,7 +85,7 @@
 
   function setDensity(preset: DensityPreset) {
     densityPreset = preset;
-    updateEmberGlowSettings({ densityPreset: preset });
+    updateEmberSettings({ densityPreset: preset });
     if (backgroundSystem) {
       backgroundSystem.setDensityPreset(preset);
       updateStats();
@@ -94,7 +94,7 @@
 
   function setHeat(intensity: HeatIntensity) {
     heatIntensity = intensity;
-    updateEmberGlowSettings({ heatIntensity: intensity });
+    updateEmberSettings({ heatIntensity: intensity });
     if (backgroundSystem) {
       backgroundSystem.setHeatIntensity(intensity);
       updateStats();
@@ -103,7 +103,7 @@
 
   function toggleLayer(layer: keyof typeof layers) {
     layers = { ...layers, [layer]: !layers[layer] };
-    updateEmberGlowSettings({ layers: { ...layers } });
+    updateEmberSettings({ layers: { ...layers } });
     if (backgroundSystem) {
       backgroundSystem.setLayerVisibility(layers);
     }
@@ -116,10 +116,10 @@
   });
 </script>
 
-<div class="ember-glow-lab">
+<div class="ember-lab">
   <div class="controls themed-scrollbar-accent">
     <div class="header">
-      <h2>Ember Glow Lab</h2>
+      <h2>Ember Lab</h2>
       <span class="badge">Fire Particles</span>
     </div>
 
@@ -240,7 +240,7 @@
 </div>
 
 <style>
-  .ember-glow-lab {
+  .ember-lab {
     display: grid;
     grid-template-columns: 300px 1fr;
     gap: 20px;
@@ -399,7 +399,7 @@
   }
 
   @media (max-width: 800px) {
-    .ember-glow-lab {
+    .ember-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
     }

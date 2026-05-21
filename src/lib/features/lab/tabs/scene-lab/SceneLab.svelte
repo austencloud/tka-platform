@@ -17,10 +17,10 @@
   import OceanControls from "./components/OceanControls.svelte";
   import AutumnControls from "./components/AutumnControls.svelte";
   import EmberControls from "./components/EmberControls.svelte";
-  import CherryBlossomControls from "./components/CherryBlossomControls.svelte";
+  import BlossomControls from "./components/BlossomControls.svelte";
   import CelestialControls from "./components/CelestialControls.svelte";
   import RainbowControls from "./components/RainbowControls.svelte";
-  import PureBlackControls from "./components/PureBlackControls.svelte";
+  import VoidControls from "./components/VoidControls.svelte";
   import ComposerPickerPanel from "$lib/shared/3d/scene-composer/ComposerPickerPanel.svelte";
   import { createComposerEditorState } from "$lib/shared/3d/scene-composer/composer-editor-state.svelte";
   import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
@@ -142,14 +142,14 @@
           <AutumnControls />
         {:else if sceneState.sceneId === "ember"}
           <EmberControls />
-        {:else if sceneState.sceneId === "cherry-blossom"}
-          <CherryBlossomControls />
+        {:else if sceneState.sceneId === "blossom"}
+          <BlossomControls />
         {:else if sceneState.sceneId === "celestial"}
           <CelestialControls />
         {:else if sceneState.sceneId === "rainbow"}
           <RainbowControls />
-        {:else if sceneState.sceneId === "pure-black"}
-          <PureBlackControls />
+        {:else if sceneState.sceneId === "void"}
+          <VoidControls />
         {:else}
           <p class="no-controls">No tunable parameters</p>
         {/if}

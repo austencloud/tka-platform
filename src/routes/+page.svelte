@@ -9,7 +9,7 @@
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
 
-  const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
+  const DEFAULT_BACKGROUND = BackgroundType.COSMIC;
   let mounted = $state(false);
 
 

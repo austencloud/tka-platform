@@ -67,7 +67,7 @@
   />
 </ParamPanel>
 
-<ParamPanel title="Snowfall">
+<ParamPanel title="Winter">
   <ParamSlider
     label="Density"
     value={cfg.snow.count}

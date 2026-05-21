@@ -1,7 +1,7 @@
 /**
- * Prefetches Firefly Forest tree images into browser cache.
+ * Prefetches Forest tree images into browser cache.
  *
- * The tree silhouette system loads 82 PNG images on-demand when Firefly Forest
+ * The tree silhouette system loads 82 PNG images on-demand when Forest
  * activates, causing a 4-5 second delay before trees appear. By prefetching
  * with <link rel="prefetch">, the browser fetches them at low priority during
  * idle time. When the image loader later requests them via new Image().src,

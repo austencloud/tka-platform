@@ -1,21 +1,21 @@
 import type {
   FishMarineLife,
   FishMood,
-  DeepOceanBackgroundOrchestrator,
-  DeepOceanLayers,
+  OceanBackgroundOrchestrator,
+  OceanLayers,
   QualityLevel,
 } from "@austencloud/backgrounds";
 import type { CoralSceneRenderer } from "../services/CoralSceneRenderer";
 
-export interface DeepOceanLabDeps {
-  getBackgroundSystem: () => DeepOceanBackgroundOrchestrator;
+export interface OceanLabDeps {
+  getBackgroundSystem: () => OceanBackgroundOrchestrator;
   coralRenderer: CoralSceneRenderer;
 }
 
-export function createDeepOceanLabState() {
+export function createOceanLabState() {
   let canvas: HTMLCanvasElement | null = $state(null);
   let isLoading = $state(true);
-  let backgroundSystem: DeepOceanBackgroundOrchestrator | null = $state(null);
+  let backgroundSystem: OceanBackgroundOrchestrator | null = $state(null);
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
 
@@ -23,7 +23,7 @@ export function createDeepOceanLabState() {
   let showCoral = $state(true);
   let coralCount = $state(0);
 
-  let layers = $state<DeepOceanLayers>({
+  let layers = $state<OceanLayers>({
     gradient: true,
     lightRays: true,
     caustics: true,
@@ -116,7 +116,7 @@ export function createDeepOceanLabState() {
     selectedFishIndex = (selectedFishIndex - 1 + fishList.length) % fishList.length;
   }
 
-  function toggleLayer(layer: keyof DeepOceanLayers) {
+  function toggleLayer(layer: keyof OceanLayers) {
     layers[layer] = !layers[layer];
     if (backgroundSystem) {
       backgroundSystem.setLayerVisibility(layers);
@@ -155,7 +155,7 @@ export function createDeepOceanLabState() {
     get isLoading() { return isLoading; },
     set isLoading(v: boolean) { isLoading = v; },
     get backgroundSystem() { return backgroundSystem; },
-    set backgroundSystem(v: DeepOceanBackgroundOrchestrator | null) { backgroundSystem = v; },
+    set backgroundSystem(v: OceanBackgroundOrchestrator | null) { backgroundSystem = v; },
     get animationFrame() { return animationFrame; },
     set animationFrame(v: number | null) { animationFrame = v; },
     get lastFrameTime() { return lastFrameTime; },
@@ -195,4 +195,4 @@ export function createDeepOceanLabState() {
   };
 }
 
-export type DeepOceanLabState = ReturnType<typeof createDeepOceanLabState>;
+export type OceanLabState = ReturnType<typeof createOceanLabState>;

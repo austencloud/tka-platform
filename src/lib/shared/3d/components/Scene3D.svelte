@@ -194,9 +194,9 @@
 
   // Determine if this is a night/dark environment that needs reduced lighting
   const isNightEnvironment = $derived(
-    backgroundType === BackgroundType.FIREFLY_FOREST ||
-      backgroundType === BackgroundType.NIGHT_SKY ||
-      backgroundType === BackgroundType.DEEP_OCEAN
+    backgroundType === BackgroundType.FOREST ||
+      backgroundType === BackgroundType.COSMIC ||
+      backgroundType === BackgroundType.OCEAN
   );
 
   // Environment-aware lighting intensities

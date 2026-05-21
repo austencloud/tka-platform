@@ -32,7 +32,7 @@ const INNER_RADIUS = Math.round(CONTENT_WIDTH * CARD_RADIUS_PCT); // ~35px
 export class PrintCardRenderer {
   constructor(
     private readonly imageComposer: ImageComposer,
-    private readonly theme: string = "nightSky"
+    private readonly theme: string = "cosmic"
   ) {}
 
   /** Draw a rounded rectangle path (does not fill or stroke) */
