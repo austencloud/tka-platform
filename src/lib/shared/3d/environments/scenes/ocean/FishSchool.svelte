@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { T, useTask, useThrelte } from "@threlte/core";
-  import { useGltf, useDraco } from "@threlte/extras";
+  import { T, useTask, useThrelte } from '@threlte/core';
   import {
     InstancedMesh,
     ShaderMaterial,
@@ -13,418 +12,52 @@
     RGBAFormat,
     type BufferGeometry,
     type Texture,
-  } from "three";
-  import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
-  import { FishEventSystem, type FishEventUniforms } from "./FishEventSystem";
-  import { userProportionsState } from "@austencloud/scene-3d";
+  } from 'three';
+  import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+  import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+  import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
+  import { FishEventSystem, type FishEventUniforms } from './FishEventSystem';
+  import { RESIDENT_SPECIES, RESIDENT_FISH_COUNT, type FishSpeciesConfig } from './fish-species-config';
+  import { LOCOMOTION_PARAMS, LocomotionMode, type LocomotionModeParams } from './fish-locomotion-params';
+  import { velocityShader, positionShader, renderVertexShader, renderFragmentShader } from './fish-shaders';
+  import { userProportionsState } from '@austencloud/scene-3d';
 
   interface Props {
-    count?: number;
     targetSize?: number;
     swimHeight?: [number, number];
     speed?: [number, number];
     stageRadius?: number;
     boundRadius?: number;
-    baseColor?: string;
     currentStrength?: number;
-    swimFrequency?: number;
-    waveAmplitude?: number;
     scatterRadius?: number;
     perceptionAngle?: number;
     rayPosition?: Vector3;
+    modelBasePath?: string;
   }
 
   let {
-    count = 80,
     targetSize = 0.08,
     swimHeight = [2, 7] as [number, number],
     speed = [0.5, 1.2] as [number, number],
     stageRadius = 5,
     boundRadius = 18,
-    baseColor = "#5599bb",
     currentStrength = 0.3,
-    swimFrequency = 5.0,
-    waveAmplitude = 0.08,
     scatterRadius = 4.0,
     perceptionAngle = 135,
     rayPosition = new Vector3(0, 0, 0),
+    modelBasePath = '/models/ocean/pack/',
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
-  const { renderer } = useThrelte();
+  const { renderer: rendererRef } = useThrelte();
 
-  const dracoLoader = useDraco("/draco/");
-
-  // ── Load all fish models at top level ───────────────────────────────────
-  const glbCommon = useGltf("/models/ocean/fish_common.glb", { dracoLoader });
-  const glbButterfly = useGltf("/models/ocean/fish_butterfly.glb", { dracoLoader });
-  const glbTrout = useGltf("/models/ocean/fish_trout.glb", { dracoLoader });
-  const glbClown = useGltf("/models/ocean/fish_clown.glb", { dracoLoader });
-  const glbClownfish = useGltf("/models/ocean/fish_clownfish.glb", { dracoLoader });
-  const glbGray = useGltf("/models/ocean/fish_gray.glb", { dracoLoader });
-  const glbKoi = useGltf("/models/ocean/fish_koi.glb", { dracoLoader });
-  const glbSmall = useGltf("/models/ocean/fish_small.glb", { dracoLoader });
-
-  const texSize = $derived(Math.ceil(Math.sqrt(count)));
-
-  /** Radius of each cluster (meters) */
   const CLUSTER_SPREAD = 2.5;
+  const VISITOR_RESERVE = 100;
 
-  // ── Boids velocity shader ──────────────────────────────────────────────
-
-  const velocityShader = /* glsl */ `
-  uniform float uDelta;
-  uniform float uTime;
-  uniform float uSepDist;
-  uniform float uAliDist;
-  uniform float uMaxSpeed;
-  uniform float uMinSpeed;
-  uniform float uGroundY;
-  uniform float uHeightMin;
-  uniform float uHeightMax;
-  uniform float uStageRadius;
-  uniform float uBoundRadius;
-  uniform float uFishCount;
-  uniform float uMaxSteer;
-  uniform float uCurrentStrength;
-  uniform float uPerceptionCos;
-  uniform sampler2D tTraits;
-
-  // School anchor uniforms — per-species home positions
-  uniform vec3 uSchoolCenters[8];
-  uniform float uSchoolRadius;
-
-  // Scatter uniforms
-  uniform vec3 uScatterOrigin;
-  uniform float uScatterRadius;
-  uniform float uScatterForce;
-
-  // Dart impulse uniforms
-  uniform int uDartCount;
-  uniform int uDartIndices[8];
-  uniform float uDartStrength;
-
-  // Vertical excursion uniforms
-  uniform int uExcursionCount;
-  uniform int uExcursionIndices[4];
-  uniform float uExcursionBias[4];
-
-  // ── Simplex 3D noise (Stefan Gustavson / Ashima Arts) ─────────────
-  vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
-  vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-
-  float snoise(vec3 v) {
-    const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
-    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-    vec3 i = floor(v + dot(v, C.yyy));
-    vec3 x0 = v - i + dot(i, C.xxx);
-    vec3 g = step(x0.yzx, x0.xyz);
-    vec3 l = 1.0 - g;
-    vec3 i1 = min(g.xyz, l.zxy);
-    vec3 i2 = max(g.xyz, l.zxy);
-    vec3 x1 = x0 - i1 + C.xxx;
-    vec3 x2 = x0 - i2 + C.yyy;
-    vec3 x3 = x0 - D.yyy;
-    i = mod(i, 289.0);
-    vec4 p = permute(permute(permute(
-        i.z + vec4(0.0, i1.z, i2.z, 1.0))
-      + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-      + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-    float n_ = 1.0 / 7.0;
-    vec3 ns = n_ * D.wyz - D.xzx;
-    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-    vec4 x_ = floor(j * ns.z);
-    vec4 y_ = floor(j - 7.0 * x_);
-    vec4 x = x_ * ns.x + ns.yyyy;
-    vec4 y = y_ * ns.x + ns.yyyy;
-    vec4 h = 1.0 - abs(x) - abs(y);
-    vec4 b0 = vec4(x.xy, y.xy);
-    vec4 b1 = vec4(x.zw, y.zw);
-    vec4 s0 = floor(b0) * 2.0 + 1.0;
-    vec4 s1 = floor(b1) * 2.0 + 1.0;
-    vec4 sh = -step(h, vec4(0.0));
-    vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
-    vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
-    vec3 p0 = vec3(a0.xy, h.x);
-    vec3 p1 = vec3(a0.zw, h.y);
-    vec3 p2 = vec3(a1.xy, h.z);
-    vec3 p3 = vec3(a1.zw, h.w);
-    vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
-    p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-    vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
-    m = m * m;
-    return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+  interface ExtractedModel {
+    geometry: BufferGeometry;
+    diffuseMap: Texture | null;
   }
-
-  vec3 curlNoise(vec3 p) {
-    float e = 0.1;
-    vec3 dx = vec3(e, 0.0, 0.0);
-    vec3 dy = vec3(0.0, e, 0.0);
-    vec3 dz = vec3(0.0, 0.0, e);
-    float px = snoise(p + dx) - snoise(p - dx);
-    float py = snoise(p + dy) - snoise(p - dy);
-    float pz = snoise(p + dz) - snoise(p - dz);
-    return vec3(py - pz, pz - px, px - py) / (2.0 * e);
-  }
-
-  void main() {
-    vec2 uv = gl_FragCoord.xy / resolution.xy;
-    vec4 posData = texture2D(texturePosition, uv);
-    vec3 pos = posData.xyz;
-    vec4 velData = texture2D(textureVelocity, uv);
-    vec3 vel = velData.xyz;
-    float instanceScale = velData.w;
-
-    if (pos.x > 9000.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, instanceScale); return; }
-
-    // Read per-fish traits
-    vec4 traits = texture2D(tTraits, uv);
-    float speedMult = traits.r;
-    float socialMult = traits.g;
-    float boldness = traits.b;
-
-    // Species ID encoded in posData.w: floor(w * 8.0) gives 0-7
-    float mySpecies = floor(posData.w * 8.0);
-
-    vec3 sep = vec3(0.0);
-    vec3 ali = vec3(0.0);
-    vec3 coh = vec3(0.0);
-    float sepN = 0.0;
-    float aliN = 0.0;
-    float cohN = 0.0;
-
-    vec3 forward = length(vel) > 0.001 ? normalize(vel) : vec3(0.0, 0.0, 1.0);
-
-    for (float y = 0.0; y < resolution.y; y += 1.0) {
-      for (float x = 0.0; x < resolution.x; x += 1.0) {
-        vec2 ref = (vec2(x, y) + 0.5) / resolution.xy;
-        vec4 neighborPos = texture2D(texturePosition, ref);
-        vec3 op = neighborPos.xyz;
-        if (op.x > 9000.0) continue;
-
-        vec3 toNeighbor = op - pos;
-        float d = length(toNeighbor);
-        if (d < 0.001 || d > uAliDist * 1.5) continue;
-
-        // Perception cone: reject neighbors behind (270 deg FOV)
-        float cosAngle = dot(forward, normalize(toNeighbor));
-        if (cosAngle < uPerceptionCos) continue;
-
-        // Species-aware schooling: same species align/cohere strongly,
-        // different species only separate (avoid collisions)
-        float neighborSpecies = floor(neighborPos.w * 8.0);
-        float sameSpecies = step(0.5, 1.0 - abs(mySpecies - neighborSpecies));
-
-        // Separation applies to ALL fish (avoid collisions regardless of species)
-        if (d < uSepDist) {
-          sep += normalize(pos - op) * (1.0 - d / uSepDist);
-          sepN += 1.0;
-        }
-        // Alignment and cohesion only with same species
-        if (d < uAliDist && sameSpecies > 0.5) {
-          ali += texture2D(textureVelocity, ref).xyz;
-          aliN += 1.0;
-        }
-        if (d < uAliDist * 1.5 && sameSpecies > 0.5) {
-          coh += op;
-          cohN += 1.0;
-        }
-      }
-    }
-
-    vec3 steer = vec3(0.0);
-
-    // Force hierarchy: cohesion > alignment > separation (keeps schools together)
-    if (sepN > 0.0) steer += normalize(sep / sepN) * 0.3;
-    // Un-normalized alignment preserves speed matching (fish converge on same heading + speed)
-    if (aliN > 0.0) steer += (ali / aliN - vel) * 0.6 * socialMult;
-    if (cohN > 0.0) steer += normalize(coh / cohN - pos) * 0.8 * socialMult;
-
-    // School center anchor — pull fish back toward their species' home range
-    int speciesIdx = int(mySpecies);
-    if (speciesIdx >= 0 && speciesIdx < 8) {
-      vec3 toSchool = uSchoolCenters[speciesIdx] - pos;
-      float schoolDist = length(toSchool);
-      if (schoolDist > uSchoolRadius) {
-        float pull = (schoolDist - uSchoolRadius) / uSchoolRadius;
-        steer += normalize(toSchool) * pull * 0.5;
-      }
-    }
-
-    // Curl noise — social fish resist currents (school drifts together, not apart)
-    float curlScale = uCurrentStrength * (1.0 - socialMult * 0.4);
-    vec3 curlForce = curlNoise(pos * 0.15 + uTime * 0.02) * curlScale;
-    steer += curlForce;
-
-    // Centering — soft pull toward origin
-    vec2 toCenter = -pos.xz;
-    float distXZ = length(pos.xz);
-    if (distXZ > uBoundRadius * 0.6) {
-      float t = (distXZ - uBoundRadius * 0.6) / (uBoundRadius * 0.4);
-      steer.xz += normalize(toCenter) * t * 1.5;
-    }
-
-    // Height bounds
-    float minY = uGroundY + uHeightMin;
-    float maxY = uGroundY + uHeightMax;
-    if (pos.y < minY + 0.5) steer.y += (minY + 0.5 - pos.y) * 2.0;
-    if (pos.y > maxY - 0.5) steer.y -= (pos.y - maxY + 0.5) * 2.0;
-
-    // Stage avoidance — bold fish tolerate closer proximity
-    float avoidDist = (uStageRadius + 2.5) * (1.5 - boldness * 0.4);
-    if (distXZ < avoidDist) {
-      float pen = avoidDist - distXZ;
-      steer.xz += normalize(pos.xz + 0.001) * pen * 3.0;
-    }
-
-    // Ray scatter — continuous avoidance when ray passes through school
-    float distToRay = distance(pos, uScatterOrigin);
-    if (distToRay < uScatterRadius && uScatterForce > 0.0) {
-      vec3 away = normalize(pos - uScatterOrigin + vec3(0.001));
-      float proximity = 1.0 - distToRay / uScatterRadius;
-      steer += away * uScatterForce * proximity * proximity;
-    }
-
-    // Clamp max steering force — low value = high inertia = fish can't escape schools
-    float steerLen = length(steer);
-    if (steerLen > uMaxSteer) steer = steer / steerLen * uMaxSteer;
-
-    // Apply steering with heavier drag (0.94 vs 0.97 — faster velocity decay)
-    vel = vel * 0.94 + steer * uDelta;
-
-    // Per-fish speed clamp using trait-modulated range
-    float adjMax = uMaxSpeed * speedMult;
-    float adjMin = uMinSpeed * speedMult;
-    float spd = length(vel);
-    if (spd > adjMax) vel = vel / spd * adjMax;
-    if (spd > 0.001 && spd < adjMin) vel = vel / spd * adjMin;
-
-    // Dart impulses — AFTER speed clamp so velocity spike is visible to
-    // the vertex shader C-start detection. Drag decays it next frame.
-    int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);
-    for (int i = 0; i < 8; i++) {
-      if (i >= uDartCount) break;
-      if (fishIdx == uDartIndices[i]) {
-        vel += normalize(vel + vec3(0.001)) * uDartStrength;
-      }
-    }
-
-    // Vertical excursions — also after clamp
-    for (int i = 0; i < 4; i++) {
-      if (i >= uExcursionCount) break;
-      if (fishIdx == uExcursionIndices[i]) {
-        vel.y += uExcursionBias[i];
-      }
-    }
-
-    gl_FragColor = vec4(vel, instanceScale);
-  }
-`;
-
-  // ── Position integration shader ────────────────────────────────────────
-
-  const positionShader = /* glsl */ `
-    uniform float uDelta;
-
-    void main() {
-      vec2 uv = gl_FragCoord.xy / resolution.xy;
-      vec4 posData = texture2D(texturePosition, uv);
-      vec3 vel = texture2D(textureVelocity, uv).xyz;
-      posData.xyz += vel * uDelta;
-      gl_FragColor = posData;
-    }
-  `;
-
-  // ── Render shaders ─────────────────────────────────────────────────────
-
-  const renderVertexShader = /* glsl */ `
-  attribute vec2 aReference;
-
-  uniform sampler2D tPosition;
-  uniform sampler2D tVelocity;
-  uniform float uSize;
-  uniform float uTime;
-  uniform float uSwimFreq;
-  uniform float uWaveNumber;
-  uniform float uBaseAmplitude;
-  uniform float uMaxSpeed;
-
-  varying vec3 vNormal;
-  varying vec2 vUv;
-  varying vec3 vWorldPos;
-
-  void main() {
-    vec4 posData = texture2D(tPosition, aReference);
-    vec3 fishPos = posData.xyz;
-    vUv = uv;
-
-    vec4 velData = texture2D(tVelocity, aReference);
-    vec3 fishVel = velData.xyz;
-    float instanceScale = velData.w;
-
-    vec3 forward = length(fishVel) > 0.001 ? normalize(fishVel) : vec3(0.0, 0.0, 1.0);
-    vec3 worldUp = vec3(0.0, 1.0, 0.0);
-    if (abs(dot(forward, worldUp)) > 0.99) worldUp = vec3(1.0, 0.0, 0.0);
-
-    vec3 right = normalize(cross(worldUp, forward));
-    vec3 up = cross(forward, right);
-    mat3 rot = mat3(right, up, forward);
-
-    float fishScale = uSize * instanceScale;
-    vec3 localPos = position;
-
-    // Undulatory propulsion — cosine wave traveling head to tail
-    float perInstanceJitter = aReference.x * 2.0;
-    float bodyPhase = uTime * (uSwimFreq + perInstanceJitter) + localPos.z * uWaveNumber;
-    float bodyLength = 1.0;
-    float amplitude = uBaseAmplitude * (0.2 + 0.8 * max(0.0, -localPos.z / bodyLength));
-    float swimSpeed = length(fishVel);
-    amplitude *= 0.5 + swimSpeed * 0.8;
-    localPos.x += sin(bodyPhase) * amplitude;
-
-    // C-start escape — sharp body bend when darting (velocity > 2x normal)
-    float speedRatio = swimSpeed / (uMaxSpeed * 0.5);
-    float cStartIntensity = smoothstep(1.5, 2.5, speedRatio);
-    float cBend = cStartIntensity * sin(localPos.z * 1.5) * 0.3;
-    localPos.x += cBend;
-
-    vec3 transformed = rot * (localPos * fishScale) + fishPos;
-    vWorldPos = transformed;
-    vNormal = normalize(rot * normal);
-
-    gl_Position = projectionMatrix * viewMatrix * vec4(transformed, 1.0);
-  }
-`;
-
-  const renderFragmentShader = /* glsl */ `
-    uniform sampler2D tDiffuse;
-    uniform vec3 uFallbackColor;
-    uniform float uHasTexture;
-    uniform vec3 uLightDir;
-    uniform float uAmbient;
-    uniform vec3 uFogColor;
-    uniform float uFogNear;
-    uniform float uFogFar;
-
-    varying vec3 vNormal;
-    varying vec2 vUv;
-    varying vec3 vWorldPos;
-
-    void main() {
-      vec3 color = mix(uFallbackColor, texture2D(tDiffuse, vUv).rgb, uHasTexture);
-      vec3 n = normalize(vNormal);
-      float NdotL = max(dot(n, uLightDir), 0.0);
-      vec3 lit = color * (uAmbient + NdotL * 0.6);
-
-      float dist = length(vWorldPos.xz);
-      float fog = smoothstep(uFogNear, uFogFar, dist);
-      lit = mix(lit, uFogColor, fog);
-
-      gl_FragColor = vec4(lit, 1.0);
-    }
-  `;
-
-  // ── Geometry helpers ───────────────────────────────────────────────────
 
   function normalizeGeometry(geo: BufferGeometry): BufferGeometry {
     geo.computeBoundingBox();
@@ -439,12 +72,7 @@
     return geo;
   }
 
-  interface ExtractedModel {
-    geometry: BufferGeometry;
-    diffuseMap: Texture | null;
-  }
-
-  function extractModel(scene: import("three").Group): ExtractedModel | null {
+  function extractModel(scene: import('three').Group): ExtractedModel | null {
     let geo: BufferGeometry | null = null;
     let diffuseMap: Texture | null = null;
     scene.traverse((child: any) => {
@@ -462,19 +90,21 @@
     return geo ? { geometry: geo, diffuseMap } : null;
   }
 
-  // Per-model rotation corrections: raw geometry head direction → +Z
-  const ORIENT_FNS: Array<(g: BufferGeometry) => void> = [
-    () => {},                                    // common: +Z ✓
-    (g) => g.rotateX(-Math.PI / 2),             // butterfly: +Y → +Z
-    (g) => g.rotateY(Math.PI),                  // trout: -Z empirically → +Z
-    () => {},                                    // clown: +Z ✓
-    (g) => g.rotateX(-Math.PI / 2),             // clownfish: +Y → +Z
-    (g) => g.rotateY(Math.PI),                  // gray: -Z → +Z
-    (g) => g.rotateY(-Math.PI / 2),             // koi: +X → +Z
-    () => {},                                    // small: +Z ✓
-  ];
-
-  // ── GPU System Setup ───────────────────────────────────────────────────
+  function buildLocoUniformArrays(): Record<string, number[]> {
+    const keys: (keyof LocomotionModeParams)[] = [
+      'swimFreq', 'waveK', 'baseAmplitude', 'stiffness', 'ampExponent',
+      'strideAmp', 'rollAmp', 'pectoralFreq', 'pectoralAmp',
+    ];
+    const result: Record<string, number[]> = {};
+    for (const key of keys) {
+      const arr: number[] = [];
+      for (let m = 0; m < Object.keys(LocomotionMode).length / 2; m++) {
+        arr.push(LOCOMOTION_PARAMS[m as LocomotionMode][key]);
+      }
+      result[key] = arr;
+    }
+    return result;
+  }
 
   let meshes = $state<InstancedMesh[]>([]);
   let gpuCompute: GPUComputationRenderer | null = null;
@@ -482,284 +112,284 @@
   let velVar: any = null;
   let materials: ShaderMaterial[] = [];
   let materialSizeMults: number[] = [];
+  let materialLocoModes: number[] = [];
   let storedTraitsData: Float32Array | null = null;
   let eventSystem: FishEventSystem | null = null;
 
   $effect(() => {
-    const ren = renderer as unknown as import("three").WebGLRenderer;
-    const gCommon = $glbCommon;
-    const gButterfly = $glbButterfly;
-    const gTrout = $glbTrout;
-    const gClown = $glbClown;
-    const gClownfish = $glbClownfish;
-    const gGray = $glbGray;
-    const gKoi = $glbKoi;
-    const gSmall = $glbSmall;
+    const ren = rendererRef.current;
     const gy = groundY;
-    if (!ren || !gCommon || !gButterfly || !gTrout || !gClown || !gClownfish || !gGray || !gKoi || !gSmall) return;
+    if (!ren) return;
 
-    const glbScenes = [gCommon, gButterfly, gTrout, gClown, gClownfish, gGray, gKoi, gSmall];
-    const geometries: BufferGeometry[] = [];
-    const diffuseMaps: (Texture | null)[] = [];
-    for (let gi = 0; gi < glbScenes.length; gi++) {
-      const extracted = extractModel(glbScenes[gi]!.scene);
-      if (!extracted) return;
-      ORIENT_FNS[gi]!(extracted.geometry);
-      normalizeGeometry(extracted.geometry);
-      geometries.push(extracted.geometry);
-      diffuseMaps.push(extracted.diffuseMap);
-    }
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('/draco/');
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.setDRACOLoader(dracoLoader);
 
-    // ── Species definitions ────────────────────────────────────────────
-    // social: <0.5 = solitary, 0.5-1.0 = loose groups, >1.2 = tight schools
-    // bold: <0.6 = nervous/flighty, 0.8-1.0 = moderate, >1.2 = fearless
-    const SPECIES = [
-      { name: "common",    fraction: 0.18, sizeMult: 1.0,  speed: [0.9, 1.1] as [number, number], social: [1.3, 1.8] as [number, number], bold: [0.5, 0.8] as [number, number] },
-      { name: "butterfly", fraction: 0.10, sizeMult: 0.9,  speed: [0.6, 0.75] as [number, number], social: [0.8, 1.2] as [number, number], bold: [0.6, 0.9] as [number, number] },
-      { name: "trout",     fraction: 0.10, sizeMult: 1.4,  speed: [1.3, 1.6] as [number, number], social: [0.6, 1.0] as [number, number], bold: [1.0, 1.4] as [number, number] },
-      { name: "clown",     fraction: 0.10, sizeMult: 0.7,  speed: [0.7, 0.85] as [number, number], social: [0.8, 1.2] as [number, number], bold: [0.7, 1.0] as [number, number] },
-      { name: "clownfish", fraction: 0.08, sizeMult: 0.6,  speed: [0.6, 0.75] as [number, number], social: [0.3, 0.5] as [number, number], bold: [0.8, 1.1] as [number, number] },
-      { name: "gray",      fraction: 0.12, sizeMult: 1.1,  speed: [1.0, 1.2] as [number, number], social: [1.0, 1.4] as [number, number], bold: [0.7, 1.0] as [number, number] },
-      { name: "koi",       fraction: 0.08, sizeMult: 2.5,  speed: [0.4, 0.55] as [number, number], social: [0.2, 0.4] as [number, number], bold: [1.2, 1.5] as [number, number] },
-      { name: "small",     fraction: 0.24, sizeMult: 0.4,  speed: [1.4, 1.7] as [number, number], social: [1.5, 2.0] as [number, number], bold: [0.3, 0.5] as [number, number] },
-    ];
+    const species = RESIDENT_SPECIES;
+    const totalFish = RESIDENT_FISH_COUNT;
+    const texSize = Math.ceil(Math.sqrt(totalFish + VISITOR_RESERVE));
 
-    // ── Allocate counts per species ────────────────────────────────────
-    const modelCounts: number[] = [];
-    let allocated = 0;
-    for (let i = 0; i < SPECIES.length - 1; i++) {
-      const c = Math.round(count * SPECIES[i]!.fraction);
-      modelCounts.push(c);
-      allocated += c;
-    }
-    modelCounts.push(count - allocated);
+    const loadPromises = species.map(
+      (sp) =>
+        new Promise<{ species: FishSpeciesConfig; model: ExtractedModel | null }>((resolve) => {
+          gltfLoader.load(
+            modelBasePath + sp.modelFile,
+            (gltf) => {
+              const model = extractModel(gltf.scene);
+              if (model) normalizeGeometry(model.geometry);
+              resolve({ species: sp, model });
+            },
+            undefined,
+            () => resolve({ species: sp, model: null }),
+          );
+        }),
+    );
 
-    // ── GPUComputationRenderer ─────────────────────────────────────────
-    const gpu = new GPUComputationRenderer(texSize, texSize, ren);
-    const posTex = gpu.createTexture();
-    const velTex = gpu.createTexture();
-    const posArr = posTex.image.data as Float32Array;
-    const velArr = velTex.image.data as Float32Array;
+    let cancelled = false;
 
-    const minR = stageRadius + 3;
-    const maxR = boundRadius * 0.8;
-    const [hMin, hMax] = swimHeight;
-    const [sMin, sMax] = speed;
+    Promise.all(loadPromises).then((results) => {
+      if (cancelled) return;
 
-    // ── Per-species spawn clusters ──────────────────────────────────────
-    // Each species gets its own cluster center so they start separated.
-    // posData.w encodes speciesIndex/8 + small jitter for shader species ID.
-    const speciesClusterCenters: { x: number; y: number; z: number; angle: number }[] = [];
-    for (let s = 0; s < SPECIES.length; s++) {
-      const cAngle = (s / SPECIES.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
-      const cR = minR + Math.random() * (maxR - minR);
-      speciesClusterCenters.push({
-        x: Math.cos(cAngle) * cR,
-        y: gy + hMin + Math.random() * (hMax - hMin),
-        z: Math.sin(cAngle) * cR,
-        angle: cAngle,
-      });
-    }
+      const loaded = results.filter((r) => r.model !== null);
+      if (loaded.length === 0) return;
 
-    // ── Initialize positions & velocities with species-clustered spawning ──
-    let spawnOffset = 0;
-    for (let s = 0; s < SPECIES.length; s++) {
-      const sCount = modelCounts[s]!;
-      const cluster = speciesClusterCenters[s]!;
-      const speciesId = s / 8.0;
+      const gpu = new GPUComputationRenderer(texSize, texSize, ren);
+      const posTex = gpu.createTexture();
+      const velTex = gpu.createTexture();
+      const posArr = posTex.image.data as Float32Array;
+      const velArr = velTex.image.data as Float32Array;
 
-      for (let j = 0; j < sCount; j++) {
-        const i = spawnOffset + j;
+      const minR = stageRadius + 3;
+      const maxR = boundRadius * 0.8;
+      const [hMin, hMax] = swimHeight;
+      const [sMin, sMax] = speed;
+
+      const clusterCenters: { x: number; y: number; z: number; angle: number }[] = [];
+      for (let s = 0; s < loaded.length; s++) {
+        const cAngle = (s / loaded.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+        const cR = minR + Math.random() * (maxR - minR);
+        clusterCenters.push({
+          x: Math.cos(cAngle) * cR,
+          y: gy + hMin + Math.random() * (hMax - hMin),
+          z: Math.sin(cAngle) * cR,
+          angle: cAngle,
+        });
+      }
+
+      let spawnOffset = 0;
+      const speciesOffsets: number[] = [];
+      for (let s = 0; s < loaded.length; s++) {
+        speciesOffsets.push(spawnOffset);
+        const { species: sp } = loaded[s]!;
+        const sCount = sp.instanceCount;
+        const cluster = clusterCenters[s]!;
+
+        for (let j = 0; j < sCount; j++) {
+          const i = spawnOffset + j;
+          const idx = i * 4;
+
+          const offAngle = Math.random() * Math.PI * 2;
+          const offR = Math.random() * CLUSTER_SPREAD;
+          const offY = (Math.random() - 0.5) * CLUSTER_SPREAD * 0.6;
+
+          posArr[idx + 0] = cluster.x + Math.cos(offAngle) * offR;
+          posArr[idx + 1] = cluster.y + offY;
+          posArr[idx + 2] = cluster.z + Math.sin(offAngle) * offR;
+          posArr[idx + 3] = s; // integer species index
+
+          const perpAngle = cluster.angle + Math.PI / 2;
+          const vSpeed = sMin + Math.random() * (sMax - sMin);
+          const jitter = (Math.random() - 0.5) * 0.3;
+          velArr[idx + 0] = Math.cos(perpAngle + jitter) * vSpeed;
+          velArr[idx + 1] = (Math.random() - 0.5) * 0.15;
+          velArr[idx + 2] = Math.sin(perpAngle + jitter) * vSpeed;
+          velArr[idx + 3] = 0.6 + Math.random() * 0.8;
+        }
+        spawnOffset += sCount;
+      }
+
+      for (let i = spawnOffset; i < texSize * texSize; i++) {
         const idx = i * 4;
-
-        const offAngle = Math.random() * Math.PI * 2;
-        const offR = Math.random() * CLUSTER_SPREAD;
-        const offY = (Math.random() - 0.5) * CLUSTER_SPREAD * 0.6;
-
-        posArr[idx + 0] = cluster.x + Math.cos(offAngle) * offR;
-        posArr[idx + 1] = cluster.y + offY;
-        posArr[idx + 2] = cluster.z + Math.sin(offAngle) * offR;
-        posArr[idx + 3] = speciesId + Math.random() * 0.1;
-
-        const perpAngle = cluster.angle + Math.PI / 2;
-        const vSpeed = sMin + Math.random() * (sMax - sMin);
-        const jitter = (Math.random() - 0.5) * 0.3;
-        velArr[idx + 0] = Math.cos(perpAngle + jitter) * vSpeed;
-        velArr[idx + 1] = (Math.random() - 0.5) * 0.15;
-        velArr[idx + 2] = Math.sin(perpAngle + jitter) * vSpeed;
-        velArr[idx + 3] = 0.6 + Math.random() * 0.8;
+        posArr[idx + 0] = 9999;
+        posArr[idx + 1] = 9999;
+        posArr[idx + 2] = 9999;
+        posArr[idx + 3] = 0;
       }
-      spawnOffset += sCount;
-    }
 
-    // Fill padding texels
-    for (let i = count; i < texSize * texSize; i++) {
-      const idx = i * 4;
-      posArr[idx + 0] = 9999;
-      posArr[idx + 1] = 9999;
-      posArr[idx + 2] = 9999;
-      posArr[idx + 3] = 0;
-    }
-
-    // ── Traits DataTexture (static, per-fish personality) ─────────────
-    const traitsData = new Float32Array(texSize * texSize * 4);
-    let speciesOffset = 0;
-    for (let s = 0; s < SPECIES.length; s++) {
-      const sp = SPECIES[s]!;
-      const sCount = modelCounts[s]!;
-      for (let j = 0; j < sCount; j++) {
-        const gi = speciesOffset + j;
-        const idx = gi * 4;
-        const rand = () => Math.random();
-        traitsData[idx + 0] = sp.speed[0] + rand() * (sp.speed[1] - sp.speed[0]);
-        traitsData[idx + 1] = sp.social[0] + rand() * (sp.social[1] - sp.social[0]);
-        traitsData[idx + 2] = sp.bold[0] + rand() * (sp.bold[1] - sp.bold[0]);
-        traitsData[idx + 3] = rand();
+      const traitsData = new Float32Array(texSize * texSize * 4);
+      let tOffset = 0;
+      for (let s = 0; s < loaded.length; s++) {
+        const { species: sp } = loaded[s]!;
+        for (let j = 0; j < sp.instanceCount; j++) {
+          const idx = (tOffset + j) * 4;
+          traitsData[idx + 0] = sp.speed[0] + Math.random() * (sp.speed[1] - sp.speed[0]);
+          traitsData[idx + 1] = sp.social[0] + Math.random() * (sp.social[1] - sp.social[0]);
+          traitsData[idx + 2] = sp.bold[0] + Math.random() * (sp.bold[1] - sp.bold[0]);
+          traitsData[idx + 3] = Math.random();
+        }
+        tOffset += sp.instanceCount;
       }
-      speciesOffset += sCount;
-    }
-    const traitsTex = new DataTexture(traitsData, texSize, texSize, RGBAFormat, FloatType);
-    traitsTex.needsUpdate = true;
-    storedTraitsData = traitsData;
+      const traitsTex = new DataTexture(traitsData, texSize, texSize, RGBAFormat, FloatType);
+      traitsTex.needsUpdate = true;
+      storedTraitsData = traitsData;
 
-    const evtSys = new FishEventSystem(count, traitsData);
-    eventSystem = evtSys;
+      const evtSys = new FishEventSystem(spawnOffset, traitsData);
+      eventSystem = evtSys;
 
-    posVar = gpu.addVariable("texturePosition", positionShader, posTex);
-    velVar = gpu.addVariable("textureVelocity", velocityShader, velTex);
-    gpu.setVariableDependencies(posVar, [posVar, velVar]);
-    gpu.setVariableDependencies(velVar, [posVar, velVar]);
+      posVar = gpu.addVariable('texturePosition', positionShader, posTex);
+      velVar = gpu.addVariable('textureVelocity', velocityShader, velTex);
+      gpu.setVariableDependencies(posVar, [posVar, velVar]);
+      gpu.setVariableDependencies(velVar, [posVar, velVar]);
 
-    // Pack school center positions for GPU uniform
-    const schoolCenterVecs = speciesClusterCenters.map(c => new Vector3(c.x, c.y, c.z));
-    while (schoolCenterVecs.length < 8) schoolCenterVecs.push(new Vector3(0, 0, 0));
+      const schoolCenterVecs = clusterCenters.map((c) => new Vector3(c.x, c.y, c.z));
+      while (schoolCenterVecs.length < 50) schoolCenterVecs.push(new Vector3(0, 0, 0));
 
-    const velUniforms = velVar.material.uniforms;
-    velUniforms.uDelta = { value: 0 };
-    velUniforms.uSepDist = { value: 0.8 };
-    velUniforms.uAliDist = { value: 4.0 };
-    velUniforms.uMaxSpeed = { value: sMax * 2.0 };
-    velUniforms.uMinSpeed = { value: sMin };
-    velUniforms.uMaxSteer = { value: 0.1 };
-    velUniforms.uGroundY = { value: gy };
-    velUniforms.uHeightMin = { value: hMin };
-    velUniforms.uHeightMax = { value: hMax };
-    velUniforms.uStageRadius = { value: stageRadius };
-    velUniforms.uBoundRadius = { value: boundRadius };
-    velUniforms.uFishCount = { value: count };
-    velUniforms.tTraits = { value: traitsTex };
-    velUniforms.uTime = { value: 0 };
-    velUniforms.uCurrentStrength = { value: currentStrength };
-    velUniforms.uPerceptionCos = { value: Math.cos(perceptionAngle * Math.PI / 180) };
-    velUniforms.uSchoolCenters = { value: schoolCenterVecs };
-    velUniforms.uSchoolRadius = { value: 6.0 };
-    velUniforms.uScatterOrigin = { value: new Vector3(0, 0, 0) };
-    velUniforms.uScatterRadius = { value: scatterRadius };
-    velUniforms.uScatterForce = { value: 3.0 };
-    velUniforms.uDartCount = { value: 0 };
-    velUniforms.uDartIndices = { value: new Int32Array(8).fill(-1) };
-    velUniforms.uDartStrength = { value: 2.0 };
-    velUniforms.uExcursionCount = { value: 0 };
-    velUniforms.uExcursionIndices = { value: new Int32Array(4).fill(-1) };
-    velUniforms.uExcursionBias = { value: new Float32Array(4) };
+      const velU = velVar.material.uniforms;
+      velU.uDelta = { value: 0 };
+      velU.uSepDist = { value: 0.8 };
+      velU.uAliDist = { value: 4.0 };
+      velU.uMaxSpeed = { value: sMax * 2.0 };
+      velU.uMinSpeed = { value: sMin };
+      velU.uMaxSteer = { value: 0.1 };
+      velU.uGroundY = { value: gy };
+      velU.uHeightMin = { value: hMin };
+      velU.uHeightMax = { value: hMax };
+      velU.uStageRadius = { value: stageRadius };
+      velU.uBoundRadius = { value: boundRadius };
+      velU.uFishCount = { value: spawnOffset };
+      velU.tTraits = { value: traitsTex };
+      velU.uTime = { value: 0 };
+      velU.uCurrentStrength = { value: currentStrength };
+      velU.uPerceptionCos = { value: Math.cos((perceptionAngle * Math.PI) / 180) };
+      velU.uSchoolCenters = { value: schoolCenterVecs };
+      velU.uSchoolRadius = { value: 6.0 };
+      velU.uScatterOrigin = { value: new Vector3(0, 0, 0) };
+      velU.uScatterRadius = { value: scatterRadius };
+      velU.uScatterForce = { value: 3.0 };
+      velU.uDartCount = { value: 0 };
+      velU.uDartIndices = { value: new Int32Array(8).fill(-1) };
+      velU.uDartStrength = { value: 2.0 };
+      velU.uExcursionCount = { value: 0 };
+      velU.uExcursionIndices = { value: new Int32Array(4).fill(-1) };
+      velU.uExcursionBias = { value: new Float32Array(4) };
 
-    posVar.material.uniforms.uDelta = { value: 0 };
+      posVar.material.uniforms.uDelta = { value: 0 };
 
-    const err = gpu.init();
-    if (err !== null) {
-      console.error("[FishSchool] GPUComputationRenderer init failed:", err);
-      return;
-    }
-
-    // ── Create one InstancedMesh per model ─────────────────────────────
-    const createdMeshes: InstancedMesh[] = [];
-    const createdMaterials: ShaderMaterial[] = [];
-    const createdSizeMults: number[] = [];
-    let fishOffset = 0;
-
-    for (let m = 0; m < SPECIES.length; m++) {
-      const mCount = modelCounts[m]!;
-      if (mCount <= 0) continue;
-      const geo = geometries[m]!;
-      const speciesSizeMult = SPECIES[m]!.sizeMult;
-
-      const refs = new Float32Array(mCount * 2);
-      for (let i = 0; i < mCount; i++) {
-        const globalIdx = fishOffset + i;
-        const col = globalIdx % texSize;
-        const row = Math.floor(globalIdx / texSize);
-        refs[i * 2 + 0] = (col + 0.5) / texSize;
-        refs[i * 2 + 1] = (row + 0.5) / texSize;
+      const err = gpu.init();
+      if (err !== null) {
+        console.error('[FishSchool] GPUComputationRenderer init failed:', err);
+        return;
       }
-      geo.setAttribute("aReference", new InstancedBufferAttribute(refs, 2));
 
-      const speciesDiffuse = diffuseMaps[m] ?? null;
+      const locoArrays = buildLocoUniformArrays();
 
-      const mat = new ShaderMaterial({
-        uniforms: {
-          tPosition: { value: null },
-          tVelocity: { value: null },
-          uSize: { value: targetSize * speciesSizeMult },
-          uTime: { value: 0 },
-          uSwimFreq: { value: swimFrequency },
-          uWaveNumber: { value: 3.0 },
-          uBaseAmplitude: { value: waveAmplitude },
-          uMaxSpeed: { value: sMax * 2.0 },
-          tDiffuse: { value: speciesDiffuse },
-          uFallbackColor: { value: new Color(baseColor) },
-          uHasTexture: { value: speciesDiffuse ? 1.0 : 0.0 },
-          uLightDir: { value: new Vector3(0.3, 1.0, 0.2).normalize() },
-          uAmbient: { value: 0.55 },
-          uFogColor: { value: new Color("#1a3040") },
-          uFogNear: { value: 15 },
-          uFogFar: { value: 25 },
-        },
-        vertexShader: renderVertexShader,
-        fragmentShader: renderFragmentShader,
-        side: DoubleSide,
-      });
+      const createdMeshes: InstancedMesh[] = [];
+      const createdMaterials: ShaderMaterial[] = [];
+      const createdSizeMults: number[] = [];
+      const createdLocoModes: number[] = [];
+      const createdGeometries: BufferGeometry[] = [];
 
-      const mesh = new InstancedMesh(geo, mat, mCount);
-      mesh.frustumCulled = false;
+      let fishOffset = 0;
+      for (let s = 0; s < loaded.length; s++) {
+        const { species: sp, model } = loaded[s]!;
+        if (!model) continue;
+        const sCount = sp.instanceCount;
+        if (sCount <= 0) continue;
 
-      createdMeshes.push(mesh);
-      createdMaterials.push(mat);
-      createdSizeMults.push(speciesSizeMult);
-      fishOffset += mCount;
-    }
+        const geo = model.geometry;
+        createdGeometries.push(geo);
 
-    // Run initial compute pass so texture targets exist before meshes enter scene
-    gpu.compute();
-    const initPosTex = gpu.getCurrentRenderTarget(posVar).texture;
-    const initVelTex = gpu.getCurrentRenderTarget(velVar).texture;
-    for (const mat of createdMaterials) {
-      mat.uniforms.tPosition!.value = initPosTex;
-      mat.uniforms.tVelocity!.value = initVelTex;
-    }
+        const refs = new Float32Array(sCount * 2);
+        for (let i = 0; i < sCount; i++) {
+          const globalIdx = fishOffset + i;
+          const col = globalIdx % texSize;
+          const row = Math.floor(globalIdx / texSize);
+          refs[i * 2 + 0] = (col + 0.5) / texSize;
+          refs[i * 2 + 1] = (row + 0.5) / texSize;
+        }
+        geo.setAttribute('aReference', new InstancedBufferAttribute(refs, 2));
 
-    meshes = createdMeshes;
-    materials = createdMaterials;
-    materialSizeMults = createdSizeMults;
-    gpuCompute = gpu;
+        const diffuse = model.diffuseMap;
+        const roughness = sp.trophicRole <= 1 ? 0.3 : sp.locomotionMode === LocomotionMode.Ostraciiform ? 0.6 : 0.5;
+
+        const mat = new ShaderMaterial({
+          uniforms: {
+            tPosition: { value: null },
+            tVelocity: { value: null },
+            uSize: { value: targetSize * sp.sizeScale },
+            uTime: { value: 0 },
+            uMaxSpeed: { value: sMax * 2.0 },
+            uLocoMode: { value: sp.locomotionMode },
+            uSwimFreq: { value: locoArrays['swimFreq'] },
+            uWaveK: { value: locoArrays['waveK'] },
+            uBaseAmplitude: { value: locoArrays['baseAmplitude'] },
+            uStiffness: { value: locoArrays['stiffness'] },
+            uAmpExponent: { value: locoArrays['ampExponent'] },
+            uStrideAmp: { value: locoArrays['strideAmp'] },
+            uRollAmp: { value: locoArrays['rollAmp'] },
+            uPectoralFreq: { value: locoArrays['pectoralFreq'] },
+            uPectoralAmp: { value: locoArrays['pectoralAmp'] },
+            tAlbedo: { value: diffuse },
+            uFallbackColor: { value: new Color('#5599bb') },
+            uHasTexture: { value: diffuse ? 1.0 : 0.0 },
+            uLightDir: { value: new Vector3(0.3, 1.0, 0.2).normalize() },
+            uAmbient: { value: 0.55 },
+            uRoughness: { value: roughness },
+            uFogColor: { value: new Color('#1a3040') },
+            uFogNear: { value: 15 },
+            uFogFar: { value: 25 },
+          },
+          vertexShader: renderVertexShader,
+          fragmentShader: renderFragmentShader,
+          vertexColors: true,
+          side: DoubleSide,
+        });
+
+        const mesh = new InstancedMesh(geo, mat, sCount);
+        mesh.frustumCulled = false;
+
+        createdMeshes.push(mesh);
+        createdMaterials.push(mat);
+        createdSizeMults.push(sp.sizeScale);
+        createdLocoModes.push(sp.locomotionMode);
+        fishOffset += sCount;
+      }
+
+      gpu.compute();
+      const initPosTex = gpu.getCurrentRenderTarget(posVar).texture;
+      const initVelTex = gpu.getCurrentRenderTarget(velVar).texture;
+      for (const mat of createdMaterials) {
+        mat.uniforms.tPosition!.value = initPosTex;
+        mat.uniforms.tVelocity!.value = initVelTex;
+      }
+
+      meshes = createdMeshes;
+      materials = createdMaterials;
+      materialSizeMults = createdSizeMults;
+      materialLocoModes = createdLocoModes;
+      gpuCompute = gpu;
+    });
 
     return () => {
-      gpu.dispose();
-      traitsTex.dispose();
+      cancelled = true;
+      if (gpuCompute) gpuCompute.dispose();
       storedTraitsData = null;
       eventSystem = null;
-      for (const geo of geometries) geo.dispose();
-      for (const mat of createdMaterials) mat.dispose();
-      for (const mesh of createdMeshes) mesh.dispose();
+      for (const mat of materials) mat.dispose();
+      for (const m of meshes) {
+        m.geometry.dispose();
+        m.dispose();
+      }
       meshes = [];
       materials = [];
       materialSizeMults = [];
+      materialLocoModes = [];
       gpuCompute = null;
       posVar = null;
       velVar = null;
     };
   });
-
-  // ── Frame Update ───────────────────────────────────────────────────────
 
   let elapsed = 0;
 
@@ -772,7 +402,9 @@
     velVar.material.uniforms.uDelta.value = dt;
     velVar.material.uniforms.uTime.value = elapsed;
     velVar.material.uniforms.uCurrentStrength.value = currentStrength;
-    velVar.material.uniforms.uPerceptionCos.value = Math.cos(perceptionAngle * Math.PI / 180);
+    velVar.material.uniforms.uPerceptionCos.value = Math.cos(
+      (perceptionAngle * Math.PI) / 180,
+    );
     velVar.material.uniforms.uScatterRadius.value = scatterRadius;
     posVar.material.uniforms.uDelta.value = dt;
 
@@ -790,8 +422,6 @@
       mat.uniforms.tPosition!.value = posTex;
       mat.uniforms.tVelocity!.value = velTex;
       mat.uniforms.uTime!.value = elapsed;
-      mat.uniforms.uSwimFreq!.value = swimFrequency;
-      mat.uniforms.uBaseAmplitude!.value = waveAmplitude;
       mat.uniforms.uSize!.value = targetSize * (materialSizeMults[mi] ?? 1.0);
     }
   });

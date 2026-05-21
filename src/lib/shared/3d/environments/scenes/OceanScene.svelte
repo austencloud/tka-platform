@@ -1008,15 +1008,12 @@
 <!-- GPGPU fish school (boids simulation) -->
 {#if activeConfig.fish.enabled}
   <FishSchool
-    count={activeConfig.fish.count}
     targetSize={activeConfig.fish.targetSize}
     swimHeight={activeConfig.fish.swimHeight}
     speed={activeConfig.fish.speed}
     stageRadius={zones.clearingRadius}
     boundRadius={zones.forestOuter}
     currentStrength={activeConfig.fish.currentStrength}
-    swimFrequency={activeConfig.fish.swimFrequency}
-    waveAmplitude={activeConfig.fish.waveAmplitude}
     scatterRadius={activeConfig.fish.scatterRadius}
     perceptionAngle={activeConfig.fish.perceptionAngle}
     rayPosition={rayWorldPos}
