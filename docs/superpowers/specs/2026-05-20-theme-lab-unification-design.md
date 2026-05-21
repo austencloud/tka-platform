@@ -8,7 +8,7 @@ Two separate labs do overlapping work:
 - **Background Builder** (`2d-backgrounds` tab): 9 tabs for 2D canvas backgrounds. Production-connected — updates `settingsService.backgroundType`, which drives the main 3D viewer via `Environment3D`.
 - **Scene Lab** (`scene-lab` tab): 10 scenes with full 3D parameter tuning. Isolated — configs stay in localStorage, developers copy-paste to source.
 
-They share 8 themes with different names (Night Sky vs Cosmic, Snowfall vs Winter, Pride vs Rainbow). Celestial and Pure Black exist only in Scene Lab. Users have no unified mental model.
+They share 8 themes with different names (Night Sky vs Cosmic, Snowfall vs Winter, Pride vs Rainbow). Celestial and Pure Black have 3D scenes but no 2D backgrounds. Users have no unified mental model.
 
 ## Design Decisions
 
@@ -36,27 +36,41 @@ interface ThemeOption {
   label: string;
   icon: string;          // FA icon name with fa- prefix (for ThemeStrip buttons)
   color: string;         // Theme accent color (hex)
-  has2d: boolean;
-  has3d: boolean;
-  backgroundType: BackgroundType | null;  // Phase 1 mapping to npm package enum
-  sceneId: SceneId;                       // Phase 1 mapping to scene-lab type
+  backgroundType: BackgroundType;  // Phase 1 mapping to npm package enum
+  sceneId: SceneId;                // Phase 1 mapping to scene-lab type
 }
 ```
 
 ### THEME_OPTIONS
 
-| ThemeId | Label | Icon | Color | BackgroundType | SceneId | 2D | 3D |
-|---|---|---|---|---|---|---|---|
-| `ocean` | Ocean | `fa-water` | `#0ea5e9` | `DEEP_OCEAN` | `ocean` | yes | yes |
-| `cosmic` | Cosmic | `fa-moon` | `#8b5cf6` | `NIGHT_SKY` | `cosmic` | yes | yes |
-| `forest` | Forest | `fa-tree` | `#22c55e` | `FIREFLY_FOREST` | `forest` | yes | yes |
-| `blossom` | Blossom | `fa-spa` | `#f472b6` | `CHERRY_BLOSSOM` | `cherry-blossom` | yes | yes |
-| `pride` | Pride | `fa-rainbow` | `#f59e0b` | `PRIDE` | `rainbow` | yes | yes |
-| `ember` | Ember | `fa-fire` | `#ef4444` | `EMBER_GLOW` | `ember` | yes | yes |
-| `winter` | Winter | `fa-snowflake` | `#67e8f9` | `SNOWFALL` | `winter` | yes | yes |
-| `autumn` | Autumn | `fa-leaf` | `#d97706` | `AUTUMN_DRIFT` | `autumn` | yes | yes |
-| `celestial` | Celestial | `fa-star` | `#e2e8f0` | `CELESTIAL` | `celestial` | no | yes |
-| `pure-black` | Pure Black | `fa-square` | `#6b7280` | `null` | `pure-black` | no | yes |
+Every theme has both a 2D canvas background and a 3D scene. No exceptions.
+
+| ThemeId | Label | Icon | Color | BackgroundType | SceneId |
+|---|---|---|---|---|---|
+| `ocean` | Ocean | `fa-water` | `#0ea5e9` | `DEEP_OCEAN` | `ocean` |
+| `cosmic` | Cosmic | `fa-moon` | `#8b5cf6` | `NIGHT_SKY` | `cosmic` |
+| `forest` | Forest | `fa-tree` | `#22c55e` | `FIREFLY_FOREST` | `forest` |
+| `blossom` | Blossom | `fa-spa` | `#f472b6` | `CHERRY_BLOSSOM` | `cherry-blossom` |
+| `pride` | Pride | `fa-rainbow` | `#f59e0b` | `PRIDE` | `rainbow` |
+| `ember` | Ember | `fa-fire` | `#ef4444` | `EMBER_GLOW` | `ember` |
+| `winter` | Winter | `fa-snowflake` | `#67e8f9` | `SNOWFALL` | `winter` |
+| `autumn` | Autumn | `fa-leaf` | `#d97706` | `AUTUMN_DRIFT` | `autumn` |
+| `celestial` | Celestial | `fa-star` | `#e2e8f0` | `CELESTIAL` | `celestial` |
+| `pure-black` | Pure Black | `fa-square` | `#6b7280` | `PURE_BLACK` (new) | `pure-black` |
+
+### New 2D backgrounds required
+
+Two themes lack 2D canvas implementations. Both must be built as part of Phase 1:
+
+**Celestial 2D** — `BackgroundType.CELESTIAL` already exists in the enum but has no canvas implementation in `@austencloud/backgrounds`. Needs:
+- `CelestialBackgroundSystem` in the npm package (layered cloud fields, animated god rays, golden warm light, floating island silhouettes)
+- `CelestialLab.svelte` in `background-builder/components/` (layer toggles: clouds, god rays, islands, pillars; quality slider)
+
+**Pure Black 2D** — `BackgroundType.PURE_BLACK` does not exist yet. Needs:
+- Add `PURE_BLACK` to the `BackgroundType` enum in `@austencloud/backgrounds`
+- `PureBlackBackgroundSystem` in the npm package (solid black canvas with optional subtle grid lines and vignette — minimal, matching the 3D void aesthetic)
+- `PureBlackLab.svelte` in `background-builder/components/` (toggles: grid overlay, vignette; grid opacity/spacing sliders)
+- Add `PURE_BLACK` entries to `BACKGROUND_THEME_COLORS`, `THEME_TO_FAMILY`, `THEME_TO_GRADIENT` in settings utils
 
 ## Component Architecture
 
@@ -82,18 +96,18 @@ ThemesLab.svelte
 
 ### ThemeId → 2D Lab Component Mapping
 
-| ThemeId | 2D Lab Component |
-|---|---|
-| `ocean` | `DeepOceanLab.svelte` |
-| `cosmic` | `NightSkyLab.svelte` |
-| `forest` | `FireflyForestLab.svelte` |
-| `blossom` | `CherryBlossomLab.svelte` |
-| `pride` | `PrideLab.svelte` |
-| `ember` | `EmberGlowLab.svelte` |
-| `winter` | `SnowfallLab.svelte` |
-| `autumn` | `AutumnDriftLab.svelte` |
-| `celestial` | n/a (3D only) |
-| `pure-black` | n/a (3D only) |
+| ThemeId | 2D Lab Component | Status |
+|---|---|---|
+| `ocean` | `DeepOceanLab.svelte` | exists |
+| `cosmic` | `NightSkyLab.svelte` | exists |
+| `forest` | `FireflyForestLab.svelte` | exists |
+| `blossom` | `CherryBlossomLab.svelte` | exists |
+| `pride` | `PrideLab.svelte` | exists |
+| `ember` | `EmberGlowLab.svelte` | exists |
+| `winter` | `SnowfallLab.svelte` | exists |
+| `autumn` | `AutumnDriftLab.svelte` | exists |
+| `celestial` | `CelestialLab.svelte` | **new** |
+| `pure-black` | `PureBlackLab.svelte` | **new** |
 
 ### ThemeId → 3D Controls Component Mapping
 
@@ -116,15 +130,13 @@ Horizontal scrolling chip strip. Each chip:
 - Color dot (8px circle, theme accent color)
 - Label text
 - Active state: accent-colored border + tinted background
-- Chips that lack the current mode (e.g., Celestial when 2D is active) show dimmed with a small "3D" badge
 
 ### ThemeHeader
 
 Row between strip and content:
 - **Left:** Theme label (bold) + color dot + mode badge (`<span class="mode-badge">2D</span>`)
 - **Right:** Pill segmented control `[2D | 3D]`
-- When the active theme lacks 2D (Celestial, Pure Black), the 2D pill is disabled (opacity 0.3, no click)
-- Selecting a 3D-only theme auto-switches mode to 3D
+- Both modes always available for every theme
 
 ### ThemeControlsPanel (3D mode)
 
@@ -240,7 +252,7 @@ src/lib/features/themes-lab/
 ```
 
 ### Reused unchanged (imported, not moved):
-- `background-builder/components/*Lab.svelte` — 8 existing 2D labs
+- `background-builder/components/*Lab.svelte` — 8 existing + 2 new 2D labs
 - `lab/tabs/scene-lab/components/ScenePreview.svelte` — 3D preview
 - `lab/tabs/scene-lab/components/*Controls.svelte` — 10 scene control panels
 - `lab/tabs/scene-lab/state/scene-lab-state.svelte.ts` — scene config state (read by ScenePreview)
@@ -253,7 +265,12 @@ src/lib/features/themes-lab/
 ## Phasing
 
 ### Phase 1 (this spec)
-Build ThemesLab with mapping layer. Ship unified UI. Both old tabs removed from navigation. Old components reused by import.
+1. Add `PURE_BLACK` to `BackgroundType` enum in `@austencloud/backgrounds`, implement `CelestialBackgroundSystem` and `PureBlackBackgroundSystem` canvas renderers, publish new package version
+2. Build `CelestialLab.svelte` and `PureBlackLab.svelte` 2D lab components
+3. Add `PURE_BLACK` entries to theme color maps, avatar gradients, and background preloader
+4. Build ThemesLab with mapping layer — theme strip, header, content routing
+5. Wire tab registration, remove old tabs
+6. Migrate scene-lab localStorage into settingsService
 
 ### Phase 2 (separate spec)
 1. Update `@austencloud/backgrounds` npm package: export `ThemeId` type, deprecate `BackgroundType`
@@ -265,7 +282,6 @@ Build ThemesLab with mapping layer. Ship unified UI. Both old tabs removed from 
 
 ## Edge Cases
 
-- **Celestial/Pure Black in 2D mode:** Pill toggle auto-switches to 3D. 2D pill disabled.
 - **Gradient tab:** Dropped. Was a placeholder ("Coming Soon"). Not a theme.
 - **SOLID_COLOR BackgroundType:** Not a theme. Settings panel keeps its own solid-color picker.
 - **LINEAR_GRADIENT BackgroundType:** Not a theme. Settings panel keeps its own gradient picker.
