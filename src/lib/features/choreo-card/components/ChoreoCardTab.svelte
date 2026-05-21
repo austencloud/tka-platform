@@ -503,22 +503,20 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     pushNavState();
   }
 
+  function filterContinuousReversals(seqs: SequenceData[], deck: Deck | undefined): SequenceData[] {
+    if (!deck || deck.reversalPattern !== "continuous") return seqs;
+    return seqs.filter((seq) => !seq.steps.some((s) => s.blueReversal || s.redReversal));
+  }
+
   async function handleSelectDeckSequences(deckId: string) {
     isDeckLoading = true;
     deckErrorMessage = null;
     try {
       const deck = decks.find((d) => d.id === deckId);
       if (deck && deck.totalSequences < 500) {
-        deckSequences = await loadDeckSequences(deckId);
-      } else if (deck) {
-        const firstFamily = deck.families[0];
-        if (firstFamily && firstFamily.sequenceIds.length > 0) {
-          deckSequences = await loadSequencesByIds(deckId, [...firstFamily.sequenceIds]);
-        } else {
-          deckSequences = await loadDeckSequences(deckId);
-        }
+        deckSequences = filterContinuousReversals(await loadDeckSequences(deckId), deck);
       } else {
-        deckSequences = await loadDeckSequences(deckId);
+        deckSequences = [];
       }
       if (deckSequences.length > 0) {
         deckSequenceCache.set(deckId, deckSequences);
@@ -562,15 +560,20 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     const deck = decks.find((d) => d.id === selectedDeckId);
     if (!deck || !selectedDeckId) return;
 
+    if (familyIds.length === 0) {
+      deckSequences = [];
+      return;
+    }
+
     isDeckLoading = true;
     try {
       const seqIds = deck.families
         .filter((f) => familyIds.includes(f.id))
         .flatMap((f) => [...f.sequenceIds]);
       if (seqIds.length > 0) {
-        deckSequences = await loadSequencesByIds(selectedDeckId, seqIds);
+        deckSequences = filterContinuousReversals(await loadSequencesByIds(selectedDeckId, seqIds), deck);
       } else {
-        deckSequences = await loadDeckSequences(selectedDeckId);
+        deckSequences = filterContinuousReversals(await loadDeckSequences(selectedDeckId), deck);
       }
       if (deckSequences.length > 0) {
         deckSequenceCache.set(selectedDeckId, deckSequences);

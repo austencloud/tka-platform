@@ -10,7 +10,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getDeckLayoutPolicy } from "../../domain/deck-layout-policy";
-  import { cardCache, lastRerenderKey, setLastRerenderKey, type RenderedCard, type CachedCard } from "./print-preview-cache";
+  import { cardCache, type RenderedCard, type CachedCard } from "./print-preview-cache";
+  import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
 
   interface Props {
     sequences: SequenceData[];
@@ -38,6 +39,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onCardClick?: (sequence: SequenceData, frontImageUrl?: string, rerender?: () => Promise<string | null>) => void;
     onPairsReady?: (pairs: CardPair[]) => void;
     onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
+    /** "sheets" = print-ready pages with fronts+backs, "grid" = flowing card grid (fronts only) */
+    displayMode?: "sheets" | "grid";
   }
 
   let {
@@ -59,8 +62,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onCardClick,
     onPairsReady,
     onRenderStateChange,
+    displayMode = "sheets",
   }: Props = $props();
 
+  let lastSeenRerenderKey = rerenderKey;
   let renderedCards: RenderedCard[] = $state([]);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
@@ -173,40 +178,68 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   });
 
   async function renderAll(seqs: SequenceData[], generation: number) {
-    // If rerenderKey changed, flush the cache to force fresh renders
-    if (rerenderKey !== lastRerenderKey) {
+    if (rerenderKey !== lastSeenRerenderKey) {
+      console.log(`[CardCache] rerenderKey changed ${lastSeenRerenderKey} → ${rerenderKey}, flushing caches`);
       cardCache.clear();
-      setLastRerenderKey(rerenderKey);
+      deckCardBlobCache.clear().catch(() => {});
+      lastSeenRerenderKey = rerenderKey;
     }
 
     renderTotal = seqs.length;
 
-    // Fast path: check if every card is already cached
-    const allCached = seqs.every((seq) => {
+    // Phase 1: Hydrate in-memory cache from IndexedDB for any misses
+    const missKeys: string[] = [];
+    for (const seq of seqs) {
       const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
       const key = buildCacheKey(seq, seq.steps?.length, seqLabel);
-      return cardCache.has(key);
+      if (!cardCache.has(key)) missKeys.push(key);
+    }
+
+    if (missKeys.length > 0) {
+      console.log(`[CardCache] ${missKeys.length}/${seqs.length} not in memory, checking IndexedDB…`);
+      const idbHits = await deckCardBlobCache.getMultiple(missKeys);
+      if (generation !== renderGeneration) return;
+
+      console.log(`[CardCache] IndexedDB returned ${idbHits.size}/${missKeys.length} hits`);
+      for (const [key, entry] of idbHits) {
+        const frontUrl = await blobToDataUrl(entry.frontBlob);
+        const backUrl = await blobToDataUrl(entry.backBlob);
+        cardCache.set(key, {
+          rendered: { frontUrl, backUrl, label: entry.label },
+          pair: null,
+        });
+      }
+      if (generation !== renderGeneration) return;
+    } else {
+      console.log(`[CardCache] All ${seqs.length} cards found in memory`);
+    }
+
+    // Phase 2: Fast path if every card is now in memory (from either tier)
+    const allCached = seqs.every((seq) => {
+      const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
+      return cardCache.has(buildCacheKey(seq, seq.steps?.length, seqLabel));
     });
 
     if (allCached) {
-      // All cache hits - populate instantly, no progressive rendering
+      console.log(`[CardCache] All ${seqs.length} cards cached — instant display`);
       const cards: RenderedCard[] = [];
-      const pairs: CardPair[] = [];
       for (const seq of seqs) {
         const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
         const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, seqLabel))!;
         cards.push(cached.rendered);
-        pairs.push(cached.pair);
       }
       renderedCards = cards;
       renderProgress = seqs.length;
       isRendering = false;
-      onPairsReady?.(pairs);
       onRenderStateChange?.({ isRendering: false, progress: seqs.length, total: seqs.length });
+
+      rebuildPairs(seqs, generation).then(pairs => {
+        if (pairs && generation === renderGeneration) onPairsReady?.(pairs);
+      });
       return;
     }
 
-    // Slow path: render uncached cards progressively
+    // Phase 3: Render uncached cards progressively
     isRendering = true;
     renderProgress = 0;
     renderedCards = [];
@@ -217,7 +250,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const cards: RenderedCard[] = [];
 
     for (let i = 0; i < seqs.length; i++) {
-      if (generation !== renderGeneration) return; // superseded
+      if (generation !== renderGeneration) return;
 
       const seq = seqs[i]!;
       const stepCount = seq.steps?.length;
@@ -227,7 +260,13 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
       if (cached) {
         cards.push(cached.rendered);
-        pairs.push(cached.pair);
+        if (cached.pair) {
+          pairs.push(cached.pair);
+        } else {
+          const pair = await reconstructPair(cached.rendered);
+          cached.pair = pair;
+          pairs.push(pair);
+        }
       } else {
         const options = buildRenderOptions(stepCount, seqLabel);
         const frontCanvas = await renderer.renderFront(seq, options);
@@ -244,6 +283,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
         pairs.push(pair);
         cards.push(card);
         cardCache.set(cacheKey, { rendered: card, pair });
+
+        Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
+          .then(([fb, bb]) => deckCardBlobCache.set(cacheKey, fb, bb, label))
+          .catch(() => {});
       }
 
       if (generation !== renderGeneration) return;
@@ -258,7 +301,46 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onRenderStateChange?.({ isRendering: false, progress: seqs.length, total: seqs.length });
   }
 
-  /** Re-render a single card by its index in the sequences array */
+  async function rebuildPairs(seqs: SequenceData[], generation: number): Promise<CardPair[] | null> {
+    const pairs: CardPair[] = [];
+    for (const seq of seqs) {
+      if (generation !== renderGeneration) return null;
+      const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
+      const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, seqLabel));
+      if (!cached) return null;
+      if (cached.pair) {
+        pairs.push(cached.pair);
+      } else {
+        const pair = await reconstructPair(cached.rendered);
+        cached.pair = pair;
+        pairs.push(pair);
+      }
+    }
+    return pairs;
+  }
+
+  async function reconstructPair(rendered: RenderedCard): Promise<CardPair> {
+    const [front, back] = await Promise.all([
+      dataUrlToCanvas(rendered.frontUrl),
+      dataUrlToCanvas(rendered.backUrl),
+    ]);
+    return { front, back, label: rendered.label };
+  }
+
+  function dataUrlToCanvas(dataUrl: string): Promise<HTMLCanvasElement> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext("2d")!.drawImage(img, 0, 0);
+        resolve(canvas);
+      };
+      img.src = dataUrl;
+    });
+  }
+
   async function rerenderCard(index: number): Promise<string | null> {
     const seq = sequences[index];
     if (!seq) return null;
@@ -268,9 +350,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
     const options = buildRenderOptions(stepCount, seqLabel);
 
-    // Invalidate cache for this card
     const cacheKey = buildCacheKey(seq, stepCount, seqLabel);
     cardCache.delete(cacheKey);
+    deckCardBlobCache.delete(cacheKey).catch(() => {});
 
     const frontCanvas = await renderer.renderFront(seq, options);
     const backCanvas = await renderer.renderBack(seq, options);
@@ -282,11 +364,14 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       label,
     };
 
-    // Update cache with fresh render
     cardCache.set(cacheKey, {
       rendered: card,
       pair: { front: frontCanvas, back: backCanvas, label },
     });
+
+    Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
+      .then(([fb, bb]) => deckCardBlobCache.set(cacheKey, fb, bb, label))
+      .catch(() => {});
 
     renderedCards = renderedCards.map((c, i) => i === index ? card : c);
     return card.frontUrl;
@@ -322,81 +407,107 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       </div>
     {/if}
 
-    <div class="pages-scroll">
-      {#each sheets as sheet, sheetIndex (sheetIndex)}
-        <!-- Fronts page -->
-        <span class="page-label">Fronts - Sheet {sheetIndex + 1}</span>
-        <div class="page">
+    {#if displayMode === "grid"}
+      <div class="card-grid-scroll">
+        {#each renderedCards as card, idx (idx)}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="page-grid"
-            style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
+            class="card-cell"
+            class:clickable={!!onCardClick}
+            style:aspect-ratio="{cardAspect}"
+            role="button"
+            tabindex="0"
+            onclick={() => onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx))}
+            onkeydown={(e) => {
+              if (!onCardClick) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+              }
+            }}
+            oncontextmenu={(e) => handleCardContextMenu(e, idx)}
           >
-            {#each sheet as card, cardIndex (cardIndex)}
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="card-cell"
-                class:clickable={!!onCardClick}
-                style:aspect-ratio="{cardAspect}"
-                role="button"
-                tabindex="0"
-                onclick={() => {
-                  const idx = sheetIndex * layout.cardsPerPage + cardIndex;
-                  onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
-                }}
-                onkeydown={(e) => {
-                  if (!onCardClick) return;
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    const idx = sheetIndex * layout.cardsPerPage + cardIndex;
-                    onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
-                  }
-                }}
-                oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
-              >
-                <img src={card.frontUrl} alt="{card.label} front" />
-              </div>
-            {/each}
+            <img src={card.frontUrl} alt="{card.label} front" />
           </div>
-        </div>
+        {/each}
+      </div>
+    {:else}
+      <div class="pages-scroll">
+        {#each sheets as sheet, sheetIndex (sheetIndex)}
+          <!-- Fronts page -->
+          <span class="page-label">Fronts - Sheet {sheetIndex + 1}</span>
+          <div class="page">
+            <div
+              class="page-grid"
+              style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
+            >
+              {#each sheet as card, cardIndex (cardIndex)}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                  class="card-cell"
+                  class:clickable={!!onCardClick}
+                  style:aspect-ratio="{cardAspect}"
+                  role="button"
+                  tabindex="0"
+                  onclick={() => {
+                    const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                    onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                  }}
+                  onkeydown={(e) => {
+                    if (!onCardClick) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                      onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                    }
+                  }}
+                  oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
+                >
+                  <img src={card.frontUrl} alt="{card.label} front" />
+                </div>
+              {/each}
+            </div>
+          </div>
 
-        <!-- Backs page (columns mirrored for duplex) -->
-        <span class="page-label">Backs - Sheet {sheetIndex + 1}</span>
-        <div class="page">
-          <div
-            class="page-grid"
-            style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
-          >
-            {#each sheet as card, cardIndex (cardIndex)}
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="card-cell"
-                class:clickable={!!onCardClick}
-                style:aspect-ratio="{cardAspect}"
-                style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
-                style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
-                role="button"
-                tabindex="0"
-                onclick={() => {
-                  const idx = sheetIndex * layout.cardsPerPage + cardIndex;
-                  onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
-                }}
-                onkeydown={(e) => {
-                  if (!onCardClick) return;
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
+          <!-- Backs page (columns mirrored for duplex) -->
+          <span class="page-label">Backs - Sheet {sheetIndex + 1}</span>
+          <div class="page">
+            <div
+              class="page-grid"
+              style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
+            >
+              {#each sheet as card, cardIndex (cardIndex)}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                  class="card-cell"
+                  class:clickable={!!onCardClick}
+                  style:aspect-ratio="{cardAspect}"
+                  style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
+                  style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
+                  role="button"
+                  tabindex="0"
+                  onclick={() => {
                     const idx = sheetIndex * layout.cardsPerPage + cardIndex;
-                    onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
-                  }
-                }}
-                oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
-              >
-                <img src={card.backUrl} alt="{card.label} back" />
-              </div>
-            {/each}
+                    onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                  }}
+                  onkeydown={(e) => {
+                    if (!onCardClick) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                      onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                    }
+                  }}
+                  oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
+                >
+                  <img src={card.backUrl} alt="{card.label} back" />
+                </div>
+              {/each}
+            </div>
           </div>
-        </div>
-      {/each}
-    </div>
+        {/each}
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -407,6 +518,13 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     flex: 1;
     overflow-y: auto;
     padding: 16px;
+  }
+
+  .card-grid-scroll {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    padding-bottom: 24px;
   }
 
   .pages-scroll {

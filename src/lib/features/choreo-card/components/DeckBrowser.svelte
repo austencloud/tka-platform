@@ -11,7 +11,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import DeckInteriorFilterPanel from "./filters/DeckInteriorFilterPanel.svelte";
-  import ChoreoCard from "./ChoreoCard.svelte";
   import CardInspectModal from "./CardInspectModal.svelte";
   import DeckBrowseFilterBar from "./DeckBrowseFilterBar.svelte";
   import DeckBrowseGrid from "./DeckBrowseGrid.svelte";
@@ -22,7 +21,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
   import type { CardPair } from "../services/types";
-  import { getDeckLayoutPolicy } from "../domain/deck-layout-policy";
   import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
   import {
     resolveVtgFamilyId as resolveVtgFamily,
@@ -338,6 +336,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   let interiorFilters = $state({ familyIds: [] as string[], position: null as string | null });
   let interiorFiltersOpen = $state(false);
+  let selectedTypeCombo = $state<TypeComboGroup | null>(null);
 
   const filteredSequences = $derived.by(() => {
     let seqs = deckSequences;
@@ -446,9 +445,48 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     return groupByFamily(filteredSequences, selectedDeck);
   });
 
+  interface TypeComboGroup {
+    typeCombo: string;
+    displayLabel: string;
+    familyIds: string[];
+    count: number;
+  }
+
+  const typeComboGroups = $derived.by((): TypeComboGroup[] => {
+    if (!selectedDeck || !isLargeDeck) return [];
+
+    const groups = new Map<string, TypeComboGroup>();
+
+    for (const family of selectedDeck.families) {
+      const key = family.typeCombo || family.label;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.familyIds.push(family.id);
+        existing.count += family.sequenceIds.length;
+      } else {
+        groups.set(key, {
+          typeCombo: key,
+          displayLabel: family.label || family.typeCombo,
+          familyIds: [family.id],
+          count: family.sequenceIds.length,
+        });
+      }
+    }
+
+    return [...groups.values()].sort((a, b) => b.count - a.count);
+  });
+
+  function resetToPicker() {
+    selectedTypeCombo = null;
+    interiorFilters = { familyIds: [], position: null };
+    interiorFiltersOpen = false;
+    if (isLargeDeck) onLoadFamilySequences([]);
+  }
+
   // Reset interior filters when deck changes
   $effect(() => {
     if (selectedDeckId) {
+      selectedTypeCombo = null;
       interiorFilters = { familyIds: [], position: null };
       interiorFiltersOpen = false;
     }
@@ -466,12 +504,33 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     <div class="level-container level-interior">
       <div class="top-bar">
         <nav class="breadcrumb" aria-label="Deck navigation">
-          <button class="crumb" onclick={onBackToCollections} type="button" aria-label="Go back to browser">
+          <button
+            class="crumb"
+            type="button"
+            aria-label={isLargeDeck && selectedTypeCombo ? 'Back to type combos' : 'Back to browser'}
+            onclick={() => {
+              if (isLargeDeck && selectedTypeCombo) {
+                resetToPicker();
+              } else {
+                onBackToCollections();
+              }
+            }}
+          >
             <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:12px;"></i>
-            Back to browser
+            Back
           </button>
           <span class="crumb-sep" aria-hidden="true">›</span>
-          <span class="crumb current">{tkaDesignation}</span>
+          {#if isLargeDeck && selectedTypeCombo}
+            <button class="crumb" type="button" onclick={resetToPicker} aria-label="Back to type combos">
+              {tkaDesignation}
+            </button>
+            <span class="crumb-sep" aria-hidden="true">›</span>
+            <span class="crumb current">
+              <MotionTypePills label={selectedTypeCombo.displayLabel} fontSize="13px" />
+            </span>
+          {:else}
+            <span class="crumb current">{tkaDesignation}</span>
+          {/if}
           {#if vtgDesignation}
             <span class="crumb-sep" aria-hidden="true">·</span>
             <span class="crumb vtg-label">{vtgDesignation}</span>
@@ -583,35 +642,31 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
           {/each}
         </div>
       {:else if filteredSequences.length === 0}
-        {#if isLargeDeck && interiorFilters.familyIds.length === 0 && viewMode === 'print'}
-          <div class="print-subgroup-picker">
+        {#if isLargeDeck && interiorFilters.familyIds.length === 0 && typeComboGroups.length > 0}
+          <div class="type-combo-picker">
             <p class="picker-heading">
-              {formatCount(selectedDeck.totalSequences)} sequences - pick a family to preview
+              {formatCount(selectedDeck.totalSequences)} sequences across {typeComboGroups.length}
+              type {typeComboGroups.length === 1 ? 'combo' : 'combos'}
             </p>
             <div class="picker-grid">
-              {#each selectedDeck.families as family (family.id)}
+              {#each typeComboGroups as group (group.typeCombo)}
                 <button
                   class="picker-card"
                   type="button"
-                  aria-label="Preview {family.label || family.typeCombo} family"
+                  aria-label="Load {group.displayLabel} sequences"
                   onclick={() => {
-                    interiorFilters = { ...interiorFilters, familyIds: [family.id] };
-                    onLoadFamilySequences([family.id]);
+                    selectedTypeCombo = group;
+                    interiorFilters = { ...interiorFilters, familyIds: group.familyIds };
+                    onLoadFamilySequences(group.familyIds);
                   }}
                 >
-                  <span class="picker-label"><MotionTypePills label={family.label || family.typeCombo} fontSize="12px" /></span>
-                  <span class="picker-count">{family.sequenceIds.length}</span>
+                  <span class="picker-label"><MotionTypePills label={group.displayLabel} fontSize="12px" /></span>
+                  {#if group.count > 0}
+                    <span class="picker-count">{group.count}</span>
+                  {/if}
                 </button>
               {/each}
             </div>
-          </div>
-        {:else if isLargeDeck && interiorFilters.familyIds.length === 0}
-          <div class="empty-state" role="status">
-            <i class="fas fa-file-alt empty-icon" aria-hidden="true"></i>
-            <p class="empty-text">
-              This deck has {formatCount(selectedDeck.totalSequences)} sequences.
-              Select a family to explore.
-            </p>
           </div>
         {:else}
           <div class="empty-state" role="status">
@@ -620,7 +675,11 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             <button
               class="clear-filters-btn"
               onclick={() => {
-                interiorFilters = { familyIds: [], position: null };
+                if (isLargeDeck) {
+                  resetToPicker();
+                } else {
+                  interiorFilters = { familyIds: [], position: null };
+                }
               }}
               type="button"
               aria-label="Clear filters">Clear filters</button
@@ -680,36 +739,29 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             onPairsReady={(pairs) => { renderedPairs = pairs; }}
           />
         {:else}
-          <div class="sequence-sections">
-            {#each sequenceGroups as group (group.label)}
-              <section class="seq-section">
-                <h3 class="section-header"><MotionTypePills label={group.label} /> <span class="section-count">({group.sequences.length})</span></h3>
-                <div class="sequence-grid">
-                  {#each group.sequences as sequence (sequence.id)}
-                    <div class="playing-card" data-seq-id={sequence.id}>
-                      <ChoreoCard
-                        {sequence}
-                        printMode={true}
-                        {handPointsVisible}
-                        {showGrid}
-                        {showTKA}
-                        {showWord}
-                        {includeStartPosition}
-                        startPositionLayout={getDeckLayoutPolicy(sequence.steps?.length ?? 0)}
-                        showMandala={true}
-                        onSelect={() => {
-                          const cardEl = document.querySelector(`[data-seq-id="${sequence.id}"]`);
-                          inspectedFrontImageUrl = (cardEl?.querySelector('img') as HTMLImageElement)?.src ?? null;
-                          inspectedSequence = sequence;
-                        }}
-                        {onContextMenu}
-                      />
-                    </div>
-                  {/each}
-                </div>
-              </section>
-            {/each}
-          </div>
+          <PrintPreviewPages
+            sequences={filteredSequences}
+            {cardSize}
+            theme={selectedTheme}
+            {rerenderKey}
+            isLoading={false}
+            {handPointsVisible}
+            {showGrid}
+            {showTKA}
+            {showWord}
+            {includeStartPosition}
+            deckMode={true}
+            displayMode="grid"
+            leftLabel={deckLeftLabel}
+            getLeftLabel={resolvedVtgFamilyId ? getSequenceLeftLabel : undefined}
+            onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
+            onCardClick={(seq, frontUrl, rerender) => {
+              inspectedFrontImageUrl = frontUrl ?? null;
+              inspectedRerender = rerender ?? null;
+              inspectedSequence = seq;
+            }}
+            onPairsReady={(pairs) => { renderedPairs = pairs; }}
+          />
         {/if}
       {/if}
     </div>
@@ -739,8 +791,9 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 {/if}
 
 <style>
-  /* ── Print subgroup picker ── */
+  /* ── Type-combo / Print subgroup picker ── */
 
+  .type-combo-picker,
   .print-subgroup-picker {
     display: flex;
     flex-direction: column;
@@ -952,52 +1005,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   /* ── Sequence Sections (Level 2) ── */
 
-  .sequence-sections {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .seq-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .section-header {
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    color: var(--theme-text, #fff);
-    margin: 0;
-    padding-bottom: 4px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  .section-count {
-    font-weight: 400;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-  }
-
-  .sequence-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
-  }
-
-  .playing-card {
-    aspect-ratio: 5 / 7;
-    border-radius: 5%;
-    overflow: hidden;
-    box-shadow: var(--shadow-card, 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--print-bg, #ffffff);
-  }
-
-  .playing-card :global(> button) {
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-  }
 
   /* ── Shared States ── */
 
@@ -1045,9 +1052,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       padding: 16px;
     }
 
-    .sequence-grid {
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    }
   }
 
   .deck-skeleton {

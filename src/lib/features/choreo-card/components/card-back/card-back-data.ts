@@ -51,6 +51,8 @@ export interface LevelBadgeData {
 export interface TurnGlyphEntry {
   readonly blue: number;
   readonly red: number;
+  readonly blueFloat?: boolean;
+  readonly redFloat?: boolean;
 }
 
 export interface CardBackData {
@@ -74,10 +76,16 @@ export interface CardBackData {
   vtgRatio: string | null;
   /** Period-compressed turn pattern entries for the barter glyph */
   turnGlyphEntries: TurnGlyphEntry[];
+  /** Compact turn label, e.g. "0T", "1T", "½T", "FL", or "0-1T" for mixed */
+  turnLabel: string;
+  /** Start position descriptor, e.g. "DIAMOND · γ" or "BOX · α" */
+  startPositionLabel: string | null;
   /** Reversal pattern sequence string for the barter glyph */
   reversalSequence: string;
   /** Reversal pattern period (columns to display) */
   reversalPeriod: number;
+  /** Raw hand-path family string ("+"-separated), e.g. "Shift+Static+Dash+Static" */
+  handPathFamily: string | null;
   /** TKA deck designation, e.g. "Halved Rotated 0T Continuous Diamond" */
   tkaDesignation: string | null;
   /** VTG deck designation, e.g. "VTG Split-Same 1:1" */
@@ -375,42 +383,28 @@ export function deriveVtgRatio(sequence: SequenceData): string | null {
 }
 
 /**
- * Derive the uniform turn format string (e.g. "0T", "1T") from turn glyph entries.
- * Returns null if turns are mixed (different values across beats or between hands).
- */
-function deriveUniformTurnFormat(entries: TurnGlyphEntry[]): string | null {
-  if (entries.length === 0) return null;
-  const first = entries[0]!;
-  // Check all entries have the same value for both hands
-  if (first.blue !== first.red) return null;
-  for (const entry of entries) {
-    if (entry.blue !== first.blue || entry.red !== first.red) return null;
-  }
-  return `${first.blue}T`;
-}
-
-/**
  * Build the TKA deck designation string from sequence properties.
- * Format: "{Halved|Quartered} {LoopType} {TurnPattern} {ReversalPattern} {GridMode}"
- * Only built for LOOP sequences - returns null for non-LOOP sequences.
+ *
+ * When a hand-path family is available (deck-enumerated sequences),
+ * the designation shows the type-combo (e.g., "Shift → Static → Dash → Shift")
+ * since grid mode, turns, and reversal pattern are already communicated
+ * by other card elements (pictograph, turn glyph, reversal glyph).
+ *
+ * Falls back to "{Halved|Quartered} {LoopType}" for non-deck sequences.
  */
 function deriveTkaDesignation(
   sliceName: string | null,
   loopLabel: string | null,
-  turnFormat: string | null,
-  reversalLabel: string,
-  gridMode: string | null,
+  handPathFamily: string | null,
 ): string | null {
-  // Need at least a loop label to form a designation
-  if (!loopLabel) return null;
+  if (handPathFamily) {
+    return handPathFamily.replace(/\+/g, " → ");
+  }
 
+  if (!loopLabel) return null;
   const parts: string[] = [];
   if (sliceName) parts.push(sliceName);
   parts.push(loopLabel);
-  if (turnFormat) parts.push(turnFormat);
-  parts.push(reversalLabel);
-  if (gridMode) parts.push(capitalize(gridMode));
-
   return parts.join(" ");
 }
 
@@ -462,15 +456,15 @@ export function deriveCardBackData(
   const vtgRatio = deriveVtgRatio(sequence);
 
   // Build deck designation strings for the card back content area
-  const turnFormat = deriveUniformTurnFormat(turnGlyphEntries);
-  const reversalLabel = revPattern?.label ?? "Continuous";
-  const gridMode = sequence.gridMode ?? null;
+  const handPathFamily = (sequence.metadata?.handPathFamily as string) ?? null;
   const tkaDesignation = deriveTkaDesignation(
-    sliceName, loopLabel, turnFormat, reversalLabel, gridMode,
+    sliceName, loopLabel, handPathFamily,
   );
-  // VTG designation: show ratio when available (family classification
-  // requires per-letter lookup that isn't available at the sequence level)
-  const vtgDesignation = vtgRatio ? `VTG ${vtgRatio}` : null;
+  const vtgDesignation = !handPathFamily && vtgRatio ? `VTG ${vtgRatio}` : null;
+
+  const startPosInfo = deriveStartPosition(sequence);
+  const turnLabel = deriveTurnLabel(turnGlyphEntries);
+  const startPositionLabel = deriveStartPositionLabel(startPosInfo);
 
   return {
     word: simplifyRepeatedWord(sequence.word ?? sequence.name ?? ""),
@@ -492,14 +486,62 @@ export function deriveCardBackData(
     isRotated: sequence.loopType
       ? ROTATED_LOOP_TYPES.has(sequence.loopType)
       : false,
-    startPosition: deriveStartPosition(sequence),
+    startPosition: startPosInfo,
     vtgRatio,
     turnGlyphEntries,
+    turnLabel,
+    startPositionLabel,
     reversalSequence,
     reversalPeriod,
+    handPathFamily,
     tkaDesignation,
     vtgDesignation,
   };
+}
+
+const GREEK_SYMBOLS: Record<string, string> = {
+  alpha: "α", beta: "β", gamma: "γ",
+  zeta: "ζ", eta: "η", tau: "τ", terra: "⊕",
+};
+
+function deriveStartPositionLabel(info: StartPositionInfo | null): string | null {
+  if (!info) return null;
+  const mode = info.gridMode === "diamond" ? "Diamond" : info.gridMode === "box" ? "Box" : null;
+  const groupSym = info.group ? GREEK_SYMBOLS[info.group] ?? info.group : null;
+  if (mode && groupSym) return `${mode} · ${groupSym}`;
+  if (mode) return mode;
+  if (groupSym) return groupSym;
+  return null;
+}
+
+function formatTurnValue(v: number): string {
+  if (v === 0.5) return "½";
+  if (v === 1.5) return "1½";
+  if (v === 2.5) return "2½";
+  return String(v);
+}
+
+function deriveTurnLabel(entries: TurnGlyphEntry[]): string {
+  const hasFloat = entries.some(e => e.blueFloat || e.redFloat);
+  const allFloat = entries.every(e => e.blueFloat && e.redFloat);
+  if (allFloat) return "FL";
+
+  const values = new Set<number>();
+  for (const e of entries) {
+    if (!e.blueFloat) values.add(e.blue);
+    if (!e.redFloat) values.add(e.red);
+  }
+
+  if (values.size === 0) return "0T";
+  if (values.size === 1) {
+    const v = [...values][0]!;
+    const label = `${formatTurnValue(v)}T`;
+    return hasFloat ? `${label}+FL` : label;
+  }
+
+  const sorted = [...values].sort((a, b) => a - b);
+  const label = sorted.map(formatTurnValue).join("-") + "T";
+  return hasFloat ? `${label}+FL` : label;
 }
 
 /**
@@ -517,6 +559,8 @@ function deriveTurnGlyphEntries(sequence: SequenceData): TurnGlyphEntry[] {
     return {
       blue: typeof blueT === "number" ? blueT : 0,
       red: typeof redT === "number" ? redT : 0,
+      blueFloat: blueT === "fl",
+      redFloat: redT === "fl",
     };
   });
 
@@ -535,7 +579,8 @@ function detectPeriod(entries: TurnGlyphEntry[]): number {
     for (let i = p; i < n; i++) {
       const ref = entries[i % p]!;
       const cur = entries[i]!;
-      if (ref.blue !== cur.blue || ref.red !== cur.red) continue outer;
+      if (ref.blue !== cur.blue || ref.red !== cur.red ||
+          ref.blueFloat !== cur.blueFloat || ref.redFloat !== cur.redFloat) continue outer;
     }
     return p;
   }

@@ -481,8 +481,8 @@
       </g>
     {/each}
 
-  {:else if theme === "pride"}
-    <!-- Pride: no extra decorations. The rainbow border IS the decoration. -->
+  {:else if theme === "rainbow"}
+    <!-- Rainbow: no extra decorations. The rainbow border IS the decoration. -->
   {/if}
 </svg>
 

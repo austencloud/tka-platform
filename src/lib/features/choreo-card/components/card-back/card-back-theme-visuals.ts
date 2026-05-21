@@ -54,7 +54,7 @@ const THEMES: Record<string, CardBackThemeVisuals> = {
     accentColor: "#d97706",
     background: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
   },
-  pride: {
+  rainbow: {
     // Metallic rainbow: bright white highlights between each color
     borderGradient: "linear-gradient(135deg, #ff0000 0%, #ff6666 8%, #ff8000 14%, #ffcc66 22%, #ffff00 28%, #ffffaa 36%, #00ff00 42%, #66ff99 50%, #0080ff 56%, #66b3ff 64%, #8000ff 70%, #cc99ff 78%, #ff0080 85%, #ff66b3 92%, #ff0000 100%)",
     accentColor: "#f43f5e",

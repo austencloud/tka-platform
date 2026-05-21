@@ -24,13 +24,14 @@ import { onMount } from "svelte";
   import TurnPatternGlyph from "./TurnPatternGlyph.svelte";
   import ReversalPatternGlyph from "./ReversalPatternGlyph.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import MotionTypePills from "../MotionTypePills.svelte";
   interface Props { sequence: SequenceData; }
   let { sequence }: Props = $props();
 
   const d = $derived(deriveCardBackData(sequence));
 
   // Deck designation labels shown below the mandala
-  const hasDesignation = $derived(!!d.tkaDesignation || !!d.vtgDesignation);
+  const hasDesignation = $derived(!!d.handPathFamily || !!d.tkaDesignation || !!d.vtgDesignation);
 
   const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
 </script>
@@ -45,6 +46,7 @@ import { onMount } from "svelte";
     <header class="card-header">
       <div class="header-left">
         <TurnPatternGlyph entries={d.turnGlyphEntries} />
+        <span class="corner-sublabel">{d.turnLabel}</span>
       </div>
       <div class="header-center">
         <span class="brand">CHOREO CARDS</span>
@@ -52,6 +54,7 @@ import { onMount } from "svelte";
       </div>
       <div class="header-right">
         <ReversalPatternGlyph sequence={d.reversalSequence} period={d.reversalPeriod} />
+        <span class="corner-sublabel">reversals</span>
       </div>
     </header>
 
@@ -71,7 +74,11 @@ import { onMount } from "svelte";
 
       {#if hasDesignation}
         <div class="content-text">
-          {#if d.tkaDesignation}
+          {#if d.handPathFamily}
+            <div class="deck-designation pills">
+              <MotionTypePills label={d.handPathFamily} fontSize="2.6cqi" />
+            </div>
+          {:else if d.tkaDesignation}
             <p class="deck-designation">{d.tkaDesignation}</p>
           {/if}
           {#if d.vtgDesignation}
@@ -86,6 +93,9 @@ import { onMount } from "svelte";
       <div class="footer-left">
         {#if sequence.startPosition}
           <StartPositionPictograph pictographData={sequence.startPosition} />
+          {#if d.startPositionLabel}
+            <span class="corner-sublabel">{d.startPositionLabel}</span>
+          {/if}
         {/if}
       </div>
       <div class="footer-center"></div>
@@ -139,7 +149,9 @@ import { onMount } from "svelte";
 
   .header-left {
     display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 0.4cqi;
   }
 
   .header-center {
@@ -151,7 +163,9 @@ import { onMount } from "svelte";
 
   .header-right {
     display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 0.4cqi;
   }
 
   .brand {
@@ -229,6 +243,12 @@ import { onMount } from "svelte";
     text-align: center;
   }
 
+  .deck-designation.pills {
+    display: flex;
+    justify-content: center;
+    text-transform: none;
+  }
+
   .deck-designation.vtg {
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
     font-size: 2.5cqi;
@@ -246,7 +266,9 @@ import { onMount } from "svelte";
 
   .footer-left {
     display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 0.4cqi;
   }
 
   .footer-center {
@@ -269,11 +291,12 @@ import { onMount } from "svelte";
   }
 
   .corner-sublabel {
-    font-size: 2.8cqi;
+    font-size: 2cqi;
     font-weight: 500;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    line-height: 1;
   }
 
 
