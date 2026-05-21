@@ -22,6 +22,7 @@ import type { FormationPreset } from "@austencloud/scene-3d";
 import { calculateFacingAngle } from "@austencloud/scene-3d";
 import { PRESET_VALID_COUNTS, createFormationFromPreset } from "@austencloud/scene-3d";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
+import { userProportionsState } from "@austencloud/scene-3d";
 import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
 import type { OceanVariant } from "../environments/domain/enums/environment-enums";
 
@@ -41,6 +42,7 @@ const STORAGE_KEY_VISIBLE_PLANES = "tka-viewer3d-visiblePlanes";
 const STORAGE_KEY_PRESET = "tka-viewer3d-activePreset";
 const STORAGE_KEY_CAM_PRESET = "tka-viewer3d-cameraPreset";
 const STORAGE_KEY_NAV_MODE = "tka-viewer3d-navMode";
+const STORAGE_KEY_GRID_LABELS = "tka-viewer3d-gridLabels";
 
 export type ViewerNavMode = "orbit" | "fly" | "walk";
 
@@ -290,6 +292,9 @@ export function createViewer3DState(deps: {
   // realm/museum/duet keep their simpler index-only model. null = "All".
   let selectedPerformerIndex = $state<number | null>(null);
 
+  // Whether prop size is linked (global) or per-performer.
+  let propSizeLinked = $state(true);
+
   // Suppresses performer raycast picks while the user is orbiting the camera.
   // OrbitControls onstart/onend in Viewer3DCamera flip this flag so a drag
   // that ends near a performer's body doesn't accidentally select them.
@@ -314,6 +319,40 @@ export function createViewer3DState(deps: {
    */
   function selectPerformerScope(index: number | null): void {
     selectedPerformerIndex = index;
+  }
+
+  /**
+   * Toggle between linked (global) and unlinked (per-performer) prop sizing.
+   *
+   * Linked → Unlinked: stamps current global staffLengthCm onto every
+   * performer that still has null (i.e. inheriting global).
+   *
+   * Unlinked → Linked: syncs global to the selected performer's value
+   * (or performer 0 if "All" is selected), then clears all per-performer
+   * overrides so everyone inherits the global again.
+   */
+  function togglePropSizeLink(): void {
+    if (propSizeLinked) {
+      // Linked → Unlinked: stamp current global value onto all performers with null
+      const globalCm = userProportionsState.staffLengthCm;
+      for (const p of performerManager.performers) {
+        if (p.settings.staffLengthCm === null) {
+          p.setStaffLengthCm(globalCm);
+        }
+      }
+      propSizeLinked = false;
+    } else {
+      // Unlinked → Linked: sync global to selected performer's value, clear all
+      const sourceIdx = selectedPerformerIndex ?? 0;
+      const source = performerManager.performers[sourceIdx];
+      if (source?.settings.staffLengthCm != null) {
+        userProportionsState.setStaffLengthCm(source.settings.staffLengthCm);
+      }
+      for (const p of performerManager.performers) {
+        p.setStaffLengthCm(null);
+      }
+      propSizeLinked = true;
+    }
   }
 
   /**
@@ -568,6 +607,13 @@ export function createViewer3DState(deps: {
   // On first visit, default to null (no planes shown). When the user enables the
   // grid for the first time, we auto-select only the planes the sequence uses.
   let visiblePlanes = $state<Set<Plane>>(loadPersistedPlanes() ?? new Set());
+  let showGridLabels = $state<boolean>((() => {
+    if (typeof localStorage === "undefined") return false;
+    try {
+      const v = localStorage.getItem(STORAGE_KEY_GRID_LABELS);
+      return v === "true";
+    } catch { return false; }
+  })());
   let webglCanvas = $state<HTMLCanvasElement | null>(null);
   let stageGroundOffset = $state(0);
 
@@ -612,25 +658,38 @@ export function createViewer3DState(deps: {
   // Camera snap callback - registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }) => void) | null = null;
 
-  // When a hand is assigned to a non-wall plane, automatically add that
-  // plane's grid circle to visiblePlanes so the plane actually renders.
-  // Driven by performer 0 for now - full per-performer plane tracking
-  // lands in Task 14's scope work. WALL is deliberately excluded so that
-  // the grid stays hidden by default on first 3D entry; users must
-  // explicitly toggle the grid on to see the wall plane.
+  // When a hand is newly assigned to a non-wall plane, auto-add that
+  // plane to visiblePlanes as a one-time convenience. Uses a tracking
+  // set so toggling the plane off afterward is respected — the effect
+  // won't re-add a plane the user explicitly hid.
+  let _lastSeenBlue = $state<Plane | null>(null);
+  let _lastSeenRed = $state<Plane | null>(null);
+
   $effect(() => {
     const primary = performerManager.performers[0];
     if (!primary) return;
     const blue = primary.customBluePlane;
     const red = primary.customRedPlane;
 
-    const needsBlue = blue !== Plane.WALL && !visiblePlanes.has(blue);
-    const needsRed = red !== Plane.WALL && !visiblePlanes.has(red);
+    let changed = false;
+    const next = new Set(visiblePlanes);
 
-    if (needsBlue || needsRed) {
-      const next = new Set(visiblePlanes);
-      if (needsBlue) next.add(blue);
-      if (needsRed) next.add(red);
+    if (blue !== _lastSeenBlue) {
+      _lastSeenBlue = blue;
+      if (blue !== Plane.WALL && !next.has(blue)) {
+        next.add(blue);
+        changed = true;
+      }
+    }
+    if (red !== _lastSeenRed) {
+      _lastSeenRed = red;
+      if (red !== Plane.WALL && !next.has(red)) {
+        next.add(red);
+        changed = true;
+      }
+    }
+
+    if (changed) {
       visiblePlanes = next;
       persistPlanes(visiblePlanes);
     }
@@ -820,6 +879,10 @@ export function createViewer3DState(deps: {
     },
     scopedPerformers,
     selectPerformerScope,
+    get propSizeLinked() {
+      return propSizeLinked;
+    },
+    togglePropSizeLink,
     setHandPlaneScoped,
     loadSequenceScoped,
     get canUndo() {
@@ -848,6 +911,13 @@ export function createViewer3DState(deps: {
     },
     get showGrid() {
       return visiblePlanes.size > 0;
+    },
+    get showGridLabels() {
+      return showGridLabels;
+    },
+    toggleGridLabels() {
+      showGridLabels = !showGridLabels;
+      try { localStorage.setItem(STORAGE_KEY_GRID_LABELS, String(showGridLabels)); } catch {}
     },
     get activePreset() {
       return activePreset;

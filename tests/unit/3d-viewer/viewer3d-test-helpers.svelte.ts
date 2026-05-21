@@ -1,5 +1,5 @@
 import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
-import { Viewer3DUndoManager } from "$lib/shared/3d/services/implementations/Viewer3DUndoManager";
+import { Viewer3DUndoManager } from "@austencloud/scene-3d";
 
 export type ViewerState = ReturnType<typeof createViewer3DState>;
 
