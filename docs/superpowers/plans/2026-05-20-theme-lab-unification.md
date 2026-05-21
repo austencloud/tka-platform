@@ -51,6 +51,7 @@ src/lib/features/lab/LabModule.svelte                   # Remove 2 imports, add 
 ```typescript
 // tests/unit/themes-lab/theme-types.test.ts
 import { describe, it, expect } from "vitest";
+import { BackgroundType } from "@austencloud/backgrounds";
 import {
   THEME_OPTIONS,
   getThemeOption,
@@ -74,15 +75,15 @@ describe("THEME_OPTIONS", () => {
     }
   });
 
-  it("maps ocean ThemeId to DEEP_OCEAN BackgroundType", () => {
+  it("maps ocean ThemeId to DEEP_OCEAN BackgroundType and ocean SceneId", () => {
     const ocean = getThemeOption("ocean");
-    expect(ocean?.backgroundType).toBe("deepOcean");
+    expect(ocean?.backgroundType).toBe("deepOcean" as BackgroundType);
     expect(ocean?.sceneId).toBe("ocean");
   });
 
-  it("maps cosmic ThemeId to nightSky BackgroundType", () => {
+  it("maps cosmic ThemeId to NIGHT_SKY BackgroundType and cosmic SceneId", () => {
     const cosmic = getThemeOption("cosmic");
-    expect(cosmic?.backgroundType).toBe("nightSky");
+    expect(cosmic?.backgroundType).toBe("nightSky" as BackgroundType);
     expect(cosmic?.sceneId).toBe("cosmic");
   });
 
