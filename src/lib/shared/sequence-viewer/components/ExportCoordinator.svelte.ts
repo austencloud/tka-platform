@@ -172,8 +172,6 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       const loopBefore = primaryAvatar?.loop ?? false;
       if (driverActive && primaryAvatar) primaryAvatar.loop = true;
 
-      const pc = playbackController!;
-
       // Start camera recording
       cameraKeyframes.startRecording(threlteCamera);
       isRecording3D = true;
