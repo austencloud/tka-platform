@@ -67,15 +67,15 @@
 
 <!-- Layer Chips -->
 <ChipGroup>
-  <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="lime" onclick={() => onLayerToggle("gradient")} />
-  <ChipToggle label="Stars" icon="fa-star" active={layers.stars} color="lime" onclick={() => onLayerToggle("stars")} />
-  <ChipToggle label="Moon" icon="fa-moon" active={layers.moon} color="lime" onclick={() => onLayerToggle("moon")} />
-  <ChipToggle label="Shooting Stars" icon="fa-meteor" active={layers.shootingStars} color="lime" onclick={() => onLayerToggle("shootingStars")} />
-  <ChipToggle label="Trees" icon="fa-tree" active={layers.trees} color="lime" onclick={() => onLayerToggle("trees")} />
-  <ChipToggle label="Grass" icon="fa-seedling" active={layers.grass} color="lime" onclick={() => onLayerToggle("grass")} />
-  <ChipToggle label="Dust Motes" icon="fa-wand-magic-sparkles" active={layers.ambientParticles} color="lime" onclick={() => onLayerToggle("ambientParticles")} />
-  <ChipToggle label="Campfire" icon="fa-fire" active={layers.campfire} color="red" onclick={() => onLayerToggle("campfire")} />
-  <ChipToggle label="Fireflies" icon="fa-lightbulb" active={layers.fireflies} color="lime" onclick={() => onLayerToggle("fireflies")} />
+  <ChipToggle label="Gradient" icon="fill-drip" active={layers.gradient} color="lime" onclick={() => onLayerToggle("gradient")} />
+  <ChipToggle label="Stars" icon="star" active={layers.stars} color="lime" onclick={() => onLayerToggle("stars")} />
+  <ChipToggle label="Moon" icon="moon" active={layers.moon} color="lime" onclick={() => onLayerToggle("moon")} />
+  <ChipToggle label="Shooting Stars" icon="meteor" active={layers.shootingStars} color="lime" onclick={() => onLayerToggle("shootingStars")} />
+  <ChipToggle label="Trees" icon="tree" active={layers.trees} color="lime" onclick={() => onLayerToggle("trees")} />
+  <ChipToggle label="Grass" icon="seedling" active={layers.grass} color="lime" onclick={() => onLayerToggle("grass")} />
+  <ChipToggle label="Dust Motes" icon="wand-magic-sparkles" active={layers.ambientParticles} color="lime" onclick={() => onLayerToggle("ambientParticles")} />
+  <ChipToggle label="Campfire" icon="fire" active={layers.campfire} color="red" onclick={() => onLayerToggle("campfire")} />
+  <ChipToggle label="Fireflies" icon="lightbulb" active={layers.fireflies} color="lime" onclick={() => onLayerToggle("fireflies")} />
 </ChipGroup>
 
 <!-- Tree Type Chips -->

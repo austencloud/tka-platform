@@ -48,19 +48,19 @@
 
 <!-- Layer Chips -->
 <ChipGroup>
-  <ChipToggle label="Stars" icon="fa-star" active={layers.stars} onclick={() => onLayerToggle("stars")} />
-  <ChipToggle label="Nebula" icon="fa-cloud" active={layers.nebula} onclick={() => onLayerToggle("nebula")} />
-  <ChipToggle label="Aurora" icon="fa-wind" active={layers.aurora} onclick={() => onLayerToggle("aurora")} />
-  <ChipToggle label="Milky Way" icon="fa-star-half-stroke" active={layers.milkyWay} onclick={() => onLayerToggle("milkyWay")} />
-  <ChipToggle label="Meteors" icon="fa-meteor" active={layers.meteors} onclick={() => onLayerToggle("meteors")} />
-  <ChipToggle label="Comets" icon="fa-fire" active={layers.comets} onclick={() => onLayerToggle("comets")} />
-  <ChipToggle label="UFO" icon="fa-satellite" active={layers.ufo} onclick={() => onLayerToggle("ufo")} />
+  <ChipToggle label="Stars" icon="star" active={layers.stars} onclick={() => onLayerToggle("stars")} />
+  <ChipToggle label="Nebula" icon="cloud" active={layers.nebula} onclick={() => onLayerToggle("nebula")} />
+  <ChipToggle label="Aurora" icon="wind" active={layers.aurora} onclick={() => onLayerToggle("aurora")} />
+  <ChipToggle label="Milky Way" icon="star-half-stroke" active={layers.milkyWay} onclick={() => onLayerToggle("milkyWay")} />
+  <ChipToggle label="Meteors" icon="meteor" active={layers.meteors} onclick={() => onLayerToggle("meteors")} />
+  <ChipToggle label="Comets" icon="fire" active={layers.comets} onclick={() => onLayerToggle("comets")} />
+  <ChipToggle label="UFO" icon="satellite" active={layers.ufo} onclick={() => onLayerToggle("ufo")} />
 </ChipGroup>
 
 <!-- Trigger Buttons -->
 <ChipGroup>
-  <ChipToggle label="Meteor" icon="fa-meteor" color="amber" onclick={onTriggerMeteor} />
-  <ChipToggle label="Comet" icon="fa-fire" color="cyan" onclick={onTriggerComet} />
+  <ChipToggle label="Meteor" icon="meteor" color="amber" onclick={onTriggerMeteor} />
+  <ChipToggle label="Comet" icon="fire" color="cyan" onclick={onTriggerComet} />
 </ChipGroup>
 
 <!-- Density Chips -->

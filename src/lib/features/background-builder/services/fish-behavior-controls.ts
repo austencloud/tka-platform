@@ -7,27 +7,27 @@ import type {
 export type ColorPreset = "default" | "cyan" | "blue" | "lime" | "amber" | "rose" | "emerald" | "red" | "gray";
 
 export const moodOptions: { mood: FishMood; label: string; icon: string; color: ColorPreset }[] = [
-  { mood: "calm", label: "Calm", icon: "fa-water", color: "cyan" },
-  { mood: "curious", label: "Curious", icon: "fa-search", color: "default" },
-  { mood: "alert", label: "Alert", icon: "fa-exclamation", color: "amber" },
-  { mood: "playful", label: "Playful", icon: "fa-star", color: "emerald" },
-  { mood: "tired", label: "Tired", icon: "fa-bed", color: "gray" },
-  { mood: "social", label: "Social", icon: "fa-users", color: "rose" },
+  { mood: "calm", label: "Calm", icon: "water", color: "cyan" },
+  { mood: "curious", label: "Curious", icon: "search", color: "default" },
+  { mood: "alert", label: "Alert", icon: "exclamation", color: "amber" },
+  { mood: "playful", label: "Playful", icon: "star", color: "emerald" },
+  { mood: "tired", label: "Tired", icon: "bed", color: "gray" },
+  { mood: "social", label: "Social", icon: "users", color: "rose" },
 ];
 
 export const wobbleOptions: { type: NonNullable<FishMarineLife["wobbleType"]>; label: string; icon: string; color: ColorPreset }[] = [
-  { type: "curious_tilt", label: "Curious", icon: "fa-search", color: "blue" },
-  { type: "startled_dart", label: "Startle", icon: "fa-bolt", color: "amber" },
-  { type: "playful_wiggle", label: "Wiggle", icon: "fa-star", color: "emerald" },
-  { type: "tired_drift", label: "Drift", icon: "fa-bed", color: "gray" },
+  { type: "curious_tilt", label: "Curious", icon: "search", color: "blue" },
+  { type: "startled_dart", label: "Startle", icon: "bolt", color: "amber" },
+  { type: "playful_wiggle", label: "Wiggle", icon: "star", color: "emerald" },
+  { type: "tired_drift", label: "Drift", icon: "bed", color: "gray" },
 ];
 
 export const rareBehaviorOptions: { type: string; label: string; icon: string; color: ColorPreset }[] = [
-  { type: "barrel_roll", label: "Roll", icon: "fa-sync", color: "cyan" },
-  { type: "freeze", label: "Freeze", icon: "fa-snowflake", color: "blue" },
-  { type: "double_take", label: "Look", icon: "fa-eye", color: "amber" },
-  { type: "happy_flip", label: "Flip", icon: "fa-arrow-up", color: "emerald" },
-  { type: "sync_swim", label: "Sync", icon: "fa-link", color: "rose" },
+  { type: "barrel_roll", label: "Roll", icon: "sync", color: "cyan" },
+  { type: "freeze", label: "Freeze", icon: "snowflake", color: "blue" },
+  { type: "double_take", label: "Look", icon: "eye", color: "amber" },
+  { type: "happy_flip", label: "Flip", icon: "arrow-up", color: "emerald" },
+  { type: "sync_swim", label: "Sync", icon: "link", color: "rose" },
 ];
 
 export function getMoodColor(mood: FishMood): string {

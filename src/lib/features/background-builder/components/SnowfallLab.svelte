@@ -108,9 +108,9 @@
 
     <!-- Layer Chips -->
     <ChipGroup>
-      <ChipToggle label="Sky Gradient" icon="fa-moon" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
-      <ChipToggle label="Snowflakes" icon="fa-snowflake" active={layers.snowflakes} color="cyan" onclick={() => toggleLayer("snowflakes")} />
-      <ChipToggle label="Shooting Stars" icon="fa-meteor" active={layers.shootingStars} color="cyan" onclick={() => toggleLayer("shootingStars")} />
+      <ChipToggle label="Sky Gradient" icon="moon" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Snowflakes" icon="snowflake" active={layers.snowflakes} color="cyan" onclick={() => toggleLayer("snowflakes")} />
+      <ChipToggle label="Shooting Stars" icon="meteor" active={layers.shootingStars} color="cyan" onclick={() => toggleLayer("shootingStars")} />
     </ChipGroup>
 
     <!-- Density Chips -->

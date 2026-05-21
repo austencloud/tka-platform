@@ -182,21 +182,21 @@
     <ChipGroup>
       <ChipToggle
         label="Twilight"
-        icon="fa-cloud-moon"
+        icon="cloud-moon"
         active={timeOfDay === "twilight"}
         color="default"
         onclick={() => setTimeOfDayMode("twilight")}
       />
       <ChipToggle
         label="Golden Hour"
-        icon="fa-sun"
+        icon="sun"
         active={timeOfDay === "goldenHour"}
         color="amber"
         onclick={() => setTimeOfDayMode("goldenHour")}
       />
       <ChipToggle
         label="Night"
-        icon="fa-moon"
+        icon="moon"
         active={timeOfDay === "night"}
         color="cyan"
         onclick={() => setTimeOfDayMode("night")}
@@ -212,8 +212,8 @@
 
     <!-- Core Layer Toggles -->
     <ChipGroup>
-      <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="rose" onclick={() => toggleLayer("gradient")} />
-      <ChipToggle label="Petals" icon="fa-leaf" active={layers.petals} color="rose" onclick={() => toggleLayer("petals")} />
+      <ChipToggle label="Gradient" icon="fill-drip" active={layers.gradient} color="rose" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Petals" icon="leaf" active={layers.petals} color="rose" onclick={() => toggleLayer("petals")} />
     </ChipGroup>
 
     <!-- Parallax Depth Toggles -->
@@ -225,11 +225,11 @@
 
     <!-- Environmental Layers -->
     <ChipGroup>
-      <ChipToggle label="Moon" icon="fa-moon" active={layers.moon} color="cyan" onclick={() => toggleLayer("moon")} />
-      <ChipToggle label="Stars" icon="fa-star" active={layers.stars} color="cyan" onclick={() => toggleLayer("stars")} />
-      <ChipToggle label="Trees" icon="fa-tree" active={layers.trees} color="emerald" onclick={() => toggleLayer("trees")} />
-      <ChipToggle label="Lanterns" icon="fa-lightbulb" active={layers.lanterns} color="amber" onclick={() => toggleLayer("lanterns")} />
-      <ChipToggle label="Reflection" icon="fa-water" active={layers.reflection} color="cyan" onclick={() => toggleLayer("reflection")} />
+      <ChipToggle label="Moon" icon="moon" active={layers.moon} color="cyan" onclick={() => toggleLayer("moon")} />
+      <ChipToggle label="Stars" icon="star" active={layers.stars} color="cyan" onclick={() => toggleLayer("stars")} />
+      <ChipToggle label="Trees" icon="tree" active={layers.trees} color="emerald" onclick={() => toggleLayer("trees")} />
+      <ChipToggle label="Lanterns" icon="lightbulb" active={layers.lanterns} color="amber" onclick={() => toggleLayer("lanterns")} />
+      <ChipToggle label="Reflection" icon="water" active={layers.reflection} color="cyan" onclick={() => toggleLayer("reflection")} />
     </ChipGroup>
 
     <!-- Moon Settings (shown when moon is enabled) -->
@@ -294,9 +294,9 @@
 
     <!-- Effect Layers -->
     <ChipGroup>
-      <ChipToggle label="Trails" icon="fa-wind" active={layers.trails} color="rose" onclick={() => toggleLayer("trails")} />
-      <ChipToggle label="Accumulation" icon="fa-layer-group" active={layers.accumulation} color="rose" onclick={() => toggleLayer("accumulation")} />
-      <ChipToggle label="Vortex" icon="fa-hurricane" active={layers.vortex} color="rose" onclick={() => toggleLayer("vortex")} />
+      <ChipToggle label="Trails" icon="wind" active={layers.trails} color="rose" onclick={() => toggleLayer("trails")} />
+      <ChipToggle label="Accumulation" icon="layer-group" active={layers.accumulation} color="rose" onclick={() => toggleLayer("accumulation")} />
+      <ChipToggle label="Vortex" icon="hurricane" active={layers.vortex} color="rose" onclick={() => toggleLayer("vortex")} />
     </ChipGroup>
 
     <!-- Density Chips -->

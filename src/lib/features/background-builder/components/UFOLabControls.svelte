@@ -105,34 +105,34 @@
 
 
   const moodOptions: { mood: UFOMood; icon: string; color: ColorPreset }[] = [
-    { mood: "curious", icon: "fa-search", color: "blue" },
-    { mood: "excited", icon: "fa-bolt", color: "amber" },
-    { mood: "playful", icon: "fa-star", color: "default" },
-    { mood: "bored", icon: "fa-meh", color: "gray" },
-    { mood: "startled", icon: "fa-exclamation", color: "red" },
-    { mood: "tired", icon: "fa-bed", color: "gray" },
+    { mood: "curious", icon: "search", color: "blue" },
+    { mood: "excited", icon: "bolt", color: "amber" },
+    { mood: "playful", icon: "star", color: "default" },
+    { mood: "bored", icon: "meh", color: "gray" },
+    { mood: "startled", icon: "exclamation", color: "red" },
+    { mood: "tired", icon: "bed", color: "gray" },
   ];
 
   const wobbleOptions: { type: WobbleType; label: string; icon: string; color: ColorPreset }[] = [
-    { type: "curious_tilt", label: "Curious", icon: "fa-search", color: "blue" },
-    { type: "startled_jolt", label: "Startle", icon: "fa-bolt", color: "amber" },
-    { type: "disappointed_shake", label: "Disappoint", icon: "fa-frown", color: "gray" },
-    { type: "happy_bounce", label: "Happy", icon: "fa-smile", color: "emerald" },
-    { type: "yawn_stretch", label: "Yawn", icon: "fa-bed", color: "gray" },
+    { type: "curious_tilt", label: "Curious", icon: "search", color: "blue" },
+    { type: "startled_jolt", label: "Startle", icon: "bolt", color: "amber" },
+    { type: "disappointed_shake", label: "Disappoint", icon: "frown", color: "gray" },
+    { type: "happy_bounce", label: "Happy", icon: "smile", color: "emerald" },
+    { type: "yawn_stretch", label: "Yawn", icon: "bed", color: "gray" },
   ];
 
   const entranceOptions: { type: EntranceType; icon: string }[] = [
-    { type: "fade", icon: "fa-ghost" },
-    { type: "warp", icon: "fa-bolt" },
-    { type: "zoom", icon: "fa-compress-arrows-alt" },
-    { type: "descend", icon: "fa-arrow-down" },
+    { type: "fade", icon: "ghost" },
+    { type: "warp", icon: "bolt" },
+    { type: "zoom", icon: "compress-arrows-alt" },
+    { type: "descend", icon: "arrow-down" },
   ];
 
   const exitOptions: { type: ExitType; icon: string }[] = [
-    { type: "fade", icon: "fa-ghost" },
-    { type: "warp", icon: "fa-bolt" },
-    { type: "zoom", icon: "fa-expand-arrows-alt" },
-    { type: "shootUp", icon: "fa-rocket" },
+    { type: "fade", icon: "ghost" },
+    { type: "warp", icon: "bolt" },
+    { type: "zoom", icon: "expand-arrows-alt" },
+    { type: "shootUp", icon: "rocket" },
   ];
 
   function triggerMood(mood: UFOMood) {
@@ -165,10 +165,10 @@
 
   <!-- Quick Commands -->
   <ChipGroup>
-    <ChipToggle icon="fa-random" label="Wander" layout="vertical" color="default" onclick={onWander} />
-    <ChipToggle icon="fa-cloud" label="Drift" layout="vertical" color="default" onclick={onDrift} />
-    <ChipToggle icon="fa-pause" label="Pause" layout="vertical" color="default" onclick={onPause} />
-    <ChipToggle icon="fa-crosshairs" label="Scan" layout="vertical" color="default" onclick={onScanStar} />
+    <ChipToggle icon="random" label="Wander" layout="vertical" color="default" onclick={onWander} />
+    <ChipToggle icon="cloud" label="Drift" layout="vertical" color="default" onclick={onDrift} />
+    <ChipToggle icon="pause" label="Pause" layout="vertical" color="default" onclick={onPause} />
+    <ChipToggle icon="crosshairs" label="Scan" layout="vertical" color="default" onclick={onScanStar} />
   </ChipGroup>
 
   <!-- Mood Control -->
@@ -184,8 +184,8 @@
       {/each}
     </div>
     <div class="mood-actions">
-      <ChipToggle icon="fa-battery-full" label="Reset Energy" color="emerald" onclick={onResetTiredness} />
-      <ChipToggle icon="fa-eraser" label="Clear Memory" color="default" onclick={onClearScannedStars} />
+      <ChipToggle icon="battery-full" label="Reset Energy" color="emerald" onclick={onResetTiredness} />
+      <ChipToggle icon="eraser" label="Clear Memory" color="default" onclick={onClearScannedStars} />
     </div>
   </CollapsibleLabSection>
 
@@ -227,8 +227,8 @@
   <!-- Events -->
   <CollapsibleLabSection title="Events" icon="fa-magic" defaultOpen={true} accentColor="purple">
     <div class="trigger-grid cols-2">
-      <ChipToggle icon="fa-meteor" label="Meteor" color="amber" onclick={onTriggerMeteor} />
-      <ChipToggle icon="fa-fire" label="Comet" color="cyan" onclick={onTriggerComet} />
+      <ChipToggle icon="meteor" label="Meteor" color="amber" onclick={onTriggerMeteor} />
+      <ChipToggle icon="fire" label="Comet" color="cyan" onclick={onTriggerComet} />
     </div>
   </CollapsibleLabSection>
 

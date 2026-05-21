@@ -132,19 +132,19 @@
 
     <!-- Layer Chips -->
     <ChipGroup>
-      <ChipToggle label="Base" icon="fa-square" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
-      <ChipToggle label="Coal Bed" icon="fa-fire-burner" active={layers.coalBed} color="amber" onclick={() => toggleLayer("coalBed")} />
-      <ChipToggle label="Smoke" icon="fa-cloud" active={layers.smoke} color="amber" onclick={() => toggleLayer("smoke")} />
-      <ChipToggle label="Embers" icon="fa-fire" active={layers.embers} color="amber" onclick={() => toggleLayer("embers")} />
-      <ChipToggle label="Sparks" icon="fa-sparkle" active={layers.sparks} color="amber" onclick={() => toggleLayer("sparks")} />
+      <ChipToggle label="Base" icon="square" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Coal Bed" icon="fire-burner" active={layers.coalBed} color="amber" onclick={() => toggleLayer("coalBed")} />
+      <ChipToggle label="Smoke" icon="cloud" active={layers.smoke} color="amber" onclick={() => toggleLayer("smoke")} />
+      <ChipToggle label="Embers" icon="fire" active={layers.embers} color="amber" onclick={() => toggleLayer("embers")} />
+      <ChipToggle label="Sparks" icon="sparkle" active={layers.sparks} color="amber" onclick={() => toggleLayer("sparks")} />
     </ChipGroup>
 
     <!-- Enhancement Chips -->
     <ChipGroup>
-      <ChipToggle label="Vignette" icon="fa-circle" active={layers.vignette} color="amber" onclick={() => toggleLayer("vignette")} />
-      <ChipToggle label="Bottom Glow" icon="fa-sun" active={layers.bottomGlow} color="amber" onclick={() => toggleLayer("bottomGlow")} />
-      <ChipToggle label="Spark Trails" icon="fa-comet" active={layers.sparkTrails} color="amber" onclick={() => toggleLayer("sparkTrails")} />
-      <ChipToggle label="Breathing" icon="fa-wind" active={layers.breathing} color="amber" onclick={() => toggleLayer("breathing")} />
+      <ChipToggle label="Vignette" icon="circle" active={layers.vignette} color="amber" onclick={() => toggleLayer("vignette")} />
+      <ChipToggle label="Bottom Glow" icon="sun" active={layers.bottomGlow} color="amber" onclick={() => toggleLayer("bottomGlow")} />
+      <ChipToggle label="Spark Trails" icon="comet" active={layers.sparkTrails} color="amber" onclick={() => toggleLayer("sparkTrails")} />
+      <ChipToggle label="Breathing" icon="wind" active={layers.breathing} color="amber" onclick={() => toggleLayer("breathing")} />
     </ChipGroup>
 
     <!-- Density Chips -->

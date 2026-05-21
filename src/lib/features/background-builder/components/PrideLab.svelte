@@ -150,12 +150,12 @@
 
     <!-- Layer Chips -->
     <ChipGroup>
-      <ChipToggle label="Base" icon="fa-square" active={layers.gradient} color="rose" onclick={() => toggleLayer("gradient")} />
-      <ChipToggle label="Bands" icon="fa-rainbow" active={layers.bands} color="rose" onclick={() => toggleLayer("bands")} />
-      <ChipToggle label="Shimmer" icon="fa-sparkle" active={layers.shimmer} color="rose" onclick={() => toggleLayer("shimmer")} />
-      <ChipToggle label="Bokeh" icon="fa-circle" active={layers.bokeh} color="rose" onclick={() => toggleLayer("bokeh")} />
-      <ChipToggle label="Sparkles" icon="fa-wand-magic-sparkles" active={layers.sparkles} color="rose" onclick={() => toggleLayer("sparkles")} />
-      <ChipToggle label="Hearts" icon="fa-heart" active={layers.hearts} color="rose" onclick={() => toggleLayer("hearts")} />
+      <ChipToggle label="Base" icon="square" active={layers.gradient} color="rose" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Bands" icon="rainbow" active={layers.bands} color="rose" onclick={() => toggleLayer("bands")} />
+      <ChipToggle label="Shimmer" icon="sparkle" active={layers.shimmer} color="rose" onclick={() => toggleLayer("shimmer")} />
+      <ChipToggle label="Bokeh" icon="circle" active={layers.bokeh} color="rose" onclick={() => toggleLayer("bokeh")} />
+      <ChipToggle label="Sparkles" icon="wand-magic-sparkles" active={layers.sparkles} color="rose" onclick={() => toggleLayer("sparkles")} />
+      <ChipToggle label="Hearts" icon="heart" active={layers.hearts} color="rose" onclick={() => toggleLayer("hearts")} />
     </ChipGroup>
 
     <!-- Regenerate -->

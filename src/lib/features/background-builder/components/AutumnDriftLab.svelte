@@ -111,8 +111,8 @@
 
     <!-- Layer Chips -->
     <ChipGroup>
-      <ChipToggle label="Background" icon="fa-fill-drip" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
-      <ChipToggle label="Leaves" icon="fa-leaf" active={layers.leaves} color="amber" onclick={() => toggleLayer("leaves")} />
+      <ChipToggle label="Background" icon="fill-drip" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Leaves" icon="leaf" active={layers.leaves} color="amber" onclick={() => toggleLayer("leaves")} />
     </ChipGroup>
 
     <!-- Density Chips -->

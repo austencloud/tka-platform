@@ -514,28 +514,28 @@
   });
 
   const moodOptions: { mood: FishMood; label: string; icon: string; color: ColorPreset }[] = [
-    { mood: "calm", label: "Calm", icon: "fa-water", color: "cyan" },
-    { mood: "curious", label: "Curious", icon: "fa-search", color: "default" },
-    { mood: "alert", label: "Alert", icon: "fa-exclamation", color: "amber" },
-    { mood: "playful", label: "Playful", icon: "fa-star", color: "emerald" },
-    { mood: "tired", label: "Tired", icon: "fa-bed", color: "gray" },
-    { mood: "social", label: "Social", icon: "fa-users", color: "rose" },
+    { mood: "calm", label: "Calm", icon: "water", color: "cyan" },
+    { mood: "curious", label: "Curious", icon: "search", color: "default" },
+    { mood: "alert", label: "Alert", icon: "exclamation", color: "amber" },
+    { mood: "playful", label: "Playful", icon: "star", color: "emerald" },
+    { mood: "tired", label: "Tired", icon: "bed", color: "gray" },
+    { mood: "social", label: "Social", icon: "users", color: "rose" },
   ];
 
   const wobbleOptions: { type: NonNullable<FishMarineLife["wobbleType"]>; label: string; icon: string; color: ColorPreset }[] = [
-    { type: "curious_tilt", label: "Curious", icon: "fa-search", color: "blue" },
-    { type: "startled_dart", label: "Startle", icon: "fa-bolt", color: "amber" },
-    { type: "playful_wiggle", label: "Wiggle", icon: "fa-star", color: "emerald" },
-    { type: "tired_drift", label: "Drift", icon: "fa-bed", color: "gray" },
+    { type: "curious_tilt", label: "Curious", icon: "search", color: "blue" },
+    { type: "startled_dart", label: "Startle", icon: "bolt", color: "amber" },
+    { type: "playful_wiggle", label: "Wiggle", icon: "star", color: "emerald" },
+    { type: "tired_drift", label: "Drift", icon: "bed", color: "gray" },
   ];
 
   // Rare behavior options for manual triggering
   const rareBehaviorOptions: { type: string; label: string; icon: string; color: ColorPreset }[] = [
-    { type: "barrel_roll", label: "Roll", icon: "fa-sync", color: "cyan" },
-    { type: "freeze", label: "Freeze", icon: "fa-snowflake", color: "blue" },
-    { type: "double_take", label: "Look", icon: "fa-eye", color: "amber" },
-    { type: "happy_flip", label: "Flip", icon: "fa-arrow-up", color: "emerald" },
-    { type: "sync_swim", label: "Sync", icon: "fa-link", color: "rose" },
+    { type: "barrel_roll", label: "Roll", icon: "sync", color: "cyan" },
+    { type: "freeze", label: "Freeze", icon: "snowflake", color: "blue" },
+    { type: "double_take", label: "Look", icon: "eye", color: "amber" },
+    { type: "happy_flip", label: "Flip", icon: "arrow-up", color: "emerald" },
+    { type: "sync_swim", label: "Sync", icon: "link", color: "rose" },
   ];
 
   // Track active rare behavior triggers
@@ -622,23 +622,23 @@
 
     <!-- Quick Commands -->
     <ChipGroup>
-      <ChipToggle icon="fa-sync" label="Regen" layout="vertical" color="cyan" onclick={regenerate} />
-      <ChipToggle icon="fa-plus" label="Fish" layout="vertical" color="cyan" onclick={spawnFish} />
-      <ChipToggle icon="fa-plus" label="Jelly" layout="vertical" color="cyan" onclick={spawnJellyfish} />
-      <ChipToggle icon="fa-eye" label="All On" layout="vertical" color="cyan" onclick={enableAllLayers} />
+      <ChipToggle icon="sync" label="Regen" layout="vertical" color="cyan" onclick={regenerate} />
+      <ChipToggle icon="plus" label="Fish" layout="vertical" color="cyan" onclick={spawnFish} />
+      <ChipToggle icon="plus" label="Jelly" layout="vertical" color="cyan" onclick={spawnJellyfish} />
+      <ChipToggle icon="eye" label="All On" layout="vertical" color="cyan" onclick={enableAllLayers} />
     </ChipGroup>
 
     <!-- Scene Layers -->
     <CollapsibleLabSection title="Layers" icon="fa-layer-group" defaultOpen={true} accentColor="cyan">
       <ChipGroup>
-        <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
-        <ChipToggle label="Rays" icon="fa-sun" active={layers.lightRays} color="cyan" onclick={() => toggleLayer("lightRays")} />
-        <ChipToggle label="Caustics" icon="fa-water" active={layers.caustics} color="cyan" onclick={() => toggleLayer("caustics")} />
-        <ChipToggle label="Particles" icon="fa-dot-circle" active={layers.particles} color="cyan" onclick={() => toggleLayer("particles")} />
-        <ChipToggle label="Bubbles" icon="fa-circle" active={layers.bubbles} color="cyan" onclick={() => toggleLayer("bubbles")} />
-        <ChipToggle label="Fish" icon="fa-fish" active={layers.fish} color="cyan" onclick={() => toggleLayer("fish")} />
-        <ChipToggle label="Jellyfish" icon="fa-disease" active={layers.jellyfish} color="cyan" onclick={() => toggleLayer("jellyfish")} />
-        <ChipToggle label="Coral" icon="fa-seedling" active={showCoral} color="cyan" onclick={toggleCoral} />
+        <ChipToggle label="Gradient" icon="fill-drip" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
+        <ChipToggle label="Rays" icon="sun" active={layers.lightRays} color="cyan" onclick={() => toggleLayer("lightRays")} />
+        <ChipToggle label="Caustics" icon="water" active={layers.caustics} color="cyan" onclick={() => toggleLayer("caustics")} />
+        <ChipToggle label="Particles" icon="dot-circle" active={layers.particles} color="cyan" onclick={() => toggleLayer("particles")} />
+        <ChipToggle label="Bubbles" icon="circle" active={layers.bubbles} color="cyan" onclick={() => toggleLayer("bubbles")} />
+        <ChipToggle label="Fish" icon="fish" active={layers.fish} color="cyan" onclick={() => toggleLayer("fish")} />
+        <ChipToggle label="Jellyfish" icon="disease" active={layers.jellyfish} color="cyan" onclick={() => toggleLayer("jellyfish")} />
+        <ChipToggle label="Coral" icon="seedling" active={showCoral} color="cyan" onclick={toggleCoral} />
       </ChipGroup>
     </CollapsibleLabSection>
 
@@ -674,7 +674,7 @@
 
       <!-- Display Options -->
       <div class="display-options">
-        <ChipToggle icon="fa-eye" label="Overlay" color="cyan" active={showOverlay} onclick={() => showOverlay = !showOverlay} />
+        <ChipToggle icon="eye" label="Overlay" color="cyan" active={showOverlay} onclick={() => showOverlay = !showOverlay} />
       </div>
 
       <!-- Mood Triggers -->
@@ -723,7 +723,7 @@
       <div class="subsection-label">Hunting</div>
       <div class="trigger-grid cols-2">
         <ChipToggle
-          icon="fa-crosshairs"
+          icon="crosshairs"
           label="Force Hunt"
           color="red"
           onclick={forceHuntOnSelected}
@@ -765,28 +765,28 @@
       <div class="subsection-label">Rendering</div>
       <ChipGroup>
         <ChipToggle
-          icon="fa-bone"
+          icon="bone"
           label="Spine"
           color="red"
           active={fishDebugConfig.useSpineRendering}
           onclick={() => fishDebugConfig.useSpineRendering = !fishDebugConfig.useSpineRendering}
         />
         <ChipToggle
-          icon="fa-wave-square"
+          icon="wave-square"
           label="Wobble"
           color="red"
           active={fishDebugConfig.enableWobble}
           onclick={() => fishDebugConfig.enableWobble = !fishDebugConfig.enableWobble}
         />
         <ChipToggle
-          icon="fa-wind"
+          icon="wind"
           label="Tail"
           color="red"
           active={fishDebugConfig.enableTailOscillation}
           onclick={() => fishDebugConfig.enableTailOscillation = !fishDebugConfig.enableTailOscillation}
         />
         <ChipToggle
-          icon="fa-rocket"
+          icon="rocket"
           label="Propulsion"
           color="red"
           active={fishDebugConfig.enablePropulsion}
@@ -797,35 +797,35 @@
       <div class="subsection-label">Social Behaviors</div>
       <ChipGroup>
         <ChipToggle
-          icon="fa-users"
+          icon="users"
           label="Flocking"
           color="amber"
           active={fishDebugConfig.enableFlocking}
           onclick={() => fishDebugConfig.enableFlocking = !fishDebugConfig.enableFlocking}
         />
         <ChipToggle
-          icon="fa-handshake"
+          icon="handshake"
           label="Interact"
           color="amber"
           active={fishDebugConfig.enableInteractions}
           onclick={() => fishDebugConfig.enableInteractions = !fishDebugConfig.enableInteractions}
         />
         <ChipToggle
-          icon="fa-magic"
+          icon="magic"
           label="Rare"
           color="amber"
           active={fishDebugConfig.enableRareBehaviors}
           onclick={() => fishDebugConfig.enableRareBehaviors = !fishDebugConfig.enableRareBehaviors}
         />
         <ChipToggle
-          icon="fa-home"
+          icon="home"
           label="Zones"
           color="amber"
           active={fishDebugConfig.enableHomeZones}
           onclick={() => fishDebugConfig.enableHomeZones = !fishDebugConfig.enableHomeZones}
         />
         <ChipToggle
-          icon="fa-crosshairs"
+          icon="crosshairs"
           label="Hunting"
           color="red"
           active={fishDebugConfig.enableHunting}
@@ -836,21 +836,21 @@
       <div class="subsection-label">Visualization</div>
       <ChipGroup>
         <ChipToggle
-          icon="fa-map-marker"
+          icon="map-marker"
           label="Show Homes"
           color="cyan"
           active={fishDebugConfig.showHomeZones}
           onclick={() => fishDebugConfig.showHomeZones = !fishDebugConfig.showHomeZones}
         />
         <ChipToggle
-          icon="fa-bolt"
+          icon="bolt"
           label="Show Interact"
           color="cyan"
           active={fishDebugConfig.showInteractions}
           onclick={() => fishDebugConfig.showInteractions = !fishDebugConfig.showInteractions}
         />
         <ChipToggle
-          icon="fa-crosshairs"
+          icon="crosshairs"
           label="Show Hunts"
           color="red"
           active={fishDebugConfig.showHunts}
