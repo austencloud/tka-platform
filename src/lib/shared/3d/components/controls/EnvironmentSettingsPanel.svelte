@@ -38,7 +38,7 @@
     },
     {
       type: BackgroundType.NIGHT_SKY,
-      name: "Night Sky",
+      name: "Cosmic",
       icon: "fa-moon",
       has3DScene: true,
     },
