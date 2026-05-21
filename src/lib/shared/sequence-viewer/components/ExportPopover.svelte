@@ -6,7 +6,6 @@
     type VideoResolution,
     type VideoQuality,
   } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
-  import type { CameraPresetId } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
   import { scale, slide } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";
 
@@ -27,42 +26,7 @@
   }
   const FPS_OPTIONS: VideoFps[] = [30, 60, 120];
 
-  // Camera preset tiles. Plane-locked variants tint using the plane accent
-  // tokens so the picker reads as "this preset locks you to that plane".
-  type PresetTile = {
-    id: CameraPresetId;
-    label: string;
-    icon: string;
-    tint?: string;
-  };
-  const CAMERA_PRESETS: PresetTile[] = [
-    { id: "free", label: "Free", icon: "fa-hand-paper" },
-    { id: "auto-orbit", label: "Auto-orbit", icon: "fa-sync-alt" },
-    { id: "plane-wall", label: "Wall", icon: "fa-square", tint: "var(--plane-wall, #4a9eff)" },
-    { id: "plane-wheel", label: "Wheel", icon: "fa-circle", tint: "var(--plane-wheel, #ff9e4a)" },
-    { id: "plane-floor", label: "Floor", icon: "fa-th-large", tint: "var(--plane-floor, #4affa0)" },
-    { id: "quad-plane-tour", label: "Tour", icon: "fa-film" },
-    { id: "ensemble-focus", label: "Ensemble", icon: "fa-users" },
-  ];
 
-  const performerCount = $derived(viewer.performerManager.performers.length);
-  const activePresetId = $derived(viewer.cameraChoreography.activePresetId);
-
-  function isDisabled(id: CameraPresetId): boolean {
-    return id === "ensemble-focus" && performerCount !== 4;
-  }
-
-  function tooltipFor(id: CameraPresetId): string | undefined {
-    if (id === "ensemble-focus" && performerCount !== 4) {
-      return "Needs exactly 4 performers";
-    }
-    return undefined;
-  }
-
-  function pickPreset(id: CameraPresetId) {
-    if (isDisabled(id)) return;
-    viewer.cameraChoreography.setPresetId(id);
-  }
 </script>
 
 {#if open}
@@ -124,29 +88,6 @@
               aria-pressed={opts.videoFps === f}
             >
               {f}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="row-label">Camera</div>
-        <div class="camera-grid">
-          {#each CAMERA_PRESETS as preset (preset.id)}
-            {@const disabled = isDisabled(preset.id)}
-            {@const active = activePresetId === preset.id}
-            <button
-              type="button"
-              class="cam-tile"
-              class:active
-              disabled={disabled}
-              aria-pressed={active}
-              title={tooltipFor(preset.id)}
-              style={preset.tint ? `--tile-accent: ${preset.tint};` : undefined}
-              onclick={() => pickPreset(preset.id)}
-            >
-              <i class="fas {preset.icon}"></i>
-              <span class="cam-label">{preset.label}</span>
             </button>
           {/each}
         </div>
@@ -235,42 +176,6 @@
     border-color: color-mix(in srgb, #4a9eff 55%, transparent);
     color: #cfe4ff;
   }
-
-  .camera-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-  }
-  .cam-tile {
-    --tile-accent: #4a9eff;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 6px;
-    padding: 10px 6px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 10px;
-    color: rgba(255,255,255,0.72);
-    font-size: 11px; font-weight: 600;
-    cursor: pointer;
-    transition: all 140ms cubic-bezier(0.2, 0, 0.13, 1.5);
-    min-height: 58px;
-  }
-  .cam-tile:hover:not(:disabled) {
-    background: rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.95);
-  }
-  .cam-tile:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-  .cam-tile.active {
-    background: color-mix(in srgb, var(--tile-accent) 22%, transparent);
-    border-color: color-mix(in srgb, var(--tile-accent) 55%, transparent);
-    color: color-mix(in srgb, var(--tile-accent) 70%, white 30%);
-  }
-  .cam-tile i { font-size: 15px; }
-  .cam-label { letter-spacing: 0.02em; }
 
   .advanced-toggle {
     background: none; border: none;
