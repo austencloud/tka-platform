@@ -27,32 +27,31 @@
   <ParamSlider label="Texture repeat" value={cfg.ground.textureRepeat ?? 8} min={4} max={60} step={1} onChange={(v) => (mut().ground.textureRepeat = v)} />
 </ParamPanel>
 
+<ParamPanel title="Zone layout" defaultOpen={false}>
+  <ParamSlider label="Stage radius" value={cfg.zones.stageRadius} min={1} max={10} step={0.5} unit="m" onChange={(v) => (mut().zones.stageRadius = v)} />
+  <ParamSlider label="Clearing radius" value={cfg.zones.clearingRadius} min={2} max={15} step={0.5} unit="m" onChange={(v) => (mut().zones.clearingRadius = v)} />
+  <ParamSlider label="Reef inner" value={cfg.zones.reefInner} min={3} max={20} step={0.5} unit="m" onChange={(v) => (mut().zones.reefInner = v)} />
+  <ParamSlider label="Reef outer" value={cfg.zones.reefOuter} min={5} max={25} step={0.5} unit="m" onChange={(v) => (mut().zones.reefOuter = v)} />
+  <ParamSlider label="Forest inner" value={cfg.zones.forestInner} min={8} max={30} step={0.5} unit="m" onChange={(v) => (mut().zones.forestInner = v)} />
+  <ParamSlider label="Forest outer" value={cfg.zones.forestOuter} min={10} max={40} step={0.5} unit="m" onChange={(v) => (mut().zones.forestOuter = v)} />
+  <ParamSlider label="Background radius" value={cfg.zones.backgroundRadius} min={15} max={60} step={1} unit="m" onChange={(v) => (mut().zones.backgroundRadius = v)} />
+</ParamPanel>
+
 <ParamPanel title="Coral" enabled={cfg.coral.enabled} onToggle={(v) => (mut().coral.enabled = v)}>
-  <ParamSlider label="Count" value={cfg.coral.count} min={0} max={30} step={1} onChange={(v) => (mut().coral.count = v)} />
-  <ParamSlider label="Clearing radius" value={cfg.coral.clearingRadius} min={5} max={25} step={0.5} unit="m" onChange={(v) => (mut().coral.clearingRadius = v)} />
+  <ParamSlider label="Count" value={cfg.coral.count} min={0} max={100} step={1} onChange={(v) => (mut().coral.count = v)} />
   <ParamColor label="Glow color" value={cfg.coral.glowColor} onChange={(v) => (mut().coral.glowColor = v)} />
   <ParamSlider label="Glow blend" value={cfg.coral.glowBlend} min={0} max={1} step={0.01} onChange={(v) => (mut().coral.glowBlend = v)} />
 </ParamPanel>
 
 <ParamPanel title="Kelp forest" defaultOpen={false} enabled={cfg.kelp.enabled} onToggle={(v) => (mut().kelp.enabled = v)}>
+  <ParamSlider label="Count" value={cfg.kelp.count} min={0} max={150} step={1} onChange={(v) => (mut().kelp.count = v)} />
   <ParamSlider label="Sway speed" value={cfg.kelp.swaySpeed} min={0} max={3} step={0.1} onChange={(v) => (mut().kelp.swaySpeed = v)} />
   <ParamSlider label="Sway amplitude" value={cfg.kelp.swayAmplitude} min={0} max={0.5} step={0.01} unit="rad" onChange={(v) => (mut().kelp.swayAmplitude = v)} />
-  <ParamSlider label="Clearing radius" value={cfg.kelp.clearingRadius} min={5} max={25} step={0.5} unit="m" onChange={(v) => (mut().kelp.clearingRadius = v)} />
-  {#each cfg.kelp.rings as _, i}
-    <div class="ring-group">
-      <div class="ring-label">Ring {i + 1}</div>
-      <ParamSlider label="Radius" value={cfg.kelp.rings[i]!.radius} min={8} max={40} step={0.5} unit="m" onChange={(v) => (mut().kelp.rings[i]!.radius = v)} />
-      <ParamSlider label="Count" value={cfg.kelp.rings[i]!.count} min={0} max={50} step={1} onChange={(v) => (mut().kelp.rings[i]!.count = v)} />
-      <ParamSlider label="Scale base" value={cfg.kelp.rings[i]!.scaleBase} min={0.3} max={2.5} step={0.05} onChange={(v) => (mut().kelp.rings[i]!.scaleBase = v)} />
-    </div>
-  {/each}
 </ParamPanel>
 
 <ParamPanel title="Fish" defaultOpen={false} enabled={cfg.fish.enabled} onToggle={(v) => (mut().fish.enabled = v)}>
   <ParamSlider label="Count" value={cfg.fish.count} min={0} max={30} step={1} onChange={(v) => (mut().fish.count = v)} />
   <ParamSlider label="Target size" value={cfg.fish.targetSize} min={0.05} max={1} step={0.01} unit="m" onChange={(v) => (mut().fish.targetSize = v)} />
-  <ParamSlider label="Min radius" value={cfg.fish.swimRadius[0]} min={2} max={20} step={0.5} unit="m" onChange={(v) => (mut().fish.swimRadius[0] = v)} />
-  <ParamSlider label="Max radius" value={cfg.fish.swimRadius[1]} min={4} max={30} step={0.5} unit="m" onChange={(v) => (mut().fish.swimRadius[1] = v)} />
   <ParamSlider label="Min height" value={cfg.fish.swimHeight[0]} min={0.5} max={8} step={0.25} unit="m" onChange={(v) => (mut().fish.swimHeight[0] = v)} />
   <ParamSlider label="Max height" value={cfg.fish.swimHeight[1]} min={1} max={12} step={0.25} unit="m" onChange={(v) => (mut().fish.swimHeight[1] = v)} />
   <ParamSlider label="Min speed" value={cfg.fish.speed[0]} min={0.05} max={2} step={0.05} onChange={(v) => (mut().fish.speed[0] = v)} />
@@ -64,10 +63,10 @@
   <ParamSlider label="Target size" value={cfg.decorations.targetSize} min={0.05} max={1} step={0.01} unit="m" onChange={(v) => (mut().decorations.targetSize = v)} />
 </ParamPanel>
 
-<ParamPanel title="Rocks" defaultOpen={false}>
-  <ParamSlider label="Count" value={cfg.rockCount} min={0} max={20} step={1} onChange={(v) => (mut().rockCount = v)} />
-  <ParamColor label="Tint color" value={cfg.rockTintColor} onChange={(v) => (mut().rockTintColor = v)} />
-  <ParamSlider label="Tint blend" value={cfg.rockTintBlend} min={0} max={1} step={0.01} onChange={(v) => (mut().rockTintBlend = v)} />
+<ParamPanel title="Rocks" defaultOpen={false} enabled={cfg.rocks.enabled} onToggle={(v) => (mut().rocks.enabled = v)}>
+  <ParamSlider label="Count" value={cfg.rocks.count} min={0} max={100} step={1} onChange={(v) => (mut().rocks.count = v)} />
+  <ParamColor label="Tint color" value={cfg.rocks.tintColor} onChange={(v) => (mut().rocks.tintColor = v)} />
+  <ParamSlider label="Tint blend" value={cfg.rocks.tintBlend} min={0} max={1} step={0.01} onChange={(v) => (mut().rocks.tintBlend = v)} />
 </ParamPanel>
 
 <ParamPanel title="Bubbles">
@@ -127,27 +126,32 @@
   </ParamPanel>
 {/if}
 
+{#if cfg.godRayShafts}
+  <ParamPanel title="God ray shafts" defaultOpen={false} enabled={cfg.godRayShafts.enabled} onToggle={(v) => { if (mut().godRayShafts) mut().godRayShafts!.enabled = v; }}>
+    <ParamSlider label="Count" value={cfg.godRayShafts.count} min={0} max={20} step={1} onChange={(v) => { if (mut().godRayShafts) mut().godRayShafts!.count = v; }} />
+    <ParamColor label="Color" value={cfg.godRayShafts.color} onChange={(v) => { if (mut().godRayShafts) mut().godRayShafts!.color = v; }} />
+    <ParamSlider label="Intensity" value={cfg.godRayShafts.intensity} min={0} max={3} step={0.05} onChange={(v) => { if (mut().godRayShafts) mut().godRayShafts!.intensity = v; }} />
+    <ParamSlider label="Width" value={cfg.godRayShafts.width} min={0.1} max={5} step={0.1} unit="m" onChange={(v) => { if (mut().godRayShafts) mut().godRayShafts!.width = v; }} />
+    <ParamSlider label="Height" value={cfg.godRayShafts.height} min={1} max={30} step={0.5} unit="m" onChange={(v) => { if (mut().godRayShafts) mut().godRayShafts!.height = v; }} />
+    <ParamSlider label="Speed" value={cfg.godRayShafts.speed} min={0} max={2} step={0.05} onChange={(v) => { if (mut().godRayShafts) mut().godRayShafts!.speed = v; }} />
+    <ParamSlider label="Sway amount" value={cfg.godRayShafts.swayAmount} min={0} max={3} step={0.1} onChange={(v) => { if (mut().godRayShafts) mut().godRayShafts!.swayAmount = v; }} />
+  </ParamPanel>
+{/if}
+
+{#if cfg.waterSurface}
+  <ParamPanel title="Water surface" defaultOpen={false} enabled={cfg.waterSurface.enabled} onToggle={(v) => { if (mut().waterSurface) mut().waterSurface!.enabled = v; }}>
+    <ParamSlider label="Height" value={cfg.waterSurface.height} min={5} max={25} step={0.5} unit="m" onChange={(v) => { if (mut().waterSurface) mut().waterSurface!.height = v; }} />
+    <ParamColor label="Color" value={cfg.waterSurface.color} onChange={(v) => { if (mut().waterSurface) mut().waterSurface!.color = v; }} />
+    <ParamSlider label="Opacity" value={cfg.waterSurface.opacity} min={0} max={1} step={0.01} onChange={(v) => { if (mut().waterSurface) mut().waterSurface!.opacity = v; }} />
+    <ParamSlider label="Wave scale" value={cfg.waterSurface.waveScale} min={1} max={20} step={0.5} onChange={(v) => { if (mut().waterSurface) mut().waterSurface!.waveScale = v; }} />
+    <ParamSlider label="Wave speed" value={cfg.waterSurface.waveSpeed} min={0} max={2} step={0.05} onChange={(v) => { if (mut().waterSurface) mut().waterSurface!.waveSpeed = v; }} />
+    <ParamSlider label="Wave amplitude" value={cfg.waterSurface.waveAmplitude} min={0} max={1} step={0.01} unit="m" onChange={(v) => { if (mut().waterSurface) mut().waterSurface!.waveAmplitude = v; }} />
+  </ParamPanel>
+{/if}
+
 <ParamPanel title="Hemisphere light" defaultOpen={false}>
   <ParamColor label="Sky" value={cfg.hemisphereLight.skyColor} onChange={(v) => (mut().hemisphereLight.skyColor = v)} />
   <ParamColor label="Ground" value={cfg.hemisphereLight.groundColor} onChange={(v) => (mut().hemisphereLight.groundColor = v)} />
   <ParamSlider label="Intensity" value={cfg.hemisphereLight.intensity} min={0} max={3} step={0.05} onChange={(v) => (mut().hemisphereLight.intensity = v)} />
 </ParamPanel>
 
-<style>
-  .ring-group {
-    margin: 4px 0 8px;
-    padding: 4px 8px;
-    background: rgba(255, 255, 255, 0.02);
-    border-left: 2px solid var(--theme-accent, #38bdf8);
-    border-radius: 4px;
-  }
-
-  .ring-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    margin-bottom: 4px;
-  }
-</style>

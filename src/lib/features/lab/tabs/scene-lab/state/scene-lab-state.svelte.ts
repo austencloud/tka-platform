@@ -42,8 +42,9 @@ export function createSceneLabState() {
   let cosmicAuroraConfig = $state<CosmicSceneConfig>(
     persisted?.configs.cosmicAurora ?? createDefaultCosmicAuroraConfig()
   );
+  const persistedOcean = persisted?.configs.ocean;
   let oceanConfig = $state<OceanSceneConfig>(
-    persisted?.configs.ocean ?? createDefaultOceanReefConfig()
+    persistedOcean && "zones" in persistedOcean ? persistedOcean : createDefaultOceanReefConfig()
   );
   let emberConfig = $state<EmberSceneConfig>(
     persisted?.configs.ember ?? createDefaultEmberGlowConfig()

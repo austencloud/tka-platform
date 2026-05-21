@@ -44,6 +44,7 @@
         class="toggle-pill"
         class:on={isEnabled}
         aria-pressed={isEnabled}
+        aria-label="Toggle {title}"
         onclick={() => onToggle?.(!isEnabled)}
       >
         <span class="toggle-knob"></span>
