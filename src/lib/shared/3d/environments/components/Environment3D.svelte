@@ -26,11 +26,13 @@
     backgroundType: BackgroundType;
     /** Minimum platform radius to fit all performers. 0 = use scene default. */
     minPlatformRadius?: number;
+    /** Minimum platform half-extents (X, Z) for rectangular stages. */
+    minPlatformExtents?: { halfW: number; halfD: number };
     /** Ocean sub-variant selection */
     oceanVariant?: OceanVariant;
   }
 
-  let { backgroundType, minPlatformRadius = 0, oceanVariant }: Props = $props();
+  let { backgroundType, minPlatformRadius = 0, minPlatformExtents, oceanVariant }: Props = $props();
 
   const { scene, renderer } = useThrelte();
 
@@ -139,7 +141,7 @@
   {:else if config.scene === "winter"}
     <WinterScene />
   {:else if config.scene === "ocean"}
-    <OceanScene variant={config.variant} {minPlatformRadius} />
+    <OceanScene variant={config.variant} {minPlatformRadius} {minPlatformExtents} />
   {:else if config.scene === "ember"}
     <EmberScene />
   {:else if config.scene === "cherryBlossom"}

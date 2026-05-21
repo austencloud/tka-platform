@@ -303,6 +303,21 @@
     return maxDist + PERFORMER_BODY_PADDING;
   });
 
+  const requiredStageExtents = $derived.by(() => {
+    const performers = performerManager.performers;
+    if (performers.length <= 1) return { halfW: 0, halfD: 0 };
+    let maxAbsX = 0;
+    let maxAbsZ = 0;
+    for (const p of performers) {
+      maxAbsX = Math.max(maxAbsX, Math.abs(p.position.x));
+      maxAbsZ = Math.max(maxAbsZ, Math.abs(p.position.z));
+    }
+    return {
+      halfW: maxAbsX + PERFORMER_BODY_PADDING,
+      halfD: maxAbsZ + PERFORMER_BODY_PADDING,
+    };
+  });
+
   $effect(() => {
     viewer3DState.setStageGroundOffset(stageGroundOffset);
   });
@@ -329,7 +344,7 @@
 
 <!-- Environment (gated by scene feature toggle) -->
 {#if hasEnvironment && sceneFeatures.isEnabled("environment")}
-  <Environment3D {backgroundType} minPlatformRadius={requiredStageRadius} oceanVariant={viewer3DState.oceanVariant} />
+  <Environment3D {backgroundType} minPlatformRadius={requiredStageRadius} minPlatformExtents={requiredStageExtents} oceanVariant={viewer3DState.oceanVariant} />
 {/if}
 
 <!-- Seated audience (gated by scene feature toggle) -->

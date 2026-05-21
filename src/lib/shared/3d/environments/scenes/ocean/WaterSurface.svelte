@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { T, useTask } from "@threlte/core";
-  import { ShaderMaterial, DoubleSide, Color } from "three";
+  import { T, useTask, useThrelte } from "@threlte/core";
+  import { ShaderMaterial, DoubleSide, Color, Vector3 } from "three";
   import type { OceanWaterSurfaceConfig } from "../../domain/models/scene-configs";
 
   interface Props {
@@ -10,12 +10,15 @@
 
   let { config, size = 50 }: Props = $props();
 
+  const { camera } = useThrelte();
+
   const vertexShader = /* glsl */ `
     uniform float uTime;
     uniform float uWaveScale;
     uniform float uWaveSpeed;
     uniform float uWaveAmplitude;
     varying vec2 vUv;
+    varying vec3 vWorldPosition;
     varying float vDisplacement;
 
     void main() {
@@ -29,7 +32,9 @@
       pos.y += wave1 + wave2 + wave3;
       vDisplacement = wave1 + wave2 + wave3;
 
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      vec4 worldPos = modelMatrix * vec4(pos, 1.0);
+      vWorldPosition = worldPos.xyz;
+      gl_Position = projectionMatrix * viewMatrix * worldPos;
     }
   `;
 
@@ -37,20 +42,109 @@
     uniform vec3 uColor;
     uniform float uOpacity;
     uniform float uTime;
+    uniform vec3 uCameraPosition;
+
+    // Snell's window uniforms
+    uniform bool uSnellEnabled;
+    uniform vec3 uSkyColor;
+    uniform vec3 uSunColor;
+    uniform float uSunSize;
+    uniform float uTirDarkness;
+    uniform float uEdgeSoftness;
+    uniform float uNoiseScale;
+    uniform float uNoiseSpeed;
+    uniform float uNoiseAmplitude;
+
     varying vec2 vUv;
+    varying vec3 vWorldPosition;
     varying float vDisplacement;
+
+    // Simple 2D hash noise
+    float hash(vec2 p) {
+      p = fract(p * vec2(123.34, 456.21));
+      p += dot(p, p + 45.32);
+      return fract(p.x * p.y);
+    }
+
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      float a = hash(i);
+      float b = hash(i + vec2(1.0, 0.0));
+      float c = hash(i + vec2(0.0, 1.0));
+      float d = hash(i + vec2(1.0, 1.0));
+      return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+
+    float fbm(vec2 p) {
+      float v = 0.0;
+      v += noise(p) * 0.5;
+      v += noise(p * 2.1 + 0.3) * 0.25;
+      v += noise(p * 4.3 + 0.7) * 0.125;
+      return v;
+    }
 
     void main() {
       float edgeFade = 1.0 - smoothstep(0.3, 0.5, length(vUv - 0.5));
 
-      float highlight = smoothstep(0.0, 0.1, vDisplacement) * 0.3;
+      if (!uSnellEnabled) {
+        float highlight = smoothstep(0.0, 0.1, vDisplacement) * 0.3;
+        float ripple = sin(vUv.x * 40.0 + uTime * 2.0) * sin(vUv.y * 35.0 - uTime * 1.5) * 0.1;
+        float alpha = (uOpacity + highlight + ripple) * edgeFade;
+        vec3 color = uColor + vec3(highlight * 0.5);
+        gl_FragColor = vec4(color, alpha);
+        return;
+      }
 
-      float ripple = sin(vUv.x * 40.0 + uTime * 2.0) * sin(vUv.y * 35.0 - uTime * 1.5) * 0.1;
+      // Snell's window calculation
+      vec3 viewDir = normalize(vWorldPosition - uCameraPosition);
+      vec3 surfaceNormal = vec3(0.0, -1.0, 0.0); // viewed from below
 
-      float alpha = (uOpacity + highlight + ripple) * edgeFade;
-      vec3 color = uColor + vec3(highlight * 0.5);
+      float cosTheta = abs(dot(viewDir, surfaceNormal));
+      float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
 
-      gl_FragColor = vec4(color, alpha);
+      const float IOR_WATER = 1.333;
+      const float CRITICAL_SIN = 1.0 / IOR_WATER; // ~0.7502
+
+      // Animate boundary with noise
+      vec2 noiseUv = vWorldPosition.xz * uNoiseScale + uTime * uNoiseSpeed;
+      float waveNoise = (fbm(noiseUv) - 0.5) * 2.0 * uNoiseAmplitude;
+      float perturbedSin = clamp(sinTheta + waveNoise, 0.0, 1.0);
+
+      // Window mask: 1 = inside window (bright sky), 0 = outside (TIR dark)
+      float windowMask = 1.0 - smoothstep(
+        CRITICAL_SIN - uEdgeSoftness,
+        CRITICAL_SIN + uEdgeSoftness,
+        perturbedSin
+      );
+
+      // Sky color inside window — brighter toward center
+      float centerBrightness = pow(cosTheta, 0.5);
+      vec3 skyResult = uSkyColor * (0.6 + 0.4 * centerBrightness);
+
+      // Sun disc — approximate overhead sun position
+      vec2 sunOffset = viewDir.xz / max(abs(viewDir.y), 0.001);
+      float sunDist = length(sunOffset);
+      float sunGlow = smoothstep(uSunSize * 4.0, uSunSize, sunDist);
+      skyResult += uSunColor * sunGlow * 0.8;
+
+      // TIR region — dark reflective tint
+      vec3 tirResult = uColor * uTirDarkness;
+
+      // Fresnel-like edge brightening near boundary
+      float edgeFresnel = smoothstep(0.0, 0.15, abs(perturbedSin - CRITICAL_SIN));
+      float edgeBright = (1.0 - edgeFresnel) * 0.3;
+
+      vec3 finalColor = mix(tirResult, skyResult, windowMask);
+      finalColor += vec3(edgeBright) * uSkyColor * 0.3;
+
+      // Wave highlight overlay
+      float highlight = smoothstep(0.0, 0.1, vDisplacement) * 0.15;
+      finalColor += vec3(highlight);
+
+      float alpha = mix(0.85, 0.4, windowMask) * edgeFade;
+      gl_FragColor = vec4(finalColor, alpha);
     }
   `;
 
@@ -65,6 +159,16 @@
       uWaveScale: { value: 0 },
       uWaveSpeed: { value: 0 },
       uWaveAmplitude: { value: 0 },
+      uCameraPosition: { value: new Vector3() },
+      uSnellEnabled: { value: false },
+      uSkyColor: { value: new Color() },
+      uSunColor: { value: new Color() },
+      uSunSize: { value: 0.08 },
+      uTirDarkness: { value: 0.15 },
+      uEdgeSoftness: { value: 0.06 },
+      uNoiseScale: { value: 3.0 },
+      uNoiseSpeed: { value: 0.4 },
+      uNoiseAmplitude: { value: 0.04 },
     },
     vertexShader,
     fragmentShader,
@@ -76,10 +180,29 @@
     material.uniforms.uWaveScale!.value = config.waveScale;
     material.uniforms.uWaveSpeed!.value = config.waveSpeed;
     material.uniforms.uWaveAmplitude!.value = config.waveAmplitude;
+
+    const snell = config.snellWindow;
+    if (snell?.enabled) {
+      material.uniforms.uSnellEnabled!.value = true;
+      material.uniforms.uSkyColor!.value = new Color(snell.skyColor);
+      material.uniforms.uSunColor!.value = new Color(snell.sunColor);
+      material.uniforms.uSunSize!.value = snell.sunSize;
+      material.uniforms.uTirDarkness!.value = snell.tirDarkness;
+      material.uniforms.uEdgeSoftness!.value = snell.edgeSoftness;
+      material.uniforms.uNoiseScale!.value = snell.noiseScale;
+      material.uniforms.uNoiseSpeed!.value = snell.noiseSpeed;
+      material.uniforms.uNoiseAmplitude!.value = snell.noiseAmplitude;
+    } else {
+      material.uniforms.uSnellEnabled!.value = false;
+    }
   });
 
   useTask((delta) => {
     material.uniforms.uTime!.value += delta;
+    const cam = camera.current;
+    if (cam) {
+      material.uniforms.uCameraPosition!.value.copy(cam.position);
+    }
   });
 </script>
 
@@ -88,5 +211,5 @@
   rotation.x={-Math.PI / 2}
   {material}
 >
-  <T.PlaneGeometry args={[size, size, 32, 32]} />
+  <T.PlaneGeometry args={[size, size, 64, 64]} />
 </T.Mesh>
