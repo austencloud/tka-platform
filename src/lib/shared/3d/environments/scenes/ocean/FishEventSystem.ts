@@ -44,16 +44,16 @@ export class FishEventSystem {
       const dartSeed = this.traitsData[i * 4 + 3]!;
 
       // Dart timer
-      this.dartTimers[i] -= dt;
-      if (this.dartTimers[i] <= 0 && dartCount < 8) {
+      this.dartTimers[i]! -= dt;
+      if (this.dartTimers[i]! <= 0 && dartCount < 8) {
         dartIndices[dartCount] = i;
         dartCount++;
         this.dartTimers[i] = 8.0 * (1.5 - boldness) + dartSeed * 2.0;
       }
 
       // Vertical excursion timer
-      this.excursionTimers[i] -= dt;
-      if (this.excursionTimers[i] <= 0 && excursionCount < 4) {
+      this.excursionTimers[i]! -= dt;
+      if (this.excursionTimers[i]! <= 0 && excursionCount < 4) {
         excursionIndices[excursionCount] = i;
         excursionBias[excursionCount] = (dartSeed > 0.5 ? 1.0 : -1.0) * 0.5;
         excursionCount++;
