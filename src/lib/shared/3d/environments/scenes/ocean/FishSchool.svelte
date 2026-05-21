@@ -66,8 +66,6 @@
 
   const texSize = $derived(Math.ceil(Math.sqrt(count)));
 
-  /** Number of sub-schools to cluster fish into */
-  const CLUSTER_COUNT = 4;
   /** Radius of each cluster (meters) */
   const CLUSTER_SPREAD = 2.5;
 
@@ -166,7 +164,8 @@
 
   void main() {
     vec2 uv = gl_FragCoord.xy / resolution.xy;
-    vec3 pos = texture2D(texturePosition, uv).xyz;
+    vec4 posData = texture2D(texturePosition, uv);
+    vec3 pos = posData.xyz;
     vec4 velData = texture2D(textureVelocity, uv);
     vec3 vel = velData.xyz;
     float instanceScale = velData.w;
@@ -178,6 +177,9 @@
     float speedMult = traits.r;
     float socialMult = traits.g;
     float boldness = traits.b;
+
+    // Species ID encoded in posData.w: floor(w * 8.0) gives 0-7
+    float mySpecies = floor(posData.w * 8.0);
 
     vec3 sep = vec3(0.0);
     vec3 ali = vec3(0.0);
@@ -191,7 +193,8 @@
     for (float y = 0.0; y < resolution.y; y += 1.0) {
       for (float x = 0.0; x < resolution.x; x += 1.0) {
         vec2 ref = (vec2(x, y) + 0.5) / resolution.xy;
-        vec3 op = texture2D(texturePosition, ref).xyz;
+        vec4 neighborPos = texture2D(texturePosition, ref);
+        vec3 op = neighborPos.xyz;
         if (op.x > 9000.0) continue;
 
         vec3 toNeighbor = op - pos;
@@ -202,15 +205,22 @@
         float cosAngle = dot(forward, normalize(toNeighbor));
         if (cosAngle < uPerceptionCos) continue;
 
+        // Species-aware schooling: same species align/cohere strongly,
+        // different species only separate (avoid collisions)
+        float neighborSpecies = floor(neighborPos.w * 8.0);
+        float sameSpecies = step(0.5, 1.0 - abs(mySpecies - neighborSpecies));
+
+        // Separation applies to ALL fish (avoid collisions regardless of species)
         if (d < uSepDist) {
           sep += normalize(pos - op) * (1.0 - d / uSepDist);
           sepN += 1.0;
         }
-        if (d < uAliDist) {
+        // Alignment and cohesion only with same species
+        if (d < uAliDist && sameSpecies > 0.5) {
           ali += texture2D(textureVelocity, ref).xyz;
           aliN += 1.0;
         }
-        if (d < uAliDist * 1.5) {
+        if (d < uAliDist * 1.5 && sameSpecies > 0.5) {
           coh += op;
           cohN += 1.0;
         }
@@ -498,12 +508,14 @@
     const [hMin, hMax] = swimHeight;
     const [sMin, sMax] = speed;
 
-    // ── Generate cluster centers ───────────────────────────────────────
-    const clusterCenters: { x: number; y: number; z: number; angle: number }[] = [];
-    for (let c = 0; c < CLUSTER_COUNT; c++) {
-      const cAngle = (c / CLUSTER_COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+    // ── Per-species spawn clusters ──────────────────────────────────────
+    // Each species gets its own cluster center so they start separated.
+    // posData.w encodes speciesIndex/8 + small jitter for shader species ID.
+    const speciesClusterCenters: { x: number; y: number; z: number; angle: number }[] = [];
+    for (let s = 0; s < SPECIES.length; s++) {
+      const cAngle = (s / SPECIES.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
       const cR = minR + Math.random() * (maxR - minR);
-      clusterCenters.push({
+      speciesClusterCenters.push({
         x: Math.cos(cAngle) * cR,
         y: gy + hMin + Math.random() * (hMax - hMin),
         z: Math.sin(cAngle) * cR,
@@ -511,14 +523,17 @@
       });
     }
 
-    // ── Initialize positions & velocities with clustered spawning ──────
-    for (let i = 0; i < texSize * texSize; i++) {
-      const idx = i * 4;
-      if (i < count) {
-        // Assign to a cluster (round-robin)
-        const cluster = clusterCenters[i % CLUSTER_COUNT]!;
+    // ── Initialize positions & velocities with species-clustered spawning ──
+    let spawnOffset = 0;
+    for (let s = 0; s < SPECIES.length; s++) {
+      const sCount = modelCounts[s]!;
+      const cluster = speciesClusterCenters[s]!;
+      const speciesId = s / 8.0;
 
-        // Random offset within cluster radius
+      for (let j = 0; j < sCount; j++) {
+        const i = spawnOffset + j;
+        const idx = i * 4;
+
         const offAngle = Math.random() * Math.PI * 2;
         const offR = Math.random() * CLUSTER_SPREAD;
         const offY = (Math.random() - 0.5) * CLUSTER_SPREAD * 0.6;
@@ -526,23 +541,26 @@
         posArr[idx + 0] = cluster.x + Math.cos(offAngle) * offR;
         posArr[idx + 1] = cluster.y + offY;
         posArr[idx + 2] = cluster.z + Math.sin(offAngle) * offR;
-        posArr[idx + 3] = (Math.random() - 0.5) * 1.2; // hue offset
+        posArr[idx + 3] = speciesId + Math.random() * 0.1;
 
-        // Initial velocity: perpendicular to the cluster's radial direction
-        // (so the sub-school is already swimming together in a circular path)
         const perpAngle = cluster.angle + Math.PI / 2;
         const vSpeed = sMin + Math.random() * (sMax - sMin);
         const jitter = (Math.random() - 0.5) * 0.3;
         velArr[idx + 0] = Math.cos(perpAngle + jitter) * vSpeed;
         velArr[idx + 1] = (Math.random() - 0.5) * 0.15;
         velArr[idx + 2] = Math.sin(perpAngle + jitter) * vSpeed;
-        velArr[idx + 3] = 0.6 + Math.random() * 0.8; // instance scale
-      } else {
-        posArr[idx + 0] = 9999;
-        posArr[idx + 1] = 9999;
-        posArr[idx + 2] = 9999;
-        posArr[idx + 3] = 0;
+        velArr[idx + 3] = 0.6 + Math.random() * 0.8;
       }
+      spawnOffset += sCount;
+    }
+
+    // Fill padding texels
+    for (let i = count; i < texSize * texSize; i++) {
+      const idx = i * 4;
+      posArr[idx + 0] = 9999;
+      posArr[idx + 1] = 9999;
+      posArr[idx + 2] = 9999;
+      posArr[idx + 3] = 0;
     }
 
     // ── Traits DataTexture (static, per-fish personality) ─────────────
