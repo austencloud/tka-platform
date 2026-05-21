@@ -339,6 +339,11 @@ export interface OceanSceneConfig {
     targetSize: number;
     swimHeight: [number, number];
     speed: [number, number];
+    currentStrength: number;
+    swimFrequency: number;
+    waveAmplitude: number;
+    scatterRadius: number;
+    perceptionAngle: number;
   };
 
   decorations: {
@@ -943,6 +948,11 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       targetSize: 0.08,
       swimHeight: [2, 7],
       speed: [0.5, 1.2],
+      currentStrength: 0.3,
+      swimFrequency: 5.0,
+      waveAmplitude: 0.08,
+      scatterRadius: 4.0,
+      perceptionAngle: 135,
     },
     decorations: {
       enabled: true,
