@@ -240,12 +240,18 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
       }
     }
     if (components.size > 0) {
+      const sd = isSequenceData(input) ? input : undefined;
+      const period = sd?.period ?? (sd?.orientationCycleCount === 4 ? 4 : 2);
       return {
         components,
         componentDomains,
-        period: 2,
-        rotationPeriod: undefined,
-        inversionPeriod: undefined,
+        period,
+        rotationPeriod: components.has(LOOPComponent.ROTATED)
+          ? period === 4 ? Period.QUARTERED : period === 2 ? Period.HALVED : undefined
+          : undefined,
+        inversionPeriod: components.has(LOOPComponent.INVERTED)
+          ? period === 4 ? Period.QUARTERED : period === 2 ? Period.HALVED : undefined
+          : undefined,
       };
     }
   }

@@ -113,6 +113,45 @@ if (outPath) console.log(`  Output: ${outPath}`);
 console.log("");
 
 // ---------------------------------------------------------------------------
+// Continuous-deck reversal check
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true if the beat steps contain any rotation-direction reversals.
+ * Uses LOOP wrapping — beat 1's "previous" context is the tail of the sequence.
+ * Skips noRotation beats (static/dash) when looking backwards.
+ */
+function hasReversals(beatSteps) {
+  function getRotDir(step, color) {
+    const m = step.motions[color];
+    if (!m) return null;
+    if (m.rotationDirection && m.rotationDirection !== 'noRotation') return m.rotationDirection;
+    if (m.motionType === 'static' || m.motionType === 'dash') return null;
+    return m.rotationDirection || null;
+  }
+
+  function getLastValidDir(steps, endIdx, color) {
+    // Walk backwards (with wrapping) to find last non-null rotation direction
+    for (let offset = 1; offset <= steps.length; offset++) {
+      const idx = (endIdx - offset + steps.length) % steps.length;
+      const dir = getRotDir(steps[idx], color);
+      if (dir) return dir;
+    }
+    return null;
+  }
+
+  for (let i = 0; i < beatSteps.length; i++) {
+    for (const color of ['blue', 'red']) {
+      const current = getRotDir(beatSteps[i], color);
+      if (!current) continue;
+      const prev = getLastValidDir(beatSteps, i, color);
+      if (prev && prev !== current) return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // CSV Loading
 // ---------------------------------------------------------------------------
 
@@ -621,28 +660,21 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     const sliceLabel = slice === "quartered" ? "Quartered" : "Halved";
     const loopLabel = loopType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
-    // Build family data for the deck document
-    const familyDocs = sortedGroups.map(([family, items], idx) => ({
-      id: `family-${idx}`,
-      label: family,
-      typeCombo: family,
-      sequenceIds: items.map(item => `${item.startPos}_${item.seedWord}`),
-    }));
-
-    // Write deck metadata document
-    const deckData = {
-      name: `Level ${level}: ${sliceLabel} ${loopLabel} LOOP`,
-      description: `Complete enumeration of all L${level} ${slice} ${loopLabel} LOOP sequences. ${deduped.length} sequences across ${sortedGroups.length} hand-path families.`,
-      families: familyDocs,
-      totalSequences: deduped.length,
-      gridMode,
-      level,
-      sliceType: slice,
-    };
+    // Track which sequences survive filtering so deck metadata is accurate.
+    // Maps family index → set of written sequence IDs.
+    const writtenByFamily = new Map();
+    for (let i = 0; i < sortedGroups.length; i++) {
+      writtenByFamily.set(i, new Set());
+    }
+    // Reverse map: seedKey → family index
+    const seedToFamilyIdx = new Map();
+    for (let idx = 0; idx < sortedGroups.length; idx++) {
+      for (const item of sortedGroups[idx][1]) {
+        seedToFamilyIdx.set(`${item.startPos}_${item.seedWord}`, idx);
+      }
+    }
 
     console.log(`\nSeeding deck "${deckId}" to Firestore...`);
-    await db.doc(`decks/${deckId}`).set(deckData);
-    console.log(`  Deck document written`);
 
     // Execute LOOP on each seed to produce full circular sequences
     const { loopExecutorSelector } = require("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
@@ -859,14 +891,15 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         continue;
       }
 
-      // Apply reversal pattern to the beat steps (all steps after the start position).
-      // We mutate the engine step objects in-place before converting to Firestore
-      // format so that the letter re-lookup and Firestore conversion both see the
-      // same reversed motion types.
-      //
-      // Apply reversal transformation directly on the motions.blue/motions.red
-      // nested structure used by engine steps.
+      // For continuous decks, reject sequences that contain reversals.
       const beatStepsForReversal = fullSteps.slice(1);
+      if (!reversalPattern || reversalPattern === 'continuous') {
+        if (hasReversals(beatStepsForReversal)) {
+          continue;
+        }
+      }
+
+      // Apply reversal pattern to the beat steps (all steps after the start position).
       if (reversalPattern && reversalPattern !== 'continuous') {
         const patternDef = REVERSAL_PATTERNS[reversalPattern];
         for (let i = 0; i < beatStepsForReversal.length; i++) {
@@ -962,6 +995,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         gridMode,
         isCircular: true,
         loopType: loopType,
+        orientationCycleCount: slice === "quartered" ? 4 : 2,
         reversalPattern: reversalPattern || 'continuous',
         sequenceLength: steps.length,
         level,
@@ -979,6 +1013,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       batchCount++;
       totalWritten++;
 
+      // Track which family this sequence belongs to
+      const familyIdx = seedToFamilyIdx.get(seqId);
+      if (familyIdx !== undefined) writtenByFamily.get(familyIdx).add(seqId);
+
       if (batchCount >= BATCH_SIZE) {
         await batch.commit();
         console.log(`  Written ${totalWritten}/${deduped.length} sequences...`);
@@ -992,7 +1030,33 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       await batch.commit();
     }
 
+    // Build deck metadata with only the sequences that survived filtering
+    const familyDocs = sortedGroups.map(([family], idx) => {
+      const ids = [...writtenByFamily.get(idx)];
+      return { id: `family-${idx}`, label: family, typeCombo: family, sequenceIds: ids };
+    }).filter(f => f.sequenceIds.length > 0);
+
+    const deckData = {
+      name: `Level ${level}: ${sliceLabel} ${loopLabel} LOOP`,
+      description: `Complete enumeration of all L${level} ${slice} ${loopLabel} LOOP sequences. ${totalWritten} sequences across ${familyDocs.length} hand-path families.`,
+      families: familyDocs,
+      totalSequences: totalWritten,
+      gridMode,
+      level,
+      collection: 'LOOPs',
+      loopType,
+      sliceType: slice,
+      stepCount: seedLength * (slice === 'quartered' ? 4 : 2),
+      turnPattern: '0-turn',
+      reversalPattern: reversalPattern || 'continuous',
+    };
+
+    await db.doc(`decks/${deckId}`).set(deckData);
+    console.log(`  Deck document written`);
     console.log(`  Done! ${totalWritten} sequences written to decks/${deckId}/sequences/`);
+    if (totalWritten < deduped.length) {
+      console.log(`  Filtered out ${deduped.length - totalWritten} sequences with reversals (continuous deck)`);
+    }
   }
 
   if (!outPath && !seedFirestore) {

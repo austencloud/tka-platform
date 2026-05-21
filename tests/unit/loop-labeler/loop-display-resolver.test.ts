@@ -55,8 +55,20 @@ describe("resolveLoopDisplay", () => {
       const result = resolveLoopDisplay(seq);
 
       expect(result.components.has(LOOPComponent.ROTATED)).toBe(true);
-      // Stored path can't recover slice size from a string — stays undefined.
-      expect(result.rotationPeriod).toBeUndefined();
+      expect(result.rotationPeriod).toBe(Period.HALVED);
+    });
+
+    it("detects quartered from orientationCycleCount", () => {
+      const seq = makeSequenceData("stored-quartered", {
+        loopType: LOOPType.ROTATED,
+        orientationCycleCount: 4,
+      });
+
+      const result = resolveLoopDisplay(seq);
+
+      expect(result.components.has(LOOPComponent.ROTATED)).toBe(true);
+      expect(result.rotationPeriod).toBe(Period.QUARTERED);
+      expect(result.period).toBe(4);
     });
 
     it("parses multiple components from a compound loopType", () => {
