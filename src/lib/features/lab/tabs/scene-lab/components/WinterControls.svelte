@@ -182,17 +182,7 @@
 </ParamPanel>
 
 {#if cfg.pond}
-  <ParamPanel title="Frozen pond" defaultOpen={false}>
-    <ParamSlider
-      label="Enabled"
-      value={cfg.pond.enabled ? 1 : 0}
-      min={0}
-      max={1}
-      step={1}
-      onChange={(v) => {
-        if (state.winterConfig.pond) state.winterConfig.pond.enabled = v > 0.5;
-      }}
-    />
+  <ParamPanel title="Frozen pond" defaultOpen={false} enabled={cfg.pond.enabled} onToggle={(v) => { if (state.winterConfig.pond) state.winterConfig.pond.enabled = v; }}>
     <ParamColor
       label="Ice color"
       value={cfg.pond.color}
@@ -247,18 +237,7 @@
 {/if}
 
 {#if cfg.campfire}
-  <ParamPanel title="Campfire" defaultOpen={false}>
-    <ParamSlider
-      label="Enabled"
-      value={cfg.campfire.enabled ? 1 : 0}
-      min={0}
-      max={1}
-      step={1}
-      onChange={(v) => {
-        if (state.winterConfig.campfire)
-          state.winterConfig.campfire.enabled = v > 0.5;
-      }}
-    />
+  <ParamPanel title="Campfire" defaultOpen={false} enabled={cfg.campfire.enabled} onToggle={(v) => { if (state.winterConfig.campfire) state.winterConfig.campfire.enabled = v; }}>
     <ParamSlider
       label="Fire scale"
       value={cfg.campfire.fireScale}
@@ -324,18 +303,7 @@
 </ParamPanel>
 
 {#if cfg.moonLight}
-  <ParamPanel title="Moon (directional light)" defaultOpen={false}>
-    <ParamSlider
-      label="Enabled"
-      value={cfg.moonLight.enabled ? 1 : 0}
-      min={0}
-      max={1}
-      step={1}
-      onChange={(v) => {
-        if (state.winterConfig.moonLight)
-          state.winterConfig.moonLight.enabled = v > 0.5;
-      }}
-    />
+  <ParamPanel title="Moon (directional light)" defaultOpen={false} enabled={cfg.moonLight.enabled} onToggle={(v) => { if (state.winterConfig.moonLight) state.winterConfig.moonLight.enabled = v; }}>
     <ParamColor
       label="Color"
       value={cfg.moonLight.color}

@@ -1,11 +1,4 @@
 <script lang="ts">
-  /**
-   * ForestControls
-   *
-   * Param controls bound to a ForestSceneConfig (either firefly or autumn variant).
-   * Same pattern as WinterControls but for the forest config shape.
-   */
-
   import ParamPanel from "./ParamPanel.svelte";
   import ParamSlider from "./ParamSlider.svelte";
   import ParamColor from "./ParamColor.svelte";
@@ -13,10 +6,10 @@
 
   const { state } = getSceneLabContext();
 
-  const cfg = $derived(state.forestFireflyConfig);
+  const cfg = $derived(state.forestConfig);
 
   function mutable() {
-    return state.forestFireflyConfig;
+    return state.forestConfig;
   }
 </script>
 

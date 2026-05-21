@@ -125,14 +125,12 @@
           {/if}
         {:else if sceneState.sceneId === "winter"}
           <WinterControls />
-        {:else if sceneState.sceneId === "cosmic-night"}
-          <CosmicControls variant="night" />
-        {:else if sceneState.sceneId === "cosmic-aurora"}
-          <CosmicControls variant="aurora" />
-        {:else if sceneState.sceneId.startsWith("ocean")}
-          <OceanControls />
-        {:else if sceneState.sceneId.startsWith("forest")}
+        {:else if sceneState.sceneId === "forest"}
           <ForestControls />
+        {:else if sceneState.sceneId === "cosmic"}
+          <CosmicControls />
+        {:else if sceneState.sceneId === "ocean"}
+          <OceanControls />
         {/if}
       </div>
     </aside>
