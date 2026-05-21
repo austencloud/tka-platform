@@ -690,6 +690,10 @@ export function createAvatarInstanceState(
     _settings = { ..._settings, effects: next };
   }
 
+  function setStaffLengthCm(cm: number | null): void {
+    _settings = { ..._settings, staffLengthCm: cm };
+  }
+
   /**
    * Update locomotion state each frame. Lerps facing angle toward
    * target for smooth avatar rotation in third-person mode.
@@ -873,6 +877,7 @@ export function createAvatarInstanceState(
     setEffort,
     setProp,
     toggleEffect,
+    setStaffLengthCm,
   };
 }
 

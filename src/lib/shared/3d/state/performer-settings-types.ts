@@ -15,6 +15,7 @@ export interface PerformerSettings {
   effortId: EffortId;
   prop: PropType;
   effects: Set<EffectId>;
+  staffLengthCm: number | null;
 }
 
 export function makeDefaultPerformerSettings(): PerformerSettings {
@@ -22,5 +23,6 @@ export function makeDefaultPerformerSettings(): PerformerSettings {
     effortId: "linear",
     prop: PropType.STAFF,
     effects: new Set(),
+    staffLengthCm: null,
   };
 }
