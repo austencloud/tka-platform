@@ -95,15 +95,12 @@
   function handlePointerDown(event: PointerEvent) {
     const intersection = findIntersection(event);
     if (intersection && onMeshClick) {
-      // Check if the clicked mesh belongs to a performer
       const performerId = findPerformerAncestor(intersection.object);
       if (performerId) {
-        // Create a virtual object with the performer name for identification
         const virtualMesh = new THREE.Object3D();
         virtualMesh.name = `PERFORMER_${performerId}`;
         onMeshClick(virtualMesh, intersection.point);
       } else {
-        // Not a performer - pass through the original mesh
         onMeshClick(intersection.object, intersection.point);
       }
     }
@@ -129,7 +126,6 @@
       return; // Skip hover logic during drag
     }
 
-    // Normal hover detection when not dragging
     const intersection = findIntersection(event);
     const hitObject = intersection?.object ?? null;
 
@@ -144,24 +140,33 @@
     }
   }
 
-  onMount(() => {
-    // Get the canvas from the renderer - guard against renderer not yet initialized
+  function bindEvents() {
     canvasElement = renderer?.current?.domElement ?? null;
-    if (!canvasElement) {
-      console.warn("[ManualRaycaster] Renderer not ready at mount, skipping event setup");
-      return;
-    }
-
+    if (!canvasElement) return false;
     canvasElement.addEventListener("pointerdown", handlePointerDown);
     canvasElement.addEventListener("pointerup", handlePointerUp);
     canvasElement.addEventListener("pointermove", handlePointerMove);
-  });
+    return true;
+  }
 
-  onDestroy(() => {
+  function unbindEvents() {
     if (canvasElement) {
       canvasElement.removeEventListener("pointerdown", handlePointerDown);
       canvasElement.removeEventListener("pointerup", handlePointerUp);
       canvasElement.removeEventListener("pointermove", handlePointerMove);
     }
+  }
+
+  onMount(() => {
+    if (bindEvents()) return;
+    let attempts = 0;
+    const id = setInterval(() => {
+      if (bindEvents() || ++attempts > 20) clearInterval(id);
+    }, 50);
+    return () => clearInterval(id);
+  });
+
+  onDestroy(() => {
+    unbindEvents();
   });
 </script>

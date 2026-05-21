@@ -131,8 +131,8 @@ export function planeAngleToWorldPosition(
       return new Vector3(0, -sin_a * radius, cos_a * radius);
 
     case Plane.FLOOR:
-      // Same X negate as wall
-      return new Vector3(-cos_a * radius, 0, sin_a * radius);
+      // X negated like wall; Z negated so NORTH (-π/2) maps to +Z (downstage)
+      return new Vector3(-cos_a * radius, 0, -sin_a * radius);
 
     default: {
       // Fusion planes: project angle onto derived up/right basis.
@@ -155,7 +155,7 @@ export function getPlaneUp(plane: Plane): Vector3 {
     case Plane.WHEEL:
       return new Vector3(0, 1, 0);    // N = up
     case Plane.FLOOR:
-      return new Vector3(0, 0, -1);   // N = toward audience (but -Z in floor coords)
+      return new Vector3(0, 0, 1);    // N = downstage (+Z toward audience)
     default:
       return deriveUpRight(PLANE_NORMALS[plane]).up;
   }

@@ -17,30 +17,25 @@
   const bluePlane = $derived(avatarState?.customBluePlane ?? Plane.WALL);
   const redPlane = $derived(avatarState?.customRedPlane ?? Plane.WALL);
 
-  function isImplicit(plane: Plane): boolean {
+  function hasHandOnPlane(plane: Plane): boolean {
     return bluePlane === plane || redPlane === plane;
   }
 
-  function isForceShown(plane: Plane): boolean {
-    return viewer.visiblePlanes.has(plane) && !isImplicit(plane);
-  }
-
   function isVisible(plane: Plane): boolean {
-    return isImplicit(plane) || isForceShown(plane);
+    return viewer.visiblePlanes.has(plane);
   }
 
   const isPlaneStateNonDefault = $derived(
     (avatarState?.customBluePlane ?? Plane.WALL) !== Plane.WALL ||
     (avatarState?.customRedPlane ?? Plane.WALL) !== Plane.WALL ||
     (avatarState?.hasStepOverrides ?? false) ||
-    PLANES.some(({ plane }) => isForceShown(plane))
+    viewer.visiblePlanes.size > 0
   );
 
   const hasStepOverrides = $derived(avatarState?.hasStepOverrides ?? false);
 
   function handlePlaneToggleClick(e: MouseEvent, plane: Plane) {
     e.stopPropagation();
-    if (isImplicit(plane)) return;
     viewer.togglePlane(plane);
   }
 
@@ -60,11 +55,7 @@
     for (const p of viewer.scopedPerformers()) {
       p.clearBeatPlaneOverrides();
     }
-    for (const { plane } of PLANES) {
-      if (isForceShown(plane)) {
-        viewer.togglePlane(plane);
-      }
-    }
+    viewer.hideAllPlanes();
   }
 </script>
 
@@ -88,12 +79,12 @@
     <div class="pop-body">
       <div class="plane-matrix">
         {#each PLANES as { plane, label }}
-          {@const implicit = isImplicit(plane)}
+          {@const handAssigned = hasHandOnPlane(plane)}
           {@const visible = isVisible(plane)}
           {@const color = PLANE_COLORS[plane]}
           <div
             class="plane-row"
-            class:with-hand={implicit}
+            class:with-hand={handAssigned}
             class:hidden-row={!visible}
           >
             <div class="plane-left">
@@ -101,12 +92,10 @@
                 class="plane-toggle"
                 class:visible
                 class:hidden={!visible}
-                class:implicit
                 style="--dot-color: {color};"
                 onclick={(e) => handlePlaneToggleClick(e, plane)}
                 aria-pressed={visible}
-                aria-disabled={implicit}
-                aria-label={`${label} plane - ${implicit ? 'locked visible, hand assigned' : (visible ? 'force-shown, click to hide' : 'hidden, click to show')}`}
+                aria-label={`${label} plane - ${visible ? 'visible, click to hide' : 'hidden, click to show'}`}
               >
                 <i
                   class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
@@ -133,6 +122,21 @@
             </div>
           </div>
         {/each}
+      </div>
+
+      <div class="label-toggle-row">
+        <span class="toggle-label">Location labels</span>
+        <button
+          class="label-toggle"
+          class:active={viewer.showGridLabels}
+          onclick={(e) => { e.stopPropagation(); viewer.toggleGridLabels(); }}
+          aria-pressed={viewer.showGridLabels}
+          aria-label="Toggle grid location labels"
+        >
+          <span class="toggle-track">
+            <span class="toggle-thumb"></span>
+          </span>
+        </button>
       </div>
 
       {#if isPlaneStateNonDefault}
@@ -273,11 +277,7 @@
     color: var(--dot-color);
   }
 
-  .plane-toggle.implicit {
-    cursor: default;
-  }
-
-  .plane-toggle:hover:not(.implicit) {
+  .plane-toggle:hover {
     transform: scale(1.1);
   }
 
@@ -356,6 +356,60 @@
     border-color: rgba(255, 255, 255, 0.25);
     background: rgba(255, 255, 255, 0.08);
     transform: translateY(-1px);
+  }
+
+  .label-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    margin-top: 6px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .toggle-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .label-toggle {
+    position: relative;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .toggle-track {
+    display: block;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.12);
+    transition: background 180ms ease;
+    position: relative;
+  }
+
+  .label-toggle.active .toggle-track {
+    background: rgba(139, 92, 246, 0.7);
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    transition: transform 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+  }
+
+  .label-toggle.active .toggle-thumb {
+    transform: translateX(16px);
   }
 
   .reset-btn.with-overrides .override-badge {

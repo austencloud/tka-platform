@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 import { createViewer3DStateForTest } from "./viewer3d-test-helpers.svelte";
-import { Viewer3DUndoManager } from "$lib/shared/3d/services/implementations/Viewer3DUndoManager";
+import { Viewer3DUndoManager } from "@austencloud/scene-3d";
 import { __resetWebGL2CapabilityForTests } from "$lib/shared/3d/capabilities/webgl-capabilities";
 
 // The jsdom test environment doesn't implement canvas.getContext. Patch

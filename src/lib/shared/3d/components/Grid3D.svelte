@@ -12,7 +12,8 @@
    * Grid3D in positioned T.Groups). This component is pure content.
    */
 
-  import { T } from "@threlte/core";
+  import { T, useThrelte, useTask } from "@threlte/core";
+  import { Vector3 } from "three";
   import GridPlane from "./GridPlane.svelte";
   import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
   import type { GridMode } from "@austencloud/scene-3d";
@@ -42,8 +43,39 @@
     label,
   }: Props = $props();
 
-  // Use user proportions as default if size not explicitly provided
   const effectiveSize = $derived(size ?? userProportionsState.gridSize);
+
+  const { camera } = useThrelte();
+
+  const PLANE_NORMALS: Record<Plane, Vector3> = {
+    [Plane.WALL]: new Vector3(0, 0, 1),
+    [Plane.WHEEL]: new Vector3(1, 0, 0),
+    [Plane.FLOOR]: new Vector3(0, 1, 0),
+  };
+
+  const _viewDir = new Vector3();
+  let labelPlane = $state<Plane | null>(null);
+
+  useTask(() => {
+    if (!showLabels) { labelPlane = null; return; }
+
+    const cam = camera.current;
+    cam.getWorldDirection(_viewDir);
+
+    let bestPlane: Plane | null = null;
+    let bestDot = -1;
+
+    for (const p of [Plane.WALL, Plane.WHEEL, Plane.FLOOR]) {
+      if (!visiblePlanes.has(p)) continue;
+      const dot = Math.abs(_viewDir.dot(PLANE_NORMALS[p]));
+      if (dot > bestDot) {
+        bestDot = dot;
+        bestPlane = p;
+      }
+    }
+
+    labelPlane = bestPlane;
+  });
 </script>
 
 <!-- Wall plane (purple) -->
@@ -52,7 +84,7 @@
     plane={Plane.WALL}
     color={PLANE_COLORS[Plane.WALL]}
     opacity={planeOpacity}
-    {showLabels}
+    showLabels={labelPlane === Plane.WALL}
     size={effectiveSize}
     {gridMode}
   />
@@ -64,7 +96,7 @@
     plane={Plane.WHEEL}
     color={PLANE_COLORS[Plane.WHEEL]}
     opacity={planeOpacity}
-    {showLabels}
+    showLabels={labelPlane === Plane.WHEEL}
     size={effectiveSize}
     {gridMode}
   />
@@ -76,7 +108,7 @@
     plane={Plane.FLOOR}
     color={PLANE_COLORS[Plane.FLOOR]}
     opacity={planeOpacity}
-    {showLabels}
+    showLabels={labelPlane === Plane.FLOOR}
     size={effectiveSize}
     {gridMode}
   />

@@ -2,7 +2,7 @@
   import { T } from "@threlte/core";
   import { HTML } from "@threlte/extras";
   import { DoubleSide } from "three";
-  import { Plane, PLANE_LABELS } from "@austencloud/scene-3d";
+  import { Plane } from "@austencloud/scene-3d";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
   import { planeAngleToWorldPosition } from "../domain/constants/plane-transforms";
@@ -75,18 +75,7 @@
     [GridLocation.CENTER]: "C",
   };
 
-  const planeLabelPosition = $derived.by((): [number, number, number] => {
-    switch (plane) {
-      case Plane.WALL:
-        return [0, effectiveSize * 0.9, 0];
-      case Plane.WHEEL:
-        return [0, effectiveSize * 0.9, 0];
-      case Plane.FLOOR:
-        return [0, 0, -effectiveSize * 0.9];
-      default:
-        return [0, effectiveSize * 0.9, 0];
-    }
-  });
+
 </script>
 
 <!-- Plane group with rotation -->
@@ -140,13 +129,6 @@
     <T.MeshBasicMaterial {color} />
   </T.Mesh>
 
-  {#if showLabels}
-    <T.Group position={[pos[0] * 1.12, pos[1] * 1.12, pos[2] * 1.12]}>
-      <HTML center sprite>
-        <span class="grid-label hand">{locationLabels[location]}</span>
-      </HTML>
-    </T.Group>
-  {/if}
 {/each}
 
 <!-- Outer point markers (smaller, at outer radius) -->
@@ -160,44 +142,24 @@
   {#if showLabels}
     <T.Group position={[pos[0] * 1.08, pos[1] * 1.08, pos[2] * 1.08]}>
       <HTML center sprite>
-        <span class="grid-label outer">{locationLabels[location]}</span>
+        <span class="grid-label" style="color: {color};">{locationLabels[location]}</span>
       </HTML>
     </T.Group>
   {/if}
 {/each}
 
-<!-- Plane label -->
-{#if showLabels}
-  <T.Group position={planeLabelPosition}>
-    <HTML center sprite>
-      <span class="grid-label plane" style="color: {color}">
-        {PLANE_LABELS[plane]}
-      </span>
-    </HTML>
-  </T.Group>
-{/if}
 
 <style>
   .grid-label {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 9px;
+    font-weight: 700;
     white-space: nowrap;
     pointer-events: none;
     user-select: none;
     text-shadow:
-      -1px -1px 0 rgba(0, 0, 0, 0.5),
-      1px -1px 0 rgba(0, 0, 0, 0.5),
-      -1px 1px 0 rgba(0, 0, 0, 0.5),
-      1px 1px 0 rgba(0, 0, 0, 0.5);
-  }
-  .grid-label.hand {
-    color: #ffffff;
-  }
-  .grid-label.outer {
-    color: #9ca3af;
-    font-size: 8px;
-  }
-  .grid-label.plane {
-    font-size: 12px;
+      -1px -1px 0 rgba(0, 0, 0, 0.6),
+      1px -1px 0 rgba(0, 0, 0, 0.6),
+      -1px 1px 0 rgba(0, 0, 0, 0.6),
+      1px 1px 0 rgba(0, 0, 0, 0.6);
   }
 </style>

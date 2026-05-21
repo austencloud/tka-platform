@@ -211,24 +211,12 @@
     if (!controlsInstance) return;
 
     if (spherical) {
-      console.log('[TOP-DIAG] inputs:', JSON.stringify({ targetPos, targetLookAt, spherical }));
       controlsInstance.setLookAt(
         targetPos.x, targetPos.y, targetPos.z,
         targetLookAt.x, targetLookAt.y, targetLookAt.z,
         true,
       );
       controlsInstance.rotateTo(spherical.azimuth, spherical.polar, false);
-      const _p = new THREE.Vector3();
-      const _t = new THREE.Vector3();
-      controlsInstance.getPosition(_p);
-      controlsInstance.getTarget(_t);
-      console.log('[TOP-DIAG] immediate pos:', _p.toArray(), 'tgt:', _t.toArray());
-      setTimeout(() => {
-        controlsInstance!.getPosition(_p);
-        controlsInstance!.getTarget(_t);
-        console.log('[TOP-DIAG] after 1s pos:', _p.toArray(), 'tgt:', _t.toArray());
-        console.log('[TOP-DIAG] azimuth:', controlsInstance!.azimuthAngle, 'polar:', controlsInstance!.polarAngle);
-      }, 1000);
     } else {
       controlsInstance.setLookAt(
         targetPos.x,
