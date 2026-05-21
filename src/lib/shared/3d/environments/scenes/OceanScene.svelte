@@ -37,9 +37,10 @@
     variant?: OceanVariant;
     config?: OceanSceneConfig;
     minPlatformRadius?: number;
+    minPlatformExtents?: { halfW: number; halfD: number };
   }
 
-  let { variant = "abyss", config, minPlatformRadius = 0 }: Props = $props();
+  let { variant = "abyss", config, minPlatformRadius = 0, minPlatformExtents }: Props = $props();
 
   const VARIANT_CONFIGS: Record<OceanVariant, () => OceanSceneConfig> = {
     abyss: createDefaultOceanAbyssConfig,
@@ -51,18 +52,19 @@
   const baseConfig = $derived(config ?? VARIANT_CONFIGS[variant]());
 
   const activeConfig = $derived.by(() => {
-    if (minPlatformRadius <= 0) return baseConfig;
-    const minWidth = minPlatformRadius * 2;
-    const minDepth = minPlatformRadius * 2 * 0.75;
-    if (minWidth <= baseConfig.platform.width && minDepth <= baseConfig.platform.depth) {
+    const ext = minPlatformExtents;
+    if (!ext || (ext.halfW <= 0 && ext.halfD <= 0)) return baseConfig;
+    const neededW = ext.halfW * 2;
+    const neededD = ext.halfD * 2;
+    if (neededW <= baseConfig.platform.width && neededD <= baseConfig.platform.depth) {
       return baseConfig;
     }
     return {
       ...baseConfig,
       platform: {
         ...baseConfig.platform,
-        width: Math.max(baseConfig.platform.width, minWidth),
-        depth: Math.max(baseConfig.platform.depth, minDepth),
+        width: Math.max(baseConfig.platform.width, neededW),
+        depth: Math.max(baseConfig.platform.depth, neededD),
       },
     };
   });
