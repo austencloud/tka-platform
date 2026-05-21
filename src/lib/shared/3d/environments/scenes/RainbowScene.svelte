@@ -21,6 +21,19 @@
   } from "three";
   import { onDestroy, untrack } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import PrismPlatform from "./rainbow/PrismPlatform.svelte";
+  import {
+    type RainbowSceneConfig,
+    createDefaultRainbowConfig,
+  } from "../domain/models/scene-configs";
+
+  interface Props {
+    config?: RainbowSceneConfig;
+  }
+
+  let { config }: Props = $props();
+
+  const activeConfig = $derived(config ?? createDefaultRainbowConfig());
 
   const sceneFeatures = getSceneFeatureContext();
   $effect(() => {
@@ -692,3 +705,5 @@
   sizeRange={[0.008, 0.025]}
   spin={false}
 />
+
+<PrismPlatform config={activeConfig.platform} />

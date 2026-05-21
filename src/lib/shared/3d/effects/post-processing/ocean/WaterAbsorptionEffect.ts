@@ -10,8 +10,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   float depth = readDepth(uv);
   float linearDepth = depth * maxDepth;
 
-  // Beer-Lambert per-channel absorption
-  // Red attenuates fastest, green next, blue last — physically correct
+  // Beer-Lambert per-channel absorption — red dies first
   vec3 transmittance = exp(-absorptionCoeff * linearDepth);
 
   // In-scattering: water column glows faintly toward scatter color

@@ -23,6 +23,7 @@
   } from "../domain/models/scene-configs";
   import { onMount } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import Stage3D from "../../components/Stage3D.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
   import { Vector3, FogExp2, Color } from "three";
   import { onDestroy } from "svelte";
@@ -365,3 +366,5 @@
     rotation.y={activeConfig.tent.rotationY}
   />
 {/if}
+
+<Stage3D />

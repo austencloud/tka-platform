@@ -19,6 +19,8 @@
   import EmberControls from "./components/EmberControls.svelte";
   import CherryBlossomControls from "./components/CherryBlossomControls.svelte";
   import CelestialControls from "./components/CelestialControls.svelte";
+  import RainbowControls from "./components/RainbowControls.svelte";
+  import PureBlackControls from "./components/PureBlackControls.svelte";
   import ComposerPickerPanel from "$lib/shared/3d/scene-composer/ComposerPickerPanel.svelte";
   import { createComposerEditorState } from "$lib/shared/3d/scene-composer/composer-editor-state.svelte";
   import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
@@ -144,6 +146,10 @@
           <CherryBlossomControls />
         {:else if sceneState.sceneId === "celestial"}
           <CelestialControls />
+        {:else if sceneState.sceneId === "rainbow"}
+          <RainbowControls />
+        {:else if sceneState.sceneId === "pure-black"}
+          <PureBlackControls />
         {:else}
           <p class="no-controls">No tunable parameters</p>
         {/if}

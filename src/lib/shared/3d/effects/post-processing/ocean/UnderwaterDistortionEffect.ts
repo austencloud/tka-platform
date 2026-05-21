@@ -5,19 +5,19 @@ const fragmentShader = /* glsl */ `
 uniform float strength;
 uniform float frequency;
 uniform float speed;
+uniform float maxDepth;
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
   float depth = readDepth(uv);
 
-  // Stronger distortion for distant objects, subtle for near
-  float depthFactor = smoothstep(0.0, 0.4, depth);
+  float depthFactor = smoothstep(0.05, 0.6, depth);
 
   // Animated 2D noise for organic underwater ripple
   float t = time * speed;
   float nx = sin(uv.y * frequency + t * 0.7) * cos(uv.x * frequency * 0.8 + t * 0.3);
   float ny = cos(uv.x * frequency + t * 0.5) * sin(uv.y * frequency * 1.2 - t * 0.6);
 
-  // Add a second octave for more organic feel
+  // Second octave for organic feel
   nx += sin(uv.y * frequency * 2.3 + t * 1.1) * 0.5;
   ny += cos(uv.x * frequency * 1.9 - t * 0.9) * 0.5;
 
@@ -35,6 +35,7 @@ export interface UnderwaterDistortionOptions {
   strength?: number;
   frequency?: number;
   speed?: number;
+  maxDepth?: number;
 }
 
 export class UnderwaterDistortionEffect extends Effect {
@@ -43,6 +44,7 @@ export class UnderwaterDistortionEffect extends Effect {
     strength = 0.003,
     frequency = 12.0,
     speed = 0.8,
+    maxDepth = 100.0,
   }: UnderwaterDistortionOptions = {}) {
     super("UnderwaterDistortionEffect", fragmentShader, {
       blendFunction,
@@ -51,6 +53,7 @@ export class UnderwaterDistortionEffect extends Effect {
         ["strength", new Uniform(strength)],
         ["frequency", new Uniform(frequency)],
         ["speed", new Uniform(speed)],
+        ["maxDepth", new Uniform(maxDepth)],
       ]),
     });
   }

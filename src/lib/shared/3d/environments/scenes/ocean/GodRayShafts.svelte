@@ -30,16 +30,19 @@
     varying float vWorldY;
 
     void main() {
-      float centerFade = 1.0 - abs(vUv.x - 0.5) * 2.0;
-      centerFade = pow(centerFade, 2.5);
+      // Soft gaussian-ish center fade — broad and gentle
+      float cx = (vUv.x - 0.5) * 2.0;
+      float centerFade = exp(-cx * cx * 2.0);
 
-      float verticalFade = smoothstep(0.0, 0.3, vUv.y) * smoothstep(1.0, 0.6, vUv.y);
+      // Gentle vertical fade — strongest in middle, fades at both ends
+      float verticalFade = smoothstep(0.0, 0.15, vUv.y) * smoothstep(1.0, 0.7, vUv.y);
 
-      float shimmer = 0.7 + 0.3 * sin(vWorldY * 3.0 + uTime * 1.5);
-      shimmer *= 0.8 + 0.2 * sin(vWorldY * 7.0 - uTime * 0.8);
+      // Slow, layered shimmer for organic caustic-like variation
+      float shimmer = 0.75 + 0.25 * sin(vWorldY * 1.5 + uTime * 0.8);
+      shimmer *= 0.85 + 0.15 * sin(vWorldY * 3.5 - uTime * 0.5);
 
       float alpha = centerFade * verticalFade * shimmer * uIntensity;
-      gl_FragColor = vec4(uColor * alpha, alpha * 0.6);
+      gl_FragColor = vec4(uColor * alpha, alpha * 0.4);
     }
   `;
 
@@ -69,12 +72,14 @@
   const shafts = $derived(
     Array.from({ length: config.count }, (_, i) => {
       const angle = (i / config.count) * Math.PI * 2 + 0.7;
-      const radius = 6 + Math.sin(i * 2.3) * 3;
+      const radius = 5 + Math.sin(i * 2.3) * 4;
+      const widthVariation = 0.7 + Math.sin(i * 3.1) * 0.3;
       return {
         x: Math.cos(angle) * radius,
         z: Math.sin(angle) * radius,
-        rotY: angle + Math.PI * 0.5,
-        tilt: 0.15 + Math.sin(i * 1.7) * 0.1,
+        rotY: angle + Math.PI * 0.5 + Math.sin(i * 1.3) * 0.3,
+        tilt: 0.08 + Math.sin(i * 1.7) * 0.06,
+        widthScale: widthVariation,
       };
     }),
   );
@@ -89,6 +94,6 @@
     rotation.z={shaft.tilt}
     {material}
   >
-    <T.PlaneGeometry args={[config.width, config.height]} />
+    <T.PlaneGeometry args={[config.width * shaft.widthScale, config.height]} />
   </T.Mesh>
 {/each}

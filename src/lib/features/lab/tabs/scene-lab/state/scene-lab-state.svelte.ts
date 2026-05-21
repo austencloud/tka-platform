@@ -7,6 +7,8 @@ import {
   type EmberSceneConfig,
   type CherryBlossomSceneConfig,
   type CelestialSceneConfig,
+  type RainbowSceneConfig,
+  type PureBlackSceneConfig,
   createDefaultAutumnConfig,
   createDefaultForestFireflyConfig,
   createDefaultWinterConfig,
@@ -16,6 +18,8 @@ import {
   createDefaultEmberGlowConfig,
   createDefaultCherryBlossomConfig,
   createDefaultCelestialConfig,
+  createDefaultRainbowConfig,
+  createDefaultPureBlackConfig,
 } from "$lib/shared/3d/environments/domain/models/scene-configs";
 import type { SceneId } from "../domain/scene-lab-types";
 import type { CosmicVariant } from "../services/scene-lab-persistence";
@@ -42,9 +46,12 @@ export function createSceneLabState() {
   let cosmicAuroraConfig = $state<CosmicSceneConfig>(
     persisted?.configs.cosmicAurora ?? createDefaultCosmicAuroraConfig()
   );
+  const oceanDefaults = createDefaultOceanReefConfig();
   const persistedOcean = persisted?.configs.ocean;
   let oceanConfig = $state<OceanSceneConfig>(
-    persistedOcean && "zones" in persistedOcean ? persistedOcean : createDefaultOceanReefConfig()
+    persistedOcean && "zones" in persistedOcean
+      ? { ...oceanDefaults, ...persistedOcean }
+      : oceanDefaults
   );
   let emberConfig = $state<EmberSceneConfig>(
     persisted?.configs.ember ?? createDefaultEmberGlowConfig()
@@ -54,6 +61,12 @@ export function createSceneLabState() {
   );
   let celestialConfig = $state<CelestialSceneConfig>(
     persisted?.configs.celestial ?? createDefaultCelestialConfig()
+  );
+  let rainbowConfig = $state<RainbowSceneConfig>(
+    persisted?.configs.rainbow ?? createDefaultRainbowConfig()
+  );
+  let pureBlackConfig = $state<PureBlackSceneConfig>(
+    persisted?.configs.pureBlack ?? createDefaultPureBlackConfig()
   );
 
   $effect(() => {
@@ -71,6 +84,8 @@ export function createSceneLabState() {
         ember: emberConfig,
         cherryBlossom: cherryBlossomConfig,
         celestial: celestialConfig,
+        rainbow: rainbowConfig,
+        pureBlack: pureBlackConfig,
       },
     });
     const timer = setTimeout(() => {
@@ -96,6 +111,8 @@ export function createSceneLabState() {
       case "ember": emberConfig = createDefaultEmberGlowConfig(); break;
       case "cherry-blossom": cherryBlossomConfig = createDefaultCherryBlossomConfig(); break;
       case "celestial": celestialConfig = createDefaultCelestialConfig(); break;
+      case "rainbow": rainbowConfig = createDefaultRainbowConfig(); break;
+      case "pure-black": pureBlackConfig = createDefaultPureBlackConfig(); break;
     }
   }
 
@@ -109,6 +126,8 @@ export function createSceneLabState() {
       case "ember": return $state.snapshot(emberConfig);
       case "cherry-blossom": return $state.snapshot(cherryBlossomConfig);
       case "celestial": return $state.snapshot(celestialConfig);
+      case "rainbow": return $state.snapshot(rainbowConfig);
+      case "pure-black": return $state.snapshot(pureBlackConfig);
       default: return {};
     }
   }
@@ -123,6 +142,8 @@ export function createSceneLabState() {
       case "ember": return "createDefaultEmberGlowConfig";
       case "cherry-blossom": return "createDefaultCherryBlossomConfig";
       case "celestial": return "createDefaultCelestialConfig";
+      case "rainbow": return "createDefaultRainbowConfig";
+      case "pure-black": return "createDefaultPureBlackConfig";
       default: return "createDefaultWinterConfig";
     }
   }
@@ -137,6 +158,8 @@ export function createSceneLabState() {
       case "ember": return "EmberSceneConfig";
       case "cherry-blossom": return "CherryBlossomSceneConfig";
       case "celestial": return "CelestialSceneConfig";
+      case "rainbow": return "RainbowSceneConfig";
+      case "pure-black": return "PureBlackSceneConfig";
       default: return "unknown";
     }
   }
@@ -161,6 +184,8 @@ export function createSceneLabState() {
     get emberConfig() { return emberConfig; },
     get cherryBlossomConfig() { return cherryBlossomConfig; },
     get celestialConfig() { return celestialConfig; },
+    get rainbowConfig() { return rainbowConfig; },
+    get pureBlackConfig() { return pureBlackConfig; },
     resetCurrent,
     copyCurrentToClipboard,
   };

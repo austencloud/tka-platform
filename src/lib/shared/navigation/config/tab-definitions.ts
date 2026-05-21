@@ -810,8 +810,8 @@ export const LAB_TABS: Section[] = [
   },
   // avatar removed (Mar 2026)
   {
-    id: "backgrounds",
-    label: "Backgrounds",
+    id: "2d-backgrounds",
+    label: "2D Backgrounds",
     icon: '<i class="fas fa-water" aria-hidden="true"></i>',
     description: "Background theme design tool",
     color: "#0ea5e9",

@@ -149,6 +149,17 @@
   </ParamPanel>
 {/if}
 
+<ParamPanel title="Sunken ruins platform" defaultOpen={false} enabled={cfg.platform.enabled} onToggle={(v) => (mut().platform.enabled = v)}>
+  <ParamSlider label="Width" value={cfg.platform.width} min={4} max={14} step={0.5} unit="m" onChange={(v) => (mut().platform.width = v)} />
+  <ParamSlider label="Depth" value={cfg.platform.depth} min={3} max={12} step={0.5} unit="m" onChange={(v) => (mut().platform.depth = v)} />
+  <ParamSlider label="Height" value={cfg.platform.height} min={0.1} max={1.5} step={0.05} unit="m" onChange={(v) => (mut().platform.height = v)} />
+  <ParamColor label="Stone color" value={cfg.platform.stoneColor} onChange={(v) => (mut().platform.stoneColor = v)} />
+  <ParamColor label="Rune glow" value={cfg.platform.runeGlowColor} onChange={(v) => (mut().platform.runeGlowColor = v)} />
+  <ParamSlider label="Glow intensity" value={cfg.platform.glowIntensity} min={0} max={2} step={0.05} onChange={(v) => (mut().platform.glowIntensity = v)} />
+  <ParamSlider label="Moss intensity" value={cfg.platform.mossIntensity} min={0} max={1} step={0.05} onChange={(v) => (mut().platform.mossIntensity = v)} />
+  <ParamSlider label="Columns" value={cfg.platform.columnCount} min={0} max={12} step={1} onChange={(v) => (mut().platform.columnCount = v)} />
+</ParamPanel>
+
 <ParamPanel title="Hemisphere light" defaultOpen={false}>
   <ParamColor label="Sky" value={cfg.hemisphereLight.skyColor} onChange={(v) => (mut().hemisphereLight.skyColor = v)} />
   <ParamColor label="Ground" value={cfg.hemisphereLight.groundColor} onChange={(v) => (mut().hemisphereLight.groundColor = v)} />

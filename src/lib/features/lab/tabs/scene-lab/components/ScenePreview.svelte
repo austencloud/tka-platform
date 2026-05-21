@@ -27,11 +27,11 @@
   import CherryBlossomScene from "$lib/shared/3d/environments/scenes/CherryBlossomScene.svelte";
   import RainbowScene from "$lib/shared/3d/environments/scenes/RainbowScene.svelte";
   import CelestialScene from "$lib/shared/3d/environments/scenes/CelestialScene.svelte";
+  import PureBlackScene from "$lib/shared/3d/environments/scenes/PureBlackScene.svelte";
   import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
   import { Avatar3D } from "@austencloud/scene-3d";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
-  import Stage3D from "$lib/shared/3d/components/Stage3D.svelte";
   import GenericSceneEditor from "$lib/shared/3d/scene-composer/GenericSceneEditor.svelte";
   import ComposerInteractivity from "$lib/shared/3d/scene-composer/ComposerInteractivity.svelte";
   import ComposerGhost from "$lib/shared/3d/scene-composer/ComposerGhost.svelte";
@@ -289,13 +289,11 @@
       {:else if labState.sceneId === "cherry-blossom"}
         <CherryBlossomScene config={labState.cherryBlossomConfig} />
       {:else if labState.sceneId === "rainbow"}
-        <RainbowScene />
+        <RainbowScene config={labState.rainbowConfig} />
       {:else if labState.sceneId === "celestial"}
         <CelestialScene config={labState.celestialConfig} />
-      {/if}
-
-      {#if camMode === "compose"}
-        <Stage3D />
+      {:else if labState.sceneId === "pure-black"}
+        <PureBlackScene config={labState.pureBlackConfig} />
       {/if}
 
       {#if camMode === "walk"}

@@ -102,6 +102,13 @@
   </ParamPanel>
 {/if}
 
+<ParamPanel title="Engawa platform" defaultOpen={false} enabled={cfg.platform.enabled} onToggle={(v) => (mut().platform.enabled = v)}>
+  <ParamSlider label="Radius" value={cfg.platform.radius} min={2} max={12} step={0.5} unit="m" onChange={(v) => (mut().platform.radius = v)} />
+  <ParamSlider label="Height" value={cfg.platform.height} min={0.1} max={1.5} step={0.05} unit="m" onChange={(v) => (mut().platform.height = v)} />
+  <ParamColor label="Wood color" value={cfg.platform.primaryColor} onChange={(v) => (mut().platform.primaryColor = v)} />
+  <ParamSlider label="Glow intensity" value={cfg.platform.glowIntensity} min={0} max={2} step={0.05} onChange={(v) => (mut().platform.glowIntensity = v)} />
+</ParamPanel>
+
 <style>
   .ring-group {
     margin: 4px 0 8px;

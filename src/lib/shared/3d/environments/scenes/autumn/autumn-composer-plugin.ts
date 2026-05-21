@@ -18,7 +18,7 @@ const vegetationItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-tree",
 		fallbackGeometry: "cone",
-		defaultScale: 3,
+		defaultScale: 1.5,
 		defaultHeight: 0,
 		snapToGround: true,
 		canRotate: true,
@@ -31,7 +31,7 @@ const vegetationItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-tree",
 		fallbackGeometry: "cone",
-		defaultScale: 2.5,
+		defaultScale: 1.2,
 		defaultHeight: 0,
 		snapToGround: true,
 		canRotate: true,
@@ -44,7 +44,7 @@ const vegetationItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-leaf",
 		fallbackGeometry: "sphere",
-		defaultScale: 1.5,
+		defaultScale: 0.6,
 		defaultHeight: 0,
 		snapToGround: true,
 		canRotate: false,
@@ -57,7 +57,7 @@ const vegetationItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-seedling",
 		fallbackGeometry: "sphere",
-		defaultScale: 0.8,
+		defaultScale: 0.3,
 		defaultHeight: 0,
 		snapToGround: true,
 		canRotate: false,
@@ -70,7 +70,7 @@ const vegetationItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-fan",
 		fallbackGeometry: "sphere",
-		defaultScale: 0.4,
+		defaultScale: 0.15,
 		defaultHeight: 0,
 		snapToGround: true,
 		canRotate: true,
@@ -86,7 +86,7 @@ const terrainItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-mountain",
 		fallbackGeometry: "sphere",
-		defaultScale: 1.8,
+		defaultScale: 0.5,
 		defaultHeight: 0,
 		snapToGround: true,
 		canRotate: true,
@@ -99,7 +99,7 @@ const terrainItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-gem",
 		fallbackGeometry: "sphere",
-		defaultScale: 0.6,
+		defaultScale: 0.2,
 		defaultHeight: 0,
 		snapToGround: true,
 		canRotate: true,
@@ -112,8 +112,8 @@ const terrainItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-minus",
 		fallbackGeometry: "cylinder",
-		defaultScale: 2,
-		defaultHeight: 0.2,
+		defaultScale: 0.4,
+		defaultHeight: 0.1,
 		snapToGround: true,
 		canRotate: true,
 		canScale: true,
@@ -128,7 +128,7 @@ const atmosphereItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-fire",
 		fallbackGeometry: "cylinder",
-		defaultScale: 1,
+		defaultScale: 0.4,
 		defaultHeight: 0,
 		snapToGround: true,
 		canRotate: false,
@@ -141,8 +141,8 @@ const atmosphereItems: ObjectDefinition[] = [
 		type: "prop",
 		icon: "fa-lightbulb",
 		fallbackGeometry: "sphere",
-		defaultScale: 0.3,
-		defaultHeight: 0.5,
+		defaultScale: 0.15,
+		defaultHeight: 0.3,
 		snapToGround: true,
 		canRotate: false,
 		canScale: true,
@@ -154,8 +154,8 @@ const atmosphereItems: ObjectDefinition[] = [
 		type: "zone",
 		icon: "fa-cloud",
 		fallbackGeometry: "cylinder",
-		defaultScale: 3,
-		defaultHeight: 0.1,
+		defaultScale: 1.5,
+		defaultHeight: 0.05,
 		snapToGround: true,
 		canRotate: false,
 		canScale: true,
@@ -184,14 +184,7 @@ const catalog: ComposerCatalog = {
 const surfaceRules: SurfaceRules = {
 	isSurface(mesh: Mesh): boolean {
 		const name = (mesh.name ?? "").toLowerCase();
-		if (name.includes("ground") || name.includes("terrain") || name.includes("plane")) {
-			return true;
-		}
-		if (mesh.geometry?.boundingSphere) {
-			mesh.geometry.computeBoundingSphere();
-			if (mesh.geometry.boundingSphere!.radius > 5) return true;
-		}
-		return false;
+		return name.includes("ground") || name.includes("terrain") || name.includes("floor");
 	},
 	orientationMode: "upright",
 	gridSize: null,
@@ -201,17 +194,10 @@ const surfaceRules: SurfaceRules = {
 const constraints: PlacementConstraints = {
 	maxObjects: 200,
 	minSpacing: 0.5,
-	exclusionZones: [
-		{
-			center: [0, 0, 0],
-			radius: 5,
-			reason: "performer clearing",
-		},
-	],
 };
 
 const autumnPlugin: SceneComposerPlugin = {
-	sceneId: "forest-autumn",
+	sceneId: "autumn",
 	displayName: "Autumn Forest",
 	catalog,
 	surfaceRules,

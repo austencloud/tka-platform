@@ -67,11 +67,11 @@
   });
 
   const geometries: Record<string, any> = {
-    box: new BoxGeometry(1, 1, 1),
-    sphere: new SphereGeometry(0.5, 16, 12),
-    cylinder: new CylinderGeometry(0.5, 0.5, 1, 16),
-    cone: new ConeGeometry(0.5, 1, 16),
-    flag: new BoxGeometry(0.05, 1, 0.5),
+    box: new BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
+    sphere: new SphereGeometry(0.5, 16, 12).translate(0, 0.5, 0),
+    cylinder: new CylinderGeometry(0.5, 0.5, 1, 16).translate(0, 0.5, 0),
+    cone: new ConeGeometry(0.5, 1, 16).translate(0, 0.5, 0),
+    flag: new BoxGeometry(0.05, 1, 0.5).translate(0, 0.5, 0),
   };
 
   const ghostGeometry = $derived(
@@ -147,16 +147,12 @@
     hitNormal.copy(hit.face.normal).transformDirection(hit.object.matrixWorld);
 
     let px = hitPoint.x;
-    let py = hitPoint.y + surfaceRules.surfaceOffset;
+    let py = hitPoint.y + surfaceRules.surfaceOffset + (definition.defaultHeight ?? 0);
     let pz = hitPoint.z;
 
     if (surfaceRules.gridSize) {
       px = snapToGrid(px, surfaceRules.gridSize);
       pz = snapToGrid(pz, surfaceRules.gridSize);
-    }
-
-    if (definition.snapToGround) {
-      py = definition.defaultHeight + surfaceRules.surfaceOffset;
     }
 
     ghostX = px;

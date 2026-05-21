@@ -36,6 +36,7 @@
   import { userProportionsState } from "@austencloud/scene-3d";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import IcePlatform from "./winter/IcePlatform.svelte";
 
   interface Props {
     /** Optional scene config. Defaults to the baked winter look. */
@@ -433,3 +434,5 @@
     position.z={m.position[2]}
   />
 {/if}
+
+<IcePlatform config={activeConfig.platform} />

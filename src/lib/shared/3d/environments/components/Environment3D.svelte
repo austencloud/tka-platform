@@ -8,6 +8,8 @@
    */
 
   import { BackgroundType } from "@austencloud/backgrounds";
+  import { useThrelte } from "@threlte/core";
+  import { untrack } from "svelte";
   import ForestScene from "../scenes/ForestScene.svelte";
   import AutumnScene from "../scenes/AutumnScene.svelte";
   import CosmicScene from "../scenes/CosmicScene.svelte";
@@ -29,6 +31,8 @@
   }
 
   let { backgroundType, minPlatformRadius = 0, oceanVariant }: Props = $props();
+
+  const { scene, renderer } = useThrelte();
 
   // Map BackgroundType to scene type and variant
   type SceneConfig =
@@ -70,26 +74,81 @@
   }
 
   const config = $derived(getSceneConfig(backgroundType));
+
+  // Force a clean frame between scene swaps. When the scene type changes,
+  // briefly render nothing so the old scene's fog, sky dome, and objects
+  // are fully removed before the new scene mounts. Without this, stale
+  // Three.js state from the departing scene bleeds into the arriving one.
+  let mountedScene = $state(untrack(() => config.scene));
+  let ready = $state(true);
+
+  // Threlte's scene can be a CurrentWritable ({current: Scene}) or the Scene directly
+  function getScene() {
+    return (scene as any)?.current ?? (scene as any);
+  }
+  function getRenderer() {
+    return (renderer as any)?.current ?? (renderer as any);
+  }
+
+  // DEBUG: expose scene globally + log every reactive change
+  $effect(() => {
+    const s = getScene();
+    const r = getRenderer();
+    if (s?.isScene) {
+      (window as any).__tkaScene = s;
+    }
+    if (r?.domElement) {
+      (window as any).__tkaRenderer = r;
+    }
+    const childCount = s?.children?.length ?? -1;
+    const meshCount = childCount > 0 ? s.children.filter((c: any) => c.isMesh || c.isGroup).length : 0;
+    console.warn("[Env3D] bg=%s scene=%s mounted=%s ready=%s children=%d meshes/groups=%d fog=%s",
+      backgroundType, config.scene, mountedScene, ready,
+      childCount, meshCount,
+      s?.fog ? "yes" : "no"
+    );
+  });
+
+  $effect(() => {
+    const next = config.scene;
+    if (next !== mountedScene) {
+      const s = getScene();
+      const r = getRenderer();
+      if (s?.isScene) {
+        s.fog = null;
+        s.background = null;
+        s.environment = null;
+      }
+      if (r?.clear) r.clear();
+      ready = false;
+      mountedScene = next;
+      requestAnimationFrame(() => {
+        ready = true;
+      });
+    }
+  });
 </script>
 
-{#if config.scene === "forest"}
-  <ForestScene variant={config.variant} />
-{:else if config.scene === "autumn"}
-  <AutumnScene />
-{:else if config.scene === "cosmic"}
-  <CosmicScene variant={config.variant} {minPlatformRadius} />
-{:else if config.scene === "winter"}
-  <WinterScene />
-{:else if config.scene === "ocean"}
-  <OceanScene variant={config.variant} />
-{:else if config.scene === "ember"}
-  <EmberScene />
-{:else if config.scene === "cherryBlossom"}
-  <CherryBlossomScene />
-{:else if config.scene === "rainbow"}
-  <RainbowScene />
-{:else if config.scene === "celestial"}
-  <CelestialScene />
+{#if ready}
+  {#if config.scene === "forest"}
+    <ForestScene variant={config.variant} />
+  {:else if config.scene === "autumn"}
+    <AutumnScene />
+  {:else if config.scene === "cosmic"}
+    <CosmicScene variant={config.variant} {minPlatformRadius} />
+  {:else if config.scene === "winter"}
+    <WinterScene />
+  {:else if config.scene === "ocean"}
+    <OceanScene variant={config.variant} {minPlatformRadius} />
+  {:else if config.scene === "ember"}
+    <EmberScene />
+  {:else if config.scene === "cherryBlossom"}
+    <CherryBlossomScene />
+  {:else if config.scene === "rainbow"}
+    <RainbowScene />
+  {:else if config.scene === "celestial"}
+    <CelestialScene />
+  {/if}
 {/if}
 
 <!-- SOLID_COLOR and LINEAR_GRADIENT render nothing - just the default grid -->

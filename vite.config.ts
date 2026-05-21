@@ -660,7 +660,7 @@ export default defineConfig(({ mode }) => ({
       }),
   ].filter(Boolean),
   resolve: {
-    dedupe: ["three"],
+    dedupe: ["three", "@threlte/core"],
     alias: {
       // Aliases handled by SvelteKit
     },

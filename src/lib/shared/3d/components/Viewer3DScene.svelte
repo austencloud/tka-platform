@@ -1,7 +1,7 @@
 <script lang="ts">
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, untrack } from "svelte";
   import { PerformerRig } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { BackgroundType } from "@austencloud/backgrounds";
@@ -9,7 +9,6 @@
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
   import { STAGE } from "@austencloud/scene-3d";
-  import Stage3D from "./Stage3D.svelte";
   import SeatedAudience3D from "./SeatedAudience3D.svelte";
   import { Plane, GRID_OFFSETS, cmToUnits } from "@austencloud/scene-3d";
   import type { GridMode } from "@austencloud/scene-3d";
@@ -44,8 +43,6 @@
   const { renderer, camera, scene } = useThrelte();
   const { scheduler, resetFrameInvalidation } = useScheduler();
 
-  const COSMIC_PLATFORM_HEIGHT = 0.4;
-
   const backgroundType = $derived.by((): BackgroundType => {
     try {
       const settings = settingsService;
@@ -53,7 +50,29 @@
     } catch { return BackgroundType.SOLID_COLOR; }
   });
 
-  const hasOwnPlatform = $derived(backgroundType === BackgroundType.NIGHT_SKY);
+  function getStageGroundOffset(bg: BackgroundType): number {
+    switch (bg) {
+      case BackgroundType.FIREFLY_FOREST:
+      case BackgroundType.AUTUMN_DRIFT:
+        return sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0;
+      case BackgroundType.NIGHT_SKY:
+        return 0.4;
+      case BackgroundType.SNOWFALL:
+        return 0.45;
+      case BackgroundType.DEEP_OCEAN:
+        return 0.5;
+      case BackgroundType.EMBER_GLOW:
+        return 0.5;
+      case BackgroundType.CHERRY_BLOSSOM:
+        return 0.35;
+      case BackgroundType.PRIDE:
+        return 0.4;
+      case BackgroundType.CELESTIAL:
+        return 0.02;
+      default:
+        return 0;
+    }
+  }
 
   // Reconstructs Threlte's default setAnimationLoop callback. We restore
   // this after the offline export pauses the loop.
@@ -269,11 +288,7 @@
     backgroundType === BackgroundType.DEEP_OCEAN
   );
 
-  const stageGroundOffset = $derived(
-    hasOwnPlatform
-      ? COSMIC_PLATFORM_HEIGHT
-      : sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0
-  );
+  const stageGroundOffset = $derived(getStageGroundOffset(backgroundType));
 
   const PERFORMER_BODY_PADDING = 1.5;
 
@@ -288,10 +303,18 @@
     return maxDist + PERFORMER_BODY_PADDING;
   });
 
-  const stageWidth = $derived(Math.max(6.0, requiredStageRadius * 2));
-  const stageDepth = $derived(Math.max(4.5, requiredStageRadius * 2));
   $effect(() => {
     viewer3DState.setStageGroundOffset(stageGroundOffset);
+  });
+
+  // Reset environment readiness when the background type changes so scenes
+  // that need async loading (GLB models, textures) can re-report progress.
+  let prevBackgroundType = $state(untrack(() => backgroundType));
+  $effect(() => {
+    if (backgroundType !== prevBackgroundType) {
+      sceneFeatures.resetReady("environment");
+      prevBackgroundType = backgroundType;
+    }
   });
 
   // When the background type doesn't produce a 3D environment (solid color,
@@ -307,10 +330,6 @@
 <!-- Environment (gated by scene feature toggle) -->
 {#if hasEnvironment && sceneFeatures.isEnabled("environment")}
   <Environment3D {backgroundType} minPlatformRadius={requiredStageRadius} oceanVariant={viewer3DState.oceanVariant} />
-{/if}
-
-{#if sceneFeatures.isEnabled("stage") && !hasOwnPlatform}
-  <Stage3D width={stageWidth} depth={stageDepth} />
 {/if}
 
 <!-- Seated audience (gated by scene feature toggle) -->

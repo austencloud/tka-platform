@@ -71,6 +71,15 @@ export function createSceneFeatureState(
     readySet = new Set([...readySet, key]);
   }
 
+  function resetReady(key: string): void {
+    if (!readySet.has(key)) return;
+    const next = new Set(readySet);
+    next.delete(key);
+    readySet = next;
+    const { [key]: _, ...rest } = progressMap;
+    progressMap = rest;
+  }
+
   function reset(): void {
     localStorage.removeItem(STORAGE_KEY);
     const defaults: Record<string, boolean> = {};
@@ -93,6 +102,7 @@ export function createSceneFeatureState(
     toggle,
     reportProgress,
     reportReady,
+    resetReady,
     get allEnabledReady(): boolean {
       const asyncFeatures = getEnabledAsyncFeatures();
       return (

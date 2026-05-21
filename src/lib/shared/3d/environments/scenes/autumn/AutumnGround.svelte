@@ -107,7 +107,7 @@
 </script>
 
 <T.Group position={[0, groundY, 0]}>
-  <T.Mesh rotation.x={-Math.PI / 2}>
+  <T.Mesh name="ground" rotation.x={-Math.PI / 2}>
     <T is={geometry} />
     <T.MeshStandardMaterial vertexColors roughness={0.95} />
   </T.Mesh>

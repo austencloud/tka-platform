@@ -1,2 +1,5 @@
 packages:
-  - "packages/*"
+  - packages/*
+
+patchedDependencies:
+  '@austencloud/scene-3d@0.1.2': patches/@austencloud__scene-3d@0.1.2.patch

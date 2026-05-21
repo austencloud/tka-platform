@@ -23,6 +23,7 @@
   } from "../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import EngawaPlatform from "./cherry-blossom/EngawaPlatform.svelte";
 
   interface Props {
     config?: CherryBlossomSceneConfig;
@@ -308,3 +309,5 @@
     position.z={m.position[2]}
   />
 {/if}
+
+<EngawaPlatform config={activeConfig.platform} />

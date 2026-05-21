@@ -28,6 +28,7 @@
   } from "../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import ObsidianPlatform from "./ember/ObsidianPlatform.svelte";
 
   interface Props {
     config?: EmberSceneConfig;
@@ -408,3 +409,5 @@
     position.z={sl.position[2]}
   />
 {/if}
+
+<ObsidianPlatform config={activeConfig.platform} />

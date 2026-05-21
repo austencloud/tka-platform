@@ -289,6 +289,9 @@ importers:
       three:
         specifier: ^0.182.0
         version: 0.182.0
+      three-good-godrays:
+        specifier: ^0.11.2
+        version: 0.11.2(@types/three@0.182.0)(postprocessing@6.38.2(three@0.182.0))(three@0.182.0)
       three-mesh-bvh:
         specifier: ^0.9.9
         version: 0.9.9(three@0.182.0)
@@ -6174,6 +6177,17 @@ packages:
     engines: {node: '>=12'}
     peerDependencies:
       three: '>=0.154'
+
+  three-good-godrays@0.11.2:
+    resolution: {integrity: sha512-RkEneHMW3pzb1jgNhKAkXYUBByegNVppt6B34UsbdSwXcXd7xTbRJ9mE3lKn1ERm1xQBXlSImE9k028ZvB3MEQ==}
+    engines: {node: '>= 0.13.2'}
+    peerDependencies:
+      '@types/three': '>= 0.125.0'
+      postprocessing: ^6.33.4
+      three: '>= 0.125.0 <= 0.182.0'
+    peerDependenciesMeta:
+      '@types/three':
+        optional: true
 
   three-instanced-uniforms-mesh@0.52.4:
     resolution: {integrity: sha512-YwDBy05hfKZQtU+Rp0KyDf9yH4GxfhxMbVt9OYruxdgLfPwmDG5oAbGoW0DrKtKZSM3BfFcCiejiOHCjFBTeng==}
@@ -12865,6 +12879,13 @@ snapshots:
       three-geojson-geometry: 2.1.1(three@0.182.0)
       three-slippy-map-globe: 1.0.6(three@0.182.0)
       tinycolor2: 1.6.0
+
+  three-good-godrays@0.11.2(@types/three@0.182.0)(postprocessing@6.38.2(three@0.182.0))(three@0.182.0):
+    dependencies:
+      postprocessing: 6.38.2(three@0.182.0)
+      three: 0.182.0
+    optionalDependencies:
+      '@types/three': 0.182.0
 
   three-instanced-uniforms-mesh@0.52.4(three@0.173.0):
     dependencies:

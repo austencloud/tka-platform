@@ -1,10 +1,11 @@
 <script lang="ts">
   import { T, useThrelte, useTask } from "@threlte/core";
-  import { useGltf } from "@threlte/extras";
-  import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
-  import GroundPlane from "../primitives/GroundPlane.svelte";
+  import { useGltf, useDraco } from "@threlte/extras";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
+  import ProceduralSeabed from "./ocean/ProceduralSeabed.svelte";
+  import WaterSurface from "./ocean/WaterSurface.svelte";
+  import { terrainHeight as terrainHeightRaw, terrainHeightForPlacement } from "./ocean/terrain-height";
   import type { OceanVariant } from "../domain/enums/environment-enums";
   import {
     type OceanSceneConfig,
@@ -13,41 +14,32 @@
     createDefaultOceanMysticalConfig,
     createDefaultOceanCinematicConfig,
   } from "../domain/models/scene-configs";
-  import VoronoiCaustics from "./ocean/VoronoiCaustics.svelte";
-  import GodRayShafts from "./ocean/GodRayShafts.svelte";
-  import WaterSurface from "./ocean/WaterSurface.svelte";
-  import { onDestroy, onMount } from "svelte";
-  import { disposeSceneGraph } from "../utils/dispose-scene";
+  import { poissonDiscSample, seededRandom } from "../utils/poisson-disc";
   import { clone as cloneWithSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import { onDestroy, onMount } from "svelte";
+  import { disposeSceneGraph } from "../utils/dispose-scene";
+  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import RuinsPlatform from "./ocean/RuinsPlatform.svelte";
+  import GodRayShafts from "./ocean/GodRayShafts.svelte";
   import {
     FogExp2,
     Color,
-    ShaderMaterial,
-    AdditiveBlending,
-    DoubleSide,
-    Group,
     Mesh,
-    IcosahedronGeometry,
-    ConeGeometry,
-    CylinderGeometry,
-    DodecahedronGeometry,
-    PlaneGeometry,
-    SphereGeometry,
-    MeshStandardMaterial,
-    MeshPhysicalMaterial,
-    InstancedMesh,
     Object3D,
     Vector3,
+    Box3,
   } from "three";
-  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+
+  // ── Props + Config ────────────────────────────────────────────────────
 
   interface Props {
     variant?: OceanVariant;
     config?: OceanSceneConfig;
+    minPlatformRadius?: number;
   }
 
-  let { variant = "abyss", config }: Props = $props();
+  let { variant = "abyss", config, minPlatformRadius = 0 }: Props = $props();
 
   const VARIANT_CONFIGS: Record<OceanVariant, () => OceanSceneConfig> = {
     abyss: createDefaultOceanAbyssConfig,
@@ -56,40 +48,61 @@
     cinematic: createDefaultOceanCinematicConfig,
   };
 
-  const activeConfig = $derived(config ?? VARIANT_CONFIGS[variant]());
+  const baseConfig = $derived(config ?? VARIANT_CONFIGS[variant]());
+
+  const activeConfig = $derived.by(() => {
+    if (minPlatformRadius <= 0) return baseConfig;
+    const minWidth = minPlatformRadius * 2;
+    const minDepth = minPlatformRadius * 2 * 0.75;
+    if (minWidth <= baseConfig.platform.width && minDepth <= baseConfig.platform.depth) {
+      return baseConfig;
+    }
+    return {
+      ...baseConfig,
+      platform: {
+        ...baseConfig.platform,
+        width: Math.max(baseConfig.platform.width, minWidth),
+        depth: Math.max(baseConfig.platform.depth, minDepth),
+      },
+    };
+  });
+
+  // ── Model Loading ─────────────────────────────────────────────────────
+
+  const dracoLoader = useDraco("/draco/");
+  const opts = { dracoLoader };
 
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
+  const rockA = useGltf(`${R2_CDN}/models/forest/Rock_1_A_Color1.gltf`, opts);
+  const rockB = useGltf(`${R2_CDN}/models/forest/Rock_1_B_Color1.gltf`, opts);
 
-  // Keep rock GLBs (they exist on R2)
-  const rockA = useGltf(`${R2_CDN}/models/forest/Rock_1_A_Color1.gltf`);
-  const rockB = useGltf(`${R2_CDN}/models/forest/Rock_1_B_Color1.gltf`);
+  const fishGlb0 = useGltf("/models/ocean/fish_clownfish.glb", opts);
+  const fishGlb1 = useGltf("/models/ocean/fish_butterfly.glb", opts);
+  const fishGlb2 = useGltf("/models/ocean/fish_common.glb", opts);
+  const fishGlb3 = useGltf("/models/ocean/fish_koi.glb", opts);
+  const fishGlb4 = useGltf("/models/ocean/fish_trout.glb", opts);
 
-  // ============================================================================
-  // Local ocean GLB models (served from public/models/ocean/)
-  // ============================================================================
+  const coralGlb0 = useGltf("/models/ocean/coral_0.glb", opts);
+  const coralGlb1 = useGltf("/models/ocean/coral_1.glb", opts);
+  const coralGlb2 = useGltf("/models/ocean/coral_2.glb", opts);
+  const coralGlb3 = useGltf("/models/ocean/coral_3.glb", opts);
+  const coralLargeGlb = useGltf("/models/ocean/coral_large.glb", opts);
 
-  // Fish GLBs (3 varieties for visual diversity)
-  const fishClown = useGltf("/models/ocean/fish_clownfish.glb");
-  const fishButterfly = useGltf("/models/ocean/fish_butterfly.glb");
-  const fishCommon = useGltf("/models/ocean/fish_common.glb");
+  const seaweedGlb = useGltf("/models/ocean/seaweed.glb", opts);
+  const kelpPlantGlb = useGltf("/models/ocean/kelp_plant.glb", opts);
 
-  // Coral GLBs (4 varieties)
-  const coralGlb0 = useGltf("/models/ocean/coral_0.glb");
-  const coralGlb1 = useGltf("/models/ocean/coral_1.glb");
-  const coralGlb2 = useGltf("/models/ocean/coral_2.glb");
-  const coralGlb3 = useGltf("/models/ocean/coral_3.glb");
+  const jellyfishGlb = useGltf("/models/ocean/jellyfish.glb", opts);
+  const jellyfishSmallGlb = useGltf("/models/ocean/jellyfish_small.glb", opts);
 
-  // Kelp / seaweed
-  const seaweedGlb = useGltf("/models/ocean/seaweed.glb");
+  const octopusGlb = useGltf("/models/ocean/octopus.glb", opts);
+  const rayGlb = useGltf("/models/ocean/ray.glb", opts);
 
-  // Jellyfish
-  const jellyfishGlb = useGltf("/models/ocean/jellyfish.glb");
+  const starfishGlb = useGltf("/models/ocean/starfish.glb", opts);
+  const seaUrchinGlb = useGltf("/models/ocean/sea_urchin.glb", opts);
+  const shellGlb = useGltf("/models/ocean/shell.glb", opts);
+  const anemoneGlb = useGltf("/models/ocean/anemone.glb", opts);
 
-  // Decorations
-  const starfishGlb = useGltf("/models/ocean/starfish.glb");
-  const seaUrchinGlb = useGltf("/models/ocean/sea_urchin.glb");
-  const shellGlb = useGltf("/models/ocean/shell.glb");
-  const anemoneGlb = useGltf("/models/ocean/anemone.glb");
+  // ── Scene Context ─────────────────────────────────────────────────────
 
   const { scene } = useThrelte();
 
@@ -102,292 +115,17 @@
 
   const groundY = $derived(userProportionsState.groundY);
 
-  // ============================================================================
-  // Procedural geometry factory functions
-  // ============================================================================
-
-  function createBrainCoral(color: string, emissiveColor: string): Group {
-    const group = new Group();
-    const mainGeo = new IcosahedronGeometry(0.35, 2);
-    const mat = new MeshStandardMaterial({
-      color: new Color(color),
-      roughness: 0.85,
-      emissive: new Color(emissiveColor),
-      emissiveIntensity: 0.15,
-    });
-    const main = new Mesh(mainGeo, mat);
-    group.add(main);
-
-    // Lumpy cluster — 2 smaller offset icosahedrons
-    const bumpGeo = new IcosahedronGeometry(0.22, 2);
-    const bump1 = new Mesh(bumpGeo, mat);
-    bump1.position.set(0.2, 0.08, 0.15);
-    bump1.scale.setScalar(0.8);
-    group.add(bump1);
-
-    const bump2 = new Mesh(bumpGeo, mat);
-    bump2.position.set(-0.15, 0.05, -0.2);
-    bump2.scale.setScalar(0.65);
-    group.add(bump2);
-
-    const bump3 = new Mesh(bumpGeo, mat);
-    bump3.position.set(0.05, 0.18, -0.1);
-    bump3.scale.setScalar(0.55);
-    group.add(bump3);
-
-    return group;
+  function getTerrainY(wx: number, wz: number): number {
+    return terrainHeightForPlacement(wx, wz, zones.stageRadius, zones.clearingRadius);
   }
 
-  function createFanCoral(color: string): Group {
-    const group = new Group();
-    const geo = new PlaneGeometry(0.6, 0.8, 1, 4);
-    const mat = new MeshStandardMaterial({
-      color: new Color(color),
-      roughness: 0.7,
-      transparent: true,
-      opacity: 0.85,
-      side: DoubleSide,
-    });
-    const fan = new Mesh(geo, mat);
-    fan.position.y = 0.4; // lift so base sits at origin
-    group.add(fan);
-    return group;
-  }
-
-  function createTubeCoral(color: string): Group {
-    const group = new Group();
-    const tubeCount = 5;
-    for (let i = 0; i < tubeCount; i++) {
-      const height = 0.3 + Math.random() * 0.3;
-      const geo = new CylinderGeometry(0.04, 0.03, height, 6);
-      const mat = new MeshStandardMaterial({
-        color: new Color(color),
-        roughness: 0.75,
-        emissive: new Color(color),
-        emissiveIntensity: 0.1,
-      });
-      const tube = new Mesh(geo, mat);
-      const angle = (i / tubeCount) * Math.PI * 2;
-      const radius = 0.06 + Math.random() * 0.06;
-      tube.position.set(
-        Math.cos(angle) * radius,
-        height / 2,
-        Math.sin(angle) * radius,
-      );
-      // Slight tilt outward
-      tube.rotation.x = (Math.random() - 0.5) * 0.3;
-      tube.rotation.z = (Math.random() - 0.5) * 0.3;
-      group.add(tube);
-    }
-    return group;
-  }
-
-  function createKelpStrand(height: number, color: string): Mesh {
-    const geo = new PlaneGeometry(0.15, height, 1, 8);
-    const mat = new MeshStandardMaterial({
-      color: new Color(color),
-      roughness: 0.6,
-      transparent: true,
-      opacity: 0.75,
-      side: DoubleSide,
-    });
-    const mesh = new Mesh(geo, mat);
-    mesh.position.y = height / 2; // anchor base at origin
-    return mesh;
-  }
-
-  function createProceduralRock(scale: number, color: string): Mesh {
-    const geo = new DodecahedronGeometry(0.5, 1);
-    const mat = new MeshStandardMaterial({
-      color: new Color(color),
-      roughness: 0.9,
-    });
-    const mesh = new Mesh(geo, mat);
-    mesh.scale.setScalar(scale);
-    return mesh;
-  }
-
-  function createProceduralJellyfish(bellColor: string, tentacleColor: string): Group {
-    const group = new Group();
-
-    // Bell — slightly more than a hemisphere
-    const bellGeo = new SphereGeometry(0.25, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.55);
-    const bellMat = new MeshPhysicalMaterial({
-      color: new Color(bellColor),
-      roughness: 0.1,
-      transmission: 0.4,
-      transparent: true,
-      opacity: 0.7,
-      emissive: new Color(bellColor),
-      emissiveIntensity: 0.3,
-      side: DoubleSide,
-    });
-    const bell = new Mesh(bellGeo, bellMat);
-    group.add(bell);
-
-    // Tentacles
-    const tentacleCount = 6;
-    const tentacleMat = new MeshStandardMaterial({
-      color: new Color(tentacleColor),
-      transparent: true,
-      opacity: 0.5,
-      emissive: new Color(tentacleColor),
-      emissiveIntensity: 0.2,
-    });
-    for (let i = 0; i < tentacleCount; i++) {
-      const angle = (i / tentacleCount) * Math.PI * 2;
-      const radius = 0.1 + Math.random() * 0.06;
-      const tentGeo = new CylinderGeometry(0.008, 0.003, 0.5, 4);
-      const tentacle = new Mesh(tentGeo, tentacleMat);
-      tentacle.position.set(
-        Math.cos(angle) * radius,
-        -0.28,
-        Math.sin(angle) * radius,
-      );
-      // Slight splay outward
-      tentacle.rotation.x = (Math.cos(angle)) * 0.15;
-      tentacle.rotation.z = (Math.sin(angle)) * 0.15;
-      group.add(tentacle);
-    }
-
-    return group;
-  }
-
-  // ============================================================================
-  // Procedural instance arrays (reactive from config)
-  // ============================================================================
-
-  interface PlacedMesh {
-    mesh: Group | Mesh;
-    x: number;
-    z: number;
-    scale: number;
-    rotY: number;
-  }
-
-  const CORAL_GLB_NORMALIZE = [
-    0.5 / 821,
-    0.5 / 3995,
-    0.5 / 2597,
-    0.5 / 4769,
-  ];
-
-  const CORAL_COLORS = [
-    { color: "#e06060", emissive: "#ff8888" },
-    { color: "#f0a050", emissive: "#ffcc88" },
-    { color: "#d070d0", emissive: "#ff99ff" },
-    { color: "#50c0a0", emissive: "#88ffcc" },
-    { color: "#e0e060", emissive: "#ffff88" },
-    { color: "#6080e0", emissive: "#88aaff" },
-  ];
-
-  const coralInstances = $derived.by(() => {
-    if (!activeConfig.coral.enabled) return [];
-    const { count, clearingRadius } = activeConfig.coral;
-    const result: PlacedMesh[] = [];
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2 + 0.3;
-      const radius = clearingRadius - 1.5 + Math.sin(i * 3.7) * 1.5;
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const scale = 0.6 + Math.abs(Math.sin(i * 2.3) * 0.4);
-      const rotY = Math.sin(i * 1.7) * Math.PI;
-      const palette = CORAL_COLORS[i % CORAL_COLORS.length]!;
-      const kind = i % 3;
-      let mesh: Group;
-      if (kind === 0) {
-        mesh = createBrainCoral(palette.color, palette.emissive);
-      } else if (kind === 1) {
-        mesh = createFanCoral(palette.color);
-      } else {
-        mesh = createTubeCoral(palette.color);
-      }
-      result.push({ mesh, x, z, scale, rotY });
-    }
-    return result;
+  const seabedRippleColor = $derived.by(() => {
+    const c = new Color(activeConfig.ground.color);
+    c.offsetHSL(0, 0.05, 0.08);
+    return "#" + c.getHexString();
   });
 
-  const KELP_COLORS = ["#1a5a2a", "#0d4a1a", "#2a6a3a", "#0a3a14"];
-
-  const kelpInstances = $derived.by(() => {
-    if (!activeConfig.kelp.enabled) return [];
-    const result: PlacedMesh[] = [];
-    activeConfig.kelp.rings.forEach((ring, ringIndex) => {
-      for (let i = 0; i < ring.count; i++) {
-        const angleOffset = ringIndex * 0.4;
-        const angle = (i / ring.count) * Math.PI * 2 + angleOffset;
-        const seed = ringIndex * 100 + i;
-        const radiusVariation = ring.radius + Math.sin(seed * 3.7) * ring.radiusJitter;
-        const x = Math.cos(angle) * radiusVariation;
-        const z = Math.sin(angle) * radiusVariation;
-        const scale = ring.scaleBase + Math.abs(Math.sin(seed * 2.3) * ring.scaleVariation);
-        const rotY = angle + Math.PI + Math.sin(seed * 1.7) * 0.3;
-        const height = 1.5 + Math.abs(Math.sin(seed * 4.1)) * 2.0;
-        const color = KELP_COLORS[seed % KELP_COLORS.length]!;
-        const mesh = createKelpStrand(height, color);
-        result.push({ mesh, x, z, scale, rotY });
-      }
-    });
-    return result;
-  });
-
-  const proceduralRockInstances = $derived.by(() => {
-    const count = activeConfig.rockCount;
-    const clearingRadius = activeConfig.kelp.clearingRadius;
-    const result: PlacedMesh[] = [];
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2 + 0.2;
-      const radius = clearingRadius - 2.0 + Math.sin(i * 4.1) * 1.0;
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const scale = 0.3 + Math.abs(Math.sin(i * 3.2) * 0.25);
-      const rotY = Math.sin(i * 2.8) * Math.PI;
-      const mesh = createProceduralRock(1.0, activeConfig.rockTintColor);
-      result.push({ mesh, x, z, scale, rotY });
-    }
-    return result;
-  });
-
-  // Keep the original rock placements for the GLB path
-  const rockPlacements = $derived.by(() => {
-    const count = activeConfig.rockCount;
-    const clearingRadius = activeConfig.kelp.clearingRadius;
-    return Array.from({ length: count }, (_, i) => {
-      const angle = (i / count) * Math.PI * 2 + 0.2;
-      const radius = clearingRadius - 2.0 + Math.sin(i * 4.1) * 1.0;
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const scale = 0.3 + Math.abs(Math.sin(i * 3.2) * 0.25);
-      const rotation = Math.sin(i * 2.8) * Math.PI;
-      return [x, z, scale, rotation] as [number, number, number, number];
-    });
-  });
-
-  interface JellyfishInstance {
-    mesh: Group;
-    x: number;
-    y: number;
-    z: number;
-    seed: number;
-  }
-
-  const jellyfishInstances = $derived.by((): JellyfishInstance[] => {
-    const jf = activeConfig.jellyfish;
-    if (!jf?.enabled) return [];
-    return Array.from({ length: jf.count }, (_, i) => {
-      const angle = (i / jf.count) * Math.PI * 2 + 0.5;
-      const radius = jf.spawnRadius * (0.5 + Math.sin(i * 2.7) * 0.3);
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const y = jf.heightRange[0] + (jf.heightRange[1] - jf.heightRange[0]) * ((i + 0.5) / jf.count);
-      const mesh = createProceduralJellyfish(jf.glowColor, jf.glowColor);
-      return { mesh, x, y, z, seed: i * 37 };
-    });
-  });
-
-  // ============================================================================
-  // Placement arrays (position/scale/rotation data for GLB models)
-  // ============================================================================
+  // ── Poisson Disc Placements ───────────────────────────────────────────
 
   interface Placement {
     x: number;
@@ -396,92 +134,173 @@
     rotY: number;
   }
 
-  const coralPlacements = $derived.by((): Placement[] => {
+  // Zone-aware placements — all elements respect the shared spatial plan
+  const zones = $derived(activeConfig.zones);
+
+  interface CoralPlacement extends Placement {
+    hueShift: number;
+    satBoost: number;
+    speciesIdx: number;
+  }
+
+  const CORAL_PALETTE_HUES = [0.0, -0.08, 0.06, 0.12, -0.12];
+
+  const coralPlacements = $derived.by((): CoralPlacement[] => {
     if (!activeConfig.coral.enabled) return [];
-    const { count, clearingRadius } = activeConfig.coral;
-    return Array.from({ length: count }, (_, i) => {
-      const angle = (i / count) * Math.PI * 2 + 0.3;
-      const radius = clearingRadius - 1.5 + Math.sin(i * 3.7) * 1.5;
-      return {
-        x: Math.cos(angle) * radius,
-        z: Math.sin(angle) * radius,
-        scale: 0.6 + Math.abs(Math.sin(i * 2.3) * 0.4),
-        rotY: Math.sin(i * 1.7) * Math.PI,
-      };
+    const rng = seededRandom(42);
+    const results: CoralPlacement[] = [];
+
+    const clusterCount = Math.max(8, Math.floor(activeConfig.coral.count / 5));
+    const clusterCenters = poissonDiscSample({
+      innerRadius: zones.clearingRadius - 1,
+      outerRadius: zones.forestOuter,
+      minDistance: 2.5,
+      count: clusterCount,
+      seed: 42,
     });
+
+    for (let ci = 0; ci < clusterCenters.length; ci++) {
+      const center = clusterCenters[ci]!;
+      const clusterSize = 3 + Math.floor(rng() * 6);
+      const isFeature = rng() > 0.7;
+
+      const species = Math.floor(rng() * 5);
+      const clusterHue = CORAL_PALETTE_HUES[species]! + (rng() - 0.5) * 0.03;
+      const clusterSat = 0.85 + rng() * 0.3;
+
+      for (let j = 0; j < clusterSize && results.length < activeConfig.coral.count; j++) {
+        const angle = rng() * Math.PI * 2;
+        const dist = rng() * (isFeature ? 2.8 : 1.6);
+        const x = center.x + Math.cos(angle) * dist;
+        const z = center.z + Math.sin(angle) * dist;
+
+        const r = Math.sqrt(x * x + z * z);
+        if (r < zones.stageRadius || r > zones.backgroundRadius) continue;
+
+        const sizeRoll = rng();
+        const scale = sizeRoll > 0.9
+          ? 1.2 + rng() * 1.0
+          : sizeRoll > 0.65
+            ? 0.5 + rng() * 0.6
+            : 0.15 + rng() * 0.35;
+
+        results.push({
+          x,
+          z,
+          scale: isFeature && j === 0 ? scale * 1.8 : scale,
+          rotY: rng() * Math.PI * 2,
+          hueShift: clusterHue + (rng() - 0.5) * 0.02,
+          satBoost: clusterSat + (rng() - 0.5) * 0.1,
+          speciesIdx: species,
+        });
+      }
+    }
+
+    return results;
   });
 
   const kelpPlacements = $derived.by((): Placement[] => {
-    if (!activeConfig.kelp.enabled) return [];
-    const result: Placement[] = [];
-    activeConfig.kelp.rings.forEach((ring, ringIndex) => {
-      for (let i = 0; i < ring.count; i++) {
-        const angleOffset = ringIndex * 0.4;
-        const angle = (i / ring.count) * Math.PI * 2 + angleOffset;
-        const seed = ringIndex * 100 + i;
-        const radiusVariation = ring.radius + Math.sin(seed * 3.7) * ring.radiusJitter;
-        result.push({
-          x: Math.cos(angle) * radiusVariation,
-          z: Math.sin(angle) * radiusVariation,
-          scale: ring.scaleBase + Math.abs(Math.sin(seed * 2.3) * ring.scaleVariation),
-          rotY: angle + Math.PI + Math.sin(seed * 1.7) * 0.3,
-        });
-      }
+    if (!activeConfig.kelp.enabled || activeConfig.kelp.count === 0) return [];
+    const samples = poissonDiscSample({
+      innerRadius: zones.forestInner,
+      outerRadius: zones.forestOuter,
+      minDistance: 1.5,
+      count: activeConfig.kelp.count,
+      seed: 137,
     });
-    return result;
+    const rng = seededRandom(138);
+    return samples.map((s) => ({
+      x: s.x,
+      z: s.z,
+      scale: 0.7 + rng() * 0.5,
+      rotY: rng() * Math.PI * 2,
+    }));
   });
 
-  interface JellyfishPlacement {
-    x: number;
-    y: number;
-    z: number;
-    seed: number;
-  }
-
-  const jellyfishPlacements = $derived.by((): JellyfishPlacement[] => {
-    const jf = activeConfig.jellyfish;
-    if (!jf?.enabled) return [];
-    return Array.from({ length: jf.count }, (_, i) => {
-      const angle = (i / jf.count) * Math.PI * 2 + 0.5;
-      const radius = jf.spawnRadius * (0.5 + Math.sin(i * 2.7) * 0.3);
+  const rockPlacements = $derived.by((): Placement[] => {
+    if (!activeConfig.rocks.enabled || activeConfig.rocks.count === 0) return [];
+    const samples = poissonDiscSample({
+      innerRadius: zones.clearingRadius,
+      outerRadius: zones.backgroundRadius,
+      minDistance: 1.0,
+      count: activeConfig.rocks.count,
+      seed: 271,
+    });
+    const rng = seededRandom(272);
+    return samples.map((s) => {
+      const dist = Math.sqrt(s.x * s.x + s.z * s.z);
+      const farBias = Math.min(dist / 30, 1.0);
+      const baseScale = 0.15 + rng() * 0.35;
+      const bigChance = rng();
+      const scale = bigChance > 0.85
+        ? baseScale * (2.5 + farBias * 2.5)
+        : bigChance > 0.6
+          ? baseScale * (1.5 + farBias * 1.5)
+          : baseScale;
       return {
-        x: Math.cos(angle) * radius,
-        z: Math.sin(angle) * radius,
-        y: jf.heightRange[0] + (jf.heightRange[1] - jf.heightRange[0]) * ((i + 0.5) / jf.count),
-        seed: i * 37,
+        x: s.x,
+        z: s.z,
+        scale,
+        rotY: rng() * Math.PI * 2,
       };
     });
   });
 
-  interface DecorationPlacement {
-    x: number;
-    z: number;
-    scale: number;
-    rotY: number;
-    type: "starfish" | "urchin" | "shell" | "anemone";
-  }
+  const boulderPlacements = $derived.by((): Placement[] => {
+    if (!activeConfig.rocks.enabled) return [];
+    const samples = poissonDiscSample({
+      innerRadius: zones.forestOuter - 2,
+      outerRadius: zones.backgroundRadius,
+      minDistance: 4.0,
+      count: 8,
+      seed: 333,
+    });
+    const rng = seededRandom(334);
+    return samples.map((s) => ({
+      x: s.x,
+      z: s.z,
+      scale: 1.5 + rng() * 2.5,
+      rotY: rng() * Math.PI * 2,
+    }));
+  });
 
-  const decorationPlacements = $derived.by((): DecorationPlacement[] => {
+  type DecoType = "starfish" | "urchin" | "shell" | "anemone";
+  interface DecoPlacement extends Placement {
+    type: DecoType;
+  }
+  const DECO_TYPES: DecoType[] = ["starfish", "urchin", "shell", "anemone"];
+
+  const decorationPlacements = $derived.by((): DecoPlacement[] => {
     if (!activeConfig.decorations.enabled) return [];
-    const clearingRadius = activeConfig.coral.clearingRadius;
-    const count = activeConfig.decorations.count;
-    const types: DecorationPlacement["type"][] = ["starfish", "urchin", "shell", "anemone"];
-    return Array.from({ length: count }, (_, i) => {
-      const angle = (i / count) * Math.PI * 2 + 1.1;
-      const radius = clearingRadius - 3 + Math.sin(i * 5.3) * 2;
-      return {
-        x: Math.cos(angle) * radius,
-        z: Math.sin(angle) * radius,
-        scale: 0.2 + Math.abs(Math.sin(i * 3.1) * 0.15),
-        rotY: Math.sin(i * 2.1) * Math.PI,
-        type: types[i % types.length]!,
-      };
+    const samples = poissonDiscSample({
+      innerRadius: zones.stageRadius,
+      outerRadius: zones.clearingRadius,
+      minDistance: 0.8,
+      count: activeConfig.decorations.count,
+      seed: 389,
     });
+    const rng = seededRandom(390);
+    return samples.map((s, i) => ({
+      x: s.x,
+      z: s.z,
+      scale: 0.12 + rng() * 0.25,
+      rotY: rng() * Math.PI * 2,
+      type: DECO_TYPES[i % DECO_TYPES.length]!,
+    }));
   });
 
-  // ============================================================================
-  // Schooling fish (InstancedMesh fallback + GLB fish state)
-  // ============================================================================
+  const octopusPlacement = $derived.by(() => {
+    const rng = seededRandom(777);
+    const angle = rng() * Math.PI * 2;
+    const r = 7 + rng() * 3;
+    return {
+      x: Math.cos(angle) * r,
+      z: Math.sin(angle) * r,
+      rotY: rng() * Math.PI * 2,
+    };
+  });
+
+  // ── Fish Data (Wander Paths) ──────────────────────────────────────────
 
   interface FishInstance {
     angle: number;
@@ -489,90 +308,34 @@
     height: number;
     speed: number;
     phase: number;
-  }
-
-  function measureModelExtent(root: Object3D): number {
-    root.updateMatrixWorld(true);
-    const v = new Vector3();
-    let minX = Infinity, minY = Infinity, minZ = Infinity;
-    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-    let found = false;
-    root.traverse((child) => {
-      const mesh = child as Mesh;
-      if (!mesh.isMesh || !mesh.geometry) return;
-      const pos = mesh.geometry.getAttribute("position");
-      if (!pos) return;
-      found = true;
-      for (let i = 0; i < pos.count; i++) {
-        v.fromBufferAttribute(pos, i);
-        v.applyMatrix4(mesh.matrixWorld);
-        if (v.x < minX) minX = v.x;
-        if (v.y < minY) minY = v.y;
-        if (v.z < minZ) minZ = v.z;
-        if (v.x > maxX) maxX = v.x;
-        if (v.y > maxY) maxY = v.y;
-        if (v.z > maxZ) maxZ = v.z;
-      }
-    });
-    if (!found) return 0;
-    const extent = Math.max(maxX - minX, maxY - minY, maxZ - minZ);
-    return isFinite(extent) && extent > 0 ? extent : 0;
-  }
-
-  const MAX_CREATURE_SCALE = 0.5;
-
-  const fishScales = $derived.by((): [number, number, number] => {
-    if (!$fishClown || !$fishButterfly || !$fishCommon) return [0.0002, 0.0002, 0.0002];
-    const target = activeConfig.fish.targetSize;
-    const names = ["clownfish", "butterfly", "common"];
-    return [$fishClown, $fishButterfly, $fishCommon].map((model, idx) => {
-      const extent = measureModelExtent(model.scene as Object3D);
-      const scale = extent < 0.001 ? 0.0002 : Math.min(target / extent, MAX_CREATURE_SCALE);
-      console.log(`[OceanDiag] fish ${names[idx]}: extent=${extent.toFixed(4)}, target=${target}, scale=${scale.toFixed(6)}`);
-      // Dump scene graph
-      (model.scene as Object3D).traverse((child) => {
-        const m = child as Mesh;
-        if (m.isMesh && m.geometry) {
-          const pos = m.geometry.getAttribute("position");
-          console.log(`  [mesh] name="${child.name}", vertexCount=${pos?.count ?? 0}, worldScale=[${child.scale.x.toFixed(2)},${child.scale.y.toFixed(2)},${child.scale.z.toFixed(2)}]`);
-        }
-      });
-      return scale;
-    }) as [number, number, number];
-  });
-
-  const JELLYFISH_TARGET_SIZE = 0.4;
-  const jellyfishScale = $derived.by((): number => {
-    if (!$jellyfishGlb) return 0.0002;
-    const extent = measureModelExtent($jellyfishGlb.scene as Object3D);
-    const scale = extent < 0.001 ? 0.0002 : Math.min(JELLYFISH_TARGET_SIZE / extent, MAX_CREATURE_SCALE);
-    console.log(`[OceanDiag] jellyfish: extent=${extent.toFixed(4)}, scale=${scale.toFixed(6)}`);
-    return scale;
-  });
-
-  function decorationScale(glb: { scene: Object3D } | undefined): number {
-    const target = activeConfig.decorations.targetSize;
-    if (!glb) return target;
-    const extent = measureModelExtent(glb.scene);
-    if (extent < 0.001) return 0.0002;
-    return Math.min(target / extent, MAX_CREATURE_SCALE);
+    prevX: number;
+    prevZ: number;
   }
 
   const fishData = $derived.by((): FishInstance[] => {
     if (!activeConfig.fish.enabled) return [];
-    const fishCfg = activeConfig.fish;
-    const useGlb = !!($fishClown && $fishButterfly && $fishCommon);
-    const count = useGlb ? fishCfg.count : Math.min(fishCfg.count * 3, 40);
-    const [rMin, rMax] = fishCfg.swimRadius;
-    const [hMin, hMax] = fishCfg.swimHeight;
-    const [sMin, sMax] = fishCfg.speed;
-    return Array.from({ length: count }, (_, i) => ({
-      angle: (i / count) * Math.PI * 2,
-      radius: rMin + Math.random() * (rMax - rMin),
-      height: hMin + Math.random() * (hMax - hMin),
-      speed: sMin + Math.random() * (sMax - sMin),
-      phase: Math.random() * Math.PI * 2,
-    }));
+    const cfg = activeConfig.fish;
+    const rng = seededRandom(500);
+    const rMin = zones.reefInner;
+    const rMax = zones.forestOuter;
+    const [hMin, hMax] = cfg.swimHeight;
+    const [sMin, sMax] = cfg.speed;
+    return Array.from({ length: cfg.count }, () => {
+      const angle = rng() * Math.PI * 2;
+      const radius = rMin + rng() * (rMax - rMin);
+      const height = hMin + rng() * (hMax - hMin);
+      const speed = sMin + rng() * (sMax - sMin);
+      const phase = rng() * Math.PI * 2;
+      return {
+        angle,
+        radius,
+        height,
+        speed,
+        phase,
+        prevX: Math.cos(angle) * radius,
+        prevZ: Math.sin(angle) * radius,
+      };
+    });
   });
 
   interface FishState {
@@ -584,127 +347,10 @@
   }
 
   let fishStates = $state<FishState[]>([]);
-
-  const fishGeometry = new ConeGeometry(0.04, 0.12, 4);
-  fishGeometry.rotateX(Math.PI / 2); // point forward along +Z
-  const fishMaterial = new MeshStandardMaterial({
-    color: new Color("#8899bb"),
-    emissive: new Color("#334466"),
-    emissiveIntensity: 0.2,
-    roughness: 0.5,
-  });
-
-  let fishMesh: InstancedMesh | null = null;
-  const fishTempObj = new Object3D();
-
-  function handleFishMeshCreated(mesh: InstancedMesh) {
-    fishMesh = mesh;
-  }
-
-  // ============================================================================
-  // Underwater tint (for GLB rocks)
-  // ============================================================================
-
-  function tintUnderwater(root: { traverse: (cb: (obj: unknown) => void) => void }, color: string, blend: number) {
-    const tintColor = new Color(color);
-    root.traverse((obj) => {
-      const m = obj as { isMesh?: boolean; material?: unknown };
-      if (!m.isMesh || !m.material) return;
-      const mats = Array.isArray(m.material) ? m.material : [m.material];
-      const cloned = mats.map((mat) => {
-        const clone = (mat as import("three").MeshStandardMaterial).clone();
-        if (clone.color) clone.color.lerp(tintColor, blend);
-        if (clone.emissive) clone.emissive.lerp(tintColor, blend * 0.5);
-        return clone;
-      });
-      (m as { material: unknown }).material = Array.isArray(m.material)
-        ? cloned
-        : cloned[0];
-    });
-  }
-
-  function underwaterClone(
-    sourceScene: { clone: () => { traverse: (cb: (obj: unknown) => void) => void } },
-    color: string,
-    blend: number,
-  ) {
-    const cloned = sourceScene.clone();
-    tintUnderwater(cloned, color, blend);
-    return cloned;
-  }
-
-  // ============================================================================
-  // Caustic shader
-  // ============================================================================
-
-  function createCausticMaterial(color: string, intensity: number, _speed: number, scale: number): ShaderMaterial {
-    return new ShaderMaterial({
-      transparent: true,
-      blending: AdditiveBlending,
-      side: DoubleSide,
-      depthWrite: false,
-      uniforms: {
-        uTime: { value: 0 },
-        uColor: { value: new Color(color) },
-        uIntensity: { value: intensity },
-        uScale: { value: scale },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float uTime;
-        uniform vec3 uColor;
-        uniform float uIntensity;
-        uniform float uScale;
-        varying vec2 vUv;
-
-        float causticLayer(vec2 p, float t) {
-          float a = sin(p.x * 3.0 + t * 0.7) * sin(p.y * 2.5 + t * 0.5);
-          float b = sin(p.x * 2.0 - t * 0.6) * sin(p.y * 3.5 - t * 0.4);
-          float c = sin((p.x + p.y) * 2.8 + t * 0.8);
-          return (a + b + c) / 3.0;
-        }
-
-        void main() {
-          vec2 scaledUv = (vUv - 0.5) * uScale;
-          float c1 = causticLayer(scaledUv, uTime);
-          float c2 = causticLayer(scaledUv * 1.3 + 0.5, uTime * 1.2);
-          float pattern = smoothstep(0.0, 0.8, (c1 + c2) * 0.5 + 0.5);
-          float alpha = pattern * uIntensity;
-          gl_FragColor = vec4(uColor * alpha, alpha);
-        }
-      `,
-    });
-  }
-
-  let causticMaterial = $state<ShaderMaterial | null>(null);
-
-  $effect(() => {
-    const c = activeConfig.caustics;
-    if (!c?.enabled) {
-      causticMaterial = null;
-      return;
-    }
-    causticMaterial = createCausticMaterial(c.color, c.intensity, c.speed, c.scale);
-  });
-
-  $effect(() => {
-    if (!causticMaterial || !activeConfig.caustics) return;
-    causticMaterial.uniforms.uColor!.value = new Color(activeConfig.caustics.color);
-    causticMaterial.uniforms.uIntensity!.value = activeConfig.caustics.intensity;
-    causticMaterial.uniforms.uScale!.value = activeConfig.caustics.scale;
-  });
-
-  // ============================================================================
-  // Jellyfish animation (drift + pulse)
-  // ============================================================================
-
   let jellyfishOffsets = $state<{ dx: number; dy: number; dz: number; pulse: number }[]>([]);
+  let jellyfishTime = $state(0);
+  let fishTime = 0;
+  let rayAngle = $state(0);
 
   $effect(() => {
     const jf = activeConfig.jellyfish;
@@ -712,83 +358,446 @@
       jellyfishOffsets = [];
       return;
     }
-    jellyfishOffsets = Array.from({ length: jf.count }, () => ({ dx: 0, dy: 0, dz: 0, pulse: 1.0 }));
+    jellyfishOffsets = Array.from({ length: jf.count }, () => ({
+      dx: 0,
+      dy: 0,
+      dz: 0,
+      pulse: 1.0,
+    }));
   });
 
-  let jellyfishTime = $state(0);
-  let fishTime = 0;
+  // ── Jellyfish Data ────────────────────────────────────────────────────
 
-  // ============================================================================
-  // Main animation loop
-  // ============================================================================
+  interface JellyfishSample {
+    x: number;
+    y: number;
+    z: number;
+    seed: number;
+    isSmall: boolean;
+  }
+
+  const jellyfishSamples = $derived.by((): JellyfishSample[] => {
+    const jf = activeConfig.jellyfish;
+    if (!jf?.enabled) return [];
+    const rng = seededRandom(600);
+    return Array.from({ length: jf.count }, (_, i) => ({
+      x: (rng() - 0.5) * jf.spawnRadius * 2,
+      z: (rng() - 0.5) * jf.spawnRadius * 2,
+      y: jf.heightRange[0] + rng() * (jf.heightRange[1] - jf.heightRange[0]),
+      seed: i * 37,
+      isSmall: rng() > 0.6,
+    }));
+  });
+
+  // ── Model Scaling ─────────────────────────────────────────────────────
+
+  const MAX_CREATURE_SCALE = 0.5;
+
+  function measureModelExtent(root: Object3D): number {
+    root.updateMatrixWorld(true);
+    const v = new Vector3();
+    let minX = Infinity,
+      minY = Infinity,
+      minZ = Infinity;
+    let maxX = -Infinity,
+      maxY = -Infinity,
+      maxZ = -Infinity;
+    let found = false;
+    root.traverse((child) => {
+      const m = child as Mesh;
+      if (!m.isMesh || !m.geometry) return;
+      const pos = m.geometry.getAttribute("position");
+      if (!pos) return;
+      found = true;
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        v.applyMatrix4(m.matrixWorld);
+        minX = Math.min(minX, v.x);
+        minY = Math.min(minY, v.y);
+        minZ = Math.min(minZ, v.z);
+        maxX = Math.max(maxX, v.x);
+        maxY = Math.max(maxY, v.y);
+        maxZ = Math.max(maxZ, v.z);
+      }
+    });
+    if (!found) return 0;
+    const extent = Math.max(maxX - minX, maxY - minY, maxZ - minZ);
+    return isFinite(extent) && extent > 0 ? extent : 0;
+  }
+
+  function measureModelMinY(root: Object3D): number {
+    root.updateMatrixWorld(true);
+    const v = new Vector3();
+    let minY = 0;
+    root.traverse((child) => {
+      const m = child as Mesh;
+      if (!m.isMesh || !m.geometry) return;
+      const pos = m.geometry.getAttribute("position");
+      if (!pos) return;
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        v.applyMatrix4(m.matrixWorld);
+        if (v.y < minY) minY = v.y;
+      }
+    });
+    return minY;
+  }
+
+  function mScale(
+    model: { scene: Object3D } | undefined,
+    target: number,
+  ): number {
+    if (!model) return 0.0002;
+    const extent = measureModelExtent(model.scene as Object3D);
+    return extent < 0.001
+      ? 0.0002
+      : Math.min(target / extent, MAX_CREATURE_SCALE);
+  }
+
+  const fishScales = $derived.by((): number[] => {
+    const models = [
+      $fishGlb0,
+      $fishGlb1,
+      $fishGlb2,
+      $fishGlb3,
+      $fishGlb4,
+    ];
+    const target = activeConfig.fish.targetSize;
+    return models.map((m) => mScale(m, target));
+  });
+
+  const jellyfishLargeScale = $derived(mScale($jellyfishGlb, 0.4));
+  const jellyfishSmallScale = $derived(mScale($jellyfishSmallGlb, 0.2));
+  const octopusScale = $derived(mScale($octopusGlb, 0.5));
+  const rayScale = $derived(mScale($rayGlb, 0.6));
+
+  function decoScale(type: DecoType): number {
+    const target = activeConfig.decorations.targetSize;
+    if (type === "starfish") return mScale($starfishGlb, target);
+    if (type === "urchin") return mScale($seaUrchinGlb, target);
+    if (type === "shell") return mScale($shellGlb, target);
+    return mScale($anemoneGlb, target);
+  }
+
+  // ── Underwater Tinting ────────────────────────────────────────────────
+
+  function tintUnderwater(
+    root: Object3D,
+    color: string,
+    blend: number,
+    enrichMaterial = false,
+  ) {
+    const tintColor = new Color(color);
+    let meshIdx = 0;
+    root.traverse((obj) => {
+      const m = obj as Mesh;
+      if (!m.isMesh || !m.material) return;
+      const mats = Array.isArray(m.material) ? m.material : [m.material];
+      const idx = meshIdx++;
+      const cloned = mats.map((mat) => {
+        const c = (mat as import("three").MeshStandardMaterial).clone();
+        if (c.color) c.color.lerp(tintColor, blend);
+        if (enrichMaterial) {
+          const variation = ((idx * 17 + 31) % 100) / 100;
+          c.roughness = 0.4 + variation * 0.4;
+          c.metalness = 0.05 + variation * 0.1;
+          if (c.emissive) {
+            const emissiveColor = tintColor.clone();
+            emissiveColor.multiplyScalar(0.3 + variation * 0.4);
+            c.emissive.copy(emissiveColor);
+            c.emissiveIntensity = 0.15 + variation * 0.25;
+          }
+          if (c.color) {
+            const hsl = { h: 0, s: 0, l: 0 };
+            c.color.getHSL(hsl);
+            hsl.l = Math.max(0.08, Math.min(0.6, hsl.l + (variation - 0.5) * 0.15));
+            c.color.setHSL(hsl.h, hsl.s, hsl.l);
+          }
+        } else {
+          if (c.emissive) c.emissive.lerp(tintColor, blend * 0.5);
+        }
+        return c;
+      });
+      (m as unknown as { material: unknown }).material = Array.isArray(m.material)
+        ? cloned
+        : cloned[0]!;
+    });
+  }
+
+  function hasSkeleton(root: Object3D): boolean {
+    let found = false;
+    root.traverse((c) => { if ((c as any).isSkinnedMesh) found = true; });
+    return found;
+  }
+
+  function underwaterClone(
+    sourceScene: Object3D,
+    color: string,
+    blend: number,
+    enrichMaterial = false,
+  ): Object3D {
+    const cloned = hasSkeleton(sourceScene)
+      ? cloneWithSkeleton(sourceScene)
+      : sourceScene.clone();
+    tintUnderwater(cloned, color, blend, enrichMaterial);
+    return cloned;
+  }
+
+  // ── Clone Caching ─────────────────────────────────────────────────────
+
+  const coralClones = $derived.by(() => {
+    const models = [
+      $coralGlb0,
+      $coralGlb1,
+      $coralGlb2,
+      $coralGlb3,
+      $coralLargeGlb,
+    ].filter(Boolean) as { scene: Object3D }[];
+    if (models.length === 0) return [];
+    return coralPlacements.map((placement) => {
+      const baseColor = new Color(activeConfig.coral.glowColor);
+      const hsl = { h: 0, s: 0, l: 0 };
+      baseColor.getHSL(hsl);
+      hsl.h += placement.hueShift;
+      hsl.s = Math.min(1, hsl.s * placement.satBoost);
+      hsl.l = Math.max(0.1, Math.min(0.7, hsl.l + (placement.hueShift > 0 ? 0.05 : -0.03)));
+      baseColor.setHSL(hsl.h, hsl.s, hsl.l);
+      const modelIdx = placement.speciesIdx % models.length;
+      return underwaterClone(
+        models[modelIdx]!.scene,
+        "#" + baseColor.getHexString(),
+        activeConfig.coral.glowBlend,
+        true,
+      );
+    });
+  });
+
+  const coralScales = $derived.by((): number[] => {
+    const models = [
+      $coralGlb0,
+      $coralGlb1,
+      $coralGlb2,
+      $coralGlb3,
+      $coralLargeGlb,
+    ].filter(Boolean) as { scene: Object3D }[];
+    if (models.length === 0) return [];
+    return coralPlacements.map((placement) =>
+      mScale(models[placement.speciesIdx % models.length], 0.5),
+    );
+  });
+
+  const coralBaseOffsets = $derived.by((): number[] => {
+    const models = [
+      $coralGlb0,
+      $coralGlb1,
+      $coralGlb2,
+      $coralGlb3,
+      $coralLargeGlb,
+    ].filter(Boolean) as { scene: Object3D }[];
+    return models.map((m) => {
+      const raw = -measureModelMinY(m.scene as Object3D);
+      return raw * 1.3 + 0.08;
+    });
+  });
+
+  const kelpBaseOffsets = $derived.by((): number[] => {
+    const models = [$seaweedGlb, $kelpPlantGlb].filter(Boolean) as { scene: Object3D }[];
+    return models.map((m) => {
+      const raw = -measureModelMinY(m.scene as Object3D);
+      return raw * 1.3 + 0.08;
+    });
+  });
+
+  const kelpScales = $derived.by((): number[] => {
+    const models = [$seaweedGlb, $kelpPlantGlb].filter(Boolean) as { scene: Object3D }[];
+    if (models.length === 0) return [];
+    return kelpPlacements.map((_, i) =>
+      mScale(models[i % models.length], 1.5),
+    );
+  });
+
+  const rockScales = $derived.by((): number[] => {
+    if (!$rockA || !$rockB) return [];
+    return rockPlacements.map((_, i) =>
+      mScale(i % 2 === 0 ? $rockA : $rockB, 0.6),
+    );
+  });
+
+  const kelpClones = $derived.by(() => {
+    const models = [$seaweedGlb, $kelpPlantGlb].filter(Boolean) as {
+      scene: Object3D;
+    }[];
+    if (models.length === 0) return [];
+    return kelpPlacements.map((_, i) =>
+      underwaterClone(models[i % models.length]!.scene, "#0d3a1a", 0.2, true),
+    );
+  });
+
+  const rockClones = $derived.by(() => {
+    if (!$rockA || !$rockB) return [];
+    return rockPlacements.map((_, i) =>
+      underwaterClone(
+        (i % 2 === 0 ? $rockA : $rockB)!.scene as Object3D,
+        activeConfig.rocks.tintColor,
+        activeConfig.rocks.tintBlend,
+      ),
+    );
+  });
+
+  const boulderClones = $derived.by(() => {
+    if (!$rockA || !$rockB) return [];
+    return boulderPlacements.map((_, i) =>
+      underwaterClone(
+        (i % 2 === 0 ? $rockA : $rockB)!.scene as Object3D,
+        "#0d1a2a",
+        0.6,
+      ),
+    );
+  });
+
+  const boulderScales = $derived.by((): number[] => {
+    if (!$rockA || !$rockB) return [];
+    return boulderPlacements.map((_, i) =>
+      mScale(i % 2 === 0 ? $rockA : $rockB, 2.0),
+    );
+  });
+
+  const fishClones = $derived.by(() => {
+    const models = [
+      $fishGlb0,
+      $fishGlb1,
+      $fishGlb2,
+      $fishGlb3,
+      $fishGlb4,
+    ].filter(Boolean) as { scene: Object3D }[];
+    if (models.length === 0) return [];
+    return fishData.map((_, i) =>
+      cloneWithSkeleton(models[i % models.length]!.scene),
+    );
+  });
+
+  const jellyfishClones = $derived.by(() => {
+    const large = $jellyfishGlb;
+    const small = $jellyfishSmallGlb;
+    if (!large) return [];
+    return jellyfishSamples.map((jf) => {
+      if (jf.isSmall && small) return small.scene.clone();
+      return large.scene.clone();
+    });
+  });
+
+  const octopusClone = $derived(
+    $octopusGlb ? $octopusGlb.scene.clone() : null,
+  );
+  const rayClone = $derived(
+    $rayGlb ? cloneWithSkeleton($rayGlb.scene) : null,
+  );
+
+  const decorationClones = $derived.by(() => {
+    return decorationPlacements.map((dec) => {
+      if (dec.type === "starfish" && $starfishGlb)
+        return $starfishGlb.scene.clone();
+      if (dec.type === "urchin" && $seaUrchinGlb)
+        return $seaUrchinGlb.scene.clone();
+      if (dec.type === "shell" && $shellGlb) return $shellGlb.scene.clone();
+      if (dec.type === "anemone" && $anemoneGlb)
+        return underwaterClone($anemoneGlb.scene as Object3D, "#cc3366", 0.25);
+      return null;
+    });
+  });
+
+  // ── Animation Loop ────────────────────────────────────────────────────
 
   useTask((delta) => {
-    // Animate caustic uniforms
-    if (causticMaterial) {
-      causticMaterial.uniforms.uTime!.value += delta * (activeConfig.caustics?.speed ?? 0.02) * 10;
+    fishTime += delta;
+
+    // Fish: wander-path orbits with velocity-direction facing
+    const loadedFish = [
+      $fishGlb0,
+      $fishGlb1,
+      $fishGlb2,
+      $fishGlb3,
+      $fishGlb4,
+    ].filter(Boolean);
+    if (loadedFish.length > 0 && fishData.length > 0) {
+      const next: FishState[] = [];
+      for (let i = 0; i < fishData.length; i++) {
+        const fish = fishData[i]!;
+        fish.angle += fish.speed * delta;
+
+        const wanderR =
+          fish.radius + Math.sin(fishTime * 0.7 + fish.phase * 3.0) * 1.5;
+        const wanderA =
+          fish.angle + Math.sin(fishTime * 0.3 + fish.phase * 2.0) * 0.4;
+
+        const px = Math.cos(wanderA) * wanderR;
+        const py =
+          groundY + fish.height + Math.sin(fishTime * 0.5 + fish.phase) * 0.6;
+        const pz = Math.sin(wanderA) * wanderR;
+
+        const dx = px - fish.prevX;
+        const dz = pz - fish.prevZ;
+        const rotY =
+          Math.sqrt(dx * dx + dz * dz) > 0.001
+            ? Math.atan2(dx, dz)
+            : (fishStates[i]?.rotY ?? fish.angle + Math.PI / 2);
+
+        fish.prevX = px;
+        fish.prevZ = pz;
+
+        next.push({
+          x: px,
+          y: py,
+          z: pz,
+          rotY,
+          variety: i % loadedFish.length,
+        });
+      }
+      fishStates = next;
     }
 
-    // Animate jellyfish drift + bell pulse
+    // Jellyfish: drift + bell pulse
     const jf = activeConfig.jellyfish;
     if (jf?.enabled && jellyfishOffsets.length > 0) {
       jellyfishTime += delta * jf.driftSpeed;
       const pulseAmp = jf.pulseAmplitude ?? 0.15;
       for (let i = 0; i < jellyfishOffsets.length; i++) {
         const phase = i * 2.3;
-        const pulsePhase = jellyfishTime * jf.pulseRate * Math.PI * 2 + i * 1.7;
-        const bellPulse = 1.0 + Math.sin(pulsePhase) * pulseAmp;
+        const pulsePhase =
+          jellyfishTime * jf.pulseRate * Math.PI * 2 + i * 1.7;
         jellyfishOffsets[i] = {
           dx: Math.sin(jellyfishTime * 0.7 + phase) * 1.5,
-          dy: Math.sin(jellyfishTime * 0.4 + phase * 1.3) * 0.5 +
-              Math.sin(pulsePhase) * 0.15,
+          dy:
+            Math.sin(jellyfishTime * 0.4 + phase * 1.3) * 0.5 +
+            Math.sin(pulsePhase) * 0.15,
           dz: Math.cos(jellyfishTime * 0.5 + phase * 0.8) * 1.5,
-          pulse: bellPulse,
+          pulse: 1.0 + Math.sin(pulsePhase) * pulseAmp,
         };
       }
     }
 
-    // Animate schooling fish
-    fishTime += delta;
-    const useGlbFish = $fishClown && $fishButterfly && $fishCommon;
-    if (useGlbFish) {
-      // GLB fish: update reactive state array
-      const next: FishState[] = [];
-      for (let i = 0; i < fishData.length; i++) {
-        const fish = fishData[i]!;
-        fish.angle += fish.speed * delta;
-        const px = Math.cos(fish.angle) * fish.radius;
-        const py = groundY + fish.height + Math.sin(fishTime + fish.phase) * 0.3;
-        const pz = Math.sin(fish.angle) * fish.radius;
-        const tangentAngle = fish.angle + Math.PI / 2;
-        next.push({ x: px, y: py, z: pz, rotY: tangentAngle, variety: i % 3 });
+    // Kelp: gentle sway via direct rotation mutation
+    const swaySpeed = activeConfig.kelp.swaySpeed;
+    const swayAmp = activeConfig.kelp.swayAmplitude;
+    for (let i = 0; i < kelpClones.length; i++) {
+      const clone = kelpClones[i];
+      if (clone) {
+        const phase = i * 1.7;
+        clone.rotation.x =
+          Math.sin(fishTime * swaySpeed + phase) * swayAmp;
+        clone.rotation.z =
+          Math.cos(fishTime * swaySpeed * 0.7 + phase) * swayAmp * 0.6;
       }
-      fishStates = next;
-    } else if (fishMesh && fishData.length > 0) {
-      // InstancedMesh fallback
-      for (let i = 0; i < fishData.length; i++) {
-        const fish = fishData[i]!;
-        fish.angle += fish.speed * delta;
-
-        const px = Math.cos(fish.angle) * fish.radius;
-        const py = groundY + fish.height + Math.sin(fishTime + fish.phase) * 0.3;
-        const pz = Math.sin(fish.angle) * fish.radius;
-
-        fishTempObj.position.set(px, py, pz);
-        const tangentAngle = fish.angle + Math.PI / 2;
-        fishTempObj.rotation.set(0, tangentAngle, 0);
-
-        fishTempObj.updateMatrix();
-        fishMesh.setMatrixAt(i, fishTempObj.matrix);
-      }
-      fishMesh.instanceMatrix.needsUpdate = true;
     }
+
+    // Ray: slow graceful orbit
+    rayAngle += delta * 0.15;
   });
 
-  // ============================================================================
-  // Fog
-  // ============================================================================
+  // ── Fog ───────────────────────────────────────────────────────────────
 
   let fogInstance: FogExp2 | null = null;
+
   $effect(() => {
     if (!scene.current) return;
     const fog = activeConfig.fog;
@@ -799,29 +808,28 @@
       fogInstance.color.set(fog.color);
       fogInstance.density = fog.density;
     }
+
     return () => {
       if (scene.current) scene.current.fog = null;
       fogInstance = null;
     };
   });
 
-  // ============================================================================
-  // Loading progress — track local GLB loading, report ready when all loaded
-  // ============================================================================
+  // ── Loading Progress ──────────────────────────────────────────────────
 
   $effect(() => {
     if (!sceneFeatures) return;
     const glbs = [
-      $fishClown, $fishButterfly, $fishCommon,
-      $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3,
-      $seaweedGlb, $jellyfishGlb,
+      $fishGlb0, $fishGlb1, $fishGlb2, $fishGlb3, $fishGlb4,
+      $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3, $coralLargeGlb,
+      $seaweedGlb, $kelpPlantGlb,
+      $jellyfishGlb, $jellyfishSmallGlb,
+      $octopusGlb, $rayGlb,
       $starfishGlb, $seaUrchinGlb, $shellGlb, $anemoneGlb,
     ];
     const loaded = glbs.filter(Boolean).length;
     sceneFeatures.reportProgress("environment", loaded / glbs.length);
-    if (loaded === glbs.length) {
-      sceneFeatures.reportReady("environment");
-    }
+    if (loaded === glbs.length) sceneFeatures.reportReady("environment");
   });
 
   onMount(() => {
@@ -830,60 +838,63 @@
         console.warn("[OceanScene] Lifting curtain via timeout");
         sceneFeatures.reportReady("environment");
       }
-    }, 3_000);
+    }, 5_000);
+
+    // Debug: expose seabed diagnostic on window
+    (window as any).__oceanDiag = () => {
+      const box = new Box3();
+      const wp = new Vector3();
+      const results: { name: string; x: number; z: number; meshBottom: number; terrainY: number; delta: number }[] = [];
+
+      scene.traverse((obj: any) => {
+        if (!obj.isMesh && !obj.isGroup) return;
+        if (obj.type === 'Scene') return;
+        if (obj.material?.uniforms?.uTexRepeat) return;
+        if (obj.material?.uniforms?.uWaterColor) return;
+
+        obj.getWorldPosition(wp);
+        if (Math.abs(wp.y - groundY) > 5) return;
+
+        box.setFromObject(obj);
+        if (!isFinite(box.min.y)) return;
+
+        const th = terrainHeightRaw(wp.x, wp.z, zones.stageRadius, zones.clearingRadius);
+        const surfaceY = groundY + th;
+        const delta = box.min.y - surfaceY;
+
+        if (delta < -0.05) {
+          results.push({
+            name: obj.name || obj.type || 'unnamed',
+            x: +wp.x.toFixed(2),
+            z: +wp.z.toFixed(2),
+            meshBottom: +box.min.y.toFixed(3),
+            terrainY: +surfaceY.toFixed(3),
+            delta: +delta.toFixed(3),
+          });
+        }
+      });
+
+      results.sort((a, b) => a.delta - b.delta);
+      console.table(results);
+      console.log(`${results.length} sunken objects found (bottom below terrain surface)`);
+      return results;
+    };
+
     return () => clearTimeout(timer);
   });
 
-  // ── Clone caching — clone once per GLB load, not per render ─────────
-
-  const coralClones = $derived.by(() => {
-    if (!$coralGlb0 || !$coralGlb1 || !$coralGlb2 || !$coralGlb3) return [];
-    const models = [$coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3];
-    return coralPlacements.map((_, i) =>
-      underwaterClone(models[i % models.length]!.scene, activeConfig.coral.glowColor, activeConfig.coral.glowBlend)
-    );
-  });
-
-  const kelpClones = $derived.by(() => {
-    if (!$seaweedGlb) return [];
-    return kelpPlacements.map(() => underwaterClone($seaweedGlb!.scene, "#0d3a1a", 0.2));
-  });
-
-  const oceanRockClones = $derived.by(() => {
-    if (!$rockA || !$rockB) return [];
-    return rockPlacements.map((_, i) =>
-      underwaterClone((i % 2 === 0 ? $rockA : $rockB)!.scene, activeConfig.rockTintColor, activeConfig.rockTintBlend)
-    );
-  });
-
-  const fishClones = $derived.by(() => {
-    if (!$fishClown || !$fishButterfly || !$fishCommon) return [];
-    const models = [$fishClown, $fishButterfly, $fishCommon];
-    return fishData.map((_, i) => cloneWithSkeleton(models[i % 3]!.scene));
-  });
-
-  const jellyfishClones = $derived.by(() => {
-    if (!$jellyfishGlb) return [];
-    return jellyfishPlacements.map(() => $jellyfishGlb!.scene.clone());
-  });
-
-  const decorationClones = $derived.by(() => {
-    return decorationPlacements.map((dec) => {
-      if (dec.type === "starfish" && $starfishGlb) return $starfishGlb.scene.clone();
-      if (dec.type === "urchin" && $seaUrchinGlb) return $seaUrchinGlb.scene.clone();
-      if (dec.type === "shell" && $shellGlb) return $shellGlb.scene.clone();
-      if (dec.type === "anemone" && $anemoneGlb) return underwaterClone($anemoneGlb.scene, "#cc3366", 0.25);
-      return null;
-    });
-  });
+  // ── Cleanup ───────────────────────────────────────────────────────────
 
   onDestroy(() => {
-    for (const c of coralClones) disposeSceneGraph(c as Object3D);
-    for (const c of kelpClones) disposeSceneGraph(c as Object3D);
-    for (const c of oceanRockClones) disposeSceneGraph(c as Object3D);
+    for (const c of coralClones) disposeSceneGraph(c);
+    for (const c of kelpClones) disposeSceneGraph(c);
+    for (const c of rockClones) disposeSceneGraph(c);
+    for (const c of boulderClones) disposeSceneGraph(c);
     for (const c of fishClones) disposeSceneGraph(c);
     for (const c of jellyfishClones) disposeSceneGraph(c);
     for (const c of decorationClones) if (c) disposeSceneGraph(c as Object3D);
+    if (octopusClone) disposeSceneGraph(octopusClone);
+    if (rayClone) disposeSceneGraph(rayClone);
   });
 </script>
 
@@ -894,222 +905,187 @@
   bottomColor={activeConfig.sky.bottomColor}
 />
 
-<!-- Ocean floor -->
-{#if activeConfig.ground.textured && activeConfig.ground.diffuseMap}
-  <TexturedGroundPlane
-    color={activeConfig.ground.color}
-    size={activeConfig.ground.size}
-    diffuseMap={activeConfig.ground.diffuseMap}
-    normalMap={activeConfig.ground.normalMap}
-    roughnessMap={activeConfig.ground.roughnessMap}
-    normalScale={activeConfig.ground.normalScale ?? 1.0}
-    textureRepeat={activeConfig.ground.textureRepeat ?? 8}
-  />
-{:else}
-  <GroundPlane
-    color={activeConfig.ground.color}
-    size={activeConfig.ground.size}
-    opacity={activeConfig.ground.opacity ?? 1}
-  />
-{/if}
+<!-- Procedural seabed with sand ripples (replaces flat ground) -->
+<ProceduralSeabed
+  color={activeConfig.ground.color}
+  rippleColor={seabedRippleColor}
+  size={activeConfig.ground.size}
+  stageRadius={zones.stageRadius}
+  clearingRadius={zones.clearingRadius}
+/>
 
-<!-- Caustic light ripples — Voronoi or legacy -->
-{#if activeConfig.caustics?.enabled}
-  {#if activeConfig.caustics.voronoi}
-    <VoronoiCaustics
-      intensity={activeConfig.caustics.intensity}
-      speed={activeConfig.caustics.speed}
-      scale={activeConfig.caustics.scale}
-      color={activeConfig.caustics.color}
-      groundSize={activeConfig.ground.size}
-    />
-  {:else if causticMaterial}
-    <T.Mesh
-      position.y={groundY + 0.02}
-      rotation.x={-Math.PI / 2}
-      material={causticMaterial}
-    >
-      <T.PlaneGeometry args={[activeConfig.ground.size * 0.8, activeConfig.ground.size * 0.8]} />
-    </T.Mesh>
-  {/if}
-{/if}
-
-<!-- Volumetric god ray shafts -->
-{#if activeConfig.godRayShafts?.enabled}
-  <GodRayShafts config={activeConfig.godRayShafts} />
-{/if}
-
-<!-- Water surface -->
+<!-- Water surface shimmer -->
 {#if activeConfig.waterSurface?.enabled}
   <WaterSurface config={activeConfig.waterSurface} size={activeConfig.ground.size} />
 {/if}
 
-<!-- Coral formations — GLB with procedural fallback -->
-{#if activeConfig.coral.enabled}
-  {#if coralClones.length > 0}
-    {#each coralClones as clone, i}
-      {@const placement = coralPlacements[i]}
-      {#if placement}
-        <T
-          is={clone}
-          position.x={placement.x}
-          position.y={groundY}
-          position.z={placement.z}
-          scale={placement.scale * CORAL_GLB_NORMALIZE[i % 4]!}
-          rotation.y={placement.rotY}
-        />
-      {/if}
-    {/each}
-  {:else}
-    {#each coralInstances as coral}
-      <T
-        is={coral.mesh}
-        position.x={coral.x}
-        position.y={groundY}
-        position.z={coral.z}
-        scale={coral.scale}
-        rotation.y={coral.rotY}
-      />
-    {/each}
-  {/if}
-{/if}
 
-<!-- Kelp forest — GLB seaweed with procedural fallback -->
-{#if activeConfig.kelp.enabled}
-  {#if kelpClones.length > 0}
-    {#each kelpClones as clone, i}
-      {@const placement = kelpPlacements[i]}
-      {#if placement}
-        <T
-          is={clone}
-          position.x={placement.x}
-          position.y={groundY}
-          position.z={placement.z}
-          scale={placement.scale * 0.8}
-          rotation.y={placement.rotY}
-        />
-      {/if}
-    {/each}
-  {:else}
-    {#each kelpInstances as kelp}
+<!-- Coral formations (Poisson-disc placed, auto-scaled) -->
+{#if activeConfig.coral.enabled && coralClones.length > 0}
+  {#each coralClones as clone, i}
+    {@const p = coralPlacements[i]}
+    {@const s = coralScales[i] ?? 0.001}
+    {#if p}
+      {@const th = getTerrainY(p.x, p.z)}
+      {@const baseOffset = (coralBaseOffsets[p.speciesIdx % coralBaseOffsets.length] ?? 0) * p.scale * s}
       <T
-        is={kelp.mesh}
-        position.x={kelp.x}
-        position.y={groundY}
-        position.z={kelp.z}
-        scale={kelp.scale}
-        rotation.y={kelp.rotY}
+        is={clone}
+        position.x={p.x}
+        position.y={groundY + th + baseOffset}
+        position.z={p.z}
+        scale={p.scale * s}
+        rotation.y={p.rotY}
       />
-    {/each}
-  {/if}
-{/if}
-
-<!-- Seabed rocks — GLB with procedural fallback -->
-{#if oceanRockClones.length > 0}
-  {#each oceanRockClones as clone, i}
-    {@const [x, z, scale, rotY] = rockPlacements[i] ?? [0, 0, 1, 0]}
-    <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
-  {/each}
-{:else}
-  {#each proceduralRockInstances as rock}
-    <T
-      is={rock.mesh}
-      position.x={rock.x}
-      position.y={groundY}
-      position.z={rock.z}
-      scale={rock.scale}
-      rotation.y={rock.rotY}
-    />
+    {/if}
   {/each}
 {/if}
 
-<!-- Schooling fish — GLB models with InstancedMesh fallback -->
-{#if activeConfig.fish.enabled}
-  {#if fishClones.length > 0}
-    {#each fishStates as fish, i}
-      {#if fishClones[i]}
-        <T
-          is={fishClones[i]}
-          position.x={fish.x}
-          position.y={fish.y}
-          position.z={fish.z}
-          rotation.y={fish.rotY}
-          scale={fishScales[fish.variety]}
-        />
-      {/if}
-    {/each}
-  {:else}
-    <T.InstancedMesh
-      args={[fishGeometry, fishMaterial, fishData.length || 1]}
-      frustumCulled={false}
-      oncreate={handleFishMeshCreated}
-    />
-  {/if}
+<!-- Kelp forest (Poisson-disc, sway-animated via useTask) -->
+{#if activeConfig.kelp.enabled && kelpClones.length > 0}
+  {#each kelpClones as clone, i}
+    {@const p = kelpPlacements[i]}
+    {@const s = kelpScales[i] ?? 0.001}
+    {#if p}
+      {@const th = getTerrainY(p.x, p.z)}
+      {@const baseOffset = (kelpBaseOffsets[i % kelpBaseOffsets.length] ?? 0) * p.scale * s}
+      <T
+        is={clone}
+        position.x={p.x}
+        position.y={groundY + th + baseOffset}
+        position.z={p.z}
+        scale={p.scale * s}
+        rotation.y={p.rotY}
+      />
+    {/if}
+  {/each}
 {/if}
 
-<!-- Jellyfish — GLB model with procedural fallback + bell pulse -->
-{#if activeConfig.jellyfish?.enabled}
-  {#if jellyfishClones.length > 0}
-    {#each jellyfishPlacements as jf, i}
-      {@const offset = jellyfishOffsets[i] ?? { dx: 0, dy: 0, dz: 0, pulse: 1.0 }}
-      {@const pulseScale = jellyfishScale * (offset.pulse ?? 1.0)}
-      <T.Group
-        position.x={jf.x + offset.dx}
-        position.y={groundY + jf.y + offset.dy}
-        position.z={jf.z + offset.dz}
-      >
-        {#if jellyfishClones[i]}
-          <T is={jellyfishClones[i]} scale={pulseScale} />
-        {/if}
-        <T.PointLight
-          color={activeConfig.jellyfish.glowColor}
-          intensity={activeConfig.jellyfish.lightIntensity * (0.7 + 0.3 * Math.sin(jellyfishTime * activeConfig.jellyfish.pulseRate * Math.PI * 2 + i * 1.7))}
-          distance={activeConfig.jellyfish.lightDistance}
-          decay={2}
-        />
-      </T.Group>
-    {/each}
-  {:else}
-    {#each jellyfishInstances as jf, i}
-      {@const offset = jellyfishOffsets[i] ?? { dx: 0, dy: 0, dz: 0, pulse: 1.0 }}
-      {@const pulseS = 0.5 * (offset.pulse ?? 1.0)}
-      <T.Group
-        position.x={jf.x + offset.dx}
-        position.y={groundY + jf.y + offset.dy}
-        position.z={jf.z + offset.dz}
-      >
-        <T is={jf.mesh} scale={pulseS} />
-        <T.PointLight
-          color={activeConfig.jellyfish.glowColor}
-          intensity={activeConfig.jellyfish.lightIntensity * (0.7 + 0.3 * Math.sin(jellyfishTime * activeConfig.jellyfish.pulseRate * Math.PI * 2 + i * 1.7))}
-          distance={activeConfig.jellyfish.lightDistance}
-          decay={2}
-        />
-      </T.Group>
-    {/each}
-  {/if}
+<!-- Seabed rocks (zone-placed: clearing → background) -->
+{#if activeConfig.rocks.enabled && rockClones.length > 0}
+  {#each rockClones as clone, i}
+    {@const p = rockPlacements[i]}
+    {@const s = rockScales[i] ?? 0.001}
+    {#if p}
+      {@const finalScale = p.scale * s}
+      <T
+        is={clone}
+        position.x={p.x}
+        position.y={groundY + getTerrainY(p.x, p.z) - finalScale * 0.4}
+        position.z={p.z}
+        scale={finalScale}
+        rotation.y={p.rotY}
+      />
+    {/if}
+  {/each}
 {/if}
 
-<!-- Ocean floor decorations (starfish, sea urchins, shells, anemones) -->
+<!-- Background boulders (large silhouettes at distance) -->
+{#if activeConfig.rocks.enabled && boulderClones.length > 0}
+  {#each boulderClones as clone, i}
+    {@const p = boulderPlacements[i]}
+    {@const s = boulderScales[i] ?? 0.001}
+    {#if p}
+      {@const finalScale = p.scale * s}
+      <T
+        is={clone}
+        position.x={p.x}
+        position.y={groundY + getTerrainY(p.x, p.z) - finalScale * 0.6}
+        position.z={p.z}
+        scale={finalScale}
+        rotation.y={p.rotY}
+      />
+    {/if}
+  {/each}
+{/if}
+
+<!-- Floor decorations (zone-placed: stage edge → clearing) -->
 {#if activeConfig.decorations.enabled}
-{#each decorationClones as clone, i}
-  {@const dec = decorationPlacements[i]}
-  {#if clone && dec}
-    <T
-      is={clone}
-      position.x={dec.x}
-      position.y={groundY}
-      position.z={dec.z}
-      scale={dec.scale * decorationScale(
-        dec.type === "starfish" ? $starfishGlb :
-        dec.type === "urchin" ? $seaUrchinGlb :
-        dec.type === "shell" ? $shellGlb :
-        $anemoneGlb
-      )}
-      rotation.y={dec.rotY}
-    />
-  {/if}
-{/each}
+  {#each decorationClones as clone, i}
+    {@const dec = decorationPlacements[i]}
+    {#if clone && dec}
+      <T
+        is={clone}
+        position.x={dec.x}
+        position.y={groundY + getTerrainY(dec.x, dec.z)}
+        position.z={dec.z}
+        scale={dec.scale * decoScale(dec.type)}
+        rotation.y={dec.rotY}
+      />
+    {/if}
+  {/each}
+{/if}
+
+<!-- Hero: Octopus (sits on seabed) — gated by decorations -->
+{#if activeConfig.decorations.enabled && octopusClone}
+  <T
+    is={octopusClone}
+    position.x={octopusPlacement.x}
+    position.y={groundY + getTerrainY(octopusPlacement.x, octopusPlacement.z)}
+    position.z={octopusPlacement.z}
+    scale={octopusScale}
+    rotation.y={octopusPlacement.rotY}
+  />
+{/if}
+
+<!-- Hero: Ray (glides in slow orbit above the reef) — gated by fish -->
+{#if activeConfig.fish.enabled && rayClone}
+  <T
+    is={rayClone}
+    position.x={Math.cos(rayAngle) * 10}
+    position.y={groundY + 5}
+    position.z={Math.sin(rayAngle) * 10}
+    scale={rayScale}
+    rotation.y={rayAngle + Math.PI / 2}
+  />
+{/if}
+
+<!-- Schooling fish (velocity-facing, wander-path) -->
+{#if activeConfig.fish.enabled && fishClones.length > 0}
+  {#each fishStates as fish, i}
+    {#if fishClones[i]}
+      <T
+        is={fishClones[i]}
+        position.x={fish.x}
+        position.y={fish.y}
+        position.z={fish.z}
+        rotation.y={fish.rotY}
+        scale={fishScales[fish.variety] ?? 0.0002}
+      />
+    {/if}
+  {/each}
+{/if}
+
+<!-- Jellyfish (drift + pulse + bioluminescent glow) -->
+{#if activeConfig.jellyfish?.enabled && jellyfishClones.length > 0}
+  {#each jellyfishSamples as jf, i}
+    {@const offset = jellyfishOffsets[i] ?? { dx: 0, dy: 0, dz: 0, pulse: 1.0 }}
+    {@const baseScale = jf.isSmall ? jellyfishSmallScale : jellyfishLargeScale}
+    {@const pulseScale = baseScale * (offset.pulse ?? 1.0)}
+    <T.Group
+      position.x={jf.x + offset.dx}
+      position.y={groundY + jf.y + offset.dy}
+      position.z={jf.z + offset.dz}
+    >
+      {#if jellyfishClones[i]}
+        <T is={jellyfishClones[i]} scale={pulseScale} />
+      {/if}
+      <T.PointLight
+        color={activeConfig.jellyfish.glowColor}
+        intensity={activeConfig.jellyfish.lightIntensity *
+          (0.7 +
+            0.3 *
+              Math.sin(
+                jellyfishTime *
+                  activeConfig.jellyfish.pulseRate *
+                  Math.PI *
+                  2 +
+                  i * 1.7,
+              ))}
+        distance={activeConfig.jellyfish.lightDistance}
+        decay={2}
+      />
+    </T.Group>
+  {/each}
 {/if}
 
 <!-- Bubbles -->
@@ -1166,9 +1142,16 @@
   />
 {/if}
 
+<!-- Geometric god ray shafts (additive-blended light beams) -->
+{#if activeConfig.godRayShafts?.enabled}
+  <GodRayShafts config={activeConfig.godRayShafts} />
+{/if}
+
 <!-- Hemisphere ambient -->
 <T.HemisphereLight
   color={activeConfig.hemisphereLight.skyColor}
   groundColor={activeConfig.hemisphereLight.groundColor}
   intensity={activeConfig.hemisphereLight.intensity}
 />
+
+<RuinsPlatform config={activeConfig.platform} />

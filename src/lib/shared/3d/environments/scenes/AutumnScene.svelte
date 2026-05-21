@@ -13,6 +13,7 @@
     createDefaultAutumnConfig,
   } from "../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import Stage3D from "../../components/Stage3D.svelte";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
   interface Props {
@@ -201,3 +202,5 @@
     position.z={sl.position[2]}
   />
 {/if}
+
+<Stage3D />

@@ -13,6 +13,7 @@
 
   const { state } = getSceneLabContext();
   const cfg = $derived(state.winterConfig);
+  function mut() { return state.winterConfig; }
 </script>
 
 <ParamPanel title="Sky">
@@ -324,6 +325,14 @@
     />
   </ParamPanel>
 {/if}
+
+<ParamPanel title="Ice platform" defaultOpen={false} enabled={cfg.platform.enabled} onToggle={(v) => (mut().platform.enabled = v)}>
+  <ParamSlider label="Radius" value={cfg.platform.radius} min={2} max={12} step={0.5} unit="m" onChange={(v) => (mut().platform.radius = v)} />
+  <ParamSlider label="Height" value={cfg.platform.height} min={0.1} max={1.5} step={0.05} unit="m" onChange={(v) => (mut().platform.height = v)} />
+  <ParamColor label="Color" value={cfg.platform.primaryColor} onChange={(v) => (mut().platform.primaryColor = v)} />
+  <ParamSlider label="Glow intensity" value={cfg.platform.glowIntensity} min={0} max={2} step={0.05} onChange={(v) => (mut().platform.glowIntensity = v)} />
+  <ParamSlider label="Frost density" value={cfg.platform.frostDensity} min={0.2} max={3} step={0.1} onChange={(v) => (mut().platform.frostDensity = v)} />
+</ParamPanel>
 
 <style>
   .ring-group {

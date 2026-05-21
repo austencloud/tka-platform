@@ -1,18 +1,7 @@
 <script lang="ts">
-  /**
-   * Generic Scene Editor
-   *
-   * Universal editor shell for any scene using the Scene Composer system.
-   * Extracted from MuseumSceneEditor — replaces hardcoded museum state with
-   * generic ComposerEditorState and prefix-walking with userData.composerId.
-   *
-   * Placed inside a <Canvas>. Click to select, TransformControls gizmo for
-   * transform, 1/2/3 for translate/rotate/scale, WASD+QE for panning,
-   * Ctrl+Z/Ctrl+Shift+Z for undo/redo, Delete to remove, Ctrl+S to save.
-   */
   import { useThrelte, useTask } from "@threlte/core";
   import { TransformControls } from "@threlte/extras";
-  import { Raycaster, Vector2, Vector3, type Object3D, type Camera } from "three";
+  import { Vector3, Color, type Object3D, type Camera } from "three";
   import { onMount, onDestroy } from "svelte";
   import type { ComposerEditorState } from "./composer-editor-state.svelte";
   import type { Command } from "./command-stack.svelte";
@@ -24,12 +13,17 @@
 
   const { editorState, onSave }: Props = $props();
 
+  console.log('[GenericSceneEditor] MOUNTED');
+
   const _tempVec = new Vector3();
   const _worldPos = new Vector3();
+
+  // ── Gizmo drag → undo/redo commands ──
 
   let dragStartPos: Vector3 | null = null;
   let dragStartRot = $state<{ x: number; y: number; z: number } | null>(null);
   let dragStartScale: Vector3 | null = null;
+  let gizmoDragging = false;
 
   function captureBeforeDrag(obj: Object3D) {
     dragStartPos = obj.position.clone();
@@ -94,116 +88,70 @@
     return null;
   }
 
-  const ctx = useThrelte();
-  const getScene = () => (ctx.scene as any)?.current ?? ctx.scene;
+  // ── Hover highlight ──
+
+  const HOVER_EMISSIVE = new Color(0x444444);
+  const ZERO_EMISSIVE = new Color(0x000000);
+  let hoveredGroup: Object3D | null = null;
+
+  function setHoverHighlight(obj: Object3D | null) {
+    if (hoveredGroup === obj) return;
+    if (hoveredGroup) {
+      hoveredGroup.traverse((child) => {
+        const m = child as any;
+        if (m.isMesh && m.material?.emissive) {
+          m.material.emissive.copy(ZERO_EMISSIVE);
+        }
+      });
+    }
+    hoveredGroup = obj;
+    if (obj) {
+      obj.traverse((child) => {
+        const m = child as any;
+        if (m.isMesh && m.material?.emissive) {
+          m.material.emissive.copy(HOVER_EMISSIVE);
+        }
+      });
+    }
+    const canvas = (renderer as any)?.current?.domElement ?? (renderer as any)?.domElement;
+    if (canvas) canvas.style.cursor = obj ? "pointer" : "";
+  }
+
+  export function handlePointerEnter(group: Object3D) {
+    if (editorState.activeCatalogItem || gizmoDragging) return;
+    setHoverHighlight(group);
+  }
+
+  export function handlePointerLeave() {
+    if (gizmoDragging) return;
+    setHoverHighlight(null);
+  }
+
+  export function handleClick(group: Object3D) {
+    if (editorState.activeCatalogItem) return;
+    setHoverHighlight(null);
+    editorState.select(group);
+  }
+
+  export function handleMissedClick() {
+    if (editorState.activeCatalogItem) return;
+    editorState.deselect();
+  }
+
+  // ── Camera + WASD panning ──
+
+  const { camera, renderer } = useThrelte();
   const getCamera = (): Camera | null => {
-    const c = (ctx.camera as any)?.current ?? ctx.camera;
+    const c = (camera as any).current ?? camera;
     return c?.isCamera ? c : null;
   };
-  const getCanvas = (): HTMLCanvasElement | null => {
-    const r = (ctx.renderer as any)?.current ?? ctx.renderer;
-    return r?.domElement ?? null;
-  };
 
-  const raycaster = new Raycaster();
-  const pointer = new Vector2();
-  let gizmoDragging = false;
-
-  function findClickedObject(event: PointerEvent): Object3D | null {
-    const cam = getCamera();
-    const scene = getScene();
-    if (!cam || !scene) return null;
-
-    const canvas = getCanvas();
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(pointer, cam);
-    const intersects = raycaster.intersectObjects(scene.children, true);
-
-    for (const hit of intersects) {
-      // Skip gizmo meshes
-      let isGizmo = false;
-      let parent: Object3D | null = hit.object;
-      while (parent) {
-        if (
-          (parent as any).isTransformControls ||
-          parent.type === "TransformControlsGizmo" ||
-          parent.type === "TransformControlsPlane"
-        ) {
-          isGizmo = true;
-          break;
-        }
-        parent = parent.parent;
-      }
-      if (isGizmo) return null;
-
-      // Skip instanced meshes (walls, floors, ceilings)
-      if ((hit.object as any).isInstancedMesh) continue;
-
-      // Walk up hierarchy looking for userData.composerId
-      let target: Object3D = hit.object;
-      let walk: Object3D | null = hit.object;
-      while (walk && walk.type !== "Scene") {
-        if (walk.userData?.composerId) {
-          target = walk;
-          break;
-        }
-        walk = walk.parent;
-      }
-
-      if (target.userData?.composerId) return target;
-    }
-    return null;
-  }
-
-  function handlePointerDown(event: PointerEvent) {
-    if (event.button !== 0) return;
-    if (gizmoDragging) return;
-    if (editorState.activeCatalogItem) return;
-
-    requestAnimationFrame(() => {
-      if (gizmoDragging) return;
-      const obj = findClickedObject(event);
-      if (obj) {
-        editorState.select(obj);
-      } else {
-        editorState.deselect();
-      }
-    });
-  }
-
-  function handleDoubleClick(event: MouseEvent) {
-    const cam = getCamera();
-    const scene = getScene();
-    const canvas = getCanvas();
-    if (!cam || !scene || !canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(pointer, cam);
-    const hits = raycaster.intersectObjects(scene.children, true);
-
-    for (const hit of hits) {
-      if ((hit.object as any).isInstancedMesh || (hit.object as any).isTransformControls)
-        continue;
-      editorState.focusOnPoint(hit.point.x, hit.point.y, hit.point.z);
-      break;
-    }
-  }
-
-  // ── WASD keyboard panning ──
   const panKeys = new Set<string>();
   const PAN_SPEED = 8;
 
   function handleKeyDown(event: KeyboardEvent) {
     const key = event.key.toLowerCase();
 
-    // Gizmo mode
     if (key === "1") {
       editorState.setGizmoMode("translate");
       return;
@@ -222,7 +170,6 @@
       return;
     }
 
-    // Delete selected object
     if (key === "delete" || key === "backspace") {
       const sel = editorState.selectedObject;
       if (sel) {
@@ -249,21 +196,18 @@
       return;
     }
 
-    // Ctrl+Z / Ctrl+Shift+Z undo/redo
     if ((event.ctrlKey || event.metaKey) && key === "z") {
       event.preventDefault();
       event.shiftKey ? editorState.commands.redo() : editorState.commands.undo();
       return;
     }
 
-    // Ctrl+S save
     if ((event.ctrlKey || event.metaKey) && key === "s") {
       event.preventDefault();
       onSave?.();
       return;
     }
 
-    // WASD + Q/E for panning
     if (["w", "a", "s", "d", "q", "e"].includes(key)) {
       panKeys.add(key);
       event.preventDefault();
@@ -277,7 +221,6 @@
     if (event.key === "Shift") panKeys.delete("shift");
   }
 
-  // Each frame: pan the orbit target (camera follows via OrbitControls)
   useTask((delta) => {
     if (panKeys.size === 0) return;
     const cam = getCamera();
@@ -307,24 +250,15 @@
   });
 
   onMount(() => {
-    const canvas = getCanvas();
-    if (canvas) {
-      canvas.addEventListener("pointerdown", handlePointerDown);
-      canvas.addEventListener("dblclick", handleDoubleClick);
-    }
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     if (document.pointerLockElement) document.exitPointerLock();
   });
 
   onDestroy(() => {
-    const canvas = getCanvas();
-    if (canvas) {
-      canvas.removeEventListener("pointerdown", handlePointerDown);
-      canvas.removeEventListener("dblclick", handleDoubleClick);
-    }
     window.removeEventListener("keydown", handleKeyDown);
     window.removeEventListener("keyup", handleKeyUp);
+    setHoverHighlight(null);
     editorState.deselect();
   });
 </script>
