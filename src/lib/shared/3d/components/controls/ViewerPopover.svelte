@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Popover } from "bits-ui";
   import { getViewer3DContext, type PopoverId } from "../../context/viewer-3d-context";
-  import { scale } from "svelte/transition";
+  import { scale, fly, fade } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
 
@@ -34,16 +34,13 @@
   let popoverOpen = $state(false);
 
   $effect(() => {
-    const shouldBeOpen = viewer.activePopover === id;
-    if (popoverOpen !== shouldBeOpen) {
-      popoverOpen = shouldBeOpen;
-    }
+    popoverOpen = viewer.activePopover === id;
   });
 
-  function handleOpenChange(open: boolean) {
-    if (open) {
+  function handleOpenChange(next: boolean) {
+    if (next) {
       viewer.openPopover(id);
-    } else if (viewer.activePopover === id) {
+    } else {
       viewer.closePopover();
     }
   }
@@ -64,46 +61,55 @@
       </button>
     {/snippet}
   </Popover.Trigger>
-  <Popover.Portal>
-    <Popover.Content
-      side="left"
-      sideOffset={10}
-      align="start"
-      avoidCollisions={true}
-      collisionPadding={12}
-      forceMount
-      onInteractOutside={() => handleOpenChange(false)}
-    >
-      {#snippet child({ open, wrapperProps, props })}
-        <div {...wrapperProps}>
-          {#if open}
-            <div
-              {...props}
-              class="viewer-popover-panel"
-              style:--popover-width="{width}px"
-              in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
-              out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
+  <Popover.Content
+    side="left"
+    sideOffset={10}
+    align="start"
+    avoidCollisions={true}
+    collisionPadding={12}
+    forceMount
+  >
+    {#snippet child({ open, wrapperProps, props })}
+      <div {...wrapperProps}>
+        {#if open}
+          <div
+            {...props}
+            class="viewer-popover-panel"
+            style:--popover-width="{width}px"
+            in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
+            out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
+          >
+            <header
+              class="pop-header"
+              in:fly={{ y: -6, duration: 180, delay: 40 }}
+              out:fade={{ duration: 80 }}
             >
-              <header class="pop-header">
-                <span class="pop-title">{title}</span>
-                {#if accentColor}
-                  <span class="pop-badge" style:background={accentColor}></span>
-                {/if}
-              </header>
-              <div class="pop-body">
-                {@render children()}
-              </div>
-              {#if footer}
-                <div class="pop-footer">
-                  {@render footer()}
-                </div>
+              <span class="pop-title">{title}</span>
+              {#if accentColor}
+                <span class="pop-badge" style:background={accentColor}></span>
               {/if}
+            </header>
+            <div
+              class="pop-body"
+              in:fly={{ y: 6, duration: 180, delay: 100 }}
+              out:fade={{ duration: 60 }}
+            >
+              {@render children()}
             </div>
-          {/if}
-        </div>
-      {/snippet}
-    </Popover.Content>
-  </Popover.Portal>
+            {#if footer}
+              <div
+                class="pop-footer"
+                in:fly={{ y: 6, duration: 180, delay: 140 }}
+                out:fade={{ duration: 60 }}
+              >
+                {@render footer()}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/snippet}
+  </Popover.Content>
 </Popover.Root>
 
 <style>
@@ -158,13 +164,16 @@
     position: relative;
     transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
+  .rail-chip:hover {
+    transform: scale(1.08);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
   .rail-chip:hover::after {
     content: attr(data-tooltip);
     position: absolute;
     right: calc(100% + 10px);
     top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.88);
     color: white;
     padding: 6px 10px;
     border-radius: 8px;
@@ -173,12 +182,28 @@
     letter-spacing: 0.04em;
     white-space: nowrap;
     pointer-events: none;
+    animation: tooltip-in 160ms cubic-bezier(0.2, 0, 0.13, 1.5) 180ms both;
+  }
+  @keyframes tooltip-in {
+    from {
+      opacity: 0;
+      transform: translateY(-50%) translateX(4px) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0) scale(1);
+    }
   }
   .rail-chip[aria-pressed="true"] {
     background: color-mix(in srgb, #4a9eff 18%, transparent);
     border-color: color-mix(in srgb, #4a9eff 50%, transparent);
     color: #8fc3ff;
     box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent);
+    animation: chip-glow 2.4s ease-in-out infinite;
+  }
+  @keyframes chip-glow {
+    0%, 100% { box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent); }
+    50% { box-shadow: 0 4px 28px color-mix(in srgb, #4a9eff 40%, transparent); }
   }
   .rail-chip.performer-scoped i {
     color: var(--chip-tint, rgba(255, 255, 255, 0.62));
@@ -187,6 +212,11 @@
     background: color-mix(in srgb, var(--chip-tint) 18%, transparent);
     border-color: color-mix(in srgb, var(--chip-tint) 50%, transparent);
     box-shadow: 0 4px 20px color-mix(in srgb, var(--chip-tint) 25%, transparent);
+    animation: chip-glow-accent 2.4s ease-in-out infinite;
+  }
+  @keyframes chip-glow-accent {
+    0%, 100% { box-shadow: 0 4px 20px color-mix(in srgb, var(--chip-tint) 25%, transparent); }
+    50% { box-shadow: 0 4px 28px color-mix(in srgb, var(--chip-tint) 40%, transparent); }
   }
   .rail-chip i {
     font-size: 22px;
