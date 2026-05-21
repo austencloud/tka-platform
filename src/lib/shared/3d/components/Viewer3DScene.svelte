@@ -18,11 +18,14 @@
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
-  import { Raycaster, Vector2 } from "three";
+  import { Raycaster, Vector2, AdditiveBlending } from "three";
   import type { Object3D, Scene } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import PerformerBadge3D from "./PerformerBadge3D.svelte";
   import { getPerformerColor } from "../constants/performer-colors";
+  import { attachSceneUndoKeyboard } from "../undo/scene-undo-keyboard";
+  import { getSceneUndoManager } from "../undo/getSceneUndoManager";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -65,7 +68,7 @@
         return 0.5;
       case BackgroundType.BLOSSOM:
         return 0.35;
-      case BackgroundType.PRIDE:
+      case BackgroundType.RAINBOW:
         return 0.4;
       case BackgroundType.CELESTIAL:
         return 0.02;
@@ -154,7 +157,10 @@
   //
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
-  useTask(() => {
+  useTask((delta) => {
+    if (viewer3DState.selectedPerformerIndex !== null) {
+      ringPulsePhase += delta * 3;
+    }
     // During offline export, the exporter sets exportCurrentStep on
     // viewer3DState each frame. We read it here instead of the component
     // prop `currentStep` (which is frozen because playback is paused).
@@ -249,14 +255,23 @@
     viewer3DState.selectPerformerScope(idx);
   }
 
+  let _detachUndo: (() => void) | null = null;
+
   onMount(() => {
     _raycasterCanvas = renderer?.current?.domElement ?? null;
     if (!_raycasterCanvas) return;
     _raycasterCanvas.addEventListener("pointerdown", onPointerDown);
+
+    _detachUndo = attachSceneUndoKeyboard(
+      getSceneUndoManager(),
+      (desc) => toast.info(`Undid: ${desc}`, 1500),
+      (desc) => toast.info(`Redid: ${desc}`, 1500),
+    );
   });
 
   onDestroy(() => {
     _raycasterCanvas?.removeEventListener("pointerdown", onPointerDown);
+    _detachUndo?.();
   });
 
   // Resolve prop type: prefer sequence's intended prop, fall back to settings
@@ -322,6 +337,34 @@
 
   $effect(() => {
     viewer3DState.setStageGroundOffset(stageGroundOffset);
+  });
+
+  let ringPulsePhase = $state(0);
+  const ringPulse = $derived(0.6 + 0.4 * Math.sin(ringPulsePhase));
+
+  let cameraFocusInitialized = false;
+  $effect(() => {
+    const idx = viewer3DState.selectedPerformerIndex;
+    if (!cameraFocusInitialized) {
+      cameraFocusInitialized = true;
+      return;
+    }
+    if (idx !== null) {
+      const p = performerManager.performers[idx];
+      if (!p) return;
+      const wx = p.position.x;
+      const wz = p.position.z + stageZOffset;
+      const gridY = stageGroundOffset;
+      viewer3DState.snapCameraTo(
+        { x: wx, y: gridY + 2.5, z: wz + 5.0 },
+        { x: wx, y: gridY - 0.2, z: wz },
+      );
+    } else {
+      viewer3DState.snapCameraTo(
+        { x: 0, y: stageGroundOffset, z: stageZOffset + 3.5 },
+        { x: 0, y: stageGroundOffset, z: stageZOffset },
+      );
+    }
   });
 
   // Reset environment readiness when the background type changes so scenes
@@ -403,21 +446,58 @@
       {/snippet}
     </PerformerRig>
 
-    {#if viewer3DState.selectedPerformerIndex === i || viewer3DState.selectedPerformerIndex === null}
-      <!-- Ground-disc selection indicator. Gray when scope is "All",
-           per-performer color when individually selected. -->
+    {#if viewer3DState.selectedPerformerIndex === i}
+      {@const glowColor = Number.parseInt(getPerformerColor(i).slice(1), 16)}
+      {@const groundLevel = userProportionsState.groundY + stageGroundOffset}
+
+      <T.PointLight
+        position={[performer.position.x, stageGroundOffset + 2.5, performer.position.z + 0.3]}
+        intensity={6}
+        color={0xfff5e6}
+        distance={5}
+        decay={1.5}
+      />
+
+      <T.Group
+        position={[performer.position.x, groundLevel + 0.015, performer.position.z]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <T.Mesh>
+          <T.RingGeometry args={[0.42, 0.58, 64]} />
+          <T.MeshBasicMaterial
+            color={glowColor}
+            transparent
+            opacity={ringPulse * 0.9}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </T.Mesh>
+        <T.Mesh>
+          <T.RingGeometry args={[0.58, 1.0, 64]} />
+          <T.MeshBasicMaterial
+            color={glowColor}
+            transparent
+            opacity={ringPulse * 0.3}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </T.Mesh>
+        <T.Mesh>
+          <T.CircleGeometry args={[0.42, 64]} />
+          <T.MeshBasicMaterial
+            color={glowColor}
+            transparent
+            opacity={0.15}
+          />
+        </T.Mesh>
+      </T.Group>
+    {:else if viewer3DState.selectedPerformerIndex === null}
       <T.Mesh
         position={[performer.position.x, userProportionsState.groundY + stageGroundOffset + 0.01, performer.position.z]}
         rotation={[-Math.PI / 2, 0, 0]}
       >
-        <T.CircleGeometry args={[0.45, 32]} />
-        <T.MeshBasicMaterial
-          color={viewer3DState.selectedPerformerIndex === null
-            ? 0x6b7280
-            : Number.parseInt(getPerformerColor(i).slice(1), 16)}
-          transparent
-          opacity={0.35}
-        />
+        <T.CircleGeometry args={[0.35, 32]} />
+        <T.MeshBasicMaterial color={0x6b7280} transparent opacity={0.15} />
       </T.Mesh>
     {/if}
 

@@ -70,7 +70,7 @@
 <style>
   .performer-rail {
     position: absolute;
-    bottom: 12px;
+    bottom: 80px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
