@@ -22,11 +22,13 @@
     propType,
     size = 64,
     recipeOverride = undefined,
+    darkBackground = false,
   }: {
     propType: PropType;
     size?: number;
     /** Override the default recipe (used by lab tab for live tuning) */
     recipeOverride?: CompositionRecipe;
+    darkBackground?: boolean;
   } = $props();
 
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
@@ -61,6 +63,7 @@
 
 <svg
   class="prop-composition-preview"
+  class:dark-bg={darkBackground}
   width={size}
   height={size}
   viewBox="0 0 100 100"
@@ -101,5 +104,9 @@
 
   .red-prop {
     filter: hue-rotate(125deg) saturate(1.2);
+  }
+
+  .prop-composition-preview.dark-bg {
+    filter: brightness(1.8) saturate(1.4);
   }
 </style>
