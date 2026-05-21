@@ -12,6 +12,7 @@
     FloatType,
     RGBAFormat,
     type BufferGeometry,
+    type Texture,
   } from "three";
   import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
   import { FishEventSystem, type FishEventUniforms } from "./FishEventSystem";
@@ -330,13 +331,13 @@
   uniform float uMaxSpeed;
 
   varying vec3 vNormal;
-  varying float vHue;
+  varying vec2 vUv;
   varying vec3 vWorldPos;
 
   void main() {
     vec4 posData = texture2D(tPosition, aReference);
     vec3 fishPos = posData.xyz;
-    vHue = posData.w;
+    vUv = uv;
 
     vec4 velData = texture2D(tVelocity, aReference);
     vec3 fishVel = velData.xyz;
@@ -377,7 +378,9 @@
 `;
 
   const renderFragmentShader = /* glsl */ `
-    uniform vec3 uBaseColor;
+    uniform sampler2D tDiffuse;
+    uniform vec3 uFallbackColor;
+    uniform float uHasTexture;
     uniform vec3 uLightDir;
     uniform float uAmbient;
     uniform vec3 uFogColor;
@@ -385,18 +388,11 @@
     uniform float uFogFar;
 
     varying vec3 vNormal;
-    varying float vHue;
+    varying vec2 vUv;
     varying vec3 vWorldPos;
 
-    vec3 hueShift(vec3 col, float shift) {
-      float cosA = cos(shift);
-      float sinA = sin(shift);
-      vec3 k = vec3(0.57735);
-      return col * cosA + cross(k, col) * sinA + k * dot(k, col) * (1.0 - cosA);
-    }
-
     void main() {
-      vec3 color = hueShift(uBaseColor, vHue);
+      vec3 color = mix(uFallbackColor, texture2D(tDiffuse, vUv).rgb, uHasTexture);
       vec3 n = normalize(vNormal);
       float NdotL = max(dot(n, uLightDir), 0.0);
       vec3 lit = color * (uAmbient + NdotL * 0.6);
@@ -424,21 +420,40 @@
     return geo;
   }
 
-  function extractGeometry(
-    scene: import("three").Group,
-  ): BufferGeometry | null {
-    let found: BufferGeometry | null = null;
-    scene.traverse((child: any) => {
-      if (child.isMesh && !found) found = child.geometry.clone();
-    });
-    if (found) {
-      // Strip morph targets — we do our own vertex animation via GPU compute.
-      // Leaving them causes Three.js to access undefined morphTargetInfluences.
-      (found as BufferGeometry).morphAttributes = {};
-      (found as BufferGeometry).morphTargetsRelative = false;
-    }
-    return found;
+  interface ExtractedModel {
+    geometry: BufferGeometry;
+    diffuseMap: Texture | null;
   }
+
+  function extractModel(scene: import("three").Group): ExtractedModel | null {
+    let geo: BufferGeometry | null = null;
+    let diffuseMap: Texture | null = null;
+    scene.traverse((child: any) => {
+      if (!child.isMesh) return;
+      if (!geo) geo = child.geometry.clone();
+      if (!diffuseMap && child.material) {
+        const mat = Array.isArray(child.material) ? child.material[0] : child.material;
+        if (mat?.map) diffuseMap = mat.map;
+      }
+    });
+    if (geo) {
+      (geo as BufferGeometry).morphAttributes = {};
+      (geo as BufferGeometry).morphTargetsRelative = false;
+    }
+    return geo ? { geometry: geo, diffuseMap } : null;
+  }
+
+  // Per-model rotation corrections: raw geometry head direction → +Z
+  const ORIENT_FNS: Array<(g: BufferGeometry) => void> = [
+    () => {},                                    // common: +Z ✓
+    (g) => g.rotateX(-Math.PI / 2),             // butterfly: +Y → +Z
+    () => {},                                    // trout: +Z ✓
+    () => {},                                    // clown: +Z ✓
+    (g) => g.rotateX(-Math.PI / 2),             // clownfish: +Y → +Z
+    (g) => g.rotateY(Math.PI),                  // gray: -Z → +Z
+    (g) => g.rotateY(-Math.PI / 2),             // koi: +X → +Z
+    () => {},                                    // small: +Z ✓
+  ];
 
   // ── GPU System Setup ───────────────────────────────────────────────────
 
@@ -466,11 +481,14 @@
 
     const glbScenes = [gCommon, gButterfly, gTrout, gClown, gClownfish, gGray, gKoi, gSmall];
     const geometries: BufferGeometry[] = [];
-    for (const g of glbScenes) {
-      const geo = extractGeometry(g.scene);
-      if (!geo) return;
-      normalizeGeometry(geo);
-      geometries.push(geo);
+    const diffuseMaps: (Texture | null)[] = [];
+    for (let gi = 0; gi < glbScenes.length; gi++) {
+      const extracted = extractModel(glbScenes[gi]!.scene);
+      if (!extracted) return;
+      ORIENT_FNS[gi]!(extracted.geometry);
+      normalizeGeometry(extracted.geometry);
+      geometries.push(extracted.geometry);
+      diffuseMaps.push(extracted.diffuseMap);
     }
 
     // ── Species definitions ────────────────────────────────────────────
@@ -649,6 +667,8 @@
       }
       geo.setAttribute("aReference", new InstancedBufferAttribute(refs, 2));
 
+      const speciesDiffuse = diffuseMaps[m] ?? null;
+
       const mat = new ShaderMaterial({
         uniforms: {
           tPosition: { value: null },
@@ -659,7 +679,9 @@
           uWaveNumber: { value: 3.0 },
           uBaseAmplitude: { value: waveAmplitude },
           uMaxSpeed: { value: sMax * 2.0 },
-          uBaseColor: { value: new Color(baseColor) },
+          tDiffuse: { value: speciesDiffuse },
+          uFallbackColor: { value: new Color(baseColor) },
+          uHasTexture: { value: speciesDiffuse ? 1.0 : 0.0 },
           uLightDir: { value: new Vector3(0.3, 1.0, 0.2).normalize() },
           uAmbient: { value: 0.55 },
           uFogColor: { value: new Color("#1a3040") },
