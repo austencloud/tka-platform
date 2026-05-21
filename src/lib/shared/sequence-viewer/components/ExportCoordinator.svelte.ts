@@ -173,8 +173,6 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       if (driverActive && primaryAvatar) primaryAvatar.loop = true;
 
       const pc = playbackController!;
-      pc.jumpToStep(0);
-      if (!isPlayingLocal) pc.togglePlayback();
 
       // Start camera recording
       cameraKeyframes.startRecording(threlteCamera);
@@ -211,7 +209,6 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         if (driverActive && primaryAvatar) primaryAvatar.loop = loopBefore;
       }
 
-      if (isPlayingLocal) pc.togglePlayback();
       cameraKeyframes.stopRecording();
       isRecording3D = false;
       resolveRecording = null;
