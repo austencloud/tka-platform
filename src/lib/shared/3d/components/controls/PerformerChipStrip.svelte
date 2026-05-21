@@ -149,12 +149,11 @@
   }
 
   .chip-add {
-    margin-left: auto;
     width: 44px;
-    height: 44px;
-    border-radius: 22px;
+    height: 28px;
+    border-radius: 14px;
     padding: 0;
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1;
   }
 
