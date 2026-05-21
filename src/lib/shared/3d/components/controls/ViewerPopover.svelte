@@ -13,6 +13,7 @@
     icon: string;
     tooltip: string;
     performerScoped?: boolean;
+    hasOverride?: boolean;
     children: Snippet;
     footer?: Snippet;
   }
@@ -25,6 +26,7 @@
     icon,
     tooltip,
     performerScoped = false,
+    hasOverride = false,
     children,
     footer,
   }: Props = $props();
@@ -58,6 +60,9 @@
         style:--chip-tint={accentColor}
       >
         <i class="fas {icon}"></i>
+        {#if hasOverride && accentColor}
+          <span class="override-dot" style:background={accentColor}></span>
+        {/if}
       </button>
     {/snippet}
   </Popover.Trigger>
@@ -220,5 +225,15 @@
   }
   .rail-chip i {
     font-size: 22px;
+  }
+  .override-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 6px currentColor;
   }
 </style>
