@@ -302,49 +302,63 @@
   // ── Render shaders ─────────────────────────────────────────────────────
 
   const renderVertexShader = /* glsl */ `
-    attribute vec2 aReference;
+  attribute vec2 aReference;
 
-    uniform sampler2D tPosition;
-    uniform sampler2D tVelocity;
-    uniform float uSize;
-    uniform float uTime;
+  uniform sampler2D tPosition;
+  uniform sampler2D tVelocity;
+  uniform float uSize;
+  uniform float uTime;
+  uniform float uSwimFreq;
+  uniform float uWaveNumber;
+  uniform float uBaseAmplitude;
+  uniform float uMaxSpeed;
 
-    varying vec3 vNormal;
-    varying float vHue;
-    varying vec3 vWorldPos;
+  varying vec3 vNormal;
+  varying float vHue;
+  varying vec3 vWorldPos;
 
-    void main() {
-      vec4 posData = texture2D(tPosition, aReference);
-      vec3 fishPos = posData.xyz;
-      vHue = posData.w;
+  void main() {
+    vec4 posData = texture2D(tPosition, aReference);
+    vec3 fishPos = posData.xyz;
+    vHue = posData.w;
 
-      vec4 velData = texture2D(tVelocity, aReference);
-      vec3 fishVel = velData.xyz;
-      float instanceScale = velData.w;
+    vec4 velData = texture2D(tVelocity, aReference);
+    vec3 fishVel = velData.xyz;
+    float instanceScale = velData.w;
 
-      vec3 forward = length(fishVel) > 0.001 ? normalize(fishVel) : vec3(0.0, 0.0, 1.0);
-      vec3 worldUp = vec3(0.0, 1.0, 0.0);
-      if (abs(dot(forward, worldUp)) > 0.99) worldUp = vec3(1.0, 0.0, 0.0);
+    vec3 forward = length(fishVel) > 0.001 ? normalize(fishVel) : vec3(0.0, 0.0, 1.0);
+    vec3 worldUp = vec3(0.0, 1.0, 0.0);
+    if (abs(dot(forward, worldUp)) > 0.99) worldUp = vec3(1.0, 0.0, 0.0);
 
-      vec3 right = normalize(cross(worldUp, forward));
-      vec3 up = cross(forward, right);
-      mat3 rot = mat3(right, up, forward);
+    vec3 right = normalize(cross(worldUp, forward));
+    vec3 up = cross(forward, right);
+    mat3 rot = mat3(right, up, forward);
 
-      float fishScale = uSize * instanceScale;
+    float fishScale = uSize * instanceScale;
+    vec3 localPos = position;
 
-      // Tail wiggle — sinusoidal bend along local Z (forward axis)
-      vec3 localPos = position;
-      float tailFactor = max(0.0, -localPos.z) * 0.15;
-      float phase = uTime * (4.0 + vHue * 2.0) + aReference.x * 40.0;
-      localPos.x += sin(phase) * tailFactor;
+    // Undulatory propulsion — cosine wave traveling head to tail
+    float perInstanceJitter = aReference.x * 2.0;
+    float bodyPhase = uTime * (uSwimFreq + perInstanceJitter) + localPos.z * uWaveNumber;
+    float bodyLength = 1.0;
+    float amplitude = uBaseAmplitude * (0.2 + 0.8 * max(0.0, -localPos.z / bodyLength));
+    float swimSpeed = length(fishVel);
+    amplitude *= 0.5 + swimSpeed * 0.8;
+    localPos.x += sin(bodyPhase) * amplitude;
 
-      vec3 transformed = rot * (localPos * fishScale) + fishPos;
-      vWorldPos = transformed;
-      vNormal = normalize(rot * normal);
+    // C-start escape — sharp body bend when darting (velocity > 2x normal)
+    float speedRatio = swimSpeed / (uMaxSpeed * 0.5);
+    float cStartIntensity = smoothstep(1.5, 2.5, speedRatio);
+    float cBend = cStartIntensity * sin(localPos.z * 1.5) * 0.3;
+    localPos.x += cBend;
 
-      gl_Position = projectionMatrix * viewMatrix * vec4(transformed, 1.0);
-    }
-  `;
+    vec3 transformed = rot * (localPos * fishScale) + fishPos;
+    vWorldPos = transformed;
+    vNormal = normalize(rot * normal);
+
+    gl_Position = projectionMatrix * viewMatrix * vec4(transformed, 1.0);
+  }
+`;
 
   const renderFragmentShader = /* glsl */ `
     uniform vec3 uBaseColor;
@@ -591,6 +605,10 @@
           tVelocity: { value: null },
           uSize: { value: targetSize },
           uTime: { value: 0 },
+          uSwimFreq: { value: swimFrequency },
+          uWaveNumber: { value: 3.0 },
+          uBaseAmplitude: { value: waveAmplitude },
+          uMaxSpeed: { value: sMax * 2.0 },
           uBaseColor: { value: new Color(baseColor) },
           uLightDir: { value: new Vector3(0.3, 1.0, 0.2).normalize() },
           uAmbient: { value: 0.55 },
