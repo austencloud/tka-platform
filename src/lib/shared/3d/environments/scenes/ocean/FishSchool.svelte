@@ -54,10 +54,15 @@
 
   const dracoLoader = useDraco("/draco/");
 
-  // ── Load 3 fish models at top level ────────────────────────────────────
+  // ── Load all fish models at top level ───────────────────────────────────
   const glbCommon = useGltf("/models/ocean/fish_common.glb", { dracoLoader });
   const glbButterfly = useGltf("/models/ocean/fish_butterfly.glb", { dracoLoader });
   const glbTrout = useGltf("/models/ocean/fish_trout.glb", { dracoLoader });
+  const glbClown = useGltf("/models/ocean/fish_clown.glb", { dracoLoader });
+  const glbClownfish = useGltf("/models/ocean/fish_clownfish.glb", { dracoLoader });
+  const glbGray = useGltf("/models/ocean/fish_gray.glb", { dracoLoader });
+  const glbKoi = useGltf("/models/ocean/fish_koi.glb", { dracoLoader });
+  const glbSmall = useGltf("/models/ocean/fish_small.glb", { dracoLoader });
 
   const texSize = $derived(Math.ceil(Math.sqrt(count)));
 
@@ -426,6 +431,7 @@
   let posVar: any = null;
   let velVar: any = null;
   let materials: ShaderMaterial[] = [];
+  let materialSizeMults: number[] = [];
   let storedTraitsData: Float32Array | null = null;
   let eventSystem: FishEventSystem | null = null;
 
@@ -434,32 +440,45 @@
     const gCommon = $glbCommon;
     const gButterfly = $glbButterfly;
     const gTrout = $glbTrout;
+    const gClown = $glbClown;
+    const gClownfish = $glbClownfish;
+    const gGray = $glbGray;
+    const gKoi = $glbKoi;
+    const gSmall = $glbSmall;
     const gy = groundY;
-    if (!ren || !gCommon || !gButterfly || !gTrout) return;
+    if (!ren || !gCommon || !gButterfly || !gTrout || !gClown || !gClownfish || !gGray || !gKoi || !gSmall) return;
 
-    // Extract and normalize geometries
-    const geoCommon = extractGeometry(gCommon.scene);
-    const geoButterfly = extractGeometry(gButterfly.scene);
-    const geoTrout = extractGeometry(gTrout.scene);
-    if (!geoCommon || !geoButterfly || !geoTrout) return;
+    const glbScenes = [gCommon, gButterfly, gTrout, gClown, gClownfish, gGray, gKoi, gSmall];
+    const geometries: BufferGeometry[] = [];
+    for (const g of glbScenes) {
+      const geo = extractGeometry(g.scene);
+      if (!geo) return;
+      normalizeGeometry(geo);
+      geometries.push(geo);
+    }
 
-    normalizeGeometry(geoCommon);
-    normalizeGeometry(geoButterfly);
-    normalizeGeometry(geoTrout);
-
-    const geometries = [geoCommon, geoButterfly, geoTrout];
-
-    // ── Divide fish among 3 models ─────────────────────────────────────
+    // ── Species definitions ────────────────────────────────────────────
+    // sizeMult scales per-species relative to targetSize
     const SPECIES = [
-      { name: "common",    fraction: 0.35,  speed: [0.8, 1.2] as [number, number], social: [0.7, 1.3] as [number, number], bold: [0.6, 1.0] as [number, number] },
-      { name: "butterfly", fraction: 0.325, speed: [0.6, 0.9] as [number, number], social: [1.0, 1.5] as [number, number], bold: [0.5, 0.8] as [number, number] },
-      { name: "trout",     fraction: 0.325, speed: [1.1, 1.6] as [number, number], social: [0.5, 0.9] as [number, number], bold: [0.9, 1.3] as [number, number] },
-    ] as const;
+      { name: "common",    fraction: 0.15, sizeMult: 1.0,  speed: [0.8, 1.2] as [number, number], social: [0.7, 1.3] as [number, number], bold: [0.6, 1.0] as [number, number] },
+      { name: "butterfly", fraction: 0.12, sizeMult: 0.9,  speed: [0.6, 0.9] as [number, number], social: [1.0, 1.5] as [number, number], bold: [0.5, 0.8] as [number, number] },
+      { name: "trout",     fraction: 0.12, sizeMult: 1.3,  speed: [1.1, 1.6] as [number, number], social: [0.5, 0.9] as [number, number], bold: [0.9, 1.3] as [number, number] },
+      { name: "clown",     fraction: 0.12, sizeMult: 0.8,  speed: [0.7, 1.0] as [number, number], social: [1.1, 1.5] as [number, number], bold: [0.6, 0.9] as [number, number] },
+      { name: "clownfish", fraction: 0.10, sizeMult: 0.7,  speed: [0.8, 1.1] as [number, number], social: [1.2, 1.5] as [number, number], bold: [0.5, 0.8] as [number, number] },
+      { name: "gray",      fraction: 0.12, sizeMult: 1.1,  speed: [0.9, 1.3] as [number, number], social: [0.6, 1.0] as [number, number], bold: [0.7, 1.1] as [number, number] },
+      { name: "koi",       fraction: 0.10, sizeMult: 2.0,  speed: [0.5, 0.8] as [number, number], social: [0.4, 0.8] as [number, number], bold: [1.0, 1.3] as [number, number] },
+      { name: "small",     fraction: 0.17, sizeMult: 0.5,  speed: [1.2, 1.8] as [number, number], social: [1.2, 1.5] as [number, number], bold: [0.4, 0.7] as [number, number] },
+    ];
 
-    const commonCount = Math.ceil(count * SPECIES[0].fraction);
-    const butterflyCount = Math.floor(count * SPECIES[1].fraction);
-    const troutCount = count - commonCount - butterflyCount;
-    const modelCounts = [commonCount, butterflyCount, troutCount];
+    // ── Allocate counts per species ────────────────────────────────────
+    const modelCounts: number[] = [];
+    let allocated = 0;
+    for (let i = 0; i < SPECIES.length - 1; i++) {
+      const c = Math.round(count * SPECIES[i]!.fraction);
+      modelCounts.push(c);
+      allocated += c;
+    }
+    modelCounts.push(count - allocated);
 
     // ── GPUComputationRenderer ─────────────────────────────────────────
     const gpu = new GPUComputationRenderer(texSize, texSize, ren);
@@ -523,7 +542,7 @@
     // ── Traits DataTexture (static, per-fish personality) ─────────────
     const traitsData = new Float32Array(texSize * texSize * 4);
     let speciesOffset = 0;
-    for (let s = 0; s < 3; s++) {
+    for (let s = 0; s < SPECIES.length; s++) {
       const sp = SPECIES[s]!;
       const sCount = modelCounts[s]!;
       for (let j = 0; j < sCount; j++) {
@@ -587,13 +606,15 @@
     // ── Create one InstancedMesh per model ─────────────────────────────
     const createdMeshes: InstancedMesh[] = [];
     const createdMaterials: ShaderMaterial[] = [];
+    const createdSizeMults: number[] = [];
     let fishOffset = 0;
 
-    for (let m = 0; m < 3; m++) {
+    for (let m = 0; m < SPECIES.length; m++) {
       const mCount = modelCounts[m]!;
+      if (mCount <= 0) continue;
       const geo = geometries[m]!;
+      const speciesSizeMult = SPECIES[m]!.sizeMult;
 
-      // Build aReference attribute pointing to this model's subset of texels
       const refs = new Float32Array(mCount * 2);
       for (let i = 0; i < mCount; i++) {
         const globalIdx = fishOffset + i;
@@ -608,7 +629,7 @@
         uniforms: {
           tPosition: { value: null },
           tVelocity: { value: null },
-          uSize: { value: targetSize },
+          uSize: { value: targetSize * speciesSizeMult },
           uTime: { value: 0 },
           uSwimFreq: { value: swimFrequency },
           uWaveNumber: { value: 3.0 },
@@ -631,11 +652,13 @@
 
       createdMeshes.push(mesh);
       createdMaterials.push(mat);
+      createdSizeMults.push(speciesSizeMult);
       fishOffset += mCount;
     }
 
     meshes = createdMeshes;
     materials = createdMaterials;
+    materialSizeMults = createdSizeMults;
     gpuCompute = gpu;
 
     return () => {
@@ -648,6 +671,7 @@
       for (const mesh of createdMeshes) mesh.dispose();
       meshes = [];
       materials = [];
+      materialSizeMults = [];
       gpuCompute = null;
       posVar = null;
       velVar = null;
@@ -680,12 +704,14 @@
     const posTex = gpuCompute.getCurrentRenderTarget(posVar).texture;
     const velTex = gpuCompute.getCurrentRenderTarget(velVar).texture;
 
-    for (const mat of materials) {
+    for (let mi = 0; mi < materials.length; mi++) {
+      const mat = materials[mi]!;
       mat.uniforms.tPosition!.value = posTex;
       mat.uniforms.tVelocity!.value = velTex;
       mat.uniforms.uTime!.value = elapsed;
       mat.uniforms.uSwimFreq!.value = swimFrequency;
       mat.uniforms.uBaseAmplitude!.value = waveAmplitude;
+      mat.uniforms.uSize!.value = targetSize * (materialSizeMults[mi] ?? 1.0);
     }
   });
 </script>

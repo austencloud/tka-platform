@@ -944,8 +944,8 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
     },
     fish: {
       enabled: true,
-      count: 80,
-      targetSize: 0.08,
+      count: 150,
+      targetSize: 0.3,
       swimHeight: [2, 7],
       speed: [0.5, 1.2],
       currentStrength: 0.3,
