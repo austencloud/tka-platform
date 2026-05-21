@@ -623,9 +623,19 @@
             if (backgroundType === "solidColor" && (!settings.backgroundColor || settings.backgroundColor === "#000000")) {
               backgroundType = "cosmic";
             }
-            // Migration: treat old "nightSky" as "cosmic"
-            if (backgroundType === "nightSky") {
-              backgroundType = "cosmic";
+            // Migration: map old multi-word theme names to new single-word names
+            var legacyThemeMap = {
+              nightSky: "cosmic",
+              deepOcean: "ocean",
+              fireflyForest: "forest",
+              cherryBlossom: "blossom",
+              emberGlow: "ember",
+              snowfall: "winter",
+              autumnDrift: "autumn",
+              pureBlack: "void"
+            };
+            if (legacyThemeMap[backgroundType]) {
+              backgroundType = legacyThemeMap[backgroundType];
             }
           }
 

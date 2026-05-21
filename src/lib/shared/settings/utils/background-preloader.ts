@@ -146,9 +146,19 @@ export function ensureBackgroundApplied(): void {
 
     let backgroundType = settings.backgroundType ?? BackgroundType.COSMIC;
 
-    // Migration: treat old "nightSky" as "cosmic"
-    if ((backgroundType as string) === "nightSky") {
-      backgroundType = BackgroundType.COSMIC;
+    const legacyMap: Record<string, BackgroundType> = {
+      nightSky: BackgroundType.COSMIC,
+      deepOcean: BackgroundType.OCEAN,
+      fireflyForest: BackgroundType.FOREST,
+      cherryBlossom: BackgroundType.BLOSSOM,
+      emberGlow: BackgroundType.EMBER,
+      snowfall: BackgroundType.WINTER,
+      autumnDrift: BackgroundType.AUTUMN,
+      pureBlack: BackgroundType.VOID,
+    };
+    const legacyMapped = legacyMap[backgroundType as string];
+    if (legacyMapped) {
+      backgroundType = legacyMapped;
     }
 
     // Migration: treat old default (solidColor + black) as cosmic

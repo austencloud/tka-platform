@@ -29,7 +29,7 @@ const THEMES: Record<string, CardBackThemeVisuals> = {
     accentColor: "#22d3ee",
     background: "linear-gradient(180deg, #001a2e 0%, #000c1e 40%, #001122 70%, #000511 100%)",
   },
-  snowfall: {
+  winter: {
     borderGradient: "linear-gradient(135deg, #1e3a5f 0%, #3b82f6 20%, #dbeafe 38%, #93c5fd 50%, #dbeafe 62%, #3b82f6 80%, #1e3a5f 100%)",
     accentColor: "#93c5fd",
     background: "linear-gradient(180deg, #0a0e1a 0%, #16213e 40%, #0f3460 70%, #041426 100%)",

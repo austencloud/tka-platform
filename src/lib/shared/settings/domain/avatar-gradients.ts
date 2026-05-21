@@ -153,7 +153,7 @@ export const ALL_GRADIENTS: GradientOption[] = [
     family: "warm",
   },
   {
-    id: "pureBlack",
+    id: "void",
     name: "Void",
     gradient: "linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%)",
     family: "dark",

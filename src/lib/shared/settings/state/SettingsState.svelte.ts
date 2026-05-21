@@ -42,6 +42,17 @@ const DEFAULT_PROP_PRESETS: PropPreset[] = [
   { bluePropType: PropType.STAFF, redPropType: PropType.FAN, catDogMode: true },
 ];
 
+const LEGACY_THEME_MAP: Record<string, BackgroundType> = {
+  nightSky: BackgroundType.COSMIC,
+  deepOcean: BackgroundType.OCEAN,
+  fireflyForest: BackgroundType.FOREST,
+  cherryBlossom: BackgroundType.BLOSSOM,
+  emberGlow: BackgroundType.EMBER,
+  snowfall: BackgroundType.WINTER,
+  autumnDrift: BackgroundType.AUTUMN,
+  pureBlack: BackgroundType.VOID,
+};
+
 const DEFAULT_SETTINGS: AppSettings = {
   gridMode: GridMode.DIAMOND,
   backgroundType: BackgroundType.COSMIC,
@@ -170,13 +181,13 @@ class SettingsState {
                 this.getSettingsForPersistence()
               );
               debug.success("Migrated Firebase background from solidColor to cosmic");
-            } else if ((firebaseSettings.backgroundType as string) === "nightSky") {
-              // Migration: treat old "nightSky" as "cosmic"
-              debug.success("Firebase has old nightSky, migrating to cosmic");
-              settingsState.backgroundType = BackgroundType.COSMIC;
-              updateBodyBackground(BackgroundType.COSMIC);
-              applyThemeForBackground(BackgroundType.COSMIC);
-              updateThemeService(BackgroundType.COSMIC);
+            } else if (LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]) {
+              const migratedType = LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]!;
+              debug.success(`Firebase has old "${firebaseSettings.backgroundType}", migrating to "${migratedType}"`);
+              settingsState.backgroundType = migratedType;
+              updateBodyBackground(migratedType);
+              applyThemeForBackground(migratedType);
+              updateThemeService(migratedType);
               this.saveSettingsToStorage(settingsState);
               await this.firebasePersistence.saveSettings(
                 this.getSettingsForPersistence()
@@ -239,6 +250,15 @@ class SettingsState {
   private getSettingsForPersistence(): AppSettings {
     const snapshot = $state.snapshot(settingsState) as AppSettings & { _localTimestamp?: number };
     delete snapshot._localTimestamp;
+    if (!snapshot.backgroundType) {
+      snapshot.backgroundType = BackgroundType.COSMIC;
+    }
+    const obj = snapshot as unknown as Record<string, unknown>;
+    for (const key of Object.keys(obj)) {
+      if (obj[key] === undefined) {
+        delete obj[key];
+      }
+    }
     return snapshot;
   }
 
@@ -557,9 +577,9 @@ class SettingsState {
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       }
 
-      // Migration: treat old "nightSky" as "cosmic"
-      if ((merged.backgroundType as string) === "nightSky") {
-        merged.backgroundType = BackgroundType.COSMIC;
+      const migrated = LEGACY_THEME_MAP[merged.backgroundType as string];
+      if (migrated) {
+        merged.backgroundType = migrated;
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       }
 
