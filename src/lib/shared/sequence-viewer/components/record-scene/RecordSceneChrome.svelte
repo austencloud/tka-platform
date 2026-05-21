@@ -1,32 +1,32 @@
 <script lang="ts">
-  /**
-   * RecordSceneChrome
-   *
-   * Overlay chrome for 3D Record Scene mode. Mounts on top of the full-bleed
-   * canvas area (pointer-events: none on the root so clicks reach the canvas
-   * by default; individual controls opt back in with pointer-events: auto).
-   *
-   * Layout:
-   *   bottom-right: Floating Record button
-   *
-   * Tempo and Export popovers now live on the right rail (see RightRail.svelte).
-   * The Viewer3DGearPopover (Scene) lives inside Viewer3DCanvas and remains
-   * visible during Record Scene mode.
-   */
-
   import RecordSceneRecordButton from "./RecordSceneRecordButton.svelte";
+  import RecordingModeToggle from "./RecordingModeToggle.svelte";
+  import type { CameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
 
   interface Props {
     isExporting: boolean;
     canvasReady: boolean;
     onExport: () => void;
+    choreography: CameraChoreographyState;
   }
 
-  let { isExporting, canvasReady, onExport }: Props = $props();
+  let { isExporting, canvasReady, onExport, choreography }: Props = $props();
+
+  const currentMode = $derived(
+    choreography?.activePresetId === "auto-orbit" ? "auto-orbit" as const : "free" as const
+  );
+
+  function handleModeToggle(mode: "free" | "auto-orbit") {
+    choreography?.setPresetId(mode);
+  }
 </script>
 
 <div class="chrome-root">
   <div class="bottom-right">
+    <RecordingModeToggle
+      mode={currentMode}
+      onToggle={handleModeToggle}
+    />
     <RecordSceneRecordButton
       {onExport}
       {isExporting}
@@ -46,7 +46,7 @@
   .bottom-right {
     position: absolute;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 8px;
     pointer-events: auto;
     bottom: 68px;
