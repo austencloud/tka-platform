@@ -447,7 +447,7 @@
   const ORIENT_FNS: Array<(g: BufferGeometry) => void> = [
     () => {},                                    // common: +Z ✓
     (g) => g.rotateX(-Math.PI / 2),             // butterfly: +Y → +Z
-    () => {},                                    // trout: +Z ✓
+    (g) => g.rotateY(Math.PI),                  // trout: -Z empirically → +Z
     () => {},                                    // clown: +Z ✓
     (g) => g.rotateX(-Math.PI / 2),             // clownfish: +Y → +Z
     (g) => g.rotateY(Math.PI),                  // gray: -Z → +Z
@@ -492,16 +492,17 @@
     }
 
     // ── Species definitions ────────────────────────────────────────────
-    // sizeMult scales per-species relative to targetSize
+    // social: <0.5 = solitary, 0.5-1.0 = loose groups, >1.2 = tight schools
+    // bold: <0.6 = nervous/flighty, 0.8-1.0 = moderate, >1.2 = fearless
     const SPECIES = [
-      { name: "common",    fraction: 0.15, sizeMult: 1.0,  speed: [0.8, 1.2] as [number, number], social: [0.7, 1.3] as [number, number], bold: [0.6, 1.0] as [number, number] },
-      { name: "butterfly", fraction: 0.12, sizeMult: 0.9,  speed: [0.6, 0.9] as [number, number], social: [1.0, 1.5] as [number, number], bold: [0.5, 0.8] as [number, number] },
-      { name: "trout",     fraction: 0.12, sizeMult: 1.3,  speed: [1.1, 1.6] as [number, number], social: [0.5, 0.9] as [number, number], bold: [0.9, 1.3] as [number, number] },
-      { name: "clown",     fraction: 0.12, sizeMult: 0.8,  speed: [0.7, 1.0] as [number, number], social: [1.1, 1.5] as [number, number], bold: [0.6, 0.9] as [number, number] },
-      { name: "clownfish", fraction: 0.10, sizeMult: 0.7,  speed: [0.8, 1.1] as [number, number], social: [1.2, 1.5] as [number, number], bold: [0.5, 0.8] as [number, number] },
-      { name: "gray",      fraction: 0.12, sizeMult: 1.1,  speed: [0.9, 1.3] as [number, number], social: [0.6, 1.0] as [number, number], bold: [0.7, 1.1] as [number, number] },
-      { name: "koi",       fraction: 0.10, sizeMult: 2.0,  speed: [0.5, 0.8] as [number, number], social: [0.4, 0.8] as [number, number], bold: [1.0, 1.3] as [number, number] },
-      { name: "small",     fraction: 0.17, sizeMult: 0.5,  speed: [1.2, 1.8] as [number, number], social: [1.2, 1.5] as [number, number], bold: [0.4, 0.7] as [number, number] },
+      { name: "common",    fraction: 0.18, sizeMult: 1.0,  speed: [0.8, 1.1] as [number, number], social: [1.3, 1.8] as [number, number], bold: [0.5, 0.8] as [number, number] },
+      { name: "butterfly", fraction: 0.10, sizeMult: 0.9,  speed: [0.5, 0.8] as [number, number], social: [0.8, 1.2] as [number, number], bold: [0.6, 0.9] as [number, number] },
+      { name: "trout",     fraction: 0.10, sizeMult: 1.4,  speed: [1.2, 1.8] as [number, number], social: [0.6, 1.0] as [number, number], bold: [1.0, 1.4] as [number, number] },
+      { name: "clown",     fraction: 0.10, sizeMult: 0.7,  speed: [0.6, 0.9] as [number, number], social: [0.8, 1.2] as [number, number], bold: [0.7, 1.0] as [number, number] },
+      { name: "clownfish", fraction: 0.08, sizeMult: 0.6,  speed: [0.5, 0.8] as [number, number], social: [0.3, 0.5] as [number, number], bold: [0.8, 1.1] as [number, number] },
+      { name: "gray",      fraction: 0.12, sizeMult: 1.1,  speed: [0.9, 1.3] as [number, number], social: [1.0, 1.4] as [number, number], bold: [0.7, 1.0] as [number, number] },
+      { name: "koi",       fraction: 0.08, sizeMult: 2.5,  speed: [0.3, 0.6] as [number, number], social: [0.2, 0.4] as [number, number], bold: [1.2, 1.5] as [number, number] },
+      { name: "small",     fraction: 0.24, sizeMult: 0.4,  speed: [1.3, 2.0] as [number, number], social: [1.5, 2.0] as [number, number], bold: [0.3, 0.5] as [number, number] },
     ];
 
     // ── Allocate counts per species ────────────────────────────────────
