@@ -23,11 +23,17 @@
   import WinterScene from "$lib/shared/3d/environments/scenes/WinterScene.svelte";
   import CosmicScene from "$lib/shared/3d/environments/scenes/CosmicScene.svelte";
   import OceanScene from "$lib/shared/3d/environments/scenes/OceanScene.svelte";
+  import EmberScene from "$lib/shared/3d/environments/scenes/EmberScene.svelte";
+  import CherryBlossomScene from "$lib/shared/3d/environments/scenes/CherryBlossomScene.svelte";
+  import RainbowScene from "$lib/shared/3d/environments/scenes/RainbowScene.svelte";
+  import CelestialScene from "$lib/shared/3d/environments/scenes/CelestialScene.svelte";
   import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
   import { Avatar3D } from "@austencloud/scene-3d";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import Stage3D from "$lib/shared/3d/components/Stage3D.svelte";
   import GenericSceneEditor from "$lib/shared/3d/scene-composer/GenericSceneEditor.svelte";
+  import ComposerInteractivity from "$lib/shared/3d/scene-composer/ComposerInteractivity.svelte";
   import ComposerGhost from "$lib/shared/3d/scene-composer/ComposerGhost.svelte";
   import ComposedObject from "$lib/shared/3d/scene-composer/ComposedObject.svelte";
   import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
@@ -47,6 +53,7 @@
   let pointerLocked = $state(false);
 
   // ── Compose mode helpers ──
+  let editorRef: ReturnType<typeof GenericSceneEditor> | undefined = $state();
   const composePersistence = new FilePersistence();
   const activePlugin = $derived(composerRegistry.get(labState.sceneId));
   const canCompose = $derived(!!activePlugin);
@@ -269,22 +276,26 @@
     <T.Group position.y={camMode === "walk" ? sceneShiftY : 0}>
       {#if labState.sceneId === "winter"}
         <WinterScene config={labState.winterConfig} />
-      {:else if labState.sceneId === "forest-firefly"}
-        <ForestScene variant="firefly" config={labState.forestFireflyConfig} />
-      {:else if labState.sceneId === "forest-autumn"}
-        <AutumnScene config={labState.forestAutumnConfig} />
-      {:else if labState.sceneId === "cosmic-night"}
-        <CosmicScene variant="night" config={labState.cosmicNightConfig} />
-      {:else if labState.sceneId === "cosmic-aurora"}
-        <CosmicScene variant="aurora" config={labState.cosmicAuroraConfig} />
-      {:else if labState.sceneId === "ocean-abyss"}
-        <OceanScene variant="abyss" config={labState.oceanAbyssConfig} />
-      {:else if labState.sceneId === "ocean-reef"}
-        <OceanScene variant="reef" config={labState.oceanReefConfig} />
-      {:else if labState.sceneId === "ocean-mystical"}
-        <OceanScene variant="mystical" config={labState.oceanMysticalConfig} />
-      {:else if labState.sceneId === "ocean-cinematic"}
-        <OceanScene variant="cinematic" config={labState.oceanCinematicConfig} />
+      {:else if labState.sceneId === "forest"}
+        <ForestScene variant="firefly" config={labState.forestConfig} />
+      {:else if labState.sceneId === "autumn"}
+        <AutumnScene config={labState.autumnConfig} />
+      {:else if labState.sceneId === "cosmic"}
+        <CosmicScene variant={labState.cosmicVariant} config={labState.cosmicVariant === "night" ? labState.cosmicNightConfig : labState.cosmicAuroraConfig} />
+      {:else if labState.sceneId === "ocean"}
+        <OceanScene config={labState.oceanConfig} />
+      {:else if labState.sceneId === "ember"}
+        <EmberScene config={labState.emberConfig} />
+      {:else if labState.sceneId === "cherry-blossom"}
+        <CherryBlossomScene config={labState.cherryBlossomConfig} />
+      {:else if labState.sceneId === "rainbow"}
+        <RainbowScene />
+      {:else if labState.sceneId === "celestial"}
+        <CelestialScene config={labState.celestialConfig} />
+      {/if}
+
+      {#if camMode === "compose"}
+        <Stage3D />
       {/if}
 
       {#if camMode === "walk"}
@@ -307,25 +318,33 @@
     </T.Group>
 
     {#if camMode === "compose" && activePlugin}
-      <GenericSceneEditor editorState={composerState} onSave={handleComposeSave} />
+      <ComposerInteractivity>
+        <GenericSceneEditor bind:this={editorRef} editorState={composerState} onSave={handleComposeSave} />
 
-      {#each composerState.placements as placement (placement.id)}
-        {@const def = activePlugin.catalog.getDefinition(placement.objectKey)}
-        {#if def}
-          <ComposedObject {placement} definition={def} />
+        {#each composerState.placements as placement (placement.id)}
+          {@const def = activePlugin.catalog.getDefinition(placement.objectKey)}
+          {#if def}
+            <ComposedObject
+              {placement}
+              definition={def}
+              onselect={(group) => editorRef?.handleClick(group)}
+              onhoverstart={(group) => editorRef?.handlePointerEnter(group)}
+              onhoverend={() => editorRef?.handlePointerLeave()}
+            />
+          {/if}
+        {/each}
+
+        {#if composerState.activeCatalogItem && activePlugin}
+          <ComposerGhost
+            definition={composerState.activeCatalogItem}
+            surfaceRules={activePlugin.surfaceRules}
+            constraints={activePlugin.constraints}
+            existingPlacements={composerState.placements}
+            onPlace={handlePlaceObject}
+            onCancel={() => composerState.stopPlacement()}
+          />
         {/if}
-      {/each}
-
-      {#if composerState.activeCatalogItem && activePlugin}
-        <ComposerGhost
-          definition={composerState.activeCatalogItem}
-          surfaceRules={activePlugin.surfaceRules}
-          constraints={activePlugin.constraints}
-          existingPlacements={composerState.placements}
-          onPlace={handlePlaceObject}
-          onCancel={() => composerState.stopPlacement()}
-        />
-      {/if}
+      </ComposerInteractivity>
     {/if}
   </Canvas>
 
