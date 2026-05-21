@@ -1,8 +1,30 @@
 <script lang="ts">
+  import { getViewer3DContext } from "../../context/viewer-3d-context";
   import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
+  import CascadeBadge from "./CascadeBadge.svelte";
+
+  const viewer = getViewer3DContext();
+  const selectedIndex = $derived(viewer.selectedPerformerIndex);
+  const isAllMode = $derived(selectedIndex === null);
+
+  const selected = $derived.by(() => {
+    if (selectedIndex === null) return null;
+    return viewer.performerManager.performers[selectedIndex] ?? null;
+  });
+
+  const isOverridden = $derived(!isAllMode && (selected?.hasOverride.effects ?? false));
+  const overrideCount = $derived(isAllMode ? viewer.overrideCountForCategory("effects") : 0);
 </script>
 
 <div class="effects-content">
+  {#if isAllMode && overrideCount > 0}
+    <CascadeBadge mode="overrides" {overrideCount} categoryLabel="effects" onReset={() => viewer.resetAllPerformersEffects()} />
+  {:else if !isAllMode && isOverridden}
+    <CascadeBadge mode="custom" onReset={() => selected?.resetEffects()} />
+  {:else if !isAllMode}
+    <CascadeBadge mode="default" />
+  {/if}
+
   <MobileEffectsPanel layout="grid" />
 </div>
 
@@ -10,5 +32,8 @@
   .effects-content {
     max-height: 70vh;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 </style>
