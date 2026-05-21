@@ -24,10 +24,10 @@ export const NARROW_GRID_THRESHOLD = 3;
 // ── Header layout ───────────────────────────────────────────────────────
 
 /** Difficulty badge diameter as fraction of header height */
-export const BADGE_SIZE_SCALE = 0.9;
+export const BADGE_SIZE_SCALE = 0.6;
 
 /** Padding around badge as fraction of header height */
-export const BADGE_PADDING_SCALE = 0.05;
+export const BADGE_PADDING_SCALE = 0.12;
 
 /** Badge level number font size as fraction of badge size (1/1.75 from canvas renderer) */
 export const BADGE_NUMBER_FONT_SCALE = 1 / 1.75;
@@ -44,7 +44,7 @@ export const HEADER_WORD_FONT_MIN_SCALE = 0.35;
 // ── LOOP icon strip ─────────────────────────────────────────────────────
 
 /** LOOP icon size as fraction of badge size */
-export const LOOP_ICON_SIZE_SCALE = 0.6;
+export const LOOP_ICON_SIZE_SCALE = 1.0;
 
 /** Gap between LOOP icons as fraction of icon size */
 export const LOOP_ICON_GAP_SCALE = 0.15;

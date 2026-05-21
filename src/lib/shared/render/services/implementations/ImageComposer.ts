@@ -481,9 +481,9 @@ export class ImageComposer {
 
     const resolver = tryGetLoopDisplayResolver();
     const display = resolver?.(sequence);
-    const rotationPeriod = display?.rotationPeriod;
-    const inversionPeriod = display?.inversionPeriod;
-    const loopPeriod = display?.period ?? 1;
+    let rotationPeriod = display?.rotationPeriod;
+    let inversionPeriod = display?.inversionPeriod;
+    let loopPeriod = display?.period ?? 1;
 
     if (display && display.components.size > 0) {
       loopComponents = display.components;
@@ -494,6 +494,17 @@ export class ImageComposer {
         if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) filtered.add(c);
       }
       loopComponents = filtered.size > 0 ? filtered : undefined;
+
+      if (loopComponents && loopPeriod <= 1) {
+        const seqPeriod = sequence.period ?? (sequence.orientationCycleCount === 4 ? 4 : 2);
+        loopPeriod = seqPeriod;
+        if (loopComponents.has(LOOPComponent.ROTATED)) {
+          rotationPeriod = seqPeriod === 4 ? Period.QUARTERED : Period.HALVED;
+        }
+        if (loopComponents.has(LOOPComponent.INVERTED)) {
+          inversionPeriod = seqPeriod === 4 ? Period.QUARTERED : Period.HALVED;
+        }
+      }
     }
 
     // Filter LOOP components by view mode:
@@ -826,7 +837,7 @@ export class ImageComposer {
     }
 
     try {
-      const qrSize = Math.floor(stepSize * 0.8);
+      const qrSize = Math.floor(stepSize * 0.92);
       const padding = (stepSize - qrSize) / 2;
 
       const qrImage = await this.qrCodeGenerator.generateAsImage(

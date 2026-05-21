@@ -22,7 +22,9 @@ interface PropPlacerSettings {
 }
 
 import { createPropPlacementFromPosition } from "../../domain/factories/createPropPlacementData";
-import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+// Removed: import { getSettings } from app-state.svelte
+// That import chain pulls in Firebase auth → window access → crashes in Web Workers.
+// Callers pass settings via constructor or motion data; STAFF is the safe default.
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
 import type { BetaDetector } from "./BetaDetector";
 import type { PropPlacementVisibility } from "../contracts/types";
@@ -86,10 +88,9 @@ export class PropPlacer {
   ): Promise<{ x: number; y: number }> {
     // Determine if strict handpoints are needed (large props like bighoop)
     // Legacy: pictograph_checker.has_strict_placed_props() - true when BOTH props are strict types
-    const globalSettings = this.settings ? null : getSettings();
     const resolvedSettings = this.settings ?? {
-      bluePropType: globalSettings?.bluePropType,
-      redPropType: globalSettings?.redPropType,
+      bluePropType: pictographData.motions.blue?.propType ?? "staff",
+      redPropType: pictographData.motions.red?.propType ?? "staff",
     };
     const bluePropType =
       resolvedSettings.bluePropType ??
@@ -158,12 +159,9 @@ export class PropPlacer {
 
     // App-specific: resolve actual prop types from user settings
     // (user may have "staff" stored in data but render as "buugeng" via settings)
-    const globalSettings = this.settings ? null : getSettings();
     const settings = this.settings ?? {
-      bluePropType: globalSettings?.bluePropType,
-      redPropType: globalSettings?.redPropType,
-      blueBuugengFlipped: globalSettings?.blueBuugengFlipped,
-      redBuugengFlipped: globalSettings?.redBuugengFlipped,
+      bluePropType: blueMotion.propType ?? "staff",
+      redPropType: redMotion.propType ?? "staff",
     };
 
     // Build the render-core input objects

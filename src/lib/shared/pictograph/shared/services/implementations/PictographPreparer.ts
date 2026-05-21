@@ -14,7 +14,12 @@ import type { PropAssets } from "../../../prop/domain/models/PropAssets";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../../prop/domain/enums/PropType";
 import { MotionType, HandPath, RotationDirection, type Orientation } from "../../domain/enums/pictograph-enums";
-import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+// Prop-type defaults used when callers don't pass explicit options.
+// Formerly imported getSettings() from app-state.svelte, but that module chain
+// pulls in Firebase auth which accesses `window` — crashing in Web Workers.
+// All render-path callers (ImageComposer, CompositionDispatcher) already pass
+// prop types through options, so this default is only hit in edge cases.
+const DEFAULT_PROP_SETTINGS = { bluePropType: PropType.STAFF, redPropType: PropType.STAFF };
 
 export class PictographPreparer {
   private prepareCache = new Map<string, PreparedRenderData>();
@@ -82,15 +87,13 @@ export class PictographPreparer {
   ): Promise<PreparedRenderData> {
     const gridMode = this.deriveGridMode(pictograph);
 
-    const globalSettings = getSettings();
     const settings = {
-      bluePropType: globalSettings.bluePropType,
-      redPropType: globalSettings.redPropType,
+      bluePropType: options?.bluePropType ?? DEFAULT_PROP_SETTINGS.bluePropType,
+      redPropType: options?.redPropType ?? DEFAULT_PROP_SETTINGS.redPropType,
     };
 
-    // Auto-enable hand path mode when both props are HAND (global settings or explicit)
-    const effectiveBlueProp = options?.bluePropType ?? settings.bluePropType;
-    const effectiveRedProp = options?.redPropType ?? settings.redPropType;
+    const effectiveBlueProp = settings.bluePropType;
+    const effectiveRedProp = settings.redPropType;
     const useHandPath = options?.handPathMode ||
       (effectiveBlueProp === PropType.HAND && effectiveRedProp === PropType.HAND);
 
@@ -126,7 +129,8 @@ export class PictographPreparer {
     const blue = pictograph.motions?.blue;
     const red = pictograph.motions?.red;
 
-    const globalSettings = getSettings();
+    const effectiveBlue = options?.bluePropType ?? DEFAULT_PROP_SETTINGS.bluePropType;
+    const effectiveRed = options?.redPropType ?? DEFAULT_PROP_SETTINGS.redPropType;
 
     const parts = [
       pictograph.letter ?? "none",
@@ -137,7 +141,7 @@ export class PictographPreparer {
       blue?.turns ?? 0,
       blue?.startOrientation ?? "",
       blue?.endOrientation ?? "",
-      options?.bluePropType ?? globalSettings.bluePropType ?? "",
+      effectiveBlue ?? "",
       blue?.arrowPlacementData?.manualAdjustmentX ?? 0,
       blue?.arrowPlacementData?.manualAdjustmentY ?? 0,
       red?.motionType ?? "none",
@@ -147,12 +151,12 @@ export class PictographPreparer {
       red?.turns ?? 0,
       red?.startOrientation ?? "",
       red?.endOrientation ?? "",
-      options?.redPropType ?? globalSettings.redPropType ?? "",
+      effectiveRed ?? "",
       red?.arrowPlacementData?.manualAdjustmentX ?? 0,
       red?.arrowPlacementData?.manualAdjustmentY ?? 0,
       options?.themeMode ?? "dark",
       (options?.useGridVersion ?? false) ? "grid" : "thumbnail",
-      (options?.handPathMode || ((options?.bluePropType ?? globalSettings.bluePropType) === PropType.HAND && (options?.redPropType ?? globalSettings.redPropType) === PropType.HAND)) ? "hp" : "",
+      (options?.handPathMode || (effectiveBlue === PropType.HAND && effectiveRed === PropType.HAND)) ? "hp" : "",
       options?.showBlueMotion === false ? "hideBlue" : "",
       options?.showRedMotion === false ? "hideRed" : "",
       pictograph.betaSwapped ? "bs" : "",
@@ -192,10 +196,9 @@ export class PictographPreparer {
 
     const positions: Record<string, PropPosition> = {};
     const assets: Record<string, PropAssets> = {};
-    const globalSettings = getSettings();
     const settings = {
-      bluePropType: globalSettings.bluePropType,
-      redPropType: globalSettings.redPropType,
+      bluePropType: options?.bluePropType ?? DEFAULT_PROP_SETTINGS.bluePropType,
+      redPropType: options?.redPropType ?? DEFAULT_PROP_SETTINGS.redPropType,
     };
 
     const motions = this.getMotionsWithOverrides(pictograph, settings, options);

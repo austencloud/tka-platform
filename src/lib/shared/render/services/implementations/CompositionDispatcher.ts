@@ -75,15 +75,11 @@ export class CompositionDispatcher {
   }
 
   private static detectWorkerSupport(): boolean {
-    if (typeof Worker === "undefined") return false;
-    if (typeof OffscreenCanvas === "undefined") return false;
-    try {
-      const c = new OffscreenCanvas(1, 1);
-      const ctx = c.getContext("2d");
-      return ctx !== null;
-    } catch {
-      return false;
-    }
+    // Workers disabled: the render pipeline imports SvelteKit-only modules
+    // ($env/dynamic/public, Firebase auth → window) that crash in Worker scope.
+    // Main-thread rendering works identically (same ImageComposer path) and
+    // is proven reliable via the print-preview pipeline.
+    return false;
   }
 
   async compose(
