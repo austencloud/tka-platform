@@ -1,0 +1,156 @@
+<script lang="ts">
+  import type { SceneLabState } from "$lib/features/lab/tabs/scene-lab/state/scene-lab-state.svelte";
+  import type { ThemeId } from "../domain/theme-types";
+  import WinterControls from "$lib/features/lab/tabs/scene-lab/components/WinterControls.svelte";
+  import ForestControls from "$lib/features/lab/tabs/scene-lab/components/ForestControls.svelte";
+  import CosmicControls from "$lib/features/lab/tabs/scene-lab/components/CosmicControls.svelte";
+  import OceanControls from "$lib/features/lab/tabs/scene-lab/components/OceanControls.svelte";
+  import AutumnControls from "$lib/features/lab/tabs/scene-lab/components/AutumnControls.svelte";
+  import EmberControls from "$lib/features/lab/tabs/scene-lab/components/EmberControls.svelte";
+  import CherryBlossomControls from "$lib/features/lab/tabs/scene-lab/components/CherryBlossomControls.svelte";
+  import CelestialControls from "$lib/features/lab/tabs/scene-lab/components/CelestialControls.svelte";
+  import RainbowControls from "$lib/features/lab/tabs/scene-lab/components/RainbowControls.svelte";
+  import PureBlackControls from "$lib/features/lab/tabs/scene-lab/components/PureBlackControls.svelte";
+
+  interface Props {
+    themeId: ThemeId;
+    sceneState: SceneLabState;
+  }
+
+  let { themeId, sceneState }: Props = $props();
+
+  let copyStatus = $state<"idle" | "copied" | "error">("idle");
+
+  async function handleCopy() {
+    try {
+      await sceneState.copyCurrentToClipboard();
+      copyStatus = "copied";
+      setTimeout(() => (copyStatus = "idle"), 1500);
+    } catch {
+      copyStatus = "error";
+      setTimeout(() => (copyStatus = "idle"), 2000);
+    }
+  }
+
+  function handleReset() {
+    if (confirm("Reset this scene's config to defaults?")) {
+      sceneState.resetCurrent();
+    }
+  }
+</script>
+
+<div class="controls-panel">
+  <div class="actions">
+    <button class="action-btn" onclick={handleReset} title="Reset to defaults">
+      <i class="fas fa-undo"></i> Reset
+    </button>
+    <button
+      class="action-btn primary"
+      class:success={copyStatus === "copied"}
+      class:error={copyStatus === "error"}
+      onclick={handleCopy}
+      title="Copy TypeScript config to clipboard"
+    >
+      {#if copyStatus === "copied"}
+        <i class="fas fa-check"></i> Copied
+      {:else if copyStatus === "error"}
+        <i class="fas fa-xmark"></i> Failed
+      {:else}
+        <i class="fas fa-copy"></i> Copy config
+      {/if}
+    </button>
+  </div>
+
+  <div class="controls-scroll">
+    {#if themeId === "winter"}
+      <WinterControls />
+    {:else if themeId === "forest"}
+      <ForestControls />
+    {:else if themeId === "cosmic"}
+      <CosmicControls />
+    {:else if themeId === "ocean"}
+      <OceanControls />
+    {:else if themeId === "autumn"}
+      <AutumnControls />
+    {:else if themeId === "ember"}
+      <EmberControls />
+    {:else if themeId === "blossom"}
+      <CherryBlossomControls />
+    {:else if themeId === "celestial"}
+      <CelestialControls />
+    {:else if themeId === "pride"}
+      <RainbowControls />
+    {:else if themeId === "pure-black"}
+      <PureBlackControls />
+    {/if}
+  </div>
+</div>
+
+<style>
+  .controls-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+
+  .action-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .action-btn.primary {
+    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 18%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #38bdf8) 35%, transparent);
+    color: var(--theme-accent, #38bdf8);
+  }
+
+  .action-btn.primary:hover {
+    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 28%, transparent);
+  }
+
+  .action-btn.success {
+    background: color-mix(in srgb, #10b981 22%, transparent);
+    border-color: color-mix(in srgb, #10b981 40%, transparent);
+    color: #34d399;
+  }
+
+  .action-btn.error {
+    background: color-mix(in srgb, #ef4444 22%, transparent);
+    border-color: color-mix(in srgb, #ef4444 40%, transparent);
+    color: #f87171;
+  }
+
+  .controls-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+</style>
