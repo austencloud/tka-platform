@@ -88,6 +88,8 @@
     cursor: pointer;
     text-align: left;
     padding: 0;
+    min-height: 0;
+    min-width: 0;
   }
 
   .header-label:disabled {
@@ -118,6 +120,8 @@
     position: relative;
     width: 32px;
     height: 18px;
+    min-height: 0;
+    min-width: 0;
     border-radius: 9px;
     border: none;
     background: rgba(255, 255, 255, 0.12);
