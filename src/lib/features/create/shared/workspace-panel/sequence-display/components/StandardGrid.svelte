@@ -15,8 +15,8 @@
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { mandalaCollectionState } from "$lib/features/mandala-collection/state/mandala-collection-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-
 
   const MANDALA_CELL_SCALE = 0.78;
 
@@ -101,6 +101,7 @@
   });
 
   const mandalaSize = $derived(Math.round(gridLayout.cellSize * MANDALA_CELL_SCALE));
+  const isLightBackground = $derived(settingsService.settings.backgroundType === BackgroundType.CELESTIAL);
 
   let mandalaMenuState = $state<ContextMenuState>({ open: false });
   let mandalaMenuVariant = $state<"blue" | "red" | "both">("both");
@@ -145,7 +146,7 @@
   >
     <!-- Start Position -->
     {#if startPosition && !startPosition.isBlank}
-      <div style:grid-row="1" style:grid-column="1">
+      <div class="step-container" style:grid-row="1" style:grid-column="1">
         <StartTile
           {startPosition}
           shouldAnimate={displayState.shouldAnimateStartPosition}
@@ -203,6 +204,7 @@
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="mandala-cell-wrapper"
+        class:light-bg={isLightBackground}
         style:grid-row={cell.row}
         style:grid-column={cell.column}
 
@@ -289,21 +291,22 @@
        container width is measured). */
     grid-template-columns: repeat(var(--grid-cols), minmax(0, var(--cell-size)));
     grid-auto-rows: var(--cell-size);
-    gap: 1px;
+    gap: 0;
     max-width: 100%;
     margin: auto;
     padding: 0;
     box-sizing: border-box;
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    transition:
-      opacity 300ms ease-out,
-      transform 300ms ease-out;
+    background: var(--dm-pictograph-bg, #0a0a0f);
+    border-radius: 6px;
+    overflow: hidden;
   }
 
   .step-grid.clearing {
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
+    transition:
+      opacity 300ms ease-out,
+      transform 300ms ease-out;
   }
 
   .step-container {
@@ -316,6 +319,7 @@
     height: 100%;
     min-width: 0;
     min-height: 0;
+    background: var(--dm-pictograph-bg, #0a0a0f);
   }
 
   .step-container.deleting {
@@ -351,6 +355,18 @@
     }
   }
 
+  .step-grid :global(.pictograph-renderer) {
+    border: none !important;
+  }
+
+  .step-grid :global(.step-cell) {
+    transform: none;
+  }
+
+  .step-grid :global(.step-cell:hover) {
+    transform: scale(1.02);
+  }
+
   .mandala-cell-wrapper {
     display: flex;
     align-items: center;
@@ -358,6 +374,11 @@
     cursor: context-menu;
     background: color-mix(in srgb, var(--dm-pictograph-bg, #0a0a0f) 50%, transparent);
     border-radius: 4px;
+    transition: background 350ms ease;
+  }
+
+  .mandala-cell-wrapper.light-bg {
+    background: color-mix(in srgb, var(--dm-pictograph-bg, #0a0a0f) 75%, transparent);
   }
 
   @keyframes slideIntoPlace {

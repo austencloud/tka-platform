@@ -23,6 +23,8 @@
     return flip(node, animation, params);
   }
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -125,6 +127,7 @@
   }: Props = $props();
 
   const scaleDuration = $derived(flipDuration > 0 ? 200 : 0);
+  const isLightBackground = $derived(settingsService.settings.backgroundType === BackgroundType.CELESTIAL);
 
   // Bind helper: forward the scroll ref to the parent
   function bindGridScrollRef(node: HTMLDivElement) {
@@ -456,7 +459,7 @@
           style="grid-column: {placement.col}; grid-row: {placement.row};"
           transition:fade|local={{ duration: scaleDuration }}
         >
-          <div class="pictograph-cell mandala-cell">
+          <div class="pictograph-cell mandala-cell" class:light-bg={isLightBackground}>
             <SequenceMandala
               {sequence}
               mode="card-back"
@@ -583,7 +586,7 @@
         style="grid-column: {placement.col}; grid-row: {placement.row};"
         transition:fade|local={{ duration: scaleDuration }}
       >
-        <div class="pictograph-cell mandala-cell">
+        <div class="pictograph-cell mandala-cell" class:light-bg={isLightBackground}>
           <SequenceMandala
             {sequence}
             mode="card-back"
@@ -834,6 +837,11 @@
     justify-content: center;
     pointer-events: none;
     background: transparent;
+  }
+
+  .mandala-cell.light-bg {
+    background: var(--dm-pictograph-bg, #0a0a0f);
+    border-radius: 8px;
   }
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */

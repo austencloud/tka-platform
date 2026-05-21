@@ -21,10 +21,11 @@
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { mandalaCollectionState } from "$lib/features/mandala-collection/state/mandala-collection-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
-
   const MANDALA_CELL_SCALE = 0.78;
+  const isLightBackground = $derived(settingsService.settings.backgroundType === BackgroundType.CELESTIAL);
 
   const hapticService = getHapticFeedback();
 
@@ -224,6 +225,7 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             class="timeline-cell mandala-cell"
+            class:light-bg={isLightBackground}
             style:--duration-multiplier={1}
 
             oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
@@ -483,6 +485,11 @@
   .mandala-cell {
     cursor: context-menu;
     background: color-mix(in srgb, var(--dm-pictograph-bg, #0a0a0f) 50%, transparent);
+    transition: background 350ms ease;
+  }
+
+  .mandala-cell.light-bg {
+    background: color-mix(in srgb, var(--dm-pictograph-bg, #0a0a0f) 75%, transparent);
   }
 
   @keyframes slideIntoPlace {
