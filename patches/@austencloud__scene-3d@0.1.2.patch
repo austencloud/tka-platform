@@ -1,0 +1,193 @@
+diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
+index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..1fe369a38ea617d8bb4ec9d9f4452cf9e4f48785 100644
+--- a/src/lib/components/PerformerRig.svelte
++++ b/src/lib/components/PerformerRig.svelte
+@@ -78,6 +78,7 @@
+     tipEffectMap?: TipEffectMap;
+     isPlaying?: boolean;
+     staffHalfLength?: number;
++    propLength?: number;
+ 
+     // Vertical offset (museum platforms, stages)
+     groundOffset?: number;
+@@ -132,7 +133,8 @@
+     redPropState: redPropStateOverride,
+     tipEffectMap = {},
+     isPlaying = false,
+-    staffHalfLength = userProportionsState.staffLength / 2,
++    staffHalfLength: staffHalfLengthProp,
++    propLength,
+     groundOffset = 0,
+     avatarId,
+     enableLocomotion = false,
+@@ -147,6 +149,10 @@
+     effectsSlot,
+   }: Props = $props();
+ 
++  const staffHalfLength = $derived(
++    staffHalfLengthProp ?? (propLength ? propLength / 2 : userProportionsState.staffLength / 2)
++  );
++
+   // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
+   // rig's rotation is advanced by yawDelta from Avatar3D's onRootMotion
+   // callback each frame (the turn clip drives the rotation). When the flag
+@@ -328,6 +334,7 @@
+             propType={bluePropType}
+             propState={bluePropState}
+             color="blue"
++            length={propLength}
+           />
+         {/if}
+       </T.Group>
+@@ -351,6 +358,7 @@
+             propType={redPropType}
+             propState={redPropState}
+             color="red"
++            length={propLength}
+           />
+         {/if}
+       </T.Group>
+diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
+index 0bd846fa1401f055b1322e03519d00a21e8e882a..8f023f7b8a3dc4f441fc086719b929b5b56e9c74 100644
+--- a/src/lib/components/props/Prop3D.svelte
++++ b/src/lib/components/props/Prop3D.svelte
+@@ -38,6 +38,7 @@
+     color: "blue" | "red";
+     visible?: boolean;
+     isActivePlayer?: boolean;
++    length?: number;
+   }
+ 
+   let {
+@@ -46,6 +47,7 @@
+     color,
+     visible = true,
+     isActivePlayer = false,
++    length,
+   }: Props = $props();
+ 
+   // "Big" variants use a 1.4x scale on the base prop.
+@@ -70,90 +72,90 @@
+ 
+   <!-- Tier 2: Procedural fallback geometry -->
+   {:else if propType === PropType.STAFF || propType === PropType.SIMPLESTAFF || propType === PropType.STAFF2}
+-    <Staff3D {propState} {color} {visible} {isActivePlayer} />
++    <Staff3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGSTAFF}
+-    <Staff3D {propState} {color} {visible} {isActivePlayer} />
++    <Staff3D {propState} {color} {visible} {isActivePlayer} {length} />
+ 
+   {:else if propType === PropType.CLUB}
+-    <Club3D {propState} {color} {visible} {isActivePlayer} />
++    <Club3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGCLUB}
+-    <Club3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Club3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.FAN}
+-    <Fan3D {propState} {color} {visible} {isActivePlayer} />
++    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGFAN}
+-    <Fan3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.TRIAD}
+-    <Triad3D {propState} {color} {visible} {isActivePlayer} />
++    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGTRIAD}
+-    <Triad3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.MINIHOOP}
+-    <Hoop3D {propState} {color} {visible} {isActivePlayer} />
++    <Hoop3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGHOOP}
+-    <Hoop3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Hoop3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.BUUGENG || propType === PropType.FRACTALGENG}
+-    <Buugeng3D {propState} {color} {visible} {isActivePlayer} />
++    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGBUUGENG}
+-    <Buugeng3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.TRIGENG}
+-    <Buugeng3D {propState} {color} {visible} {isActivePlayer} />
++    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} />
+ 
+   {:else if propType === PropType.TRIQUETRA || propType === PropType.TRIQUETRA2}
+-    <Triquetra3D {propState} {color} {visible} {isActivePlayer} />
++    <Triquetra3D {propState} {color} {visible} {isActivePlayer} {length} />
+ 
+   {:else if propType === PropType.SWORD}
+-    <Sword3D {propState} {color} {visible} {isActivePlayer} />
++    <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
+ 
+   {:else if propType === PropType.CHICKEN}
+-    <Chicken3D {propState} {color} {visible} {isActivePlayer} />
++    <Chicken3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGCHICKEN}
+-    <Chicken3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Chicken3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.GUITAR}
+-    <Guitar3D {propState} {color} {visible} {isActivePlayer} />
++    <Guitar3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.UKULELE}
+-    <Guitar3D {propState} {color} {visible} {isActivePlayer} scale={0.75} />
++    <Guitar3D {propState} {color} {visible} {isActivePlayer} {length} scale={0.75} />
+ 
+   {:else if propType === PropType.DOUBLESTAR}
+-    <Doublestar3D {propState} {color} {visible} {isActivePlayer} />
++    <Doublestar3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGDOUBLESTAR}
+-    <Doublestar3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Doublestar3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.EIGHTRINGS}
+-    <Eightrings3D {propState} {color} {visible} {isActivePlayer} />
++    <Eightrings3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGEIGHTRINGS}
+-    <Eightrings3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Eightrings3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.CONTACTBALL}
+-    <Ball3D {propState} {color} {visible} {isActivePlayer} />
++    <Ball3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGCONTACTBALL}
+-    <Ball3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Ball3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+   {:else if propType === PropType.DOUBLECONTACTBALL}
+-    <Ball3D {propState} {color} {visible} {isActivePlayer} />
++    <Ball3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGDOUBLECONTACTBALL}
+-    <Ball3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Ball3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.QUIAD}
+-    <Triad3D {propState} {color} {visible} {isActivePlayer} />
++    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
+ 
+   {:else if propType === PropType.TORCH}
+-    <Torch3D {propState} {color} {visible} {isActivePlayer} />
++    <Torch3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {:else if propType === PropType.BIGTORCH}
+-    <Torch3D {propState} {color} {visible} {isActivePlayer} scale={BIG_SCALE} />
++    <Torch3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.POI}
+-    <Poi3D {propState} {color} {visible} {isActivePlayer} />
++    <Poi3D {propState} {color} {visible} {isActivePlayer} {length} />
+ 
+   {:else if propType === PropType.HAND}
+     <!-- Hand = no prop visible, just the trail indicator -->
+-    <Staff3D {propState} {color} visible={false} {isActivePlayer} />
++    <Staff3D {propState} {color} visible={false} {isActivePlayer} {length} />
+ 
+   {:else}
+     <!-- Unknown prop type: fall back to staff -->
+-    <Staff3D {propState} {color} {visible} {isActivePlayer} />
++    <Staff3D {propState} {color} {visible} {isActivePlayer} {length} />
+   {/if}
+ {/if}
