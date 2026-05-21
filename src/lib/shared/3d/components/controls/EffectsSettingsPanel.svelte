@@ -72,7 +72,7 @@
   function isEnabled(key: EffectKey): boolean {
     if (performer) {
       const pk = toPerformerEffect(key);
-      return pk !== null && (performer.settings.effects?.has(pk) ?? false);
+      return pk !== null && performer.effectiveEffects.has(pk);
     }
     if (key === "motion") {
       return scene3DRender.motion.blur || scene3DRender.motion.speedLines;
@@ -240,7 +240,7 @@
 
   <!-- Quick Info -->
   {#if performer}
-    {@const count = performer.settings.effects?.size ?? 0}
+    {@const count = performer.effectiveEffects.size}
     {#if count > 0}
       <div class="active-count">
         {count} effect{count > 1 ? "s" : ""} active
