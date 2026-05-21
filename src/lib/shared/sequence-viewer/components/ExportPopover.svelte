@@ -1,16 +1,12 @@
 <script lang="ts">
-  import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import {
     getExportOptionsState,
     type VideoFps,
     type VideoResolution,
     type VideoQuality,
   } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
-  import { scale, slide } from "svelte/transition";
-  import { backOut, cubicOut } from "svelte/easing";
+  import { slide } from "svelte/transition";
 
-  const viewer = getViewer3DContext();
-  const open = $derived(viewer.activePopover === "export");
   const opts = getExportOptionsState();
 
   let advancedOpen = $state(false);
@@ -25,132 +21,100 @@
     return q === "cinema" ? "Cinema" : "Standard";
   }
   const FPS_OPTIONS: VideoFps[] = [30, 60, 120];
-
-
 </script>
 
-{#if open}
-  <!-- svelte-ignore a11y_interactive_supports_focus -->
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div
-    class="pop"
-    role="dialog"
-    aria-label="Export"
-    onclick={(e) => e.stopPropagation()}
-    onpointerdown={(e) => e.stopPropagation()}
-    in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
-    out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
-  >
-    <div class="pop-header">Export</div>
-
-    <div class="pop-body">
-      <div class="row">
-        <div class="row-label">Resolution</div>
-        <div class="chips">
-          {#each RESOLUTIONS as r (r)}
-            <button
-              class="chip"
-              class:active={opts.videoResolution === r}
-              onclick={() => opts.setVideoResolution(r)}
-              aria-pressed={opts.videoResolution === r}
-            >
-              {resLabel(r)}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="row-label">Quality</div>
-        <div class="chips">
-          {#each QUALITIES as q (q)}
-            <button
-              class="chip"
-              class:active={opts.videoQuality === q}
-              onclick={() => opts.setVideoQuality(q)}
-              aria-pressed={opts.videoQuality === q}
-            >
-              {qualityLabel(q)}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="row-label">FPS</div>
-        <div class="chips">
-          {#each FPS_OPTIONS as f (f)}
-            <button
-              class="chip"
-              class:active={opts.videoFps === f}
-              onclick={() => opts.setVideoFps(f)}
-              aria-pressed={opts.videoFps === f}
-            >
-              {f}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <button
-        class="advanced-toggle"
-        onclick={() => (advancedOpen = !advancedOpen)}
-        aria-expanded={advancedOpen}
-      >
-        <i class="fas fa-chevron-{advancedOpen ? 'down' : 'right'}"></i>
-        Advanced
-      </button>
-
-      {#if advancedOpen}
-        <div class="advanced" transition:slide={{ duration: 180 }}>
-          <div class="row">
-            <div class="row-label">Loop count</div>
-            <div class="stepper">
-              <button
-                class="step-btn"
-                onclick={() => opts.setVideoLoopCount(opts.videoLoopCount - 1)}
-                aria-label="Decrease loop count"
-                disabled={opts.videoLoopCount <= 1}
-              >
-                <i class="fas fa-minus"></i>
-              </button>
-              <span class="step-value">{opts.videoLoopCount}</span>
-              <button
-                class="step-btn"
-                onclick={() => opts.setVideoLoopCount(opts.videoLoopCount + 1)}
-                aria-label="Increase loop count"
-                disabled={opts.videoLoopCount >= 10}
-              >
-                <i class="fas fa-plus"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      {/if}
+<div class="export-content">
+  <div class="row">
+    <div class="row-label">Resolution</div>
+    <div class="chips">
+      {#each RESOLUTIONS as r (r)}
+        <button
+          class="chip"
+          class:active={opts.videoResolution === r}
+          onclick={() => opts.setVideoResolution(r)}
+          aria-pressed={opts.videoResolution === r}
+        >
+          {resLabel(r)}
+        </button>
+      {/each}
     </div>
   </div>
-{/if}
+
+  <div class="row">
+    <div class="row-label">Quality</div>
+    <div class="chips">
+      {#each QUALITIES as q (q)}
+        <button
+          class="chip"
+          class:active={opts.videoQuality === q}
+          onclick={() => opts.setVideoQuality(q)}
+          aria-pressed={opts.videoQuality === q}
+        >
+          {qualityLabel(q)}
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="row-label">FPS</div>
+    <div class="chips">
+      {#each FPS_OPTIONS as f (f)}
+        <button
+          class="chip"
+          class:active={opts.videoFps === f}
+          onclick={() => opts.setVideoFps(f)}
+          aria-pressed={opts.videoFps === f}
+        >
+          {f}
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <button
+    class="advanced-toggle"
+    onclick={() => (advancedOpen = !advancedOpen)}
+    aria-expanded={advancedOpen}
+  >
+    <i class="fas fa-chevron-{advancedOpen ? 'down' : 'right'}"></i>
+    Advanced
+  </button>
+
+  {#if advancedOpen}
+    <div class="advanced" transition:slide={{ duration: 180 }}>
+      <div class="row">
+        <div class="row-label">Loop count</div>
+        <div class="stepper">
+          <button
+            class="step-btn"
+            onclick={() => opts.setVideoLoopCount(opts.videoLoopCount - 1)}
+            aria-label="Decrease loop count"
+            disabled={opts.videoLoopCount <= 1}
+          >
+            <i class="fas fa-minus"></i>
+          </button>
+          <span class="step-value">{opts.videoLoopCount}</span>
+          <button
+            class="step-btn"
+            onclick={() => opts.setVideoLoopCount(opts.videoLoopCount + 1)}
+            aria-label="Increase loop count"
+            disabled={opts.videoLoopCount >= 10}
+          >
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+</div>
 
 <style>
-  .pop {
-    position: absolute; right: calc(100% + 10px); top: 0;
-    width: 340px;
-    background: rgba(20, 22, 32, 0.82);
-    backdrop-filter: blur(24px) saturate(150%);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 18px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
-    overflow: hidden;
-    z-index: 100;
+  .export-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
-  .pop-header {
-    padding: 14px 16px 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.10);
-    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
-    text-transform: uppercase; color: rgba(255,255,255,0.42);
-  }
-  .pop-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 14px; }
 
   .row { display: flex; flex-direction: column; gap: 8px; }
   .row-label {

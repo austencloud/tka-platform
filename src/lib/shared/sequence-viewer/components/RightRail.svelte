@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { getViewer3DContext, type PopoverId } from "$lib/shared/3d/context/viewer-3d-context";
+  import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { getPerformerColor } from "$lib/shared/3d/constants/performer-colors";
+  import ViewerPopover from "$lib/shared/3d/components/controls/ViewerPopover.svelte";
   import TempoPopover from "./TempoPopover.svelte";
   import ExportPopover from "./ExportPopover.svelte";
   import CameraPopover from "$lib/shared/3d/components/CameraPopover.svelte";
@@ -23,33 +24,9 @@
   }
   let { renderMode, bpm = 60, onBpmChange = () => {} }: Props = $props();
 
-  let rootEl = $state<HTMLDivElement | null>(null);
-
-  interface Chip { id: PopoverId; icon: string; tooltip: string; }
-
-  const CHIPS_3D_GLOBAL: Chip[] = [
-    { id: "formation", icon: "fa-users",                 tooltip: "Formation" },
-    { id: "tempo",     icon: "fa-gauge",                 tooltip: "Speed" },
-    { id: "camera",    icon: "fa-video",                 tooltip: "Camera" },
-    { id: "planes",    icon: "fa-layer-group",           tooltip: "Planes" },
-    { id: "export",    icon: "fa-arrow-up-from-bracket", tooltip: "Export" },
-    { id: "scene",     icon: "fa-mountain-sun",          tooltip: "Scene" },
-  ];
-
-  const CHIPS_PERFORMER: Chip[] = [
-    { id: "effects", icon: "fa-wand-magic-sparkles", tooltip: "Effects" },
-    { id: "prop",    icon: "fa-staff-snake",         tooltip: "Prop" },
-    { id: "effort",  icon: "fa-wave-square",         tooltip: "Effort" },
-  ];
-
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const hasPerformerSelected = $derived(renderMode === "3d" && selectedIndex !== null);
   const performerColor = $derived(getPerformerColor(selectedIndex ?? 0));
-
-  function onChipClick(e: MouseEvent, id: PopoverId) {
-    e.stopPropagation();
-    viewer.openPopover(viewer.activePopover === id ? null : id);
-  }
 
   onMount(() => {
     const cleanupKeyboard = createViewer3DKeyboardHandler({
@@ -57,18 +34,8 @@
       redo: () => viewer.redo(),
     });
 
-    function onDocClick(e: MouseEvent) {
-      if (!viewer.activePopover) return;
-      const target = e.target as Node | null;
-      if (!target) return;
-      if (rootEl && rootEl.contains(target)) return;
-      const popovers = document.querySelectorAll('[role="dialog"]');
-      for (const p of popovers) if (p.contains(target)) return;
-      viewer.closePopover();
-    }
-    document.addEventListener("click", onDocClick);
+    // NOTE: document click handler is REMOVED - Bits UI handles click-outside via onInteractOutside
     return () => {
-      document.removeEventListener("click", onDocClick);
       cleanupKeyboard();
     };
   });
@@ -78,37 +45,33 @@
   class="right-rail"
   class:mode-2d={renderMode === "2d"}
   class:mode-3d={renderMode === "3d"}
-  bind:this={rootEl}
   role="toolbar"
   aria-label="Viewer controls"
 >
   {#if renderMode === "3d"}
-    {#each CHIPS_3D_GLOBAL as chip (chip.id)}
-      <div class="chip-wrap">
-        <button
-          class="rail-chip"
-          aria-pressed={viewer.activePopover === chip.id}
-          aria-label={chip.tooltip}
-          data-tooltip={chip.tooltip}
-          onclick={(e) => onChipClick(e, chip.id)}
-        >
-          <i class="fas {chip.icon}"></i>
-        </button>
-        {#if chip.id === "formation"}
-          <FormationPopover />
-        {:else if chip.id === "tempo"}
-          <TempoPopover {bpm} {onBpmChange} />
-        {:else if chip.id === "export"}
-          <ExportPopover />
-        {:else if chip.id === "camera"}
-          <CameraPopover />
-        {:else if chip.id === "planes"}
-          <PlanesPopover />
-        {:else if chip.id === "scene"}
-          <SceneSelectorPopover />
-        {/if}
-      </div>
-    {/each}
+    <ViewerPopover id="formation" title="Formation" icon="fa-users" tooltip="Formation">
+      <FormationPopover />
+    </ViewerPopover>
+
+    <ViewerPopover id="tempo" title="Tempo" icon="fa-gauge" tooltip="Speed" width={340}>
+      <TempoPopover {bpm} {onBpmChange} />
+    </ViewerPopover>
+
+    <ViewerPopover id="camera" title="Camera" icon="fa-video" tooltip="Camera" width={300}>
+      <CameraPopover />
+    </ViewerPopover>
+
+    <ViewerPopover id="planes" title="Planes" icon="fa-layer-group" tooltip="Planes" width={320}>
+      <PlanesPopover />
+    </ViewerPopover>
+
+    <ViewerPopover id="export" title="Export" icon="fa-arrow-up-from-bracket" tooltip="Export" width={340}>
+      <ExportPopover />
+    </ViewerPopover>
+
+    <ViewerPopover id="scene" title="Scene" icon="fa-mountain-sun" tooltip="Scene" width={320}>
+      <SceneSelectorPopover />
+    </ViewerPopover>
 
     {#if hasPerformerSelected}
       <div
@@ -119,7 +82,11 @@
         <div class="separator-line"></div>
       </div>
 
-      {#each CHIPS_PERFORMER as chip (chip.id)}
+      {#each [
+        { id: "effects" as const, icon: "fa-wand-magic-sparkles", tooltip: "Effects" },
+        { id: "prop" as const, icon: "fa-staff-snake", tooltip: "Prop" },
+        { id: "effort" as const, icon: "fa-wave-square", tooltip: "Effort" },
+      ] as chip (chip.id)}
         <div class="chip-wrap" transition:slide|local={{ duration: 220, axis: "y" }}>
           <button
             class="rail-chip performer-scoped"
@@ -127,7 +94,7 @@
             aria-label={chip.tooltip}
             data-tooltip={chip.tooltip}
             style:--chip-tint={performerColor}
-            onclick={(e) => onChipClick(e, chip.id)}
+            onclick={(e) => { e.stopPropagation(); viewer.openPopover(viewer.activePopover === chip.id ? null : chip.id); }}
           >
             <i class="fas {chip.icon}"></i>
           </button>

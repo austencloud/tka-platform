@@ -1,11 +1,8 @@
 <script lang="ts">
   import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../context/viewer-3d-context";
-  import { scale } from "svelte/transition";
-  import { cubicOut, backOut } from "svelte/easing";
 
   const viewer = getViewer3DContext();
-  const open = $derived(viewer.activePopover === "planes");
   const avatarState = $derived(viewer.performerManager.performers[0] ?? null);
 
   const PLANES: { plane: Plane; label: string }[] = [
@@ -59,142 +56,90 @@
   }
 </script>
 
-{#if open}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div
-    class="planes-popover"
-    role="dialog"
-    aria-label="Plane visibility"
-    tabindex="-1"
-    onclick={(e) => e.stopPropagation()}
-    onpointerdown={(e) => e.stopPropagation()}
-    onkeydown={(e) => { if (e.key === 'Escape') viewer.closePopover(); }}
-    in:scale={{ duration: 250, start: 0.9, opacity: 0, easing: backOut }}
-    out:scale={{ duration: 180, start: 0.95, opacity: 0, easing: cubicOut }}
-  >
-    <div class="pop-header">
-      <span class="pop-title">Planes</span>
-    </div>
-    <div class="pop-body">
-      <div class="plane-matrix">
-        {#each PLANES as { plane, label }}
-          {@const handAssigned = hasHandOnPlane(plane)}
-          {@const visible = isVisible(plane)}
-          {@const color = PLANE_COLORS[plane]}
-          <div
-            class="plane-row"
-            class:with-hand={handAssigned}
-            class:hidden-row={!visible}
-          >
-            <div class="plane-left">
-              <button
-                class="plane-toggle"
-                class:visible
-                class:hidden={!visible}
-                style="--dot-color: {color};"
-                onclick={(e) => handlePlaneToggleClick(e, plane)}
-                aria-pressed={visible}
-                aria-label={`${label} plane - ${visible ? 'visible, click to hide' : 'hidden, click to show'}`}
-              >
-                <i
-                  class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
-                  aria-hidden="true"
-                ></i>
-              </button>
-              <span class="plane-label">{label}</span>
-            </div>
-            <div class="plane-right">
-              <button
-                class="hand-slot blue"
-                class:filled={bluePlane === plane}
-                onclick={(e) => handleHandSlotClick(e, "blue", plane)}
-                aria-pressed={bluePlane === plane}
-                aria-label={`Blue hand on ${label}`}
-              ></button>
-              <button
-                class="hand-slot red"
-                class:filled={redPlane === plane}
-                onclick={(e) => handleHandSlotClick(e, "red", plane)}
-                aria-pressed={redPlane === plane}
-                aria-label={`Red hand on ${label}`}
-              ></button>
-            </div>
-          </div>
-        {/each}
-      </div>
-
-      <div class="label-toggle-row">
-        <span class="toggle-label">Location labels</span>
+<div class="plane-matrix">
+  {#each PLANES as { plane, label }}
+    {@const handAssigned = hasHandOnPlane(plane)}
+    {@const visible = isVisible(plane)}
+    {@const color = PLANE_COLORS[plane]}
+    <div
+      class="plane-row"
+      class:with-hand={handAssigned}
+      class:hidden-row={!visible}
+    >
+      <div class="plane-left">
         <button
-          class="label-toggle"
-          class:active={viewer.showGridLabels}
-          onclick={(e) => { e.stopPropagation(); viewer.toggleGridLabels(); }}
-          aria-pressed={viewer.showGridLabels}
-          aria-label="Toggle grid location labels"
+          class="plane-toggle"
+          class:visible
+          class:hidden={!visible}
+          style="--dot-color: {color};"
+          onclick={(e) => handlePlaneToggleClick(e, plane)}
+          aria-pressed={visible}
+          aria-label={`${label} plane - ${visible ? 'visible, click to hide' : 'hidden, click to show'}`}
         >
-          <span class="toggle-track">
-            <span class="toggle-thumb"></span>
-          </span>
+          <i
+            class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
+            aria-hidden="true"
+          ></i>
         </button>
+        <span class="plane-label">{label}</span>
       </div>
-
-      {#if isPlaneStateNonDefault}
-        <div class="pop-footer">
-          <button
-            class="reset-btn"
-            class:with-overrides={hasStepOverrides}
-            onclick={handleResetPlanesClick}
-            aria-label={hasStepOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
-            title={hasStepOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 7v6h6"/>
-              <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
-            </svg>
-            Reset
-            {#if hasStepOverrides}
-              <span class="override-badge" aria-hidden="true"></span>
-            {/if}
-          </button>
-        </div>
-      {/if}
+      <div class="plane-right">
+        <button
+          class="hand-slot blue"
+          class:filled={bluePlane === plane}
+          onclick={(e) => handleHandSlotClick(e, "blue", plane)}
+          aria-pressed={bluePlane === plane}
+          aria-label={`Blue hand on ${label}`}
+        ></button>
+        <button
+          class="hand-slot red"
+          class:filled={redPlane === plane}
+          onclick={(e) => handleHandSlotClick(e, "red", plane)}
+          aria-pressed={redPlane === plane}
+          aria-label={`Red hand on ${label}`}
+        ></button>
+      </div>
     </div>
+  {/each}
+</div>
+
+<div class="label-toggle-row">
+  <span class="toggle-label">Location labels</span>
+  <button
+    class="label-toggle"
+    class:active={viewer.showGridLabels}
+    onclick={(e) => { e.stopPropagation(); viewer.toggleGridLabels(); }}
+    aria-pressed={viewer.showGridLabels}
+    aria-label="Toggle grid location labels"
+  >
+    <span class="toggle-track">
+      <span class="toggle-thumb"></span>
+    </span>
+  </button>
+</div>
+
+{#if isPlaneStateNonDefault}
+  <div class="planes-footer">
+    <button
+      class="reset-btn"
+      class:with-overrides={hasStepOverrides}
+      onclick={handleResetPlanesClick}
+      aria-label={hasStepOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+      title={hasStepOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7v6h6"/>
+        <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
+      </svg>
+      Reset
+      {#if hasStepOverrides}
+        <span class="override-badge" aria-hidden="true"></span>
+      {/if}
+    </button>
   </div>
 {/if}
 
 <style>
-  .planes-popover {
-    position: absolute;
-    right: calc(100% + 10px);
-    top: 0;
-    z-index: 100;
-    width: 320px;
-    border-radius: 18px;
-    transform-origin: top right;
-    background: rgba(20, 22, 32, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(24px) saturate(150%);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
-    overflow: hidden;
-  }
-
-  .pop-header {
-    padding: 14px 16px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .pop-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.88);
-    letter-spacing: 0.03em;
-  }
-
-  .pop-body {
-    padding: 12px 14px 14px;
-  }
-
   .plane-matrix {
     display: flex;
     flex-direction: column;
@@ -328,7 +273,7 @@
     box-shadow: 0 0 12px rgba(217, 74, 74, 0.5);
   }
 
-  .pop-footer {
+  .planes-footer {
     display: flex;
     justify-content: flex-end;
     margin-top: 10px;
