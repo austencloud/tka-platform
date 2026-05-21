@@ -666,6 +666,9 @@
 
     velVar.material.uniforms.uDelta.value = dt;
     velVar.material.uniforms.uTime.value = elapsed;
+    velVar.material.uniforms.uCurrentStrength.value = currentStrength;
+    velVar.material.uniforms.uPerceptionCos.value = Math.cos(perceptionAngle * Math.PI / 180);
+    velVar.material.uniforms.uScatterRadius.value = scatterRadius;
     posVar.material.uniforms.uDelta.value = dt;
 
     if (eventSystem) {
@@ -681,6 +684,8 @@
       mat.uniforms.tPosition!.value = posTex;
       mat.uniforms.tVelocity!.value = velTex;
       mat.uniforms.uTime!.value = elapsed;
+      mat.uniforms.uSwimFreq!.value = swimFrequency;
+      mat.uniforms.uBaseAmplitude!.value = waveAmplitude;
     }
   });
 </script>

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { FishEventSystem } from "$lib/shared/3d/environments/scenes/ocean/FishEventSystem";
 import { Vector3 } from "three";
 
