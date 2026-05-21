@@ -1,99 +1,237 @@
 <script lang="ts">
   import { getViewer3DContext } from "../../context/viewer-3d-context";
-  import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
-  import PropSizeControl from "$lib/shared/sequence-viewer/components/PropSizeControl.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import {
+    getBasePropType,
+    getAllVariations,
+    getPropTypeDisplayInfo,
+    isPropActive,
+    getBasePropsByCategory,
+    PROP_CATEGORIES,
+  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import { getPerformerColor } from "../../constants/performer-colors";
-  import { scale } from "svelte/transition";
-  import { cubicOut, backOut } from "svelte/easing";
+  import { slide } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
 
   const viewer = getViewer3DContext();
-  const open = $derived(viewer.activePopover === "prop");
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const performerColor = $derived(getPerformerColor(selectedIndex ?? 0));
-  const performerLabel = $derived(selectedIndex !== null ? `Performer ${selectedIndex + 1}` : "");
 
   const selected = $derived.by(() => {
     if (selectedIndex === null) return null;
     return viewer.performerManager.performers[selectedIndex] ?? null;
   });
+
+  const propCategories = $derived(getBasePropsByCategory());
+  const selectedBase = $derived(getBasePropType(selected?.settings.prop ?? PropType.STAFF));
+  let expandedFamily = $state<PropType | null>(null);
+
+  const familyVariants = $derived(
+    expandedFamily ? getAllVariations(expandedFamily).filter(isPropActive) : [],
+  );
+
+  function variantCount(base: PropType): number | undefined {
+    const count = getAllVariations(base).filter(isPropActive).length;
+    return count > 1 ? count : undefined;
+  }
+
+  function handleFamilyClick(base: PropType) {
+    if (!selected) return;
+    const activeVariants = getAllVariations(base).filter(isPropActive);
+    if (activeVariants.length <= 1) {
+      selected.setProp(base);
+      expandedFamily = null;
+    } else {
+      expandedFamily = base;
+    }
+  }
+
+  function handleVariantClick(variant: PropType) {
+    if (!selected) return;
+    selected.setProp(variant);
+  }
 </script>
 
-{#if open && selected}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div
-    class="prop-popover"
-    role="dialog"
-    aria-label="Prop for performer {(selectedIndex ?? 0) + 1}"
-    tabindex="-1"
-    onclick={(e) => e.stopPropagation()}
-    onpointerdown={(e) => e.stopPropagation()}
-    onkeydown={(e) => { if (e.key === 'Escape') viewer.closePopover(); }}
-    in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
-    out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
-  >
-    <div class="pop-header">
-      <span class="pop-title">{performerLabel}</span>
-      <span class="pop-badge" style:background={performerColor}></span>
-    </div>
-    <div class="pop-body">
-      <BentoPropGrid
-        selectedPropType={selected.settings.prop ?? PropType.STAFF}
-        color={performerColor}
-        variant="inline"
-        onSelect={(p) => selected.setProp(p)}
-      />
-      <div class="size-section">
-        <PropSizeControl performer={selected} />
+{#if selected}
+  <div class="prop-content" style:--pop-accent={performerColor}>
+    {#each PROP_CATEGORIES as cat, ci}
+      {@const bases = propCategories.get(cat.id) ?? []}
+      {#if bases.length > 0}
+        {#if ci > 0}
+          <div class="divider"></div>
+        {/if}
+        <div class="tile-row">
+          {#each bases as base}
+            {@const info = getPropTypeDisplayInfo(base)}
+            {@const isSelected = expandedFamily !== null ? expandedFamily === base : selectedBase === base}
+            {@const badge = variantCount(base)}
+            <button
+              class="tile"
+              class:selected={isSelected}
+              aria-pressed={isSelected}
+              aria-label={info.label}
+              title={info.label}
+              onclick={() => handleFamilyClick(base)}
+            >
+              {#if badge}
+                <span class="badge">{badge}</span>
+              {/if}
+              <div class="tile-icon">
+                <PropCompositionPreview propType={base} size={40} darkBackground />
+              </div>
+            </button>
+          {/each}
+        </div>
+      {/if}
+    {/each}
+  </div>
+
+  {#if expandedFamily && familyVariants.length > 1}
+    <div class="variant-strip" transition:slide={{ duration: 180, easing: cubicOut }}>
+      <span class="variant-label">{getPropTypeDisplayInfo(expandedFamily).label} Variants</span>
+      <div class="variant-row">
+        {#each familyVariants as variant}
+          {@const vInfo = getPropTypeDisplayInfo(variant)}
+          <button
+            class="variant-chip"
+            class:active={selected.settings.prop === variant}
+            onclick={() => handleVariantClick(variant)}
+          >
+            <div class="variant-icon">
+              <PropCompositionPreview propType={variant} size={32} darkBackground />
+            </div>
+            <span class="variant-name">{vInfo.label}</span>
+          </button>
+        {/each}
       </div>
     </div>
-  </div>
+  {/if}
 {/if}
 
 <style>
-  .prop-popover {
-    position: absolute;
-    right: calc(100% + 10px);
-    top: 0;
-    z-index: 100;
-    width: 420px;
-    border-radius: 18px;
-    transform-origin: top right;
-    background: rgba(20, 22, 32, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(24px) saturate(150%);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
-    overflow: hidden;
+  .prop-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
-  .pop-header {
-    padding: 14px 16px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  .divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    margin: 0 4px;
+  }
+  .tile-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tile {
+    width: 56px;
+    height: 56px;
+    background: #000;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 160ms cubic-bezier(0.2, 0, 0.13, 1.5);
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    position: relative;
+    padding: 0;
   }
-  .pop-title {
-    font-size: 11px;
+  .tile:hover {
+    background: #0a0c14;
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: scale(1.05);
+  }
+  .tile.selected {
+    border-color: var(--pop-accent);
+    border-width: 2px;
+    background: color-mix(in srgb, var(--pop-accent) 15%, #000);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--pop-accent) 35%, transparent);
+  }
+  .tile-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+  }
+  .badge {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+  }
+  .tile.selected .badge {
+    background: color-mix(in srgb, var(--pop-accent) 40%, transparent);
+    color: var(--pop-accent);
+  }
+  .variant-strip {
+    background: #08090f;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0 -14px -14px;
+  }
+  .variant-label {
+    font-size: 10px;
+    font-weight: 700;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.42);
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.45);
+    padding: 0 2px;
   }
-  .pop-badge {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
+  .variant-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
   }
-  .pop-body {
-    padding: 12px 14px 14px;
-    max-height: 70vh;
-    overflow-y: auto;
+  .variant-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px 5px 5px;
+    background: #000;
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 150ms;
+    color: rgba(255, 255, 255, 0.8);
   }
-  .size-section {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  .variant-chip:hover {
+    background: #0a0c14;
+    border-color: rgba(255, 255, 255, 0.35);
+    color: white;
+  }
+  .variant-chip.active {
+    border-color: var(--pop-accent);
+    border-width: 2px;
+    background: color-mix(in srgb, var(--pop-accent) 15%, #000);
+    color: white;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--pop-accent) 30%, transparent);
+  }
+  .variant-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .variant-name {
+    font-size: 12px;
+    font-weight: 600;
   }
 </style>
