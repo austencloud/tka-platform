@@ -7,7 +7,7 @@
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
   import SceneFeatureTiles from "../scene-features/components/SceneFeatureTiles.svelte";
   import { tryGetSceneFeatureContext } from "../scene-features/context/scene-feature-context";
-  import { userProportionsState, inchesToCm } from "@austencloud/scene-3d";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import type { OceanVariant } from "../environments/domain/enums/environment-enums";
 
   const viewer = getViewer3DContext();
@@ -89,23 +89,6 @@
           </div>
         </div>
       {/if}
-
-      <div class="scene-control">
-        <div class="scene-control-header">
-          <span class="scene-control-label">Prop size</span>
-          <span class="scene-control-value">{userProportionsState.staffLengthDisplay}</span>
-        </div>
-        <input
-          type="range"
-          class="scene-slider"
-          min={inchesToCm(24)}
-          max={inchesToCm(60)}
-          step="1"
-          value={userProportionsState.staffLengthCm}
-          oninput={(e) => userProportionsState.setStaffLengthCm(Number(e.currentTarget.value))}
-          aria-label="Prop size"
-        />
-      </div>
 
       <div class="scene-control">
         <div class="scene-control-header">

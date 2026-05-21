@@ -5,6 +5,7 @@
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
   import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
+  import PropSizeControl from "./PropSizeControl.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { PRESET_VALID_COUNTS } from "@austencloud/scene-3d";
   import { getPerformerColor } from "$lib/shared/3d/constants/performer-colors";
@@ -92,7 +93,6 @@
           class="tab"
           role="tab"
           aria-selected={activeTab === "prop"}
-          disabled={allSelected}
           onclick={() => (activeTab = "prop")}>Prop</button
         >
         <button
@@ -123,19 +123,22 @@
         <!-- Effects are scene-wide (shared with the export Effects panel).
              Per-performer scoping is Phase 2.5 work. -->
         <div class="effects-host"><MobileEffectsPanel layout="grid" /></div>
+      {:else if activeTab === "prop"}
+        {#if !allSelected && selected}
+          <BentoPropGrid
+            selectedPropType={selected.settings.prop ?? PropType.STAFF}
+            color={gridColor}
+            variant="inline"
+            onSelect={(p: PropType) => selected.setProp(p)}
+          />
+        {:else}
+          <div class="empty">Select a performer to change prop type.</div>
+        {/if}
+        <PropSizeControl performer={selected} />
       {:else if allSelected}
-        <div class="empty">
-          Select a performer to edit their prop or effort.
-        </div>
+        <div class="empty">Select a performer to edit their effort.</div>
       {:else if selected === null}
         <div class="empty">No performer selected.</div>
-      {:else if activeTab === "prop"}
-        <BentoPropGrid
-          selectedPropType={selected.settings.prop ?? PropType.STAFF}
-          color={gridColor}
-          variant="inline"
-          onSelect={(p: PropType) => selected.setProp(p)}
-        />
       {:else if activeTab === "effort"}
         <EffortPalette
           selectedEffort={selected.settings.effortId ?? "linear"}
