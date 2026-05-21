@@ -13,18 +13,31 @@
   import { getPerformerColor } from "../../constants/performer-colors";
   import { slide } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
+  import CascadeBadge from "./CascadeBadge.svelte";
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
-  const performerColor = $derived(getPerformerColor(selectedIndex ?? 0));
 
   const selected = $derived.by(() => {
     if (selectedIndex === null) return null;
     return viewer.performerManager.performers[selectedIndex] ?? null;
   });
 
+  const isAllMode = $derived(selectedIndex === null);
+
+  const currentProp = $derived(
+    isAllMode
+      ? viewer.defaultSettings.prop
+      : (selected?.effectiveProp ?? viewer.defaultSettings.prop)
+  );
+
+  const isOverridden = $derived(!isAllMode && (selected?.hasOverride.prop ?? false));
+  const overrideCount = $derived(isAllMode ? viewer.overrideCountForCategory("prop") : 0);
+
+  const performerColor = $derived(isAllMode ? "#4a9eff" : getPerformerColor(selectedIndex ?? 0));
+
   const propCategories = $derived(getBasePropsByCategory());
-  const selectedBase = $derived(getBasePropType(selected?.settings.prop ?? PropType.STAFF));
+  const selectedBase = $derived(getBasePropType(currentProp));
   let expandedFamily = $state<PropType | null>(null);
 
   const familyVariants = $derived(
@@ -37,10 +50,13 @@
   }
 
   function handleFamilyClick(base: PropType) {
-    if (!selected) return;
     const activeVariants = getAllVariations(base).filter(isPropActive);
     if (activeVariants.length <= 1) {
-      selected.setProp(base);
+      if (isAllMode) {
+        viewer.setDefaultProp(base);
+      } else if (selected) {
+        selected.setProp(base);
+      }
       expandedFamily = null;
     } else {
       expandedFamily = base;
@@ -48,65 +64,73 @@
   }
 
   function handleVariantClick(variant: PropType) {
-    if (!selected) return;
-    selected.setProp(variant);
+    if (isAllMode) {
+      viewer.setDefaultProp(variant);
+    } else if (selected) {
+      selected.setProp(variant);
+    }
   }
 </script>
 
-{#if selected}
-  <div class="prop-content" style:--pop-accent={performerColor}>
-    {#each PROP_CATEGORIES as cat, ci}
-      {@const bases = propCategories.get(cat.id) ?? []}
-      {#if bases.length > 0}
-        {#if ci > 0}
-          <div class="divider"></div>
-        {/if}
-        <div class="tile-row">
-          {#each bases as base}
-            {@const info = getPropTypeDisplayInfo(base)}
-            {@const isSelected = expandedFamily !== null ? expandedFamily === base : selectedBase === base}
-            {@const badge = variantCount(base)}
-            <button
-              class="tile"
-              class:selected={isSelected}
-              aria-pressed={isSelected}
-              aria-label={info.label}
-              title={info.label}
-              onclick={() => handleFamilyClick(base)}
-            >
-              {#if badge}
-                <span class="badge">{badge}</span>
-              {/if}
-              <div class="tile-icon">
-                <PropCompositionPreview propType={base} size={40} darkBackground />
-              </div>
-            </button>
-          {/each}
-        </div>
+<div class="prop-content" style:--pop-accent={performerColor}>
+  {#if isAllMode && overrideCount > 0}
+    <CascadeBadge mode="overrides" {overrideCount} categoryLabel="prop" onReset={() => viewer.resetAllPerformersProp()} />
+  {:else if !isAllMode && isOverridden}
+    <CascadeBadge mode="custom" onReset={() => selected?.resetProp()} />
+  {:else if !isAllMode}
+    <CascadeBadge mode="default" />
+  {/if}
+  {#each PROP_CATEGORIES as cat, ci}
+    {@const bases = propCategories.get(cat.id) ?? []}
+    {#if bases.length > 0}
+      {#if ci > 0}
+        <div class="divider"></div>
       {/if}
-    {/each}
-  </div>
-
-  {#if expandedFamily && familyVariants.length > 1}
-    <div class="variant-strip" transition:slide={{ duration: 180, easing: cubicOut }}>
-      <span class="variant-label">{getPropTypeDisplayInfo(expandedFamily).label} Variants</span>
-      <div class="variant-row">
-        {#each familyVariants as variant}
-          {@const vInfo = getPropTypeDisplayInfo(variant)}
+      <div class="tile-row">
+        {#each bases as base}
+          {@const info = getPropTypeDisplayInfo(base)}
+          {@const isSelected = expandedFamily !== null ? expandedFamily === base : selectedBase === base}
+          {@const badge = variantCount(base)}
           <button
-            class="variant-chip"
-            class:active={selected.settings.prop === variant}
-            onclick={() => handleVariantClick(variant)}
+            class="tile"
+            class:selected={isSelected}
+            aria-pressed={isSelected}
+            aria-label={info.label}
+            title={info.label}
+            onclick={() => handleFamilyClick(base)}
           >
-            <div class="variant-icon">
-              <PropCompositionPreview propType={variant} size={32} darkBackground />
+            {#if badge}
+              <span class="badge">{badge}</span>
+            {/if}
+            <div class="tile-icon">
+              <PropCompositionPreview propType={base} size={40} darkBackground />
             </div>
-            <span class="variant-name">{vInfo.label}</span>
           </button>
         {/each}
       </div>
+    {/if}
+  {/each}
+</div>
+
+{#if expandedFamily && familyVariants.length > 1}
+  <div class="variant-strip" transition:slide={{ duration: 180, easing: cubicOut }}>
+    <span class="variant-label">{getPropTypeDisplayInfo(expandedFamily).label} Variants</span>
+    <div class="variant-row">
+      {#each familyVariants as variant}
+        {@const vInfo = getPropTypeDisplayInfo(variant)}
+        <button
+          class="variant-chip"
+          class:active={currentProp === variant}
+          onclick={() => handleVariantClick(variant)}
+        >
+          <div class="variant-icon">
+            <PropCompositionPreview propType={variant} size={32} darkBackground />
+          </div>
+          <span class="variant-name">{vInfo.label}</span>
+        </button>
+      {/each}
     </div>
-  {/if}
+  </div>
 {/if}
 
 <style>
