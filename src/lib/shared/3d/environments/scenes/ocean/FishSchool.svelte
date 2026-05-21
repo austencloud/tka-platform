@@ -68,100 +68,222 @@
   // ── Boids velocity shader ──────────────────────────────────────────────
 
   const velocityShader = /* glsl */ `
-    uniform float uDelta;
-    uniform float uSepDist;
-    uniform float uAliDist;
-    uniform float uMaxSpeed;
-    uniform float uMinSpeed;
-    uniform float uGroundY;
-    uniform float uHeightMin;
-    uniform float uHeightMax;
-    uniform float uStageRadius;
-    uniform float uBoundRadius;
-    uniform float uFishCount;
-    uniform float uMaxSteer;
+  uniform float uDelta;
+  uniform float uTime;
+  uniform float uSepDist;
+  uniform float uAliDist;
+  uniform float uMaxSpeed;
+  uniform float uMinSpeed;
+  uniform float uGroundY;
+  uniform float uHeightMin;
+  uniform float uHeightMax;
+  uniform float uStageRadius;
+  uniform float uBoundRadius;
+  uniform float uFishCount;
+  uniform float uMaxSteer;
+  uniform float uCurrentStrength;
+  uniform float uPerceptionCos;
+  uniform sampler2D tTraits;
 
-    void main() {
-      vec2 uv = gl_FragCoord.xy / resolution.xy;
-      vec3 pos = texture2D(texturePosition, uv).xyz;
-      vec4 velData = texture2D(textureVelocity, uv);
-      vec3 vel = velData.xyz;
-      float instanceScale = velData.w;
+  // Scatter uniforms
+  uniform vec3 uScatterOrigin;
+  uniform float uScatterRadius;
+  uniform float uScatterForce;
 
-      if (pos.x > 9000.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, instanceScale); return; }
+  // Dart impulse uniforms
+  uniform int uDartCount;
+  uniform int uDartIndices[8];
+  uniform float uDartStrength;
 
-      vec3 sep = vec3(0.0);
-      vec3 ali = vec3(0.0);
-      vec3 coh = vec3(0.0);
-      float sepN = 0.0;
-      float aliN = 0.0;
-      float cohN = 0.0;
+  // Vertical excursion uniforms
+  uniform int uExcursionCount;
+  uniform int uExcursionIndices[4];
+  uniform float uExcursionBias[4];
 
-      for (float y = 0.0; y < resolution.y; y += 1.0) {
-        for (float x = 0.0; x < resolution.x; x += 1.0) {
-          vec2 ref = (vec2(x, y) + 0.5) / resolution.xy;
-          vec3 op = texture2D(texturePosition, ref).xyz;
-          if (op.x > 9000.0) continue;
+  // ── Simplex 3D noise (Stefan Gustavson / Ashima Arts) ─────────────
+  vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
+  vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
 
-          vec3 diff = pos - op;
-          float d = length(diff);
-          if (d < 0.001) continue;
+  float snoise(vec3 v) {
+    const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
+    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+    vec3 i = floor(v + dot(v, C.yyy));
+    vec3 x0 = v - i + dot(i, C.xxx);
+    vec3 g = step(x0.yzx, x0.xyz);
+    vec3 l = 1.0 - g;
+    vec3 i1 = min(g.xyz, l.zxy);
+    vec3 i2 = max(g.xyz, l.zxy);
+    vec3 x1 = x0 - i1 + C.xxx;
+    vec3 x2 = x0 - i2 + C.yyy;
+    vec3 x3 = x0 - D.yyy;
+    i = mod(i, 289.0);
+    vec4 p = permute(permute(permute(
+        i.z + vec4(0.0, i1.z, i2.z, 1.0))
+      + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+      + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+    float n_ = 1.0 / 7.0;
+    vec3 ns = n_ * D.wyz - D.xzx;
+    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+    vec4 x_ = floor(j * ns.z);
+    vec4 y_ = floor(j - 7.0 * x_);
+    vec4 x = x_ * ns.x + ns.yyyy;
+    vec4 y = y_ * ns.x + ns.yyyy;
+    vec4 h = 1.0 - abs(x) - abs(y);
+    vec4 b0 = vec4(x.xy, y.xy);
+    vec4 b1 = vec4(x.zw, y.zw);
+    vec4 s0 = floor(b0) * 2.0 + 1.0;
+    vec4 s1 = floor(b1) * 2.0 + 1.0;
+    vec4 sh = -step(h, vec4(0.0));
+    vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+    vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+    vec3 p0 = vec3(a0.xy, h.x);
+    vec3 p1 = vec3(a0.zw, h.y);
+    vec3 p2 = vec3(a1.xy, h.z);
+    vec3 p3 = vec3(a1.zw, h.w);
+    vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+    p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+    vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+    m = m * m;
+    return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+  }
 
-          if (d < uSepDist) {
-            sep += normalize(diff) * (1.0 - d / uSepDist);
-            sepN += 1.0;
-          }
-          if (d < uAliDist) {
-            ali += texture2D(textureVelocity, ref).xyz;
-            aliN += 1.0;
-          }
-          if (d < uAliDist * 1.5) {
-            coh += op;
-            cohN += 1.0;
-          }
+  vec3 curlNoise(vec3 p) {
+    float e = 0.1;
+    vec3 dx = vec3(e, 0.0, 0.0);
+    vec3 dy = vec3(0.0, e, 0.0);
+    vec3 dz = vec3(0.0, 0.0, e);
+    float px = snoise(p + dx) - snoise(p - dx);
+    float py = snoise(p + dy) - snoise(p - dy);
+    float pz = snoise(p + dz) - snoise(p - dz);
+    return vec3(py - pz, pz - px, px - py) / (2.0 * e);
+  }
+
+  void main() {
+    vec2 uv = gl_FragCoord.xy / resolution.xy;
+    vec3 pos = texture2D(texturePosition, uv).xyz;
+    vec4 velData = texture2D(textureVelocity, uv);
+    vec3 vel = velData.xyz;
+    float instanceScale = velData.w;
+
+    if (pos.x > 9000.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, instanceScale); return; }
+
+    // Read per-fish traits
+    vec4 traits = texture2D(tTraits, uv);
+    float speedMult = traits.r;
+    float socialMult = traits.g;
+    float boldness = traits.b;
+
+    vec3 sep = vec3(0.0);
+    vec3 ali = vec3(0.0);
+    vec3 coh = vec3(0.0);
+    float sepN = 0.0;
+    float aliN = 0.0;
+    float cohN = 0.0;
+
+    vec3 forward = length(vel) > 0.001 ? normalize(vel) : vec3(0.0, 0.0, 1.0);
+
+    for (float y = 0.0; y < resolution.y; y += 1.0) {
+      for (float x = 0.0; x < resolution.x; x += 1.0) {
+        vec2 ref = (vec2(x, y) + 0.5) / resolution.xy;
+        vec3 op = texture2D(texturePosition, ref).xyz;
+        if (op.x > 9000.0) continue;
+
+        vec3 toNeighbor = op - pos;
+        float d = length(toNeighbor);
+        if (d < 0.001 || d > uAliDist * 1.5) continue;
+
+        // Perception cone: reject neighbors behind (270 deg FOV)
+        float cosAngle = dot(forward, normalize(toNeighbor));
+        if (cosAngle < uPerceptionCos) continue;
+
+        if (d < uSepDist) {
+          sep += normalize(pos - op) * (1.0 - d / uSepDist);
+          sepN += 1.0;
+        }
+        if (d < uAliDist) {
+          ali += texture2D(textureVelocity, ref).xyz;
+          aliN += 1.0;
+        }
+        if (d < uAliDist * 1.5) {
+          coh += op;
+          cohN += 1.0;
         }
       }
-
-      vec3 steer = vec3(0.0);
-      if (sepN > 0.0) steer += normalize(sep / sepN) * 0.8;
-      if (aliN > 0.0) steer += normalize(ali / aliN - vel) * 0.4;
-      if (cohN > 0.0) steer += normalize(coh / cohN - pos) * 0.3;
-
-      // Centering — soft pull toward origin
-      vec2 toCenter = -pos.xz;
-      float distXZ = length(pos.xz);
-      if (distXZ > uBoundRadius * 0.6) {
-        float t = (distXZ - uBoundRadius * 0.6) / (uBoundRadius * 0.4);
-        steer.xz += normalize(toCenter) * t * 1.5;
-      }
-
-      // Height bounds
-      float minY = uGroundY + uHeightMin;
-      float maxY = uGroundY + uHeightMax;
-      if (pos.y < minY + 0.5) steer.y += (minY + 0.5 - pos.y) * 2.0;
-      if (pos.y > maxY - 0.5) steer.y -= (pos.y - maxY + 0.5) * 2.0;
-
-      // Stage avoidance
-      if (distXZ < uStageRadius + 2.5) {
-        float pen = uStageRadius + 2.5 - distXZ;
-        steer.xz += normalize(pos.xz + 0.001) * pen * 3.0;
-      }
-
-      // Clamp max steering force to prevent twitchy direction changes
-      float steerLen = length(steer);
-      if (steerLen > uMaxSteer) steer = steer / steerLen * uMaxSteer;
-
-      // Apply steering with drag for smooth deceleration
-      vel = vel * 0.97 + steer * uDelta;
-
-      // Speed clamp
-      float spd = length(vel);
-      if (spd > uMaxSpeed) vel = vel / spd * uMaxSpeed;
-      if (spd > 0.001 && spd < uMinSpeed) vel = vel / spd * uMinSpeed;
-
-      gl_FragColor = vec4(vel, instanceScale);
     }
-  `;
+
+    vec3 steer = vec3(0.0);
+    if (sepN > 0.0) steer += normalize(sep / sepN) * 0.8;
+    if (aliN > 0.0) steer += normalize(ali / aliN - vel) * 0.4 * socialMult;
+    if (cohN > 0.0) steer += normalize(coh / cohN - pos) * 0.3 * socialMult;
+
+    // Curl noise flow field
+    vec3 curlForce = curlNoise(pos * 0.15 + uTime * 0.02) * uCurrentStrength;
+    steer += curlForce;
+
+    // Centering — soft pull toward origin
+    vec2 toCenter = -pos.xz;
+    float distXZ = length(pos.xz);
+    if (distXZ > uBoundRadius * 0.6) {
+      float t = (distXZ - uBoundRadius * 0.6) / (uBoundRadius * 0.4);
+      steer.xz += normalize(toCenter) * t * 1.5;
+    }
+
+    // Height bounds
+    float minY = uGroundY + uHeightMin;
+    float maxY = uGroundY + uHeightMax;
+    if (pos.y < minY + 0.5) steer.y += (minY + 0.5 - pos.y) * 2.0;
+    if (pos.y > maxY - 0.5) steer.y -= (pos.y - maxY + 0.5) * 2.0;
+
+    // Stage avoidance — bold fish tolerate closer proximity
+    float avoidDist = (uStageRadius + 2.5) * (1.5 - boldness * 0.4);
+    if (distXZ < avoidDist) {
+      float pen = avoidDist - distXZ;
+      steer.xz += normalize(pos.xz + 0.001) * pen * 3.0;
+    }
+
+    // Ray scatter — continuous avoidance when ray passes through school
+    float distToRay = distance(pos, uScatterOrigin);
+    if (distToRay < uScatterRadius && uScatterForce > 0.0) {
+      vec3 away = normalize(pos - uScatterOrigin + vec3(0.001));
+      float proximity = 1.0 - distToRay / uScatterRadius;
+      steer += away * uScatterForce * proximity * proximity;
+    }
+
+    // Clamp max steering force
+    float steerLen = length(steer);
+    if (steerLen > uMaxSteer) steer = steer / steerLen * uMaxSteer;
+
+    // Apply steering with drag
+    vel = vel * 0.97 + steer * uDelta;
+
+    // Per-fish speed clamp using trait-modulated range
+    float adjMax = uMaxSpeed * speedMult;
+    float adjMin = uMinSpeed * speedMult;
+    float spd = length(vel);
+    if (spd > adjMax) vel = vel / spd * adjMax;
+    if (spd > 0.001 && spd < adjMin) vel = vel / spd * adjMin;
+
+    // Dart impulses — AFTER speed clamp so velocity spike is visible to
+    // the vertex shader C-start detection. Drag decays it next frame.
+    int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);
+    for (int i = 0; i < 8; i++) {
+      if (i >= uDartCount) break;
+      if (fishIdx == uDartIndices[i]) {
+        vel += normalize(vel + vec3(0.001)) * uDartStrength;
+      }
+    }
+
+    // Vertical excursions — also after clamp
+    for (int i = 0; i < 4; i++) {
+      if (i >= uExcursionCount) break;
+      if (fishIdx == uExcursionIndices[i]) {
+        vel.y += uExcursionBias[i];
+      }
+    }
+
+    gl_FragColor = vec4(vel, instanceScale);
+  }
+`;
 
   // ── Position integration shader ────────────────────────────────────────
 
@@ -519,6 +641,7 @@
     elapsed += dt;
 
     velVar.material.uniforms.uDelta.value = dt;
+    velVar.material.uniforms.uTime.value = elapsed;
     posVar.material.uniforms.uDelta.value = dt;
 
     gpuCompute.compute();
