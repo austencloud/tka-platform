@@ -810,12 +810,12 @@ export const LAB_TABS: Section[] = [
   },
   // avatar removed (Mar 2026)
   {
-    id: "2d-backgrounds",
-    label: "2D Backgrounds",
-    icon: '<i class="fas fa-water" aria-hidden="true"></i>',
-    description: "Background theme design tool",
-    color: "#0ea5e9",
-    gradient: "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)",
+    id: "themes",
+    label: "Themes",
+    icon: '<i class="fas fa-palette" aria-hidden="true"></i>',
+    description: "Unified theme designer — 2D backgrounds and 3D scenes",
+    color: "#a78bfa",
+    gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
   },
   // community graduated to Social module (Mar 2026)
   {
@@ -966,14 +966,6 @@ export const LAB_TABS: Section[] = [
     description: "Catalog and label 3D poses for collision safety",
     color: "#ef4444",
     gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
-  },
-  {
-    id: "scene-lab",
-    label: "Scene Lab",
-    icon: '<i class="fas fa-snowflake" style="color: #38bdf8;" aria-hidden="true"></i>',
-    description: "Tune 3D environment scenes with live sliders",
-    color: "#38bdf8",
-    gradient: "linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%)",
   },
   {
     id: "spatial-lab",

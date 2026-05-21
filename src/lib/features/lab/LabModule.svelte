@@ -21,7 +21,7 @@
       import("$lib/features/mandala-generator/components/MandalaGeneratorModule.svelte"),
     "mandala-collection": () =>
       import("$lib/features/mandala-collection/components/MandalaCollectionGallery.svelte"),
-    "2d-backgrounds": () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
+    themes: () => import("$lib/features/themes-lab/ThemesLab.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
     composition: () => import("$lib/features/lab/constraint-layout-lab/CompositionLab.svelte"),
     // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
@@ -40,7 +40,6 @@
     village: () => import("$lib/features/village/VillageLabTab.svelte"),
     "pov-pattern": () => import("./tabs/PovPatternLab.svelte"),
     "collision-lab": () => import("./tabs/collision-lab/CollisionLab.svelte"),
-    "scene-lab": () => import("./tabs/scene-lab/SceneLab.svelte"),
     "spatial-lab": () => import("./tabs/spatial-lab/SpatialLab.svelte"),
     stickers: () => import("$lib/features/sticker-lab/StickerLab.svelte"),
     "path-mandalas": () => import("./tabs/PathMandalaLab.svelte"),
