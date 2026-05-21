@@ -150,19 +150,15 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       const cameraKeyframes = new CameraKeyframeBuffer();
 
       const choreography = viewer3DState.cameraChoreography;
-      const activePresetId = choreography.activePresetId;
-      const activePreset = choreography.activePreset;
-      const presetEligible =
-        activePreset &&
-        choreography.evaluate(activePresetId, viewer3DState.performerManager.performers.length).eligible;
-      const usePreset = activePresetId !== "free" && !!activePreset && presetEligible;
+      const useOrbit = choreography.activePresetId === "auto-orbit";
 
       const primaryAvatar = viewer3DState.performerManager.performers[0] ?? null;
-      const presetTotalLoops = usePreset ? activePreset!.totalLoops : 1;
-      const presetDurationSec = usePreset ? singleLoopSec * presetTotalLoops : 0;
+      const orbitPreset = useOrbit ? choreography.activePreset : null;
+      const presetTotalLoops = orbitPreset?.totalLoops ?? 1;
+      const presetDurationSec = useOrbit ? singleLoopSec * presetTotalLoops : 0;
 
-      const disposeDriver: (() => void) | null = usePreset
-        ? choreography.applyPreset(activePresetId, {
+      const disposeDriver: (() => void) | null = useOrbit
+        ? choreography.applyPreset("auto-orbit", {
             performers: viewer3DState.performerManager.performers,
             sequenceDurationSec: singleLoopSec,
           })
