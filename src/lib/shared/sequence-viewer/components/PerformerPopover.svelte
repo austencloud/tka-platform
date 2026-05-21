@@ -7,6 +7,7 @@
   import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { PRESET_VALID_COUNTS } from "@austencloud/scene-3d";
+  import { getPerformerColor } from "$lib/shared/3d/constants/performer-colors";
   import type { FormationPreset } from "@austencloud/scene-3d";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import { scale } from "svelte/transition";
@@ -51,15 +52,11 @@
     return list[idx] ?? null;
   });
 
-  // Per-performer accent for BentoPropGrid. Reuses the PerformerChipStrip
+  // Per-performer accent for BentoPropGrid. Reuses the shared performer
   // palette so the prop picker's selection glow matches the active chip
   // instead of collapsing everyone above index 0 onto the same red.
-  const CHIP_COLORS = [
-    "#3b82f6", "#ef4444", "#8b5cf6", "#f97316",
-    "#10b981", "#ec4899", "#06b6d4", "#eab308",
-  ];
   const gridColor = $derived<string>(
-    CHIP_COLORS[(viewer.selectedPerformerIndex ?? 0) % CHIP_COLORS.length] ?? "#3b82f6",
+    getPerformerColor(viewer.selectedPerformerIndex ?? 0),
   );
 </script>
 

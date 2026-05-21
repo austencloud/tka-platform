@@ -19,6 +19,7 @@
 
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { STAGE } from "@austencloud/scene-3d";
+  import { getPerformerColor } from "../../constants/performer-colors";
 
   const viewer3DState = getViewer3DContext();
   const performers = $derived(viewer3DState.performerManager.performers);
@@ -29,15 +30,6 @@
   // Chip tint colors, cycled by performer index.
   // Blue, red, purple, orange, emerald, pink, cyan, yellow - matches the
   // tunnel layer colors used in Compose cell layers for visual consistency.
-  const CHIP_COLORS = [
-    "#3b82f6", "#ef4444", "#8b5cf6", "#f97316",
-    "#10b981", "#ec4899", "#06b6d4", "#eab308",
-  ];
-
-  function chipColor(i: number): string {
-    return CHIP_COLORS[i % CHIP_COLORS.length] ?? "#6b7280";
-  }
-
   function selectAll(): void {
     viewer3DState.selectPerformerScope(null);
   }
@@ -73,7 +65,7 @@
         class:active={selectedIndex === i}
         aria-pressed={selectedIndex === i}
         aria-label={`Select performer ${i + 1}`}
-        style="--chip-color: {chipColor(i)}"
+        style="--chip-color: {getPerformerColor(i)}"
         onclick={() => selectPerformer(i)}
       >
         {i + 1}
