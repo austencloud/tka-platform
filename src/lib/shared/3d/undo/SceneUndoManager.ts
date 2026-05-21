@@ -327,5 +327,11 @@ function domainsForOperationType(type: SceneUndoOperationType): DomainKey[] {
     case "update-scene-lab-config":
     case "change-cosmic-variant":
       return ["sceneLab"];
+    case "change-default-prop":
+    case "change-default-effort":
+    case "change-default-effects":
+    case "change-default-planes":
+    case "reset-all-overrides":
+      return ["defaults"];
   }
 }

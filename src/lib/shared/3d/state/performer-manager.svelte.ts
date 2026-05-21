@@ -10,6 +10,7 @@ import {
   makeStandaloneDeps,
   type AvatarInstanceState,
 } from "./avatar-instance-state.svelte";
+import type { DefaultPerformerSettings } from "./performer-settings-types";
 import {
   createAvatarSyncState,
   type AvatarSyncState,
@@ -35,6 +36,12 @@ export interface PerformerManagerDeps {
    * The standalone 3D viewer passes STAGE.MAX_VIEWER_PERFORMERS (8).
    */
   maxPerformers?: number;
+  /**
+   * Optional viewer-level defaults provider. When set, each performer
+   * inherits these defaults via the cascade (null override → inherit).
+   * When omitted, performers use standalone defaults.
+   */
+  getDefaults?: () => DefaultPerformerSettings;
 }
 
 /**
@@ -43,6 +50,7 @@ export interface PerformerManagerDeps {
 export function createPerformerManager(deps: PerformerManagerDeps) {
   const { initialAvatarId } = deps;
   const maxPerformers = deps.maxPerformers ?? MAX_PERFORMERS;
+  const getDefaults = deps.getDefaults;
 
   // Performer states (1-4 performers)
   let performerStates = $state<AvatarInstanceState[]>([]);
@@ -76,7 +84,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
         positionZ: pos.z,
         avatarModelId: initialAvatarId,
       },
-      makeStandaloneDeps()
+      getDefaults ? { getDefaults } : makeStandaloneDeps()
     );
   }
 
@@ -92,7 +100,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
         positionZ: initialPosition.z,
         avatarModelId: initialAvatarId,
       },
-      makeStandaloneDeps()
+      getDefaults ? { getDefaults } : makeStandaloneDeps()
     );
 
     performerStates = [initialPerformer];

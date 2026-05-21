@@ -13,9 +13,13 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
 import type { CameraStateSnapshot } from "@austencloud/scene-3d";
 import { getSceneUndoManager } from "../undo/getSceneUndoManager";
-import type { PerformerPositionSnapshot, ViewerDomainSnapshot, VisibilityDomainSnapshot } from "../undo/scene-undo-types";
-import { Plane } from "@austencloud/scene-3d";
+import type { DefaultsDomainSnapshot, PerformerPositionSnapshot, ViewerDomainSnapshot, VisibilityDomainSnapshot } from "../undo/scene-undo-types";
+import { Plane, PlaneMode } from "@austencloud/scene-3d";
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
+import { derivePlaneModeFromHands } from "./avatar-instance-state.svelte";
+import type { DefaultPerformerSettings, CascadeCategory, EffectId } from "./performer-settings-types";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { createPerformerManager, type PerformerManager } from "./performer-manager.svelte";
 import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
 import { STAGE } from "@austencloud/scene-3d";
@@ -280,12 +284,24 @@ export function createViewer3DState() {
     _activePopover = null;
   }
 
+  // Viewer-level default settings for the cascade system. Performers with
+  // null overrides inherit from these defaults.
+  const _defaultSettings = $state<DefaultPerformerSettings>({
+    prop: PropType.STAFF,
+    effects: new Set<EffectId>(),
+    effortId: "linear" as EffortId,
+    planeMode: PlaneMode.WALL,
+    customBluePlane: Plane.WALL,
+    customRedPlane: Plane.WALL,
+  });
+
   // Performer manager - single source of truth for multi-performer state.
   // The viewer passes its viewer-specific cap (8) while realm/museum/duet
   // keep their shared cap (4) by not passing maxPerformers at all.
   const performerManager: PerformerManager = createPerformerManager({
     initialAvatarId: DEFAULT_AVATAR_ID,
     maxPerformers: STAGE.MAX_VIEWER_PERFORMERS,
+    getDefaults: () => _defaultSettings,
   });
 
   // Viewer-specific selection scope. Lives on top of PerformerManager so
@@ -323,13 +339,9 @@ export function createViewer3DState() {
    * Out-of-bounds indices are allowed - scopedPerformers() will return []
    * so individual write helpers no-op cleanly.
    */
-  const PERFORMER_POPOVERS: Set<PopoverId> = new Set(["effects", "prop", "effort"]);
-
   function selectPerformerScope(index: number | null): void {
     selectedPerformerIndex = index;
-    if (index === null && _activePopover && PERFORMER_POPOVERS.has(_activePopover)) {
-      _activePopover = null;
-    }
+    persistSelectedIndex(index);
   }
 
   /**
@@ -364,6 +376,86 @@ export function createViewer3DState() {
       }
       propSizeLinked = true;
     }
+  }
+
+  // ============================================
+  // Default Settings — Cascade Write Methods
+  // ============================================
+
+  function setDefaultProp(prop: PropType): void {
+    sceneUndo.captureState("change-default-prop", `Default prop: ${prop}`);
+    _defaultSettings.prop = prop;
+    sceneUndo.commitState();
+  }
+
+  function setDefaultEffort(effortId: EffortId): void {
+    sceneUndo.captureState("change-default-effort", `Default effort: ${effortId}`);
+    _defaultSettings.effortId = effortId;
+    sceneUndo.commitState();
+  }
+
+  function setDefaultEffects(effects: Set<EffectId>): void {
+    sceneUndo.captureState("change-default-effects", "Default effects");
+    _defaultSettings.effects = new Set(effects);
+    sceneUndo.commitState();
+  }
+
+  function toggleDefaultEffect(effect: EffectId): void {
+    sceneUndo.captureState("change-default-effects", `Toggle default ${effect}`);
+    const next = new Set(_defaultSettings.effects);
+    if (next.has(effect)) next.delete(effect);
+    else next.add(effect);
+    _defaultSettings.effects = next;
+    sceneUndo.commitState();
+  }
+
+  function setDefaultPlaneMode(mode: PlaneMode): void {
+    sceneUndo.captureState("change-default-planes", `Default plane mode: ${mode}`);
+    _defaultSettings.planeMode = mode;
+    sceneUndo.commitState();
+  }
+
+  function setDefaultHandPlane(hand: "blue" | "red", plane: Plane): void {
+    sceneUndo.captureState("change-default-planes", `Default ${hand}: ${plane}`);
+    if (hand === "blue") _defaultSettings.customBluePlane = plane;
+    else _defaultSettings.customRedPlane = plane;
+    _defaultSettings.planeMode = derivePlaneModeFromHands(
+      _defaultSettings.customBluePlane,
+      _defaultSettings.customRedPlane
+    );
+    sceneUndo.commitState();
+  }
+
+  // ============================================
+  // Override Count & Bulk Reset
+  // ============================================
+
+  function overrideCountForCategory(cat: CascadeCategory): number {
+    return performerManager.performers.filter(p => p.hasOverride[cat]).length;
+  }
+
+  function resetAllPerformersProp(): void {
+    sceneUndo.captureState("reset-all-overrides", "Reset all prop overrides");
+    for (const p of performerManager.performers) p.resetProp();
+    sceneUndo.commitState();
+  }
+
+  function resetAllPerformersEffort(): void {
+    sceneUndo.captureState("reset-all-overrides", "Reset all effort overrides");
+    for (const p of performerManager.performers) p.resetEffort();
+    sceneUndo.commitState();
+  }
+
+  function resetAllPerformersEffects(): void {
+    sceneUndo.captureState("reset-all-overrides", "Reset all effect overrides");
+    for (const p of performerManager.performers) p.resetEffects();
+    sceneUndo.commitState();
+  }
+
+  function resetAllPerformersPlanes(): void {
+    sceneUndo.captureState("reset-all-overrides", "Reset all plane overrides");
+    for (const p of performerManager.performers) p.resetPlanes();
+    sceneUndo.commitState();
   }
 
   /**
@@ -457,13 +549,15 @@ export function createViewer3DState() {
 
     const newIndex = performerManager.performers.length - 1;
     const newPerf = performerManager.performers[newIndex];
-    if (newPerf && source && source !== newPerf) {
-      newPerf.setHandPlane("blue", source.customBluePlane);
-      newPerf.setHandPlane("red", source.customRedPlane);
-    }
-    if (newPerf && _currentSequenceData) {
-      newPerf.loadSequence(_currentSequenceData);
-    }
+    sceneUndo.withoutUndo(() => {
+      if (newPerf && source && source !== newPerf) {
+        newPerf.setHandPlane("blue", source.customBluePlane);
+        newPerf.setHandPlane("red", source.customRedPlane);
+      }
+      if (newPerf && _currentSequenceData) {
+        newPerf.loadSequence(_currentSequenceData);
+      }
+    });
 
     selectedPerformerIndex = newIndex;
     sceneUndo.commitState();
@@ -545,6 +639,31 @@ export function createViewer3DState() {
   sceneUndo.registerDomain("visibility", {
     capture: captureVisibilitySnapshot,
     restore: restoreVisibilitySnapshot,
+  });
+
+  function captureDefaultsSnapshot(): DefaultsDomainSnapshot {
+    return {
+      prop: _defaultSettings.prop,
+      effects: new Set(_defaultSettings.effects),
+      effortId: _defaultSettings.effortId,
+      planeMode: _defaultSettings.planeMode,
+      customBluePlane: _defaultSettings.customBluePlane,
+      customRedPlane: _defaultSettings.customRedPlane,
+    };
+  }
+
+  function restoreDefaultsSnapshot(snap: DefaultsDomainSnapshot): void {
+    _defaultSettings.prop = snap.prop;
+    _defaultSettings.effects = new Set(snap.effects);
+    _defaultSettings.effortId = snap.effortId;
+    _defaultSettings.planeMode = snap.planeMode;
+    _defaultSettings.customBluePlane = snap.customBluePlane;
+    _defaultSettings.customRedPlane = snap.customRedPlane;
+  }
+
+  sceneUndo.registerDomain("defaults", {
+    capture: captureDefaultsSnapshot,
+    restore: restoreDefaultsSnapshot,
   });
 
   function undo(): string | null {
@@ -721,14 +840,16 @@ export function createViewer3DState() {
       while (performerManager.performers.length < persisted.length) {
         performerManager.addPerformer();
       }
-      persisted.forEach((snap, i) => {
-        const p = performerManager.performers[i];
-        if (!p) return;
-        p.position.x = snap.position.x;
-        p.position.z = snap.position.z;
-        p.setFacingAngle(snap.facingAngle);
-        p.setHandPlane("blue", snap.customBluePlane);
-        p.setHandPlane("red", snap.customRedPlane);
+      sceneUndo.withoutUndo(() => {
+        persisted.forEach((snap, i) => {
+          const p = performerManager.performers[i];
+          if (!p) return;
+          p.position.x = snap.position.x;
+          p.position.z = snap.position.z;
+          p.setFacingAngle(snap.facingAngle);
+          p.setHandPlane("blue", snap.customBluePlane);
+          p.setHandPlane("red", snap.customRedPlane);
+        });
       });
     }
 
@@ -879,6 +1000,19 @@ export function createViewer3DState() {
     sceneUndo,
     undo,
     redo,
+    // Default settings cascade
+    get defaultSettings() { return _defaultSettings; },
+    setDefaultProp,
+    setDefaultEffort,
+    setDefaultEffects,
+    toggleDefaultEffect,
+    setDefaultPlaneMode,
+    setDefaultHandPlane,
+    overrideCountForCategory,
+    resetAllPerformersProp,
+    resetAllPerformersEffort,
+    resetAllPerformersEffects,
+    resetAllPerformersPlanes,
     get effectToggles() {
       return effectToggles;
     },
