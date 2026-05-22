@@ -36,6 +36,7 @@ The ocean scene has a GPGPU fish school with full boids simulation, predator/pre
 - No invisible raycast target plane exists at swim height for the mouse ray to hit.
 - No reform/cooldown behavior -- the scatter force is binary (present or absent). Fish scatter identically regardless of boldness (the trait exists in `tTraits` but `uScatterForce` is uniform).
 - No config surface for scatter tuning in `OceanSceneConfig`.
+- Scatter is purely radial -- all fish flee outward like a force field bubble. Real schools exhibit fountain effects (lateral splitting) and wave propagation (delayed onset by distance).
 
 ## Design
 
@@ -79,7 +80,7 @@ The `<FishSchool>` component already accepts `rayPosition` and feeds it through 
 
 ### 3. Scatter Algorithm Improvements
 
-The existing shader scatter is functional but crude. Three changes make it feel natural:
+The existing shader scatter is functional but crude. Five changes make it feel natural:
 
 #### 3a. Boldness-Modulated Scatter Radius
 
@@ -98,7 +99,70 @@ if (distToRay < boldScatter && uScatterForce > 0.0 && uScatterOrigin.y > -900.0)
 
 The `uScatterOrigin.y > -900.0` guard prevents scatter when the mouse is off-canvas (sentinel at y=-999).
 
-#### 3b. Behavior Shader -- Same Guard
+#### 3b. Fountain Effect (Replaces Pure Radial Repulsion)
+
+**Problem with pure radial scatter:** The existing `away` vector pushes all fish outward from the scatter origin. This looks like a force field bubble -- every fish moves directly away, producing a symmetric expanding ring. Real fish schools do not behave this way.
+
+**What real fish do:** Fish approaching the threat head-on split into two lateral streams that curve around the predator and rejoin behind it (the "fountain effect"). Fish caught broadside still flash outward radially. The result is a teardrop-shaped parting that looks alive, not a spherical explosion that looks computed.
+
+**References:** Podila et al., Information Visualization 2020; Boids-based escape maneuvers, SIGGRAPH i3D 2017 "Animating Escape Maneuvers for Fish Schools." Both ABZU and Subnautica implement variants of this.
+
+**Implementation:** After computing the radial `away` vector, compute a tangential component via cross product with the up axis. Blend between tangential (fountain) and radial (flash expansion) based on the fish's approach angle relative to the scatter origin.
+
+```glsl
+// Inside the scatter block, after computing `away`:
+vec3 tangent = normalize(cross(away, vec3(0.0, 1.0, 0.0)));
+
+// dotFwd: how head-on is this fish relative to the scatter origin?
+// fish velocity direction vs. away direction
+vec3 fishDir = normalize(vel.xyz + vec3(0.001));
+float dotFwd = abs(dot(fishDir, away)); // 1.0 = head-on, 0.0 = broadside
+
+// Head-on fish get more tangential (fountain split), broadside get more radial (flash)
+float tangentWeight = smoothstep(0.3, 0.8, dotFwd) * 0.6; // max 60% tangential
+vec3 fleeDir = normalize(mix(away, tangent, tangentWeight));
+
+steer += fleeDir * uScatterForce * proximity * proximity * (1.5 - boldness);
+```
+
+This adds 4 GLSL lines to the velocity shader. The `smoothstep` ramp prevents discontinuous switching between fountain and flash modes. The 0.6 cap ensures radial force always dominates -- the tangential component steers fish around the threat rather than replacing the flee impulse entirely.
+
+**Visual result:** Instead of a symmetric expanding ring, fish approaching the cursor split left and right, curve around, and rejoin behind. Fish caught from the side still flash outward. The combined effect looks like a school parting around a predator -- the ABZU aesthetic.
+
+#### 3c. Trafalgar Wave Propagation (Replaces Instant Scatter)
+
+**Problem with instant scatter:** The current shader applies scatter force to all fish within `uScatterRadius` simultaneously. Every fish within range reacts in the same frame. Real fish schools exhibit the "Trafalgar effect" -- a wave of agitation that propagates outward from the threat faster than individual swim speed but is NOT instantaneous.
+
+**Reference:** Marras et al., PLOS ONE "Schooling of Light Reflecting Fish" (Trafalgar effect). Both ABZU and Subnautica use delayed reaction based on distance to create visible cascading panic through the school.
+
+**Implementation:** Add a time-based delay to scatter onset proportional to distance from the scatter origin. Fish closest to the cursor react first; the reaction wave ripples outward through the school.
+
+```glsl
+// New uniform required:
+uniform float uScatterStartTime; // set when mouse enters scatter radius (or on pointermove)
+
+// In the scatter block, before applying force:
+float delay = distToRay * 0.15; // 0.15s per unit distance -- tunable
+float timeSinceScatter = uTime - uScatterStartTime;
+float waveReached = step(delay, timeSinceScatter); // 0.0 until wave arrives, 1.0 after
+```
+
+Then multiply the final steer contribution by `waveReached`:
+
+```glsl
+steer += fleeDir * uScatterForce * proximity * proximity * (1.5 - boldness) * waveReached;
+```
+
+**OceanMouseRaycast.svelte** sets `uScatterStartTime = clock.elapsedTime` whenever the scatter origin moves by more than a threshold distance (e.g., 0.5 units) from its previous position. This means:
+- Mouse entering the school: wave propagates outward from entry point.
+- Mouse sweeping through the school: wave continuously resets at the leading edge, creating a wake-like cascade.
+- Mouse stationary inside the school: all fish eventually reached, no ongoing pulsing.
+
+**Cost:** One new uniform (`uScatterStartTime`), one subtraction + one multiply + one `step()` in the velocity shader. Negligible.
+
+**Visual result:** Instead of a "force field pop" where all fish react simultaneously, a visible cascade of panic ripples outward from the cursor. Fish near the cursor scatter first; fish at the edge of the radius react 0.3-0.6 seconds later. The transformation from "computed repulsion" to "biological panic wave" is significant and cheap.
+
+#### 3d. Behavior Shader -- Same Guard
 
 **Behavior shader change** (lines 48-55):
 ```glsl
@@ -108,7 +172,7 @@ if (rayDist < uScatterRadius && uScatterOrigin.y > -900.0 && myTrophic != 0 && m
 }
 ```
 
-#### 3c. Reform Behavior
+#### 3e. Reform Behavior
 
 Reform is already implicit: when the mouse moves away (or leaves the canvas), `uScatterOrigin` moves to `(0, -999, 0)`, the distance check fails, scatter force drops to zero, and the school-center pull (`uSchoolCenters` homing at line 226-232) draws fish back. The existing `uSchoolRadius` of 6.0 and cohesion forces handle regrouping.
 
@@ -125,6 +189,7 @@ fish: {
   scatterRadius: number;      // already exists
   scatterForce: number;       // NEW -- strength of flee impulse (default 3.0)
   scatterEnabled: boolean;    // NEW -- master toggle for mouse scatter
+  scatterWaveSpeed: number;   // NEW -- Trafalgar wave propagation (seconds per unit distance, default 0.15)
   perceptionAngle: number;    // already exists
 };
 ```
@@ -133,9 +198,10 @@ fish: {
 ```typescript
 fish: {
   // ... existing ...
-  scatterRadius: 4.0,    // existing
-  scatterForce: 3.0,     // new
-  scatterEnabled: true,   // new
+  scatterRadius: 4.0,       // existing
+  scatterForce: 3.0,        // new
+  scatterEnabled: true,     // new
+  scatterWaveSpeed: 0.15,   // new -- Trafalgar delay factor
 }
 ```
 
@@ -145,18 +211,19 @@ The `scatterForce` uniform already exists in the velocity shader (`uScatterForce
 
 | File | Change |
 |------|--------|
-| `src/lib/shared/3d/environments/scenes/ocean/OceanMouseRaycast.svelte` | **NEW** -- ~40 lines. Pointer-to-world raycast against swim-height plane. |
-| `src/lib/shared/3d/environments/scenes/OceanScene.svelte` | Import OceanMouseRaycast, add `fishScatterTarget` state, wire to FishSchool's `rayPosition` prop. ~8 lines changed. |
-| `src/lib/shared/3d/environments/scenes/ocean/fish-shaders.ts` | Velocity shader: add boldness modulation to scatter, add sentinel guard. ~6 lines changed. |
+| `src/lib/shared/3d/environments/scenes/ocean/OceanMouseRaycast.svelte` | **NEW** -- ~50 lines. Pointer-to-world raycast against swim-height plane. Tracks scatter start time for wave propagation. |
+| `src/lib/shared/3d/environments/scenes/OceanScene.svelte` | Import OceanMouseRaycast, add `fishScatterTarget` state, wire to FishSchool's `rayPosition` prop. ~10 lines changed. |
+| `src/lib/shared/3d/environments/scenes/ocean/fish-shaders.ts` | Velocity shader: add boldness modulation, fountain effect (tangential split), Trafalgar wave delay, sentinel guard. ~18 lines changed. |
 | `src/lib/shared/3d/environments/scenes/ocean/fish-behavior-shader.ts` | State shader: add sentinel guard to scatter-origin check. ~1 line changed. |
-| `src/lib/shared/3d/environments/domain/models/scene-configs.ts` | Add `scatterForce` and `scatterEnabled` to `OceanSceneConfig.fish` interface + defaults. ~4 lines changed. |
-| `src/lib/shared/3d/environments/scenes/ocean/FishSchool.svelte` | Accept `scatterForce` prop, use it instead of hardcoded `3.0`. ~3 lines changed. |
+| `src/lib/shared/3d/environments/domain/models/scene-configs.ts` | Add `scatterForce`, `scatterEnabled`, `scatterWaveSpeed` to `OceanSceneConfig.fish` interface + defaults. ~6 lines changed. |
+| `src/lib/shared/3d/environments/scenes/ocean/FishSchool.svelte` | Accept `scatterForce` prop and `scatterStartTime` uniform, use instead of hardcoded values. ~5 lines changed. |
 
 ### 6. Performance Considerations
 
 - **Raycast cost:** One `ray.intersectPlane()` per pointermove event. This is a single dot product + division -- effectively zero cost compared to the GPGPU boids compute pass.
-- **No new GPU work:** The scatter logic already runs in the velocity shader every frame. Wiring a real position instead of `(0,0,0)` costs nothing extra.
+- **No new GPU work:** The scatter logic already runs in the velocity shader every frame. The fountain cross product, smoothstep, and wave step() add ~6 ALU ops per fish per frame -- invisible against the existing boids compute cost.
 - **Pointermove throttling:** Not needed. The raycast is trivial and the uniform update happens once per frame in `useTask` regardless of how many pointermove events fire.
+- **New uniforms:** One additional uniform (`uScatterStartTime`) -- single float, zero bandwidth impact.
 
 ### 7. Edge Cases
 
@@ -165,9 +232,58 @@ The `scatterForce` uniform already exists in the velocity shader (`uScatterForce
 - **Camera at extreme oblique angles:** The ray may intersect the plane very far from the viewport center. This is fine -- fish that far away are in fog and the scatter has no visible effect.
 - **Multiple Threlte instances:** OceanMouseRaycast binds to its own renderer's canvas via `useThrelte()`, same pattern as ManualRaycaster. No cross-instance conflicts.
 - **Touch devices:** `pointermove` fires for touch too. Scatter on touch-drag is a nice side effect. Touch-end triggers `pointerleave` equivalent to reset.
+- **Wave propagation during fast mouse sweep:** `uScatterStartTime` resets when the cursor moves >0.5 units, so the wave continuously re-originates at the leading edge. No stale-wave artifacts.
 
-### 8. Future Extensions (Out of Scope)
+### 8. Nice-to-Have Extensions (Document Only -- Not Required for V1)
+
+#### 8a. School Splitting
+
+During scatter, temporarily offset `uSchoolCenters[speciesIdx]` to two points flanking the scatter origin (perpendicular to the cursor velocity vector). After scatter ends, lerp the offset back to zero over ~2 seconds. This leverages the existing school-center homing force to produce macroscopic school bifurcation -- the school splits into two sub-groups that flow around the threat and merge behind it.
+
+**Why it works:** The boids system already homes fish toward `uSchoolCenters`. Splitting one center into two during scatter naturally produces two sub-schools without any per-fish logic changes. The lerp-back merges them smoothly.
+
+**Implementation sketch:**
+```glsl
+// CPU side: compute split offset
+const cursorVel = cursorPos.clone().sub(prevCursorPos).normalize();
+const splitDir = new Vector3().crossVectors(cursorVel, UP).normalize();
+const splitOffset = splitDir.multiplyScalar(scatterRadius * 0.7);
+
+// During scatter: schoolCenter[i] ± splitOffset
+// After scatter: lerp splitOffset toward zero
+```
+
+**Cost:** CPU-side vector math per frame + two modified uniform values. Zero shader changes.
+
+**Reference:** arXiv:2210.03989 "Stochastic predator-avoidance models" -- formalizes the split/merge behavior in schools under threat.
+
+#### 8b. Cursor Velocity Influence
+
+Track the cursor's world-space velocity (delta position / delta time, exponentially smoothed). Pass as a `uScatterVelocity` vec3 uniform. Use it to bias the scatter radius elliptically in the cursor's travel direction -- fish ahead of a fast-moving cursor scatter at a larger radius than fish behind it.
+
+**Implementation sketch:**
+```glsl
+// In velocity shader:
+vec3 toFish = normalize(pos - uScatterOrigin);
+float velBias = dot(toFish, normalize(uScatterVelocity)) * 0.3 + 1.0;
+float effectiveRadius = boldScatter * velBias;
+```
+
+**Cost:** One new vec3 uniform, two GLSL lines.
+
+**Visual result:** A fast-moving cursor creates an asymmetric scatter cone -- fish ahead flee farther, fish behind barely react. Stationary cursor remains symmetric. Matches the intuition that a moving predator is more threatening to fish in its path.
+
+### 9. Future Extensions (Out of Scope)
 
 - **Scatter ripple:** A visual shockwave ring expanding from the scatter point. Requires a separate shader effect.
 - **Predator cursor modes:** Different scatter behaviors for click (sharp burst) vs hover (gentle push). The current design treats all pointer presence equally.
 - **Per-species scatter sensitivity:** Currently boldness modulates scatter per-fish. Per-species overrides (e.g., cleaner wrasse ignores cursor) would need a species-indexed uniform array.
+
+### 10. References
+
+- Podila et al., "Visual Analytics of Collective Animal Behavior," Information Visualization, 2020 -- fountain effect taxonomy in schooling fish
+- "Animating Escape Maneuvers for Fish Schools," SIGGRAPH i3D 2017 -- GPU-friendly boids scatter with tangential flee components
+- Marras et al., "Schooling of Light Reflecting Fish," PLOS ONE -- Trafalgar effect (wave propagation of agitation through a school)
+- arXiv:2210.03989, "Stochastic models for predator-avoidance in fish schools" -- school splitting and merge dynamics under threat
+- ABZU (Giant Squid Studios, 2016) -- reference implementation of fountain scatter + wave propagation in a shipped title
+- Subnautica (Unknown Worlds, 2018) -- distance-delayed scatter reaction in open-world ocean
