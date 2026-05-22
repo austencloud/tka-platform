@@ -5,7 +5,7 @@
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import ProceduralSeabed from "./ocean/ProceduralSeabed.svelte";
   import WaterSurface from "./ocean/WaterSurface.svelte";
-  import { terrainHeight as terrainHeightRaw, terrainHeightForPlacement } from "./ocean/terrain-height";
+  import { terrainHeight as terrainHeightRaw, terrainHeightForPlacement, setMoundSources, type MoundSource } from "./ocean/terrain-height";
   import type { OceanVariant } from "../domain/enums/environment-enums";
   import {
     type OceanSceneConfig,
@@ -14,7 +14,7 @@
     createDefaultOceanMysticalConfig,
     createDefaultOceanCinematicConfig,
   } from "../domain/models/scene-configs";
-  import { poissonDiscSample, seededRandom } from "../utils/poisson-disc";
+  import { poissonDiscSample, seededRandom, PlacementGrid } from "../utils/poisson-disc";
   import { clone as cloneWithSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { onDestroy, onMount } from "svelte";
@@ -24,12 +24,20 @@
   import GodRayShafts from "./ocean/GodRayShafts.svelte";
   import FishSchool from "./ocean/FishSchool.svelte";
   import UnderwaterParticles from "./ocean/UnderwaterParticles.svelte";
+  import ReefStructures from "./ocean/ReefStructures.svelte";
+  import type { ReefSDFData } from "./ocean/ReefStructures.svelte";
+  import { generateRockVariants, type RockVariant } from "./ocean/procedural-rock";
   import {
     FogExp2,
     Color,
     Mesh,
+    Mesh as ThreeMesh,
+    InstancedMesh,
     Object3D,
     Vector3,
+    Matrix4 as ThreeMatrix4,
+    Euler,
+    Quaternion,
     Box3,
   } from "three";
 
@@ -75,13 +83,7 @@
   const dracoLoader = useDraco("/draco/");
   const opts = { dracoLoader };
 
-  const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
-  const rockA = useGltf(`${R2_CDN}/models/forest/Rock_1_A_Color1.gltf`, opts);
-  const rockB = useGltf(`${R2_CDN}/models/forest/Rock_1_B_Color1.gltf`, opts);
-  const rockC = useGltf("/models/vegetation/rock/rock_largeA.glb", opts);
-  const rockD = useGltf("/models/vegetation/rock/rock_largeD.glb", opts);
-  const rockE = useGltf("/models/vegetation/rock/rock_smallD.glb", opts);
-  const rockF = useGltf("/models/vegetation/rock/rock_tallC.glb", opts);
+  const rockVariants: RockVariant[] = generateRockVariants(6, "#1a3a4a", 0.3);
 
   const coralGlb0 = useGltf("/models/ocean/coral_0.glb", opts);
   const coralGlb1 = useGltf("/models/ocean/coral_1.glb", opts);
@@ -99,6 +101,14 @@
   const seaUrchinGlb = useGltf("/models/ocean/sea_urchin.glb", opts);
   const shellGlb = useGltf("/models/ocean/shell.glb", opts);
   const anemoneGlb = useGltf("/models/ocean/anemone.glb", opts);
+
+  // Meshy-generated rock models (hero rocks for formations + boulders)
+  const rockGlb0 = useGltf("/models/ocean/rock_0.glb", opts);
+  const rockGlb1 = useGltf("/models/ocean/rock_1.glb", opts);
+  const rockGlb2 = useGltf("/models/ocean/rock_2.glb", opts);
+  const rockGlb3 = useGltf("/models/ocean/rock_3.glb", opts);
+  const rockGlb4 = useGltf("/models/ocean/rock_4.glb", opts);
+  const rockGlb5 = useGltf("/models/ocean/rock_5.glb", opts);
 
   // ── Scene Context ─────────────────────────────────────────────────────
 
@@ -186,298 +196,298 @@
         saturation: 0.85 + rng() * 0.3,
         hasAnchorRock: rng() > 0.3,
         anchorRockScale: isLargeFormation
-          ? 0.8 + rng() * 1.5 + distFactor * 1.5
-          : 0.3 + rng() * 0.5,
+          ? 0.3 + rng() * 0.4 + distFactor * 0.3
+          : 0.15 + rng() * 0.25,
       });
     }
     return formations;
   });
 
-  const coralPlacements = $derived.by((): CoralPlacement[] => {
-    if (!activeConfig.coral.enabled) return [];
-    const rng = seededRandom(100);
-    const results: CoralPlacement[] = [];
-    const maxCount = activeConfig.coral.count;
+  // ── Coordinated placement with shared collision grid ─────────────────
+  // All categories are computed together so each respects prior placements.
+  // Priority order: hero rocks → procedural rocks → boulders → coral → kelp → decorations
 
-    for (const formation of reefFormations) {
-      const count = Math.floor(3 + formation.density * 8 * (formation.radius / 2.0));
-      for (let j = 0; j < count && results.length < maxCount; j++) {
-        const angle = rng() * Math.PI * 2;
-        const dist = rng() * formation.radius;
-        const x = formation.x + Math.cos(angle) * dist;
-        const z = formation.z + Math.sin(angle) * dist;
+  interface ScenePlacements {
+    coral: CoralPlacement[];
+    kelp: Placement[];
+    rocks: Placement[];
+    boulders: Placement[];
+    heroRocks: (Placement & { modelIdx: number })[];
+    decorations: (Placement & { type: "starfish" | "urchin" | "shell" | "anemone" })[];
+  }
 
-        const r = Math.sqrt(x * x + z * z);
-        if (r < zones.stageRadius || r > zones.backgroundRadius) continue;
+  const maxRockXzRadius = $derived(
+    rockVariants.length > 0 ? Math.max(...rockVariants.map(v => v.xzRadius)) : 1.0,
+  );
 
-        const closeness = 1.0 - dist / formation.radius;
-        const sizeRoll = rng();
-        const baseScale = sizeRoll > 0.85
-          ? 0.8 + rng() * 1.2
-          : sizeRoll > 0.5
-            ? 0.3 + rng() * 0.5
-            : 0.1 + rng() * 0.25;
+  const scenePlacements = $derived.by((): ScenePlacements => {
+    // Grid only tracks LARGE items (hero rocks, boulders, large procedural rocks).
+    // Coral, kelp, decorations CHECK against large items but DON'T register —
+    // they cluster freely among themselves, just like a real reef.
+    const grid = new PlacementGrid(3.0);
+    const formations = reefFormations;
+    const z_ = zones;
+    const cfg = activeConfig;
+    const rockRadius = maxRockXzRadius;
 
-        results.push({
-          x, z,
-          scale: baseScale * (0.6 + closeness * 0.8),
-          rotY: rng() * Math.PI * 2,
-          hueShift: formation.hue + (rng() - 0.5) * 0.03,
-          satBoost: formation.saturation + (rng() - 0.5) * 0.1,
-          speciesIdx: (formation.dominantSpecies + (rng() > 0.7 ? Math.floor(rng() * 4) + 1 : 0)) % 5,
+    // ── 1. Hero GLB rocks (largest — register with generous radius) ──
+    const heroRocks: ScenePlacements["heroRocks"] = [];
+    if (hasGlbRocks && cfg.rocks.enabled) {
+      const rng = seededRandom(500);
+      for (const formation of formations) {
+        if (!formation.hasAnchorRock) continue;
+        const x = formation.x + (rng() - 0.5) * 0.3;
+        const z = formation.z + (rng() - 0.5) * 0.3;
+        const scale = formation.anchorRockScale * 1.5;
+        const r = scale * 1.2;
+        if (grid.isClear(x, z, r)) {
+          grid.register(x, z, r);
+          heroRocks.push({ x, z, scale, rotY: rng() * Math.PI * 2, modelIdx: Math.floor(rng() * 6) });
+        } else { rng(); rng(); }
+      }
+      const bgSamples = poissonDiscSample({ innerRadius: z_.forestOuter, outerRadius: z_.backgroundRadius, minDistance: 5.0, count: 15, seed: 550 });
+      for (const s of bgSamples) {
+        if (heroRocks.length >= 40) break;
+        const scale = 0.8 + rng() * 1.0;
+        const r = scale * 1.2;
+        if (grid.isClear(s.x, s.z, r)) {
+          grid.register(s.x, s.z, r);
+          heroRocks.push({ x: s.x, z: s.z, scale, rotY: rng() * Math.PI * 2, modelIdx: Math.floor(rng() * 6) });
+        } else { rng(); rng(); }
+      }
+    }
+
+    // ── 2. Procedural rocks — scatter fill only, hero rocks own formations ─
+    // When hero GLB rocks exist, they own formation anchors. Procedural rocks
+    // become small pebbles/rubble filling gaps — never at formation centers.
+    // When no GLB rocks, procedural rocks take formation anchor role.
+    const rocks: Placement[] = [];
+    if (cfg.rocks.enabled && cfg.rocks.count > 0) {
+      const rng = seededRandom(300);
+      const maxCount = cfg.rocks.count;
+
+      if (!hasGlbRocks) {
+        // No hero rocks — procedural rocks anchor formations
+        for (const formation of formations) {
+          if (!formation.hasAnchorRock) continue;
+          const ax = formation.x + (rng() - 0.5) * 0.3;
+          const az = formation.z + (rng() - 0.5) * 0.3;
+          const as_ = formation.anchorRockScale;
+          grid.register(ax, az, as_ * rockRadius);
+          rocks.push({ x: ax, z: az, scale: as_, rotY: rng() * Math.PI * 2 });
+
+          const satelliteCount = Math.floor(1 + formation.density * 3);
+          for (let j = 0; j < satelliteCount && rocks.length < maxCount; j++) {
+            const angle = rng() * Math.PI * 2;
+            const dist = 0.5 + rng() * formation.radius * 0.6;
+            rocks.push({
+              x: formation.x + Math.cos(angle) * dist,
+              z: formation.z + Math.sin(angle) * dist,
+              scale: formation.anchorRockScale * (0.2 + rng() * 0.4),
+              rotY: rng() * Math.PI * 2,
+            });
+          }
+        }
+      }
+
+      // Small clearing pebbles (near stage)
+      const clearingSamples = poissonDiscSample({ innerRadius: z_.stageRadius + 0.5, outerRadius: z_.clearingRadius, minDistance: 1.2, count: 30, seed: 345 });
+      const rngC = seededRandom(346);
+      for (const s of clearingSamples) {
+        if (rocks.length >= maxCount) break;
+        const ss = 0.08 + rngC() * 0.15;
+        if (grid.isClear(s.x, s.z, ss * rockRadius)) {
+          rocks.push({ x: s.x, z: s.z, scale: ss, rotY: rngC() * Math.PI * 2 });
+        } else { rngC(); }
+      }
+
+      // Scatter fill between formations
+      const scatterSamples = poissonDiscSample({ innerRadius: z_.clearingRadius, outerRadius: z_.backgroundRadius, minDistance: 1.5, count: Math.max(0, maxCount - rocks.length), seed: 350 });
+      const rng2 = seededRandom(351);
+      for (const s of scatterSamples) {
+        if (rocks.length >= maxCount) break;
+        const ss = 0.05 + rng2() * 0.15;
+        if (grid.isClear(s.x, s.z, ss * rockRadius)) {
+          rocks.push({ x: s.x, z: s.z, scale: ss, rotY: rng2() * Math.PI * 2 });
+        } else { rng2(); }
+      }
+    }
+
+    // ── 3. Boulders (large — register in grid) ──────────────────────
+    const boulders: Placement[] = [];
+    if (cfg.rocks.enabled && !hasGlbRocks) {
+      const rng = seededRandom(400);
+      const largeFormations = formations.filter(f => f.radius > 2.5 && f.hasAnchorRock);
+      for (const formation of largeFormations) {
+        if (boulders.length >= 20) break;
+        const bx = formation.x + (rng() - 0.5) * 1.0;
+        const bz = formation.z + (rng() - 0.5) * 1.0;
+        const bs = 0.5 + formation.anchorRockScale * 0.8 + rng() * 0.4;
+        if (grid.isClear(bx, bz, bs * 0.8)) {
+          grid.register(bx, bz, bs * 0.8);
+          boulders.push({ x: bx, z: bz, scale: bs, rotY: rng() * Math.PI * 2 });
+        } else { rng(); }
+      }
+      const bgSamples = poissonDiscSample({ innerRadius: z_.forestOuter, outerRadius: z_.backgroundRadius, minDistance: 5.0, count: Math.max(0, 20 - boulders.length), seed: 450 });
+      for (const s of bgSamples) {
+        if (boulders.length >= 20) break;
+        const bs = 0.6 + rng() * 0.6;
+        if (grid.isClear(s.x, s.z, bs * 0.8)) {
+          grid.register(s.x, s.z, bs * 0.8);
+          boulders.push({ x: s.x, z: s.z, scale: bs, rotY: rng() * Math.PI * 2 });
+        } else { rng(); }
+      }
+    }
+
+    // ── 4. Coral — check against large items, DON'T register ─────────
+    // Coral clusters freely among itself, just avoids hero rocks/boulders.
+    const coral: CoralPlacement[] = [];
+    if (cfg.coral.enabled) {
+      const rng = seededRandom(100);
+      const maxCount = cfg.coral.count;
+      for (const formation of formations) {
+        const count = Math.floor(3 + formation.density * 8 * (formation.radius / 2.0));
+        for (let j = 0; j < count && coral.length < maxCount; j++) {
+          const angle = rng() * Math.PI * 2;
+          const dist = rng() * formation.radius;
+          const x = formation.x + Math.cos(angle) * dist;
+          const z = formation.z + Math.sin(angle) * dist;
+          const rDist = Math.sqrt(x * x + z * z);
+          if (rDist < z_.stageRadius || rDist > z_.backgroundRadius) continue;
+          const closeness = 1.0 - dist / formation.radius;
+          const sizeRoll = rng();
+          const baseScale = sizeRoll > 0.85 ? 0.8 + rng() * 1.2 : sizeRoll > 0.5 ? 0.3 + rng() * 0.5 : 0.1 + rng() * 0.25;
+          const finalScale = baseScale * (0.6 + closeness * 0.8);
+          if (!grid.isClear(x, z, finalScale * 0.3)) continue;
+          coral.push({
+            x, z, scale: finalScale, rotY: rng() * Math.PI * 2,
+            hueShift: formation.hue + (rng() - 0.5) * 0.03,
+            satBoost: formation.saturation + (rng() - 0.5) * 0.1,
+            speciesIdx: (formation.dominantSpecies + (rng() > 0.7 ? Math.floor(rng() * 4) + 1 : 0)) % 5,
+          });
+        }
+      }
+      const clearingCoral = poissonDiscSample({ innerRadius: z_.stageRadius + 0.5, outerRadius: z_.clearingRadius, minDistance: 1.5, count: 25, seed: 150 });
+      const rngCl = seededRandom(151);
+      for (const s of clearingCoral) {
+        if (coral.length >= maxCount) break;
+        coral.push({
+          x: s.x, z: s.z, scale: 0.15 + rngCl() * 0.3, rotY: rngCl() * Math.PI * 2,
+          hueShift: CORAL_PALETTE_HUES[Math.floor(rngCl() * 5)]! + (rngCl() - 0.5) * 0.04,
+          satBoost: 0.9 + rngCl() * 0.2, speciesIdx: Math.floor(rngCl() * 5),
         });
       }
     }
 
-    // Scattered clearing coral — small clusters in the sandy zone
-    const clearingCoral = poissonDiscSample({
-      innerRadius: zones.stageRadius + 0.5,
-      outerRadius: zones.clearingRadius,
-      minDistance: 1.5,
-      count: 25,
-      seed: 150,
-    });
-    const rngClearing = seededRandom(151);
-    for (const s of clearingCoral) {
-      if (results.length >= maxCount) break;
-      results.push({
-        x: s.x, z: s.z,
-        scale: 0.15 + rngClearing() * 0.3,
-        rotY: rngClearing() * Math.PI * 2,
-        hueShift: CORAL_PALETTE_HUES[Math.floor(rngClearing() * 5)]! + (rngClearing() - 0.5) * 0.04,
-        satBoost: 0.9 + rngClearing() * 0.2,
-        speciesIdx: Math.floor(rngClearing() * 5),
-      });
-    }
-
-    return results;
-  });
-
-  const kelpPlacements = $derived.by((): Placement[] => {
-    if (!activeConfig.kelp.enabled || activeConfig.kelp.count === 0) return [];
-    const rng = seededRandom(200);
-    const results: Placement[] = [];
-    const maxCount = activeConfig.kelp.count;
-
-    for (const formation of reefFormations) {
-      if (rng() > 0.85) continue;
-
-      const kelpCount = Math.floor(4 + formation.density * 10 * (formation.radius / 2.0));
-
-      const patchAngle = rng() * Math.PI * 2;
-      const patchDist = formation.radius * (0.3 + rng() * 0.5);
-      const patchX = formation.x + Math.cos(patchAngle) * patchDist;
-      const patchZ = formation.z + Math.sin(patchAngle) * patchDist;
-
-      for (let j = 0; j < kelpCount && results.length < maxCount; j++) {
-        const angle = rng() * Math.PI * 2;
-        const dist = rng() * 1.2;
-        const x = patchX + Math.cos(angle) * dist;
-        const z = patchZ + Math.sin(angle) * dist;
-
-        const r = Math.sqrt(x * x + z * z);
-        if (r < zones.clearingRadius || r > zones.backgroundRadius) continue;
-
-        results.push({
-          x, z,
-          scale: 0.4 + rng() * 1.0,
-          rotY: rng() * Math.PI * 2,
-        });
-      }
-    }
-    return results;
-  });
-
-  const rockPlacements = $derived.by((): Placement[] => {
-    if (!activeConfig.rocks.enabled || activeConfig.rocks.count === 0) return [];
-    const rng = seededRandom(300);
-    const results: Placement[] = [];
-    const maxCount = activeConfig.rocks.count;
-
-    for (const formation of reefFormations) {
-      if (!formation.hasAnchorRock) continue;
-      results.push({
-        x: formation.x + (rng() - 0.5) * 0.3,
-        z: formation.z + (rng() - 0.5) * 0.3,
-        scale: formation.anchorRockScale,
-        rotY: rng() * Math.PI * 2,
-      });
-
-      const satelliteCount = Math.floor(1 + formation.density * 3);
-      for (let j = 0; j < satelliteCount && results.length < maxCount; j++) {
-        const angle = rng() * Math.PI * 2;
-        const dist = 0.5 + rng() * formation.radius * 0.6;
-        results.push({
-          x: formation.x + Math.cos(angle) * dist,
-          z: formation.z + Math.sin(angle) * dist,
-          scale: formation.anchorRockScale * (0.2 + rng() * 0.4),
-          rotY: rng() * Math.PI * 2,
-        });
+    // ── 5. Kelp — check against large items, DON'T register ──────────
+    const kelp: Placement[] = [];
+    if (cfg.kelp.enabled && cfg.kelp.count > 0) {
+      const rng = seededRandom(200);
+      const maxCount = cfg.kelp.count;
+      for (const formation of formations) {
+        if (rng() > 0.85) continue;
+        const kelpCount = Math.floor(4 + formation.density * 10 * (formation.radius / 2.0));
+        const patchAngle = rng() * Math.PI * 2;
+        const patchDist = formation.radius * (0.3 + rng() * 0.5);
+        const patchX = formation.x + Math.cos(patchAngle) * patchDist;
+        const patchZ = formation.z + Math.sin(patchAngle) * patchDist;
+        for (let j = 0; j < kelpCount && kelp.length < maxCount; j++) {
+          const angle = rng() * Math.PI * 2;
+          const dist = rng() * 1.2;
+          const x = patchX + Math.cos(angle) * dist;
+          const z = patchZ + Math.sin(angle) * dist;
+          const rDist = Math.sqrt(x * x + z * z);
+          if (rDist < z_.clearingRadius || rDist > z_.backgroundRadius) continue;
+          const ss = 0.4 + rng() * 1.0;
+          if (!grid.isClear(x, z, ss * 0.2)) { rng(); continue; }
+          kelp.push({ x, z, scale: ss, rotY: rng() * Math.PI * 2 });
+        }
       }
     }
 
-    // Clearing rocks — small pebbles/rocks in the sandy zone near stage
-    const clearingSamples = poissonDiscSample({
-      innerRadius: zones.stageRadius + 0.5,
-      outerRadius: zones.clearingRadius,
-      minDistance: 1.2,
-      count: 30,
-      seed: 345,
-    });
-    const rngClearing = seededRandom(346);
-    for (const s of clearingSamples) {
-      if (results.length >= maxCount) break;
-      results.push({
-        x: s.x, z: s.z,
-        scale: 0.08 + rngClearing() * 0.2,
-        rotY: rngClearing() * Math.PI * 2,
-      });
+    // ── 6. Decorations — no grid checks, placed by ecology rules ─────
+    type DecoType = "starfish" | "urchin" | "shell" | "anemone";
+    const decorations: ScenePlacements["decorations"] = [];
+    if (cfg.decorations.enabled) {
+      const rng = seededRandom(390);
+      const maxCount = cfg.decorations.count;
+      for (const rock of rocks) {
+        if (decorations.length >= maxCount * 0.25) break;
+        if (rng() > 0.4) continue;
+        const angle = rng() * Math.PI * 2;
+        const dist = 0.3 + rng() * 0.6;
+        decorations.push({ x: rock.x + Math.cos(angle) * dist, z: rock.z + Math.sin(angle) * dist, scale: 0.4 + rng() * 0.5, rotY: rng() * Math.PI * 2, type: "anemone" as DecoType });
+      }
+      for (const c of coral) {
+        if (decorations.length >= maxCount * 0.5) break;
+        if (rng() > 0.12) continue;
+        const angle = rng() * Math.PI * 2;
+        const dist = 0.2 + rng() * 0.8;
+        decorations.push({ x: c.x + Math.cos(angle) * dist, z: c.z + Math.sin(angle) * dist, scale: 0.3 + rng() * 0.4, rotY: rng() * Math.PI * 2, type: "starfish" as DecoType });
+      }
+      for (const formation of formations) {
+        if (decorations.length >= maxCount * 0.7) break;
+        if (!formation.hasAnchorRock) continue;
+        const urchinCount = Math.floor(1 + rng() * 3);
+        for (let j = 0; j < urchinCount; j++) {
+          const angle = rng() * Math.PI * 2;
+          const dist = 0.5 + rng() * formation.radius * 0.5;
+          decorations.push({ x: formation.x + Math.cos(angle) * dist, z: formation.z + Math.sin(angle) * dist, scale: 0.25 + rng() * 0.35, rotY: rng() * Math.PI * 2, type: "urchin" as DecoType });
+        }
+      }
+      const shellSamples = poissonDiscSample({ innerRadius: z_.stageRadius, outerRadius: z_.clearingRadius + 3, minDistance: 0.8, count: Math.max(0, maxCount - decorations.length), seed: 395 });
+      const rng2 = seededRandom(396);
+      for (const s of shellSamples) {
+        if (decorations.length >= maxCount) break;
+        let nearFormation = false;
+        for (const f of formations) {
+          const dx = s.x - f.x, dz = s.z - f.z;
+          if (dx * dx + dz * dz < f.radius * f.radius) { nearFormation = true; break; }
+        }
+        if (nearFormation) continue;
+        decorations.push({ x: s.x, z: s.z, scale: 0.15 + rng2() * 0.25, rotY: rng2() * Math.PI * 2, type: "shell" as DecoType });
+      }
     }
 
-    const scatterSamples = poissonDiscSample({
-      innerRadius: zones.clearingRadius,
-      outerRadius: zones.backgroundRadius,
-      minDistance: 1.8,
-      count: Math.max(0, maxCount - results.length),
-      seed: 350,
-    });
-    const rng2 = seededRandom(351);
-    for (const s of scatterSamples) {
-      if (results.length >= maxCount) break;
-      const isLarge = rng2() < 0.2;
-      results.push({
-        x: s.x, z: s.z,
-        scale: isLarge ? 0.4 + rng2() * 0.5 : 0.1 + rng2() * 0.35,
-        rotY: rng2() * Math.PI * 2,
-      });
-    }
-
-    return results;
+    return { coral, kelp, rocks, boulders, heroRocks, decorations };
   });
 
-  const boulderPlacements = $derived.by((): Placement[] => {
-    if (!activeConfig.rocks.enabled) return [];
-    const rng = seededRandom(400);
-    const results: Placement[] = [];
+  const coralPlacements = $derived(scenePlacements.coral);
+  const kelpPlacements = $derived(scenePlacements.kelp);
 
-    const largeFormations = reefFormations.filter(f => f.radius > 2.5 && f.hasAnchorRock);
-    for (const formation of largeFormations) {
-      if (results.length >= 20) break;
-      results.push({
-        x: formation.x + (rng() - 0.5) * 1.0,
-        z: formation.z + (rng() - 0.5) * 1.0,
-        scale: 1.5 + formation.anchorRockScale * 1.2 + rng() * 1.0,
-        rotY: rng() * Math.PI * 2,
-      });
-    }
-
-    const bgSamples = poissonDiscSample({
-      innerRadius: zones.forestOuter,
-      outerRadius: zones.backgroundRadius,
-      minDistance: 5.0,
-      count: Math.max(0, 20 - results.length),
-      seed: 450,
-    });
-    for (const s of bgSamples) {
-      if (results.length >= 20) break;
-      results.push({
-        x: s.x, z: s.z,
-        scale: 2.0 + rng() * 3.0,
-        rotY: rng() * Math.PI * 2,
-      });
-    }
-
-    return results;
-  });
+  const rockPlacements = $derived(scenePlacements.rocks);
+  const boulderPlacements = $derived(scenePlacements.boulders);
 
   type DecoType = "starfish" | "urchin" | "shell" | "anemone";
   interface DecoPlacement extends Placement {
     type: DecoType;
   }
+  const decorationPlacements = $derived(scenePlacements.decorations as DecoPlacement[]);
 
-  const decorationPlacements = $derived.by((): DecoPlacement[] => {
-    if (!activeConfig.decorations.enabled) return [];
-    const rng = seededRandom(390);
-    const results: DecoPlacement[] = [];
-    const maxCount = activeConfig.decorations.count;
-
-    // Anemones — attach to rocks within formations (need hard substrate)
-    for (const rock of rockPlacements) {
-      if (results.length >= maxCount * 0.25) break;
-      if (rng() > 0.4) continue;
-      const angle = rng() * Math.PI * 2;
-      const dist = 0.3 + rng() * 0.6;
-      results.push({
-        x: rock.x + Math.cos(angle) * dist,
-        z: rock.z + Math.sin(angle) * dist,
-        scale: 0.4 + rng() * 0.5,
-        rotY: rng() * Math.PI * 2,
-        type: "anemone",
-      });
+  // ── Sediment Mounding ─────────────────────────────────────────────────
+  // Feed object positions into terrain height so geometry rises around bases.
+  // Only large objects get mounds — small scatter and decorations don't.
+  $effect(() => {
+    const mounds: MoundSource[] = [];
+    for (const p of scenePlacements.heroRocks) {
+      mounds.push({ x: p.x, z: p.z, radius: p.scale * 2.0, height: p.scale * 0.35 });
     }
-
-    // Starfish — perch near coral and on rocks
-    for (const coral of coralPlacements) {
-      if (results.length >= maxCount * 0.5) break;
-      if (rng() > 0.12) continue;
-      const angle = rng() * Math.PI * 2;
-      const dist = 0.2 + rng() * 0.8;
-      results.push({
-        x: coral.x + Math.cos(angle) * dist,
-        z: coral.z + Math.sin(angle) * dist,
-        scale: 0.3 + rng() * 0.4,
-        rotY: rng() * Math.PI * 2,
-        type: "starfish",
-      });
+    for (const p of scenePlacements.rocks) {
+      if (p.scale < 0.2) continue;
+      mounds.push({ x: p.x, z: p.z, radius: p.scale * 1.5, height: p.scale * 0.25 });
     }
-
-    // Urchins — nestle between rocks in formations
-    for (const formation of reefFormations) {
-      if (results.length >= maxCount * 0.7) break;
-      if (!formation.hasAnchorRock) continue;
-      const urchinCount = Math.floor(1 + rng() * 3);
-      for (let j = 0; j < urchinCount; j++) {
-        const angle = rng() * Math.PI * 2;
-        const dist = 0.5 + rng() * formation.radius * 0.5;
-        results.push({
-          x: formation.x + Math.cos(angle) * dist,
-          z: formation.z + Math.sin(angle) * dist,
-          scale: 0.25 + rng() * 0.35,
-          rotY: rng() * Math.PI * 2,
-          type: "urchin",
-        });
-      }
+    for (const p of scenePlacements.boulders) {
+      mounds.push({ x: p.x, z: p.z, radius: p.scale * 1.8, height: p.scale * 0.3 });
     }
-
-    // Shells — scattered on open sand between formations (debris, wave-deposited)
-    const shellSamples = poissonDiscSample({
-      innerRadius: zones.stageRadius,
-      outerRadius: zones.clearingRadius + 3,
-      minDistance: 0.8,
-      count: Math.max(0, maxCount - results.length),
-      seed: 395,
-    });
-    const rng2 = seededRandom(396);
-    for (const s of shellSamples) {
-      if (results.length >= maxCount) break;
-      // Shells avoid formation centers — they're wave-deposited on open sand
-      let nearFormation = false;
-      for (const f of reefFormations) {
-        const dx = s.x - f.x, dz = s.z - f.z;
-        if (dx * dx + dz * dz < f.radius * f.radius) { nearFormation = true; break; }
-      }
-      if (nearFormation) continue;
-      results.push({
-        x: s.x, z: s.z,
-        scale: 0.15 + rng2() * 0.25,
-        rotY: rng2() * Math.PI * 2,
-        type: "shell",
-      });
+    for (const p of scenePlacements.coral) {
+      if (p.scale < 0.4) continue;
+      mounds.push({ x: p.x, z: p.z, radius: p.scale * 0.8, height: p.scale * 0.12 });
     }
-
-    return results;
+    setMoundSources(mounds);
   });
 
+  // ── Reef SDF data (passed from ReefStructures → FishSchool) ────────
+  let reefSdfData = $state<ReefSDFData | null>(null);
 
   let jellyfishOffsets = $state<{ dx: number; dy: number; dz: number; pulse: number }[]>([]);
   let jellyfishTime = $state(0);
@@ -585,6 +595,41 @@
       ? 0.0002
       : Math.min(target / extent, MAX_CREATURE_SCALE);
   }
+
+  // ── GLB Rock Models (Meshy-generated hero rocks) ───────────────────
+
+  const rockGlbModels = $derived(
+    [$rockGlb0, $rockGlb1, $rockGlb2, $rockGlb3, $rockGlb4, $rockGlb5].filter(Boolean) as { scene: Object3D }[],
+  );
+  const hasGlbRocks = $derived(rockGlbModels.length > 0);
+
+  const rockGlbScales = $derived.by((): number[] =>
+    rockGlbModels.map((m) => {
+      const extent = measureModelExtent(m.scene as Object3D);
+      return extent < 0.001 ? 0.001 : 1.0 / extent;
+    }),
+  );
+
+  const rockGlbBaseOffsets = $derived.by((): number[] =>
+    rockGlbModels.map((m) => {
+      const raw = -measureModelMinY(m.scene as Object3D);
+      return raw * 1.1 + 0.05;
+    }),
+  );
+
+  interface HeroRockPlacement extends Placement {
+    modelIdx: number;
+  }
+
+  const heroRockPlacements = $derived(scenePlacements.heroRocks as HeroRockPlacement[]);
+
+  const heroRockClones = $derived.by(() => {
+    if (!hasGlbRocks) return [];
+    return heroRockPlacements.map((p) => {
+      const model = rockGlbModels[p.modelIdx % rockGlbModels.length]!;
+      return underwaterClone(model.scene, activeConfig.rocks.tintColor, activeConfig.rocks.tintBlend * 0.5);
+    });
+  });
 
   const jellyfishLargeScale = $derived(mScale($jellyfishGlb, 0.4));
   const jellyfishSmallScale = $derived(mScale($jellyfishSmallGlb, 0.2));
@@ -733,22 +778,60 @@
     );
   });
 
-  const rockModels = $derived.by(() => {
-    return [$rockA, $rockB, $rockC, $rockD, $rockE, $rockF].filter(Boolean) as { scene: Object3D }[];
-  });
-
-  const rockScales = $derived.by((): number[] => {
-    if (rockModels.length === 0) return [];
-    return rockPlacements.map((_, i) =>
-      mScale(rockModels[i % rockModels.length]!, 0.6),
-    );
-  });
-
-  const rockBaseOffsets = $derived.by((): number[] => {
-    return rockModels.map((m) => {
-      const raw = -measureModelMinY(m.scene as Object3D);
-      return raw * 1.1;
+  // Instanced rock meshes — one InstancedMesh per variant (6 draw calls instead of 200+)
+  const rockInstances = $derived.by((): InstancedMesh[] => {
+    if (rockVariants.length === 0 || rockPlacements.length === 0) return [];
+    const buckets: Placement[][] = rockVariants.map(() => []);
+    for (let i = 0; i < rockPlacements.length; i++) {
+      buckets[i % rockVariants.length]!.push(rockPlacements[i]!);
+    }
+    const m = new ThreeMatrix4();
+    const q = new Quaternion();
+    const s = new Vector3();
+    return rockVariants.map((variant, vi) => {
+      const placements = buckets[vi]!;
+      const inst = new InstancedMesh(variant.geometry, variant.material, placements.length);
+      inst.frustumCulled = false;
+      for (let j = 0; j < placements.length; j++) {
+        const p = placements[j]!;
+        q.setFromEuler(new Euler(0, p.rotY, 0));
+        s.setScalar(p.scale);
+        const yOffset = variant.bottomOffset * p.scale;
+        m.compose(new Vector3(p.x, groundY + getTerrainY(p.x, p.z) + yOffset, p.z), q, s);
+        inst.setMatrixAt(j, m);
+      }
+      inst.instanceMatrix.needsUpdate = true;
+      return inst;
     });
+  });
+
+  const boulderInstances = $derived.by((): InstancedMesh[] => {
+    if (rockVariants.length === 0 || boulderPlacements.length === 0) return [];
+    const buckets: Placement[][] = rockVariants.map(() => []);
+    for (let i = 0; i < boulderPlacements.length; i++) {
+      buckets[i % rockVariants.length]!.push(boulderPlacements[i]!);
+    }
+    const m = new ThreeMatrix4();
+    const q = new Quaternion();
+    const s = new Vector3();
+    return rockVariants.map((variant, vi) => {
+      const placements = buckets[vi]!;
+      if (placements.length === 0) return null;
+      const mat = variant.material.clone();
+      mat.color.lerp(new Color("#3a5068"), 0.25);
+      const inst = new InstancedMesh(variant.geometry, mat, placements.length);
+      inst.frustumCulled = false;
+      for (let j = 0; j < placements.length; j++) {
+        const p = placements[j]!;
+        q.setFromEuler(new Euler(0, p.rotY, 0));
+        s.setScalar(p.scale);
+        const yOffset = variant.bottomOffset * p.scale;
+        m.compose(new Vector3(p.x, groundY + getTerrainY(p.x, p.z) + yOffset, p.z), q, s);
+        inst.setMatrixAt(j, m);
+      }
+      inst.instanceMatrix.needsUpdate = true;
+      return inst;
+    }).filter((inst): inst is InstancedMesh => inst !== null);
   });
 
   const kelpClones = $derived.by(() => {
@@ -761,34 +844,6 @@
     );
   });
 
-  const rockClones = $derived.by(() => {
-    if (rockModels.length === 0) return [];
-    return rockPlacements.map((_, i) =>
-      underwaterClone(
-        rockModels[i % rockModels.length]!.scene as Object3D,
-        activeConfig.rocks.tintColor,
-        activeConfig.rocks.tintBlend,
-      ),
-    );
-  });
-
-  const boulderClones = $derived.by(() => {
-    if (rockModels.length === 0) return [];
-    return boulderPlacements.map((_, i) =>
-      underwaterClone(
-        rockModels[i % rockModels.length]!.scene as Object3D,
-        "#0d1a2a",
-        0.6,
-      ),
-    );
-  });
-
-  const boulderScales = $derived.by((): number[] => {
-    if (rockModels.length === 0) return [];
-    return boulderPlacements.map((_, i) =>
-      mScale(rockModels[i % rockModels.length]!, 2.0),
-    );
-  });
 
   const jellyfishClones = $derived.by(() => {
     const large = $jellyfishGlb;
@@ -884,7 +939,6 @@
       $seaweedGlb, $kelpPlantGlb,
       $jellyfishGlb, $jellyfishSmallGlb,
       $starfishGlb, $seaUrchinGlb, $shellGlb, $anemoneGlb,
-      $rockC, $rockD, $rockE, $rockF,
     ];
     const loaded = glbs.filter(Boolean).length;
     sceneFeatures.reportProgress("environment", loaded / glbs.length);
@@ -947,11 +1001,11 @@
   onDestroy(() => {
     for (const c of coralClones) disposeSceneGraph(c);
     for (const c of kelpClones) disposeSceneGraph(c);
-    for (const c of rockClones) disposeSceneGraph(c);
-    for (const c of boulderClones) disposeSceneGraph(c);
+    for (const inst of rockInstances) inst.dispose();
+    for (const inst of boulderInstances) { (inst.material as any)?.dispose?.(); inst.dispose(); }
+    for (const c of heroRockClones) disposeSceneGraph(c);
     for (const c of jellyfishClones) disposeSceneGraph(c);
     for (const c of decorationClones) if (c) disposeSceneGraph(c as Object3D);
-
   });
 </script>
 
@@ -1017,43 +1071,36 @@
   {/each}
 {/if}
 
-<!-- Seabed rocks (zone-placed: clearing → background) -->
-{#if activeConfig.rocks.enabled && rockClones.length > 0}
-  {#each rockClones as clone, i}
-    {@const p = rockPlacements[i]}
-    {@const s = rockScales[i] ?? 0.001}
+<!-- Hero rocks (Meshy GLB models — formation anchors + boulders) -->
+{#if activeConfig.rocks.enabled && heroRockClones.length > 0}
+  {#each heroRockClones as clone, i}
+    {@const p = heroRockPlacements[i]}
+    {@const s = rockGlbScales[p.modelIdx % rockGlbScales.length] ?? 0.001}
+    {@const baseOffset = (rockGlbBaseOffsets[p.modelIdx % rockGlbBaseOffsets.length] ?? 0) * p.scale * s}
     {#if p}
-      {@const finalScale = p.scale * s}
-      {@const baseY = (rockBaseOffsets[i % rockBaseOffsets.length] ?? 0) * finalScale}
       <T
         is={clone}
         position.x={p.x}
-        position.y={groundY + getTerrainY(p.x, p.z) + baseY}
+        position.y={groundY + getTerrainY(p.x, p.z) + baseOffset}
         position.z={p.z}
-        scale={finalScale}
+        scale={p.scale * s}
         rotation.y={p.rotY}
       />
     {/if}
   {/each}
 {/if}
 
-<!-- Background boulders (large silhouettes at distance) -->
-{#if activeConfig.rocks.enabled && boulderClones.length > 0}
-  {#each boulderClones as clone, i}
-    {@const p = boulderPlacements[i]}
-    {@const s = boulderScales[i] ?? 0.001}
-    {#if p}
-      {@const finalScale = p.scale * s}
-      {@const baseY = (rockBaseOffsets[i % rockBaseOffsets.length] ?? 0) * finalScale}
-      <T
-        is={clone}
-        position.x={p.x}
-        position.y={groundY + getTerrainY(p.x, p.z) + baseY}
-        position.z={p.z}
-        scale={finalScale}
-        rotation.y={p.rotY}
-      />
-    {/if}
+<!-- Seabed rocks (instanced procedural — small scatter fill) -->
+{#if activeConfig.rocks.enabled}
+  {#each rockInstances as inst}
+    <T is={inst} />
+  {/each}
+{/if}
+
+<!-- Background boulders (instanced procedural — fallback when no GLB rocks) -->
+{#if activeConfig.rocks.enabled && !hasGlbRocks}
+  {#each boulderInstances as inst}
+    <T is={inst} />
   {/each}
 {/if}
 
@@ -1085,6 +1132,7 @@
     currentStrength={activeConfig.fish.currentStrength}
     scatterRadius={activeConfig.fish.scatterRadius}
     perceptionAngle={activeConfig.fish.perceptionAngle}
+    {reefSdfData}
   />
 {/if}
 
@@ -1200,5 +1248,14 @@
 
 <!-- Marine snow / suspended sediment (GPU-driven, 4000 particles) -->
 <UnderwaterParticles />
+
+<!-- Reef structures (arch, wall, bommie, tower — Meshy AI generated) -->
+<ReefStructures
+  stageRadius={zones.stageRadius}
+  clearingRadius={zones.clearingRadius}
+  tintColor={activeConfig.rocks.tintColor}
+  tintBlend={activeConfig.rocks.tintBlend}
+  onSdfReady={(data) => { reefSdfData = data; }}
+/>
 
 <RuinsPlatform config={activeConfig.platform} />

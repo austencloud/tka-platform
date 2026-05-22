@@ -97,6 +97,7 @@ export interface RuinsPlatformConfig {
   width: number;
   depth: number;
   height: number;
+  elevation?: number;
   stoneColor: string;
   runeGlowColor: string;
   glowIntensity: number;
@@ -910,13 +911,13 @@ const OCEAN_KELP_RINGS: TreeRingConfig[] = [
 export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
   return {
     sky: {
-      topColor: "#0a2040",
-      midColor: "#1a5878",
-      bottomColor: "#0d3050",
+      topColor: "#0a2050",
+      midColor: "#2070a0",
+      bottomColor: "#105078",
     },
-    fog: { color: "#0e3550", density: 0.015 },
+    fog: { color: "#1a5580", density: 0.022 },
     ground: {
-      color: "#2a4a50",
+      color: "#5a8898",
       size: 50,
       textured: false,
       opacity: 1,
@@ -933,8 +934,8 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
     coral: {
       enabled: true,
       count: 280,
-      glowColor: "#ff6688",
-      glowBlend: 0.55,
+      glowColor: "#e87090",
+      glowBlend: 0.35,
     },
     kelp: {
       enabled: true,
@@ -945,7 +946,7 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
     fish: {
       enabled: true,
       count: 150,
-      targetSize: 0.5,
+      targetSize: 0.7,
       swimHeight: [2, 7],
       speed: [0.5, 1.2],
       currentStrength: 0.3,
@@ -962,8 +963,8 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
     rocks: {
       enabled: true,
       count: 200,
-      tintColor: "#2a5565",
-      tintBlend: 0.25,
+      tintColor: "#708898",
+      tintBlend: 0.15,
     },
     bubbles: {
       type: "bubbles",
@@ -1001,13 +1002,13 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
     },
     godRayShafts: {
       enabled: true,
-      count: 6,
-      color: "#ffe4a0",
-      intensity: 0.5,
-      width: 4.0,
+      count: 14,
+      color: "#b8d8e8",
+      intensity: 0.4,
+      width: 3.5,
       height: 18,
-      speed: 0.2,
-      swayAmount: 1.0,
+      speed: 0.3,
+      swayAmount: 1.2,
     },
     caustics: null,
     waterSurface: {
@@ -1031,8 +1032,8 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       },
     },
     hemisphereLight: {
-      skyColor: "#3a6880",
-      groundColor: "#1a2838",
+      skyColor: "#5090b0",
+      groundColor: "#2a4058",
       intensity: 1.0,
     },
     platform: {
@@ -1040,6 +1041,7 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       width: 8,
       depth: 6,
       height: 0.5,
+      elevation: 1.0,
       stoneColor: "#1a2028",
       runeGlowColor: "#44ddaa",
       glowIntensity: 0.5,

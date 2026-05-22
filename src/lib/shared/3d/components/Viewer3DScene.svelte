@@ -63,7 +63,7 @@
       case BackgroundType.WINTER:
         return 0.45;
       case BackgroundType.OCEAN:
-        return 0.5;
+        return 1.5;
       case BackgroundType.EMBER:
         return 0.5;
       case BackgroundType.BLOSSOM:

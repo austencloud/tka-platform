@@ -18,6 +18,8 @@
   let { config }: Props = $props();
   const groundY = $derived(userProportionsState.groundY);
 
+  const elevation = $derived(config.elevation ?? 0);
+
   const bodyGeometry = $derived.by(
     () => new BoxGeometry(config.width, config.height, config.depth),
   );
@@ -27,6 +29,10 @@
   const columnGeometry = $derived.by(
     () => new CylinderGeometry(0.12, 0.15, 0.6, 8),
   );
+  const supportPillarGeometry = $derived.by(() => {
+    if (elevation <= 0) return null;
+    return new CylinderGeometry(0.2, 0.35, elevation, 8);
+  });
 
   const columns = $derived.by(() => {
     const count = config.columnCount;
@@ -52,6 +58,20 @@
       }
     }
     return result;
+  });
+
+  const supportPillars = $derived.by(() => {
+    if (elevation <= 0) return [];
+    const hw = config.width * 0.4;
+    const hd = config.depth * 0.4;
+    return [
+      { x: -hw, z: -hd },
+      { x: -hw, z: hd },
+      { x: hw, z: -hd },
+      { x: hw, z: hd },
+      { x: 0, z: -hd },
+      { x: 0, z: hd },
+    ];
   });
 
   const noiseGlsl = /* glsl */ `
@@ -273,11 +293,11 @@
 
 {#if config.enabled}
   <T.Group position.z={config.zOffset ?? 0}>
-    <!-- Weathered stone body -->
+    <!-- Weathered stone body (elevated above terrain) -->
     <T.Mesh
       geometry={bodyGeometry}
       material={bodyMaterial}
-      position.y={groundY + config.height / 2}
+      position.y={groundY + elevation + config.height / 2}
     />
 
     <!-- Bioluminescent top surface -->
@@ -285,20 +305,33 @@
       geometry={topGeometry}
       material={topMaterial}
       rotation.x={-Math.PI / 2}
-      position.y={groundY + config.height + 0.001}
+      position.y={groundY + elevation + config.height + 0.001}
     />
 
-    <!-- Overgrown column stumps -->
+    <!-- Overgrown column stumps on top -->
     {#each columns as col}
       {@const colHeight = col.scaleY * 0.6}
       <T.Mesh
         geometry={columnGeometry}
         material={columnMaterial}
         position.x={col.x}
-        position.y={groundY + config.height + colHeight * 0.5}
+        position.y={groundY + elevation + config.height + colHeight * 0.5}
         position.z={col.z}
         scale.y={col.scaleY}
       />
     {/each}
+
+    <!-- Support pillars from seabed to platform -->
+    {#if supportPillarGeometry}
+      {#each supportPillars as pillar}
+        <T.Mesh
+          geometry={supportPillarGeometry}
+          material={bodyMaterial}
+          position.x={pillar.x}
+          position.y={groundY + elevation / 2}
+          position.z={pillar.z}
+        />
+      {/each}
+    {/if}
   </T.Group>
 {/if}
