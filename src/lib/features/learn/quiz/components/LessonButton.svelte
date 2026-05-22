@@ -54,6 +54,12 @@ and smooth hover animations.
           title: "What Comes Next?",
           subtitle: "Pick the valid continuation",
         };
+      case QuizType.SEQUENCE_TO_WORD:
+        return {
+          icon: "sequence-3d",
+          title: "Read the Performer",
+          subtitle: "Watch the moves, name the word",
+        };
       default:
         return {
           icon: "default",
@@ -187,6 +193,21 @@ and smooth hover animations.
         <!-- Connecting dots -->
         <circle cx="10" cy="22" r="2" fill="currentColor" opacity="0.5" />
         <circle cx="24" cy="22" r="2" fill="currentColor" opacity="0.5" />
+      </svg>
+    {:else if gameConfig.icon === "sequence-3d"}
+      <svg viewBox="0 0 48 48" fill="none">
+        <!-- Performer silhouette -->
+        <circle cx="24" cy="10" r="4" fill="currentColor" opacity="0.8" />
+        <path
+          d="M24 14 L24 28 M18 20 L30 20 M20 36 L24 28 L28 36"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <!-- Question mark bubble -->
+        <rect x="30" y="4" width="14" height="12" rx="3" stroke="currentColor" stroke-width="1.5" fill="var(--theme-stroke)" />
+        <text x="37" y="13" font-family="Georgia, serif" font-size="9" font-weight="bold" fill="currentColor" text-anchor="middle">?</text>
       </svg>
     {:else}
       <svg viewBox="0 0 48 48" fill="none">

@@ -10,6 +10,7 @@
   import LetterToPictographQuiz from "./LetterToPictographQuiz.svelte";
   import PictographToLetterQuiz from "./PictographToLetterQuiz.svelte";
   import ValidNextPictographQuiz from "./ValidNextPictographQuiz.svelte";
+  import SequenceToWordQuiz from "./SequenceToWordQuiz.svelte";
   import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
   import type { QuizLayoutMode } from "../domain/enums/quiz-enums";
   import type { QuizResults, QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
@@ -247,6 +248,12 @@
         />
       {:else if quizType === QuizType.VALID_NEXT_PICTOGRAPH}
         <ValidNextPictographQuiz
+          onAnswerSubmit={handleAnswerSubmit}
+          onNextQuestion={handleNextQuestion}
+          onBack={handleBackClick}
+        />
+      {:else if quizType === QuizType.SEQUENCE_TO_WORD}
+        <SequenceToWordQuiz
           onAnswerSubmit={handleAnswerSubmit}
           onNextQuestion={handleNextQuestion}
           onBack={handleBackClick}
