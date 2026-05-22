@@ -159,6 +159,8 @@ export function getQuizNumber(quizType: QuizType): number {
       return 2;
     case QuizType.VALID_NEXT_PICTOGRAPH:
       return 3;
+    case QuizType.SEQUENCE_TO_WORD:
+      return 4;
     default:
       return 0;
   }
@@ -175,6 +177,8 @@ export function getQuizTypeFromNumber(quizNumber: number): QuizType | null {
       return QuizType.LETTER_TO_PICTOGRAPH;
     case 3:
       return QuizType.VALID_NEXT_PICTOGRAPH;
+    case 4:
+      return QuizType.SEQUENCE_TO_WORD;
     default:
       return null;
   }
@@ -219,6 +223,8 @@ export function getRecommendedQuizMode(quizType: QuizType): QuizMode {
       return QuizMode.FIXED_QUESTION;
     case QuizType.VALID_NEXT_PICTOGRAPH:
       return QuizMode.COUNTDOWN; // More challenging quiz
+    case QuizType.SEQUENCE_TO_WORD:
+      return QuizMode.FIXED_QUESTION;
     default:
       return QuizMode.FIXED_QUESTION;
   }
@@ -235,6 +241,8 @@ export function getDifficultyLevel(quizType: QuizType): number {
       return 2; // Medium - requires understanding pictograph structure
     case QuizType.VALID_NEXT_PICTOGRAPH:
       return 4; // Hardest - requires understanding flow and transitions
+    case QuizType.SEQUENCE_TO_WORD:
+      return 3;
     default:
       return 1;
   }

@@ -5,6 +5,7 @@ export enum QuizType {
   PICTOGRAPH_TO_LETTER = "pictograph_to_letter",
   LETTER_TO_PICTOGRAPH = "letter_to_pictograph",
   VALID_NEXT_PICTOGRAPH = "valid_next_pictograph",
+  SEQUENCE_TO_WORD = "sequence_to_word",
 }
 
 /**
@@ -39,6 +40,7 @@ export enum QuizQuestionFormat {
   PICTOGRAPH = "pictograph",
   LETTER = "letter",
   TEXT = "text",
+  SEQUENCE_3D = "sequence_3d",
 }
 
 /**
@@ -47,6 +49,7 @@ export enum QuizQuestionFormat {
 export enum QuizAnswerFormat {
   BUTTON = "button",
   PICTOGRAPH = "pictograph",
+  WORD_BUTTON = "word_button",
 }
 
 /**

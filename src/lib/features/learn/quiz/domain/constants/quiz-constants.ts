@@ -62,6 +62,15 @@ export const LESSON_CONFIGS: Record<QuizType, QuizConfig> = {
     quizDescription: "valid_next_pictograph",
     questionPrompt: "Which pictograph can follow?",
   },
+  [QuizType.SEQUENCE_TO_WORD]: {
+    type: "sequence_to_word",
+    difficulty: "intermediate",
+    lessonType: QuizType.SEQUENCE_TO_WORD,
+    questionFormat: QuizQuestionFormat.SEQUENCE_3D,
+    answerFormat: QuizAnswerFormat.WORD_BUTTON,
+    quizDescription: "sequence_to_word",
+    questionPrompt: "What word is being performed?",
+  },
 };
 
 /**
@@ -85,6 +94,12 @@ export const LESSON_INFO: QuizInfo[] = [
     name: "Quiz 3",
     description: "Choose the pictograph that logically follows",
     lessonType: QuizType.VALID_NEXT_PICTOGRAPH,
+  },
+  {
+    id: "lesson-4",
+    name: "Quiz 4",
+    description: "Watch the 3D performer and identify the word",
+    lessonType: QuizType.SEQUENCE_TO_WORD,
   },
 ];
 
@@ -112,4 +127,5 @@ export const LESSON_TYPE_NAMES: Record<QuizType, string> = {
   [QuizType.PICTOGRAPH_TO_LETTER]: "Pictograph to Letter",
   [QuizType.LETTER_TO_PICTOGRAPH]: "Letter to Pictograph",
   [QuizType.VALID_NEXT_PICTOGRAPH]: "Valid Next Pictograph",
+  [QuizType.SEQUENCE_TO_WORD]: "Read the Performer",
 };
