@@ -132,7 +132,14 @@ The fallback `vec3(0.0, 0.0, 1.0)` (forward direction) is a safe default — a f
 - All boids steering normalization (`normalize(sepDir)`, `normalize(cohDir)`, etc.)
 
 **Apply to all call sites in `fish-behavior-shader.ts`:**
-- Same pattern for any `normalize()` on vectors that could be zero (e.g., relative position between fish)
+The behavior shader has **5 unguarded `normalize()` calls** — more dangerous than the velocity shader's `+0.001` pattern because they have NO guard at all:
+- Line 52: `normalize(pos - uScatterOrigin)` — NaN if fish is exactly at scatter origin
+- Line 68: `normalize(toNeighbor)` — NaN if two fish at same position (d < 0.001 guard helps but float precision can slip through)
+- Line 77: `normalize(pos - op)` — flee direction, same risk
+- Line 85: `normalize(op - pos)` — hunt direction, same risk
+- Line 103: `normalize(op - pos)` — territorial aggression direction, same risk
+
+All must use `safeNormalize()`.
 
 **Also add NaN guard in the position shader** (not just velocity). Since `posData.xyz += vel * dt` propagates NaN from either source, the position shader needs its own check:
 
@@ -187,17 +194,18 @@ This makes drag behavior frame-rate independent AND tunable via a single paramet
 
 **This permanently decouples speed from size.** Any future `targetSize` change maintains correct visual speed because the ratio is baked into the shader.
 
-### 3. Spatial hash grid for boids neighbors
+### 3. Spatial hash grid for boids neighbors (P3 — future, not blocking)
 
-**Problem:** The current stride-stepping approach samples every Nth fish by texture index:
+**Problem:** The current boids loop is a full N^2 iteration over every texel:
 
 ```glsl
-float step = max(1.0, resolution.x / 8.0);
-for (float y = 0.0; y < resolution.y; y += step) {
-  for (float x = 0.0; x < resolution.x; x += step) {
+for (float y = 0.0; y < resolution.y; y += 1.0) {
+  for (float x = 0.0; x < resolution.x; x += 1.0) {
 ```
 
-This produces biologically wrong neighbor selection — fish at index 0 "sees" fish at indices 8, 16, 24, etc., regardless of spatial distance. Two fish swimming side-by-side might never register as neighbors if their indices aren't stride-aligned. The boids rules (separation, alignment, cohesion) operate on the wrong neighbor set, producing uncorrelated motion instead of schooling.
+At the current resident fish count (~87 fish, texSize 14, 196 iterations per fragment), this is NOT a performance bottleneck — 196 iterations is trivial for any modern GPU. However, it checks every fish regardless of spatial distance, relying on the `d > uAliDist * 1.5` early-out to skip distant neighbors. This works but scales poorly if fish count increases significantly.
+
+An interim optimization is stride-stepping (`step = max(1.0, resolution.x / 8.0)`), but this samples by texture index not spatial proximity — two fish swimming side-by-side might never see each other if their indices aren't stride-aligned.
 
 **Solution:** Spatial hash grid via an extra GPGPU pass. This is the technique ABZU's enhanced boids system uses (source: ABZU GDC 2016, "Beautiful Rendering and Amazing Animals"):
 
@@ -226,28 +234,30 @@ This reduces neighbor search from O(N^2) to O(N * K) where K is the max fish per
 
 **Future path:** WebGPU compute shaders (already in project backlog as "WebGPU renderer migration") would enable true atomics and make this a straightforward compute dispatch. The spatial hash grid designed here translates directly to a WebGPU compute implementation.
 
-### 4. Amplitude-speed coupling in vertex animation
+### 4. Strengthen amplitude-speed coupling in vertex animation
 
-**Problem:** The vertex shader applies body undulation (tail wag) at constant amplitude regardless of swim speed. A stationary fish wiggles its tail at full amplitude — the single most visually jarring artifact in fish simulations. Real fish modulate both frequency and amplitude with speed. This is immediately noticeable and breaks immersion even when all other systems work correctly.
+**Problem:** The vertex shader already couples undulation to speed, but the floor is too high. Current code (`fish-shaders.ts:409-416`):
+
+```glsl
+float speedMult = length(fishVel) / max(uMaxSpeed * 0.5, 0.001);
+float freq = uSwimFreq * (0.8 + speedMult * 0.4);           // floor: 80% freq at zero speed
+float bodyAmp = uBaseAmplitude * stiffMask * (0.7 + 0.3 * speedMult);  // floor: 70% amplitude at zero speed
+```
+
+At zero speed, amplitude is still 70% of max and frequency 80%. A stationary fish wiggles nearly as hard as a cruising one. Real fish modulate both amplitude and frequency proportionally to speed — idle fish barely move their tails.
 
 Source: ABZU GDC talk (procedural fish animation), albertomelladoc Fish-Animation shader on GitHub, PNAS 2021 undulatory swimming kinematics.
 
-**Solution:** In `renderVertexShader`, read velocity magnitude from the `tVelocity` texture and modulate swim parameters:
+**Solution:** Lower the floors. `tVelocity` is already passed to the render material (line 367) and read at line 391 — no new uniform needed. Change the coupling:
 
 ```glsl
-// Read velocity from GPGPU texture
-vec4 velData = texture2D(tVelocity, fishUV);
-float speed = length(velData.xyz);
-float speedRatio = clamp(speed / uMaxSpeed, 0.3, 1.0);
-
-// Modulate swim animation
-float effectiveFreq = uSwimFreq * mix(0.5, 1.0, speedRatio);
-float effectiveAmplitude = uBaseAmplitude * speedRatio;
+float speedMult = length(fishVel) / max(uMaxSpeed * 0.5, 0.001);
+float speedRatio = clamp(speedMult, 0.3, 1.0);
+float freq = uSwimFreq * mix(0.5, 1.0, speedRatio);           // floor: 50% freq at zero speed
+float bodyAmp = uBaseAmplitude * stiffMask * speedRatio;        // floor: 30% amplitude at zero speed
 ```
 
-The `0.3` floor on `speedRatio` prevents fully dead animation at zero speed — a slowly hovering fish should have minimal fin movement. The `mix(0.5, 1.0, speedRatio)` on frequency means idle fish undulate at half-frequency (lazy drift), while bursting fish undulate at full speed.
-
-This requires passing `tVelocity` as an additional uniform to the render material, alongside the existing `tPosition` texture.
+The `0.3` floor prevents fully dead animation — a hovering fish should have minimal fin movement. But 30% is visually "gentle drift", not the current 70% which is nearly full motion.
 
 ### 5. GPU init failure fallback
 
@@ -309,18 +319,18 @@ function initCPUFallback() {
 
 ### Always: fix existing issues
 
-**A. Cap the N^2 boids loop (if `gpu.init()` fails on capable hardware)**
+**A. Cap the N^2 boids loop (only if `gpu.init()` fails on capable hardware)**
 
 **File:** `fish-shaders.ts` velocity shader, lines 187-217
 
-Replace the full resolution loop with a capped 64-neighbor sample (this is the pre-spatial-hash interim fix):
+Current loop iterates all 196 texels (14x14 texture). At this fish count, 196 iterations is fine for modern GPUs. Only apply stride-stepping as a fallback if shader compilation fails due to loop limits on weaker GPUs:
 ```glsl
 float step = max(1.0, resolution.x / 8.0);
 for (float y = 0.0; y < resolution.y; y += step) {
   for (float x = 0.0; x < resolution.x; x += step) {
 ```
 
-This reduces the loop from 196 iterations to ~64, well within GPU limits. Also apply the same change to the state shader (`fish-behavior-shader.ts` lines 57-108).
+This reduces iterations from 196 to ~64. Also apply to the state shader (`fish-behavior-shader.ts` lines 57-108) which has the same full N^2 pattern.
 
 **B. Pass the missing `rayPosition` prop**
 
@@ -335,10 +345,10 @@ Add `rayPosition` pass-through to FishSchool so scatter behavior works. The curr
 | P0 | `gpu.init()` logging + fallback | Without this, we can't diagnose anything; fallback prevents zero-fish on weak GPUs |
 | P0 | `safeNormalize()` everywhere | NaN propagation is silent and permanent; one corrupted fish never recovers |
 | P0 | BL/s speed normalization | Root cause of the "frozen fish at targetSize 0.7" problem; fixes the actual bug |
-| P1 | Amplitude-speed coupling | Most visually jarring artifact after motion is restored; cheap to implement |
+| P1 | Strengthen amplitude-speed coupling (lower 0.7 floor to 0.3) | Existing coupling too weak; cheap 2-line change |
 | P1 | Drag coefficient fix (half-speed time) | Frame-rate independent, physically derived, replaces magic number |
-| P2 | Spatial hash grid | Correct boids behavior; significant implementation effort but required for biological accuracy |
 | P2 | `rayPosition` prop | Low-impact but trivial to fix |
+| P3 | Spatial hash grid | Correct neighbor selection; but N^2 at 196 iterations is fine for current ~87 fish count. Future work. |
 
 ## Relationship to Existing Specs
 
