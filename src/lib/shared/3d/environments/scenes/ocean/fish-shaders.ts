@@ -1,4 +1,5 @@
 const MAX_SPECIES = 50;
+const MAX_SDF_STRUCTURES = 4;
 
 const NOISE_GLSL = /* glsl */ `
 vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
@@ -59,6 +60,18 @@ vec3 curlNoise(vec3 p) {
 }
 `;
 
+const SAFE_NORMALIZE_GLSL = /* glsl */ `
+vec3 safeNormalize(vec3 v) {
+  float l = length(v);
+  return l > 1e-6 ? v / l : vec3(0.0, 0.0, 1.0);
+}
+
+vec2 safeNormalize2(vec2 v) {
+  float l = length(v);
+  return l > 1e-6 ? v / l : vec2(0.0, 1.0);
+}
+`;
+
 export const velocityShader = /* glsl */ `
 uniform float uDelta;
 uniform float uTime;
@@ -96,7 +109,60 @@ uniform int uSpawnCount;
 uniform int uSpawnStartIdx;
 uniform vec4 uSpawnVelocities[64];
 
+// ── SDF obstacle avoidance uniforms ──────────────────────────────────
+uniform int uReefSDFCount;
+uniform sampler3D uReefSDF0;
+uniform sampler3D uReefSDF1;
+uniform sampler3D uReefSDF2;
+uniform sampler3D uReefSDF3;
+uniform mat4 uReefSDFInvMatrix0;
+uniform mat4 uReefSDFInvMatrix1;
+uniform mat4 uReefSDFInvMatrix2;
+uniform mat4 uReefSDFInvMatrix3;
+uniform float uReefAvoidDist;   // world-space distance at which avoidance kicks in
+uniform float uReefAvoidForce;  // strength of the avoidance push
+
 ${NOISE_GLSL}
+${SAFE_NORMALIZE_GLSL}
+
+// ── SDF sampling with tetrahedron gradient ──────────────────────────
+// Returns the signed distance from the SDF at the given world position.
+// Negative = inside mesh, positive = outside.
+float sampleSDF(sampler3D sdfTex, mat4 invMatrix, vec3 worldPos) {
+  vec3 uvw = (invMatrix * vec4(worldPos, 1.0)).xyz;
+  // If outside [0,1]³, the point is outside the SDF volume — return large positive
+  if (any(lessThan(uvw, vec3(0.0))) || any(greaterThan(uvw, vec3(1.0)))) {
+    return 999.0;
+  }
+  return texture(sdfTex, uvw).r;
+}
+
+// Compute the SDF gradient using the tetrahedron technique (4 taps).
+// Returns the normalized direction pointing away from the surface (outward).
+vec3 sdfGradient(sampler3D sdfTex, mat4 invMatrix, vec3 worldPos, float h) {
+  vec2 k = vec2(1.0, -1.0);
+  return normalize(
+    k.xyy * sampleSDF(sdfTex, invMatrix, worldPos + k.xyy * h) +
+    k.yyx * sampleSDF(sdfTex, invMatrix, worldPos + k.yyx * h) +
+    k.yxy * sampleSDF(sdfTex, invMatrix, worldPos + k.yxy * h) +
+    k.xxx * sampleSDF(sdfTex, invMatrix, worldPos + k.xxx * h)
+  );
+}
+
+// Compute avoidance force from a single SDF structure.
+// Returns a repulsion vector (zero if fish is far enough away).
+vec3 sdfAvoidance(sampler3D sdfTex, mat4 invMatrix, vec3 worldPos, float avoidDist, float force) {
+  float dist = sampleSDF(sdfTex, invMatrix, worldPos);
+  if (dist > avoidDist || dist > 998.0) return vec3(0.0);
+
+  // The closer to (or inside) the surface, the stronger the push
+  float strength = 1.0 - clamp(dist / avoidDist, 0.0, 1.0);
+  // Inside the mesh: extra strong push
+  if (dist < 0.0) strength = 1.0 + abs(dist) * 2.0;
+
+  vec3 grad = sdfGradient(sdfTex, invMatrix, worldPos, 0.3);
+  return grad * strength * strength * force;
+}
 
 void main() {
   int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);
@@ -129,7 +195,7 @@ void main() {
   float aliN = 0.0;
   float cohN = 0.0;
 
-  vec3 forward = length(vel) > 0.001 ? normalize(vel) : vec3(0.0, 0.0, 1.0);
+  vec3 forward = safeNormalize(vel);
 
   for (float y = 0.0; y < resolution.y; y += 1.0) {
     for (float x = 0.0; x < resolution.x; x += 1.0) {
@@ -142,14 +208,14 @@ void main() {
       float d = length(toNeighbor);
       if (d < 0.001 || d > uAliDist * 1.5) continue;
 
-      float cosAngle = dot(forward, normalize(toNeighbor));
+      float cosAngle = dot(forward, safeNormalize(toNeighbor));
       if (cosAngle < uPerceptionCos) continue;
 
       int neighborSpecies = int(floor(neighborPos.w));
       bool sameSpecies = (mySpecies == neighborSpecies);
 
       if (d < uSepDist) {
-        sep += normalize(pos - op) * (1.0 - d / uSepDist);
+        sep += safeNormalize(pos - op) * (1.0 - d / uSepDist);
         sepN += 1.0;
       }
       if (d < uAliDist && sameSpecies) {
@@ -165,16 +231,16 @@ void main() {
 
   vec3 steer = vec3(0.0);
 
-  if (sepN > 0.0) steer += normalize(sep / sepN) * 0.3;
+  if (sepN > 0.0) steer += safeNormalize(sep / sepN) * 0.3;
   if (aliN > 0.0) steer += (ali / aliN - vel) * 0.6 * socialMult;
-  if (cohN > 0.0) steer += normalize(coh / cohN - pos) * 0.8 * socialMult;
+  if (cohN > 0.0) steer += safeNormalize(coh / cohN - pos) * 0.8 * socialMult;
 
   if (mySpecies < ${MAX_SPECIES}) {
     vec3 toSchool = uSchoolCenters[mySpecies] - pos;
     float schoolDist = length(toSchool);
     if (schoolDist > uSchoolRadius) {
       float pull = (schoolDist - uSchoolRadius) / uSchoolRadius;
-      steer += normalize(toSchool) * pull * 0.5;
+      steer += safeNormalize(toSchool) * pull * 0.5;
     }
   }
 
@@ -186,7 +252,7 @@ void main() {
   float distXZ = length(pos.xz);
   if (distXZ > uBoundRadius * 0.6) {
     float t = (distXZ - uBoundRadius * 0.6) / (uBoundRadius * 0.4);
-    steer.xz += normalize(toCenter) * t * 1.5;
+    steer.xz += safeNormalize2(toCenter) * t * 1.5;
   }
 
   float minY = uGroundY + uHeightMin;
@@ -197,14 +263,28 @@ void main() {
   float avoidDist = (uStageRadius + 2.5) * (1.5 - boldness * 0.4);
   if (distXZ < avoidDist) {
     float pen = avoidDist - distXZ;
-    steer.xz += normalize(pos.xz + 0.001) * pen * 3.0;
+    steer.xz += safeNormalize2(pos.xz) * pen * 3.0;
   }
 
   float distToRay = distance(pos, uScatterOrigin);
   if (distToRay < uScatterRadius && uScatterForce > 0.0) {
-    vec3 away = normalize(pos - uScatterOrigin + vec3(0.001));
+    vec3 away = safeNormalize(pos - uScatterOrigin);
     float proximity = 1.0 - distToRay / uScatterRadius;
     steer += away * uScatterForce * proximity * proximity;
+  }
+
+  // ── SDF reef obstacle avoidance ──────────────────────────────────
+  if (uReefSDFCount > 0) {
+    steer += sdfAvoidance(uReefSDF0, uReefSDFInvMatrix0, pos, uReefAvoidDist, uReefAvoidForce);
+  }
+  if (uReefSDFCount > 1) {
+    steer += sdfAvoidance(uReefSDF1, uReefSDFInvMatrix1, pos, uReefAvoidDist, uReefAvoidForce);
+  }
+  if (uReefSDFCount > 2) {
+    steer += sdfAvoidance(uReefSDF2, uReefSDFInvMatrix2, pos, uReefAvoidDist, uReefAvoidForce);
+  }
+  if (uReefSDFCount > 3) {
+    steer += sdfAvoidance(uReefSDF3, uReefSDFInvMatrix3, pos, uReefAvoidDist, uReefAvoidForce);
   }
 
   float adjMax = uMaxSpeed * speedMult;
@@ -215,11 +295,11 @@ void main() {
   vec3 threatDir = vec3(stateData.z, 0.0, stateData.w);
 
   if (state > 0.5 && state < 1.5) {
-    steer = normalize(threatDir + vec3(0.001)) * 2.0 + sep * 0.3;
+    steer = safeNormalize(threatDir) * 2.0 + sep * 0.3;
     adjMax *= 2.0;
   }
   if (state > 1.5 && state < 2.5) {
-    steer = normalize(threatDir + vec3(0.001)) * 1.5;
+    steer = safeNormalize(threatDir) * 1.5;
     adjMax *= 1.5;
   }
   if (state > 2.5 && state < 3.5) {
@@ -231,9 +311,9 @@ void main() {
     vec3 home = uSchoolCenters[si];
     float dHome = distance(pos, home);
     if (dHome < uSchoolRadius) {
-      steer = normalize(threatDir + vec3(0.001)) * 1.5;
+      steer = safeNormalize(threatDir) * 1.5;
     } else {
-      steer = normalize(home - pos) * 1.0;
+      steer = safeNormalize(home - pos) * 1.0;
     }
   }
 
@@ -249,7 +329,7 @@ void main() {
   for (int i = 0; i < 8; i++) {
     if (i >= uDartCount) break;
     if (fishIdx == uDartIndices[i]) {
-      vel += normalize(vel + vec3(0.001)) * uDartStrength;
+      vel += safeNormalize(vel) * uDartStrength;
     }
   }
 
@@ -288,7 +368,22 @@ void main() {
   vec2 uv = gl_FragCoord.xy / resolution.xy;
   vec4 posData = texture2D(texturePosition, uv);
   vec3 vel = texture2D(textureVelocity, uv).xyz;
+
+  // NaN firewall: if velocity is NaN, zero it; if position is NaN, respawn
+  if (any(isnan(vel)) || any(isinf(vel))) vel = vec3(0.0);
   posData.xyz += vel * uDelta;
+
+  if (any(isnan(posData.xyz)) || any(isinf(posData.xyz))) {
+    float hash1 = fract(sin(uv.x * 12.9898 + uv.y * 78.233) * 43758.5453);
+    float hash2 = fract(sin(uv.x * 39.346 + uv.y * 11.135) * 43758.5453);
+    float hash3 = fract(sin(uv.x * 73.156 + uv.y * 29.984) * 43758.5453);
+    posData.xyz = vec3(
+      (hash1 - 0.5) * 20.0,
+      2.0 + hash2 * 5.0,
+      (hash3 - 0.5) * 20.0
+    );
+  }
+
   gl_FragColor = posData;
 }
 `;
@@ -316,6 +411,8 @@ varying vec3 vNormal;
 varying vec2 vUv;
 varying vec3 vWorldPos;
 
+${SAFE_NORMALIZE_GLSL}
+
 void main() {
   vec4 posData = texture2D(tPosition, aReference);
   vec3 fishPos = posData.xyz;
@@ -325,11 +422,11 @@ void main() {
   vec3 fishVel = velData.xyz;
   float instanceScale = velData.w;
 
-  vec3 forward = length(fishVel) > 0.001 ? normalize(fishVel) : vec3(0.0, 0.0, 1.0);
+  vec3 forward = safeNormalize(fishVel);
   vec3 worldUp = vec3(0.0, 1.0, 0.0);
   if (abs(dot(forward, worldUp)) > 0.99) worldUp = vec3(1.0, 0.0, 0.0);
 
-  vec3 right = normalize(cross(worldUp, forward));
+  vec3 right = safeNormalize(cross(worldUp, forward));
   vec3 up = cross(forward, right);
   mat3 rot = mat3(right, up, forward);
 
@@ -365,7 +462,7 @@ void main() {
 
   vec3 transformed = rot * (localPos * fishScale) + fishPos;
   vWorldPos = transformed;
-  vNormal = normalize(rot * normal);
+  vNormal = safeNormalize(rot * normal);
 
   gl_Position = projectionMatrix * viewMatrix * vec4(transformed, 1.0);
 }
