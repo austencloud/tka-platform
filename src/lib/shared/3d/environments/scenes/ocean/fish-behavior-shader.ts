@@ -19,6 +19,11 @@ uniform vec3 uSchoolCenters[50];
 uniform vec3 uScatterOrigin;
 uniform float uScatterRadius;
 
+vec3 safeNormalize(vec3 v) {
+  float l = length(v);
+  return l > 1e-6 ? v / l : vec3(0.0, 0.0, 1.0);
+}
+
 void main() {
   vec2 uv = gl_FragCoord.xy / resolution.xy;
   vec4 posData = texture2D(texturePosition, uv);
@@ -27,7 +32,7 @@ void main() {
 
   vec4 velData = texture2D(textureVelocity, uv);
   vec3 vel = velData.xyz;
-  vec3 forward = length(vel) > 0.001 ? normalize(vel) : vec3(0.0, 0.0, 1.0);
+  vec3 forward = safeNormalize(vel);
 
   vec4 stateData = texture2D(textureState, uv);
   float currentState = stateData.x;
@@ -49,7 +54,7 @@ void main() {
   if (rayDist < uScatterRadius && myTrophic != 0 && myTrophic != 5) {
     newState = 1.0;
     newTimer = 2.0;
-    vec3 awayFromRay = normalize(pos - uScatterOrigin);
+    vec3 awayFromRay = safeNormalize(pos - uScatterOrigin);
     threatDirX = awayFromRay.x;
     threatDirZ = awayFromRay.z;
   }
@@ -65,7 +70,7 @@ void main() {
       float d = length(toNeighbor);
       if (d < 0.001) continue;
 
-      float facing = dot(forward, normalize(toNeighbor));
+      float facing = dot(forward, safeNormalize(toNeighbor));
       if (facing < uPerceptionCos) continue;
 
       int neighborSpecies = int(floor(nPos.w));
@@ -74,7 +79,7 @@ void main() {
       if (d < uFleeRange && uThreatMatrix[myTrophic * 6 + neighborTrophic] > 0.5) {
         newState = 1.0;
         newTimer = 3.0;
-        vec3 away = normalize(pos - op);
+        vec3 away = safeNormalize(pos - op);
         threatDirX = away.x;
         threatDirZ = away.z;
       }
@@ -82,7 +87,7 @@ void main() {
       if (d < uHuntRange && facing > 0.7 && uHuntMatrix[myTrophic * 6 + neighborTrophic] > 0.5) {
         newState = 2.0;
         newTimer = 5.0;
-        vec3 toward = normalize(op - pos);
+        vec3 toward = safeNormalize(op - pos);
         threatDirX = toward.x;
         threatDirZ = toward.z;
       }
@@ -100,7 +105,7 @@ void main() {
       if (myTrophic == 4 && neighborSpecies != mySpecies && d < uHomeRadius) {
         newState = 6.0;
         newTimer = 2.0;
-        vec3 toward = normalize(op - pos);
+        vec3 toward = safeNormalize(op - pos);
         threatDirX = toward.x;
         threatDirZ = toward.z;
       }
