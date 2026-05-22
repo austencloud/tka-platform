@@ -492,6 +492,9 @@
   // ── Reef SDF data (passed from ReefStructures → FishSchool) ────────
   let reefSdfData = $state<ReefSDFData | null>(null);
 
+  // y=-999 keeps scatter origin off-screen until Mouse Scatter spec wires real intersection coords
+  let rayPosition = $state(new Vector3(0, -999, 0));
+
   let jellyfishOffsets = $state<{ dx: number; dy: number; dz: number; pulse: number }[]>([]);
   let jellyfishTime = $state(0);
   let animTime = 0;
@@ -1137,6 +1140,7 @@
     scatterRadius={activeConfig.fish.scatterRadius}
     perceptionAngle={activeConfig.fish.perceptionAngle}
     halfSpeedTime={activeConfig.fish.halfSpeedTime}
+    {rayPosition}
     {reefSdfData}
   />
 {/if}
