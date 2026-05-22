@@ -7,11 +7,12 @@
     TextureLoader,
     RepeatWrapping,
     PlaneGeometry,
+    Float32BufferAttribute,
     type Texture,
     type WebGLProgramParametersWithUniforms,
   } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
-  import { terrainHeightWithMounds } from "./terrain-height";
+  import { terrainHeightWithMounds, type MoundSource } from "./terrain-height";
 
   interface Props {
     color?: string;
@@ -20,6 +21,7 @@
     rippleIntensity?: number;
     stageRadius?: number;
     clearingRadius?: number;
+    moundSources?: MoundSource[];
   }
 
   let {
@@ -29,6 +31,7 @@
     rippleIntensity = 0.3,
     stageRadius = 3,
     clearingRadius = 7,
+    moundSources = [],
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
@@ -53,6 +56,8 @@
   const geometry = $derived.by(() => {
     const geo = new PlaneGeometry(size, size, SEGMENTS, SEGMENTS);
     const pos = geo.attributes.position!;
+    const proximityData = new Float32Array(pos.count);
+    const mounds = moundSources;
     for (let i = 0; i < pos.count; i++) {
       const lx = pos.getX(i);
       const ly = pos.getY(i);
@@ -60,9 +65,24 @@
       const wz = -ly;
       const h = terrainHeightWithMounds(wx, wz, stageRadius, clearingRadius);
       pos.setZ(i, h);
+
+      let prox = 0;
+      for (let m = 0; m < mounds.length; m++) {
+        const src = mounds[m]!;
+        const dx = wx - src.x;
+        const dz = wz - src.z;
+        const distSq = dx * dx + dz * dz;
+        const rSq = src.radius * src.radius;
+        if (distSq >= rSq) continue;
+        const t = Math.sqrt(distSq) / src.radius;
+        const w = 0.5 * (1.0 + Math.cos(Math.PI * t));
+        if (w > prox) prox = w;
+      }
+      proximityData[i] = prox;
     }
     pos.needsUpdate = true;
     geo.computeVertexNormals();
+    geo.setAttribute("aProximity", new Float32BufferAttribute(proximityData, 1));
     return geo;
   });
 
@@ -131,14 +151,16 @@
     shader.vertexShader = shader.vertexShader.replace(
       "#include <common>",
       `#include <common>
+      attribute float aProximity;
       varying vec3 vWorldPos;
+      varying float vProximity;
       `,
     );
-    // project_vertex always exists (unlike worldpos_vertex which is conditional)
     shader.vertexShader = shader.vertexShader.replace(
       "#include <project_vertex>",
       `#include <project_vertex>
       vWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+      vProximity = aProximity;
       `,
     );
 
@@ -155,6 +177,7 @@
       uniform sampler2D uSandAo;
       uniform float uTexRepeat;
       varying vec3 vWorldPos;
+      varying float vProximity;
       ${noiseGlsl}
       `,
     );
@@ -199,6 +222,10 @@
       float bioMask = smoothstep(0.55, 0.7, seaNoise(wp * 0.5 + 23.0));
       tintedSand = mix(tintedSand, tintedSand * 0.82 + vec3(0.02, 0.01, 0.0), bioMask * 0.4);
 
+      // Contact darkening near objects (sediment shadow + organic tint)
+      vec3 sedimentDark = tintedSand * 0.45 + vec3(0.02, 0.03, 0.01);
+      tintedSand = mix(tintedSand, sedimentDark, vProximity);
+
       diffuseColor = vec4(clamp(tintedSand, 0.0, 1.0), 1.0);
       `,
     );
@@ -234,6 +261,13 @@
       float ripplePhase = dot(wp, rippleDir) * 14.0 + seaNoise(wp * 0.25) * 4.0;
       float rippleVal = cos(ripplePhase) * rippleStrength * 0.06;
       normal = normalize(normal + vec3(rippleDir.x * rippleVal, 0.0, rippleDir.y * rippleVal));
+
+      // Fine detail normals (distance-faded — visible only near camera)
+      float detailFade = 1.0 - smoothstep(5.0, 12.0, length(wp));
+      vec2 detailUv = wp * 3.0;
+      float ddx = seaNoise(detailUv + vec2(0.05, 0.0)) - seaNoise(detailUv - vec2(0.05, 0.0));
+      float ddz = seaNoise(detailUv + vec2(0.0, 0.05)) - seaNoise(detailUv - vec2(0.0, 0.05));
+      normal = normalize(normal + vec3(ddx, 0.0, ddz) * 0.08 * detailFade);
       `,
     );
 
@@ -245,6 +279,7 @@
       vec2 rTexUv = vWorldPos.xz * uTexRepeat / 50.0;
       float texRough = texture2D(uSandRoughness, rTexUv).r;
       roughnessFactor = mix(0.6, 0.85, texRough);
+      roughnessFactor = mix(roughnessFactor, 0.35, vProximity * 0.6);
       `,
     );
 

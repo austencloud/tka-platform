@@ -465,9 +465,8 @@
   const decorationPlacements = $derived(scenePlacements.decorations as DecoPlacement[]);
 
   // ── Sediment Mounding ─────────────────────────────────────────────────
-  // Feed object positions into terrain height so geometry rises around bases.
-  // Only large objects get mounds — small scatter and decorations don't.
-  $effect(() => {
+  // $derived so ProceduralSeabed can react to mound changes via prop.
+  const moundSources = $derived.by(() => {
     const mounds: MoundSource[] = [];
     for (const p of scenePlacements.heroRocks) {
       mounds.push({ x: p.x, z: p.z, radius: p.scale * 2.0, height: p.scale * 0.35 });
@@ -483,7 +482,11 @@
       if (p.scale < 0.4) continue;
       mounds.push({ x: p.x, z: p.z, radius: p.scale * 0.8, height: p.scale * 0.12 });
     }
-    setMoundSources(mounds);
+    return mounds;
+  });
+
+  $effect(() => {
+    setMoundSources(moundSources);
   });
 
   // ── Reef SDF data (passed from ReefStructures → FishSchool) ────────
@@ -1023,6 +1026,7 @@
   size={activeConfig.ground.size}
   stageRadius={zones.stageRadius}
   clearingRadius={zones.clearingRadius}
+  {moundSources}
 />
 
 <!-- Water surface shimmer -->
