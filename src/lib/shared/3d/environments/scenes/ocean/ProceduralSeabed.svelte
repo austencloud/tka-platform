@@ -189,11 +189,15 @@
       float tempShift = seaNoise(wp * 0.06) * 2.0 - 1.0;
       tintedSand += vec3(0.03, -0.01, -0.03) * tempShift;
 
-      // Procedural ripple overlay
+      // Procedural ripple overlay (color)
       float warp = seaNoise(wp * 0.4) * 2.5;
       float ridges = sin(wp.x * 5.0 + warp) * 0.5 + 0.5;
       ridges *= smoothstep(0.2, 0.8, sin(wp.y * 3.0 + seaNoise(wp * 0.3) * 4.0) * 0.5 + 0.5);
       tintedSand += uRippleColor * ridges * 0.06;
+
+      // Bioturbation: organism-disturbed sediment patches
+      float bioMask = smoothstep(0.55, 0.7, seaNoise(wp * 0.5 + 23.0));
+      tintedSand = mix(tintedSand, tintedSand * 0.82 + vec3(0.02, 0.01, 0.0), bioMask * 0.4);
 
       diffuseColor = vec4(clamp(tintedSand, 0.0, 1.0), 1.0);
       `,
@@ -216,6 +220,20 @@
       mat3 TBN = mat3(T, B, surfN);
 
       normal = normalize(TBN * texNorm);
+
+      // Grain normal micro-perturbation (Journey sand technique)
+      vec2 grainUv = wp * 8.0;
+      float gx = seaNoise(grainUv + vec2(0.13, 0.0)) - seaNoise(grainUv - vec2(0.13, 0.0));
+      float gz = seaNoise(grainUv + vec2(0.0, 0.13)) - seaNoise(grainUv - vec2(0.0, 0.13));
+      normal = normalize(normal + vec3(gx, 0.0, gz) * 0.12);
+
+      // Slope-aware sand ripples (flat areas only, perpendicular to current)
+      float slopeFlat = dot(surfN, vec3(0.0, 1.0, 0.0));
+      float rippleStrength = smoothstep(0.7, 0.95, slopeFlat);
+      vec2 rippleDir = vec2(0.766, 0.643);
+      float ripplePhase = dot(wp, rippleDir) * 14.0 + seaNoise(wp * 0.25) * 4.0;
+      float rippleVal = cos(ripplePhase) * rippleStrength * 0.06;
+      normal = normalize(normal + vec3(rippleDir.x * rippleVal, 0.0, rippleDir.y * rippleVal));
       `,
     );
 
@@ -245,8 +263,8 @@
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <opaque_fragment>",
       `
-      // Animated Voronoi caustics (sharpened per research: pow 4.0)
-      vec2 cwp = vWorldPos.xz;
+      // Caustic UV offset by terrain normal (follows surface contour on slopes)
+      vec2 cwp = vWorldPos.xz + surfN.xz * 0.5;
       float causticTime = uTime * 6.0;
       float c1 = voronoiCaustic(cwp * 0.6, causticTime);
       float c2 = voronoiCaustic(cwp * 0.78 + 3.7, causticTime * 1.1);
@@ -254,8 +272,21 @@
       caustic = clamp(caustic, 0.0, 1.0);
       outgoingLight += vec3(0.55, 0.85, 0.75) * caustic * 0.35;
 
+      // Wet sand sparkle (Journey grain specular technique)
+      vec3 viewDir = normalize(cameraPosition - vWorldPos);
+      vec2 sparkleUv = wp * 30.0;
+      vec3 sparkleNorm = normalize(normal + vec3(
+        seaNoise(sparkleUv) * 2.0 - 1.0,
+        0.5,
+        seaNoise(sparkleUv + 77.7) * 2.0 - 1.0
+      ) * 0.4);
+      float sparkleDot = max(dot(reflect(-viewDir, sparkleNorm), normalize(vec3(0.3, 1.0, 0.2))), 0.0);
+      float sparkle = pow(sparkleDot, 80.0);
+      float sparkleMask = step(0.92, seaNoise(wp * 20.0));
+      outgoingLight += vec3(0.5, 0.7, 0.6) * sparkle * sparkleMask * 0.4;
+
       // Per-channel depth absorption (Quilez technique: red dies first)
-      float fogDist = length(cwp);
+      float fogDist = length(vWorldPos.xz);
       vec3 absorption = exp(-vec3(0.08, 0.04, 0.02) * fogDist);
       outgoingLight *= absorption;
 
