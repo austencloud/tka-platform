@@ -441,13 +441,14 @@ void main() {
   float dorsalMask = max(localPos.y, 0.0);
 
   float speedMult = length(fishVel) / max(uMaxSpeed * 0.5, 0.001);
+  float speedRatio = clamp(speedMult, 0.0, 2.0);
   float perInstanceJitter = aReference.x * 2.0;
-  float freq = uSwimFreq * (0.8 + speedMult * 0.4) + perInstanceJitter;
+  float freq = uSwimFreq * mix(0.4, 1.0, min(speedRatio, 1.0)) + perInstanceJitter;
   float phase = uTime * freq + localPos.z * uWaveK;
 
   float envelope = pow(max(spineMask, 0.001), uAmpExponent);
   float stiffMask = mix(1.0, envelope, uStiffness);
-  float bodyAmp = uBaseAmplitude * stiffMask * (0.7 + 0.3 * speedMult);
+  float bodyAmp = uBaseAmplitude * stiffMask * max(speedRatio, 0.15);
 
   localPos.x += sin(phase) * bodyAmp;
   localPos.x += sin(uTime * freq * 0.5) * uStrideAmp;
