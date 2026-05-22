@@ -38,7 +38,7 @@
 
   const loader = new TextureLoader();
   const TEX_REPEAT = 14;
-  const SEGMENTS = 128;
+  const SEGMENTS = 192;
 
   function loadTex(path: string): Texture {
     const tex = loader.load(path);
@@ -146,6 +146,7 @@
     shader.uniforms.uSandRoughness = { value: sandRoughness };
     shader.uniforms.uSandAo = { value: sandAo };
     shader.uniforms.uTexRepeat = { value: TEX_REPEAT };
+    shader.uniforms.uFogColor = { value: new Color("#1a5580") };
 
     // ── Vertex: pass world position to fragment ─────────────────────
     shader.vertexShader = shader.vertexShader.replace(
@@ -176,6 +177,7 @@
       uniform sampler2D uSandRoughness;
       uniform sampler2D uSandAo;
       uniform float uTexRepeat;
+      uniform vec3 uFogColor;
       varying vec3 vWorldPos;
       varying float vProximity;
       ${noiseGlsl}
@@ -325,9 +327,9 @@
       vec3 absorption = exp(-vec3(0.08, 0.04, 0.02) * fogDist);
       outgoingLight *= absorption;
 
-      // Fade to deep water color at distance
-      float distFade = smoothstep(20.0, 35.0, fogDist);
-      outgoingLight = mix(outgoingLight, uBaseColor * 0.15, distFade);
+      // Fade to terminal fog color at distance (converges with scene fog + sky bottom)
+      float distFade = smoothstep(30.0, 55.0, fogDist);
+      outgoingLight = mix(outgoingLight, uFogColor, distFade);
 
       gl_FragColor = vec4(outgoingLight, diffuseColor.a);
       `,

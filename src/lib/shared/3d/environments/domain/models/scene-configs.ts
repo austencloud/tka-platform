@@ -913,12 +913,12 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
     sky: {
       topColor: "#0a2050",
       midColor: "#2070a0",
-      bottomColor: "#105078",
+      bottomColor: "#1a5580",
     },
-    fog: { color: "#1a5580", density: 0.022 },
+    fog: { color: "#1a5580", density: 0.035 },
     ground: {
       color: "#5a8898",
-      size: 50,
+      size: 120,
       textured: false,
       opacity: 1,
     },
