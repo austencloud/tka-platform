@@ -5,6 +5,7 @@
  * Implements the logic from the legacy desktop app with modern TypeScript patterns.
  */
 
+import * as SequenceQuestionGenerator from "./sequence-question-generator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
@@ -87,6 +88,8 @@ export async function generateQuestion(quizType: QuizType): Promise<QuizQuestion
       return generateLetterToPictographQuestion(questionId);
     case QuizType.VALID_NEXT_PICTOGRAPH:
       return generateValidNextPictographQuestion(questionId);
+    case QuizType.SEQUENCE_TO_WORD:
+      return SequenceQuestionGenerator.generateSequenceToWordQuestion(questionId);
     default:
       throw new Error(`Unsupported quiz type: ${quizType}`);
   }
