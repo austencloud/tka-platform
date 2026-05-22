@@ -5,14 +5,21 @@
     ShaderMaterial,
     Color,
     Vector3,
+    Matrix4,
+    Object3D,
     InstancedBufferAttribute,
     DoubleSide,
     DataTexture,
+    Data3DTexture,
     FloatType,
+    HalfFloatType,
+    RedFormat,
     RGBAFormat,
+    LinearFilter,
     type BufferGeometry,
     type Texture,
   } from 'three';
+  import type { ReefSDFData } from './ReefStructures.svelte';
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
   import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
   import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
@@ -35,6 +42,7 @@
     perceptionAngle?: number;
     rayPosition?: Vector3;
     modelBasePath?: string;
+    reefSdfData?: ReefSDFData | null;
   }
 
   let {
@@ -48,6 +56,7 @@
     perceptionAngle = 135,
     rayPosition = new Vector3(0, 0, 0),
     modelBasePath = '/models/ocean/pack/',
+    reefSdfData = null,
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
@@ -119,7 +128,114 @@
     };
   }
 
+  function initCPUFallback(
+    loadedResults: { species: FishSpeciesConfig; model: ExtractedModel }[],
+    gy: number,
+  ) {
+    const FALLBACK_COUNT = 20;
+    const firstModel = loadedResults[0]?.model;
+    if (!firstModel) return;
+
+    const geo = firstModel.geometry.clone();
+    const mat = new ShaderMaterial({
+      uniforms: {
+        tPosition: { value: null },
+        tVelocity: { value: null },
+        uSize: { value: targetSize * 0.5 },
+        uTime: { value: 0 },
+        uMaxSpeed: { value: 1.0 },
+        ...getLocoUniforms(LocomotionMode.Carangiform),
+        tAlbedo: { value: firstModel.diffuseMap },
+        uFallbackColor: { value: new Color('#5599bb') },
+        uHasTexture: { value: firstModel.diffuseMap ? 1.0 : 0.0 },
+        uLightDir: { value: new Vector3(0.3, 1.0, 0.2).normalize() },
+        uAmbient: { value: 0.55 },
+        uRoughness: { value: 0.5 },
+        uFogColor: { value: new Color('#1a3040') },
+        uFogNear: { value: 15 },
+        uFogFar: { value: 25 },
+      },
+      vertexShader: renderVertexShader,
+      fragmentShader: renderFragmentShader,
+      side: DoubleSide,
+    });
+
+    const mesh = new InstancedMesh(geo, mat, FALLBACK_COUNT);
+    mesh.frustumCulled = false;
+
+    const dummy = new Object3D();
+    const paths = Array.from({ length: FALLBACK_COUNT }, (_, i) => ({
+      radius: 8 + Math.random() * 10,
+      height: gy + 2 + Math.random() * 4,
+      speed: 0.15 + Math.random() * 0.25,
+      phase: (i / FALLBACK_COUNT) * Math.PI * 2,
+      yOsc: 0.3 + Math.random() * 0.5,
+      yFreq: 0.2 + Math.random() * 0.3,
+    }));
+
+    for (let i = 0; i < FALLBACK_COUNT; i++) {
+      const p = paths[i]!;
+      const angle = p.phase;
+      dummy.position.set(
+        Math.cos(angle) * p.radius,
+        p.height,
+        Math.sin(angle) * p.radius,
+      );
+      dummy.lookAt(
+        Math.cos(angle + 0.1) * p.radius,
+        p.height,
+        Math.sin(angle + 0.1) * p.radius,
+      );
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+
+    fallbackMeshes = [mesh];
+
+    let fbElapsed = 0;
+    useTask((delta) => {
+      fbElapsed += delta;
+      mat.uniforms.uTime!.value = fbElapsed;
+      for (let i = 0; i < FALLBACK_COUNT; i++) {
+        const p = paths[i]!;
+        const angle = fbElapsed * p.speed + p.phase;
+        const x = Math.cos(angle) * p.radius;
+        const z = Math.sin(angle) * p.radius;
+        const y = p.height + Math.sin(fbElapsed * p.yFreq) * p.yOsc;
+        dummy.position.set(x, y, z);
+        const nextAngle = angle + 0.1;
+        dummy.lookAt(
+          Math.cos(nextAngle) * p.radius,
+          y,
+          Math.sin(nextAngle) * p.radius,
+        );
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+    });
+  }
+
+  /** Create a minimal 1x1x1 Data3DTexture with value 999 (far outside) */
+  function createPlaceholder3DTexture(): Data3DTexture {
+    const data = new Uint16Array(1);
+    // HalfFloat encoding of 999.0 — approximate, but any large positive works
+    // For simplicity we encode a large value; the shader checks dist > 998
+    data[0] = 0x63E7; // ~999 in half-float
+    const tex = new Data3DTexture(data, 1, 1, 1);
+    tex.format = RedFormat;
+    tex.type = HalfFloatType;
+    tex.minFilter = LinearFilter;
+    tex.magFilter = LinearFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
   let meshes = $state<InstancedMesh[]>([]);
+  let gpuFailed = $state(false);
+  let fallbackMeshes = $state<InstancedMesh[]>([]);
   let gpuCompute: GPUComputationRenderer | null = null;
   let posVar: any = null;
   let velVar: any = null;
@@ -148,7 +264,8 @@
 
   $effect(() => {
     const gy = groundY;
-    if (!renderer) return;
+    const gl = (renderer as any)?.current ?? renderer;
+    if (!gl) return;
 
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
@@ -188,7 +305,7 @@
       const loaded = results.filter((r) => r.model !== null);
       if (loaded.length === 0) return;
 
-      const gpu = new GPUComputationRenderer(texSize, texSize, renderer);
+      const gpu = new GPUComputationRenderer(texSize, texSize, gl);
       const posTex = gpu.createTexture();
       const velTex = gpu.createTexture();
       const posArr = posTex.image.data as Float32Array;
@@ -320,6 +437,24 @@
       velU.uExcursionIndices = { value: new Int32Array(4).fill(-1) };
       velU.uExcursionBias = { value: new Float32Array(4) };
 
+      // SDF obstacle avoidance uniforms — start with zero structures,
+      // populated reactively when reefSdfData becomes available
+      velU.uReefSDFCount = { value: 0 };
+      velU.uReefAvoidDist = { value: 3.0 };
+      velU.uReefAvoidForce = { value: 4.0 };
+
+      // Placeholder 1x1x1 3D textures for unused SDF slots (avoids WebGL errors)
+      const placeholderSDF = createPlaceholder3DTexture();
+      const identityMat = new Matrix4();
+      velU.uReefSDF0 = { value: placeholderSDF };
+      velU.uReefSDF1 = { value: placeholderSDF };
+      velU.uReefSDF2 = { value: placeholderSDF };
+      velU.uReefSDF3 = { value: placeholderSDF };
+      velU.uReefSDFInvMatrix0 = { value: identityMat.clone() };
+      velU.uReefSDFInvMatrix1 = { value: identityMat.clone() };
+      velU.uReefSDFInvMatrix2 = { value: identityMat.clone() };
+      velU.uReefSDFInvMatrix3 = { value: identityMat.clone() };
+
       const posU = posVar.material.uniforms;
       posU.uDelta = { value: 0 };
       posU.uSpawnCount = { value: 0 };
@@ -353,7 +488,15 @@
       stU.uScatterRadius = { value: scatterRadius };
 
       const err = gpu.init();
-      if (err !== null) return;
+      if (err !== null) {
+        console.error('[FishSchool] GPUComputationRenderer init failed:', err);
+        gpuFailed = true;
+        const validResults = loaded
+          .filter((r): r is { species: FishSpeciesConfig; model: ExtractedModel } => r.model !== null);
+        initCPUFallback(validResults, gy);
+        return;
+      }
+      console.log('[FishSchool] GPU init OK —', loaded.length, 'species,', spawnOffset, 'fish, texSize', localTexSize);
 
       const createdMeshes: InstancedMesh[] = [];
       const createdMaterials: ShaderMaterial[] = [];
@@ -434,6 +577,13 @@
 
     return () => {
       cancelled = true;
+      for (const m of fallbackMeshes) {
+        (m.material as ShaderMaterial).dispose();
+        m.geometry.dispose();
+        m.dispose();
+      }
+      fallbackMeshes = [];
+      gpuFailed = false;
       if (gpuCompute) gpuCompute.dispose();
       storedTraitsData = null;
       eventSystem = null;
@@ -458,6 +608,29 @@
       velVar = null;
       stateVar = null;
     };
+  });
+
+  // ── Reactive SDF uniform update ─────────────────────────────────────
+  // When reefSdfData arrives (structures finished generating SDFs), bind
+  // the 3D textures and inverse matrices to the velocity compute shader.
+  $effect(() => {
+    if (!velVar || !reefSdfData) return;
+    const velU = velVar.material.uniforms;
+    const results = reefSdfData.results;
+    const count = Math.min(results.length, 4);
+
+    velU.uReefSDFCount.value = count;
+
+    const sdfKeys = ['uReefSDF0', 'uReefSDF1', 'uReefSDF2', 'uReefSDF3'] as const;
+    const matKeys = ['uReefSDFInvMatrix0', 'uReefSDFInvMatrix1', 'uReefSDFInvMatrix2', 'uReefSDFInvMatrix3'] as const;
+
+    for (let i = 0; i < count; i++) {
+      const r = results[i]!;
+      velU[sdfKeys[i]!].value = r.texture;
+      velU[matKeys[i]!].value = r.inverseMatrix;
+    }
+
+    console.log(`[FishSchool] Bound ${count} reef SDF textures to velocity shader`);
   });
 
   function createVisitorMesh(
@@ -605,7 +778,7 @@
       for (let si = 0; si < group.species.length; si++) {
         const idx = speciesIdx[si];
         if (idx !== undefined && idx < centers.length) {
-          centers[idx].set(entryX, gy + 4, entryZ);
+          centers[idx]!.set(entryX, gy + 4, entryZ);
         }
       }
 
@@ -718,5 +891,8 @@
 </script>
 
 {#each meshes as mesh (mesh.id)}
+  <T is={mesh} />
+{/each}
+{#each fallbackMeshes as mesh (mesh.id)}
   <T is={mesh} />
 {/each}
