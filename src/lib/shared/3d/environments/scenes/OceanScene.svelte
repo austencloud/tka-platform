@@ -1136,6 +1136,7 @@
     currentStrength={activeConfig.fish.currentStrength}
     scatterRadius={activeConfig.fish.scatterRadius}
     perceptionAngle={activeConfig.fish.perceptionAngle}
+    halfSpeedTime={activeConfig.fish.halfSpeedTime}
     {reefSdfData}
   />
 {/if}

@@ -345,6 +345,7 @@ export interface OceanSceneConfig {
     waveAmplitude: number;
     scatterRadius: number;
     perceptionAngle: number;
+    halfSpeedTime: number;
   };
 
   decorations: {
@@ -954,6 +955,7 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       waveAmplitude: 0.08,
       scatterRadius: 4.0,
       perceptionAngle: 135,
+      halfSpeedTime: 0.5,
     },
     decorations: {
       enabled: true,

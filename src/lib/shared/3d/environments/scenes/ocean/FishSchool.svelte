@@ -40,6 +40,7 @@
     currentStrength?: number;
     scatterRadius?: number;
     perceptionAngle?: number;
+    halfSpeedTime?: number;
     rayPosition?: Vector3;
     modelBasePath?: string;
     reefSdfData?: ReefSDFData | null;
@@ -54,6 +55,7 @@
     currentStrength = 0.3,
     scatterRadius = 4.0,
     perceptionAngle = 135,
+    halfSpeedTime = 0.5,
     rayPosition = new Vector3(0, 0, 0),
     modelBasePath = '/models/ocean/pack/',
     reefSdfData = null,
@@ -412,9 +414,11 @@
       velU.uDelta = { value: 0 };
       velU.uSepDist = { value: 0.8 };
       velU.uAliDist = { value: 4.0 };
-      velU.uMaxSpeed = { value: sMax * 2.0 };
+      velU.uMaxSpeed = { value: sMax };
       velU.uMinSpeed = { value: sMin };
       velU.uMaxSteer = { value: 0.1 };
+      velU.uTargetSize = { value: targetSize };
+      velU.uHalfSpeedTime = { value: halfSpeedTime };
       velU.uGroundY = { value: gy };
       velU.uHeightMin = { value: hMin };
       velU.uHeightMax = { value: hMax };
@@ -532,7 +536,7 @@
             tVelocity: { value: null },
             uSize: { value: targetSize * sp.sizeScale },
             uTime: { value: 0 },
-            uMaxSpeed: { value: sMax * 2.0 },
+            uMaxSpeed: { value: sMax },
             ...getLocoUniforms(sp.locomotionMode),
             tAlbedo: { value: diffuse },
             uFallbackColor: { value: new Color('#5599bb') },
@@ -660,7 +664,7 @@
         tVelocity: { value: gpuCompute ? gpuCompute.getCurrentRenderTarget(velVar).texture : null },
         uSize: { value: targetSize * sp.sizeScale },
         uTime: { value: 0 },
-        uMaxSpeed: { value: sMax * 2.0 },
+        uMaxSpeed: { value: sMax },
         ...getLocoUniforms(sp.locomotionMode),
         tAlbedo: { value: diffuse },
         uFallbackColor: { value: new Color('#5599bb') },

@@ -86,6 +86,8 @@ uniform float uStageRadius;
 uniform float uBoundRadius;
 uniform float uFishCount;
 uniform float uMaxSteer;
+uniform float uTargetSize;
+uniform float uHalfSpeedTime;
 uniform float uCurrentStrength;
 uniform float uPerceptionCos;
 uniform sampler2D tTraits;
@@ -287,8 +289,9 @@ void main() {
     steer += sdfAvoidance(uReefSDF3, uReefSDFInvMatrix3, pos, uReefAvoidDist, uReefAvoidForce);
   }
 
-  float adjMax = uMaxSpeed * speedMult;
-  float adjMin = uMinSpeed * speedMult;
+  float bodyLength = uTargetSize * instanceScale;
+  float adjMax = uMaxSpeed * speedMult * bodyLength;
+  float adjMin = uMinSpeed * speedMult * bodyLength;
 
   vec4 stateData = texture2D(textureState, uv);
   float state = stateData.x;
@@ -320,7 +323,8 @@ void main() {
   float steerLen = length(steer);
   if (steerLen > uMaxSteer) steer = steer / steerLen * uMaxSteer;
 
-  vel = vel * 0.94 + steer * uDelta;
+  float drag = pow(0.5, uDelta / max(uHalfSpeedTime, 0.01));
+  vel = vel * drag + steer * uDelta;
 
   float spd = length(vel);
   if (spd > adjMax) vel = vel / spd * adjMax;
