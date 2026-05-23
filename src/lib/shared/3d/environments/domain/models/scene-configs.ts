@@ -344,6 +344,9 @@ export interface OceanSceneConfig {
     swimFrequency: number;
     waveAmplitude: number;
     scatterRadius: number;
+    scatterForce: number;
+    scatterEnabled: boolean;
+    scatterWaveSpeed: number;
     perceptionAngle: number;
     halfSpeedTime: number;
   };
@@ -954,6 +957,9 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       swimFrequency: 5.0,
       waveAmplitude: 0.08,
       scatterRadius: 4.0,
+      scatterForce: 3.0,
+      scatterEnabled: true,
+      scatterWaveSpeed: 0.15,
       perceptionAngle: 135,
       halfSpeedTime: 0.5,
     },
