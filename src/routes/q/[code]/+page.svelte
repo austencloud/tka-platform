@@ -73,7 +73,7 @@
     | { kind: "rendering"; percent: number; phase: string; word: string }
     | { kind: "playing"; videoUrl: string; word: string; isFirstView: boolean };
 
-  let state = $state<PageState>({ kind: "loading" });
+  let state: PageState = $state({ kind: "loading" });
 
   let resolvedSeq: SequenceData | null = $state(null);
   let seqWord = $state("");
@@ -85,6 +85,9 @@
   let playbackRate = $state(1);
   let isScrubbing = $state(false);
   let selectedProp = $state(PropType.STAFF);
+  let bgRenderPercent = $state(-1);
+  let bgRenderPhase = $state("");
+  let activeWorker: Worker | null = null;
 
   const PROP_OPTIONS: { value: PropType; label: string }[] = [
     { value: PropType.STAFF, label: "Staff" },
@@ -268,7 +271,19 @@
     propOverride?: PropType,
     effectOverride?: EffectType,
   ): Promise<void> {
-    state = { kind: "rendering", percent: 0, phase: "loading-assets", word };
+    const isBackground = state.kind === "playing";
+
+    if (activeWorker) {
+      activeWorker.terminate();
+      activeWorker = null;
+    }
+
+    if (isBackground) {
+      bgRenderPercent = 0;
+      bgRenderPhase = "loading-assets";
+    } else {
+      state = { kind: "rendering", percent: 0, phase: "loading-assets", word };
+    }
 
     const blueProp =
       propOverride ??
@@ -281,7 +296,10 @@
 
     const frames = precomputeFrames(seq, blueProp, redProp, RENDER_FPS, 1, 2);
     if (frames.length === 0) {
-      state = { kind: "error", message: "Failed to compute animation frames" };
+      if (!isBackground) {
+        state = { kind: "error", message: "Failed to compute animation frames" };
+      }
+      bgRenderPercent = -1;
       return;
     }
 
@@ -323,6 +341,7 @@
       ),
       { type: "module" }
     );
+    activeWorker = worker;
 
     const msg: RenderRequest = {
       type: "render",
@@ -353,28 +372,45 @@
     worker.postMessage(msg, transferables);
 
     worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
+      if (activeWorker !== worker) return;
       const out = e.data;
       if (out.type === "progress") {
-        state = {
-          kind: "rendering",
-          percent: out.percent,
-          phase: out.phase,
-          word,
-        };
+        if (isBackground) {
+          bgRenderPercent = out.percent;
+          bgRenderPhase = out.phase;
+        } else {
+          state = {
+            kind: "rendering",
+            percent: out.percent,
+            phase: out.phase,
+            word,
+          };
+        }
       } else if (out.type === "complete") {
         const blob = new Blob([out.mp4], { type: "video/mp4" });
         const blobUrl = URL.createObjectURL(blob);
-        state = { kind: "playing", videoUrl: blobUrl, word, isFirstView: true };
+        state = { kind: "playing", videoUrl: blobUrl, word, isFirstView: !isBackground };
+        bgRenderPercent = -1;
+        activeWorker = null;
         worker.terminate();
         uploadToR2(hash, out.mp4);
       } else if (out.type === "error") {
-        state = { kind: "error", message: out.message };
+        if (!isBackground) {
+          state = { kind: "error", message: out.message };
+        }
+        bgRenderPercent = -1;
+        activeWorker = null;
         worker.terminate();
       }
     };
 
     worker.onerror = (err) => {
-      state = { kind: "error", message: err.message || "Worker crashed" };
+      if (activeWorker !== worker) return;
+      if (!isBackground) {
+        state = { kind: "error", message: err.message || "Worker crashed" };
+      }
+      bgRenderPercent = -1;
+      activeWorker = null;
       worker.terminate();
     };
   }
@@ -383,10 +419,23 @@
     paused = !paused;
   }
 
+  let wasPlayingBeforeScrub = false;
+
+  function startScrub() {
+    isScrubbing = true;
+    wasPlayingBeforeScrub = !paused;
+    if (videoEl && !paused) videoEl.pause();
+  }
+
   function handleScrub(e: Event) {
     const t = parseFloat((e.target as HTMLInputElement).value);
     displayTime = t;
     if (videoEl) videoEl.currentTime = t;
+  }
+
+  function endScrub() {
+    isScrubbing = false;
+    if (videoEl && wasPlayingBeforeScrub) videoEl.play();
   }
 
   async function handlePropChange(propType: PropType) {
@@ -569,109 +618,124 @@
         <p class="first-view-badge">First scan render complete!</p>
       {/if}
 
-      <!-- svelte-ignore a11y_media_has_caption -->
-      <video
-        bind:this={videoEl}
-        bind:paused
-        bind:duration
-        bind:playbackRate
-        class="sequence-video"
-        src={state.videoUrl}
-        autoplay
-        loop
-        muted
-        playsinline
-        ontimeupdate={() => {
-          if (!isScrubbing && videoEl) displayTime = videoEl.currentTime;
-        }}
-      ></video>
-
-      <div class="controls">
-        <button
-          type="button"
-          class="play-btn"
-          onclick={togglePlay}
-          aria-label={paused ? "Play" : "Pause"}
-        >
-          {#if paused}
-            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          {:else}
-            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-            </svg>
-          {/if}
-        </button>
-
-        <input
-          type="range"
-          class="scrubber"
-          min="0"
-          max={duration || 1}
-          step="0.01"
-          value={displayTime}
-          style="background: linear-gradient(to right, #6366f1 {scrubProgress}%, rgba(255,255,255,0.15) {scrubProgress}%)"
-          onpointerdown={() => (isScrubbing = true)}
-          oninput={handleScrub}
-          onpointerup={() => (isScrubbing = false)}
-          onchange={() => (isScrubbing = false)}
-        />
-
-        <span class="time-display">
-          {formatTime(displayTime)}/{formatTime(duration)}
-        </span>
+      <div class="video-wrapper">
+        <!-- svelte-ignore a11y_media_has_caption -->
+        <video
+          bind:this={videoEl}
+          bind:paused
+          bind:duration
+          bind:playbackRate
+          class="sequence-video"
+          src={state.videoUrl}
+          autoplay
+          loop
+          muted
+          playsinline
+          preload="auto"
+          ontimeupdate={() => {
+            if (!isScrubbing && videoEl) displayTime = videoEl.currentTime;
+          }}
+        ></video>
+        {#if bgRenderPercent >= 0}
+          <div class="bg-render-overlay">
+            <div class="bg-render-bar">
+              <div class="bg-render-fill" style:width="{bgRenderPercent}%"></div>
+            </div>
+            <span class="bg-render-label">
+              {bgRenderPhase === "loading-assets" ? "Loading..." : `Rendering ${bgRenderPercent}%`}
+            </span>
+          </div>
+        {/if}
       </div>
 
-      <div class="tempo-row">
-        <TempoControl
-          bpm={selectedBpm}
-          onBpmChange={handleBpmChange}
-          showPresets={false}
-          showPractice={false}
-          presetsMode="popover"
-        />
-      </div>
+      <div class="player-sidebar">
+        <div class="controls">
+          <button
+            type="button"
+            class="play-btn"
+            onclick={togglePlay}
+            aria-label={paused ? "Play" : "Pause"}
+          >
+            {#if paused}
+              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            {:else}
+              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+              </svg>
+            {/if}
+          </button>
 
-      <div class="prop-row">
-        <span class="row-label">Prop</span>
-        <div class="prop-pills">
-          {#each PROP_OPTIONS as opt}
-            <button
-              type="button"
-              class="prop-pill"
-              class:active={selectedProp === opt.value}
-              onclick={() => handlePropChange(opt.value)}
-            >
-              {opt.label}
-            </button>
-          {/each}
+          <input
+            type="range"
+            class="scrubber"
+            min="0"
+            max={duration || 1}
+            step="0.01"
+            value={displayTime}
+            style="background: linear-gradient(to right, #6366f1 {scrubProgress}%, rgba(255,255,255,0.15) {scrubProgress}%)"
+            onpointerdown={startScrub}
+            oninput={handleScrub}
+            onpointerup={endScrub}
+            onchange={endScrub}
+          />
+
+          <span class="time-display">
+            {formatTime(displayTime)}/{formatTime(duration)}
+          </span>
         </div>
-      </div>
 
-      <div class="effect-row">
-        <span class="row-label">Effect</span>
-        <div class="effect-pills">
-          {#each EFFECT_OPTIONS as opt}
-            <button
-              type="button"
-              class="effect-pill"
-              class:active={selectedEffect === opt.value}
-              onclick={() => handleEffectChange(opt.value)}
-            >
-              {opt.label}
-            </button>
-          {/each}
+        <div class="tempo-row">
+          <TempoControl
+            bpm={selectedBpm}
+            onBpmChange={handleBpmChange}
+            showPresets={false}
+            showPractice={false}
+            presetsMode="popover"
+          />
         </div>
-      </div>
 
-      <div class="actions">
-        <button type="button" class="cta-button" onclick={handleDownload}>
-          Download
-        </button>
-        <a href="/browse/gallery" class="cta-button secondary">
-          Open TKA Composer
-        </a>
+        <div class="prop-row">
+          <span class="row-label">Prop</span>
+          <div class="prop-pills">
+            {#each PROP_OPTIONS as opt}
+              <button
+                type="button"
+                class="prop-pill"
+                class:active={selectedProp === opt.value}
+                onclick={() => handlePropChange(opt.value)}
+              >
+                {opt.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="effect-row">
+          <span class="row-label">Effect</span>
+          <div class="effect-pills">
+            {#each EFFECT_OPTIONS as opt}
+              <button
+                type="button"
+                class="effect-pill"
+                class:active={selectedEffect === opt.value}
+                onclick={() => handleEffectChange(opt.value)}
+              >
+                {opt.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="cta-button" onclick={handleDownload}>
+            Download
+          </button>
+          <a href="/browse/gallery" class="cta-button secondary">
+            Open TKA Composer
+          </a>
+        </div>
       </div>
     </div>
   {/if}
@@ -767,13 +831,63 @@
     margin: 0 0 1.5rem;
   }
 
-  .sequence-video {
+  .video-wrapper {
+    position: relative;
     width: 100%;
     max-width: 480px;
+  }
+
+  .sequence-video {
+    width: 100%;
     aspect-ratio: 1;
     border-radius: 12px;
     background: #000;
     display: block;
+  }
+
+  .bg-render-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.5rem 0.75rem;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .bg-render-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bg-render-fill {
+    height: 100%;
+    background: #6366f1;
+    border-radius: 2px;
+    transition: width 200ms ease;
+  }
+
+  .bg-render-label {
+    font-size: 0.625rem;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Player sidebar (controls wrapper) ── */
+
+  .player-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 0.75rem;
   }
 
   /* ── Transport controls ── */
@@ -1028,6 +1142,102 @@
   @keyframes spin {
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  /* ── Tablet / Z Fold unfolded (≥600px) ── */
+
+  @media (min-width: 600px) {
+    .player-container {
+      max-width: 680px;
+      gap: 1rem;
+    }
+
+    .video-wrapper {
+      max-width: 560px;
+    }
+
+    .controls,
+    .tempo-row,
+    .prop-row,
+    .effect-row {
+      max-width: 560px;
+    }
+
+    .word-title {
+      font-size: 2.25rem;
+    }
+
+    .prop-pills,
+    .effect-pills {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .prop-row,
+    .effect-row {
+      justify-content: center;
+    }
+  }
+
+  /* ── Z Fold landscape / wide tablet (≥800px) ── */
+
+  @media (min-width: 800px) {
+    .player-container {
+      max-width: 840px;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 1.5rem;
+    }
+
+    .word-title {
+      width: 100%;
+      text-align: center;
+    }
+
+    .first-view-badge {
+      width: 100%;
+      text-align: center;
+    }
+
+    .video-wrapper {
+      max-width: 420px;
+      flex-shrink: 0;
+    }
+
+    .player-sidebar {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+      flex: 1;
+      min-width: 280px;
+      max-width: 380px;
+    }
+
+    .controls {
+      max-width: none;
+    }
+
+    .tempo-row {
+      max-width: none;
+    }
+
+    .prop-row,
+    .effect-row {
+      max-width: none;
+      flex-wrap: wrap;
+    }
+
+    .prop-pills,
+    .effect-pills {
+      flex-wrap: wrap;
+    }
+
+    .actions {
+      justify-content: flex-start;
     }
   }
 </style>

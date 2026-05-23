@@ -77,7 +77,7 @@ async function handleRender(msg: RenderRequest): Promise<void> {
   const encWidth = ensureEven(canvasSize);
   const encHeight = ensureEven(canvasSize);
   const bitrate = Math.min(8_000_000, encWidth * encHeight * 8);
-  const keyframeInterval = fps * 2;
+  const keyframeInterval = Math.round(fps / 2);
   const frameDurationMicros = Math.round(1_000_000 / fps);
 
   let mbOutput: Output | null = null;
@@ -232,7 +232,7 @@ async function handleRender(msg: RenderRequest): Promise<void> {
   effectRenderer?.dispose();
 
   // 5. Finalize
-  postProgress("finalizing", 0);
+  postProgress("finalizing", 100);
 
   let mp4Buffer: ArrayBuffer;
 
