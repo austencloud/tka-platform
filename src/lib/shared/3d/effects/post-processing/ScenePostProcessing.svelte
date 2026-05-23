@@ -17,11 +17,26 @@
 
   interface Props {
     children: Snippet;
+    bloomResolutionScale?: number;
+    bloomLevels?: number;
+    enableBloom?: boolean;
+    enableChromaticAberration?: boolean;
   }
 
-  let { children }: Props = $props();
+  let {
+    children,
+    bloomResolutionScale = 1.0,
+    bloomLevels = 8,
+    enableBloom = true,
+    enableChromaticAberration = true,
+  }: Props = $props();
 
-  const { renderer, camera, scene, autoRender, renderStage } = useThrelte();
+  const _ctx = useThrelte() as any;
+  const renderer: import("three").WebGLRenderer = _ctx.renderer;
+  const camera: { current: import("three").Camera } = _ctx.camera;
+  const scene: import("three").Scene = _ctx.scene;
+  const autoRender: { current: boolean; set: (v: boolean) => void } = _ctx.autoRender;
+  const renderStage = _ctx.renderStage;
   const viewer3DState = getViewer3DContext();
 
   const isOcean = $derived.by(() => {
@@ -52,28 +67,42 @@
 
     composer.addPass(new RenderPass(scn, cam));
 
-    composer.addPass(
-      new EffectPass(
-        cam,
+    const effects: import("postprocessing").Effect[] = [];
+
+    if (enableBloom) {
+      effects.push(
         new BloomEffect({
           intensity: 1.5,
           luminanceThreshold: 0.4,
           luminanceSmoothing: 0.3,
           mipmapBlur: true,
           radius: 0.7,
-          levels: 8,
+          levels: bloomLevels,
+          resolutionScale: bloomResolutionScale,
         }),
+      );
+    }
+
+    if (enableChromaticAberration) {
+      effects.push(
         new ChromaticAberrationEffect({
           offset: new Vector2(0.0006, 0.0006),
           radialModulation: true,
           modulationOffset: 0.2,
         }),
-        new VignetteEffect({
-          darkness: 0.5,
-          offset: 0.25,
-        }),
-      ),
+      );
+    }
+
+    effects.push(
+      new VignetteEffect({
+        darkness: 0.5,
+        offset: 0.25,
+      }),
     );
+
+    if (effects.length > 0) {
+      composer.addPass(new EffectPass(cam, ...effects));
+    }
 
     renderer.getSize(_sizeVec);
     const w = Math.round(_sizeVec.x);
