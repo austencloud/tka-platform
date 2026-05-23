@@ -51,7 +51,7 @@ void main() {
   }
 
   float rayDist = distance(pos, uScatterOrigin);
-  if (rayDist < uScatterRadius && myTrophic != 0 && myTrophic != 5) {
+  if (rayDist < uScatterRadius && uScatterOrigin.y > -900.0 && myTrophic != 0 && myTrophic != 5) {
     newState = 1.0;
     newTimer = 2.0;
     vec3 awayFromRay = safeNormalize(pos - uScatterOrigin);
