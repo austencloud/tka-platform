@@ -39,6 +39,8 @@
     boundRadius?: number;
     currentStrength?: number;
     scatterRadius?: number;
+    scatterForce?: number;
+    scatterWaveSpeed?: number;
     perceptionAngle?: number;
     halfSpeedTime?: number;
     rayPosition?: Vector3;
@@ -54,6 +56,8 @@
     boundRadius = 18,
     currentStrength = 0.3,
     scatterRadius = 4.0,
+    scatterForce = 3.0,
+    scatterWaveSpeed = 0.15,
     perceptionAngle = 135,
     halfSpeedTime = 0.5,
     rayPosition = new Vector3(0, 0, 0),
@@ -237,6 +241,9 @@
 
   let meshes = $state<InstancedMesh[]>([]);
   let gpuFailed = $state(false);
+  let scatterStartTime = 0;
+  const prevScatterOrigin = new Vector3(0, -999, 0);
+  const SCATTER_MOVE_THRESHOLD = 0.5;
   let fallbackMeshes = $state<InstancedMesh[]>([]);
   let gpuCompute: GPUComputationRenderer | null = null;
   let posVar: any = null;
@@ -433,7 +440,9 @@
       velU.uSchoolRadius = { value: 6.0 };
       velU.uScatterOrigin = { value: new Vector3(0, 0, 0) };
       velU.uScatterRadius = { value: scatterRadius };
-      velU.uScatterForce = { value: 3.0 };
+      velU.uScatterForce = { value: scatterForce };
+      velU.uScatterStartTime = { value: 0 };
+      velU.uScatterWaveSpeed = { value: scatterWaveSpeed };
       velU.uDartCount = { value: 0 };
       velU.uDartIndices = { value: new Int32Array(8).fill(-1) };
       velU.uDartStrength = { value: 2.0 };
@@ -725,6 +734,15 @@
     velUni.uCurrentStrength.value = currentStrength;
     velUni.uPerceptionCos.value = Math.cos((perceptionAngle * Math.PI) / 180);
     velUni.uScatterRadius.value = scatterRadius;
+    velUni.uScatterForce.value = scatterForce;
+    velUni.uScatterWaveSpeed.value = scatterWaveSpeed;
+
+    // Detect scatter origin movement to reset wave propagation timer
+    if (rayPosition.distanceTo(prevScatterOrigin) > SCATTER_MOVE_THRESHOLD) {
+      scatterStartTime = elapsed;
+      prevScatterOrigin.copy(rayPosition);
+    }
+    velUni.uScatterStartTime.value = scatterStartTime;
     posUni.uDelta.value = dt;
 
     stUni.uDelta.value = dt;
