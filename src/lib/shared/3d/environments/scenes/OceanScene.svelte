@@ -23,6 +23,7 @@
   import RuinsPlatform from "./ocean/RuinsPlatform.svelte";
   import GodRayShafts from "./ocean/GodRayShafts.svelte";
   import FishSchool from "./ocean/FishSchool.svelte";
+  import OceanMouseRaycast from "./ocean/OceanMouseRaycast.svelte";
   import UnderwaterParticles from "./ocean/UnderwaterParticles.svelte";
   import ReefStructures from "./ocean/ReefStructures.svelte";
   import type { ReefSDFData } from "./ocean/ReefStructures.svelte";
@@ -811,7 +812,7 @@
     });
   });
 
-  const boulderInstances = $derived.by((): InstancedMesh[] => {
+  const boulderInstances = $derived.by(() => {
     if (rockVariants.length === 0 || boulderPlacements.length === 0) return [];
     const buckets: Placement[][] = rockVariants.map(() => []);
     for (let i = 0; i < boulderPlacements.length; i++) {
@@ -837,7 +838,7 @@
       }
       inst.instanceMatrix.needsUpdate = true;
       return inst;
-    }).filter((inst): inst is InstancedMesh => inst !== null);
+    }).filter((inst) => inst !== null);
   });
 
   const kelpClones = $derived.by(() => {
@@ -1082,9 +1083,9 @@
 {#if activeConfig.rocks.enabled && heroRockClones.length > 0}
   {#each heroRockClones as clone, i}
     {@const p = heroRockPlacements[i]}
-    {@const s = rockGlbScales[p.modelIdx % rockGlbScales.length] ?? 0.001}
-    {@const baseOffset = (rockGlbBaseOffsets[p.modelIdx % rockGlbBaseOffsets.length] ?? 0) * p.scale * s}
     {#if p}
+      {@const s = rockGlbScales[p.modelIdx % rockGlbScales.length] ?? 0.001}
+      {@const baseOffset = (rockGlbBaseOffsets[p.modelIdx % rockGlbBaseOffsets.length] ?? 0) * p.scale * s}
       <T
         is={clone}
         position.x={p.x}
@@ -1130,6 +1131,13 @@
 
 <!-- GPGPU fish school (boids simulation) -->
 {#if activeConfig.fish.enabled}
+  {#if activeConfig.fish.scatterEnabled}
+    <OceanMouseRaycast
+      swimHeight={activeConfig.fish.swimHeight}
+      groundY={userProportionsState.groundY}
+      bind:worldPosition={rayPosition}
+    />
+  {/if}
   <FishSchool
     targetSize={activeConfig.fish.targetSize}
     swimHeight={activeConfig.fish.swimHeight}
@@ -1138,6 +1146,8 @@
     boundRadius={zones.forestOuter}
     currentStrength={activeConfig.fish.currentStrength}
     scatterRadius={activeConfig.fish.scatterRadius}
+    scatterForce={activeConfig.fish.scatterForce}
+    scatterWaveSpeed={activeConfig.fish.scatterWaveSpeed}
     perceptionAngle={activeConfig.fish.perceptionAngle}
     halfSpeedTime={activeConfig.fish.halfSpeedTime}
     {rayPosition}
