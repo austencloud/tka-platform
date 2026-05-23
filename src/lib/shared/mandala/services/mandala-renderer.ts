@@ -107,7 +107,7 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 	const needsMask = show === "both" && paths.blue.length > 0 && paths.red.length > 0;
 	const ov = options.overlap ?? DEFAULT_OVERLAP_CONFIG;
 
-	parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="100%" height="100%">`);
+	parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="100%" height="100%" overflow="hidden">`);
 	parts.push(`  <defs>`);
 	parts.push(`    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">`);
 	parts.push(`      <feGaussianBlur stdDeviation="3" result="blur"/>`);

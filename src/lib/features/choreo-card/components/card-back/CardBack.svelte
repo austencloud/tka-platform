@@ -142,6 +142,7 @@
             style="stroke"
             show="both"
             size={380}
+            darkMode={isDarkTheme}
           />
         </div>
       </div>
@@ -155,7 +156,7 @@
           {@const isQuarteredRot = comp === LOOPComponent.ROTATED}
           {@const isQuarteredInv = comp === LOOPComponent.INVERTED && loopDisplay.inversionPeriod === Period.QUARTERED}
           <div class="loop-col">
-            <span class="loop-icon-cell">
+            <span class="loop-icon-cell" style="overflow: hidden; width: 9cqi; height: 9cqi;">
               {#if comp === LOOPComponent.SWAPPED}
                 <SwapIcon size="8cqi" />
               {:else if isQuarteredInv}
@@ -163,7 +164,7 @@
               {:else}
                 <i
                   class={isQuarteredRot ? "fas fa-arrows-spin" : icon.fa}
-                  style="font-size: 8cqi; color: {icon.color};"
+                  style="font-size: 8cqi; color: {icon.color}; line-height: 1; display: block;"
                   aria-hidden="true"
                 ></i>
               {/if}
@@ -444,6 +445,7 @@
     position: absolute;
     inset: 10cqi 3.2cqi 30cqi;
     z-index: 1;
+    overflow: hidden;
   }
 
   .level-badge-slot {
@@ -472,6 +474,7 @@
     width: 72cqi;
     max-height: 100%;
     aspect-ratio: 1;
+    overflow: hidden;
   }
 
   .mandala-anchor :global(.mandala-container) {
@@ -491,10 +494,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 9cqi;
+    height: 9cqi;
+    overflow: hidden;
   }
 
   .loop-icon-cell i {
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    filter: none;
   }
 
   .loop-period-badge {
