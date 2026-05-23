@@ -968,7 +968,7 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
     decorations: {
       enabled: true,
       count: 160,
-      targetSize: 0.45,
+      targetSize: 1.0,
     },
     rocks: {
       enabled: true,
@@ -1003,7 +1003,18 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       sizeRange: [0.008, 0.02],
       spin: false,
     },
-    jellyfish: null,
+    jellyfish: {
+      enabled: true,
+      count: 5,
+      glowColor: "#88ccff",
+      driftSpeed: 0.15,
+      pulseRate: 0.8,
+      pulseAmplitude: 0.15,
+      lightIntensity: 0.4,
+      lightDistance: 8,
+      spawnRadius: 25,
+      heightRange: [4, 14],
+    },
     godRays: {
       enabled: true,
       color: "#FFE499",

@@ -17,6 +17,7 @@
   } from "../domain/models/scene-configs";
   import { poissonDiscSample, seededRandom, PlacementGrid } from "../utils/poisson-disc";
   import { createColoredInstancedMesh, createInstancedMeshFromModel, disposeInstancedMesh, type ColoredInstancePlacement, type InstancePlacement } from "./ocean/ocean-instancing";
+
   import { detectOceanQuality, getOceanQualityConfig, type OceanQualityTier } from "./ocean/ocean-quality";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { onDestroy, onMount } from "svelte";
@@ -27,6 +28,7 @@
   import OceanMouseRaycast from "./ocean/OceanMouseRaycast.svelte";
   import UnderwaterParticles from "./ocean/UnderwaterParticles.svelte";
   import ReefStructures from "./ocean/ReefStructures.svelte";
+  import ProceduralJellyfish from "./ocean/ProceduralJellyfish.svelte";
   import type { ReefSDFData } from "./ocean/ReefStructures.svelte";
   import OceanLoadingScreen from "./ocean/OceanLoadingScreen.svelte";
   import { generateRockVariants, type RockVariant } from "./ocean/procedural-rock";
@@ -96,8 +98,7 @@
   const seaweedGlb = useGltf("/models/ocean/seaweed.glb", opts);
   const kelpPlantGlb = useGltf("/models/ocean/kelp_plant.glb", opts);
 
-  const jellyfishGlb = useGltf("/models/ocean/jellyfish.glb", opts);
-  const jellyfishSmallGlb = useGltf("/models/ocean/jellyfish_small.glb", opts);
+
 
   const starfishGlb = useGltf("/models/ocean/starfish.glb", opts);
   const seaUrchinGlb = useGltf("/models/ocean/sea_urchin.glb", opts);
@@ -115,7 +116,6 @@
   const allGlbs = $derived([
     $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3, $coralLargeGlb,
     $seaweedGlb, $kelpPlantGlb,
-    $jellyfishGlb, $jellyfishSmallGlb,
     $starfishGlb, $seaUrchinGlb, $shellGlb, $anemoneGlb,
     $rockGlb0, $rockGlb1, $rockGlb2, $rockGlb3, $rockGlb4, $rockGlb5,
   ]);
@@ -521,18 +521,22 @@
   // y=-999 keeps scatter origin off-screen until Mouse Scatter spec wires real intersection coords
   let rayPosition = $state(new Vector3(0, -999, 0));
 
+  $effect(() => {
+    console.log(`[OceanScene] fish.enabled=${activeConfig.fish.enabled} scatterEnabled=${activeConfig.fish.scatterEnabled} allLoaded=${allLoaded}`);
+  });
 
-  // ── Jellyfish Data ────────────────────────────────────────────────────
 
-  interface JellyfishSample {
+  // ── Jellyfish Spawns ────────────────────────────────────────────────
+
+  interface JellyfishSpawn {
     x: number;
     y: number;
     z: number;
     seed: number;
-    isSmall: boolean;
+    scale: number;
   }
 
-  const jellyfishSamples = $derived.by((): JellyfishSample[] => {
+  const jellyfishSpawns = $derived.by((): JellyfishSpawn[] => {
     const jf = activeConfig.jellyfish;
     if (!jf?.enabled) return [];
     const rng = seededRandom(600);
@@ -542,13 +546,13 @@
       z: (rng() - 0.5) * jf.spawnRadius * 2,
       y: jf.heightRange[0] + rng() * (jf.heightRange[1] - jf.heightRange[0]),
       seed: i * 37,
-      isSmall: rng() > 0.6,
+      scale: 0.006 + rng() * 0.012,
     }));
   });
 
   // ── Model Scaling ─────────────────────────────────────────────────────
 
-  const MAX_CREATURE_SCALE = 0.5;
+  const MAX_CREATURE_SCALE = 20;
 
   function measureModelExtent(root: Object3D): number {
     root.updateMatrixWorld(true);
@@ -621,7 +625,7 @@
   const rockGlbScales = $derived.by((): number[] =>
     rockGlbModels.map((m) => {
       const extent = measureModelExtent(m.scene as Object3D);
-      return extent < 0.001 ? 0.001 : 1.0 / extent;
+      return extent < 0.001 ? 0.001 : 3.0 / extent;
     }),
   );
 
@@ -671,8 +675,6 @@
     };
   });
 
-  const jellyfishLargeScale = $derived(mScale($jellyfishGlb, 0.4));
-  const jellyfishSmallScale = $derived(mScale($jellyfishSmallGlb, 0.2));
   function decoScale(type: DecoType): number {
     const target = activeConfig.decorations.targetSize;
     if (type === "starfish") return mScale($starfishGlb, target);
@@ -744,7 +746,7 @@
     ].filter(Boolean) as { scene: Object3D }[];
     if (models.length === 0) return [];
     return coralPlacements.map((placement) =>
-      mScale(models[placement.speciesIdx % models.length], 0.5),
+      mScale(models[placement.speciesIdx % models.length], 2.5),
     );
   });
 
@@ -774,7 +776,7 @@
     const models = [$seaweedGlb, $kelpPlantGlb].filter(Boolean) as { scene: Object3D }[];
     if (models.length === 0) return [];
     return kelpPlacements.map((_, i) =>
-      mScale(models[i % models.length], 1.5),
+      mScale(models[i % models.length], 5.0),
     );
   });
 
@@ -868,41 +870,6 @@
   });
 
 
-  let jellyfishInstances = $state<{ large: InstancedMesh | null; small: InstancedMesh | null }>({ large: null, small: null });
-  $effect(() => {
-    const large = $jellyfishGlb;
-    const small = $jellyfishSmallGlb;
-    if (!large) { jellyfishInstances = { large: null, small: null }; return; }
-
-    const largePlacements: InstancePlacement[] = [];
-    const smallPlacements: InstancePlacement[] = [];
-
-    for (const jf of jellyfishSamples) {
-      const placement: InstancePlacement = {
-        x: jf.x,
-        z: jf.z,
-        y: groundY + jf.y,
-        scale: jf.isSmall ? jellyfishSmallScale : jellyfishLargeScale,
-        rotY: 0,
-      };
-      if (jf.isSmall && small) {
-        smallPlacements.push(placement);
-      } else {
-        largePlacements.push(placement);
-      }
-    }
-
-    const newInstances = {
-      large: createInstancedMeshFromModel(large.scene, largePlacements),
-      small: small ? createInstancedMeshFromModel(small.scene, smallPlacements) : null,
-    };
-    jellyfishInstances = newInstances;
-
-    return () => {
-      disposeInstancedMesh(newInstances.large);
-      disposeInstancedMesh(newInstances.small);
-    };
-  });
 
   let decorationInstances = $state<Record<string, InstancedMesh | null>>({});
   $effect(() => {
@@ -1047,8 +1014,8 @@
     // rockInstances and boulderInstances use procedural geometry (not effect-managed)
     for (const inst of rockInstances) inst.dispose();
     for (const inst of boulderInstances) { (inst.material as any)?.dispose?.(); inst.dispose(); }
-    // coralInstances, kelpInstances, heroRockInstances, jellyfishInstances,
-    // and decorationInstances are cleaned up by their respective $effect teardowns.
+    // coralInstances, kelpInstances, heroRockInstances, and decorationInstances
+    // are cleaned up by their respective $effect teardowns.
   });
 </script>
 
@@ -1132,7 +1099,7 @@
 
 <!-- GPGPU fish school (boids simulation) -->
 {#if activeConfig.fish.enabled}
-  {#if activeConfig.fish.scatterEnabled}
+  {#if activeConfig.fish.scatterEnabled !== false}
     <OceanMouseRaycast
       swimHeight={activeConfig.fish.swimHeight}
       groundY={userProportionsState.groundY}
@@ -1156,14 +1123,18 @@
   />
 {/if}
 
-<!-- Jellyfish (instanced) -->
+<!-- Procedural Jellyfish (Verlet physics) -->
 {#if activeConfig.jellyfish?.enabled}
-  {#if jellyfishInstances.large}
-    <T is={jellyfishInstances.large} />
-  {/if}
-  {#if jellyfishInstances.small}
-    <T is={jellyfishInstances.small} />
-  {/if}
+  {#each jellyfishSpawns as jf}
+    <ProceduralJellyfish
+      x={jf.x}
+      y={groundY + jf.y}
+      z={jf.z}
+      scale={jf.scale}
+      seed={jf.seed}
+      driftSpeed={activeConfig.jellyfish.driftSpeed}
+    />
+  {/each}
 {/if}
 
 <!-- Bubbles -->
