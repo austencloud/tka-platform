@@ -623,8 +623,9 @@
 
   const heroRockPlacements = $derived(scenePlacements.heroRocks as HeroRockPlacement[]);
 
-  const heroRockInstances = $derived.by((): (InstancedMesh | null)[] => {
-    if (!hasGlbRocks) return [];
+  let heroRockInstances = $state<(InstancedMesh | null)[]>([]);
+  $effect(() => {
+    if (!hasGlbRocks) { heroRockInstances = []; return; }
 
     const buckets: Map<number, InstancePlacement[]> = new Map();
 
@@ -644,10 +645,15 @@
       });
     }
 
-    return rockGlbModels.map((model, idx) => {
+    const newInstances = rockGlbModels.map((model, idx) => {
       const placements = buckets.get(idx) ?? [];
       return createInstancedMeshFromModel(model.scene, placements);
     });
+    heroRockInstances = newInstances;
+
+    return () => {
+      for (const inst of newInstances) disposeInstancedMesh(inst);
+    };
   });
 
   const jellyfishLargeScale = $derived(mScale($jellyfishGlb, 0.4));
@@ -662,7 +668,8 @@
 
   // ── Instanced Meshes ─────────────────────────────────────────────────
 
-  const coralInstances = $derived.by((): (InstancedMesh | null)[] => {
+  let coralInstances = $state<(InstancedMesh | null)[]>([]);
+  $effect(() => {
     const models = [
       $coralGlb0,
       $coralGlb1,
@@ -670,7 +677,7 @@
       $coralGlb3,
       $coralLargeGlb,
     ].filter(Boolean) as { scene: Object3D }[];
-    if (models.length === 0) return [];
+    if (models.length === 0) { coralInstances = []; return; }
 
     const buckets = new Map<number, ColoredInstancePlacement[]>();
 
@@ -701,10 +708,15 @@
       });
     }
 
-    return models.map((model, idx) => {
+    const newInstances = models.map((model, idx) => {
       const placements = buckets.get(idx) ?? [];
       return createColoredInstancedMesh(model.scene, placements);
     });
+    coralInstances = newInstances;
+
+    return () => {
+      for (const inst of newInstances) disposeInstancedMesh(inst);
+    };
   });
 
   const coralScales = $derived.by((): number[] => {
@@ -807,9 +819,10 @@
     }).filter((inst) => inst !== null);
   });
 
-  const kelpInstances = $derived.by((): (InstancedMesh | null)[] => {
+  let kelpInstances = $state<(InstancedMesh | null)[]>([]);
+  $effect(() => {
     const models = [$seaweedGlb, $kelpPlantGlb].filter(Boolean) as { scene: Object3D }[];
-    if (models.length === 0) return [];
+    if (models.length === 0) { kelpInstances = []; return; }
 
     const buckets: InstancePlacement[][] = models.map(() => []);
 
@@ -829,16 +842,22 @@
       });
     }
 
-    return models.map((model, idx) =>
+    const newInstances = models.map((model, idx) =>
       createInstancedMeshFromModel(model.scene, buckets[idx]!),
     );
+    kelpInstances = newInstances;
+
+    return () => {
+      for (const inst of newInstances) disposeInstancedMesh(inst);
+    };
   });
 
 
-  const jellyfishInstances = $derived.by((): { large: InstancedMesh | null; small: InstancedMesh | null } => {
+  let jellyfishInstances = $state<{ large: InstancedMesh | null; small: InstancedMesh | null }>({ large: null, small: null });
+  $effect(() => {
     const large = $jellyfishGlb;
     const small = $jellyfishSmallGlb;
-    if (!large) return { large: null, small: null };
+    if (!large) { jellyfishInstances = { large: null, small: null }; return; }
 
     const largePlacements: InstancePlacement[] = [];
     const smallPlacements: InstancePlacement[] = [];
@@ -858,13 +877,20 @@
       }
     }
 
-    return {
+    const newInstances = {
       large: createInstancedMeshFromModel(large.scene, largePlacements),
       small: small ? createInstancedMeshFromModel(small.scene, smallPlacements) : null,
     };
+    jellyfishInstances = newInstances;
+
+    return () => {
+      disposeInstancedMesh(newInstances.large);
+      disposeInstancedMesh(newInstances.small);
+    };
   });
 
-  const decorationInstances = $derived.by((): Record<string, InstancedMesh | null> => {
+  let decorationInstances = $state<Record<string, InstancedMesh | null>>({});
+  $effect(() => {
     const modelMap: Record<string, Object3D | undefined> = {
       starfish: $starfishGlb?.scene,
       urchin: $seaUrchinGlb?.scene,
@@ -890,13 +916,17 @@
       });
     }
 
-    const result: Record<string, InstancedMesh | null> = {};
+    const newInstances: Record<string, InstancedMesh | null> = {};
     for (const [type, model] of Object.entries(modelMap)) {
-      result[type] = model
+      newInstances[type] = model
         ? createInstancedMeshFromModel(model, buckets[type]!)
         : null;
     }
-    return result;
+    decorationInstances = newInstances;
+
+    return () => {
+      for (const inst of Object.values(newInstances)) disposeInstancedMesh(inst);
+    };
   });
 
 
@@ -983,14 +1013,11 @@
   // ── Cleanup ───────────────────────────────────────────────────────────
 
   onDestroy(() => {
-    for (const inst of coralInstances) disposeInstancedMesh(inst);
-    for (const inst of kelpInstances) disposeInstancedMesh(inst);
+    // rockInstances and boulderInstances use procedural geometry (not effect-managed)
     for (const inst of rockInstances) inst.dispose();
     for (const inst of boulderInstances) { (inst.material as any)?.dispose?.(); inst.dispose(); }
-    for (const inst of heroRockInstances) disposeInstancedMesh(inst);
-    disposeInstancedMesh(jellyfishInstances.large);
-    disposeInstancedMesh(jellyfishInstances.small);
-    for (const inst of Object.values(decorationInstances)) disposeInstancedMesh(inst);
+    // coralInstances, kelpInstances, heroRockInstances, jellyfishInstances,
+    // and decorationInstances are cleaned up by their respective $effect teardowns.
   });
 </script>
 

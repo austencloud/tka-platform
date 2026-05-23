@@ -48,18 +48,24 @@ export function createInstancedMeshFromModel(
   const extracted = extractFirstMeshGeometryAndMaterial(model);
   if (!extracted) return null;
 
-  const inst = new InstancedMesh(extracted.geometry, extracted.material, placements.length);
+  const geo = extracted.geometry.clone();
+  const clonedMat = (extracted.material as import('three').MeshStandardMaterial).clone();
+  const inst = new InstancedMesh(geo, clonedMat, placements.length);
   inst.frustumCulled = false;
 
   const mat = new Matrix4();
   const q = new Quaternion();
   const s = new Vector3();
+  const pos = new Vector3();
+  const euler = new Euler();
 
   for (let i = 0; i < placements.length; i++) {
     const p = placements[i]!;
-    q.setFromEuler(new Euler(0, p.rotY, 0));
+    euler.set(0, p.rotY, 0);
+    q.setFromEuler(euler);
     s.setScalar(p.scale);
-    mat.compose(new Vector3(p.x, p.y, p.z), q, s);
+    pos.set(p.x, p.y, p.z);
+    mat.compose(pos, q, s);
     inst.setMatrixAt(i, mat);
   }
 
@@ -119,12 +125,16 @@ export function createColoredInstancedMesh(
   const mat = new Matrix4();
   const q = new Quaternion();
   const s = new Vector3();
+  const pos = new Vector3();
+  const euler = new Euler();
 
   for (let i = 0; i < placements.length; i++) {
     const p = placements[i]!;
-    q.setFromEuler(new Euler(0, p.rotY, 0));
+    euler.set(0, p.rotY, 0);
+    q.setFromEuler(euler);
     s.setScalar(p.scale);
-    mat.compose(new Vector3(p.x, p.y, p.z), q, s);
+    pos.set(p.x, p.y, p.z);
+    mat.compose(pos, q, s);
     inst.setMatrixAt(i, mat);
   }
 

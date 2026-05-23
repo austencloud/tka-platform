@@ -95,7 +95,8 @@
     fragmentShader,
   });
 
-  const instancedMesh = $derived.by(() => {
+  let instancedMesh = $state<InstancedMesh | null>(null);
+  $effect(() => {
     const geo = new PlaneGeometry(config.width, config.height);
     const rng = seededRandom(777);
 
@@ -108,6 +109,8 @@
     const mat = new Matrix4();
     const q = new Quaternion();
     const s = new Vector3(1, 1, 1);
+    const pos = new Vector3();
+    const euler = new Euler();
 
     for (let i = 0; i < count; i++) {
       const x = (rng() - 0.5) * 22;
@@ -117,26 +120,30 @@
       const widthScale = 0.5 + rng() * 0.8;
       opacities[i] = 0.4 + rng() * 0.6;
 
-      q.setFromEuler(new Euler(0, rotY, tilt));
+      euler.set(0, rotY, tilt);
+      q.setFromEuler(euler);
       s.set(widthScale, 1, 1);
-      mat.compose(
-        new Vector3(x, groundY + config.height * 0.5, z),
-        q,
-        s,
-      );
+      pos.set(x, groundY + config.height * 0.5, z);
+      mat.compose(pos, q, s);
       inst.setMatrixAt(i, mat);
     }
 
     inst.instanceMatrix.needsUpdate = true;
     geo.setAttribute('aOpacityMult', new InstancedBufferAttribute(opacities, 1));
 
-    return inst;
+    instancedMesh = inst;
+
+    return () => {
+      geo.dispose();
+      inst.dispose();
+    };
   });
 
   $effect(() => {
     material.uniforms.uColorBottom!.value = new Color(config.color);
     material.uniforms.uIntensity!.value = config.intensity;
     material.uniforms.uGroundY!.value = groundY;
+    material.uniforms.uHeight!.value = config.height;
   });
 
   useTask((delta) => {
@@ -145,8 +152,9 @@
 
   onDestroy(() => {
     material.dispose();
-    instancedMesh.geometry.dispose();
   });
 </script>
 
+{#if instancedMesh}
 <T is={instancedMesh} />
+{/if}
