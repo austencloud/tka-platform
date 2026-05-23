@@ -14,18 +14,21 @@ const GRID_SVGS: Record<string, string> = {
 const PROP_SVG_PATH = "/images/props/animated";
 
 function sanitizeSvgForCreateImageBitmap(svgText: string): string {
-  const viewBoxMatch = svgText.match(/viewBox="([^"]+)"/);
-  if (!viewBoxMatch) return svgText;
+  let svg = svgText.replace(/<\?xml[^?]*\?>\s*/g, "");
+  svg = svg.replace(/<!DOCTYPE[^>]*>\s*/gi, "");
 
-  const hasWidth = /\bwidth="/.test(svgText);
-  const hasHeight = /\bheight="/.test(svgText);
-  if (hasWidth && hasHeight) return svgText;
+  const viewBoxMatch = svg.match(/viewBox="([^"]+)"/);
+  if (!viewBoxMatch) return svg;
+
+  const hasWidth = /\bwidth="/.test(svg);
+  const hasHeight = /\bheight="/.test(svg);
+  if (hasWidth && hasHeight) return svg;
 
   const parts = viewBoxMatch[1]!.split(/\s+/);
   const vbWidth = parts[2] ?? "100";
   const vbHeight = parts[3] ?? "100";
 
-  return svgText.replace(
+  return svg.replace(
     "<svg",
     `<svg ${hasWidth ? "" : `width="${vbWidth}"`} ${hasHeight ? "" : `height="${vbHeight}"`}`
   );

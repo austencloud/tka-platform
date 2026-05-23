@@ -18,7 +18,7 @@ const HEADLESS_VISIBILITY_MANAGER: AnimationVisibilityStateManager = {
   setVisibility: () => {},
   isDarkMode: () => false,
   getPathShape: () => "arc",
-  getEffortPreset: () => "smooth",
+  getEffortPreset: () => "glide",
   setSpeed: () => {},
   getSpeed: () => 1,
 } as unknown as AnimationVisibilityStateManager;
@@ -37,7 +37,7 @@ export class HeadlessAnimationOrchestrator extends SequenceAnimationOrchestrator
 
     const vm = {
       ...HEADLESS_VISIBILITY_MANAGER,
-      getEffortPreset: () => config.effortPreset ?? "smooth",
+      getEffortPreset: () => config.effortPreset ?? "glide",
       getPathShape: () => config.pathShape ?? "arc",
     } as unknown as AnimationVisibilityStateManager;
     this.setVisibilityManager(vm);
