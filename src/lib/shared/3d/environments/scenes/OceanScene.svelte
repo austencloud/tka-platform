@@ -17,6 +17,7 @@
   } from "../domain/models/scene-configs";
   import { poissonDiscSample, seededRandom, PlacementGrid } from "../utils/poisson-disc";
   import { clone as cloneWithSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
+  import { createColoredInstancedMesh, createInstancedMeshFromModel, disposeInstancedMesh, type ColoredInstancePlacement, type InstancePlacement } from "./ocean/ocean-instancing";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { onDestroy, onMount } from "svelte";
   import { disposeSceneGraph } from "../utils/dispose-scene";
@@ -726,7 +727,7 @@
 
   // ── Clone Caching ─────────────────────────────────────────────────────
 
-  const coralClones = $derived.by(() => {
+  const coralInstances = $derived.by((): (InstancedMesh | null)[] => {
     const models = [
       $coralGlb0,
       $coralGlb1,
@@ -735,7 +736,14 @@
       $coralLargeGlb,
     ].filter(Boolean) as { scene: Object3D }[];
     if (models.length === 0) return [];
-    return coralPlacements.map((placement) => {
+
+    const buckets = new Map<number, ColoredInstancePlacement[]>();
+
+    for (let pi = 0; pi < coralPlacements.length; pi++) {
+      const placement = coralPlacements[pi]!;
+      const speciesIdx = placement.speciesIdx % models.length;
+      if (!buckets.has(speciesIdx)) buckets.set(speciesIdx, []);
+
       const baseColor = new Color(activeConfig.coral.glowColor);
       const hsl = { h: 0, s: 0, l: 0 };
       baseColor.getHSL(hsl);
@@ -743,13 +751,24 @@
       hsl.s = Math.min(1, hsl.s * placement.satBoost);
       hsl.l = Math.max(0.1, Math.min(0.7, hsl.l + (placement.hueShift > 0 ? 0.05 : -0.03)));
       baseColor.setHSL(hsl.h, hsl.s, hsl.l);
-      const modelIdx = placement.speciesIdx % models.length;
-      return underwaterClone(
-        models[modelIdx]!.scene,
-        "#" + baseColor.getHexString(),
-        activeConfig.coral.glowBlend,
-        true,
-      );
+
+      const s = (coralScales[pi] ?? 0.001) * placement.scale;
+      const th = getTerrainY(placement.x, placement.z);
+      const baseOffset = (coralBaseOffsets[speciesIdx % coralBaseOffsets.length] ?? 0) * s;
+
+      buckets.get(speciesIdx)!.push({
+        x: placement.x,
+        z: placement.z,
+        y: groundY + th + baseOffset,
+        scale: s,
+        rotY: placement.rotY,
+        color: baseColor,
+      });
+    }
+
+    return models.map((model, idx) => {
+      const placements = buckets.get(idx) ?? [];
+      return createColoredInstancedMesh(model.scene, placements);
     });
   });
 
@@ -1011,7 +1030,7 @@
   // ── Cleanup ───────────────────────────────────────────────────────────
 
   onDestroy(() => {
-    for (const c of coralClones) disposeSceneGraph(c);
+    for (const inst of coralInstances) disposeInstancedMesh(inst);
     for (const c of kelpClones) disposeSceneGraph(c);
     for (const inst of rockInstances) inst.dispose();
     for (const inst of boulderInstances) { (inst.material as any)?.dispose?.(); inst.dispose(); }
@@ -1047,22 +1066,11 @@
 {/if}
 
 
-<!-- Coral formations (Poisson-disc placed, auto-scaled) -->
-{#if activeConfig.coral.enabled && coralClones.length > 0}
-  {#each coralClones as clone, i}
-    {@const p = coralPlacements[i]}
-    {@const s = coralScales[i] ?? 0.001}
-    {#if p}
-      {@const th = getTerrainY(p.x, p.z)}
-      {@const baseOffset = (coralBaseOffsets[p.speciesIdx % coralBaseOffsets.length] ?? 0) * p.scale * s}
-      <T
-        is={clone}
-        position.x={p.x}
-        position.y={groundY + th + baseOffset}
-        position.z={p.z}
-        scale={p.scale * s}
-        rotation.y={p.rotY}
-      />
+<!-- Coral formations (instanced, Poisson-disc placed) -->
+{#if activeConfig.coral.enabled}
+  {#each coralInstances as inst}
+    {#if inst}
+      <T is={inst} />
     {/if}
   {/each}
 {/if}
