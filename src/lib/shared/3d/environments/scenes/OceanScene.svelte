@@ -93,6 +93,9 @@
   const coralGlb1 = useGltf("/models/ocean/coral_1.glb", opts);
   const coralGlb2 = useGltf("/models/ocean/coral_2.glb", opts);
   const coralGlb3 = useGltf("/models/ocean/coral_3.glb", opts);
+  const coralGlb4 = useGltf("/models/ocean/coral_4.glb", opts);
+  const coralGlb5 = useGltf("/models/ocean/coral_5.glb", opts);
+  const coralGlb6 = useGltf("/models/ocean/coral_6.glb", opts);
   const coralLargeGlb = useGltf("/models/ocean/coral_large.glb", opts);
 
   const seaweedGlb = useGltf("/models/ocean/seaweed.glb", opts);
@@ -114,14 +117,20 @@
   const rockGlb5 = useGltf("/models/ocean/rock_5.glb", opts);
 
   const allGlbs = $derived([
-    $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3, $coralLargeGlb,
+    $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3, $coralGlb4, $coralGlb5, $coralGlb6, $coralLargeGlb,
     $seaweedGlb, $kelpPlantGlb,
     $starfishGlb, $seaUrchinGlb, $shellGlb, $anemoneGlb,
     $rockGlb0, $rockGlb1, $rockGlb2, $rockGlb3, $rockGlb4, $rockGlb5,
   ]);
   const loadedCount = $derived(allGlbs.filter(Boolean).length);
-  const loadingProgress = $derived(allGlbs.length > 0 ? loadedCount / allGlbs.length : 0);
-  const allLoaded = $derived(loadedCount === allGlbs.length);
+  const modelsLoaded = $derived(loadedCount === allGlbs.length);
+  const sdfReady = $derived(reefSdfData !== null);
+  const sceneReady = $derived(modelsLoaded && sdfReady);
+  const loadingProgress = $derived.by(() => {
+    if (allGlbs.length === 0) return 0;
+    const modelPart = loadedCount / allGlbs.length;
+    return modelPart * 0.85 + (sdfReady ? 0.15 : 0);
+  });
 
   // ── Scene Context ─────────────────────────────────────────────────────
 
@@ -178,7 +187,7 @@
     speciesIdx: number;
   }
 
-  const CORAL_PALETTE_HUES = [0.0, -0.15, 0.1, 0.2, -0.25];
+  const CORAL_PALETTE_HUES = [0.0, -0.15, 0.1, 0.2, -0.25, 0.05, -0.08, 0.15];
 
   interface ReefFormation {
     x: number;
@@ -210,7 +219,7 @@
 
       const distFactor = Math.min((dist - zones.stageRadius) / (zones.backgroundRadius - zones.stageRadius), 1.0);
       const isLargeFormation = rng() > 0.6;
-      const species = Math.floor(rng() * 5);
+      const species = Math.floor(rng() * 8);
 
       formations.push({
         x: center.x,
@@ -389,7 +398,7 @@
             x, z, scale: finalScale, rotY: rng() * Math.PI * 2,
             hueShift: formation.hue + (rng() - 0.5) * 0.03,
             satBoost: formation.saturation + (rng() - 0.5) * 0.1,
-            speciesIdx: (formation.dominantSpecies + (rng() > 0.7 ? Math.floor(rng() * 4) + 1 : 0)) % 5,
+            speciesIdx: (formation.dominantSpecies + (rng() > 0.7 ? Math.floor(rng() * 7) + 1 : 0)) % 8,
           });
         }
       }
@@ -399,8 +408,8 @@
         if (coral.length >= maxCount) break;
         coral.push({
           x: s.x, z: s.z, scale: 0.15 + rngCl() * 0.3, rotY: rngCl() * Math.PI * 2,
-          hueShift: CORAL_PALETTE_HUES[Math.floor(rngCl() * 5)]! + (rngCl() - 0.5) * 0.04,
-          satBoost: 0.9 + rngCl() * 0.2, speciesIdx: Math.floor(rngCl() * 5),
+          hueShift: CORAL_PALETTE_HUES[Math.floor(rngCl() * 8)]! + (rngCl() - 0.5) * 0.04,
+          satBoost: 0.9 + rngCl() * 0.2, speciesIdx: Math.floor(rngCl() * 8),
         });
       }
     }
@@ -518,13 +527,43 @@
   // ── Reef SDF data (passed from ReefStructures → FishSchool) ────────
   let reefSdfData = $state<ReefSDFData | null>(null);
 
-  // y=-999 keeps scatter origin off-screen until Mouse Scatter spec wires real intersection coords
-  let rayPosition = $state(new Vector3(0, -999, 0));
+  // ── Sphere obstacles for fish avoidance (rocks, boulders) ──────────
+  const obstacleSpheres = $derived.by((): Float32Array | null => {
+    const placements = scenePlacements;
+    const gy = groundY;
+    const spheres: { x: number; y: number; z: number; r: number }[] = [];
 
-  $effect(() => {
-    console.log(`[OceanScene] fish.enabled=${activeConfig.fish.enabled} scatterEnabled=${activeConfig.fish.scatterEnabled} allLoaded=${allLoaded}`);
+    for (const p of placements.heroRocks) {
+      const ty = terrainHeightForPlacement(p.x, p.z, zones.stageRadius, zones.clearingRadius);
+      spheres.push({ x: p.x, y: gy + ty + p.scale * 0.5, z: p.z, r: p.scale * 1.5 });
+    }
+    for (const p of placements.boulders) {
+      const ty = terrainHeightForPlacement(p.x, p.z, zones.stageRadius, zones.clearingRadius);
+      spheres.push({ x: p.x, y: gy + ty + p.scale * 0.4, z: p.z, r: p.scale * 1.2 });
+    }
+    for (const p of placements.rocks) {
+      if (p.scale < 0.5) continue;
+      const ty = terrainHeightForPlacement(p.x, p.z, zones.stageRadius, zones.clearingRadius);
+      spheres.push({ x: p.x, y: gy + ty + p.scale * 0.3, z: p.z, r: p.scale * 1.0 });
+    }
+
+    spheres.sort((a, b) => b.r - a.r);
+    const count = Math.min(spheres.length, 32);
+    if (count === 0) return null;
+
+    const buf = new Float32Array(count * 4);
+    for (let i = 0; i < count; i++) {
+      const s = spheres[i]!;
+      buf[i * 4] = s.x;
+      buf[i * 4 + 1] = s.y;
+      buf[i * 4 + 2] = s.z;
+      buf[i * 4 + 3] = s.r;
+    }
+    return buf;
   });
 
+  // y=-999 keeps scatter origin off-screen until Mouse Scatter spec wires real intersection coords
+  let rayPosition = $state(new Vector3(0, -999, 0));
 
   // ── Jellyfish Spawns ────────────────────────────────────────────────
 
@@ -688,11 +727,8 @@
   let coralInstances = $state<(InstancedMesh | null)[]>([]);
   $effect(() => {
     const models = [
-      $coralGlb0,
-      $coralGlb1,
-      $coralGlb2,
-      $coralGlb3,
-      $coralLargeGlb,
+      $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3,
+      $coralGlb4, $coralGlb5, $coralGlb6, $coralLargeGlb,
     ].filter(Boolean) as { scene: Object3D }[];
     if (models.length === 0) { coralInstances = []; return; }
 
@@ -738,11 +774,8 @@
 
   const coralScales = $derived.by((): number[] => {
     const models = [
-      $coralGlb0,
-      $coralGlb1,
-      $coralGlb2,
-      $coralGlb3,
-      $coralLargeGlb,
+      $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3,
+      $coralGlb4, $coralGlb5, $coralGlb6, $coralLargeGlb,
     ].filter(Boolean) as { scene: Object3D }[];
     if (models.length === 0) return [];
     return coralPlacements.map((placement) =>
@@ -752,11 +785,8 @@
 
   const coralBaseOffsets = $derived.by((): number[] => {
     const models = [
-      $coralGlb0,
-      $coralGlb1,
-      $coralGlb2,
-      $coralGlb3,
-      $coralLargeGlb,
+      $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3,
+      $coralGlb4, $coralGlb5, $coralGlb6, $coralLargeGlb,
     ].filter(Boolean) as { scene: Object3D }[];
     return models.map((m) => {
       const raw = -measureModelMinY(m.scene as Object3D);
@@ -938,7 +968,7 @@
   $effect(() => {
     if (!sceneFeatures) return;
     sceneFeatures.reportProgress("environment", loadingProgress);
-    if (allLoaded) sceneFeatures.reportReady("environment");
+    if (sceneReady) sceneFeatures.reportReady("environment");
   });
 
   onMount(() => {
@@ -1019,9 +1049,9 @@
   });
 </script>
 
-<OceanLoadingScreen progress={loadingProgress} visible={!allLoaded} />
+<OceanLoadingScreen progress={loadingProgress} visible={!sceneReady} />
 
-{#if allLoaded}
+{#if modelsLoaded}
 <!-- Sky gradient -->
 <SkyGradient
   topColor={activeConfig.sky.topColor}
@@ -1120,6 +1150,7 @@
     halfSpeedTime={activeConfig.fish.halfSpeedTime}
     {rayPosition}
     {reefSdfData}
+    {obstacleSpheres}
   />
 {/if}
 

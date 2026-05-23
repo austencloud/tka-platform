@@ -22,6 +22,7 @@
   import type { ReefSDFData } from './ReefStructures.svelte';
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
   import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+  import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
   import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
   import { FishEventSystem, type FishEventUniforms } from './FishEventSystem';
   import { RESIDENT_SPECIES, RESIDENT_FISH_COUNT, ALL_SPECIES, THREAT_MATRIX, HUNT_MATRIX, type FishSpeciesConfig } from './fish-species-config';
@@ -46,6 +47,7 @@
     rayPosition?: Vector3;
     modelBasePath?: string;
     reefSdfData?: ReefSDFData | null;
+    obstacleSpheres?: Float32Array | null;
   }
 
   let {
@@ -63,6 +65,7 @@
     rayPosition = new Vector3(0, 0, 0),
     modelBasePath = '/models/ocean/pack/',
     reefSdfData = null,
+    obstacleSpheres = null,
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
@@ -278,6 +281,7 @@
     dracoLoader.setDecoderPath('/draco/');
     const gltfLoader = new GLTFLoader();
     gltfLoader.setDRACOLoader(dracoLoader);
+    gltfLoader.setMeshoptDecoder(MeshoptDecoder);
     cachedGltfLoader = gltfLoader;
 
     const species = RESIDENT_SPECIES;
@@ -466,6 +470,10 @@
       velU.uReefSDFInvMatrix2 = { value: identityMat.clone() };
       velU.uReefSDFInvMatrix3 = { value: identityMat.clone() };
 
+      // Sphere obstacle avoidance (rocks, boulders)
+      velU.uObstacleSphereCount = { value: 0 };
+      velU.uObstacleSpheres = { value: new Float32Array(32 * 4) };
+
       const posU = posVar.material.uniforms;
       posU.uDelta = { value: 0 };
       posU.uSpawnCount = { value: 0 };
@@ -644,6 +652,17 @@
     console.log(`[FishSchool] Bound ${count} reef SDF textures to velocity shader`);
   });
 
+  // ── Reactive sphere obstacle update ──────────────────────────────────
+  $effect(() => {
+    if (!velVar || !obstacleSpheres) return;
+    const velU = velVar.material.uniforms;
+    const count = Math.min(obstacleSpheres.length / 4, 32);
+    velU.uObstacleSphereCount.value = count;
+    const buf = velU.uObstacleSpheres.value as Float32Array;
+    buf.set(obstacleSpheres.subarray(0, count * 4));
+    console.log(`[FishSchool] Bound ${count} obstacle spheres`);
+  });
+
   function createVisitorMesh(
     sp: FishSpeciesConfig,
     model: ExtractedModel,
@@ -743,15 +762,7 @@
     stUni.uScatterRadius.value = scatterRadius;
 
     if (eventSystem) {
-      const prevY = velUni.uScatterOrigin.value.y;
       eventSystem.tick(dt, velUni as unknown as FishEventUniforms, rayPosition);
-      const newY = velUni.uScatterOrigin.value.y;
-      if (prevY < -900 && newY > -900) {
-        const o = velUni.uScatterOrigin.value;
-        const bodyLen = targetSize * 1.0;
-        const maxSpd = 1.2 * 1.0 * bodyLen;
-        console.log(`[FishScatter] ACTIVE origin=(${o.x.toFixed(2)}, ${o.y.toFixed(2)}, ${o.z.toFixed(2)}) force=${scatterForce} radius=${scatterRadius} normalMaxSpeed=${maxSpd.toFixed(4)} scatterBoost=${(1.5 * scatterForce * 0.15).toFixed(3)}`);
-      }
     }
 
     // ── Visitor spawn: write positions/velocities into GPU texture via uniforms ──

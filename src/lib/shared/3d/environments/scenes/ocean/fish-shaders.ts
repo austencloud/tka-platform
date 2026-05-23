@@ -126,6 +126,10 @@ uniform mat4 uReefSDFInvMatrix3;
 uniform float uReefAvoidDist;   // world-space distance at which avoidance kicks in
 uniform float uReefAvoidForce;  // strength of the avoidance push
 
+// ── Sphere obstacle avoidance (rocks, boulders, coral) ──────────────
+uniform int uObstacleSphereCount;
+uniform vec4 uObstacleSpheres[32]; // xyz = center, w = radius
+
 ${NOISE_GLSL}
 ${SAFE_NORMALIZE_GLSL}
 
@@ -305,6 +309,19 @@ void main() {
     steer += sdfAvoidance(uReefSDF3, uReefSDFInvMatrix3, pos, uReefAvoidDist, uReefAvoidForce);
   }
 
+  // ── Sphere obstacle avoidance (rocks, boulders) ──────────────────
+  for (int si = 0; si < 32; si++) {
+    if (si >= uObstacleSphereCount) break;
+    vec4 sphere = uObstacleSpheres[si];
+    vec3 toFish = pos - sphere.xyz;
+    float dist = length(toFish);
+    float avoidR = sphere.w + 1.5;
+    if (dist < avoidR && dist > 0.01) {
+      float pen = 1.0 - dist / avoidR;
+      steer += safeNormalize(toFish) * pen * pen * 4.0;
+    }
+  }
+
   float bodyLength = uTargetSize * instanceScale;
   float adjMax = uMaxSpeed * speedMult * bodyLength;
   float adjMin = uMinSpeed * speedMult * bodyLength;
@@ -314,7 +331,9 @@ void main() {
   vec3 threatDir = vec3(stateData.z, 0.0, stateData.w);
 
   if (state > 0.5 && state < 1.5) {
-    steer = safeNormalize(threatDir) * 2.0 + sep * 0.3;
+    if (scatterIntensity < 0.01) {
+      steer = safeNormalize(threatDir) * 2.0 + sep * 0.3;
+    }
     adjMax *= 2.0;
   }
   if (state > 1.5 && state < 2.5) {

@@ -32,7 +32,7 @@ export interface SDFGeneratorOptions {
 }
 
 function yieldFrame(): Promise<void> {
-  return new Promise((r) => setTimeout(r, 0));
+  return new Promise((r) => requestAnimationFrame(() => r()));
 }
 
 export async function generateSDFTexture(
@@ -142,8 +142,7 @@ export async function generateSDFTexture(
         sdfData[z * dim * dim + y * dim + x] = hit.distance * sign;
       }
     }
-    // Yield every 4 slices to balance throughput vs responsiveness
-    if (z % 4 === 3) await yieldFrame();
+    if (z % 2 === 1) await yieldFrame();
   }
 
   const halfData = float32ToHalf(sdfData);
