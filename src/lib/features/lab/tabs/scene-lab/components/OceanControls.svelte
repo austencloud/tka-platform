@@ -9,6 +9,22 @@
   function mut() { return state.oceanConfig; }
 </script>
 
+<ParamPanel title="Quality">
+  <div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+    <span style="font-size:12px;color:#aaa">Tier</span>
+    <select
+      value={cfg.qualityTier ?? 'auto'}
+      onchange={(e) => (mut().qualityTier = e.currentTarget.value as 'auto' | 'ultra' | 'medium' | 'low')}
+      style="flex:1;background:#222;color:#eee;border:1px solid #444;border-radius:4px;padding:3px 6px;font-size:12px"
+    >
+      <option value="auto">Auto-detect</option>
+      <option value="ultra">Ultra</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+  </div>
+</ParamPanel>
+
 <ParamPanel title="Sky">
   <ParamColor label="Top" value={cfg.sky.topColor} onChange={(v) => (mut().sky.topColor = v)} />
   <ParamColor label="Mid" value={cfg.sky.midColor ?? "#000000"} onChange={(v) => (mut().sky.midColor = v)} />
