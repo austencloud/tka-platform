@@ -28,6 +28,7 @@
   import UnderwaterParticles from "./ocean/UnderwaterParticles.svelte";
   import ReefStructures from "./ocean/ReefStructures.svelte";
   import type { ReefSDFData } from "./ocean/ReefStructures.svelte";
+  import OceanLoadingScreen from "./ocean/OceanLoadingScreen.svelte";
   import { generateRockVariants, type RockVariant } from "./ocean/procedural-rock";
   import {
     FogExp2,
@@ -110,6 +111,17 @@
   const rockGlb3 = useGltf("/models/ocean/rock_3.glb", opts);
   const rockGlb4 = useGltf("/models/ocean/rock_4.glb", opts);
   const rockGlb5 = useGltf("/models/ocean/rock_5.glb", opts);
+
+  const allGlbs = $derived([
+    $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3, $coralLargeGlb,
+    $seaweedGlb, $kelpPlantGlb,
+    $jellyfishGlb, $jellyfishSmallGlb,
+    $starfishGlb, $seaUrchinGlb, $shellGlb, $anemoneGlb,
+    $rockGlb0, $rockGlb1, $rockGlb2, $rockGlb3, $rockGlb4, $rockGlb5,
+  ]);
+  const loadedCount = $derived(allGlbs.filter(Boolean).length);
+  const loadingProgress = $derived(allGlbs.length > 0 ? loadedCount / allGlbs.length : 0);
+  const allLoaded = $derived(loadedCount === allGlbs.length);
 
   // ── Scene Context ─────────────────────────────────────────────────────
 
@@ -941,15 +953,8 @@
 
   $effect(() => {
     if (!sceneFeatures) return;
-    const glbs = [
-      $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3, $coralLargeGlb,
-      $seaweedGlb, $kelpPlantGlb,
-      $jellyfishGlb, $jellyfishSmallGlb,
-      $starfishGlb, $seaUrchinGlb, $shellGlb, $anemoneGlb,
-    ];
-    const loaded = glbs.filter(Boolean).length;
-    sceneFeatures.reportProgress("environment", loaded / glbs.length);
-    if (loaded === glbs.length) sceneFeatures.reportReady("environment");
+    sceneFeatures.reportProgress("environment", loadingProgress);
+    if (allLoaded) sceneFeatures.reportReady("environment");
   });
 
   onMount(() => {
@@ -958,7 +963,7 @@
         console.warn("[OceanScene] Lifting curtain via timeout");
         sceneFeatures.reportReady("environment");
       }
-    }, 5_000);
+    }, 15_000);
 
     // Debug: expose seabed diagnostic on window
     (window as any).__oceanDiag = () => {
@@ -1016,6 +1021,9 @@
   });
 </script>
 
+<OceanLoadingScreen progress={loadingProgress} visible={!allLoaded} />
+
+{#if allLoaded}
 <!-- Sky gradient -->
 <SkyGradient
   topColor={activeConfig.sky.topColor}
@@ -1278,3 +1286,4 @@
 />
 
 <RuinsPlatform config={activeConfig.platform} />
+{/if}
