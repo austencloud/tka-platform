@@ -48,6 +48,7 @@
   import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
+  import { EFFECTS, type EffectMeta } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
   const RENDER_FPS = 60;
@@ -73,7 +74,7 @@
     | { kind: "rendering"; percent: number; phase: string; word: string }
     | { kind: "playing"; videoUrl: string; word: string; isFirstView: boolean };
 
-  let state: PageState = $state({ kind: "loading" });
+  let pageState = $state<PageState>({ kind: "loading" });
 
   let resolvedSeq: SequenceData | null = $state(null);
   let seqWord = $state("");
@@ -101,26 +102,27 @@
   ];
 
   let selectedEffect: EffectType = $state("trails");
+  let showPropOverlay = $state(false);
+  let showEffectOverlay = $state(false);
 
-  const EFFECT_OPTIONS: { value: EffectType; label: string }[] = [
-    { value: "none", label: "None" },
-    { value: "trails", label: "Trails" },
-    { value: "fire", label: "Fire" },
-    { value: "smoke", label: "Smoke" },
-    { value: "bloom", label: "Bloom" },
-    { value: "sparkles", label: "Sparkles" },
-    { value: "zap", label: "Zap" },
-    { value: "echo", label: "Echo" },
-    { value: "ink", label: "Ink" },
-    { value: "water", label: "Water" },
-    { value: "bubbles", label: "Bubbles" },
-    { value: "petals", label: "Petals" },
-    { value: "frost", label: "Frost" },
-    { value: "silk", label: "Silk" },
-    { value: "pulse", label: "Pulse" },
-    { value: "led", label: "LED" },
-    { value: "charcoal", label: "Charcoal" },
-  ];
+  const PROP_SVG_MAP: Record<string, string> = {
+    [PropType.STAFF]: "/images/props/buttons/staff.svg",
+    [PropType.FAN]: "/images/props/buttons/fan.svg",
+    [PropType.CLUB]: "/images/props/buttons/club.svg",
+    [PropType.BUUGENG]: "/images/props/buttons/buugeng.svg",
+    [PropType.TRIAD]: "/images/props/buttons/triad.svg",
+    [PropType.MINIHOOP]: "/images/props/buttons/minihoop.svg",
+    [PropType.SWORD]: "/images/props/buttons/sword.svg",
+    [PropType.HAND]: "/images/props/buttons/hand.svg",
+  };
+
+  const selectedEffectMeta = $derived(
+    EFFECTS.find((e) => e.id === selectedEffect) ?? EFFECTS[0]!
+  );
+
+  const selectedPropLabel = $derived(
+    PROP_OPTIONS.find((o) => o.value === selectedProp)?.label ?? "Staff"
+  );
 
   let selectedBpm = $state(BASE_BPM);
 
@@ -132,8 +134,8 @@
   const scrubProgress = $derived(duration > 0 ? (displayTime / duration) * 100 : 0);
 
   const ogWord = $derived(
-    (state.kind === "playing" || state.kind === "rendering"
-      ? state.word
+    (pageState.kind === "playing" || pageState.kind === "rendering"
+      ? pageState.word
       : data?.meta?.word) || "Sequence"
   );
   const ogDesc = $derived(
@@ -271,7 +273,7 @@
     propOverride?: PropType,
     effectOverride?: EffectType,
   ): Promise<void> {
-    const isBackground = state.kind === "playing";
+    const isBackground = pageState.kind === "playing";
 
     if (activeWorker) {
       activeWorker.terminate();
@@ -282,7 +284,7 @@
       bgRenderPercent = 0;
       bgRenderPhase = "loading-assets";
     } else {
-      state = { kind: "rendering", percent: 0, phase: "loading-assets", word };
+      pageState = { kind: "rendering", percent: 0, phase: "loading-assets", word };
     }
 
     const blueProp =
@@ -297,7 +299,7 @@
     const frames = precomputeFrames(seq, blueProp, redProp, RENDER_FPS, 1, 2);
     if (frames.length === 0) {
       if (!isBackground) {
-        state = { kind: "error", message: "Failed to compute animation frames" };
+        pageState = { kind: "error", message: "Failed to compute animation frames" };
       }
       bgRenderPercent = -1;
       return;
@@ -379,7 +381,7 @@
           bgRenderPercent = out.percent;
           bgRenderPhase = out.phase;
         } else {
-          state = {
+          pageState = {
             kind: "rendering",
             percent: out.percent,
             phase: out.phase,
@@ -389,14 +391,14 @@
       } else if (out.type === "complete") {
         const blob = new Blob([out.mp4], { type: "video/mp4" });
         const blobUrl = URL.createObjectURL(blob);
-        state = { kind: "playing", videoUrl: blobUrl, word, isFirstView: !isBackground };
+        pageState = { kind: "playing", videoUrl: blobUrl, word, isFirstView: !isBackground };
         bgRenderPercent = -1;
         activeWorker = null;
         worker.terminate();
         uploadToR2(hash, out.mp4);
       } else if (out.type === "error") {
         if (!isBackground) {
-          state = { kind: "error", message: out.message };
+          pageState = { kind: "error", message: out.message };
         }
         bgRenderPercent = -1;
         activeWorker = null;
@@ -407,7 +409,7 @@
     worker.onerror = (err) => {
       if (activeWorker !== worker) return;
       if (!isBackground) {
-        state = { kind: "error", message: err.message || "Worker crashed" };
+        pageState = { kind: "error", message: err.message || "Worker crashed" };
       }
       bgRenderPercent = -1;
       activeWorker = null;
@@ -447,7 +449,7 @@
     const hash = await computeHash(resolvedSeq, propOverride, selectedEffect);
     const cached = await checkR2Cache(hash);
     if (cached) {
-      state = {
+      pageState = {
         kind: "playing",
         videoUrl: videoUrl(hash),
         word: seqWord,
@@ -467,7 +469,7 @@
     const hash = await computeHash(resolvedSeq, propOverride, effect);
     const cached = await checkR2Cache(hash);
     if (cached) {
-      state = {
+      pageState = {
         kind: "playing",
         videoUrl: videoUrl(hash),
         word: seqWord,
@@ -479,23 +481,23 @@
   }
 
   function handleDownload() {
-    if (state.kind !== "playing") return;
+    if (pageState.kind !== "playing") return;
     const a = document.createElement("a");
-    a.href = state.videoUrl;
-    a.download = `${state.word}.mp4`;
+    a.href = pageState.videoUrl;
+    a.download = `${pageState.word}.mp4`;
     a.click();
   }
 
   onMount(async () => {
     if (!shortCode) {
-      state = { kind: "error", message: "No short code provided" };
+      pageState = { kind: "error", message: "No short code provided" };
       return;
     }
 
     try {
       let seq = await shortCodeManager.resolveShortCode(shortCode);
       if (!seq) {
-        state = { kind: "error", message: "Sequence not found" };
+        pageState = { kind: "error", message: "Sequence not found" };
         return;
       }
 
@@ -527,7 +529,7 @@
       const cached = await checkR2Cache(hash);
 
       if (cached) {
-        state = {
+        pageState = {
           kind: "playing",
           videoUrl: videoUrl(hash),
           word,
@@ -537,7 +539,7 @@
         await spawnWorker(seq, hash, word);
       }
     } catch (err: unknown) {
-      state = {
+      pageState = {
         kind: "error",
         message:
           err instanceof Error ? err.message : "Failed to load sequence",
@@ -565,12 +567,12 @@
 </svelte:head>
 
 <div class="page">
-  {#if state.kind === "loading"}
+  {#if pageState.kind === "loading"}
     <div class="center-content">
       <div class="spinner"></div>
       <p class="status-text">Loading sequence...</p>
     </div>
-  {:else if state.kind === "error"}
+  {:else if pageState.kind === "error"}
     <div class="center-content">
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -587,23 +589,23 @@
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
       <h1 class="error-heading">Sequence Not Found</h1>
-      <p class="status-text">{state.message}</p>
+      <p class="status-text">{pageState.message}</p>
       <a href="/browse/gallery" class="cta-button">Browse Sequences</a>
     </div>
-  {:else if state.kind === "rendering"}
+  {:else if pageState.kind === "rendering"}
     <div class="center-content">
-      <h1 class="word-title">{state.word}</h1>
+      <h1 class="word-title">{pageState.word}</h1>
       <p class="first-view-message">
         You're the first to view this sequence!
       </p>
       <div class="progress-container">
-        <div class="progress-bar" style:width="{state.percent}%"></div>
+        <div class="progress-bar" style:width="{pageState.percent}%"></div>
       </div>
       <p class="status-text">
-        {#if state.phase === "loading-assets"}
+        {#if pageState.phase === "loading-assets"}
           Loading assets...
-        {:else if state.phase === "rendering"}
-          Building animation... {state.percent}%
+        {:else if pageState.phase === "rendering"}
+          Building animation... {pageState.percent}%
         {:else}
           Finalizing video...
         {/if}
@@ -611,14 +613,14 @@
       <p class="hint-text">Future scans will load instantly.</p>
       <a href="/browse/gallery" class="link-button">Open TKA Composer</a>
     </div>
-  {:else if state.kind === "playing"}
-    <div class="player-container">
-      <h1 class="word-title">{state.word}</h1>
-      {#if state.isFirstView}
+  {:else if pageState.kind === "playing"}
+    <div class="player-layout">
+      <h1 class="word-title">{pageState.word}</h1>
+      {#if pageState.isFirstView}
         <p class="first-view-badge">First scan render complete!</p>
       {/if}
 
-      <div class="video-wrapper">
+      <div class="video-area">
         <!-- svelte-ignore a11y_media_has_caption -->
         <video
           bind:this={videoEl}
@@ -626,7 +628,7 @@
           bind:duration
           bind:playbackRate
           class="sequence-video"
-          src={state.videoUrl}
+          src={pageState.videoUrl}
           autoplay
           loop
           muted
@@ -648,8 +650,8 @@
         {/if}
       </div>
 
-      <div class="player-sidebar">
-        <div class="controls">
+      <div class="player-controls">
+        <div class="transport">
           <button
             type="button"
             class="play-btn"
@@ -696,99 +698,155 @@
           />
         </div>
 
-        <div class="prop-row">
-          <span class="row-label">Prop</span>
-          <div class="prop-pills">
-            {#each PROP_OPTIONS as opt}
-              <button
-                type="button"
-                class="prop-pill"
-                class:active={selectedProp === opt.value}
-                onclick={() => handlePropChange(opt.value)}
-              >
-                {opt.label}
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <div class="effect-row">
-          <span class="row-label">Effect</span>
-          <div class="effect-pills">
-            {#each EFFECT_OPTIONS as opt}
-              <button
-                type="button"
-                class="effect-pill"
-                class:active={selectedEffect === opt.value}
-                onclick={() => handleEffectChange(opt.value)}
-              >
-                {opt.label}
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <div class="actions">
-          <button type="button" class="cta-button" onclick={handleDownload}>
-            Download
+        <div class="button-grid">
+          <button
+            type="button"
+            class="grid-btn"
+            onclick={() => (showPropOverlay = true)}
+          >
+            <img
+              src={PROP_SVG_MAP[selectedProp] ?? "/images/props/buttons/staff.svg"}
+              alt=""
+              class="grid-btn-icon prop-icon"
+            />
+            <span class="grid-btn-text">
+              <span class="grid-btn-label">Prop</span>
+              <span class="grid-btn-sub">{selectedPropLabel}</span>
+            </span>
+            <i class="fa-solid fa-chevron-right grid-btn-chevron"></i>
           </button>
-          <a href="/browse/gallery" class="cta-button secondary">
-            Open TKA Composer
+
+          <button
+            type="button"
+            class="grid-btn"
+            onclick={() => (showEffectOverlay = true)}
+          >
+            <i
+              class="fa-solid {selectedEffectMeta.icon} grid-btn-fa"
+              style:color={selectedEffectMeta.color}
+            ></i>
+            <span class="grid-btn-text">
+              <span class="grid-btn-label">Effects</span>
+              <span class="grid-btn-sub">{selectedEffectMeta.label}</span>
+            </span>
+            <i class="fa-solid fa-chevron-right grid-btn-chevron"></i>
+          </button>
+
+          <button type="button" class="grid-btn primary" onclick={handleDownload}>
+            <i class="fa-solid fa-download grid-btn-fa"></i>
+            <span class="grid-btn-label">Download</span>
+          </button>
+
+          <a href="/browse/gallery" class="grid-btn secondary">
+            <i class="fa-solid fa-compass grid-btn-fa"></i>
+            <span class="grid-btn-label">Open TKA</span>
           </a>
         </div>
       </div>
     </div>
+
+    <!-- Prop overlay -->
+    {#if showPropOverlay}
+      <div class="overlay-backdrop" role="presentation" onclick={() => (showPropOverlay = false)}>
+        <div class="overlay-panel" role="dialog" aria-label="Select prop" onclick={(e) => e.stopPropagation()}>
+          <div class="overlay-header">
+            <h2 class="overlay-title">Prop</h2>
+            <button type="button" class="overlay-close" onclick={() => (showPropOverlay = false)} aria-label="Close">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div class="overlay-grid">
+            {#each PROP_OPTIONS as opt}
+              <button
+                type="button"
+                class="overlay-option"
+                class:active={selectedProp === opt.value}
+                onclick={() => { handlePropChange(opt.value); showPropOverlay = false; }}
+              >
+                <img src={PROP_SVG_MAP[opt.value] ?? ""} alt="" class="overlay-prop-img" />
+                <span class="overlay-option-label">{opt.label}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Effect overlay -->
+    {#if showEffectOverlay}
+      <div class="overlay-backdrop" role="presentation" onclick={() => (showEffectOverlay = false)}>
+        <div class="overlay-panel" role="dialog" aria-label="Select effect" onclick={(e) => e.stopPropagation()}>
+          <div class="overlay-header">
+            <h2 class="overlay-title">Effects</h2>
+            <button type="button" class="overlay-close" onclick={() => (showEffectOverlay = false)} aria-label="Close">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div class="overlay-grid">
+            <button
+              type="button"
+              class="overlay-option"
+              class:active={selectedEffect === "none"}
+              onclick={() => { handleEffectChange("none"); showEffectOverlay = false; }}
+            >
+              <i class="fa-solid fa-ban overlay-effect-icon" style:color="#888"></i>
+              <span class="overlay-option-label">None</span>
+            </button>
+            {#each EFFECTS as eff}
+              <button
+                type="button"
+                class="overlay-option"
+                class:active={selectedEffect === eff.id}
+                onclick={() => { handleEffectChange(eff.id as EffectType); showEffectOverlay = false; }}
+              >
+                <i class="fa-solid {eff.icon} overlay-effect-icon" style:color={eff.color}></i>
+                <span class="overlay-option-label">{eff.label}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {/if}
   {/if}
 </div>
 
 <style>
   .page {
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
     background: #0f0f1a;
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
     font-family: system-ui, -apple-system, sans-serif;
+    overflow: hidden;
 
-    --theme-accent: #6366f1;
-    --theme-accent-strong: #4f46e5;
-    --theme-card-bg: rgba(255, 255, 255, 0.04);
-    --theme-card-hover-bg: rgba(255, 255, 255, 0.08);
-    --theme-panel-bg: rgba(15, 15, 26, 0.98);
-    --theme-stroke: rgba(255, 255, 255, 0.1);
-    --theme-stroke-strong: rgba(255, 255, 255, 0.15);
-    --theme-text: #ffffff;
-    --theme-text-dim: rgba(255, 255, 255, 0.6);
-    --theme-shadow: rgba(0, 0, 0, 0.3);
-    --min-touch-target: 44px;
-    --duration-fast: 150ms;
-    --duration-normal: 200ms;
-    --font-size-compact: 12px;
+    --accent: #6366f1;
+    --accent-strong: #4f46e5;
+    --card-bg: rgba(255, 255, 255, 0.06);
+    --card-hover: rgba(255, 255, 255, 0.1);
+    --stroke: rgba(255, 255, 255, 0.1);
+    --text-dim: rgba(255, 255, 255, 0.6);
+    --min-touch: 44px;
   }
+
+  /* ── Non-playing states (loading, error, rendering) ── */
 
   .center-content {
     text-align: center;
     max-width: 400px;
     width: 100%;
-  }
-
-  .player-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    max-width: 520px;
-    width: 100%;
-    gap: 0.75rem;
+    padding: 1rem;
   }
 
   .word-title {
-    font-size: 1.75rem;
+    font-size: 1.25rem;
     font-weight: 700;
     margin: 0;
     letter-spacing: 0.05em;
+    text-align: center;
+    flex-shrink: 0;
   }
 
   .first-view-message {
@@ -798,9 +856,11 @@
   }
 
   .first-view-badge {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: #4ade80;
     margin: 0;
+    flex-shrink: 0;
+    text-align: center;
   }
 
   .progress-container {
@@ -821,7 +881,7 @@
 
   .status-text {
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-dim);
     margin: 0 0 0.5rem;
   }
 
@@ -831,18 +891,91 @@
     margin: 0 0 1.5rem;
   }
 
-  .video-wrapper {
+  .link-button {
+    display: inline-block;
+    color: var(--text-dim);
+    font-size: 0.875rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .link-button:hover {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .error-icon {
+    color: #ef4444;
+    margin-bottom: 1rem;
+  }
+
+  .error-heading {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+  }
+
+  .cta-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--min-touch);
+    padding: 0.75rem 1.5rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── Player layout — fills viewport, no scroll ── */
+
+  .player-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 8px 12px;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .video-area {
     position: relative;
+    flex: 1 1 0;
+    min-height: 0;
     width: 100%;
     max-width: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .sequence-video {
     width: 100%;
     aspect-ratio: 1;
-    border-radius: 12px;
+    max-height: 100%;
+    border-radius: 10px;
     background: #000;
     display: block;
+    object-fit: contain;
   }
 
   .bg-render-overlay {
@@ -850,12 +983,12 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 0.5rem 0.75rem;
+    padding: 6px 10px;
     background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-    border-radius: 0 0 12px 12px;
+    border-radius: 0 0 10px 10px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 6px;
   }
 
   .bg-render-bar {
@@ -868,7 +1001,7 @@
 
   .bg-render-fill {
     height: 100%;
-    background: #6366f1;
+    background: var(--accent);
     border-radius: 2px;
     transition: width 200ms ease;
   }
@@ -880,32 +1013,33 @@
     flex-shrink: 0;
   }
 
-  /* ── Player sidebar (controls wrapper) ── */
+  /* ── Controls below video — fixed height, never scrolls ── */
 
-  .player-sidebar {
+  .player-controls {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    gap: 0.75rem;
+    max-width: 480px;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
-  /* ── Transport controls ── */
+  /* ── Transport ── */
 
-  .controls {
+  .transport {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 8px;
     width: 100%;
-    max-width: 480px;
   }
 
   .play-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: var(--min-touch);
+    height: var(--min-touch);
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.1);
     border: none;
@@ -927,317 +1061,316 @@
     border-radius: 2px;
     outline: none;
     cursor: pointer;
+    min-height: var(--min-touch);
   }
 
   .scrubber::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    background: #6366f1;
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 0 4px rgba(99, 102, 241, 0.5);
   }
 
   .scrubber::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    background: #6366f1;
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
     border: none;
     border-radius: 50%;
     cursor: pointer;
   }
 
   .time-display {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: rgba(255, 255, 255, 0.5);
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
-    min-width: 5.5ch;
-    text-align: right;
   }
 
-  /* ── Tempo control ── */
+  /* ── Tempo ── */
 
   .tempo-row {
     width: 100%;
-    max-width: 480px;
   }
 
-  /* ── Prop selector ── */
+  /* ── 2×2 button grid ── */
 
-  .prop-row {
+  .button-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .grid-btn {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    max-width: 480px;
-    overflow-x: auto;
-    scrollbar-width: none;
+    gap: 8px;
+    min-height: var(--min-touch);
+    padding: 8px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--stroke);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 120ms ease;
   }
 
-  .prop-row::-webkit-scrollbar {
-    display: none;
+  .grid-btn:hover {
+    background: var(--card-hover);
   }
 
-  .row-label {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+  .grid-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    justify-content: center;
+  }
+
+  .grid-btn.primary:hover {
+    background: var(--accent-strong);
+  }
+
+  .grid-btn.secondary {
+    justify-content: center;
+  }
+
+  .grid-btn-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    object-fit: contain;
+  }
+
+  .prop-icon {
+    filter: brightness(0) invert(1);
+  }
+
+  .grid-btn-fa {
+    font-size: 16px;
+    flex-shrink: 0;
+    width: 22px;
+    text-align: center;
+  }
+
+  .grid-btn-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .grid-btn-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .grid-btn-sub {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    line-height: 1.2;
+  }
+
+  .grid-btn-chevron {
+    font-size: 10px;
+    color: var(--text-dim);
     flex-shrink: 0;
   }
 
-  .prop-pills {
+  /* ── Overlay panels ── */
+
+  .overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
     display: flex;
-    gap: 0.375rem;
-    flex-wrap: nowrap;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 150ms ease;
   }
 
-  .prop-pill {
-    padding: 0.25rem 0.625rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 1rem;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.75rem;
-    white-space: nowrap;
-    cursor: pointer;
-    transition:
-      background 120ms ease,
-      color 120ms ease;
-  }
-
-  .prop-pill:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
-  }
-
-  .prop-pill.active {
-    background: #6366f1;
-    border-color: #6366f1;
-    color: #fff;
-  }
-
-  /* ── Effect selector ── */
-
-  .effect-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  .overlay-panel {
+    background: #1a1a2e;
+    border-radius: 16px 16px 0 0;
     width: 100%;
     max-width: 480px;
-    overflow-x: auto;
-    scrollbar-width: none;
+    max-height: 70dvh;
+    overflow-y: auto;
+    padding: 16px;
+    animation: slideUp 200ms ease;
   }
 
-  .effect-row::-webkit-scrollbar {
-    display: none;
-  }
-
-  .effect-pills {
+  .overlay-header {
     display: flex;
-    gap: 0.375rem;
-    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
   }
 
-  .effect-pill {
-    padding: 0.25rem 0.625rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 1rem;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.75rem;
-    white-space: nowrap;
-    cursor: pointer;
-    transition:
-      background 120ms ease,
-      color 120ms ease;
+  .overlay-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
   }
 
-  .effect-pill:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
-  }
-
-  .effect-pill.active {
-    background: #6366f1;
-    border-color: #6366f1;
-    color: #fff;
-  }
-
-  /* ── Actions ── */
-
-  .actions {
+  .overlay-close {
     display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 0.25rem;
-  }
-
-  .cta-button {
-    display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 48px;
-    padding: 0.75rem 1.5rem;
-    background: #6366f1;
-    color: white;
+    width: var(--min-touch);
+    height: var(--min-touch);
+    background: none;
     border: none;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
+    color: var(--text-dim);
+    font-size: 18px;
     cursor: pointer;
-    text-decoration: none;
-    transition: filter 150ms ease;
   }
 
-  .cta-button:hover {
-    filter: brightness(1.15);
+  .overlay-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
   }
 
-  .cta-button:focus-visible {
-    outline: 2px solid #6366f1;
-    outline-offset: 2px;
+  .overlay-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 72px;
+    padding: 8px 4px;
+    background: var(--card-bg);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
   }
 
-  .cta-button.secondary {
-    background: rgba(255, 255, 255, 0.1);
+  .overlay-option:hover {
+    background: var(--card-hover);
   }
 
-  .link-button {
-    display: inline-block;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.875rem;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+  .overlay-option.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--accent);
   }
 
-  .link-button:hover {
-    color: rgba(255, 255, 255, 0.9);
+  .overlay-prop-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
   }
 
-  .error-icon {
-    color: #ef4444;
-    margin-bottom: 1rem;
+  .overlay-effect-icon {
+    font-size: 24px;
   }
 
-  .error-heading {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0 0 0.5rem;
+  .overlay-option-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.2;
   }
 
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.15);
-    border-top-color: #6366f1;
-    border-radius: 50%;
-    margin: 0 auto 1rem;
-    animation: spin 0.8s linear infinite;
+  .overlay-option.active .overlay-option-label {
+    color: #fff;
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
-  /* ── Tablet / Z Fold unfolded (≥600px) ── */
-
-  @media (min-width: 600px) {
-    .player-container {
-      max-width: 680px;
-      gap: 1rem;
-    }
-
-    .video-wrapper {
-      max-width: 560px;
-    }
-
-    .controls,
-    .tempo-row,
-    .prop-row,
-    .effect-row {
-      max-width: 560px;
-    }
-
-    .word-title {
-      font-size: 2.25rem;
-    }
-
-    .prop-pills,
-    .effect-pills {
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .prop-row,
-    .effect-row {
-      justify-content: center;
-    }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
   }
 
-  /* ── Z Fold landscape / wide tablet (≥800px) ── */
+  /* ── Landscape / wide (Z Fold landscape, tablets) ── */
 
-  @media (min-width: 800px) {
-    .player-container {
-      max-width: 840px;
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: flex-start;
-      gap: 1.5rem;
+  @media (min-width: 700px) and (max-height: 800px) {
+    .player-layout {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      grid-template-rows: auto 1fr;
+      padding: 8px 16px;
+      gap: 8px;
     }
 
     .word-title {
-      width: 100%;
-      text-align: center;
+      grid-column: 1 / -1;
+      font-size: 1.1rem;
     }
 
     .first-view-badge {
-      width: 100%;
-      text-align: center;
+      grid-column: 1 / -1;
     }
 
-    .video-wrapper {
-      max-width: 420px;
-      flex-shrink: 0;
-    }
-
-    .player-sidebar {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 1rem;
-      flex: 1;
-      min-width: 280px;
-      max-width: 380px;
-    }
-
-    .controls {
+    .video-area {
+      grid-column: 1;
+      grid-row: 2;
       max-width: none;
+      min-height: 0;
     }
 
-    .tempo-row {
+    .player-controls {
+      grid-column: 2;
+      grid-row: 2;
       max-width: none;
+      justify-content: center;
     }
 
-    .prop-row,
-    .effect-row {
-      max-width: none;
-      flex-wrap: wrap;
+    .overlay-panel {
+      max-width: 520px;
+      border-radius: 16px;
+      max-height: 80dvh;
     }
 
-    .prop-pills,
-    .effect-pills {
-      flex-wrap: wrap;
+    .overlay-backdrop {
+      align-items: center;
+    }
+  }
+
+  /* ── Wider portrait tablets (Z Fold portrait) ── */
+
+  @media (min-width: 600px) and (min-height: 800px) {
+    .player-layout {
+      max-width: 600px;
+      margin: 0 auto;
+      gap: 8px;
     }
 
-    .actions {
-      justify-content: flex-start;
+    .video-area {
+      max-width: 560px;
+    }
+
+    .player-controls {
+      max-width: 560px;
+    }
+
+    .word-title {
+      font-size: 1.5rem;
+    }
+
+    .overlay-panel {
+      max-width: 560px;
+      border-radius: 16px;
+      max-height: 60dvh;
+    }
+
+    .overlay-backdrop {
+      align-items: center;
     }
   }
 </style>
