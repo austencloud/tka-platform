@@ -929,17 +929,39 @@
     };
   });
 
-  const decorationClones = $derived.by(() => {
-    return decorationPlacements.map((dec) => {
-      if (dec.type === "starfish" && $starfishGlb)
-        return $starfishGlb.scene.clone();
-      if (dec.type === "urchin" && $seaUrchinGlb)
-        return $seaUrchinGlb.scene.clone();
-      if (dec.type === "shell" && $shellGlb) return $shellGlb.scene.clone();
-      if (dec.type === "anemone" && $anemoneGlb)
-        return underwaterClone($anemoneGlb.scene as Object3D, "#cc3366", 0.25);
-      return null;
-    });
+  const decorationInstances = $derived.by((): Record<string, InstancedMesh | null> => {
+    const modelMap: Record<string, Object3D | undefined> = {
+      starfish: $starfishGlb?.scene,
+      urchin: $seaUrchinGlb?.scene,
+      shell: $shellGlb?.scene,
+      anemone: $anemoneGlb?.scene,
+    };
+
+    const buckets: Record<string, InstancePlacement[]> = {
+      starfish: [],
+      urchin: [],
+      shell: [],
+      anemone: [],
+    };
+
+    for (const dec of decorationPlacements) {
+      const th = getTerrainY(dec.x, dec.z);
+      buckets[dec.type]!.push({
+        x: dec.x,
+        z: dec.z,
+        y: groundY + th,
+        scale: dec.scale * decoScale(dec.type),
+        rotY: dec.rotY,
+      });
+    }
+
+    const result: Record<string, InstancedMesh | null> = {};
+    for (const [type, model] of Object.entries(modelMap)) {
+      result[type] = model
+        ? createInstancedMeshFromModel(model, buckets[type]!)
+        : null;
+    }
+    return result;
   });
 
   // ── Animation Loop ────────────────────────────────────────────────────
@@ -1039,7 +1061,7 @@
     for (const c of heroRockClones) disposeSceneGraph(c);
     disposeInstancedMesh(jellyfishInstances.large);
     disposeInstancedMesh(jellyfishInstances.small);
-    for (const c of decorationClones) if (c) disposeSceneGraph(c as Object3D);
+    for (const inst of Object.values(decorationInstances)) disposeInstancedMesh(inst);
   });
 </script>
 
@@ -1120,19 +1142,11 @@
   {/each}
 {/if}
 
-<!-- Floor decorations (zone-placed: stage edge → clearing) -->
+<!-- Floor decorations (instanced, zone-placed) -->
 {#if activeConfig.decorations.enabled}
-  {#each decorationClones as clone, i}
-    {@const dec = decorationPlacements[i]}
-    {#if clone && dec}
-      <T
-        is={clone}
-        position.x={dec.x}
-        position.y={groundY + getTerrainY(dec.x, dec.z)}
-        position.z={dec.z}
-        scale={dec.scale * decoScale(dec.type)}
-        rotation.y={dec.rotY}
-      />
+  {#each Object.values(decorationInstances) as inst}
+    {#if inst}
+      <T is={inst} />
     {/if}
   {/each}
 {/if}
