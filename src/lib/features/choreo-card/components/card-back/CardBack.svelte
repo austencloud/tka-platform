@@ -4,18 +4,21 @@
   Designed for physical printed cards. Fills its parent container and
   scales proportionally using container query units (cqi).
 
-  Layout: full flex column with three rows.
-    Header:  Turn glyph | "CHOREO CARDS" branding | Reversal glyph
-    Content: Mandala (fixed center), deck designation labels (TKA + VTG)
-    Footer:  Start position pictograph (left, shows props for chaining) | (future: duration) | step count
+  Layout: four absolute corners + centered content.
+    Top-left:     Turn glyph (fixed box) + label
+    Top-right:    Reversal glyph (fixed box) + label
+    Top-center:   Brand text
+    Center:       Mandala + designation pills
+    Bottom-left:  Label + start position pictograph
+    Bottom-right: Label + step count
+    Bottom-center: URL
 
-  Level badge and LOOP icons are NOT on the physical card - they live in the
-  software's sequence viewer. This keeps the printed card as its own clean
-  artifact that doesn't try to mirror the software UI.
+  Corner glyphs sit in fixed-size boxes so their labels stay at the same
+  pixel position across all card variations.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { onMount } from "svelte";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import CardBackDecorations from "./CardBackDecorations.svelte";
   import { deriveCardBackData } from "./card-back-data";
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
@@ -25,40 +28,111 @@ import { onMount } from "svelte";
   import ReversalPatternGlyph from "./ReversalPatternGlyph.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import MotionTypePills from "../MotionTypePills.svelte";
-  interface Props { sequence: SequenceData; }
-  let { sequence }: Props = $props();
+  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
+  import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";
+  import type { CardBackThemeVisuals } from "./card-back-theme-visuals";
+  interface Props {
+    sequence: SequenceData;
+    themeOverride?: { visuals: CardBackThemeVisuals; name: string };
+    showVtgDesignation?: boolean;
+  }
+  let { sequence, themeOverride, showVtgDesignation = false }: Props = $props();
 
   const d = $derived(deriveCardBackData(sequence));
+  const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
 
-  // Deck designation labels shown below the mandala
-  const hasDesignation = $derived(!!d.handPathFamily || !!d.tkaDesignation || !!d.vtgDesignation);
+  const theme = $derived(themeOverride?.visuals ?? getCardBackThemeVisuals(settingsService.settings.backgroundType));
+  const themeName = $derived(themeOverride?.name ?? settingsService.settings.backgroundType ?? "cosmic");
+  const brandStyle = $derived(theme.brandStyle ?? "uppercase-sans");
+  const ornamentType = $derived(theme.ornamentType ?? "diamond");
+  const borderWidth = $derived(theme.borderWidth ?? 2);
+  const brandGlow = $derived(theme.brandGlow ?? "drop-shadow(0 0 3cqi rgba(255, 255, 255, 0.1))");
+  const decorationOpacity = $derived(theme.decorationOpacity ?? 1);
+  const textColor = $derived(theme.textColor ?? "#ffffff");
+  const textMutedColor = $derived(theme.textMutedColor ?? "rgba(255,255,255,0.75)");
+  const isDarkTheme = $derived(!theme.textColor || theme.textColor === "#ffffff");
 
-  const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
+  const LOOP_DISPLAY_ORDER: LOOPComponent[] = [
+    LOOPComponent.ROTATED, LOOPComponent.MIRRORED, LOOPComponent.FLIPPED,
+    LOOPComponent.SWAPPED, LOOPComponent.INVERTED, LOOPComponent.REWOUND,
+  ];
+  const LOOP_ICONS: Record<string, { fa: string; color: string; label: string }> = {
+    [LOOPComponent.ROTATED]:  { fa: "fas fa-rotate",     color: "#36c3ff", label: "Rotated" },
+    [LOOPComponent.MIRRORED]: { fa: "fas fa-left-right",  color: "#6F2DA8", label: "Mirrored" },
+    [LOOPComponent.FLIPPED]:  { fa: "fas fa-up-down",     color: "#e91e63", label: "Flipped" },
+    [LOOPComponent.SWAPPED]:  { fa: "fas fa-shuffle",     color: "#26e600", label: "Swapped" },
+    [LOOPComponent.INVERTED]: { fa: "fas fa-adjust",      color: "#eb7d00", label: "Inverted" },
+    [LOOPComponent.REWOUND]:  { fa: "fas fa-backward",    color: "#00bcd4", label: "Rewound" },
+  };
+  const activeLoopList = $derived(
+    LOOP_DISPLAY_ORDER.filter(c => loopDisplay.components.has(c))
+  );
 </script>
 
-<!-- Outer: themed gradient border -->
-<div class="border-frame" style="background: {theme.borderGradient};">
-  <!-- Inner: full flex column - header, content, footer all flow naturally -->
-  <div class="back" style="background: {theme.background};">
-    <CardBackDecorations theme={settingsService.settings.backgroundType ?? "cosmic"} />
+<div class="border-frame" style="background: {theme.borderGradient}; padding: {borderWidth}cqi;">
+  <div class="back" style="background: {theme.background}; --card-text: {textColor}; --card-text-muted: {textMutedColor};">
+    {#if decorationOpacity > 0}
+      <div style="opacity: {decorationOpacity};">
+        <CardBackDecorations theme={themeName} />
+      </div>
+    {/if}
 
-    <!-- HEADER: turn glyph | branding | reversal glyph -->
-    <header class="card-header">
-      <div class="header-left">
+    <!-- TOP CENTER: brand -->
+    <div class="brand-slot">
+      <span
+        class="brand-main"
+        class:italic-serif={brandStyle === "italic-serif"}
+        class:uppercase-sans={brandStyle === "uppercase-sans"}
+        class:small-caps={brandStyle === "small-caps"}
+        style="background: {theme.brandGradient}; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: {brandGlow};"
+      >The Kinetic Alphabet</span>
+      <div class="brand-ornament">
+        {#if ornamentType === "diamond"}
+          <span class="ornament-line" style="background: linear-gradient(90deg, transparent, {theme.ornamentLineColor} 20%, {theme.ornamentLineColor} 80%, transparent);"></span>
+          <span class="ornament-diamond" style="background: linear-gradient(135deg, {theme.ornamentColor}, {theme.ornamentLineColor}, {theme.ornamentColor});"></span>
+          <span class="ornament-line" style="background: linear-gradient(90deg, transparent, {theme.ornamentLineColor} 20%, {theme.ornamentLineColor} 80%, transparent);"></span>
+        {:else if ornamentType === "triple-dot"}
+          <span class="ornament-line" style="background: linear-gradient(90deg, transparent, {theme.ornamentLineColor} 20%, {theme.ornamentLineColor} 80%, transparent);"></span>
+          <span class="ornament-dot" style="background: {theme.ornamentColor};"></span>
+          <span class="ornament-dot" style="background: {theme.ornamentColor};"></span>
+          <span class="ornament-dot" style="background: {theme.ornamentColor};"></span>
+          <span class="ornament-line" style="background: linear-gradient(90deg, transparent, {theme.ornamentLineColor} 20%, {theme.ornamentLineColor} 80%, transparent);"></span>
+        {:else if ornamentType === "star"}
+          <span class="ornament-line" style="background: linear-gradient(90deg, transparent, {theme.ornamentLineColor} 20%, {theme.ornamentLineColor} 80%, transparent);"></span>
+          <span class="ornament-star" style="color: {theme.ornamentColor};">✦</span>
+          <span class="ornament-line" style="background: linear-gradient(90deg, transparent, {theme.ornamentLineColor} 20%, {theme.ornamentLineColor} 80%, transparent);"></span>
+        {:else if ornamentType === "double-line"}
+          <span class="ornament-line double" style="border-color: {theme.ornamentLineColor};"></span>
+        {:else if ornamentType === "none"}
+          <!-- no ornament -->
+        {/if}
+      </div>
+      <span
+        class="brand-sub"
+        class:uppercase-sans-sub={brandStyle === "uppercase-sans"}
+        class:small-caps-sub={brandStyle === "small-caps"}
+        style="background: {theme.brandSubGradient}; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;"
+      >Choreo Cards</span>
+    </div>
+
+    <!-- TOP-LEFT: turn glyph in fixed box -->
+    <div class="corner top-left">
+      <div class="glyph-box">
         <TurnPatternGlyph entries={d.turnGlyphEntries} />
-        <span class="corner-sublabel">{d.turnLabel}</span>
       </div>
-      <div class="header-center">
-        <span class="brand">CHOREO CARDS</span>
-        <span class="brand-url">tkaflowarts.com</span>
-      </div>
-      <div class="header-right">
-        <ReversalPatternGlyph sequence={d.reversalSequence} period={d.reversalPeriod} />
-        <span class="corner-sublabel">reversals</span>
-      </div>
-    </header>
+    </div>
 
-    <!-- CENTER CONTENT: mandala always at same center point, text floats below -->
+    <!-- TOP-RIGHT: reversal glyph in fixed box -->
+    <div class="corner top-right">
+      <div class="glyph-box">
+        <ReversalPatternGlyph sequence={d.reversalSequence} period={d.reversalPeriod} />
+      </div>
+    </div>
+
+    <!-- CENTER: mandala -->
     <div class="content">
       <div class="mandala-zone">
         <div class="mandala-anchor">
@@ -71,39 +145,61 @@ import { onMount } from "svelte";
           />
         </div>
       </div>
+    </div>
 
-      {#if hasDesignation}
-        <div class="content-text">
-          {#if d.handPathFamily}
-            <div class="deck-designation pills">
-              <MotionTypePills label={d.handPathFamily} fontSize="2.6cqi" />
-            </div>
-          {:else if d.tkaDesignation}
-            <p class="deck-designation">{d.tkaDesignation}</p>
-          {/if}
-          {#if d.vtgDesignation}
-            <p class="deck-designation vtg">{d.vtgDesignation}</p>
-          {/if}
-        </div>
+    <!-- LOOP ROW: between mandala and bottom elements -->
+    {#if activeLoopList.length > 0}
+      <div class="loop-row">
+        {#each activeLoopList as comp}
+          {@const icon = LOOP_ICONS[comp]!}
+          {@const isQuarteredRot = comp === LOOPComponent.ROTATED}
+          {@const isQuarteredInv = comp === LOOPComponent.INVERTED && loopDisplay.inversionPeriod === Period.QUARTERED}
+          <div class="loop-col">
+            <span class="loop-icon-cell">
+              {#if comp === LOOPComponent.SWAPPED}
+                <SwapIcon size="8cqi" />
+              {:else if isQuarteredInv}
+                <CheckerboardCircleIcon size="8cqi" color={icon.color} />
+              {:else}
+                <i
+                  class={isQuarteredRot ? "fas fa-arrows-spin" : icon.fa}
+                  style="font-size: 8cqi; color: {icon.color};"
+                  aria-hidden="true"
+                ></i>
+              {/if}
+            </span>
+            <span class="loop-col-label">{icon.label}</span>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    <!-- BOTTOM-LEFT: start position pictograph -->
+    <div class="corner bottom-left">
+      {#if sequence.startPosition}
+        <StartPositionPictograph pictographData={sequence.startPosition} darkMode={isDarkTheme} />
       {/if}
     </div>
 
-    <!-- FOOTER: starting position (left, for chaining) | (future: duration) | step count -->
-    <footer class="card-footer">
-      <div class="footer-left">
-        {#if sequence.startPosition}
-          <StartPositionPictograph pictographData={sequence.startPosition} />
-          {#if d.startPositionLabel}
-            <span class="corner-sublabel">{d.startPositionLabel}</span>
-          {/if}
-        {/if}
+    <!-- BOTTOM-RIGHT: step count -->
+    <div class="corner bottom-right">
+      <span class="corner-label">{d.stepCount}</span>
+    </div>
+
+    <!-- LEVEL BADGE: above the URL ornament -->
+    <div class="level-badge-slot">
+      <DifficultyBadge level={d.level.number} size="7cqi" fontSize="4.2cqi" />
+    </div>
+
+    <!-- BOTTOM CENTER: URL -->
+    <div class="url-slot">
+      <div class="url-ornament">
+        <span class="url-line" style="background: linear-gradient(90deg, transparent, {theme.ornamentLineColor} 30%, {theme.ornamentLineColor} 70%, transparent);"></span>
+        <span class="url-diamond" style="background: linear-gradient(135deg, {theme.ornamentColor}, {theme.ornamentLineColor}, {theme.ornamentColor});"></span>
+        <span class="url-line" style="background: linear-gradient(90deg, transparent, {theme.ornamentLineColor} 30%, {theme.ornamentLineColor} 70%, transparent);"></span>
       </div>
-      <div class="footer-center"></div>
-      <div class="footer-right">
-        <span class="corner-label">{d.stepCount}</span>
-        <span class="corner-sublabel">steps</span>
-      </div>
-    </footer>
+      <span class="brand-url">tkaflowarts.com</span>
+    </div>
   </div>
 </div>
 
@@ -112,97 +208,261 @@ import { onMount } from "svelte";
     width: 100%;
     height: 100%;
     border-radius: 2.4cqi;
-    padding: 2cqi;
     box-sizing: border-box;
     overflow: hidden;
     container-type: inline-size;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
-
-  /* ═══════ CARD SHELL ═══════
-     Full flex column: header → content → footer.
-     No absolute positioning for layout elements. Everything flows. */
 
   .back {
     position: relative;
     width: 100%;
     height: 100%;
-    color: var(--theme-text, #ffffff);
+    color: var(--card-text, #ffffff);
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
     border-radius: 1.6cqi;
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    padding: 3.2cqi;
-    gap: 1.5cqi;
   }
 
-  /* ═══════ HEADER ═══════ */
+  /* ═══════ BRAND (top center, truly centered) ═══════ */
 
-  .card-header {
-    flex-shrink: 0;
+  .brand-slot {
+    position: absolute;
+    top: 3.2cqi;
+    left: 0;
+    right: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.8cqi;
     z-index: 2;
+    pointer-events: none;
   }
 
-  .header-left {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.4cqi;
-  }
-
-  .header-center {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.3cqi;
-  }
-
-  .header-right {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.4cqi;
-  }
-
-  .brand {
-    font-size: 4cqi;
-    font-weight: 400;
+  .brand-main {
+    font-size: 4.4cqi;
+    font-weight: 300;
     letter-spacing: 0.22em;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.85));
+    font-style: italic;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  .brand-main.italic-serif {
+    font-style: italic;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 300;
+    letter-spacing: 0.22em;
+  }
+
+  .brand-main.uppercase-sans {
+    font-style: normal;
+    font-family: Didot, "Bodoni MT", "Playfair Display", Georgia, serif;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-size: 4.2cqi;
+  }
+
+  .brand-main.small-caps {
+    font-style: normal;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 400;
+    letter-spacing: 0.3em;
+    font-variant: small-caps;
+    font-size: 4cqi;
+  }
+
+  .brand-ornament {
+    display: flex;
+    align-items: center;
+    gap: 1.2cqi;
+    width: 60%;
+    justify-content: center;
+  }
+
+  .ornament-line {
+    flex: 1;
+    max-width: 16cqi;
+    height: 0.3cqi;
+  }
+
+  .ornament-line.double {
+    max-width: 32cqi;
+    height: 0;
+    border-top: 0.25cqi solid;
+    border-bottom: 0.25cqi solid;
+    padding-top: 0.5cqi;
+    background: none;
+  }
+
+  .ornament-diamond {
+    width: 2cqi;
+    height: 2cqi;
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  .ornament-dot {
+    width: 1.2cqi;
+    height: 1.2cqi;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ornament-star {
+    font-size: 2.6cqi;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .brand-sub {
+    font-size: 3.2cqi;
+    font-weight: 500;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+  }
+
+  .brand-sub.uppercase-sans-sub {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.35em;
+    font-size: 3.2cqi;
+  }
+
+  .brand-sub.small-caps-sub {
+    font-variant: small-caps;
+    letter-spacing: 0.35em;
+    text-transform: none;
+  }
+
+  /* ═══════ URL (bottom center) ═══════ */
+
+  .url-slot {
+    position: absolute;
+    bottom: 2.8cqi;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6cqi;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .url-ornament {
+    display: flex;
+    align-items: center;
+    gap: 0.8cqi;
+    width: 36%;
+    justify-content: center;
+  }
+
+  .url-line {
+    flex: 1;
+    max-width: 10cqi;
+    height: 0.5cqi;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .url-diamond {
+    width: 1.6cqi;
+    height: 1.6cqi;
+    transform: rotate(45deg);
+    flex-shrink: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .brand-url {
-    font-size: 2.8cqi;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    letter-spacing: 0.04em;
+    font-size: 3cqi;
+    color: var(--card-text-muted, rgba(255, 255, 255, 0.7));
+    letter-spacing: 0.12em;
+    font-weight: 400;
   }
 
-  /* ═══════ CENTER CONTENT ═══════
-     Optional slots flow top-to-bottom. The mandala-zone uses flex:1 to
-     absorb remaining vertical space. Remove a slot and the rest reflow. */
+  /* ═══════ CORNERS (absolute, fixed position) ═══════ */
+
+  .corner {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4cqi;
+    z-index: 2;
+  }
+
+  .top-left     { top: 3.2cqi;    left: 3.2cqi; }
+  .top-right    { top: 3.2cqi;    right: 3.2cqi; }
+  .bottom-left  { bottom: 2cqi; left: 3.2cqi; gap: 1.2cqi; }
+  .bottom-right { bottom: 2cqi; right: 3.2cqi; gap: 1.2cqi; justify-content: flex-end; }
+
+  /* Fixed-size box for glyphs — bars/dots sit inside, bottom-aligned.
+     Height accommodates max 3 turns (5.4cqi) or reversal dots.
+     Ensures label below is always at the same Y position. */
+  .glyph-box {
+    width: 10cqi;
+    height: 6cqi;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .corner-sublabel {
+    font-size: 3cqi;
+    font-weight: 600;
+    color: var(--card-text-muted, rgba(255, 255, 255, 0.75));
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
+
+  .corner-label {
+    font-size: 9cqi;
+    font-weight: 700;
+    color: var(--card-text-muted, rgba(255, 255, 255, 0.9));
+    line-height: 1;
+  }
+
+  /* ═══════ CENTER CONTENT ═══════ */
+
+  .loop-row {
+    position: absolute;
+    bottom: 27cqi;
+    left: 3cqi;
+    right: 3cqi;
+    display: flex;
+    justify-content: center;
+    gap: 6cqi;
+    z-index: 2;
+  }
 
   .content {
-    flex: 1;
-    min-height: 0;
+    position: absolute;
+    inset: 10cqi 3.2cqi 30cqi;
     z-index: 1;
-    position: relative;
   }
 
-  /* Mandala fills the entire content area and centers itself.
-     Its position never changes regardless of what text is below it. */
+  .level-badge-slot {
+    position: absolute;
+    bottom: 16cqi;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    z-index: 2;
+    pointer-events: none;
+  }
+
   .mandala-zone {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Slight upward bias so the visual weight sits above center,
-       leaving room for text at the bottom without feeling cramped. */
-    padding-bottom: 6cqi;
   }
 
   .mandala-anchor {
@@ -219,24 +479,51 @@ import { onMount } from "svelte";
     height: 100% !important;
   }
 
-  /* Text floats at the bottom of the content area, overlaying
-     the mandala zone. Present or absent, mandala stays put. */
-  .content-text {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+  .loop-col {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1cqi;
-    text-align: center;
+    gap: 0.6cqi;
+  }
+
+  .loop-icon-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .loop-icon-cell i {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  }
+
+  .loop-period-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4.5cqi;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    pointer-events: none;
+    text-shadow:
+      0 0 3px rgba(0, 0, 0, 0.9),
+      0 0 6px rgba(0, 0, 0, 0.7);
+  }
+
+  .loop-col-label {
+    font-size: 2.2cqi;
+    color: var(--card-text-muted, rgba(255, 255, 255, 0.7));
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
   }
 
   .deck-designation {
     margin: 0;
-    font-size: 2.8cqi;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
+    font-size: 3cqi;
+    color: var(--card-text-muted, rgba(255, 255, 255, 0.8));
     line-height: 1.4;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -250,66 +537,29 @@ import { onMount } from "svelte";
   }
 
   .deck-designation.vtg {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
-    font-size: 2.5cqi;
+    color: var(--card-text-muted, rgba(255, 255, 255, 0.7));
+    font-size: 3cqi;
   }
-
-  /* ═══════ FOOTER ROW ═══════ */
-
-  .card-footer {
-    flex-shrink: 0;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    z-index: 2;
-  }
-
-  .footer-left {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.4cqi;
-  }
-
-  .footer-center {
-    display: flex;
-    align-items: center;
-    gap: 1.6cqi;
-  }
-
-  .footer-right {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .corner-label {
-    font-size: 6cqi;
-    font-weight: 700;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
-    line-height: 1;
-  }
-
-  .corner-sublabel {
-    font-size: 2cqi;
-    font-weight: 500;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    line-height: 1;
-  }
-
 
   /* ═══════ CHILD COMPONENT OVERRIDES ═══════ */
 
-  .footer-left :global(.start-pos-picto) {
+  .bottom-left :global(.start-pos-picto) {
     width: 12cqi !important;
     height: 12cqi !important;
   }
 
-  .footer-left :global(.start-pos-picto svg) {
+  .bottom-left :global(.start-pos-picto svg) {
     width: 100% !important;
     height: 100% !important;
   }
 
+  @media print {
+    .border-frame,
+    .back,
+    .brand-main,
+    .brand-sub {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
 </style>

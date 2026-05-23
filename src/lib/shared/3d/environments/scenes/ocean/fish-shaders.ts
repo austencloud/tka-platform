@@ -270,25 +270,25 @@ void main() {
     steer.xz += safeNormalize2(pos.xz) * pen * 3.0;
   }
 
+  float scatterIntensity = 0.0;
   float distToRay = distance(pos, uScatterOrigin);
   float boldScatter = uScatterRadius * (1.3 - boldness * 0.6);
   if (distToRay < boldScatter && uScatterForce > 0.0 && uScatterOrigin.y > -900.0) {
     vec3 away = safeNormalize(pos - uScatterOrigin);
     float proximity = 1.0 - distToRay / boldScatter;
 
-    // Fountain effect: tangential split for head-on fish
     vec3 tangent = safeNormalize(cross(away, vec3(0.0, 1.0, 0.0)));
     vec3 fishDir = safeNormalize(vel.xyz);
     float dotFwd = abs(dot(fishDir, away));
     float tangentWeight = smoothstep(0.3, 0.8, dotFwd) * 0.6;
     vec3 fleeDir = safeNormalize(mix(away, tangent, tangentWeight));
 
-    // Trafalgar wave: distance-delayed onset
     float delay = distToRay * uScatterWaveSpeed;
     float timeSinceScatter = uTime - uScatterStartTime;
     float waveReached = step(delay, timeSinceScatter);
 
-    steer += fleeDir * uScatterForce * proximity * proximity * (1.5 - boldness) * waveReached;
+    scatterIntensity = proximity * proximity * (1.5 - boldness) * waveReached;
+    steer += fleeDir * uScatterForce * scatterIntensity;
   }
 
   // ── SDF reef obstacle avoidance ──────────────────────────────────
@@ -336,11 +336,14 @@ void main() {
     }
   }
 
+  float effectiveMaxSteer = uMaxSteer + scatterIntensity * uScatterForce * 0.5;
   float steerLen = length(steer);
-  if (steerLen > uMaxSteer) steer = steer / steerLen * uMaxSteer;
+  if (steerLen > effectiveMaxSteer) steer = steer / steerLen * effectiveMaxSteer;
 
   float drag = pow(0.5, uDelta / max(uHalfSpeedTime, 0.01));
   vel = vel * drag + steer * uDelta;
+
+  adjMax += scatterIntensity * uScatterForce * 0.15;
 
   float spd = length(vel);
   if (spd > adjMax) vel = vel / spd * adjMax;

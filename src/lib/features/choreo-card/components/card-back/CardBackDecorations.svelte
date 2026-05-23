@@ -45,8 +45,8 @@
         {@const fade = Math.pow(Math.min(1, edge * 1.8), 0.6)}
         {@const wave = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(progress * Math.PI * 4.5 + 1.2))}
         {@const rayAlpha = 0.14 * wave * fade}
-        {@const topY = 10 + Math.sin(i * 3.7 + 42) * 18}
-        {@const bottomY = 450 + Math.sin(i * 7.3 + 21) * 35}
+        {@const topY = 120 + Math.sin(i * 3.7 + 42) * 25}
+        {@const bottomY = 580 + Math.sin(i * 7.3 + 21) * 35}
         {@const w = 6 + wave * 6}
         <rect
           x={x - w/2} y={topY}
@@ -67,8 +67,8 @@
         {@const fade = Math.pow(Math.min(1, edge * 1.8), 0.6)}
         {@const wave = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(progress * Math.PI * 3.5 + 2.8))}
         {@const rayAlpha = 0.09 * wave * fade}
-        {@const topY = 25 + Math.sin(i * 4.1 + 17) * 22}
-        {@const bottomY = 380 + Math.sin(i * 6.9 + 33) * 30}
+        {@const topY = 140 + Math.sin(i * 4.1 + 17) * 25}
+        {@const bottomY = 560 + Math.sin(i * 6.9 + 33) * 30}
         {@const w = 5 + wave * 5}
         <rect
           x={x - w/2} y={topY}
@@ -80,9 +80,6 @@
       {/each}
     </g>
 
-    <!-- Horizon glow: atmospheric wash at the base of the auroras -->
-    <ellipse cx="130" cy="460" rx="120" ry="30" fill="#50dcb4" opacity="0.04" filter="url(#aurora-blur)"/>
-    <ellipse cx="360" cy="390" rx="100" ry="25" fill="#50dcb4" opacity="0.03" filter="url(#aurora-blur)"/>
 
     <!-- COMET: modeled on the actual CometSystem - nucleus, coma, dual tails, debris -->
     <!-- Positioned in upper-right empty area, arcing across -->
@@ -494,5 +491,7 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 </style>

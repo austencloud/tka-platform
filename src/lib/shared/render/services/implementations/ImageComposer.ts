@@ -837,7 +837,7 @@ export class ImageComposer {
     }
 
     try {
-      const qrSize = Math.floor(stepSize * 0.92);
+      const qrSize = Math.floor(stepSize * 0.96);
       const padding = (stepSize - qrSize) / 2;
 
       const qrImage = await this.qrCodeGenerator.generateAsImage(
@@ -942,7 +942,7 @@ export class ImageComposer {
           style: "stroke",
           showGridDots: false,
           show,
-          strokeWidth: 2,
+          strokeWidth: 3,
           transparentBackground: true,
           palette,
           offsetX: x,

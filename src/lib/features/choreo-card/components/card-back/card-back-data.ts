@@ -84,6 +84,8 @@ export interface CardBackData {
   reversalSequence: string;
   /** Reversal pattern period (columns to display) */
   reversalPeriod: number;
+  /** Human label for the reversal pattern, e.g. "continuous", "alternating" */
+  reversalLabel: string;
   /** Raw hand-path family string ("+"-separated), e.g. "Shift+Static+Dash+Static" */
   handPathFamily: string | null;
   /** TKA deck designation, e.g. "Halved Rotated 0T Continuous Diamond" */
@@ -288,14 +290,14 @@ const CARDINAL = new Set(["n", "s", "e", "w"]);
 const INTERCARDINAL = new Set(["ne", "se", "sw", "nw"]);
 
 function deriveGridMode(blue: string | null, red: string | null): "box" | "diamond" | "mixed" {
-  if (!blue || !red) return "box";
+  if (!blue || !red) return "diamond";
   const blueIsCardinal = CARDINAL.has(blue);
   const redIsCardinal = CARDINAL.has(red);
   const blueIsIntercardinal = INTERCARDINAL.has(blue);
   const redIsIntercardinal = INTERCARDINAL.has(red);
 
-  if (blueIsCardinal && redIsCardinal) return "box";
-  if (blueIsIntercardinal && redIsIntercardinal) return "diamond";
+  if (blueIsCardinal && redIsCardinal) return "diamond";
+  if (blueIsIntercardinal && redIsIntercardinal) return "box";
   return "mixed";
 }
 
@@ -448,6 +450,7 @@ export function deriveCardBackData(
   const revPattern = getReversalPattern(reversalPatternId);
   const reversalSequence = revPattern?.sequence ?? "----";
   const reversalPeriod = revPattern?.period ?? 1;
+  const reversalLabel = abbreviateReversalLabel(revPattern?.label ?? "Continuous");
 
   const loopLabel = sequence.loopType
     ? LOOP_TYPE_LABELS[sequence.loopType] ?? null
@@ -493,6 +496,7 @@ export function deriveCardBackData(
     startPositionLabel,
     reversalSequence,
     reversalPeriod,
+    reversalLabel,
     handPathFamily,
     tkaDesignation,
     vtgDesignation,
@@ -504,13 +508,32 @@ const GREEK_SYMBOLS: Record<string, string> = {
   zeta: "ζ", eta: "η", tau: "τ", terra: "⊕",
 };
 
+const REVERSAL_SHORT_LABELS: Record<string, string> = {
+  "Continuous": "Cont.",
+  "Book": "Book",
+  "Red Book": "R Book",
+  "Blue Book": "B Book",
+  "Long Book": "L Book",
+  "Alternating": "Alt.",
+  "Solo 1": "Solo 1",
+  "Solo 2": "Solo 2",
+  "Solo 3": "Solo 3",
+  "Dense Weave 1": "DW 1",
+  "Dense Weave 2": "DW 2",
+  "Dense Weave 3": "DW 3",
+  "Sparse Weave 1": "SW 1",
+  "Sparse Weave 2": "SW 2",
+  "Sparse Weave 3": "SW 3",
+};
+
+function abbreviateReversalLabel(label: string): string {
+  return REVERSAL_SHORT_LABELS[label] ?? label;
+}
+
 function deriveStartPositionLabel(info: StartPositionInfo | null): string | null {
   if (!info) return null;
-  const mode = info.gridMode === "diamond" ? "Diamond" : info.gridMode === "box" ? "Box" : null;
-  const groupSym = info.group ? GREEK_SYMBOLS[info.group] ?? info.group : null;
-  if (mode && groupSym) return `${mode} · ${groupSym}`;
-  if (mode) return mode;
-  if (groupSym) return groupSym;
+  if (info.gridMode === "diamond") return "diamond";
+  if (info.gridMode === "box") return "box";
   return null;
 }
 
@@ -532,15 +555,15 @@ function deriveTurnLabel(entries: TurnGlyphEntry[]): string {
     if (!e.redFloat) values.add(e.red);
   }
 
-  if (values.size === 0) return "0T";
+  if (values.size === 0) return "0";
   if (values.size === 1) {
     const v = [...values][0]!;
-    const label = `${formatTurnValue(v)}T`;
+    const label = formatTurnValue(v);
     return hasFloat ? `${label}+FL` : label;
   }
 
   const sorted = [...values].sort((a, b) => a - b);
-  const label = sorted.map(formatTurnValue).join("-") + "T";
+  const label = sorted.map(formatTurnValue).join("-");
   return hasFloat ? `${label}+FL` : label;
 }
 

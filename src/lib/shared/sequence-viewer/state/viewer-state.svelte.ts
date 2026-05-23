@@ -65,6 +65,11 @@ export function createViewerState() {
 		persistViewerMode('split');
 	}
 
+	const wants3D = $derived(
+		viewerMode === 'animation-3d' ||
+		(viewerMode === 'split' && splitConfig.leftPane === 'animation-3d')
+	);
+
 	return {
 		get viewerMode() {
 			return viewerMode;
@@ -74,6 +79,9 @@ export function createViewerState() {
 		},
 		get splitConfig() {
 			return splitConfig;
+		},
+		get wants3D() {
+			return wants3D;
 		},
 		setViewerMode,
 		setExportContext,

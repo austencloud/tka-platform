@@ -599,7 +599,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
                     word={ctx.effectiveSequence.word ?? null}
                     bluePropType={ctx.bluePropType != null ? String(ctx.bluePropType) : null}
                     redPropType={ctx.redPropType != null ? String(ctx.redPropType) : null}
-                    onClose={() => ctx.viewer3DState.exit3D()}
+                    onClose={() => ctx.viewerState.setViewerMode('animation')}
                     onPlaybackToggle={ctx.handlePlaybackToggle}
                     onBpmChange={ctx.handleBpmChange}
                     onStepForward={ctx.stepFullBeatForward}
@@ -707,16 +707,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         {#if !ctx.isFullscreen}
           <div class="footer-collapse" class:collapsed={!!ctx.editingPane}>
             <ViewerFooter
-              bpm={ctx.bpmLocal}
-              isPlaying={ctx.isPlayingLocal}
               practiceActive={ctx.practiceActive}
-              onBpmChange={ctx.handleBpmChange}
-              onPlayPause={ctx.handlePlaybackToggle}
-              onStepBack={ctx.stepFullBeatBackward}
-              onStepForward={ctx.stepFullBeatForward}
-              onStepHalfBack={ctx.stepHalfBeatBackward}
-              onStepHalfForward={ctx.stepHalfBeatForward}
-              onRestartToStart={ctx.restartToStart}
               onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
               onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
               onPracticeStart={ctx.handlePracticeStart}

@@ -129,3 +129,113 @@ export function computeAutoOrbitShot(
   );
   return { eye, target: center };
 }
+
+// ── Choreographer Camera Shots ────────────────────────────────────
+
+/** Elevation angle from horizontal — 36° matches the ideal choreographer sightline. */
+const CHOREO_POLAR_RAD = 36 * Math.PI / 180;
+/** Extra padding so performers aren't clipped at frustum edges. */
+const CHOREO_FRAMING_PADDING = 1.15;
+/** Floor for solo performer — close intimate view. */
+const CHOREO_MIN_DIST = 3.0;
+/** Target looks at performer hip height, not the ground. */
+const CHOREO_TARGET_HEIGHT = 0.55;
+/** Welcome reveal starts this much further back than the final position. */
+const REVEAL_DISTANCE_MULT = 1.4;
+/** Reveal start target sits at this Y above stage ground (chest height). */
+const REVEAL_TARGET_HEIGHT = 1.5;
+
+const PERFORMER_BEHIND_DIST = 1.5;
+const PERFORMER_LOOK_AHEAD = 3.0;
+const PERFORMER_EYE_HEIGHT = 1.6;
+const PERFORMER_LOOK_HEIGHT = 0.3;
+
+/**
+ * Choreographer POV: behind and above the performer group, looking
+ * down at them. Scales with formation size so all performers are
+ * visible regardless of count or spread.
+ *
+ * Camera sits along a ray from group center at CHOREO_POLAR_RAD above
+ * horizontal, offset toward -Z (behind performers). Distance is
+ * FOV-derived so the full bounding sphere fits in frame.
+ */
+export function computeChoreographerShot(
+  performers: AvatarInstanceState[],
+  stageGroundOffset: number,
+): Shot {
+  const { center, radius } = computeGroupBounds(performers);
+
+  const paddedRadius = radius * CHOREO_FRAMING_PADDING;
+  const dist = Math.max(CHOREO_MIN_DIST, distanceForSphere(paddedRadius));
+
+  const behindDist = dist * Math.cos(CHOREO_POLAR_RAD);
+  const height = dist * Math.sin(CHOREO_POLAR_RAD);
+
+  const eye = new THREE.Vector3(
+    center.x,
+    stageGroundOffset + height,
+    center.z - behindDist,
+  );
+  const target = new THREE.Vector3(
+    center.x,
+    stageGroundOffset + CHOREO_TARGET_HEIGHT,
+    center.z,
+  );
+  return { eye, target };
+}
+
+/**
+ * Starting position for the welcome reveal sweep. Same angle as the
+ * final choreographer shot but 40% further back, with the target at
+ * a generic stage-center chest height. The camera animates from here
+ * into the tighter choreographer position.
+ */
+export function computeRevealStartShot(
+  performers: AvatarInstanceState[],
+  stageGroundOffset: number,
+): Shot {
+  const { center, radius } = computeGroupBounds(performers);
+  const paddedRadius = radius * CHOREO_FRAMING_PADDING;
+  const baseDist = Math.max(CHOREO_MIN_DIST, distanceForSphere(paddedRadius));
+  const dist = baseDist * REVEAL_DISTANCE_MULT;
+
+  const behindDist = dist * Math.cos(CHOREO_POLAR_RAD);
+  const height = dist * Math.sin(CHOREO_POLAR_RAD);
+
+  const eye = new THREE.Vector3(
+    center.x,
+    stageGroundOffset + height,
+    center.z - behindDist,
+  );
+  const target = new THREE.Vector3(
+    center.x,
+    stageGroundOffset + REVEAL_TARGET_HEIGHT,
+    center.z,
+  );
+  return { eye, target };
+}
+
+/**
+ * Behind-performer POV: camera behind one performer's head, looking
+ * where they look. Used when selecting a performer from the rail.
+ */
+export function computeBehindPerformerShot(
+  performer: AvatarInstanceState,
+  stageGroundOffset: number,
+): Shot {
+  const fa = performer.facingAngle;
+  const px = performer.position.x;
+  const pz = performer.position.z;
+
+  const eye = new THREE.Vector3(
+    px - Math.sin(fa) * PERFORMER_BEHIND_DIST,
+    stageGroundOffset + PERFORMER_EYE_HEIGHT,
+    pz - Math.cos(fa) * PERFORMER_BEHIND_DIST,
+  );
+  const target = new THREE.Vector3(
+    px + Math.sin(fa) * PERFORMER_LOOK_AHEAD,
+    stageGroundOffset + PERFORMER_LOOK_HEIGHT,
+    pz + Math.cos(fa) * PERFORMER_LOOK_AHEAD,
+  );
+  return { eye, target };
+}

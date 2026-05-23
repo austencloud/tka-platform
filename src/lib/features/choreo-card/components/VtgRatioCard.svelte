@@ -1,9 +1,7 @@
 <script lang="ts">
   import type { Deck } from "../domain/models/Deck";
-  import {
-    DIFFICULTY_LEVELS,
-    DEFAULT_DIFFICULTY_STYLE,
-  } from "$lib/shared/config/difficulty-styles";
+  import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import {
     VTG_RATIO_TURNS_MAP,
     VTG_RATIO_LEVEL_MAP,
@@ -39,17 +37,12 @@
   class="vtg-ratio-card"
   style="
     --tint: {tintColor};
-    --badge-bg: {levelStyle.cssBg};
-    --badge-border: {levelStyle.border};
-    --badge-text: {levelStyle.text};
   "
   aria-label="Open {deck.name} deck, {turnsLabel}"
   onclick={onSelect}
 >
   <header class="card-header">
-    <span class="level-badge">
-      {correctLevel}
-    </span>
+    <DifficultyBadge level={correctLevel} />
     <span class="turns-label">{turnsLabel}</span>
   </header>
 
@@ -111,22 +104,6 @@
     gap: 8px;
     width: 100%;
     justify-content: center;
-  }
-
-  .level-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--badge-bg);
-    border: 1px solid var(--badge-border);
-    color: var(--badge-text);
-    font-family: Cambria, serif;
-    font-weight: bold;
-    font-size: var(--font-size-min, 14px);
-    flex-shrink: 0;
   }
 
   .turns-label {

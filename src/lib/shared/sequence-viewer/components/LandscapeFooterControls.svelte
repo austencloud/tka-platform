@@ -1,15 +1,6 @@
 <script lang="ts">
-  import TempoControl from "./TempoControl.svelte";
-
   interface Props {
-    bpm: number;
-    isPlaying: boolean;
     practiceActive?: boolean;
-    onBpmChange: (bpm: number) => void;
-    onPlayPause: () => void;
-    onStepBack: () => void;
-    onStepForward: () => void;
-    onRestartToStart?: () => void;
     onSave: () => void;
     onEdit: () => void;
     onPracticeStart?: () => void;
@@ -27,14 +18,7 @@
   }
 
   let {
-    bpm,
-    isPlaying,
     practiceActive = false,
-    onBpmChange,
-    onPlayPause,
-    onStepBack,
-    onStepForward,
-    onRestartToStart,
     onSave,
     onEdit,
     onPracticeStart,
@@ -50,70 +34,9 @@
     onPublish,
     onUnpublish,
   }: Props = $props();
-
-  let bpmPopoverOpen = $state(false);
 </script>
 
-<aside class="landscape-controls" aria-label="Playback and actions">
-  <button
-    type="button"
-    class="landscape-btn play-pause"
-    onclick={onPlayPause}
-    aria-label={isPlaying ? "Pause" : "Play"}
-  >
-    <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-  </button>
-
-  <button
-    type="button"
-    class="landscape-btn"
-    onclick={onRestartToStart ?? onStepBack}
-    aria-label={onRestartToStart ? "Restart from beginning" : "Step backward"}
-  >
-    <i class="fas {onRestartToStart ? 'fa-backward-fast' : 'fa-backward-step'}" aria-hidden="true"></i>
-  </button>
-  <button
-    type="button"
-    class="landscape-btn"
-    onclick={onStepForward}
-    aria-label="Step forward"
-  >
-    <i class="fas fa-forward-step" aria-hidden="true"></i>
-  </button>
-
-  <div class="landscape-bpm-wrapper">
-    <button
-      type="button"
-      class="landscape-btn bpm-trigger"
-      onclick={() => (bpmPopoverOpen = !bpmPopoverOpen)}
-      aria-label="Adjust BPM: {bpm}"
-      aria-expanded={bpmPopoverOpen}
-    >
-      <span class="bpm-value">{bpm}</span>
-      <span class="bpm-label">BPM</span>
-    </button>
-
-    {#if bpmPopoverOpen}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="bpm-popover-backdrop"
-        onclick={() => (bpmPopoverOpen = false)}
-        onkeydown={(e) => { if (e.key === "Escape") bpmPopoverOpen = false; }}
-      ></div>
-      <div class="bpm-popover" role="dialog" aria-label="Tempo control">
-        <TempoControl
-          {bpm}
-          {onBpmChange}
-          practiceActive={practiceActive}
-          onPracticeStart={onPracticeStart}
-          onPracticeStop={onPracticeStop}
-        />
-      </div>
-    {/if}
-  </div>
-
-  <div class="landscape-divider" aria-hidden="true"></div>
-
+<aside class="landscape-controls" aria-label="Sequence actions">
   {#if onFavorite}
     <button
       type="button"
@@ -156,6 +79,20 @@
       {/if}
     </button>
   {/if}
+
+  {#if onPracticeStart || onPracticeStop}
+    <button
+      type="button"
+      class="landscape-btn"
+      class:practice-active={practiceActive}
+      onclick={() => practiceActive ? onPracticeStop?.() : onPracticeStart?.()}
+      aria-label={practiceActive ? "Stop practice" : "Practice"}
+      aria-pressed={practiceActive}
+    >
+      <i class="fas {practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+    </button>
+  {/if}
+
   {#if isOwned && isSaved}
     <button
       type="button"
@@ -228,82 +165,16 @@
     outline-offset: 2px;
   }
 
-  .landscape-btn.play-pause {
-    width: 44px;
-    min-height: 36px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--theme-accent, #6366f1);
-    border-color: transparent;
-    color: white;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-
-  .landscape-btn.play-pause:active {
-    background: var(--theme-accent-hover, #4f46e5);
-  }
-
   .landscape-btn.save { color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
   .landscape-btn.edit { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
   .landscape-btn.delete { color: var(--semantic-error); border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent); }
   .landscape-btn.favorited { color: var(--semantic-error); border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent); }
 
-  .landscape-divider {
-    width: 28px;
-    height: 1px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    flex-shrink: 1;
-    margin: 1px 0;
-  }
-
-  .landscape-btn.bpm-trigger {
-    flex-direction: column;
-    gap: 0;
-    min-height: 32px;
-    height: 40px;
-    width: 40px;
-    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .bpm-value {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    color: var(--theme-text, white);
-    line-height: 1;
-  }
-
-  .bpm-label {
-    font-size: 9px;
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    line-height: 1;
-  }
-
-  .landscape-bpm-wrapper {
-    position: relative;
-  }
-
-  .bpm-popover-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 99;
-  }
-
-  .bpm-popover {
-    position: absolute;
-    right: calc(100% + 8px);
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 100;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    padding: 12px;
-    min-width: 200px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  .landscape-btn.practice-active {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #f87171;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
   }
 
   .landscape-btn.video {

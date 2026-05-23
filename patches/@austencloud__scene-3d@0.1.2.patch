@@ -47,6 +47,222 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..1fe369a38ea617d8bb4ec9d9f4452cf9
            />
          {/if}
        </T.Group>
+diff --git a/src/lib/components/props/Buugeng3D.svelte b/src/lib/components/props/Buugeng3D.svelte
+index a9635fe66f94d37311d56d30aede4f639214a5c3..8b02d7960387431387d12a655ba4dddbeaf575a1 100644
+--- a/src/lib/components/props/Buugeng3D.svelte
++++ b/src/lib/components/props/Buugeng3D.svelte
+@@ -1,21 +1,6 @@
+ <script lang="ts">
+-  /**
+-   * Buugeng3D Component
+-   *
+-   * Renders a 3D buugeng (S-shaped curved staff) with:
+-   * - 5 cylinder segments forming a smooth S-curve
+-   * - Center grip at the origin (buugeng are center-gripped)
+-   * - Segments progress from ~35° at tips to 0° at center
+-   * - Sphere caps at each tip
+-   * - White grip ring (torus) at origin
+-   * - Trail indicator sphere for path visualization
+-   *
+-   * The S-curve uses 5 segments instead of 3 for a smoother shape.
+-   * Overall length is ~90% of staffLength since buugeng are slightly
+-   * shorter than full staves.
+-   */
+-
+   import { T } from "@threlte/core";
++  import { CatmullRomCurve3, Vector3 } from "three";
+   import type { Prop3DProps } from "./Prop3DProps";
+   import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+@@ -47,132 +32,42 @@
+   );
+ 
+   const palette = $derived(PROP_COLORS[color]);
+-
+   const rotation = $derived(computePropRotation(propState));
+ 
+-  // Tube radius: 1.8x base staff radius
+   const tubeRadius = $derived(baseRadius * 1.8);
+ 
+-  // Each of the 5 segments is ~18% of total length
+-  const segLength = $derived(effectiveLength * 0.18);
+-
+-  // Angles progress from 0° at center to ~35° at tips.
+-  // Segment 3 (center) = 0°, segments 2/4 = 18°, segments 1/5 = 35°
+-  const ANGLE_TIP = (35 * Math.PI) / 180;
+-  const ANGLE_MID = (18 * Math.PI) / 180;
+-  const ANGLE_CENTER = 0;
+-
+-  // Build the upper half of the S-curve (segments 3, 4, 5 going upward).
+-  // Each segment's base connects to the previous segment's top.
+-  // A cylinder in Three.js is centered on its own origin, aligned along Y.
+-  // We compute each segment's center position and Z-rotation so the
+-  // chain connects end-to-end with no gaps.
+-
+-  // Segment center (seg 3): straight, centered at origin
+-  // Its top end is at (0, segLength/2, 0)
+-  const seg3Pos = $derived({ x: 0, y: 0 });
+-
+-  // Segment 4 (upper mid): angled at ANGLE_MID from vertical
+-  // Its bottom end must meet seg3's top end
+-  const seg4Pos = $derived.by(() => {
+-    const halfPrev = segLength / 2; // top of seg3
+-    const halfCurr = segLength / 2;
+-    const baseX = 0;
+-    const baseY = halfPrev;
+-    return {
+-      x: baseX + halfCurr * Math.sin(ANGLE_MID),
+-      y: baseY + halfCurr * Math.cos(ANGLE_MID),
+-    };
++  // Smooth S-curve: one full sine period sampled at 24 points.
++  // Bottom arc bows left (-X), upper arc bows right (+X).
++  // Amplitude ~25% of length gives proportions matching real buugeng.
++  const curve = $derived.by(() => {
++    const halfLen = effectiveLength / 2;
++    const amplitude = effectiveLength * 0.25;
++    const N = 24;
++    const points: Vector3[] = [];
++
++    for (let i = 0; i <= N; i++) {
++      const t = i / N;
++      const y = effectiveLength * (t - 0.5);
++      const x = -amplitude * Math.sin(t * Math.PI * 2);
++      points.push(new Vector3(x, y, 0));
++    }
++
++    return new CatmullRomCurve3(points, false, "centripetal", 0.5);
+   });
+ 
+-  // Segment 5 (upper tip): angled at ANGLE_TIP from vertical
+-  // Its bottom end must meet seg4's top end
+-  const seg5Pos = $derived.by(() => {
+-    const seg4TopX = seg4Pos.x + (segLength / 2) * Math.sin(ANGLE_MID);
+-    const seg4TopY = seg4Pos.y + (segLength / 2) * Math.cos(ANGLE_MID);
+-    const halfCurr = segLength / 2;
+-    return {
+-      x: seg4TopX + halfCurr * Math.sin(ANGLE_TIP),
+-      y: seg4TopY + halfCurr * Math.cos(ANGLE_TIP),
+-    };
+-  });
+-
+-  // Tip positions (very end of seg 5, for sphere caps)
+-  const upperTip = $derived.by(() => ({
+-    x: seg5Pos.x + (segLength / 2) * Math.sin(ANGLE_TIP),
+-    y: seg5Pos.y + (segLength / 2) * Math.cos(ANGLE_TIP),
+-  }));
+-
+-  // Lower half mirrors upper half across the origin
+-  const seg2Pos = $derived({ x: -seg4Pos.x, y: -seg4Pos.y });
+-  const seg1Pos = $derived({ x: -seg5Pos.x, y: -seg5Pos.y });
+-  const lowerTip = $derived({ x: -upperTip.x, y: -upperTip.y });
++  const lowerTip = $derived(curve.getPoint(0));
++  const upperTip = $derived(curve.getPoint(1));
+ 
+-  // Tip cap radius slightly larger than tube
+   const tipCapRadius = $derived(tubeRadius * 1.15);
+ 
+-  // Grip ring at center
+   const gripOuterRadius = $derived(baseRadius * 1.3);
+   const gripTubeRadius = $derived(baseRadius * 0.15);
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <!-- Segment 3: center grip section (straight, 0° angle) -->
+-    <T.Mesh position={[seg3Pos.x, seg3Pos.y, 0]}>
+-      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Segment 4: upper mid (18° from vertical, curving outward) -->
+-    <T.Mesh
+-      position={[seg4Pos.x, seg4Pos.y, 0]}
+-      rotation={[0, 0, -ANGLE_MID]}
+-    >
+-      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Segment 5: upper tip (35° from vertical, most angled) -->
+-    <T.Mesh
+-      position={[seg5Pos.x, seg5Pos.y, 0]}
+-      rotation={[0, 0, -ANGLE_TIP]}
+-    >
+-      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Segment 2: lower mid (mirrors segment 4) -->
+-    <T.Mesh
+-      position={[seg2Pos.x, seg2Pos.y, 0]}
+-      rotation={[0, 0, -ANGLE_MID]}
+-    >
+-      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Segment 1: lower tip (mirrors segment 5) -->
+-    <T.Mesh
+-      position={[seg1Pos.x, seg1Pos.y, 0]}
+-      rotation={[0, 0, -ANGLE_TIP]}
+-    >
+-      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
++    <T.Mesh>
++      <T.TubeGeometry args={[curve, 64, tubeRadius, 16, false]} />
+       <T.MeshStandardMaterial
+         color={palette.main}
+         roughness={0.3}
+@@ -180,8 +75,7 @@
+       />
+     </T.Mesh>
+ 
+-    <!-- Upper tip cap -->
+-    <T.Mesh position={[upperTip.x, upperTip.y, 0]}>
++    <T.Mesh position={[lowerTip.x, lowerTip.y, lowerTip.z]}>
+       <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
+       <T.MeshStandardMaterial
+         color={palette.dark}
+@@ -190,8 +84,7 @@
+       />
+     </T.Mesh>
+ 
+-    <!-- Lower tip cap -->
+-    <T.Mesh position={[lowerTip.x, lowerTip.y, 0]}>
++    <T.Mesh position={[upperTip.x, upperTip.y, upperTip.z]}>
+       <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
+       <T.MeshStandardMaterial
+         color={palette.dark}
+@@ -200,14 +93,12 @@
+       />
+     </T.Mesh>
+ 
+-    <!-- Center grip ring (white, at the hand point) -->
+     <T.Mesh>
+       <T.TorusGeometry args={[gripOuterRadius, gripTubeRadius, 12, 24]} />
+       <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+     </T.Mesh>
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere -->
+   <T.Mesh layers={propLayer}>
+     <T.SphereGeometry args={[0.015, 8, 8]} />
+     <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
 diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
 index 0bd846fa1401f055b1322e03519d00a21e8e882a..8f023f7b8a3dc4f441fc086719b929b5b56e9c74 100644
 --- a/src/lib/components/props/Prop3D.svelte
@@ -191,3 +407,130 @@ index 0bd846fa1401f055b1322e03519d00a21e8e882a..8f023f7b8a3dc4f441fc086719b929b5
 +    <Staff3D {propState} {color} {visible} {isActivePlayer} {length} />
    {/if}
  {/if}
+diff --git a/src/lib/components/props/prop-model-registry.ts b/src/lib/components/props/prop-model-registry.ts
+index 1764140ed8145df67c1274dc4206565a7584a59d..899e076e7e08becffb11b36d6651a9099ab43d6c 100644
+--- a/src/lib/components/props/prop-model-registry.ts
++++ b/src/lib/components/props/prop-model-registry.ts
+@@ -46,10 +46,8 @@ function modelUrl(filename: string): string {
+  * Add entries as models become available - the system degrades gracefully.
+  */
+ export const PROP_MODEL_REGISTRY: Partial<Record<PropType, PropModelEntry>> = {
+-  // Models will be added here as they're generated.
+-  // Example:
+-  // [PropType.CLUB]: { modelUrl: modelUrl("club.glb"), scale: 1, gripOffsetY: 0 },
+-  // [PropType.FAN]: { modelUrl: modelUrl("fan.glb"), scale: 1, gripOffsetY: 0 },
++  // Re-enable after Blender assembly: scale + gripOffsetY may need tuning
++  // [PropType.BUUGENG]: { modelUrl: modelUrl("buugeng.glb"), scale: 1, gripOffsetY: 0 },
+ };
+ 
+ /**
+diff --git a/src/lib/config/formation-presets.ts b/src/lib/config/formation-presets.ts
+index 0b1727f2f185c21a5cf0b37f40a59ce199e08e84..2cefc525c3e2283338de01920b671e46b30173c7 100644
+--- a/src/lib/config/formation-presets.ts
++++ b/src/lib/config/formation-presets.ts
+@@ -88,7 +88,10 @@ function generateLineSlots(count: number): FormationSlot[] {
+  * Performers arranged in a circle facing the center
+  */
+ function generateCircleSlots(count: number): FormationSlot[] {
+-  const radius = DEFAULT_FORMATION_SPACING * 0.75;
++  // 2m min arc per performer — enough for arm span + staff clearance.
++  const MIN_ARC = 2.0;
++  const baseRadius = DEFAULT_FORMATION_SPACING * 0.75;
++  const radius = Math.max(baseRadius, (count * MIN_ARC) / (2 * Math.PI));
+   const offset = FORMATION_WALL_OFFSET;
+   const slots: FormationSlot[] = [];
+ 
+@@ -97,29 +100,24 @@ function generateCircleSlots(count: number): FormationSlot[] {
+   }
+ 
+   if (count === 2) {
+-    // Two performers facing each other
+     return [
+       {
+         index: 0,
+         position: { x: -radius, z: offset },
+         facingAngle: Math.PI / 2,
+-      }, // Face right
++      },
+       {
+         index: 1,
+         position: { x: radius, z: offset },
+         facingAngle: -Math.PI / 2,
+-      }, // Face left
++      },
+     ];
+   }
+ 
+-  // 3-4 performers in a circle
+   for (let i = 0; i < count; i++) {
+-    // Start from front and go clockwise
+     const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+     const x = Math.cos(angle) * radius;
+     const z = Math.sin(angle) * radius + offset;
+-
+-    // Face toward center
+     const facingAngle = angle + Math.PI / 2;
+ 
+     slots.push({
+@@ -374,6 +372,20 @@ export function createFormationFromPreset(
+   const slots = getSlotsForPreset(preset, performerCount);
+   const facingMode = getDefaultFacingMode(preset);
+ 
++  // Center formation at z=0 so performers sit in the middle of any stage
++  if (slots.length > 0) {
++    let minZ = Infinity;
++    let maxZ = -Infinity;
++    for (const s of slots) {
++      if (s.position.z < minZ) minZ = s.position.z;
++      if (s.position.z > maxZ) maxZ = s.position.z;
++    }
++    const centerZ = (minZ + maxZ) / 2;
++    for (const s of slots) {
++      s.position.z -= centerZ;
++    }
++  }
++
+   const presetNames: Record<FormationPreset, string> = {
+     "grid-2x2": "Grid",
+     line: "Line",
+diff --git a/src/lib/domain/constants/performer-positions.ts b/src/lib/domain/constants/performer-positions.ts
+index a3d140dcb081e1eef86e76ce0c2283613e14e77a..730719efc4a7fe1c5f939b42851f98a8d8275dd6 100644
+--- a/src/lib/domain/constants/performer-positions.ts
++++ b/src/lib/domain/constants/performer-positions.ts
+@@ -14,7 +14,7 @@ export function getDefaultPositions(count: number): PerformerPosition[] {
+   if (count > 8) count = 8;
+ 
+   if (count === 1) {
+-    return [{ x: 0, z: WALL_OFFSET }];
++    return [{ x: 0, z: 0 }];
+   }
+ 
+   const positions: PerformerPosition[] = [];
+@@ -24,7 +24,7 @@ export function getDefaultPositions(count: number): PerformerPosition[] {
+   for (let i = 0; i < count; i++) {
+     const row = Math.floor(i / 2);
+     const col = i % 2;
+-    const rowZ = -row * GRID_SPACING + WALL_OFFSET;
++    const rowZ = -row * GRID_SPACING;
+ 
+     if (row === lastRow && lastRowIsSingleton) {
+       positions.push({ x: 0, z: rowZ });
+@@ -36,6 +36,18 @@ export function getDefaultPositions(count: number): PerformerPosition[] {
+     }
+   }
+ 
++  // Center the formation at z=0 so it sits in the middle of any stage
++  let minZ = Infinity;
++  let maxZ = -Infinity;
++  for (const p of positions) {
++    if (p.z < minZ) minZ = p.z;
++    if (p.z > maxZ) maxZ = p.z;
++  }
++  const centerZ = (minZ + maxZ) / 2;
++  for (const p of positions) {
++    p.z -= centerZ;
++  }
++
+   return positions;
+ }
+ 

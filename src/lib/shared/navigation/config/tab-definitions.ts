@@ -578,6 +578,14 @@ export const CHOREO_CARD_TABS: Section[] = [
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
+  {
+    id: "theme-lab",
+    label: "Theme Lab",
+    icon: '<i class="fas fa-palette" aria-hidden="true"></i>',
+    description: "Compare card back theme variations side by side",
+    color: "#6366f1",
+    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
+  },
 ];
 
 // Festival Hub tabs configuration

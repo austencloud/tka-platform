@@ -55,8 +55,8 @@
     stageRadius = 5,
     boundRadius = 18,
     currentStrength = 0.3,
-    scatterRadius = 4.0,
-    scatterForce = 3.0,
+    scatterRadius = 6.0,
+    scatterForce = 8.0,
     scatterWaveSpeed = 0.15,
     perceptionAngle = 135,
     halfSpeedTime = 0.5,
@@ -241,9 +241,7 @@
 
   let meshes = $state<InstancedMesh[]>([]);
   let gpuFailed = $state(false);
-  let scatterStartTime = 0;
-  const prevScatterOrigin = new Vector3(0, -999, 0);
-  const SCATTER_MOVE_THRESHOLD = 0.5;
+  let scatterStartTime = -1000;
   let fallbackMeshes = $state<InstancedMesh[]>([]);
   let gpuCompute: GPUComputationRenderer | null = null;
   let posVar: any = null;
@@ -737,11 +735,6 @@
     velUni.uScatterForce.value = scatterForce;
     velUni.uScatterWaveSpeed.value = scatterWaveSpeed;
 
-    // Detect scatter origin movement to reset wave propagation timer
-    if (rayPosition.distanceTo(prevScatterOrigin) > SCATTER_MOVE_THRESHOLD) {
-      scatterStartTime = elapsed;
-      prevScatterOrigin.copy(rayPosition);
-    }
     velUni.uScatterStartTime.value = scatterStartTime;
     posUni.uDelta.value = dt;
 
@@ -750,7 +743,15 @@
     stUni.uScatterRadius.value = scatterRadius;
 
     if (eventSystem) {
+      const prevY = velUni.uScatterOrigin.value.y;
       eventSystem.tick(dt, velUni as unknown as FishEventUniforms, rayPosition);
+      const newY = velUni.uScatterOrigin.value.y;
+      if (prevY < -900 && newY > -900) {
+        const o = velUni.uScatterOrigin.value;
+        const bodyLen = targetSize * 1.0;
+        const maxSpd = 1.2 * 1.0 * bodyLen;
+        console.log(`[FishScatter] ACTIVE origin=(${o.x.toFixed(2)}, ${o.y.toFixed(2)}, ${o.z.toFixed(2)}) force=${scatterForce} radius=${scatterRadius} normalMaxSpeed=${maxSpd.toFixed(4)} scatterBoost=${(1.5 * scatterForce * 0.15).toFixed(3)}`);
+      }
     }
 
     // ── Visitor spawn: write positions/velocities into GPU texture via uniforms ──

@@ -207,6 +207,7 @@
     targetPos: { x: number; y: number; z: number },
     targetLookAt: { x: number; y: number; z: number },
     spherical?: { azimuth: number; polar: number },
+    animate: boolean = true,
   ) {
     if (!controlsInstance) return;
 
@@ -214,7 +215,7 @@
       controlsInstance.setLookAt(
         targetPos.x, targetPos.y, targetPos.z,
         targetLookAt.x, targetLookAt.y, targetLookAt.z,
-        true,
+        animate,
       );
       controlsInstance.rotateTo(spherical.azimuth, spherical.polar, false);
     } else {
@@ -225,7 +226,7 @@
         targetLookAt.x,
         targetLookAt.y,
         targetLookAt.z,
-        true,
+        animate,
       );
     }
   }

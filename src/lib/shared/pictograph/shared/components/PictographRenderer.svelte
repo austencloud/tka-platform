@@ -559,9 +559,10 @@ Usage:
     pointer-events: none;
   }
 
-  /* Subtle white outline in dark mode to distinguish boundaries */
+  /* Subtle white outline in dark mode to distinguish boundaries.
+     Parent can set --pictograph-border: none to suppress (e.g. flush grids). */
   :global(:root.dark) .pictograph-renderer {
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: var(--pictograph-border, 1px solid rgba(255, 255, 255, 0.12));
   }
 
   svg {

@@ -48,10 +48,19 @@ function hydrateSteps(
   steps: readonly StepData[] | undefined
 ): readonly StepData[] {
   if (!steps || steps.length === 0) return [];
-  return steps.map((step) => ({
-    ...step,
-    motions: hydrateMotions(step.motions),
-  }));
+  return steps.map((step, index) => {
+    const raw = step as unknown as Record<string, unknown>;
+    const beat = typeof raw.beat === "number" ? raw.beat : undefined;
+    return {
+      ...step,
+      stepNumber: step.stepNumber ?? (beat !== undefined ? beat + 1 : index + 1),
+      duration: step.duration ?? 1,
+      blueReversal: step.blueReversal ?? false,
+      redReversal: step.redReversal ?? false,
+      isBlank: step.isBlank ?? false,
+      motions: hydrateMotions(step.motions),
+    };
+  });
 }
 
 const DECK_CACHE_KEY = "deckLoader.cachedDecks";

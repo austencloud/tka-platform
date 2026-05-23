@@ -59,3 +59,41 @@ export function poissonDiscSample(config: PoissonDiscConfig): PoissonSample[] {
 export function seededRandom(seed: number): () => number {
   return mulberry32(seed);
 }
+
+export class PlacementGrid {
+  private cells = new Map<string, { x: number; z: number; r: number }[]>();
+  private cellSize: number;
+
+  constructor(cellSize: number = 2.0) {
+    this.cellSize = cellSize;
+  }
+
+  private key(cx: number, cz: number): string {
+    return `${cx},${cz}`;
+  }
+
+  register(x: number, z: number, radius: number): void {
+    const cx = Math.floor(x / this.cellSize);
+    const cz = Math.floor(z / this.cellSize);
+    const k = this.key(cx, cz);
+    if (!this.cells.has(k)) this.cells.set(k, []);
+    this.cells.get(k)!.push({ x, z, r: radius });
+  }
+
+  isClear(x: number, z: number, radius: number): boolean {
+    const cx = Math.floor(x / this.cellSize);
+    const cz = Math.floor(z / this.cellSize);
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const entries = this.cells.get(this.key(cx + dx, cz + dz));
+        if (!entries) continue;
+        for (const e of entries) {
+          const ddx = x - e.x, ddz = z - e.z;
+          const minDist = radius + e.r;
+          if (ddx * ddx + ddz * ddz < minDist * minDist) return false;
+        }
+      }
+    }
+    return true;
+  }
+}

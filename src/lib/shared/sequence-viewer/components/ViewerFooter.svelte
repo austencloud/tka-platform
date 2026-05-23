@@ -4,18 +4,9 @@
   import DesktopFooterControls from "./DesktopFooterControls.svelte";
 
   interface Props {
-    bpm: number;
-    isPlaying: boolean;
     controlsVisible?: boolean;
     landscape?: boolean;
     practiceActive?: boolean;
-    onBpmChange: (bpm: number) => void;
-    onPlayPause: () => void;
-    onStepBack: () => void;
-    onStepForward: () => void;
-    onStepHalfBack?: () => void;
-    onStepHalfForward?: () => void;
-    onRestartToStart?: () => void;
     onSave: () => void;
     onEdit: () => void;
     onExportVideo?: () => void;
@@ -38,18 +29,9 @@
   }
 
   let {
-    bpm,
-    isPlaying,
     controlsVisible = true,
     landscape = false,
     practiceActive = false,
-    onBpmChange,
-    onPlayPause,
-    onStepBack,
-    onStepForward,
-    onStepHalfBack,
-    onStepHalfForward,
-    onRestartToStart,
     onSave,
     onEdit,
     onExportVideo,
@@ -93,14 +75,7 @@
 
 {#if landscape}
   <LandscapeFooterControls
-    {bpm}
-    {isPlaying}
     {practiceActive}
-    {onBpmChange}
-    {onPlayPause}
-    {onStepBack}
-    {onStepForward}
-    {onRestartToStart}
     {onSave}
     {onEdit}
     {onPracticeStart}
@@ -124,13 +99,7 @@
 >
   {#if layout === "mid"}
     <MidFooterControls
-      {bpm}
-      {isPlaying}
       {practiceActive}
-      {onBpmChange}
-      {onPlayPause}
-      {onStepForward}
-      {onRestartToStart}
       {onSave}
       {onEdit}
       {onPracticeStart}
@@ -151,13 +120,7 @@
     />
   {:else}
     <DesktopFooterControls
-      {bpm}
-      {isPlaying}
       {practiceActive}
-      {onBpmChange}
-      {onPlayPause}
-      {onStepForward}
-      {onRestartToStart}
       {onSave}
       {onEdit}
       {onExportVideo}

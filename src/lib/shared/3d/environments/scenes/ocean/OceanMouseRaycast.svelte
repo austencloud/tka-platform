@@ -25,7 +25,7 @@
   const swimPlane = $derived(new Plane(new Vector3(0, 1, 0), -midSwimY));
 
   function onPointerMove(event: PointerEvent) {
-    const canvas = renderer.domElement;
+    const canvas = renderer.current.domElement;
     const rect = canvas.getBoundingClientRect();
     ndc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     ndc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -46,7 +46,8 @@
   let canvas: HTMLCanvasElement | null = null;
 
   onMount(() => {
-    canvas = renderer.domElement;
+    canvas = renderer.current?.domElement ?? null;
+    if (!canvas) return;
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerleave', onPointerLeave);
   });

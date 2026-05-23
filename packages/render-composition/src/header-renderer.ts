@@ -262,7 +262,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
     const stripWidth = activeCount * iconSize + (activeCount - 1) * gap;
     const rightEdge = canvasWidth - badgePadding;
     const stripCenterX = rightEdge - stripWidth / 2 - iconSize * LOOP_ICON_STRIP_OFFSET_SCALE;
-    renderLoopIconStrip(ctx, loopComponents, stripCenterX, headerHeight / 2, iconSize, darkMode, false, rotationPeriod, inversionPeriod, period);
+    renderLoopIconStrip(ctx, loopComponents, stripCenterX, headerHeight / 2, iconSize, darkMode, false, rotationPeriod, inversionPeriod);
   }
 
   // Word text (center)

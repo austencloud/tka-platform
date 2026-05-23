@@ -1,9 +1,6 @@
 <script lang="ts">
   import type { Deck } from "../domain/models/Deck";
-  import {
-    DIFFICULTY_LEVELS,
-    DEFAULT_DIFFICULTY_STYLE,
-  } from "$lib/shared/config/difficulty-styles";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
 
   interface Props {
     deck: Deck;
@@ -13,10 +10,6 @@
   }
 
   const { deck, accentColor, accentIcon, onSelect }: Props = $props();
-
-  const levelStyle = $derived(
-    DIFFICULTY_LEVELS[deck.level] ?? DEFAULT_DIFFICULTY_STYLE,
-  );
 
   function formatCount(n: number): string {
     if (n >= 1000) {
@@ -42,12 +35,7 @@
   </span>
 
   <span class="meta">
-    <span
-      class="level-badge"
-      style="background: {levelStyle.cssBg}; border-color: {levelStyle.border}; color: {levelStyle.text};"
-    >
-      {deck.level}
-    </span>
+    <DifficultyBadge level={deck.level} />
     <span class="chip">{deck.gridMode}</span>
     <span class="chip">{deck.families.length} families</span>
   </span>
@@ -120,20 +108,6 @@
     font-size: var(--font-size-compact, 12px);
     line-height: 1.4;
     white-space: nowrap;
-  }
-
-  .level-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 1px solid;
-    font-family: Cambria, serif;
-    font-weight: bold;
-    font-size: var(--font-size-min, 14px);
-    flex-shrink: 0;
   }
 
   .chip {

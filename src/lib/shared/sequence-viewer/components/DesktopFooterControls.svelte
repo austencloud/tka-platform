@@ -1,14 +1,6 @@
 <script lang="ts">
-  import TempoControl from "./TempoControl.svelte";
-
   interface Props {
-    bpm: number;
-    isPlaying: boolean;
     practiceActive?: boolean;
-    onBpmChange: (bpm: number) => void;
-    onPlayPause: () => void;
-    onStepForward: () => void;
-    onRestartToStart?: () => void;
     onSave: () => void;
     onEdit: () => void;
     onExportVideo?: () => void;
@@ -30,13 +22,7 @@
   }
 
   let {
-    bpm,
-    isPlaying,
     practiceActive = false,
-    onBpmChange,
-    onPlayPause,
-    onStepForward,
-    onRestartToStart,
     onSave,
     onEdit,
     onExportVideo,
@@ -59,134 +45,105 @@
 </script>
 
 <div class="desktop-row">
-  <div class="footer-side footer-left">
-    <div class="tempo-section">
-      <TempoControl
-        {bpm}
-        {onBpmChange}
-        practiceActive={practiceActive}
-        onPracticeStart={onPracticeStart}
-        onPracticeStop={onPracticeStop}
-      />
-    </div>
-  </div>
-
-  <div class="footer-center">
-    {#if onRestartToStart}
+  <div class="actions-section">
+    {#if onFavorite}
       <button
         type="button"
-        class="step-btn"
-        onclick={onRestartToStart}
-        aria-label="Restart from beginning"
+        class="action-btn"
+        class:favorited={isFavorite}
+        onclick={onFavorite}
+        aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       >
-        <i class="fas fa-backward-fast" aria-hidden="true"></i>
+        <i class="fas fa-heart" aria-hidden="true"></i>
+        <span>{isFavorite ? "Favorited" : "Favorite"}</span>
       </button>
     {/if}
-    <button
-      type="button"
-      class="play-btn"
-      class:playing={isPlaying}
-      onclick={onPlayPause}
-      aria-label={isPlaying ? "Pause" : "Play"}
-    >
-      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-    </button>
-    <button
-      type="button"
-      class="step-btn"
-      onclick={onStepForward}
-      aria-label="Next beat"
-    >
-      <i class="fas fa-forward-step" aria-hidden="true"></i>
-    </button>
-  </div>
 
-  <div class="footer-side footer-right">
-    <div class="actions-section">
-      {#if onFavorite}
-        <button
-          type="button"
-          class="action-btn"
-          class:favorited={isFavorite}
-          onclick={onFavorite}
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          <i class="fas fa-heart" aria-hidden="true"></i>
-          <span>{isFavorite ? "Favorited" : "Favorite"}</span>
-        </button>
-      {/if}
-
-      {#if onCopyLink}
-        <button
-          type="button"
-          class="action-btn"
-          class:copied={linkCopied}
-          onclick={onCopyLink}
-          aria-label={linkCopied ? "Link copied" : "Copy shareable link"}
-        >
-          <i class="fas {linkCopied ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
-          <span>{linkCopied ? "Copied" : "Copy Link"}</span>
-        </button>
-      {/if}
-
-      {#if !isSaved}
-        <button
-          type="button"
-          class="action-btn save"
-          onclick={onSave}
-          aria-label="Save sequence"
-        >
-          <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-          <span>Save</span>
-        </button>
-      {/if}
-
+    {#if onCopyLink}
       <button
         type="button"
-        class="action-btn edit"
-        onclick={onEdit}
-        aria-label="Remix"
+        class="action-btn"
+        class:copied={linkCopied}
+        onclick={onCopyLink}
+        aria-label={linkCopied ? "Link copied" : "Copy shareable link"}
       >
-        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-        <span>Remix</span>
+        <i class="fas {linkCopied ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
+        <span>{linkCopied ? "Copied" : "Copy Link"}</span>
       </button>
-      {#if onVideoUpload}
-        <button
-          type="button"
-          class="action-btn video"
-          onclick={onVideoUpload}
-          aria-label="Upload video"
-        >
-          <i class="fas fa-video" aria-hidden="true"></i>
-          <span>Video</span>
-          {#if videoCount && videoCount > 0}
-            <span class="video-badge">{videoCount}</span>
-          {/if}
-        </button>
-      {/if}
-      {#if isOwned && isSaved}
-        <button
-          type="button"
-          class="action-btn"
-          onclick={isPublished ? onUnpublish : onPublish}
-          aria-label={isPublished ? "Make Private" : "Make Public"}
-        >
-          <i class="fas {isPublished ? 'fa-eye-slash' : 'fa-eye'}" aria-hidden="true"></i>
-          <span>{isPublished ? "Make Private" : "Make Public"}</span>
-        </button>
-        {#if onDeleteRequest}
-          <button
-            type="button"
-            class="action-btn delete"
-            onclick={onDeleteRequest}
-            aria-label="Delete sequence"
-          >
-            <i class="fas fa-trash" aria-hidden="true"></i>
-            <span>Delete</span>
-          </button>
+    {/if}
+
+    {#if !isSaved}
+      <button
+        type="button"
+        class="action-btn save"
+        onclick={onSave}
+        aria-label="Save sequence"
+      >
+        <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+        <span>Save</span>
+      </button>
+    {/if}
+
+    <button
+      type="button"
+      class="action-btn edit"
+      onclick={onEdit}
+      aria-label="Remix"
+    >
+      <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+      <span>Remix</span>
+    </button>
+    {#if onVideoUpload}
+      <button
+        type="button"
+        class="action-btn video"
+        onclick={onVideoUpload}
+        aria-label="Upload video"
+      >
+        <i class="fas fa-video" aria-hidden="true"></i>
+        <span>Video</span>
+        {#if videoCount && videoCount > 0}
+          <span class="video-badge">{videoCount}</span>
         {/if}
+      </button>
+    {/if}
+
+    {#if onPracticeStart || onPracticeStop}
+      <button
+        type="button"
+        class="action-btn"
+        class:practice-active={practiceActive}
+        onclick={() => practiceActive ? onPracticeStop?.() : onPracticeStart?.()}
+        aria-label={practiceActive ? "Stop practice" : "Practice"}
+        aria-pressed={practiceActive}
+      >
+        <i class="fas {practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+        <span>{practiceActive ? "Stop" : "Practice"}</span>
+      </button>
+    {/if}
+
+    {#if isOwned && isSaved}
+      <button
+        type="button"
+        class="action-btn"
+        onclick={isPublished ? onUnpublish : onPublish}
+        aria-label={isPublished ? "Make Private" : "Make Public"}
+      >
+        <i class="fas {isPublished ? 'fa-eye-slash' : 'fa-eye'}" aria-hidden="true"></i>
+        <span>{isPublished ? "Make Private" : "Make Public"}</span>
+      </button>
+      {#if onDeleteRequest}
+        <button
+          type="button"
+          class="action-btn delete"
+          onclick={onDeleteRequest}
+          aria-label="Delete sequence"
+        >
+          <i class="fas fa-trash" aria-hidden="true"></i>
+          <span>Delete</span>
+        </button>
       {/if}
-    </div>
+    {/if}
   </div>
 </div>
 
@@ -194,100 +151,16 @@
   .desktop-row {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
-  }
-
-  .footer-side {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    gap: 10px;
-  }
-
-  .footer-left {
-    justify-content: flex-start;
-  }
-
-  .footer-right {
-    justify-content: flex-end;
-    margin-left: auto;
-  }
-
-  .footer-center {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
   }
 
   .actions-section {
     display: flex;
     align-items: center;
     gap: 10px;
-  }
-
-  .tempo-section {
-    min-width: 0;
-    max-width: 500px;
-  }
-
-  .step-btn {
-    display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     justify-content: center;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .step-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, white);
-  }
-
-  .step-btn:active {
-    transform: scale(0.9);
-    transition-duration: 0ms;
-  }
-
-  .play-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-accent, rgba(139, 92, 246, 0.4));
-    color: var(--theme-accent, rgba(139, 92, 246, 1));
-    font-size: var(--font-size-lg, 18px);
-    cursor: pointer;
-    transition: all var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.2));
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .play-btn.playing {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, white);
-  }
-
-  .play-btn:hover {
-    transform: scale(1.05);
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-  }
-
-  .play-btn:active {
-    transform: scale(0.92);
-    transition-duration: 0ms;
   }
 
   .action-btn {
@@ -380,6 +253,13 @@
   .action-btn.copied {
     color: var(--semantic-success, #22c55e);
     border-color: rgba(34, 197, 94, 0.25);
+  }
+
+  .action-btn.practice-active {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #f87171;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
   }
 
   .action-btn.video {

@@ -29,13 +29,15 @@ import { PRESET_VALID_COUNTS, createFormationFromPreset } from "@austencloud/sce
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
 import { userProportionsState } from "@austencloud/scene-3d";
 import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
+import { computeChoreographerShot, computeBehindPerformerShot } from "$lib/shared/sequence-viewer/camera-choreography/presets/shots";
 import type { OceanVariant } from "../environments/domain/enums/environment-enums";
+
 
 // ============================================
 // Popover Stack
 // ============================================
 
-export type PopoverId = "formation" | "tempo" | "export" | "camera" | "planes" | "info" | "scene" | "effects" | "prop" | "effort";
+export type PopoverId = "formation" | "tempo" | "export" | "camera" | "planes" | "info" | "scene" | "effects" | "prop" | "effort" | "dev";
 
 // ============================================
 // Persistence
@@ -70,12 +72,31 @@ function persistNavMode(value: ViewerNavMode) {
   }
 }
 
+function loadPersistedDefaultProp(): PropType {
+  if (typeof localStorage === "undefined") return PropType.STAFF;
+  try {
+    const v = localStorage.getItem(STORAGE_KEY_DEFAULT_PROP);
+    if (v && Object.values(PropType).includes(v as PropType)) return v as PropType;
+    return PropType.STAFF;
+  } catch {
+    return PropType.STAFF;
+  }
+}
+
+function persistDefaultProp(prop: PropType) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_DEFAULT_PROP, prop);
+  } catch {}
+}
+
 // New multi-performer persistence keys (v2). The old
 // STORAGE_KEY_VISIBLE_PLANES is migrated to the first entry of the new
 // performers array on first load.
 const STORAGE_KEY_PERFORMERS = "tka-viewer3d-performers";
 const STORAGE_KEY_ACTIVE_FORMATION = "tka-viewer3d-activeFormation";
 const STORAGE_KEY_SELECTED_INDEX = "tka-viewer3d-selectedIndex";
+const STORAGE_KEY_DEFAULT_PROP = "tka-viewer3d-defaultProp";
 
 interface StoredPerformerSnapshot {
   position: { x: number; z: number };
@@ -287,7 +308,7 @@ export function createViewer3DState() {
   // Viewer-level default settings for the cascade system. Performers with
   // null overrides inherit from these defaults.
   const _defaultSettings = $state<DefaultPerformerSettings>({
-    prop: PropType.STAFF,
+    prop: loadPersistedDefaultProp(),
     effects: new Set<EffectId>(),
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
@@ -316,6 +337,12 @@ export function createViewer3DState() {
   // that ends near a performer's body doesn't accidentally select them.
   let isCameraDragging = $state(false);
 
+  // Welcome animation: plays once per session on first 3D entry.
+  // Fires via requestIdleCallback after registerSnapTo, so the browser's
+  // heavy scene setup work has settled before the sweep starts.
+  let _hasPlayedWelcome = false;
+  let _welcomeAnimationPending = false;
+
   // Gate for the performer persistence $effect. Stays false until enter3D()
   // finishes restoring from localStorage, preventing the effect from
   // overwriting the saved multi-performer state with an empty array before
@@ -342,6 +369,26 @@ export function createViewer3DState() {
   function selectPerformerScope(index: number | null): void {
     selectedPerformerIndex = index;
     persistSelectedIndex(index);
+
+    if (renderMode !== "3d" || !_snapToFn) return;
+    const performers = performerManager.performers;
+    if (performers.length === 0) return;
+
+    if (index !== null) {
+      const performer = performers[index];
+      if (!performer) return;
+      const shot = computeBehindPerformerShot(performer, stageGroundOffset);
+      snapCameraTo(
+        { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
+        { x: shot.target.x, y: shot.target.y, z: shot.target.z },
+      );
+    } else {
+      const shot = computeChoreographerShot(performers, stageGroundOffset);
+      snapCameraTo(
+        { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
+        { x: shot.target.x, y: shot.target.y, z: shot.target.z },
+      );
+    }
   }
 
   /**
@@ -385,6 +432,7 @@ export function createViewer3DState() {
   function setDefaultProp(prop: PropType): void {
     sceneUndo.captureState("change-default-prop", `Default prop: ${prop}`);
     _defaultSettings.prop = prop;
+    persistDefaultProp(prop);
     sceneUndo.commitState();
   }
 
@@ -766,7 +814,7 @@ export function createViewer3DState() {
   let updateEffectsCallback = $state<((dt: number) => void) | null>(null);
 
   // Camera snap callback - registered by Viewer3DCamera, called by Viewer3DViewPresets
-  let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }) => void) | null = null;
+  let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }, animate?: boolean) => void) | null = null;
 
   // When a hand is newly assigned to a non-wall plane, auto-add that
   // plane to visiblePlanes as a one-time convenience. Uses a tracking
@@ -891,6 +939,13 @@ export function createViewer3DState() {
     // Now that restoration is complete, let the persistence $effect write
     // future changes back to localStorage.
     _performersPersistReady = true;
+
+    // Queue welcome animation on first 3D entry this session.
+    // The snap executes when Viewer3DCamera registers its snapTo callback.
+    if (!_hasPlayedWelcome) {
+      _welcomeAnimationPending = true;
+      _hasPlayedWelcome = true;
+    }
   }
 
   /**
@@ -928,14 +983,33 @@ export function createViewer3DState() {
     performerManager.destroy();
   }
 
+  function _fireWelcome(): void {
+    if (!_welcomeAnimationPending || !_snapToFn) return;
+    _welcomeAnimationPending = false;
+    const performers = performerManager.performers;
+    if (performers.length === 0) return;
+    const shot = computeChoreographerShot(performers, stageGroundOffset);
+    snapCameraTo(
+      { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
+      { x: shot.target.x, y: shot.target.y, z: shot.target.z },
+    );
+  }
+
   /**
    * Register the snap-to callback from Viewer3DCamera so preset buttons
    * can animate the camera without direct coupling to Three.js objects.
    */
   function registerSnapTo(
-    fn: (position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }) => void
+    fn: (position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }, animate?: boolean) => void
   ) {
     _snapToFn = fn;
+    if (_welcomeAnimationPending) {
+      if (typeof requestIdleCallback === "function") {
+        requestIdleCallback(() => _fireWelcome());
+      } else {
+        setTimeout(() => _fireWelcome(), 500);
+      }
+    }
   }
 
   /**
@@ -946,8 +1020,9 @@ export function createViewer3DState() {
     position: { x: number; y: number; z: number },
     target: { x: number; y: number; z: number },
     spherical?: { azimuth: number; polar: number },
+    animate: boolean = true,
   ) {
-    _snapToFn?.(position, target, spherical);
+    _snapToFn?.(position, target, spherical, animate);
   }
 
   return {

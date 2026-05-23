@@ -45,7 +45,7 @@
 		placement.scale[2] * definition.defaultScale
 	]);
 
-	let groupRef: import('three').Object3D | undefined = $state();
+	let groupRef: import('three').Group | undefined = $state();
 </script>
 
 <T.Group

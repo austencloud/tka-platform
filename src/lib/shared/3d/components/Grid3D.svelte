@@ -47,7 +47,7 @@
 
   const { camera } = useThrelte();
 
-  const PLANE_NORMALS: Record<Plane, Vector3> = {
+  const PLANE_NORMALS: Partial<Record<Plane, Vector3>> = {
     [Plane.WALL]: new Vector3(0, 0, 1),
     [Plane.WHEEL]: new Vector3(1, 0, 0),
     [Plane.FLOOR]: new Vector3(0, 1, 0),
@@ -67,7 +67,9 @@
 
     for (const p of [Plane.WALL, Plane.WHEEL, Plane.FLOOR]) {
       if (!visiblePlanes.has(p)) continue;
-      const dot = Math.abs(_viewDir.dot(PLANE_NORMALS[p]));
+      const normal = PLANE_NORMALS[p];
+      if (!normal) continue;
+      const dot = Math.abs(_viewDir.dot(normal));
       if (dot > bestDot) {
         bestDot = dot;
         bestPlane = p;

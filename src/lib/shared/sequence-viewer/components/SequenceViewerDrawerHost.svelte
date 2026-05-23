@@ -284,8 +284,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         {@const isRecordSceneActive = isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl}
         {@const isSidebarExportActive = isAnyExportActive && !isRecordSceneActive}
         {@const showRail = !isMobileWidth}
-        {@const handleBackToSplit = () => {
-          ctx.viewerState.backToSplit();
+        {@const handleExitExport = () => {
+          ctx.viewerState.exitExport();
           setTimeout(() => rerenderTrigger++, 280);
         }}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
@@ -294,7 +294,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 <button
                   type="button"
                   class="drawer-back-button"
-                  onclick={handleBackToSplit}
+                  onclick={handleExitExport}
                   aria-label="Back to viewer"
                 >
                   <i class="fas fa-arrow-left" aria-hidden="true"></i>
@@ -395,13 +395,15 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       activeMode={ctx.viewerState.viewerMode}
                       {videoCount}
                       webgl2Available={ctx.viewer3DState.webgl2Available}
-                      onSelectSplit={handleBackToSplit}
+                      onSelectSplit={() => {
+                        ctx.viewerState.exitExport();
+                        ctx.viewerState.setViewerMode('split');
+                        setTimeout(() => rerenderTrigger++, 280);
+                      }}
                       onSelectMode={(mode) => {
                         if (mode === 'animation') {
-                          if (ctx.renderMode === '3d') ctx.viewer3DState.exit3D();
                           ctx.viewerState.enterExport('animation-export', 'animation');
                         } else if (mode === 'animation-3d') {
-                          if (ctx.renderMode !== '3d' && overlay.sequence) ctx.viewer3DState.enter3D(overlay.sequence);
                           ctx.viewerState.enterExport('animation-export', 'animation-3d');
                         } else if (mode === 'card') {
                           ctx.viewerState.enterExport('image-export');
@@ -560,16 +562,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 
             <div class="footer-collapse" class:collapsed={isAnyExportActive}>
               <ViewerFooter
-                bpm={ctx.bpmLocal}
-                isPlaying={ctx.isPlayingLocal}
                 landscape={isLandscape}
-                onBpmChange={ctx.handleBpmChange}
-                onPlayPause={ctx.handlePlaybackToggle}
-                onStepBack={ctx.stepFullBeatBackward}
-                onStepForward={ctx.stepFullBeatForward}
-                onStepHalfBack={ctx.stepHalfBeatBackward}
-                onStepHalfForward={ctx.stepHalfBeatForward}
-                onRestartToStart={ctx.restartToStart}
                 onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
                 onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
                 onExportVideo={() => ctx.enterEditMode('animation')}

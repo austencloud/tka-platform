@@ -16,11 +16,11 @@
   import PictographRenderer from "$lib/shared/pictograph/shared/components/PictographRenderer.svelte";
 
   interface Props {
-    /** Start position data (extends PictographData) - has motions with prop info */
     pictographData: PictographData;
+    darkMode?: boolean;
   }
 
-  let { pictographData }: Props = $props();
+  let { pictographData, darkMode = true }: Props = $props();
 
   let prepared: PreparedPictographData | null = $state(null);
 
@@ -31,7 +31,7 @@
     (async () => {
       try {
         const result = await pictographPreparer.prepareSingle(data, {
-          themeMode: "dark",
+          themeMode: darkMode ? "dark" : "light",
         });
         prepared = result;
       } catch (err) {
@@ -43,22 +43,24 @@
 </script>
 
 <div class="start-pos-picto">
-  {#if prepared}
-    <PictographRenderer
-      pictograph={prepared}
-      transparentBackground={true}
-      showGrid={true}
-      showTKA={false}
-      showReversals={false}
-      showVTG={false}
-      showElemental={false}
-      showPositions={false}
-      showNonRadialPoints={false}
-      handPointVisibility="all"
-      darkMode={true}
-      showStepNumber={false}
-    />
-  {/if}
+  <div class="picto-zoom">
+    {#if prepared}
+      <PictographRenderer
+        pictograph={prepared}
+        transparentBackground={true}
+        showGrid={true}
+        showTKA={false}
+        showReversals={false}
+        showVTG={false}
+        showElemental={false}
+        showPositions={false}
+        showNonRadialPoints={false}
+        handPointVisibility="all"
+        darkMode={darkMode}
+        showStepNumber={false}
+      />
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -66,5 +68,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 0.3cqi solid var(--card-text-muted, rgba(255, 255, 255, 0.3));
+    border-radius: 1cqi;
+    overflow: hidden;
+  }
+
+  .picto-zoom {
+    transform: scale(1.3);
   }
 </style>

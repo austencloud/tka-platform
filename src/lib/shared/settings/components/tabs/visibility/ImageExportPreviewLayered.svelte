@@ -8,6 +8,7 @@ This gives users a live preview of exactly how their settings affect the exporte
 <script lang="ts">
   import { fly, fade, scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import PictographWithVisibility from "$lib/shared/pictograph/shared/components/PictographWithVisibility.svelte";
   import {
     exampleStartPositionData,
@@ -69,45 +70,6 @@ This gives users a live preview of exactly how their settings affect the exporte
     authState.user?.displayName || "Your Name"
   );
 
-  // Level badge visual styles - matches the actual choreo card print styles
-  const levelStyles: Record<
-    number,
-    { bg: string; border: string; text: string }
-  > = {
-    1: {
-      bg: "linear-gradient(135deg, #fff, #f5f5f5)",
-      border: "#000",
-      text: "#000",
-    },
-    2: {
-      bg: "linear-gradient(135deg, #d4d4d4, #a8a8a8)",
-      border: "#000",
-      text: "#000",
-    },
-    3: {
-      bg: "linear-gradient(135deg, #ffd700, #b8860b)",
-      border: "#000",
-      text: "#000",
-    },
-    4: {
-      bg: "linear-gradient(135deg, #c8a2c8, #9400d3)",
-      border: "#000",
-      text: "#000",
-    },
-    5: {
-      bg: "linear-gradient(135deg, #ff4500, #8b0000)",
-      border: "#000",
-      text: "#fff",
-    },
-  };
-  const defaultLevelStyle = {
-    bg: "linear-gradient(135deg, #fff, #f5f5f5)",
-    border: "#000",
-    text: "#000",
-  };
-  const currentLevelStyle = $derived(
-    levelStyles[difficultyLevel] ?? defaultLevelStyle
-  );
 </script>
 
 <div class="layered-preview" class:dark-mode={darkMode}>
@@ -119,12 +81,8 @@ This gives users a live preview of exactly how their settings affect the exporte
         transition:fly={{ y: -20, duration: 250, easing: cubicOut }}
       >
         {#if showDifficultyLevel}
-          <div
-            class="difficulty-badge"
-            style="background: {currentLevelStyle.bg}; border-color: {currentLevelStyle.border}; color: {currentLevelStyle.text};"
-            transition:scale={{ duration: 200, easing: cubicOut }}
-          >
-            {difficultyLevel}
+          <div class="badge-wrapper" transition:scale={{ duration: 200, easing: cubicOut }}>
+            <DifficultyBadge level={difficultyLevel} size="clamp(18px, 6cqi, 28px)" fontSize="clamp(10px, 3cqi, 14px)" />
           </div>
         {/if}
         {#if showWord}
@@ -247,22 +205,11 @@ This gives users a live preview of exactly how their settings affect the exporte
     border-bottom-color: rgba(255, 255, 255, 0.15);
   }
 
-  .difficulty-badge {
+  .badge-wrapper {
     position: absolute;
     left: 4px;
     top: 50%;
     transform: translateY(-50%);
-    width: clamp(18px, 6cqi, 28px);
-    height: clamp(18px, 6cqi, 28px);
-    border-radius: 50%;
-    border: 1px solid black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: Georgia, serif;
-    font-weight: bold;
-    font-size: clamp(10px, 3cqi, 14px);
-    flex-shrink: 0;
   }
 
   .word-text {
@@ -445,7 +392,7 @@ This gives users a live preview of exactly how their settings affect the exporte
   @media (prefers-reduced-motion: reduce) {
     .header-section,
     .footer-section,
-    .difficulty-badge,
+    .badge-wrapper,
     .word-text,
     .footer-name,
     .footer-notes,

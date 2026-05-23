@@ -25,7 +25,7 @@ import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { animationSettings } from "../../state/animation-settings-state.svelte";
 import { TrackingMode } from "../../domain/types/TrailTypes";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+
 
 interface CanvasContextMenuDeps {
   visibilityManager: AnimationVisibilityStateManager;
@@ -35,11 +35,9 @@ interface CanvasContextMenuDeps {
   captureEffectDiagnostics?: () => Record<string, unknown>;
   viewer3DState?: {
     renderMode: "2d" | "3d";
-    enter3D: (data: SequenceData) => void;
-    exit3D: () => void;
     webgl2Available: boolean;
   };
-  sequenceData?: SequenceData | null;
+  onToggle3DView?: () => void;
 }
 
 type ActiveEffect = "fire" | "charcoal" | "led" | "trails" | "none";
@@ -385,19 +383,13 @@ export function buildCanvasContextMenuItems(
     );
   }
 
-  if (deps.viewer3DState?.webgl2Available && deps.sequenceData) {
+  if (deps.viewer3DState?.webgl2Available && deps.onToggle3DView) {
     items.push({ type: "separator" as const });
     items.push({
       id: "toggle-3d-view",
       label: deps.viewer3DState.renderMode === "3d" ? "Exit 3D View" : "Enter 3D View",
       icon: "fa-cube",
-      action: () => {
-        if (deps.viewer3DState!.renderMode === "3d") {
-          deps.viewer3DState!.exit3D();
-        } else {
-          deps.viewer3DState!.enter3D(deps.sequenceData!);
-        }
-      },
+      action: deps.onToggle3DView,
     });
   }
 

@@ -10,13 +10,41 @@
     makeStandaloneDeps,
   } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
+  import type { BackgroundType } from "@austencloud/backgrounds";
+  import Environment3D from "$lib/shared/3d/environments/components/Environment3D.svelte";
+  import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
 
-  let { sequence }: { sequence: SequenceData | null } = $props();
+  let { sequence, backgroundType }: { sequence: SequenceData | null; backgroundType: BackgroundType } = $props();
 
   const PLATFORM_HEIGHT = 0.2;
   const groundOffset = $derived(-userProportionsState.groundY + PLATFORM_HEIGHT);
 
+  const shot = $derived(
+    computeFramingShot({
+      performers: [{ x: 0, z: 0 }],
+      plane: "wall",
+      groundOffset,
+      fovDeg: 50,
+      elevationDeg: 5,
+    })
+  );
+
+  // Mirror camera to +Z side so we face the performer's front
+  const frontEye = $derived<[number, number, number]>([
+    shot.eye.x,
+    shot.eye.y,
+    2 * shot.target.z - shot.eye.z,
+  ]);
+
   let performerState = $state<ReturnType<typeof createAvatarInstanceState> | null>(null);
+
+  const displayedStepNumber = $derived(
+    performerState ? performerState.currentStepIndex : null
+  );
+  const isStartPosition = $derived(
+    performerState !== null && performerState.currentStepIndex === 0
+  );
 
   try {
     performerState = createAvatarInstanceState(
@@ -39,36 +67,38 @@
 
   onDestroy(() => {
     if (performerState) {
-      performerState.stop();
+      performerState.pause();
       performerState.destroy();
     }
   });
 </script>
 
 <div class="stage-container">
+  <svg class="step-overlay" viewBox="0 0 950 950" preserveAspectRatio="xMinYMin meet">
+    <StepNumber
+      stepNumber={displayedStepNumber}
+      {isStartPosition}
+      darkMode={true}
+    />
+  </svg>
   <Canvas>
-    <T.AmbientLight intensity={0.5} />
-    <T.DirectionalLight position={[3, 8, 5]} intensity={2} castShadow />
-
-    <T.PerspectiveCamera makeDefault position={[0, 2.5, 5]} fov={40}>
+    <T.PerspectiveCamera
+      makeDefault
+      position={frontEye}
+      fov={50}
+    >
       <OrbitControls
         enableZoom={false}
         enablePan={false}
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI / 2.2}
         autoRotate={false}
-        target={[0, 1.2, 0]}
+        target={[shot.target.x, shot.target.y, shot.target.z]}
+        oncreate={(ref) => { ref.update(); }}
       />
     </T.PerspectiveCamera>
 
-    <!-- Subtle platform disc -->
-    <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
-      <T.CylinderGeometry args={[0.7, 0.8, PLATFORM_HEIGHT, 24]} />
-      <T.MeshStandardMaterial
-        color="#2a2520"
-        roughness={0.85}
-      />
-    </T.Mesh>
+    <Environment3D {backgroundType} performerCount={1} />
 
     {#if performerState}
       <PerformerRig
@@ -91,16 +121,21 @@
 
 <style>
   .stage-container {
+    position: relative;
     width: 100%;
     height: 100%;
     min-height: 200px;
     border-radius: 16px;
     overflow: hidden;
-    background: radial-gradient(
-      ellipse at 50% 80%,
-      color-mix(in srgb, var(--theme-panel-bg) 95%, var(--theme-accent)),
-      var(--theme-panel-bg)
-    );
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .step-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 25%;
+    height: auto;
+    z-index: 10;
+    pointer-events: none;
   }
 </style>

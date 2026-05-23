@@ -1,41 +1,83 @@
 import type { Deck } from "$lib/features/choreo-card/domain/models/Deck";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { loadDecks, loadDeckSequences } from "$lib/features/choreo-card/services/deck-loader";
+import { getCachedDecks, loadDecks, loadDeckSequencesPage } from "$lib/features/choreo-card/services/deck-loader";
 import { QuizAnswerFormat, QuizQuestionFormat, QuizType } from "../domain/enums/quiz-enums";
 import type { QuizAnswerOption, QuizQuestionData } from "../domain/models/quiz-models";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 let sequencePool: SequenceData[] = [];
 let isInitialized = false;
 const recentWords: string[] = [];
 const RECENT_WORD_HISTORY = 5;
+const LOAD_TIMEOUT_MS = 15_000;
+const SEQS_PER_DECK = 8;
+
+const sequenceDeckMap = new Map<string, string>();
+
+export function getDeckIdForSequence(sequenceId: string): string | undefined {
+  return sequenceDeckMap.get(sequenceId);
+}
+
+function isMatchingDeck(d: Deck): boolean {
+  return d.level === 1;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
 
 export async function initialize(): Promise<void> {
   if (isInitialized) return;
 
-  const allDecks = await loadDecks();
-  const matchingDecks = allDecks.filter(
-    (d: Deck) =>
-      d.level === 1 &&
-      d.loopType === "rotated" &&
-      d.sliceType === "quartered" &&
-      d.stepCount === 16
-  );
+  const cached = getCachedDecks();
+  let allDecks: Deck[];
+
+  if (cached && cached.length > 0) {
+    allDecks = cached;
+  } else {
+    allDecks = await withTimeout(loadDecks(), LOAD_TIMEOUT_MS, "loadDecks");
+  }
+
+  const matchingDecks = allDecks.filter(isMatchingDeck);
 
   if (matchingDecks.length === 0) {
     throw new Error("No L1 rotated quartered 16-count decks found");
   }
 
-  const allSequences: SequenceData[] = [];
-  for (const deck of matchingDecks) {
-    const seqs = await loadDeckSequences(deck.id);
-    allSequences.push(...seqs);
-  }
+  shuffleArray(matchingDecks);
+  const decksToLoad = matchingDecks.slice(0, 20);
 
-  sequencePool = allSequences.filter((s) => s.word && s.word.length > 0);
+  const loads = decksToLoad.map((deck) =>
+    withTimeout(
+      loadDeckSequencesPage(deck.id, SEQS_PER_DECK),
+      LOAD_TIMEOUT_MS,
+      `loadDeckSequencesPage(${deck.id})`
+    )
+      .then((r) => ({ deckId: deck.id, sequences: r.sequences }))
+      .catch(() => ({ deckId: deck.id, sequences: [] as SequenceData[] }))
+  );
+
+  const results = await Promise.all(loads);
+
+  sequenceDeckMap.clear();
+  sequencePool = [];
+  for (const { deckId, sequences } of results) {
+    for (const seq of sequences) {
+      if (seq.word && seq.word.length > 0) {
+        sequencePool.push(seq);
+        sequenceDeckMap.set(seq.id, deckId);
+      }
+    }
+  }
 
   if (sequencePool.length < 4) {
     throw new Error(
-      `Need at least 4 sequences with distinct words, found ${sequencePool.length}`
+      `Need at least 4 sequences with distinct words across ${matchingDecks.length} decks, found ${sequencePool.length}`
     );
   }
 
@@ -50,9 +92,9 @@ export async function generateSequenceToWordQuestion(
   }
 
   const correctSequence = pickRandomSequence();
-  const correctWord = correctSequence.word;
+  const correctWord = simplifyRepeatedWord(correctSequence.word);
 
-  const distractorWords = pickDistractorWords(correctWord, 3);
+  const distractorWords = pickDistractorWords(correctSequence.word, 3);
 
   const allWords = [correctWord, ...distractorWords];
   shuffleArray(allWords);
@@ -63,7 +105,7 @@ export async function generateSequenceToWordQuestion(
     isCorrect: word === correctWord,
   }));
 
-  trackRecentWord(correctWord);
+  trackRecentWord(correctSequence.word);
 
   return {
     questionId,
@@ -79,6 +121,9 @@ export async function generateSequenceToWordQuestion(
 
 export function resetState(): void {
   recentWords.length = 0;
+  sequencePool = [];
+  sequenceDeckMap.clear();
+  isInitialized = false;
 }
 
 function pickRandomSequence(): SequenceData {
@@ -94,9 +139,14 @@ function pickRandomSequence(): SequenceData {
   return candidates[Math.floor(Math.random() * candidates.length)]!;
 }
 
-function pickDistractorWords(correctWord: string, count: number): string[] {
+function pickDistractorWords(correctRawWord: string, count: number): string[] {
+  const correctSimplified = simplifyRepeatedWord(correctRawWord);
   const uniqueWords = [
-    ...new Set(sequencePool.map((s) => s.word).filter((w) => w !== correctWord)),
+    ...new Set(
+      sequencePool
+        .map((s) => simplifyRepeatedWord(s.word))
+        .filter((w) => w !== correctSimplified)
+    ),
   ];
 
   shuffleArray(uniqueWords);

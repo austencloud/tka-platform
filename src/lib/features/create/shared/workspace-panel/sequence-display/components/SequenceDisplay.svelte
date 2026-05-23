@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-  import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
 import type { SequenceState } from "../../../state/SequenceStateOrchestrator.svelte";
   import { getCreateModuleContext } from "../../../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -137,11 +137,6 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   });
   const difficultyLevel = $derived(difficultyAnalysis.level);
 
-  // Level badge colors - single source of truth shared with the image compositor
-  const currentLevelStyle = $derived.by(() => {
-    const style = DIFFICULTY_LEVELS[difficultyLevel] ?? DEFAULT_DIFFICULTY_STYLE;
-    return { bg: style.cssBg, border: style.border, text: style.text };
-  });
   const hasContent = $derived((currentSequence?.steps?.length ?? 0) > 0);
 
   // Info modals
@@ -203,17 +198,12 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
           {#if hasContent}
             {#key difficultyLevel}
               <button
-                class="difficulty-badge pop-in"
-                style="
-                  background: {currentLevelStyle.bg};
-                  border-color: {currentLevelStyle.border};
-                  color: {currentLevelStyle.text};
-                "
+                class="badge-button pop-in"
                 title="Level {difficultyLevel}"
                 aria-label="Level {difficultyLevel} - tap for details"
                 onclick={() => (showDifficultyInfo = true)}
               >
-                {difficultyLevel}
+                <DifficultyBadge level={difficultyLevel} size="40px" fontSize="26px" />
               </button>
             {/key}
           {/if}
@@ -346,34 +336,24 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
     min-width: 40px;
   }
 
-  /* Difficulty badge - matches ChoreoCard.svelte proportions */
-  .difficulty-badge {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: Cambria, serif;
-    font-weight: bold;
-    font-size: 26px;
-    flex-shrink: 0;
-    cursor: pointer;
+  .badge-button {
+    background: none;
+    border: none;
     padding: 0;
+    cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: transform 0.15s ease;
   }
 
-  .difficulty-badge:hover {
+  .badge-button:hover {
     transform: scale(1.1);
   }
 
-  .difficulty-badge:active {
+  .badge-button:active {
     transform: scale(0.95);
   }
 
-  .difficulty-badge.pop-in {
+  .badge-button.pop-in {
     animation: badge-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -393,7 +373,7 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .difficulty-badge.pop-in,
+    .badge-button.pop-in,
     .loop-badge-button.pop-in {
       animation: none;
     }

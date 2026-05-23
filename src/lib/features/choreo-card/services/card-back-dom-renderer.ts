@@ -1,5 +1,6 @@
 import { mount, unmount } from "svelte";
 import CardBack from "../components/card-back/CardBack.svelte";
+import { getCardBackThemeVisuals } from "../components/card-back/card-back-theme-visuals";
 import type { CardBackDomRenderOptions } from "./types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -49,8 +50,9 @@ export async function renderCardBack(sequence: SequenceData, options: CardBackDo
     finalCanvas.height = height;
     const ctx = finalCanvas.getContext("2d")!;
 
-    // Fill bleed area with dark background matching the card
-    ctx.fillStyle = "#060610";
+    const visuals = getCardBackThemeVisuals(options.theme);
+    const isProofMode = visuals.textColor === "#111111";
+    ctx.fillStyle = isProofMode ? "#ffffff" : "#060610";
     ctx.fillRect(0, 0, width, height);
 
     // Draw captured content centered in the bleed area

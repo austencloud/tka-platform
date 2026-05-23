@@ -25,7 +25,7 @@
       godRays: layers.godRays,
       islands: layers.islands,
       pillars: layers.pillars,
-    });
+    } as any);
     isLoading = false;
   }
 
@@ -38,7 +38,7 @@
       godRays: layers.godRays,
       islands: layers.islands,
       pillars: layers.pillars,
-    });
+    } as any);
   }
 
   function setQuality(q: QualityLevel) {
@@ -55,7 +55,7 @@
       godRays: layers.godRays,
       islands: layers.islands,
       pillars: layers.pillars,
-    });
+    } as any);
   }
 
   onDestroy(() => {

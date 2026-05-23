@@ -53,10 +53,22 @@ Provides quiz functionality for learning TKA notation:
   // COMPONENT STATE
   // ============================================================================
 
-  let currentView = $state<"selector" | "workspace" | "results">("selector");
-  let selectedQuizId = $state<string | null>(null);
-  let selectedQuizType = $state<QuizType | null>(null);
-  let selectedQuizMode = $state<QuizMode | null>(null);
+  const DEV_PERSIST_KEY = "quiz-dev-state";
+
+  function loadDevState() {
+    if (!import.meta.hot) return null;
+    try {
+      const raw = sessionStorage.getItem(DEV_PERSIST_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  const devState = loadDevState();
+
+  let currentView = $state<"selector" | "workspace" | "results">(devState?.view ?? "selector");
+  let selectedQuizId = $state<string | null>(devState?.quizId ?? null);
+  let selectedQuizType = $state<QuizType | null>(devState?.quizType ?? null);
+  let selectedQuizMode = $state<QuizMode | null>(devState?.quizMode ?? null);
   let currentQuestionIndex = $state(0);
   let totalQuestions = $state(10);
   let score = $state(0);
@@ -260,6 +272,12 @@ Provides quiz functionality for learning TKA notation:
   // LIFECYCLE
   // ============================================================================
 
+  $effect(() => {
+    if (!import.meta.hot) return;
+    const state = { view: currentView, quizId: selectedQuizId, quizType: selectedQuizType, quizMode: selectedQuizMode };
+    try { sessionStorage.setItem(DEV_PERSIST_KEY, JSON.stringify(state)); } catch {}
+  });
+
   onMount(async () => {
     try {
       isLoading = true;
@@ -269,6 +287,13 @@ Provides quiz functionality for learning TKA notation:
 
       // Load available quizzes
       quizRepo.getAllQuizTypes();
+
+      if (devState?.view === "workspace" && devState.quizType && devState.quizMode) {
+        await QuestionGenerator.initialize();
+        const quizId = `${devState.quizType}_${devState.quizMode}`;
+        selectedQuizId = quizId;
+        await quizSessionService.startQuiz(quizId);
+      }
     } catch (err) {
       console.error("❌ QuizTab: Initialization failed:", err);
       error =

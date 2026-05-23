@@ -7,6 +7,7 @@
 <script lang="ts">
   import { fade, scale, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
@@ -80,19 +81,11 @@
     {:else}
       {#if showDifficultyLevel}
         <div
-          class="difficulty-badge"
-          style="
-            background: {currentLevelStyle.bg};
-            border-color: {currentLevelStyle.border};
-            color: {currentLevelStyle.text};
-            width: {badgeSize}px;
-            height: {badgeSize}px;
-            left: {badgePadding}px;
-            font-size: {badgeNumberFontSize}px;
-          "
+          class="badge-wrapper"
+          style="left: {badgePadding}px;"
           transition:scale|local={{ duration: 200, easing: cubicOut }}
         >
-          {difficultyLevel}
+          <DifficultyBadge level={difficultyLevel} size="{badgeSize}px" fontSize="{badgeNumberFontSize}px" />
         </div>
       {/if}
 
@@ -151,18 +144,10 @@
     border-bottom-color: rgba(255, 255, 255, 0.15);
   }
 
-  .difficulty-badge {
+  .badge-wrapper {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    border-radius: 50%;
-    border: 1px solid black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: Cambria, serif;
-    font-weight: bold;
-    flex-shrink: 0;
   }
 
   .word-title {

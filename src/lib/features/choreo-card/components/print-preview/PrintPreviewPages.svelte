@@ -100,11 +100,13 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
             : imageComposition.startPositionLayout,
       handPointsVisible,
+      showMandala: true,
       theme,
       elementTheme,
       bluePropType: settingsService.settings.bluePropType,
       redPropType: settingsService.settings.redPropType,
       leftLabel: overrideLeftLabel ?? leftLabel,
+      bleedPx: 0,
     };
   }
 
@@ -561,7 +563,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     overflow: hidden;
     /* Standard playing card corner radius: ~3mm on 63.5mm = 4.72% of width */
     border-radius: 4.72%;
-    background: var(--print-page-bg, #f0f0f0);
+    background: #ffffff;
   }
 
   .card-cell.clickable {

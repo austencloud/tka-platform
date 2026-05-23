@@ -283,6 +283,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   const viewerState = createViewerState();
 
+  if (viewer3DState.renderMode === '3d' && !viewerState.wants3D) {
+    viewerState.setSplitPaneContent('left', 'animation-3d');
+  }
+
   const editingPane = $derived.by((): 'animation' | 'image' | 'video-upload' | null => {
     const { viewerMode, exportContext } = viewerState;
     if (exportContext === 'animation-export') return 'animation';
@@ -514,19 +518,20 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   });
 
-  let _3dRestored = false;
   $effect(() => {
-    if (_3dRestored) return;
     if (!sequence) return;
-    if (!viewer3DState.webgl2Available) {
-      _3dRestored = true;
-      return;
-    }
-    const shouldBe3D = initialRenderMode === '3d' || viewer3DState.renderMode === '3d';
-    if (shouldBe3D) {
+    if (!viewer3DState.webgl2Available) return;
+
+    const shouldBe3D = viewerState.wants3D || initialRenderMode === '3d';
+    const is3D = viewer3DState.renderMode === '3d';
+
+    const performersReady = viewer3DState.performerManager.performers.length > 0;
+
+    if (shouldBe3D && (!is3D || !performersReady)) {
       viewer3DState.enter3D(sequence);
+    } else if (!shouldBe3D && is3D) {
+      viewer3DState.exit3D();
     }
-    _3dRestored = true;
   });
 
   let lastAppliedSyncTimestamp = 0;
@@ -642,13 +647,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   let wasPlayingBeforeImageExport = false;
 
   function enterEditMode(pane: 'animation' | 'image' | 'video-upload') {
-    if (viewer3DState.renderMode === '3d' && pane !== 'animation') {
-      viewer3DState.exit3D();
-    }
     hapticService?.trigger("selection");
 
     if (pane === 'animation') {
-      const contentType = viewer3DState.renderMode === '3d' ? 'animation-3d' as const : 'animation' as const;
+      const leftContent = viewerState.splitConfig.leftPane;
+      const contentType = leftContent === 'animation-3d' ? 'animation-3d' as const : 'animation' as const;
       viewerState.enterExport('animation-export', contentType);
       if (!playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
@@ -678,7 +681,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   function exitEditMode() {
     hapticService?.trigger("selection");
     const wasPaneImage = editingPane === "image" || editingPane === "video-upload";
-    viewerState.backToSplit();
+    viewerState.exitExport();
     exportCoord.dismissPreview();
 
     if (wasPaneImage && wasPlayingBeforeImageExport && !playback.isPlayingLocal && playbackControllerRef) {
@@ -686,7 +689,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
     wasPlayingBeforeImageExport = false;
 
-    accessibilityHelper.announce("Split view restored");
+    accessibilityHelper.announce("Export closed");
   }
 
   async function handleExport() {

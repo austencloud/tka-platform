@@ -57,5 +57,8 @@
 
   .dot.red { background: var(--tka-red-hand, #e74c3c); }
   .dot.blue { background: var(--tka-blue-hand, #3498db); }
-  .dot.empty { background: var(--theme-stroke, rgba(255, 255, 255, 0.18)); }
+  .dot.empty {
+    background: var(--card-text-muted, rgba(255, 255, 255, 0.18));
+    opacity: 0.4;
+  }
 </style>

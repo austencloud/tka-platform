@@ -56,20 +56,21 @@
     varying float vAlpha;
     varying float vScatter;
 
-    vec3 hash3(vec3 p) {
-      p = fract(p * vec3(443.897, 441.423, 437.195));
-      p += dot(p, p.yzx + 19.19);
-      return fract((p.xxy + p.yzz) * p.zyx);
-    }
-
     void main() {
       float t = uTime * 0.12 + aPhase;
 
-      vec3 turb = (hash3(position * 0.25 + t * 0.3) - 0.5) * 1.5;
-      vec3 micro = (hash3(position * 2.0 + t * 1.5) - 0.5) * 0.08;
+      // Layered sine/cosine for smooth, continuous turbulence
+      vec3 turb;
+      turb.x = sin(position.y * 1.3 + t * 0.7) * 0.5
+             + sin(position.z * 0.8 + t * 0.3) * 0.25;
+      turb.y = sin(position.x * 0.9 + t * 0.5) * 0.15
+             + cos(position.z * 1.1 + t * 0.2) * 0.1;
+      turb.z = cos(position.x * 1.2 + t * 0.6) * 0.5
+             + sin(position.y * 0.7 + t * 0.4) * 0.25;
+
       vec3 drift = uCurrentDir * uTime;
 
-      vec3 pos = position + turb + micro + drift;
+      vec3 pos = position + turb + drift;
 
       pos.x = mod(pos.x + uAreaWidth * 0.5, uAreaWidth) - uAreaWidth * 0.5;
       pos.y = mod(pos.y, uAreaHeight);

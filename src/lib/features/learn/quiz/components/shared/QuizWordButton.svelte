@@ -139,6 +139,22 @@
     .word-text { font-size: 2rem; }
   }
 
+  @media (min-width: 1440px) {
+    .word-btn {
+      padding: 1.375rem 2rem;
+      border-radius: 20px;
+    }
+    .word-text { font-size: 2.25rem; }
+  }
+
+  @media (min-width: 1920px) {
+    .word-btn {
+      padding: 1.625rem 2.25rem;
+      border-radius: 22px;
+    }
+    .word-text { font-size: 2.5rem; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .word-btn.correct, .word-btn.incorrect, .result-icon {
       animation: none;

@@ -12,20 +12,18 @@
   import { buildCanvasContextMenuItems } from "./CanvasContextMenuBuilder";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-
   interface Props {
     disassembled?: boolean;
     onToggleDisassemble?: () => void;
     captureEffectDiagnostics?: () => Record<string, unknown>;
-    sequenceData?: SequenceData | null;
+    onToggle3DView?: () => void;
   }
 
   const {
     disassembled = false,
     onToggleDisassemble,
     captureEffectDiagnostics,
-    sequenceData,
+    onToggle3DView,
   }: Props = $props();
 
   // Try to read the viewer-3d context. When this component is rendered inside
@@ -68,7 +66,7 @@
       onToggleDisassemble,
       captureEffectDiagnostics,
       viewer3DState,
-      sequenceData,
+      onToggle3DView,
     });
   });
 

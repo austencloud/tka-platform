@@ -14,6 +14,8 @@
   import EffortPopover from "$lib/shared/3d/components/controls/EffortPopover.svelte";
   import PerformerPropSizeSlider from "$lib/shared/3d/components/controls/PerformerPropSizeSlider.svelte";
   import { createViewer3DKeyboardHandler } from "$lib/shared/3d/keyboard/Viewer3DKeyboardHandler";
+  import DevToolsPopover from "$lib/shared/3d/components/controls/DevToolsPopover.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   const viewer = getViewer3DContext();
 
@@ -131,6 +133,15 @@
     >
       <EffortPopover />
     </ViewerPopover>
+
+    {#if authState.isAdmin}
+      <div class="performer-separator" aria-hidden="true">
+        <div class="separator-line"></div>
+      </div>
+      <ViewerPopover id="dev" title="Dev Tools" icon="fa-terminal" tooltip="Dev Tools" width={280}>
+        <DevToolsPopover />
+      </ViewerPopover>
+    {/if}
   {/if}
 </div>
 

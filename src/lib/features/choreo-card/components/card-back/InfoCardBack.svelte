@@ -12,13 +12,12 @@
 
   const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
 
-  import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
 
-  // Use the canonical level styles from difficulty-styles.ts
-  const LEVEL_GRADIENTS = [
-    { num: 1, label: "Base Motions", gradient: DIFFICULTY_LEVELS[1]!.cssBg, textColor: DIFFICULTY_LEVELS[1]!.text },
-    { num: 2, label: "Whole Turns", gradient: DIFFICULTY_LEVELS[2]!.cssBg, textColor: DIFFICULTY_LEVELS[2]!.text },
-    { num: 3, label: "Half Turns, Floats", gradient: DIFFICULTY_LEVELS[3]!.cssBg, textColor: DIFFICULTY_LEVELS[3]!.text },
+  const LEVEL_INFO = [
+    { num: 1, label: "Base Motions" },
+    { num: 2, label: "Whole Turns" },
+    { num: 3, label: "Half Turns, Floats" },
   ];
 </script>
 
@@ -37,7 +36,7 @@
       <div class="corner-diagram">
         <div class="diagram-card">
           <div class="diagram-tl">
-            <span class="mini-badge" style="background: {LEVEL_GRADIENTS[0]?.gradient}; color: {LEVEL_GRADIENTS[0]?.textColor};">1</span>
+            <DifficultyBadge level={1} size="22px" fontSize="14px" />
           </div>
           <div class="diagram-tr"><i class="fas fa-sync-alt"></i></div>
           <div class="diagram-center">WORD</div>
@@ -61,9 +60,9 @@
       <!-- Levels with real gradients -->
       <h3 class="section-label">Levels</h3>
       <div class="level-list">
-        {#each LEVEL_GRADIENTS as lv}
+        {#each LEVEL_INFO as lv}
           <div class="level-row">
-            <span class="level-badge" style="background: {lv.gradient}; color: {lv.textColor};">{lv.num}</span>
+            <DifficultyBadge level={lv.num} size="26px" fontSize="15px" />
             <span class="level-desc">{lv.label}</span>
           </div>
         {/each}
@@ -186,17 +185,6 @@
   .diagram-bl { position: absolute; bottom: 6px; left: 10px; font-size: 16px; font-weight: 700; color: var(--theme-text-muted, rgba(255, 255, 255, 0.5)); }
   .diagram-br { position: absolute; bottom: 6px; right: 10px; font-family: Georgia, serif; font-size: 18px; font-weight: 700; color: var(--theme-text-muted, rgba(255, 255, 255, 0.5)); }
 
-  .mini-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    font-family: Cambria, serif;
-    font-size: 14px;
-    font-weight: bold;
-  }
 
   .corner-labels {
     display: flex;
@@ -238,16 +226,7 @@
     flex: 1;
   }
 
-  .level-badge {
-    width: 26px;
-    height: 26px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-family: Cambria, serif;
-    font-size: 15px;
-    font-weight: bold;
+  .level-row :global(.difficulty-badge) {
     flex-shrink: 0;
   }
 

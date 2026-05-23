@@ -25,9 +25,7 @@
     calculateTimelinePadding,
   } from "$lib/shared/create/utils/grid-calculations";
   import { formatDurationCompact } from "../../../domain/models/DurationPatternData";
-  import SpotlightGrid from "./SpotlightGrid.svelte";
-  import TimelineGrid from "./TimelineGrid.svelte";
-  import StandardGrid from "./StandardGrid.svelte";
+  import WorkspaceGrid from "./WorkspaceGrid.svelte";
 
   // Services
   const hapticService = getHapticFeedback();
@@ -48,7 +46,6 @@
     isSideBySideLayout = false,
     shouldOrbitAroundCenter = false,
     activeMode = null,
-    isSpotlightMode = false,
     isTimelineMode = false,
     manualColumnCount = null,
     highlightedSteps = null,
@@ -76,7 +73,6 @@
     isSideBySideLayout?: boolean;
     shouldOrbitAroundCenter?: boolean;
     activeMode?: BuildModeId | null;
-    isSpotlightMode?: boolean;
     isTimelineMode?: boolean;
     manualColumnCount?: number | null;
     highlightedSteps?: Map<number, { bg: string; border: string }> | null;
@@ -112,10 +108,7 @@
       deviceDetector,
       {
         isSideBySideLayout,
-        maxCellSize: isSpotlightMode ? 9999 : undefined,
-        widthPaddingRatio: isSpotlightMode ? 1.0 : undefined,
-        heightPaddingRatio: isSpotlightMode ? 1.0 : undefined,
-        heightSizingRowThreshold: isSpotlightMode ? 9999 : heightSizingRowThreshold,
+        heightSizingRowThreshold,
         manualColumnCount,
       }
     );
@@ -440,42 +433,22 @@
 
 <div
   class="step-grid-container"
-  class:spotlight-mode={isSpotlightMode}
   bind:this={containerRef}
 >
   {#if steps.length === 0 && (!startPosition || startPosition.isBlank)}
-    <!-- Empty grid state -->
     <div class="empty-grid-message">
       <span class="empty-icon">📋</span>
       <span class="empty-text">No sequence loaded</span>
     </div>
-  {:else if isSpotlightMode}
-    <SpotlightGrid
+  {:else}
+    <WorkspaceGrid
       {steps}
       {startPosition}
-      gridLayout={gridLayout}
-      {displayState}
-      {selectedStepNumber}
-      {practiceStepNumber}
-      {activeMode}
-      {removingStepIndex}
-      {removingStepIndices}
-      {isClearing}
-      {highlightedSteps}
-      onStepClick={handleStepClick}
-      onStartClick={handleStartClick}
-      {onStepDelete}
-      {onStepLongPress}
-      {getStepKey}
-      {getDurationDisplay}
-    />
-  {:else if isTimelineMode}
-    <TimelineGrid
-      {steps}
-      {startPosition}
-      timelineRows={timelineRows}
-      timelineUnitSize={timelineUnitSize}
-      timelinePadding={timelinePadding}
+      {isTimelineMode}
+      {gridLayout}
+      {timelineRows}
+      {timelineUnitSize}
+      {timelinePadding}
       {displayState}
       {scrollState}
       {selectedStepNumber}
@@ -490,29 +463,6 @@
       {onStepDelete}
       {onStepLongPress}
       {onDurationChange}
-      {getStepKey}
-      {getDurationDisplay}
-      {sequenceWord}
-      bind:scrollContainerRef
-    />
-  {:else}
-    <StandardGrid
-      {steps}
-      {startPosition}
-      gridLayout={gridLayout}
-      {displayState}
-      {scrollState}
-      {selectedStepNumber}
-      {practiceStepNumber}
-      {activeMode}
-      {removingStepIndex}
-      {removingStepIndices}
-      {isClearing}
-      {highlightedSteps}
-      onStepClick={handleStepClick}
-      onStartClick={handleStartClick}
-      {onStepDelete}
-      {onStepLongPress}
       {getStepKey}
       {getDurationDisplay}
       {bluePropTypeOverride}
@@ -535,12 +485,6 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-  }
-
-  .step-grid-container.spotlight-mode {
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .empty-grid-message {

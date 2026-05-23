@@ -144,6 +144,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
       _playbackController.togglePlayback();
     }
     modalAnimationState.setPlaybackMode(mode);
+    animationVisibility.setPlaybackMode(mode);
     if (wasPlaying && _playbackController) {
       setTimeout(() => _playbackController?.togglePlayback(), 0);
     }

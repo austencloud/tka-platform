@@ -18,6 +18,10 @@
   import MisconceptionHint from "./shared/MisconceptionHint.svelte";
   import ScorePopAnimation from "./shared/ScorePopAnimation.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { BackgroundType } from "@austencloud/backgrounds";
+  import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
+  import { getDeckIdForSequence } from "../services/sequence-question-generator";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
     onAnswerSubmit?: (event: QuizAnswerEvent) => void;
@@ -42,7 +46,7 @@
   let selectedAnswerId = $state<string | null>(null);
   let isAnswered = $state(false);
   let showFeedback = $state(false);
-  let isLoading = $state(true);
+  let isInitialLoading = $state(true);
   let error = $state<string | null>(null);
 
   let currentStreak = $state(0);
@@ -50,6 +54,29 @@
   let currentGap = $state<DetectedGap | null>(null);
 
   const answerSlots = [0, 1, 2, 3];
+
+  let quizScene = $state<BackgroundType>(settingsService.settings.backgroundType ?? BackgroundType.COSMIC);
+
+  function selectScene(type: BackgroundType) {
+    quizScene = type;
+  }
+
+  let copiedDiag = $state(false);
+
+  async function copyDiagnostic() {
+    if (!currentSequence) return;
+    const deckId = getDeckIdForSequence(currentSequence.id) ?? "unknown";
+    const diag = {
+      sequenceId: currentSequence.id,
+      deckId,
+      word: currentSequence.word,
+      stepCount: currentSequence.steps?.length ?? 0,
+      gridMode: currentSequence.gridMode ?? "unknown",
+    };
+    await navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
+    copiedDiag = true;
+    setTimeout(() => { copiedDiag = false; }, 1500);
+  }
 
   let currentSequence = $derived(
     questionData?.questionContent as SequenceData | null
@@ -68,7 +95,6 @@
   });
 
   async function loadQuestion() {
-    isLoading = true;
     error = null;
     try {
       questionData = await QuestionGenerator.generateQuestion(
@@ -78,7 +104,7 @@
       console.error("Failed to load question:", err);
       error = err instanceof Error ? err.message : "Failed to load question";
     } finally {
-      isLoading = false;
+      isInitialLoading = false;
     }
   }
 
@@ -170,7 +196,7 @@
   }
 </script>
 
-{#if isLoading}
+{#if isInitialLoading}
   <QuizContainer>
     <QuizLoadingState />
   </QuizContainer>
@@ -183,8 +209,34 @@
     <QuizPrompt text="What word is being performed?" />
 
     <div class="quiz-content">
-      <div class="stage-panel">
-        <QuizPerformerStage sequence={currentSequence} />
+      <div class="stage-column">
+        <div class="stage-panel">
+          <QuizPerformerStage sequence={currentSequence} backgroundType={quizScene} />
+        </div>
+        <div class="stage-toolbar">
+          <div class="scene-strip">
+            {#each ANIMATED_BACKGROUNDS as bg}
+              <button
+                class="scene-chip"
+                class:active={quizScene === bg.type}
+                onclick={() => selectScene(bg.type)}
+                aria-pressed={quizScene === bg.type}
+                aria-label={bg.label}
+                title={bg.label}
+              >
+                <i class="fas {bg.icon}" aria-hidden="true"></i>
+              </button>
+            {/each}
+          </div>
+          <button
+            class="diag-btn"
+            class:copied={copiedDiag}
+            onclick={copyDiagnostic}
+            title="Copy sequence diagnostic"
+          >
+            {copiedDiag ? "Copied" : "Copy Diag"}
+          </button>
+        </div>
       </div>
 
       <div class="answer-section">
@@ -232,12 +284,89 @@
     gap: 1.25rem;
     width: 100%;
     max-width: 420px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .stage-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
   }
 
   .stage-panel {
     width: 100%;
-    aspect-ratio: 4 / 3;
-    max-height: 280px;
+    flex: 1;
+    min-height: 200px;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .stage-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .scene-strip {
+    display: flex;
+    gap: 4px;
+  }
+
+  .diag-btn {
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 150ms ease;
+    white-space: nowrap;
+  }
+
+  .diag-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .diag-btn.copied {
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 40%, transparent);
+    color: var(--semantic-success);
+  }
+
+  .scene-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: all 150ms ease;
+    font-size: 12px;
+    padding: 0;
+  }
+
+  .scene-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .scene-chip.active {
+    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    color: var(--theme-accent);
   }
 
   .answer-section {
@@ -265,10 +394,8 @@
       gap: 2rem;
     }
 
-    .stage-panel {
+    .stage-column {
       flex: 1;
-      aspect-ratio: auto;
-      max-height: none;
       min-height: 360px;
     }
 
@@ -280,6 +407,12 @@
     .answer-grid {
       grid-template-columns: 1fr;
       gap: 0.75rem;
+    }
+
+    .scene-chip {
+      width: 36px;
+      height: 36px;
+      font-size: 13px;
     }
   }
 
@@ -297,13 +430,73 @@
     }
   }
 
-  @media (max-width: 480px) {
+  @media (min-width: 1440px) {
     .quiz-content {
+      max-width: 1400px;
+      gap: 3rem;
+    }
+
+    .stage-column {
+      min-height: 500px;
+    }
+
+    .answer-section {
+      flex: 0 0 380px;
+    }
+
+    .answer-grid {
       gap: 1rem;
     }
 
-    .stage-panel {
-      max-height: 220px;
+    .scene-chip {
+      width: 40px;
+      height: 40px;
+      font-size: 14px;
+      border-radius: 10px;
+    }
+
+    .scene-strip {
+      gap: 6px;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .quiz-content {
+      max-width: 1800px;
+      gap: 4rem;
+    }
+
+    .stage-column {
+      min-height: 600px;
+    }
+
+    .answer-section {
+      flex: 0 0 440px;
+    }
+
+    .answer-grid {
+      gap: 1.25rem;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .quiz-content {
+      max-width: 2200px;
+      gap: 5rem;
+    }
+
+    .stage-column {
+      min-height: 700px;
+    }
+
+    .answer-section {
+      flex: 0 0 520px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .quiz-content {
+      gap: 1rem;
     }
 
     .answer-grid {

@@ -9,13 +9,12 @@
    */
 
   import { getViewer3DContext } from "../context/viewer-3d-context";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {
-    sequenceData: SequenceData | null;
+    onEnter3D: () => void;
   }
 
-  let { sequenceData }: Props = $props();
+  let { onEnter3D }: Props = $props();
   const viewer3DState = getViewer3DContext();
 
   let faded = $state(false);
@@ -26,19 +25,13 @@
     }, 3000);
     return () => clearTimeout(timer);
   });
-
-  function handleClick() {
-    if (sequenceData && viewer3DState.webgl2Available) {
-      viewer3DState.enter3D(sequenceData);
-    }
-  }
 </script>
 
 {#if viewer3DState.renderMode === "2d" && viewer3DState.webgl2Available}
   <button
     class="corner-icon"
     class:faded
-    onclick={handleClick}
+    onclick={onEnter3D}
     aria-label="Enter 3D view"
   >
     <svg

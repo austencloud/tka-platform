@@ -16,23 +16,23 @@ The ocean scene has a GPGPU fish school with full boids simulation, predator/pre
 
 1. **FishSchool.svelte** accepts a `rayPosition: Vector3` prop (line 42), defaulting to `(0,0,0)`.
 2. **FishEventSystem.ts** copies `rayPosition` into `uScatterOrigin` every tick (line 66).
-3. **Velocity shader** (`fish-shaders.ts`, lines 256-261) already has scatter logic:
+3. **Velocity shader** (`fish-shaders.ts`) already has scatter logic using `safeNormalize`:
    ```glsl
    float distToRay = distance(pos, uScatterOrigin);
    if (distToRay < uScatterRadius && uScatterForce > 0.0) {
-     vec3 away = normalize(pos - uScatterOrigin + vec3(0.001));
+     vec3 away = safeNormalize(pos - uScatterOrigin);
      float proximity = 1.0 - distToRay / uScatterRadius;
      steer += away * uScatterForce * proximity * proximity;
    }
    ```
-4. **Behavior shader** (`fish-behavior-shader.ts`, lines 48-55) triggers flee state when fish are within `uScatterRadius` of `uScatterOrigin`.
-5. **OceanScene.svelte** passes `scatterRadius` from config but does NOT pass `rayPosition` to FishSchool (line 1130-1141).
+4. **Behavior shader** (`fish-behavior-shader.ts`) triggers flee state when fish are within `uScatterRadius` of `uScatterOrigin`, using `safeNormalize`.
+5. **OceanScene.svelte** passes `scatterRadius` from config and `rayPosition` (sentinel `(0, -999, 0)`) to FishSchool.
 6. **ManualRaycaster.svelte** exists in `src/lib/shared/3d/components/` and handles pointer events + ground-plane raycasting for the scene composer. It is instantiated by `Scene3D.svelte`.
 
 ### What is missing
 
 - No component converts mouse screen position to a world-space point in the ocean scene.
-- `OceanScene.svelte` does not bind `rayPosition` on the `<FishSchool>` element.
+- `OceanScene.svelte` passes `rayPosition` but nothing updates it from mouse input — it stays at the sentinel `(0, -999, 0)`.
 - No invisible raycast target plane exists at swim height for the mouse ray to hit.
 - No reform/cooldown behavior -- the scatter force is binary (present or absent). Fish scatter identically regardless of boldness (the trait exists in `tTraits` but `uScatterForce` is uniform).
 - No config surface for scatter tuning in `OceanSceneConfig`.
@@ -91,7 +91,7 @@ Currently `uScatterRadius` is uniform for all fish. Fish with high boldness (tra
 float distToRay = distance(pos, uScatterOrigin);
 float boldScatter = uScatterRadius * (1.3 - boldness * 0.6); // bold fish: smaller flee zone
 if (distToRay < boldScatter && uScatterForce > 0.0 && uScatterOrigin.y > -900.0) {
-  vec3 away = normalize(pos - uScatterOrigin + vec3(0.001));
+  vec3 away = safeNormalize(pos - uScatterOrigin);
   float proximity = 1.0 - distToRay / boldScatter;
   steer += away * uScatterForce * proximity * proximity * (1.5 - boldness);
 }
@@ -111,16 +111,15 @@ The `uScatterOrigin.y > -900.0` guard prevents scatter when the mouse is off-can
 
 ```glsl
 // Inside the scatter block, after computing `away`:
-vec3 tangent = normalize(cross(away, vec3(0.0, 1.0, 0.0)));
+vec3 tangent = safeNormalize(cross(away, vec3(0.0, 1.0, 0.0)));
 
 // dotFwd: how head-on is this fish relative to the scatter origin?
-// fish velocity direction vs. away direction
-vec3 fishDir = normalize(vel.xyz + vec3(0.001));
+vec3 fishDir = safeNormalize(vel.xyz);
 float dotFwd = abs(dot(fishDir, away)); // 1.0 = head-on, 0.0 = broadside
 
 // Head-on fish get more tangential (fountain split), broadside get more radial (flash)
 float tangentWeight = smoothstep(0.3, 0.8, dotFwd) * 0.6; // max 60% tangential
-vec3 fleeDir = normalize(mix(away, tangent, tangentWeight));
+vec3 fleeDir = safeNormalize(mix(away, tangent, tangentWeight));
 
 steer += fleeDir * uScatterForce * proximity * proximity * (1.5 - boldness);
 ```

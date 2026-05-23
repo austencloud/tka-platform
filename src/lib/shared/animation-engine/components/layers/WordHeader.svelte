@@ -14,7 +14,7 @@ Supports letter highlighting during animation playback.
   import { safeSlide } from "$lib/shared/utils/transitions";
   import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
   import { untrack } from "svelte";
-  import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
+  import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
@@ -56,13 +56,6 @@ Supports letter highlighting during animation playback.
     inversionPeriod?: Period;
     loopPeriod?: number;
   } = $props();
-
-  // Difficulty badge styling from shared config
-  const currentLevelStyle = $derived.by(() => {
-    if (difficultyLevel == null) return null;
-    const style = DIFFICULTY_LEVELS[difficultyLevel] ?? DEFAULT_DIFFICULTY_STYLE;
-    return { bg: style.cssBg, border: style.border, text: style.text };
-  });
 
   // Animation state machine: "idle" | "exiting" | "entering"
   let animationPhase = $state<"idle" | "exiting" | "entering">("idle");
@@ -200,16 +193,9 @@ Supports letter highlighting during animation playback.
     data-controlled="true"
     transition:safeSlide={{ duration: 350, easing: cubicOut }}
   >
-    {#if difficultyLevel != null && currentLevelStyle}
-      <div
-        class="difficulty-badge"
-        style="
-          background: {currentLevelStyle.bg};
-          border-color: {currentLevelStyle.border};
-          color: {currentLevelStyle.text};
-        "
-      >
-        {difficultyLevel}
+    {#if difficultyLevel != null}
+      <div class="badge-wrapper">
+        <DifficultyBadge level={difficultyLevel} size="clamp(24px, 7cqw, 34px)" fontSize="clamp(12px, 4cqw, 18px)" />
       </div>
     {/if}
 
@@ -280,22 +266,11 @@ Supports letter highlighting during animation playback.
       border-color 150ms ease-out;
   }
 
-  .difficulty-badge {
+  .badge-wrapper {
     position: absolute;
     left: clamp(6px, 3cqw, 12px);
     top: 50%;
     transform: translateY(-50%);
-    width: clamp(24px, 7cqw, 34px);
-    height: clamp(24px, 7cqw, 34px);
-    border-radius: 50%;
-    border: 1.5px solid black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: Cambria, serif;
-    font-weight: bold;
-    font-size: clamp(12px, 4cqw, 18px);
-    flex-shrink: 0;
   }
 
   .loop-icon-badge {

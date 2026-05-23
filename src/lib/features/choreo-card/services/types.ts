@@ -99,6 +99,8 @@ export interface PrintRenderOptions {
   redPropType?: PropType;
   /** VTG elemental theme for front frame coloring. Omit for neutral gray. */
   elementTheme?: ElementalTheme;
+  /** Show mandala fills in empty grid cells */
+  showMandala?: boolean;
   /** Left-side barter label (e.g. "QS 1:1" for deck cards) */
   leftLabel?: string;
 }

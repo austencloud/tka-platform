@@ -99,6 +99,7 @@ Last audit: 2025-12-27
     externalDisassembled = false,
     suppress2DOverlays = false,
     virtualTime = undefined,
+    onToggle3DView = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -160,6 +161,7 @@ Last audit: 2025-12-27
     suppress2DOverlays?: boolean;
     /** Virtual time for this frame (in ms). Used during video export. */
     virtualTime?: number;
+    onToggle3DView?: () => void;
   } = $props();
 
   const playbackAdapter = createAnimatorPlaybackAdapter({
@@ -856,7 +858,7 @@ Last audit: 2025-12-27
       disassembled={externalToggleDisassemble ? externalDisassembled : isDisassembledView}
       onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
       captureEffectDiagnostics={() => engine.captureEffectDiagnostics()}
-      {sequenceData}
+      {onToggle3DView}
     />
   {/if}
 </div>
