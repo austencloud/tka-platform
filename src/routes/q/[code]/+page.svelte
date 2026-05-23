@@ -596,7 +596,7 @@
     <div class="center-content">
       <h1 class="word-title">{pageState.word}</h1>
       <p class="first-view-message">
-        You're the first to view this sequence!
+        Rendering your sequence...
       </p>
       <div class="progress-container">
         <div class="progress-bar" style:width="{pageState.percent}%"></div>
@@ -616,10 +616,6 @@
   {:else if pageState.kind === "playing"}
     <div class="player-layout">
       <h1 class="word-title">{pageState.word}</h1>
-      {#if pageState.isFirstView}
-        <p class="first-view-badge">First scan render complete!</p>
-      {/if}
-
       <div class="video-area">
         <!-- svelte-ignore a11y_media_has_caption -->
         <video

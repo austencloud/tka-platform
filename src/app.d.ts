@@ -33,7 +33,11 @@ declare global {
       deckNavId?: string | null;
       deckNavVtgFamily?: string | null;
     }
-    // interface Platform {}
+    interface Platform {
+      env: {
+        QR_VIDEOS: R2Bucket;
+      };
+    }
   }
 
   /** App version injected from package.json at build time */

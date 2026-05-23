@@ -5,3 +5,7 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 
 [vars]
 PUBLIC_ENVIRONMENT = "production"
+
+[[r2_buckets]]
+binding = "QR_VIDEOS"
+bucket_name = "qr-videos"
