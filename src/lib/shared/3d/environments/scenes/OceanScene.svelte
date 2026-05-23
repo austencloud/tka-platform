@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useThrelte, useTask } from "@threlte/core";
+  import { T, useThrelte } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
   import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
   import SkyGradient from "../primitives/SkyGradient.svelte";
@@ -16,11 +16,9 @@
     createDefaultOceanCinematicConfig,
   } from "../domain/models/scene-configs";
   import { poissonDiscSample, seededRandom, PlacementGrid } from "../utils/poisson-disc";
-  import { clone as cloneWithSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
   import { createColoredInstancedMesh, createInstancedMeshFromModel, disposeInstancedMesh, type ColoredInstancePlacement, type InstancePlacement } from "./ocean/ocean-instancing";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { onDestroy, onMount } from "svelte";
-  import { disposeSceneGraph } from "../utils/dispose-scene";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import RuinsPlatform from "./ocean/RuinsPlatform.svelte";
   import GodRayShafts from "./ocean/GodRayShafts.svelte";
@@ -509,24 +507,6 @@
   // y=-999 keeps scatter origin off-screen until Mouse Scatter spec wires real intersection coords
   let rayPosition = $state(new Vector3(0, -999, 0));
 
-  let jellyfishOffsets = $state<{ dx: number; dy: number; dz: number; pulse: number }[]>([]);
-  let jellyfishTime = $state(0);
-  let animTime = 0;
-
-
-  $effect(() => {
-    const jf = activeConfig.jellyfish;
-    if (!jf?.enabled) {
-      jellyfishOffsets = [];
-      return;
-    }
-    jellyfishOffsets = Array.from({ length: jf.count }, () => ({
-      dx: 0,
-      dy: 0,
-      dz: 0,
-      pulse: 1.0,
-    }));
-  });
 
   // ── Jellyfish Data ────────────────────────────────────────────────────
 
@@ -680,71 +660,7 @@
     return mScale($anemoneGlb, target);
   }
 
-  // ── Underwater Tinting ────────────────────────────────────────────────
-
-  function tintUnderwater(
-    root: Object3D,
-    color: string,
-    blend: number,
-    enrichMaterial = false,
-  ) {
-    const tintColor = new Color(color);
-    let meshIdx = 0;
-    root.traverse((obj) => {
-      const m = obj as Mesh;
-      if (!m.isMesh || !m.material) return;
-      const mats = Array.isArray(m.material) ? m.material : [m.material];
-      const idx = meshIdx++;
-      const cloned = mats.map((mat) => {
-        const c = (mat as import("three").MeshStandardMaterial).clone();
-        if (c.color) c.color.lerp(tintColor, blend);
-        if (enrichMaterial) {
-          const variation = ((idx * 17 + 31) % 100) / 100;
-          c.roughness = 0.4 + variation * 0.4;
-          c.metalness = 0.05 + variation * 0.1;
-          if (c.emissive) {
-            const emissiveColor = tintColor.clone();
-            emissiveColor.multiplyScalar(0.3 + variation * 0.4);
-            c.emissive.copy(emissiveColor);
-            c.emissiveIntensity = 0.15 + variation * 0.25;
-          }
-          if (c.color) {
-            const hsl = { h: 0, s: 0, l: 0 };
-            c.color.getHSL(hsl);
-            hsl.l = Math.max(0.08, Math.min(0.6, hsl.l + (variation - 0.5) * 0.15));
-            c.color.setHSL(hsl.h, hsl.s, hsl.l);
-          }
-        } else {
-          if (c.emissive) c.emissive.lerp(tintColor, blend * 0.5);
-        }
-        return c;
-      });
-      (m as unknown as { material: unknown }).material = Array.isArray(m.material)
-        ? cloned
-        : cloned[0]!;
-    });
-  }
-
-  function hasSkeleton(root: Object3D): boolean {
-    let found = false;
-    root.traverse((c) => { if ((c as any).isSkinnedMesh) found = true; });
-    return found;
-  }
-
-  function underwaterClone(
-    sourceScene: Object3D,
-    color: string,
-    blend: number,
-    enrichMaterial = false,
-  ): Object3D {
-    const cloned = hasSkeleton(sourceScene)
-      ? cloneWithSkeleton(sourceScene)
-      : sourceScene.clone();
-    tintUnderwater(cloned, color, blend, enrichMaterial);
-    return cloned;
-  }
-
-  // ── Clone Caching ─────────────────────────────────────────────────────
+  // ── Instanced Meshes ─────────────────────────────────────────────────
 
   const coralInstances = $derived.by((): (InstancedMesh | null)[] => {
     const models = [
@@ -983,12 +899,6 @@
     return result;
   });
 
-  // ── Animation Loop ────────────────────────────────────────────────────
-
-  useTask((delta) => {
-    animTime += delta;
-
-  });
 
   // ── Fog ───────────────────────────────────────────────────────────────
 
