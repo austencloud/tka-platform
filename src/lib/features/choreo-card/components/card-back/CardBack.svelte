@@ -208,7 +208,7 @@
   .border-frame {
     width: 100%;
     height: 100%;
-    border-radius: 2.4cqi;
+    border-radius: 0;
     box-sizing: border-box;
     overflow: hidden;
     container-type: inline-size;
@@ -223,7 +223,7 @@
     color: var(--card-text, #ffffff);
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
-    border-radius: 1.6cqi;
+    border-radius: 0;
     box-sizing: border-box;
   }
 
