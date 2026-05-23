@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { T, useTask } from "@threlte/core";
   import {
     MeshStandardMaterial,
@@ -375,6 +376,14 @@
   useTask((delta) => {
     if (!shaderRef) return;
     shaderRef.uniforms.uTime!.value += delta * 0.05;
+  });
+
+  onDestroy(() => {
+    sandDiffuse.dispose();
+    sandNormal.dispose();
+    sandRoughness.dispose();
+    sandAo.dispose();
+    material.dispose();
   });
 </script>
 
