@@ -255,6 +255,9 @@ static/textures/water/
 scripts/temp/
 scripts/model-curator/
 
+# Source model backups (originals before gltf-transform optimization)
+assets/source-models/
+
 # Monorepo remnants
 packages/manifest.json
 
