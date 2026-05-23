@@ -13,29 +13,10 @@ const GRID_SVGS: Record<string, string> = {
 
 const PROP_SVG_PATH = "/images/props/animated";
 
-function sanitizeSvgForCreateImageBitmap(svgText: string): string {
-  let svg = svgText.replace(/<\?xml[^?]*\?>\s*/g, "");
-  svg = svg.replace(/<!DOCTYPE[^>]*>\s*/gi, "");
-
-  const viewBoxMatch = svg.match(/viewBox="([^"]+)"/);
-  if (!viewBoxMatch) return svg;
-
-  const hasWidth = /\bwidth="/.test(svg);
-  const hasHeight = /\bheight="/.test(svg);
-  if (hasWidth && hasHeight) return svg;
-
-  const parts = viewBoxMatch[1]!.split(/\s+/);
-  const vbWidth = parts[2] ?? "100";
-  const vbHeight = parts[3] ?? "100";
-
-  return svg.replace(
-    "<svg",
-    `<svg ${hasWidth ? "" : `width="${vbWidth}"`} ${hasHeight ? "" : `height="${vbHeight}"`}`
-  );
-}
-
 function applyColorToSvg(svgText: string, color: string): string {
-  return svgText.replace(/fill="[^"]*"/g, `fill="${color}"`);
+  let svg = svgText.replace(/fill="[^"]*"/g, `fill="${color}"`);
+  svg = svg.replace(/fill:[^;"]+/g, `fill:${color}`);
+  return svg;
 }
 
 function parseViewBox(svgText: string): { width: number; height: number } {
@@ -48,7 +29,37 @@ function parseViewBox(svgText: string): { width: number; height: number } {
   };
 }
 
-async function loadSvgAsBitmap(url: string, colorOverride?: string): Promise<{ bitmap: ImageBitmap; viewBox: { width: number; height: number } }> {
+function rasterizeSvgViaImage(
+  svgText: string,
+  width: number,
+  height: number
+): Promise<ImageBitmap> {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      createImageBitmap(canvas).then(resolve, reject);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Failed to load SVG via <img>"));
+    };
+    img.src = url;
+  });
+}
+
+async function loadSvgAsBitmap(
+  url: string,
+  colorOverride?: string,
+  renderSize = 512
+): Promise<{ bitmap: ImageBitmap; viewBox: { width: number; height: number } }> {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load SVG: ${url} (${response.status})`);
 
@@ -59,11 +70,11 @@ async function loadSvgAsBitmap(url: string, colorOverride?: string): Promise<{ b
     svgText = applyColorToSvg(svgText, colorOverride);
   }
 
-  svgText = sanitizeSvgForCreateImageBitmap(svgText);
+  const aspect = viewBox.width / viewBox.height;
+  const w = aspect >= 1 ? renderSize : Math.round(renderSize * aspect);
+  const h = aspect >= 1 ? Math.round(renderSize / aspect) : renderSize;
 
-  const blob = new Blob([svgText], { type: "image/svg+xml" });
-  const bitmap = await createImageBitmap(blob);
-
+  const bitmap = await rasterizeSvgViaImage(svgText, w, h);
   return { bitmap, viewBox };
 }
 
@@ -79,7 +90,7 @@ export async function loadAssets(
   const propPath = `${PROP_SVG_PATH}/${propType}.svg`;
 
   const [gridResult, bluePropResult, redPropResult] = await Promise.all([
-    loadSvgAsBitmap(`${baseUrl}${gridPath}`),
+    loadSvgAsBitmap(`${baseUrl}${gridPath}`, undefined, 950),
     loadSvgAsBitmap(`${baseUrl}${propPath}`, "#2E5BFF"),
     loadSvgAsBitmap(`${baseUrl}${propPath}`, "#ED1C24"),
   ]);

@@ -14,7 +14,6 @@
 
 import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
 import { renderScene } from "../services/worker-scene-renderer";
-import { loadAssets } from "../services/WorkerAssetLoader";
 import type {
   WorkerInMessage,
   WorkerOutMessage,
@@ -53,16 +52,9 @@ function selectCodec(width: number, height: number): string {
 async function handleRender(msg: RenderRequest): Promise<void> {
   const startTime = performance.now();
   const { config, frames } = msg;
-  const { fps, resolution, baseUrl } = config;
+  const { fps, resolution } = config;
 
-  // 1. Load SVG assets
-  postProgress("loading-assets", 0);
-
-  const gridMode = msg.sequenceData.gridMode ?? "diamond";
-  const propTypeName = String(config.propTypes.blue ?? "staff");
-
-  const assets = await loadAssets(baseUrl, gridMode, propTypeName);
-  postProgress("loading-assets", 100);
+  const assets = msg.assets;
 
   // 2. Set up canvas and renderer
   const canvasSize = resolution;

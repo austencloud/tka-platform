@@ -25,11 +25,20 @@ export interface VideoRenderConfig {
   cacheHash?: string;
 }
 
+export interface TransferableAssets {
+  gridImage: ImageBitmap;
+  bluePropImage: ImageBitmap;
+  redPropImage: ImageBitmap;
+  bluePropViewBox: { width: number; height: number };
+  redPropViewBox: { width: number; height: number };
+}
+
 export interface RenderRequest {
   type: "render";
   sequenceData: SequenceData;
   config: VideoRenderConfig;
   frames: PrecomputedFrame[];
+  assets: TransferableAssets;
 }
 
 export interface RenderProgress {

@@ -37,7 +37,8 @@
   } from "$lib/shared/qr-video/domain/qr-video-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-  import type { WorkerOutMessage, RenderRequest, PrecomputedFrame } from "$lib/shared/qr-video/domain/qr-video-types";
+  import type { WorkerOutMessage, RenderRequest, PrecomputedFrame, TransferableAssets } from "$lib/shared/qr-video/domain/qr-video-types";
+  import { loadAssets } from "$lib/shared/qr-video/services/WorkerAssetLoader";
 
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
 
@@ -180,11 +181,11 @@
     return frames;
   }
 
-  function spawnWorker(
+  async function spawnWorker(
     seq: SequenceData,
     hash: string,
     word: string
-  ): void {
+  ): Promise<void> {
     state = { kind: "rendering", percent: 0, phase: "loading-assets", word };
 
     const blueProp =
@@ -198,6 +199,10 @@
       return;
     }
 
+    const gridMode = seq.gridMode ?? "diamond";
+    const propTypeName = String(blueProp ?? "staff").toLowerCase();
+    const assets = await loadAssets(window.location.origin, gridMode, propTypeName);
+
     const worker = new Worker(
       new URL(
         "$lib/shared/qr-video/workers/headless-video-renderer.worker.ts",
@@ -210,6 +215,7 @@
       type: "render",
       sequenceData: seq,
       frames,
+      assets,
       config: {
         fps: 30,
         resolution: 720,
@@ -223,7 +229,7 @@
       },
     };
 
-    worker.postMessage(msg);
+    worker.postMessage(msg, [assets.gridImage, assets.bluePropImage, assets.redPropImage]);
 
     worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
       const out = e.data;
@@ -296,7 +302,7 @@
           isFirstView: false,
         };
       } else {
-        spawnWorker(seq, hash, word);
+        await spawnWorker(seq, hash, word);
       }
     } catch (err: unknown) {
       state = {
