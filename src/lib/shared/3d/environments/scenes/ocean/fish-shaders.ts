@@ -98,6 +98,8 @@ uniform float uSchoolRadius;
 uniform vec3 uScatterOrigin;
 uniform float uScatterRadius;
 uniform float uScatterForce;
+uniform float uScatterStartTime;
+uniform float uScatterWaveSpeed;
 
 uniform int uDartCount;
 uniform int uDartIndices[8];
@@ -269,10 +271,24 @@ void main() {
   }
 
   float distToRay = distance(pos, uScatterOrigin);
-  if (distToRay < uScatterRadius && uScatterForce > 0.0) {
+  float boldScatter = uScatterRadius * (1.3 - boldness * 0.6);
+  if (distToRay < boldScatter && uScatterForce > 0.0 && uScatterOrigin.y > -900.0) {
     vec3 away = safeNormalize(pos - uScatterOrigin);
-    float proximity = 1.0 - distToRay / uScatterRadius;
-    steer += away * uScatterForce * proximity * proximity;
+    float proximity = 1.0 - distToRay / boldScatter;
+
+    // Fountain effect: tangential split for head-on fish
+    vec3 tangent = safeNormalize(cross(away, vec3(0.0, 1.0, 0.0)));
+    vec3 fishDir = safeNormalize(vel.xyz);
+    float dotFwd = abs(dot(fishDir, away));
+    float tangentWeight = smoothstep(0.3, 0.8, dotFwd) * 0.6;
+    vec3 fleeDir = safeNormalize(mix(away, tangent, tangentWeight));
+
+    // Trafalgar wave: distance-delayed onset
+    float delay = distToRay * uScatterWaveSpeed;
+    float timeSinceScatter = uTime - uScatterStartTime;
+    float waveReached = step(delay, timeSinceScatter);
+
+    steer += fleeDir * uScatterForce * proximity * proximity * (1.5 - boldness) * waveReached;
   }
 
   // ── SDF reef obstacle avoidance ──────────────────────────────────
