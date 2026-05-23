@@ -78,10 +78,49 @@ async function loadSvgAsBitmap(
   return { bitmap, viewBox };
 }
 
+export async function loadLetterGlyphs(
+  baseUrl: string,
+  letterPaths: string[],
+  darkMode: boolean
+): Promise<ImageBitmap[]> {
+  return Promise.all(
+    letterPaths.map(async (path) => {
+      const resp = await fetch(`${baseUrl}${path}`);
+      if (!resp.ok) throw new Error(`Failed to load glyph: ${path} (${resp.status})`);
+      let svgText = await resp.text();
+      const vb = parseViewBox(svgText);
+
+      if (darkMode) {
+        svgText = applyColorToSvg(svgText, "#ffffff");
+      }
+
+      const size = 120;
+      const aspect = vb.width / vb.height;
+      const w = aspect >= 1 ? size : Math.round(size * aspect);
+      const h = aspect >= 1 ? Math.round(size / aspect) : size;
+
+      return rasterizeSvgViaImage(svgText, w, h);
+    })
+  );
+}
+
+function applyGridDarkMode(svgText: string): string {
+  let svg = svgText;
+  svg = svg.replace(/fill:currentColor/g, "fill:#d0d0d0");
+  svg = svg.replace(/currentColor/g, "#d0d0d0");
+  svg = svg.replace(/<circle([^>]*?)(?:\s+fill="[^"]*")?(\s*\/>)/g, (match, attrs, close) => {
+    if (/fill="/.test(attrs)) return match;
+    if (/class=".*(?:invisible|layer2)/.test(attrs)) return match;
+    return `<circle${attrs} fill="#d0d0d0"${close}`;
+  });
+  return svg;
+}
+
 export async function loadAssets(
   baseUrl: string,
   gridMode: string,
   propType: string,
+  darkMode = true,
   onProgress?: (phase: string) => void
 ): Promise<LoadedAssets> {
   onProgress?.("loading-assets");
@@ -89,14 +128,23 @@ export async function loadAssets(
   const gridPath = GRID_SVGS[gridMode] ?? GRID_SVGS.diamond!;
   const propPath = `${PROP_SVG_PATH}/${propType}.svg`;
 
-  const [gridResult, bluePropResult, redPropResult] = await Promise.all([
-    loadSvgAsBitmap(`${baseUrl}${gridPath}`, undefined, 950),
+  const gridUrl = `${baseUrl}${gridPath}`;
+  const gridResp = await fetch(gridUrl);
+  if (!gridResp.ok) throw new Error(`Failed to load grid: ${gridUrl}`);
+  let gridSvg = await gridResp.text();
+  if (darkMode) {
+    gridSvg = applyGridDarkMode(gridSvg);
+  }
+  const gridVb = parseViewBox(gridSvg);
+  const gridBitmap = await rasterizeSvgViaImage(gridSvg, gridVb.width, gridVb.height);
+
+  const [bluePropResult, redPropResult] = await Promise.all([
     loadSvgAsBitmap(`${baseUrl}${propPath}`, "#2E5BFF"),
     loadSvgAsBitmap(`${baseUrl}${propPath}`, "#ED1C24"),
   ]);
 
   return {
-    gridImage: gridResult.bitmap,
+    gridImage: gridBitmap,
     bluePropImage: bluePropResult.bitmap,
     redPropImage: redPropResult.bitmap,
     bluePropViewBox: bluePropResult.viewBox,

@@ -3,6 +3,16 @@ import type { FramePropState } from "../domain/qr-video-types";
 const GRID_HALFWAY_POINT_OFFSET = 150;
 const VIEWBOX_SIZE = 950;
 
+const DARK_BG = "#0a0a0f";
+const STEP_NUM_COLOR = "#ffffff";
+const STEP_NUM_FONT = "bold 100px Georgia";
+const STEP_NUM_X = 65;
+const STEP_NUM_Y = 130;
+
+const GLYPH_X = 50;
+const GLYPH_Y = 770;
+const GLYPH_MAX_SIZE = 130;
+
 function drawProp(
   ctx: OffscreenCanvasRenderingContext2D,
   canvasSize: number,
@@ -43,6 +53,12 @@ function drawProp(
   ctx.restore();
 }
 
+export interface SceneOverlay {
+  stepIndex: number;
+  isStartPosition: boolean;
+  letterGlyphs: ImageBitmap[];
+}
+
 export function renderScene(
   ctx: OffscreenCanvasRenderingContext2D,
   canvasSize: number,
@@ -52,11 +68,13 @@ export function renderScene(
   blueProp: FramePropState | null,
   redProp: FramePropState | null,
   bluePropViewBox: { width: number; height: number },
-  redPropViewBox: { width: number; height: number }
+  redPropViewBox: { width: number; height: number },
+  overlay?: SceneOverlay
 ): void {
-  ctx.clearRect(0, 0, canvasSize, canvasSize);
+  const scale = canvasSize / VIEWBOX_SIZE;
 
-  ctx.fillStyle = "#ffffff";
+  ctx.clearRect(0, 0, canvasSize, canvasSize);
+  ctx.fillStyle = DARK_BG;
   ctx.fillRect(0, 0, canvasSize, canvasSize);
 
   ctx.drawImage(gridImage, 0, 0, canvasSize, canvasSize);
@@ -67,4 +85,28 @@ export function renderScene(
   if (redProp) {
     drawProp(ctx, canvasSize, redProp, redPropImage, redPropViewBox);
   }
+
+  if (!overlay) return;
+
+  ctx.save();
+  ctx.scale(scale, scale);
+
+  const { stepIndex, isStartPosition, letterGlyphs } = overlay;
+  const stepNumber = isStartPosition ? 0 : stepIndex + 1;
+
+  ctx.fillStyle = STEP_NUM_COLOR;
+  ctx.font = STEP_NUM_FONT;
+  ctx.textBaseline = "top";
+  ctx.textAlign = "left";
+  ctx.fillText(stepNumber === 0 ? "Start" : String(stepNumber), STEP_NUM_X, STEP_NUM_Y - 80);
+
+  if (stepIndex >= 0 && stepIndex < letterGlyphs.length) {
+    const glyph = letterGlyphs[stepIndex]!;
+    const aspect = glyph.width / glyph.height;
+    const drawW = aspect >= 1 ? GLYPH_MAX_SIZE : GLYPH_MAX_SIZE * aspect;
+    const drawH = aspect >= 1 ? GLYPH_MAX_SIZE / aspect : GLYPH_MAX_SIZE;
+    ctx.drawImage(glyph, GLYPH_X, GLYPH_Y, drawW, drawH);
+  }
+
+  ctx.restore();
 }

@@ -13,7 +13,7 @@
  */
 
 import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
-import { renderScene } from "../services/worker-scene-renderer";
+import { renderScene, type SceneOverlay } from "../services/worker-scene-renderer";
 import type {
   WorkerInMessage,
   WorkerOutMessage,
@@ -156,6 +156,12 @@ async function handleRender(msg: RenderRequest): Promise<void> {
   for (let i = 0; i < totalFrames; i++) {
     const frame = frames[i]!;
 
+    const overlay: SceneOverlay = {
+      stepIndex: frame.stepIndex,
+      isStartPosition: frame.isStartPosition,
+      letterGlyphs: assets.letterGlyphs,
+    };
+
     renderScene(
       ctx,
       canvasSize,
@@ -165,7 +171,8 @@ async function handleRender(msg: RenderRequest): Promise<void> {
       frame.blue,
       frame.red,
       assets.bluePropViewBox,
-      assets.redPropViewBox
+      assets.redPropViewBox,
+      overlay
     );
 
     const isKeyframe = i % keyframeInterval === 0;

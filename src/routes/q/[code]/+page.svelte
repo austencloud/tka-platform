@@ -38,7 +38,9 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import type { WorkerOutMessage, RenderRequest, PrecomputedFrame, TransferableAssets } from "$lib/shared/qr-video/domain/qr-video-types";
-  import { loadAssets } from "$lib/shared/qr-video/services/WorkerAssetLoader";
+  import { loadAssets, loadLetterGlyphs } from "$lib/shared/qr-video/services/WorkerAssetLoader";
+  import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
+  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
 
@@ -175,6 +177,8 @@
         red: propStates.red
           ? { ...propStates.red }
           : null,
+        stepIndex: timing.stepIndex,
+        isStartPosition: timing.isStartPosition,
       });
     }
 
@@ -201,7 +205,19 @@
 
     const gridMode = seq.gridMode ?? "diamond";
     const propTypeName = String(blueProp ?? "staff").toLowerCase();
-    const assets = await loadAssets(window.location.origin, gridMode, propTypeName);
+    const baseUrl = window.location.origin;
+
+    const steps = (seq.steps ?? []).filter((s) => s && s.stepNumber !== 0);
+    const letterPaths = steps
+      .map((s) => (s.letter ? getLetterImagePath(s.letter as Letter) : null))
+      .filter((p): p is string => p !== null);
+
+    const [assets, letterGlyphs] = await Promise.all([
+      loadAssets(baseUrl, gridMode, propTypeName, true),
+      loadLetterGlyphs(baseUrl, letterPaths, true),
+    ]);
+
+    assets.letterGlyphs = letterGlyphs;
 
     const worker = new Worker(
       new URL(
@@ -224,12 +240,18 @@
         loopCount: 2,
         includeStartPosition: true,
         includeEndHold: true,
-        baseUrl: window.location.origin,
+        baseUrl,
         cacheHash: hash,
       },
     };
 
-    worker.postMessage(msg, [assets.gridImage, assets.bluePropImage, assets.redPropImage]);
+    const transferables: Transferable[] = [
+      assets.gridImage,
+      assets.bluePropImage,
+      assets.redPropImage,
+      ...letterGlyphs,
+    ];
+    worker.postMessage(msg, transferables);
 
     worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
       const out = e.data;

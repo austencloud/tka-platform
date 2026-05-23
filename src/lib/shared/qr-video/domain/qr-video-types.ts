@@ -11,6 +11,8 @@ export interface FramePropState {
 export interface PrecomputedFrame {
   blue: FramePropState | null;
   red: FramePropState | null;
+  stepIndex: number;
+  isStartPosition: boolean;
 }
 
 export interface VideoRenderConfig {
@@ -31,6 +33,7 @@ export interface TransferableAssets {
   redPropImage: ImageBitmap;
   bluePropViewBox: { width: number; height: number };
   redPropViewBox: { width: number; height: number };
+  letterGlyphs: ImageBitmap[];
 }
 
 export interface RenderRequest {
