@@ -872,13 +872,30 @@
     }).filter((inst) => inst !== null);
   });
 
-  const kelpClones = $derived.by(() => {
-    const models = [$seaweedGlb, $kelpPlantGlb].filter(Boolean) as {
-      scene: Object3D;
-    }[];
+  const kelpInstances = $derived.by((): (InstancedMesh | null)[] => {
+    const models = [$seaweedGlb, $kelpPlantGlb].filter(Boolean) as { scene: Object3D }[];
     if (models.length === 0) return [];
-    return kelpPlacements.map((_, i) =>
-      underwaterClone(models[i % models.length]!.scene, "#0d3a1a", 0.2, true),
+
+    const buckets: InstancePlacement[][] = models.map(() => []);
+
+    for (let i = 0; i < kelpPlacements.length; i++) {
+      const p = kelpPlacements[i]!;
+      const modelIdx = i % models.length;
+      const s = kelpScales[i] ?? 0.001;
+      const th = getTerrainY(p.x, p.z);
+      const baseOffset = (kelpBaseOffsets[modelIdx % kelpBaseOffsets.length] ?? 0) * p.scale * s;
+
+      buckets[modelIdx]!.push({
+        x: p.x,
+        z: p.z,
+        y: groundY + th + baseOffset,
+        scale: p.scale * s,
+        rotY: p.rotY,
+      });
+    }
+
+    return models.map((model, idx) =>
+      createInstancedMeshFromModel(model.scene, buckets[idx]!),
     );
   });
 
@@ -928,20 +945,6 @@
           dz: Math.cos(jellyfishTime * 0.5 + phase * 0.8) * 1.5,
           pulse: 1.0 + Math.sin(pulsePhase) * pulseAmp,
         };
-      }
-    }
-
-    // Kelp: gentle sway via direct rotation mutation
-    const swaySpeed = activeConfig.kelp.swaySpeed;
-    const swayAmp = activeConfig.kelp.swayAmplitude;
-    for (let i = 0; i < kelpClones.length; i++) {
-      const clone = kelpClones[i];
-      if (clone) {
-        const phase = i * 1.7;
-        clone.rotation.x =
-          Math.sin(animTime * swaySpeed + phase) * swayAmp;
-        clone.rotation.z =
-          Math.cos(animTime * swaySpeed * 0.7 + phase) * swayAmp * 0.6;
       }
     }
 
@@ -1031,7 +1034,7 @@
 
   onDestroy(() => {
     for (const inst of coralInstances) disposeInstancedMesh(inst);
-    for (const c of kelpClones) disposeSceneGraph(c);
+    for (const inst of kelpInstances) disposeInstancedMesh(inst);
     for (const inst of rockInstances) inst.dispose();
     for (const inst of boulderInstances) { (inst.material as any)?.dispose?.(); inst.dispose(); }
     for (const c of heroRockClones) disposeSceneGraph(c);
@@ -1075,22 +1078,11 @@
   {/each}
 {/if}
 
-<!-- Kelp forest (Poisson-disc, sway-animated via useTask) -->
-{#if activeConfig.kelp.enabled && kelpClones.length > 0}
-  {#each kelpClones as clone, i}
-    {@const p = kelpPlacements[i]}
-    {@const s = kelpScales[i] ?? 0.001}
-    {#if p}
-      {@const th = getTerrainY(p.x, p.z)}
-      {@const baseOffset = (kelpBaseOffsets[i % kelpBaseOffsets.length] ?? 0) * p.scale * s}
-      <T
-        is={clone}
-        position.x={p.x}
-        position.y={groundY + th + baseOffset}
-        position.z={p.z}
-        scale={p.scale * s}
-        rotation.y={p.rotY}
-      />
+<!-- Kelp forest (instanced, Poisson-disc placed) -->
+{#if activeConfig.kelp.enabled}
+  {#each kelpInstances as inst}
+    {#if inst}
+      <T is={inst} />
     {/if}
   {/each}
 {/if}
