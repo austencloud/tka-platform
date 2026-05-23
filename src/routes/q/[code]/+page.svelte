@@ -212,12 +212,22 @@
       .map((s) => (s.letter ? getLetterImagePath(s.letter as Letter) : null))
       .filter((p): p is string => p !== null);
 
-    const [assets, letterGlyphs] = await Promise.all([
+    const posGroup = seq.startingPositionGroup ?? "alpha";
+    const posGlyphMap: Record<string, string> = {
+      alpha: "/images/letters_trimmed/Type6/α.svg",
+      beta: "/images/letters_trimmed/Type6/β.svg",
+      gamma: "/images/letters_trimmed/Type6/γ.svg",
+    };
+    const posGlyphPath = posGlyphMap[posGroup];
+
+    const [assets, letterGlyphs, startGlyphs] = await Promise.all([
       loadAssets(baseUrl, gridMode, propTypeName, true),
       loadLetterGlyphs(baseUrl, letterPaths, true),
+      posGlyphPath ? loadLetterGlyphs(baseUrl, [posGlyphPath], true) : Promise.resolve([]),
     ]);
 
     assets.letterGlyphs = letterGlyphs;
+    assets.startPositionGlyph = startGlyphs[0] ?? null;
 
     const worker = new Worker(
       new URL(
@@ -250,6 +260,7 @@
       assets.bluePropImage,
       assets.redPropImage,
       ...letterGlyphs,
+      ...(assets.startPositionGlyph ? [assets.startPositionGlyph] : []),
     ];
     worker.postMessage(msg, transferables);
 

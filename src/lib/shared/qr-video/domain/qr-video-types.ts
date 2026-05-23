@@ -34,6 +34,7 @@ export interface TransferableAssets {
   bluePropViewBox: { width: number; height: number };
   redPropViewBox: { width: number; height: number };
   letterGlyphs: ImageBitmap[];
+  startPositionGlyph: ImageBitmap | null;
 }
 
 export interface RenderRequest {
