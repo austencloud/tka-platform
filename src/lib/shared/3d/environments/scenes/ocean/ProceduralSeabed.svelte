@@ -22,6 +22,8 @@
     stageRadius?: number;
     clearingRadius?: number;
     moundSources?: MoundSource[];
+    qualityLevel?: number; // 0 = low, 1 = medium, 2 = ultra
+    segments?: number;
   }
 
   let {
@@ -32,13 +34,14 @@
     stageRadius = 3,
     clearingRadius = 7,
     moundSources = [],
+    qualityLevel = 2,
+    segments = 192,
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
 
   const loader = new TextureLoader();
   const TEX_REPEAT = 14;
-  const SEGMENTS = 192;
 
   function loadTex(path: string): Texture {
     const tex = loader.load(path);
@@ -54,7 +57,7 @@
   const sandAo = loadTex("/textures/terrain/sand/ao.jpg");
 
   const geometry = $derived.by(() => {
-    const geo = new PlaneGeometry(size, size, SEGMENTS, SEGMENTS);
+    const geo = new PlaneGeometry(size, size, segments, segments);
     const pos = geo.attributes.position!;
     const proximityData = new Float32Array(pos.count);
     const mounds = moundSources;
@@ -111,6 +114,16 @@
       for (int i = 0; i < 5; i++) { v += a * seaNoise(p); p *= 2.0; a *= 0.5; }
       return v;
     }
+    float seaFbm3(vec2 p) {
+      float v = 0.0; float a = 0.5;
+      for (int i = 0; i < 3; i++) { v += a * seaNoise(p); p *= 2.0; a *= 0.5; }
+      return v;
+    }
+    float seaNoise2(vec2 p) {
+      float v = 0.0; float a = 0.5;
+      for (int i = 0; i < 2; i++) { v += a * seaNoise(p); p *= 2.0; a *= 0.5; }
+      return v;
+    }
     float voronoiCaustic(vec2 p, float t) {
       vec2 ci = floor(p); vec2 cf = fract(p); float cd = 1.0;
       for (int cx = -1; cx <= 1; cx++) {
@@ -134,6 +147,9 @@
     metalness: 0.0,
     side: DoubleSide,
   });
+
+  material.defines = material.defines ?? {};
+  material.defines.QUALITY_LEVEL = qualityLevel;
 
   material.onBeforeCompile = (shader) => {
     shaderRef = shader;
@@ -198,15 +214,25 @@
       tintedSand += (sandColor - 0.5) * 0.15;
 
       // Large slow patches: dark rocky substrate
-      float rockMask = smoothstep(0.42, 0.58, seaFbm(wp * 0.08 + 3.7));
+      #if QUALITY_LEVEL >= 2
+        float rockMask = smoothstep(0.42, 0.58, seaFbm(wp * 0.08 + 3.7));
+        float algaeMask = smoothstep(0.48, 0.62, seaFbm(wp * 0.18 + 11.3));
+        float trailNoise = seaFbm(wp * 0.35 + 7.1);
+      #elif QUALITY_LEVEL >= 1
+        float rockMask = smoothstep(0.42, 0.58, seaFbm3(wp * 0.08 + 3.7));
+        float algaeMask = smoothstep(0.48, 0.62, seaFbm3(wp * 0.18 + 11.3));
+        float trailNoise = seaFbm3(wp * 0.35 + 7.1);
+      #else
+        float rockMask = smoothstep(0.42, 0.58, seaNoise2(wp * 0.08 + 3.7));
+        float algaeMask = 0.0;
+        float trailNoise = seaNoise2(wp * 0.35 + 7.1);
+      #endif
       tintedSand = mix(tintedSand, uBaseColor * 0.55, rockMask * 0.45);
 
       // Medium patches: greenish algae/biofilm
-      float algaeMask = smoothstep(0.48, 0.62, seaFbm(wp * 0.18 + 11.3));
       tintedSand = mix(tintedSand, vec3(0.14, 0.25, 0.13), algaeMask * 0.25);
 
       // Fine grain: lighter sand trails
-      float trailNoise = seaFbm(wp * 0.35 + 7.1);
       float trailMask = smoothstep(0.35, 0.55, trailNoise) * (1.0 - smoothstep(0.55, 0.7, trailNoise));
       tintedSand = mix(tintedSand, uRippleColor * 1.2, trailMask * 0.35);
 
@@ -300,6 +326,7 @@
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <opaque_fragment>",
       `
+      #if QUALITY_LEVEL >= 1
       // Caustic UV offset by terrain normal (follows surface contour on slopes)
       vec2 cwp = vWorldPos.xz + surfN.xz * 0.5;
       float causticTime = uTime * 6.0;
@@ -308,7 +335,9 @@
       float caustic = pow(min(c1, c2), 4.0) * 2.0;
       caustic = clamp(caustic, 0.0, 1.0);
       outgoingLight += vec3(0.55, 0.85, 0.75) * caustic * 0.35;
+      #endif
 
+      #if QUALITY_LEVEL >= 2
       // Wet sand sparkle (Journey grain specular technique)
       vec3 viewDir = normalize(cameraPosition - vWorldPos);
       vec2 sparkleUv = wp * 30.0;
@@ -321,6 +350,7 @@
       float sparkle = pow(sparkleDot, 80.0);
       float sparkleMask = step(0.92, seaNoise(wp * 20.0));
       outgoingLight += vec3(0.5, 0.7, 0.6) * sparkle * sparkleMask * 0.4;
+      #endif
 
       // Per-channel depth absorption (Quilez technique: red dies first)
       float fogDist = length(vWorldPos.xz);

@@ -1068,6 +1068,8 @@
   stageRadius={zones.stageRadius}
   clearingRadius={zones.clearingRadius}
   {moundSources}
+  qualityLevel={detectedTier === 'ultra' ? 2 : detectedTier === 'medium' ? 1 : 0}
+  segments={qualityConfig.seabedSegments}
 />
 
 <!-- Water surface shimmer -->
