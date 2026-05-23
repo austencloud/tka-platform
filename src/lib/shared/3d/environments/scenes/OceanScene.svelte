@@ -1072,7 +1072,7 @@
 
 <!-- Water surface shimmer -->
 {#if activeConfig.waterSurface?.enabled}
-  <WaterSurface config={activeConfig.waterSurface} size={activeConfig.ground.size} />
+  <WaterSurface config={activeConfig.waterSurface} size={activeConfig.ground.size} segments={qualityConfig.waterSurfaceSegments} />
 {/if}
 
 

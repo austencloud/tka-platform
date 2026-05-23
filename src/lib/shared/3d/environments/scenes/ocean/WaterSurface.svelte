@@ -6,9 +6,10 @@
   interface Props {
     config: OceanWaterSurfaceConfig;
     size?: number;
+    segments?: number;
   }
 
-  let { config, size = 50 }: Props = $props();
+  let { config, size = 50, segments = 64 }: Props = $props();
 
   const { camera } = useThrelte();
 
@@ -211,5 +212,5 @@
   rotation.x={-Math.PI / 2}
   {material}
 >
-  <T.PlaneGeometry args={[size, size, 64, 64]} />
+  <T.PlaneGeometry args={[size, size, segments, segments]} />
 </T.Mesh>
