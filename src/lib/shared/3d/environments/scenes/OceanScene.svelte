@@ -643,11 +643,30 @@
 
   const heroRockPlacements = $derived(scenePlacements.heroRocks as HeroRockPlacement[]);
 
-  const heroRockClones = $derived.by(() => {
+  const heroRockInstances = $derived.by((): (InstancedMesh | null)[] => {
     if (!hasGlbRocks) return [];
-    return heroRockPlacements.map((p) => {
-      const model = rockGlbModels[p.modelIdx % rockGlbModels.length]!;
-      return underwaterClone(model.scene, activeConfig.rocks.tintColor, activeConfig.rocks.tintBlend * 0.5);
+
+    const buckets: Map<number, InstancePlacement[]> = new Map();
+
+    for (const p of heroRockPlacements) {
+      const modelIdx = p.modelIdx % rockGlbModels.length;
+      if (!buckets.has(modelIdx)) buckets.set(modelIdx, []);
+
+      const s = rockGlbScales[modelIdx] ?? 0.001;
+      const baseOffset = (rockGlbBaseOffsets[modelIdx] ?? 0) * p.scale * s;
+
+      buckets.get(modelIdx)!.push({
+        x: p.x,
+        z: p.z,
+        y: groundY + getTerrainY(p.x, p.z) + baseOffset,
+        scale: p.scale * s,
+        rotY: p.rotY,
+      });
+    }
+
+    return rockGlbModels.map((model, idx) => {
+      const placements = buckets.get(idx) ?? [];
+      return createInstancedMeshFromModel(model.scene, placements);
     });
   });
 
@@ -1058,7 +1077,7 @@
     for (const inst of kelpInstances) disposeInstancedMesh(inst);
     for (const inst of rockInstances) inst.dispose();
     for (const inst of boulderInstances) { (inst.material as any)?.dispose?.(); inst.dispose(); }
-    for (const c of heroRockClones) disposeSceneGraph(c);
+    for (const inst of heroRockInstances) disposeInstancedMesh(inst);
     disposeInstancedMesh(jellyfishInstances.large);
     disposeInstancedMesh(jellyfishInstances.small);
     for (const inst of Object.values(decorationInstances)) disposeInstancedMesh(inst);
@@ -1109,21 +1128,11 @@
   {/each}
 {/if}
 
-<!-- Hero rocks (Meshy GLB models — formation anchors + boulders) -->
-{#if activeConfig.rocks.enabled && heroRockClones.length > 0}
-  {#each heroRockClones as clone, i}
-    {@const p = heroRockPlacements[i]}
-    {#if p}
-      {@const s = rockGlbScales[p.modelIdx % rockGlbScales.length] ?? 0.001}
-      {@const baseOffset = (rockGlbBaseOffsets[p.modelIdx % rockGlbBaseOffsets.length] ?? 0) * p.scale * s}
-      <T
-        is={clone}
-        position.x={p.x}
-        position.y={groundY + getTerrainY(p.x, p.z) + baseOffset}
-        position.z={p.z}
-        scale={p.scale * s}
-        rotation.y={p.rotY}
-      />
+<!-- Hero rocks (instanced GLB models — formation anchors) -->
+{#if activeConfig.rocks.enabled && hasGlbRocks}
+  {#each heroRockInstances as inst}
+    {#if inst}
+      <T is={inst} />
     {/if}
   {/each}
 {/if}
