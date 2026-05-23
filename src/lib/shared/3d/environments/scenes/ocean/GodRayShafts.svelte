@@ -1,8 +1,21 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
-  import { ShaderMaterial, AdditiveBlending, DoubleSide, Color } from "three";
+  import {
+    ShaderMaterial,
+    AdditiveBlending,
+    DoubleSide,
+    Color,
+    PlaneGeometry,
+    InstancedMesh,
+    InstancedBufferAttribute,
+    Matrix4,
+    Vector3,
+    Quaternion,
+    Euler,
+  } from "three";
   import type { OceanGodRayShaftConfig } from "../../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import { onDestroy } from "svelte";
 
   interface Props {
     config: OceanGodRayShaftConfig;
@@ -12,39 +25,58 @@
   const groundY = $derived(userProportionsState.groundY);
 
   const vertexShader = /* glsl */ `
+    attribute float aOpacityMult;
     varying vec2 vUv;
     varying float vWorldY;
+    varying float vNormY;
+    varying float vOpacityMult;
+    uniform float uHeight;
+    uniform float uGroundY;
+
     void main() {
       vUv = uv;
-      vec4 worldPos = modelMatrix * vec4(position, 1.0);
+      vOpacityMult = aOpacityMult;
+      vec4 worldPos = modelMatrix * instanceMatrix * vec4(position, 1.0);
       vWorldY = worldPos.y;
+      vNormY = clamp((worldPos.y - uGroundY) / uHeight, 0.0, 1.0);
       gl_Position = projectionMatrix * viewMatrix * worldPos;
     }
   `;
 
   const fragmentShader = /* glsl */ `
     uniform float uTime;
-    uniform vec3 uColor;
+    uniform vec3 uColorTop;
+    uniform vec3 uColorBottom;
     uniform float uIntensity;
     varying vec2 vUv;
     varying float vWorldY;
+    varying float vNormY;
+    varying float vOpacityMult;
 
     void main() {
-      // Soft gaussian-ish center fade — broad and gentle
-      float cx = (vUv.x - 0.5) * 2.0;
-      float centerFade = exp(-cx * cx * 2.0);
+      float cx = (vUv.x - 0.48) * 2.0;
+      float centerFade = exp(-cx * cx * 2.5);
+      float verticalFade = smoothstep(0.0, 0.08, vUv.y) * smoothstep(1.0, 0.5, vUv.y);
 
-      // Gentle vertical fade — strongest in middle, fades at both ends
-      float verticalFade = smoothstep(0.0, 0.15, vUv.y) * smoothstep(1.0, 0.7, vUv.y);
+      float s1 = sin(vWorldY * 1.7 + uTime * 1.2);
+      float s2 = sin(vWorldY * 3.3 - uTime * 0.7 + 1.3);
+      float s3 = sin(vWorldY * 0.8 + uTime * 2.1 + 3.7);
+      float s4 = cos(vWorldY * 5.1 - uTime * 1.5 + 0.9);
+      float shimmer = 0.55 + 0.2 * s1 + 0.12 * s2 + 0.08 * s3 + 0.05 * s4;
 
-      // Slow, layered shimmer for organic caustic-like variation
-      float shimmer = 0.75 + 0.25 * sin(vWorldY * 1.5 + uTime * 0.8);
-      shimmer *= 0.85 + 0.15 * sin(vWorldY * 3.5 - uTime * 0.5);
-
-      float alpha = centerFade * verticalFade * shimmer * uIntensity;
-      gl_FragColor = vec4(uColor * alpha, alpha * 0.4);
+      vec3 color = mix(uColorBottom, uColorTop, vNormY);
+      float alpha = centerFade * verticalFade * shimmer * uIntensity * vOpacityMult;
+      gl_FragColor = vec4(color * alpha, alpha * 0.35);
     }
   `;
+
+  function seededRandom(seed: number) {
+    let s = seed;
+    return () => {
+      s = (s * 16807 + 0) % 2147483647;
+      return s / 2147483647;
+    };
+  }
 
   const material = new ShaderMaterial({
     transparent: true,
@@ -53,47 +85,68 @@
     depthWrite: false,
     uniforms: {
       uTime: { value: 0 },
-      uColor: { value: new Color() },
-      uIntensity: { value: 0 },
+      uColorTop: { value: new Color("#d4e8f0") },
+      uColorBottom: { value: new Color(config.color) },
+      uIntensity: { value: config.intensity },
+      uHeight: { value: config.height },
+      uGroundY: { value: 0 },
     },
     vertexShader,
     fragmentShader,
   });
 
+  const instancedMesh = $derived.by(() => {
+    const geo = new PlaneGeometry(config.width, config.height);
+    const rng = seededRandom(777);
+
+    const count = config.count;
+    const opacities = new Float32Array(count);
+
+    const inst = new InstancedMesh(geo, material, count);
+    inst.frustumCulled = false;
+
+    const mat = new Matrix4();
+    const q = new Quaternion();
+    const s = new Vector3(1, 1, 1);
+
+    for (let i = 0; i < count; i++) {
+      const x = (rng() - 0.5) * 22;
+      const z = (rng() - 0.5) * 22;
+      const rotY = rng() * Math.PI * 2;
+      const tilt = 0.04 + rng() * 0.12;
+      const widthScale = 0.5 + rng() * 0.8;
+      opacities[i] = 0.4 + rng() * 0.6;
+
+      q.setFromEuler(new Euler(0, rotY, tilt));
+      s.set(widthScale, 1, 1);
+      mat.compose(
+        new Vector3(x, groundY + config.height * 0.5, z),
+        q,
+        s,
+      );
+      inst.setMatrixAt(i, mat);
+    }
+
+    inst.instanceMatrix.needsUpdate = true;
+    geo.setAttribute('aOpacityMult', new InstancedBufferAttribute(opacities, 1));
+
+    return inst;
+  });
+
   $effect(() => {
-    material.uniforms.uColor!.value = new Color(config.color);
+    material.uniforms.uColorBottom!.value = new Color(config.color);
     material.uniforms.uIntensity!.value = config.intensity;
+    material.uniforms.uGroundY!.value = groundY;
   });
 
   useTask((delta) => {
     material.uniforms.uTime!.value += delta * config.speed * 5;
   });
 
-  const shafts = $derived(
-    Array.from({ length: config.count }, (_, i) => {
-      const angle = (i / config.count) * Math.PI * 2 + 0.7;
-      const radius = 5 + Math.sin(i * 2.3) * 4;
-      const widthVariation = 0.7 + Math.sin(i * 3.1) * 0.3;
-      return {
-        x: Math.cos(angle) * radius,
-        z: Math.sin(angle) * radius,
-        rotY: angle + Math.PI * 0.5 + Math.sin(i * 1.3) * 0.3,
-        tilt: 0.08 + Math.sin(i * 1.7) * 0.06,
-        widthScale: widthVariation,
-      };
-    }),
-  );
+  onDestroy(() => {
+    material.dispose();
+    instancedMesh.geometry.dispose();
+  });
 </script>
 
-{#each shafts as shaft}
-  <T.Mesh
-    position.x={shaft.x}
-    position.y={groundY + config.height * 0.5}
-    position.z={shaft.z}
-    rotation.y={shaft.rotY}
-    rotation.z={shaft.tilt}
-    {material}
-  >
-    <T.PlaneGeometry args={[config.width * shaft.widthScale, config.height]} />
-  </T.Mesh>
-{/each}
+<T is={instancedMesh} />
