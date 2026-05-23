@@ -130,11 +130,13 @@
   const qualityOverride = $derived<OceanQualityTier | 'auto'>(activeConfig.qualityTier ?? 'auto');
   const detectedTier = $derived.by((): OceanQualityTier => {
     if (qualityOverride !== 'auto') return qualityOverride;
+    if (!renderer.current) return 'ultra';
     return detectOceanQuality(renderer.current);
   });
   const qualityConfig = $derived(getOceanQualityConfig(detectedTier));
 
   $effect(() => {
+    if (!renderer.current) return;
     renderer.current.setPixelRatio(Math.min(window.devicePixelRatio, qualityConfig.maxPixelRatio));
   });
 
