@@ -106,7 +106,9 @@ export function resolveLoopDisplay(input: LoopDisplayInput): LoopDisplay {
 
   if (cacheKey) {
     const cached = displayCache.get(cacheKey);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
   }
 
   const result = computeLoopDisplay(input);

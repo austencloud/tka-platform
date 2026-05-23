@@ -196,7 +196,6 @@ export class LOOPDetector implements ILOOPDetector {
     const rewoundCandidate = effectiveCandidates.find(
       c => c.components.includes("rewound")
     );
-
     if (uniformCandidates.length > 0) {
       const primary = uniformCandidates[0]!;
       const allComponents = [...primary.components];
@@ -228,7 +227,39 @@ export class LOOPDetector implements ILOOPDetector {
         displayPairs = toPublicStepPairs(quarteredStepPairs);
         displayGroups =
           this.analysisService.groupStepPairsByPattern(quarteredStepPairs);
+
+        // Uniform unanimity only detected halved (period 2). Quartered is
+        // strictly more specific (every quartered is also halved). If quarter
+        // motions are structurally consistent, upgrade to quartered.
+        const currentPeriod = periodFromIntervals(intervals, true);
+        if (currentPeriod < 4) {
+          const qLen = Math.floor(steps.length / 4);
+          const motionsConsistent = this.quarteredMotionsConsistent(steps, qLen);
+          if (qLen > 0 && motionsConsistent) {
+            // Try modular quartered detection first
+            const modularResult = this.detectModularQuarteredPattern(
+              quarteredStepPairs,
+              rotationDirection,
+              polyrhythmic,
+              layeredPath
+            );
+            if (modularResult) {
+              this.enrichWithHalvedPrimitives(modularResult, halvedStepPairs);
+              return modularResult;
+            }
+            // Modular detector may reject uniform quartered patterns.
+            // Upgrade intervals directly — quarteredMotionsConsistent
+            // already confirmed the quartered structure.
+            if (intervals.rotation) intervals.rotation = 4;
+            if (intervals.swap) intervals.swap = 4;
+            if (intervals.mirror) intervals.mirror = 4;
+            if (intervals.flip) intervals.flip = 4;
+            if (intervals.invert) intervals.invert = 4;
+          }
+        }
       }
+
+      const finalPeriod = periodFromIntervals(intervals, true);
 
       return {
         loopType: primary.loopType,

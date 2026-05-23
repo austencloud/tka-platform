@@ -460,8 +460,8 @@ void main() {
   localPos.y += sin(phase * 1.5) * bodyAmp * 0.3 * dorsalMask;
 
   float swimSpeed = length(fishVel);
-  float speedRatio = swimSpeed / (uMaxSpeed * 0.5);
-  float cStartIntensity = smoothstep(1.5, 2.5, speedRatio);
+  float cStartRatio = swimSpeed / (uMaxSpeed * 0.5);
+  float cStartIntensity = smoothstep(1.5, 2.5, cStartRatio);
   float cBend = cStartIntensity * sin(localPos.z * 1.5) * 0.3;
   localPos.x += cBend;
 
