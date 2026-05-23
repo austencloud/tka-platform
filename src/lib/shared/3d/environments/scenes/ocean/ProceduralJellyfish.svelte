@@ -47,7 +47,13 @@
     const driftY = Math.sin(elapsed * 0.001 * driftSpeed * 0.6 + phaseOffset * 2) * 0.3;
     const driftZ = Math.cos(elapsed * 0.001 * driftSpeed * 0.8 + phaseOffset * 0.5) * 0.4;
 
-    medusae.item.position.set(x + driftX, y + driftY, z + driftZ);
+    const t = medusae.animTime;
+    const pulse = (Math.sin(t * Math.PI - Math.PI * 0.5) + 1) * 0.5;
+    const strength = 0.4 + 0.6 * ((Math.sin(t * 0.31 + phaseOffset * 5.3) + 1) * 0.5)
+      * ((Math.sin(t * 0.17 + phaseOffset * 2.9) + 1) * 0.5);
+    const bob = pulse * strength * 0.08;
+
+    medusae.item.position.set(x + driftX, y + driftY + bob, z + driftZ);
     medusae.item.scale.setScalar(scale);
 
     const tiltX = Math.sin(elapsed * 0.0003 + phaseOffset) * 0.1;
