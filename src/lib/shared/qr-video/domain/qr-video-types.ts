@@ -1,5 +1,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
 
 export interface FramePropState {
   centerPathAngle: number;
@@ -25,6 +26,7 @@ export interface VideoRenderConfig {
   includeEndHold: boolean;
   baseUrl: string;
   cacheHash?: string;
+  effectType?: EffectType;
 }
 
 export interface TransferableAssets {

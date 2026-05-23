@@ -213,14 +213,24 @@ export class WebGLFireRenderer {
 
     container.appendChild(this.canvas);
 
-    this.gl = this.canvas.getContext("webgl2", {
+    return this.initGLContext(width, height, true);
+  }
+
+  initializeHeadless(width: number, height: number): boolean {
+    this.canvas = new OffscreenCanvas(width, height) as unknown as HTMLCanvasElement;
+    this.dpr = 1;
+    return this.initGLContext(width, height, false);
+  }
+
+  private initGLContext(width: number, height: number, isDom: boolean): boolean {
+    this.gl = this.canvas!.getContext("webgl2", {
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
       depth: false,
       stencil: false,
-      preserveDrawingBuffer: true, // Required for video export to read fire pixels
-    });
+      preserveDrawingBuffer: true,
+    }) as WebGL2RenderingContext | null;
 
     if (!this.gl) {
       console.warn("WebGL2 not available for fire overlay");
@@ -230,7 +240,6 @@ export class WebGLFireRenderer {
 
     const gl = this.gl;
 
-    // Float texture support is required for fluid simulation
     const ext = gl.getExtension("EXT_color_buffer_float");
     if (!ext) {
       console.warn("EXT_color_buffer_float not available - fire simulation requires float FBOs");
@@ -246,7 +255,6 @@ export class WebGLFireRenderer {
 
     this.createSimulationBuffers();
 
-    // Blending for final display composite (premultiplied alpha source-over)
     gl.enable(gl.BLEND);
     gl.blendFuncSeparate(
       gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
@@ -254,7 +262,7 @@ export class WebGLFireRenderer {
     );
     gl.disable(gl.DEPTH_TEST);
 
-    if (typeof window !== "undefined" && window.matchMedia) {
+    if (isDom && typeof window !== "undefined" && window.matchMedia) {
       this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     }
 
@@ -262,7 +270,6 @@ export class WebGLFireRenderer {
     this.initialized = true;
     activeFireInstanceCount++;
 
-    // Create frame cache for loop replay optimization
     this.frameCache = new FireFrameCache(gl);
 
     return true;
@@ -1610,7 +1617,9 @@ export class WebGLFireRenderer {
     this.bloomCompositeProgram = null;
 
     if (this.canvas) {
-      this.canvas.remove();
+      if (typeof (this.canvas as any).remove === "function") {
+        this.canvas.remove();
+      }
       this.canvas = null;
     }
 

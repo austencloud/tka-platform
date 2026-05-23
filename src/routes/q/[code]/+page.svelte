@@ -30,6 +30,7 @@
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
   import { HeadlessAnimationOrchestrator } from "$lib/shared/qr-video/services/HeadlessAnimationOrchestrator";
   import {
     buildTimelineParams,
@@ -96,6 +97,28 @@
     { value: PropType.HAND, label: "Hand" },
   ];
 
+  let selectedEffect: EffectType = $state("trails");
+
+  const EFFECT_OPTIONS: { value: EffectType; label: string }[] = [
+    { value: "none", label: "None" },
+    { value: "trails", label: "Trails" },
+    { value: "fire", label: "Fire" },
+    { value: "smoke", label: "Smoke" },
+    { value: "bloom", label: "Bloom" },
+    { value: "sparkles", label: "Sparkles" },
+    { value: "zap", label: "Zap" },
+    { value: "echo", label: "Echo" },
+    { value: "ink", label: "Ink" },
+    { value: "water", label: "Water" },
+    { value: "bubbles", label: "Bubbles" },
+    { value: "petals", label: "Petals" },
+    { value: "frost", label: "Frost" },
+    { value: "silk", label: "Silk" },
+    { value: "pulse", label: "Pulse" },
+    { value: "led", label: "LED" },
+    { value: "charcoal", label: "Charcoal" },
+  ];
+
   let selectedBpm = $state(BASE_BPM);
 
   function handleBpmChange(newBpm: number) {
@@ -138,12 +161,16 @@
 
   async function computeHash(
     seq: SequenceData,
-    propOverride?: PropType
+    propOverride?: PropType,
+    effectType?: EffectType,
   ): Promise<string> {
     const pipeString = encodeSequence(seq);
-    const input = propOverride
+    let input = propOverride
       ? `${pipeString}|prop=${propOverride}`
       : pipeString;
+    if (effectType && effectType !== "trails") {
+      input += `|effect=${effectType}`;
+    }
     const buffer = new TextEncoder().encode(input);
     const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
     return Array.from(new Uint8Array(hashBuffer), (b) =>
@@ -238,7 +265,8 @@
     seq: SequenceData,
     hash: string,
     word: string,
-    propOverride?: PropType
+    propOverride?: PropType,
+    effectOverride?: EffectType,
   ): Promise<void> {
     state = { kind: "rendering", percent: 0, phase: "loading-assets", word };
 
@@ -311,6 +339,7 @@
         includeEndHold: true,
         baseUrl,
         cacheHash: hash,
+        effectType: effectOverride ?? selectedEffect,
       },
     };
 
@@ -365,10 +394,8 @@
     selectedProp = propType;
     const defaultProp =
       (resolvedSeq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
-    const hash = await computeHash(
-      resolvedSeq,
-      propType === defaultProp ? undefined : propType
-    );
+    const propOverride = propType === defaultProp ? undefined : propType;
+    const hash = await computeHash(resolvedSeq, propOverride, selectedEffect);
     const cached = await checkR2Cache(hash);
     if (cached) {
       state = {
@@ -378,7 +405,27 @@
         isFirstView: false,
       };
     } else {
-      await spawnWorker(resolvedSeq, hash, seqWord, propType);
+      await spawnWorker(resolvedSeq, hash, seqWord, propOverride, selectedEffect);
+    }
+  }
+
+  async function handleEffectChange(effect: EffectType) {
+    if (!resolvedSeq || effect === selectedEffect) return;
+    selectedEffect = effect;
+    const defaultProp =
+      (resolvedSeq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
+    const propOverride = selectedProp === defaultProp ? undefined : selectedProp;
+    const hash = await computeHash(resolvedSeq, propOverride, effect);
+    const cached = await checkR2Cache(hash);
+    if (cached) {
+      state = {
+        kind: "playing",
+        videoUrl: videoUrl(hash),
+        word: seqWord,
+        isFirstView: false,
+      };
+    } else {
+      await spawnWorker(resolvedSeq, hash, seqWord, selectedProp === defaultProp ? undefined : selectedProp, effect);
     }
   }
 
@@ -595,6 +642,22 @@
               class="prop-pill"
               class:active={selectedProp === opt.value}
               onclick={() => handlePropChange(opt.value)}
+            >
+              {opt.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="effect-row">
+        <span class="row-label">Effect</span>
+        <div class="effect-pills">
+          {#each EFFECT_OPTIONS as opt}
+            <button
+              type="button"
+              class="effect-pill"
+              class:active={selectedEffect === opt.value}
+              onclick={() => handleEffectChange(opt.value)}
             >
               {opt.label}
             </button>
@@ -837,6 +900,53 @@
   }
 
   .prop-pill.active {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #fff;
+  }
+
+  /* ── Effect selector ── */
+
+  .effect-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 480px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .effect-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .effect-pills {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: nowrap;
+  }
+
+  .effect-pill {
+    padding: 0.25rem 0.625rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background 120ms ease,
+      color 120ms ease;
+  }
+
+  .effect-pill:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+  }
+
+  .effect-pill.active {
     background: #6366f1;
     border-color: #6366f1;
     color: #fff;

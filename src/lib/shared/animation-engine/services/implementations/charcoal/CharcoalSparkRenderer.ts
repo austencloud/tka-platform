@@ -217,21 +217,31 @@ export class CharcoalSparkRenderer {
 		this.canvas.width = Math.round(width * this.dpr);
 		this.canvas.height = Math.round(height * this.dpr);
 
+		container.appendChild(this.canvas);
+
+		return this.initGLContext(width, height, true);
+	}
+
+	initializeHeadless(width: number, height: number): boolean {
+		this.canvas = new OffscreenCanvas(width, height) as unknown as HTMLCanvasElement;
+		this.dpr = 1;
+		return this.initGLContext(width, height, false);
+	}
+
+	private initGLContext(width: number, height: number, isDom: boolean): boolean {
 		const areaRatio = (width * height) / (CharcoalSparkRenderer.REFERENCE_SIZE ** 2);
 		this.canvasScale = Math.max(0.1, Math.min(1.0, areaRatio));
 		const minDim = Math.min(width, height);
 		this.sizeScale = Math.max(0.1, Math.min(1.0, minDim / CharcoalSparkRenderer.REFERENCE_SIZE));
 
-		container.appendChild(this.canvas);
-
-		this.gl = this.canvas.getContext("webgl2", {
+		this.gl = this.canvas!.getContext("webgl2", {
 			alpha: true,
 			premultipliedAlpha: true,
 			antialias: false,
 			depth: false,
 			stencil: false,
-			preserveDrawingBuffer: true, // Required for video export to read charcoal pixels
-		});
+			preserveDrawingBuffer: true,
+		}) as WebGL2RenderingContext | null;
 
 		if (!this.gl) {
 			console.warn("WebGL2 not available for charcoal spark overlay");
@@ -247,13 +257,12 @@ export class CharcoalSparkRenderer {
 		this.allocateParticlePool(this.currentParams.maxParticles);
 		this.createGPUBuffers();
 
-		// Additive blending: sparks add light on top of the scene
 		const gl = this.gl;
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 		gl.disable(gl.DEPTH_TEST);
 
-		if (typeof window !== "undefined" && window.matchMedia) {
+		if (isDom && typeof window !== "undefined" && window.matchMedia) {
 			this.reducedMotion = window.matchMedia(
 				"(prefers-reduced-motion: reduce)"
 			).matches;
@@ -977,7 +986,9 @@ export class CharcoalSparkRenderer {
 		this.ambientAccumulators.clear();
 
 		if (this.canvas) {
-			this.canvas.remove();
+			if (typeof (this.canvas as any).remove === "function") {
+				this.canvas.remove();
+			}
 			this.canvas = null;
 		}
 

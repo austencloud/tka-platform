@@ -134,14 +134,26 @@ export class WebGLLedRenderer {
 
 		container.appendChild(this.canvas);
 
-		this.gl = this.canvas.getContext("webgl2", {
+		return this.initGLContext(width, height, true);
+	}
+
+	initializeHeadless(width: number, height: number): boolean {
+		this.canvas = new OffscreenCanvas(width, height) as unknown as HTMLCanvasElement;
+		this.dpr = 1;
+		this.displayWidth = width;
+		this.displayHeight = height;
+		return this.initGLContext(width, height, false);
+	}
+
+	private initGLContext(_width: number, _height: number, isDom: boolean): boolean {
+		this.gl = this.canvas!.getContext("webgl2", {
 			alpha: true,
 			premultipliedAlpha: false,
 			antialias: false,
 			depth: false,
 			stencil: false,
-			preserveDrawingBuffer: true, // Required for video export to read LED pixels
-		});
+			preserveDrawingBuffer: true,
+		}) as WebGL2RenderingContext | null;
 
 		if (!this.gl) {
 			console.warn("WebGL2 not available for LED overlay");
@@ -151,7 +163,6 @@ export class WebGLLedRenderer {
 
 		const gl = this.gl;
 
-		// Float texture support is required for HDR bloom pipeline
 		const ext = gl.getExtension("EXT_color_buffer_float");
 		if (!ext) {
 			console.warn("EXT_color_buffer_float not available - LED overlay requires float FBOs");
@@ -171,7 +182,7 @@ export class WebGLLedRenderer {
 
 		gl.disable(gl.DEPTH_TEST);
 
-		if (typeof window !== "undefined" && window.matchMedia) {
+		if (isDom && typeof window !== "undefined" && window.matchMedia) {
 			this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		}
 
@@ -887,7 +898,9 @@ export class WebGLLedRenderer {
 		this.instanceBuffer = null;
 
 		if (this.canvas) {
-			this.canvas.remove();
+			if (typeof (this.canvas as any).remove === "function") {
+				this.canvas.remove();
+			}
 			this.canvas = null;
 		}
 

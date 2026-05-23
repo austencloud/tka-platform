@@ -14,6 +14,7 @@
 
 import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
 import { renderScene, createRenderState, type SceneOverlay } from "../services/worker-scene-renderer";
+import { createWorkerEffectRenderer } from "../services/worker-effect-renderer";
 import type {
   WorkerInMessage,
   WorkerOutMessage,
@@ -153,7 +154,13 @@ async function handleRender(msg: RenderRequest): Promise<void> {
   // 4. Render + encode frame loop
   postProgress("rendering", 0);
 
-  const renderState = createRenderState();
+  const effectType = config.effectType;
+  const effectRenderer = effectType && effectType !== "none"
+    ? createWorkerEffectRenderer(effectType, canvasSize)
+    : null;
+
+  const renderState = effectRenderer ? undefined : createRenderState();
+  const dt = 1 / fps;
 
   for (let i = 0; i < totalFrames; i++) {
     const frame = frames[i]!;
@@ -176,8 +183,18 @@ async function handleRender(msg: RenderRequest): Promise<void> {
       assets.bluePropViewBox,
       assets.redPropViewBox,
       overlay,
-      renderState
+      renderState,
     );
+
+    if (effectRenderer) {
+      effectRenderer.renderFrame(
+        ctx, canvasSize,
+        frame.blue, frame.red,
+        assets.bluePropViewBox, assets.redPropViewBox,
+        i, dt,
+        frame.stepIndex, frame.isStartPosition,
+      );
+    }
 
     const isKeyframe = i % keyframeInterval === 0;
     const timestampMicros = i * frameDurationMicros;
@@ -211,6 +228,8 @@ async function handleRender(msg: RenderRequest): Promise<void> {
       postProgress("rendering", Math.round((i / totalFrames) * 100));
     }
   }
+
+  effectRenderer?.dispose();
 
   // 5. Finalize
   postProgress("finalizing", 0);
