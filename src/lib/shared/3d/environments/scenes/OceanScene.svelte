@@ -900,14 +900,33 @@
   });
 
 
-  const jellyfishClones = $derived.by(() => {
+  const jellyfishInstances = $derived.by((): { large: InstancedMesh | null; small: InstancedMesh | null } => {
     const large = $jellyfishGlb;
     const small = $jellyfishSmallGlb;
-    if (!large) return [];
-    return jellyfishSamples.map((jf) => {
-      if (jf.isSmall && small) return small.scene.clone();
-      return large.scene.clone();
-    });
+    if (!large) return { large: null, small: null };
+
+    const largePlacements: InstancePlacement[] = [];
+    const smallPlacements: InstancePlacement[] = [];
+
+    for (const jf of jellyfishSamples) {
+      const placement: InstancePlacement = {
+        x: jf.x,
+        z: jf.z,
+        y: groundY + jf.y,
+        scale: jf.isSmall ? jellyfishSmallScale : jellyfishLargeScale,
+        rotY: 0,
+      };
+      if (jf.isSmall && small) {
+        smallPlacements.push(placement);
+      } else {
+        largePlacements.push(placement);
+      }
+    }
+
+    return {
+      large: createInstancedMeshFromModel(large.scene, largePlacements),
+      small: small ? createInstancedMeshFromModel(small.scene, smallPlacements) : null,
+    };
   });
 
   const decorationClones = $derived.by(() => {
@@ -927,26 +946,6 @@
 
   useTask((delta) => {
     animTime += delta;
-
-    // Jellyfish: drift + bell pulse
-    const jf = activeConfig.jellyfish;
-    if (jf?.enabled && jellyfishOffsets.length > 0) {
-      jellyfishTime += delta * jf.driftSpeed;
-      const pulseAmp = jf.pulseAmplitude ?? 0.15;
-      for (let i = 0; i < jellyfishOffsets.length; i++) {
-        const phase = i * 2.3;
-        const pulsePhase =
-          jellyfishTime * jf.pulseRate * Math.PI * 2 + i * 1.7;
-        jellyfishOffsets[i] = {
-          dx: Math.sin(jellyfishTime * 0.7 + phase) * 1.5,
-          dy:
-            Math.sin(jellyfishTime * 0.4 + phase * 1.3) * 0.5 +
-            Math.sin(pulsePhase) * 0.15,
-          dz: Math.cos(jellyfishTime * 0.5 + phase * 0.8) * 1.5,
-          pulse: 1.0 + Math.sin(pulsePhase) * pulseAmp,
-        };
-      }
-    }
 
   });
 
@@ -1038,7 +1037,8 @@
     for (const inst of rockInstances) inst.dispose();
     for (const inst of boulderInstances) { (inst.material as any)?.dispose?.(); inst.dispose(); }
     for (const c of heroRockClones) disposeSceneGraph(c);
-    for (const c of jellyfishClones) disposeSceneGraph(c);
+    disposeInstancedMesh(jellyfishInstances.large);
+    disposeInstancedMesh(jellyfishInstances.small);
     for (const c of decorationClones) if (c) disposeSceneGraph(c as Object3D);
   });
 </script>
@@ -1163,37 +1163,14 @@
   />
 {/if}
 
-<!-- Jellyfish (drift + pulse + bioluminescent glow) -->
-{#if activeConfig.jellyfish?.enabled && jellyfishClones.length > 0}
-  {#each jellyfishSamples as jf, i}
-    {@const offset = jellyfishOffsets[i] ?? { dx: 0, dy: 0, dz: 0, pulse: 1.0 }}
-    {@const baseScale = jf.isSmall ? jellyfishSmallScale : jellyfishLargeScale}
-    {@const pulseScale = baseScale * (offset.pulse ?? 1.0)}
-    <T.Group
-      position.x={jf.x + offset.dx}
-      position.y={groundY + jf.y + offset.dy}
-      position.z={jf.z + offset.dz}
-    >
-      {#if jellyfishClones[i]}
-        <T is={jellyfishClones[i]} scale={pulseScale} />
-      {/if}
-      <T.PointLight
-        color={activeConfig.jellyfish.glowColor}
-        intensity={activeConfig.jellyfish.lightIntensity *
-          (0.7 +
-            0.3 *
-              Math.sin(
-                jellyfishTime *
-                  activeConfig.jellyfish.pulseRate *
-                  Math.PI *
-                  2 +
-                  i * 1.7,
-              ))}
-        distance={activeConfig.jellyfish.lightDistance}
-        decay={2}
-      />
-    </T.Group>
-  {/each}
+<!-- Jellyfish (instanced) -->
+{#if activeConfig.jellyfish?.enabled}
+  {#if jellyfishInstances.large}
+    <T is={jellyfishInstances.large} />
+  {/if}
+  {#if jellyfishInstances.small}
+    <T is={jellyfishInstances.small} />
+  {/if}
 {/if}
 
 <!-- Bubbles -->
