@@ -37,19 +37,24 @@
   } from "$lib/shared/qr-video/domain/qr-video-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-  import type { WorkerOutMessage, RenderRequest, PrecomputedFrame, TransferableAssets } from "$lib/shared/qr-video/domain/qr-video-types";
+  import type {
+    WorkerOutMessage,
+    RenderRequest,
+    PrecomputedFrame,
+    TransferableAssets,
+  } from "$lib/shared/qr-video/domain/qr-video-types";
   import { loadAssets, loadLetterGlyphs } from "$lib/shared/qr-video/services/WorkerAssetLoader";
   import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
 
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
+  const RENDER_FPS = 60;
+  const BASE_BPM = 60;
 
   interface Props {
     data: {
-      geo: {
-        country: string | null;
-        city: string | null;
-      };
+      geo: { country: string | null; city: string | null };
       meta: {
         word: string | null;
         creator: string | null;
@@ -59,7 +64,6 @@
   }
 
   const { data }: Props = $props();
-
   const shortCode = $derived($page.params["code"]);
 
   type PageState =
@@ -70,13 +74,50 @@
 
   let state = $state<PageState>({ kind: "loading" });
 
+  let resolvedSeq: SequenceData | null = $state(null);
+  let seqWord = $state("");
+
+  let videoEl: HTMLVideoElement | null = $state(null);
+  let paused = $state(false);
+  let displayTime = $state(0);
+  let duration = $state(0);
+  let playbackRate = $state(1);
+  let isScrubbing = $state(false);
+  let selectedProp = $state(PropType.STAFF);
+
+  const PROP_OPTIONS: { value: PropType; label: string }[] = [
+    { value: PropType.STAFF, label: "Staff" },
+    { value: PropType.FAN, label: "Fan" },
+    { value: PropType.CLUB, label: "Club" },
+    { value: PropType.BUUGENG, label: "Buugeng" },
+    { value: PropType.TRIAD, label: "Triad" },
+    { value: PropType.MINIHOOP, label: "Hoop" },
+    { value: PropType.SWORD, label: "Sword" },
+    { value: PropType.HAND, label: "Hand" },
+  ];
+
+  let selectedBpm = $state(BASE_BPM);
+
+  function handleBpmChange(newBpm: number) {
+    selectedBpm = newBpm;
+    playbackRate = newBpm / BASE_BPM;
+  }
+
+  const scrubProgress = $derived(duration > 0 ? (displayTime / duration) * 100 : 0);
+
   const ogWord = $derived(
-    (state.kind === "playing" || state.kind === "rendering" ? state.word : data?.meta?.word) || "Sequence"
+    (state.kind === "playing" || state.kind === "rendering"
+      ? state.word
+      : data?.meta?.word) || "Sequence"
   );
   const ogDesc = $derived(
-    ogWord !== "Sequence" ? `Watch the ${ogWord} flow sequence` : "Watch this flow sequence"
+    ogWord !== "Sequence"
+      ? `Watch the ${ogWord} flow sequence`
+      : "Watch this flow sequence"
   );
-  const ogImage = $derived(data?.meta?.thumbnailUrl || "https://tkaflowarts.com/og-default.png");
+  const ogImage = $derived(
+    data?.meta?.thumbnailUrl || "https://tkaflowarts.com/og-default.png"
+  );
 
   const stubBrowseLoader = {
     loadSequenceMetadata: async () => [],
@@ -89,9 +130,21 @@
 
   const shortCodeManager = new ShortCodeManager(stubBrowseLoader);
 
-  async function computeHash(seq: SequenceData): Promise<string> {
+  function formatTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  }
+
+  async function computeHash(
+    seq: SequenceData,
+    propOverride?: PropType
+  ): Promise<string> {
     const pipeString = encodeSequence(seq);
-    const buffer = new TextEncoder().encode(pipeString);
+    const input = propOverride
+      ? `${pipeString}|prop=${propOverride}`
+      : pipeString;
+    const buffer = new TextEncoder().encode(input);
     const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
     return Array.from(new Uint8Array(hashBuffer), (b) =>
       b.toString(16).padStart(2, "0")
@@ -171,12 +224,8 @@
       const propStates = orchestrator.getPropStates();
 
       frames.push({
-        blue: propStates.blue
-          ? { ...propStates.blue }
-          : null,
-        red: propStates.red
-          ? { ...propStates.red }
-          : null,
+        blue: propStates.blue ? { ...propStates.blue } : null,
+        red: propStates.red ? { ...propStates.red } : null,
         stepIndex: timing.stepIndex,
         isStartPosition: timing.isStartPosition,
       });
@@ -188,16 +237,21 @@
   async function spawnWorker(
     seq: SequenceData,
     hash: string,
-    word: string
+    word: string,
+    propOverride?: PropType
   ): Promise<void> {
     state = { kind: "rendering", percent: 0, phase: "loading-assets", word };
 
     const blueProp =
-      (seq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
+      propOverride ??
+      (seq.intendedProp?.bluePropType as PropType) ??
+      PropType.STAFF;
     const redProp =
-      (seq.intendedProp?.redPropType as PropType) ?? PropType.STAFF;
+      propOverride ??
+      (seq.intendedProp?.redPropType as PropType) ??
+      PropType.STAFF;
 
-    const frames = precomputeFrames(seq, blueProp, redProp, 30, 1, 2);
+    const frames = precomputeFrames(seq, blueProp, redProp, RENDER_FPS, 1, 2);
     if (frames.length === 0) {
       state = { kind: "error", message: "Failed to compute animation frames" };
       return;
@@ -220,14 +274,19 @@
     };
     const posGlyphPath = posGlyphMap[posGroup];
 
-    const [assets, letterGlyphs, startGlyphs] = await Promise.all([
+    const [rawAssets, letterGlyphs, startGlyphs] = await Promise.all([
       loadAssets(baseUrl, gridMode, propTypeName, true),
       loadLetterGlyphs(baseUrl, letterPaths, true),
-      posGlyphPath ? loadLetterGlyphs(baseUrl, [posGlyphPath], true) : Promise.resolve([]),
+      posGlyphPath
+        ? loadLetterGlyphs(baseUrl, [posGlyphPath], true)
+        : Promise.resolve([]),
     ]);
 
-    assets.letterGlyphs = letterGlyphs;
-    assets.startPositionGlyph = startGlyphs[0] ?? null;
+    const assets: TransferableAssets = {
+      ...rawAssets,
+      letterGlyphs,
+      startPositionGlyph: startGlyphs[0] ?? null,
+    };
 
     const worker = new Worker(
       new URL(
@@ -243,7 +302,7 @@
       frames,
       assets,
       config: {
-        fps: 30,
+        fps: RENDER_FPS,
         resolution: 720,
         speed: 1,
         propTypes: { blue: blueProp, red: redProp },
@@ -291,6 +350,46 @@
     };
   }
 
+  function togglePlay() {
+    paused = !paused;
+  }
+
+  function handleScrub(e: Event) {
+    const t = parseFloat((e.target as HTMLInputElement).value);
+    displayTime = t;
+    if (videoEl) videoEl.currentTime = t;
+  }
+
+  async function handlePropChange(propType: PropType) {
+    if (!resolvedSeq || propType === selectedProp) return;
+    selectedProp = propType;
+    const defaultProp =
+      (resolvedSeq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
+    const hash = await computeHash(
+      resolvedSeq,
+      propType === defaultProp ? undefined : propType
+    );
+    const cached = await checkR2Cache(hash);
+    if (cached) {
+      state = {
+        kind: "playing",
+        videoUrl: videoUrl(hash),
+        word: seqWord,
+        isFirstView: false,
+      };
+    } else {
+      await spawnWorker(resolvedSeq, hash, seqWord, propType);
+    }
+  }
+
+  function handleDownload() {
+    if (state.kind !== "playing") return;
+    const a = document.createElement("a");
+    a.href = state.videoUrl;
+    a.download = `${state.word}.mp4`;
+    a.click();
+  }
+
   onMount(async () => {
     if (!shortCode) {
       state = { kind: "error", message: "No short code provided" };
@@ -311,7 +410,11 @@
         gridModeDeriver,
       });
 
+      resolvedSeq = seq;
       const word = seq.word || seq.name || "Sequence";
+      seqWord = word;
+      selectedProp =
+        (seq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
 
       if (
         !isInlineEncoded(shortCode) &&
@@ -340,18 +443,11 @@
     } catch (err: unknown) {
       state = {
         kind: "error",
-        message: err instanceof Error ? err.message : "Failed to load sequence",
+        message:
+          err instanceof Error ? err.message : "Failed to load sequence",
       };
     }
   });
-
-  function handleDownload() {
-    if (state.kind !== "playing") return;
-    const a = document.createElement("a");
-    a.href = state.videoUrl;
-    a.download = `${state.word}.mp4`;
-    a.click();
-  }
 </script>
 
 <svelte:head>
@@ -361,7 +457,10 @@
   <meta property="og:title" content="{ogWord} - TKA" />
   <meta property="og:description" content={ogDesc} />
   <meta property="og:image" content={ogImage} />
-  <meta property="og:url" content="https://tkaflowarts.com/q/{$page.params.code}" />
+  <meta
+    property="og:url"
+    content="https://tkaflowarts.com/q/{$page.params.code}"
+  />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="{ogWord} - TKA" />
   <meta name="twitter:description" content={ogDesc} />
@@ -375,10 +474,18 @@
       <div class="spinner"></div>
       <p class="status-text">Loading sequence...</p>
     </div>
-
   {:else if state.kind === "error"}
     <div class="center-content">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="error-icon">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        class="error-icon"
+      >
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="12" y1="8" x2="12" y2="12"></line>
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -387,7 +494,6 @@
       <p class="status-text">{state.message}</p>
       <a href="/browse/gallery" class="cta-button">Browse Sequences</a>
     </div>
-
   {:else if state.kind === "rendering"}
     <div class="center-content">
       <h1 class="word-title">{state.word}</h1>
@@ -409,22 +515,93 @@
       <p class="hint-text">Future scans will load instantly.</p>
       <a href="/browse/gallery" class="link-button">Open TKA Composer</a>
     </div>
-
   {:else if state.kind === "playing"}
-    <div class="video-container">
+    <div class="player-container">
       <h1 class="word-title">{state.word}</h1>
       {#if state.isFirstView}
         <p class="first-view-badge">First scan render complete!</p>
       {/if}
+
       <!-- svelte-ignore a11y_media_has_caption -->
       <video
+        bind:this={videoEl}
+        bind:paused
+        bind:duration
+        bind:playbackRate
         class="sequence-video"
         src={state.videoUrl}
         autoplay
         loop
         muted
         playsinline
+        ontimeupdate={() => {
+          if (!isScrubbing && videoEl) displayTime = videoEl.currentTime;
+        }}
       ></video>
+
+      <div class="controls">
+        <button
+          type="button"
+          class="play-btn"
+          onclick={togglePlay}
+          aria-label={paused ? "Play" : "Pause"}
+        >
+          {#if paused}
+            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          {:else}
+            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+            </svg>
+          {/if}
+        </button>
+
+        <input
+          type="range"
+          class="scrubber"
+          min="0"
+          max={duration || 1}
+          step="0.01"
+          value={displayTime}
+          style="background: linear-gradient(to right, #6366f1 {scrubProgress}%, rgba(255,255,255,0.15) {scrubProgress}%)"
+          onpointerdown={() => (isScrubbing = true)}
+          oninput={handleScrub}
+          onpointerup={() => (isScrubbing = false)}
+          onchange={() => (isScrubbing = false)}
+        />
+
+        <span class="time-display">
+          {formatTime(displayTime)}/{formatTime(duration)}
+        </span>
+      </div>
+
+      <div class="tempo-row">
+        <TempoControl
+          bpm={selectedBpm}
+          onBpmChange={handleBpmChange}
+          showPresets={false}
+          showPractice={false}
+          presetsMode="popover"
+        />
+      </div>
+
+      <div class="prop-row">
+        <span class="row-label">Prop</span>
+        <div class="prop-pills">
+          {#each PROP_OPTIONS as opt}
+            <button
+              type="button"
+              class="prop-pill"
+              class:active={selectedProp === opt.value}
+              onclick={() => handlePropChange(opt.value)}
+            >
+              {opt.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+
       <div class="actions">
         <button type="button" class="cta-button" onclick={handleDownload}>
           Download
@@ -448,6 +625,21 @@
     justify-content: center;
     padding: 1rem;
     font-family: system-ui, -apple-system, sans-serif;
+
+    --theme-accent: #6366f1;
+    --theme-accent-strong: #4f46e5;
+    --theme-card-bg: rgba(255, 255, 255, 0.04);
+    --theme-card-hover-bg: rgba(255, 255, 255, 0.08);
+    --theme-panel-bg: rgba(15, 15, 26, 0.98);
+    --theme-stroke: rgba(255, 255, 255, 0.1);
+    --theme-stroke-strong: rgba(255, 255, 255, 0.15);
+    --theme-text: #ffffff;
+    --theme-text-dim: rgba(255, 255, 255, 0.6);
+    --theme-shadow: rgba(0, 0, 0, 0.3);
+    --min-touch-target: 44px;
+    --duration-fast: 150ms;
+    --duration-normal: 200ms;
+    --font-size-compact: 12px;
   }
 
   .center-content {
@@ -456,16 +648,19 @@
     width: 100%;
   }
 
-  .video-container {
-    text-align: center;
-    max-width: 600px;
+  .player-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 520px;
     width: 100%;
+    gap: 0.75rem;
   }
 
   .word-title {
     font-size: 1.75rem;
     font-weight: 700;
-    margin: 0 0 0.75rem;
+    margin: 0;
     letter-spacing: 0.05em;
   }
 
@@ -478,7 +673,7 @@
   .first-view-badge {
     font-size: 0.875rem;
     color: #4ade80;
-    margin: 0 0 1rem;
+    margin: 0;
   }
 
   .progress-container {
@@ -511,18 +706,150 @@
 
   .sequence-video {
     width: 100%;
-    max-width: 500px;
+    max-width: 480px;
     aspect-ratio: 1;
     border-radius: 12px;
     background: #000;
-    margin-bottom: 1.5rem;
+    display: block;
   }
+
+  /* ── Transport controls ── */
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .play-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+
+  .play-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .scrubber {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .scrubber::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #6366f1;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba(99, 102, 241, 0.5);
+  }
+
+  .scrubber::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #6366f1;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .time-display {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    min-width: 5.5ch;
+    text-align: right;
+  }
+
+  /* ── Tempo control ── */
+
+  .tempo-row {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* ── Prop selector ── */
+
+  .prop-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 480px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .prop-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .row-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
+
+  .prop-pills {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: nowrap;
+  }
+
+  .prop-pill {
+    padding: 0.25rem 0.625rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background 120ms ease,
+      color 120ms ease;
+  }
+
+  .prop-pill:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+  }
+
+  .prop-pill.active {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #fff;
+  }
+
+  /* ── Actions ── */
 
   .actions {
     display: flex;
     gap: 0.75rem;
     justify-content: center;
     flex-wrap: wrap;
+    margin-top: 0.25rem;
   }
 
   .cta-button {
