@@ -17,6 +17,7 @@
   } from "../domain/models/scene-configs";
   import { poissonDiscSample, seededRandom, PlacementGrid } from "../utils/poisson-disc";
   import { createColoredInstancedMesh, createInstancedMeshFromModel, disposeInstancedMesh, type ColoredInstancePlacement, type InstancePlacement } from "./ocean/ocean-instancing";
+  import { detectOceanQuality, getOceanQualityConfig, type OceanQualityTier } from "./ocean/ocean-quality";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { onDestroy, onMount } from "svelte";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
@@ -124,7 +125,18 @@
 
   // ── Scene Context ─────────────────────────────────────────────────────
 
-  const { scene } = useThrelte();
+  const { scene, renderer } = useThrelte();
+
+  const qualityOverride = $derived<OceanQualityTier | 'auto'>(activeConfig.qualityTier ?? 'auto');
+  const detectedTier = $derived.by((): OceanQualityTier => {
+    if (qualityOverride !== 'auto') return qualityOverride;
+    return detectOceanQuality(renderer.current);
+  });
+  const qualityConfig = $derived(getOceanQualityConfig(detectedTier));
+
+  $effect(() => {
+    renderer.current.setPixelRatio(Math.min(window.devicePixelRatio, qualityConfig.maxPixelRatio));
+  });
 
   let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(null);
   try {
@@ -259,7 +271,7 @@
       }
       const bgSamples = poissonDiscSample({ innerRadius: z_.forestOuter, outerRadius: z_.backgroundRadius, minDistance: 5.0, count: 15, seed: 550 });
       for (const s of bgSamples) {
-        if (heroRocks.length >= 40) break;
+        if (heroRocks.length >= qualityConfig.maxHeroRocks) break;
         const scale = 0.8 + rng() * 1.0;
         const r = scale * 1.2;
         if (grid.isClear(s.x, s.z, r)) {
@@ -356,7 +368,7 @@
     const coral: CoralPlacement[] = [];
     if (cfg.coral.enabled) {
       const rng = seededRandom(100);
-      const maxCount = cfg.coral.count;
+      const maxCount = Math.min(cfg.coral.count, qualityConfig.maxCoralCount);
       for (const formation of formations) {
         const count = Math.floor(3 + formation.density * 8 * (formation.radius / 2.0));
         for (let j = 0; j < count && coral.length < maxCount; j++) {
@@ -395,7 +407,7 @@
     const kelp: Placement[] = [];
     if (cfg.kelp.enabled && cfg.kelp.count > 0) {
       const rng = seededRandom(200);
-      const maxCount = cfg.kelp.count;
+      const maxCount = Math.min(cfg.kelp.count, qualityConfig.maxKelpCount);
       for (const formation of formations) {
         if (rng() > 0.85) continue;
         const kelpCount = Math.floor(4 + formation.density * 10 * (formation.radius / 2.0));
@@ -422,7 +434,7 @@
     const decorations: ScenePlacements["decorations"] = [];
     if (cfg.decorations.enabled) {
       const rng = seededRandom(390);
-      const maxCount = cfg.decorations.count;
+      const maxCount = Math.min(cfg.decorations.count, qualityConfig.maxCoralCount);
       for (const rock of rocks) {
         if (decorations.length >= maxCount * 0.25) break;
         if (rng() > 0.4) continue;
@@ -522,7 +534,8 @@
     const jf = activeConfig.jellyfish;
     if (!jf?.enabled) return [];
     const rng = seededRandom(600);
-    return Array.from({ length: jf.count }, (_, i) => ({
+    const count = Math.min(jf.count, qualityConfig.maxJellyfish);
+    return Array.from({ length: count }, (_, i) => ({
       x: (rng() - 0.5) * jf.spawnRadius * 2,
       z: (rng() - 0.5) * jf.spawnRadius * 2,
       y: jf.heightRange[0] + rng() * (jf.heightRange[1] - jf.heightRange[0]),
@@ -1007,6 +1020,22 @@
       return results;
     };
 
+    (window as any).__oceanPerf = () => {
+      const info = renderer.current.info;
+      console.log(`Draw calls: ${info.render.calls}`);
+      console.log(`Triangles: ${info.render.triangles}`);
+      console.log(`Textures: ${info.memory.textures}`);
+      console.log(`Geometries: ${info.memory.geometries}`);
+      console.log(`Quality tier: ${detectedTier}`);
+      return {
+        drawCalls: info.render.calls,
+        triangles: info.render.triangles,
+        textures: info.memory.textures,
+        geometries: info.memory.geometries,
+        tier: detectedTier,
+      };
+    };
+
     return () => clearTimeout(timer);
   });
 
@@ -1137,7 +1166,7 @@
 {#key activeConfig.bubbles.count}
   <FallingParticles
     type={activeConfig.bubbles.type}
-    count={activeConfig.bubbles.count}
+    count={Math.min(activeConfig.bubbles.count, qualityConfig.bubbleCount)}
     area={activeConfig.bubbles.area}
     speed={activeConfig.bubbles.speed}
     colors={activeConfig.bubbles.colors}
@@ -1211,16 +1240,18 @@
 />
 
 <!-- Marine snow / suspended sediment (GPU-driven, 4000 particles) -->
-<UnderwaterParticles />
+<UnderwaterParticles count={qualityConfig.particleCount} />
 
 <!-- Reef structures (arch, wall, bommie, tower — Meshy AI generated) -->
-<ReefStructures
-  stageRadius={zones.stageRadius}
-  clearingRadius={zones.clearingRadius}
-  tintColor={activeConfig.rocks.tintColor}
-  tintBlend={activeConfig.rocks.tintBlend}
-  onSdfReady={(data) => { reefSdfData = data; }}
-/>
+{#if qualityConfig.maxReefStructures > 0}
+  <ReefStructures
+    stageRadius={zones.stageRadius}
+    clearingRadius={zones.clearingRadius}
+    tintColor={activeConfig.rocks.tintColor}
+    tintBlend={activeConfig.rocks.tintBlend}
+    onSdfReady={(data) => { reefSdfData = data; }}
+  />
+{/if}
 
 <RuinsPlatform config={activeConfig.platform} />
 {/if}

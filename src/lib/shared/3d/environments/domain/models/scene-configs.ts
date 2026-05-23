@@ -318,6 +318,8 @@ export interface OceanSceneConfig {
   fog: FogConfig;
   ground: GroundConfig;
 
+  qualityTier?: 'auto' | 'ultra' | 'medium' | 'low';
+
   zones: OceanZonesConfig;
 
   coral: {
@@ -956,8 +958,8 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       currentStrength: 0.3,
       swimFrequency: 5.0,
       waveAmplitude: 0.08,
-      scatterRadius: 4.0,
-      scatterForce: 3.0,
+      scatterRadius: 6.0,
+      scatterForce: 8.0,
       scatterEnabled: true,
       scatterWaveSpeed: 0.15,
       perceptionAngle: 135,
