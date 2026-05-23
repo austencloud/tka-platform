@@ -500,6 +500,32 @@ export interface LunarCrystalsConfig {
   opacity: number;
 }
 
+// Crystal Formations (Tier 1 upgrade — replaces LunarCrystals)
+
+export interface CrystalSpeciesConfig {
+  type: 'spire' | 'cluster' | 'plate' | 'branch';
+  count: number;
+  sizeRange: [number, number];
+  palette: string[];
+  glowIntensity: number;
+}
+
+export interface CrystalFormationsConfig {
+  enabled: boolean;
+  seed: number;
+  placementRadius: [number, number];
+  species: CrystalSpeciesConfig[];
+}
+
+export interface PrismaticCausticsConfig {
+  enabled: boolean;
+  baseColor: string;
+  intensity: number;
+  scale: number;
+  speed: number;
+  spectrumShift: number;
+}
+
 export interface EarthGodRaysConfig {
   enabled: boolean;
   color: string;
@@ -514,6 +540,10 @@ export interface LunarGroundConfig {
   veinIntensity: number;
   veinPulseSpeed: number;
   veinDensity: number;
+  bioColor?: string;
+  bioIntensity?: number;
+  frostColor?: string;
+  frostIntensity?: number;
 }
 
 export interface StarfieldConfig {
@@ -559,6 +589,8 @@ export interface CosmicSceneConfig {
     };
   };
   crystals: LunarCrystalsConfig;
+  crystalFormations: CrystalFormationsConfig;
+  caustics: PrismaticCausticsConfig;
   godRays: EarthGodRaysConfig;
   lunarGround: LunarGroundConfig;
   starfield: StarfieldConfig;
@@ -958,10 +990,10 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       currentStrength: 0.3,
       swimFrequency: 5.0,
       waveAmplitude: 0.08,
-      scatterRadius: 6.0,
-      scatterForce: 8.0,
+      scatterRadius: 15.0,
+      scatterForce: 30.0,
       scatterEnabled: true,
-      scatterWaveSpeed: 0.15,
+      scatterWaveSpeed: 0.08,
       perceptionAngle: 135,
       halfSpeedTime: 0.5,
     },
@@ -1211,7 +1243,7 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
       },
     },
     crystals: {
-      enabled: true,
+      enabled: false,
       clusterCount: 8,
       ringRadius: 6.5,
       color: "#334466",
@@ -1219,6 +1251,49 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
       glowIntensity: 0.8,
       heightRange: [0.8, 2.5],
       opacity: 0.6,
+    },
+    crystalFormations: {
+      enabled: true,
+      seed: 42,
+      placementRadius: [6, 25],
+      species: [
+        {
+          type: "spire",
+          count: 40,
+          sizeRange: [1.5, 4.0],
+          palette: ["#334488", "#4466aa", "#2255aa", "#5577cc"],
+          glowIntensity: 0.8,
+        },
+        {
+          type: "cluster",
+          count: 45,
+          sizeRange: [0.8, 2.0],
+          palette: ["#4488ff", "#66aaff", "#3366dd"],
+          glowIntensity: 1.0,
+        },
+        {
+          type: "plate",
+          count: 30,
+          sizeRange: [0.6, 1.8],
+          palette: ["#6688cc", "#88aadd", "#aaccff"],
+          glowIntensity: 0.5,
+        },
+        {
+          type: "branch",
+          count: 25,
+          sizeRange: [1.0, 3.0],
+          palette: ["#4488ff", "#22ccff", "#66ddff"],
+          glowIntensity: 0.9,
+        },
+      ],
+    },
+    caustics: {
+      enabled: true,
+      baseColor: "#4488ff",
+      intensity: 0.35,
+      scale: 1.2,
+      speed: 1.0,
+      spectrumShift: 0.02,
     },
     godRays: {
       enabled: true,
@@ -1233,6 +1308,10 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
       veinIntensity: 0.4,
       veinPulseSpeed: 0.5,
       veinDensity: 3.0,
+      bioColor: "#2266cc",
+      bioIntensity: 0.3,
+      frostColor: "#aaccff",
+      frostIntensity: 0.4,
     },
     starfield: {
       enabled: true,
@@ -1437,7 +1516,7 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
       },
     },
     crystals: {
-      enabled: true,
+      enabled: false,
       clusterCount: 10,
       ringRadius: 6.5,
       color: "#2a4455",
@@ -1445,6 +1524,49 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
       glowIntensity: 1.0,
       heightRange: [1.0, 3.0],
       opacity: 0.55,
+    },
+    crystalFormations: {
+      enabled: true,
+      seed: 99,
+      placementRadius: [6, 25],
+      species: [
+        {
+          type: "spire",
+          count: 45,
+          sizeRange: [1.5, 4.0],
+          palette: ["#00aa88", "#22ccaa", "#00ddbb", "#44eedd"],
+          glowIntensity: 0.9,
+        },
+        {
+          type: "cluster",
+          count: 50,
+          sizeRange: [0.8, 2.0],
+          palette: ["#00ccaa", "#44eedd", "#22bbaa"],
+          glowIntensity: 1.2,
+        },
+        {
+          type: "plate",
+          count: 30,
+          sizeRange: [0.6, 1.8],
+          palette: ["#88ddcc", "#aaeedd", "#ccffee"],
+          glowIntensity: 0.6,
+        },
+        {
+          type: "branch",
+          count: 30,
+          sizeRange: [1.0, 3.0],
+          palette: ["#00ccaa", "#cc66cc", "#aa44aa", "#44eedd"],
+          glowIntensity: 1.0,
+        },
+      ],
+    },
+    caustics: {
+      enabled: true,
+      baseColor: "#00ccaa",
+      intensity: 0.4,
+      scale: 1.0,
+      speed: 1.2,
+      spectrumShift: 0.03,
     },
     godRays: {
       enabled: true,
@@ -1459,6 +1581,10 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
       veinIntensity: 0.5,
       veinPulseSpeed: 0.4,
       veinDensity: 2.5,
+      bioColor: "#00aa88",
+      bioIntensity: 0.35,
+      frostColor: "#88eedd",
+      frostIntensity: 0.45,
     },
     starfield: {
       enabled: true,

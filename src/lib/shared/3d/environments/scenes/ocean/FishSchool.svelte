@@ -445,6 +445,7 @@
       velU.uScatterForce = { value: scatterForce };
       velU.uScatterStartTime = { value: 0 };
       velU.uScatterWaveSpeed = { value: scatterWaveSpeed };
+      velU.uFlashBurst = { value: 0.0 };
       velU.uDartCount = { value: 0 };
       velU.uDartIndices = { value: new Int32Array(8).fill(-1) };
       velU.uDartStrength = { value: 2.0 };
@@ -496,7 +497,7 @@
       stU.uTime = { value: 0 };
       stU.uFleeRange = { value: 5.0 };
       stU.uHuntRange = { value: 8.0 };
-      stU.uPanicRadius = { value: 3.0 };
+      stU.uPanicRadius = { value: 5.0 };
       stU.uHomeRadius = { value: 4.0 };
       stU.uPerceptionCos = { value: Math.cos((perceptionAngle * Math.PI) / 180) };
       stU.uTrophicRole = { value: trophicRoles };
@@ -505,6 +506,7 @@
       stU.uSchoolCenters = velU.uSchoolCenters;
       stU.uScatterOrigin = velU.uScatterOrigin;
       stU.uScatterRadius = { value: scatterRadius };
+      stU.textureTraits = { value: traitsTex };
 
       const err = gpu.init();
       if (err !== null) {
@@ -549,6 +551,7 @@
           uniforms: {
             tPosition: { value: null },
             tVelocity: { value: null },
+            tState: { value: null },
             uSize: { value: targetSize * sp.sizeScale },
             uTime: { value: 0 },
             uMaxSpeed: { value: sMax },
@@ -580,9 +583,11 @@
       gpu.compute();
       const initPosTex = gpu.getCurrentRenderTarget(posVar).texture;
       const initVelTex = gpu.getCurrentRenderTarget(velVar).texture;
+      const initStateTex = gpu.getCurrentRenderTarget(stateVar).texture;
       for (const mat of createdMaterials) {
         mat.uniforms.tPosition!.value = initPosTex;
         mat.uniforms.tVelocity!.value = initVelTex;
+        mat.uniforms.tState!.value = initStateTex;
       }
 
       meshes = createdMeshes;
@@ -688,6 +693,7 @@
       uniforms: {
         tPosition: { value: gpuCompute ? gpuCompute.getCurrentRenderTarget(posVar).texture : null },
         tVelocity: { value: gpuCompute ? gpuCompute.getCurrentRenderTarget(velVar).texture : null },
+        tState: { value: gpuCompute ? gpuCompute.getCurrentRenderTarget(stateVar).texture : null },
         uSize: { value: targetSize * sp.sizeScale },
         uTime: { value: 0 },
         uMaxSpeed: { value: sMax },
@@ -735,6 +741,7 @@
   }
 
   let elapsed = 0;
+  let prevMouseActive = false;
 
   useTask((delta) => {
     if (!gpuCompute || !posVar || !velVar || !stateVar || materials.length === 0) return;
@@ -753,6 +760,11 @@
     velUni.uScatterRadius.value = scatterRadius;
     velUni.uScatterForce.value = scatterForce;
     velUni.uScatterWaveSpeed.value = scatterWaveSpeed;
+
+    const mouseActive = rayPosition.y > -900;
+    const flashThisFrame = mouseActive && !prevMouseActive;
+    prevMouseActive = mouseActive;
+    velUni.uFlashBurst.value = flashThisFrame ? 1.0 : 0.0;
 
     velUni.uScatterStartTime.value = scatterStartTime;
     posUni.uDelta.value = dt;
@@ -904,20 +916,22 @@
 
     const posTex = gpuCompute.getCurrentRenderTarget(posVar).texture;
     const velTex = gpuCompute.getCurrentRenderTarget(velVar).texture;
+    const stateTex = gpuCompute.getCurrentRenderTarget(stateVar).texture;
 
     for (let mi = 0; mi < materials.length; mi++) {
       const mat = materials[mi]!;
       mat.uniforms.tPosition!.value = posTex;
       mat.uniforms.tVelocity!.value = velTex;
+      mat.uniforms.tState!.value = stateTex;
       mat.uniforms.uTime!.value = elapsed;
       mat.uniforms.uSize!.value = targetSize * (materialSizeMults[mi] ?? 1.0);
     }
 
-    // Visitor materials also need texture updates
     for (const v of activeVisitors) {
       for (const mat of v.materials) {
         mat.uniforms.tPosition!.value = posTex;
         mat.uniforms.tVelocity!.value = velTex;
+        if (mat.uniforms.tState) mat.uniforms.tState.value = stateTex;
         mat.uniforms.uTime!.value = elapsed;
       }
     }

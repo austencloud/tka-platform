@@ -19,6 +19,8 @@ uniform vec3 uSchoolCenters[50];
 uniform vec3 uScatterOrigin;
 uniform float uScatterRadius;
 
+uniform sampler2D textureTraits;
+
 vec3 safeNormalize(vec3 v) {
   float l = length(v);
   return l > 1e-6 ? v / l : vec3(0.0, 0.0, 1.0);
@@ -26,6 +28,7 @@ vec3 safeNormalize(vec3 v) {
 
 void main() {
   vec2 uv = gl_FragCoord.xy / resolution.xy;
+  int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);
   vec4 posData = texture2D(texturePosition, uv);
   vec3 pos = posData.xyz;
   if (pos.x > 9000.0) { gl_FragColor = vec4(0.0); return; }
@@ -33,6 +36,9 @@ void main() {
   vec4 velData = texture2D(textureVelocity, uv);
   vec3 vel = velData.xyz;
   vec3 forward = safeNormalize(vel);
+
+  vec4 traitsData = texture2D(textureTraits, uv);
+  float boldness = traitsData.z;
 
   vec4 stateData = texture2D(textureState, uv);
   float currentState = stateData.x;
@@ -51,13 +57,18 @@ void main() {
   }
 
   float rayDist = distance(pos, uScatterOrigin);
-  if (rayDist < uScatterRadius && uScatterOrigin.y > -900.0 && myTrophic != 0 && myTrophic != 5) {
-    newState = 1.0;
-    newTimer = 2.0;
+  if (rayDist < uScatterRadius && uScatterOrigin.y > -900.0) {
     vec3 awayFromRay = safeNormalize(pos - uScatterOrigin);
     threatDirX = awayFromRay.x;
     threatDirZ = awayFromRay.z;
+    newState = 1.0;
+    if (currentState < 0.5 || newTimer < 1.0) {
+      newTimer = 5.0 + boldness * 2.0;
+    }
   }
+
+  float panicAccum = 0.0;
+  vec3 cascadeDirAccum = vec3(0.0);
 
   for (float ny = 0.0; ny < resolution.y; ny += 1.0) {
     for (float nx = 0.0; nx < resolution.x; nx += 1.0) {
@@ -95,10 +106,26 @@ void main() {
       if (mySpecies == neighborSpecies && d < uPanicRadius) {
         vec4 neighborState = texture2D(textureState, ref);
         if (neighborState.x > 0.5 && neighborState.x < 1.5) {
-          newState = 1.0;
-          newTimer = 2.0;
-          threatDirX = neighborState.z;
-          threatDirZ = neighborState.w;
+          float panicWeight = (1.0 - d / uPanicRadius);
+          panicWeight *= panicWeight;
+          panicWeight *= (1.0 - boldness * 0.5);
+
+          panicAccum += panicWeight;
+
+          vec3 neighborFleeDir = vec3(neighborState.z, 0.0, neighborState.w);
+          vec3 awayFromNeighbor = safeNormalize(pos - op);
+          vec3 cascadeDir = safeNormalize(neighborFleeDir * 0.5 + awayFromNeighbor * 0.5);
+          cascadeDirAccum += cascadeDir * panicWeight;
+        }
+
+        vec3 neighborVel = texture2D(textureVelocity, ref).xyz;
+        float neighborSpeed = length(neighborVel);
+        float neighborTraits_w = texture2D(textureVelocity, ref).w;
+        float normalSpeed = neighborTraits_w * 2.0;
+        if (neighborSpeed > normalSpeed * 2.5 && d < uPanicRadius * 0.6) {
+          float sprintWeight = 0.3 * (1.0 - d / (uPanicRadius * 0.6));
+          panicAccum += sprintWeight;
+          cascadeDirAccum += safeNormalize(pos - op) * sprintWeight;
         }
       }
 
@@ -109,6 +136,18 @@ void main() {
         threatDirX = toward.x;
         threatDirZ = toward.z;
       }
+    }
+  }
+
+  if (panicAccum > 0.3 && newState < 0.5) {
+    float threshold = fract(sin(float(fishIdx) * 12.9898 + uTime * 0.37) * 43758.5453);
+    float catchChance = clamp(panicAccum, 0.0, 1.0);
+    if (threshold < catchChance) {
+      newState = 1.0;
+      newTimer = 4.0 + boldness * 1.5;
+      vec3 cascadeDir = safeNormalize(cascadeDirAccum);
+      threatDirX = cascadeDir.x;
+      threatDirZ = cascadeDir.z;
     }
   }
 

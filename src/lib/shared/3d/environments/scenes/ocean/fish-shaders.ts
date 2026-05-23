@@ -100,6 +100,7 @@ uniform float uScatterRadius;
 uniform float uScatterForce;
 uniform float uScatterStartTime;
 uniform float uScatterWaveSpeed;
+uniform float uFlashBurst;
 
 uniform int uDartCount;
 uniform int uDartIndices[8];
@@ -291,8 +292,12 @@ void main() {
     float timeSinceScatter = uTime - uScatterStartTime;
     float waveReached = step(delay, timeSinceScatter);
 
-    scatterIntensity = proximity * proximity * (1.5 - boldness) * waveReached;
+    scatterIntensity = proximity * proximity * (1.5 - boldness * 0.3) * waveReached;
     steer += fleeDir * uScatterForce * scatterIntensity;
+
+    if (uFlashBurst > 0.5) {
+      steer += away * uScatterForce * 2.0 * proximity;
+    }
   }
 
   // ── SDF reef obstacle avoidance ──────────────────────────────────
@@ -331,10 +336,33 @@ void main() {
   vec3 threatDir = vec3(stateData.z, 0.0, stateData.w);
 
   if (state > 0.5 && state < 1.5) {
+    float fleeTimer = stateData.y;
+    float maxFleeTime = 6.0;
+    float timeSinceStartle = maxFleeTime - fleeTimer;
+
+    // How much the fish has recovered (0 = fresh scare, 1 = fully calm)
+    float recovery = smoothstep(1.0, 5.0, timeSinceStartle);
+
     if (scatterIntensity < 0.01) {
-      steer = safeNormalize(threatDir) * 2.0 + sep * 0.3;
+      // Blend from flee-only steering to normal boids as recovery progresses
+      vec3 fleeSteer = safeNormalize(threatDir) * 2.0 + sep * 0.3;
+      steer = mix(fleeSteer, steer, recovery);
     }
-    adjMax *= 2.0;
+
+    // 4-phase recovery: burst → sustain → elevated → calm-down
+    float burstMult = 3.5;    // 0–0.3s: explosive escape
+    float sustainMult = 2.5;  // 0.3–1.0s: fast sustained flee
+    float elevatedMult = 1.6; // 1.0–3.0s: still jittery, above cruising
+    float calmMult = 1.0;     // 3.0–6.0s: gradual return to normal
+
+    float speedMult = mix(burstMult, sustainMult, smoothstep(0.0, 0.3, timeSinceStartle));
+    speedMult = mix(speedMult, elevatedMult, smoothstep(0.8, 2.5, timeSinceStartle));
+    speedMult = mix(speedMult, calmMult, smoothstep(3.0, 6.0, timeSinceStartle));
+    adjMax *= speedMult;
+
+    if (scatterIntensity > 0.01) {
+      steer += safeNormalize(threatDir) * uScatterForce * 0.5;
+    }
   }
   if (state > 1.5 && state < 2.5) {
     steer = safeNormalize(threatDir) * 1.5;
@@ -355,14 +383,14 @@ void main() {
     }
   }
 
-  float effectiveMaxSteer = uMaxSteer + scatterIntensity * uScatterForce * 0.5;
+  float effectiveMaxSteer = uMaxSteer + scatterIntensity * uScatterForce * 0.8;
   float steerLen = length(steer);
   if (steerLen > effectiveMaxSteer) steer = steer / steerLen * effectiveMaxSteer;
 
   float drag = pow(0.5, uDelta / max(uHalfSpeedTime, 0.01));
   vel = vel * drag + steer * uDelta;
 
-  adjMax += scatterIntensity * uScatterForce * 0.15;
+  adjMax += scatterIntensity * uScatterForce * 0.3;
 
   float spd = length(vel);
   if (spd > adjMax) vel = vel / spd * adjMax;
@@ -435,6 +463,7 @@ attribute vec2 aReference;
 
 uniform sampler2D tPosition;
 uniform sampler2D tVelocity;
+uniform sampler2D tState;
 uniform float uSize;
 uniform float uTime;
 uniform float uMaxSpeed;
@@ -484,9 +513,15 @@ void main() {
   float freq = uSwimFreq * mix(0.4, 1.0, min(speedRatio, 1.0)) + perInstanceJitter;
   float phase = uTime * freq + localPos.z * uWaveK;
 
+  vec4 stateInfo = texture2D(tState, aReference);
+  float isFleeing = smoothstep(0.5, 1.0, stateInfo.x);
+  float fleeTimeLeft = stateInfo.y;
+  float panicLevel = isFleeing * smoothstep(0.0, 2.0, fleeTimeLeft);
+
   float envelope = pow(max(spineMask, 0.001), uAmpExponent);
   float stiffMask = mix(1.0, envelope, uStiffness);
-  float bodyAmp = uBaseAmplitude * stiffMask * max(speedRatio, 0.15);
+  float panicAmpBoost = 1.0 + panicLevel * 0.4;
+  float bodyAmp = uBaseAmplitude * stiffMask * max(speedRatio, 0.15) * panicAmpBoost;
 
   localPos.x += sin(phase) * bodyAmp;
   localPos.x += sin(uTime * freq * 0.5) * uStrideAmp;
@@ -500,7 +535,8 @@ void main() {
   float swimSpeed = length(fishVel);
   float cStartRatio = swimSpeed / (uMaxSpeed * 0.5);
   float cStartIntensity = smoothstep(1.5, 2.5, cStartRatio);
-  float cBend = cStartIntensity * sin(localPos.z * 1.5) * 0.3;
+  float panicCBend = 1.0 + panicLevel * 0.8;
+  float cBend = cStartIntensity * sin(localPos.z * 1.5) * 0.3 * panicCBend;
   localPos.x += cBend;
 
   vec3 transformed = rot * (localPos * fishScale) + fishPos;
