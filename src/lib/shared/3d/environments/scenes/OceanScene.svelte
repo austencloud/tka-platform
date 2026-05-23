@@ -1,6 +1,7 @@
 <script lang="ts">
   import { T, useThrelte, useTask } from "@threlte/core";
-  import { useGltf, useDraco } from "@threlte/extras";
+  import { useGltf } from "@threlte/extras";
+  import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import ProceduralSeabed from "./ocean/ProceduralSeabed.svelte";
@@ -81,8 +82,7 @@
 
   // ── Model Loading ─────────────────────────────────────────────────────
 
-  const dracoLoader = useDraco("/draco/");
-  const opts = { dracoLoader };
+  const opts = { meshoptDecoder: MeshoptDecoder };
 
   const rockVariants: RockVariant[] = generateRockVariants(6, "#1a3a4a", 0.3);
 
