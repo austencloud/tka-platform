@@ -87,8 +87,10 @@ for f in "$OCEAN_DIR"/pack/*.glb; do
 done
 
 # Small models — already small, just compress
-echo "[4/5] Coral, kelp, jellyfish, decorations (meshopt only)..."
-for f in "$OCEAN_DIR"/coral_*.glb "$OCEAN_DIR"/seaweed.glb "$OCEAN_DIR"/kelp_plant.glb \
+# NOTE: kelp_plant.glb excluded — its skeleton holds scale transforms that
+# flatten/prune destroy, producing a 2-unit model instead of 143-unit.
+echo "[4/5] Coral, jellyfish, decorations (meshopt only)..."
+for f in "$OCEAN_DIR"/coral_*.glb "$OCEAN_DIR"/seaweed.glb \
          "$OCEAN_DIR"/jellyfish.glb "$OCEAN_DIR"/jellyfish_small.glb \
          "$OCEAN_DIR"/starfish.glb "$OCEAN_DIR"/sea_urchin.glb \
          "$OCEAN_DIR"/shell.glb "$OCEAN_DIR"/anemone.glb; do
