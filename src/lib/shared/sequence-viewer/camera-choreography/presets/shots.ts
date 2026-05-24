@@ -228,14 +228,14 @@ export function computeBehindPerformerShot(
   const pz = performer.position.z;
 
   const eye = new Vector3(
-    px - Math.sin(fa) * PERFORMER_BEHIND_DIST,
+    px + Math.sin(fa) * PERFORMER_BEHIND_DIST,
     stageGroundOffset + PERFORMER_EYE_HEIGHT,
-    pz - Math.cos(fa) * PERFORMER_BEHIND_DIST,
+    pz + Math.cos(fa) * PERFORMER_BEHIND_DIST,
   );
   const target = new Vector3(
-    px + Math.sin(fa) * PERFORMER_LOOK_AHEAD,
+    px - Math.sin(fa) * PERFORMER_LOOK_AHEAD,
     stageGroundOffset + PERFORMER_LOOK_HEIGHT,
-    pz + Math.cos(fa) * PERFORMER_LOOK_AHEAD,
+    pz - Math.cos(fa) * PERFORMER_LOOK_AHEAD,
   );
   return { eye, target };
 }
