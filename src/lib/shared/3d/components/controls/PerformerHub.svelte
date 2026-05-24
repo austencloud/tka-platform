@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getViewer3DContext } from "../../context/viewer-3d-context";
+  import { getPerformerColor } from "../../constants/performer-colors";
   import PerformerSpine from "./PerformerSpine.svelte";
   import PerformerHubDetail from "./PerformerHubDetail.svelte";
   import { slide } from "svelte/transition";
@@ -9,6 +10,21 @@
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const hasSelection = $derived(selectedIndex !== null);
   const performers = $derived(viewer.performerManager.performers);
+  const performerColor = $derived(selectedIndex !== null ? getPerformerColor(selectedIndex) : "#6b7280");
+
+  let detailCollapsed = $state(false);
+  let prevIndex = $state<number | null>(null);
+
+  $effect(() => {
+    if (selectedIndex !== prevIndex) {
+      detailCollapsed = false;
+      prevIndex = selectedIndex;
+    }
+  });
+
+  function collapseDetail() {
+    detailCollapsed = true;
+  }
 </script>
 
 {#if performers.length >= 1}
@@ -17,11 +33,15 @@
       <PerformerSpine />
     </div>
 
-    {#if hasSelection}
+    {#if hasSelection && !detailCollapsed}
       <div
         class="detail-panel"
+        style:--panel-color={performerColor}
         transition:slide={{ axis: "x", duration: 250, easing: cubicOut }}
       >
+        <button class="close-btn" aria-label="Close controls" onclick={collapseDetail}>
+          <i class="fas fa-times"></i>
+        </button>
         <PerformerHubDetail />
       </div>
     {/if}
@@ -52,12 +72,48 @@
   }
 
   .detail-panel {
-    background: rgba(20, 22, 32, 0.78);
-    backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    background:
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--panel-color) 12%, rgba(20, 22, 32, 0.82)),
+        color-mix(in srgb, var(--panel-color) 5%, rgba(20, 22, 32, 0.82))
+      );
+    backdrop-filter: blur(24px) saturate(150%);
+    border: 1px solid color-mix(in srgb, var(--panel-color) 30%, rgba(255, 255, 255, 0.08));
     border-radius: 14px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 color-mix(in srgb, var(--panel-color) 10%, transparent);
     overflow: hidden;
     max-width: calc(100vw - 140px);
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 5;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid color-mix(in srgb, var(--panel-color) 25%, rgba(255, 255, 255, 0.1));
+    background: color-mix(in srgb, var(--panel-color) 10%, rgba(0, 0, 0, 0.3));
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 140ms ease;
+  }
+
+  .close-btn:hover {
+    background: color-mix(in srgb, var(--panel-color) 20%, rgba(0, 0, 0, 0.3));
+    color: white;
+    border-color: color-mix(in srgb, var(--panel-color) 50%, transparent);
+  }
+
+  .close-btn i {
+    font-size: 12px;
   }
 </style>
