@@ -62,7 +62,10 @@
     resetIdle();
   }
 
-  function togglePlay() {
+  function stop(e: Event) { e.stopPropagation(); }
+
+  function togglePlay(e?: Event) {
+    e?.stopPropagation();
     sceneAudioState.playing = !sceneAudioState.playing;
     resetIdle();
   }
@@ -96,36 +99,39 @@
     onpointerenter={resetIdle}
     onpointermove={resetIdle}
   >
-    {#if !expanded}
-      <button
-        type="button"
-        class="collapsed-btn"
-        class:playing={sceneAudioState.playing && sceneAudioState.audioUnlocked}
-        onclick={toggle}
-        aria-label="Open audio player"
-      >
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="player-shell"
+      class:expanded
+      class:playing={sceneAudioState.playing && sceneAudioState.audioUnlocked && !expanded}
+      onclick={() => { if (!expanded) toggle(); }}
+      role={expanded ? undefined : "button"}
+      tabindex={expanded ? undefined : 0}
+      aria-label={expanded ? undefined : "Open audio player"}
+    >
+      <div class="collapsed-icon" class:hidden={expanded}>
         <i class="fa-solid fa-music"></i>
-      </button>
-    {:else}
-      <div class="expanded-card">
+      </div>
+
+      <div class="expanded-content" class:visible={expanded}>
         <div class="header">
           <span class="track-label" title="{variantLabel}: {activeTrack.name}">
             <i class="fa-solid fa-music"></i>
             {variantLabel}: {activeTrack.name}
           </span>
-          <button type="button" class="close-btn" onclick={toggle} aria-label="Collapse player">
+          <button type="button" class="close-btn" onclick={(e) => { stop(e); toggle(); }} aria-label="Collapse player">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
 
         <div class="controls">
-          <button type="button" class="ctrl-btn" onclick={() => cycleTrack(-1)} aria-label="Previous track">
+          <button type="button" class="ctrl-btn" onclick={(e) => { stop(e); cycleTrack(-1); }} aria-label="Previous track">
             <i class="fa-solid fa-backward-step"></i>
           </button>
-          <button type="button" class="ctrl-btn play-btn" onclick={togglePlay} aria-label={sceneAudioState.playing ? "Pause" : "Play"}>
+          <button type="button" class="ctrl-btn play-btn" onclick={(e) => togglePlay(e)} aria-label={sceneAudioState.playing ? "Pause" : "Play"}>
             <i class="fa-solid {sceneAudioState.playing ? 'fa-pause' : 'fa-play'}"></i>
           </button>
-          <button type="button" class="ctrl-btn" onclick={() => cycleTrack(1)} aria-label="Next track">
+          <button type="button" class="ctrl-btn" onclick={(e) => { stop(e); cycleTrack(1); }} aria-label="Next track">
             <i class="fa-solid fa-forward-step"></i>
           </button>
           <input
@@ -136,12 +142,13 @@
             step="0.01"
             value={sceneAudioState.masterVolume}
             oninput={onVolumeInput}
+            onclick={stop}
             aria-label="Volume"
           />
           <button
             type="button"
             class="ctrl-btn mute-btn"
-            onclick={() => sceneAudioState.toggleMute()}
+            onclick={(e) => { stop(e); sceneAudioState.toggleMute(); }}
             aria-label={sceneAudioState.muted ? "Unmute" : "Mute"}
           >
             <i class="fa-solid {sceneAudioState.muted ? 'fa-volume-xmark' : 'fa-volume-high'}"></i>
@@ -154,7 +161,7 @@
               type="button"
               class="track-item"
               class:active={track.id === activeTrack.id}
-              onclick={() => selectTrack(track)}
+              onclick={(e) => { stop(e); selectTrack(track); }}
             >
               {#if track.id === activeTrack.id}
                 <i class="fa-solid fa-caret-right"></i>
@@ -164,7 +171,7 @@
           {/each}
         </div>
       </div>
-    {/if}
+    </div>
   </div>
 {/if}
 
@@ -185,30 +192,38 @@
     opacity: 1;
   }
 
-  .collapsed-btn {
+  .player-shell {
+    position: relative;
     width: 32px;
     height: 32px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(18, 18, 24, 0.8);
-    backdrop-filter: blur(8px);
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 14px;
+    background: rgba(18, 18, 24, 0.85);
+    backdrop-filter: blur(12px);
+    overflow: hidden;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
+    padding: 0;
+    text-align: left;
+    transition:
+      width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      border-radius 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .collapsed-btn:hover {
-    background: rgba(30, 30, 38, 0.9);
-    color: rgba(255, 255, 255, 0.95);
-    border-color: rgba(255, 255, 255, 0.2);
+  .player-shell.expanded {
+    width: 200px;
+    height: 132px;
+    border-radius: 12px;
+    cursor: default;
   }
 
-  .collapsed-btn.playing {
+  .player-shell.playing {
     animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  .player-shell:not(.expanded):hover {
+    background: rgba(30, 30, 38, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   @keyframes pulse-glow {
@@ -216,19 +231,33 @@
     50% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.15); }
   }
 
-  .expanded-card {
-    width: 200px;
-    background: rgba(18, 18, 24, 0.88);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    overflow: hidden;
-    animation: card-in 0.2s ease;
+  .collapsed-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    transition: opacity 0.2s ease 0.05s;
   }
 
-  @keyframes card-in {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
+  .collapsed-icon.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transition-delay: 0s;
+  }
+
+  .expanded-content {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .expanded-content.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transition-delay: 0.12s;
   }
 
   .header {
