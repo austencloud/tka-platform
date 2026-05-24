@@ -59,6 +59,8 @@ export interface MandalaRenderOptions {
 	palette?: MandalaPalette;
 	/** Overlap rendering parameters */
 	overlap?: MandalaOverlapConfig;
+	/** Current tip dx for dynamic viewBox scaling during animation */
+	tipDx?: number;
 }
 
 export type MandalaMode = "card-back" | "gallery" | "animated";

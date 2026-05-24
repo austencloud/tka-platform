@@ -531,15 +531,16 @@ export class MandalaGeometryCalculator {
 		options?: MandalaPathOptions,
 		tipOverride?: { dx: number; dy: number }
 	): MandalaPaths {
-		// Check cache first
-		const tipKey = tipOverride ? `tip:${tipOverride.dx}:${tipOverride.dy}` : "";
-		const key = this.buildCacheKey(steps, _bluePropType, _redPropType, options) + tipKey;
-		const cached = this.cache.get(key);
-		if (cached) {
-			// Move to end (most recently used) by deleting and re-inserting
-			this.cache.delete(key);
-			this.cache.set(key, cached);
-			return cached;
+		const skipCache = tipOverride !== undefined;
+
+		if (!skipCache) {
+			const key = this.buildCacheKey(steps, _bluePropType, _redPropType, options);
+			const cached = this.cache.get(key);
+			if (cached) {
+				this.cache.delete(key);
+				this.cache.set(key, cached);
+				return cached;
+			}
 		}
 
 		// Filter to steps that have motions (skip start position / empty steps)
@@ -551,9 +552,6 @@ export class MandalaGeometryCalculator {
 			return { blue: [], red: [], purple: [] };
 		}
 
-		// Standardized bilateral tips: all mandalas use MANDALA_STANDARD_TIP_DX
-		// regardless of prop type, producing consistent visual fingerprints.
-		// tipOverride lets callers (playground, animation) use custom values.
 		const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
 		const dy = tipOverride?.dy ?? 0;
 		const standardTips = [{ dx: -dx, dy }, { dx: dx, dy }];
@@ -595,13 +593,14 @@ export class MandalaGeometryCalculator {
 
 		const result: MandalaPaths = { blue, red, purple: [] };
 
-		// Cache the result with LRU eviction if needed
-		if (this.cache.size >= MandalaGeometryCalculator.MAX_CACHE_SIZE) {
-			// Delete oldest entry (first key in Map iteration order)
-			const oldestKey = this.cache.keys().next().value;
-			if (oldestKey !== undefined) this.cache.delete(oldestKey);
+		if (!skipCache) {
+			const key = this.buildCacheKey(steps, _bluePropType, _redPropType, options);
+			if (this.cache.size >= MandalaGeometryCalculator.MAX_CACHE_SIZE) {
+				const oldestKey = this.cache.keys().next().value;
+				if (oldestKey !== undefined) this.cache.delete(oldestKey);
+			}
+			this.cache.set(key, result);
 		}
-		this.cache.set(key, result);
 
 		return result;
 	}

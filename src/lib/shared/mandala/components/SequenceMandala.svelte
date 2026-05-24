@@ -2,6 +2,7 @@
 	import { getMandalaGeometryCalculator } from "../getMandalaGeometryCalculator";
 	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 	import { onMount } from "svelte";
+	import { cubicInOut } from "svelte/easing";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import type {
 		MandalaMode,
@@ -26,6 +27,63 @@
 		LIGHT_MOTION_PURPLE_FILL,
 	} from "../domain/mandala-constants";
 	import type { MandalaGeometryCalculator } from "../services/implementations/MandalaGeometryCalculator";
+	import type { MandalaPathOptions } from "../services/contracts/types";
+
+	export type MandalaPathShape = "arc" | "linear" | "concave" | "motion-aware";
+
+	export type UndulationEasing =
+		| "sine"
+		| "ease"
+		| "soft-elastic"
+		| "breathe"
+		| "heartbeat"
+		| "drift"
+		| "bloom"
+		| "tidal";
+
+	function softElasticEase(t: number): number {
+		if (t === 0 || t === 1) return t;
+		const base = (1 - Math.cos(t * Math.PI)) / 2;
+		const wobble = Math.sin(t * Math.PI * 3) * t * (1 - t) * 0.35;
+		return base + wobble;
+	}
+
+	function breatheEase(t: number): number {
+		return Math.pow(Math.sin(t * Math.PI / 2), 1.6);
+	}
+
+	function heartbeatEase(t: number): number {
+		if (t < 0.3) return Math.pow(t / 0.3, 2) * 1.08;
+		if (t < 0.45) return 1.08 - 0.18 * ((t - 0.3) / 0.15);
+		return 0.9 + 0.1 * (1 - Math.pow(1 - (t - 0.45) / 0.55, 2));
+	}
+
+	function driftEase(t: number): number {
+		const base = (1 - Math.cos(t * Math.PI)) / 2;
+		const wander = Math.sin(t * Math.PI * 5) * Math.pow(t * (1 - t), 1.5) * 0.18;
+		return base + wander;
+	}
+
+	function bloomEase(t: number): number {
+		return 1 - Math.pow(1 - t, 3.5);
+	}
+
+	function tidalEase(t: number): number {
+		const primary = (1 - Math.cos(t * Math.PI)) / 2;
+		const secondary = Math.sin(t * Math.PI * 2) * 0.1 * (1 - Math.abs(2 * t - 1));
+		return primary + secondary;
+	}
+
+	const EASING_FNS: Record<UndulationEasing, (t: number) => number> = {
+		sine: (t: number) => (1 - Math.cos(t * Math.PI)) / 2,
+		ease: cubicInOut,
+		"soft-elastic": softElasticEase,
+		breathe: breatheEase,
+		heartbeat: heartbeatEase,
+		drift: driftEase,
+		bloom: bloomEase,
+		tidal: tidalEase,
+	};
 
 	interface Props {
 		sequence: any;
@@ -45,6 +103,12 @@
 		animateMax?: number;
 		/** Seconds per full oscillation cycle (default 4) */
 		animatePeriod?: number;
+		/** Easing curve: "sine" (natural), "ease" (cubicInOut), "elastic" (overshoot), "linear" (constant speed) */
+		animateEasing?: UndulationEasing;
+		/** Degrees to rotate the whole mandala per undulation cycle (0 = no rotation) */
+		animateRotation?: number;
+		/** Path interpolation shape for hand movement */
+		pathShape?: MandalaPathShape;
 		/** Fixed tip dx override (bypasses standard and animation) */
 		tipDx?: number;
 	}
@@ -60,9 +124,12 @@
 		bluePropType,
 		redPropType,
 		animate = false,
-		animateMin = 80,
-		animateMax = 170,
-		animatePeriod = 4,
+		animateMin = 0,
+		animateMax = 250,
+		animatePeriod = 5,
+		animateEasing = "sine",
+		animateRotation = 90,
+		pathShape = "arc",
 		tipDx,
 	}: Props = $props();
 
@@ -86,6 +153,7 @@
 
 	let calculator: MandalaGeometryCalculator | null = $state(null);
 	let animatedDx: number = $state(MANDALA_STANDARD_TIP_DX);
+	let rotationDeg: number = $state(0);
 	let rafId: number = 0;
 
 	onMount(() => {
@@ -107,13 +175,25 @@
 		const minDx = animateMin;
 		const maxDx = animateMax;
 		const period = animatePeriod;
+		const rotPerCycle = animateRotation;
+		const easeFn = EASING_FNS[animateEasing];
 		let startTime: number | null = null;
+		let lastPhase = 0;
 
 		function tick(time: number) {
 			if (startTime === null) startTime = time;
 			const elapsed = (time - startTime) / 1000;
-			const t = (Math.sin((elapsed / period) * Math.PI * 2) + 1) / 2;
-			animatedDx = minDx + (maxDx - minDx) * t;
+			const phase = (elapsed % period) / period;
+			const triangle = phase < 0.5 ? phase * 2 : 2 - phase * 2;
+			const eased = easeFn(triangle);
+			animatedDx = minDx + (maxDx - minDx) * eased;
+
+			if (rotPerCycle !== 0) {
+				const dt = phase >= lastPhase ? phase - lastPhase : phase + (1 - lastPhase);
+				rotationDeg += dt * rotPerCycle;
+			}
+			lastPhase = phase;
+
 			rafId = requestAnimationFrame(tick);
 		}
 
@@ -130,13 +210,19 @@
 		tipDx ?? (animate ? animatedDx : MANDALA_STANDARD_TIP_DX)
 	);
 
+	const pathOptions = $derived.by((): MandalaPathOptions | undefined => {
+		if (pathShape === "motion-aware") return { motionAware: true };
+		if (pathShape !== "arc") return { pathShape };
+		return undefined;
+	});
+
 	const paths = $derived.by((): MandalaPaths | null => {
 		if (!calculator || !sequence?.steps) return null;
 		return calculator.calculate(
 			sequence.steps,
 			bluePropType,
 			redPropType,
-			undefined,
+			pathOptions,
 			{ dx: effectiveDx, dy: 0 }
 		);
 	});
@@ -152,6 +238,7 @@
 			show,
 			transparentBackground: isCardBack,
 			palette: effectiveDarkMode ? DARK_MOTION_PALETTE : LIGHT_MOTION_PALETTE,
+			tipDx: effectiveDx,
 		};
 	});
 
@@ -162,7 +249,10 @@
 </script>
 
 {#if svgString}
-	<div class="mandala-container" style="width: {size}px; height: {size}px;">
+	<div
+		class="mandala-container"
+		style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);"
+	>
 		{@html svgString}
 	</div>
 {/if}

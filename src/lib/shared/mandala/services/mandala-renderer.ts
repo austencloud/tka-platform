@@ -97,7 +97,8 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 	const { size, style, showGridDots, show, strokeWidth = 2.5, transparentBackground = false } = options;
 	const center = size / 2;
 
-	const tipReach = MANDALA_STANDARD_TIP_DX * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
+	const effectiveTipDx = Math.max(options.tipDx ?? MANDALA_STANDARD_TIP_DX, MANDALA_STANDARD_TIP_DX);
+	const tipReach = effectiveTipDx * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
 	const maxExtent = MANDALA_GRID_RADIUS + tipReach;
 	const scale = center / (maxExtent * 1.05);
 

@@ -23,13 +23,16 @@
   let rangeMin: number = $state(0);
   let rangeMax: number = $state(250);
 
+  const CONTROLS_WIDTH = 300;
+
   $effect(() => {
     if (!containerEl) return;
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
       const { width, height } = entry.contentRect;
-      containerSize = Math.floor(Math.min(width, height) - 32);
+      const availableWidth = width - CONTROLS_WIDTH;
+      containerSize = Math.floor(Math.min(availableWidth, height) - 32);
     });
     observer.observe(containerEl);
     return () => observer.disconnect();
@@ -81,25 +84,22 @@
     width: 100%;
     height: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
     background: #0a0a1a;
-    position: relative;
     overflow: hidden;
   }
 
   .mandala-stage {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 0;
   }
 
   .controls-rail {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 100%;
+    flex-shrink: 0;
     width: 300px;
+    height: 100%;
     overflow-y: auto;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     backdrop-filter: blur(12px);
