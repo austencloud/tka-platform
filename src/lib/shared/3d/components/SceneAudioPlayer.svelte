@@ -187,10 +187,10 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 1px solid rgba(100, 180, 255, 0.2);
-    background: rgba(10, 20, 40, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(18, 18, 24, 0.8);
     backdrop-filter: blur(8px);
-    color: rgba(180, 210, 255, 0.8);
+    color: rgba(255, 255, 255, 0.7);
     font-size: 14px;
     cursor: pointer;
     display: flex;
@@ -200,9 +200,9 @@
   }
 
   .collapsed-btn:hover {
-    background: rgba(20, 40, 70, 0.85);
-    color: rgba(200, 230, 255, 1);
-    border-color: rgba(100, 180, 255, 0.4);
+    background: rgba(30, 30, 38, 0.9);
+    color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   .collapsed-btn.playing {
@@ -210,15 +210,15 @@
   }
 
   @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 4px rgba(100, 180, 255, 0.1); }
-    50% { box-shadow: 0 0 12px rgba(100, 180, 255, 0.3); }
+    0%, 100% { box-shadow: 0 0 4px rgba(255, 255, 255, 0.05); }
+    50% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.15); }
   }
 
   .expanded-card {
     width: 200px;
-    background: rgba(10, 20, 40, 0.75);
+    background: rgba(18, 18, 24, 0.88);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(100, 180, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     overflow: hidden;
     animation: card-in 0.2s ease;
@@ -234,12 +234,12 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 10px;
-    border-bottom: 1px solid rgba(100, 180, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .track-label {
     font-size: 11px;
-    color: rgba(180, 210, 255, 0.9);
+    color: rgba(255, 255, 255, 0.85);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -256,7 +256,7 @@
   .close-btn {
     background: none;
     border: none;
-    color: rgba(180, 210, 255, 0.5);
+    color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
     padding: 2px 4px;
     font-size: 12px;
@@ -265,7 +265,7 @@
   }
 
   .close-btn:hover {
-    color: rgba(200, 230, 255, 0.9);
+    color: rgba(255, 255, 255, 0.85);
   }
 
   .controls {
@@ -273,13 +273,13 @@
     align-items: center;
     gap: 4px;
     padding: 6px 10px;
-    border-bottom: 1px solid rgba(100, 180, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .ctrl-btn {
     background: none;
     border: none;
-    color: rgba(180, 210, 255, 0.7);
+    color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
     padding: 4px;
     font-size: 12px;
@@ -288,8 +288,8 @@
   }
 
   .ctrl-btn:hover {
-    color: rgba(200, 230, 255, 1);
-    background: rgba(100, 180, 255, 0.1);
+    color: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .play-btn {
@@ -301,7 +301,7 @@
     min-width: 0;
     height: 4px;
     appearance: none;
-    background: rgba(100, 180, 255, 0.2);
+    background: rgba(255, 255, 255, 0.12);
     border-radius: 2px;
     outline: none;
     cursor: pointer;
@@ -312,7 +312,7 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: rgba(180, 210, 255, 0.8);
+    background: rgba(255, 255, 255, 0.7);
     cursor: pointer;
   }
 
@@ -320,7 +320,7 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: rgba(180, 210, 255, 0.8);
+    background: rgba(255, 255, 255, 0.7);
     border: none;
     cursor: pointer;
   }
@@ -339,7 +339,7 @@
   .track-item {
     background: none;
     border: none;
-    color: rgba(180, 210, 255, 0.6);
+    color: rgba(255, 255, 255, 0.5);
     font-size: 11px;
     text-align: left;
     padding: 4px 8px;
@@ -349,13 +349,13 @@
   }
 
   .track-item:hover {
-    background: rgba(100, 180, 255, 0.1);
-    color: rgba(200, 230, 255, 0.9);
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.85);
   }
 
   .track-item.active {
-    color: rgba(200, 230, 255, 1);
-    background: rgba(100, 180, 255, 0.15);
+    color: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.12);
     font-weight: 500;
   }
 
