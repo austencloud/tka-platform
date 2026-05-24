@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T, useTask, useThrelte } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import { ShaderMaterial, DoubleSide, Color, Vector3 } from "three";
   import type { OceanWaterSurfaceConfig } from "../../domain/models/scene-configs";
 
@@ -252,6 +253,8 @@
       material.uniforms.uCameraPosition!.value.copy(cam.position);
     }
   });
+
+  onDestroy(() => material.dispose());
 </script>
 
 <T.Mesh

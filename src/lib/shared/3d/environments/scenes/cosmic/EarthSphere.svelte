@@ -17,7 +17,8 @@
 
   let { config, onReady }: Props = $props();
 
-  const geometry = $derived(new SphereGeometry(config.radius, 48, 48));
+  let geometry = $state<SphereGeometry | null>(null);
+  let material = $state<ShaderMaterial | null>(null);
 
   const textureLoader = useLoader(TextureLoader);
   const earthTex = $derived(textureLoader.load("/textures/cosmic/earth-diffuse.jpg"));
@@ -56,18 +57,32 @@
     }
   `;
 
-  const material = $derived.by(() => {
+  // Main earth geometry + material (shared dependencies: config.radius, $earthTex, config.rimColor, config.rimIntensity)
+  $effect(() => {
+    const geo = new SphereGeometry(config.radius, 48, 48);
+    geometry = geo;
+
     const tex = $earthTex;
-    if (!tex) return null;
-    return new ShaderMaterial({
-      uniforms: {
-        uEarthMap: { value: tex },
-        uRimColor: { value: new Color(config.rimColor) },
-        uRimIntensity: { value: config.rimIntensity },
-      },
-      vertexShader,
-      fragmentShader,
-    });
+    if (tex) {
+      const mat = new ShaderMaterial({
+        uniforms: {
+          uEarthMap: { value: tex },
+          uRimColor: { value: new Color(config.rimColor) },
+          uRimIntensity: { value: config.rimIntensity },
+        },
+        vertexShader,
+        fragmentShader,
+      });
+      material = mat;
+
+      return () => {
+        geo.dispose();
+        mat.dispose();
+      };
+    }
+
+    material = null;
+    return () => geo.dispose();
   });
 
   $effect(() => {
@@ -83,9 +98,13 @@
     rotationY += delta * config.rotationSpeed;
   });
 
-  const glowGeometry = $derived(new SphereGeometry(config.radius * 1.15, 32, 32));
-  const glowMaterial = $derived.by(() => {
-    return new ShaderMaterial({
+  let glowGeometry = $state<SphereGeometry | null>(null);
+  let glowMaterial = $state<ShaderMaterial | null>(null);
+
+  // Glow geometry + material
+  $effect(() => {
+    const geo = new SphereGeometry(config.radius * 1.15, 32, 32);
+    const mat = new ShaderMaterial({
       uniforms: {
         uRimColor: { value: new Color(config.rimColor) },
         uRimIntensity: { value: config.rimIntensity * 0.4 },
@@ -117,10 +136,17 @@
       side: BackSide,
       depthWrite: false,
     });
+    glowGeometry = geo;
+    glowMaterial = mat;
+
+    return () => {
+      geo.dispose();
+      mat.dispose();
+    };
   });
 </script>
 
-{#if config.enabled && material}
+{#if config.enabled && material && geometry && glowGeometry && glowMaterial}
   <T.Group
     position.x={config.position[0]}
     position.y={config.position[1]}

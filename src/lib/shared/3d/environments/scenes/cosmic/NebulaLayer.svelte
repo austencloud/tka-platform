@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import {
     SphereGeometry,
     ShaderMaterial,
@@ -102,8 +103,10 @@
   `;
 
   let time = 0;
-  const material = $derived.by(() => {
-    return new ShaderMaterial({
+  let material = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uColor1: { value: new Color(config.color1) },
         uColor2: { value: new Color(config.color2) },
@@ -118,7 +121,11 @@
       blending: AdditiveBlending,
       depthWrite: false,
     });
+    material = mat;
+    return () => mat.dispose();
   });
+
+  onDestroy(() => geometry.dispose());
 
   useTask((delta) => {
     if (!material) return;

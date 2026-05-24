@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import {
     SphereGeometry,
     ShaderMaterial,
@@ -99,8 +100,10 @@
     }
   `;
 
-  const materials = $derived.by(() => {
-    return config.colors.map((c) => {
+  let materials = $state<ShaderMaterial[]>([]);
+
+  $effect(() => {
+    const mats = config.colors.map((c) => {
       const color = new Color(c);
       return new ShaderMaterial({
         uniforms: {
@@ -114,7 +117,11 @@
         blending: AdditiveBlending,
       });
     });
+    materials = mats;
+    return () => mats.forEach((m) => m.dispose());
   });
+
+  onDestroy(() => wispGeo.dispose());
 
   const trailScales = [0.6, 0.35, 0.15];
 

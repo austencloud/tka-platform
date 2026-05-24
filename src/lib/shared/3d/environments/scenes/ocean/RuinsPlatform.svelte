@@ -20,18 +20,34 @@
 
   const elevation = $derived(config.elevation ?? 0);
 
-  const bodyGeometry = $derived.by(
-    () => new BoxGeometry(config.width, config.height, config.depth),
-  );
-  const topGeometry = $derived.by(
-    () => new PlaneGeometry(config.width, config.depth),
-  );
-  const columnGeometry = $derived.by(
-    () => new CylinderGeometry(0.12, 0.15, 0.6, 8),
-  );
-  const supportPillarGeometry = $derived.by(() => {
-    if (elevation <= 0) return null;
-    return new CylinderGeometry(0.2, 0.35, elevation, 8);
+  let bodyGeometry = $state<BoxGeometry | undefined>(undefined);
+  let topGeometry = $state<PlaneGeometry | undefined>(undefined);
+  let columnGeometry = $state<CylinderGeometry | undefined>(undefined);
+  let supportPillarGeometry = $state<CylinderGeometry | undefined>(undefined);
+
+  $effect(() => {
+    const geo = new BoxGeometry(config.width, config.height, config.depth);
+    bodyGeometry = geo;
+    return () => geo.dispose();
+  });
+  $effect(() => {
+    const geo = new PlaneGeometry(config.width, config.depth);
+    topGeometry = geo;
+    return () => geo.dispose();
+  });
+  $effect(() => {
+    const geo = new CylinderGeometry(0.12, 0.15, 0.6, 8);
+    columnGeometry = geo;
+    return () => geo.dispose();
+  });
+  $effect(() => {
+    if (elevation <= 0) {
+      supportPillarGeometry = undefined;
+      return;
+    }
+    const geo = new CylinderGeometry(0.2, 0.35, elevation, 8);
+    supportPillarGeometry = geo;
+    return () => geo.dispose();
   });
 
   const columns = $derived.by(() => {
@@ -226,8 +242,12 @@
     }
   `;
 
-  const bodyMaterial = $derived.by(() => {
-    return new ShaderMaterial({
+  let bodyMaterial = $state<ShaderMaterial | undefined>(undefined);
+  let topMaterial = $state<ShaderMaterial | undefined>(undefined);
+  let columnMaterial = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uStoneColor: { value: new Color(config.stoneColor) },
@@ -236,10 +256,12 @@
       vertexShader: bodyVertexShader,
       fragmentShader: bodyFragmentShader,
     });
+    bodyMaterial = mat;
+    return () => mat.dispose();
   });
 
-  const topMaterial = $derived.by(() => {
-    return new ShaderMaterial({
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uStoneColor: { value: new Color(config.stoneColor) },
@@ -251,10 +273,12 @@
       fragmentShader: topFragmentShader,
       side: DoubleSide,
     });
+    topMaterial = mat;
+    return () => mat.dispose();
   });
 
-  const columnMaterial = $derived.by(() => {
-    return new ShaderMaterial({
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uStoneColor: { value: new Color(config.stoneColor) },
@@ -263,10 +287,12 @@
       vertexShader: bodyVertexShader,
       fragmentShader: bodyFragmentShader,
     });
+    columnMaterial = mat;
+    return () => mat.dispose();
   });
 
   $effect(() => {
-    if (!bodyMaterial || !topMaterial) return;
+    if (!bodyMaterial || !topMaterial || !columnMaterial) return;
     const stoneCol = new Color(config.stoneColor);
     const glowCol = new Color(config.runeGlowColor);
 
@@ -283,7 +309,7 @@
   });
 
   useTask((delta) => {
-    if (!bodyMaterial || !topMaterial) return;
+    if (!bodyMaterial || !topMaterial || !columnMaterial) return;
     const dt = delta * 0.8;
     bodyMaterial.uniforms.uTime!.value += dt;
     topMaterial.uniforms.uTime!.value += dt;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import { ShaderMaterial, AdditiveBlending, DoubleSide, Color } from "three";
   import type { PrismaticCausticsConfig } from "../../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
@@ -133,6 +134,8 @@
     vertexShader,
     fragmentShader,
   });
+
+  onDestroy(() => material.dispose());
 
   $effect(() => {
     material.uniforms.uBaseColor!.value = new Color(config.baseColor);

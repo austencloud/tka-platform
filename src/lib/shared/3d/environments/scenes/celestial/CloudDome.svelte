@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import { SphereGeometry, ShaderMaterial, BackSide, Color, Vector3 } from "three";
   import type { CloudDomeConfig } from "../../domain/models/scene-configs";
 
@@ -85,13 +86,15 @@
 
   let time = 0;
 
-  const material = $derived.by(() => {
+  let material = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
     const sunDir = new Vector3(
       config.sunDirection[0],
       config.sunDirection[1],
       config.sunDirection[2],
     );
-    return new ShaderMaterial({
+    const mat = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uDensity: { value: config.density },
@@ -107,7 +110,11 @@
       transparent: true,
       depthWrite: false,
     });
+    material = mat;
+    return () => mat.dispose();
   });
+
+  onDestroy(() => geometry.dispose());
 
   useTask((delta) => {
     if (!material) return;

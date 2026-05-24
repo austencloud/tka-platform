@@ -8,7 +8,7 @@
    */
 
   import { T } from "@threlte/core";
-  import { untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import {
     SphereGeometry,
     ShaderMaterial,
@@ -37,12 +37,14 @@
 
   const geometry = untrack(() => new SphereGeometry(radius, 32, 32));
 
-  const material = $derived.by(() => {
+  let material = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
     const top = new Color(topColor);
     const mid = midColor ? new Color(midColor) : null;
     const bottom = new Color(bottomColor);
 
-    return new ShaderMaterial({
+    const mat = new ShaderMaterial({
       uniforms: {
         uTopColor: { value: top },
         uMidColor: { value: mid ?? new Color().lerpColors(top, bottom, 0.5) },
@@ -86,7 +88,11 @@
       side: BackSide,
       depthWrite: false,
     });
+    material = mat;
+    return () => mat.dispose();
   });
+
+  onDestroy(() => geometry.dispose());
 </script>
 
 <T.Mesh {geometry} {material} renderOrder={-1} frustumCulled={false} />

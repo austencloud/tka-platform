@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import {
     PlaneGeometry,
     ShaderMaterial,
@@ -59,8 +60,10 @@
 
   let time = 0;
 
-  const material = $derived.by(() => {
-    return new ShaderMaterial({
+  let material = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color(config.color) },
@@ -74,7 +77,11 @@
       blending: AdditiveBlending,
       depthWrite: false,
     });
+    material = mat;
+    return () => mat.dispose();
   });
+
+  onDestroy(() => geometry.dispose());
 
   useTask((delta) => {
     if (!material) return;

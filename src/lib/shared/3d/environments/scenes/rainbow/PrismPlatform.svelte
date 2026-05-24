@@ -17,8 +17,12 @@
   let { config }: Props = $props();
   const groundY = $derived(userProportionsState.groundY);
 
-  const geometry = $derived.by(() => {
-    return new CircleGeometry(config.radius, 128);
+  let geometry = $state<CircleGeometry | undefined>(undefined);
+
+  $effect(() => {
+    const geo = new CircleGeometry(config.radius, 128);
+    geometry = geo;
+    return () => geo.dispose();
   });
 
   const vertexShader = /* glsl */ `
@@ -86,8 +90,10 @@
     }
   `;
 
-  const material = $derived.by(() => {
-    return new ShaderMaterial({
+  let material = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uGlowIntensity: { value: config.glowIntensity },
@@ -99,15 +105,22 @@
       depthWrite: false,
       side: DoubleSide,
     });
+    material = mat;
+    return () => mat.dispose();
   });
 
   // Glass prism body geometry + material
-  const bodyGeometry = $derived.by(() => {
-    return new CylinderGeometry(config.radius, config.radius, config.height, 64);
+  let bodyGeometry = $state<CylinderGeometry | undefined>(undefined);
+  let bodyMaterial = $state<MeshPhysicalMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const geo = new CylinderGeometry(config.radius, config.radius, config.height, 64);
+    bodyGeometry = geo;
+    return () => geo.dispose();
   });
 
-  const bodyMaterial = $derived.by(() => {
-    return new MeshPhysicalMaterial({
+  $effect(() => {
+    const mat = new MeshPhysicalMaterial({
       color: "#ffffff",
       transmission: 0.7,
       roughness: 0.05,
@@ -116,6 +129,8 @@
       opacity: 0.5,
       ior: 1.5,
     });
+    bodyMaterial = mat;
+    return () => mat.dispose();
   });
 
   $effect(() => {

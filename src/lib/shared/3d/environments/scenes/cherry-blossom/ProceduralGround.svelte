@@ -58,7 +58,9 @@
 
   // --- Geometry with baked vertex colors ---
 
-  const geometry = $derived.by(() => {
+  let geometry = $state<PlaneGeometry | undefined>(undefined);
+
+  $effect(() => {
     const geom = new PlaneGeometry(size * 2, size * 2, resolution, resolution);
     const pos = geom.attributes.position!;
     const count = pos.count;
@@ -102,7 +104,8 @@
     }
 
     geom.setAttribute("color", new Float32BufferAttribute(colors, 3));
-    return geom;
+    geometry = geom;
+    return () => geom.dispose();
   });
 </script>
 

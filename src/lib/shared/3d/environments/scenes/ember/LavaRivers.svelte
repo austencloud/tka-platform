@@ -1,6 +1,5 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
-  import { onDestroy } from "svelte";
   import {
     PlaneGeometry,
     ShaderMaterial,
@@ -113,10 +112,15 @@
     length: number;
   }
 
-  const rivers = $derived.by(() => {
-    if (!config.enabled) return [];
+  let rivers = $state<RiverInstance[]>([]);
 
-    return config.channels.map((ch) => {
+  $effect(() => {
+    if (!config.enabled) {
+      rivers = [];
+      return;
+    }
+
+    const created = config.channels.map((ch) => {
       const w = config.width * ch.widthScale;
       const geometry = new PlaneGeometry(ch.length, w, 32, 4);
       const material = new ShaderMaterial({
@@ -142,18 +146,18 @@
 
       return { geometry, material, x, z, rotY, length: ch.length } as RiverInstance;
     });
+    rivers = created;
+    return () => {
+      for (const river of created) {
+        river.geometry.dispose();
+        river.material.dispose();
+      }
+    };
   });
 
   useTask((delta) => {
     for (const river of rivers) {
       river.material.uniforms.uTime!.value += delta * config.flowSpeed * 8;
-    }
-  });
-
-  onDestroy(() => {
-    for (const river of rivers) {
-      river.geometry.dispose();
-      river.material.dispose();
     }
   });
 </script>

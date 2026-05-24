@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import { SphereGeometry, ShaderMaterial, Color, AdditiveBlending } from "three";
   import type { CloudIslandsConfig } from "../../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
@@ -106,8 +107,10 @@
 
   let islands = $state<{ x: number; y: number; z: number; scale: number }[]>([]);
 
-  const cloudMaterial = $derived.by(() => {
-    return new ShaderMaterial({
+  let cloudMaterial = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uColor: { value: new Color(config.color) },
         uTime: { value: 0 },
@@ -117,7 +120,11 @@
       transparent: true,
       depthWrite: false,
     });
+    cloudMaterial = mat;
+    return () => mat.dispose();
   });
+
+  onDestroy(() => sphereGeometry.dispose());
 
   let time = 0;
 

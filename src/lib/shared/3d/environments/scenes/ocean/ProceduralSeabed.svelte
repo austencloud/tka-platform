@@ -57,7 +57,9 @@
   const sandRoughness = loadTex("/textures/terrain/sand/roughness.jpg");
   const sandAo = loadTex("/textures/terrain/sand/ao.jpg");
 
-  const geometry = $derived.by(() => {
+  let geometry = $state<PlaneGeometry | null>(null);
+
+  $effect(() => {
     const geo = new PlaneGeometry(size, size, segments, segments);
     const pos = geo.attributes.position!;
     const proximityData = new Float32Array(pos.count);
@@ -87,7 +89,9 @@
     pos.needsUpdate = true;
     geo.computeVertexNormals();
     geo.setAttribute("aProximity", new Float32BufferAttribute(proximityData, 1));
-    return geo;
+    geometry = geo;
+
+    return () => geo.dispose();
   });
 
   // ── Noise GLSL (shared by fragment shader injection) ──────────────────
@@ -387,9 +391,11 @@
   });
 </script>
 
+{#if geometry}
 <T.Mesh
   position.y={groundY}
   rotation.x={-Math.PI / 2}
   {material}
   {geometry}
 />
+{/if}

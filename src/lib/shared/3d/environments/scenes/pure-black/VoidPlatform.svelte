@@ -20,27 +20,39 @@
   const groundY = $derived(userProportionsState.groundY);
 
   // --- Cylinder body (nearly invisible dark volume) ---
-  const bodyGeometry = $derived.by(() => {
-    return new CylinderGeometry(config.radius, config.radius, config.height, 64);
+  let bodyGeometry = $state<CylinderGeometry | undefined>(undefined);
+  let bodyMaterial = $state<MeshStandardMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const geo = new CylinderGeometry(config.radius, config.radius, config.height, 64);
+    bodyGeometry = geo;
+    return () => geo.dispose();
   });
 
-  const bodyMaterial = $derived.by(() => {
-    return new MeshStandardMaterial({
+  $effect(() => {
+    const mat = new MeshStandardMaterial({
       color: "#000000",
       transparent: true,
       opacity: 0.15,
       depthWrite: false,
     });
+    bodyMaterial = mat;
+    return () => mat.dispose();
   });
 
   // --- Bottom edge glow ring (torus at base) ---
-  const bottomRingGeometry = $derived.by(() => {
+  let bottomRingGeometry = $state<TorusGeometry | undefined>(undefined);
+  let bottomRingMaterial = $state<MeshStandardMaterial | undefined>(undefined);
+
+  $effect(() => {
     // Thin torus at the platform radius — tube radius gives it visible thickness
-    return new TorusGeometry(config.radius, 0.015, 8, 128);
+    const geo = new TorusGeometry(config.radius, 0.015, 8, 128);
+    bottomRingGeometry = geo;
+    return () => geo.dispose();
   });
 
-  const bottomRingMaterial = $derived.by(() => {
-    return new MeshStandardMaterial({
+  $effect(() => {
+    const mat = new MeshStandardMaterial({
       color: config.gridColor,
       emissive: config.gridColor,
       emissiveIntensity: config.glowIntensity * 1.5,
@@ -48,15 +60,22 @@
       opacity: 0.9,
       depthWrite: false,
     });
+    bottomRingMaterial = mat;
+    return () => mat.dispose();
   });
 
   // --- Top edge glow ring (torus at top rim) ---
-  const topRingGeometry = $derived.by(() => {
-    return new TorusGeometry(config.radius, 0.015, 8, 128);
+  let topRingGeometry = $state<TorusGeometry | undefined>(undefined);
+  let topRingMaterial = $state<MeshStandardMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const geo = new TorusGeometry(config.radius, 0.015, 8, 128);
+    topRingGeometry = geo;
+    return () => geo.dispose();
   });
 
-  const topRingMaterial = $derived.by(() => {
-    return new MeshStandardMaterial({
+  $effect(() => {
+    const mat = new MeshStandardMaterial({
       color: config.gridColor,
       emissive: config.gridColor,
       emissiveIntensity: config.glowIntensity * 1.2,
@@ -64,17 +83,24 @@
       opacity: 0.8,
       depthWrite: false,
     });
+    topRingMaterial = mat;
+    return () => mat.dispose();
   });
 
   // --- Vertical wireframe columns ---
   const COLUMN_COUNT = 8;
-  const columnGeometry = $derived.by(() => {
+  let columnGeometry = $state<CylinderGeometry | undefined>(undefined);
+  let columnMaterial = $state<MeshStandardMaterial | undefined>(undefined);
+
+  $effect(() => {
     // Thin cylinder from bottom to top
-    return new CylinderGeometry(0.008, 0.008, config.height, 6);
+    const geo = new CylinderGeometry(0.008, 0.008, config.height, 6);
+    columnGeometry = geo;
+    return () => geo.dispose();
   });
 
-  const columnMaterial = $derived.by(() => {
-    return new MeshStandardMaterial({
+  $effect(() => {
+    const mat = new MeshStandardMaterial({
       color: config.gridColor,
       emissive: config.gridColor,
       emissiveIntensity: config.glowIntensity * 0.8,
@@ -82,6 +108,8 @@
       opacity: 0.6,
       depthWrite: false,
     });
+    columnMaterial = mat;
+    return () => mat.dispose();
   });
 
   // Pre-compute column positions around the circumference
@@ -97,8 +125,12 @@
     return positions;
   });
 
-  const geometry = $derived.by(() => {
-    return new CircleGeometry(config.radius, 128);
+  let geometry = $state<CircleGeometry | undefined>(undefined);
+
+  $effect(() => {
+    const geo = new CircleGeometry(config.radius, 128);
+    geometry = geo;
+    return () => geo.dispose();
   });
 
   const vertexShader = /* glsl */ `
@@ -171,8 +203,10 @@
     }
   `;
 
-  const material = $derived.by(() => {
-    return new ShaderMaterial({
+  let material = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uGridColor: { value: new Color(config.gridColor) },
@@ -185,6 +219,8 @@
       depthWrite: false,
       side: DoubleSide,
     });
+    material = mat;
+    return () => mat.dispose();
   });
 
   $effect(() => {
@@ -196,6 +232,7 @@
 
   // Keep emissive materials in sync with config changes
   $effect(() => {
+    if (!bottomRingMaterial || !topRingMaterial || !columnMaterial) return;
     const color = new Color(config.gridColor);
     bottomRingMaterial.color = color;
     bottomRingMaterial.emissive = color;

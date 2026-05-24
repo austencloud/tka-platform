@@ -74,8 +74,10 @@
 
   const geometry = new CylinderGeometry(0.15, 0.2, 1, 8);
 
-  const material = $derived.by(() => {
-    return new ShaderMaterial({
+  let material = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uBaseColor: { value: new Color(config.baseColor) },
@@ -88,6 +90,8 @@
       depthWrite: false,
       side: DoubleSide,
     });
+    material = mat;
+    return () => mat.dispose();
   });
 
   $effect(() => {
@@ -123,7 +127,6 @@
 
   onDestroy(() => {
     geometry.dispose();
-    material?.dispose();
   });
 </script>
 

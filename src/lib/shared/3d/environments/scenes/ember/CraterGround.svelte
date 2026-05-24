@@ -1,6 +1,5 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { onDestroy } from "svelte";
   import {
     Shape,
     Path,
@@ -36,7 +35,13 @@
 
   const holeRadius = $derived(craterRadius * 1.08);
 
-  const groundGeo = $derived.by(() => {
+  let groundGeo = $state<ShapeGeometry | undefined>(undefined);
+  let groundMat = $state<MeshStandardMaterial | undefined>(undefined);
+  let wallGeo = $state<CylinderGeometry | undefined>(undefined);
+  let wallMat = $state<MeshStandardMaterial | undefined>(undefined);
+  let rimGeo = $state<CylinderGeometry | undefined>(undefined);
+
+  $effect(() => {
     const shape = new Shape();
     const s = groundSize;
     shape.moveTo(-s, -s);
@@ -56,20 +61,24 @@
     }
     shape.holes.push(hole);
 
-    return new ShapeGeometry(shape);
+    const geo = new ShapeGeometry(shape);
+    groundGeo = geo;
+    return () => geo.dispose();
   });
 
-  const groundMat = $derived.by(() => {
-    return new MeshStandardMaterial({
+  $effect(() => {
+    const mat = new MeshStandardMaterial({
       color: new Color(groundColor),
       opacity: groundOpacity,
       transparent: groundOpacity < 1,
       side: DoubleSide,
     });
+    groundMat = mat;
+    return () => mat.dispose();
   });
 
-  const wallGeo = $derived.by(() => {
-    return new CylinderGeometry(
+  $effect(() => {
+    const geo = new CylinderGeometry(
       holeRadius,
       holeRadius * 0.88,
       craterDepth,
@@ -77,18 +86,22 @@
       1,
       true,
     );
+    wallGeo = geo;
+    return () => geo.dispose();
   });
 
-  const wallMat = $derived.by(() => {
-    return new MeshStandardMaterial({
+  $effect(() => {
+    const mat = new MeshStandardMaterial({
       color: new Color(wallColor),
       roughness: 1,
       side: DoubleSide,
     });
+    wallMat = mat;
+    return () => mat.dispose();
   });
 
-  const rimGeo = $derived.by(() => {
-    return new CylinderGeometry(
+  $effect(() => {
+    const geo = new CylinderGeometry(
       holeRadius * 1.12,
       holeRadius,
       0.25,
@@ -96,14 +109,8 @@
       1,
       true,
     );
-  });
-
-  onDestroy(() => {
-    groundGeo?.dispose();
-    groundMat?.dispose();
-    wallGeo?.dispose();
-    wallMat?.dispose();
-    rimGeo?.dispose();
+    rimGeo = geo;
+    return () => geo.dispose();
   });
 </script>
 

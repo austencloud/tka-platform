@@ -69,15 +69,23 @@
   });
 
   // Create tube geometry from positions
-  const tubeGeometry = $derived.by((): BufferGeometry | null => {
-    if (!hasEnoughPoints) return null;
+  let tubeGeometry = $state<BufferGeometry | undefined>(undefined);
+
+  $effect(() => {
+    if (!hasEnoughPoints) {
+      tubeGeometry = undefined;
+      return undefined;
+    }
 
     try {
       // Clone positions to avoid mutation issues
       const points = validPositions.map((p) => p.clone());
 
       // Need at least 2 points for a curve
-      if (points.length < 2) return null;
+      if (points.length < 2) {
+        tubeGeometry = undefined;
+        return undefined;
+      }
 
       // Create smooth curve through points
       const curve = new CatmullRomCurve3(points, false, "catmullrom", 0.5);
@@ -89,60 +97,64 @@
       // If fadeOut or rainbow, modify vertex colors
       if (fadeOut || isRainbow) {
         const positionAttr = geometry.getAttribute("position");
-        if (!positionAttr) return geometry;
+        if (positionAttr) {
+          const count = positionAttr.count;
+          const colors = new Float32Array(count * 3);
 
-        const count = positionAttr.count;
-        const colors = new Float32Array(count * 3);
+          for (let i = 0; i < count; i++) {
+            const x = positionAttr.getX(i);
+            const y = positionAttr.getY(i);
+            const z = positionAttr.getZ(i);
+            const vertexPos = new Vector3(x, y, z);
 
-        for (let i = 0; i < count; i++) {
-          const x = positionAttr.getX(i);
-          const y = positionAttr.getY(i);
-          const z = positionAttr.getZ(i);
-          const vertexPos = new Vector3(x, y, z);
+            // Find closest point on curve to determine t value
+            let minDist = Infinity;
+            let closestT = 0;
 
-          // Find closest point on curve to determine t value
-          let minDist = Infinity;
-          let closestT = 0;
-
-          for (let j = 0; j < points.length; j++) {
-            const dist = vertexPos.distanceTo(points[j]!);
-            if (dist < minDist) {
-              minDist = dist;
-              closestT = points.length > 1 ? j / (points.length - 1) : 0;
+            for (let j = 0; j < points.length; j++) {
+              const dist = vertexPos.distanceTo(points[j]!);
+              if (dist < minDist) {
+                minDist = dist;
+                closestT = points.length > 1 ? j / (points.length - 1) : 0;
+              }
             }
+
+            let c: Color;
+            if (isRainbow) {
+              c = new Color();
+              c.setHSL(closestT, 0.8, 0.6);
+            } else {
+              c = solidColor.clone();
+            }
+
+            // Apply fade
+            if (fadeOut) {
+              c.multiplyScalar(1 - closestT * 0.8);
+            }
+
+            colors[i * 3] = c.r;
+            colors[i * 3 + 1] = c.g;
+            colors[i * 3 + 2] = c.b;
           }
 
-          let c: Color;
-          if (isRainbow) {
-            c = new Color();
-            c.setHSL(closestT, 0.8, 0.6);
-          } else {
-            c = solidColor.clone();
-          }
-
-          // Apply fade
-          if (fadeOut) {
-            c.multiplyScalar(1 - closestT * 0.8);
-          }
-
-          colors[i * 3] = c.r;
-          colors[i * 3 + 1] = c.g;
-          colors[i * 3 + 2] = c.b;
+          geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
         }
-
-        geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
       }
 
-      return geometry;
+      tubeGeometry = geometry;
+      return () => geometry.dispose();
     } catch (e) {
       console.warn("TrailRenderer: Failed to create geometry", e);
-      return null;
+      tubeGeometry = undefined;
+      return undefined;
     }
   });
 
   // Create material
-  const material = $derived.by(() => {
-    return new MeshBasicMaterial({
+  let material = $state<MeshBasicMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const mat = new MeshBasicMaterial({
       color: isRainbow ? 0xffffff : solidColor,
       transparent: true,
       opacity: opacity,
@@ -150,6 +162,8 @@
       vertexColors: fadeOut || isRainbow,
       depthWrite: false,
     });
+    material = mat;
+    return () => mat.dispose();
   });
 </script>
 

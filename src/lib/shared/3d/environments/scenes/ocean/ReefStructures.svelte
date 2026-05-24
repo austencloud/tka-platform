@@ -4,9 +4,7 @@
   import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
   import { userProportionsState } from "@austencloud/scene-3d";
   import { terrainHeightForPlacement } from "./terrain-height";
-  import { Color, Object3D, Mesh, Vector3, Matrix4 } from "three";
-  import { onDestroy } from "svelte";
-  import { disposeSceneGraph } from "../../utils/dispose-scene";
+  import { Color, Object3D, Mesh, Material, Vector3, Matrix4 } from "three";
   import { generateSDFTexture, type SDFResult } from "./sdf-generator";
 
   export interface ReefSDFData {
@@ -111,7 +109,9 @@
     baseY: number;
   }
 
-  const structures = $derived.by((): PreparedStructure[] => {
+  let structures = $state<PreparedStructure[]>([]);
+
+  $effect(() => {
     const models = [$archGlb, $wallGlb, $bommieGlb, $towerGlb];
     const results: PreparedStructure[] = [];
 
@@ -137,7 +137,19 @@
       });
     }
 
-    return results;
+    structures = results;
+
+    return () => {
+      for (const s of results) {
+        s.clone.traverse((child) => {
+          if (child instanceof Mesh) {
+            child.geometry?.dispose();
+            if (child.material instanceof Material) child.material.dispose();
+            if (Array.isArray(child.material)) child.material.forEach((m: Material) => m.dispose());
+          }
+        });
+      }
+    };
   });
 
   // ── SDF Generation ─────────────────────────────────────────────────
@@ -197,9 +209,7 @@
     return () => { aborted = true; };
   });
 
-  onDestroy(() => {
-    for (const s of structures) disposeSceneGraph(s.clone);
-  });
+  // Cleanup is handled by the $effect teardown for structures.
 </script>
 
 {#each structures as s}

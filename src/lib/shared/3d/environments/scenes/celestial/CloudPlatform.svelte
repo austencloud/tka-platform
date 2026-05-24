@@ -11,8 +11,12 @@
   let { config }: Props = $props();
   const groundY = $derived(userProportionsState.groundY);
 
-  const geometry = $derived.by(() => {
-    return new CircleGeometry(config.radius, 64);
+  let geometry = $state<CircleGeometry | undefined>(undefined);
+
+  $effect(() => {
+    const geo = new CircleGeometry(config.radius, 64);
+    geometry = geo;
+    return () => geo.dispose();
   });
 
   const vertexShader = /* glsl */ `
@@ -70,8 +74,10 @@
     }
   `;
 
-  const material = $derived.by(() => {
-    return new ShaderMaterial({
+  let material = $state<ShaderMaterial | undefined>(undefined);
+
+  $effect(() => {
+    const mat = new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uGlowColor: { value: new Color(config.glowColor) },
@@ -84,6 +90,8 @@
       depthWrite: false,
       side: DoubleSide,
     });
+    material = mat;
+    return () => mat.dispose();
   });
 
   $effect(() => {

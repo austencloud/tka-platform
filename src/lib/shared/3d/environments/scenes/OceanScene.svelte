@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useThrelte } from "@threlte/core";
+  import { T, useThrelte, useTask } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
   import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
   import SkyGradient from "../primitives/SkyGradient.svelte";
@@ -16,12 +16,12 @@
     createDefaultOceanCinematicConfig,
   } from "../domain/models/scene-configs";
   import { poissonDiscSample, seededRandom, PlacementGrid } from "../utils/poisson-disc";
-  import { createColoredInstancedMesh, createInstancedMeshFromModel, disposeInstancedMesh, type ColoredInstancePlacement, type InstancePlacement } from "./ocean/ocean-instancing";
+  import { createColoredInstancedMesh, createInstancedMeshFromModel, createSwayingInstancedMesh, disposeInstancedMesh, type ColoredInstancePlacement, type InstancePlacement, type SwayingInstancedMeshResult } from "./ocean/ocean-instancing";
   import { bakeSceneSDF, type SceneSDFResult } from "./ocean/scene-sdf-baker";
 
   import { detectOceanQuality, getOceanQualityConfig, type OceanQualityTier } from "./ocean/ocean-quality";
   import { userProportionsState } from "@austencloud/scene-3d";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import RuinsPlatform from "./ocean/RuinsPlatform.svelte";
   import GodRayShafts from "./ocean/GodRayShafts.svelte";
@@ -31,8 +31,10 @@
   import ReefStructures from "./ocean/ReefStructures.svelte";
   import ProceduralJellyfish from "./ocean/ProceduralJellyfish.svelte";
   import BoatSilhouette from "./ocean/BoatSilhouette.svelte";
+  import HeroKelp from "./ocean/HeroKelp.svelte";
   import type { ReefSDFData } from "./ocean/ReefStructures.svelte";
   import OceanLoadingScreen from "./ocean/OceanLoadingScreen.svelte";
+  import OceanAmbientAudio from "./ocean/OceanAmbientAudio.svelte";
   import { generateRockVariants, type RockVariant } from "./ocean/procedural-rock";
   import {
     FogExp2,
@@ -40,6 +42,7 @@
     Mesh,
     Mesh as ThreeMesh,
     InstancedMesh,
+    MeshStandardMaterial,
     Object3D,
     Vector3,
     Matrix4 as ThreeMatrix4,
@@ -102,7 +105,6 @@
 
   const seaweedGlb = useGltf("/models/ocean/seaweed.glb", opts);
   const kelpPlantGlb = useGltf("/models/ocean/kelp_plant.glb", opts);
-
 
 
   const starfishGlb = useGltf("/models/ocean/starfish.glb", opts);
@@ -248,6 +250,7 @@
   interface ScenePlacements {
     coral: CoralPlacement[];
     kelp: Placement[];
+    backgroundKelp: Placement[];
     rocks: Placement[];
     boulders: Placement[];
     heroRocks: (Placement & { modelIdx: number })[];
@@ -421,11 +424,15 @@
       }
     }
 
-    // ── 5. Kelp — check against large items, DON'T register ──────────
-    const kelp: Placement[] = [];
-    if (cfg.kelp.enabled && cfg.kelp.count > 0) {
+    // ── 5. Kelp — zone-based placement (mid forest + background silhouettes) ──
+    const midKelp: Placement[] = [];
+    const backgroundKelp: Placement[] = [];
+    if (cfg.kelp.enabled) {
       const rng = seededRandom(200);
-      const maxCount = Math.min(cfg.kelp.count, qualityConfig.maxKelpCount);
+      const maxMid = Math.min(cfg.kelp.midCount, qualityConfig.maxMidKelp);
+      const maxBg = Math.min(cfg.kelp.backgroundCount, qualityConfig.maxBackgroundKelp);
+
+      // Mid kelp: forest zone, near formations
       for (const formation of formations) {
         if (rng() > 0.85) continue;
         const kelpCount = Math.floor(4 + formation.density * 10 * (formation.radius / 2.0));
@@ -433,19 +440,34 @@
         const patchDist = formation.radius * (0.3 + rng() * 0.5);
         const patchX = formation.x + Math.cos(patchAngle) * patchDist;
         const patchZ = formation.z + Math.sin(patchAngle) * patchDist;
-        for (let j = 0; j < kelpCount && kelp.length < maxCount; j++) {
+        for (let j = 0; j < kelpCount && midKelp.length < maxMid; j++) {
           const angle = rng() * Math.PI * 2;
           const dist = rng() * 1.2;
           const x = patchX + Math.cos(angle) * dist;
           const z = patchZ + Math.sin(angle) * dist;
           const rDist = Math.sqrt(x * x + z * z);
-          if (rDist < z_.clearingRadius || rDist > z_.backgroundRadius) continue;
+          if (rDist < z_.clearingRadius || rDist > z_.forestOuter) continue;
           const ss = 0.4 + rng() * 1.0;
           if (!grid.isClear(x, z, ss * 0.2)) { rng(); continue; }
-          kelp.push({ x, z, scale: ss, rotY: rng() * Math.PI * 2 });
+          midKelp.push({ x, z, scale: ss, rotY: rng() * Math.PI * 2 });
         }
       }
+
+      // Background kelp: forest outer → background radius (silhouette fill)
+      const bgSamples = poissonDiscSample({
+        innerRadius: z_.forestOuter,
+        outerRadius: z_.backgroundRadius,
+        minDistance: 1.5,
+        count: maxBg * 2,
+        seed: 210,
+      });
+      const bgRng = seededRandom(211);
+      for (const s of bgSamples) {
+        if (backgroundKelp.length >= maxBg) break;
+        backgroundKelp.push({ x: s.x, z: s.z, scale: 0.6 + bgRng() * 0.8, rotY: bgRng() * Math.PI * 2 });
+      }
     }
+    const kelp = midKelp;
 
     // ── 6. Decorations — no grid checks, placed by ecology rules ─────
     type DecoType = "starfish" | "urchin" | "shell" | "anemone";
@@ -491,11 +513,12 @@
       }
     }
 
-    return { coral, kelp, rocks, boulders, heroRocks, decorations };
+    return { coral, kelp, backgroundKelp, rocks, boulders, heroRocks, decorations };
   });
 
   const coralPlacements = $derived(scenePlacements.coral);
   const kelpPlacements = $derived(scenePlacements.kelp);
+  const backgroundKelpPlacements = $derived(scenePlacements.backgroundKelp);
 
   const rockPlacements = $derived(scenePlacements.rocks);
   const boulderPlacements = $derived(scenePlacements.boulders);
@@ -587,6 +610,52 @@
       seed: i * 37,
       scale: 0.006 + rng() * 0.012,
     }));
+  });
+
+  // ── Hero Kelp Spawns ─────────────────────────────────────────────────
+
+  interface HeroKelpSpawn {
+    model: string;
+    x: number;
+    y: number;
+    z: number;
+    targetHeight: number;
+    rotY: number;
+    timeOffset: number;
+    animationIndex: number;
+  }
+
+  const HERO_KELP_VARIETIES = [
+    { model: "/models/ocean/kelp/breathing_kelp.glb", scaleRange: [3, 5] as [number, number], animIdx: 0 },
+    { model: "/models/ocean/kelp/leafy_kelp.glb", scaleRange: [2, 3.5] as [number, number], animIdx: 0 },
+  ];
+
+  const heroKelpSpawns = $derived.by((): HeroKelpSpawn[] => {
+    if (!activeConfig.kelp.enabled) return [];
+    const rng = seededRandom(700);
+    const spawns: HeroKelpSpawn[] = [];
+    const heroCount = Math.min(activeConfig.kelp.heroCount, qualityConfig.maxHeroKelp);
+    const reefMid = (zones.reefInner + zones.reefOuter) / 2;
+
+    for (let i = 0; i < heroCount; i++) {
+      const angle = rng() * Math.PI * 2;
+      const r = reefMid + (rng() - 0.5) * (zones.reefOuter - zones.reefInner) * 0.6;
+      const px = Math.cos(angle) * r;
+      const pz = Math.sin(angle) * r;
+      const th = getTerrainY(px, pz);
+      const variety = HERO_KELP_VARIETIES[i % HERO_KELP_VARIETIES.length]!;
+      spawns.push({
+        model: variety.model,
+        x: px,
+        y: groundY + th,
+        z: pz,
+        targetHeight: variety.scaleRange[0] + rng() * (variety.scaleRange[1] - variety.scaleRange[0]),
+        rotY: rng() * Math.PI * 2,
+        timeOffset: rng() * 6,
+        animationIndex: variety.animIdx,
+      });
+    }
+    return spawns;
   });
 
   // ── Model Scaling ─────────────────────────────────────────────────────
@@ -761,9 +830,17 @@
       });
     }
 
+    const glowBlend = activeConfig.coral.glowBlend;
+    const emissiveColor = new Color(activeConfig.coral.glowColor);
     const newInstances = models.map((model, idx) => {
       const placements = buckets.get(idx) ?? [];
-      return createColoredInstancedMesh(model.scene, placements);
+      const inst = createColoredInstancedMesh(model.scene, placements);
+      if (inst && glowBlend > 0) {
+        const mat = inst.material as MeshStandardMaterial;
+        mat.emissive = emissiveColor;
+        mat.emissiveIntensity = glowBlend * 2.0;
+      }
+      return inst;
     });
     coralInstances = newInstances;
 
@@ -811,8 +888,10 @@
   });
 
   // Instanced rock meshes — one InstancedMesh per variant (6 draw calls instead of 200+)
-  const rockInstances = $derived.by((): InstancedMesh[] => {
-    if (rockVariants.length === 0 || rockPlacements.length === 0) return [];
+  let rockInstances = $state<InstancedMesh[]>([]);
+
+  $effect(() => {
+    if (rockVariants.length === 0 || rockPlacements.length === 0) { rockInstances = []; return; }
     const buckets: Placement[][] = rockVariants.map(() => []);
     for (let i = 0; i < rockPlacements.length; i++) {
       buckets[i % rockVariants.length]!.push(rockPlacements[i]!);
@@ -820,7 +899,7 @@
     const m = new ThreeMatrix4();
     const q = new Quaternion();
     const s = new Vector3();
-    return rockVariants.map((variant, vi) => {
+    const newInstances = rockVariants.map((variant, vi) => {
       const placements = buckets[vi]!;
       const inst = new InstancedMesh(variant.geometry, variant.material, placements.length);
       inst.frustumCulled = false;
@@ -835,10 +914,17 @@
       inst.instanceMatrix.needsUpdate = true;
       return inst;
     });
+    rockInstances = newInstances;
+
+    return () => {
+      for (const inst of newInstances) inst.dispose();
+    };
   });
 
-  const boulderInstances = $derived.by(() => {
-    if (rockVariants.length === 0 || boulderPlacements.length === 0) return [];
+  let boulderInstances = $state<InstancedMesh[]>([]);
+
+  $effect(() => {
+    if (rockVariants.length === 0 || boulderPlacements.length === 0) { boulderInstances = []; return; }
     const buckets: Placement[][] = rockVariants.map(() => []);
     for (let i = 0; i < boulderPlacements.length; i++) {
       buckets[i % rockVariants.length]!.push(boulderPlacements[i]!);
@@ -846,7 +932,7 @@
     const m = new ThreeMatrix4();
     const q = new Quaternion();
     const s = new Vector3();
-    return rockVariants.map((variant, vi) => {
+    const newInstances = rockVariants.map((variant, vi) => {
       const placements = buckets[vi]!;
       if (placements.length === 0) return null;
       const mat = variant.material.clone();
@@ -863,13 +949,20 @@
       }
       inst.instanceMatrix.needsUpdate = true;
       return inst;
-    }).filter((inst) => inst !== null);
+    }).filter((inst) => inst !== null) as InstancedMesh[];
+    boulderInstances = newInstances;
+
+    return () => {
+      for (const inst of newInstances) { (inst.material as any)?.dispose?.(); inst.dispose(); }
+    };
   });
 
-  let kelpInstances = $state<(InstancedMesh | null)[]>([]);
+  // Mid-tier kelp instancing (forest zone — seaweed + kelp_plant with standard sway)
+  let midKelpInstances = $state<(InstancedMesh | null)[]>([]);
+  let midKelpSwayResults = $state<(SwayingInstancedMeshResult | null)[]>([]);
   $effect(() => {
     const models = [$seaweedGlb, $kelpPlantGlb].filter(Boolean) as { scene: Object3D }[];
-    if (models.length === 0) { kelpInstances = []; return; }
+    if (models.length === 0) { midKelpInstances = []; midKelpSwayResults = []; return; }
 
     const buckets: InstancePlacement[][] = models.map(() => []);
 
@@ -889,17 +982,71 @@
       });
     }
 
-    const newInstances = models.map((model, idx) =>
-      createInstancedMeshFromModel(model.scene, buckets[idx]!),
+    const cd = activeConfig.kelp.currentDirection;
+    const sway = { speed: activeConfig.kelp.swaySpeed, amplitude: activeConfig.kelp.swayAmplitude, currentDirection: cd as [number, number] };
+    const newResults = models.map((model, idx) =>
+      createSwayingInstancedMesh(model.scene, buckets[idx]!, sway),
     );
-    kelpInstances = newInstances;
+    midKelpSwayResults = newResults;
+    midKelpInstances = newResults.map(r => r?.mesh ?? null);
 
     return () => {
-      for (const inst of newInstances) disposeInstancedMesh(inst);
+      for (const r of newResults) {
+        if (r) disposeInstancedMesh(r.mesh);
+      }
     };
   });
 
+  // Background-tier kelp instancing (silhouette fill — slower speed, larger amplitude for distant parallax)
+  let bgKelpInstances = $state<(InstancedMesh | null)[]>([]);
+  let bgKelpSwayResults = $state<(SwayingInstancedMeshResult | null)[]>([]);
+  $effect(() => {
+    const models = [$seaweedGlb, $kelpPlantGlb].filter(Boolean) as { scene: Object3D }[];
+    if (models.length === 0 || backgroundKelpPlacements.length === 0) { bgKelpInstances = []; bgKelpSwayResults = []; return; }
 
+    const buckets: InstancePlacement[][] = models.map(() => []);
+
+    for (let i = 0; i < backgroundKelpPlacements.length; i++) {
+      const p = backgroundKelpPlacements[i]!;
+      const modelIdx = i % models.length;
+      const s = kelpScales.length > 0 ? kelpScales[i % kelpScales.length]! : 0.001;
+      const th = getTerrainY(p.x, p.z);
+      const baseOffset = (kelpBaseOffsets[modelIdx % kelpBaseOffsets.length] ?? 0) * p.scale * s;
+
+      buckets[modelIdx]!.push({
+        x: p.x,
+        z: p.z,
+        y: groundY + th + baseOffset,
+        scale: p.scale * s * 1.3,
+        rotY: p.rotY,
+      });
+    }
+
+    const cd = activeConfig.kelp.currentDirection;
+    const bgSway = { speed: activeConfig.kelp.swaySpeed * 0.4, amplitude: activeConfig.kelp.swayAmplitude * 2.5, currentDirection: cd as [number, number] };
+    const newResults = models.map((model, idx) =>
+      createSwayingInstancedMesh(model.scene, buckets[idx]!, bgSway),
+    );
+    bgKelpSwayResults = newResults;
+    bgKelpInstances = newResults.map(r => r?.mesh ?? null);
+
+    return () => {
+      for (const r of newResults) {
+        if (r) disposeInstancedMesh(r.mesh);
+      }
+    };
+  });
+
+  let kelpTime = 0;
+  useTask((delta) => {
+    kelpTime += delta;
+    for (const r of midKelpSwayResults) {
+      if (r) r.timeUniform.value = kelpTime;
+    }
+    for (const r of bgKelpSwayResults) {
+      if (r) r.timeUniform.value = kelpTime;
+    }
+  });
 
   let decorationInstances = $state<Record<string, InstancedMesh | null>>({});
   $effect(() => {
@@ -1039,19 +1186,17 @@
   });
 
   // ── Cleanup ───────────────────────────────────────────────────────────
-
-  onDestroy(() => {
-    // rockInstances and boulderInstances use procedural geometry (not effect-managed)
-    for (const inst of rockInstances) inst.dispose();
-    for (const inst of boulderInstances) { (inst.material as any)?.dispose?.(); inst.dispose(); }
-    // coralInstances, kelpInstances, heroRockInstances, and decorationInstances
-    // are cleaned up by their respective $effect teardowns.
-  });
+  // rockInstances, boulderInstances, coralInstances, midKelpInstances,
+  // bgKelpInstances, heroRockInstances, and decorationInstances are all
+  // cleaned up by their respective $effect teardowns.
 </script>
 
 <OceanLoadingScreen progress={loadingProgress} visible={!sceneReady} />
 
 {#if modelsLoaded}
+<!-- Procedural ambient audio (per-variant underwater soundscape) -->
+<OceanAmbientAudio {variant} />
+
 <!-- Sky gradient -->
 <SkyGradient
   topColor={activeConfig.sky.topColor}
@@ -1086,14 +1231,37 @@
   {/each}
 {/if}
 
-<!-- Kelp forest (instanced, Poisson-disc placed) -->
+<!-- Mid-tier kelp forest (instanced, forest zone) -->
 {#if activeConfig.kelp.enabled}
-  {#each kelpInstances as inst}
+  {#each midKelpInstances as inst}
     {#if inst}
       <T is={inst} />
     {/if}
   {/each}
 {/if}
+
+<!-- Background kelp silhouettes (instanced, slow sway, distant fill) -->
+{#if activeConfig.kelp.enabled}
+  {#each bgKelpInstances as inst}
+    {#if inst}
+      <T is={inst} />
+    {/if}
+  {/each}
+{/if}
+
+<!-- Hero kelps (bone-animated, individual placement) -->
+{#each heroKelpSpawns as hk}
+  <HeroKelp
+    model={hk.model}
+    x={hk.x}
+    y={hk.y}
+    z={hk.z}
+    targetHeight={hk.targetHeight}
+    rotY={hk.rotY}
+    timeOffset={hk.timeOffset}
+    animationIndex={hk.animationIndex}
+  />
+{/each}
 
 <!-- Hero rocks (instanced GLB models — formation anchors) -->
 {#if activeConfig.rocks.enabled && hasGlbRocks}
