@@ -220,8 +220,8 @@
   .col {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 16px 18px;
+    gap: 8px;
+    padding: 14px 16px;
   }
 
   .col + .col {
@@ -239,13 +239,13 @@
   }
 
   .col-effort {
-    width: 200px;
+    width: 320px;
     flex-shrink: 0;
   }
 
   .col-effects {
     flex: 1;
-    min-width: 260px;
+    min-width: 420px;
   }
 
   .col-header {
@@ -531,16 +531,26 @@
     white-space: nowrap;
   }
 
-  /* Effort */
+  /* Effort — 4 columns × 2 rows */
   .effort-wrap {
     --theme-stroke: rgba(255, 255, 255, 0.1);
     --theme-card-bg: rgba(255, 255, 255, 0.04);
     --theme-text-dim: rgba(255, 255, 255, 0.55);
     --theme-text: white;
-    --min-touch-target: 44px;
+    --min-touch-target: 40px;
   }
 
-  /* Effects */
+  .effort-wrap :global(.effort-palette) {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .effort-wrap :global(.palette-btn) {
+    min-width: 0;
+  }
+
+  /* Effects — 6 columns for compact height */
   .effects-wrap {
     --theme-card-bg: transparent;
     --theme-panel-bg: rgba(255, 255, 255, 0.04);
@@ -548,7 +558,7 @@
     --theme-stroke-strong: rgba(255, 255, 255, 0.2);
     --theme-text: white;
     --theme-text-dim: rgba(255, 255, 255, 0.55);
-    --min-touch-target: 44px;
+    --min-touch-target: 40px;
   }
 
   .effects-wrap :global(.effects-settings) {
@@ -559,5 +569,9 @@
 
   .effects-wrap :global(h3) {
     display: none;
+  }
+
+  .effects-wrap :global(.effect-chips) {
+    grid-template-columns: repeat(6, 1fr);
   }
 </style>
