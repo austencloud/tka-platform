@@ -120,6 +120,8 @@
   let selectedEffect: EffectType = $state("trails");
   let showPropOverlay = $state(false);
   let showEffectOverlay = $state(false);
+  let propSectionOpen = $state(false);
+  let effectSectionOpen = $state(false);
 
   const PROP_SVG_MAP: Record<string, string> = {
     [PropType.STAFF]: "/images/props/buttons/staff.svg",
@@ -744,30 +746,52 @@
         </div>
 
         <div class="desktop-sections">
-          <div class="desktop-section">
-            <h3 class="desktop-section-title">Prop</h3>
+          <button type="button" class="section-header" onclick={() => propSectionOpen = !propSectionOpen}>
+            <img
+              src={PROP_SVG_MAP[selectedProp] ?? "/images/props/buttons/staff.svg"}
+              alt=""
+              class="section-header-icon"
+            />
+            <span class="section-header-text">
+              <span class="section-header-label">Prop</span>
+              <span class="section-header-value">{selectedPropLabel}</span>
+            </span>
+            <i class="fa-solid fa-chevron-down section-chevron" class:open={propSectionOpen}></i>
+          </button>
+          {#if propSectionOpen}
             <div class="desktop-grid">
               {#each PROP_OPTIONS as opt}
                 <button
                   type="button"
                   class="overlay-option"
                   class:active={selectedProp === opt.value}
-                  onclick={() => handlePropChange(opt.value)}
+                  onclick={() => { handlePropChange(opt.value); propSectionOpen = false; }}
                 >
                   <img src={PROP_SVG_MAP[opt.value] ?? ""} alt="" class="overlay-prop-img" />
                   <span class="overlay-option-label">{opt.label}</span>
                 </button>
               {/each}
             </div>
-          </div>
-          <div class="desktop-section">
-            <h3 class="desktop-section-title">Effects</h3>
+          {/if}
+
+          <button type="button" class="section-header" onclick={() => effectSectionOpen = !effectSectionOpen}>
+            <i
+              class="fa-solid {selectedEffectMeta.icon} section-header-fa"
+              style:color={selectedEffectMeta.color}
+            ></i>
+            <span class="section-header-text">
+              <span class="section-header-label">Effects</span>
+              <span class="section-header-value">{selectedEffectMeta.label}</span>
+            </span>
+            <i class="fa-solid fa-chevron-down section-chevron" class:open={effectSectionOpen}></i>
+          </button>
+          {#if effectSectionOpen}
             <div class="desktop-grid">
               <button
                 type="button"
                 class="overlay-option"
                 class:active={selectedEffect === "none"}
-                onclick={() => handleEffectChange("none")}
+                onclick={() => { handleEffectChange("none"); effectSectionOpen = false; }}
               >
                 <i class="fa-solid fa-ban overlay-effect-icon" style:color="#888"></i>
                 <span class="overlay-option-label">None</span>
@@ -777,14 +801,15 @@
                   type="button"
                   class="overlay-option"
                   class:active={selectedEffect === eff.id}
-                  onclick={() => handleEffectChange(eff.id as EffectType)}
+                  onclick={() => { handleEffectChange(eff.id as EffectType); effectSectionOpen = false; }}
                 >
                   <i class="fa-solid {eff.icon} overlay-effect-icon" style:color={eff.color}></i>
                   <span class="overlay-option-label">{eff.label}</span>
                 </button>
               {/each}
             </div>
-          </div>
+          {/if}
+
           <div class="desktop-actions">
             <button type="button" class="grid-btn primary" onclick={handleDownload}>
               <i class="fa-solid fa-download grid-btn-fa"></i>
@@ -837,6 +862,16 @@
       <span class="time-display-sm">
         {formatTime(displayTime)}/{formatTime(duration)}
       </span>
+
+      <div class="scrubber-bpm">
+        <TempoControl
+          bpm={selectedBpm}
+          onBpmChange={handleBpmChange}
+          showPresets={false}
+          showPractice={false}
+          presetsMode="popover"
+        />
+      </div>
     </div>
 
     <!-- Prop overlay -->
@@ -1445,6 +1480,19 @@
     to { transform: translateY(0); }
   }
 
+  /* ── Scrubber BPM (hidden on mobile, shown in landscape/desktop) ── */
+
+  .scrubber-bpm {
+    display: none;
+    flex-shrink: 0;
+  }
+
+  /* ── Desktop sections (hidden on mobile) ── */
+
+  .desktop-sections {
+    display: none;
+  }
+
   /* ── Landscape: side-by-side layout ── */
 
   @media (orientation: landscape), (min-aspect-ratio: 5/4) {
@@ -1476,7 +1524,16 @@
       justify-content: center;
     }
 
+    .tempo-row {
+      display: none;
+    }
+
+    .scrubber-bpm {
+      display: flex;
+    }
+
     .button-grid {
+      grid-template-columns: 1fr;
       gap: 4px;
     }
 
@@ -1523,22 +1580,74 @@
     }
   }
 
-  /* ── Desktop: inline prop/effect grids ── */
+  /* ── Desktop: expandable prop/effect sections ── */
 
-  .desktop-sections {
-    display: none;
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--stroke);
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    transition: background 120ms ease;
   }
 
-  .desktop-section-title {
-    font-size: 0.8rem;
+  .section-header:hover {
+    background: var(--card-hover);
+  }
+
+  .section-header-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    flex-shrink: 0;
+  }
+
+  .section-header-fa {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .section-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    text-align: left;
+  }
+
+  .section-header-label {
+    font-size: 0.65rem;
     font-weight: 600;
     color: var(--text-dim);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin: 0 0 8px;
+    letter-spacing: 0.06em;
   }
 
-  @media (min-width: 1024px) {
+  .section-header-value {
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .section-chevron {
+    font-size: 10px;
+    color: var(--text-dim);
+    transition: transform 200ms ease;
+    flex-shrink: 0;
+  }
+
+  .section-chevron.open {
+    transform: rotate(180deg);
+  }
+
+  @media (min-width: 960px) {
     .player-layout {
       display: grid;
       grid-template-columns: 1fr 340px;
@@ -1574,6 +1683,14 @@
 
     .player-controls::-webkit-scrollbar {
       display: none;
+    }
+
+    .tempo-row {
+      display: none;
+    }
+
+    .scrubber-bpm {
+      display: flex;
     }
 
     .button-grid {

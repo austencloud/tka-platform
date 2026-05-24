@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QR Inner</title>
+<link rel="stylesheet" href="/fonts/css/fontawesome.min.css">
+<style>
+  @font-face {
+    font-family: "Font Awesome 6 Free";
+    font-style: normal;
+    font-weight: 900;
+    src: url("/fonts/webfonts/fa-solid-900.woff2") format("woff2");
+  }
+  .fa-solid { font-family: "Font Awesome 6 Free"; font-weight: 900; font-style: normal; -webkit-font-smoothing: antialiased; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0f0f1a;
+    color: #fff;
+    font-family: system-ui, -apple-system, sans-serif;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .page {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    --accent: #6366f1;
+    --accent-strong: #4f46e5;
+    --card-bg: rgba(255,255,255,0.06);
+    --card-hover: rgba(255,255,255,0.1);
+    --stroke: rgba(255,255,255,0.1);
+    --text-dim: rgba(255,255,255,0.6);
+    --min-touch: 44px;
+  }
+
+  /* ── Player layout ── */
+
+  .player-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 8px 8px;
+    padding-bottom: calc(48px + max(6px, env(safe-area-inset-bottom)));
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .word-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .video-area {
+    position: relative;
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sequence-video,
+  .sequence-canvas {
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 100%;
+    border-radius: 10px;
+    background: #000;
+    display: block;
+    object-fit: contain;
+  }
+
+  /* ── Controls ── */
+
+  .player-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 480px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .tempo-row {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bpm-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #fff;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .bpm-display {
+    background: rgba(138,92,246,0.15);
+    border: 1px solid rgba(138,92,246,0.3);
+    border-radius: 8px;
+    padding: 3px 12px;
+    text-align: center;
+    min-width: 56px;
+  }
+
+  .bpm-value { font-size: 0.95rem; font-weight: 700; color: #a78bfa; }
+  .bpm-label { font-size: 0.55rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* ── 2×2 button grid ── */
+
+  .button-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .grid-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--min-touch);
+    padding: 6px 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--stroke);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 120ms ease;
+    overflow: hidden;
+  }
+
+  .grid-btn:hover { background: var(--card-hover); }
+  .grid-btn.primary { background: var(--accent); border-color: var(--accent); justify-content: center; }
+  .grid-btn.primary:hover { background: var(--accent-strong); }
+  .grid-btn.secondary { justify-content: center; }
+
+  .grid-btn-icon { width: 20px; height: 20px; flex-shrink: 0; object-fit: contain; filter: brightness(0) invert(1); }
+  .grid-btn-fa { font-size: 14px; flex-shrink: 0; width: 20px; text-align: center; }
+  .grid-btn-text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+  .grid-btn-label { font-size: 0.75rem; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grid-btn-sub { font-size: 0.6rem; color: var(--text-dim); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grid-btn-chevron { font-size: 9px; color: var(--text-dim); flex-shrink: 0; }
+
+  /* ── Narrow screens: compact buttons ── */
+
+  @media (max-width: 359px) {
+    .grid-btn { padding: 4px 6px; gap: 4px; }
+    .grid-btn-text { display: none; }
+    .grid-btn-chevron { display: none; }
+    .grid-btn-icon { width: 24px; height: 24px; }
+    .grid-btn-fa { font-size: 18px; width: 24px; }
+    .grid-btn { justify-content: center; }
+  }
+
+  /* ── Bottom-edge scrubber bar ── */
+
+  .bottom-scrubber {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    background: rgba(15, 15, 26, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 50;
+  }
+
+  .play-btn-sm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+
+  .play-btn-sm:hover { background: rgba(255,255,255,0.2); }
+
+  .scrubber-track {
+    flex: 1;
+    position: relative;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+  }
+
+  .scrubber-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    background: #6366f1;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  .scrubber-input {
+    position: absolute;
+    top: 50%; left: 0;
+    width: 100%;
+    height: 44px;
+    transform: translateY(-50%);
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .scrubber-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba(0,0,0,0.4);
+  }
+
+  .scrubber-input::-moz-range-thumb {
+    width: 14px; height: 14px;
+    background: #fff; border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .time-display-sm {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.5);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* ── Overlay panels ── */
+
+  .overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 150ms ease;
+  }
+
+  .overlay-backdrop.hidden { display: none; }
+
+  .overlay-panel {
+    background: #1a1a2e;
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-width: min(480px, 100vw);
+    max-height: 70dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px;
+    animation: slideUp 200ms ease;
+    scrollbar-width: none;
+  }
+
+  .overlay-panel::-webkit-scrollbar { display: none; }
+
+  .overlay-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .overlay-title { font-size: 1.1rem; font-weight: 700; margin: 0; }
+
+  .overlay-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    background: none; border: none;
+    color: rgba(255,255,255,0.6);
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .overlay-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  @media (max-width: 380px) {
+    .overlay-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .overlay-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 72px;
+    padding: 8px 4px;
+    background: var(--card-bg);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+
+  .overlay-option:hover { background: var(--card-hover); }
+  .overlay-option.active { background: rgba(99,102,241,0.15); border-color: #6366f1; }
+
+  .overlay-prop-img { width: 32px; height: 32px; object-fit: contain; filter: brightness(0) invert(1); }
+  .overlay-effect-icon { font-size: 24px; }
+  .overlay-option-label { font-size: 0.7rem; color: var(--text-dim); text-align: center; line-height: 1.2; }
+  .overlay-option.active .overlay-option-label { color: #fff; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  /* ── Scrubber BPM (hidden on mobile, shown in landscape/desktop) ── */
+  .scrubber-bpm { display: none; flex-shrink: 0; }
+
+  /* ── Desktop sections (hidden on mobile) ── */
+  .desktop-sections { display: none; }
+
+  /* ── Landscape: side-by-side ── */
+
+  @media (orientation: landscape), (min-aspect-ratio: 5/4) {
+    .player-layout {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      grid-template-rows: auto 1fr;
+      padding: 8px 12px;
+      padding-bottom: calc(48px + max(6px, env(safe-area-inset-bottom)));
+      gap: 8px;
+    }
+    .word-title { grid-column: 1 / -1; font-size: 1.1rem; }
+    .video-area { grid-column: 1; grid-row: 2; max-width: none; min-height: 0; }
+    .player-controls { grid-column: 2; grid-row: 2; max-width: none; justify-content: center; }
+    .tempo-row { display: none; }
+    .scrubber-bpm { display: flex; }
+    .button-grid { grid-template-columns: 1fr; gap: 4px; }
+    .overlay-panel { max-width: 520px; border-radius: 16px; max-height: 80dvh; }
+    .overlay-backdrop { align-items: center; }
+  }
+
+  /* ── Wide portrait (Z Fold open portrait, tablets) ── */
+
+  @media (min-width: 600px) and (min-height: 800px) {
+    .player-layout { max-width: 600px; margin: 0 auto; gap: 8px; }
+    .video-area { max-width: 560px; }
+    .player-controls { max-width: 560px; }
+    .word-title { font-size: 1.5rem; }
+    .overlay-panel { max-width: 560px; border-radius: 16px; max-height: 60dvh; }
+    .overlay-backdrop { align-items: center; }
+  }
+
+  /* ── Debug badge ── */
+  .debug-badge {
+    position: fixed;
+    top: 4px; right: 4px;
+    background: rgba(0,0,0,0.7);
+    color: #4ade80;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 999;
+    font-family: monospace;
+  }
+
+  /* ── Desktop: expandable sections ── */
+
+  .section-header {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 10px 12px; background: var(--card-bg);
+    border: 1px solid var(--stroke); border-radius: 10px;
+    color: #fff; cursor: pointer; transition: background 120ms ease;
+  }
+  .section-header:hover { background: var(--card-hover); }
+  .section-header-icon { width: 20px; height: 20px; object-fit: contain; filter: brightness(0) invert(1); flex-shrink: 0; }
+  .section-header-fa { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+  .section-header-text { display: flex; flex-direction: column; gap: 1px; flex: 1; text-align: left; }
+  .section-header-label { font-size: 0.65rem; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+  .section-header-value { font-size: 0.85rem; font-weight: 500; }
+  .section-chevron { font-size: 10px; color: var(--text-dim); transition: transform 200ms ease; flex-shrink: 0; }
+  .section-chevron.open { transform: rotate(180deg); }
+
+  @media (min-width: 960px) {
+    .player-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      grid-template-rows: auto 1fr;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      padding-bottom: calc(56px + max(8px, env(safe-area-inset-bottom)));
+      gap: 16px;
+    }
+    .word-title { grid-column: 1 / -1; font-size: 1.75rem; }
+    .video-area { grid-column: 1; grid-row: 2; max-width: none; min-height: 0; }
+    .player-controls {
+      grid-column: 2; grid-row: 2;
+      max-width: none;
+      justify-content: flex-start;
+      overflow-y: auto;
+      scrollbar-width: none;
+      gap: 12px;
+    }
+    .player-controls::-webkit-scrollbar { display: none; }
+    .tempo-row { display: none; }
+    .scrubber-bpm { display: flex; }
+    .button-grid { display: none; }
+    .desktop-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+    .desktop-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .desktop-grid .overlay-option { min-height: 60px; padding: 6px 4px; gap: 4px; }
+    .desktop-grid .overlay-prop-img { width: 26px; height: 26px; }
+    .desktop-grid .overlay-effect-icon { font-size: 20px; }
+    .desktop-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .bottom-scrubber {
+      left: 50%;
+      right: auto;
+      width: 100%;
+      max-width: 1000px;
+      transform: translateX(-50%);
+      border-radius: 12px 12px 0 0;
+    }
+    .overlay-panel { max-width: 600px; border-radius: 16px; max-height: 70dvh; }
+    .overlay-backdrop { align-items: center; }
+  }
+
+  @media (min-width: 1440px) {
+    .player-layout { max-width: 1200px; grid-template-columns: 1fr 380px; }
+    .desktop-grid { grid-template-columns: repeat(4, 1fr); }
+    .bottom-scrubber { max-width: 1200px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="player-layout">
+    <h1 class="word-title">GALAXY</h1>
+
+    <div class="video-area">
+      <canvas class="sequence-canvas" id="canvas" width="720" height="720"></canvas>
+    </div>
+
+    <div class="player-controls">
+      <div class="tempo-row">
+        <button class="bpm-btn" id="bpm-down">−</button>
+        <div class="bpm-display">
+          <div class="bpm-value" id="bpm-val">60</div>
+          <div class="bpm-label">BPM</div>
+        </div>
+        <button class="bpm-btn" id="bpm-up">+</button>
+      </div>
+
+      <div class="button-grid">
+        <button class="grid-btn" id="btn-prop">
+          <img src="/images/props/buttons/staff.svg" alt="" class="grid-btn-icon" id="prop-icon">
+          <span class="grid-btn-text">
+            <span class="grid-btn-label">Prop</span>
+            <span class="grid-btn-sub" id="prop-sub">Staff</span>
+          </span>
+          <i class="fa-solid fa-chevron-right grid-btn-chevron"></i>
+        </button>
+        <button class="grid-btn" id="btn-effect">
+          <i class="fa-solid fa-route grid-btn-fa" id="effect-icon" style="color:#60a5fa"></i>
+          <span class="grid-btn-text">
+            <span class="grid-btn-label">Effects</span>
+            <span class="grid-btn-sub" id="effect-sub">Trails</span>
+          </span>
+          <i class="fa-solid fa-chevron-right grid-btn-chevron"></i>
+        </button>
+        <button class="grid-btn primary" id="btn-download">
+          <i class="fa-solid fa-download grid-btn-fa"></i>
+          <span class="grid-btn-label">Download</span>
+        </button>
+        <a href="#" class="grid-btn secondary" onclick="return false">
+          <i class="fa-solid fa-compass grid-btn-fa"></i>
+          <span class="grid-btn-label">Open TKA</span>
+        </a>
+      </div>
+
+      <div class="desktop-sections">
+        <button class="section-header" id="prop-section-toggle" onclick="togglePropSection()">
+          <img src="/images/props/buttons/staff.svg" alt="" class="section-header-icon" id="section-prop-icon">
+          <span class="section-header-text">
+            <span class="section-header-label">Prop</span>
+            <span class="section-header-value" id="section-prop-value">Staff</span>
+          </span>
+          <i class="fa-solid fa-chevron-down section-chevron" id="prop-chevron"></i>
+        </button>
+        <div class="desktop-grid" id="desktop-prop-grid" style="display:none"></div>
+
+        <button class="section-header" id="effect-section-toggle" onclick="toggleEffectSection()">
+          <i class="fa-solid fa-route section-header-fa" id="section-effect-icon" style="color:#60a5fa"></i>
+          <span class="section-header-text">
+            <span class="section-header-label">Effects</span>
+            <span class="section-header-value" id="section-effect-value">Trails</span>
+          </span>
+          <i class="fa-solid fa-chevron-down section-chevron" id="effect-chevron"></i>
+        </button>
+        <div class="desktop-grid" id="desktop-effect-grid" style="display:none"></div>
+
+        <div class="desktop-actions">
+          <button class="grid-btn primary" onclick="alert('Download: ' + selectedProp + ' + ' + selectedEffect)">
+            <i class="fa-solid fa-download grid-btn-fa"></i>
+            <span class="grid-btn-label">Download</span>
+          </button>
+          <a href="#" class="grid-btn secondary" onclick="return false">
+            <i class="fa-solid fa-compass grid-btn-fa"></i>
+            <span class="grid-btn-label">Open TKA</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom scrubber -->
+<div class="bottom-scrubber">
+  <button class="play-btn-sm" id="play-btn">
+    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" id="play-icon">
+      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+    </svg>
+  </button>
+  <div class="scrubber-track">
+    <div class="scrubber-fill" id="fill"></div>
+    <input type="range" class="scrubber-input" min="0" max="800" step="1" value="0" id="scrub">
+  </div>
+  <span class="time-display-sm" id="time-disp">0:00/0:08</span>
+  <div class="scrubber-bpm">
+    <button class="bpm-btn" id="scrub-bpm-down">−</button>
+    <div class="bpm-display">
+      <div class="bpm-value" id="scrub-bpm-val">60</div>
+      <div class="bpm-label">BPM</div>
+    </div>
+    <button class="bpm-btn" id="scrub-bpm-up">+</button>
+  </div>
+</div>
+
+<!-- Prop overlay -->
+<div class="overlay-backdrop hidden" id="prop-overlay">
+  <div class="overlay-panel" onclick="event.stopPropagation()">
+    <div class="overlay-header">
+      <h2 class="overlay-title">Prop</h2>
+      <button class="overlay-close" onclick="closePropOverlay()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="overlay-grid" id="prop-grid"></div>
+  </div>
+</div>
+
+<!-- Effect overlay -->
+<div class="overlay-backdrop hidden" id="effect-overlay">
+  <div class="overlay-panel" onclick="event.stopPropagation()">
+    <div class="overlay-header">
+      <h2 class="overlay-title">Effects</h2>
+      <button class="overlay-close" onclick="closeEffectOverlay()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="overlay-grid" id="effect-grid"></div>
+  </div>
+</div>
+
+<div class="debug-badge" id="dbg"></div>
+
+<script>
+// ── Debug ──
+function updDbg() {
+  document.getElementById('dbg').textContent =
+    window.innerWidth + '×' + window.innerHeight +
+    (document.documentElement.scrollHeight > window.innerHeight ? ' OVERFLOW' : ' FITS');
+}
+updDbg();
+window.addEventListener('resize', updDbg);
+
+// ── Canvas animation (simulated sequence video) ──
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = 720, H = 720;
+const TOTAL_FRAMES = 480; // 8s at 60fps
+const DURATION = 8;
+let frame = 0;
+let playing = true;
+let speed = 1;
+let animId = null;
+let lastTime = 0;
+
+const COLORS = {
+  blue: '#3b82f6',
+  red: '#ef4444',
+  grid: 'rgba(255,255,255,0.08)',
+  gridLine: 'rgba(255,255,255,0.12)',
+};
+
+function drawFrame(f) {
+  const t = f / TOTAL_FRAMES;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = '#0a0a1a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = COLORS.gridLine;
+  ctx.lineWidth = 1;
+  const cx = W/2, cy = H/2, r = 280;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r*0.5, 0, Math.PI*2);
+  ctx.stroke();
+  for (let i = 0; i < 8; i++) {
+    const a = (i/8) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a)*r, cy + Math.sin(a)*r);
+    ctx.stroke();
+  }
+
+  // Grid dots
+  for (let i = 0; i < 8; i++) {
+    const a = (i/8) * Math.PI * 2;
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(a)*r, cy + Math.sin(a)*r, 4, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Two "props" orbiting
+  const blueAngle = t * Math.PI * 4 + Math.PI;
+  const redAngle = t * Math.PI * 4;
+  const orbitR = r * 0.6;
+
+  // Trails
+  const trailLen = 20;
+  for (let i = 0; i < trailLen; i++) {
+    const tt = (f - i*2) / TOTAL_FRAMES;
+    const alpha = (1 - i/trailLen) * 0.4;
+    const ba = tt * Math.PI * 4 + Math.PI;
+    const ra = tt * Math.PI * 4;
+    ctx.fillStyle = `rgba(59,130,246,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(ba)*orbitR, cy + Math.sin(ba)*orbitR, 6, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(239,68,68,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(ra)*orbitR, cy + Math.sin(ra)*orbitR, 6, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Blue prop (staff line)
+  const bx = cx + Math.cos(blueAngle)*orbitR;
+  const by = cy + Math.sin(blueAngle)*orbitR;
+  const staffLen = 60;
+  const bsa = blueAngle + Math.PI/2;
+  ctx.strokeStyle = COLORS.blue;
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(bx - Math.cos(bsa)*staffLen/2, by - Math.sin(bsa)*staffLen/2);
+  ctx.lineTo(bx + Math.cos(bsa)*staffLen/2, by + Math.sin(bsa)*staffLen/2);
+  ctx.stroke();
+
+  // Red prop
+  const rx = cx + Math.cos(redAngle)*orbitR;
+  const ry = cy + Math.sin(redAngle)*orbitR;
+  const rsa = redAngle + Math.PI/2;
+  ctx.strokeStyle = COLORS.red;
+  ctx.beginPath();
+  ctx.moveTo(rx - Math.cos(rsa)*staffLen/2, ry - Math.sin(rsa)*staffLen/2);
+  ctx.lineTo(rx + Math.cos(rsa)*staffLen/2, ry + Math.sin(rsa)*staffLen/2);
+  ctx.stroke();
+
+  // Tip dots
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(bx + Math.cos(bsa)*staffLen/2, by + Math.sin(bsa)*staffLen/2, 5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(rx + Math.cos(rsa)*staffLen/2, ry + Math.sin(rsa)*staffLen/2, 5, 0, Math.PI*2);
+  ctx.fill();
+
+  // Step indicator
+  const stepIdx = Math.floor(t * 8) % 8;
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '600 24px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Step ' + (stepIdx + 1), cx, 40);
+}
+
+function animate(ts) {
+  if (!playing) return;
+  if (!lastTime) lastTime = ts;
+  const dt = (ts - lastTime) / 1000;
+  lastTime = ts;
+
+  frame += dt * 60 * speed;
+  if (frame >= TOTAL_FRAMES) frame = 0;
+
+  drawFrame(Math.floor(frame));
+  updateScrubber();
+  animId = requestAnimationFrame(animate);
+}
+
+function updateScrubber() {
+  const pct = (frame / TOTAL_FRAMES) * 100;
+  document.getElementById('fill').style.width = pct + '%';
+  document.getElementById('scrub').value = Math.floor(frame);
+  const sec = (frame / TOTAL_FRAMES) * DURATION;
+  document.getElementById('time-disp').textContent = fmt(sec) + '/' + fmt(DURATION);
+}
+
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + String(sec).padStart(2, '0');
+}
+
+// Start
+drawFrame(0);
+animId = requestAnimationFrame(animate);
+
+// ── Play/Pause ──
+const playBtn = document.getElementById('play-btn');
+const playIcon = document.getElementById('play-icon');
+const pausePath = 'M6 19h4V5H6v14zm8-14v14h4V5h-4z';
+const playPath = 'M8 5v14l11-7z';
+
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  if (playing) {
+    lastTime = 0;
+    playIcon.innerHTML = '<path d="' + pausePath + '"/>';
+    animId = requestAnimationFrame(animate);
+  } else {
+    playIcon.innerHTML = '<path d="' + playPath + '"/>';
+    if (animId) cancelAnimationFrame(animId);
+  }
+});
+
+// ── Scrubber ──
+const scrub = document.getElementById('scrub');
+scrub.max = TOTAL_FRAMES;
+let wasPaused = false;
+
+scrub.addEventListener('pointerdown', () => {
+  wasPaused = !playing;
+  playing = false;
+  if (animId) cancelAnimationFrame(animId);
+  playIcon.innerHTML = '<path d="' + playPath + '"/>';
+});
+
+scrub.addEventListener('input', () => {
+  frame = parseInt(scrub.value);
+  drawFrame(Math.floor(frame));
+  updateScrubber();
+});
+
+scrub.addEventListener('pointerup', finishScrub);
+scrub.addEventListener('change', finishScrub);
+
+function finishScrub() {
+  if (!wasPaused) {
+    playing = true;
+    lastTime = 0;
+    playIcon.innerHTML = '<path d="' + pausePath + '"/>';
+    animId = requestAnimationFrame(animate);
+  }
+}
+
+// ── BPM (syncs both tempo-row + scrubber controls) ──
+let bpm = 60;
+function updateBpm() {
+  document.getElementById('bpm-val').textContent = bpm;
+  var sv = document.getElementById('scrub-bpm-val');
+  if (sv) sv.textContent = bpm;
+  speed = bpm / 60;
+}
+document.getElementById('bpm-down').onclick = () => { bpm = Math.max(15, bpm - 5); updateBpm(); };
+document.getElementById('bpm-up').onclick = () => { bpm = Math.min(240, bpm + 5); updateBpm(); };
+document.getElementById('scrub-bpm-down').onclick = () => { bpm = Math.max(15, bpm - 5); updateBpm(); };
+document.getElementById('scrub-bpm-up').onclick = () => { bpm = Math.min(240, bpm + 5); updateBpm(); };
+
+// ── Prop overlay ──
+const PROPS = [
+  { id: 'staff',              label: 'Staff',         svg: '/images/props/buttons/staff.svg' },
+  { id: 'simple_staff',       label: 'Simple Staff',  svg: '/images/props/buttons/simple_staff.svg' },
+  { id: 'staff_v2',           label: 'Staff v2',      svg: '/images/props/buttons/staff_v2.svg' },
+  { id: 'fan',                label: 'Fan',           svg: '/images/props/buttons/fan.svg' },
+  { id: 'club',               label: 'Club',          svg: '/images/props/buttons/club.svg' },
+  { id: 'buugeng',            label: 'Buugeng',       svg: '/images/props/buttons/buugeng.svg' },
+  { id: 'fractalgeng',        label: 'Fractalgeng',   svg: '/images/props/buttons/fractalgeng.svg' },
+  { id: 'trigeng',            label: 'Trigeng',        svg: '/images/props/buttons/trigeng.svg' },
+  { id: 'triad',              label: 'Triad',         svg: '/images/props/buttons/triad.svg' },
+  { id: 'minihoop',           label: 'Hoop',          svg: '/images/props/buttons/minihoop.svg' },
+  { id: 'sword',              label: 'Sword',         svg: '/images/props/buttons/sword.svg' },
+  { id: 'hand',               label: 'Hand',          svg: '/images/props/buttons/hand.svg' },
+  { id: 'triquetra',          label: 'Triquetra',     svg: '/images/props/buttons/triquetra.svg' },
+  { id: 'triquetra2',         label: 'Triquetra 2',   svg: '/images/props/buttons/triquetra2.svg' },
+  { id: 'chicken',            label: 'Chicken',       svg: '/images/props/buttons/chicken.svg' },
+  { id: 'guitar',             label: 'Guitar',        svg: '/images/props/buttons/guitar.svg' },
+  { id: 'ukulele',            label: 'Ukulele',       svg: '/images/props/buttons/ukulele.svg' },
+  { id: 'doublestar',         label: 'Double Star',   svg: '/images/props/buttons/doublestar.svg' },
+  { id: 'eightrings',         label: 'Eight Rings',   svg: '/images/props/buttons/eightrings.svg' },
+  { id: 'contactball',        label: 'Contact Ball',  svg: '/images/props/buttons/contactball.svg' },
+  { id: 'doublecontactball',  label: 'Dbl Contact',   svg: '/images/props/buttons/doublecontactball.svg' },
+  { id: 'quiad',              label: 'Quiad',         svg: '/images/props/buttons/quiad.svg' },
+  { id: 'torch',              label: 'Torch',         svg: '/images/props/buttons/torch.svg' },
+];
+
+let selectedProp = 'staff';
+
+function buildPropGrid() {
+  const grid = document.getElementById('prop-grid');
+  grid.innerHTML = PROPS.map(p => `
+    <button class="overlay-option ${p.id === selectedProp ? 'active' : ''}"
+            onclick="selectProp('${p.id}')">
+      <img src="${p.svg}" alt="" class="overlay-prop-img">
+      <span class="overlay-option-label">${p.label}</span>
+    </button>
+  `).join('');
+}
+
+function selectProp(id) {
+  selectedProp = id;
+  var p = PROPS.find(function(x) { return x.id === id; });
+  document.getElementById('prop-sub').textContent = p.label;
+  document.getElementById('prop-icon').src = p.svg;
+  var si = document.getElementById('section-prop-icon');
+  if (si) si.src = p.svg;
+  var sv = document.getElementById('section-prop-value');
+  if (sv) sv.textContent = p.label;
+  closePropOverlay();
+  propSectionOpen = false;
+  refreshDesktopSections();
+}
+
+document.getElementById('btn-prop').onclick = () => {
+  buildPropGrid();
+  document.getElementById('prop-overlay').classList.remove('hidden');
+};
+document.getElementById('prop-overlay').onclick = closePropOverlay;
+function closePropOverlay() { document.getElementById('prop-overlay').classList.add('hidden'); }
+
+// ── Effect overlay ──
+const EFFECTS = [
+  { id: 'none',        label: 'None',        icon: 'fa-ban',              color: '#888' },
+  { id: 'trails',      label: 'Trails',      icon: 'fa-route',            color: '#60a5fa' },
+  { id: 'bloom',       label: 'Bloom',       icon: 'fa-sun',              color: '#fbbf24' },
+  { id: 'particles',   label: 'Particles',   icon: 'fa-sparkles',         color: '#a78bfa' },
+  { id: 'echo',        label: 'Echo',        icon: 'fa-clone',            color: '#34d399' },
+  { id: 'fire',        label: 'Fire',        icon: 'fa-fire',             color: '#f97316' },
+  { id: 'ice',         label: 'Ice',         icon: 'fa-snowflake',        color: '#67e8f9' },
+  { id: 'lightning',   label: 'Lightning',   icon: 'fa-bolt',             color: '#facc15' },
+  { id: 'smoke',       label: 'Smoke',       icon: 'fa-smog',             color: '#9ca3af' },
+  { id: 'neon',        label: 'Neon',        icon: 'fa-lightbulb',        color: '#f472b6' },
+  { id: 'glitch',      label: 'Glitch',      icon: 'fa-virus',            color: '#c084fc' },
+  { id: 'chromatic',   label: 'Chromatic',   icon: 'fa-palette',          color: '#fb923c' },
+  { id: 'water',       label: 'Water',       icon: 'fa-water',            color: '#38bdf8' },
+  { id: 'pixel',       label: 'Pixel',       icon: 'fa-th',               color: '#4ade80' },
+  { id: 'ink',         label: 'Ink',         icon: 'fa-pen-nib',          color: '#e2e8f0' },
+  { id: 'aurora',      label: 'Aurora',      icon: 'fa-rainbow',          color: '#2dd4bf' },
+  { id: 'mandala',     label: 'Mandala',     icon: 'fa-dharmachakra',     color: '#c084fc' },
+];
+
+let selectedEffect = 'trails';
+
+function buildEffectGrid() {
+  const grid = document.getElementById('effect-grid');
+  grid.innerHTML = EFFECTS.map(e => `
+    <button class="overlay-option ${e.id === selectedEffect ? 'active' : ''}"
+            onclick="selectEffect('${e.id}')">
+      <i class="fa-solid ${e.icon} overlay-effect-icon" style="color:${e.color}"></i>
+      <span class="overlay-option-label">${e.label}</span>
+    </button>
+  `).join('');
+}
+
+function selectEffect(id) {
+  selectedEffect = id;
+  var e = EFFECTS.find(function(x) { return x.id === id; });
+  document.getElementById('effect-sub').textContent = e.label;
+  var icon = document.getElementById('effect-icon');
+  icon.className = 'fa-solid ' + e.icon + ' grid-btn-fa';
+  icon.style.color = e.color;
+  var si = document.getElementById('section-effect-icon');
+  if (si) { si.className = 'fa-solid ' + e.icon + ' section-header-fa'; si.style.color = e.color; }
+  var sv = document.getElementById('section-effect-value');
+  if (sv) sv.textContent = e.label;
+  closeEffectOverlay();
+  effectSectionOpen = false;
+  refreshDesktopSections();
+}
+
+document.getElementById('btn-effect').onclick = () => {
+  buildEffectGrid();
+  document.getElementById('effect-overlay').classList.remove('hidden');
+};
+document.getElementById('effect-overlay').onclick = closeEffectOverlay;
+function closeEffectOverlay() { document.getElementById('effect-overlay').classList.add('hidden'); }
+
+// ── Download (mock) ──
+document.getElementById('btn-download').onclick = () => {
+  alert('Download: ' + selectedProp + ' + ' + selectedEffect);
+};
+
+// ── Desktop expandable sections ──
+var propSectionOpen = false;
+var effectSectionOpen = false;
+
+function togglePropSection() {
+  propSectionOpen = !propSectionOpen;
+  refreshDesktopSections();
+}
+
+function toggleEffectSection() {
+  effectSectionOpen = !effectSectionOpen;
+  refreshDesktopSections();
+}
+
+function refreshDesktopSections() {
+  var pg = document.getElementById('desktop-prop-grid');
+  var eg = document.getElementById('desktop-effect-grid');
+  var pc = document.getElementById('prop-chevron');
+  var ec = document.getElementById('effect-chevron');
+
+  if (pg) {
+    pg.style.display = propSectionOpen ? 'grid' : 'none';
+    pg.innerHTML = PROPS.map(function(p) {
+      return '<button class="overlay-option ' + (p.id === selectedProp ? 'active' : '') + '"' +
+        ' onclick="selectProp(\'' + p.id + '\')">' +
+        '<img src="' + p.svg + '" alt="" class="overlay-prop-img">' +
+        '<span class="overlay-option-label">' + p.label + '</span></button>';
+    }).join('');
+  }
+  if (eg) {
+    eg.style.display = effectSectionOpen ? 'grid' : 'none';
+    eg.innerHTML = EFFECTS.map(function(e) {
+      return '<button class="overlay-option ' + (e.id === selectedEffect ? 'active' : '') + '"' +
+        ' onclick="selectEffect(\'' + e.id + '\')">' +
+        '<i class="fa-solid ' + e.icon + ' overlay-effect-icon" style="color:' + e.color + '"></i>' +
+        '<span class="overlay-option-label">' + e.label + '</span></button>';
+    }).join('');
+  }
+  if (pc) pc.classList.toggle('open', propSectionOpen);
+  if (ec) ec.classList.toggle('open', effectSectionOpen);
+}
+refreshDesktopSections();
+</script>
+</body>
+</html>

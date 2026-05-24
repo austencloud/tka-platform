@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Scan — Device Playground</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #fff;
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-label {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-right: 4px;
+  }
+
+  .device-btn {
+    padding: 6px 14px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: transparent;
+    color: #fff;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 120ms ease;
+    white-space: nowrap;
+  }
+
+  .device-btn:hover { background: rgba(255,255,255,0.1); }
+  .device-btn.active {
+    background: #6366f1;
+    border-color: #6366f1;
+  }
+
+  .frames-container {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .device-frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .device-label {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+  }
+
+  .device-chrome {
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    position: relative;
+  }
+
+  .device-chrome iframe {
+    border: none;
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="toolbar-label">Presets</span>
+  <button class="device-btn" onclick="showPreset('phone')">iPhone 15</button>
+  <button class="device-btn" onclick="showPreset('zfold-cover')">Z Fold Cover</button>
+  <button class="device-btn" onclick="showPreset('zfold-open')">Z Fold Open</button>
+  <button class="device-btn" onclick="showPreset('zfold-landscape')">Z Fold Landscape</button>
+  <button class="device-btn" onclick="showPreset('desktop')">Desktop</button>
+  <button class="device-btn" onclick="showPreset('all')" id="btn-all">All Mobile</button>
+  <span class="toolbar-label" style="margin-left:auto">Scale</span>
+  <button class="device-btn" onclick="setScale(0.5)">50%</button>
+  <button class="device-btn active" onclick="setScale(0.7)" id="scale-70">70%</button>
+  <button class="device-btn" onclick="setScale(1)">100%</button>
+</div>
+
+<div class="frames-container" id="frames"></div>
+
+<script>
+const DEVICES = {
+  'phone':          { label: 'iPhone 15 Pro',      w: 393,  h: 852  },
+  'zfold-cover':    { label: 'Z Fold Cover',        w: 344,  h: 882  },
+  'zfold-open':     { label: 'Z Fold Open (Port)',   w: 674,  h: 882  },
+  'zfold-landscape':{ label: 'Z Fold Open (Land)',   w: 882,  h: 674  },
+  'desktop':        { label: 'Desktop 1440p',       w: 1440, h: 900  },
+};
+
+const MOBILE_KEYS = ['phone', 'zfold-cover', 'zfold-open', 'zfold-landscape'];
+
+let currentScale = 0.7;
+let currentPreset = 'all';
+
+function setScale(s) {
+  currentScale = s;
+  document.querySelectorAll('.device-btn').forEach(b => {
+    if (b.textContent.includes('%')) b.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  showPreset(currentPreset);
+}
+
+function showPreset(preset) {
+  currentPreset = preset;
+  document.querySelectorAll('.device-btn').forEach(b => {
+    if (!b.textContent.includes('%')) b.classList.remove('active');
+  });
+
+  const keys = preset === 'all' ? MOBILE_KEYS : [preset];
+
+  if (preset === 'all') document.getElementById('btn-all').classList.add('active');
+  else event?.target?.classList.add('active');
+
+  const container = document.getElementById('frames');
+  container.innerHTML = '';
+
+  keys.forEach(key => {
+    const dev = DEVICES[key];
+    const sw = Math.round(dev.w * currentScale);
+    const sh = Math.round(dev.h * currentScale);
+
+    const frame = document.createElement('div');
+    frame.className = 'device-frame';
+    frame.innerHTML = `
+      <div class="device-chrome" style="width:${sw+4}px">
+        <iframe src="/playground-qr-inner.html"
+                width="${sw}" height="${sh}"
+                style="width:${sw}px;height:${sh}px"></iframe>
+      </div>
+      <div class="device-label">${dev.label} — ${dev.w}×${dev.h}</div>
+    `;
+    container.appendChild(frame);
+  });
+}
+
+showPreset('all');
+</script>
+</body>
+</html>
