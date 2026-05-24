@@ -118,7 +118,7 @@ let { onDismiss } = $props<{
 		align-items: center;
 		justify-content: center;
 		background: transparent;
-		z-index: 9999;
+		z-index: var(--z-toast);
 		pointer-events: none;
 		transition: background var(--duration-emphasis) ease;
 		overflow: hidden;

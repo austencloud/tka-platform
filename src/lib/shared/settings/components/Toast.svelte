@@ -62,7 +62,7 @@
     box-shadow:
       0 8px 20px var(--theme-shadow),
       0 2px 6px rgba(0, 0, 0, 0.12);
-    z-index: 10000;
+    z-index: var(--z-toast);
     pointer-events: none;
     /* iOS spring animation - exact curve */
     animation: ios-toast-spring 0.5s cubic-bezier(0.36, 0.66, 0.04, 1);

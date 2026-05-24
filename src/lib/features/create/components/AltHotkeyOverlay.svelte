@@ -345,7 +345,7 @@
     top: 12px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 9999;
+    z-index: var(--z-overlay);
     width: fit-content;
     max-width: calc(100vw - 48px);
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.97));

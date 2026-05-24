@@ -241,7 +241,7 @@
     padding: 20px;
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(8px);
-    z-index: 10000;
+    z-index: var(--z-modal);
     animation: fadeIn 0.2s ease-out;
   }
 

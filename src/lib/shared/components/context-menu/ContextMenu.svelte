@@ -253,7 +253,7 @@
   */
   :global(.ctx-menu-content) {
     position: relative;
-    z-index: 9999;
+    z-index: var(--z-dropdown);
     min-width: 200px;
     max-width: 300px;
     padding: 4px;
@@ -274,7 +274,7 @@
   :global(.ctx-menu-content.ctx-submenu) {
     min-width: 160px;
     max-width: 260px;
-    z-index: 10000;
+    z-index: calc(var(--z-dropdown) + 1);
     transform-origin: top left;
   }
 

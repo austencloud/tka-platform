@@ -103,7 +103,7 @@
 	.burst-container {
 		position: fixed;
 		pointer-events: none;
-		z-index: 9999;
+		z-index: var(--z-toast);
 		transform: translate(-50%, -50%);
 	}
 </style>

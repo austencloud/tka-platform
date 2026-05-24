@@ -403,7 +403,7 @@
   }
 
   .search-results.fixed-position {
-    z-index: 10000;
+    z-index: var(--z-dropdown);
   }
 
   .search-results.inline {

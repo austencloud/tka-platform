@@ -240,7 +240,7 @@
     position: fixed;
     inset: 0;
     background: color-mix(in srgb, var(--theme-shadow) 60%, transparent);
-    z-index: 9999;
+    z-index: var(--z-tooltip);
     display: flex;
     align-items: flex-start;
     justify-content: center;

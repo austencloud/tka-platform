@@ -247,7 +247,7 @@
     position: fixed;
     left: 0;
     right: 0;
-    z-index: 9999;
+    z-index: var(--z-tooltip);
 
     /* Default: use CSS env() for VirtualKeyboard API browsers */
     bottom: calc(env(keyboard-inset-height, 0px));

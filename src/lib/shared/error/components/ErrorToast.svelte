@@ -83,7 +83,7 @@
     display: flex;
     flex-direction: column-reverse;
     gap: 8px;
-    z-index: 9999;
+    z-index: var(--z-toast);
     pointer-events: none;
     max-width: 380px;
     width: calc(100vw - 48px);

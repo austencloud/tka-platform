@@ -144,7 +144,7 @@
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
-    z-index: 10000;
+    z-index: var(--z-dropdown);
     overflow: hidden;
     animation: slideDown var(--duration-normal, 0.3s) ease;
     padding: 6px;

@@ -505,15 +505,33 @@ h6 {
   --button-active-current: var(--button-active-cosmic);
 
   /* ========================================
+     Z-INDEX SCALE
+     Centralized stacking layers — raw values >9
+     should use these tokens (0-9 is fine for
+     intra-component ordering).
+     ======================================== */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-sidebar: 200;
+  --z-dropdown: 300;
+  --z-drawer: 400;
+  --z-overlay: 500;
+  --z-modal: 600;
+  --z-toast: 700;
+  --z-tooltip: 800;
+  --z-priority: 900;
+  --z-debug: 1000;
+
+  /* ========================================
      SHEET SYSTEM - Design Tokens
      Unified styling for Drawer components
      ======================================== */
 
-  /* Z-Index Hierarchy */
-  --sheet-z-modal: 1200; /* Full-screen modal sheets (Share, LOOP) */
-  --sheet-z-overlay: 1100; /* Settings, overlays */
-  --sheet-z-base: 1000; /* Standard sheets */
-  --sheet-z-low: 150; /* Lower priority sheets */
+  /* Z-Index Hierarchy (legacy — migrate to --z-* scale) */
+  --sheet-z-modal: 1200;
+  --sheet-z-overlay: 1100;
+  --sheet-z-base: 1000;
+  --sheet-z-low: 150;
 
   /* Backdrop Styles */
   --backdrop-opaque: rgba(0, 0, 0, 0.85);

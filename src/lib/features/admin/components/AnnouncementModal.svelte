@@ -172,7 +172,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
+    z-index: var(--z-modal);
     padding: 20px;
     animation: fadeIn var(--duration-normal) ease-out;
   }

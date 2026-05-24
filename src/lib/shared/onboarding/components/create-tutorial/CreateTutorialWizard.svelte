@@ -181,7 +181,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.4);
-    z-index: 10000;
+    z-index: var(--z-priority);
     overflow-y: auto;
   }
 

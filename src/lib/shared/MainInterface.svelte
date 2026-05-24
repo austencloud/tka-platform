@@ -389,7 +389,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery"
     border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
-    z-index: 9999;
+    z-index: var(--z-priority);
   }
 
   .skip-link:focus {

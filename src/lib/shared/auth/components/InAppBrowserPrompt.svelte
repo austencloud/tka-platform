@@ -164,7 +164,7 @@
   .in-app-browser-prompt {
     position: fixed;
     inset: 0;
-    z-index: 10000;
+    z-index: var(--z-priority);
     display: flex;
     align-items: center;
     justify-content: center;

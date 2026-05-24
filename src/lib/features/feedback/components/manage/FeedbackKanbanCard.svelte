@@ -176,7 +176,7 @@
       top: ${y - cardRect.height / 2}px;
       width: ${cardRect.width}px;
       height: ${cardRect.height}px;
-      z-index: 10000;
+      z-index: var(--z-dropdown);
       pointer-events: none;
       opacity: 0.9;
       transform: scale(1.05) rotate(2deg);

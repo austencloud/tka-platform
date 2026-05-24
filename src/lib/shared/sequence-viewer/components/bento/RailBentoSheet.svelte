@@ -207,7 +207,7 @@
   .bento-portal {
     position: fixed;
     inset: 0;
-    z-index: 2147483645;
+    z-index: var(--z-priority);
     pointer-events: none;
   }
 
@@ -219,7 +219,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.65);
-    z-index: 2147483645;
+    z-index: var(--z-priority);
     cursor: pointer;
     border: none;
     padding: 0;
@@ -232,7 +232,7 @@
     right: 8px;
     bottom: 8px;
     max-height: 85vh;
-    z-index: 2147483646;
+    z-index: calc(var(--z-priority) + 1);
     background: #0d1018;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 16px;

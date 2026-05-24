@@ -504,7 +504,7 @@
   .bpm-custom-popover {
     position: fixed;
     transform: translate(-50%, -100%);
-    z-index: 9999;
+    z-index: var(--z-tooltip);
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 2px solid color-mix(in srgb, var(--theme-accent) 80%, transparent);
     border-radius: 16px;

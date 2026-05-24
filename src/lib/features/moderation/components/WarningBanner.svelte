@@ -117,7 +117,7 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 9999;
+    z-index: var(--z-toast);
     display: flex;
     align-items: center;
     justify-content: space-between;

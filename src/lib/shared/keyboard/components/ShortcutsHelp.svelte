@@ -252,7 +252,7 @@
     inset: 0;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(8px);
-    z-index: 9999;
+    z-index: var(--z-tooltip);
     display: flex;
     align-items: center;
     justify-content: center;

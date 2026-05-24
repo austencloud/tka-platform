@@ -271,7 +271,7 @@
 
   .search-container.expanded {
     width: clamp(200px, 40vw, 400px);
-    z-index: 10000;
+    z-index: var(--z-dropdown);
   }
 
   .search-button {

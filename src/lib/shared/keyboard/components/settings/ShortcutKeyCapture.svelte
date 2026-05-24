@@ -348,7 +348,7 @@
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
-    z-index: 9999;
+    z-index: var(--z-tooltip);
     display: flex;
     align-items: center;
     justify-content: center;

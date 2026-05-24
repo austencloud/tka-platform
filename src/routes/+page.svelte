@@ -386,7 +386,7 @@
     border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
-    z-index: 9999;
+    z-index: var(--z-overlay);
     transition: top var(--duration-normal) ease;
   }
 
