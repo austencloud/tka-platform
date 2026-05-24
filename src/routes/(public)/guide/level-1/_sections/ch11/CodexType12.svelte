@@ -15,7 +15,7 @@
     {#each ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"] as letter}
       <figure class="codex-cell">
         <img
-          src="/guide/level-1/images/double-staff-codex/{letter}.png"
+          src="/guide/level-1/images/double-staff-codex/{letter}.webp"
           alt="Letter {letter}"
           loading="lazy"
         />
@@ -29,7 +29,7 @@
     {#each ["W", "X", "Y", "Z", "Σ", "Δ", "θ", "Ω"] as letter}
       <figure class="codex-cell">
         <img
-          src="/guide/level-1/images/double-staff-codex/{letter}.png"
+          src="/guide/level-1/images/double-staff-codex/{letter}.webp"
           alt="Letter {letter}"
           loading="lazy"
         />

@@ -8,7 +8,7 @@
     {#each ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "θ-", "Ω-"] as letter}
       <figure class="codex-cell">
         <img
-          src="/guide/level-1/images/double-staff-codex/{letter}.png"
+          src="/guide/level-1/images/double-staff-codex/{letter}.webp"
           alt="Letter {letter}"
           loading="lazy"
         />
@@ -22,7 +22,7 @@
     {#each ["Φ", "Ψ", "Λ"] as letter}
       <figure class="codex-cell">
         <img
-          src="/guide/level-1/images/double-staff-codex/{letter}.png"
+          src="/guide/level-1/images/double-staff-codex/{letter}.webp"
           alt="Letter {letter}"
           loading="lazy"
         />
@@ -36,7 +36,7 @@
     {#each ["Φ-", "Ψ-", "Λ-"] as letter}
       <figure class="codex-cell">
         <img
-          src="/guide/level-1/images/double-staff-codex/{letter}.png"
+          src="/guide/level-1/images/double-staff-codex/{letter}.webp"
           alt="Letter {letter}"
           loading="lazy"
         />
@@ -50,7 +50,7 @@
     {#each [{ file: "α", label: "α" }, { file: "β", label: "β" }, { file: "Γ", label: "Γ" }] as { file, label }}
       <figure class="codex-cell">
         <img
-          src="/guide/level-1/images/double-staff-codex/{file}.png"
+          src="/guide/level-1/images/double-staff-codex/{file}.webp"
           alt="Letter {label}"
           loading="lazy"
         />

@@ -10,7 +10,7 @@
       img.crossOrigin = 'anonymous';
       img.onload = () => drawCanvas(img);
       img.onerror = () => reject(new Error("Failed to load image"));
-      img.src = '/images/austen-fire.jpg';
+      img.src = '/images/austen-fire.webp';
 
       function drawCanvas(artistImg: HTMLImageElement) {
         // Scale down to fit under 5MB limit
