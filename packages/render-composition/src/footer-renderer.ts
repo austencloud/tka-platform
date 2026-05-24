@@ -20,8 +20,10 @@ export interface FooterOptions {
   backgroundColor?: string;
   /** Override footer border color */
   borderColor?: string;
-  /** Left-side label override (e.g. "QS 1:1" for deck cards) */
+  /** Left-side label override (e.g. "SS 🌊" for VTG cards) */
   leftLabel?: string;
+  /** Right-side label override (e.g. "1:1" turn ratio) */
+  rightLabel?: string;
 }
 
 export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptions): void {
@@ -31,7 +33,7 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
     darkMode = true,
     showCreatorName = true, showNotes = true, showBirthday = true,
     backgroundColor, borderColor,
-    leftLabel,
+    leftLabel, rightLabel,
   } = options;
 
   const footerTop = canvasHeight - footerHeight;
@@ -65,8 +67,12 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
     ctx.fillText(userName, margin, yPosition);
   }
 
-  // Right: year only
-  if (showBirthday) {
+  // Right: rightLabel or year
+  if (rightLabel?.trim()) {
+    ctx.font = `bold ${fontSize}px Cambria, Georgia, serif`;
+    ctx.textAlign = "right";
+    ctx.fillText(rightLabel, canvasWidth - margin, yPosition);
+  } else if (showBirthday) {
     const dateToUse = birthday || new Date();
     const year = dateToUse.getFullYear().toString();
 

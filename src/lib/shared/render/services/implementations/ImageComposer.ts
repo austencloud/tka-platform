@@ -590,7 +590,8 @@ export class ImageComposer {
         options.customNotesText,
         options.deckCard ? DECK_HEADER_BG : undefined,
         options.deckCard ? DECK_BORDER_COLOR : undefined,
-        options.leftLabel
+        options.leftLabel,
+        options.rightLabel,
       );
     }
 

@@ -21,8 +21,10 @@ export interface SequenceExportOptions {
   showNotes?: boolean; 
   showBirthday?: boolean; 
   customNotesText?: string; 
-  /** Left-side label override (e.g. "QS 1:1" for deck cards) */
+  /** Left-side label override (e.g. "SS 🌊" for VTG cards) */
   leftLabel?: string;
+  /** Right-side label override (e.g. "1:1" turn ratio) */
+  rightLabel?: string;
 
   propTypeOverride?: PropType;
 

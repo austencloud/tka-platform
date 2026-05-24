@@ -265,9 +265,11 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     }
 
     // 11. Draw Position glyph or Solo motion glyph (top center)
+    // When showTKA is false (e.g. ChoreoCard solo mode), skip the baked-in solo
+    // glyph — CellRenderer provides its own HTML overlay for locations/turns.
     const singleColor =
       visibility.showBlueMotion === false || visibility.showRedMotion === false;
-    if (singleColor) {
+    if (singleColor && visibility.showTKA) {
       drawSoloMotionGlyph(
         ctx, preparedPictograph, size, isDarkMode,
         visibility.showBlueMotion ?? true,
