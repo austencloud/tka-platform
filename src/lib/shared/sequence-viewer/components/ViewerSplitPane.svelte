@@ -20,6 +20,7 @@
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
   import PerformerRail from "$lib/shared/3d/components/controls/PerformerRail.svelte";
+  import PerformerHub from "$lib/shared/3d/components/controls/PerformerHub.svelte";
   import PaneContentSelector from './PaneContentSelector.svelte';
   import VideoGallery from './VideoGallery.svelte';
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -127,6 +128,8 @@
     onProgressBarSeek?: (targetStep: number) => void;
     onProgressBarScrubStart?: () => void;
     onProgressBarScrubEnd?: () => void;
+    playbackMode?: "continuous" | "step";
+    onPlaybackModeChange?: (mode: "continuous" | "step") => void;
     rerenderTrigger?: number;
     /**
      * When true, the tap-to-focus handlers on both panes are suppressed
@@ -160,6 +163,8 @@
     onProgressBarSeek,
     onProgressBarScrubStart,
     onProgressBarScrubEnd,
+    playbackMode,
+    onPlaybackModeChange,
     rerenderTrigger = 0,
     isExporting = false,
     splitConfig = { leftPane: 'animation', rightPane: 'card' },
@@ -225,6 +230,13 @@
     onUnfocusPane();
   }
 
+  // Persist the 3D canvas once it's been activated — avoids full WebGL/GLB/SDF
+  // teardown+rebuild on every pane switch.
+  let _3dLeftMounted = $state(false);
+  const _3dLeftActive = $derived(splitConfig.leftPane === 'animation-3d');
+  $effect(() => {
+    if (_3dLeftActive) _3dLeftMounted = true;
+  });
 
 </script>
 
@@ -254,11 +266,54 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
       />
     {/if}
 
+    <!-- Persistent 3D canvas — stays mounted after first activation to preserve
+         WebGL context, loaded GLBs, and generated SDF textures across pane switches. -->
+    {#if _3dLeftMounted}
+      <div
+        class="media-pane animation-pane persistent-3d"
+        class:persistent-3d-hidden={!_3dLeftActive}
+      >
+        {#if _3dLeftActive && layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
+          <div
+            class="pane-close-btn"
+            role="button"
+            tabindex="0"
+            onclick={handleCloseClick}
+            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") handleCloseClick(e); }}
+            aria-label="Exit focus mode"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </div>
+        {/if}
+
+        <div
+          class="canvas-layer canvas-3d-layer"
+          style="opacity:1;pointer-events:auto;"
+        >
+          <Viewer3DCanvas
+            sequenceData={playback.animationState.sequenceData}
+            currentStep={playback.currentStep}
+            isPlaying={playback.isPlaying}
+            {bpm}
+            {onBpmChange}
+            bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+            redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+            hideOverlays={false}
+            fullScreen={layout.focusedPane === "animation"}
+            onExitFullScreen={onUnfocusPane}
+            {onPlaybackToggle}
+            {onProgressBarSeek}
+            {playbackMode}
+            {onPlaybackModeChange}
+          />
+        </div>
+      </div>
+    {/if}
+
     {#if splitConfig.leftPane === 'animation'}
       <div
         class="media-pane animation-pane"
       >
-        <!-- Close button - shown when focused (desktop only) -->
         {#if layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
           <div
             class="pane-close-btn"
@@ -313,56 +368,11 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
 
       </div>
 
-      <RightRail renderMode="2d" {bpm} {onBpmChange} />
+      <RightRail renderMode="2d" />
     {:else if splitConfig.leftPane === 'animation-3d'}
-      <div class="media-pane animation-pane">
-        {#if layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
-          <div
-            class="pane-close-btn"
-            role="button"
-            tabindex="0"
-            onclick={handleCloseClick}
-            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") handleCloseClick(e); }}
-            aria-label="Exit focus mode"
-          >
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </div>
-        {/if}
-
-        {#if playback.animationLoading}
-          <div class="loading-state">
-            <ProgressRing percent={-1} size={32} strokeWidth={3} />
-          </div>
-        {:else if playback.animationState.error}
-          <div class="error-state">
-            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-            <span>{playback.animationState.error}</span>
-          </div>
-        {:else}
-          <div
-            class="canvas-layer canvas-3d-layer"
-            style="opacity:1;pointer-events:auto;"
-          >
-            <Viewer3DCanvas
-              sequenceData={playback.animationState.sequenceData}
-              currentStep={playback.currentStep}
-              isPlaying={playback.isPlaying}
-              {bpm}
-              {onBpmChange}
-              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-              hideOverlays={false}
-              fullScreen={layout.focusedPane === "animation"}
-              onExitFullScreen={onUnfocusPane}
-              {onPlaybackToggle}
-              {onProgressBarSeek}
-            />
-          </div>
-        {/if}
-      </div>
-
-      <RightRail renderMode="3d" {bpm} {onBpmChange} />
+      <RightRail renderMode="3d" />
       <PerformerRail />
+      <PerformerHub />
     {:else if splitConfig.leftPane === 'card'}
       <div class="media-pane preview-pane">
         <ChoreoCard
@@ -515,6 +525,8 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
               onExitFullScreen={onUnfocusPane}
               {onPlaybackToggle}
               {onProgressBarSeek}
+              {playbackMode}
+              {onPlaybackModeChange}
             />
           </div>
         </div>
@@ -553,6 +565,13 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     position: relative;
     /* No grid transition — animated grid-template-columns causes ChoreoCard's
        ResizeObserver to fire on every frame, producing a tiny→expand resize cascade. */
+  }
+
+  .persistent-3d-hidden {
+    visibility: hidden;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
 
   /* Split columns - tappable focus targets */
