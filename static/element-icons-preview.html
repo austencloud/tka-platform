@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VTG Element Icons — Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #1a1a2e;
+    color: #fff;
+    padding: 40px;
+  }
+  h1 { text-align: center; margin-bottom: 32px; font-size: 24px; opacity: 0.9; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 32px 24px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+  }
+  .icon-row {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .icon-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon-box img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+  }
+  .icon-box.large img {
+    width: 120px;
+    height: 120px;
+  }
+  .icon-box span {
+    font-size: 11px;
+    opacity: 0.5;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .label {
+    text-align: center;
+  }
+  .element-name {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .family-name {
+    font-size: 14px;
+    opacity: 0.6;
+    margin-top: 4px;
+  }
+  .emoji {
+    font-size: 48px;
+    line-height: 1;
+  }
+  .footer-preview {
+    width: 100%;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+  .swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .colors {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+  <h1>VTG Element Icons — Current Assets</h1>
+  <div class="grid">
+
+    <div class="card">
+      <div class="icon-row">
+        <div class="icon-box large"><img src="/images/elements/water.png" alt="water png"><span>PNG</span></div>
+        <div class="icon-box large"><img src="/images/elements/water.svg" alt="water svg"><span>SVG</span></div>
+        <div class="emoji">🌊</div>
+      </div>
+      <div class="label">
+        <div class="element-name" style="color:#63b7cd">Water</div>
+        <div class="family-name">Split-Same</div>
+      </div>
+      <div class="colors"><span class="swatch" style="background:#63b7cd"></span>#63b7cd <span class="swatch" style="background:#1a5276"></span>#1a5276</div>
+      <div class="footer-preview">Split-Same 1:1 - 🌊</div>
+    </div>
+
+    <div class="card">
+      <div class="icon-row">
+        <div class="icon-box large"><img src="/images/elements/earth.png" alt="earth png"><span>PNG</span></div>
+        <div class="icon-box large"><img src="/images/elements/earth.svg" alt="earth svg"><span>SVG</span></div>
+        <div class="emoji">🌍</div>
+      </div>
+      <div class="label">
+        <div class="element-name" style="color:#75A874">Earth</div>
+        <div class="family-name">Tog-Same</div>
+      </div>
+      <div class="colors"><span class="swatch" style="background:#75A874"></span>#75A874 <span class="swatch" style="background:#2a4a29"></span>#2a4a29</div>
+      <div class="footer-preview">Tog-Same 1:1 - 🌍</div>
+    </div>
+
+    <div class="card">
+      <div class="icon-row">
+        <div class="icon-box large"><img src="/images/elements/sun.png" alt="sun png"><span>PNG</span></div>
+        <div class="icon-box large"><img src="/images/elements/sun.svg" alt="sun svg"><span>SVG</span></div>
+        <div class="emoji">☀️</div>
+      </div>
+      <div class="label">
+        <div class="element-name" style="color:#ffde17">Sun</div>
+        <div class="family-name">Quarter-Same</div>
+      </div>
+      <div class="colors"><span class="swatch" style="background:#ffde17"></span>#ffde17 <span class="swatch" style="background:#7a6a00"></span>#7a6a00</div>
+      <div class="footer-preview">Quarter-Same 1:1 - ☀️</div>
+    </div>
+
+    <div class="card">
+      <div class="icon-row">
+        <div class="icon-box large"><img src="/images/elements/fire.png" alt="fire png"><span>PNG</span></div>
+        <div class="icon-box large"><img src="/images/elements/fire.svg" alt="fire svg"><span>SVG</span></div>
+        <div class="emoji">🔥</div>
+      </div>
+      <div class="label">
+        <div class="element-name" style="color:#f2673a">Fire</div>
+        <div class="family-name">Split-Opp</div>
+      </div>
+      <div class="colors"><span class="swatch" style="background:#f2673a"></span>#f2673a <span class="swatch" style="background:#6b1a0a"></span>#6b1a0a</div>
+      <div class="footer-preview">Split-Opp 1:1 - 🔥</div>
+    </div>
+
+    <div class="card">
+      <div class="icon-row">
+        <div class="icon-box large"><img src="/images/elements/air.png" alt="air png"><span>PNG</span></div>
+        <div class="icon-box large"><img src="/images/elements/air.svg" alt="air svg"><span>SVG</span></div>
+        <div class="emoji">💨</div>
+      </div>
+      <div class="label">
+        <div class="element-name" style="color:#78b7e3">Air</div>
+        <div class="family-name">Tog-Opp</div>
+      </div>
+      <div class="colors"><span class="swatch" style="background:#78b7e3"></span>#78b7e3 <span class="swatch" style="background:#1a4a6b"></span>#1a4a6b</div>
+      <div class="footer-preview">Tog-Opp 1:1 - 💨</div>
+    </div>
+
+    <div class="card">
+      <div class="icon-row">
+        <div class="icon-box large"><img src="/images/elements/moon.png" alt="moon png"><span>PNG</span></div>
+        <div class="icon-box large"><img src="/images/elements/moon.svg" alt="moon svg"><span>SVG</span></div>
+        <div class="emoji">🌙</div>
+      </div>
+      <div class="label">
+        <div class="element-name" style="color:#6a4199">Moon</div>
+        <div class="family-name">Quarter-Opp</div>
+      </div>
+      <div class="colors"><span class="swatch" style="background:#6a4199"></span>#6a4199 <span class="swatch" style="background:#2a1540"></span>#2a1540</div>
+      <div class="footer-preview">Quarter-Opp 1:1 - 🌙</div>
+    </div>
+
+  </div>
+</body>
+</html>
