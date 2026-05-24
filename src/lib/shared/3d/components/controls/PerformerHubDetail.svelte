@@ -1,27 +1,21 @@
 <script lang="ts">
-  /**
-   * PerformerHubDetail
-   *
-   * Three-column horizontal detail band rendered when a performer is selected.
-   * Sits inside the PerformerHub shell, to the right of PerformerSpine.
-   * Parent provides the glass background — this component has no background.
-   *
-   * Columns:
-   *  1. Identity — avatar circle, name, sequence label, badge, avatar picker
-   *  2. Controls — PerformerPropSizeSlider
-   *  3. Effects  — 4-column chip grid for per-performer effect toggles
-   */
-
   import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
-  import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { getPerformerColor } from "../../constants/performer-colors";
-  import type { EffectId } from "../../state/performer-settings-types";
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
-
-  // ────────────────────────────────────────────────────────────────
-  // State
-  // ────────────────────────────────────────────────────────────────
+  import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
+  import EffectsSettingsPanel from "./EffectsSettingsPanel.svelte";
+  import {
+    getBasePropType,
+    getAllVariations,
+    getPropTypeDisplayInfo,
+    isPropActive,
+    getBasePropsByCategory,
+    PROP_CATEGORIES,
+  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
@@ -31,7 +25,6 @@
       : null,
   );
 
-  // Identity derivations
   const performerColor = $derived(selectedIndex !== null ? getPerformerColor(selectedIndex) : "#6b7280");
   const badgeLabel = $derived(selectedIndex !== null ? `P${selectedIndex + 1}` : "");
 
@@ -43,19 +36,14 @@
   );
 
   const sequence = $derived(performer?.loadedSequence ?? null);
-  const sequenceWord = $derived(
-    sequence?.word ?? sequence?.name ?? null,
-  );
-  const sequenceBeats = $derived(
-    sequence?.steps?.length ?? null,
-  );
+  const sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
+  const sequenceBeats = $derived(sequence?.steps?.length ?? null);
   const sequenceLabel = $derived(
     sequenceWord && sequenceBeats !== null
       ? `${sequenceWord} · ${sequenceBeats} beats`
       : sequenceWord ?? (sequenceBeats !== null ? `${sequenceBeats} beats` : null),
   );
 
-  // Avatar picker toggle
   let showAvatarPicker = $state(false);
 
   function pickAvatar(id: AvatarId) {
@@ -63,54 +51,50 @@
     showAvatarPicker = false;
   }
 
-  // ────────────────────────────────────────────────────────────────
-  // Effects grid — only EffectId-compatible effects shown
-  // ────────────────────────────────────────────────────────────────
+  // Prop type selection (mirrors PropPopover logic)
+  const currentProp = $derived(
+    performer?.effectiveProp ?? viewer.defaultSettings.prop,
+  );
+  const propCategories = $derived(getBasePropsByCategory());
+  const selectedBase = $derived(getBasePropType(currentProp));
+  let expandedFamily = $state<PropType | null>(null);
+  const familyVariants = $derived(
+    expandedFamily ? getAllVariations(expandedFamily).filter(isPropActive) : [],
+  );
 
-  // EffectId union: trails | fire | charcoal | led | electricity | sparkles | motion | bloom
-  // Registry id "zap" maps to EffectId "electricity".
-  // "echo", "water", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse" are hidden.
-
-  type EffectChip = { effectId: EffectId; label: string; icon: string; color: string };
-
-  function toEffectId(registryId: string): EffectId | null {
-    if (registryId === "zap") return "electricity";
-    const valid: EffectId[] = ["trails", "fire", "charcoal", "led", "sparkles", "bloom"];
-    return (valid as string[]).includes(registryId) ? (registryId as EffectId) : null;
+  function handleFamilyClick(base: PropType) {
+    const activeVariants = getAllVariations(base).filter(isPropActive);
+    if (activeVariants.length <= 1) {
+      performer?.setProp(base);
+      expandedFamily = null;
+    } else {
+      expandedFamily = base;
+    }
   }
 
-  const effectChips: EffectChip[] = [
-    ...EFFECTS.flatMap((e) => {
-      const id = toEffectId(e.id);
-      if (!id) return [];
-      return [{
-        effectId: id,
-        label: e.id === "zap" ? "Zap" : e.label,
-        icon: e.icon.replace(/^fa-/, ""),
-        color: e.color,
-      }];
-    }),
-    // Motion appended last per spec
-    { effectId: "motion", label: "Motion", icon: "wind", color: "#22d3ee" },
-  ];
+  function handleVariantClick(variant: PropType) {
+    performer?.setProp(variant);
+  }
+
+  // Effort selection
+  const currentEffort = $derived(
+    performer?.effectiveEffortId ?? viewer.defaultSettings.effortId,
+  );
+
+  function handleEffortSelect(effortId: EffortId) {
+    performer?.setEffort(effortId);
+  }
 </script>
 
 {#if performer !== null && selectedIndex !== null}
-  <div class="hub-detail" style:--performer-color={performerColor}>
+  <div class="hub-detail" style:--performer-color={performerColor} style:--pop-accent={performerColor}>
 
-    <!-- ── Column 1: Identity ────────────────────────────────────── -->
+    <!-- Identity -->
     <div class="col col-identity">
-
       <div class="identity-row">
-        <!-- Avatar circle -->
-        <div
-          class="avatar-circle"
-          style:border-color={performerColor}
-          aria-hidden="true"
-        >
+        <div class="avatar-circle" style:border-color={performerColor} aria-hidden="true">
           <span class="avatar-initials">{avatarInitials}</span>
         </div>
-
         <div class="identity-text">
           <span class="performer-name">{avatarDef?.name ?? "—"}</span>
           {#if sequenceLabel}
@@ -119,12 +103,9 @@
             <span class="sequence-label no-seq">No sequence</span>
           {/if}
         </div>
-
-        <!-- Badge -->
         <span class="badge" style:background-color={performerColor}>{badgeLabel}</span>
       </div>
 
-      <!-- Change avatar button -->
       <button
         class="change-avatar-btn"
         aria-expanded={showAvatarPicker}
@@ -134,7 +115,6 @@
         <span>Change Avatar</span>
       </button>
 
-      <!-- Inline avatar picker -->
       {#if showAvatarPicker}
         <div class="avatar-picker" role="radiogroup" aria-label="Select avatar">
           {#each AVATAR_DEFINITIONS as def (def.id)}
@@ -154,30 +134,75 @@
       {/if}
     </div>
 
-    <!-- ── Column 2: Controls ────────────────────────────────────── -->
-    <div class="col col-controls">
-      <div class="col-header">Controls</div>
+    <!-- Prop -->
+    <div class="col col-prop">
+      <div class="col-header">Prop</div>
+      <div class="prop-tiles">
+        {#each PROP_CATEGORIES as cat, ci}
+          {@const bases = propCategories.get(cat.id) ?? []}
+          {#if bases.length > 0}
+            {#if ci > 0}
+              <div class="tile-divider"></div>
+            {/if}
+            <div class="tile-row">
+              {#each bases as base}
+                {@const info = getPropTypeDisplayInfo(base)}
+                {@const isSelected = expandedFamily !== null ? expandedFamily === base : selectedBase === base}
+                <button
+                  class="prop-tile"
+                  class:selected={isSelected}
+                  aria-pressed={isSelected}
+                  aria-label={info.label}
+                  title={info.label}
+                  onclick={() => handleFamilyClick(base)}
+                >
+                  <div class="tile-icon">
+                    <PropCompositionPreview propType={base} size={36} darkBackground />
+                  </div>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        {/each}
+      </div>
+
+      {#if expandedFamily && familyVariants.length > 1}
+        <div class="variant-strip">
+          <span class="variant-header">{getPropTypeDisplayInfo(expandedFamily).label} Variants</span>
+          <div class="variant-row">
+            {#each familyVariants as variant}
+              {@const vInfo = getPropTypeDisplayInfo(variant)}
+              <button
+                class="variant-chip"
+                class:active={currentProp === variant}
+                onclick={() => handleVariantClick(variant)}
+              >
+                <div class="variant-icon">
+                  <PropCompositionPreview propType={variant} size={28} darkBackground />
+                </div>
+                <span class="variant-name">{vInfo.label}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
       <PerformerPropSizeSlider {performer} />
     </div>
 
-    <!-- ── Column 3: Effects ─────────────────────────────────────── -->
+    <!-- Effort -->
+    <div class="col col-effort">
+      <div class="col-header">Effort</div>
+      <div class="effort-wrap">
+        <EffortPalette selectedEffort={currentEffort} onSelect={handleEffortSelect} />
+      </div>
+    </div>
+
+    <!-- Effects -->
     <div class="col col-effects">
       <div class="col-header">Effects</div>
-      <div class="effects-grid">
-        {#each effectChips as chip (chip.effectId)}
-          {@const active = performer.effectiveEffects.has(chip.effectId)}
-          <button
-            class="effect-chip"
-            class:active
-            style:--eff-color={chip.color}
-            aria-pressed={active}
-            aria-label="{chip.label} effect"
-            onclick={() => performer.toggleEffect(chip.effectId)}
-          >
-            <i class="fas fa-{chip.icon}" aria-hidden="true"></i>
-            <span class="chip-label">{chip.label}</span>
-          </button>
-        {/each}
+      <div class="effects-wrap">
+        <EffectsSettingsPanel {performer} />
       </div>
     </div>
 
@@ -185,7 +210,6 @@
 {/if}
 
 <style>
-  /* ── Layout ─────────────────────────────────────────────── */
   .hub-detail {
     display: flex;
     flex-direction: row;
@@ -200,28 +224,30 @@
     padding: 16px 18px;
   }
 
-  /* Column separators */
   .col + .col {
     border-left: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* Fixed widths for identity + controls; effects takes remaining space */
   .col-identity {
     width: 190px;
     flex-shrink: 0;
   }
 
-  .col-controls {
-    width: 180px;
+  .col-prop {
+    width: 200px;
+    flex-shrink: 0;
+  }
+
+  .col-effort {
+    width: 200px;
     flex-shrink: 0;
   }
 
   .col-effects {
     flex: 1;
-    min-width: 280px;
+    min-width: 260px;
   }
 
-  /* ── Column header ───────────────────────────────────────── */
   .col-header {
     font-size: 11px;
     font-weight: 700;
@@ -231,7 +257,7 @@
     line-height: 1;
   }
 
-  /* ── Identity column ─────────────────────────────────────── */
+  /* Identity */
   .identity-row {
     display: flex;
     align-items: center;
@@ -306,7 +332,6 @@
     align-self: flex-start;
   }
 
-  /* ── Change Avatar button ────────────────────────────────── */
   .change-avatar-btn {
     display: flex;
     align-items: center;
@@ -341,7 +366,6 @@
     font-size: 12px;
   }
 
-  /* ── Avatar picker ───────────────────────────────────────── */
   .avatar-picker {
     display: flex;
     flex-direction: column;
@@ -390,55 +414,150 @@
     text-overflow: ellipsis;
   }
 
-  /* ── Effects grid ────────────────────────────────────────── */
-  .effects-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-
-  .effect-chip {
+  /* Prop tiles */
+  .prop-tiles {
     display: flex;
     flex-direction: column;
+    gap: 6px;
+  }
+
+  .tile-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .tile-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .prop-tile {
+    width: 48px;
+    height: 48px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 160ms cubic-bezier(0.2, 0, 0.13, 1.5);
+    display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+  }
+
+  .prop-tile:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: scale(1.05);
+  }
+
+  .prop-tile.selected {
+    border-color: var(--pop-accent);
+    border-width: 2px;
+    background: color-mix(in srgb, var(--pop-accent) 15%, rgba(0, 0, 0, 0.3));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--pop-accent) 30%, transparent);
+  }
+
+  .tile-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+  }
+
+  .variant-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .variant-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .variant-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .variant-chip {
+    display: flex;
+    align-items: center;
     gap: 5px;
-    min-height: 52px;
-    padding: 8px 6px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: transparent;
-    color: rgba(255, 255, 255, 0.55);
+    padding: 4px 10px 4px 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
     cursor: pointer;
-    transition: background 140ms, border-color 140ms, color 140ms;
-  }
-
-  .effect-chip i {
-    font-size: 16px;
-    transition: color 140ms;
-  }
-
-  .chip-label {
+    transition: all 150ms;
+    color: rgba(255, 255, 255, 0.7);
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.02em;
-    line-height: 1;
-    text-align: center;
   }
 
-  .effect-chip:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.8);
-    border-color: rgba(255, 255, 255, 0.22);
+  .variant-chip:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+    color: white;
   }
 
-  .effect-chip.active {
-    background: color-mix(in srgb, var(--eff-color) 20%, transparent);
-    border-color: color-mix(in srgb, var(--eff-color) 60%, transparent);
-    color: rgba(255, 255, 255, 0.95);
+  .variant-chip.active {
+    border-color: var(--pop-accent);
+    border-width: 2px;
+    background: color-mix(in srgb, var(--pop-accent) 15%, rgba(0, 0, 0, 0.3));
+    color: white;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--pop-accent) 25%, transparent);
   }
 
-  .effect-chip.active i {
-    color: var(--eff-color);
+  .variant-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .variant-name {
+    white-space: nowrap;
+  }
+
+  /* Effort */
+  .effort-wrap {
+    --theme-stroke: rgba(255, 255, 255, 0.1);
+    --theme-card-bg: rgba(255, 255, 255, 0.04);
+    --theme-text-dim: rgba(255, 255, 255, 0.55);
+    --theme-text: white;
+    --min-touch-target: 44px;
+  }
+
+  /* Effects */
+  .effects-wrap {
+    --theme-card-bg: transparent;
+    --theme-panel-bg: rgba(255, 255, 255, 0.04);
+    --theme-stroke: rgba(255, 255, 255, 0.1);
+    --theme-stroke-strong: rgba(255, 255, 255, 0.2);
+    --theme-text: white;
+    --theme-text-dim: rgba(255, 255, 255, 0.55);
+    --min-touch-target: 44px;
+  }
+
+  .effects-wrap :global(.effects-settings) {
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+
+  .effects-wrap :global(h3) {
+    display: none;
   }
 </style>
