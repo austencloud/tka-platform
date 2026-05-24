@@ -16,7 +16,7 @@ import {
   simplifyAndTruncate,
   compressWord,
   compressedToDisplayString,
-} from "../../../src/lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+} from "../../../src/lib/shared/foundation/utils/word-simplifier";
 
 describe("Word Simplifier", () => {
   describe("simplifyRepeatedWord", () => {

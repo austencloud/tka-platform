@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { simplifyAndTruncate, simplifyRepeatedWord } from "../../shared/utils/word-simplifier";
+  import { simplifyAndTruncate, simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
