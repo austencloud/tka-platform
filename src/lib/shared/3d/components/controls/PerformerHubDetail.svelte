@@ -8,6 +8,7 @@
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
   import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
   import EffectsSettingsPanel from "./EffectsSettingsPanel.svelte";
+  import PlanesPopover from "../PlanesPopover.svelte";
   import {
     getBasePropType,
     getAllVariations,
@@ -95,81 +96,92 @@
 
     <!-- Identity -->
     <div class="col col-identity">
-      <div class="identity-row">
-        <div class="avatar-circle" style:border-color={performerColor} aria-hidden="true">
+      <div class="identity-header">
+        <div class="avatar-circle" aria-hidden="true">
           <span class="avatar-initials">{avatarInitials}</span>
         </div>
         <div class="identity-text">
           <span class="performer-name">{avatarDef?.name ?? "—"}</span>
-          {#if sequenceLabel}
-            <span class="sequence-label">{sequenceLabel}</span>
-          {:else}
-            <span class="sequence-label no-seq">No sequence</span>
-          {/if}
+          <span class="badge" style:background-color={performerColor}>{badgeLabel}</span>
         </div>
-        <span class="badge" style:background-color={performerColor}>{badgeLabel}</span>
       </div>
 
-      <Popover.Root bind:open={avatarPickerOpen}>
-        <Popover.Trigger>
-          {#snippet child({ props })}
-            <button
-              {...props}
-              class="change-avatar-btn"
-              aria-expanded={avatarPickerOpen}
-            >
-              <i class="fas fa-exchange-alt" aria-hidden="true"></i>
-              <span>Change Avatar</span>
-            </button>
-          {/snippet}
-        </Popover.Trigger>
-        <Popover.Content
-          side="top"
-          sideOffset={8}
-          align="start"
-          avoidCollisions={true}
-          collisionPadding={12}
-          forceMount
-        >
-          {#snippet child({ open, wrapperProps, props })}
-            <div {...wrapperProps}>
-              {#if open}
-                <div
-                  {...props}
-                  class="avatar-popover"
-                  style:--pop-color={performerColor}
-                  in:scale={{ duration: 200, start: 0.92, opacity: 0, easing: backOut }}
-                  out:scale={{ duration: 140, start: 0.95, opacity: 0, easing: cubicOut }}
-                >
-                  <div class="avatar-pop-accent"></div>
-                  <div class="avatar-pop-header">Select Avatar</div>
-                  <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
-                    {#each AVATAR_DEFINITIONS as def (def.id)}
-                      <button
-                        class="avatar-card"
-                        class:selected={performer.avatarModelId === def.id}
-                        role="radio"
-                        aria-checked={performer.avatarModelId === def.id}
-                        onclick={() => pickAvatar(def.id as AvatarId)}
-                        title={def.description}
-                      >
-                        <i class="fas {def.icon ?? 'fa-user'}" aria-hidden="true"></i>
-                        <span class="avatar-card-name">{def.name}</span>
-                      </button>
-                    {/each}
+      <div class="identity-actions">
+        <Popover.Root bind:open={avatarPickerOpen}>
+          <Popover.Trigger>
+            {#snippet child({ props })}
+              <button
+                {...props}
+                class="action-btn"
+                aria-expanded={avatarPickerOpen}
+              >
+                <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+                <span>Avatar</span>
+              </button>
+            {/snippet}
+          </Popover.Trigger>
+          <Popover.Content
+            side="top"
+            sideOffset={8}
+            align="start"
+            avoidCollisions={true}
+            collisionPadding={12}
+            forceMount
+          >
+            {#snippet child({ open, wrapperProps, props })}
+              <div {...wrapperProps}>
+                {#if open}
+                  <div
+                    {...props}
+                    class="avatar-popover"
+                    style:--pop-color={performerColor}
+                    in:scale={{ duration: 200, start: 0.92, opacity: 0, easing: backOut }}
+                    out:scale={{ duration: 140, start: 0.95, opacity: 0, easing: cubicOut }}
+                  >
+                    <div class="avatar-pop-accent"></div>
+                    <div class="avatar-pop-header">Select Avatar</div>
+                    <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
+                      {#each AVATAR_DEFINITIONS as def (def.id)}
+                        <button
+                          class="avatar-card"
+                          class:selected={performer.avatarModelId === def.id}
+                          role="radio"
+                          aria-checked={performer.avatarModelId === def.id}
+                          onclick={() => pickAvatar(def.id as AvatarId)}
+                          title={def.description}
+                        >
+                          <i class="fas {def.icon ?? 'fa-user'}" aria-hidden="true"></i>
+                          <span class="avatar-card-name">{def.name}</span>
+                        </button>
+                      {/each}
+                    </div>
                   </div>
-                </div>
-              {/if}
-            </div>
-          {/snippet}
-        </Popover.Content>
-      </Popover.Root>
+                {/if}
+              </div>
+            {/snippet}
+          </Popover.Content>
+        </Popover.Root>
 
-      {#if canRemove}
-        <button class="remove-performer-btn" onclick={() => viewer.removePerformerFromUI()}>
-          <i class="fas fa-trash-alt" aria-hidden="true"></i>
-          <span>Remove</span>
-        </button>
+        {#if canRemove}
+          <button class="action-btn danger" onclick={() => viewer.removePerformerFromUI()}>
+            <i class="fas fa-trash-alt" aria-hidden="true"></i>
+            <span>Remove</span>
+          </button>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Sequence -->
+    <div class="col col-sequence">
+      <div class="col-header">Sequence</div>
+      {#if sequenceWord}
+        <div class="seq-word">{sequenceWord}</div>
+      {/if}
+      {#if sequenceBeats !== null}
+        <div class="seq-meta">{sequenceBeats} beats</div>
+      {/if}
+      {#if !sequenceWord && sequenceBeats === null}
+        <div class="seq-meta dim">No sequence loaded</div>
       {/if}
     </div>
 
@@ -191,7 +203,7 @@
               onclick={() => handleFamilyClick(base)}
             >
               <div class="tile-icon">
-                <PropCompositionPreview propType={base} size={34} darkBackground />
+                <PropCompositionPreview propType={base} size={32} darkBackground />
               </div>
             </button>
           {/each}
@@ -210,7 +222,7 @@
                 onclick={() => handleVariantClick(variant)}
               >
                 <div class="variant-icon">
-                  <PropCompositionPreview propType={variant} size={28} darkBackground />
+                  <PropCompositionPreview propType={variant} size={26} darkBackground />
                 </div>
                 <span class="variant-name">{vInfo.label}</span>
               </button>
@@ -220,6 +232,14 @@
       {/if}
 
       <PerformerPropSizeSlider {performer} />
+    </div>
+
+    <!-- Planes -->
+    <div class="col col-planes">
+      <div class="col-header">Planes</div>
+      <div class="planes-wrap">
+        <PlanesPopover />
+      </div>
     </div>
 
     <!-- Effort -->
@@ -245,15 +265,15 @@
   .hub-detail {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
+    align-items: stretch;
     min-height: 0;
   }
 
   .col {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 14px 16px;
+    gap: 10px;
+    padding: 14px 18px;
   }
 
   .col + .col {
@@ -261,12 +281,22 @@
   }
 
   .col-identity {
-    width: 190px;
+    width: 170px;
+    flex-shrink: 0;
+  }
+
+  .col-sequence {
+    width: 130px;
     flex-shrink: 0;
   }
 
   .col-prop {
-    width: 340px;
+    width: 380px;
+    flex-shrink: 0;
+  }
+
+  .col-planes {
+    width: 200px;
     flex-shrink: 0;
   }
 
@@ -290,26 +320,26 @@
   }
 
   /* Identity */
-  .identity-row {
+  .identity-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
 
   .avatar-circle {
-    width: 40px;
-    height: 44px;
-    border-radius: 8px;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
     border: 2px solid var(--performer-color, rgba(255, 255, 255, 0.3));
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background: color-mix(in srgb, var(--performer-color, rgba(255,255,255,0.1)) 12%, transparent);
+    background: color-mix(in srgb, var(--performer-color, rgba(255,255,255,0.1)) 14%, transparent);
   }
 
   .avatar-initials {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 800;
     color: var(--performer-color, rgba(255, 255, 255, 0.7));
     letter-spacing: 0.04em;
@@ -319,7 +349,7 @@
   .identity-text {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
     flex: 1;
   }
@@ -331,99 +361,94 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.3;
-  }
-
-  .sequence-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.55);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
-  }
-
-  .sequence-label.no-seq {
-    font-style: italic;
-    color: rgba(255, 255, 255, 0.35);
+    line-height: 1.2;
   }
 
   .badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 3px 8px;
+    padding: 2px 7px;
     border-radius: 5px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
     color: rgba(0, 0, 0, 0.85);
     letter-spacing: 0.04em;
-    flex-shrink: 0;
     line-height: 1;
-    align-self: flex-start;
+    width: fit-content;
   }
 
-  .change-avatar-btn {
+  .identity-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .action-btn {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 8px 12px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: transparent;
-    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.65);
     font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 140ms, border-color 140ms, color 140ms;
-    width: 100%;
-    justify-content: center;
-    min-height: 36px;
-  }
-
-  .change-avatar-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.18);
-    color: rgba(255, 255, 255, 0.85);
-  }
-
-  .change-avatar-btn[aria-expanded="true"] {
-    background: color-mix(in srgb, var(--performer-color) 14%, transparent);
-    border-color: color-mix(in srgb, var(--performer-color) 40%, transparent);
-    color: var(--performer-color);
-  }
-
-  .change-avatar-btn i {
-    font-size: 12px;
-  }
-
-  .remove-performer-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(220, 50, 50, 0.2);
-    background: transparent;
-    color: rgba(220, 50, 50, 0.6);
-    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition: all 140ms ease;
     width: 100%;
     justify-content: center;
-    min-height: 32px;
+    min-height: 36px;
   }
 
-  .remove-performer-btn:hover {
-    background: rgba(220, 50, 50, 0.12);
-    border-color: rgba(220, 50, 50, 0.4);
-    color: rgba(220, 50, 50, 0.9);
+  .action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.9);
   }
 
-  .remove-performer-btn i {
-    font-size: 11px;
+  .action-btn[aria-expanded="true"] {
+    background: color-mix(in srgb, var(--performer-color) 14%, transparent);
+    border-color: color-mix(in srgb, var(--performer-color) 40%, transparent);
+    color: var(--performer-color);
+  }
+
+  .action-btn i {
+    font-size: 12px;
+  }
+
+  .action-btn.danger {
+    border-color: rgba(220, 50, 50, 0.3);
+    background: rgba(220, 50, 50, 0.08);
+    color: rgba(220, 80, 80, 0.8);
+  }
+
+  .action-btn.danger:hover {
+    background: rgba(220, 50, 50, 0.18);
+    border-color: rgba(220, 50, 50, 0.5);
+    color: rgba(240, 80, 80, 1);
+  }
+
+  /* Sequence */
+  .seq-word {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  .seq-meta {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.3;
+  }
+
+  .seq-meta.dim {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.3);
   }
 
   .avatar-popover {
@@ -507,7 +532,7 @@
   /* Prop grid — flat flow */
   .prop-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(8, 1fr);
     gap: 5px;
   }
 
@@ -608,6 +633,15 @@
 
   .variant-name {
     white-space: nowrap;
+  }
+
+  /* Planes */
+  .planes-wrap :global(.plane-matrix) {
+    gap: 6px;
+  }
+
+  .planes-wrap :global(.cascade-badge) {
+    display: none;
   }
 
   /* Effort — 4 columns × 2 rows */

@@ -103,14 +103,14 @@
 
   .close-btn {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: -1px;
+    right: -1px;
     z-index: 5;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    border: 1px solid color-mix(in srgb, var(--panel-color) 25%, rgba(255, 255, 255, 0.1));
-    background: color-mix(in srgb, var(--panel-color) 10%, rgba(0, 0, 0, 0.3));
+    width: 30px;
+    height: 30px;
+    border-radius: 0 14px 0 10px;
+    border: none;
+    background: color-mix(in srgb, var(--panel-color) 18%, rgba(0, 0, 0, 0.5));
     color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
     display: flex;
@@ -120,12 +120,11 @@
   }
 
   .close-btn:hover {
-    background: color-mix(in srgb, var(--panel-color) 20%, rgba(0, 0, 0, 0.3));
+    background: color-mix(in srgb, var(--panel-color) 30%, rgba(0, 0, 0, 0.5));
     color: white;
-    border-color: color-mix(in srgb, var(--panel-color) 50%, transparent);
   }
 
   .close-btn i {
-    font-size: 12px;
+    font-size: 11px;
   }
 </style>

@@ -69,63 +69,53 @@
       <SceneSelectorPopover />
     </ViewerPopover>
 
-    <div class="performer-separator" aria-hidden="true">
-      <div class="separator-line"></div>
-    </div>
+    {#if !isIndividualMode}
+      <div class="performer-separator" aria-hidden="true">
+        <div class="separator-line"></div>
+      </div>
 
-    <ViewerPopover
-      id="planes"
-      title={isIndividualMode ? `Performer ${(selectedIndex ?? 0) + 1}` : "All Performers"}
-      icon="fa-layer-group"
-      tooltip="Planes"
-      width={320}
-      accentColor={performerColor}
-      performerScoped={isIndividualMode}
-      hasOverride={planesOverride}
-    >
-      <PlanesPopover />
-    </ViewerPopover>
+      <ViewerPopover
+        id="planes"
+        title="All Performers"
+        icon="fa-layer-group"
+        tooltip="Planes"
+        width={320}
+      >
+        <PlanesPopover />
+      </ViewerPopover>
 
-    <ViewerPopover
-      id="effects"
-      title={isIndividualMode ? `Performer ${(selectedIndex ?? 0) + 1}` : "All Performers"}
-      icon="fa-wand-magic-sparkles"
-      tooltip="Effects"
-      accentColor={performerColor}
-      performerScoped={isIndividualMode}
-      hasOverride={effectsOverride}
-    >
-      <EffectsPopover />
-    </ViewerPopover>
+      <ViewerPopover
+        id="effects"
+        title="All Performers"
+        icon="fa-wand-magic-sparkles"
+        tooltip="Effects"
+      >
+        <EffectsPopover />
+      </ViewerPopover>
 
-    <ViewerPopover
-      id="prop"
-      title={isIndividualMode ? `Performer ${(selectedIndex ?? 0) + 1}` : "All Performers"}
-      icon="fa-staff-snake"
-      tooltip="Prop"
-      accentColor={performerColor}
-      performerScoped={isIndividualMode}
-      hasOverride={propOverride}
-    >
-      <PropPopover />
-      {#snippet footer()}
-        {#if selectedPerformer}
-          <PerformerPropSizeSlider performer={selectedPerformer} />
-        {/if}
-      {/snippet}
-    </ViewerPopover>
+      <ViewerPopover
+        id="prop"
+        title="All Performers"
+        icon="fa-staff-snake"
+        tooltip="Prop"
+      >
+        <PropPopover />
+        {#snippet footer()}
+          {#if selectedPerformer}
+            <PerformerPropSizeSlider performer={selectedPerformer} />
+          {/if}
+        {/snippet}
+      </ViewerPopover>
 
-    <ViewerPopover
-      id="effort"
-      title={isIndividualMode ? `Performer ${(selectedIndex ?? 0) + 1}` : "All Performers"}
-      icon="fa-wave-square"
-      tooltip="Effort"
-      accentColor={performerColor}
-      performerScoped={isIndividualMode}
-      hasOverride={effortOverride}
-    >
-      <EffortPopover />
-    </ViewerPopover>
+      <ViewerPopover
+        id="effort"
+        title="All Performers"
+        icon="fa-wave-square"
+        tooltip="Effort"
+      >
+        <EffortPopover />
+      </ViewerPopover>
+    {/if}
 
     {#if authState.isAdmin}
       <div class="performer-separator" aria-hidden="true">
