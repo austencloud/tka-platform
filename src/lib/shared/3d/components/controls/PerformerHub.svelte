@@ -28,15 +28,14 @@
 </script>
 
 {#if performers.length >= 1}
-  <div class="hub-anchor">
-    <div class="spine-panel">
+  <div class="hub-anchor" style:--panel-color={performerColor}>
+    <div class="spine-panel" class:has-detail={hasSelection && !detailCollapsed}>
       <PerformerSpine />
     </div>
 
     {#if hasSelection && !detailCollapsed}
       <div
         class="detail-panel"
-        style:--panel-color={performerColor}
         transition:slide={{ axis: "x", duration: 250, easing: cubicOut }}
       >
         <button class="close-btn" aria-label="Close controls" onclick={collapseDetail}>
@@ -58,17 +57,29 @@
     display: flex;
     flex-direction: row;
     align-items: flex-end;
-    gap: 8px;
+    gap: 0;
   }
 
   .spine-panel {
     padding: 8px 6px;
-    background: rgba(20, 22, 32, 0.78);
-    backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--panel-color) 10%, rgba(20, 22, 32, 0.82)),
+        color-mix(in srgb, var(--panel-color) 5%, rgba(20, 22, 32, 0.82))
+      );
+    backdrop-filter: blur(24px) saturate(150%);
+    border: 1px solid color-mix(in srgb, var(--panel-color) 25%, rgba(255, 255, 255, 0.08));
     border-radius: 14px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
     flex-shrink: 0;
+    transition: border-radius 200ms ease, border-color 200ms ease, background 200ms ease;
+  }
+
+  .spine-panel.has-detail {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right-color: transparent;
   }
 
   .detail-panel {
@@ -81,7 +92,8 @@
       );
     backdrop-filter: blur(24px) saturate(150%);
     border: 1px solid color-mix(in srgb, var(--panel-color) 30%, rgba(255, 255, 255, 0.08));
-    border-radius: 14px;
+    border-left: none;
+    border-radius: 0 14px 14px 0;
     box-shadow:
       0 4px 24px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 color-mix(in srgb, var(--panel-color) 10%, transparent);
