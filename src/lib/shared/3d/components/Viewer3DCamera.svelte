@@ -176,7 +176,6 @@
   const ORBIT_COLLAPSE_THRESHOLD = 0.5;
   const _healthPos = new Vector3();
   const _healthTgt = new Vector3();
-  let lastHealthCheck = 0;
 
   function checkOrbitHealth(controls: CameraControls): boolean {
     controls.getPosition(_healthPos);
@@ -281,7 +280,8 @@
     viewer3DState.registerSnapTo(snapTo);
 
     function onVisibilityChange() {
-      if (document.hidden && controlsInstance) {
+      if (!controlsInstance) return;
+      if (document.hidden) {
         const p = new Vector3();
         const t = new Vector3();
         controlsInstance.getPosition(p);
@@ -296,6 +296,8 @@
             timestamp: Date.now(),
           });
         }
+      } else {
+        checkOrbitHealth(controlsInstance);
       }
     }
     document.addEventListener("visibilitychange", onVisibilityChange);
@@ -310,14 +312,6 @@
   useTask((delta) => {
     if (viewer3DState.isExporting) return;
     viewer3DState.cameraChoreography.tick(delta);
-
-    if (controlsInstance) {
-      lastHealthCheck += delta;
-      if (lastHealthCheck >= 1.0) {
-        lastHealthCheck = 0;
-        checkOrbitHealth(controlsInstance);
-      }
-    }
   });
 
   onDestroy(() => {
