@@ -1,8 +1,5 @@
 <script lang="ts">
   import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
-  import { Popover } from "bits-ui";
-  import { scale } from "svelte/transition";
-  import { backOut, cubicOut } from "svelte/easing";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { getPerformerColor } from "../../constants/performer-colors";
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
@@ -29,12 +26,17 @@
       : null,
   );
 
-  const performerColor = $derived(selectedIndex !== null ? getPerformerColor(selectedIndex) : "#6b7280");
-  const badgeLabel = $derived(selectedIndex !== null ? `P${selectedIndex + 1}` : "");
+  const performerColor = $derived(
+    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#6b7280",
+  );
+  const badgeLabel = $derived(
+    selectedIndex !== null ? `P${selectedIndex + 1}` : "",
+  );
   const canRemove = $derived(viewer.performerManager.performers.length > 1);
 
   const avatarDef = $derived(
-    AVATAR_DEFINITIONS.find((a) => a.id === performer?.avatarModelId) ?? AVATAR_DEFINITIONS[0],
+    AVATAR_DEFINITIONS.find((a) => a.id === performer?.avatarModelId) ??
+      AVATAR_DEFINITIONS[0],
   );
   const avatarInitials = $derived(
     avatarDef ? avatarDef.name.slice(0, 2).toUpperCase() : "?",
@@ -43,20 +45,27 @@
   const sequence = $derived(performer?.loadedSequence ?? null);
   const sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
   const sequenceBeats = $derived(sequence?.steps?.length ?? null);
-  const sequenceLabel = $derived(
-    sequenceWord && sequenceBeats !== null
-      ? `${sequenceWord} · ${sequenceBeats} beats`
-      : sequenceWord ?? (sequenceBeats !== null ? `${sequenceBeats} beats` : null),
-  );
-
-  let avatarPickerOpen = $state(false);
 
   function pickAvatar(id: AvatarId) {
     performer?.setAvatarModel(id);
-    avatarPickerOpen = false;
   }
 
-  // Prop type selection (mirrors PropPopover logic)
+  // ─── Tabs ───
+  type HubTab = "prop" | "planes" | "effort" | "effects" | "avatar" | "sequence";
+  let activeTab = $state<HubTab>("prop");
+
+  const TABS: { id: HubTab; label: string; icon: string }[] = [
+    { id: "avatar", label: "Avatar", icon: "fa-user" },
+    { id: "sequence", label: "Seq", icon: "fa-film" },
+    { id: "prop", label: "Prop", icon: "fa-shapes" },
+    { id: "planes", label: "Planes", icon: "fa-layer-group" },
+    { id: "effort", label: "Effort", icon: "fa-gauge-high" },
+    { id: "effects", label: "FX", icon: "fa-wand-sparkles" },
+  ];
+
+  const tabIndex = $derived(TABS.findIndex((t) => t.id === activeTab));
+
+  // ─── Prop ───
   const currentProp = $derived(
     performer?.effectiveProp ?? viewer.defaultSettings.prop,
   );
@@ -64,7 +73,9 @@
   const selectedBase = $derived(getBasePropType(currentProp));
   let expandedFamily = $state<PropType | null>(null);
   const familyVariants = $derived(
-    expandedFamily ? getAllVariations(expandedFamily).filter(isPropActive) : [],
+    expandedFamily
+      ? getAllVariations(expandedFamily).filter(isPropActive)
+      : [],
   );
 
   function handleFamilyClick(base: PropType) {
@@ -81,7 +92,7 @@
     performer?.setProp(variant);
   }
 
-  // Effort selection
+  // ─── Effort ───
   const currentEffort = $derived(
     performer?.effectiveEffortId ?? viewer.defaultSettings.effortId,
   );
@@ -92,267 +103,279 @@
 </script>
 
 {#if performer !== null && selectedIndex !== null}
-  <div class="hub-detail" style:--performer-color={performerColor} style:--pop-accent={performerColor}>
+  <div
+    class="hub-detail"
+    style:--performer-color={performerColor}
+    style:--pop-accent={performerColor}
+  >
+    <div class="accent-strip" aria-hidden="true"></div>
 
-    <!-- Identity -->
-    <div class="col col-identity">
-      <div class="identity-header">
+    <!-- ─── Header (compact identity) ─── -->
+    <div class="header">
+      <div class="identity">
         <div class="avatar-circle" aria-hidden="true">
           <span class="avatar-initials">{avatarInitials}</span>
         </div>
-        <div class="identity-text">
+        <div class="identity-meta">
           <span class="performer-name">{avatarDef?.name ?? "—"}</span>
-          <span class="badge" style:background-color={performerColor}>{badgeLabel}</span>
+          <div class="sub-row">
+            <span class="badge" style:background-color={performerColor}
+              >{badgeLabel}</span
+            >
+            {#if sequenceWord}
+              <span class="seq-chip">{sequenceWord}</span>
+            {/if}
+            {#if sequenceBeats !== null}
+              <span class="seq-beats">{sequenceBeats}b</span>
+            {/if}
+          </div>
         </div>
       </div>
-
-      <div class="identity-actions">
-        <Popover.Root bind:open={avatarPickerOpen}>
-          <Popover.Trigger>
-            {#snippet child({ props })}
-              <button
-                {...props}
-                class="action-btn"
-                aria-expanded={avatarPickerOpen}
-              >
-                <i class="fas fa-exchange-alt" aria-hidden="true"></i>
-                <span>Avatar</span>
-              </button>
-            {/snippet}
-          </Popover.Trigger>
-          <Popover.Content
-            side="top"
-            sideOffset={8}
-            align="start"
-            avoidCollisions={true}
-            collisionPadding={12}
-            forceMount
-          >
-            {#snippet child({ open, wrapperProps, props })}
-              <div {...wrapperProps}>
-                {#if open}
-                  <div
-                    {...props}
-                    class="avatar-popover"
-                    style:--pop-color={performerColor}
-                    in:scale={{ duration: 200, start: 0.92, opacity: 0, easing: backOut }}
-                    out:scale={{ duration: 140, start: 0.95, opacity: 0, easing: cubicOut }}
-                  >
-                    <div class="avatar-pop-accent"></div>
-                    <div class="avatar-pop-header">Select Avatar</div>
-                    <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
-                      {#each AVATAR_DEFINITIONS as def (def.id)}
-                        <button
-                          class="avatar-card"
-                          class:selected={performer.avatarModelId === def.id}
-                          role="radio"
-                          aria-checked={performer.avatarModelId === def.id}
-                          onclick={() => pickAvatar(def.id as AvatarId)}
-                          title={def.description}
-                        >
-                          <i class="fas {def.icon ?? 'fa-user'}" aria-hidden="true"></i>
-                          <span class="avatar-card-name">{def.name}</span>
-                        </button>
-                      {/each}
-                    </div>
-                  </div>
-                {/if}
-              </div>
-            {/snippet}
-          </Popover.Content>
-        </Popover.Root>
-
-        {#if canRemove}
-          <button class="action-btn danger" onclick={() => viewer.removePerformerFromUI()}>
-            <i class="fas fa-trash-alt" aria-hidden="true"></i>
-            <span>Remove</span>
-          </button>
-        {/if}
-      </div>
     </div>
 
-    <!-- Sequence -->
-    <div class="col col-sequence">
-      <div class="col-header">Sequence</div>
-      {#if sequenceWord}
-        <div class="seq-word">{sequenceWord}</div>
-      {/if}
-      {#if sequenceBeats !== null}
-        <div class="seq-meta">{sequenceBeats} beats</div>
-      {/if}
-      {#if !sequenceWord && sequenceBeats === null}
-        <div class="seq-meta dim">No sequence loaded</div>
-      {/if}
-    </div>
+    <div class="header-divider" aria-hidden="true"></div>
 
-    <!-- Prop -->
-    <div class="col col-prop">
-      <div class="col-header">Prop</div>
-      <div class="prop-grid">
-        {#each PROP_CATEGORIES as cat}
-          {@const bases = propCategories.get(cat.id) ?? []}
-          {#each bases as base}
-            {@const info = getPropTypeDisplayInfo(base)}
-            {@const isSelected = expandedFamily !== null ? expandedFamily === base : selectedBase === base}
-            <button
-              class="prop-tile"
-              class:selected={isSelected}
-              aria-pressed={isSelected}
-              aria-label={info.label}
-              title={info.label}
-              onclick={() => handleFamilyClick(base)}
-            >
-              <div class="tile-icon">
-                <PropCompositionPreview propType={base} size={32} darkBackground />
-              </div>
-            </button>
-          {/each}
-        {/each}
-      </div>
-
-      {#if expandedFamily && familyVariants.length > 1}
-        <div class="variant-strip">
-          <span class="variant-header">{getPropTypeDisplayInfo(expandedFamily).label} Variants</span>
-          <div class="variant-row">
-            {#each familyVariants as variant}
-              {@const vInfo = getPropTypeDisplayInfo(variant)}
+    <!-- ─── Tab panes ─── -->
+    <div class="tab-content">
+      <!-- Avatar tab -->
+      <div class="tab-pane" class:active={activeTab === "avatar"} role="tabpanel">
+        <div class="avatar-section">
+          <div class="section-label">Select Avatar</div>
+          <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
+            {#each AVATAR_DEFINITIONS as def (def.id)}
               <button
-                class="variant-chip"
-                class:active={currentProp === variant}
-                onclick={() => handleVariantClick(variant)}
+                class="avatar-card"
+                class:selected={performer.avatarModelId === def.id}
+                role="radio"
+                aria-checked={performer.avatarModelId === def.id}
+                onclick={() => pickAvatar(def.id as AvatarId)}
+                title={def.description}
               >
-                <div class="variant-icon">
-                  <PropCompositionPreview propType={variant} size={26} darkBackground />
-                </div>
-                <span class="variant-name">{vInfo.label}</span>
+                <i
+                  class="fas {def.icon ?? 'fa-user'}"
+                  aria-hidden="true"
+                ></i>
+                <span class="avatar-card-name">{def.name}</span>
               </button>
             {/each}
           </div>
+          {#if canRemove}
+            <button
+              class="remove-btn"
+              onclick={() => viewer.removePerformerFromUI()}
+            >
+              <i class="fas fa-trash-alt" aria-hidden="true"></i>
+              <span>Remove Performer</span>
+            </button>
+          {/if}
         </div>
-      {/if}
+      </div>
 
-      <PerformerPropSizeSlider {performer} />
-    </div>
+      <!-- Sequence tab -->
+      <div class="tab-pane" class:active={activeTab === "sequence"} role="tabpanel">
+        <div class="sequence-section">
+          {#if sequenceWord}
+            <div class="seq-display">
+              <div class="seq-word-large">{sequenceWord}</div>
+              {#if sequenceBeats !== null}
+                <div class="seq-beat-count">{sequenceBeats} beats</div>
+              {/if}
+            </div>
+            <button
+              class="seq-action-btn"
+              onclick={() => performer?.clearSequence()}
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+              <span>Clear Sequence</span>
+            </button>
+          {:else}
+            <div class="seq-empty">
+              <i class="fas fa-film" aria-hidden="true"></i>
+              <span>No sequence loaded</span>
+              <span class="seq-hint">Load a sequence from the library to animate this performer</span>
+            </div>
+          {/if}
+        </div>
+      </div>
 
-    <!-- Planes -->
-    <div class="col col-planes">
-      <div class="col-header">Planes</div>
-      <div class="planes-wrap">
-        <PlanesPopover />
+      <!-- Prop tab -->
+      <div class="tab-pane" class:active={activeTab === "prop"} role="tabpanel">
+        <div class="prop-section">
+          <div class="prop-grid">
+            {#each PROP_CATEGORIES as cat}
+              {@const bases = propCategories.get(cat.id) ?? []}
+              {#each bases as base}
+                {@const info = getPropTypeDisplayInfo(base)}
+                {@const isSelected =
+                  expandedFamily !== null
+                    ? expandedFamily === base
+                    : selectedBase === base}
+                <button
+                  class="prop-tile"
+                  class:selected={isSelected}
+                  aria-pressed={isSelected}
+                  aria-label={info.label}
+                  title={info.label}
+                  onclick={() => handleFamilyClick(base)}
+                >
+                  <PropCompositionPreview
+                    propType={base}
+                    size={28}
+                    darkBackground
+                  />
+                </button>
+              {/each}
+            {/each}
+          </div>
+
+          {#if expandedFamily && familyVariants.length > 1}
+            <div class="variant-strip">
+              <span class="variant-header"
+                >{getPropTypeDisplayInfo(expandedFamily).label}</span
+              >
+              <div class="variant-row">
+                {#each familyVariants as variant}
+                  {@const vInfo = getPropTypeDisplayInfo(variant)}
+                  <button
+                    class="variant-chip"
+                    class:active={currentProp === variant}
+                    onclick={() => handleVariantClick(variant)}
+                  >
+                    <div class="variant-icon">
+                      <PropCompositionPreview
+                        propType={variant}
+                        size={22}
+                        darkBackground
+                      />
+                    </div>
+                    <span>{vInfo.label}</span>
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          <PerformerPropSizeSlider {performer} />
+        </div>
+      </div>
+
+      <!-- Planes tab -->
+      <div
+        class="tab-pane"
+        class:active={activeTab === "planes"}
+        role="tabpanel"
+      >
+        <div class="planes-section">
+          <PlanesPopover />
+        </div>
+      </div>
+
+      <!-- Effort tab -->
+      <div
+        class="tab-pane"
+        class:active={activeTab === "effort"}
+        role="tabpanel"
+      >
+        <div class="effort-section">
+          <EffortPalette
+            selectedEffort={currentEffort}
+            onSelect={handleEffortSelect}
+          />
+        </div>
+      </div>
+
+      <!-- Effects tab -->
+      <div
+        class="tab-pane"
+        class:active={activeTab === "effects"}
+        role="tabpanel"
+      >
+        <div class="effects-section">
+          <EffectsSettingsPanel {performer} />
+        </div>
       </div>
     </div>
 
-    <!-- Effort -->
-    <div class="col col-effort">
-      <div class="col-header">Effort</div>
-      <div class="effort-wrap">
-        <EffortPalette selectedEffort={currentEffort} onSelect={handleEffortSelect} />
-      </div>
-    </div>
+    <div class="tab-divider" aria-hidden="true"></div>
 
-    <!-- Effects -->
-    <div class="col col-effects">
-      <div class="col-header">Effects</div>
-      <div class="effects-wrap">
-        <EffectsSettingsPanel {performer} />
-      </div>
+    <!-- ─── Tab bar (bottom-anchored) ─── -->
+    <div class="tab-bar" role="tablist" style:--active-index={tabIndex}>
+      <div class="tab-indicator" aria-hidden="true"></div>
+      {#each TABS as tab}
+        <button
+          class="tab-btn"
+          class:active={activeTab === tab.id}
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          onclick={() => (activeTab = tab.id)}
+        >
+          <i class="fas {tab.icon}" aria-hidden="true"></i>
+          <span class="tab-label">{tab.label}</span>
+        </button>
+      {/each}
     </div>
-
   </div>
 {/if}
 
 <style>
   .hub-detail {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    min-height: 0;
-  }
-
-  .col {
+    width: 440px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 14px 18px;
   }
 
-  .col + .col {
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
+  /* ─── Accent strip ─── */
+  .accent-strip {
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      var(--performer-color),
+      color-mix(in srgb, var(--performer-color) 20%, transparent)
+    );
   }
 
-  .col-identity {
-    width: 170px;
-    flex-shrink: 0;
+  /* ─── Header ─── */
+  .header {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px 8px;
+    gap: 12px;
   }
 
-  .col-sequence {
-    width: 130px;
-    flex-shrink: 0;
-  }
-
-  .col-prop {
-    width: 380px;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-
-  .col-planes {
-    width: 200px;
-    flex-shrink: 0;
-  }
-
-  .col-effort {
-    width: 320px;
-    flex-shrink: 0;
-  }
-
-  .col-effects {
-    flex: 1;
-    min-width: 420px;
-  }
-
-  .col-header {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.5);
-    line-height: 1;
-  }
-
-  /* Identity */
-  .identity-header {
+  .identity {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
+    flex: 1;
   }
 
   .avatar-circle {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     border-radius: 10px;
-    border: 2px solid var(--performer-color, rgba(255, 255, 255, 0.3));
+    border: 2px solid var(--performer-color);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background: color-mix(in srgb, var(--performer-color, rgba(255,255,255,0.1)) 14%, transparent);
+    background: color-mix(in srgb, var(--performer-color) 14%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--performer-color) 20%, transparent);
   }
 
   .avatar-initials {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 800;
-    color: var(--performer-color, rgba(255, 255, 255, 0.7));
-    letter-spacing: 0.04em;
+    color: var(--performer-color);
     line-height: 1;
+    letter-spacing: 0.03em;
   }
 
-  .identity-text {
+  .identity-meta {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
-    flex: 1;
   }
 
   .performer-name {
@@ -365,119 +388,166 @@
     line-height: 1.2;
   }
 
-  .badge {
-    display: inline-flex;
+  .sub-row {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 2px 7px;
-    border-radius: 5px;
-    font-size: 10px;
+    gap: 6px;
+  }
+
+  .badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 9px;
     font-weight: 800;
     color: rgba(0, 0, 0, 0.85);
-    letter-spacing: 0.04em;
-    line-height: 1;
-    width: fit-content;
-  }
-
-  .identity-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .action-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.65);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 140ms ease;
-    width: 100%;
-    justify-content: center;
-    min-height: 36px;
-  }
-
-  .action-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .action-btn[aria-expanded="true"] {
-    background: color-mix(in srgb, var(--performer-color) 14%, transparent);
-    border-color: color-mix(in srgb, var(--performer-color) 40%, transparent);
-    color: var(--performer-color);
-  }
-
-  .action-btn i {
-    font-size: 12px;
-  }
-
-  .action-btn.danger {
-    border-color: rgba(220, 50, 50, 0.3);
-    background: rgba(220, 50, 50, 0.08);
-    color: rgba(220, 80, 80, 0.8);
-  }
-
-  .action-btn.danger:hover {
-    background: rgba(220, 50, 50, 0.18);
-    border-color: rgba(220, 50, 50, 0.5);
-    color: rgba(240, 80, 80, 1);
-  }
-
-  /* Sequence */
-  .seq-word {
-    font-size: 16px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.9);
-    line-height: 1.2;
-    word-break: break-word;
-  }
-
-  .seq-meta {
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.5);
     line-height: 1.3;
   }
 
-  .seq-meta.dim {
-    font-style: italic;
-    color: rgba(255, 255, 255, 0.3);
-  }
-
-  .avatar-popover {
-    width: 320px;
-    border-radius: 16px;
-    background: color-mix(in srgb, var(--pop-color) 6%, #0c0e16);
-    border: 1px solid color-mix(in srgb, var(--pop-color) 35%, transparent);
-    box-shadow:
-      0 12px 48px rgba(0, 0, 0, 0.7),
-      0 0 24px color-mix(in srgb, var(--pop-color) 15%, transparent);
-    overflow: hidden;
-    padding: 12px;
-  }
-
-  .avatar-pop-accent {
-    height: 3px;
-    margin: -12px -12px 10px;
-    background: linear-gradient(90deg, var(--pop-color), color-mix(in srgb, var(--pop-color) 40%, transparent));
-    border-radius: 16px 16px 0 0;
-  }
-
-  .avatar-pop-header {
+  .seq-chip {
     font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .seq-beats {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  /* ─── Dividers ─── */
+  .header-divider {
+    height: 1px;
+    margin: 0 14px;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--performer-color) 22%, transparent),
+      rgba(255, 255, 255, 0.04)
+    );
+  }
+
+  .tab-divider {
+    height: 1px;
+    margin: 0 14px;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.02)
+    );
+  }
+
+  /* ─── Tab bar (6 columns) ─── */
+  .tab-bar {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    margin: 0 10px 8px;
+    padding: 3px;
+    background: rgba(0, 0, 0, 0.28);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .tab-indicator {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    width: calc((100% - 6px) / 6);
+    left: calc(3px + var(--active-index) * (100% - 6px) / 6);
+    border-radius: 7px;
+    background: color-mix(
+      in srgb,
+      var(--performer-color) 20%,
+      rgba(255, 255, 255, 0.09)
+    );
+    box-shadow:
+      0 1px 4px rgba(0, 0, 0, 0.3),
+      0 0 16px color-mix(in srgb, var(--performer-color) 12%, transparent);
+    transition: left 280ms cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .tab-btn {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 0;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      color 200ms ease,
+      transform 140ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tab-btn:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .tab-btn.active {
+    color: var(--performer-color);
+  }
+
+  .tab-btn i {
+    font-size: 11px;
+  }
+
+  .tab-label {
+    letter-spacing: 0.02em;
+  }
+
+  /* ─── Tab content ─── */
+  .tab-content {
+    padding: 12px 14px 14px;
+  }
+
+  .tab-pane {
+    display: none;
+  }
+
+  .tab-pane.active {
+    display: block;
+    animation: pane-in 160ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  @keyframes pane-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ─── Section label ─── */
+  .section-label {
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--pop-color) 70%, rgba(255, 255, 255, 0.7));
-    padding: 0 4px 10px;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 8px;
+  }
+
+  /* ─── Avatar tab ─── */
+  .avatar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .avatar-grid {
@@ -497,22 +567,28 @@
     background: rgba(255, 255, 255, 0.04);
     border: 1.5px solid transparent;
     border-radius: 10px;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
-    transition: all 140ms ease;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease,
+      transform 160ms ease,
+      box-shadow 200ms ease;
   }
 
   .avatar-card:hover {
-    background: color-mix(in srgb, var(--pop-color) 10%, transparent);
-    border-color: color-mix(in srgb, var(--pop-color) 25%, transparent);
+    background: color-mix(in srgb, var(--performer-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--performer-color) 25%, transparent);
     color: white;
+    transform: scale(1.04);
   }
 
   .avatar-card.selected {
-    background: color-mix(in srgb, var(--pop-color) 20%, transparent);
-    border-color: color-mix(in srgb, var(--pop-color) 50%, transparent);
-    color: var(--pop-color);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--pop-color) 20%, transparent);
+    background: color-mix(in srgb, var(--performer-color) 22%, transparent);
+    border-color: color-mix(in srgb, var(--performer-color) 55%, transparent);
+    color: var(--performer-color);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--performer-color) 20%, transparent);
   }
 
   .avatar-card i {
@@ -530,56 +606,173 @@
     max-width: 100%;
   }
 
-  /* Prop grid — flat flow */
+  .remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(220, 50, 50, 0.25);
+    background: rgba(220, 50, 50, 0.06);
+    color: rgba(220, 80, 80, 0.75);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
+  }
+
+  .remove-btn:hover {
+    background: rgba(220, 50, 50, 0.15);
+    border-color: rgba(220, 50, 50, 0.5);
+    color: rgba(240, 80, 80, 1);
+  }
+
+  .remove-btn i {
+    font-size: 12px;
+  }
+
+  /* ─── Sequence tab ─── */
+  .sequence-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .seq-display {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .seq-word-large {
+    font-size: 22px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.95);
+    line-height: 1.2;
+    word-break: break-word;
+    letter-spacing: -0.01em;
+  }
+
+  .seq-beat-count {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .seq-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    width: fit-content;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
+  }
+
+  .seq-action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .seq-action-btn i {
+    font-size: 11px;
+  }
+
+  .seq-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 0;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .seq-empty i {
+    font-size: 24px;
+    opacity: 0.4;
+  }
+
+  .seq-empty span {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .seq-hint {
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    color: rgba(255, 255, 255, 0.2) !important;
+    text-align: center;
+    max-width: 280px;
+    line-height: 1.4;
+  }
+
+  /* ─── Prop tab ─── */
+  .prop-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .prop-grid {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
     gap: 5px;
   }
 
   .prop-tile {
-    min-width: 0;
     aspect-ratio: 1;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.25);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     cursor: pointer;
-    transition: all 160ms cubic-bezier(0.2, 0, 0.13, 1.5);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
+    min-height: 44px;
+    transition:
+      background 160ms ease,
+      border-color 160ms ease,
+      transform 200ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      box-shadow 200ms ease;
   }
 
   .prop-tile:hover {
     background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.35);
-    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   }
 
   .prop-tile.selected {
     border-color: var(--pop-accent);
     border-width: 2px;
     background: color-mix(in srgb, var(--pop-accent) 15%, rgba(0, 0, 0, 0.3));
-    box-shadow: 0 0 12px color-mix(in srgb, var(--pop-accent) 30%, transparent);
-  }
-
-  .tile-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
+    box-shadow: 0 0 14px color-mix(in srgb, var(--pop-accent) 25%, transparent);
   }
 
   .variant-strip {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 8px;
+    padding: 8px 10px;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   .variant-header {
@@ -587,7 +780,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.4);
   }
 
   .variant-row {
@@ -601,18 +794,22 @@
     align-items: center;
     gap: 5px;
     padding: 4px 10px 4px 4px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.25);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 150ms;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.65);
     font-size: 11px;
     font-weight: 600;
+    transition:
+      border-color 150ms,
+      color 150ms,
+      background 150ms,
+      box-shadow 200ms;
   }
 
   .variant-chip:hover {
-    border-color: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.28);
     color: white;
   }
 
@@ -621,51 +818,43 @@
     border-width: 2px;
     background: color-mix(in srgb, var(--pop-accent) 15%, rgba(0, 0, 0, 0.3));
     color: white;
-    box-shadow: 0 0 10px color-mix(in srgb, var(--pop-accent) 25%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--pop-accent) 18%, transparent);
   }
 
   .variant-icon {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  .variant-name {
-    white-space: nowrap;
-  }
-
-  /* Planes */
-  .planes-wrap :global(.plane-matrix) {
-    gap: 6px;
-  }
-
-  .planes-wrap :global(.cascade-badge) {
+  /* ─── Planes tab ─── */
+  .planes-section :global(.cascade-badge) {
     display: none;
   }
 
-  /* Effort — 4 columns × 2 rows */
-  .effort-wrap {
+  /* ─── Effort tab ─── */
+  .effort-section {
     --theme-stroke: rgba(255, 255, 255, 0.1);
     --theme-card-bg: rgba(255, 255, 255, 0.04);
     --theme-text-dim: rgba(255, 255, 255, 0.55);
     --theme-text: white;
-    --min-touch-target: 40px;
+    --min-touch-target: 44px;
   }
 
-  .effort-wrap :global(.effort-palette) {
+  .effort-section :global(.effort-palette) {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 6px;
   }
 
-  .effort-wrap :global(.palette-btn) {
+  .effort-section :global(.palette-btn) {
     min-width: 0;
   }
 
-  /* Effects — 6 columns for compact height */
-  .effects-wrap {
+  /* ─── Effects tab ─── */
+  .effects-section {
     --theme-card-bg: transparent;
     --theme-panel-bg: rgba(255, 255, 255, 0.04);
     --theme-stroke: rgba(255, 255, 255, 0.1);
@@ -675,17 +864,26 @@
     --min-touch-target: 40px;
   }
 
-  .effects-wrap :global(.effects-settings) {
+  .effects-section :global(.effects-settings) {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     padding: 0;
     background: transparent;
     border: none;
   }
 
-  .effects-wrap :global(h3) {
+  .effects-section :global(h3) {
     display: none;
   }
 
-  .effects-wrap :global(.effect-chips) {
-    grid-template-columns: repeat(6, 1fr);
+  .effects-section :global(.effect-chips) {
+    order: 10;
+  }
+
+  .effects-section :global(.sub-control),
+  .effects-section :global(.intensity-control),
+  .effects-section :global(.active-count) {
+    margin-top: 0;
   }
 </style>

@@ -10,7 +10,9 @@
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const hasSelection = $derived(selectedIndex !== null);
   const performers = $derived(viewer.performerManager.performers);
-  const performerColor = $derived(selectedIndex !== null ? getPerformerColor(selectedIndex) : "#6b7280");
+  const performerColor = $derived(
+    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#6b7280",
+  );
 
   let detailCollapsed = $state(false);
   let prevIndex = $state<number | null>(null);
@@ -36,9 +38,13 @@
     {#if hasSelection && !detailCollapsed}
       <div
         class="detail-panel"
-        transition:slide={{ axis: "x", duration: 250, easing: cubicOut }}
+        transition:slide={{ axis: "x", duration: 260, easing: cubicOut }}
       >
-        <button class="close-btn" aria-label="Close controls" onclick={collapseDetail}>
+        <button
+          class="close-tab"
+          aria-label="Close controls"
+          onclick={collapseDetail}
+        >
           <i class="fas fa-times"></i>
         </button>
         <PerformerHubDetail />
@@ -53,27 +59,30 @@
     bottom: 90px;
     left: 16px;
     z-index: 20;
-
     display: flex;
     flex-direction: row;
     align-items: flex-end;
-    gap: 0;
   }
 
   .spine-panel {
     padding: 8px 6px;
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--panel-color) 10%, rgba(20, 22, 32, 0.82)),
-        color-mix(in srgb, var(--panel-color) 5%, rgba(20, 22, 32, 0.82))
-      );
-    backdrop-filter: blur(24px) saturate(150%);
-    border: 1px solid color-mix(in srgb, var(--panel-color) 25%, rgba(255, 255, 255, 0.08));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--panel-color) 10%, rgba(20, 22, 32, 0.85)),
+      color-mix(in srgb, var(--panel-color) 4%, rgba(20, 22, 32, 0.85))
+    );
+    backdrop-filter: blur(28px) saturate(160%);
+    border: 1px solid
+      color-mix(in srgb, var(--panel-color) 22%, rgba(255, 255, 255, 0.07));
     border-radius: 14px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    box-shadow:
+      0 6px 32px rgba(0, 0, 0, 0.55),
+      0 1px 0 inset rgba(255, 255, 255, 0.04);
     flex-shrink: 0;
-    transition: border-radius 200ms ease, border-color 200ms ease, background 200ms ease;
+    transition:
+      border-radius 220ms ease,
+      border-color 220ms ease,
+      background 220ms ease;
   }
 
   .spine-panel.has-detail {
@@ -84,47 +93,52 @@
 
   .detail-panel {
     position: relative;
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--panel-color) 12%, rgba(20, 22, 32, 0.82)),
-        color-mix(in srgb, var(--panel-color) 5%, rgba(20, 22, 32, 0.82))
-      );
-    backdrop-filter: blur(24px) saturate(150%);
-    border: 1px solid color-mix(in srgb, var(--panel-color) 30%, rgba(255, 255, 255, 0.08));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--panel-color) 12%, rgba(20, 22, 32, 0.85)),
+      color-mix(in srgb, var(--panel-color) 4%, rgba(20, 22, 32, 0.85))
+    );
+    backdrop-filter: blur(28px) saturate(160%);
+    border: 1px solid
+      color-mix(in srgb, var(--panel-color) 28%, rgba(255, 255, 255, 0.07));
     border-left: none;
     border-radius: 0 14px 14px 0;
     box-shadow:
-      0 4px 24px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 color-mix(in srgb, var(--panel-color) 10%, transparent);
+      0 6px 32px rgba(0, 0, 0, 0.55),
+      0 1px 0 inset rgba(255, 255, 255, 0.04),
+      inset 1px 0 0 rgba(255, 255, 255, 0.03);
     overflow: hidden;
     max-width: calc(100vw - 140px);
   }
 
-  .close-btn {
+  .close-tab {
     position: absolute;
     top: -1px;
     right: -1px;
     z-index: 5;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     border-radius: 0 14px 0 10px;
     border: none;
-    background: color-mix(in srgb, var(--panel-color) 18%, rgba(0, 0, 0, 0.5));
-    color: rgba(255, 255, 255, 0.5);
+    background: color-mix(in srgb, var(--panel-color) 15%, rgba(0, 0, 0, 0.4));
+    color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 140ms ease;
+    transition:
+      background 140ms ease,
+      color 140ms ease,
+      transform 140ms ease;
   }
 
-  .close-btn:hover {
+  .close-tab:hover {
     background: color-mix(in srgb, var(--panel-color) 30%, rgba(0, 0, 0, 0.5));
     color: white;
+    transform: scale(1.08);
   }
 
-  .close-btn i {
-    font-size: 11px;
+  .close-tab i {
+    font-size: 10px;
   }
 </style>
