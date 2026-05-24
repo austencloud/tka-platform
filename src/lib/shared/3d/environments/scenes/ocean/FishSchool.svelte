@@ -401,8 +401,8 @@
       const evtSys = new FishEventSystem(spawnOffset, traitsData);
       eventSystem = evtSys;
 
-      posVar = gpu.addVariable('texturePosition', positionShader, posTex);
-      velVar = gpu.addVariable('textureVelocity', velocityShader, velTex);
+      const localPosVar = gpu.addVariable('texturePosition', positionShader, posTex);
+      const localVelVar = gpu.addVariable('textureVelocity', velocityShader, velTex);
 
       const stateTex = gpu.createTexture();
       const stateArr = stateTex.image.data as Float32Array;
@@ -412,16 +412,16 @@
         stateArr[i * 4 + 2] = 0;
         stateArr[i * 4 + 3] = 0;
       }
-      stateVar = gpu.addVariable('textureState', stateShader, stateTex);
+      const localStateVar = gpu.addVariable('textureState', stateShader, stateTex);
 
-      gpu.setVariableDependencies(posVar, [posVar, velVar]);
-      gpu.setVariableDependencies(velVar, [posVar, velVar, stateVar]);
-      gpu.setVariableDependencies(stateVar, [stateVar, posVar, velVar]);
+      gpu.setVariableDependencies(localPosVar, [localPosVar, localVelVar]);
+      gpu.setVariableDependencies(localVelVar, [localPosVar, localVelVar, localStateVar]);
+      gpu.setVariableDependencies(localStateVar, [localStateVar, localPosVar, localVelVar]);
 
       const schoolCenterVecs = clusterCenters.map((c) => new Vector3(c.x, c.y, c.z));
       while (schoolCenterVecs.length < 50) schoolCenterVecs.push(new Vector3(0, 0, 0));
 
-      const velU = velVar.material.uniforms;
+      const velU = localVelVar.material.uniforms;
       velU.uDelta = { value: 0 };
       velU.uSepDist = { value: 0.8 };
       velU.uAliDist = { value: 4.0 };
@@ -478,7 +478,7 @@
       velU.uSceneSDFInvMatrix = { value: identityMat.clone() };
       velU.uSceneSDFEnabled = { value: 0 };
 
-      const posU = posVar.material.uniforms;
+      const posU = localPosVar.material.uniforms;
       posU.uDelta = { value: 0 };
       posU.uSpawnCount = { value: 0 };
       posU.uSpawnStartIdx = { value: 0 };
@@ -495,7 +495,7 @@
         trophicRoles[s] = loaded[s]!.species.trophicRole;
       }
 
-      const stU = stateVar.material.uniforms;
+      const stU = localStateVar.material.uniforms;
       stU.uDelta = { value: 0 };
       stU.uTime = { value: 0 };
       stU.uFleeRange = { value: 5.0 };
@@ -521,7 +521,27 @@
         initCPUFallback(validResults, gy);
         return;
       }
-      console.log('[FishSchool] GPU init OK —', loaded.length, 'species,', spawnOffset, 'fish, texSize', localTexSize);
+
+      if (import.meta.env.DEV) {
+        console.log('[FishSchool] GPU init OK —', loaded.length, 'species,', spawnOffset, 'fish, texSize', localTexSize);
+        const glCtx = gl.getContext?.() ?? gl;
+        if (glCtx instanceof WebGL2RenderingContext || glCtx instanceof WebGLRenderingContext) {
+          const origShaderError = (gl as any).debug?.onShaderError;
+          (gl as any).debug = (gl as any).debug || {};
+          (gl as any).debug.onShaderError = (
+            _gl: WebGL2RenderingContext,
+            _program: WebGLProgram,
+            vsShader: WebGLShader,
+            fsShader: WebGLShader,
+          ) => {
+            const fsLog = _gl.getShaderInfoLog(fsShader);
+            const fsSource = _gl.getShaderSource(fsShader);
+            console.error('[FishSchool] GLSL compile error:\n', fsLog);
+            console.error('[FishSchool] First 500 chars of fragment shader:\n', fsSource?.substring(0, 500));
+            if (origShaderError) origShaderError(_gl, _program, vsShader, fsShader);
+          };
+        }
+      }
 
       const createdMeshes: InstancedMesh[] = [];
       const createdMaterials: ShaderMaterial[] = [];
@@ -585,14 +605,18 @@
       }
 
       gpu.compute();
-      const initPosTex = gpu.getCurrentRenderTarget(posVar).texture;
-      const initVelTex = gpu.getCurrentRenderTarget(velVar).texture;
-      const initStateTex = gpu.getCurrentRenderTarget(stateVar).texture;
+      const initPosTex = gpu.getCurrentRenderTarget(localPosVar).texture;
+      const initVelTex = gpu.getCurrentRenderTarget(localVelVar).texture;
+      const initStateTex = gpu.getCurrentRenderTarget(localStateVar).texture;
       for (const mat of createdMaterials) {
         mat.uniforms.tPosition!.value = initPosTex;
         mat.uniforms.tVelocity!.value = initVelTex;
         mat.uniforms.tState!.value = initStateTex;
       }
+
+      posVar = localPosVar;
+      velVar = localVelVar;
+      stateVar = localStateVar;
 
       meshes = createdMeshes;
       materials = createdMaterials;
@@ -658,7 +682,7 @@
       velU[matKeys[i]!].value = r.inverseMatrix;
     }
 
-    console.log(`[FishSchool] Bound ${count} reef SDF textures to velocity shader`);
+    if (import.meta.env.DEV) console.log(`[FishSchool] Bound ${count} reef SDF textures to velocity shader`);
   });
 
   // ── Reactive scene-wide SDF update ───────────────────────────────────
@@ -668,7 +692,7 @@
     velU.uSceneSDF.value = sceneSdfTexture;
     velU.uSceneSDFInvMatrix.value = sceneSdfInvMatrix;
     velU.uSceneSDFEnabled.value = 1;
-    console.log(`[FishSchool] Bound scene-wide SDF texture`);
+    if (import.meta.env.DEV) console.log(`[FishSchool] Bound scene-wide SDF texture`);
   });
 
   function createVisitorMesh(

@@ -6,7 +6,7 @@
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import ProceduralSeabed from "./ocean/ProceduralSeabed.svelte";
   import WaterSurface from "./ocean/WaterSurface.svelte";
-  import { terrainHeight as terrainHeightRaw, terrainHeightForPlacement, setMoundSources, type MoundSource } from "./ocean/terrain-height";
+  import { terrainHeight as terrainHeightRaw, terrainHeightForPlacement, terrainSlope, setMoundSources, type MoundSource } from "./ocean/terrain-height";
   import type { OceanVariant } from "../domain/enums/environment-enums";
   import {
     type OceanSceneConfig,
@@ -32,10 +32,13 @@
   import ProceduralJellyfish from "./ocean/ProceduralJellyfish.svelte";
   import BoatSilhouette from "./ocean/BoatSilhouette.svelte";
   import HeroKelp from "./ocean/HeroKelp.svelte";
+  import OceanClickInspect from "./ocean/OceanClickInspect.svelte";
   import type { ReefSDFData } from "./ocean/ReefStructures.svelte";
   import OceanLoadingScreen from "./ocean/OceanLoadingScreen.svelte";
   import OceanAmbientAudio from "./ocean/OceanAmbientAudio.svelte";
   import { generateRockVariants, type RockVariant } from "./ocean/procedural-rock";
+  import { generateDLAMask, type DLAMask } from "../utils/dla";
+  import { densityCurve, selectSpecies, vonMisesSample } from "../utils/reef-ecology";
   import {
     FogExp2,
     Color,
@@ -120,26 +123,44 @@
   const rockGlb4 = useGltf("/models/ocean/rock_4.glb", opts);
   const rockGlb5 = useGltf("/models/ocean/rock_5.glb", opts);
 
+  // Meshy AI coral/rock formation models
+  const meshyGlb0 = useGltf("/models/ocean/meshy/basalt_pinnacle.glb", opts);
+  const meshyGlb1 = useGltf("/models/ocean/meshy/coral_encrusted_rock.glb", opts);
+  const meshyGlb2 = useGltf("/models/ocean/meshy/coral_mountain.glb", opts);
+  const meshyGlb3 = useGltf("/models/ocean/meshy/neon_coral_summit.glb", opts);
+  const meshyGlb4 = useGltf("/models/ocean/meshy/submerged_coral_citadel.glb", opts);
+  const meshyGlb5 = useGltf("/models/ocean/meshy/sunlit_coral_arch.glb", opts);
+  const meshyGlb6 = useGltf("/models/ocean/meshy/underwater_coral_arch.glb", opts);
+  const meshyGlb7 = useGltf("/models/ocean/meshy/underwater_rock_table.glb", opts);
+  const meshyGlb8 = useGltf("/models/ocean/meshy/photorealistic_coral_0.glb", opts);
+  const meshyGlb9 = useGltf("/models/ocean/meshy/photorealistic_coral_1.glb", opts);
+  const meshyGlb10 = useGltf("/models/ocean/meshy/photorealistic_coral_2.glb", opts);
+  const meshyGlb11 = useGltf("/models/ocean/meshy/photorealistic_coral_3.glb", opts);
+
   const allGlbs = $derived([
     $coralGlb0, $coralGlb1, $coralGlb2, $coralGlb3, $coralGlb4, $coralGlb5, $coralGlb6, $coralLargeGlb,
     $seaweedGlb, $kelpPlantGlb,
     $starfishGlb, $seaUrchinGlb, $shellGlb, $anemoneGlb,
     $rockGlb0, $rockGlb1, $rockGlb2, $rockGlb3, $rockGlb4, $rockGlb5,
+    ...(!activeConfig.meshyFormations.enabled ? [] : [
+      $meshyGlb0, $meshyGlb1, $meshyGlb2, $meshyGlb3,
+      $meshyGlb4, $meshyGlb5, $meshyGlb6, $meshyGlb7,
+      $meshyGlb8, $meshyGlb9, $meshyGlb10, $meshyGlb11,
+    ]),
   ]);
   const loadedCount = $derived(allGlbs.filter(Boolean).length);
   const modelsLoaded = $derived(loadedCount === allGlbs.length);
   let reefSdfData = $state<ReefSDFData | null>(null);
   const sdfReady = $derived(reefSdfData !== null);
-  const sceneReady = $derived(modelsLoaded && sdfReady);
+  const sceneReady = $derived(modelsLoaded);
   const loadingProgress = $derived.by(() => {
     if (allGlbs.length === 0) return 0;
-    const modelPart = loadedCount / allGlbs.length;
-    return modelPart * 0.85 + (sdfReady ? 0.15 : 0);
+    return loadedCount / allGlbs.length;
   });
 
   // ── Scene Context ─────────────────────────────────────────────────────
 
-  const { scene, renderer } = useThrelte();
+  const { scene, renderer, camera } = useThrelte();
 
   const qualityOverride = $derived<OceanQualityTier | 'auto'>(activeConfig.qualityTier ?? 'auto');
   const detectedTier = $derived.by((): OceanQualityTier => {
@@ -206,9 +227,22 @@
     anchorRockScale: number;
   }
 
+  const dlaMask = $derived.by((): DLAMask | null => {
+    if (!activeConfig.placement.dlaMacroShape) return null;
+    return generateDLAMask({
+      ...activeConfig.dla,
+      innerRadius: zones.clearingRadius,
+      outerRadius: zones.backgroundRadius,
+      seed: 99,
+    });
+  });
+
   const reefFormations = $derived.by((): ReefFormation[] => {
     const rng = seededRandom(42);
     const formations: ReefFormation[] = [];
+    const cfg = activeConfig;
+    const mask = dlaMask;
+    const useBell = cfg.placement.densityCurve === 'bell';
 
     const formationCenters = poissonDiscSample({
       innerRadius: zones.clearingRadius + 0.5,
@@ -216,13 +250,23 @@
       minDistance: 2.5,
       count: 50,
       seed: 42,
+      densityBias: (x, z, dNorm) => {
+        let bias = useBell ? densityCurve(dNorm) : 1.0;
+        if (mask) {
+          bias *= mask.lookup(x, z) ? 1.0 : cfg.dla.outsideLeakFactor;
+        }
+        return bias;
+      },
     });
 
     for (const center of formationCenters) {
       const dist = Math.sqrt(center.x * center.x + center.z * center.z);
       if (dist < zones.stageRadius) continue;
 
-      const distFactor = Math.min((dist - zones.stageRadius) / (zones.backgroundRadius - zones.stageRadius), 1.0);
+      const distFactor = Math.min(
+        (dist - zones.stageRadius) / (zones.backgroundRadius - zones.stageRadius),
+        1.0,
+      );
       const isLargeFormation = rng() > 0.6;
       const species = Math.floor(rng() * 8);
 
@@ -254,6 +298,7 @@
     rocks: Placement[];
     boulders: Placement[];
     heroRocks: (Placement & { modelIdx: number })[];
+    meshyFormations: (Placement & { modelIdx: number })[];
     decorations: (Placement & { type: "starfish" | "urchin" | "shell" | "anemone" })[];
   }
 
@@ -384,34 +429,180 @@
       }
     }
 
+    // ── 3.5. Meshy AI formations — between hero rocks and coral ──────
+    const meshyFormations: ScenePlacements["meshyFormations"] = [];
+    if (cfg.meshyFormations.enabled) {
+      const rng = seededRandom(600);
+      const maxCount = cfg.meshyFormations.count;
+      const models = cfg.meshyFormations.models;
+      const totalWeight = models.reduce((s, m) => s + m.weight, 0);
+
+      // Landmarks: unique large placements at background distances
+      const landmarks = models.filter(m => m.category === "landmark" || m.category === "any");
+      const landmarkSamples = poissonDiscSample({
+        innerRadius: z_.forestOuter,
+        outerRadius: z_.backgroundRadius - 2,
+        minDistance: 6.0,
+        count: 6,
+        seed: 610,
+      });
+      for (const s of landmarkSamples) {
+        if (meshyFormations.length >= 6) break;
+        const pick = landmarks[Math.floor(rng() * landmarks.length)]!;
+        const modelIdx = models.indexOf(pick);
+        const scale = pick.baseScale * (0.8 + rng() * 0.6);
+        const r = scale * 1.5;
+        if (grid.isClear(s.x, s.z, r)) {
+          grid.register(s.x, s.z, r);
+          meshyFormations.push({
+            x: s.x, z: s.z, scale,
+            rotY: pick.rotationRange[0] + rng() * (pick.rotationRange[1] - pick.rotationRange[0]),
+            modelIdx,
+          });
+        }
+      }
+
+      // Formation anchors: at formation centers without hero rocks
+      for (const formation of formations) {
+        if (meshyFormations.length >= maxCount * 0.6) break;
+        if (formation.hasAnchorRock && hasGlbRocks) continue;
+        if (rng() > 0.7) continue;
+        let r_ = rng() * totalWeight;
+        let pickIdx = 0;
+        for (let i = 0; i < models.length; i++) {
+          r_ -= models[i]!.weight;
+          if (r_ <= 0) { pickIdx = i; break; }
+        }
+        const m = models[pickIdx]!;
+        if (m.category === "landmark") continue;
+        const scale = m.baseScale * (0.5 + rng() * 0.5);
+        const r = scale * 1.2;
+        if (grid.isClear(formation.x, formation.z, r)) {
+          grid.register(formation.x, formation.z, r);
+          meshyFormations.push({
+            x: formation.x, z: formation.z, scale,
+            rotY: m.rotationRange[0] + rng() * (m.rotationRange[1] - m.rotationRange[0]),
+            modelIdx: pickIdx,
+          });
+        }
+      }
+
+      // Cluster fill: smaller instances scattered within formations
+      for (const formation of formations) {
+        if (meshyFormations.length >= maxCount) break;
+        const fillCount = Math.floor(rng() * 3);
+        for (let j = 0; j < fillCount && meshyFormations.length < maxCount; j++) {
+          let r_ = rng() * totalWeight;
+          let pickIdx = 0;
+          for (let i = 0; i < models.length; i++) {
+            r_ -= models[i]!.weight;
+            if (r_ <= 0) { pickIdx = i; break; }
+          }
+          const m = models[pickIdx]!;
+          const angle = rng() * Math.PI * 2;
+          const dist = 0.5 + rng() * formation.radius * 0.8;
+          const x = formation.x + Math.cos(angle) * dist;
+          const z = formation.z + Math.sin(angle) * dist;
+          const rDist = Math.sqrt(x * x + z * z);
+          if (rDist < z_.clearingRadius || rDist > z_.backgroundRadius) continue;
+          const scale = m.baseScale * (0.3 + rng() * 0.3);
+          if (!grid.isClear(x, z, scale * 0.8)) continue;
+          meshyFormations.push({
+            x, z, scale,
+            rotY: m.rotationRange[0] + rng() * (m.rotationRange[1] - m.rotationRange[0]),
+            modelIdx: pickIdx,
+          });
+        }
+      }
+    }
+
     // ── 4. Coral — check against large items, DON'T register ─────────
-    // Coral clusters freely among itself, just avoids hero rocks/boulders.
     const coral: CoralPlacement[] = [];
     if (cfg.coral.enabled) {
       const rng = seededRandom(100);
       const maxCount = Math.min(cfg.coral.count, qualityConfig.maxCoralCount);
+
       for (const formation of formations) {
-        const count = Math.floor(3 + formation.density * 8 * (formation.radius / 2.0));
-        for (let j = 0; j < count && coral.length < maxCount; j++) {
-          const angle = rng() * Math.PI * 2;
-          const dist = rng() * formation.radius;
-          const x = formation.x + Math.cos(angle) * dist;
-          const z = formation.z + Math.sin(angle) * dist;
-          const rDist = Math.sqrt(x * x + z * z);
-          if (rDist < z_.stageRadius || rDist > z_.backgroundRadius) continue;
-          const closeness = 1.0 - dist / formation.radius;
-          const sizeRoll = rng();
-          const baseScale = sizeRoll > 0.85 ? 0.8 + rng() * 1.2 : sizeRoll > 0.5 ? 0.3 + rng() * 0.5 : 0.1 + rng() * 0.25;
-          const finalScale = baseScale * (0.6 + closeness * 0.8);
-          if (!grid.isClear(x, z, finalScale * 0.3)) continue;
-          coral.push({
-            x, z, scale: finalScale, rotY: rng() * Math.PI * 2,
-            hueShift: formation.hue + (rng() - 0.5) * 0.03,
-            satBoost: formation.saturation + (rng() - 0.5) * 0.1,
-            speciesIdx: (formation.dominantSpecies + (rng() > 0.7 ? Math.floor(rng() * 7) + 1 : 0)) % 8,
-          });
+        const totalCount = Math.floor(3 + formation.density * 8 * (formation.radius / 2.0));
+
+        if (cfg.placement.speciesClustering) {
+          // Generate 2-4 colony nuclei per formation
+          const nucleiCount = 2 + Math.floor(rng() * 3);
+          const nuclei: { x: number; z: number; species: number }[] = [];
+          for (let n = 0; n < nucleiCount; n++) {
+            const nAngle = rng() * Math.PI * 2;
+            const nDist = rng() * formation.radius * 0.6;
+            const nx = formation.x + Math.cos(nAngle) * nDist;
+            const nz = formation.z + Math.sin(nAngle) * nDist;
+            const nRDist = Math.sqrt(nx * nx + nz * nz);
+            const dNorm = Math.min(1, Math.max(0,
+              (nRDist - z_.clearingRadius) / (z_.backgroundRadius - z_.clearingRadius),
+            ));
+            const sp = cfg.placement.depthZonation
+              ? selectSpecies(cfg.coralSpecies, dNorm, rng)
+              : (formation.dominantSpecies + (rng() > 0.7 ? Math.floor(rng() * 7) + 1 : 0)) % 8;
+            nuclei.push({ x: nx, z: nz, species: sp });
+          }
+
+          // Distribute corals around nuclei with gaussian offset
+          const perNucleus = Math.ceil(totalCount / nuclei.length);
+          for (const nucleus of nuclei) {
+            for (let j = 0; j < perNucleus && coral.length < maxCount; j++) {
+              const u1 = Math.max(0.0001, rng());
+              const u2 = rng();
+              const sigma = 0.3 + rng() * 0.3;
+              const gx = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2) * sigma;
+              const gz = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2) * sigma;
+              const x = nucleus.x + gx;
+              const z = nucleus.z + gz;
+              const rDist = Math.sqrt(x * x + z * z);
+              if (rDist < z_.stageRadius || rDist > z_.backgroundRadius) continue;
+              const closeness = 1.0 - Math.sqrt(gx * gx + gz * gz) / (formation.radius + 0.01);
+              const sizeRoll = rng();
+              const baseScale = sizeRoll > 0.85 ? 0.8 + rng() * 1.2 : sizeRoll > 0.5 ? 0.3 + rng() * 0.5 : 0.1 + rng() * 0.25;
+              const finalScale = baseScale * Math.max(0.3, 0.6 + closeness * 0.8);
+              if (!grid.isClear(x, z, finalScale * 0.3)) continue;
+              if (cfg.placement.slopeAware) {
+                const slope = terrainSlope(x, z, z_.stageRadius, z_.clearingRadius);
+                if (slope < 0.05 && rng() > 0.2) continue;
+              }
+              coral.push({
+                x, z, scale: finalScale, rotY: rng() * Math.PI * 2,
+                hueShift: formation.hue + (rng() - 0.5) * 0.03,
+                satBoost: formation.saturation + (rng() - 0.5) * 0.1,
+                speciesIdx: nucleus.species,
+              });
+            }
+          }
+        } else {
+          // Original flat placement (fallback)
+          for (let j = 0; j < totalCount && coral.length < maxCount; j++) {
+            const angle = rng() * Math.PI * 2;
+            const dist = rng() * formation.radius;
+            const x = formation.x + Math.cos(angle) * dist;
+            const z = formation.z + Math.sin(angle) * dist;
+            const rDist = Math.sqrt(x * x + z * z);
+            if (rDist < z_.stageRadius || rDist > z_.backgroundRadius) continue;
+            const closeness = 1.0 - dist / formation.radius;
+            const sizeRoll = rng();
+            const baseScale = sizeRoll > 0.85 ? 0.8 + rng() * 1.2 : sizeRoll > 0.5 ? 0.3 + rng() * 0.5 : 0.1 + rng() * 0.25;
+            const finalScale = baseScale * (0.6 + closeness * 0.8);
+            if (!grid.isClear(x, z, finalScale * 0.3)) continue;
+            if (cfg.placement.slopeAware) {
+              const slope = terrainSlope(x, z, z_.stageRadius, z_.clearingRadius);
+              if (slope < 0.05 && rng() > 0.2) continue;
+            }
+            coral.push({
+              x, z, scale: finalScale, rotY: rng() * Math.PI * 2,
+              hueShift: formation.hue + (rng() - 0.5) * 0.03,
+              satBoost: formation.saturation + (rng() - 0.5) * 0.1,
+              speciesIdx: (formation.dominantSpecies + (rng() > 0.7 ? Math.floor(rng() * 7) + 1 : 0)) % 8,
+            });
+          }
         }
       }
+
+      // Clearing coral unchanged
       const clearingCoral = poissonDiscSample({ innerRadius: z_.stageRadius + 0.5, outerRadius: z_.clearingRadius, minDistance: 1.5, count: 25, seed: 150 });
       const rngCl = seededRandom(151);
       for (const s of clearingCoral) {
@@ -429,27 +620,72 @@
     const backgroundKelp: Placement[] = [];
     if (cfg.kelp.enabled) {
       const rng = seededRandom(200);
+      const currentAngle = cfg.placement.currentDrivenKelp
+        ? Math.atan2(cfg.currentDirection.z, cfg.currentDirection.x)
+        : 0;
+      const kappa = 2.0;
       const maxMid = Math.min(cfg.kelp.midCount, qualityConfig.maxMidKelp);
       const maxBg = Math.min(cfg.kelp.backgroundCount, qualityConfig.maxBackgroundKelp);
 
-      // Mid kelp: forest zone, near formations
-      for (const formation of formations) {
-        if (rng() > 0.85) continue;
-        const kelpCount = Math.floor(4 + formation.density * 10 * (formation.radius / 2.0));
-        const patchAngle = rng() * Math.PI * 2;
-        const patchDist = formation.radius * (0.3 + rng() * 0.5);
-        const patchX = formation.x + Math.cos(patchAngle) * patchDist;
-        const patchZ = formation.z + Math.sin(patchAngle) * patchDist;
-        for (let j = 0; j < kelpCount && midKelp.length < maxMid; j++) {
-          const angle = rng() * Math.PI * 2;
-          const dist = rng() * 1.2;
-          const x = patchX + Math.cos(angle) * dist;
-          const z = patchZ + Math.sin(angle) * dist;
-          const rDist = Math.sqrt(x * x + z * z);
-          if (rDist < z_.clearingRadius || rDist > z_.forestOuter) continue;
-          const ss = 0.4 + rng() * 1.0;
-          if (!grid.isClear(x, z, ss * 0.2)) { rng(); continue; }
-          midKelp.push({ x, z, scale: ss, rotY: rng() * Math.PI * 2 });
+      // Mid kelp: near rocks when enabled, else near formation centers
+      if (cfg.placement.rockAnchoredKelp) {
+        const holdfasts = [
+          ...heroRocks.filter(r => r.scale > 0.2).map(r => ({ x: r.x, z: r.z, size: r.scale })),
+          ...rocks.filter(r => r.scale > 0.15).map(r => ({ x: r.x, z: r.z, size: r.scale })),
+          ...boulders.map(b => ({ x: b.x, z: b.z, size: b.scale })),
+        ];
+        for (const holdfast of holdfasts) {
+          const kelpCount = Math.floor(rng() * 3 * holdfast.size);
+          for (let j = 0; j < kelpCount && midKelp.length < maxMid; j++) {
+            const angle = rng() * Math.PI * 2;
+            const dist = 0.5 + rng() * 1.5;
+            const x = holdfast.x + Math.cos(angle) * dist;
+            const z = holdfast.z + Math.sin(angle) * dist;
+            const rDist = Math.sqrt(x * x + z * z);
+            if (rDist < z_.clearingRadius || rDist > z_.forestOuter) continue;
+            const ss = 0.4 + rng() * 1.0;
+            if (!grid.isClear(x, z, ss * 0.2)) { rng(); continue; }
+            if (cfg.placement.slopeAware) {
+              const slope = terrainSlope(x, z, z_.stageRadius, z_.clearingRadius);
+              if (slope > 0.3 && rng() > 0.1) continue;
+            }
+            midKelp.push({
+              x, z, scale: ss,
+              rotY: cfg.placement.currentDrivenKelp
+                ? vonMisesSample(currentAngle, kappa, rng)
+                : rng() * Math.PI * 2,
+            });
+          }
+        }
+      } else {
+        // Original: offset from formation centers
+        for (const formation of formations) {
+          if (rng() > 0.85) continue;
+          const kelpCount = Math.floor(4 + formation.density * 10 * (formation.radius / 2.0));
+          const patchAngle = rng() * Math.PI * 2;
+          const patchDist = formation.radius * (0.3 + rng() * 0.5);
+          const patchX = formation.x + Math.cos(patchAngle) * patchDist;
+          const patchZ = formation.z + Math.sin(patchAngle) * patchDist;
+          for (let j = 0; j < kelpCount && midKelp.length < maxMid; j++) {
+            const angle = rng() * Math.PI * 2;
+            const dist = rng() * 1.2;
+            const x = patchX + Math.cos(angle) * dist;
+            const z = patchZ + Math.sin(angle) * dist;
+            const rDist = Math.sqrt(x * x + z * z);
+            if (rDist < z_.clearingRadius || rDist > z_.forestOuter) continue;
+            const ss = 0.4 + rng() * 1.0;
+            if (!grid.isClear(x, z, ss * 0.2)) { rng(); continue; }
+            if (cfg.placement.slopeAware) {
+              const slope = terrainSlope(x, z, z_.stageRadius, z_.clearingRadius);
+              if (slope > 0.3 && rng() > 0.1) continue;
+            }
+            midKelp.push({
+              x, z, scale: ss,
+              rotY: cfg.placement.currentDrivenKelp
+                ? vonMisesSample(currentAngle, kappa, rng)
+                : rng() * Math.PI * 2,
+            });
+          }
         }
       }
 
@@ -464,7 +700,12 @@
       const bgRng = seededRandom(211);
       for (const s of bgSamples) {
         if (backgroundKelp.length >= maxBg) break;
-        backgroundKelp.push({ x: s.x, z: s.z, scale: 0.6 + bgRng() * 0.8, rotY: bgRng() * Math.PI * 2 });
+        backgroundKelp.push({
+          x: s.x, z: s.z, scale: 0.6 + bgRng() * 0.8,
+          rotY: cfg.placement.currentDrivenKelp
+            ? vonMisesSample(currentAngle, kappa, bgRng)
+            : bgRng() * Math.PI * 2,
+        });
       }
     }
     const kelp = midKelp;
@@ -475,20 +716,40 @@
     if (cfg.decorations.enabled) {
       const rng = seededRandom(390);
       const maxCount = Math.min(cfg.decorations.count, qualityConfig.maxCoralCount);
+      const drift = cfg.placement.driftAccumulation;
+      const slopeAware = cfg.placement.slopeAware;
+
+      // Anemones near rocks
       for (const rock of rocks) {
         if (decorations.length >= maxCount * 0.25) break;
         if (rng() > 0.4) continue;
         const angle = rng() * Math.PI * 2;
-        const dist = 0.3 + rng() * 0.6;
-        decorations.push({ x: rock.x + Math.cos(angle) * dist, z: rock.z + Math.sin(angle) * dist, scale: 0.4 + rng() * 0.5, rotY: rng() * Math.PI * 2, type: "anemone" as DecoType });
+        const dist = drift ? 0.2 + rng() * 0.3 : 0.3 + rng() * 0.6;
+        const x = rock.x + Math.cos(angle) * dist;
+        const z = rock.z + Math.sin(angle) * dist;
+        if (slopeAware) {
+          const slope = terrainSlope(x, z, z_.stageRadius, z_.clearingRadius);
+          if (slope < 0.1 && rng() > 0.5) continue;
+        }
+        decorations.push({ x, z, scale: 0.4 + rng() * 0.5, rotY: rng() * Math.PI * 2, type: "anemone" as DecoType });
       }
+
+      // Starfish near coral
       for (const c of coral) {
         if (decorations.length >= maxCount * 0.5) break;
         if (rng() > 0.12) continue;
         const angle = rng() * Math.PI * 2;
-        const dist = 0.2 + rng() * 0.8;
-        decorations.push({ x: c.x + Math.cos(angle) * dist, z: c.z + Math.sin(angle) * dist, scale: 0.3 + rng() * 0.4, rotY: rng() * Math.PI * 2, type: "starfish" as DecoType });
+        const dist = drift ? 0.15 + rng() * 0.35 : 0.2 + rng() * 0.8;
+        const x = c.x + Math.cos(angle) * dist;
+        const z = c.z + Math.sin(angle) * dist;
+        if (slopeAware) {
+          const slope = terrainSlope(x, z, z_.stageRadius, z_.clearingRadius);
+          if (slope > 0.1 && rng() > 0.3) continue;
+        }
+        decorations.push({ x, z, scale: 0.3 + rng() * 0.4, rotY: rng() * Math.PI * 2, type: "starfish" as DecoType });
       }
+
+      // Urchins near formations
       for (const formation of formations) {
         if (decorations.length >= maxCount * 0.7) break;
         if (!formation.hasAnchorRock) continue;
@@ -496,9 +757,17 @@
         for (let j = 0; j < urchinCount; j++) {
           const angle = rng() * Math.PI * 2;
           const dist = 0.5 + rng() * formation.radius * 0.5;
-          decorations.push({ x: formation.x + Math.cos(angle) * dist, z: formation.z + Math.sin(angle) * dist, scale: 0.25 + rng() * 0.35, rotY: rng() * Math.PI * 2, type: "urchin" as DecoType });
+          const x = formation.x + Math.cos(angle) * dist;
+          const z = formation.z + Math.sin(angle) * dist;
+          if (slopeAware) {
+            const slope = terrainSlope(x, z, z_.stageRadius, z_.clearingRadius);
+            if (slope < 0.1 && rng() > 0.5) continue;
+          }
+          decorations.push({ x, z, scale: 0.25 + rng() * 0.35, rotY: rng() * Math.PI * 2, type: "urchin" as DecoType });
         }
       }
+
+      // Shells in clearing
       const shellSamples = poissonDiscSample({ innerRadius: z_.stageRadius, outerRadius: z_.clearingRadius + 3, minDistance: 0.8, count: Math.max(0, maxCount - decorations.length), seed: 395 });
       const rng2 = seededRandom(396);
       for (const s of shellSamples) {
@@ -509,11 +778,19 @@
           if (dx * dx + dz * dz < f.radius * f.radius) { nearFormation = true; break; }
         }
         if (nearFormation) continue;
+        if (drift) {
+          const nearLarge = !grid.isClear(s.x, s.z, 0.8);
+          if (!nearLarge && rng2() > 0.5) continue;
+        }
+        if (slopeAware) {
+          const slope = terrainSlope(s.x, s.z, z_.stageRadius, z_.clearingRadius);
+          if (slope > 0.1 && rng2() > 0.3) continue;
+        }
         decorations.push({ x: s.x, z: s.z, scale: 0.15 + rng2() * 0.25, rotY: rng2() * Math.PI * 2, type: "shell" as DecoType });
       }
     }
 
-    return { coral, kelp, backgroundKelp, rocks, boulders, heroRocks, decorations };
+    return { coral, kelp, backgroundKelp, rocks, boulders, heroRocks, meshyFormations, decorations };
   });
 
   const coralPlacements = $derived(scenePlacements.coral);
@@ -542,6 +819,9 @@
     }
     for (const p of scenePlacements.boulders) {
       mounds.push({ x: p.x, z: p.z, radius: p.scale * 1.8, height: p.scale * 0.3 });
+    }
+    for (const p of scenePlacements.meshyFormations) {
+      mounds.push({ x: p.x, z: p.z, radius: p.scale * 2.5, height: p.scale * 0.4 });
     }
     for (const p of scenePlacements.coral) {
       if (p.scale < 0.4) continue;
@@ -621,13 +901,10 @@
     z: number;
     targetHeight: number;
     rotY: number;
-    timeOffset: number;
-    animationIndex: number;
   }
 
   const HERO_KELP_VARIETIES = [
-    { model: "/models/ocean/kelp/breathing_kelp.glb", scaleRange: [3, 5] as [number, number], animIdx: 0 },
-    { model: "/models/ocean/kelp/leafy_kelp.glb", scaleRange: [2, 3.5] as [number, number], animIdx: 0 },
+    { model: "/models/ocean/kelp/breathing_kelp.glb", scaleRange: [3, 5] as [number, number] },
   ];
 
   const heroKelpSpawns = $derived.by((): HeroKelpSpawn[] => {
@@ -651,9 +928,8 @@
         z: pz,
         targetHeight: variety.scaleRange[0] + rng() * (variety.scaleRange[1] - variety.scaleRange[0]),
         rotY: rng() * Math.PI * 2,
-        timeOffset: rng() * 6,
-        animationIndex: variety.animIdx,
       });
+      rng(); rng();
     }
     return spawns;
   });
@@ -777,6 +1053,64 @@
       return createInstancedMeshFromModel(model.scene, placements);
     });
     heroRockInstances = newInstances;
+
+    return () => {
+      for (const inst of newInstances) disposeInstancedMesh(inst);
+    };
+  });
+
+  // ── Meshy Formation Models ───────────────────────────────────────────
+
+  const meshyGlbModels = $derived(
+    [$meshyGlb0, $meshyGlb1, $meshyGlb2, $meshyGlb3, $meshyGlb4, $meshyGlb5,
+     $meshyGlb6, $meshyGlb7, $meshyGlb8, $meshyGlb9, $meshyGlb10, $meshyGlb11,
+    ].filter(Boolean) as { scene: Object3D }[],
+  );
+  const hasMeshyModels = $derived(meshyGlbModels.length > 0 && activeConfig.meshyFormations.enabled);
+
+  const meshyGlbScales = $derived.by((): number[] =>
+    meshyGlbModels.map((m) => {
+      const extent = measureModelExtent(m.scene as Object3D);
+      return extent < 0.001 ? 0.001 : 3.0 / extent;
+    }),
+  );
+
+  const meshyGlbBaseOffsets = $derived.by((): number[] =>
+    meshyGlbModels.map((m) => {
+      const raw = -measureModelMinY(m.scene as Object3D);
+      return raw * 1.1 + 0.05;
+    }),
+  );
+
+  const meshyFormationPlacements = $derived(scenePlacements.meshyFormations);
+
+  let meshyInstances = $state<(InstancedMesh | null)[]>([]);
+  $effect(() => {
+    if (!hasMeshyModels) { meshyInstances = []; return; }
+
+    const buckets: Map<number, InstancePlacement[]> = new Map();
+
+    for (const p of meshyFormationPlacements) {
+      const modelIdx = p.modelIdx % meshyGlbModels.length;
+      if (!buckets.has(modelIdx)) buckets.set(modelIdx, []);
+
+      const s = meshyGlbScales[modelIdx] ?? 0.001;
+      const baseOffset = (meshyGlbBaseOffsets[modelIdx] ?? 0) * p.scale * s;
+
+      buckets.get(modelIdx)!.push({
+        x: p.x,
+        z: p.z,
+        y: groundY + getTerrainY(p.x, p.z) + baseOffset,
+        scale: p.scale * s,
+        rotY: p.rotY,
+      });
+    }
+
+    const newInstances = meshyGlbModels.map((model, idx) => {
+      const placements = buckets.get(idx) ?? [];
+      return createInstancedMeshFromModel(model.scene, placements);
+    });
+    meshyInstances = newInstances;
 
     return () => {
       for (const inst of newInstances) disposeInstancedMesh(inst);
@@ -1115,7 +1449,12 @@
   $effect(() => {
     if (!sceneFeatures) return;
     sceneFeatures.reportProgress("environment", loadingProgress);
-    if (sceneReady) sceneFeatures.reportReady("environment");
+    if (sceneReady) {
+      if (renderer.current && camera.current && scene.current) {
+        renderer.current.compile(scene.current, camera.current);
+      }
+      sceneFeatures.reportReady("environment");
+    }
   });
 
   onMount(() => {
@@ -1187,13 +1526,15 @@
 
   // ── Cleanup ───────────────────────────────────────────────────────────
   // rockInstances, boulderInstances, coralInstances, midKelpInstances,
-  // bgKelpInstances, heroRockInstances, and decorationInstances are all
-  // cleaned up by their respective $effect teardowns.
+  // bgKelpInstances, heroRockInstances, meshyInstances, and decorationInstances
+  // are all cleaned up by their respective $effect teardowns.
 </script>
 
 <OceanLoadingScreen progress={loadingProgress} visible={!sceneReady} />
 
 {#if modelsLoaded}
+<OceanClickInspect />
+
 <!-- Procedural ambient audio (per-variant underwater soundscape) -->
 <OceanAmbientAudio {variant} />
 
@@ -1258,14 +1599,21 @@
     z={hk.z}
     targetHeight={hk.targetHeight}
     rotY={hk.rotY}
-    timeOffset={hk.timeOffset}
-    animationIndex={hk.animationIndex}
   />
 {/each}
 
 <!-- Hero rocks (instanced GLB models — formation anchors) -->
 {#if activeConfig.rocks.enabled && hasGlbRocks}
   {#each heroRockInstances as inst}
+    {#if inst}
+      <T is={inst} />
+    {/if}
+  {/each}
+{/if}
+
+<!-- Meshy AI formations (instanced GLB models — landmarks + cluster fill) -->
+{#if hasMeshyModels}
+  {#each meshyInstances as inst}
     {#if inst}
       <T is={inst} />
     {/if}

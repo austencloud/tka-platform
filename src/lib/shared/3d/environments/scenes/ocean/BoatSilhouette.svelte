@@ -1,17 +1,18 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
+  import { useGltf } from "@threlte/extras";
+  import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
   import {
-    BoxGeometry,
-    MeshBasicMaterial,
+    Box3,
     DirectionalLight,
-    DoubleSide,
     Group,
+    MeshBasicMaterial,
     Color,
+    Vector3,
   } from "three";
   import type { OceanBoatSilhouetteConfig } from "../../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { godraysLightStore } from "../../../effects/post-processing/godrays-light-store.svelte";
-  import { onDestroy } from "svelte";
 
   interface Props {
     config: OceanBoatSilhouetteConfig;
@@ -22,44 +23,57 @@
   const groundY = $derived(userProportionsState.groundY);
   const boatY = $derived(groundY + waterSurfaceHeight + config.heightAboveSurface);
 
-  const hullMaterial = new MeshBasicMaterial({
-    color: new Color(config.color),
-    side: DoubleSide,
+  const gltf = useGltf(config.modelPath ?? "/models/ocean/boat.glb", {
+    meshoptDecoder: MeshoptDecoder,
   });
 
-  function createTaperedHull(length: number, depth: number, width: number): BoxGeometry {
-    const geo = new BoxGeometry(length, depth, width, 4, 1, 1);
-    const pos = geo.attributes.position!;
-    const halfLen = length / 2;
-    const taperStart = 0.55;
+  const silhouetteMat = new MeshBasicMaterial({
+    color: new Color(config.color),
+  });
 
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const absX = Math.abs(x);
-      const norm = absX / halfLen;
+  $effect(() => {
+    const model = $gltf;
+    if (!model) return;
 
-      if (norm > taperStart) {
-        const t = (norm - taperStart) / (1 - taperStart);
-        const squeeze = 1 - t * t * 0.85;
-        pos.setZ(i, pos.getZ(i) * squeeze);
-        const y = pos.getY(i);
-        if (y < 0) {
-          pos.setY(i, y * (1 - t * 0.4));
-        }
+    model.scene.scale.setScalar(1);
+    model.scene.position.set(0, 0, 0);
+
+    const dims: { child: any; max: number; min: number }[] = [];
+    model.scene.traverse((child: any) => {
+      if (!child.isMesh) return;
+      const mb = new Box3().setFromObject(child);
+      const ms = new Vector3();
+      mb.getSize(ms);
+      const sorted = [ms.x, ms.y, ms.z].sort((a, b) => a - b);
+      dims.push({ child, max: sorted[2]!, min: sorted[0]! });
+    });
+
+    for (const { child, max, min } of dims) {
+      const isFlat = min < max * 0.05;
+      const isMassive = max > 50;
+      if (isFlat || isMassive) {
+        child.visible = false;
+        continue;
       }
+      child.material = silhouetteMat;
+      child.castShadow = true;
     }
 
-    pos.needsUpdate = true;
-    geo.computeVertexNormals();
-    return geo;
-  }
-
-  const hullGeo = createTaperedHull(config.length, config.depth, config.width);
-  const keelGeo = new BoxGeometry(config.length * 0.65, config.depth * 0.75, 0.08);
+    const box = new Box3().setFromObject(model.scene);
+    const size = new Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const s = maxDim > 0.001 ? config.length / maxDim : 1;
+    model.scene.scale.setScalar(s);
+    model.scene.position.set(
+      -box.getCenter(new Vector3()).x * s,
+      -box.min.y * s,
+      -box.getCenter(new Vector3()).z * s,
+    );
+  });
 
   let group = $state<Group | undefined>(undefined);
   let elapsed = 0;
-
   let godRayLight = $state<DirectionalLight | null>(null);
 
   $effect(() => {
@@ -91,39 +105,39 @@
     if (!group || !config.animated) return;
     elapsed += delta;
 
-    group.rotation.x = Math.sin(elapsed * 0.4) * 0.015;
-    group.rotation.z = Math.sin(elapsed * 0.3 + 1.0) * 0.02;
-    group.position.y = boatY + Math.sin(elapsed * 0.5) * 0.05;
-  });
+    const t = elapsed * config.driftSpeed;
+    const r = config.driftRadius;
+    const driftX = Math.sin(t) * r;
+    const driftZ = Math.sin(t * 0.7) * r * 0.6;
 
-  onDestroy(() => {
-    hullGeo.dispose();
-    keelGeo.dispose();
-    hullMaterial.dispose();
+    group.position.x = config.offsetX + driftX;
+    group.position.z = config.offsetZ + driftZ;
+    group.position.y = boatY + Math.sin(elapsed * 0.5) * 0.08;
+
+    const headingX = Math.cos(t) * r * config.driftSpeed;
+    const headingZ = Math.cos(t * 0.7) * r * 0.6 * config.driftSpeed * 0.7;
+    group.rotation.y = Math.atan2(headingX, headingZ);
+
+    group.rotation.x = Math.sin(elapsed * 0.4) * 0.02;
+    group.rotation.z = Math.sin(elapsed * 0.3 + 1.0) * 0.025;
   });
 </script>
 
-<T.Group
-  bind:ref={group}
-  position.x={config.offsetX}
-  position.y={boatY}
-  position.z={config.offsetZ}
-  rotation.y={config.rotationY}
->
-  <T.Mesh geometry={hullGeo} material={hullMaterial} castShadow />
-
-  {#if config.keelEnabled}
-    <T.Mesh
-      geometry={keelGeo}
-      material={hullMaterial}
-      position.y={-config.depth * 0.85}
-      castShadow
-    />
-  {/if}
-</T.Group>
+{#if $gltf}
+  <T.Group
+    bind:ref={group}
+    position.x={config.offsetX}
+    position.y={boatY}
+    position.z={config.offsetZ}
+    rotation.y={config.rotationY}
+  >
+    <T is={$gltf.scene} />
+  </T.Group>
+{/if}
 
 {#if godRayLight}
   <T is={godRayLight}>
     <T is={godRayLight.target} />
   </T>
 {/if}
+

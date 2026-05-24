@@ -104,6 +104,21 @@ export function terrainHeightForPlacement(
   return Math.max(h0, h1, h2, h3, h4);
 }
 
+export function terrainSlope(
+  wx: number,
+  wz: number,
+  stageRadius: number,
+  clearingRadius: number,
+): number {
+  const eps = 0.3;
+  const hC = terrainHeight(wx, wz, stageRadius, clearingRadius);
+  const hX = terrainHeight(wx + eps, wz, stageRadius, clearingRadius);
+  const hZ = terrainHeight(wx, wz + eps, stageRadius, clearingRadius);
+  const dx = (hX - hC) / eps;
+  const dz = (hZ - hC) / eps;
+  return Math.sqrt(dx * dx + dz * dz);
+}
+
 // ── Sediment Mounding ─────────────────────────────────────────────────
 // Objects placed on the base terrain. Geometry then raised around them
 // via mounding — breaks the "placed on top" look, simulates sediment

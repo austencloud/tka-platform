@@ -176,6 +176,16 @@
   <ParamSlider label="Columns" value={cfg.platform.columnCount} min={0} max={12} step={1} onChange={(v) => (mut().platform.columnCount = v)} />
 </ParamPanel>
 
+{#if cfg.boatSilhouette}
+  <ParamPanel title="Boat" enabled={cfg.boatSilhouette.enabled} onToggle={(v) => { if (mut().boatSilhouette) mut().boatSilhouette!.enabled = v; }}>
+    <ParamSlider label="Height offset" value={cfg.boatSilhouette.heightAboveSurface} min={-3} max={5} step={0.05} unit="m" onChange={(v) => { if (mut().boatSilhouette) mut().boatSilhouette!.heightAboveSurface = v; }} />
+    <ParamSlider label="Size" value={cfg.boatSilhouette.length} min={2} max={20} step={0.5} unit="m" onChange={(v) => { if (mut().boatSilhouette) mut().boatSilhouette!.length = v; }} />
+    <ParamSlider label="Offset X" value={cfg.boatSilhouette.offsetX} min={-20} max={20} step={0.5} unit="m" onChange={(v) => { if (mut().boatSilhouette) mut().boatSilhouette!.offsetX = v; }} />
+    <ParamSlider label="Offset Z" value={cfg.boatSilhouette.offsetZ} min={-20} max={20} step={0.5} unit="m" onChange={(v) => { if (mut().boatSilhouette) mut().boatSilhouette!.offsetZ = v; }} />
+    <ParamSlider label="Rotation" value={cfg.boatSilhouette.rotationY} min={-3.14} max={3.14} step={0.05} unit="rad" onChange={(v) => { if (mut().boatSilhouette) mut().boatSilhouette!.rotationY = v; }} />
+  </ParamPanel>
+{/if}
+
 <ParamPanel title="Hemisphere light" defaultOpen={false}>
   <ParamColor label="Sky" value={cfg.hemisphereLight.skyColor} onChange={(v) => (mut().hemisphereLight.skyColor = v)} />
   <ParamColor label="Ground" value={cfg.hemisphereLight.groundColor} onChange={(v) => (mut().hemisphereLight.groundColor = v)} />

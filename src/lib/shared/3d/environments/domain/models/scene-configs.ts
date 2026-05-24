@@ -311,6 +311,48 @@ export interface OceanZonesConfig {
   forestOuter: number;
   /** Background silhouettes — fades into fog */
   backgroundRadius: number;
+  reefAxisAngle: number;
+}
+
+export interface DLAConfig {
+  gridSize: number;
+  walkerCount: number;
+  seeds: Array<{ angle: number; distanceNorm: number }>;
+  outsideLeakFactor: number;
+}
+
+export interface CoralSpeciesConfig {
+  speciesIndex: number;
+  depthPreference: [number, number];
+  currentAffinity?: number;
+}
+
+export interface PlacementConfig {
+  slopeAware: boolean;
+  dlaMacroShape: boolean;
+  depthZonation: boolean;
+  currentDrivenKelp: boolean;
+  speciesClustering: boolean;
+  rockAnchoredKelp: boolean;
+  driftAccumulation: boolean;
+  densityCurve: 'flat' | 'bell';
+}
+
+export interface MeshyModelEntry {
+  path: string;
+  name: string;
+  baseScale: number;
+  rotationRange: [number, number];
+  weight: number;
+  category: "formation" | "landmark" | "any";
+}
+
+export interface MeshyFormationsConfig {
+  enabled: boolean;
+  count: number;
+  models: MeshyModelEntry[];
+  tintColor: string;
+  tintBlend: number;
 }
 
 export interface OceanSceneConfig {
@@ -332,8 +374,12 @@ export interface OceanSceneConfig {
   kelp: {
     enabled: boolean;
     count: number;
+    heroCount: number;
+    midCount: number;
+    backgroundCount: number;
     swaySpeed: number;
     swayAmplitude: number;
+    currentDirection: [number, number];
   };
 
   fish: {
@@ -407,6 +453,11 @@ export interface OceanSceneConfig {
 
   hemisphereLight: HemisphereLightConfig;
   platform: RuinsPlatformConfig;
+  currentDirection: { x: number; z: number };
+  dla: DLAConfig;
+  coralSpecies: CoralSpeciesConfig[];
+  placement: PlacementConfig;
+  meshyFormations: MeshyFormationsConfig;
 }
 
 export interface OceanBoatSilhouetteConfig {
@@ -423,6 +474,8 @@ export interface OceanBoatSilhouetteConfig {
   animated: boolean;
   keelEnabled: boolean;
   godRayOcclusion: boolean;
+  driftSpeed: number;
+  driftRadius: number;
 }
 
 // ============================================================================
@@ -995,6 +1048,7 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       forestInner: 14,
       forestOuter: 22,
       backgroundRadius: 24,
+      reefAxisAngle: Math.PI,
     },
     coral: {
       enabled: true,
@@ -1005,8 +1059,12 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
     kelp: {
       enabled: true,
       count: 300,
+      heroCount: 4,
+      midCount: 40,
+      backgroundCount: 80,
       swaySpeed: 0.5,
       swayAmplitude: 0.2,
+      currentDirection: [0.6, 0.3],
     },
     fish: {
       enabled: true,
@@ -1115,9 +1173,9 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       enabled: true,
       offsetX: 10,
       offsetZ: -2,
-      heightAboveSurface: 0.3,
-      modelPath: null,
-      length: 6,
+      heightAboveSurface: 1.10,
+      modelPath: "/models/ocean/boat.glb",
+      length: 8,
       width: 2.5,
       depth: 0.8,
       color: "#0a1520",
@@ -1125,6 +1183,8 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       animated: true,
       keelEnabled: true,
       godRayOcclusion: true,
+      driftSpeed: 0.15,
+      driftRadius: 8,
     },
     hemisphereLight: {
       skyColor: "#5090b0",
@@ -1142,6 +1202,58 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       glowIntensity: 0.5,
       mossIntensity: 0.8,
       columnCount: 6,
+    },
+    currentDirection: { x: 0, z: -1 },
+    dla: {
+      gridSize: 64,
+      walkerCount: 1000,
+      seeds: [
+        { angle: Math.PI, distanceNorm: 0.3 },
+        { angle: Math.PI * 0.8, distanceNorm: 0.5 },
+        { angle: Math.PI * 1.2, distanceNorm: 0.4 },
+        { angle: Math.PI * 0.6, distanceNorm: 0.6 },
+      ],
+      outsideLeakFactor: 0.1,
+    },
+    coralSpecies: [
+      { speciesIndex: 0, depthPreference: [0.0, 0.4] },
+      { speciesIndex: 1, depthPreference: [0.2, 0.6] },
+      { speciesIndex: 2, depthPreference: [0.4, 0.8] },
+      { speciesIndex: 3, depthPreference: [0.6, 1.0] },
+      { speciesIndex: 4, depthPreference: [0.3, 0.9], currentAffinity: 2.0 },
+      { speciesIndex: 5, depthPreference: [0.0, 0.5] },
+      { speciesIndex: 6, depthPreference: [0.3, 0.7] },
+      { speciesIndex: 7, depthPreference: [0.5, 1.0] },
+    ],
+    placement: {
+      slopeAware: true,
+      dlaMacroShape: true,
+      depthZonation: true,
+      currentDrivenKelp: true,
+      speciesClustering: true,
+      rockAnchoredKelp: true,
+      driftAccumulation: true,
+      densityCurve: 'bell',
+    },
+    meshyFormations: {
+      enabled: true,
+      count: 35,
+      models: [
+        { path: "basalt_pinnacle.glb", name: "Basalt Pinnacle", baseScale: 1.0, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "landmark" },
+        { path: "coral_encrusted_rock.glb", name: "Coral Encrusted Rock", baseScale: 0.8, rotationRange: [0, Math.PI * 2], weight: 1.5, category: "formation" },
+        { path: "coral_mountain.glb", name: "Coral Mountain", baseScale: 1.2, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "landmark" },
+        { path: "neon_coral_summit.glb", name: "Neon Coral Summit", baseScale: 1.0, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "landmark" },
+        { path: "submerged_coral_citadel.glb", name: "Submerged Coral Citadel", baseScale: 1.0, rotationRange: [0, Math.PI * 2], weight: 1.2, category: "landmark" },
+        { path: "sunlit_coral_arch.glb", name: "Sunlit Coral Arch", baseScale: 0.9, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "landmark" },
+        { path: "underwater_coral_arch.glb", name: "Underwater Coral Arch", baseScale: 0.9, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "any" },
+        { path: "underwater_rock_table.glb", name: "Underwater Rock Table", baseScale: 0.7, rotationRange: [0, Math.PI * 2], weight: 1.3, category: "formation" },
+        { path: "photorealistic_coral_0.glb", name: "Photorealistic Coral A", baseScale: 0.8, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "any" },
+        { path: "photorealistic_coral_1.glb", name: "Photorealistic Coral B", baseScale: 0.8, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "any" },
+        { path: "photorealistic_coral_2.glb", name: "Photorealistic Coral C", baseScale: 0.7, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "formation" },
+        { path: "photorealistic_coral_3.glb", name: "Photorealistic Coral D", baseScale: 0.7, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "formation" },
+      ],
+      tintColor: "#708898",
+      tintBlend: 0.15,
     },
   };
 }
@@ -1297,17 +1409,17 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
     crystalFormations: {
       enabled: true,
       seed: 42,
-      placementRadius: [6, 25],
-      totalCount: 140,
-      sizeRange: [0.8, 3.5],
+      placementRadius: [7, 22],
+      totalCount: 72,
+      sizeRange: [0.6, 2.8],
       models: [
-        { path: "/models/cosmic/crystal-spire-crimson.glb", weight: 2, glowIntensity: 0.8 },
-        { path: "/models/cosmic/crystal-spire-prismatic.glb", weight: 2, glowIntensity: 0.9 },
-        { path: "/models/cosmic/crystal-pyramid-blue.glb", weight: 2, glowIntensity: 0.7 },
-        { path: "/models/cosmic/crystal-cluster-pink.glb", weight: 2, glowIntensity: 1.0 },
+        { path: "/models/cosmic/crystal-spire-prismatic.glb", weight: 2.5, glowIntensity: 0.9 },
+        { path: "/models/cosmic/crystal-pyramid-blue.glb", weight: 2.5, glowIntensity: 0.8 },
         { path: "/models/cosmic/crystal-cluster-aurora.glb", weight: 2, glowIntensity: 1.0 },
-        { path: "/models/cosmic/crystal-plate-golden.glb", weight: 1.5, glowIntensity: 0.5 },
-        { path: "/models/cosmic/crystal-branch-moonlit.glb", weight: 1.5, glowIntensity: 0.9 },
+        { path: "/models/cosmic/crystal-branch-moonlit.glb", weight: 2, glowIntensity: 0.9 },
+        { path: "/models/cosmic/crystal-spire-cyan.glb", weight: 2.5, glowIntensity: 0.85 },
+        { path: "/models/cosmic/crystal-cluster-emerald.glb", weight: 2, glowIntensity: 1.0 },
+        { path: "/models/cosmic/crystal-spire-amethyst.glb", weight: 2.5, glowIntensity: 0.95 },
       ],
       species: [],
     },
@@ -1552,17 +1664,17 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
     crystalFormations: {
       enabled: true,
       seed: 99,
-      placementRadius: [6, 25],
-      totalCount: 155,
-      sizeRange: [0.8, 3.5],
+      placementRadius: [7, 22],
+      totalCount: 84,
+      sizeRange: [0.6, 3.0],
       models: [
-        { path: "/models/cosmic/crystal-spire-crimson.glb", weight: 2, glowIntensity: 0.9 },
-        { path: "/models/cosmic/crystal-spire-prismatic.glb", weight: 2, glowIntensity: 1.0 },
-        { path: "/models/cosmic/crystal-pyramid-blue.glb", weight: 2, glowIntensity: 0.8 },
-        { path: "/models/cosmic/crystal-cluster-pink.glb", weight: 2, glowIntensity: 1.2 },
+        { path: "/models/cosmic/crystal-spire-prismatic.glb", weight: 2.5, glowIntensity: 1.0 },
+        { path: "/models/cosmic/crystal-pyramid-blue.glb", weight: 2.5, glowIntensity: 0.9 },
         { path: "/models/cosmic/crystal-cluster-aurora.glb", weight: 2.5, glowIntensity: 1.2 },
-        { path: "/models/cosmic/crystal-plate-golden.glb", weight: 1.5, glowIntensity: 0.6 },
         { path: "/models/cosmic/crystal-branch-moonlit.glb", weight: 2, glowIntensity: 1.0 },
+        { path: "/models/cosmic/crystal-spire-cyan.glb", weight: 2.5, glowIntensity: 0.9 },
+        { path: "/models/cosmic/crystal-cluster-emerald.glb", weight: 2.5, glowIntensity: 1.1 },
+        { path: "/models/cosmic/crystal-spire-amethyst.glb", weight: 2.5, glowIntensity: 1.0 },
       ],
       species: [],
     },

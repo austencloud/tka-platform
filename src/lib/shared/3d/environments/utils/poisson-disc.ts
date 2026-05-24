@@ -4,6 +4,7 @@ export interface PoissonDiscConfig {
   minDistance: number;
   count: number;
   seed: number;
+  densityBias?: (x: number, z: number, distanceNorm: number) => number;
 }
 
 export interface PoissonSample {
@@ -23,7 +24,7 @@ function mulberry32(seed: number): () => number {
 }
 
 export function poissonDiscSample(config: PoissonDiscConfig): PoissonSample[] {
-  const { innerRadius, outerRadius, minDistance, count, seed } = config;
+  const { innerRadius, outerRadius, minDistance, count, seed, densityBias } = config;
   const rng = mulberry32(seed);
   const samples: PoissonSample[] = [];
   const maxAttempts = count * 40;
@@ -45,11 +46,11 @@ export function poissonDiscSample(config: PoissonDiscConfig): PoissonSample[] {
     }
 
     if (!tooClose) {
-      samples.push({
-        x,
-        z,
-        distanceNorm: (r - innerRadius) / Math.max(outerRadius - innerRadius, 0.001),
-      });
+      const distanceNorm = (r - innerRadius) / Math.max(outerRadius - innerRadius, 0.001);
+      if (densityBias && rng() > densityBias(x, z, distanceNorm)) {
+        continue;
+      }
+      samples.push({ x, z, distanceNorm });
     }
   }
 

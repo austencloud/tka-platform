@@ -7,6 +7,9 @@ export interface OceanQualityConfig {
 
   maxCoralCount: number;
   maxKelpCount: number;
+  maxHeroKelp: number;
+  maxMidKelp: number;
+  maxBackgroundKelp: number;
   maxFishCount: number;
   maxHeroRocks: number;
   maxReefStructures: number;
@@ -37,6 +40,9 @@ const TIER_PRESETS: Record<OceanQualityTier, OceanQualityConfig> = {
     tier: 'ultra',
     maxCoralCount: 200,
     maxKelpCount: 80,
+    maxHeroKelp: 4,
+    maxMidKelp: 40,
+    maxBackgroundKelp: 80,
     maxFishCount: 200,
     maxHeroRocks: 40,
     maxReefStructures: 4,
@@ -61,6 +67,9 @@ const TIER_PRESETS: Record<OceanQualityTier, OceanQualityConfig> = {
     tier: 'medium',
     maxCoralCount: 80,
     maxKelpCount: 30,
+    maxHeroKelp: 2,
+    maxMidKelp: 15,
+    maxBackgroundKelp: 30,
     maxFishCount: 100,
     maxHeroRocks: 15,
     maxReefStructures: 2,
@@ -85,6 +94,9 @@ const TIER_PRESETS: Record<OceanQualityTier, OceanQualityConfig> = {
     tier: 'low',
     maxCoralCount: 30,
     maxKelpCount: 10,
+    maxHeroKelp: 0,
+    maxMidKelp: 8,
+    maxBackgroundKelp: 0,
     maxFishCount: 30,
     maxHeroRocks: 5,
     maxReefStructures: 0,
