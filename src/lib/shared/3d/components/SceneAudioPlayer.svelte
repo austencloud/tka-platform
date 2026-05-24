@@ -21,6 +21,7 @@
   });
 
   let expanded = $state(false);
+  let hasAutoExpanded = false;
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   let idle = $state(false);
 
@@ -78,7 +79,8 @@
   });
 
   $effect(() => {
-    if (sceneAudioState.audioUnlocked && sceneAudioState.playing && !expanded) {
+    if (sceneAudioState.audioUnlocked && sceneAudioState.playing && !expanded && !hasAutoExpanded) {
+      hasAutoExpanded = true;
       expanded = true;
       resetIdle();
     }
