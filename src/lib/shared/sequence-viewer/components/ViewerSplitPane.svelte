@@ -19,10 +19,10 @@
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
-  import PerformerRail from "$lib/shared/3d/components/controls/PerformerRail.svelte";
   import PerformerHub from "$lib/shared/3d/components/controls/PerformerHub.svelte";
   import PaneContentSelector from './PaneContentSelector.svelte';
   import VideoGallery from './VideoGallery.svelte';
+  import MandalaPane from './MandalaPane.svelte';
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
@@ -371,7 +371,6 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
       <RightRail renderMode="2d" />
     {:else if splitConfig.leftPane === 'animation-3d'}
       <RightRail renderMode="3d" />
-      <PerformerRail />
       <PerformerHub />
     {:else if splitConfig.leftPane === 'card'}
       <div class="media-pane preview-pane">
@@ -407,6 +406,14 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     {:else if splitConfig.leftPane === 'videos'}
       <div class="media-pane">
         <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
+      </div>
+    {:else if splitConfig.leftPane === 'mandala'}
+      <div class="media-pane">
+        <MandalaPane
+          {sequence}
+          bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
+          redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+        />
       </div>
     {/if}
   </div>
@@ -534,6 +541,14 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
         <div class="media-pane">
           <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
         </div>
+      {:else if splitConfig.rightPane === 'mandala'}
+        <div class="media-pane">
+          <MandalaPane
+            {sequence}
+            bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
+            redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+          />
+        </div>
       {/if}
     </div>
   </div>
@@ -567,7 +582,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
        ResizeObserver to fire on every frame, producing a tiny→expand resize cascade. */
   }
 
-  .persistent-3d-hidden {
+  .media-pane.persistent-3d-hidden {
     visibility: hidden;
     position: absolute;
     inset: 0;

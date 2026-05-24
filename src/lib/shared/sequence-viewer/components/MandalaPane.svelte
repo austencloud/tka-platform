@@ -1,5 +1,6 @@
 <script lang="ts">
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import MandalaViewerControls from "./MandalaViewerControls.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { UndulationEasing, MandalaPathShape } from "$lib/shared/mandala/components/SequenceMandala.svelte";
 
@@ -54,6 +55,25 @@
       show="both"
     />
   </div>
+
+  <aside class="controls-rail">
+    <MandalaViewerControls
+      {paused}
+      {pathShape}
+      {easing}
+      {rotation}
+      {period}
+      {rangeMin}
+      {rangeMax}
+      onPausedChange={(v) => { paused = v; }}
+      onPathShapeChange={(v) => { pathShape = v; }}
+      onEasingChange={(v) => { easing = v; }}
+      onRotationChange={(v) => { rotation = v; }}
+      onPeriodChange={(v) => { period = v; }}
+      onRangeMinChange={(v) => { rangeMin = v; }}
+      onRangeMaxChange={(v) => { rangeMax = v; }}
+    />
+  </aside>
 </div>
 
 <style>
@@ -72,5 +92,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .controls-rail {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 200px;
+    overflow-y: auto;
+    background: rgba(10, 10, 26, 0.85);
+    backdrop-filter: blur(8px);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
   }
 </style>
