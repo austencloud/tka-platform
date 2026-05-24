@@ -6,11 +6,6 @@ export class SceneComposerRegistry {
 	private plugins = new Map<string, SceneComposerPlugin>();
 
 	register(plugin: SceneComposerPlugin): void {
-		if (this.plugins.has(plugin.sceneId)) {
-			throw new Error(
-				`Scene composer plugin already registered: ${plugin.sceneId}`
-			);
-		}
 		this.plugins.set(plugin.sceneId, plugin);
 	}
 

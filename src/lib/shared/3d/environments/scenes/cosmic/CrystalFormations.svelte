@@ -14,6 +14,7 @@
   } from "./cosmic-instancing";
   import type { CrystalFormationsConfig } from "../../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import { COSMIC_PLACEMENTS } from "./placements";
 
   interface Props {
     config: CrystalFormationsConfig;
@@ -21,14 +22,6 @@
 
   let { config }: Props = $props();
   const groundY = $derived(userProportionsState.groundY);
-
-  function seedRng(seed: number) {
-    let s = seed;
-    return () => {
-      s = (s * 1664525 + 1013904223) & 0xffffffff;
-      return (s >>> 0) / 0xffffffff;
-    };
-  }
 
   // ── GLB model loading (top-level, matching Ocean/ReefStructures pattern) ────
 
@@ -43,9 +36,9 @@
   const glb5 = useGltf(config.models[5]?.path ?? "", loaderOpts);
   const glb6 = useGltf(config.models[6]?.path ?? "", loaderOpts);
 
-  const allGlbs = $derived([$glb0, $glb1, $glb2, $glb3, $glb4, $glb5, $glb6]);
+  const allGlbs = $derived([$glb0, $glb1, $glb2, $glb3, $glb4, $glb5, $glb6].filter(Boolean));
 
-  // ── Build instanced meshes when models load ─────────────────────────────────
+  // ── Build instanced meshes from Composer placements ─────────────────────────
 
   interface MeshData {
     mesh: InstancedMesh;
@@ -58,49 +51,21 @@
     for (const { mesh } of list) disposeCrystalMesh(mesh);
   }
 
-  function generatePlacements(cfg: CrystalFormationsConfig): CrystalPlacement[] {
-    const rng = seedRng(cfg.seed);
-    const [rMin, rMax] = cfg.placementRadius;
-    const [sMin, sMax] = cfg.sizeRange;
-    const total = cfg.totalCount;
-    const result: CrystalPlacement[] = [];
-
-    for (let i = 0; i < total; i++) {
-      const angle = rng() * Math.PI * 2;
-      const radius = rMin + rng() * (rMax - rMin);
-      result.push({
-        x: Math.cos(angle) * radius,
-        z: Math.sin(angle) * radius,
-        y: 0,
-        scale: sMin + rng() * (sMax - sMin),
-        rotY: rng() * Math.PI * 2,
-        glowIntensity: 0.5 + rng() * 0.8,
-        glowPhase: rng() * Math.PI * 2,
-      });
+  function objectKeyToModelIndex(key: string): number {
+    for (let i = 0; i < config.models.length; i++) {
+      const path = config.models[i]!.path;
+      const filename = path.split("/").pop()!.replace(".glb", "");
+      if (filename === key) return i;
     }
-    return result;
+    return -1;
   }
 
-  function assignToVariants(
-    placements: CrystalPlacement[],
-    modelCount: number,
-    weights: number[],
-    seed: number,
-  ): CrystalPlacement[][] {
-    const rng = seedRng(seed + 7777);
-    const totalWeight = weights.reduce((a, b) => a + b, 0);
-    const groups: CrystalPlacement[][] = Array.from({ length: modelCount }, () => []);
-
-    for (const p of placements) {
-      let r = rng() * totalWeight;
-      let idx = 0;
-      for (let i = 0; i < weights.length; i++) {
-        r -= weights[i]!;
-        if (r <= 0) { idx = i; break; }
-      }
-      groups[idx]!.push(p);
-    }
-    return groups;
+  function seedRng(seed: number) {
+    let s = seed;
+    return () => {
+      s = (s * 1664525 + 1013904223) & 0xffffffff;
+      return (s >>> 0) / 0xffffffff;
+    };
   }
 
   $effect(() => {
@@ -122,9 +87,28 @@
 
     if (readyModels.length === 0) return;
 
-    const placements = generatePlacements(config);
-    const weights = readyModels.map((rm) => config.models[rm.index]?.weight ?? 1);
-    const groups = assignToVariants(placements, readyModels.length, weights, config.seed);
+    const rng = seedRng(config.seed);
+    const groups: CrystalPlacement[][] = Array.from({ length: readyModels.length }, () => []);
+
+    for (const placement of COSMIC_PLACEMENTS) {
+      const modelIdx = objectKeyToModelIndex(placement.objectKey);
+      if (modelIdx === -1) continue;
+
+      const readyIdx = readyModels.findIndex((rm) => rm.index === modelIdx);
+      if (readyIdx === -1) continue;
+
+      const rotY = 2 * Math.atan2(placement.rotation[1], placement.rotation[3]);
+
+      groups[readyIdx]!.push({
+        x: placement.position[0],
+        y: placement.position[1],
+        z: placement.position[2],
+        scale: placement.scale[0],
+        rotY,
+        glowIntensity: 0.5 + rng() * 0.5,
+        glowPhase: rng() * Math.PI * 2,
+      });
+    }
 
     const newMeshes: MeshData[] = [];
     for (let i = 0; i < readyModels.length; i++) {
@@ -165,25 +149,18 @@
 
   onDestroy(() => disposeAll(meshes));
 
-  // ── Ambient glow lights ─────────────────────────────────────────────────────
+  // ── Ambient glow lights derived from placement positions ───────────────────
 
   const glowLights = $derived.by(() => {
     if (!config.enabled) return [];
-    const rng = seedRng(config.seed + 333);
-    const [rMin, rMax] = config.placementRadius;
-    const lights: { x: number; z: number; color: string }[] = [];
-    const count = Math.min(8, Math.floor(config.totalCount / 15));
-
-    for (let i = 0; i < count; i++) {
-      const angle = rng() * Math.PI * 2;
-      const radius = rMin + rng() * (rMax - rMin) * 0.6;
-      lights.push({
-        x: Math.cos(angle) * radius,
-        z: Math.sin(angle) * radius,
-        color: "#4488ff",
-      });
-    }
-    return lights;
+    const largePlacements = COSMIC_PLACEMENTS
+      .filter((p) => p.scale[0] >= 0.8)
+      .slice(0, 8);
+    return largePlacements.map((p) => ({
+      x: p.position[0],
+      z: p.position[2],
+      color: "#4488ff",
+    }));
   });
 </script>
 

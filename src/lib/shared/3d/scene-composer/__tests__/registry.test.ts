@@ -43,11 +43,12 @@ describe("SceneComposerRegistry", () => {
 		expect(registry.has("nonexistent")).toBe(false);
 	});
 
-	it("throws on duplicate registration", () => {
-		registry.register(makeStubPlugin("autumn"));
-		expect(() => registry.register(makeStubPlugin("autumn"))).toThrow(
-			"Scene composer plugin already registered: autumn"
-		);
+	it("overwrites on duplicate registration", () => {
+		const first = makeStubPlugin("autumn");
+		const second = makeStubPlugin("autumn");
+		registry.register(first);
+		registry.register(second);
+		expect(registry.get("autumn")).toBe(second);
 	});
 
 	it("lists all registered plugins", () => {

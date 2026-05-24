@@ -26,6 +26,7 @@
   import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
   import { FilePersistence } from "$lib/shared/3d/scene-composer/persistence/file-persistence";
   import "$lib/shared/3d/environments/scenes/autumn/autumn-composer-plugin";
+  import "$lib/shared/3d/environments/scenes/cosmic/cosmic-composer-plugin";
 
   const sceneState = createSceneLabState();
   const composerState = createComposerEditorState();
