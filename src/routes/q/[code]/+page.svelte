@@ -971,6 +971,7 @@
       display: grid;
       grid-template-columns: 1fr 220px;
       grid-template-rows: auto 1fr;
+      align-items: stretch;
       padding: 8px 12px;
       gap: 8px;
     }
@@ -1109,6 +1110,7 @@
       display: grid;
       grid-template-columns: 1fr 340px;
       grid-template-rows: auto 1fr;
+      align-items: stretch;
       max-width: 1000px;
       margin: 0 auto;
       padding: 16px 24px;

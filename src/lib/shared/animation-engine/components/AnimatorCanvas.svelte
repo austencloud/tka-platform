@@ -41,7 +41,7 @@ Last audit: 2025-12-27
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { isSeamlesslyLoopable as sequenceLoopabilityCheck } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
-  import { getLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
+  import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
@@ -362,20 +362,21 @@ Last audit: 2025-12-27
 
   // Shared resolver: same components + slice-aware rotation as every other
   // LOOP badge surface, cached by sequence id.
-  const loopDisplay = $derived.by(() =>
-    sequenceData
-      ? getLoopDisplayResolver()(sequenceData)
-      : {
-          components: new Set<LOOPComponent>(),
-          rotationPeriod: undefined as
-            | import("$lib/shared/foundation/domain/models/generation/circular-models").Period
-            | undefined,
-          inversionPeriod: undefined as
-            | import("$lib/shared/foundation/domain/models/generation/circular-models").Period
-            | undefined,
-          period: 1,
-        }
-  );
+  const emptyLoopDisplay = {
+    components: new Set<LOOPComponent>(),
+    rotationPeriod: undefined as
+      | import("$lib/shared/foundation/domain/models/generation/circular-models").Period
+      | undefined,
+    inversionPeriod: undefined as
+      | import("$lib/shared/foundation/domain/models/generation/circular-models").Period
+      | undefined,
+    period: 1,
+  };
+  const loopDisplay = $derived.by(() => {
+    if (!sequenceData) return emptyLoopDisplay;
+    const resolver = tryGetLoopDisplayResolver();
+    return resolver ? resolver(sequenceData) : emptyLoopDisplay;
+  });
   const computedLoopComponents = $derived(
     loopDisplay.components.size > 0 ? loopDisplay.components : null
   );
