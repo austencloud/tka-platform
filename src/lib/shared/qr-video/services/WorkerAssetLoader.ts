@@ -15,7 +15,14 @@ const PROP_SVG_PATH = "/images/props/animated";
 
 function applyColorToSvg(svgText: string, color: string): string {
   let svg = svgText.replace(/fill="[^"]*"/g, `fill="${color}"`);
-  svg = svg.replace(/fill:[^;"]+/g, `fill:${color}`);
+  svg = svg.replace(/fill:(?!none)[^;}"]+/g, `fill:${color}`);
+
+  // If no fill attributes were present (e.g. α/β/γ position glyphs default to
+  // black), inject a fill on the root <svg> so all child paths inherit the color.
+  if (!(/fill="/.test(svg))) {
+    svg = svg.replace(/<svg\b/, `<svg fill="${color}"`);
+  }
+
   return svg;
 }
 

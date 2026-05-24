@@ -44,11 +44,13 @@
     PrecomputedFrame,
     TransferableAssets,
   } from "$lib/shared/qr-video/domain/qr-video-types";
-  import { loadAssets, loadLetterGlyphs } from "$lib/shared/qr-video/services/WorkerAssetLoader";
+  import { loadAssets, loadLetterGlyphs, type LoadedAssets } from "$lib/shared/qr-video/services/WorkerAssetLoader";
   import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
   import { EFFECTS, type EffectMeta } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
+  import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
   const RENDER_FPS = 60;
@@ -166,11 +168,12 @@
 
   const scrubProgress = $derived(duration > 0 ? (displayTime / duration) * 100 : 0);
 
-  const ogWord = $derived(
+  const rawWord = $derived(
     (pageState.kind === "playing" || pageState.kind === "rendering"
       ? pageState.word
       : data?.meta?.word) || "Sequence"
   );
+  const ogWord = rawWord;
   const ogDesc = $derived(
     ogWord !== "Sequence"
       ? `Watch the ${ogWord} flow sequence`
@@ -320,16 +323,18 @@
       pageState = { kind: "rendering", percent: 0, phase: "loading-assets", word };
     }
 
+    const plainSeq = $state.snapshot(seq) as SequenceData;
+
     const blueProp =
       propOverride ??
-      (seq.intendedProp?.bluePropType as PropType) ??
+      (plainSeq.intendedProp?.bluePropType as PropType) ??
       PropType.STAFF;
     const redProp =
       propOverride ??
-      (seq.intendedProp?.redPropType as PropType) ??
+      (plainSeq.intendedProp?.redPropType as PropType) ??
       PropType.STAFF;
 
-    const frames = precomputeFrames(seq, blueProp, redProp, RENDER_FPS, 1, 2);
+    const frames = precomputeFrames(plainSeq, blueProp, redProp, RENDER_FPS, 1, 2);
     if (frames.length === 0) {
       if (!isBackground) {
         pageState = { kind: "error", message: "Failed to compute animation frames" };
@@ -338,16 +343,16 @@
       return;
     }
 
-    const gridMode = seq.gridMode ?? "diamond";
+    const gridMode = plainSeq.gridMode ?? "diamond";
     const propTypeName = String(blueProp ?? "staff").toLowerCase();
     const baseUrl = window.location.origin;
 
-    const steps = (seq.steps ?? []).filter((s) => s && s.stepNumber !== 0);
+    const steps = (plainSeq.steps ?? []).filter((s) => s && s.stepNumber !== 0);
     const letterPaths = steps
       .map((s) => (s.letter ? getLetterImagePath(s.letter as Letter) : null))
       .filter((p): p is string => p !== null);
 
-    const posGroup = seq.startingPositionGroup ?? "alpha";
+    const posGroup = plainSeq.startingPositionGroup ?? "alpha";
     const posGlyphMap: Record<string, string> = {
       alpha: "/images/letters_trimmed/Type6/α.svg",
       beta: "/images/letters_trimmed/Type6/β.svg",
@@ -355,13 +360,25 @@
     };
     const posGlyphPath = posGlyphMap[posGroup];
 
-    const [rawAssets, letterGlyphs, startGlyphs] = await Promise.all([
-      loadAssets(baseUrl, gridMode, propTypeName, true),
-      loadLetterGlyphs(baseUrl, letterPaths, true),
-      posGlyphPath
-        ? loadLetterGlyphs(baseUrl, [posGlyphPath], true)
-        : Promise.resolve([]),
-    ]);
+    let rawAssets: LoadedAssets;
+    let letterGlyphs: ImageBitmap[];
+    let startGlyphs: ImageBitmap[];
+    try {
+      [rawAssets, letterGlyphs, startGlyphs] = await Promise.all([
+        loadAssets(baseUrl, gridMode, propTypeName, true),
+        loadLetterGlyphs(baseUrl, letterPaths, true),
+        posGlyphPath
+          ? loadLetterGlyphs(baseUrl, [posGlyphPath], true)
+          : Promise.resolve([]),
+      ]);
+    } catch (err) {
+      console.error("[QR Video] Asset loading failed:", err);
+      if (!isBackground) {
+        pageState = { kind: "error", message: err instanceof Error ? err.message : "Failed to load assets" };
+      }
+      bgRenderPercent = -1;
+      return;
+    }
 
     const assets: TransferableAssets = {
       ...rawAssets,
@@ -380,7 +397,7 @@
 
     const msg: RenderRequest = {
       type: "render",
-      sequenceData: seq,
+      sequenceData: plainSeq,
       frames,
       assets,
       config: {
@@ -530,7 +547,11 @@
     }
 
     try {
-      let seq = await shortCodeManager.resolveShortCode(shortCode);
+      const [seq_] = await Promise.all([
+        shortCodeManager.resolveShortCode(shortCode),
+        getGlyphCache().initialize(),
+      ]);
+      let seq = seq_;
       if (!seq) {
         pageState = { kind: "error", message: "Sequence not found" };
         return;
@@ -637,7 +658,9 @@
     </div>
   {:else if pageState.kind === "rendering"}
     <div class="center-content">
-      <h1 class="word-title">{pageState.word}</h1>
+      <div class="word-title">
+        <TKAWordGlyph word={rawWord} height={28} darkMode />
+      </div>
       <p class="first-view-message">
         Rendering your sequence...
       </p>
@@ -654,11 +677,13 @@
         {/if}
       </p>
       <p class="hint-text">Future scans will load instantly.</p>
-      <a href="/browse/gallery" class="link-button">Open TKA Composer</a>
+      <a href="/browse/gallery" class="cta-button">Open TKA Composer</a>
     </div>
   {:else if pageState.kind === "playing"}
     <div class="player-layout">
-      <h1 class="word-title">{pageState.word}</h1>
+      <div class="word-title">
+        <TKAWordGlyph word={rawWord} height={28} darkMode />
+      </div>
       <div class="video-area">
         <!-- svelte-ignore a11y_media_has_caption -->
         <video
@@ -739,7 +764,7 @@
             <span class="grid-btn-label">Download</span>
           </button>
 
-          <a href="/browse/gallery" class="grid-btn secondary">
+          <a href="/browse/gallery" class="grid-btn cta">
             <i class="fa-solid fa-compass grid-btn-fa"></i>
             <span class="grid-btn-label">Open TKA</span>
           </a>
@@ -815,7 +840,7 @@
               <i class="fa-solid fa-download grid-btn-fa"></i>
               <span class="grid-btn-label">Download</span>
             </button>
-            <a href="/browse/gallery" class="grid-btn secondary">
+            <a href="/browse/gallery" class="grid-btn cta">
               <i class="fa-solid fa-compass grid-btn-fa"></i>
               <span class="grid-btn-label">Open TKA</span>
             </a>
@@ -970,11 +995,9 @@
   }
 
   .word-title {
-    font-size: 1.25rem;
-    font-weight: 700;
+    display: flex;
+    justify-content: center;
     margin: 0;
-    letter-spacing: 0.05em;
-    text-align: center;
     flex-shrink: 0;
   }
 
@@ -1010,18 +1033,6 @@
     font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.4);
     margin: 0 0 1.5rem;
-  }
-
-  .link-button {
-    display: inline-block;
-    color: var(--text-dim);
-    font-size: 0.875rem;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  .link-button:hover {
-    color: rgba(255, 255, 255, 0.9);
   }
 
   .error-icon {
@@ -1291,8 +1302,15 @@
     background: var(--accent-strong);
   }
 
-  .grid-btn.secondary {
+  .grid-btn.cta {
     justify-content: center;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: #7c3aed;
+    font-weight: 600;
+  }
+
+  .grid-btn.cta:hover {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
   }
 
   .grid-btn-icon {
@@ -1507,7 +1525,6 @@
 
     .word-title {
       grid-column: 1 / -1;
-      font-size: 1.1rem;
     }
 
     .video-area {
@@ -1563,10 +1580,6 @@
 
     .player-controls {
       max-width: 560px;
-    }
-
-    .word-title {
-      font-size: 1.5rem;
     }
 
     .overlay-panel {
@@ -1661,7 +1674,6 @@
 
     .word-title {
       grid-column: 1 / -1;
-      font-size: 1.75rem;
     }
 
     .video-area {
