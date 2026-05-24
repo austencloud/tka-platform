@@ -2,11 +2,11 @@
 status: backlog
 value: 4
 effort: M
-remaining: "Phases 2+3 COMPLETE. Phase 4 polish: kelp sway vertex animation (config exists, shader not wired), bloom tuning for bioluminescent elements, per-variant ambient audio (stretch)."
+remaining: "ALL PHASES COMPLETE. Post-processing (absorption, caustics, distortion, godrays), Gerstner waves, jellyfish Fresnel glow, kelp sway, coral bloom, procedural ambient audio all shipped. Ready to move to shipped/."
 depends_on: ""
 plan_path: ""
 tags: ["3d", "scenes", "ocean", "shaders"]
-last_triaged: 2026-05-23
+last_triaged: 2026-05-24
 ---
 # Ocean Scene Premium Upgrade — Design Spec
 

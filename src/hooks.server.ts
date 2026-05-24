@@ -1,6 +1,6 @@
 // import { getRedirectURL, shouldRedirectToPrimary } from "$config/domains"; // TODO: Fix config path
 import { dev } from "$app/environment";
-import type { Handle } from "@sveltejs/kit";
+import type { Handle, HandleServerError } from "@sveltejs/kit";
 
 /**
  * Check if a request is for a font file that needs CORS headers.
@@ -109,4 +109,25 @@ export const handle: Handle = async ({ event, resolve }) => {
   );
 
   return response;
+};
+
+export const handleError: HandleServerError = async ({ error, event, status, message }) => {
+  const err = error instanceof Error ? error : new Error(String(error));
+
+  console.error(JSON.stringify({
+    level: "error",
+    type: "server_error",
+    status,
+    message: err.message,
+    stack: err.stack,
+    url: event.url.pathname + event.url.search,
+    method: event.request.method,
+    userAgent: event.request.headers.get("user-agent") ?? "unknown",
+    timestamp: new Date().toISOString(),
+  }));
+
+  return {
+    message: dev ? err.message : message,
+    code: status,
+  };
 };

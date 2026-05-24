@@ -46,6 +46,39 @@ if (browser && !dev) {
 
   // Clear the reload guard on successful page load (no stale chunks)
   sessionStorage.removeItem("tka-chunk-reload");
+
+  // Report unhandled promise rejections to error telemetry
+  window.addEventListener("unhandledrejection", (event) => {
+    const reason = event.reason;
+    const message = reason?.message || String(reason) || "Unknown rejection";
+    const stack = reason?.stack;
+
+    if (
+      message.includes("ResizeObserver loop") ||
+      message.includes("Failed to fetch dynamically imported module") ||
+      message.includes("MIME type")
+    ) {
+      return;
+    }
+
+    import("$lib/shared/error/services/error-telemetry-reporter")
+      .then(({ reportErrorTelemetry }) => {
+        reportErrorTelemetry({
+          message: `Unhandled rejection: ${message.slice(0, 200)}`,
+          severity: "warning",
+          context: {
+            module: "global",
+            action: "unhandledrejection",
+            additionalData: {
+              url: window.location.pathname,
+              stack: stack?.slice(0, 1000),
+            },
+          },
+          error: reason instanceof Error ? reason : undefined,
+        });
+      })
+      .catch(() => {});
+  });
 }
 
 // Production: register the minimal hand-written service worker
