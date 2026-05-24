@@ -37,7 +37,7 @@
     };
   });
 
-  const { scene } = useThrelte();
+  const { scene, renderer, camera } = useThrelte();
 
   let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(
     null,
@@ -68,6 +68,9 @@
 
   // Report ready once on mount
   onMount(() => {
+    if (renderer.current && camera.current && scene.current) {
+      renderer.current.compile(scene.current, camera.current);
+    }
     sceneFeatures?.reportProgress("environment", 1);
     sceneFeatures?.reportReady("environment");
   });

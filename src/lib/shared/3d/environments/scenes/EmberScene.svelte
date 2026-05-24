@@ -57,7 +57,7 @@
   const logSmall = useGltf("/models/camping/tree-log-small.glb");
   const campfire = useGltf("/models/camping/campfire-pit.glb");
 
-  const { scene } = useThrelte();
+  const { scene, renderer, camera } = useThrelte();
 
   let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(
     null,
@@ -188,6 +188,9 @@
     const loaded = glbs.filter(Boolean).length;
     sceneFeatures.reportProgress("environment", loaded / glbs.length);
     if (loaded === glbs.length) {
+      if (renderer.current && camera.current && scene.current) {
+        renderer.current.compile(scene.current, camera.current);
+      }
       sceneFeatures.reportReady("environment");
     }
   });

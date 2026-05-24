@@ -73,7 +73,7 @@
 
   const campfire = useGltf("/models/camping/campfire-pit.glb");
 
-  const { scene } = useThrelte();
+  const { scene, renderer, camera } = useThrelte();
 
   // -----------------------------------------------------------------
   // Frozen pond - organic Shape with a Three.js Reflector for true
@@ -296,6 +296,9 @@
     const loaded = glbs.filter(Boolean).length;
     sceneFeatures.reportProgress("environment", loaded / glbs.length);
     if (loaded === glbs.length) {
+      if (renderer.current && camera.current && scene.current) {
+        renderer.current.compile(scene.current, camera.current);
+      }
       sceneFeatures.reportReady("environment");
     }
   });

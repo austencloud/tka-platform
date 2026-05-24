@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T } from "@threlte/core";
+  import { T, useThrelte } from "@threlte/core";
   import {
     type VoidSceneConfig,
     createDefaultVoidConfig,
@@ -28,8 +28,12 @@
     };
   });
 
+  const { scene, renderer, camera } = useThrelte();
   const sceneFeatures = getSceneFeatureContext();
   $effect(() => {
+    if (renderer.current && camera.current && scene.current) {
+      renderer.current.compile(scene.current, camera.current);
+    }
     sceneFeatures?.reportReady("environment");
   });
 </script>

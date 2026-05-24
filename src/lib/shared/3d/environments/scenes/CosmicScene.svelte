@@ -51,7 +51,7 @@
     };
   });
 
-  const { scene } = useThrelte();
+  const { scene, renderer, camera } = useThrelte();
   const groundY = $derived(userProportionsState.groundY);
 
   $effect(() => {
@@ -69,6 +69,9 @@
   $effect(() => {
     if (!sceneFeatures) return;
     if (earthReady || !activeConfig.earth.enabled) {
+      if (renderer.current && camera.current && scene.current) {
+        renderer.current.compile(scene.current, camera.current);
+      }
       sceneFeatures.reportReady("environment");
     } else {
       sceneFeatures.reportProgress("environment", 0.5);

@@ -29,7 +29,6 @@
 
   interface ShardData {
     geometry: ConeGeometry;
-    material: MeshPhysicalMaterial;
     mesh: Mesh;
     offsetX: number;
     offsetZ: number;
@@ -40,6 +39,7 @@
   interface ClusterData {
     group: Group;
     shards: ShardData[];
+    material: MeshPhysicalMaterial;
     x: number;
     z: number;
     baseHeight: number;
@@ -47,9 +47,9 @@
 
   function disposeClusters(list: ClusterData[]) {
     for (const cluster of list) {
+      cluster.material.dispose();
       for (const shard of cluster.shards) {
         shard.geometry.dispose();
-        shard.material.dispose();
       }
     }
   }
@@ -79,26 +79,27 @@
       const group = new Group();
       const shards: ShardData[] = [];
 
+      // One material per cluster — pulse animation sets emissiveIntensity per-cluster
+      const material = new MeshPhysicalMaterial({
+        color: crystalColor,
+        emissive: glowCol,
+        emissiveIntensity: 0,
+        transmission: 0.85,
+        thickness: 0.4,
+        roughness: 0.05,
+        metalness: 0.0,
+        ior: 1.45,
+        transparent: true,
+        opacity: config.opacity,
+        envMapIntensity: 1.5,
+      });
+
       for (let j = 0; j < shardCount; j++) {
         const [minH, maxH] = config.heightRange;
         const height = minH + rng() * (maxH - minH);
         const radiusBottom = 0.06 + rng() * 0.1;
 
         const geometry = new ConeGeometry(radiusBottom, height, 6, 1, false, rng() * Math.PI * 2);
-
-        const material = new MeshPhysicalMaterial({
-          color: crystalColor,
-          emissive: glowCol,
-          emissiveIntensity: 0,
-          transmission: 0.85,
-          thickness: 0.4,
-          roughness: 0.05,
-          metalness: 0.0,
-          ior: 1.45,
-          transparent: true,
-          opacity: config.opacity,
-          envMapIntensity: 1.5,
-        });
 
         const mesh = new Mesh(geometry, material);
 
@@ -112,10 +113,10 @@
         mesh.rotation.z = rotZ;
 
         group.add(mesh);
-        shards.push({ geometry, material, mesh, offsetX, offsetZ, rotX, rotZ });
+        shards.push({ geometry, mesh, offsetX, offsetZ, rotX, rotZ });
       }
 
-      result.push({ group, shards, x: cx, z: cz, baseHeight: 0 });
+      result.push({ group, shards, material, x: cx, z: cz, baseHeight: 0 });
     }
 
     const old = untrack(() => clusters);
@@ -137,17 +138,15 @@
       const phase = (i / config.clusterCount) * Math.PI * 2;
       const pulse = (Math.sin(time * 1.8 + phase) * 0.5 + 0.5) * config.glowIntensity;
 
-      for (const shard of cluster.shards) {
-        shard.material.emissiveIntensity = pulse;
-      }
+      cluster.material.emissiveIntensity = pulse;
     }
   });
 
   onDestroy(() => {
     for (const cluster of clusters) {
+      cluster.material.dispose();
       for (const shard of cluster.shards) {
         shard.geometry.dispose();
-        shard.material.dispose();
       }
     }
   });

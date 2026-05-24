@@ -49,11 +49,13 @@
   });
 
   const sceneFeatures = getSceneFeatureContext();
+  const { scene, renderer, camera } = useThrelte();
   $effect(() => {
+    if (renderer.current && camera.current && scene.current) {
+      renderer.current.compile(scene.current, camera.current);
+    }
     sceneFeatures?.reportReady("environment");
   });
-
-  const { scene } = useThrelte();
   const groundY = $derived(userProportionsState.groundY);
 
   // ── Fog ───────────────────────────────────────────────────────────────
@@ -372,10 +374,13 @@
     { color: "#ffee44", angle: 5.3, radius: 5.8, height: 3.8, scale: 0.14 },
   ];
 
+  // Shared unit-sphere geometries for all orbs — scaled per-mesh instead of baking radius
+  const sharedCoreGeo = untrack(() => new SphereGeometry(1, 24, 24));
+  const sharedGlowGeo = untrack(() => new SphereGeometry(1, 16, 16));
+
   function createPrismaticOrb(color: string, scale: number): Group {
     const group = new Group();
 
-    const coreGeo = new SphereGeometry(scale, 24, 24);
     const coreMat = new MeshPhysicalMaterial({
       color: new Color(color),
       roughness: 0.05,
@@ -387,10 +392,10 @@
       emissiveIntensity: 0.8,
       side: DoubleSide,
     });
-    const core = new Mesh(coreGeo, coreMat);
+    const core = new Mesh(sharedCoreGeo, coreMat);
+    core.scale.setScalar(scale);
     group.add(core);
 
-    const glowGeo = new SphereGeometry(scale * 2.2, 16, 16);
     const glowMat = new MeshStandardMaterial({
       color: new Color(color),
       transparent: true,
@@ -400,7 +405,8 @@
       side: BackSide,
       depthWrite: false,
     });
-    const glow = new Mesh(glowGeo, glowMat);
+    const glow = new Mesh(sharedGlowGeo, glowMat);
+    glow.scale.setScalar(scale * 2.2);
     group.add(glow);
 
     return group;
@@ -540,6 +546,8 @@
     accentRingGeometry.dispose();
     accentRingMaterial.dispose();
     dotGeometry.dispose();
+    sharedCoreGeo.dispose();
+    sharedGlowGeo.dispose();
 
     for (const geo of shaftGeometries) geo.dispose();
     for (const mat of shaftMaterials) mat.dispose();
@@ -547,7 +555,7 @@
     for (const orb of prismaticOrbs) {
       orb.group.traverse((child) => {
         if (child instanceof Mesh) {
-          child.geometry.dispose();
+          // Geometries are shared — don't dispose per-orb; only dispose materials
           if (Array.isArray(child.material)) {
             child.material.forEach((m) => m.dispose());
           } else {

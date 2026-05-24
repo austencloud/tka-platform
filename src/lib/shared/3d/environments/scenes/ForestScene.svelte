@@ -62,7 +62,7 @@
   const fallenLog = useGltf("/models/camping/tree-log.glb");
   const fallenLogSmall = useGltf("/models/camping/tree-log-small.glb");
 
-  const { scene } = useThrelte();
+  const { scene, renderer, camera } = useThrelte();
 
   // ========================================
   // All positions and scales in METERS (1 unit = 1 meter)
@@ -212,6 +212,9 @@
     const loaded = glbs.filter(Boolean).length;
     sceneFeatures.reportProgress("environment", loaded / glbs.length);
     if (loaded === glbs.length) {
+      if (renderer.current && camera.current && scene.current) {
+        renderer.current.compile(scene.current, camera.current);
+      }
       sceneFeatures.reportReady("environment");
     }
   });

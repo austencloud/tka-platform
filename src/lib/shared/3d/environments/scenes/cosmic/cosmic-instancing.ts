@@ -8,6 +8,7 @@ import {
   Color,
   Object3D,
   Mesh,
+  Sphere,
   type BufferGeometry,
   type Material,
   MeshPhysicalMaterial,
@@ -178,8 +179,16 @@ export function createCrystalInstancedMesh(
   geo.setAttribute('aGlowPhase', new InstancedBufferAttribute(glowPhases, 1));
 
   const inst = new InstancedMesh(geo, mat, count);
-  inst.frustumCulled = false;
+  inst.frustumCulled = true;
   applyTransforms(inst, placements);
+
+  let maxDist = 0;
+  for (let i = 0; i < count; i++) {
+    const p = placements[i]!;
+    const dist = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z) + p.scale * 2;
+    if (dist > maxDist) maxDist = dist;
+  }
+  inst.geometry.boundingSphere = new Sphere(new Vector3(0, 0, 0), maxDist);
 
   return { mesh: inst, material: mat };
 }
@@ -204,6 +213,16 @@ export function extractFromGLB(model: Object3D): GLBExtraction | null {
     const mat = Array.isArray(m.material) ? m.material[0]! : m.material;
     const geo = m.geometry.clone();
     geo.applyMatrix4(m.matrixWorld);
+
+    // Rebase so geometry bottom sits at y=0 (Meshy models center at origin)
+    geo.computeBoundingBox();
+    if (geo.boundingBox) {
+      const yShift = -geo.boundingBox.min.y;
+      if (Math.abs(yShift) > 0.001) {
+        geo.translate(0, yShift, 0);
+      }
+    }
+
     result = {
       geometry: geo,
       material: (mat as MeshStandardMaterial).clone(),
@@ -251,8 +270,16 @@ export function createGLBCrystalInstancedMesh(
   geo.setAttribute('aGlowPhase', new InstancedBufferAttribute(glowPhases, 1));
 
   const inst = new InstancedMesh(geo, mat, count);
-  inst.frustumCulled = false;
+  inst.frustumCulled = true;
   applyTransforms(inst, placements);
+
+  let maxDist = 0;
+  for (let i = 0; i < count; i++) {
+    const p = placements[i]!;
+    const dist = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z) + p.scale * 2;
+    if (dist > maxDist) maxDist = dist;
+  }
+  inst.geometry.boundingSphere = new Sphere(new Vector3(0, 0, 0), maxDist);
 
   return { mesh: inst, material: mat };
 }

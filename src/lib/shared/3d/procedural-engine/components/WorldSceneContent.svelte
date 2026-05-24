@@ -604,12 +604,12 @@
     sun.castShadow = !isArchiveRealm;
 
     // Shadow map settings - larger map for quality
-    sun.shadow.mapSize.width = 2048;
-    sun.shadow.mapSize.height = 2048;
+    sun.shadow.mapSize.width = 1024;
+    sun.shadow.mapSize.height = 1024;
 
     // Shadow camera frustum - covers area around player
     // Will be updated each frame to follow player position
-    const shadowSize = 100; // 100m radius around player
+    const shadowSize = 50; // 50m radius around player
     sun.shadow.camera.left = -shadowSize;
     sun.shadow.camera.right = shadowSize;
     sun.shadow.camera.top = shadowSize;

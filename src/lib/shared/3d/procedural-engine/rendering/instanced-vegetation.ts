@@ -110,6 +110,7 @@ export class VegetationManager {
   private modelCache: ModelCache | null = null;
   private initialized = false;
   private useNewSystem = false;
+  private materialCache = new Map<string, Material>();
 
   // Temporary objects for matrix composition (avoid GC)
   private tempObject = new Object3D();
@@ -257,6 +258,44 @@ export class VegetationManager {
   }
 
   private getProceduralGeometryForCategory(category: VegetationCategory): { geometry: BufferGeometry; material: Material } {
+    const cached = this.materialCache.get(category);
+    if (cached) {
+      return { geometry: this.createGeometryForCategory(category), material: cached };
+    }
+
+    const result = this.createProceduralGeometryAndMaterial(category);
+    this.materialCache.set(category, result.material);
+    return result;
+  }
+
+  private createGeometryForCategory(category: VegetationCategory): BufferGeometry {
+    switch (category) {
+      case "tree":
+      case "pine":
+      case "palm":
+        return this.createTreeGeometry();
+      case "rock":
+        return this.createRockGeometry();
+      case "bush": {
+        const bushGeom = this.createTreeGeometry();
+        bushGeom.scale(0.3, 0.4, 0.3);
+        return bushGeom;
+      }
+      case "grass":
+      case "flower":
+        return this.createGrassGeometry();
+      case "mushroom":
+        return this.createMushroomGeometry();
+      case "log":
+        return this.createLogGeometry();
+      case "cactus":
+        return this.createCactusGeometry();
+      default:
+        return new BufferGeometry();
+    }
+  }
+
+  private createProceduralGeometryAndMaterial(category: VegetationCategory): { geometry: BufferGeometry; material: Material } {
     switch (category) {
       case "tree":
       case "pine":
@@ -941,6 +980,12 @@ export class VegetationManager {
       }
     }
     this.legacyBatches.clear();
+
+    // Dispose cached materials
+    for (const mat of this.materialCache.values()) {
+      mat.dispose();
+    }
+    this.materialCache.clear();
 
     this.chunkVegetation.clear();
 

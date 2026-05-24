@@ -46,7 +46,7 @@
     };
   });
 
-  const { scene } = useThrelte();
+  const { scene, renderer, camera } = useThrelte();
 
   const sceneFeatures = getSceneFeatureContext();
 
@@ -169,6 +169,9 @@
 
   // Procedural scene — no GLBs to wait for
   $effect(() => {
+    if (renderer.current && camera.current && scene.current) {
+      renderer.current.compile(scene.current, camera.current);
+    }
     sceneFeatures?.reportReady("environment");
   });
 </script>
