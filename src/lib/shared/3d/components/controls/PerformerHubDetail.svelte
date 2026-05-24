@@ -293,6 +293,7 @@
   .col-prop {
     width: 380px;
     flex-shrink: 0;
+    overflow: hidden;
   }
 
   .col-planes {
@@ -537,7 +538,7 @@
   }
 
   .prop-tile {
-    width: 100%;
+    min-width: 0;
     aspect-ratio: 1;
     background: rgba(0, 0, 0, 0.3);
     border: 1.5px solid rgba(255, 255, 255, 0.15);
@@ -567,8 +568,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 100%;
+    height: 100%;
   }
 
   .variant-strip {
