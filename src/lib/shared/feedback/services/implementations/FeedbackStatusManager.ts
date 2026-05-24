@@ -31,25 +31,26 @@ export class FeedbackStatusService {
     const firestore = await getFirestoreInstance();
     const docRef = doc(firestore, COLLECTION_NAME, feedbackId);
 
-    const feedback = await getFeedback(feedbackId);
-    if (!feedback) {
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
       throw new Error("Feedback not found");
     }
+    const data = snap.data();
+    const currentStatus = (data["status"] as FeedbackStatus) ?? "new";
+    const currentHistory = (data["statusHistory"] as StatusHistoryEntry[]) ?? [];
 
     const updateData: Record<string, unknown> = {
       status,
       updatedAt: serverTimestamp(),
     };
 
-    // Set archivedAt when moving to archived status
     if (status === "archived") {
       updateData["archivedAt"] = serverTimestamp();
     }
 
-    // Track status change in history (with 60s debounce)
     const shouldRecord = this.shouldRecordStatusChange(
-      feedback.statusHistory || [],
-      feedback.status,
+      currentHistory,
+      currentStatus,
       status
     );
 
@@ -57,9 +58,9 @@ export class FeedbackStatusService {
       const newEntry: StatusHistoryEntry = {
         status,
         timestamp: new Date(),
-        fromStatus: feedback.status,
+        fromStatus: currentStatus,
       };
-      const updatedHistory = [...(feedback.statusHistory || []), newEntry];
+      const updatedHistory = [...currentHistory, newEntry];
       updateData["statusHistory"] = updatedHistory;
     }
 

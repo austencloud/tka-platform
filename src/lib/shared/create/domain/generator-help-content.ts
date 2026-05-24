@@ -134,7 +134,7 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     fullDesc:
       "When using LOOP mode, this determines HOW your sequence returns to start. Each type creates a different visual effect.",
     bullets: [
-      "Rotated: Positions rotate 180° around the grid center",
+      "Rotated: Positions rotate around the grid center",
       "Mirrored: Second half mirrors the first (left↔right)",
       "Swapped: Hands switch roles in the return (blue↔red)",
       "Inverted: Motion types transform (pro↔anti, static↔dash)",
