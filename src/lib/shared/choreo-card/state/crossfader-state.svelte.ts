@@ -1,16 +1,10 @@
-/**
- * dark-mode-crossfader-state.svelte.ts
- *
- * State machine for smooth dark/light mode transitions in ChoreoCard.
- * Instead of sequential spinners during mode switch, this keeps old images
- * visible while rendering new ones, then cross-fades all at once.
- */
-
 import { untrack } from "svelte";
 
-export function createDarkModeCrossfaderState(getInitialDarkMode: () => boolean) {
-  // Cross-fade state: smooth dark mode transitions without sequential spinners
+export type TransitionMode = "crossfade" | "swap";
+
+export function createCrossfaderState(getInitialDarkMode: () => boolean) {
   let crossfadeActive = $state(false);
+  let transitionMode = $state<TransitionMode>("crossfade");
   let crossfadeTimer: ReturnType<typeof setTimeout> | null = null;
   // Initialize to the prop value so the first render has the correct dark mode class.
   // Do NOT initialize to false - that causes a one-frame flash where backgrounds
@@ -28,7 +22,8 @@ export function createDarkModeCrossfaderState(getInitialDarkMode: () => boolean)
    * Begin cross-fade transition. Call before swapping cell images.
    * Returns cleanup function to call after CSS transition completes.
    */
-  function beginCrossfade(newDarkMode: boolean): void {
+  function beginCrossfade(newDarkMode: boolean, mode: TransitionMode = "crossfade"): void {
+    transitionMode = mode;
     activeDarkMode = newDarkMode;
     crossfadeActive = true;
   }
@@ -122,6 +117,7 @@ export function createDarkModeCrossfaderState(getInitialDarkMode: () => boolean)
 
   return {
     get crossfadeActive() { return crossfadeActive; },
+    get transitionMode() { return transitionMode; },
     get activeDarkMode() { return activeDarkMode; },
     get lastContentKey() { return lastContentKey; },
     get lastImageKey() { return lastImageKey; },

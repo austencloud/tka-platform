@@ -28,6 +28,7 @@
     showStepNumbers: boolean;
     activeDarkMode: boolean;
     crossfadeActive: boolean;
+    transitionMode: "crossfade" | "swap";
     isBrowseSoloMode: boolean;
     isMotionSoloMode: boolean;
     soloColor: "blue" | "red" | undefined;
@@ -47,6 +48,7 @@
     showStepNumbers,
     activeDarkMode,
     crossfadeActive,
+    transitionMode,
     isBrowseSoloMode,
     isMotionSoloMode,
     soloColor,
@@ -57,15 +59,18 @@
     formatSoloTurns,
     shortOrientation,
   }: Props = $props();
+
+  const isSwapMode = $derived(transitionMode === "swap");
 </script>
 
 {#if cell.isLoaded}
   {#if cell.fadeOutUrl}
-    <img class="cell-image cell-fade-old" class:fading={crossfadeActive} src={cell.fadeOutUrl} alt="" draggable="false" />
+    <img class="cell-image cell-fade-old" class:fading={crossfadeActive} class:swap-out={isSwapMode && crossfadeActive} src={cell.fadeOutUrl} alt="" draggable="false" />
   {/if}
   <img
     class="cell-image"
-    class:cell-fade-new={!!cell.fadeOutUrl}
+    class:cell-fade-new={!!cell.fadeOutUrl && !isSwapMode}
+    class:cell-swap-new={!!cell.fadeOutUrl && isSwapMode}
     class:reveal={crossfadeActive}
     src={cell.imageUrl}
     alt={cell.label}
@@ -145,6 +150,21 @@
   .cell-image.cell-fade-new.reveal {
     opacity: 1;
     transition: opacity 350ms ease;
+  }
+
+  /* Sequential swap: old exits fully before new enters. No overlap. */
+  .cell-fade-old.swap-out {
+    opacity: 0;
+    transition: opacity 150ms ease-out;
+  }
+
+  .cell-image.cell-swap-new {
+    opacity: 0;
+  }
+
+  .cell-image.cell-swap-new.reveal {
+    opacity: 1;
+    transition: opacity 200ms ease-in 150ms;
   }
 
   /* Step number overlay - rendered as HTML instead of baked into blobs

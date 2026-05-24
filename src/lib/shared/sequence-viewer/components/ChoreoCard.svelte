@@ -59,7 +59,7 @@
     buildRenderOptions,
   } from "$lib/shared/choreo-card/services/choreo-card-cell-pipeline";
   import { createChoreoCardLayoutState } from "$lib/shared/choreo-card/state/choreo-card-layout-state.svelte";
-  import { createDarkModeCrossfaderState } from "$lib/shared/choreo-card/state/dark-mode-crossfader-state.svelte";
+  import { createCrossfaderState } from "$lib/shared/choreo-card/state/crossfader-state.svelte";
   import { buildChoreoCardContextMenu } from "$lib/shared/choreo-card/services/choreo-card-context-menu";
 
   // Eagerly initialize the singleton so its constructor (which mutates $state)
@@ -185,21 +185,19 @@
   let isLoading = $state(true);
   let isRendering = false;
   let renderQueued = false;
-  // Suppress ResizeObserver-driven updates during sequential cell loading.
-  // Explicit calls from renderAllCells() still work; only observer callbacks are blocked.
-  let suppressObserverUpdates = false;
+  // Suppress cellWidth updates during cell loading. Cell content swaps cause
+  // the preview-stack to micro-fluctuate, cascading into font/header jitter.
+  // Container dimensions (containedWidth/Height) are NEVER suppressed — the
+  // container root is parent-sized and unaffected by cell content.
+  let suppressCellWidthUpdates = false;
   let cellWidth = $state(0);
-  // Tracks previous column count so we can skip flip animation during
-  // start-position toggles (container resize handles the visual transition).
   let prevEffectiveColumns = $state(0);
   let suppressFlip = $state(false);
   let hasMixedDurations = $state(false);
   let durationRows = $state<TimelineRow[]>([]);
-  /** Max duration units in any single row (including start position), for CSS --col-count */
   let durationColCount = $state(0);
 
-  // Cross-fade state machine (extracted)
-  const crossfader = createDarkModeCrossfaderState(() => darkMode);
+  const crossfader = createCrossfaderState(() => darkMode);
   // Reactive aliases used by the template and internal functions
   const crossfadeActive = $derived(crossfader.crossfadeActive);
   const activeDarkMode = $derived(crossfader.activeDarkMode);
@@ -759,22 +757,20 @@
         });
       }
 
-      // Pre-calculate contain dimensions and cellWidth BEFORE inserting cells.
-      // The containerElement (.choreo-card-root) has parent-determined dimensions
-      // (width: 100%; height: 100%), so its size is valid even before cells exist.
-      // Without this, the first frame shows auto-sized content that snaps to
-      // calculated dimensions on the next frame - a visible jump.
-      console.log(`[ChoreoCard:renderAllCells] cols=${cols}, rows=${rws}, stepCount=${stepCount}, containerEl=${containerElement?.clientWidth}x${containerElement?.clientHeight}, previewAspectRatio=${previewAspectRatio?.toFixed(3)}`);
-      updateContainedDimensions();
+      // Seed cellWidth from whatever containedWidth the observer already set.
+      // Don't call updateContainedDimensions() here — the ResizeObserver on
+      // containerElement is the sole source of truth for container size.
+      // Reading it eagerly during a view-switch transition measures mid-layout
+      // and produces tiny cells.
       if (containedWidth && cols > 0) {
         const newCw = containedWidth / cols;
         if (Math.abs(newCw - cellWidth) > 0.5) cellWidth = newCw;
       }
 
-      // Lock observer-driven updates for the duration of cell loading.
-      // Individual cell content swaps cause ResizeObserver firings that
-      // cascade into header/footer height changes and card repositioning.
-      suppressObserverUpdates = true;
+      // Suppress cellWidth observer updates during loading. Cell content swaps
+      // cause preview-stack micro-fluctuations that cascade into font jitter.
+      // Container dimensions are never suppressed (parent-sized, stable).
+      suppressCellWidthUpdates = true;
 
       // Show grid with full dimensions immediately (placeholders fill all cells)
       cells = placeholderCells;
@@ -885,25 +881,16 @@
       console.error("Failed to render cells:", error);
     } finally {
       isRendering = false;
-      suppressObserverUpdates = false;
+      suppressCellWidthUpdates = false;
       // Suppress flip animations during the post-render dimension adjustment.
-      // Without this, updateContainedDimensions() resizes the grid, triggering
-      // animate:flip on all cells. If hasMounted becomes true in the same Svelte
-      // batch (via the .then() callback), flipDuration jumps from 0 to 250ms and
-      // the animation can be interrupted by a queued re-render, leaving transforms
-      // stuck at ~97% completion (visible as shrunken cells with black gaps).
       suppressFlip = true;
-      // Measurements were suppressed during rendering to prevent per-cell jumps.
-      // Run them once now that all cells are loaded.
+      // CellWidth was suppressed during loading — run once now.
       updateCellWidth();
-      updateContainedDimensions();
       hasMounted = true;
-      // Re-enable flip after layout settles
       requestAnimationFrame(() => {
         suppressFlip = false;
         flipEnabled = true;
       });
-      // If a render was requested while we were busy, run it now
       if (renderQueued) {
         renderQueued = false;
         renderAllCells();
@@ -916,7 +903,7 @@
    * Renders all new-mode images in the background while keeping old images visible,
    * then swaps all at once with a simultaneous opacity cross-fade.
    */
-  async function crossfadeCellImages() {
+  async function crossfadeCellImages(mode: "crossfade" | "swap" = "crossfade") {
     if (!sequence?.steps?.length || cells.length === 0) return;
 
     if (isRendering) {
@@ -1000,8 +987,7 @@
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       });
 
-      // Trigger the cross-fade
-      crossfader.beginCrossfade(isDark);
+      crossfader.beginCrossfade(isDark, mode);
 
       // Clean up after the CSS transition completes.
       crossfader.scheduleCrossfadeEnd(() => {
@@ -1096,20 +1082,15 @@
   let resizeObserver: ResizeObserver | undefined;
   let containerObserver: ResizeObserver | undefined;
 
-  // Calculate "contain" dimensions - fill container while maintaining aspect ratio
+  // Calculate "contain" dimensions — fit preview-stack inside containerElement
+  // while preserving aspect ratio. Never suppressed: the container root is
+  // parent-sized (width/height: 100%) and unaffected by cell content swaps.
+  // The ResizeObserver on containerElement is the sole trigger.
   function updateContainedDimensions() {
-    // Don't recalculate during cell loading - aspect ratio and container
-    // size are stable, but ResizeObserver firings from cell content swaps
-    // can cause micro-fluctuations that shift the card.
-    if (suppressObserverUpdates) return;
-
     if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) {
-      console.log(`[ChoreoCard:containDims] BAIL — container=${!!containerElement}, aspectRatio=${previewAspectRatio}`);
       return;
     }
 
-    // Use content area (clientWidth minus padding), not clientWidth which includes padding.
-    // The .preview-stack child lives in the content area, so contain must fit within it.
     const style = getComputedStyle(containerElement);
     const containerWidth = containerElement.clientWidth
       - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
@@ -1122,63 +1103,34 @@
     let newHeight: number | null;
 
     if (needsScroll) {
-      // Scroll mode: CSS handles sizing (width/height: 100% on .preview-stack).
-      // Clear JS dimensions so CSS takes over.
       containedWidth = null;
       containedHeight = null;
       return;
-    } else if (forceContain) {
-      // Force-contain mode: fit to whichever dimension is more constrained,
-      // same as normal contain. overflow:visible on root handles any overflow.
-      // When fitWidth is set (mobile export), always constrain by width so
-      // the card renders at full fidelity and the parent pane scrolls.
-      const contentRatio = previewAspectRatio;
-      const containerRatio = containerWidth / containerHeight;
-
-      if (fitWidth) {
-        // Mobile export: constrain by width for full-fidelity rendering,
-        // but cap to container height so tall cards don't overflow the preview.
-        const widthConstrained = containerWidth;
-        const hFromWidth = containerWidth / contentRatio;
-        if (Number.isFinite(hFromWidth) && hFromWidth > containerHeight) {
-          // Card would be taller than container - constrain by height instead
-          newHeight = containerHeight;
-          const w = containerHeight * contentRatio;
-          newWidth = Number.isFinite(w) ? w : null;
-        } else {
-          newWidth = widthConstrained;
-          newHeight = Number.isFinite(hFromWidth) ? hFromWidth : null;
-        }
-      } else if (contentRatio > containerRatio) {
-        // Wide card: constrain by width
-        newWidth = containerWidth;
-        const h = containerWidth / contentRatio;
-        newHeight = Number.isFinite(h) ? h : null;
-      } else {
-        // Tall card on desktop: constrain by height, let width be natural
-        newHeight = containerHeight;
-        const w = containerHeight * contentRatio;
-        newWidth = Number.isFinite(w) ? w : null;
-      }
-    } else {
-      // Contain mode: fit content while preserving aspect ratio
-      const contentRatio = previewAspectRatio;
-      const containerRatio = containerWidth / containerHeight;
-
-      if (contentRatio > containerRatio) {
-        newWidth = containerWidth;
-        const h = containerWidth / contentRatio;
-        newHeight = Number.isFinite(h) ? h : null;
-      } else {
-        newHeight = containerHeight;
-        const w = containerHeight * contentRatio;
-        newWidth = Number.isFinite(w) ? w : null;
-      }
     }
 
-    console.log(`[ChoreoCard:containDims] container=${Math.round(containerWidth)}x${Math.round(containerHeight)}, aspectRatio=${previewAspectRatio?.toFixed(3)}, needsScroll=${needsScroll}, forceContain=${forceContain}, fitWidth=${fitWidth} → new=${newWidth ? Math.round(newWidth) : null}x${newHeight ? Math.round(newHeight) : null}, cols=${columns}, rows=${rows}, effCols=${effectiveColumns}, effRows=${effectiveRows}`);
+    const contentRatio = previewAspectRatio;
+    const containerRatio = containerWidth / containerHeight;
 
-    // Only update state if values actually changed (prevents ResizeObserver → state → resize loop)
+    if (forceContain && fitWidth) {
+      const hFromWidth = containerWidth / contentRatio;
+      if (Number.isFinite(hFromWidth) && hFromWidth > containerHeight) {
+        newHeight = containerHeight;
+        const w = containerHeight * contentRatio;
+        newWidth = Number.isFinite(w) ? w : null;
+      } else {
+        newWidth = containerWidth;
+        newHeight = Number.isFinite(hFromWidth) ? hFromWidth : null;
+      }
+    } else if (contentRatio > containerRatio) {
+      newWidth = containerWidth;
+      const h = containerWidth / contentRatio;
+      newHeight = Number.isFinite(h) ? h : null;
+    } else {
+      newHeight = containerHeight;
+      const w = containerHeight * contentRatio;
+      newWidth = Number.isFinite(w) ? w : null;
+    }
+
     const widthChanged = newWidth !== containedWidth && (newWidth === null || containedWidth === null || Math.abs(newWidth - containedWidth) > 0.5);
     const heightChanged = newHeight !== containedHeight && (newHeight === null || containedHeight === null || Math.abs(newHeight - containedHeight) > 0.5);
 
@@ -1186,17 +1138,12 @@
     if (heightChanged) containedHeight = newHeight;
   }
 
-  // Track cell width for responsive sizing using ResizeObserver
   function updateCellWidth() {
-    // Don't update cellWidth while cells are loading sequentially -
-    // fractional size changes from cell content swaps cascade into
-    // header/footer height changes that cause visible jumps.
-    if (suppressObserverUpdates) return;
+    if (suppressCellWidthUpdates) return;
 
     if (previewStackElement && columns > 0) {
       const stackWidth = previewStackElement.clientWidth;
       const newCellWidth = Number.isFinite(stackWidth / columns) ? stackWidth / columns : 0;
-      // Only update state if value actually changed (prevents ResizeObserver loop)
       if (Math.abs(newCellWidth - cellWidth) > 0.5) {
         cellWidth = newCellWidth;
       }
@@ -1275,10 +1222,9 @@
         relayoutCells();
       });
     } else if (changeType === "grid-stable-image") {
-      // Grid structure stable, only cell images need to swap
       crossfader.setActiveDarkMode(dm);
       untrack(() => {
-        crossfadeCellImages();
+        crossfadeCellImages("swap");
       });
     } else {
       crossfader.setActiveDarkMode(dm);
@@ -1414,7 +1360,6 @@
         durationColCount = cached.durationColCount ?? 0;
         isLoading = false;
         updateCellWidth();
-        updateContainedDimensions();
         hasMounted = true;
         requestAnimationFrame(() => {
           flipEnabled = true;
@@ -1540,6 +1485,7 @@
         onGridScrollRefChange={(el) => { gridScrollRef = el; }}
         {showStepNumbers}
         {crossfadeActive}
+        transitionMode={crossfader.transitionMode}
         {isBrowseSoloMode}
         {isMotionSoloMode}
         {soloColor}

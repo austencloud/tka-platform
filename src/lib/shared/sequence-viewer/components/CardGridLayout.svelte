@@ -76,6 +76,7 @@
     // CellRenderer pass-through props
     showStepNumbers: boolean;
     crossfadeActive: boolean;
+    transitionMode: "crossfade" | "swap";
     isBrowseSoloMode: boolean;
     isMotionSoloMode: boolean;
     soloColor: "blue" | "red" | undefined;
@@ -116,6 +117,7 @@
     onGridScrollRefChange,
     showStepNumbers,
     crossfadeActive,
+    transitionMode,
     isBrowseSoloMode,
     isMotionSoloMode,
     soloColor,
@@ -160,6 +162,7 @@
                 {showStepNumbers}
                 {activeDarkMode}
                 {crossfadeActive}
+                {transitionMode}
                 {isBrowseSoloMode}
                 {isMotionSoloMode}
                 {soloColor}
@@ -203,6 +206,7 @@
                           {showStepNumbers}
                           {activeDarkMode}
                           {crossfadeActive}
+                {transitionMode}
                           {isBrowseSoloMode}
                           {isMotionSoloMode}
                           {soloColor}
@@ -227,6 +231,7 @@
                           {showStepNumbers}
                           {activeDarkMode}
                           {crossfadeActive}
+                {transitionMode}
                           {isBrowseSoloMode}
                           {isMotionSoloMode}
                           {soloColor}
@@ -262,6 +267,7 @@
               {showStepNumbers}
               {activeDarkMode}
               {crossfadeActive}
+                {transitionMode}
               {isBrowseSoloMode}
               {isMotionSoloMode}
               {soloColor}
@@ -303,6 +309,7 @@
                         {showStepNumbers}
                         {activeDarkMode}
                         {crossfadeActive}
+                {transitionMode}
                         {isBrowseSoloMode}
                         {isMotionSoloMode}
                         {soloColor}
@@ -327,6 +334,7 @@
                         {showStepNumbers}
                         {activeDarkMode}
                         {crossfadeActive}
+                {transitionMode}
                         {isBrowseSoloMode}
                         {isMotionSoloMode}
                         {soloColor}
@@ -369,6 +377,7 @@
               {showStepNumbers}
               {activeDarkMode}
               {crossfadeActive}
+                {transitionMode}
               {isBrowseSoloMode}
               {isMotionSoloMode}
               {soloColor}
@@ -404,6 +413,7 @@
               {showStepNumbers}
               {activeDarkMode}
               {crossfadeActive}
+                {transitionMode}
               {isBrowseSoloMode}
               {isMotionSoloMode}
               {soloColor}
@@ -428,6 +438,7 @@
               {showStepNumbers}
               {activeDarkMode}
               {crossfadeActive}
+                {transitionMode}
               {isBrowseSoloMode}
               {isMotionSoloMode}
               {soloColor}
@@ -496,6 +507,7 @@
             {showStepNumbers}
             {activeDarkMode}
             {crossfadeActive}
+                {transitionMode}
             {isBrowseSoloMode}
             {isMotionSoloMode}
             {soloColor}
@@ -531,6 +543,7 @@
             {showStepNumbers}
             {activeDarkMode}
             {crossfadeActive}
+                {transitionMode}
             {isBrowseSoloMode}
             {isMotionSoloMode}
             {soloColor}
@@ -555,6 +568,7 @@
             {showStepNumbers}
             {activeDarkMode}
             {crossfadeActive}
+                {transitionMode}
             {isBrowseSoloMode}
             {isMotionSoloMode}
             {soloColor}
