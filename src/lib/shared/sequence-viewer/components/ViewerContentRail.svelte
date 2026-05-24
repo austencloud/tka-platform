@@ -24,6 +24,7 @@
 		{ id: 'animation', icon: 'fa-play', label: '2D Animation' },
 		{ id: 'animation-3d', icon: 'fa-cube', label: '3D Animation' },
 		{ id: 'card', icon: 'fa-grip', label: 'Card' },
+		{ id: 'mandala', icon: 'fa-dharmachakra', label: 'Mandala' },
 		{ id: 'practice', icon: 'fa-signal', label: 'Practice' }
 	];
 

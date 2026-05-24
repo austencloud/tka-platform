@@ -286,34 +286,63 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         {@const showRail = !isMobileWidth}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <header class="drawer-header">
-              {#if isAnyExportActive}
-                <button
-                  type="button"
-                  class="drawer-back-button"
-                  onclick={() => ctx.viewerState.exitExport()}
-                  aria-label="Exit export mode"
-                >
-                  <i class="fas fa-arrow-left" aria-hidden="true"></i>
-                  <span class="drawer-back-label">Back</span>
-                </button>
+                <div class="drawer-header-left-actions">
+                  <button
+                    type="button"
+                    class="header-action-btn"
+                    class:favorited={ctx.isFavorite}
+                    onclick={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
+                    aria-label={ctx.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <i class="fas fa-heart" aria-hidden="true"></i>
+                  </button>
 
-                <div class="drawer-header-title">
-                  {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
+                  {#if !ctx.isSaved}
+                    <button
+                      type="button"
+                      class="header-action-btn save"
+                      onclick={() => ctx.invokeGatedAction("save", ctx.handleSave)}
+                      aria-label="Save sequence"
+                    >
+                      <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+                    </button>
+                  {/if}
+
+                  <button
+                    type="button"
+                    class="header-action-btn remix"
+                    onclick={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
+                    aria-label="Remix"
+                  >
+                    <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+                  </button>
+
+                  <span class="header-action-divider"></span>
+
+                  <MotionVisibilityToggle />
+
+                  {#if authState.isAdmin}
+                    <button
+                      type="button"
+                      class="header-action-btn"
+                      onclick={handleCopyForClaude}
+                      aria-label="Copy sequence data for Claude"
+                      title="Copy for Claude"
+                    >
+                      <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
+                    </button>
+                  {/if}
                 </div>
-              {:else}
-                <button
-                  type="button"
-                  class="drawer-back-button"
-                  onclick={handleDismiss}
-                  aria-label="Back to {overlay.returnLabel}"
-                >
-                  <i class="fas fa-chevron-down" aria-hidden="true"></i>
-                  <span class="drawer-back-label">{overlay.returnLabel}</span>
-                </button>
 
                 <div class="drawer-header-title-group">
-                  <div class="drawer-header-title">Sequence Viewer</div>
-                  {#if ctx.presentation && ctx.sequence?.creatorIntent?.propConfig && (ctx.sequence.creatorIntent.propConfig.bluePropType !== settingsService.settings.bluePropType || ctx.sequence.creatorIntent.propConfig.redPropType !== settingsService.settings.redPropType)}
+                  <div class="drawer-header-title">
+                    {#if isAnyExportActive}
+                      {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
+                    {:else}
+                      Sequence Viewer
+                    {/if}
+                  </div>
+                  {#if !isAnyExportActive && ctx.presentation && ctx.sequence?.creatorIntent?.propConfig && (ctx.sequence.creatorIntent.propConfig.bluePropType !== settingsService.settings.bluePropType || ctx.sequence.creatorIntent.propConfig.redPropType !== settingsService.settings.redPropType)}
                     <button
                       class="prop-toggle"
                       class:creator-active={ctx.presentation.source === "creator-intent"}
@@ -337,83 +366,51 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                         Mine
                       </span>
                     </button>
-                  {:else}
-                    <div class="export-hint">Tap to download</div>
                   {/if}
                 </div>
-              {/if}
 
-              <div class="drawer-header-actions">
-                <button
-                  type="button"
-                  class="header-action-btn"
-                  class:favorited={ctx.isFavorite}
-                  onclick={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-                  aria-label={ctx.isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  <i class="fas fa-heart" aria-hidden="true"></i>
-                </button>
+                <div class="drawer-header-right-actions">
+                  {#if isAnyExportActive && !isMobileWidth && !isRecordSceneActive}
+                    <button
+                      type="button"
+                      class="header-action-btn"
+                      class:active={!exportSidebarCollapsed}
+                      onclick={toggleExportSidebar}
+                      aria-label={exportSidebarCollapsed ? "Show export settings" : "Hide export settings"}
+                      title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
+                    >
+                      <i class="fas fa-sliders" aria-hidden="true"></i>
+                    </button>
+                  {/if}
 
-                {#if !ctx.isSaved}
+                  <ViewerOverflowMenu
+                    variant="header"
+                    dropDown
+                    isFavorite={ctx.isFavorite}
+                    onFavoriteToggle={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
+                    isSaved={ctx.isSaved}
+                    onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
+                    onRemix={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
+                    onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
+                    copyDataFeedback={copyClaudeFeedback}
+                    practiceActive={ctx.practiceActive}
+                    onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
+                    onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
+                    isPublished={ctx.isPublished}
+                    onPublish={ctx.isOwned && ctx.isSaved ? () => ctx.invokeGatedAction("publish", ctx.handlePublishAction) : undefined}
+                    onUnpublish={ctx.isOwned && ctx.isSaved ? ctx.handleUnpublishAction : undefined}
+                    onDeleteRequest={ctx.isOwned && ctx.isSaved ? () => (deleteConfirmOpen = true) : undefined}
+                  />
+
                   <button
                     type="button"
-                    class="header-action-btn save"
-                    onclick={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-                    aria-label="Save sequence"
+                    class="drawer-close-button"
+                    onclick={handleDismiss}
+                    aria-label="Close viewer"
                   >
-                    <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+                    <i class="fas fa-times" aria-hidden="true"></i>
                   </button>
-                {/if}
-
-                <button
-                  type="button"
-                  class="header-action-btn remix"
-                  onclick={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-                  aria-label="Remix"
-                >
-                  <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-                </button>
-
-                <span class="header-action-divider"></span>
-
-                <MotionVisibilityToggle />
-
-                {#if isAnyExportActive && !isMobileWidth && !isRecordSceneActive}
-                  <button
-                    type="button"
-                    class="header-action-btn"
-                    class:active={!exportSidebarCollapsed}
-                    onclick={toggleExportSidebar}
-                    aria-label={exportSidebarCollapsed ? "Show export settings" : "Hide export settings"}
-                    title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
-                  >
-                    <i class="fas fa-sliders" aria-hidden="true"></i>
-                  </button>
-                {/if}
-
-                {#if authState.isAdmin}
-                  <button
-                    type="button"
-                    class="header-action-btn"
-                    onclick={handleCopyForClaude}
-                    aria-label="Copy sequence data for Claude"
-                    title="Copy for Claude"
-                  >
-                    <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
-                  </button>
-                {/if}
-
-                <ViewerOverflowMenu
-                  variant="header"
-                  practiceActive={ctx.practiceActive}
-                  onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
-                  onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
-                  isPublished={ctx.isPublished}
-                  onPublish={ctx.isOwned && ctx.isSaved ? () => ctx.invokeGatedAction("publish", ctx.handlePublishAction) : undefined}
-                  onUnpublish={ctx.isOwned && ctx.isSaved ? ctx.handleUnpublishAction : undefined}
-                  onDeleteRequest={ctx.isOwned && ctx.isSaved ? () => (deleteConfirmOpen = true) : undefined}
-                />
-              </div>
+                </div>
             </header>
 
           <div class="drawer-main">
@@ -445,6 +442,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                           ctx.viewerState.enterExport('animation-export', 'animation-3d');
                         } else if (mode === 'card') {
                           ctx.viewerState.enterExport('image-export');
+                        } else if (mode === 'mandala') {
+                          ctx.viewerState.exitExport();
+                          ctx.viewerState.setViewerMode('mandala');
                         }
                       }}
                     />
@@ -494,7 +494,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
                       playbackMode={ctx.playbackMode}
                       onPlaybackModeChange={ctx.handlePlaybackModeChange}
-                      splitConfig={ctx.viewerState.viewerMode !== 'split' && (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d')
+                      splitConfig={ctx.viewerState.viewerMode !== 'split' && (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d' || ctx.viewerState.viewerMode === 'mandala')
                         ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
                         : ctx.viewerState.splitConfig}
                       onSplitConfigChange={(pane, content) => ctx.viewerState.setSplitPaneContent(pane, content)}
@@ -670,43 +670,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     overflow: visible;
   }
 
-  .drawer-back-button {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: none;
-    border: none;
-    color: var(--theme-accent, #f43f5e);
-    font-size: 14px;
-    cursor: pointer;
-    padding: 0 10px 0 12px;
-    min-height: var(--min-touch-target);
-    border-radius: 8px;
-    transition: background 150ms ease;
-  }
-
-  .drawer-back-button:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-  }
-
-  .drawer-back-button:focus-visible {
-    outline: 2px solid var(--theme-accent, #f43f5e);
-    outline-offset: 2px;
-  }
-
-  .drawer-back-button i {
-    font-size: 11px;
-    flex-shrink: 0;
-  }
-
-  .drawer-back-label {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    white-space: nowrap;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 
   .drawer-header-title-group {
     position: absolute;
@@ -721,9 +684,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   }
 
   .drawer-header-title {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     color: var(--theme-text, #ffffff);
@@ -731,11 +691,35 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     pointer-events: none;
   }
 
-  .export-hint {
-    font-size: var(--font-size-xs, 11px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-weight: 400;
-    white-space: nowrap;
+  .drawer-header > .drawer-header-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .drawer-close-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
+    background: none;
+    border: none;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 150ms ease, color 150ms ease;
+    font-size: 16px;
+  }
+
+  .drawer-close-button:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .drawer-close-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #f43f5e);
+    outline-offset: 2px;
   }
 
   .prop-toggle {
@@ -779,7 +763,13 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     font-size: 10px;
   }
 
-  .drawer-header-actions {
+  .drawer-header-left-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .drawer-header-right-actions {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -863,14 +853,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     display: none;
   }
 
-  .landscape .drawer-back-label {
-    display: none;
-  }
-
-  .landscape .drawer-back-button {
-    min-height: 32px;
-    padding: 0 8px;
-  }
 
   .landscape .header-action-btn {
     min-width: 32px;
