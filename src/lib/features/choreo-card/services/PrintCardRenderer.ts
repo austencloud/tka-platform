@@ -21,7 +21,6 @@ const MPC_WIDTH = 822;
 const MPC_HEIGHT = 1122;
 const MPC_BLEED = 36;
 const CONTENT_WIDTH = MPC_WIDTH - MPC_BLEED * 2;   // 750
-const _CONTENT_HEIGHT = MPC_HEIGHT - MPC_BLEED * 2;  // 1050
 
 const OUTER_RADIUS = 0;
 const INNER_RADIUS = 0;

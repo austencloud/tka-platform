@@ -65,8 +65,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     displayMode = "sheets",
   }: Props = $props();
 
-  cardCache.clear();
-  deckCardBlobCache.clear().catch(() => {});
   let lastSeenRerenderKey = rerenderKey;
   let renderedCards: RenderedCard[] = $state([]);
   let renderProgress = $state(0);
@@ -389,12 +387,14 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   function handleCardContextMenu(event: MouseEvent, cardIndex: number) {
     if (!onCardContextMenu) return;
+    const seq = sequences[cardIndex];
+    if (!seq) return;
     event.preventDefault();
     onCardContextMenu(
       event.clientX,
       event.clientY,
       () => rerenderCard(cardIndex),
-      sequences[cardIndex]!
+      seq
     );
   }
 </script>
@@ -427,12 +427,13 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             style:aspect-ratio="{cardAspect}"
             role="button"
             tabindex="0"
-            onclick={() => onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx))}
+            onclick={() => { const seq = sequences[idx]; if (seq) onCardClick?.(seq, card.frontUrl, () => rerenderCard(idx)); }}
             onkeydown={(e) => {
               if (!onCardClick) return;
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                const seq = sequences[idx];
+                if (seq) onCardClick(seq, card.frontUrl, () => rerenderCard(idx));
               }
             }}
             oncontextmenu={(e) => handleCardContextMenu(e, idx)}
@@ -461,14 +462,16 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
                   tabindex="0"
                   onclick={() => {
                     const idx = sheetIndex * layout.cardsPerPage + cardIndex;
-                    onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                    const seq = sequences[idx];
+                    if (seq) onCardClick?.(seq, card.frontUrl, () => rerenderCard(idx));
                   }}
                   onkeydown={(e) => {
                     if (!onCardClick) return;
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       const idx = sheetIndex * layout.cardsPerPage + cardIndex;
-                      onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                      const seq = sequences[idx];
+                      if (seq) onCardClick(seq, card.frontUrl, () => rerenderCard(idx));
                     }
                   }}
                   oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
@@ -498,14 +501,16 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
                   tabindex="0"
                   onclick={() => {
                     const idx = sheetIndex * layout.cardsPerPage + cardIndex;
-                    onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                    const seq = sequences[idx];
+                    if (seq) onCardClick?.(seq, card.frontUrl, () => rerenderCard(idx));
                   }}
                   onkeydown={(e) => {
                     if (!onCardClick) return;
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       const idx = sheetIndex * layout.cardsPerPage + cardIndex;
-                      onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                      const seq = sequences[idx];
+                      if (seq) onCardClick(seq, card.frontUrl, () => rerenderCard(idx));
                     }
                   }}
                   oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}

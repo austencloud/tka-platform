@@ -3,7 +3,7 @@
   Uses CardPreviewStack from the card designer for side-by-side display.
 -->
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -60,7 +60,9 @@
   const imageComposition = getImageCompositionManager();
   let compositionVersion = $state(0);
   function onCompositionChanged(): void { compositionVersion++; }
-  imageComposition.registerObserver(onCompositionChanged);
+  onMount(() => {
+    imageComposition.registerObserver(onCompositionChanged);
+  });
   onDestroy(() => imageComposition.unregisterObserver(onCompositionChanged));
 
   const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });

@@ -128,8 +128,10 @@
   function onVisibilityChanged(): void { visibilityVersion++; }
   function onCompositionChanged(): void { compositionVersion++; }
 
-  visibilityManager.registerObserver(onVisibilityChanged, ["all"]);
-  imageComposition.registerObserver(onCompositionChanged);
+  onMount(() => {
+    visibilityManager.registerObserver(onVisibilityChanged, ["all"]);
+    imageComposition.registerObserver(onCompositionChanged);
+  });
 
   onDestroy(() => {
     visibilityManager.unregisterObserver(onVisibilityChanged);

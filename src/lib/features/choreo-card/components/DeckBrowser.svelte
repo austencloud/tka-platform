@@ -8,6 +8,7 @@
 <script lang="ts">
 
 import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-exporter";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import DeckInteriorFilterPanel from "./filters/DeckInteriorFilterPanel.svelte";
@@ -21,7 +22,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
   import type { CardPair } from "../services/types";
-  import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
   import {
     resolveVtgFamilyId as resolveVtgFamily,
     computeTkaDesignation as computeTkaLabel,
@@ -68,18 +68,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     onContextMenu,
     vtgFamilyId,
   }: Props = $props();
-
-  // ── Desktop detection ───────────────────────────────────────────────────
-  let isDesktop = $state(false);
-
-  $effect(() => {
-    if (typeof window === 'undefined') return;
-    const mq = window.matchMedia(`(min-width: ${BREAKPOINTS.DESKTOP}px)`);
-    isDesktop = mq.matches;
-    const handler = (e: MediaQueryListEvent) => { isDesktop = e.matches; };
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  });
 
   const browseState = createDeckBrowseState(() => decks);
   setBrowseContext(browseState);
@@ -157,6 +145,9 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       a.download = `${deckName.replace(/[^a-zA-Z0-9]/g, "_")}_print.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+    } catch (err) {
+      console.warn("[DeckBrowser] PDF export failed:", err);
+      toast.error("PDF export failed. Try re-rendering cards first.");
     } finally {
       isExporting = false;
     }
@@ -174,6 +165,9 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       a.download = `${deckName.replace(/[^a-zA-Z0-9]/g, "_")}_cards.zip`;
       a.click();
       URL.revokeObjectURL(url);
+    } catch (err) {
+      console.warn("[DeckBrowser] ZIP export failed:", err);
+      toast.error("ZIP export failed. Try re-rendering cards first.");
     } finally {
       isExporting = false;
     }

@@ -1,6 +1,8 @@
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
   setDoc,
   runTransaction,
 } from "firebase/firestore";
@@ -8,6 +10,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import {
   getDeckReleaseCounterPath,
   getDeckReleaseManifestPath,
+  getDeckReleaseManifestsPath,
 } from "$lib/shared/library/data/firestore-paths";
 import type { DeckRelease, DeckReleaseCard } from "../domain/models/DeckRelease";
 
@@ -57,9 +60,16 @@ export async function releaseDeck(
   return release;
 }
 
-export async function getDeckRelease(deckNumber: number): Promise<DeckRelease | null> {
+export async function getAllReleasedSequenceIds(): Promise<Set<string>> {
   const db = await getFirestoreInstance();
-  const manifestRef = doc(db, getDeckReleaseManifestPath(deckNumber));
-  const snap = await getDoc(manifestRef);
-  return snap.exists() ? (snap.data() as DeckRelease) : null;
+  const manifestsRef = collection(db, getDeckReleaseManifestsPath());
+  const snapshot = await getDocs(manifestsRef);
+  const ids = new Set<string>();
+  for (const d of snapshot.docs) {
+    const data = d.data() as DeckRelease;
+    for (const card of data.sequences ?? []) {
+      ids.add(card.sequenceId);
+    }
+  }
+  return ids;
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { Deck } from "../../domain/models/Deck";
   import type { DeckReleaseCard, StepCountWeight } from "../../domain/models/DeckRelease";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -7,10 +8,17 @@
   import {
     buildSequencePool,
     getAvailableWeights,
+    getDeckSourceSummaries,
+    getVtgFamilyOptions,
+    buildVtgCards,
     composeDeck,
     swapCard,
+    prunePool,
+    type DeckPoolFilter,
+    type DeckSourceSummary,
+    type VtgFamilyOption,
   } from "../../services/deck-composer";
-  import { getNextDeckNumber, releaseDeck } from "../../services/deck-release-store";
+  import { getNextDeckNumber, releaseDeck, getAllReleasedSequenceIds } from "../../services/deck-release-store";
   import ConfigureStep from "./ConfigureStep.svelte";
   import ReviewStep from "./ReviewStep.svelte";
 
@@ -34,12 +42,30 @@
   let nextDeckNumber = $state(1);
   let isReleasing = $state(false);
   let releasedNumber = $state<number | null>(null);
+  let sourceSummaries = $state<DeckSourceSummary[]>([]);
+  let selectedSliceTypes = $state<Set<'halved' | 'quartered'>>(new Set(['quartered']));
+  let releasedIds = $state<Set<string>>(new Set());
+  let drawGeneration = 0;
+  let vtgFamilies = $state<VtgFamilyOption[]>([]);
+  let deckMode = $state<'loop' | 'vtg'>('loop');
+  let selectedVtgFamilies = $state<Set<string>>(new Set());
+
+  function rebuildPool() {
+    const filter: DeckPoolFilter = { sliceTypes: selectedSliceTypes };
+    pool = buildSequencePool(decks, filter);
+    if (releasedIds.size > 0) {
+      prunePool(pool, releasedIds, new Set([4]));
+    }
+    weights = getAvailableWeights(pool);
+  }
 
   onMount(async () => {
     try {
       decks = await loadDecks();
-      pool = buildSequencePool(decks);
-      weights = getAvailableWeights(pool);
+      sourceSummaries = getDeckSourceSummaries(decks);
+      vtgFamilies = getVtgFamilyOptions(decks);
+      releasedIds = await getAllReleasedSequenceIds();
+      rebuildPool();
     } catch (err) {
       console.warn("Failed to load deck pools:", err);
     } finally {
@@ -53,24 +79,67 @@
     }
   });
 
+  function handleSliceTypeToggle(sliceType: 'halved' | 'quartered') {
+    const next = new Set(selectedSliceTypes);
+    if (next.has(sliceType)) {
+      if (next.size > 1) next.delete(sliceType);
+    } else {
+      next.add(sliceType);
+    }
+    selectedSliceTypes = next;
+    rebuildPool();
+  }
+
+  function handleModeChange(mode: 'loop' | 'vtg') {
+    deckMode = mode;
+    if (mode === 'vtg' && selectedVtgFamilies.size === 0) {
+      selectedVtgFamilies = new Set(vtgFamilies.map(f => f.familyId));
+    }
+  }
+
+  function handleVtgFamilyToggle(familyId: string) {
+    const next = new Set(selectedVtgFamilies);
+    if (next.has(familyId)) {
+      next.delete(familyId);
+    } else {
+      next.add(familyId);
+    }
+    selectedVtgFamilies = next;
+  }
+
+  const vtgCardCount = $derived(
+    buildVtgCards(vtgFamilies, selectedVtgFamilies).length
+  );
+
   function handleWeightChange(stepCount: number, weight: number) {
     weights = weights.map((w) =>
       w.stepCount === stepCount ? { ...w, weight } : w
     );
   }
 
+  function composeFullDeck(): DeckReleaseCard[] {
+    const vtg = vtgEnabled ? buildVtgCards(vtgFamilies, selectedVtgFamilies) : [];
+    const loopSlots = Math.max(0, totalCards - vtg.length);
+    const loopCards = composeDeck(pool, weights, loopSlots);
+    const all = [...vtg, ...loopCards];
+    return all.map((c, i) => ({ ...c, position: i + 1 }));
+  }
+
   async function handleDraw() {
-    cards = composeDeck(pool, weights, totalCards);
-    await loadSelectedSequences();
+    const gen = ++drawGeneration;
+    cards = composeFullDeck();
+    await loadSelectedSequences(gen);
+    if (gen !== drawGeneration) return;
     step = "review";
   }
 
   async function handleRedraw() {
-    cards = composeDeck(pool, weights, totalCards);
-    await loadSelectedSequences();
+    const gen = ++drawGeneration;
+    cards = composeFullDeck();
+    await loadSelectedSequences(gen);
   }
 
-  async function loadSelectedSequences() {
+  async function loadSelectedSequences(generation: number) {
     isLoadingSequences = true;
     try {
       const byDeck = new Map<string, string[]>();
@@ -86,6 +155,7 @@
         allSeqs.push(...loaded);
       }
 
+      if (generation !== drawGeneration) return;
       const seqMap = new Map(allSeqs.map((s) => [s.id, s]));
       sequences = cards
         .map((c) => seqMap.get(c.sequenceId))
@@ -97,8 +167,27 @@
     }
   }
 
-  function handleSwapCard(index: number) {
+  async function handleSwapCard(index: number) {
+    const oldCard = cards[index];
+    if (oldCard) {
+      const bucket = pool.get(oldCard.stepCount);
+      if (bucket) {
+        pool.set(oldCard.stepCount, bucket.filter(e => e.sequenceId !== oldCard.sequenceId));
+      }
+    }
+
     cards = swapCard(cards, index, pool);
+    const newCard = cards[index];
+    if (!newCard) return;
+
+    try {
+      const loaded = await loadSequencesByIds(newCard.sourceDeckId, [newCard.sequenceId]);
+      if (loaded.length > 0) {
+        sequences = sequences.map((s, i) => i === index ? loaded[0]! : s);
+      }
+    } catch (err) {
+      console.warn("Failed to load swapped sequence:", err);
+    }
   }
 
   async function handleRelease() {
@@ -109,7 +198,9 @@
       nextDeckNumber = release.deckNumber + 1;
       step = "released";
     } catch (err) {
-      console.warn("Failed to release deck:", err);
+      const msg = err instanceof Error ? err.message : "Release failed";
+      const isPermission = msg.includes("permission") || msg.includes("PERMISSION_DENIED");
+      toast.error(isPermission ? "Admin access required to release decks." : `Release failed: ${msg}`);
     } finally {
       isReleasing = false;
     }
@@ -129,10 +220,19 @@
       {weights}
       {totalCards}
       {notes}
+      {sourceSummaries}
+      {selectedSliceTypes}
+      {vtgFamilies}
+      {vtgEnabled}
+      {selectedVtgFamilies}
+      {vtgCardCount}
       isLoading={isLoadingPools}
       onWeightChange={handleWeightChange}
       onTotalCardsChange={(t) => { totalCards = t; }}
       onNotesChange={(n) => { notes = n; }}
+      onSliceTypeToggle={handleSliceTypeToggle}
+      onVtgToggle={handleVtgToggle}
+      onVtgFamilyToggle={handleVtgFamilyToggle}
       onDraw={handleDraw}
     />
   {:else if step === "review"}
