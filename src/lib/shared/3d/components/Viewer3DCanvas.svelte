@@ -29,6 +29,7 @@
   import { createViewerCameraPlayerState } from "@austencloud/camera-3d";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import SceneAudioPlayer from "./SceneAudioPlayer.svelte";
   import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
   import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
 
@@ -186,6 +187,7 @@
     {/if}
     <SceneLoadingCurtain />
     {#if !hideOverlays}
+      <SceneAudioPlayer />
       <div class="timeline-anchor">
         <UnifiedTimeline playback={playbackAdapter} />
       </div>
