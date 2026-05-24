@@ -136,9 +136,11 @@
                 <div
                   {...props}
                   class="avatar-popover"
+                  style:--pop-color={performerColor}
                   in:scale={{ duration: 200, start: 0.92, opacity: 0, easing: backOut }}
                   out:scale={{ duration: 140, start: 0.95, opacity: 0, easing: cubicOut }}
                 >
+                  <div class="avatar-pop-accent"></div>
                   <div class="avatar-pop-header">Select Avatar</div>
                   <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
                     {#each AVATAR_DEFINITIONS as def (def.id)}
@@ -391,11 +393,20 @@
   .avatar-popover {
     width: 320px;
     border-radius: 16px;
-    background: #0c0e16;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7);
+    background: color-mix(in srgb, var(--pop-color) 6%, #0c0e16);
+    border: 1px solid color-mix(in srgb, var(--pop-color) 35%, transparent);
+    box-shadow:
+      0 12px 48px rgba(0, 0, 0, 0.7),
+      0 0 24px color-mix(in srgb, var(--pop-color) 15%, transparent);
     overflow: hidden;
     padding: 12px;
+  }
+
+  .avatar-pop-accent {
+    height: 3px;
+    margin: -12px -12px 10px;
+    background: linear-gradient(90deg, var(--pop-color), color-mix(in srgb, var(--pop-color) 40%, transparent));
+    border-radius: 16px 16px 0 0;
   }
 
   .avatar-pop-header {
@@ -403,7 +414,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.5);
+    color: color-mix(in srgb, var(--pop-color) 70%, rgba(255, 255, 255, 0.7));
     padding: 0 4px 10px;
   }
 
@@ -430,14 +441,16 @@
   }
 
   .avatar-card:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--pop-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--pop-color) 25%, transparent);
     color: white;
   }
 
   .avatar-card.selected {
-    background: color-mix(in srgb, var(--performer-color) 18%, transparent);
-    border-color: color-mix(in srgb, var(--performer-color) 45%, transparent);
-    color: var(--performer-color);
+    background: color-mix(in srgb, var(--pop-color) 20%, transparent);
+    border-color: color-mix(in srgb, var(--pop-color) 50%, transparent);
+    color: var(--pop-color);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--pop-color) 20%, transparent);
   }
 
   .avatar-card i {
