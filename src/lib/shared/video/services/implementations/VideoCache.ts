@@ -372,7 +372,8 @@ export class VideoCache {
       // Save to IndexedDB
       await this.saveVideo(url, blob);
 
-      // Create blob URL for immediate use
+      const prev = this.blobUrls.get(url);
+      if (prev) URL.revokeObjectURL(prev);
       const blobUrl = URL.createObjectURL(blob);
       this.blobUrls.set(url, blobUrl);
 

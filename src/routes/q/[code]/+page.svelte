@@ -19,7 +19,7 @@
 -->
 <script lang="ts">
   import { page } from "$app/stores";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { encodeSequence, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { ShortCodeManager } from "$lib/shared/qr/services/implementations/ShortCodeManager";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
@@ -89,16 +89,32 @@
   let bgRenderPercent = $state(-1);
   let bgRenderPhase = $state("");
   let activeWorker: Worker | null = null;
+  let currentBlobUrl: string | null = null;
 
   const PROP_OPTIONS: { value: PropType; label: string }[] = [
     { value: PropType.STAFF, label: "Staff" },
+    { value: PropType.SIMPLESTAFF, label: "Simple Staff" },
+    { value: PropType.STAFF2, label: "Staff v2" },
     { value: PropType.FAN, label: "Fan" },
     { value: PropType.CLUB, label: "Club" },
     { value: PropType.BUUGENG, label: "Buugeng" },
+    { value: PropType.FRACTALGENG, label: "Fractalgeng" },
+    { value: PropType.TRIGENG, label: "Trigeng" },
     { value: PropType.TRIAD, label: "Triad" },
     { value: PropType.MINIHOOP, label: "Hoop" },
     { value: PropType.SWORD, label: "Sword" },
     { value: PropType.HAND, label: "Hand" },
+    { value: PropType.TRIQUETRA, label: "Triquetra" },
+    { value: PropType.TRIQUETRA2, label: "Triquetra 2" },
+    { value: PropType.CHICKEN, label: "Chicken" },
+    { value: PropType.GUITAR, label: "Guitar" },
+    { value: PropType.UKULELE, label: "Ukulele" },
+    { value: PropType.DOUBLESTAR, label: "Double Star" },
+    { value: PropType.EIGHTRINGS, label: "Eight Rings" },
+    { value: PropType.CONTACTBALL, label: "Contact Ball" },
+    { value: PropType.DOUBLECONTACTBALL, label: "Dbl Contact" },
+    { value: PropType.QUIAD, label: "Quiad" },
+    { value: PropType.TORCH, label: "Torch" },
   ];
 
   let selectedEffect: EffectType = $state("trails");
@@ -107,13 +123,28 @@
 
   const PROP_SVG_MAP: Record<string, string> = {
     [PropType.STAFF]: "/images/props/buttons/staff.svg",
+    [PropType.SIMPLESTAFF]: "/images/props/buttons/simple_staff.svg",
+    [PropType.STAFF2]: "/images/props/buttons/staff_v2.svg",
     [PropType.FAN]: "/images/props/buttons/fan.svg",
     [PropType.CLUB]: "/images/props/buttons/club.svg",
     [PropType.BUUGENG]: "/images/props/buttons/buugeng.svg",
+    [PropType.FRACTALGENG]: "/images/props/buttons/fractalgeng.svg",
+    [PropType.TRIGENG]: "/images/props/buttons/trigeng.svg",
     [PropType.TRIAD]: "/images/props/buttons/triad.svg",
     [PropType.MINIHOOP]: "/images/props/buttons/minihoop.svg",
     [PropType.SWORD]: "/images/props/buttons/sword.svg",
     [PropType.HAND]: "/images/props/buttons/hand.svg",
+    [PropType.TRIQUETRA]: "/images/props/buttons/triquetra.svg",
+    [PropType.TRIQUETRA2]: "/images/props/buttons/triquetra2.svg",
+    [PropType.CHICKEN]: "/images/props/buttons/chicken.svg",
+    [PropType.GUITAR]: "/images/props/buttons/guitar.svg",
+    [PropType.UKULELE]: "/images/props/buttons/ukulele.svg",
+    [PropType.DOUBLESTAR]: "/images/props/buttons/doublestar.svg",
+    [PropType.EIGHTRINGS]: "/images/props/buttons/eightrings.svg",
+    [PropType.CONTACTBALL]: "/images/props/buttons/contactball.svg",
+    [PropType.DOUBLECONTACTBALL]: "/images/props/buttons/doublecontactball.svg",
+    [PropType.QUIAD]: "/images/props/buttons/quiad.svg",
+    [PropType.TORCH]: "/images/props/buttons/torch.svg",
   };
 
   const selectedEffectMeta = $derived(
@@ -390,7 +421,9 @@
         }
       } else if (out.type === "complete") {
         const blob = new Blob([out.mp4], { type: "video/mp4" });
+        if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
         const blobUrl = URL.createObjectURL(blob);
+        currentBlobUrl = blobUrl;
         pageState = { kind: "playing", videoUrl: blobUrl, word, isFirstView: !isBackground };
         bgRenderPercent = -1;
         activeWorker = null;
@@ -544,6 +577,14 @@
         message:
           err instanceof Error ? err.message : "Failed to load sequence",
       };
+    }
+  });
+
+  onDestroy(() => {
+    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    if (activeWorker) {
+      activeWorker.terminate();
+      activeWorker = null;
     }
   });
 </script>
@@ -700,6 +741,60 @@
             <i class="fa-solid fa-compass grid-btn-fa"></i>
             <span class="grid-btn-label">Open TKA</span>
           </a>
+        </div>
+
+        <div class="desktop-sections">
+          <div class="desktop-section">
+            <h3 class="desktop-section-title">Prop</h3>
+            <div class="desktop-grid">
+              {#each PROP_OPTIONS as opt}
+                <button
+                  type="button"
+                  class="overlay-option"
+                  class:active={selectedProp === opt.value}
+                  onclick={() => handlePropChange(opt.value)}
+                >
+                  <img src={PROP_SVG_MAP[opt.value] ?? ""} alt="" class="overlay-prop-img" />
+                  <span class="overlay-option-label">{opt.label}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+          <div class="desktop-section">
+            <h3 class="desktop-section-title">Effects</h3>
+            <div class="desktop-grid">
+              <button
+                type="button"
+                class="overlay-option"
+                class:active={selectedEffect === "none"}
+                onclick={() => handleEffectChange("none")}
+              >
+                <i class="fa-solid fa-ban overlay-effect-icon" style:color="#888"></i>
+                <span class="overlay-option-label">None</span>
+              </button>
+              {#each EFFECTS as eff}
+                <button
+                  type="button"
+                  class="overlay-option"
+                  class:active={selectedEffect === eff.id}
+                  onclick={() => handleEffectChange(eff.id as EffectType)}
+                >
+                  <i class="fa-solid {eff.icon} overlay-effect-icon" style:color={eff.color}></i>
+                  <span class="overlay-option-label">{eff.label}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+          <div class="desktop-actions">
+            <button type="button" class="grid-btn primary" onclick={handleDownload}>
+              <i class="fa-solid fa-download grid-btn-fa"></i>
+              <span class="grid-btn-label">Download</span>
+            </button>
+            <a href="/browse/gallery" class="grid-btn secondary">
+              <i class="fa-solid fa-compass grid-btn-fa"></i>
+              <span class="grid-btn-label">Open TKA</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -943,7 +1038,7 @@
     align-items: center;
     width: 100%;
     height: 100%;
-    padding: 8px 12px;
+    padding: 8px 8px;
     padding-bottom: calc(48px + max(6px, env(safe-area-inset-bottom)));
     gap: 6px;
     overflow: hidden;
@@ -1125,25 +1220,26 @@
   .button-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 4px;
     width: 100%;
   }
 
   .grid-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     min-height: var(--min-touch);
-    padding: 8px 12px;
+    padding: 6px 8px;
     background: var(--card-bg);
     border: 1px solid var(--stroke);
     border-radius: 10px;
     color: #fff;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
     text-decoration: none;
     transition: background 120ms ease;
+    overflow: hidden;
   }
 
   .grid-btn:hover {
@@ -1165,8 +1261,8 @@
   }
 
   .grid-btn-icon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
     object-fit: contain;
   }
@@ -1176,9 +1272,9 @@
   }
 
   .grid-btn-fa {
-    font-size: 16px;
+    font-size: 14px;
     flex-shrink: 0;
-    width: 22px;
+    width: 20px;
     text-align: center;
   }
 
@@ -1191,21 +1287,39 @@
   }
 
   .grid-btn-label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .grid-btn-sub {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: var(--text-dim);
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .grid-btn-chevron {
-    font-size: 10px;
+    font-size: 9px;
     color: var(--text-dim);
     flex-shrink: 0;
+  }
+
+  @media (max-width: 359px) {
+    .grid-btn {
+      padding: 4px 6px;
+      gap: 4px;
+      justify-content: center;
+    }
+    .grid-btn-text { display: none; }
+    .grid-btn-chevron { display: none; }
+    .grid-btn-icon { width: 24px; height: 24px; }
+    .grid-btn-fa { font-size: 18px; width: 24px; }
   }
 
   /* ── Overlay panels ── */
@@ -1225,12 +1339,16 @@
     background: #1a1a2e;
     border-radius: 16px 16px 0 0;
     width: 100%;
-    max-width: 480px;
+    max-width: min(480px, 100vw);
     max-height: 70dvh;
     overflow-y: auto;
-    padding: 16px;
+    overflow-x: hidden;
+    padding: 12px;
     animation: slideUp 200ms ease;
+    scrollbar-width: none;
   }
+
+  .overlay-panel::-webkit-scrollbar { display: none; }
 
   .overlay-header {
     display: flex;
@@ -1261,7 +1379,13 @@
   .overlay-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    gap: 6px;
+  }
+
+  @media (max-width: 380px) {
+    .overlay-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   .overlay-option {
@@ -1321,14 +1445,15 @@
     to { transform: translateY(0); }
   }
 
-  /* ── Landscape / wide (Z Fold landscape, tablets) ── */
+  /* ── Landscape: side-by-side layout ── */
 
-  @media (min-width: 700px) and (max-height: 800px) {
+  @media (orientation: landscape), (min-aspect-ratio: 5/4) {
     .player-layout {
       display: grid;
-      grid-template-columns: 1fr 260px;
+      grid-template-columns: 1fr 220px;
       grid-template-rows: auto 1fr;
-      padding: 8px 16px;
+      padding: 8px 12px;
+      padding-bottom: calc(48px + max(6px, env(safe-area-inset-bottom)));
       gap: 8px;
     }
 
@@ -1349,6 +1474,10 @@
       grid-row: 2;
       max-width: none;
       justify-content: center;
+    }
+
+    .button-grid {
+      gap: 4px;
     }
 
     .overlay-panel {
@@ -1391,6 +1520,133 @@
 
     .overlay-backdrop {
       align-items: center;
+    }
+  }
+
+  /* ── Desktop: inline prop/effect grids ── */
+
+  .desktop-sections {
+    display: none;
+  }
+
+  .desktop-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 8px;
+  }
+
+  @media (min-width: 1024px) {
+    .player-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      grid-template-rows: auto 1fr;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      padding-bottom: calc(56px + max(8px, env(safe-area-inset-bottom)));
+      gap: 16px;
+    }
+
+    .word-title {
+      grid-column: 1 / -1;
+      font-size: 1.75rem;
+    }
+
+    .video-area {
+      grid-column: 1;
+      grid-row: 2;
+      max-width: none;
+      min-height: 0;
+    }
+
+    .player-controls {
+      grid-column: 2;
+      grid-row: 2;
+      max-width: none;
+      justify-content: flex-start;
+      overflow-y: auto;
+      scrollbar-width: none;
+      gap: 12px;
+    }
+
+    .player-controls::-webkit-scrollbar {
+      display: none;
+    }
+
+    .button-grid {
+      display: none;
+    }
+
+    .desktop-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .desktop-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .desktop-grid .overlay-option {
+      min-height: 60px;
+      padding: 6px 4px;
+      gap: 4px;
+    }
+
+    .desktop-grid .overlay-prop-img {
+      width: 26px;
+      height: 26px;
+    }
+
+    .desktop-grid .overlay-effect-icon {
+      font-size: 20px;
+    }
+
+    .desktop-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .bottom-scrubber {
+      left: 50%;
+      right: auto;
+      width: 100%;
+      max-width: 1000px;
+      transform: translateX(-50%);
+      border-radius: 12px 12px 0 0;
+    }
+
+    .overlay-panel {
+      max-width: 600px;
+      border-radius: 16px;
+      max-height: 70dvh;
+    }
+
+    .overlay-backdrop {
+      align-items: center;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .player-layout {
+      max-width: 1200px;
+      grid-template-columns: 1fr 380px;
+    }
+
+    .desktop-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .bottom-scrubber {
+      max-width: 1200px;
     }
   }
 </style>

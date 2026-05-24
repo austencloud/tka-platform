@@ -6,6 +6,9 @@ export class VideoSourceProvider {
 	private currentInfo: VideoSourceInfo | null = null;
 
 	async loadFromFile(file: File): Promise<VideoSourceInfo> {
+		if (this.currentInfo?.url?.startsWith("blob:")) {
+			URL.revokeObjectURL(this.currentInfo.url);
+		}
 		const url = URL.createObjectURL(file);
 		return this.loadFromUrl(url, file.name);
 	}
@@ -101,10 +104,13 @@ export class VideoSourceProvider {
 	}
 
 	dispose(): void {
+		if (this.currentInfo?.url?.startsWith("blob:")) {
+			URL.revokeObjectURL(this.currentInfo.url);
+		}
 		if (this.videoEl) {
 			this.videoEl.pause();
 			this.videoEl.removeAttribute("src");
-			this.videoEl.load(); // Release any held resources.
+			this.videoEl.load();
 			this.videoEl.remove();
 			this.videoEl = null;
 		}

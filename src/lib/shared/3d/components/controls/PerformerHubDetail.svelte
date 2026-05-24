@@ -30,6 +30,7 @@
 
   const performerColor = $derived(selectedIndex !== null ? getPerformerColor(selectedIndex) : "#6b7280");
   const badgeLabel = $derived(selectedIndex !== null ? `P${selectedIndex + 1}` : "");
+  const canRemove = $derived(viewer.performerManager.performers.length > 1);
 
   const avatarDef = $derived(
     AVATAR_DEFINITIONS.find((a) => a.id === performer?.avatarModelId) ?? AVATAR_DEFINITIONS[0],
@@ -163,6 +164,13 @@
           {/snippet}
         </Popover.Content>
       </Popover.Root>
+
+      {#if canRemove}
+        <button class="remove-performer-btn" onclick={() => viewer.removePerformerFromUI()}>
+          <i class="fas fa-trash-alt" aria-hidden="true"></i>
+          <span>Remove</span>
+        </button>
+      {/if}
     </div>
 
     <!-- Prop -->
@@ -388,6 +396,34 @@
 
   .change-avatar-btn i {
     font-size: 12px;
+  }
+
+  .remove-performer-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(220, 50, 50, 0.2);
+    background: transparent;
+    color: rgba(220, 50, 50, 0.6);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 140ms ease;
+    width: 100%;
+    justify-content: center;
+    min-height: 32px;
+  }
+
+  .remove-performer-btn:hover {
+    background: rgba(220, 50, 50, 0.12);
+    border-color: rgba(220, 50, 50, 0.4);
+    color: rgba(220, 50, 50, 0.9);
+  }
+
+  .remove-performer-btn i {
+    font-size: 11px;
   }
 
   .avatar-popover {

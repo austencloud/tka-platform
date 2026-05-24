@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
@@ -31,6 +31,12 @@
   const state = galleryGeneratorState;
   // Batch size optimized for Ryzen 9 7950X / 128GB RAM / RTX 4090
   const BATCH_SIZE = 50;
+
+  onDestroy(() => {
+    for (const img of state.renderedImages) {
+      if (img.imageUrl) URL.revokeObjectURL(img.imageUrl);
+    }
+  });
 
   // Services (initialized on mount)
   let galleryRenderer: GalleryRenderer | null = null;

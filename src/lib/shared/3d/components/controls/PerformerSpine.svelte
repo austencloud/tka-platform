@@ -23,12 +23,6 @@
     viewer.spawnPerformerFromUI();
   }
 
-  const canRemove = $derived(performers.length > 1);
-
-  function removePerformer(e: MouseEvent): void {
-    e.stopPropagation();
-    viewer.removePerformerFromUI();
-  }
 </script>
 
 {#if performers.length >= 1}
@@ -50,29 +44,17 @@
     {#each [...performers].reverse() as _, ri (performers.length - 1 - ri)}
       {@const i = performers.length - 1 - ri}
       {@const color = getPerformerColor(i)}
-      <div class="chip-wrap">
-        <button
-          class="spine-chip performer-chip"
-          aria-pressed={selectedIndex === i}
-          aria-label="Performer {i + 1}"
-          data-tooltip="Performer {i + 1}"
-          style:--performer-color={color}
-          onclick={() => selectPerformer(i)}
-        >
-          <span class="performer-number">{i + 1}</span>
-          <span class="performer-dot"></span>
-        </button>
-        {#if selectedIndex === i && canRemove}
-          <button
-            class="remove-btn"
-            aria-label="Remove performer {i + 1}"
-            style:--performer-color={color}
-            onclick={removePerformer}
-          >
-            <i class="fas fa-minus"></i>
-          </button>
-        {/if}
-      </div>
+      <button
+        class="spine-chip performer-chip"
+        aria-pressed={selectedIndex === i}
+        aria-label="Performer {i + 1}"
+        data-tooltip="Performer {i + 1}"
+        style:--performer-color={color}
+        onclick={() => selectPerformer(i)}
+      >
+        <span class="performer-number">{i + 1}</span>
+        <span class="performer-dot"></span>
+      </button>
     {/each}
 
     <div class="separator" aria-hidden="true"></div>
@@ -191,40 +173,6 @@
 
   .performer-chip[aria-pressed="true"] .performer-dot {
     box-shadow: 0 0 8px var(--performer-color);
-  }
-
-  /* Chip wrapper for remove button overlay */
-  .chip-wrap {
-    position: relative;
-  }
-
-  .remove-btn {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 1.5px solid color-mix(in srgb, var(--performer-color) 60%, transparent);
-    background: rgba(0, 0, 0, 0.7);
-    color: var(--performer-color);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 140ms ease;
-    z-index: 2;
-  }
-
-  .remove-btn i {
-    font-size: 8px;
-  }
-
-  .remove-btn:hover {
-    background: rgba(220, 50, 50, 0.8);
-    border-color: rgba(220, 50, 50, 0.9);
-    color: white;
-    transform: scale(1.15);
   }
 
   /* Add chip */

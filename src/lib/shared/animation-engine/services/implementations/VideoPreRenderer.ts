@@ -82,6 +82,7 @@ export class VideoPreRenderer {
   private db: IDBDatabase | null = null;
   private isCurrentlyRendering = false;
   private cancelRequested = false;
+  private cachedBlobUrls = new Map<string, string>();
 
   /**
    * Initialize IndexedDB for video caching
@@ -494,7 +495,10 @@ export class VideoPreRenderer {
         request.onsuccess = () => {
           const result = request.result;
           if (result?.videoBlob) {
+            const prev = this.cachedBlobUrls.get(sequenceId);
+            if (prev) URL.revokeObjectURL(prev);
             const blobUrl = URL.createObjectURL(result.videoBlob);
+            this.cachedBlobUrls.set(sequenceId, blobUrl);
             resolve({
               success: true,
               videoBlob: result.videoBlob,

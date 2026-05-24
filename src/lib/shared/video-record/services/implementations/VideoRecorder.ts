@@ -31,6 +31,7 @@ interface RecordingState {
 export class VideoRecorder {
   private db: IDBDatabase | null = null;
   private activeRecordings = new Map<string, RecordingState>();
+  private cachedBlobUrls = new Map<string, string>();
 
   /**
    * Initialize IndexedDB for recording caching
@@ -286,7 +287,10 @@ export class VideoRecorder {
         request.onsuccess = () => {
           const result = request.result;
           if (result?.videoBlob) {
+            const prev = this.cachedBlobUrls.get(recordingId);
+            if (prev) URL.revokeObjectURL(prev);
             const blobUrl = URL.createObjectURL(result.videoBlob);
+            this.cachedBlobUrls.set(recordingId, blobUrl);
             resolve({
               success: true,
               videoBlob: result.videoBlob,
