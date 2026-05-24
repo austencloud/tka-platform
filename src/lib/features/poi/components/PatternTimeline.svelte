@@ -65,8 +65,13 @@
 
     let prevTime = performance.now();
     let rafId = 0;
+    let paused = false;
 
     function tick() {
+      if (document.hidden) {
+        paused = true;
+        return;
+      }
       const now = performance.now();
       const dt = (now - prevTime) / 1000;
       prevTime = now;
@@ -74,8 +79,21 @@
       rafId = requestAnimationFrame(tick);
     }
 
+    function onVisibilityChange() {
+      if (!document.hidden && paused) {
+        paused = false;
+        prevTime = performance.now();
+        rafId = requestAnimationFrame(tick);
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
     rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   });
 
   function getStepFromX(clientX: number): number {

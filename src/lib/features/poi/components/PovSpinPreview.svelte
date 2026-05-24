@@ -122,9 +122,14 @@
     const ctx = canvas.getContext("2d")!;
     let prevTime = performance.now();
     let staffAngle = 0;
+    let paused = false;
 
     function draw() {
       if (!canvas || !ctx) return;
+      if (document.hidden) {
+        paused = true;
+        return;
+      }
 
       const now = performance.now();
       const dt = (now - prevTime) / 1000;
@@ -360,10 +365,20 @@
       animFrameId = requestAnimationFrame(draw);
     }
 
+    function onVisibilityChange() {
+      if (!document.hidden && paused) {
+        paused = false;
+        prevTime = performance.now();
+        animFrameId = requestAnimationFrame(draw);
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
     animFrameId = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(animFrameId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   });
 

@@ -46,6 +46,8 @@ class ConnectState {
 	// Orchestrator reference
 	private orchestrator: ConnectOrchestrator | null = null;
 	private unsubscribers: Array<() => void> = [];
+	private _errorClearTimer: ReturnType<typeof setTimeout> | null = null;
+	private _loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// ==================== Getters ====================
 
@@ -163,8 +165,9 @@ class ConnectState {
 				this._isSoloMode = false;
 				this._connectionError = `Session ended: ${reason}`;
 
-				// Clear error after a delay
-				setTimeout(() => {
+				if (this._errorClearTimer !== null) clearTimeout(this._errorClearTimer);
+				this._errorClearTimer = setTimeout(() => {
+					this._errorClearTimer = null;
 					this._connectionError = null;
 				}, 5000);
 			})
@@ -365,8 +368,9 @@ class ConnectState {
 		// Sync state from orchestrator
 		this.syncFromOrchestrator();
 
-		// Brief loading indicator
-		setTimeout(() => {
+		if (this._loadingTimer !== null) clearTimeout(this._loadingTimer);
+		this._loadingTimer = setTimeout(() => {
+			this._loadingTimer = null;
 			this._isLoading = false;
 		}, 500);
 	}
@@ -398,6 +402,15 @@ class ConnectState {
 		this._isInitialized = false;
 		this._isConnecting = false;
 		this._connectionError = null;
+
+		if (this._errorClearTimer !== null) {
+			clearTimeout(this._errorClearTimer);
+			this._errorClearTimer = null;
+		}
+		if (this._loadingTimer !== null) {
+			clearTimeout(this._loadingTimer);
+			this._loadingTimer = null;
+		}
 	}
 
 	// ==================== Private Helpers ====================

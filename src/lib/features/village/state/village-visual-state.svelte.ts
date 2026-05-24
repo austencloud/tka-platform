@@ -73,6 +73,7 @@ export function createVillageVisualState(): VillageVisualState {
 	let toasts = $state<VillageEventToast[]>([]);
 	let deathMarks = $state<DeathMark[]>([]);
 	let relightingMonuments = $state<Set<string>>(new Set());
+	const relightTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 	return {
 		get showToasts() { return showToasts; },
@@ -139,12 +140,19 @@ export function createVillageVisualState(): VillageVisualState {
 		},
 
 		triggerRelight(sequenceId: string) {
+			const existing = relightTimers.get(sequenceId);
+			if (existing !== undefined) clearTimeout(existing);
+
 			relightingMonuments = new Set([...relightingMonuments, sequenceId]);
-			setTimeout(() => {
+
+			const timerId = setTimeout(() => {
+				relightTimers.delete(sequenceId);
 				relightingMonuments = new Set(
 					[...relightingMonuments].filter((id) => id !== sequenceId),
 				);
 			}, 1300);
+
+			relightTimers.set(sequenceId, timerId);
 		},
 	};
 }

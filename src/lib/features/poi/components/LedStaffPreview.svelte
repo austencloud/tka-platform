@@ -48,9 +48,14 @@
     // don't suddenly jump during a crossfade.
     let cyclePos = 0;
     let rafId = 0;
+    let paused = false;
 
     function draw() {
       if (!canvas || !ctx) return;
+      if (document.hidden) {
+        paused = true;
+        return;
+      }
 
       // Rich playback state - primary is the incoming pattern, secondary
       // (when non-null) is the outgoing pattern being crossfaded out.
@@ -134,10 +139,20 @@
       rafId = requestAnimationFrame(draw);
     }
 
+    function onVisibilityChange() {
+      if (!document.hidden && paused) {
+        paused = false;
+        prevTime = performance.now();
+        rafId = requestAnimationFrame(draw);
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
     rafId = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(rafId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   });
 
