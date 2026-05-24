@@ -99,10 +99,10 @@
     top: 0;
     right: 0;
     height: 100%;
-    width: 200px;
+    width: 260px;
     overflow-y: auto;
-    background: rgba(10, 10, 26, 0.85);
-    backdrop-filter: blur(8px);
+    background: rgba(10, 10, 26, 0.88);
+    backdrop-filter: blur(12px);
     border-left: 1px solid rgba(255, 255, 255, 0.06);
   }
 </style>

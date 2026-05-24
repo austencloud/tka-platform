@@ -274,7 +274,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
       initialStep={overlay.initialStep}
       viewingContext={overlay.viewingContext}
       handPathMode={overlay.handPathMode}
-      onBack={handleDismiss}
+      onClose={handleDismiss}
     >
       {#snippet children(ctx)}
         {@const isVideoExportActive = ctx.editingPane === "animation"}

@@ -35,13 +35,11 @@
     onRangeMaxChange,
   }: Props = $props();
 
-  let tuneExpanded: boolean = $state(false);
-
   const PATH_SHAPES: { id: MandalaPathShape; label: string }[] = [
     { id: "arc", label: "Arc" },
     { id: "linear", label: "Linear" },
     { id: "concave", label: "Concave" },
-    { id: "motion-aware", label: "Motion" },
+    { id: "motion-aware", label: "Motion Aware" },
   ];
 
   const EASINGS: { id: UndulationEasing; label: string }[] = [
@@ -49,7 +47,7 @@
     { id: "ease", label: "Ease" },
     { id: "soft-elastic", label: "Elastic" },
     { id: "breathe", label: "Breathe" },
-    { id: "heartbeat", label: "Heart" },
+    { id: "heartbeat", label: "Heartbeat" },
     { id: "drift", label: "Drift" },
     { id: "bloom", label: "Bloom" },
     { id: "tidal", label: "Tidal" },
@@ -65,22 +63,35 @@
 </script>
 
 <div class="mandala-controls">
-  <div class="control-section">
+  <div class="transport">
     <button
-      class="play-toggle"
+      class="transport-btn"
+      class:active={!paused}
       onclick={() => onPausedChange(!paused)}
       aria-label={paused ? "Play" : "Pause"}
     >
       <i class="fas {paused ? 'fa-play' : 'fa-pause'}" aria-hidden="true"></i>
     </button>
+    <div class="speed-control">
+      <input
+        type="range"
+        min="1"
+        max="20"
+        step="0.5"
+        value={period}
+        oninput={(e) => onPeriodChange(Number((e.target as HTMLInputElement).value))}
+        class="speed-slider"
+      />
+      <span class="speed-label">{period}s</span>
+    </div>
   </div>
 
-  <div class="control-section">
-    <span class="section-label">Path</span>
-    <div class="btn-group">
+  <div class="control-group">
+    <span class="group-label">Path Shape</span>
+    <div class="pill-row">
       {#each PATH_SHAPES as shape}
         <button
-          class="ctrl-btn"
+          class="pill"
           class:active={pathShape === shape.id}
           onclick={() => onPathShapeChange(shape.id)}
         >
@@ -90,231 +101,240 @@
     </div>
   </div>
 
-  <button
-    class="tune-toggle"
-    onclick={() => { tuneExpanded = !tuneExpanded; }}
-    aria-expanded={tuneExpanded}
-  >
-    <i class="fas fa-sliders" aria-hidden="true"></i>
-    Tune
-    <i class="fas fa-chevron-{tuneExpanded ? 'up' : 'down'}" aria-hidden="true"></i>
-  </button>
+  <div class="control-group">
+    <span class="group-label">Easing</span>
+    <div class="pill-grid">
+      {#each EASINGS as e}
+        <button
+          class="pill"
+          class:active={easing === e.id}
+          onclick={() => onEasingChange(e.id)}
+        >
+          {e.label}
+        </button>
+      {/each}
+    </div>
+  </div>
 
-  {#if tuneExpanded}
-    <div class="tune-panel">
-      <div class="control-section">
-        <span class="section-label">Easing</span>
-        <div class="btn-group wrap">
-          {#each EASINGS as e}
-            <button
-              class="ctrl-btn"
-              class:active={easing === e.id}
-              onclick={() => onEasingChange(e.id)}
-            >
-              {e.label}
-            </button>
-          {/each}
-        </div>
-      </div>
+  <div class="control-group">
+    <span class="group-label">Rotation</span>
+    <div class="pill-row">
+      {#each ROTATIONS as r}
+        <button
+          class="pill"
+          class:active={rotation === r.value}
+          onclick={() => onRotationChange(r.value)}
+        >
+          {r.label}
+        </button>
+      {/each}
+    </div>
+  </div>
 
-      <div class="control-section">
-        <span class="section-label">Rotation</span>
-        <div class="btn-group">
-          {#each ROTATIONS as r}
-            <button
-              class="ctrl-btn"
-              class:active={rotation === r.value}
-              onclick={() => onRotationChange(r.value)}
-            >
-              {r.label}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <div class="control-section">
-        <span class="section-label">Period</span>
+  <div class="control-group">
+    <span class="group-label">Range</span>
+    <div class="range-row">
+      <div class="range-field">
+        <span class="range-hint">Min</span>
         <input
-          type="range"
-          min="1"
-          max="20"
-          step="0.5"
-          value={period}
-          oninput={(e) => onPeriodChange(Number((e.target as HTMLInputElement).value))}
-          class="range-input"
+          type="number"
+          min="0"
+          max="150"
+          value={rangeMin}
+          oninput={(e) => onRangeMinChange(Number((e.target as HTMLInputElement).value))}
+          class="num-input"
         />
-        <span class="range-value">{period}s</span>
       </div>
-
-      <div class="control-section">
-        <span class="section-label">Range</span>
-        <div class="range-pair">
-          <input
-            type="number"
-            min="0"
-            max="150"
-            value={rangeMin}
-            oninput={(e) => onRangeMinChange(Number((e.target as HTMLInputElement).value))}
-            class="num-input"
-          />
-          <span>–</span>
-          <input
-            type="number"
-            min="100"
-            max="300"
-            value={rangeMax}
-            oninput={(e) => onRangeMaxChange(Number((e.target as HTMLInputElement).value))}
-            class="num-input"
-          />
-        </div>
+      <span class="range-sep">–</span>
+      <div class="range-field">
+        <span class="range-hint">Max</span>
+        <input
+          type="number"
+          min="100"
+          max="300"
+          value={rangeMax}
+          oninput={(e) => onRangeMaxChange(Number((e.target as HTMLInputElement).value))}
+          class="num-input"
+        />
       </div>
     </div>
-  {/if}
+  </div>
 </div>
 
 <style>
   .mandala-controls {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+    gap: 20px;
+    padding: 16px;
     color: var(--theme-text, #e2e8f0);
-    font-size: 0.75rem;
   }
 
-  .control-section {
+  .transport {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    gap: 12px;
   }
 
-  .section-label {
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    opacity: 0.5;
-  }
-
-  .play-toggle {
-    width: 36px;
-    height: 36px;
+  .transport-btn {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
     border-radius: 50%;
     border: 1px solid rgba(139, 92, 246, 0.3);
-    background: rgba(139, 92, 246, 0.1);
-    color: #c4b5fd;
+    background: rgba(139, 92, 246, 0.08);
+    color: rgba(196, 181, 253, 0.7);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
-    transition: all 0.2s;
+    font-size: 14px;
+    transition: all 0.15s ease;
   }
 
-  .play-toggle:hover {
-    background: rgba(139, 92, 246, 0.2);
+  .transport-btn.active {
     border-color: rgba(139, 92, 246, 0.5);
-  }
-
-  .btn-group {
-    display: flex;
-    gap: 3px;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 6px;
-    padding: 2px;
-  }
-
-  .btn-group.wrap {
-    flex-wrap: wrap;
-  }
-
-  .ctrl-btn {
-    padding: 4px 8px;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: inherit;
-    font-size: 0.65rem;
-    cursor: pointer;
-    opacity: 0.6;
-    transition: all 0.2s;
-  }
-
-  .ctrl-btn.active {
-    background: rgba(139, 92, 246, 0.25);
-    opacity: 1;
+    background: rgba(139, 92, 246, 0.15);
     color: #c4b5fd;
   }
 
-  .ctrl-btn:hover {
-    opacity: 0.9;
+  .transport-btn:hover {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: rgba(139, 92, 246, 0.6);
+    color: #ddd6fe;
   }
 
-  .tune-toggle {
+  .speed-control {
+    flex: 1;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.03);
-    color: inherit;
-    font-size: 0.68rem;
-    cursor: pointer;
-    opacity: 0.6;
-    transition: all 0.2s;
+    gap: 8px;
   }
 
-  .tune-toggle:hover {
-    opacity: 1;
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  .tune-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-top: 4px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .range-input {
-    width: 100%;
+  .speed-slider {
+    flex: 1;
     height: 4px;
     appearance: none;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 2px;
     cursor: pointer;
   }
 
-  .range-input::-webkit-slider-thumb {
+  .speed-slider::-webkit-slider-thumb {
     appearance: none;
     width: 14px;
     height: 14px;
     border-radius: 50%;
     background: #a78bfa;
+    border: 2px solid rgba(10, 10, 26, 0.6);
     cursor: pointer;
+    transition: transform 0.1s ease;
   }
 
-  .range-value {
-    font-size: 0.6rem;
-    opacity: 0.5;
+  .speed-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .speed-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
     font-variant-numeric: tabular-nums;
+    min-width: 28px;
+    text-align: right;
   }
 
-  .range-pair {
+  .control-group {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .group-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .pill-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .pill-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .pill {
+    padding: 6px 0;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+    flex: 1;
+  }
+
+  .pill:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .pill.active {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: #c4b5fd;
+  }
+
+  .range-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .range-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .range-hint {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.25);
+  }
+
+  .range-sep {
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 14px;
+    padding-bottom: 6px;
   }
 
   .num-input {
-    width: 48px;
-    padding: 3px 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
     background: rgba(0, 0, 0, 0.3);
     color: inherit;
-    font-size: 0.68rem;
+    font-size: 12px;
     text-align: center;
+    font-variant-numeric: tabular-nums;
+    transition: border-color 0.15s ease;
+  }
+
+  .num-input:focus {
+    outline: none;
+    border-color: rgba(139, 92, 246, 0.4);
   }
 </style>
