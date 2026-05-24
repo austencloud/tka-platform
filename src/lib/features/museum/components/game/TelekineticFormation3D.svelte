@@ -17,8 +17,7 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { untrack } from "svelte";
   import { T } from "@threlte/core";
-  import * as THREE from "three";
-  import { Vector3, Quaternion } from "three";
+  import { Vector3, Quaternion, Color } from "three";
   import { PerformerRig } from "@austencloud/scene-3d";
   import type { PropState3D } from "@austencloud/scene-3d";
   import { Plane } from "@austencloud/scene-3d";
@@ -49,8 +48,8 @@
   // Ritual platform
   const PLATFORM_RADIUS = 3.5;
   const PLATFORM_HEIGHT = 0.3;
-  const platformColor = new THREE.Color(0x2a1f18);
-  const platformRingColor = new THREE.Color(0x4a3828);
+  const platformColor = new Color(0x2a1f18);
+  const platformRingColor = new Color(0x4a3828);
 
   // Avatar3D in "stage mode" positions feet at groundY (≈ -1.4m below rig origin).
   // In the museum the floor is at y=0, so we offset by -groundY + PLATFORM_HEIGHT.

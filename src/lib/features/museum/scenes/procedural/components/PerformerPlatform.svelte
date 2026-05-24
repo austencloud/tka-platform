@@ -8,7 +8,7 @@
    * Platform disc is a sibling outside the rig (independent of groundOffset).
    */
   import { T } from "@threlte/core";
-  import * as THREE from "three";
+  import { Color } from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { PerformerRig } from "@austencloud/scene-3d";
@@ -28,7 +28,7 @@
 
   const ACTIVATION_DISTANCE = 15; // meters
   const PLATFORM_HEIGHT = 0.3;    // matches cylinder geometry
-  const platformColor = new THREE.Color(0x6b5b4f);
+  const platformColor = new Color(0x6b5b4f);
 
   // Avatar3D positions feet at groundY (below rig origin). Offset by -groundY
   // to bring feet to floor level, then add platform height to stand on top.

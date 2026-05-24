@@ -7,7 +7,7 @@
    */
 
   import { T } from "@threlte/core";
-  import * as THREE from "three";
+  import { DoubleSide } from "three";
   import type { Snippet } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
 
@@ -38,7 +38,7 @@
         color={isDragging ? "#4caf50" : "#64b5f6"}
         transparent
         opacity={isDragging ? 0.6 : 0.3}
-        side={THREE.DoubleSide}
+        side={DoubleSide}
       />
     </T.Mesh>
   </T.Group>

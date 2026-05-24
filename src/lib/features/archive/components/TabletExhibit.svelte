@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { T } from "@threlte/core";
-	import * as THREE from "three";
+	import { Color } from "three";
 
 	interface Props {
 		position: [number, number, number];
@@ -10,10 +10,10 @@
 	let { position, groundY }: Props = $props();
 
 	// Materials
-	const pedestalColor = new THREE.Color(0x3a3530); // Lighter stone
-	const tabletColor = new THREE.Color(0x8b7d5a); // Ochre/limestone
-	const ochreColor = new THREE.Color(0xcc6633); // Ochre pigment markings
-	const labelColor = new THREE.Color(0x1a1614); // Dark backing for label
+	const pedestalColor = new Color(0x3a3530); // Lighter stone
+	const tabletColor = new Color(0x8b7d5a); // Ochre/limestone
+	const ochreColor = new Color(0xcc6633); // Ochre pigment markings
+	const labelColor = new Color(0x1a1614); // Dark backing for label
 
 	// Pedestal dimensions
 	const pedestalWidth = 1.2;

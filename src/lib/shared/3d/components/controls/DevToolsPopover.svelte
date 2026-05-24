@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as THREE from "three";
+  import { Vector3 } from "three";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
 
   const viewer = getViewer3DContext();
@@ -9,8 +9,8 @@
     const controls = viewer.cameraChoreography.controls;
     if (!controls) return;
 
-    const pos = new THREE.Vector3();
-    const tgt = new THREE.Vector3();
+    const pos = new Vector3();
+    const tgt = new Vector3();
     controls.getPosition(pos);
     controls.getTarget(tgt);
 

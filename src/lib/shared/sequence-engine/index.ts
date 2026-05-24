@@ -1,3 +1,5 @@
+// @deprecated — all consumers use deep imports; remove when confirmed safe
+
 /**
  * Sequence Engine - Wrapper
  *

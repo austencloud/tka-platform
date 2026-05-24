@@ -7,7 +7,12 @@
    * with a floor and some walls.
    */
   import { onMount, onDestroy } from "svelte";
-  import * as THREE from "three";
+  import {
+    Scene, Color, PerspectiveCamera, WebGLRenderer,
+    GridHelper, AmbientLight, DirectionalLight,
+    PlaneGeometry, MeshStandardMaterial, Mesh,
+    BoxGeometry, Vector3,
+  } from "three";
   import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
   let container: HTMLDivElement;
@@ -18,14 +23,14 @@
     const { playerController } = await import("three-player-controller");
 
     // ── Setup Three.js scene ──
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a2e);
+    const scene = new Scene();
+    scene.background = new Color(0x1a1a2e);
 
-    const camera = new THREE.PerspectiveCamera(
+    const camera = new PerspectiveCamera(
       70, container.clientWidth / container.clientHeight, 0.1, 1000
     );
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
@@ -41,26 +46,26 @@
     controls.update();
 
     // Grid helper for spatial reference
-    scene.add(new THREE.GridHelper(50, 50, 0x444444, 0x222222));
+    scene.add(new GridHelper(50, 50, 0x444444, 0x222222));
 
     // ── Lighting ──
-    scene.add(new THREE.AmbientLight(0xc8b890, 0.6));
-    const dirLight = new THREE.DirectionalLight(0xfff0d0, 0.8);
+    scene.add(new AmbientLight(0xc8b890, 0.6));
+    const dirLight = new DirectionalLight(0xfff0d0, 0.8);
     dirLight.position.set(10, 15, 5);
     scene.add(dirLight);
 
     // ── Floor ──
-    const floorGeo = new THREE.PlaneGeometry(50, 50);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x3a3530, roughness: 0.9 });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
+    const floorGeo = new PlaneGeometry(50, 50);
+    const floorMat = new MeshStandardMaterial({ color: 0x3a3530, roughness: 0.9 });
+    const floor = new Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
     // ── Some walls to test collision ──
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a2420 });
+    const wallMat = new MeshStandardMaterial({ color: 0x2a2420 });
     for (let i = -2; i <= 2; i++) {
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(1, 4, 10), wallMat);
+      const wall = new Mesh(new BoxGeometry(1, 4, 10), wallMat);
       wall.position.set(i * 8, 2, -8);
       scene.add(wall);
     }
@@ -81,7 +86,7 @@
           runAnim: "",
           jumpAnim: "",
         },
-        initPos: new THREE.Vector3(0, 0, 5),
+        initPos: new Vector3(0, 0, 5),
       });
 
       // Switch to third-person (library defaults to first-person)

@@ -24,7 +24,7 @@
   import type CameraControls from "camera-controls";
   import OrbitControls from "./OrbitControls.svelte";
   import { EffectComposer } from "threlte-postprocessing";
-  import * as THREE from "three";
+  import { Object3D, PerspectiveCamera, Vector3 } from "three";
   import Grid3D from "./Grid3D.svelte";
   import PerfMonitor from "./PerfMonitor.svelte";
   import Stage3D from "./Stage3D.svelte";
@@ -175,7 +175,7 @@
   }: Props = $props();
 
   // Handle mesh click from raycaster
-  function handleMeshClick(mesh: THREE.Object3D, point: THREE.Vector3) {
+  function handleMeshClick(mesh: Object3D, point: Vector3) {
     const meshName = mesh.name || "";
     if (onMeshClick) {
       onMeshClick(meshName, { x: point.x, y: point.y, z: point.z });
@@ -233,14 +233,14 @@
 
   // Reference to orbit controls for getting camera state.
   let controlsRef = $state<CameraControls | null>(null);
-  const _camStatePos = new THREE.Vector3();
-  const _camStateTgt = new THREE.Vector3();
+  const _camStatePos = new Vector3();
+  const _camStateTgt = new Vector3();
 
   // Reference to camera for first-person mode
-  let cameraRef = $state<THREE.PerspectiveCamera | undefined>(undefined);
+  let cameraRef = $state<PerspectiveCamera | undefined>(undefined);
 
   // Reference to orbit camera for layer configuration
-  let orbitCameraRef = $state<THREE.PerspectiveCamera | undefined>(undefined);
+  let orbitCameraRef = $state<PerspectiveCamera | undefined>(undefined);
 
   // Determine if we're in first-person mode
   const isFirstPerson = $derived(cameraMode === CameraMode.FIRST_PERSON);

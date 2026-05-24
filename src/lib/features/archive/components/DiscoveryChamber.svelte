@@ -12,7 +12,7 @@
 	 *   - Interaction detection (E key near exhibit)
 	 */
 	import { T, useThrelte } from "@threlte/core";
-	import * as THREE from "three";
+	import { Color } from "three";
 	import type { SolvedRoom } from "$lib/shared/3d/indoor/domain/room-types";
 	import TorchLight from "./TorchLight.svelte";
 	import TabletExhibit from "./TabletExhibit.svelte";
@@ -33,7 +33,7 @@
 		const threeScene = scene.current;
 		if (!threeScene) return;
 		const previousBackground = threeScene.background;
-		threeScene.background = new THREE.Color(0x050403);
+		threeScene.background = new Color(0x050403);
 		return () => {
 			threeScene.background = previousBackground;
 		};

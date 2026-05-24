@@ -18,19 +18,25 @@
    * did `controlsRef.target.copy(v)` now call
    * `controlsRef.setTarget(v.x, v.y, v.z, true)`; instead of
    * `controlsRef.target.x` they do
-   * `const t = new THREE.Vector3(); controlsRef.getTarget(t)`. See
+   * `const t = new Vector3(); controlsRef.getTarget(t)`. See
    * the camera-controls README for the full surface.
    */
 
   import { onMount, onDestroy } from "svelte";
   import { useThrelte, useTask } from "@threlte/core";
-  import * as THREE from "three";
+  import {
+    Vector2, Vector3, Vector4, Quaternion, Matrix4,
+    Spherical, Box3, Sphere, Raycaster, MathUtils,
+  } from "three";
+  import type { PerspectiveCamera, WebGLRenderer } from "three";
   import CameraControls from "camera-controls";
 
   // Safe to call more than once - dedupes internally. Ensures the
   // library has the three.js subset it needs regardless of which
   // consumer mounts first.
-  CameraControls.install({ THREE });
+  CameraControls.install({
+    THREE: { Vector2, Vector3, Vector4, Quaternion, Matrix4, Spherical, Box3, Sphere, Raycaster, MathUtils },
+  });
 
   type Vec3Tuple = [number, number, number];
 
@@ -74,7 +80,7 @@
      * the controls' internal target.
      */
     paused?: boolean;
-    target?: Vec3Tuple | THREE.Vector3;
+    target?: Vec3Tuple | Vector3;
     /** Fires on every internal update tick (i.e. while animating). */
     onchange?: (controls: CameraControls) => void;
     oncontrolstart?: (controls: CameraControls) => void;
@@ -121,11 +127,11 @@
     // back to the raw reference for older shapes so this keeps
     // working if threlte revs again.
     const gl =
-      (renderer as { current?: THREE.WebGLRenderer })?.current ??
-      (renderer as unknown as THREE.WebGLRenderer);
+      (renderer as { current?: WebGLRenderer })?.current ??
+      (renderer as unknown as WebGLRenderer);
     const cam =
-      (camera as { current?: THREE.PerspectiveCamera })?.current ??
-      (camera as unknown as THREE.PerspectiveCamera);
+      (camera as { current?: PerspectiveCamera })?.current ??
+      (camera as unknown as PerspectiveCamera);
     if (!gl?.domElement || !cam) {
       console.warn("[OrbitControls] renderer or camera unavailable at mount");
       return;

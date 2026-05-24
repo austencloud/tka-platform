@@ -15,22 +15,12 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
   import WhatsNewChecker from "../../settings/components/WhatsNewChecker.svelte";
   import ErrorModal from "../../error/components/ErrorModal.svelte";
   import ErrorToast from "../../error/components/ErrorToast.svelte";
-  import InboxDrawer from "../../inbox/components/InboxDrawer.svelte";
   import InboxSubscriptionProvider from "../../inbox/components/InboxSubscriptionProvider.svelte";
   import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
-  import FirstRunWizard from "../../onboarding/components/first-run/FirstRunWizard.svelte";
-  import CreateTutorialWizard from "../../onboarding/components/create-tutorial/CreateTutorialWizard.svelte";
-  import TutorialPrompt from "../../onboarding/components/create-tutorial/TutorialPrompt.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
-  import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
   import { getAttributionPromptState } from "../../attribution/state/attribution-prompt-state.svelte";
-  import SequenceViewerDrawerHost from "../../sequence-viewer/components/SequenceViewerDrawerHost.svelte";
   import SendSequenceSheetHost from "../../inbox/components/SendSequenceSheetHost.svelte";
-  import HeyTikaListener from "../../voice-control/components/HeyTikaListener.svelte";
-  import VoiceControlIndicator from "../../voice-control/components/VoiceControlIndicator.svelte";
-  import VoiceCommandHelpOverlay from "../../voice-control/components/VoiceCommandHelpOverlay.svelte";
-  import PropSelectionSheet from "../../settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
   import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 
@@ -46,7 +36,6 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
 import type { SheetType } from "../../navigation/services/contracts/types";
   import { authState } from "../../auth/state/authState.svelte";
   import LandingPage from "../../auth/components/LandingPage.svelte";
-  import AuthDrawer from "../../auth/components/AuthDrawer.svelte";
   import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -68,7 +57,6 @@ import type { SheetType } from "../../navigation/services/contracts/types";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import BackgroundHost from "../../background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import PwaMigrationBanner from "../../pwa/components/PwaMigrationBanner.svelte";
   import {
     getShowDebugPanel,
     toggleDebugPanel,
@@ -479,7 +467,9 @@ import type { SheetType } from "../../navigation/services/contracts/types";
     <MainInterface />
 
     <!-- PWA migration banner for users who installed from tkascribe.com -->
-    <PwaMigrationBanner />
+    {#await import("../../pwa/components/PwaMigrationBanner.svelte") then mod}
+      <mod.default />
+    {/await}
 
     <!-- FirstRunWizard as overlay (only for newly authenticated users) -->
     <!-- Returning users (isDone() === true) have valid local preferences
@@ -496,50 +486,58 @@ import type { SheetType } from "../../navigation/services/contracts/types";
       </div>
     {:else if isAuthenticated && (!firstRunState.isDone() || firstRunState.shouldShow)}
       <div class="fullscreen-overlay">
-        {#if appEntryState.phase === "wizard-exiting"}
-          <div class="wizard-exit-wrapper">
-            <FirstRunWizard
-              onComplete={() => firstRunState.markCompleted()}
-              onSkip={() => firstRunState.markSkipped()}
+        {#await import("../../onboarding/components/first-run/FirstRunWizard.svelte") then mod}
+          {#if appEntryState.phase === "wizard-exiting"}
+            <div class="wizard-exit-wrapper">
+              <mod.default
+                onComplete={() => firstRunState.markCompleted()}
+                onSkip={() => firstRunState.markSkipped()}
+              />
+            </div>
+          {:else}
+            <mod.default
+              onComplete={() => {
+                firstRunState.markCompleted();
+                appEntryState.startEntrySequence(true);
+              }}
+              onSkip={() => {
+                firstRunState.markSkipped();
+                appEntryState.startEntrySequence(true);
+              }}
             />
-          </div>
-        {:else}
-          <FirstRunWizard
-            onComplete={() => {
-              firstRunState.markCompleted();
-              appEntryState.startEntrySequence(true);
-            }}
-            onSkip={() => {
-              firstRunState.markSkipped();
-              appEntryState.startEntrySequence(true);
-            }}
-          />
-        {/if}
+          {/if}
+        {/await}
       </div>
     {:else if isAuthenticated && appEntryState.isCreateTutorial()}
       <div class="fullscreen-overlay">
-        <CreateTutorialWizard
-          onComplete={() => appEntryState.completeEntry()}
-          onSkip={() => appEntryState.skipToComplete()}
-        />
+        {#await import("../../onboarding/components/create-tutorial/CreateTutorialWizard.svelte") then mod}
+          <mod.default
+            onComplete={() => appEntryState.completeEntry()}
+            onSkip={() => appEntryState.skipToComplete()}
+          />
+        {/await}
       </div>
     {/if}
 
     <!-- Tutorial prompt overlays the main app so the user sees the real layout behind it -->
     {#if isAuthenticated && appEntryState.isTutorialPrompt()}
-      <TutorialPrompt
-        onAccept={() => appEntryState.acceptTutorial()}
-        onSkip={() => appEntryState.declineTutorial()}
-      />
+      {#await import("../../onboarding/components/create-tutorial/TutorialPrompt.svelte") then mod}
+        <mod.default
+          onAccept={() => appEntryState.acceptTutorial()}
+          onSkip={() => appEntryState.declineTutorial()}
+        />
+      {/await}
     {/if}
 
     <!-- AuthDrawer for guest sign-up flow -->
     {#if !isAuthenticated}
-      <AuthDrawer
-        open={authDrawerState.open}
-        initialMode={authDrawerState.initialMode}
-        onClose={() => authDrawerState.hide()}
-      />
+      {#await import("../../auth/components/AuthDrawer.svelte") then mod}
+        <mod.default
+          open={authDrawerState.open}
+          initialMode={authDrawerState.initialMode}
+          onClose={() => authDrawerState.hide()}
+        />
+      {/await}
     {/if}
 
     <!-- Auth sheet (route-based) -->
@@ -563,7 +561,9 @@ import type { SheetType } from "../../navigation/services/contracts/types";
     <InboxSubscriptionProvider />
 
     <!-- Inbox Drawer (messages + notifications) -->
-    <InboxDrawer />
+    {#await import("../../inbox/components/InboxDrawer.svelte") then mod}
+      <mod.default />
+    {/await}
 
     <!-- Quick Feedback Panel (desktop hotkey: f) -->
     {#await import("$lib/features/feedback/components/quick/QuickFeedbackPanel.svelte") then mod}
@@ -595,28 +595,40 @@ import type { SheetType } from "../../navigation/services/contracts/types";
     <ErrorToast />
 
     <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
-    <AttributionPrompt />
+    {#await import("../../attribution/components/AttributionPrompt.svelte") then mod}
+      <mod.default />
+    {/await}
 
     <!-- Global Prop Selection Drawer (P key shortcut) -->
-    <PropSelectionSheet
-      bind:isOpen={propDrawerState.isOpen}
-      selectedPropType={propDrawerSelectedPropType}
-      color={catDogMode ? propDrawerActiveTab : "blue"}
-      title={catDogMode ? (propDrawerActiveTab === "blue" ? "Blue Prop" : "Red Prop") : "Change Prop"}
-      onSelect={handleGlobalPropSelect}
-      showCatDogToggle={true}
-      catDogEnabled={catDogMode}
-      onCatDogToggle={handleCatDogToggle}
-      showTabs={catDogMode}
-      bind:activeTab={propDrawerActiveTab}
-      autoClose={!catDogMode}
-    />
+    {#if propDrawerState.isOpen}
+      {#await import("../../settings/components/tabs/prop-type/PropSelectionSheet.svelte") then mod}
+        <mod.default
+          bind:isOpen={propDrawerState.isOpen}
+          selectedPropType={propDrawerSelectedPropType}
+          color={catDogMode ? propDrawerActiveTab : "blue"}
+          title={catDogMode ? (propDrawerActiveTab === "blue" ? "Blue Prop" : "Red Prop") : "Change Prop"}
+          onSelect={handleGlobalPropSelect}
+          showCatDogToggle={true}
+          catDogEnabled={catDogMode}
+          onCatDogToggle={handleCatDogToggle}
+          showTabs={catDogMode}
+          bind:activeTab={propDrawerActiveTab}
+          autoClose={!catDogMode}
+        />
+      {/await}
+    {/if}
 
     <!-- Voice Control: opt-in via Settings > Preferences -->
     {#if voiceControlEnabled}
-      <HeyTikaListener />
-      <VoiceControlIndicator />
-      <VoiceCommandHelpOverlay />
+      {#await import("../../voice-control/components/HeyTikaListener.svelte") then mod}
+        <mod.default />
+      {/await}
+      {#await import("../../voice-control/components/VoiceControlIndicator.svelte") then mod}
+        <mod.default />
+      {/await}
+      {#await import("../../voice-control/components/VoiceCommandHelpOverlay.svelte") then mod}
+        <mod.default />
+      {/await}
     {/if}
   {/if}
 
@@ -624,7 +636,9 @@ import type { SheetType } from "../../navigation/services/contracts/types";
   <SendSequenceSheetHost />
 
   <!-- Sequence Viewer Drawer (mobile overlay) - outside auth gate so external links work -->
-  <SequenceViewerDrawerHost />
+  {#await import("../../sequence-viewer/components/SequenceViewerDrawerHost.svelte") then mod}
+    <mod.default />
+  {/await}
 </div>
 
 <style>

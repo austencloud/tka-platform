@@ -7,7 +7,7 @@
  * frame the same way.
  */
 
-import * as THREE from "three";
+import { Vector3 } from "three";
 import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
 
 export type Plane3 = "wall" | "wheel" | "floor";
@@ -27,7 +27,7 @@ const HALF_FOV_RAD = (50 / 2) * Math.PI / 180;
 const MIN_DIST = 1.05;
 
 export interface PerformerGroupBounds {
-  center: THREE.Vector3;
+  center: Vector3;
   radius: number;
 }
 
@@ -40,12 +40,12 @@ export function computeGroupBounds(
   performers: AvatarInstanceState[],
 ): PerformerGroupBounds {
   if (performers.length === 0) {
-    return { center: new THREE.Vector3(0, TARGET_Y, 0), radius: 1.2 };
+    return { center: new Vector3(0, TARGET_Y, 0), radius: 1.2 };
   }
 
   // Center = mean XZ position (Y fixed at shoulder height).
-  const sum = new THREE.Vector3();
-  for (const p of performers) sum.add(new THREE.Vector3(p.position.x, 0, p.position.z));
+  const sum = new Vector3();
+  for (const p of performers) sum.add(new Vector3(p.position.x, 0, p.position.z));
   const center = sum.divideScalar(performers.length);
   center.y = TARGET_Y;
 
@@ -71,9 +71,9 @@ function distanceForSphere(radius: number): number {
 
 export interface Shot {
   /** Camera position in world space. */
-  eye: THREE.Vector3;
+  eye: Vector3;
   /** Camera lookAt target in world space. */
-  target: THREE.Vector3;
+  target: Vector3;
 }
 
 /**
@@ -122,7 +122,7 @@ export function computeAutoOrbitShot(
 
   // Polar = 65° measured from +Y (25° above horizon).
   const polar = (65 * Math.PI) / 180;
-  const eye = new THREE.Vector3(
+  const eye = new Vector3(
     center.x + dist * Math.sin(polar) * Math.sin(initialAzimuth),
     center.y + dist * Math.cos(polar),
     center.z + dist * Math.sin(polar) * Math.cos(initialAzimuth),
@@ -171,12 +171,12 @@ export function computeChoreographerShot(
   const behindDist = dist * Math.cos(CHOREO_POLAR_RAD);
   const height = dist * Math.sin(CHOREO_POLAR_RAD);
 
-  const eye = new THREE.Vector3(
+  const eye = new Vector3(
     center.x,
     stageGroundOffset + height,
     center.z - behindDist,
   );
-  const target = new THREE.Vector3(
+  const target = new Vector3(
     center.x,
     stageGroundOffset + CHOREO_TARGET_HEIGHT,
     center.z,
@@ -202,12 +202,12 @@ export function computeRevealStartShot(
   const behindDist = dist * Math.cos(CHOREO_POLAR_RAD);
   const height = dist * Math.sin(CHOREO_POLAR_RAD);
 
-  const eye = new THREE.Vector3(
+  const eye = new Vector3(
     center.x,
     stageGroundOffset + height,
     center.z - behindDist,
   );
-  const target = new THREE.Vector3(
+  const target = new Vector3(
     center.x,
     stageGroundOffset + REVEAL_TARGET_HEIGHT,
     center.z,
@@ -227,12 +227,12 @@ export function computeBehindPerformerShot(
   const px = performer.position.x;
   const pz = performer.position.z;
 
-  const eye = new THREE.Vector3(
+  const eye = new Vector3(
     px - Math.sin(fa) * PERFORMER_BEHIND_DIST,
     stageGroundOffset + PERFORMER_EYE_HEIGHT,
     pz - Math.cos(fa) * PERFORMER_BEHIND_DIST,
   );
-  const target = new THREE.Vector3(
+  const target = new Vector3(
     px + Math.sin(fa) * PERFORMER_LOOK_AHEAD,
     stageGroundOffset + PERFORMER_LOOK_HEIGHT,
     pz + Math.cos(fa) * PERFORMER_LOOK_AHEAD,

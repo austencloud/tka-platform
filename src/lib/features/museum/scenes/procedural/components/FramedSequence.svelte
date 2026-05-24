@@ -1,15 +1,17 @@
 <script module lang="ts">
-  import * as THREE from "three";
+  import { TextureLoader } from "three";
 
   // One TextureLoader shared across all FramedSequence instances.
   // Creating a loader per-instance (or per prop change inside a $effect)
   // was wasteful - the loader itself is stateless and safe to share.
-  const sharedLoader = new THREE.TextureLoader();
+  const sharedLoader = new TextureLoader();
   sharedLoader.setCrossOrigin("anonymous");
 </script>
 
 <script lang="ts">
   import { T } from "@threlte/core";
+  import { Color, LinearFilter, SRGBColorSpace } from "three";
+  import type { Texture } from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
 
   interface Props {
@@ -25,20 +27,20 @@
   const FRAME_BORDER = 0.08;
   const FRAME_DEPTH = 0.05;
 
-  const goldColor = new THREE.Color(0xc9a227);
-  const goldBright = new THREE.Color(0xe8d589);
-  const darkBg = new THREE.Color(0x1a1a2e);
+  const goldColor = new Color(0xc9a227);
+  const goldBright = new Color(0xe8d589);
+  const darkBg = new Color(0x1a1a2e);
 
   // Load thumbnail texture
-  let texture = $state<THREE.Texture | null>(null);
+  let texture = $state<Texture | null>(null);
   let loadError = $state(false);
 
   $effect(() => {
     sharedLoader.load(
       thumbnailUrl,
       (tex) => {
-        tex.minFilter = THREE.LinearFilter;
-        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.minFilter = LinearFilter;
+        tex.colorSpace = SRGBColorSpace;
         texture = tex;
       },
       undefined,

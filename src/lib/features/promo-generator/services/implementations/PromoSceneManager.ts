@@ -5,7 +5,13 @@
  * Handles device model loading, environment setup, and scene lifecycle.
  */
 
-import * as THREE from "three";
+import {
+  Scene, PerspectiveCamera, WebGLRenderer, Group, Mesh,
+  SRGBColorSpace, ACESFilmicToneMapping,
+  AmbientLight, DirectionalLight, MeshStandardMaterial,
+  Color, CanvasTexture, EquirectangularReflectionMapping,
+  Box3, Vector3, Object3D, Material,
+} from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -90,11 +96,11 @@ const ENVIRONMENT_PRESETS: Record<EnvironmentType, EnvironmentConfig> = {
 };
 
 export class PromoSceneManager {
-  private scene: THREE.Scene | null = null;
-  private camera: THREE.PerspectiveCamera | null = null;
-  private renderer: THREE.WebGLRenderer | null = null;
-  private device: THREE.Group | null = null;
-  private screenMesh: THREE.Mesh | null = null;
+  private scene: Scene | null = null;
+  private camera: PerspectiveCamera | null = null;
+  private renderer: WebGLRenderer | null = null;
+  private device: Group | null = null;
+  private screenMesh: Mesh | null = null;
   private gltfLoader: GLTFLoader;
   private hdrLoader: HDRLoader;
   private currentDeviceType: DeviceType | null = null;
@@ -114,15 +120,15 @@ export class PromoSceneManager {
     height: number
   ): Promise<void> {
     // Create scene
-    this.scene = new THREE.Scene();
+    this.scene = new Scene();
 
     // Create camera
-    this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+    this.camera = new PerspectiveCamera(50, width / height, 0.1, 1000);
     this.camera.position.set(0, 0, 5);
     this.camera.lookAt(0, 0, 0);
 
     // Create renderer
-    this.renderer = new THREE.WebGLRenderer({
+    this.renderer = new WebGLRenderer({
       canvas,
       antialias: true,
       alpha: true,
@@ -130,8 +136,8 @@ export class PromoSceneManager {
     });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.outputColorSpace = SRGBColorSpace;
+    this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
 
     // Set up default lighting
@@ -152,22 +158,22 @@ export class PromoSceneManager {
     if (!this.scene) return;
 
     // Ambient light for overall illumination
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new AmbientLight(0xffffff, 0.5);
     this.scene.add(ambientLight);
 
     // Key light (main light source)
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    const keyLight = new DirectionalLight(0xffffff, 1.0);
     keyLight.position.set(5, 5, 5);
     keyLight.castShadow = true;
     this.scene.add(keyLight);
 
     // Fill light (softer, from opposite side)
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    const fillLight = new DirectionalLight(0xffffff, 0.4);
     fillLight.position.set(-5, 3, 5);
     this.scene.add(fillLight);
 
     // Rim light (creates edge highlights)
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    const rimLight = new DirectionalLight(0xffffff, 0.3);
     rimLight.position.set(0, 5, -5);
     this.scene.add(rimLight);
   }
@@ -204,7 +210,7 @@ export class PromoSceneManager {
 
       // Find the screen mesh
       this.device.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
+        if (child instanceof Mesh) {
           // Try to find screen by name or by naming convention
           const name = child.name.toLowerCase();
           if (
@@ -226,9 +232,9 @@ export class PromoSceneManager {
       }
 
       // Get original bounding box
-      const bbox = new THREE.Box3().setFromObject(this.device);
-      const center = bbox.getCenter(new THREE.Vector3());
-      const size = bbox.getSize(new THREE.Vector3());
+      const bbox = new Box3().setFromObject(this.device);
+      const center = bbox.getCenter(new Vector3());
+      const size = bbox.getSize(new Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
 
       // Calculate scale to normalize model to roughly 2 units
@@ -236,7 +242,7 @@ export class PromoSceneManager {
       const scale = targetSize / maxDim;
 
       // Create a pivot group to properly center the model
-      const pivot = new THREE.Group();
+      const pivot = new Group();
       pivot.add(this.device);
 
       // Move device within pivot to center it
@@ -249,8 +255,8 @@ export class PromoSceneManager {
       this.device = pivot;
 
       // Auto-orient the model: many phone models are lying flat
-      const newBbox = new THREE.Box3().setFromObject(this.device);
-      const newSize = newBbox.getSize(new THREE.Vector3());
+      const newBbox = new Box3().setFromObject(this.device);
+      const newSize = newBbox.getSize(new Vector3());
       // If the model is wider than tall in the current orientation, rotate it
       if (newSize.y < newSize.z) {
         // Phone is lying down (Z is taller than Y), rotate to stand up
@@ -262,8 +268,8 @@ export class PromoSceneManager {
 
       // Update camera position based on model size
       if (this.camera) {
-        const finalBbox = new THREE.Box3().setFromObject(this.device);
-        const finalSize = finalBbox.getSize(new THREE.Vector3());
+        const finalBbox = new Box3().setFromObject(this.device);
+        const finalSize = finalBbox.getSize(new Vector3());
         // Camera distance: phone should fill a good portion of frame
         // Model is ~2 units, camera at 5 gives nice framing with preset scaling
         this._cameraDistance = Math.max(finalSize.x, finalSize.y, finalSize.z) * 2.5;
@@ -308,18 +314,18 @@ export class PromoSceneManager {
         gradient.addColorStop(1, config.gradientColors[1]);
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 2, 256);
-        const texture = new THREE.CanvasTexture(canvas);
+        const texture = new CanvasTexture(canvas);
         this.scene.background = texture;
       }
     } else if (config.backgroundColor) {
-      this.scene.background = new THREE.Color(config.backgroundColor);
+      this.scene.background = new Color(config.backgroundColor);
     }
 
     // Load HDR environment map if provided
     if (config.hdrPath) {
       this.hdrLoader.load(config.hdrPath, (texture) => {
         if (this.scene) {
-          texture.mapping = THREE.EquirectangularReflectionMapping;
+          texture.mapping = EquirectangularReflectionMapping;
           this.scene.environment = texture;
         }
       });
@@ -341,19 +347,19 @@ export class PromoSceneManager {
     };
   }
 
-  getDevice(): THREE.Group | null {
+  getDevice(): Group | null {
     return this.device;
   }
 
-  getScreenMesh(): THREE.Mesh | null {
+  getScreenMesh(): Mesh | null {
     return this.screenMesh;
   }
 
-  getCamera(): THREE.PerspectiveCamera | null {
+  getCamera(): PerspectiveCamera | null {
     return this.camera;
   }
 
-  getRenderer(): THREE.WebGLRenderer | null {
+  getRenderer(): WebGLRenderer | null {
     return this.renderer;
   }
 
@@ -422,14 +428,14 @@ export class PromoSceneManager {
   /**
    * Find the largest flat mesh in a group (heuristic for screen detection)
    */
-  private findLargestFlatMesh(group: THREE.Group): THREE.Mesh | null {
+  private findLargestFlatMesh(group: Group): Mesh | null {
     let largestArea = 0;
-    let result: THREE.Mesh | null = null;
+    let result: Mesh | null = null;
 
     group.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.geometry) {
-        const bbox = new THREE.Box3().setFromObject(child);
-        const size = new THREE.Vector3();
+      if (child instanceof Mesh && child.geometry) {
+        const bbox = new Box3().setFromObject(child);
+        const size = new Vector3();
         bbox.getSize(size);
         const area = size.x * size.y;
         // Look for flat surfaces (thin in Z relative to X and Y)
@@ -443,8 +449,8 @@ export class PromoSceneManager {
     return result;
   }
 
-  private disposeObject(object: THREE.Object3D): void {
-    if (object instanceof THREE.Mesh) {
+  private disposeObject(object: Object3D): void {
+    if (object instanceof Mesh) {
       if (object.geometry) {
         object.geometry.dispose();
       }
@@ -458,10 +464,10 @@ export class PromoSceneManager {
     }
   }
 
-  private disposeMaterial(material: THREE.Material): void {
+  private disposeMaterial(material: Material): void {
     material.dispose();
     // Dispose textures
-    const mat = material as THREE.MeshStandardMaterial;
+    const mat = material as MeshStandardMaterial;
     if (mat.map) mat.map.dispose();
     if (mat.normalMap) mat.normalMap.dispose();
     if (mat.roughnessMap) mat.roughnessMap.dispose();

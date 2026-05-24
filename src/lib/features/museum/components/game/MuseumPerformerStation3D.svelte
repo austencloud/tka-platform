@@ -11,7 +11,7 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { untrack } from "svelte";
   import { T } from "@threlte/core";
-  import * as THREE from "three";
+  import { Color } from "three";
   import { PerformerRig } from "@austencloud/scene-3d";
   import { Plane } from "@austencloud/scene-3d";
   import { PlaneMode } from "@austencloud/scene-3d";
@@ -135,7 +135,7 @@
     } catch { return PropType.STAFF; }
   });
 
-  const platformColor = new THREE.Color(0x3a3028);
+  const platformColor = new Color(0x3a3028);
 </script>
 
 <!-- Station root group - positioned at world coords, children use local coords -->

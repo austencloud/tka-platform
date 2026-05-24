@@ -1,6 +1,6 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import * as THREE from "three";
+  import { Color } from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
 
   interface Props {
@@ -10,8 +10,8 @@
 
   let { slot, isNearby }: Props = $props();
 
-  const inactiveColor = new THREE.Color(0x444444);
-  const activeColor = new THREE.Color(0xa78bfa);
+  const inactiveColor = new Color(0x444444);
+  const activeColor = new Color(0xa78bfa);
 </script>
 
 <T.Group

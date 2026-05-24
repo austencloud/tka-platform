@@ -5,21 +5,24 @@
  * Supports dynamic texture updates for multi-screen animations.
  */
 
-import * as THREE from "three";
+import {
+  Mesh, Texture, TextureLoader, SRGBColorSpace,
+  MeshBasicMaterial, FrontSide,
+} from "three";
 import type { ScreenshotContent } from "../../domain/promo-models";
 
 export class ScreenshotInjector {
-  private screenMesh: THREE.Mesh | null = null;
-  private currentTexture: THREE.Texture | null = null;
-  private textureCache: Map<string, THREE.Texture> = new Map();
+  private screenMesh: Mesh | null = null;
+  private currentTexture: Texture | null = null;
+  private textureCache: Map<string, Texture> = new Map();
   private screenshotTimeline: ScreenshotContent[] = [];
-  private textureLoader: THREE.TextureLoader;
+  private textureLoader: TextureLoader;
 
   constructor() {
-    this.textureLoader = new THREE.TextureLoader();
+    this.textureLoader = new TextureLoader();
   }
 
-  initialize(screenMesh: THREE.Mesh): void {
+  initialize(screenMesh: Mesh): void {
     this.screenMesh = screenMesh;
   }
 
@@ -30,9 +33,9 @@ export class ScreenshotInjector {
       );
     }
 
-    const texture = await this.loadTexture(source);
-    this.applyTexture(texture);
-    this.currentTexture = texture;
+    const tex = await this.loadTexture(source);
+    this.applyTexture(tex);
+    this.currentTexture = tex;
 
     // Set as the only screenshot in timeline
     this.screenshotTimeline = [{ source, startTime: 0, endTime: 1 }];
@@ -86,33 +89,33 @@ export class ScreenshotInjector {
     }
   }
 
-  applyTexture(texture: THREE.Texture): void {
+  applyTexture(texture: Texture): void {
     if (!this.screenMesh) {
       console.warn("[ScreenshotInjector] No screen mesh to apply texture to");
       return;
     }
 
     // Configure texture
-    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.colorSpace = SRGBColorSpace;
     texture.flipY = true; // Most screen images need Y flip
     texture.needsUpdate = true;
 
     // Create or update material
-    const material = this.screenMesh.material as THREE.MeshBasicMaterial;
-    if (material instanceof THREE.MeshBasicMaterial) {
+    const material = this.screenMesh.material as MeshBasicMaterial;
+    if (material instanceof MeshBasicMaterial) {
       material.map = texture;
       material.needsUpdate = true;
     } else {
       // Replace with basic material for screen display
-      const newMaterial = new THREE.MeshBasicMaterial({
+      const newMaterial = new MeshBasicMaterial({
         map: texture,
-        side: THREE.FrontSide,
+        side: FrontSide,
       });
       this.screenMesh.material = newMaterial;
     }
   }
 
-  getCurrentTexture(): THREE.Texture | null {
+  getCurrentTexture(): Texture | null {
     return this.currentTexture;
   }
 
@@ -133,7 +136,7 @@ export class ScreenshotInjector {
     this.screenshotTimeline = [];
   }
 
-  private async loadTexture(source: string): Promise<THREE.Texture> {
+  private async loadTexture(source: string): Promise<Texture> {
     // Check cache first
     if (this.textureCache.has(source)) {
       return this.textureCache.get(source)!;
@@ -145,7 +148,7 @@ export class ScreenshotInjector {
         const image = new Image();
         image.crossOrigin = "anonymous";
         image.onload = () => {
-          const texture = new THREE.Texture(image);
+          const texture = new Texture(image);
           texture.needsUpdate = true;
           this.textureCache.set(source, texture);
           resolve(texture);
@@ -172,7 +175,7 @@ export class ScreenshotInjector {
     });
   }
 
-  private isTextureInCache(texture: THREE.Texture): boolean {
+  private isTextureInCache(texture: Texture): boolean {
     for (const cached of this.textureCache.values()) {
       if (cached === texture) return true;
     }

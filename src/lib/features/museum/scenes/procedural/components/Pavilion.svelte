@@ -1,6 +1,6 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import * as THREE from "three";
+  import { Color } from "three";
   import type { PavilionLayout } from "../domain/museum-types";
 
   interface Props {
@@ -10,8 +10,8 @@
 
   let { pavilion, groundY }: Props = $props();
 
-  const wallColor = new THREE.Color(0xd4c5a9); // warm sandstone
-  const floorColor = new THREE.Color(0x8b7d6b); // flagstone
+  const wallColor = new Color(0xd4c5a9); // warm sandstone
+  const floorColor = new Color(0x8b7d6b); // flagstone
 </script>
 
 <!-- Floor plane under the pavilion -->

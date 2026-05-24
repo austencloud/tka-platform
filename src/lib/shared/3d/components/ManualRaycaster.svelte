@@ -7,12 +7,13 @@
    * Also supports drag-to-move by raycasting against a ground plane.
    */
   import { useThrelte } from "@threlte/core";
-  import * as THREE from "three";
+  import { Raycaster, Vector2, Vector3, Plane, Object3D, Mesh } from "three";
+  import type { Intersection } from "three";
   import { onMount, onDestroy } from "svelte";
 
   interface Props {
     /** Callback when a mesh is clicked, with the mesh and intersection point */
-    onMeshClick?: (mesh: THREE.Object3D, point: THREE.Vector3) => void;
+    onMeshClick?: (mesh: Object3D, point: Vector3) => void;
     /** Callback when pointer is released */
     onPointerUp?: () => void;
     /** Callback during drag with ground plane coordinates */
@@ -20,9 +21,9 @@
     /** Whether dragging is currently active (controls ground plane raycasting) */
     isDragging?: boolean;
     /** Callback when mouse enters a mesh */
-    onMeshEnter?: (mesh: THREE.Object3D) => void;
+    onMeshEnter?: (mesh: Object3D) => void;
     /** Callback when mouse leaves a mesh */
-    onMeshLeave?: (mesh: THREE.Object3D) => void;
+    onMeshLeave?: (mesh: Object3D) => void;
   }
 
   let {
@@ -36,17 +37,17 @@
 
   const { scene, camera, renderer } = useThrelte();
 
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
+  const raycaster = new Raycaster();
+  const pointer = new Vector2();
 
   // Ground plane for drag raycasting (y = 0, facing up)
-  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-  const intersectPoint = new THREE.Vector3();
+  const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
+  const intersectPoint = new Vector3();
 
-  let currentHovered: THREE.Object3D | null = null;
+  let currentHovered: Object3D | null = null;
   let canvasElement: HTMLCanvasElement | null = null;
 
-  function getCanvasCoords(event: PointerEvent): THREE.Vector2 {
+  function getCanvasCoords(event: PointerEvent): Vector2 {
     if (!canvasElement) return pointer;
 
     const rect = canvasElement.getBoundingClientRect();
@@ -56,7 +57,7 @@
     return pointer;
   }
 
-  function findIntersection(event: PointerEvent): THREE.Intersection | null {
+  function findIntersection(event: PointerEvent): Intersection | null {
     const cam = camera.current;
     if (!cam || !scene.current) return null;
 
@@ -68,7 +69,7 @@
 
     // Find first mesh intersection
     for (const intersection of intersects) {
-      if (intersection.object instanceof THREE.Mesh) {
+      if (intersection.object instanceof Mesh) {
         return intersection;
       }
     }
@@ -80,8 +81,8 @@
    * Walk up the parent hierarchy to find a group named PERFORMER_X
    * Returns the performer ID (e.g., "performer-0") or null if not found
    */
-  function findPerformerAncestor(object: THREE.Object3D): string | null {
-    let current: THREE.Object3D | null = object;
+  function findPerformerAncestor(object: Object3D): string | null {
+    let current: Object3D | null = object;
     while (current) {
       if (current.name?.startsWith("PERFORMER_")) {
         // Extract the ID part after PERFORMER_
@@ -97,7 +98,7 @@
     if (intersection && onMeshClick) {
       const performerId = findPerformerAncestor(intersection.object);
       if (performerId) {
-        const virtualMesh = new THREE.Object3D();
+        const virtualMesh = new Object3D();
         virtualMesh.name = `PERFORMER_${performerId}`;
         onMeshClick(virtualMesh, intersection.point);
       } else {

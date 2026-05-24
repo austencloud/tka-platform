@@ -10,7 +10,7 @@
 
   import { onMount, onDestroy } from "svelte";
   import { T, useTask } from "@threlte/core";
-  import * as THREE from "three";
+  import { PerspectiveCamera, Vector3 } from "three";
   import type CameraControls from "camera-controls";
   import OrbitControls from "./OrbitControls.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
@@ -166,7 +166,7 @@
   // Live reference to the three.js camera. Populated via bind:ref on
   // <T.PerspectiveCamera> below. camera-controls needs the real camera
   // instance, not a threlte wrapper, so we bind the ref directly.
-  let cameraRef = $state<THREE.PerspectiveCamera | undefined>(undefined);
+  let cameraRef = $state<PerspectiveCamera | undefined>(undefined);
 
   // The camera-controls instance, exposed by the child on mount. Used by
   // snapTo to imperatively move the camera with the library's built-in
@@ -175,8 +175,8 @@
 
   // Debounce persistence - only save after user stops orbiting for 500ms.
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
-  const _endPos = new THREE.Vector3();
-  const _endTgt = new THREE.Vector3();
+  const _endPos = new Vector3();
+  const _endTgt = new Vector3();
 
   function handleControlEnd(controls: CameraControls) {
     const camera = cameraRef;
