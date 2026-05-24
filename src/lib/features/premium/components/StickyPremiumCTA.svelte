@@ -59,7 +59,7 @@
     );
     border-top: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
-    z-index: 1000;
+    z-index: var(--z-toast);
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
   }
 

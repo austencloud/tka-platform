@@ -394,7 +394,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 	.session-viewer-overlay {
 		position: fixed;
 		inset: 0;
-		z-index: 1000;
+		z-index: var(--z-modal);
 		background: var(--theme-overlay-bg-dark, rgba(0, 0, 0, 0.9));
 		display: flex;
 		align-items: center;

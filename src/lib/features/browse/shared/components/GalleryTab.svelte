@@ -397,7 +397,7 @@
     font-size: 24px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
     cursor: pointer;
-    z-index: 1000;
+    z-index: var(--z-modal);
     transition: transform var(--duration-fast) ease, background var(--duration-fast) ease, opacity var(--duration-fast) ease;
   }
 

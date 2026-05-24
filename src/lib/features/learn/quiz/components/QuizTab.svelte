@@ -499,7 +499,7 @@ Provides quiz functionality for learning TKA notation:
     justify-content: center;
     align-items: center;
     gap: 1rem;
-    z-index: 1000;
+    z-index: var(--z-modal);
     color: var(--foreground, #ffffff);
   }
 

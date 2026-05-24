@@ -417,7 +417,7 @@ Timestamp: ${new Date().toISOString()}
 		justify-content: center;
 		font-size: 1.25rem;
 		transition: transform var(--duration-normal), background var(--duration-normal);
-		z-index: 1000;
+		z-index: var(--z-modal);
 	}
 
 	.tika-fab:hover {
@@ -444,7 +444,7 @@ Timestamp: ${new Date().toISOString()}
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 8px 32px color-mix(in srgb, var(--theme-panel-bg, #000) 40%, transparent);
-		z-index: 999;
+		z-index: calc(var(--z-modal) - 1);
 		overflow: hidden;
 	}
 

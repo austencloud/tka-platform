@@ -133,7 +133,7 @@
     position: fixed;
     bottom: 24px;
     left: 24px;
-    z-index: 2000;
+    z-index: var(--z-toast);
     pointer-events: none;
     transition: opacity 0.3s ease;
   }

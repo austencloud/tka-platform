@@ -443,7 +443,7 @@
   .crop-editor {
     position: fixed;
     inset: 0;
-    z-index: 2100;
+    z-index: var(--z-toast);
     background: #0d0d14;
     display: flex;
     flex-direction: column;

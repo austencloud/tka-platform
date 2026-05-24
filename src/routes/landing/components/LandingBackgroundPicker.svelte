@@ -46,7 +46,7 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    z-index: 1000;
+    z-index: var(--z-modal);
     width: var(--min-touch-target);
     height: var(--min-touch-target);
     border-radius: 50%;

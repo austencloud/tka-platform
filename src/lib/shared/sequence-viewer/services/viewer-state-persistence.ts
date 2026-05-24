@@ -1,4 +1,4 @@
-export type ContentType = 'animation' | 'animation-3d' | 'card' | 'videos';
+export type ContentType = 'animation' | 'animation-3d' | 'card' | 'videos' | 'mandala';
 export type ViewerMode = 'split' | ContentType;
 export type ExportContext = 'animation-export' | 'image-export' | null;
 
@@ -44,7 +44,7 @@ export function loadViewerMode(): ViewerMode {
 
 	try {
 		const raw = localStorage.getItem(VIEWER_MODE_KEY);
-		if (raw === 'animation' || raw === 'animation-3d' || raw === 'card' || raw === 'videos' || raw === 'split') {
+		if (raw === 'animation' || raw === 'animation-3d' || raw === 'card' || raw === 'videos' || raw === 'mandala' || raw === 'split') {
 			return raw;
 		}
 		return 'split';
@@ -87,5 +87,5 @@ export function persistSplitConfig(config: SplitConfig): void {
 }
 
 function isValidContentType(value: unknown): value is ContentType {
-	return value === 'animation' || value === 'animation-3d' || value === 'card' || value === 'videos';
+	return value === 'animation' || value === 'animation-3d' || value === 'card' || value === 'videos' || value === 'mandala';
 }

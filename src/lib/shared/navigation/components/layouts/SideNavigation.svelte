@@ -118,7 +118,7 @@
       );
     width: 72px;
     min-height: 100vh;
-    z-index: 100;
+    z-index: var(--z-sticky);
 
     transition:
       transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),

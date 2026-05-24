@@ -89,7 +89,7 @@
 
   .positioning-fixed {
     position: fixed;
-    z-index: 1000;
+    z-index: var(--z-modal);
   }
 
   .delete-confirm-dialog {

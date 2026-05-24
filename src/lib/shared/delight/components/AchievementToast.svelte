@@ -88,7 +88,7 @@
 		align-items: center;
 		padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
 		pointer-events: none;
-		z-index: 9998;
+		z-index: var(--z-toast);
 		gap: 8px;
 	}
 

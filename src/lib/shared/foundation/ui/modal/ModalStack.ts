@@ -11,13 +11,14 @@
  * Similar pattern to DrawerStack.
  */
 
+import { Z } from '$lib/shared/ui/z-index';
+
 type DismissCallback = () => void;
 
 const modalStack: string[] = [];
 const dismissCallbacks = new Map<string, DismissCallback>();
 
-// Base z-index for modals (higher than drawers which use 200)
-const BASE_Z_INDEX = 1000;
+const BASE_Z_INDEX = Z.MODAL;
 const Z_INDEX_INCREMENT = 10;
 
 /**

@@ -542,7 +542,7 @@ import type { HapticFeedback } from "../../application/services/implementations/
     backdrop-filter: blur(40px) saturate(180%);
     -webkit-backdrop-filter: blur(40px) saturate(180%);
     border-right: 1px solid var(--theme-stroke);
-    z-index: 150;
+    z-index: var(--z-sidebar);
     overflow: hidden;
     transition:
       width var(--duration-emphasis, 280ms)

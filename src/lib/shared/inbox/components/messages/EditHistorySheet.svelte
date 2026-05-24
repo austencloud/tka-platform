@@ -83,7 +83,7 @@
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    z-index: 1000;
+    z-index: var(--z-modal);
   }
 
   :global(.history-sheet) {
@@ -95,7 +95,7 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px 16px 0 0;
-    z-index: 1001;
+    z-index: calc(var(--z-modal) + 1);
     overflow: hidden;
     display: flex;
     flex-direction: column;

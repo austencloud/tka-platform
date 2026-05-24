@@ -70,7 +70,7 @@ import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
     bottom: 1rem;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 9000;
+    z-index: var(--z-priority);
     background: var(--theme-card-bg, rgba(30, 30, 45, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-lg, 12px);

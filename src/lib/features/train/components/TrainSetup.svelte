@@ -299,7 +299,7 @@
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    z-index: 1000;
+    z-index: var(--z-modal);
   }
 
   .loading-overlay p {

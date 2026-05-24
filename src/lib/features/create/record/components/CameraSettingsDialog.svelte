@@ -149,7 +149,7 @@ Settings dialog for camera configuration including mirror toggle and camera sour
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: var(--z-modal);
     padding: var(--spacing-lg, 24px);
   }
 

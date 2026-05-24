@@ -212,7 +212,7 @@
   .editor-overlay {
     position: fixed;
     inset: 0;
-    z-index: 2000;
+    z-index: var(--z-toast);
     background: #0a0a12;
     display: flex;
     flex-direction: column;

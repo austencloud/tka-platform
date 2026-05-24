@@ -296,7 +296,7 @@
   .snip-editor {
     position: fixed;
     inset: 0;
-    z-index: 2100;
+    z-index: var(--z-toast);
     background: rgba(0, 0, 0, 0.95);
     display: flex;
     flex-direction: column;

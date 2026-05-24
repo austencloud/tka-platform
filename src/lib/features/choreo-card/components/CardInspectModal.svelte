@@ -5,6 +5,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { Snippet } from "svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
@@ -22,6 +23,8 @@
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
     /** Pre-rendered front image URL from the grid card - shows this instead of re-rendering */
     frontImageUrl?: string | null;
+    /** Additional action buttons rendered in the bottom bar */
+    extraActions?: Snippet;
   }
 
   let {
@@ -34,6 +37,7 @@
     onClose,
     onContextMenu,
     frontImageUrl,
+    extraActions,
   }: Props = $props();
 
   let stackEl: HTMLDivElement | undefined = $state();
@@ -184,6 +188,9 @@
         >
           <i class="fas fa-qrcode"></i> QR {showQRCode ? "On" : "Off"}
         </button>
+        {#if extraActions}
+          {@render extraActions()}
+        {/if}
       </div>
       <div class="hints">
         <span><kbd>Esc</kbd> close</span>
@@ -201,7 +208,7 @@
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: var(--z-modal);
     background: var(--theme-overlay-bg, rgba(0, 0, 0, 0.88));
     display: flex;
     align-items: center;
@@ -265,7 +272,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.15s ease;
-    z-index: 1001;
+    z-index: calc(var(--z-modal) + 1);
   }
 
   .close-btn:hover {

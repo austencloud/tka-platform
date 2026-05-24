@@ -102,7 +102,7 @@
     top: 80px;
     left: 50%;
     transform: translateX(-50%) translateY(-120%);
-    z-index: 2000;
+    z-index: var(--z-toast);
     transition: transform var(--duration-dramatic) cubic-bezier(0.68, -0.55, 0.265, 1.55);
     pointer-events: none;
   }

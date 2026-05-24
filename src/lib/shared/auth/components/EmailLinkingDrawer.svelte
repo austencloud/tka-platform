@@ -175,7 +175,7 @@
     background: color-mix(in srgb, var(--theme-shadow) 70%, transparent);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    z-index: 1000;
+    z-index: var(--z-modal);
     animation: fadeIn var(--duration-normal) ease-out;
   }
 
@@ -212,7 +212,7 @@
           var(--theme-accent-strong, var(--theme-accent-strong)) 10%,
           transparent
         );
-    z-index: 1001;
+    z-index: calc(var(--z-modal) + 1);
     animation: modalSlideIn var(--duration-emphasis) ease-out;
   }
 

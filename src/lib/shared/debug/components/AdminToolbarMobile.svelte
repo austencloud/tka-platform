@@ -303,7 +303,7 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 9997;
+    z-index: var(--z-debug);
   }
 
   .mobile-sheet {
@@ -311,7 +311,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 9998;
+    z-index: calc(var(--z-debug) + 1);
     background: linear-gradient(
       180deg,
       rgba(20, 20, 30, 0.98) 0%,

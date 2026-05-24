@@ -264,7 +264,7 @@
 
     /* Exclude from view transitions */
     view-transition-name: none;
-    z-index: 100;
+    z-index: var(--z-sticky);
 
     /* iOS safe area - push content above home indicator on iPhones */
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -389,7 +389,7 @@
     left: 56px; /* Position after module switcher (48px + 8px gap) */
     top: 50%;
     transform: translateY(-50%);
-    z-index: 101; /* Above navigation but below modals */
+    z-index: calc(var(--z-sticky) + 1); /* Above navigation but below modals */
     pointer-events: none; /* Let clicks pass through to navigation */
   }
 
@@ -580,7 +580,7 @@
     );
     border: none;
     cursor: pointer;
-    z-index: 99;
+    z-index: calc(var(--z-sticky) - 1);
     transition: background var(--duration-normal) ease;
   }
 

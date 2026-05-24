@@ -276,7 +276,7 @@
 
 <style>
   :global(.invite-sheet) {
-    --sheet-z-index: 1200;
+    --sheet-z-index: var(--z-modal);
   }
 
   .invite-sheet__container {

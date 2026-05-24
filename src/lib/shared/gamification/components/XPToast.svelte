@@ -52,7 +52,7 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    z-index: 2100;
+    z-index: var(--z-toast);
     display: flex;
     flex-direction: column-reverse;
     gap: 6px;

@@ -73,7 +73,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 9000;
+    z-index: var(--z-priority);
     cursor: pointer;
   }
   .sheet {
@@ -86,7 +86,7 @@
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
     padding: 24px 20px 32px;
-    z-index: 9001;
+    z-index: calc(var(--z-priority) + 1);
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
     color: var(--theme-text, #fff);
   }

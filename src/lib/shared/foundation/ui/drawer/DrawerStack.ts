@@ -9,6 +9,7 @@
  */
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { Z } from '$lib/shared/ui/z-index';
 
 const debug = createComponentLogger("DrawerStack");
 
@@ -18,8 +19,7 @@ const drawerStack: string[] = [];
 // Map of drawer IDs to their dismiss callbacks
 const dismissCallbacks = new Map<string, () => void>();
 
-// Base z-index for drawers (must be higher than navigation sidebar z-index: 150)
-const BASE_Z_INDEX = 200;
+const BASE_Z_INDEX = Z.DRAWER;
 
 // Z-index increment per drawer level
 const Z_INDEX_INCREMENT = 10;

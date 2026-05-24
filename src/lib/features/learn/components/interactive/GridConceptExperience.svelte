@@ -222,7 +222,7 @@ import { onMount } from 'svelte';
 		border: none;
 		border-radius: 8px;
 		cursor: pointer;
-		z-index: 1000;
+		z-index: var(--z-modal);
 		transition: top var(--duration-normal) ease;
 	}
 

@@ -36,7 +36,7 @@ Shows at the bottom center of screen, auto-dismisses after 3 seconds
     bottom: 80px; /* Above the button panel */
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1000;
+    z-index: var(--z-toast);
     pointer-events: none;
   }
 

@@ -77,7 +77,7 @@
     position: absolute;
     top: 8px;
     left: 8px;
-    z-index: 1000;
+    z-index: var(--z-debug);
     background: rgba(0, 0, 0, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 6px;

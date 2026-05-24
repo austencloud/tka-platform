@@ -539,7 +539,7 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 9998;
+    z-index: var(--z-debug);
     background: linear-gradient(
       180deg,
       rgba(15, 23, 42, 0.98) 0%,

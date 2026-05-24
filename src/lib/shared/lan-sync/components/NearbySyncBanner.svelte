@@ -116,7 +116,7 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
+    z-index: var(--z-modal);
     background: linear-gradient(
       135deg,
       var(--theme-accent, #8b5cf6) 0%,

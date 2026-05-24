@@ -85,7 +85,7 @@ Shows:
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 850;
+    z-index: var(--z-tooltip);
 
     display: flex;
     align-items: center;

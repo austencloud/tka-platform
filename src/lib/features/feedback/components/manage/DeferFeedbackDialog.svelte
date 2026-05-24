@@ -145,7 +145,7 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
-    z-index: 1000;
+    z-index: var(--z-modal);
     animation: fadeIn var(--duration-normal) ease;
   }
 

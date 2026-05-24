@@ -122,7 +122,7 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
+    z-index: var(--z-modal);
     background: linear-gradient(
       135deg,
       var(--semantic-warning, var(--semantic-warning)) 0%,

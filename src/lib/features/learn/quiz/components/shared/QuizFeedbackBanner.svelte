@@ -67,7 +67,7 @@ Features:
     text-align: center;
     animation: bannerFadeIn var(--duration-emphasis) cubic-bezier(0.16, 1, 0.3, 1);
     white-space: nowrap;
-    z-index: 150;
+    z-index: var(--z-sidebar);
   }
 
   .feedback-banner.correct {

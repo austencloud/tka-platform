@@ -199,7 +199,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: var(--z-modal);
     padding: 20px;
   }
 
@@ -219,7 +219,7 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    z-index: 1001;
+    z-index: calc(var(--z-modal) + 1);
   }
 
   .dialog-header {

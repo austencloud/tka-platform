@@ -193,7 +193,7 @@ Supports keyboard navigation (arrow keys between phases) and accessibility featu
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    z-index: 1000;
+    z-index: var(--z-modal);
     transition: top var(--duration-normal, 200ms) ease;
   }
 

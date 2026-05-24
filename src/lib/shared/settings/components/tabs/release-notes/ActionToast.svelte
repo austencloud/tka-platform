@@ -40,7 +40,7 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     font-size: var(--font-size-compact);
     color: var(--theme-text, var(--theme-text));
-    z-index: 1000;
+    z-index: var(--z-toast);
     animation: slideUp var(--duration-normal) ease-out;
   }
 

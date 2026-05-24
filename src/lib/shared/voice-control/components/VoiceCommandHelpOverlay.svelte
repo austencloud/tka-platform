@@ -283,7 +283,7 @@
   .help-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 3000;
+    z-index: var(--z-toast);
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
     display: flex;

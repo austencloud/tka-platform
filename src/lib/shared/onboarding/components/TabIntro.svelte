@@ -235,7 +235,7 @@
     bottom: 0;
     /* Offset left edge by sidebar width - content centers in remaining space */
     left: var(--sidebar-offset, 0);
-    z-index: 1000;
+    z-index: var(--z-modal);
     display: flex;
     flex-direction: column;
     align-items: center;

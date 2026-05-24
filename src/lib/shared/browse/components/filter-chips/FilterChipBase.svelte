@@ -182,7 +182,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
 
   .chip-popover {
     position: fixed;
-    z-index: 1000;
+    z-index: var(--z-dropdown);
     min-width: 160px;
     padding: 4px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
