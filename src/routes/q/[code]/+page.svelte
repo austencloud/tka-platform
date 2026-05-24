@@ -1,26 +1,23 @@
 <!--
   /q/[code]/+page.svelte
 
-  QR Video Landing Page
+  QR Scan Landing Page
 
-  Minimal page that plays a cached MP4 video of the scanned sequence,
-  or renders one on-device via a headless worker if uncached.
-  No full app bundle - no SequenceViewerOrchestrator, no animation
-  engine, no 3D renderer.
+  Minimal page that plays a live 2D Canvas animation of the scanned sequence
+  using a lazy-loaded AnimationPlayer component. No worker, no MP4 encoding,
+  no R2 caching - the production animation engine renders directly.
 
   URL format: /q/{shortCode}
 
   Flow:
   1. Resolve short code → SequenceData
-  2. Compute canonical hash (SequenceEncoder.encode → SHA-256)
-  3. HEAD check against R2 CDN for cached video
-  4a. Cached: play <video src={r2Url}> instantly
-  4b. Uncached: spawn headless worker → render → play → upload to R2
+  2. Lazy-load AnimationPlayer + GlyphCache (parallel with step 1)
+  3. Mount AnimationPlayer → live 2D playback
 -->
 <script lang="ts">
   import { page } from "$app/stores";
   import { onMount, onDestroy } from "svelte";
-  import { encodeSequence, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
+  import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { ShortCodeManager } from "$lib/shared/qr/services/implementations/ShortCodeManager";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
@@ -31,29 +28,17 @@
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
-  import { HeadlessAnimationOrchestrator } from "$lib/shared/qr-video/services/HeadlessAnimationOrchestrator";
-  import {
-    buildTimelineParams,
-    calculateFrameTiming,
-  } from "$lib/shared/qr-video/domain/qr-video-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-  import type {
-    WorkerOutMessage,
-    RenderRequest,
-    PrecomputedFrame,
-    TransferableAssets,
-  } from "$lib/shared/qr-video/domain/qr-video-types";
-  import { loadAssets, loadLetterGlyphs, type LoadedAssets } from "$lib/shared/qr-video/services/WorkerAssetLoader";
-  import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
   import { EFFECTS, type EffectMeta } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
-  const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
-  const RENDER_FPS = 60;
   const BASE_BPM = 60;
 
   interface Props {
@@ -73,25 +58,14 @@
   type PageState =
     | { kind: "loading" }
     | { kind: "error"; message: string }
-    | { kind: "rendering"; percent: number; phase: string; word: string }
-    | { kind: "playing"; videoUrl: string; word: string; isFirstView: boolean };
+    | { kind: "playing"; word: string };
 
   let pageState = $state<PageState>({ kind: "loading" });
 
   let resolvedSeq: SequenceData | null = $state(null);
   let seqWord = $state("");
 
-  let videoEl: HTMLVideoElement | null = $state(null);
-  let paused = $state(false);
-  let displayTime = $state(0);
-  let duration = $state(0);
-  let playbackRate = $state(1);
-  let isScrubbing = $state(false);
   let selectedProp = $state(PropType.STAFF);
-  let bgRenderPercent = $state(-1);
-  let bgRenderPhase = $state("");
-  let activeWorker: Worker | null = null;
-  let currentBlobUrl: string | null = null;
 
   const PROP_OPTIONS: { value: PropType; label: string }[] = [
     { value: PropType.STAFF, label: "Staff" },
@@ -161,15 +135,19 @@
 
   let selectedBpm = $state(BASE_BPM);
 
-  function handleBpmChange(newBpm: number) {
-    selectedBpm = newBpm;
-    playbackRate = newBpm / BASE_BPM;
-  }
+  let AnimationPlayerComponent: typeof import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte").default | null = $state(null);
+  let playbackController = $state<AnimationPlaybackController | null>(null);
+  let animPanelState = $state<AnimationPanelState | null>(null);
+  let isAnimPlaying = $state(false);
+  let currentAnimStep = $state(0);
+  let isDownloading = $state(false);
+  let downloadProgress = $state(0);
 
-  const scrubProgress = $derived(duration > 0 ? (displayTime / duration) * 100 : 0);
+  const effectsConfig = createEffectsConfigState();
+  setEffectsConfigContext(effectsConfig);
 
   const rawWord = $derived(
-    (pageState.kind === "playing" || pageState.kind === "rendering"
+    (pageState.kind === "playing"
       ? pageState.word
       : data?.meta?.word) || "Sequence"
   );
@@ -194,359 +172,96 @@
 
   const shortCodeManager = new ShortCodeManager(stubBrowseLoader);
 
-  function formatTime(seconds: number): string {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
+  function applyEffectToConfig(effect: EffectType) {
+    // Effects are toggled via the tipEffectMap — set the cell-wide ("*") key
+    // to the selected effect. "none" disables all effects.
+    effectsConfig.setTipEffectMap({ "*": { effect } });
   }
 
-  async function computeHash(
-    seq: SequenceData,
-    propOverride?: PropType,
-    effectType?: EffectType,
-  ): Promise<string> {
-    const pipeString = encodeSequence(seq);
-    let input = propOverride
-      ? `${pipeString}|prop=${propOverride}`
-      : pipeString;
-    if (effectType && effectType !== "trails") {
-      input += `|effect=${effectType}`;
-    }
-    const buffer = new TextEncoder().encode(input);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-    return Array.from(new Uint8Array(hashBuffer), (b) =>
-      b.toString(16).padStart(2, "0")
-    ).join("");
-  }
-
-  function videoUrl(hash: string): string {
-    return `${R2_CDN}/qr-videos/${hash}.mp4`;
-  }
-
-  async function checkR2Cache(hash: string): Promise<boolean> {
-    try {
-      const res = await fetch(videoUrl(hash), { method: "HEAD" });
-      return res.ok;
-    } catch {
-      return false;
-    }
-  }
-
-  async function uploadToR2(hash: string, mp4: ArrayBuffer): Promise<void> {
-    try {
-      await fetch(`/api/qr-video/${hash}`, {
-        method: "PUT",
-        headers: { "Content-Type": "video/mp4" },
-        body: mp4,
-      });
-    } catch (err) {
-      console.warn("[QR Video] Upload to R2 failed:", err);
-    }
-  }
-
-  function precomputeFrames(
-    seq: SequenceData,
-    blueProp: PropType,
-    redProp: PropType,
-    fps: number,
-    speed: number,
-    loopCount: number
-  ): PrecomputedFrame[] {
-    const orchestrator = new HeadlessAnimationOrchestrator({
-      bluePropType: blueProp,
-      redPropType: redProp,
-    });
-
-    const initialized = orchestrator.initializeWithDomainData(seq);
-    if (!initialized) return [];
-
-    const steps = (seq.steps ?? []).filter((s) => s && s.stepNumber !== 0);
-    const stepDurations = steps.map((s) => s.duration ?? 1);
-    const stepCount = steps.length;
-
-    const timeline = buildTimelineParams(
-      stepDurations,
-      speed,
-      fps,
-      loopCount,
-      true,
-      true
-    );
-
-    const frames: PrecomputedFrame[] = [];
-
-    for (let i = 0; i < timeline.totalFrames; i++) {
-      const timing = calculateFrameTiming(
-        i,
-        timeline.totalFrames,
-        timeline.totalDurationWithHolds,
-        timeline.startPositionDuration,
-        timeline.motionLoopUnits,
-        timeline.totalDurationUnits,
-        timeline.cumulativeDurations,
-        stepDurations,
-        stepCount
-      );
-
-      orchestrator.calculateState(timing.playbackPosition);
-      const propStates = orchestrator.getPropStates();
-
-      frames.push({
-        blue: propStates.blue ? { ...propStates.blue } : null,
-        red: propStates.red ? { ...propStates.red } : null,
-        stepIndex: timing.stepIndex,
-        isStartPosition: timing.isStartPosition,
-      });
-    }
-
-    return frames;
-  }
-
-  async function spawnWorker(
-    seq: SequenceData,
-    hash: string,
-    word: string,
-    propOverride?: PropType,
-    effectOverride?: EffectType,
-  ): Promise<void> {
-    const isBackground = pageState.kind === "playing";
-
-    if (activeWorker) {
-      activeWorker.terminate();
-      activeWorker = null;
-    }
-
-    if (isBackground) {
-      bgRenderPercent = 0;
-      bgRenderPhase = "loading-assets";
-    } else {
-      pageState = { kind: "rendering", percent: 0, phase: "loading-assets", word };
-    }
-
-    const plainSeq = $state.snapshot(seq) as SequenceData;
-
-    const blueProp =
-      propOverride ??
-      (plainSeq.intendedProp?.bluePropType as PropType) ??
-      PropType.STAFF;
-    const redProp =
-      propOverride ??
-      (plainSeq.intendedProp?.redPropType as PropType) ??
-      PropType.STAFF;
-
-    const frames = precomputeFrames(plainSeq, blueProp, redProp, RENDER_FPS, 1, 2);
-    if (frames.length === 0) {
-      if (!isBackground) {
-        pageState = { kind: "error", message: "Failed to compute animation frames" };
-      }
-      bgRenderPercent = -1;
-      return;
-    }
-
-    const gridMode = plainSeq.gridMode ?? "diamond";
-    const propTypeName = String(blueProp ?? "staff").toLowerCase();
-    const baseUrl = window.location.origin;
-
-    const steps = (plainSeq.steps ?? []).filter((s) => s && s.stepNumber !== 0);
-    const letterPaths = steps
-      .map((s) => (s.letter ? getLetterImagePath(s.letter as Letter) : null))
-      .filter((p): p is string => p !== null);
-
-    const posGroup = plainSeq.startingPositionGroup ?? "alpha";
-    const posGlyphMap: Record<string, string> = {
-      alpha: "/images/letters_trimmed/Type6/α.svg",
-      beta: "/images/letters_trimmed/Type6/β.svg",
-      gamma: "/images/letters_trimmed/Type6/γ.svg",
-    };
-    const posGlyphPath = posGlyphMap[posGroup];
-
-    let rawAssets: LoadedAssets;
-    let letterGlyphs: ImageBitmap[];
-    let startGlyphs: ImageBitmap[];
-    try {
-      [rawAssets, letterGlyphs, startGlyphs] = await Promise.all([
-        loadAssets(baseUrl, gridMode, propTypeName, true),
-        loadLetterGlyphs(baseUrl, letterPaths, true),
-        posGlyphPath
-          ? loadLetterGlyphs(baseUrl, [posGlyphPath], true)
-          : Promise.resolve([]),
-      ]);
-    } catch (err) {
-      console.error("[QR Video] Asset loading failed:", err);
-      if (!isBackground) {
-        pageState = { kind: "error", message: err instanceof Error ? err.message : "Failed to load assets" };
-      }
-      bgRenderPercent = -1;
-      return;
-    }
-
-    const assets: TransferableAssets = {
-      ...rawAssets,
-      letterGlyphs,
-      startPositionGlyph: startGlyphs[0] ?? null,
-    };
-
-    const worker = new Worker(
-      new URL(
-        "$lib/shared/qr-video/workers/headless-video-renderer.worker.ts",
-        import.meta.url
-      ),
-      { type: "module" }
-    );
-    activeWorker = worker;
-
-    const msg: RenderRequest = {
-      type: "render",
-      sequenceData: plainSeq,
-      frames,
-      assets,
-      config: {
-        fps: RENDER_FPS,
-        resolution: 720,
-        speed: 1,
-        propTypes: { blue: blueProp, red: redProp },
-        loopCount: 2,
-        includeStartPosition: true,
-        includeEndHold: true,
-        baseUrl,
-        cacheHash: hash,
-        effectType: effectOverride ?? selectedEffect,
-      },
-    };
-
-    const transferables: Transferable[] = [
-      assets.gridImage,
-      assets.bluePropImage,
-      assets.redPropImage,
-      ...letterGlyphs,
-      ...(assets.startPositionGlyph ? [assets.startPositionGlyph] : []),
-    ];
-    worker.postMessage(msg, transferables);
-
-    worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
-      if (activeWorker !== worker) return;
-      const out = e.data;
-      if (out.type === "progress") {
-        if (isBackground) {
-          bgRenderPercent = out.percent;
-          bgRenderPhase = out.phase;
-        } else {
-          pageState = {
-            kind: "rendering",
-            percent: out.percent,
-            phase: out.phase,
-            word,
-          };
-        }
-      } else if (out.type === "complete") {
-        const blob = new Blob([out.mp4], { type: "video/mp4" });
-        if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-        const blobUrl = URL.createObjectURL(blob);
-        currentBlobUrl = blobUrl;
-        pageState = { kind: "playing", videoUrl: blobUrl, word, isFirstView: !isBackground };
-        bgRenderPercent = -1;
-        activeWorker = null;
-        worker.terminate();
-        uploadToR2(hash, out.mp4);
-      } else if (out.type === "error") {
-        if (!isBackground) {
-          pageState = { kind: "error", message: out.message };
-        }
-        bgRenderPercent = -1;
-        activeWorker = null;
-        worker.terminate();
-      }
-    };
-
-    worker.onerror = (err) => {
-      if (activeWorker !== worker) return;
-      if (!isBackground) {
-        pageState = { kind: "error", message: err.message || "Worker crashed" };
-      }
-      bgRenderPercent = -1;
-      activeWorker = null;
-      worker.terminate();
-    };
-  }
-
-  function togglePlay() {
-    paused = !paused;
-  }
-
-  let wasPlayingBeforeScrub = false;
-
-  function startScrub() {
-    isScrubbing = true;
-    wasPlayingBeforeScrub = !paused;
-    if (videoEl && !paused) videoEl.pause();
-  }
-
-  function handleScrub(e: Event) {
-    const t = parseFloat((e.target as HTMLInputElement).value);
-    displayTime = t;
-    if (videoEl) videoEl.currentTime = t;
-  }
-
-  function endScrub() {
-    isScrubbing = false;
-    if (videoEl && wasPlayingBeforeScrub) videoEl.play();
-  }
-
-  async function handlePropChange(propType: PropType) {
-    if (!resolvedSeq || propType === selectedProp) return;
-    selectedProp = propType;
-    const defaultProp =
-      (resolvedSeq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
-    const propOverride = propType === defaultProp ? undefined : propType;
-    const hash = await computeHash(resolvedSeq, propOverride, selectedEffect);
-    const cached = await checkR2Cache(hash);
-    if (cached) {
-      pageState = {
-        kind: "playing",
-        videoUrl: videoUrl(hash),
-        word: seqWord,
-        isFirstView: false,
-      };
-    } else {
-      await spawnWorker(resolvedSeq, hash, seqWord, propOverride, selectedEffect);
-    }
-  }
-
-  async function handleEffectChange(effect: EffectType) {
-    if (!resolvedSeq || effect === selectedEffect) return;
+  function handleEffectChange(effect: EffectType) {
+    if (effect === selectedEffect) return;
     selectedEffect = effect;
-    const defaultProp =
-      (resolvedSeq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
-    const propOverride = selectedProp === defaultProp ? undefined : selectedProp;
-    const hash = await computeHash(resolvedSeq, propOverride, effect);
-    const cached = await checkR2Cache(hash);
-    if (cached) {
-      pageState = {
-        kind: "playing",
-        videoUrl: videoUrl(hash),
-        word: seqWord,
-        isFirstView: false,
-      };
-    } else {
-      await spawnWorker(resolvedSeq, hash, seqWord, selectedProp === defaultProp ? undefined : selectedProp, effect);
-    }
+    applyEffectToConfig(effect);
+  }
+
+  function handleBpmChange(newBpm: number) {
+    selectedBpm = newBpm;
+    const speed = newBpm / BASE_BPM;
+    playbackController?.setSpeed(speed);
+  }
+
+  function handlePropChange(propType: PropType) {
+    if (propType === selectedProp) return;
+    selectedProp = propType;
+    // AnimationPlayer receives prop types as props — Svelte reactivity handles the rest
   }
 
   async function handleDownload() {
-    if (pageState.kind !== "playing") return;
-    const url = pageState.videoUrl;
-    const word = pageState.word;
+    if (!resolvedSeq || !playbackController || !animPanelState) return;
+
+    const canvasEl = document.querySelector<HTMLCanvasElement>(".canvas-area canvas");
+    if (!canvasEl) return;
+
+    isDownloading = true;
+    downloadProgress = 0;
+
     try {
-      const resp = await fetch(url);
-      const blob = await resp.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      let orchestrator;
+      try {
+        const { getVideoExportOrchestrator } = await import(
+          "$lib/shared/animation-engine/getVideoExportOrchestrator"
+        );
+        orchestrator = getVideoExportOrchestrator();
+      } catch {
+        const [
+          { VideoExportOrchestrator },
+          { getVideoExporter },
+          { getCompositeVideoRenderer },
+          { getExportGlyphPrerenderer },
+          { getBackgroundVideoEncoder },
+        ] = await Promise.all([
+          import("$lib/features/compose/services/implementations/VideoExportOrchestrator"),
+          import("$lib/shared/animation-engine/getVideoExporter"),
+          import("$lib/shared/animation-engine/getCompositeVideoRenderer"),
+          import("$lib/shared/animation-engine/getExportGlyphPrerenderer"),
+          import("$lib/shared/animation-engine/getBackgroundVideoEncoder"),
+        ]);
+        orchestrator = new VideoExportOrchestrator(
+          getVideoExporter(),
+          getCompositeVideoRenderer(),
+          getExportGlyphPrerenderer(),
+          getBackgroundVideoEncoder()
+        );
+      }
+
+      const blob = await orchestrator.executeExport(
+        canvasEl,
+        playbackController,
+        animPanelState,
+        (progress) => {
+          downloadProgress = Math.round(progress.progress);
+        },
+        {
+          compositeMode: "none",
+          fps: 60,
+          loopCount: 2,
+          resolution: 720,
+          includeAnimationStartPosition: true,
+          includeEndHold: true,
+        }
+      );
+
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = `${word}.mp4`;
+      a.href = url;
+      a.download = `${seqWord}.mp4`;
       a.click();
-      URL.revokeObjectURL(blobUrl);
-    } catch {
-      window.open(url, "_blank");
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[QR] Download failed:", err);
+    } finally {
+      isDownloading = false;
+      downloadProgress = 0;
     }
   }
 
@@ -557,10 +272,13 @@
     }
 
     try {
-      const [seq_] = await Promise.all([
+      const [seq_, PlayerModule] = await Promise.all([
         shortCodeManager.resolveShortCode(shortCode),
-        getGlyphCache().initialize(),
+        getGlyphCache().initialize().then(() =>
+          import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte")
+        ),
       ]);
+
       let seq = seq_;
       if (!seq) {
         pageState = { kind: "error", message: "Sequence not found" };
@@ -580,10 +298,9 @@
       selectedProp =
         (seq.intendedProp?.bluePropType as PropType) ?? PropType.STAFF;
 
-      if (
-        !isInlineEncoded(shortCode) &&
-        isGenuineScan(shortCode)
-      ) {
+      AnimationPlayerComponent = PlayerModule.default;
+
+      if (!isInlineEncoded(shortCode) && isGenuineScan(shortCode)) {
         captureEvent("qr_video_scanned", {
           short_code: shortCode,
           sequence_word: word,
@@ -591,34 +308,19 @@
         });
       }
 
-      const hash = await computeHash(seq);
-      const cached = await checkR2Cache(hash);
+      applyEffectToConfig(selectedEffect);
 
-      if (cached) {
-        pageState = {
-          kind: "playing",
-          videoUrl: videoUrl(hash),
-          word,
-          isFirstView: false,
-        };
-      } else {
-        await spawnWorker(seq, hash, word);
-      }
+      pageState = { kind: "playing", word };
     } catch (err: unknown) {
       pageState = {
         kind: "error",
-        message:
-          err instanceof Error ? err.message : "Failed to load sequence",
+        message: err instanceof Error ? err.message : "Failed to load sequence",
       };
     }
   });
 
   onDestroy(() => {
-    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-    if (activeWorker) {
-      activeWorker.terminate();
-      activeWorker = null;
-    }
+    // AnimationPlayer manages its own lifecycle (controller.dispose, animState.dispose)
   });
 </script>
 
@@ -666,62 +368,29 @@
       <p class="status-text">{pageState.message}</p>
       <a href="/browse/gallery" class="cta-button">Browse Sequences</a>
     </div>
-  {:else if pageState.kind === "rendering"}
-    <div class="center-content">
-      <div class="word-title">
-        <TKAWordGlyph word={rawWord} height={28} darkMode />
-      </div>
-      <p class="first-view-message">
-        Rendering your sequence...
-      </p>
-      <div class="progress-container">
-        <div class="progress-bar" style:width="{pageState.percent}%"></div>
-      </div>
-      <p class="status-text">
-        {#if pageState.phase === "loading-assets"}
-          Loading assets...
-        {:else if pageState.phase === "rendering"}
-          Building animation... {pageState.percent}%
-        {:else}
-          Finalizing video...
-        {/if}
-      </p>
-      <p class="hint-text">Future scans will load instantly.</p>
-      <a href="/browse/gallery" class="cta-button">Open TKA Composer</a>
-    </div>
-  {:else if pageState.kind === "playing"}
+  {:else if pageState.kind === "playing" && AnimationPlayerComponent && resolvedSeq}
     <div class="player-layout">
       <div class="word-title">
         <TKAWordGlyph word={rawWord} height={28} darkMode />
       </div>
-      <div class="video-area">
-        <!-- svelte-ignore a11y_media_has_caption -->
-        <video
-          bind:this={videoEl}
-          bind:paused
-          bind:duration
-          bind:playbackRate
-          class="sequence-video"
-          src={pageState.videoUrl}
-          autoplay
-          loop
-          muted
-          playsinline
-          preload="auto"
-          ontimeupdate={() => {
-            if (!isScrubbing && videoEl) displayTime = videoEl.currentTime;
+      <div class="canvas-area">
+        <svelte:component
+          this={AnimationPlayerComponent}
+          sequence={resolvedSeq}
+          autoPlay={true}
+          showControls={false}
+          bluePropType={selectedProp}
+          redPropType={selectedProp}
+          previewDarkMode={true}
+          onControllerReady={(ctrl, state) => {
+            playbackController = ctrl;
+            animPanelState = state;
           }}
-        ></video>
-        {#if bgRenderPercent >= 0}
-          <div class="bg-render-overlay">
-            <div class="bg-render-bar">
-              <div class="bg-render-fill" style:width="{bgRenderPercent}%"></div>
-            </div>
-            <span class="bg-render-label">
-              {bgRenderPhase === "loading-assets" ? "Loading..." : `Rendering ${bgRenderPercent}%`}
-            </span>
-          </div>
-        {/if}
+          onStepChange={(stepIndex, playing) => {
+            currentAnimStep = stepIndex ?? 0;
+            isAnimPlaying = playing;
+          }}
+        />
       </div>
 
       <div class="player-controls">
@@ -769,9 +438,9 @@
             <i class="fa-solid fa-chevron-right grid-btn-chevron"></i>
           </button>
 
-          <button type="button" class="grid-btn primary" onclick={handleDownload}>
-            <i class="fa-solid fa-download grid-btn-fa"></i>
-            <span class="grid-btn-label">Download</span>
+          <button type="button" class="grid-btn primary" onclick={handleDownload} disabled={isDownloading}>
+            <i class="fa-solid {isDownloading ? 'fa-spinner fa-spin' : 'fa-download'} grid-btn-fa"></i>
+            <span class="grid-btn-label">{isDownloading ? `${downloadProgress}%` : 'Download'}</span>
           </button>
 
           <a href="/browse/gallery" class="grid-btn cta">
@@ -846,9 +515,9 @@
           {/if}
 
           <div class="desktop-actions">
-            <button type="button" class="grid-btn primary" onclick={handleDownload}>
-              <i class="fa-solid fa-download grid-btn-fa"></i>
-              <span class="grid-btn-label">Download</span>
+            <button type="button" class="grid-btn primary" onclick={handleDownload} disabled={isDownloading}>
+              <i class="fa-solid {isDownloading ? 'fa-spinner fa-spin' : 'fa-download'} grid-btn-fa"></i>
+              <span class="grid-btn-label">{isDownloading ? `${downloadProgress}%` : 'Download'}</span>
             </button>
             <a href="/browse/gallery" class="grid-btn cta">
               <i class="fa-solid fa-compass grid-btn-fa"></i>
@@ -856,56 +525,6 @@
             </a>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Bottom-edge scrubber bar -->
-    <div class="bottom-scrubber">
-      <button
-        type="button"
-        class="play-btn-sm"
-        onclick={togglePlay}
-        aria-label={paused ? "Play" : "Pause"}
-      >
-        {#if paused}
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        {:else}
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-          </svg>
-        {/if}
-      </button>
-
-      <div class="scrubber-track">
-        <div class="scrubber-fill" style:width="{scrubProgress}%"></div>
-        <input
-          type="range"
-          class="scrubber-input"
-          min="0"
-          max={duration || 1}
-          step="0.01"
-          value={displayTime}
-          onpointerdown={startScrub}
-          oninput={handleScrub}
-          onpointerup={endScrub}
-          onchange={endScrub}
-        />
-      </div>
-
-      <span class="time-display-sm">
-        {formatTime(displayTime)}/{formatTime(duration)}
-      </span>
-
-      <div class="scrubber-bpm">
-        <TempoControl
-          bpm={selectedBpm}
-          onBpmChange={handleBpmChange}
-          showPresets={false}
-          showPractice={false}
-          presetsMode="popover"
-        />
       </div>
     </div>
 
@@ -995,7 +614,7 @@
     --min-touch: 44px;
   }
 
-  /* ── Non-playing states (loading, error, rendering) ── */
+  /* ── Non-playing states (loading, error) ── */
 
   .center-content {
     text-align: center;
@@ -1011,38 +630,10 @@
     flex-shrink: 0;
   }
 
-  .first-view-message {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0 0 1.5rem;
-  }
-
-  .progress-container {
-    width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 1rem;
-  }
-
-  .progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #6366f1, #a855f7);
-    border-radius: 3px;
-    transition: width 200ms ease;
-  }
-
   .status-text {
     font-size: 0.875rem;
     color: var(--text-dim);
     margin: 0 0 0.5rem;
-  }
-
-  .hint-text {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.4);
-    margin: 0 0 1.5rem;
   }
 
   .error-icon {
@@ -1095,12 +686,11 @@
     width: 100%;
     height: 100%;
     padding: 8px 8px;
-    padding-bottom: calc(48px + max(6px, env(safe-area-inset-bottom)));
     gap: 6px;
     overflow: hidden;
   }
 
-  .video-area {
+  .canvas-area {
     position: relative;
     flex: 1 1 0;
     min-height: 0;
@@ -1109,54 +699,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .sequence-video {
-    width: 100%;
-    aspect-ratio: 1;
-    max-height: 100%;
     border-radius: 10px;
-    background: #000;
-    display: block;
-    object-fit: contain;
-  }
-
-  .bg-render-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 6px 10px;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-    border-radius: 0 0 10px 10px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .bg-render-bar {
-    flex: 1;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
     overflow: hidden;
+    background: #000;
   }
 
-  .bg-render-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    transition: width 200ms ease;
-  }
-
-  .bg-render-label {
-    font-size: 0.625rem;
-    color: rgba(255, 255, 255, 0.7);
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  /* ── Controls below video — fixed height, never scrolls ── */
+  /* ── Controls below canvas — fixed height, never scrolls ── */
 
   .player-controls {
     display: flex;
@@ -1174,104 +722,7 @@
     width: 100%;
   }
 
-  /* ── Bottom-edge scrubber bar ── */
-
-  .bottom-scrubber {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    padding-bottom: max(6px, env(safe-area-inset-bottom));
-    background: rgba(15, 15, 26, 0.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 50;
-  }
-
-  .play-btn-sm {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: 50%;
-    color: #fff;
-    cursor: pointer;
-    transition: background 120ms ease;
-  }
-
-  .play-btn-sm:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .scrubber-track {
-    flex: 1;
-    position: relative;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 2px;
-  }
-
-  .scrubber-fill {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    pointer-events: none;
-  }
-
-  .scrubber-input {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: var(--min-touch);
-    transform: translateY(-50%);
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-    outline: none;
-    cursor: pointer;
-    margin: 0;
-  }
-
-  .scrubber-input::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    background: #fff;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
-  }
-
-  .scrubber-input::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    background: #fff;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  .time-display-sm {
-    font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.5);
-    font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-
-  /* ── 2×2 button grid ── */
+  /* ── 2x2 button grid ── */
 
   .button-grid {
     display: grid;
@@ -1300,6 +751,11 @@
 
   .grid-btn:hover {
     background: var(--card-hover);
+  }
+
+  .grid-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .grid-btn.primary {
@@ -1508,13 +964,6 @@
     to { transform: translateY(0); }
   }
 
-  /* ── Scrubber BPM (hidden on mobile, shown in landscape/desktop) ── */
-
-  .scrubber-bpm {
-    display: none;
-    flex-shrink: 0;
-  }
-
   /* ── Desktop sections (hidden on mobile) ── */
 
   .desktop-sections {
@@ -1529,7 +978,6 @@
       grid-template-columns: 1fr 220px;
       grid-template-rows: auto 1fr;
       padding: 8px 12px;
-      padding-bottom: calc(48px + max(6px, env(safe-area-inset-bottom)));
       gap: 8px;
     }
 
@@ -1537,7 +985,7 @@
       grid-column: 1 / -1;
     }
 
-    .video-area {
+    .canvas-area {
       grid-column: 1;
       grid-row: 2;
       max-width: none;
@@ -1549,14 +997,6 @@
       grid-row: 2;
       max-width: none;
       justify-content: center;
-    }
-
-    .tempo-row {
-      display: none;
-    }
-
-    .scrubber-bpm {
-      display: flex;
     }
 
     .button-grid {
@@ -1584,7 +1024,7 @@
       gap: 8px;
     }
 
-    .video-area {
+    .canvas-area {
       max-width: 560px;
     }
 
@@ -1678,7 +1118,6 @@
       max-width: 1000px;
       margin: 0 auto;
       padding: 16px 24px;
-      padding-bottom: calc(56px + max(8px, env(safe-area-inset-bottom)));
       gap: 16px;
     }
 
@@ -1686,7 +1125,7 @@
       grid-column: 1 / -1;
     }
 
-    .video-area {
+    .canvas-area {
       grid-column: 1;
       grid-row: 2;
       max-width: none;
@@ -1705,14 +1144,6 @@
 
     .player-controls::-webkit-scrollbar {
       display: none;
-    }
-
-    .tempo-row {
-      display: none;
-    }
-
-    .scrubber-bpm {
-      display: flex;
     }
 
     .button-grid {
@@ -1754,15 +1185,6 @@
       margin-top: 4px;
     }
 
-    .bottom-scrubber {
-      left: 50%;
-      right: auto;
-      width: 100%;
-      max-width: 1000px;
-      transform: translateX(-50%);
-      border-radius: 12px 12px 0 0;
-    }
-
     .overlay-panel {
       max-width: 600px;
       border-radius: 16px;
@@ -1782,10 +1204,6 @@
 
     .desktop-grid {
       grid-template-columns: repeat(4, 1fr);
-    }
-
-    .bottom-scrubber {
-      max-width: 1200px;
     }
   }
 </style>
