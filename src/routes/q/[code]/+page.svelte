@@ -173,7 +173,7 @@
       ? pageState.word
       : data?.meta?.word) || "Sequence"
   );
-  const ogWord = rawWord;
+  const ogWord = $derived(rawWord);
   const ogDesc = $derived(
     ogWord !== "Sequence"
       ? `Watch the ${ogWord} flow sequence`
@@ -532,12 +532,22 @@
     }
   }
 
-  function handleDownload() {
+  async function handleDownload() {
     if (pageState.kind !== "playing") return;
-    const a = document.createElement("a");
-    a.href = pageState.videoUrl;
-    a.download = `${pageState.word}.mp4`;
-    a.click();
+    const url = pageState.videoUrl;
+    const word = pageState.word;
+    try {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${word}.mp4`;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(url, "_blank");
+    }
   }
 
   onMount(async () => {

@@ -1,15 +1,36 @@
 import type { RequestHandler } from "./$types";
+import { withRateLimit } from "$lib/server/security/withRateLimit";
+import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
 
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 const HASH_RE = /^[0-9a-f]{64}$/;
 
+const KNOWN_MP4_BRANDS = new Set([
+  0x69736f6d, // isom
+  0x69736f32, // iso2
+  0x6d703431, // mp41
+  0x6d703432, // mp42
+  0x4d345620, // M4V
+  0x61766331, // avc1
+  0x66347620, // f4v
+]);
+
 function isMP4(buf: ArrayBuffer): boolean {
-  if (buf.byteLength < 8) return false;
+  if (buf.byteLength < 12) return false;
   const view = new DataView(buf);
-  return view.getUint32(4) === 0x66747970; // "ftyp"
+  if (view.getUint32(4) !== 0x66747970) return false;
+  return KNOWN_MP4_BRANDS.has(view.getUint32(8));
 }
 
 export const PUT: RequestHandler = async (event) => {
+  const blocked = withRateLimit(event, RATE_LIMITS.GENERAL, "ip");
+  if (blocked) return blocked;
+
+  const origin = event.request.headers.get("origin");
+  if (origin && origin !== event.url.origin) {
+    return new Response("Cross-origin uploads not allowed", { status: 403 });
+  }
+
   const { params, request, platform } = event;
   const hash = params.hash;
   if (!hash || !HASH_RE.test(hash)) {

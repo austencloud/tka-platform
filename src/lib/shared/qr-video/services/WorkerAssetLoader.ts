@@ -14,7 +14,7 @@ const GRID_SVGS: Record<string, string> = {
 const PROP_SVG_PATH = "/images/props/animated";
 
 function applyColorToSvg(svgText: string, color: string): string {
-  let svg = svgText.replace(/fill="[^"]*"/g, `fill="${color}"`);
+  let svg = svgText.replace(/fill="(?!none)[^"]*"/g, `fill="${color}"`);
   svg = svg.replace(/fill:(?!none)[^;}"]+/g, `fill:${color}`);
 
   // If no fill attributes were present (e.g. α/β/γ position glyphs default to
