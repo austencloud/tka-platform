@@ -10,20 +10,21 @@
 
 	interface Props {
 		activeMode: RailMode;
-		videoCount?: number;
 		webgl2Available?: boolean;
+		practiceActive?: boolean;
 		onSelectMode: (mode: ContentType) => void;
 		onSelectSplit: () => void;
+		onPracticeToggle?: () => void;
 	}
 
-	let { activeMode, videoCount = 0, webgl2Available = true, onSelectMode, onSelectSplit }: Props = $props();
+	let { activeMode, webgl2Available = true, practiceActive = false, onSelectMode, onSelectSplit, onPracticeToggle }: Props = $props();
 
-	const allModes: { id: RailMode; icon: string; label: string }[] = [
+	const allModes: { id: RailMode | 'practice'; icon: string; label: string }[] = [
 		{ id: 'split', icon: 'fa-columns', label: 'Side by Side' },
 		{ id: 'animation', icon: 'fa-play', label: '2D Animation' },
 		{ id: 'animation-3d', icon: 'fa-cube', label: '3D Animation' },
 		{ id: 'card', icon: 'fa-grip', label: 'Card' },
-		{ id: 'videos', icon: 'fa-video', label: 'Videos' }
+		{ id: 'practice', icon: 'fa-signal', label: 'Practice' }
 	];
 
 	const modes = $derived(
@@ -113,42 +114,23 @@
 	style:width="{railWidth}px"
 >
 	<div class="rail-modes">
-		<button
-			type="button"
-			class="rail-mode-btn split-btn"
-			class:active={activeMode === 'split'}
-			aria-pressed={activeMode === 'split'}
-			aria-label="Side by Side"
-			onclick={onSelectSplit}
-			onkeydown={(e) => handleKeydown(e, 0)}
-		>
-			<i class="fas fa-columns" aria-hidden="true"></i>
-			{#if !collapsed}
-				<span class="rail-mode-label">Side by Side</span>
-			{/if}
-		</button>
-
-		<div class="rail-divider"></div>
-		{#if !collapsed}
-			<div class="rail-section-label">Focus</div>
-		{/if}
-
-		{#each modes.filter(m => m.id !== 'split') as mode, i (mode.id)}
+		{#each modes as mode, i (mode.id)}
 			<button
 				type="button"
 				class="rail-mode-btn"
-				class:active={activeMode === mode.id}
-				aria-pressed={activeMode === mode.id}
+				class:active={mode.id === 'practice' ? practiceActive : activeMode === mode.id}
+				aria-pressed={mode.id === 'practice' ? practiceActive : activeMode === mode.id}
 				aria-label={mode.label}
-				onclick={() => onSelectMode(mode.id as ContentType)}
-				onkeydown={(e) => handleKeydown(e, i + 1)}
+				onclick={() => {
+					if (mode.id === 'split') onSelectSplit();
+					else if (mode.id === 'practice') onPracticeToggle?.();
+					else onSelectMode(mode.id as ContentType);
+				}}
+				onkeydown={(e) => handleKeydown(e, i)}
 			>
-				<i class="fas {mode.icon}" aria-hidden="true"></i>
+				<i class="fas {mode.id === 'practice' && practiceActive ? 'fa-stop' : mode.icon}" aria-hidden="true"></i>
 				{#if !collapsed}
-					<span class="rail-mode-label">{mode.label}</span>
-				{/if}
-				{#if mode.id === 'videos' && videoCount > 0}
-					<span class="rail-badge">{videoCount}</span>
+					<span class="rail-mode-label">{mode.id === 'practice' && practiceActive ? 'Stop' : mode.label}</span>
 				{/if}
 			</button>
 		{/each}
@@ -248,29 +230,6 @@
 		flex-direction: column;
 	}
 
-	.rail-divider {
-		height: 1px;
-		background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
-		margin: 0 12px;
-		flex-shrink: 0;
-	}
-
-	.rail-section-label {
-		padding: 8px 0 4px;
-		text-align: center;
-		font-size: 9px;
-		font-weight: 600;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: rgba(255, 255, 255, 0.2);
-		flex-shrink: 0;
-	}
-
-	.rail-mode-btn.split-btn {
-		flex: 0 0 auto;
-		padding: 14px 8px;
-	}
-
 	.rail-mode-btn {
 		flex: 1;
 		display: flex;
@@ -314,24 +273,6 @@
 		font-size: var(--font-size-xs, 11px);
 		font-weight: 500;
 		letter-spacing: 0.02em;
-	}
-
-	.rail-badge {
-		position: absolute;
-		top: 12px;
-		right: 12px;
-		min-width: 18px;
-		height: 18px;
-		padding: 0 5px;
-		border-radius: 9px;
-		background: var(--theme-accent, #6366f1);
-		color: white;
-		font-size: 10px;
-		font-weight: 700;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 1;
 	}
 
 	@media (prefers-reduced-motion: reduce) {

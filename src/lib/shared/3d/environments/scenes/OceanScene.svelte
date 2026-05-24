@@ -17,6 +17,7 @@
   } from "../domain/models/scene-configs";
   import { poissonDiscSample, seededRandom, PlacementGrid } from "../utils/poisson-disc";
   import { createColoredInstancedMesh, createInstancedMeshFromModel, disposeInstancedMesh, type ColoredInstancePlacement, type InstancePlacement } from "./ocean/ocean-instancing";
+  import { bakeSceneSDF, type SceneSDFResult } from "./ocean/scene-sdf-baker";
 
   import { detectOceanQuality, getOceanQualityConfig, type OceanQualityTier } from "./ocean/ocean-quality";
   import { userProportionsState } from "@austencloud/scene-3d";
@@ -29,6 +30,7 @@
   import UnderwaterParticles from "./ocean/UnderwaterParticles.svelte";
   import ReefStructures from "./ocean/ReefStructures.svelte";
   import ProceduralJellyfish from "./ocean/ProceduralJellyfish.svelte";
+  import BoatSilhouette from "./ocean/BoatSilhouette.svelte";
   import type { ReefSDFData } from "./ocean/ReefStructures.svelte";
   import OceanLoadingScreen from "./ocean/OceanLoadingScreen.svelte";
   import { generateRockVariants, type RockVariant } from "./ocean/procedural-rock";
@@ -124,6 +126,7 @@
   ]);
   const loadedCount = $derived(allGlbs.filter(Boolean).length);
   const modelsLoaded = $derived(loadedCount === allGlbs.length);
+  let reefSdfData = $state<ReefSDFData | null>(null);
   const sdfReady = $derived(reefSdfData !== null);
   const sceneReady = $derived(modelsLoaded && sdfReady);
   const loadingProgress = $derived.by(() => {
@@ -266,7 +269,11 @@
     const rockRadius = maxRockXzRadius;
 
     // ── 1. Hero GLB rocks (largest — register with generous radius) ──
+    // Grid radius accounts for GLB normalization scale (3.0 / modelExtent)
     const heroRocks: ScenePlacements["heroRocks"] = [];
+    const glbScale = rockGlbScales.length > 0
+      ? rockGlbScales.reduce((a, b) => a + b, 0) / rockGlbScales.length
+      : 1.0;
     if (hasGlbRocks && cfg.rocks.enabled) {
       const rng = seededRandom(500);
       for (const formation of formations) {
@@ -274,7 +281,7 @@
         const x = formation.x + (rng() - 0.5) * 0.3;
         const z = formation.z + (rng() - 0.5) * 0.3;
         const scale = formation.anchorRockScale * 1.5;
-        const r = scale * 1.2;
+        const r = scale * glbScale * 0.6;
         if (grid.isClear(x, z, r)) {
           grid.register(x, z, r);
           heroRocks.push({ x, z, scale, rotY: rng() * Math.PI * 2, modelIdx: Math.floor(rng() * 6) });
@@ -284,7 +291,7 @@
       for (const s of bgSamples) {
         if (heroRocks.length >= qualityConfig.maxHeroRocks) break;
         const scale = 0.8 + rng() * 1.0;
-        const r = scale * 1.2;
+        const r = scale * glbScale * 0.6;
         if (grid.isClear(s.x, s.z, r)) {
           grid.register(s.x, s.z, r);
           heroRocks.push({ x: s.x, z: s.z, scale, rotY: rng() * Math.PI * 2, modelIdx: Math.floor(rng() * 6) });
@@ -524,42 +531,35 @@
     setMoundSources(moundSources);
   });
 
-  // ── Reef SDF data (passed from ReefStructures → FishSchool) ────────
-  let reefSdfData = $state<ReefSDFData | null>(null);
-
-  // ── Sphere obstacles for fish avoidance (rocks, boulders) ──────────
-  const obstacleSpheres = $derived.by((): Float32Array | null => {
+  // ── Scene-wide SDF baked from obstacle spheres ──────────────────────
+  const sceneSdf = $derived.by((): SceneSDFResult | null => {
     const placements = scenePlacements;
     const gy = groundY;
-    const spheres: { x: number; y: number; z: number; r: number }[] = [];
+    const glbScales = rockGlbScales;
+    const z_ = zones;
 
+    const spheres: { x: number; y: number; z: number; r: number }[] = [];
     for (const p of placements.heroRocks) {
-      const ty = terrainHeightForPlacement(p.x, p.z, zones.stageRadius, zones.clearingRadius);
-      spheres.push({ x: p.x, y: gy + ty + p.scale * 0.5, z: p.z, r: p.scale * 1.5 });
+      const ty = terrainHeightForPlacement(p.x, p.z, z_.stageRadius, z_.clearingRadius);
+      const gs = glbScales[p.modelIdx % (glbScales.length || 1)] ?? 1;
+      const worldScale = p.scale * gs;
+      spheres.push({ x: p.x, y: gy + ty + worldScale * 0.5, z: p.z, r: worldScale * 0.8 });
     }
     for (const p of placements.boulders) {
-      const ty = terrainHeightForPlacement(p.x, p.z, zones.stageRadius, zones.clearingRadius);
+      const ty = terrainHeightForPlacement(p.x, p.z, z_.stageRadius, z_.clearingRadius);
       spheres.push({ x: p.x, y: gy + ty + p.scale * 0.4, z: p.z, r: p.scale * 1.2 });
     }
     for (const p of placements.rocks) {
       if (p.scale < 0.5) continue;
-      const ty = terrainHeightForPlacement(p.x, p.z, zones.stageRadius, zones.clearingRadius);
+      const ty = terrainHeightForPlacement(p.x, p.z, z_.stageRadius, z_.clearingRadius);
       spheres.push({ x: p.x, y: gy + ty + p.scale * 0.3, z: p.z, r: p.scale * 1.0 });
     }
 
-    spheres.sort((a, b) => b.r - a.r);
-    const count = Math.min(spheres.length, 32);
-    if (count === 0) return null;
+    if (spheres.length === 0) return null;
 
-    const buf = new Float32Array(count * 4);
-    for (let i = 0; i < count; i++) {
-      const s = spheres[i]!;
-      buf[i * 4] = s.x;
-      buf[i * 4 + 1] = s.y;
-      buf[i * 4 + 2] = s.z;
-      buf[i * 4 + 3] = s.r;
-    }
-    return buf;
+    const boundsMin = new Vector3(-z_.backgroundRadius, gy - 2, -z_.backgroundRadius);
+    const boundsMax = new Vector3(z_.backgroundRadius, gy + 15, z_.backgroundRadius);
+    return bakeSceneSDF(spheres, boundsMin, boundsMax);
   });
 
   // y=-999 keeps scatter origin off-screen until Mouse Scatter spec wires real intersection coords
@@ -1150,7 +1150,8 @@
     halfSpeedTime={activeConfig.fish.halfSpeedTime}
     {rayPosition}
     {reefSdfData}
-    {obstacleSpheres}
+    sceneSdfTexture={sceneSdf?.texture ?? null}
+    sceneSdfInvMatrix={sceneSdf?.inverseMatrix ?? null}
   />
 {/if}
 
@@ -1209,6 +1210,14 @@
       spin={activeConfig.plankton.spin}
     />
   {/key}
+{/if}
+
+<!-- Boat hull silhouette at water surface -->
+{#if activeConfig.boatSilhouette?.enabled}
+  <BoatSilhouette
+    config={activeConfig.boatSilhouette}
+    waterSurfaceHeight={activeConfig.waterSurface?.height ?? 12}
+  />
 {/if}
 
 <!-- God rays (directional light from above) -->

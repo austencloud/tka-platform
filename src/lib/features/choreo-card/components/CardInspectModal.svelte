@@ -1,6 +1,6 @@
 <!--
   CardInspectModal - Full-screen modal for inspecting a card's front and back.
-  Uses CardPreviewStack from the card designer for the focus/toggle interaction.
+  Uses CardPreviewStack from the card designer for side-by-side display.
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
@@ -36,7 +36,6 @@
     frontImageUrl,
   }: Props = $props();
 
-  let focusedCard = $state<"front" | "back" | null>(null);
   let stackEl: HTMLDivElement | undefined = $state();
 
   // Copy state
@@ -106,12 +105,6 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') onClose();
-    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') focusedCard = 'front';
-    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') focusedCard = 'back';
-    if (e.key === ' ') {
-      e.preventDefault();
-      focusedCard = focusedCard === null ? 'front' : focusedCard === 'front' ? 'back' : null;
-    }
   }
 
   function handleBackdropClick(e: MouseEvent) {
@@ -130,15 +123,13 @@
       <h2 class="modal-title" id="inspect-modal-title">
         <TKAWordGlyph {word} height={28} darkMode />
       </h2>
-      <p class="modal-hint">Click a card to focus it. Click again to reset.</p>
+      <p class="modal-hint">Front and back side by side</p>
     </div>
 
     <!-- Card stack - reuses the designer's CardPreviewStack -->
     <div class="stack-wrapper" bind:this={stackEl}>
       <CardPreviewStack
         {sequence}
-        {focusedCard}
-        onFocusChange={(f) => { focusedCard = f; }}
         {handPointsVisible}
         {showGrid}
         {showTKA}
@@ -194,9 +185,6 @@
       </div>
       <div class="hints">
         <span><kbd>Esc</kbd> close</span>
-        <span><kbd>Space</kbd> cycle focus</span>
-        <span><kbd>&uarr;</kbd> front</span>
-        <span><kbd>&darr;</kbd> back</span>
       </div>
     </div>
   </div>

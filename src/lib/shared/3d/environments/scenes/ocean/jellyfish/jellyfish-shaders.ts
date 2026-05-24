@@ -55,9 +55,14 @@ void main() {
   saturation += max(accumulate(uv2, 1.0, 1.0), -0.25);
   saturation += max(accumulate(uv3, 1.0, 1.0), -0.25);
 
-  gl_FragColor = vec4(
-    mix(diffuse, diffuseB, smoothstep(-0.5, 0.5, saturation)),
-    (1.0 - smoothstep(-0.5, 2.5, saturation)) * opacity);
+  vec3 baseColor = mix(diffuse, diffuseB, smoothstep(-0.5, 0.5, saturation));
+  float baseAlpha = (1.0 - smoothstep(-0.5, 2.5, saturation)) * opacity;
+
+  // Fresnel rim glow on the hood — bioluminescent edge emission
+  float fresnelGlow = pow(rim, 3.0) * 0.8;
+  vec3 glowTint = diffuse * 1.5 + vec3(0.05, 0.15, 0.3);
+
+  gl_FragColor = vec4(baseColor + glowTint * fresnelGlow, baseAlpha + fresnelGlow * 0.2);
 }
 `;
 
@@ -85,8 +90,12 @@ void main() {
     smoothstep(0.25, 1.0, rim) * 0.5 +
     smoothstep(0.90, 1.0, rim) * 0.8;
 
-  gl_FragColor.rgb = diffuse * vec3(rimLight);
-  gl_FragColor.a = opacity;
+  // Fresnel rim glow — bioluminescent subsurface scattering approximation
+  float fresnelGlow = pow(rim, 2.5) * 1.2;
+  vec3 glowColor = diffuse * 1.8 + vec3(0.1, 0.2, 0.4);
+
+  gl_FragColor.rgb = diffuse * vec3(rimLight) + glowColor * fresnelGlow;
+  gl_FragColor.a = opacity + fresnelGlow * 0.3;
 }
 `;
 

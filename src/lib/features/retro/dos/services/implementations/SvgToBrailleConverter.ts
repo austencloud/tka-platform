@@ -167,7 +167,7 @@ export class SvgToBrailleConverter {
 		// The canvas may not be exactly PX_WIDTH × PX_HEIGHT because
 		// the SVG is square (950×950) - it will be PX_WIDTH × PX_WIDTH.
 		// We need to read the actual dimensions and scale if needed.
-		const ctx = canvas.getContext("2d");
+		const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
 		if (!ctx) throw new Error("Failed to get canvas 2d context");
 
 		// Read pixel data from the rendered canvas

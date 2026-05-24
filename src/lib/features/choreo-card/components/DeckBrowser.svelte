@@ -28,13 +28,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     computeVtgDesignation as computeVtgLabel,
     computeDeckLeftLabel as computeLeftLabel,
   } from "../domain/deck-vtg-labels";
-  import {
-    createDeckInteriorState,
-    filterSequences as filterDeckSequences,
-    groupByStartPosition as groupSeqsByPosition,
-    groupByFamily as groupSeqsByFamily,
-    formatCount as fmtCount,
-  } from "../state/deck-interior-state.svelte";
   import { calculateVTG } from "$lib/shared/pictograph/shared/domain/utils/vtg-calculator";
   import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -360,39 +353,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   const isLargeDeck = $derived(selectedDeck ? selectedDeck.totalSequences >= 500 : false);
 
-  const PRINT_PREVIEW_MAX = 128;
-
-  // When print preview has too many sequences, compute subgroup options for drill-down
-  const printSubgroups = $derived.by((): { label: string; count: number; familyId?: string; position?: string }[] => {
-    if (viewMode !== 'print' || !selectedDeck || filteredSequences.length <= PRINT_PREVIEW_MAX) return [];
-
-    // If no family filter active, offer families as subgroups.
-    // Use the deck's family metadata for counts - sequences may not be fully loaded yet.
-    if (interiorFilters.familyIds.length === 0) {
-      return selectedDeck.families
-        .map(f => ({
-          label: f.label || f.typeCombo,
-          count: f.sequenceIds.length,
-          familyId: f.id,
-        }))
-        .filter(g => g.count > 0)
-        .sort((a, b) => b.count - a.count);
-    }
-
-    // Family filter is active but still too many - offer position subgroups
-    const posGroups: Record<string, number> = {};
-    for (const seq of filteredSequences) {
-      const gridPos = seq.startPosition?.gridPosition ?? seq.startPosition?.startPosition ?? "";
-      const group = gridPos.startsWith("alpha") ? "alpha"
-        : gridPos.startsWith("beta") ? "beta"
-        : gridPos.startsWith("gamma") ? "gamma"
-        : "other";
-      posGroups[group] = (posGroups[group] ?? 0) + 1;
-    }
-    return ["alpha", "beta", "gamma"]
-      .filter(g => posGroups[g] && posGroups[g] > 0)
-      .map(g => ({ label: START_POS_LABELS[g] ?? g, count: posGroups[g]!, position: g }));
-  });
 
   // Group sequences for display
   interface SequenceGroup {
@@ -480,15 +440,43 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     selectedTypeCombo = null;
     interiorFilters = { familyIds: [], position: null };
     interiorFiltersOpen = false;
+    if (selectedDeckId) saveTypeCombo(selectedDeckId, null);
     if (isLargeDeck) onLoadFamilySequences([]);
   }
 
-  // Reset interior filters when deck changes
+  // Persist type combo selection per deck
+  function saveTypeCombo(deckId: string, combo: TypeComboGroup | null) {
+    if (typeof window === 'undefined') return;
+    if (combo) {
+      localStorage.setItem(`choreoCard.typeCombo.${deckId}`, combo.typeCombo);
+    } else {
+      localStorage.removeItem(`choreoCard.typeCombo.${deckId}`);
+    }
+  }
+
+  function loadSavedTypeCombo(deckId: string): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(`choreoCard.typeCombo.${deckId}`);
+  }
+
+  // Reset interior filters when deck changes, but restore saved type combo
   $effect(() => {
     if (selectedDeckId) {
+      interiorFiltersOpen = false;
+
+      const savedKey = loadSavedTypeCombo(selectedDeckId);
+      if (savedKey && typeComboGroups.length > 0) {
+        const match = typeComboGroups.find(g => g.typeCombo === savedKey);
+        if (match) {
+          selectedTypeCombo = match;
+          interiorFilters = { familyIds: match.familyIds, position: null };
+          onLoadFamilySequences(match.familyIds);
+          return;
+        }
+      }
+
       selectedTypeCombo = null;
       interiorFilters = { familyIds: [], position: null };
-      interiorFiltersOpen = false;
     }
   });
 
@@ -658,6 +646,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
                     selectedTypeCombo = group;
                     interiorFilters = { ...interiorFilters, familyIds: group.familyIds };
                     onLoadFamilySequences(group.familyIds);
+                    if (selectedDeckId) saveTypeCombo(selectedDeckId, group);
                   }}
                 >
                   <span class="picker-label"><MotionTypePills label={group.displayLabel} fontSize="12px" /></span>
@@ -687,35 +676,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
           </div>
         {/if}
       {:else}
-        {#if viewMode === 'print' && filteredSequences.length > PRINT_PREVIEW_MAX}
-          <div class="print-subgroup-picker">
-            <p class="picker-heading">
-              {filteredSequences.length} sequences - pick a
-              {printSubgroups[0]?.familyId ? 'family' : 'starting position'}
-              to preview
-            </p>
-            <div class="picker-grid">
-              {#each printSubgroups as group (group.label)}
-                <button
-                  class="picker-card"
-                  type="button"
-                  aria-label="Preview {group.label} subgroup"
-                  onclick={() => {
-                    if (group.familyId) {
-                      interiorFilters = { ...interiorFilters, familyIds: [group.familyId] };
-                      if (isLargeDeck) onLoadFamilySequences([group.familyId]);
-                    } else if (group.position) {
-                      interiorFilters = { ...interiorFilters, position: group.position };
-                    }
-                  }}
-                >
-                  <span class="picker-label"><MotionTypePills label={group.label} fontSize="12px" /></span>
-                  <span class="picker-count">{group.count}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
-        {:else if viewMode === 'print'}
+        {#if viewMode === 'print'}
           <PrintPreviewPages
             sequences={filteredSequences}
             {cardSize}
@@ -793,8 +754,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 <style>
   /* ── Type-combo / Print subgroup picker ── */
 
-  .type-combo-picker,
-  .print-subgroup-picker {
+  .type-combo-picker {
     display: flex;
     flex-direction: column;
     gap: 16px;

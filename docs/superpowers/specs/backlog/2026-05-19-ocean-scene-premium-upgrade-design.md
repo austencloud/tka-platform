@@ -2,11 +2,11 @@
 status: backlog
 value: 4
 effort: M
-remaining: "Phase 1 foundation done (4 variants, voronoi caustics, god rays, water surface). Phase 2 post-processing upgrades next."
+remaining: "Phases 2+3 COMPLETE. Phase 4 polish: kelp sway vertex animation (config exists, shader not wired), bloom tuning for bioluminescent elements, per-variant ambient audio (stretch)."
 depends_on: ""
 plan_path: ""
 tags: ["3d", "scenes", "ocean", "shaders"]
-last_triaged: 2026-05-19
+last_triaged: 2026-05-23
 ---
 # Ocean Scene Premium Upgrade — Design Spec
 

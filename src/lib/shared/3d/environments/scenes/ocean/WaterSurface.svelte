@@ -9,7 +9,7 @@
     segments?: number;
   }
 
-  let { config, size = 50, segments = 64 }: Props = $props();
+  let { config, size = 50, segments = 128 }: Props = $props();
 
   const { camera } = useThrelte();
 
@@ -21,17 +21,63 @@
     varying vec2 vUv;
     varying vec3 vWorldPosition;
     varying float vDisplacement;
+    varying vec3 vNormal;
+
+    // Gerstner wave: returns (displacement.xyz, partial derivatives for normal)
+    // D = direction, w = frequency, A = amplitude, Q = steepness, phi = phase speed
+    vec3 gerstnerWave(vec2 D, float w, float A, float Q, float phi,
+                      vec2 p, float t, inout vec3 tangent, inout vec3 binormal) {
+      float phase = w * dot(D, p) + phi * t;
+      float S = sin(phase);
+      float C = cos(phase);
+      float WA = w * A;
+
+      // Accumulate tangent/binormal partials for normal computation
+      tangent += vec3(-Q * D.x * D.x * WA * S,
+                       D.x * WA * C,
+                      -Q * D.x * D.y * WA * S);
+      binormal += vec3(-Q * D.x * D.y * WA * S,
+                        D.y * WA * C,
+                       -Q * D.y * D.y * WA * S);
+
+      return vec3(Q * A * D.x * C,
+                   A * S,
+                   Q * A * D.y * C);
+    }
 
     void main() {
       vUv = uv;
       vec3 pos = position;
+      vec2 p = pos.xz;
 
-      float wave1 = sin(pos.x * uWaveScale + uTime * uWaveSpeed) * uWaveAmplitude;
-      float wave2 = sin(pos.z * uWaveScale * 0.7 + uTime * uWaveSpeed * 1.3) * uWaveAmplitude * 0.6;
-      float wave3 = sin((pos.x + pos.z) * uWaveScale * 0.5 + uTime * uWaveSpeed * 0.8) * uWaveAmplitude * 0.4;
+      // 4 Gerstner wave layers with varied directions and harmonics
+      // Config-driven: uWaveScale controls frequency, uWaveAmplitude controls height
+      vec3 tangent = vec3(1.0, 0.0, 0.0);
+      vec3 binormal = vec3(0.0, 0.0, 1.0);
 
-      pos.y += wave1 + wave2 + wave3;
-      vDisplacement = wave1 + wave2 + wave3;
+      vec3 disp = vec3(0.0);
+      float baseW = uWaveScale;
+      float baseA = uWaveAmplitude;
+      float speed = uWaveSpeed;
+
+      // Primary swell
+      disp += gerstnerWave(normalize(vec2(1.0, 0.6)), baseW, baseA,
+                           0.6, speed, p, uTime, tangent, binormal);
+      // Cross swell
+      disp += gerstnerWave(normalize(vec2(-0.4, 1.0)), baseW * 1.3, baseA * 0.6,
+                           0.5, speed * 1.2, p, uTime, tangent, binormal);
+      // Short chop
+      disp += gerstnerWave(normalize(vec2(0.8, -0.3)), baseW * 2.1, baseA * 0.3,
+                           0.4, speed * 1.6, p, uTime, tangent, binormal);
+      // Detail ripple
+      disp += gerstnerWave(normalize(vec2(-0.6, -0.8)), baseW * 3.2, baseA * 0.15,
+                           0.3, speed * 2.0, p, uTime, tangent, binormal);
+
+      pos += disp;
+      vDisplacement = disp.y;
+
+      // Analytical normal from accumulated Gerstner partials
+      vNormal = normalize(cross(binormal, tangent));
 
       vec4 worldPos = modelMatrix * vec4(pos, 1.0);
       vWorldPosition = worldPos.xyz;
@@ -59,6 +105,7 @@
     varying vec2 vUv;
     varying vec3 vWorldPosition;
     varying float vDisplacement;
+    varying vec3 vNormal;
 
     // Simple 2D hash noise
     float hash(vec2 p) {
@@ -98,9 +145,9 @@
         return;
       }
 
-      // Snell's window calculation
+      // Snell's window calculation using Gerstner-derived normal
       vec3 viewDir = normalize(vWorldPosition - uCameraPosition);
-      vec3 surfaceNormal = vec3(0.0, -1.0, 0.0); // viewed from below
+      vec3 surfaceNormal = normalize(-vNormal); // flip for viewing from below
 
       float cosTheta = abs(dot(viewDir, surfaceNormal));
       float sinTheta = sqrt(1.0 - cosTheta * cosTheta);

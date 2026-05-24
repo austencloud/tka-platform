@@ -1,4 +1,4 @@
-import type { UnifiedPlaybackContext } from "../unified-playback-context";
+import type { UnifiedPlaybackContext, PlaybackMode } from "../unified-playback-context";
 
 // ── Pure computation functions (exported for testing) ──────────────────
 
@@ -47,11 +47,19 @@ export interface OrchestratorCallbacks {
 	getIsPlaying: () => boolean;
 }
 
+export interface TempoCallbacks {
+	getBpm: () => number;
+	onBpmChange: (bpm: number) => void;
+	getPlaybackMode: () => PlaybackMode;
+	onPlaybackModeChange: (mode: PlaybackMode) => void;
+}
+
 // ── Adapter factory ────────────────────────────────────────────────────
 
 export function createAvatarPlaybackAdapter(
 	getAvatar: () => AvatarPlaybackHandle | null,
 	orchestrator?: OrchestratorCallbacks,
+	tempo?: TempoCallbacks,
 ): UnifiedPlaybackContext {
 	return {
 		get overallProgress() {
@@ -97,6 +105,14 @@ export function createAvatarPlaybackAdapter(
 				(_, i) => (i + 1) / av.totalSteps,
 			);
 		},
+		get bpm() {
+			return tempo?.getBpm();
+		},
+		get playbackMode() {
+			return tempo?.getPlaybackMode();
+		},
+		onBpmChange: tempo?.onBpmChange,
+		onPlaybackModeChange: tempo?.onPlaybackModeChange,
 		seek(progress: number) {
 			const av = getAvatar();
 			if (!av) return;

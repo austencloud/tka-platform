@@ -2,7 +2,7 @@
 status: active
 value: 5
 effort: L
-remaining: "Delete app-side executors, consolidate MCP copies, publish packages"
+remaining: "Phase 0 done (tka-types pkg + deriveReversals). Phase 1 next: migrate 22 engine files from SequenceStep/MotionData to Step/Motion. Then Phase 2 (231 app files), Phase 3 (delete app-side executors), Phase 4 (MCP consolidation), Phase 5 (broadcast), Phase 6 (DB backfill), Phase 7 (publish)."
 depends_on: ""
 plan_path: plans/active/2026-04-20-sequence-engine-unification-plan.md
 tags: []

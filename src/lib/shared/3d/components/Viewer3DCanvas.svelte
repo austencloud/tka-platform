@@ -30,6 +30,7 @@
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
+  import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "@austencloud/scene-3d";
@@ -49,6 +50,8 @@
     onCameraStateChange?: (state: CameraStateSnapshot) => void;
     onPlaybackToggle?: () => void;
     onProgressBarSeek?: (targetStep: number) => void;
+    playbackMode?: PlaybackMode;
+    onPlaybackModeChange?: (mode: PlaybackMode) => void;
   }
 
   let {
@@ -63,6 +66,8 @@
     onCameraStateChange,
     onPlaybackToggle,
     onProgressBarSeek,
+    playbackMode,
+    onPlaybackModeChange,
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
@@ -73,6 +78,14 @@
           onPlaybackToggle,
           onProgressBarSeek,
           getIsPlaying: () => isPlaying,
+        }
+      : undefined,
+    onPlaybackModeChange
+      ? {
+          getBpm: () => bpm,
+          onBpmChange,
+          getPlaybackMode: () => playbackMode ?? "continuous",
+          onPlaybackModeChange,
         }
       : undefined,
   ));

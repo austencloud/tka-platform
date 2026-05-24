@@ -3,7 +3,6 @@
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { getPerformerColor } from "$lib/shared/3d/constants/performer-colors";
   import ViewerPopover from "$lib/shared/3d/components/controls/ViewerPopover.svelte";
-  import TempoPopover from "./TempoPopover.svelte";
   import ExportPopover from "./ExportPopover.svelte";
   import CameraPopover from "$lib/shared/3d/components/CameraPopover.svelte";
   import PlanesPopover from "$lib/shared/3d/components/PlanesPopover.svelte";
@@ -21,10 +20,8 @@
 
   interface Props {
     renderMode: "2d" | "3d";
-    bpm?: number;
-    onBpmChange?: (bpm: number) => void;
   }
-  let { renderMode, bpm = 60, onBpmChange = () => {} }: Props = $props();
+  let { renderMode }: Props = $props();
 
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const isIndividualMode = $derived(renderMode === "3d" && selectedIndex !== null);
@@ -58,10 +55,6 @@
   {#if renderMode === "3d"}
     <ViewerPopover id="formation" title="Formation" icon="fa-users" tooltip="Formation">
       <FormationPopover />
-    </ViewerPopover>
-
-    <ViewerPopover id="tempo" title="Tempo" icon="fa-gauge" tooltip="Speed" width={340}>
-      <TempoPopover {bpm} {onBpmChange} />
     </ViewerPopover>
 
     <ViewerPopover id="camera" title="Camera" icon="fa-video" tooltip="Camera" width={300}>

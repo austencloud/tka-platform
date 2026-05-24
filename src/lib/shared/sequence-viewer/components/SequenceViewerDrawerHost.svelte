@@ -15,7 +15,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
   import ViewerContentRail from "./ViewerContentRail.svelte";
   import VideoGallery from "./VideoGallery.svelte";
-  import ViewerFooter from "./ViewerFooter.svelte";
+  import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
   import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
@@ -284,18 +284,14 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         {@const isRecordSceneActive = isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl}
         {@const isSidebarExportActive = isAnyExportActive && !isRecordSceneActive}
         {@const showRail = !isMobileWidth}
-        {@const handleExitExport = () => {
-          ctx.viewerState.exitExport();
-          setTimeout(() => rerenderTrigger++, 280);
-        }}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <header class="drawer-header">
               {#if isAnyExportActive}
                 <button
                   type="button"
                   class="drawer-back-button"
-                  onclick={handleExitExport}
-                  aria-label="Back to viewer"
+                  onclick={handleDismiss}
+                  aria-label="Close viewer"
                 >
                   <i class="fas fa-arrow-left" aria-hidden="true"></i>
                   <span class="drawer-back-label">Back</span>
@@ -303,22 +299,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 
                 <div class="drawer-header-title">
                   {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
-                </div>
-
-                <div class="drawer-header-actions">
-                  <MotionVisibilityToggle />
-                  {#if !isMobileWidth && !isRecordSceneActive}
-                    <button
-                      type="button"
-                      class="header-action-btn"
-                      class:active={!exportSidebarCollapsed}
-                      onclick={toggleExportSidebar}
-                      aria-label={exportSidebarCollapsed ? "Show export settings" : "Hide export settings"}
-                      title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
-                    >
-                      <i class="fas fa-sliders" aria-hidden="true"></i>
-                    </button>
-                  {/if}
                 </div>
               {:else}
                 <button
@@ -361,22 +341,79 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     <div class="export-hint">Tap to download</div>
                   {/if}
                 </div>
-
-                <div class="drawer-header-actions">
-                  <MotionVisibilityToggle />
-                  {#if authState.isAdmin}
-                    <button
-                      type="button"
-                      class="header-action-btn"
-                      onclick={handleCopyForClaude}
-                      aria-label="Copy sequence data for Claude"
-                      title="Copy for Claude"
-                    >
-                      <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
-                    </button>
-                  {/if}
-                </div>
               {/if}
+
+              <div class="drawer-header-actions">
+                <button
+                  type="button"
+                  class="header-action-btn"
+                  class:favorited={ctx.isFavorite}
+                  onclick={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
+                  aria-label={ctx.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <i class="fas fa-heart" aria-hidden="true"></i>
+                </button>
+
+                {#if !ctx.isSaved}
+                  <button
+                    type="button"
+                    class="header-action-btn save"
+                    onclick={() => ctx.invokeGatedAction("save", ctx.handleSave)}
+                    aria-label="Save sequence"
+                  >
+                    <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+                  </button>
+                {/if}
+
+                <button
+                  type="button"
+                  class="header-action-btn remix"
+                  onclick={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
+                  aria-label="Remix"
+                >
+                  <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+                </button>
+
+                <span class="header-action-divider"></span>
+
+                <MotionVisibilityToggle />
+
+                {#if isAnyExportActive && !isMobileWidth && !isRecordSceneActive}
+                  <button
+                    type="button"
+                    class="header-action-btn"
+                    class:active={!exportSidebarCollapsed}
+                    onclick={toggleExportSidebar}
+                    aria-label={exportSidebarCollapsed ? "Show export settings" : "Hide export settings"}
+                    title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
+                  >
+                    <i class="fas fa-sliders" aria-hidden="true"></i>
+                  </button>
+                {/if}
+
+                {#if authState.isAdmin}
+                  <button
+                    type="button"
+                    class="header-action-btn"
+                    onclick={handleCopyForClaude}
+                    aria-label="Copy sequence data for Claude"
+                    title="Copy for Claude"
+                  >
+                    <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
+                  </button>
+                {/if}
+
+                <ViewerOverflowMenu
+                  variant="header"
+                  practiceActive={ctx.practiceActive}
+                  onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
+                  onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
+                  isPublished={ctx.isPublished}
+                  onPublish={ctx.isOwned && ctx.isSaved ? () => ctx.invokeGatedAction("publish", ctx.handlePublishAction) : undefined}
+                  onUnpublish={ctx.isOwned && ctx.isSaved ? ctx.handleUnpublishAction : undefined}
+                  onDeleteRequest={ctx.isOwned && ctx.isSaved ? () => (deleteConfirmOpen = true) : undefined}
+                />
+              </div>
             </header>
 
           <div class="drawer-main">
@@ -393,8 +430,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                   {#if showRail}
                     <ViewerContentRail
                       activeMode={ctx.viewerState.viewerMode}
-                      {videoCount}
                       webgl2Available={ctx.viewer3DState.webgl2Available}
+                      practiceActive={ctx.practiceActive}
+                      onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
                       onSelectSplit={() => {
                         ctx.viewerState.exitExport();
                         ctx.viewerState.setViewerMode('split');
@@ -407,9 +445,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                           ctx.viewerState.enterExport('animation-export', 'animation-3d');
                         } else if (mode === 'card') {
                           ctx.viewerState.enterExport('image-export');
-                        } else {
-                          ctx.exitEditMode();
-                          ctx.viewerState.setViewerMode('videos');
                         }
                       }}
                     />
@@ -426,6 +461,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       sequence={ctx.effectiveSequence}
                       renderMode={ctx.renderMode}
                       isExporting={ctx.isExporting}
+                      bpm={ctx.bpmLocal}
+                      onBpmChange={ctx.handleBpmChange}
                       playback={ctx.splitPanePlayback}
                       imageComposition={isImageExportActive
                         ? {
@@ -455,6 +492,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onProgressBarSeek={ctx.handleProgressBarSeek}
                       onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
                       onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
+                      playbackMode={ctx.playbackMode}
+                      onPlaybackModeChange={ctx.handlePlaybackModeChange}
                       splitConfig={ctx.viewerState.viewerMode !== 'split' && (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d')
                         ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
                         : ctx.viewerState.splitConfig}
@@ -560,28 +599,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
               {/if}
             </div>
 
-            <div class="footer-collapse" class:collapsed={isAnyExportActive}>
-              <ViewerFooter
-                landscape={isLandscape}
-                onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-                onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-                onExportVideo={() => ctx.enterEditMode('animation')}
-                onExportImage={() => ctx.enterEditMode('image')}
-                practiceActive={ctx.practiceActive}
-                onPracticeStart={ctx.handlePracticeStart}
-                onPracticeStop={ctx.handlePracticeStop}
-                isOwned={ctx.isOwned}
-                onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
-                onDeleteRequest={() => (deleteConfirmOpen = true)}
-                {videoCount}
-                isSaved={ctx.isSaved}
-                isPublished={ctx.isPublished}
-                isFavorite={ctx.isFavorite}
-                onFavorite={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-                onPublish={() => ctx.invokeGatedAction("publish", ctx.handlePublishAction)}
-                onUnpublish={ctx.handleUnpublishAction}
-              />
-            </div>
 
             {#if isMobileWidth && isImageExportActive && ctx.effectiveSequence}
               <div
@@ -692,27 +709,25 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   }
 
   .drawer-header-title-group {
-    flex: 1;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 3px;
     pointer-events: none;
     overflow: visible;
-    min-width: 0;
   }
 
   .drawer-header-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     color: var(--theme-text, #ffffff);
     white-space: nowrap;
-  }
-
-  .drawer-header-title:only-child {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
     pointer-events: none;
   }
 
@@ -768,6 +783,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     display: flex;
     align-items: center;
     gap: 4px;
+    margin-left: auto;
   }
 
   .header-action-btn {
@@ -793,6 +809,26 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     color: var(--theme-accent, #6366f1);
   }
 
+  .header-action-btn.favorited {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .header-action-btn.save {
+    color: #22c55e;
+  }
+
+  .header-action-btn.remix {
+    color: #f59e0b;
+  }
+
+  .header-action-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    margin: 0 2px;
+    flex-shrink: 0;
+  }
+
   .header-action-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #f43f5e);
     outline-offset: 2px;
@@ -807,19 +843,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     position: relative;
   }
 
-  .landscape .footer-collapse {
-    grid-template-rows: 1fr;
-    grid-template-columns: 1fr;
-    transition: grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1),
-                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
-  }
-
-  .landscape .footer-collapse.collapsed {
-    grid-template-columns: 0fr;
-    grid-template-rows: 1fr;
-    opacity: 0;
-    pointer-events: none;
-  }
 
   .drawer-body-content {
     flex: 1;
@@ -935,24 +958,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     z-index: 3;
   }
 
-  .footer-collapse {
-    display: grid;
-    grid-template-rows: 1fr;
-    transition: grid-template-rows 250ms cubic-bezier(0.2, 0, 0, 1),
-                opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                transform 250ms cubic-bezier(0.2, 0, 0, 1);
-  }
-
-  .footer-collapse > :global(*) {
-    overflow: hidden;
-  }
-
-  .footer-collapse.collapsed {
-    grid-template-rows: 0fr;
-    opacity: 0;
-    transform: translateY(30px);
-    pointer-events: none;
-  }
 
   @media (prefers-reduced-motion: reduce) {
     .viewer-and-export {

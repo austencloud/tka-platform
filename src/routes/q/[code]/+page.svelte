@@ -647,43 +647,6 @@
       </div>
 
       <div class="player-controls">
-        <div class="transport">
-          <button
-            type="button"
-            class="play-btn"
-            onclick={togglePlay}
-            aria-label={paused ? "Play" : "Pause"}
-          >
-            {#if paused}
-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            {:else}
-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-              </svg>
-            {/if}
-          </button>
-
-          <input
-            type="range"
-            class="scrubber"
-            min="0"
-            max={duration || 1}
-            step="0.01"
-            value={displayTime}
-            style="background: linear-gradient(to right, #6366f1 {scrubProgress}%, rgba(255,255,255,0.15) {scrubProgress}%)"
-            onpointerdown={startScrub}
-            oninput={handleScrub}
-            onpointerup={endScrub}
-            onchange={endScrub}
-          />
-
-          <span class="time-display">
-            {formatTime(displayTime)}/{formatTime(duration)}
-          </span>
-        </div>
-
         <div class="tempo-row">
           <TempoControl
             bpm={selectedBpm}
@@ -739,6 +702,46 @@
           </a>
         </div>
       </div>
+    </div>
+
+    <!-- Bottom-edge scrubber bar -->
+    <div class="bottom-scrubber">
+      <button
+        type="button"
+        class="play-btn-sm"
+        onclick={togglePlay}
+        aria-label={paused ? "Play" : "Pause"}
+      >
+        {#if paused}
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        {:else}
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+          </svg>
+        {/if}
+      </button>
+
+      <div class="scrubber-track">
+        <div class="scrubber-fill" style:width="{scrubProgress}%"></div>
+        <input
+          type="range"
+          class="scrubber-input"
+          min="0"
+          max={duration || 1}
+          step="0.01"
+          value={displayTime}
+          onpointerdown={startScrub}
+          oninput={handleScrub}
+          onpointerup={endScrub}
+          onchange={endScrub}
+        />
+      </div>
+
+      <span class="time-display-sm">
+        {formatTime(displayTime)}/{formatTime(duration)}
+      </span>
     </div>
 
     <!-- Prop overlay -->
@@ -851,14 +854,6 @@
     margin: 0 0 1.5rem;
   }
 
-  .first-view-badge {
-    font-size: 0.75rem;
-    color: #4ade80;
-    margin: 0;
-    flex-shrink: 0;
-    text-align: center;
-  }
-
   .progress-container {
     width: 100%;
     height: 6px;
@@ -949,6 +944,7 @@
     width: 100%;
     height: 100%;
     padding: 8px 12px;
+    padding-bottom: calc(48px + max(6px, env(safe-area-inset-bottom)));
     gap: 6px;
     overflow: hidden;
   }
@@ -1021,21 +1017,36 @@
     flex-shrink: 0;
   }
 
-  /* ── Transport ── */
+  /* ── Tempo ── */
 
-  .transport {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .tempo-row {
     width: 100%;
   }
 
-  .play-btn {
+  /* ── Bottom-edge scrubber bar ── */
+
+  .bottom-scrubber {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    background: rgba(15, 15, 26, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 50;
+  }
+
+  .play-btn-sm {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--min-touch);
-    height: var(--min-touch);
+    width: 36px;
+    height: 36px;
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.1);
     border: none;
@@ -1045,51 +1056,68 @@
     transition: background 120ms ease;
   }
 
-  .play-btn:hover {
+  .play-btn-sm:hover {
     background: rgba(255, 255, 255, 0.2);
   }
 
-  .scrubber {
+  .scrubber-track {
     flex: 1;
+    position: relative;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+  }
+
+  .scrubber-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  .scrubber-input {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: var(--min-touch);
+    transform: translateY(-50%);
     -webkit-appearance: none;
     appearance: none;
-    height: 4px;
-    border-radius: 2px;
+    background: transparent;
     outline: none;
     cursor: pointer;
-    min-height: var(--min-touch);
+    margin: 0;
   }
 
-  .scrubber::-webkit-slider-thumb {
+  .scrubber-input::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    background: var(--accent);
+    width: 14px;
+    height: 14px;
+    background: #fff;
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 0 4px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
   }
 
-  .scrubber::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    background: var(--accent);
+  .scrubber-input::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #fff;
     border: none;
     border-radius: 50%;
     cursor: pointer;
   }
 
-  .time-display {
-    font-size: 0.7rem;
+  .time-display-sm {
+    font-size: 0.65rem;
     color: rgba(255, 255, 255, 0.5);
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
-  }
-
-  /* ── Tempo ── */
-
-  .tempo-row {
-    width: 100%;
+    white-space: nowrap;
   }
 
   /* ── 2×2 button grid ── */
@@ -1307,10 +1335,6 @@
     .word-title {
       grid-column: 1 / -1;
       font-size: 1.1rem;
-    }
-
-    .first-view-badge {
-      grid-column: 1 / -1;
     }
 
     .video-area {

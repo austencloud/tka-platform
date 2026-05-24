@@ -12,7 +12,7 @@
 import {
 	BLUE_STROKE,
 	RED_STROKE,
-	DEFAULT_TIP_INSET_PX,
+	MANDALA_STANDARD_TIP_DX,
 	MANDALA_GRID_RADIUS,
 	ENGINE_GRID_RADIUS,
 } from "../../domain/mandala-constants";
@@ -47,7 +47,7 @@ function measurePathLength(d: string): number {
  */
 function computeScale(canvasSize: number): number {
 	const tipReach =
-		((ENGINE_GRID_RADIUS - DEFAULT_TIP_INSET_PX) * MANDALA_GRID_RADIUS) /
+		(MANDALA_STANDARD_TIP_DX * MANDALA_GRID_RADIUS) /
 		ENGINE_GRID_RADIUS;
 	const maxExtent = MANDALA_GRID_RADIUS + tipReach;
 	return canvasSize / 2 / (maxExtent * 1.05);

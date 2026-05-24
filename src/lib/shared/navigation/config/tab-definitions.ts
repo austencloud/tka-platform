@@ -586,6 +586,14 @@ export const CHOREO_CARD_TABS: Section[] = [
     color: "#6366f1",
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
+  {
+    id: "releaser",
+    label: "Deck Releaser",
+    icon: '<i class="fas fa-stamp" aria-hidden="true"></i>',
+    description: "Compose and release unique physical card decks",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
 ];
 
 // Festival Hub tabs configuration
@@ -990,6 +998,14 @@ export const LAB_TABS: Section[] = [
     description: "Turn LOOP mandalas into printable stickers",
     color: "#ec4899",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
+  },
+  {
+    id: "coral-lab",
+    label: "Coral Lab",
+    icon: '<i class="fas fa-seedling" aria-hidden="true"></i>',
+    description: "Procedural coral prototyping with EZ-Tree",
+    color: "#ff6b4a",
+    gradient: "linear-gradient(135deg, #ff6b4a 0%, #d4518a 100%)",
   },
 ];
 

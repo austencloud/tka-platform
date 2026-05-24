@@ -19,11 +19,10 @@ import {
 	PI,
 } from "$lib/shared/foundation/domain/math-constants";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
-import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import {
 	BASE_SAMPLES_PER_BEAT,
 	MANDALA_GRID_RADIUS,
+	MANDALA_STANDARD_TIP_DX,
 	ENGINE_GRID_RADIUS,
 } from "../../domain/mandala-constants";
 import type {
@@ -482,43 +481,6 @@ function generatePathPoints(
 	return points;
 }
 
-// ─── Prop tip offsets ───────────────────────────────────────────────────────
-
-// Look up tip attachment points for the given prop type from the unified
-// PropTipPoints registry. Falls back to staff tips when prop type is unknown
-// or has no tip points defined (e.g. contact ball, hand).
-// Props are already shortened to produce visible lobes on 0-turn motions,
-// so no additional inset is applied here.
-
-function getTipOffsetsForProp(propType: string | undefined): TipOffset[] {
-	const config = getTipPointsBaseline(propType);
-	const points = config.points;
-
-	// Props with no tips (contact ball, hand) fall back to staff
-	if (points.length === 0) {
-		const fallback = getTipPointsBaseline("staff").points;
-		return fallback;
-	}
-
-	// Unilateral props (fan, club, hoop, triad) trace only their primary tip -
-	// the center/outermost point - matching the trail system's behavior.
-	if (propType && !isBilateralProp(propType) && points.length > 1) {
-		const middleIndex = Math.floor(points.length / 2);
-		return [points[middleIndex]!];
-	}
-
-	// Bilateral props with exactly 2 tips (staff, buugeng) use both as-is.
-	// Bilateral props with 4+ tips (doublestar, quiad) use only the 2 tips
-	// closest to the vertical center axis (smallest |dx|) - the horizontal
-	// tips trace redundant paths that clutter the mandala.
-	if (points.length > 2) {
-		const sorted = [...points].sort((a, b) => Math.abs(a.dx) - Math.abs(b.dx));
-		return [sorted[0]!, sorted[1]!];
-	}
-
-	return points;
-}
-
 // ─── Public class ───────────────────────────────────────────────────────────
 
 export class MandalaGeometryCalculator {
@@ -554,10 +516,12 @@ export class MandalaGeometryCalculator {
 		steps: readonly StepLike[],
 		_bluePropType?: string,
 		_redPropType?: string,
-		options?: MandalaPathOptions
+		options?: MandalaPathOptions,
+		tipOverride?: { dx: number; dy: number }
 	): MandalaPaths {
 		// Check cache first
-		const key = this.buildCacheKey(steps, _bluePropType, _redPropType, options);
+		const tipKey = tipOverride ? `tip:${tipOverride.dx}:${tipOverride.dy}` : "";
+		const key = this.buildCacheKey(steps, _bluePropType, _redPropType, options) + tipKey;
 		const cached = this.cache.get(key);
 		if (cached) {
 			// Move to end (most recently used) by deleting and re-inserting
@@ -575,12 +539,14 @@ export class MandalaGeometryCalculator {
 			return { blue: [], red: [], purple: [] };
 		}
 
-
-		// Look up tip attachment points for each hand's prop type.
-		// Different props have different numbers of tips - staff has 2,
-		// fan has 5, club has 1, etc. Each tip traces its own mandala path.
-		const blueTips = getTipOffsetsForProp(_bluePropType);
-		const redTips = getTipOffsetsForProp(_redPropType);
+		// Standardized bilateral tips: all mandalas use MANDALA_STANDARD_TIP_DX
+		// regardless of prop type, producing consistent visual fingerprints.
+		// tipOverride lets callers (playground, animation) use custom values.
+		const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
+		const dy = tipOverride?.dy ?? 0;
+		const standardTips = [{ dx: -dx, dy }, { dx: dx, dy }];
+		const blueTips = standardTips;
+		const redTips = standardTips;
 
 		const gridRadius = MANDALA_GRID_RADIUS;
 		const samplesPerBeat = BASE_SAMPLES_PER_BEAT;

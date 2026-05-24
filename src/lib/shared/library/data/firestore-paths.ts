@@ -161,6 +161,26 @@ export function getSystemDeckSequencePath(
 }
 
 // ============================================================================
+// DECK RELEASE PATHS
+// ============================================================================
+
+export function getDeckReleasesPath(): string {
+  return "deckReleases";
+}
+
+export function getDeckReleaseCounterPath(): string {
+  return "deckReleases/counter";
+}
+
+export function getDeckReleaseManifestsPath(): string {
+  return "deckReleases/counter/manifests";
+}
+
+export function getDeckReleaseManifestPath(deckNumber: number): string {
+  return `deckReleases/counter/manifests/${String(deckNumber).padStart(3, "0")}`;
+}
+
+// ============================================================================
 // CONSTANTS
 // ============================================================================
 

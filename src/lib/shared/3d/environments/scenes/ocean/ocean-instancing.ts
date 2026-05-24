@@ -27,14 +27,15 @@ export interface ColoredInstancePlacement extends InstancePlacement {
 
 function extractFirstMeshGeometryAndMaterial(
   root: Object3D,
-): { geometry: BufferGeometry; material: Material } | null {
-  let result: { geometry: BufferGeometry; material: Material } | null = null;
+): { geometry: BufferGeometry; material: Material; meshWorldMatrix: Matrix4 } | null {
+  root.updateMatrixWorld(true);
+  let result: { geometry: BufferGeometry; material: Material; meshWorldMatrix: Matrix4 } | null = null;
   root.traverse((child) => {
     if (result) return;
     const m = child as Mesh;
     if (!m.isMesh || !m.geometry) return;
     const mat = Array.isArray(m.material) ? m.material[0]! : m.material;
-    result = { geometry: m.geometry, material: mat };
+    result = { geometry: m.geometry, material: mat, meshWorldMatrix: m.matrixWorld.clone() };
   });
   return result;
 }
@@ -49,6 +50,7 @@ export function createInstancedMeshFromModel(
   if (!extracted) return null;
 
   const geo = extracted.geometry.clone();
+  geo.applyMatrix4(extracted.meshWorldMatrix);
   const clonedMat = (extracted.material as import('three').MeshStandardMaterial).clone();
   const inst = new InstancedMesh(geo, clonedMat, placements.length);
   inst.frustumCulled = false;
@@ -110,6 +112,7 @@ export function createColoredInstancedMesh(
   };
 
   const geo = extracted.geometry.clone();
+  geo.applyMatrix4(extracted.meshWorldMatrix);
   const colors = new Float32Array(placements.length * 3);
   for (let i = 0; i < placements.length; i++) {
     const c = placements[i]!.color;

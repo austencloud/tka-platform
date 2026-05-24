@@ -51,7 +51,11 @@ export function createSceneLabState() {
   const persistedOcean = persisted?.configs.ocean;
   let oceanConfig = $state<OceanSceneConfig>(
     persistedOcean && "zones" in persistedOcean
-      ? { ...oceanDefaults, ...persistedOcean }
+      ? {
+          ...oceanDefaults,
+          ...persistedOcean,
+          fish: { ...oceanDefaults.fish, ...(persistedOcean as OceanSceneConfig).fish },
+        }
       : oceanDefaults
   );
   let emberConfig = $state<EmberSceneConfig>(

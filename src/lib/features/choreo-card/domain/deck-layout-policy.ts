@@ -1,3 +1,4 @@
-export function getDeckLayoutPolicy(_stepCount: number): "row" | "column" {
+export function getDeckLayoutPolicy(stepCount: number): "row" | "column" {
+  if (stepCount === 8) return "column";
   return "row";
 }

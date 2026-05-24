@@ -2,7 +2,7 @@ import { browser } from "$app/environment";
 
 const DB_NAME = "deck-card-cache";
 const STORE_NAME = "cards";
-const DB_VERSION = 1;
+const DB_VERSION = 3;
 const MAX_SIZE_BYTES = 200 * 1024 * 1024;
 
 interface CachedCardEntry {

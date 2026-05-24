@@ -403,8 +403,26 @@ export interface OceanSceneConfig {
 
   waterSurface: OceanWaterSurfaceConfig | null;
 
+  boatSilhouette: OceanBoatSilhouetteConfig | null;
+
   hemisphereLight: HemisphereLightConfig;
   platform: RuinsPlatformConfig;
+}
+
+export interface OceanBoatSilhouetteConfig {
+  enabled: boolean;
+  offsetX: number;
+  offsetZ: number;
+  heightAboveSurface: number;
+  modelPath: string | null;
+  length: number;
+  width: number;
+  depth: number;
+  color: string;
+  rotationY: number;
+  animated: boolean;
+  keelEnabled: boolean;
+  godRayOcclusion: boolean;
 }
 
 // ============================================================================
@@ -510,10 +528,19 @@ export interface CrystalSpeciesConfig {
   glowIntensity: number;
 }
 
+export interface CrystalModelConfig {
+  path: string;
+  weight: number;
+  glowIntensity: number;
+}
+
 export interface CrystalFormationsConfig {
   enabled: boolean;
   seed: number;
   placementRadius: [number, number];
+  totalCount: number;
+  sizeRange: [number, number];
+  models: CrystalModelConfig[];
   species: CrystalSpeciesConfig[];
 }
 
@@ -1084,6 +1111,21 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
         noiseAmplitude: 0.04,
       },
     },
+    boatSilhouette: {
+      enabled: true,
+      offsetX: 10,
+      offsetZ: -2,
+      heightAboveSurface: 0.3,
+      modelPath: null,
+      length: 6,
+      width: 2.5,
+      depth: 0.8,
+      color: "#0a1520",
+      rotationY: 0.3,
+      animated: true,
+      keelEnabled: true,
+      godRayOcclusion: true,
+    },
     hemisphereLight: {
       skyColor: "#5090b0",
       groundColor: "#2a4058",
@@ -1256,36 +1298,18 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
       enabled: true,
       seed: 42,
       placementRadius: [6, 25],
-      species: [
-        {
-          type: "spire",
-          count: 40,
-          sizeRange: [1.5, 4.0],
-          palette: ["#334488", "#4466aa", "#2255aa", "#5577cc"],
-          glowIntensity: 0.8,
-        },
-        {
-          type: "cluster",
-          count: 45,
-          sizeRange: [0.8, 2.0],
-          palette: ["#4488ff", "#66aaff", "#3366dd"],
-          glowIntensity: 1.0,
-        },
-        {
-          type: "plate",
-          count: 30,
-          sizeRange: [0.6, 1.8],
-          palette: ["#6688cc", "#88aadd", "#aaccff"],
-          glowIntensity: 0.5,
-        },
-        {
-          type: "branch",
-          count: 25,
-          sizeRange: [1.0, 3.0],
-          palette: ["#4488ff", "#22ccff", "#66ddff"],
-          glowIntensity: 0.9,
-        },
+      totalCount: 140,
+      sizeRange: [0.8, 3.5],
+      models: [
+        { path: "/models/cosmic/crystal-spire-crimson.glb", weight: 2, glowIntensity: 0.8 },
+        { path: "/models/cosmic/crystal-spire-prismatic.glb", weight: 2, glowIntensity: 0.9 },
+        { path: "/models/cosmic/crystal-pyramid-blue.glb", weight: 2, glowIntensity: 0.7 },
+        { path: "/models/cosmic/crystal-cluster-pink.glb", weight: 2, glowIntensity: 1.0 },
+        { path: "/models/cosmic/crystal-cluster-aurora.glb", weight: 2, glowIntensity: 1.0 },
+        { path: "/models/cosmic/crystal-plate-golden.glb", weight: 1.5, glowIntensity: 0.5 },
+        { path: "/models/cosmic/crystal-branch-moonlit.glb", weight: 1.5, glowIntensity: 0.9 },
       ],
+      species: [],
     },
     caustics: {
       enabled: true,
@@ -1529,36 +1553,18 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
       enabled: true,
       seed: 99,
       placementRadius: [6, 25],
-      species: [
-        {
-          type: "spire",
-          count: 45,
-          sizeRange: [1.5, 4.0],
-          palette: ["#00aa88", "#22ccaa", "#00ddbb", "#44eedd"],
-          glowIntensity: 0.9,
-        },
-        {
-          type: "cluster",
-          count: 50,
-          sizeRange: [0.8, 2.0],
-          palette: ["#00ccaa", "#44eedd", "#22bbaa"],
-          glowIntensity: 1.2,
-        },
-        {
-          type: "plate",
-          count: 30,
-          sizeRange: [0.6, 1.8],
-          palette: ["#88ddcc", "#aaeedd", "#ccffee"],
-          glowIntensity: 0.6,
-        },
-        {
-          type: "branch",
-          count: 30,
-          sizeRange: [1.0, 3.0],
-          palette: ["#00ccaa", "#cc66cc", "#aa44aa", "#44eedd"],
-          glowIntensity: 1.0,
-        },
+      totalCount: 155,
+      sizeRange: [0.8, 3.5],
+      models: [
+        { path: "/models/cosmic/crystal-spire-crimson.glb", weight: 2, glowIntensity: 0.9 },
+        { path: "/models/cosmic/crystal-spire-prismatic.glb", weight: 2, glowIntensity: 1.0 },
+        { path: "/models/cosmic/crystal-pyramid-blue.glb", weight: 2, glowIntensity: 0.8 },
+        { path: "/models/cosmic/crystal-cluster-pink.glb", weight: 2, glowIntensity: 1.2 },
+        { path: "/models/cosmic/crystal-cluster-aurora.glb", weight: 2.5, glowIntensity: 1.2 },
+        { path: "/models/cosmic/crystal-plate-golden.glb", weight: 1.5, glowIntensity: 0.6 },
+        { path: "/models/cosmic/crystal-branch-moonlit.glb", weight: 2, glowIntensity: 1.0 },
       ],
+      species: [],
     },
     caustics: {
       enabled: true,

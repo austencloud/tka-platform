@@ -11,6 +11,7 @@
 	} from "../domain/mandala-types";
 	import {
 		MANDALA_DEFAULT_SIZE,
+		MANDALA_STANDARD_TIP_DX,
 		DARK_MOTION_BLUE_STROKE,
 		DARK_MOTION_RED_STROKE,
 		DARK_MOTION_BLUE_FILL,
@@ -27,27 +28,25 @@
 	import type { MandalaGeometryCalculator } from "../services/implementations/MandalaGeometryCalculator";
 
 	interface Props {
-		// SequenceData - typed as any to avoid circular import issues across module boundaries
 		sequence: any;
 		mode?: MandalaMode;
 		style?: "stroke" | "filled";
 		show?: "blue" | "red" | "both";
 		size?: number;
 		currentStep?: number;
-		/**
-		 * When true, keep the default dark-mode palette. When false, use the
-		 * light-mode prop hues so the mandala matches --prop-blue / --prop-red
-		 * on a light background.
-		 * Defaults to the app's dark-mode setting.
-		 */
 		darkMode?: boolean;
-		/**
-		 * Explicit prop type overrides for geometry - used when the host needs
-		 * the mandala to reflect a specific prop (e.g. landing page forcing
-		 * staff) rather than the user's current settings.
-		 */
 		bluePropType?: string;
 		redPropType?: string;
+		/** Animate the mandala by oscillating tip point distance */
+		animate?: boolean;
+		/** Min dx for animation oscillation (default 80) */
+		animateMin?: number;
+		/** Max dx for animation oscillation (default 170) */
+		animateMax?: number;
+		/** Seconds per full oscillation cycle (default 4) */
+		animatePeriod?: number;
+		/** Fixed tip dx override (bypasses standard and animation) */
+		tipDx?: number;
 	}
 
 	let {
@@ -60,6 +59,11 @@
 		darkMode,
 		bluePropType,
 		redPropType,
+		animate = false,
+		animateMin = 80,
+		animateMax = 170,
+		animatePeriod = 4,
+		tipDx,
 	}: Props = $props();
 
 	const DARK_MOTION_PALETTE: MandalaPalette = {
@@ -81,27 +85,64 @@
 	};
 
 	let calculator: MandalaGeometryCalculator | null = $state(null);
+	let animatedDx: number = $state(MANDALA_STANDARD_TIP_DX);
+	let rafId: number = 0;
 
 	onMount(() => {
 		calculator = getMandalaGeometryCalculator();
+		return () => {
+			if (rafId) cancelAnimationFrame(rafId);
+		};
 	});
 
-	// Derive geometry from sequence steps - recomputes whenever sequence or
-	// prop type changes, so switching from staff to fan redraws the mandala
-	// with the fan's 5-tip geometry instead of the staff's 2-tip geometry.
+	$effect(() => {
+		if (!animate) {
+			if (rafId) {
+				cancelAnimationFrame(rafId);
+				rafId = 0;
+			}
+			return;
+		}
+
+		const minDx = animateMin;
+		const maxDx = animateMax;
+		const period = animatePeriod;
+		let startTime: number | null = null;
+
+		function tick(time: number) {
+			if (startTime === null) startTime = time;
+			const elapsed = (time - startTime) / 1000;
+			const t = (Math.sin((elapsed / period) * Math.PI * 2) + 1) / 2;
+			animatedDx = minDx + (maxDx - minDx) * t;
+			rafId = requestAnimationFrame(tick);
+		}
+
+		rafId = requestAnimationFrame(tick);
+		return () => {
+			if (rafId) {
+				cancelAnimationFrame(rafId);
+				rafId = 0;
+			}
+		};
+	});
+
+	const effectiveDx = $derived(
+		tipDx ?? (animate ? animatedDx : MANDALA_STANDARD_TIP_DX)
+	);
+
 	const paths = $derived.by((): MandalaPaths | null => {
 		if (!calculator || !sequence?.steps) return null;
-		const blueProp = bluePropType ?? settingsService.settings.bluePropType;
-		const redProp = redPropType ?? settingsService.settings.redPropType;
-		return calculator.calculate(sequence.steps, blueProp, redProp);
+		return calculator.calculate(
+			sequence.steps,
+			bluePropType,
+			redPropType,
+			undefined,
+			{ dx: effectiveDx, dy: 0 }
+		);
 	});
 
-	// Effective dark-mode flag - explicit prop wins, otherwise fall back to global settings.
 	const effectiveDarkMode = $derived(darkMode ?? settingsService.settings.darkMode);
 
-	// Derive render options - card-back mode omits grid dots and background for a clean embed.
-	// Palette mirrors the actual pictograph arrow colors (--dm-motion-*) so the
-	// mandala's red/blue match what the user sees in the beat cells.
 	const renderOptions = $derived.by((): MandalaRenderOptions => {
 		const isCardBack = mode === "card-back";
 		return {
@@ -114,7 +155,6 @@
 		};
 	});
 
-	// Generate SVG markup string from geometry + options
 	const svgString = $derived.by((): string => {
 		if (!paths) return "";
 		return renderMandalaSVG(paths, renderOptions);

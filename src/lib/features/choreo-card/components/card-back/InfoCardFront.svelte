@@ -99,7 +99,7 @@
   .border-frame {
     width: 100%;
     height: 100%;
-    border-radius: 12px;
+    border-radius: 0;
     padding: 4px;
     box-sizing: border-box;
     overflow: hidden;
@@ -111,7 +111,7 @@
     color: var(--theme-text, #ffffff);
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 0;
     box-sizing: border-box;
   }
 

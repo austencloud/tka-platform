@@ -47,7 +47,8 @@
     rayPosition?: Vector3;
     modelBasePath?: string;
     reefSdfData?: ReefSDFData | null;
-    obstacleSpheres?: Float32Array | null;
+    sceneSdfTexture?: Data3DTexture | null;
+    sceneSdfInvMatrix?: Matrix4 | null;
   }
 
   let {
@@ -65,11 +66,12 @@
     rayPosition = new Vector3(0, 0, 0),
     modelBasePath = '/models/ocean/pack/',
     reefSdfData = null,
-    obstacleSpheres = null,
+    sceneSdfTexture = null,
+    sceneSdfInvMatrix = null,
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
-  const { renderer } = useThrelte();
+  const { renderer, camera } = useThrelte();
 
   const CLUSTER_SPREAD = 2.5;
   const VISITOR_RESERVE = 100;
@@ -248,7 +250,7 @@
   let fallbackMeshes = $state<InstancedMesh[]>([]);
   let gpuCompute: GPUComputationRenderer | null = null;
   let posVar: any = null;
-  let velVar: any = null;
+  let velVar = $state<any>(null);
   let stateVar: any = null;
   let materials: ShaderMaterial[] = [];
   let materialSizeMults: number[] = [];
@@ -471,9 +473,10 @@
       velU.uReefSDFInvMatrix2 = { value: identityMat.clone() };
       velU.uReefSDFInvMatrix3 = { value: identityMat.clone() };
 
-      // Sphere obstacle avoidance (rocks, boulders)
-      velU.uObstacleSphereCount = { value: 0 };
-      velU.uObstacleSpheres = { value: new Float32Array(32 * 4) };
+      // Scene-wide SDF (rocks, boulders — baked at load time)
+      velU.uSceneSDF = { value: placeholderSDF };
+      velU.uSceneSDFInvMatrix = { value: identityMat.clone() };
+      velU.uSceneSDFEnabled = { value: 0 };
 
       const posU = posVar.material.uniforms;
       posU.uDelta = { value: 0 };
@@ -506,6 +509,7 @@
       stU.uSchoolCenters = velU.uSchoolCenters;
       stU.uScatterOrigin = velU.uScatterOrigin;
       stU.uScatterRadius = { value: scatterRadius };
+      stU.uCameraRight = { value: new Vector3(1, 0, 0) };
       stU.textureTraits = { value: traitsTex };
 
       const err = gpu.init();
@@ -657,15 +661,14 @@
     console.log(`[FishSchool] Bound ${count} reef SDF textures to velocity shader`);
   });
 
-  // ── Reactive sphere obstacle update ──────────────────────────────────
+  // ── Reactive scene-wide SDF update ───────────────────────────────────
   $effect(() => {
-    if (!velVar || !obstacleSpheres) return;
+    if (!velVar || !sceneSdfTexture || !sceneSdfInvMatrix) return;
     const velU = velVar.material.uniforms;
-    const count = Math.min(obstacleSpheres.length / 4, 32);
-    velU.uObstacleSphereCount.value = count;
-    const buf = velU.uObstacleSpheres.value as Float32Array;
-    buf.set(obstacleSpheres.subarray(0, count * 4));
-    console.log(`[FishSchool] Bound ${count} obstacle spheres`);
+    velU.uSceneSDF.value = sceneSdfTexture;
+    velU.uSceneSDFInvMatrix.value = sceneSdfInvMatrix;
+    velU.uSceneSDFEnabled.value = 1;
+    console.log(`[FishSchool] Bound scene-wide SDF texture`);
   });
 
   function createVisitorMesh(
@@ -772,6 +775,12 @@
     stUni.uDelta.value = dt;
     stUni.uTime.value = elapsed;
     stUni.uScatterRadius.value = scatterRadius;
+
+    const cam = (camera as any)?.current ?? camera;
+    if (cam && cam.matrixWorld) {
+      const e = cam.matrixWorld.elements;
+      stUni.uCameraRight.value.set(e[0], e[1], e[2]).normalize();
+    }
 
     if (eventSystem) {
       eventSystem.tick(dt, velUni as unknown as FishEventUniforms, rayPosition);

@@ -95,8 +95,10 @@ const config = {
   // SVELTE 5 COMPILER OPTIONS
   // ============================================================================
   compilerOptions: {
-    // Svelte 5 runes mode is enabled by default
-    // 2026: Runes provide better reactivity and performance
+    warningFilter: (warning) => {
+      if (warning.code === "state_referenced_locally") return false;
+      return true;
+    },
   },
 
   // ============================================================================

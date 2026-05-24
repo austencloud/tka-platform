@@ -18,6 +18,7 @@ uniform vec3 uSchoolCenters[50];
 
 uniform vec3 uScatterOrigin;
 uniform float uScatterRadius;
+uniform vec3 uCameraRight;
 
 uniform sampler2D textureTraits;
 
@@ -59,8 +60,12 @@ void main() {
   float rayDist = distance(pos, uScatterOrigin);
   if (rayDist < uScatterRadius && uScatterOrigin.y > -900.0) {
     vec3 awayFromRay = safeNormalize(pos - uScatterOrigin);
-    threatDirX = awayFromRay.x;
-    threatDirZ = awayFromRay.z;
+    float lateralSign = sign(dot(awayFromRay, uCameraRight));
+    if (abs(lateralSign) < 0.01) lateralSign = 1.0;
+    vec3 lateralDir = uCameraRight * lateralSign;
+    vec3 biasedFlee = safeNormalize(awayFromRay * 0.4 + lateralDir * 0.6);
+    threatDirX = biasedFlee.x;
+    threatDirZ = biasedFlee.z;
     newState = 1.0;
     if (currentState < 0.5 || newTimer < 1.0) {
       newTimer = 5.0 + boldness * 2.0;

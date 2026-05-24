@@ -127,9 +127,10 @@ uniform mat4 uReefSDFInvMatrix3;
 uniform float uReefAvoidDist;   // world-space distance at which avoidance kicks in
 uniform float uReefAvoidForce;  // strength of the avoidance push
 
-// ── Sphere obstacle avoidance (rocks, boulders, coral) ──────────────
-uniform int uObstacleSphereCount;
-uniform vec4 uObstacleSpheres[32]; // xyz = center, w = radius
+// ── Scene-wide SDF (rocks, boulders — baked at load time) ───────────
+uniform sampler3D uSceneSDF;
+uniform mat4 uSceneSDFInvMatrix;
+uniform int uSceneSDFEnabled;
 
 ${NOISE_GLSL}
 ${SAFE_NORMALIZE_GLSL}
@@ -314,17 +315,9 @@ void main() {
     steer += sdfAvoidance(uReefSDF3, uReefSDFInvMatrix3, pos, uReefAvoidDist, uReefAvoidForce);
   }
 
-  // ── Sphere obstacle avoidance (rocks, boulders) ──────────────────
-  for (int si = 0; si < 32; si++) {
-    if (si >= uObstacleSphereCount) break;
-    vec4 sphere = uObstacleSpheres[si];
-    vec3 toFish = pos - sphere.xyz;
-    float dist = length(toFish);
-    float avoidR = sphere.w + 1.5;
-    if (dist < avoidR && dist > 0.01) {
-      float pen = 1.0 - dist / avoidR;
-      steer += safeNormalize(toFish) * pen * pen * 4.0;
-    }
+  // ── Scene-wide SDF obstacle avoidance (rocks, boulders) ─────────
+  if (uSceneSDFEnabled > 0) {
+    steer += sdfAvoidance(uSceneSDF, uSceneSDFInvMatrix, pos, uReefAvoidDist, uReefAvoidForce);
   }
 
   float bodyLength = uTargetSize * instanceScale;

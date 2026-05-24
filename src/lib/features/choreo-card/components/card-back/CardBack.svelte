@@ -200,6 +200,7 @@
         <span class="url-line" style="background: linear-gradient(90deg, transparent, {theme.ornamentLineColor} 30%, {theme.ornamentLineColor} 70%, transparent);"></span>
       </div>
       <span class="brand-url">tkaflowarts.com</span>
+      <span class="brand-year">© {new Date().getFullYear()}</span>
     </div>
   </div>
 </div>
@@ -385,6 +386,13 @@
     font-weight: 400;
   }
 
+  .brand-year {
+    font-size: 2.2cqi;
+    color: var(--card-text-muted, rgba(255, 255, 255, 0.7));
+    letter-spacing: 0.1em;
+    font-weight: 300;
+  }
+
   /* ═══════ CORNERS (absolute, fixed position) ═══════ */
 
   .corner {
@@ -410,6 +418,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    filter: drop-shadow(0 0.5cqi 1cqi rgba(0, 0, 0, 0.1));
   }
 
   .corner-sublabel {
@@ -426,6 +435,7 @@
     font-weight: 700;
     color: var(--card-text-muted, rgba(255, 255, 255, 0.9));
     line-height: 1;
+    filter: drop-shadow(0 0.5cqi 1cqi rgba(0, 0, 0, 0.08));
   }
 
   /* ═══════ CENTER CONTENT ═══════ */
@@ -457,6 +467,7 @@
     justify-content: center;
     z-index: 2;
     pointer-events: none;
+    filter: drop-shadow(0 0.5cqi 2cqi rgba(0, 0, 0, 0.15));
   }
 
   .mandala-zone {
@@ -487,6 +498,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.6cqi;
+    filter: drop-shadow(0 0.5cqi 1.5cqi rgba(0, 0, 0, 0.12));
   }
 
   .loop-icon-cell {
@@ -552,6 +564,7 @@
   .bottom-left :global(.start-pos-picto) {
     width: 12cqi !important;
     height: 12cqi !important;
+    filter: drop-shadow(0 0.5cqi 1.5cqi rgba(0, 0, 0, 0.12));
   }
 
   .bottom-left :global(.start-pos-picto svg) {

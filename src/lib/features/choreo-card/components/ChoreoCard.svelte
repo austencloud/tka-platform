@@ -44,7 +44,7 @@
     sequence,
     printMode = false,
     showQRCodes = true,
-    showBirthday = true,
+    showBirthday = false,
     handPointsVisible = true,
     showGrid = true,
     showTKA = true,
@@ -53,7 +53,7 @@
     startPositionLayout = "row",
     handPathMode = false,
     cardMode = false,
-    customNotesText,
+    customNotesText = "🔥 FireDrums 2026 🔥",
     preRenderedImageUrl: preRenderedImageUrlProp,
     showMandala = false,
     onSelect,
@@ -145,7 +145,9 @@
         addDifficultyLevel={false}
         {includeStartPosition}
         {startPositionLayout}
-        {showBirthday}
+        showBirthday={false}
+        showCreatorName={false}
+        showNotes={true}
         userName={sequence.author ?? ""}
         visibility={visibilitySettings}
         {cardMode}
@@ -173,7 +175,7 @@
     height: 100%; /* Fill grid cell */
     padding: 0;
     background: var(--print-bg);
-    border: 1px solid var(--print-border);
+    border: 2px solid #999999;
     border-radius: 0;
     overflow: hidden;
     cursor: pointer;
@@ -181,7 +183,6 @@
   }
 
   .choreo-card:hover {
-    transform: scale(1.02);
     box-shadow: var(--shadow-card, 0 4px 12px rgba(0, 0, 0, 0.15));
   }
 

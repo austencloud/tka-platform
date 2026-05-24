@@ -1,6 +1,9 @@
 <script lang="ts">
   import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
   import { renderCardBack } from "$lib/features/choreo-card/services/card-back-dom-renderer";
+  import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
+  import { getProofModeVisuals } from "$lib/features/choreo-card/components/card-back/card-back-theme-visuals";
+  import type { CardBackThemeVisuals } from "$lib/features/choreo-card/components/card-back/card-back-theme-visuals";
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -12,12 +15,28 @@
   const engine = createBrowseEngine({ persistKey: null, minColumns: 2, initialColumns: 3 });
 
   let cards: { url: string; name: string }[] = $state([]);
+  let sequence: SequenceData | null = $state(null);
   let status = $state("Loading sequences...");
+
+  const FONT_VARIANTS: { label: string; style: "uppercase-sans" | "italic-serif" | "small-caps" }[] = [
+    { label: "Uppercase Didot (current)", style: "uppercase-sans" },
+    { label: "Italic Serif", style: "italic-serif" },
+    { label: "Small Caps", style: "small-caps" },
+  ];
+
+  function makeThemeOverride(brandStyle: string): { visuals: CardBackThemeVisuals; name: string } {
+    const base = getProofModeVisuals("ocean");
+    return {
+      visuals: { ...base, brandStyle: brandStyle as CardBackThemeVisuals["brandStyle"] },
+      name: "ocean",
+    };
+  }
 
   onMount(async () => {
     await engine.initialize();
     const seqs = engine.sequences.slice(0, CARD_COUNT);
     if (seqs.length === 0) { status = "No sequences found."; return; }
+    sequence = seqs[0]!;
     status = `Capturing ${seqs.length} cards...`;
     await captureAll(seqs);
   });
@@ -77,6 +96,20 @@
       {/each}
     </div>
   {/if}
+
+  {#if sequence}
+    <h2>Font Comparison — "The Kinetic Alphabet"</h2>
+    <div class="font-compare">
+      {#each FONT_VARIANTS as variant}
+        <div class="font-card">
+          <div class="card-slot">
+            <CardBack {sequence} themeOverride={makeThemeOverride(variant.style)} />
+          </div>
+          <span class="font-label">{variant.label}</span>
+        </div>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -99,4 +132,28 @@
   .card-cell img { width: 160px; border: 1px solid #333; border-radius: 4px; }
   .grid.medium .card-cell img { width: 250px; }
   .label { font-size: 11px; color: #666; }
+
+  .font-compare {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .font-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-slot {
+    width: 250px;
+    height: 350px;
+    container-type: inline-size;
+    overflow: hidden;
+  }
+  .font-label {
+    font-size: 13px;
+    color: #aaa;
+    font-weight: 500;
+  }
 </style>

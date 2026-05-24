@@ -65,11 +65,12 @@
 
     {#if layers.grid}
       <div class="slider-group">
-        <label class="slider-label">
+        <label class="slider-label" for="void-grid-opacity">
           Grid Opacity
           <span class="slider-value">{(gridOpacity * 100).toFixed(0)}%</span>
         </label>
         <input
+          id="void-grid-opacity"
           type="range"
           min="0.02"
           max="0.3"
@@ -81,11 +82,12 @@
       </div>
 
       <div class="slider-group">
-        <label class="slider-label">
+        <label class="slider-label" for="void-grid-spacing">
           Grid Spacing
           <span class="slider-value">{gridSpacing}px</span>
         </label>
         <input
+          id="void-grid-spacing"
           type="range"
           min="10"
           max="100"

@@ -288,7 +288,7 @@ Variation support:
 <style>
   .choreo-card {
     position: relative;
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
     background: transparent;
     border: none;

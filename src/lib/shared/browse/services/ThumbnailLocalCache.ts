@@ -21,10 +21,8 @@ export interface ThumbnailLocalCacheStats {
 
 const DB_NAME = "thumbnail-local-cache";
 const STORE_NAME = "thumbnails";
-// v3: Purge stale LOOP icons. Prior versions baked icons from the lossy
-// loopType string ("rotated") instead of live detection, dropping compound
-// components like swap. Detection-derived icons are now authoritative.
-const DB_VERSION = 3;
+// v5: Purge after 8-step column layout change.
+const DB_VERSION = 5;
 const DEFAULT_MAX_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB default limit
 
 interface CachedEntry {

@@ -62,7 +62,6 @@
 
   let selectedLength = $state(loadInt(STORAGE_KEYS.length, 0));
   let currentSequence = $state<SequenceData | null>(null);
-  let focusedCard = $state<"front" | "back" | null>(loadString(STORAGE_KEYS.focusedCard) as "front" | "back" | null ?? null);
   let showInfoCard = $state(loadBool(STORAGE_KEYS.infoCard, false));
   let sidebarOpen = $state(loadBool(STORAGE_KEYS.sidebarOpen, false));
   let isExporting = $state(false);
@@ -178,11 +177,6 @@
     }
   }
 
-  function handleFocusChange(card: "front" | "back" | null) {
-    focusedCard = card;
-    save(STORAGE_KEYS.focusedCard, card);
-  }
-
   function handleSidebarToggle() {
     sidebarOpen = !sidebarOpen;
     save(STORAGE_KEYS.sidebarOpen, sidebarOpen);
@@ -295,8 +289,6 @@
   <div class="preview-panel">
     <CardPreviewStack
       sequence={currentSequence}
-      {focusedCard}
-      onFocusChange={handleFocusChange}
       {handPointsVisible}
       {showGrid}
       {showTKA}

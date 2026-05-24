@@ -23,11 +23,8 @@ const MPC_BLEED = 36;
 const CONTENT_WIDTH = MPC_WIDTH - MPC_BLEED * 2;   // 750
 const _CONTENT_HEIGHT = MPC_HEIGHT - MPC_BLEED * 2;  // 1050
 
-// Standard playing card corner radius: ~3mm on 63.5mm width = 4.72%
-// Applied to MPC canvas width for realistic proportions
-const CARD_RADIUS_PCT = 0.0472;
-const OUTER_RADIUS = Math.round(MPC_WIDTH * CARD_RADIUS_PCT);  // ~39px
-const INNER_RADIUS = Math.round(CONTENT_WIDTH * CARD_RADIUS_PCT); // ~35px
+const OUTER_RADIUS = 0;
+const INNER_RADIUS = 0;
 
 export class PrintCardRenderer {
   constructor(
@@ -126,10 +123,10 @@ export class PrintCardRenderer {
       combinedGrids: false,
       userName: sequence.author ?? "",
       exportDate: new Date().toISOString(),
-      notes: "",
-      showCreatorName: true,
+      notes: "🔥 FireDrums 2026 🔥",
+      showCreatorName: false,
       showNotes: true,
-      showBirthday: true,
+      showBirthday: false,
       leftLabel: options.leftLabel,
       loopType: sequence.loopType ?? undefined,
       showLoopGlyph: false,

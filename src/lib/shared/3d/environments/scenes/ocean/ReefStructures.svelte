@@ -1,6 +1,7 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import { useGltf, useDraco } from "@threlte/extras";
+  import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
   import { userProportionsState } from "@austencloud/scene-3d";
   import { terrainHeightForPlacement } from "./terrain-height";
   import { Color, Object3D, Mesh, Vector3, Matrix4 } from "three";
@@ -31,7 +32,7 @@
   const groundY = $derived(userProportionsState.groundY);
 
   const dracoLoader = useDraco("/draco/");
-  const opts = { dracoLoader };
+  const opts = { dracoLoader, meshoptDecoder: MeshoptDecoder };
 
   const archGlb = useGltf("/models/ocean/structures/coral-arch.glb", opts);
   const wallGlb = useGltf("/models/ocean/structures/reef-wall.glb", opts);

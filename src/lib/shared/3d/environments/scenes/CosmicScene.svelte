@@ -10,6 +10,8 @@
   import EnergyParticles from "./cosmic/EnergyParticles.svelte";
   import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
   import LunarCrystals from "./cosmic/LunarCrystals.svelte";
+  import CrystalFormations from "./cosmic/CrystalFormations.svelte";
+  import PrismaticCaustics from "./cosmic/PrismaticCaustics.svelte";
   import EarthGodRays from "./cosmic/EarthGodRays.svelte";
   import LunarGroundPlane from "./cosmic/LunarGroundPlane.svelte";
   import Starfield from "./cosmic/Starfield.svelte";
@@ -95,7 +97,15 @@
 
 <LunarGroundPlane veins={activeConfig.lunarGround} groundConfig={activeConfig.ground} />
 
-<LunarCrystals config={activeConfig.crystals} />
+{#if activeConfig.crystalFormations.enabled}
+  <CrystalFormations config={activeConfig.crystalFormations} />
+{:else}
+  <LunarCrystals config={activeConfig.crystals} />
+{/if}
+
+{#if activeConfig.caustics.enabled}
+  <PrismaticCaustics config={activeConfig.caustics} groundSize={activeConfig.ground.size} />
+{/if}
 
 <StationPlatform config={activeConfig.platform} />
 

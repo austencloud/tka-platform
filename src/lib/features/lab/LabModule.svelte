@@ -43,6 +43,7 @@
     "spatial-lab": () => import("./tabs/spatial-lab/SpatialLab.svelte"),
     stickers: () => import("$lib/features/sticker-lab/StickerLab.svelte"),
     "path-mandalas": () => import("./tabs/PathMandalaLab.svelte"),
+    "coral-lab": () => import("./tools/coral-lab/CoralLab.svelte"),
     // hand-path-explorer, hand-path-builder graduated to Hand Paths module (Mar 2026)
     // video-trails, video-lab graduated to Video module (Mar 2026)
   };

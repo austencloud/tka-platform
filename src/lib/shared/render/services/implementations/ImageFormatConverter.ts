@@ -82,7 +82,7 @@ export async function blobToImage(blob: Blob): Promise<HTMLImageElement> {
 export async function imageToBlob(img: HTMLImageElement): Promise<Blob> {
   const canvas = createRenderCanvas(img.width || img.naturalWidth, img.height || img.naturalHeight);
 
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
   if (!ctx) {
     throw new Error("Failed to get 2D context for blob conversion");
   }

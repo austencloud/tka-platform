@@ -121,12 +121,15 @@ importers:
       '@caps/domain':
         specifier: file:./packages/caps-domain
         version: file:packages/caps-domain
+      '@dgreenheck/ez-tree':
+        specifier: ^1.1.0
+        version: 1.1.0(three@0.182.0)
       '@dimforge/rapier3d-compat':
         specifier: ^0.19.3
         version: 0.19.3
       '@flow-arts/core':
         specifier: file:./packages/flow-arts-core
-        version: link:packages/flow-arts-core
+        version: file:packages/flow-arts-core
       '@googlemaps/markerclusterer':
         specifier: ^2.5.3
         version: 2.6.2
@@ -189,22 +192,22 @@ importers:
         version: 2.27.2
       '@tka/domain':
         specifier: file:./packages/domain
-        version: link:packages/domain
+        version: file:packages/domain
       '@tka/render-composition':
         specifier: workspace:*
         version: link:packages/render-composition
       '@tka/render-core':
         specifier: file:./packages/render-core
-        version: link:packages/render-core
+        version: file:packages/render-core
       '@tka/sequence-engine':
         specifier: file:./packages/sequence-engine
         version: file:packages/sequence-engine
       '@tka/tka-types':
         specifier: file:./packages/tka-types
-        version: link:packages/tka-types
+        version: file:packages/tka-types
       '@vtg/domain':
         specifier: file:./packages/vtg-domain
-        version: link:packages/vtg-domain
+        version: file:packages/vtg-domain
       ai:
         specifier: ^6.0.0
         version: 6.0.70(zod@4.3.6)
@@ -1083,6 +1086,11 @@ packages:
   '@dabh/diagnostics@2.0.8':
     resolution: {integrity: sha512-R4MSXTVnuMzGD7bzHdW2ZhhdPC/igELENcq5IjEverBvq5hn1SXCWcsi6eSsdWP0/Ur+SItRRjAktmdoX/8R/Q==}
 
+  '@dgreenheck/ez-tree@1.1.0':
+    resolution: {integrity: sha512-6pvS6hD6B6h00dm0SnkgYeT4ABU5Y1Z9M44p1tXiV5C0eKrQy2sKECXshoaUv0qAOqYVL68w/PwadUxDFDiHUg==}
+    peerDependencies:
+      three: '>=0.167'
+
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
 
@@ -1850,6 +1858,9 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@flow-arts/core@file:packages/flow-arts-core':
+    resolution: {directory: packages/flow-arts-core, type: directory}
 
   '@gltf-transform/cli@4.3.0':
     resolution: {integrity: sha512-JvmIlITGjkQLq44vkp1LGmIJNZZaC2LhCQq/Uua72Rg7FMz3006SMUHkni/+i3ml0k7gWu07wWJYREV4+aMVNQ==}
@@ -3102,8 +3113,17 @@ packages:
   '@tiptap/starter-kit@2.27.2':
     resolution: {integrity: sha512-bb0gJvPoDuyRUQ/iuN52j1//EtWWttw+RXAv1uJxfR0uKf8X7uAqzaOOgwjknoCIDC97+1YHwpGdnRjpDkOBxw==}
 
+  '@tka/domain@file:packages/domain':
+    resolution: {directory: packages/domain, type: directory}
+
+  '@tka/render-core@file:packages/render-core':
+    resolution: {directory: packages/render-core, type: directory}
+
   '@tka/sequence-engine@file:packages/sequence-engine':
     resolution: {directory: packages/sequence-engine, type: directory}
+
+  '@tka/tka-types@file:packages/tka-types':
+    resolution: {directory: packages/tka-types, type: directory}
 
   '@tootallnate/once@2.0.0':
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
@@ -3453,6 +3473,9 @@ packages:
 
   '@vitest/utils@4.0.18':
     resolution: {integrity: sha512-msMRKLMVLWygpK3u2Hybgi4MNjcYJvwTb0Ru09+fOyCXIgT5raYP041DRRdiJiI3k/2U6SEbAETB3YtBrUkCFA==}
+
+  '@vtg/domain@file:packages/vtg-domain':
+    resolution: {directory: packages/vtg-domain, type: directory}
 
   '@webgpu/types@0.1.69':
     resolution: {integrity: sha512-RPmm6kgRbI8e98zSD3RVACvnuktIja5+yLgDAkTmxLr90BEwdTXRQWNLF3ETTTyH/8mKhznZuN5AveXYFEsMGQ==}
@@ -7655,6 +7678,10 @@ snapshots:
       enabled: 2.0.0
       kuler: 2.0.0
 
+  '@dgreenheck/ez-tree@1.1.0(three@0.182.0)':
+    dependencies:
+      three: 0.182.0
+
   '@dimforge/rapier3d-compat@0.12.0': {}
 
   '@dimforge/rapier3d-compat@0.19.3': {}
@@ -8306,6 +8333,8 @@ snapshots:
       '@floating-ui/utils': 0.2.10
 
   '@floating-ui/utils@0.2.10': {}
+
+  '@flow-arts/core@file:packages/flow-arts-core': {}
 
   '@gltf-transform/cli@4.3.0':
     dependencies:
@@ -9674,9 +9703,15 @@ snapshots:
       '@tiptap/extension-text-style': 2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))
       '@tiptap/pm': 2.27.2
 
+  '@tka/domain@file:packages/domain': {}
+
+  '@tka/render-core@file:packages/render-core': {}
+
   '@tka/sequence-engine@file:packages/sequence-engine':
     dependencies:
       '@tka/tka-types': link:packages/tka-types
+
+  '@tka/tka-types@file:packages/tka-types': {}
 
   '@tootallnate/once@2.0.0':
     optional: true
@@ -10102,6 +10137,10 @@ snapshots:
     dependencies:
       '@vitest/pretty-format': 4.0.18
       tinyrainbow: 3.0.3
+
+  '@vtg/domain@file:packages/vtg-domain':
+    dependencies:
+      '@flow-arts/core': file:packages/flow-arts-core
 
   '@webgpu/types@0.1.69': {}
 

@@ -14,6 +14,10 @@
     onPublish?: () => void;
     onUnpublish?: () => void;
     onDeleteRequest?: () => void;
+    practiceActive?: boolean;
+    onPracticeToggle?: () => void;
+    onVideoUpload?: () => void;
+    variant?: 'header' | 'footer';
   }
 
   let {
@@ -24,6 +28,10 @@
     onPublish,
     onUnpublish,
     onDeleteRequest,
+    practiceActive = false,
+    onPracticeToggle,
+    onVideoUpload,
+    variant = 'header',
   }: Props = $props();
 
   let isOpen = $state(false);
@@ -74,10 +82,21 @@
   }
 
   let menuItems = $derived.by(() => {
-    const items: Array<{ label: string; icon: string; action: () => void; className?: string }> = [];
+    const items: Array<{ label: string; icon: string; action: () => void; className?: string; dividerBefore?: boolean }> = [];
 
+    if (onPracticeToggle) {
+      items.push({
+        label: practiceActive ? "Stop Practice" : "Practice Mode",
+        icon: practiceActive ? "fa-stop" : "fa-signal",
+        action: onPracticeToggle,
+        className: practiceActive ? "practice-active" : undefined,
+      });
+    }
+    if (onVideoUpload) {
+      items.push({ label: "Upload Video", icon: "fa-video", action: onVideoUpload });
+    }
     if (onPropsOpen) {
-      items.push({ label: "Props", icon: "fa-wand-magic-sparkles", action: onPropsOpen });
+      items.push({ label: "Props", icon: "fa-wand-magic-sparkles", action: onPropsOpen, dividerBefore: items.length > 0 });
     }
     if (onCopyLink) {
       items.push({
@@ -85,6 +104,7 @@
         icon: linkCopied ? "fa-check" : "fa-link",
         action: onCopyLink,
         className: linkCopied ? "copied" : undefined,
+        dividerBefore: !onPropsOpen && items.length > 0,
       });
     }
     if (onPublish || onUnpublish) {
@@ -92,6 +112,7 @@
         label: isPublished ? "Make Private" : "Make Public",
         icon: isPublished ? "fa-eye-slash" : "fa-eye",
         action: (isPublished ? onUnpublish : onPublish) ?? (() => {}),
+        dividerBefore: !(onPropsOpen || onCopyLink) && items.length > 0,
       });
     }
     if (onDeleteRequest) {
@@ -116,6 +137,7 @@
       bind:this={triggerEl}
       type="button"
       class="overflow-trigger"
+      class:header-variant={variant === 'header'}
       onclick={toggle}
       aria-haspopup="menu"
       aria-expanded={isOpen}
@@ -130,6 +152,9 @@
 
       <div bind:this={menuEl} class="overflow-popover" role="menu" aria-label="More actions">
         {#each menuItems as item}
+          {#if item.dividerBefore}
+            <div class="menu-divider"></div>
+          {/if}
           <button
             type="button"
             role="menuitem"
@@ -248,6 +273,32 @@
 
   .overflow-item.copied {
     color: var(--semantic-success, #22c55e);
+  }
+
+  .overflow-item.practice-active {
+    color: #f87171;
+  }
+
+  .overflow-item.practice-active:hover,
+  .overflow-item.practice-active:focus {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+  }
+
+  .menu-divider {
+    height: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    margin: 4px 8px;
+  }
+
+  .overflow-trigger.header-variant {
+    width: auto;
+    height: auto;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    border-radius: 8px;
+    background: none;
+    border: none;
   }
 
   @media (prefers-reduced-motion: reduce) {

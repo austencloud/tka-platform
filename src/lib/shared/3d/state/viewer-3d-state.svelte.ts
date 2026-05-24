@@ -338,8 +338,7 @@ export function createViewer3DState() {
   let isCameraDragging = $state(false);
 
   // Welcome animation: plays once per session on first 3D entry.
-  // Fires via requestIdleCallback after registerSnapTo, so the browser's
-  // heavy scene setup work has settled before the sweep starts.
+  // Fires on the next animation frame after registerSnapTo.
   let _hasPlayedWelcome = false;
   let _welcomeAnimationPending = false;
 
@@ -1004,11 +1003,7 @@ export function createViewer3DState() {
   ) {
     _snapToFn = fn;
     if (_welcomeAnimationPending) {
-      if (typeof requestIdleCallback === "function") {
-        requestIdleCallback(() => _fireWelcome());
-      } else {
-        setTimeout(() => _fireWelcome(), 500);
-      }
+      requestAnimationFrame(() => _fireWelcome());
     }
   }
 

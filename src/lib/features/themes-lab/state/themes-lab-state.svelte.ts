@@ -17,6 +17,9 @@ export function createThemesLabState() {
   const sceneState = createSceneLabState();
   const composerState = createComposerEditorState();
 
+  const initialOption = getThemeOption(themeId);
+  if (initialOption) sceneState.setSceneId(initialOption.sceneId);
+
   function setTheme(id: ThemeId) {
     themeId = id;
 

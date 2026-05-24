@@ -65,6 +65,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     displayMode = "sheets",
   }: Props = $props();
 
+  cardCache.clear();
+  deckCardBlobCache.clear().catch(() => {});
   let lastSeenRerenderKey = rerenderKey;
   let renderedCards: RenderedCard[] = $state([]);
   let renderProgress = $state(0);
@@ -106,7 +108,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       bluePropType: settingsService.settings.bluePropType,
       redPropType: settingsService.settings.redPropType,
       leftLabel: overrideLeftLabel ?? leftLabel,
-      bleedPx: 0,
+      bleedPx: 36,
     };
   }
 
@@ -116,6 +118,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   function buildCacheKey(seq: SequenceData, stepCount: number | undefined, seqLeftLabel?: string): string {
     const seqId = seq.id ?? seq.word ?? seq.name ?? "";
+    const layout = deckMode && stepCount != null
+      ? getDeckLayoutPolicy(stepCount)
+      : "row";
     const optsPart = [
       cardSize, theme, showGrid, showTKA, showWord,
       includeStartPosition, handPointsVisible,
@@ -125,6 +130,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       settingsService.settings.backgroundType ?? "",
       stepCount,
       seqLeftLabel ?? leftLabel ?? "",
+      layout,
+      "v3",
     ].join("|");
     return `${seqId}::${optsPart}`;
   }
@@ -561,8 +568,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   .card-cell {
     overflow: hidden;
-    /* Standard playing card corner radius: ~3mm on 63.5mm = 4.72% of width */
-    border-radius: 4.72%;
+    border-radius: 0;
     background: #ffffff;
   }
 

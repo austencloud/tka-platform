@@ -121,6 +121,12 @@ export function createAnimatorPlaybackAdapter(
     get beatMarkerPositions() {
       return computeBeatMarkerPositions(getDurations(params.getSteps()));
     },
+    get bpm() {
+      return undefined;
+    },
+    get playbackMode() {
+      return undefined;
+    },
     seek(progress: number) {
       const target = computeSeekTarget(
         progress,

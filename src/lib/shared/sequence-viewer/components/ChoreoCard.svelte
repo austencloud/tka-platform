@@ -389,8 +389,12 @@
   // Values from Firestore may arrive as Timestamp objects instead of Date,
   // so coerce to Date before calling Date methods.
   const birthdayDate = $derived.by(() => {
-    const raw = sequence.birthday ?? sequence.createdAt ?? sequence.dateAdded ?? new Date();
+    const raw = sequence.birthday || sequence.createdAt || sequence.dateAdded || new Date();
     const date = raw instanceof Date ? raw : typeof (raw as any).toDate === "function" ? (raw as any).toDate() : new Date(raw as any);
+    if (isNaN(date.getTime())) {
+      const now = new Date();
+      return `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
+    }
     const month = date.getMonth() + 1;
     const day = date.getDate();
     const year = date.getFullYear();
@@ -760,6 +764,7 @@
       // (width: 100%; height: 100%), so its size is valid even before cells exist.
       // Without this, the first frame shows auto-sized content that snaps to
       // calculated dimensions on the next frame - a visible jump.
+      console.log(`[ChoreoCard:renderAllCells] cols=${cols}, rows=${rws}, stepCount=${stepCount}, containerEl=${containerElement?.clientWidth}x${containerElement?.clientHeight}, previewAspectRatio=${previewAspectRatio?.toFixed(3)}`);
       updateContainedDimensions();
       if (containedWidth && cols > 0) {
         const newCw = containedWidth / cols;
@@ -1098,7 +1103,10 @@
     // can cause micro-fluctuations that shift the card.
     if (suppressObserverUpdates) return;
 
-    if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) return;
+    if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) {
+      console.log(`[ChoreoCard:containDims] BAIL — container=${!!containerElement}, aspectRatio=${previewAspectRatio}`);
+      return;
+    }
 
     // Use content area (clientWidth minus padding), not clientWidth which includes padding.
     // The .preview-stack child lives in the content area, so contain must fit within it.
@@ -1167,6 +1175,8 @@
         newWidth = Number.isFinite(w) ? w : null;
       }
     }
+
+    console.log(`[ChoreoCard:containDims] container=${Math.round(containerWidth)}x${Math.round(containerHeight)}, aspectRatio=${previewAspectRatio?.toFixed(3)}, needsScroll=${needsScroll}, forceContain=${forceContain}, fitWidth=${fitWidth} → new=${newWidth ? Math.round(newWidth) : null}x${newHeight ? Math.round(newHeight) : null}, cols=${columns}, rows=${rows}, effCols=${effectiveColumns}, effRows=${effectiveRows}`);
 
     // Only update state if values actually changed (prevents ResizeObserver → state → resize loop)
     const widthChanged = newWidth !== containedWidth && (newWidth === null || containedWidth === null || Math.abs(newWidth - containedWidth) > 0.5);
@@ -1475,7 +1485,7 @@
     <div
       class="preview-stack"
       class:scroll-mode={needsScroll}
-      style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};`}
+      style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};${(!containedWidth && !containedHeight) ? ' visibility: hidden;' : ''}`}
       bind:this={previewStackElement}
     >
       <!-- Header section -->

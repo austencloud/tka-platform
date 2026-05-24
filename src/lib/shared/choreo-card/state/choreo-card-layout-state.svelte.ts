@@ -176,7 +176,8 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     const headerFraction = deps.showHeader ? (1 / HEADER_HEIGHT_DIVISOR) * hfScale : 0;
     const footerFraction = deps.showFooter ? (1 / FOOTER_HEIGHT_DIVISOR) * hfScale : 0;
     const totalHeight = gridHeight + headerFraction + footerFraction;
-    return gridWidth / totalHeight;
+    const ratio = gridWidth / totalHeight;
+    return ratio;
   });
 
   // Scaled sizes based on grid element width.

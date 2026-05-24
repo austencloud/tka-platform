@@ -38,7 +38,7 @@ export async function renderCardBack(sequence: SequenceData, options: CardBackDo
     const capturedCanvas = await domToCanvas(container, {
       width: contentW,
       height: contentH,
-      scale: 1,
+      scale: 2,
     });
 
     // Unmount the Svelte component

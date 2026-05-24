@@ -25,6 +25,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   import CardDesigner from "./CardDesigner.svelte";
   import ScanActivityTab from "./scan-activity/ScanActivityTab.svelte";
   import CardBackThemeLab from "./card-back/CardBackThemeLab.svelte";
+  import DeckReleaserTab from "./deck-releaser/DeckReleaserTab.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
@@ -156,7 +157,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   );
 
   // Mode state - synced with global navigation
-  type ChoreoCardMode = "decks" | "designer" | "scan-activity" | "theme-lab";
+  type ChoreoCardMode = "decks" | "designer" | "scan-activity" | "theme-lab" | "releaser";
   let mode = $state<ChoreoCardMode>("decks");
 
   let browseSequencesLoaded = false;
@@ -164,7 +165,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   // Sync with navigation state (sidebar tab selection)
   $effect(() => {
     const navTab = navigationState.activeTab;
-    if (navTab === "decks" || navTab === "designer" || navTab === "scan-activity" || navTab === "theme-lab") {
+    if (navTab === "decks" || navTab === "designer" || navTab === "scan-activity" || navTab === "theme-lab" || navTab === "releaser") {
       const newMode = navTab as ChoreoCardMode;
       if (newMode !== mode) {
         mode = newMode;
@@ -629,6 +630,10 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     {:else if mode === "theme-lab"}
       <main class="content-area">
         <CardBackThemeLab />
+      </main>
+    {:else if mode === "releaser"}
+      <main class="content-area">
+        <DeckReleaserTab />
       </main>
     {/if}
   </div>

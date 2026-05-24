@@ -33,7 +33,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   // Components
   import ViewerSplitPane from "$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte";
-  import ViewerFooter from "$lib/shared/sequence-viewer/components/ViewerFooter.svelte";
   import FullscreenControls from "$lib/shared/sequence-viewer/components/FullscreenControls.svelte";
   import ExportVideoDrawer from "$lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte";
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
@@ -549,6 +548,20 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
           onBack={ctx.onBack}
           onExitEditMode={ctx.exitEditMode}
           sequence={sequence}
+          isFavorite={ctx.isFavorite}
+          isSaved={ctx.isSaved}
+          isPublished={ctx.isPublished}
+          isOwned={ctx.isOwned}
+          isLoggedIn={ctx.isLoggedIn}
+          practiceActive={ctx.practiceActive}
+          onFavorite={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
+          onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
+          onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
+          onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
+          onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
+          onPublish={() => ctx.invokeGatedAction("publish", ctx.handlePublishAction)}
+          onUnpublish={ctx.handleUnpublishAction}
+          onDeleteRequest={() => (deleteConfirmOpen = true)}
         />
 
         <!-- Main content -->
@@ -703,32 +716,12 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
           {/if}
         </div>
 
-        <!-- Footer: CSS collapse (not Svelte transition) so height change is gradual -->
-        {#if !ctx.isFullscreen}
-          <div class="footer-collapse" class:collapsed={!!ctx.editingPane}>
-            <ViewerFooter
-              practiceActive={ctx.practiceActive}
-              onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-              onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-              onPracticeStart={ctx.handlePracticeStart}
-              onPracticeStop={ctx.handlePracticeStop}
-              isOwned={ctx.isOwned}
-              onDeleteRequest={() => (deleteConfirmOpen = true)}
-              isSaved={ctx.isSaved}
-              isPublished={ctx.isPublished}
-              isFavorite={ctx.isFavorite}
-              onFavorite={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-              onPublish={() => ctx.invokeGatedAction("publish", ctx.handlePublishAction)}
-              onUnpublish={ctx.handleUnpublishAction}
-            />
-            {#if ctx.practiceActive}
-              <PracticeProgressIndicator
-                progress={ctx.practiceState.progress}
-                onStop={ctx.handlePracticeStop}
-                variant="floating"
-              />
-            {/if}
-          </div>
+        {#if !ctx.isFullscreen && ctx.practiceActive}
+          <PracticeProgressIndicator
+            progress={ctx.practiceState.progress}
+            onStop={ctx.handlePracticeStop}
+            variant="floating"
+          />
         {/if}
       </div>
 
@@ -892,25 +885,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       border-left: none;
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
-  }
-
-  /* Footer - CSS grid row collapse for smooth height animation.
-     grid-template-rows: 1fr → 0fr collapses without layout jumps. */
-  .footer-collapse {
-    display: grid;
-    grid-template-rows: 1fr;
-    transition: grid-template-rows 250ms cubic-bezier(0.2, 0, 0, 1),
-                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
-  }
-
-  .footer-collapse > :global(*) {
-    overflow: hidden;
-  }
-
-  .footer-collapse.collapsed {
-    grid-template-rows: 0fr;
-    opacity: 0;
-    pointer-events: none;
   }
 
   /* Mobile drawer appearance */

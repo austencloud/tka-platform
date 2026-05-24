@@ -1212,6 +1212,20 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // DECK RELEASES (Sequential deck numbering + manifests)
+    // ============================================================================
+
+    match /deckReleases/{document} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+
+      match /manifests/{manifestId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
+    }
+
+    // ============================================================================
     // DEVELOPERS COLLECTION (Multi-Developer Access Control)
     // ============================================================================
 

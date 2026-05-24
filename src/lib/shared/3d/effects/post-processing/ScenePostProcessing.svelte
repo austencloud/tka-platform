@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { HalfFloatType, Vector2 } from "three";
+  import { Color, HalfFloatType, PerspectiveCamera, Vector2 } from "three";
   import {
     EffectComposer,
     RenderPass,
@@ -11,9 +11,14 @@
     ChromaticAberrationEffect,
     VignetteEffect,
   } from "postprocessing";
+  import { GodraysPass } from "three-good-godrays";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
+  import { WaterAbsorptionEffect } from "./ocean/WaterAbsorptionEffect";
+  import { UnderwaterDistortionEffect } from "./ocean/UnderwaterDistortionEffect";
+  import { RefractionCausticsEffect } from "./ocean/RefractionCausticsEffect";
+  import { godraysLightStore } from "./godrays-light-store.svelte";
 
   interface Props {
     children: Snippet;
@@ -67,7 +72,30 @@
 
     composer.addPass(new RenderPass(scn, cam));
 
+    // Volumetric god rays (pass-level, composites before per-pixel effects)
+    const godLight = godraysLightStore.light;
+    if (isOcean && godLight && cam instanceof PerspectiveCamera) {
+      renderer.shadowMap.enabled = true;
+      const godraysPass = new GodraysPass(godLight, cam, {
+        density: 1 / 128,
+        maxDensity: 0.5,
+        distanceAttenuation: 2,
+        color: new Color(0x88bbdd),
+        raymarchSteps: 60,
+        blur: true,
+        gammaCorrection: true,
+        resolutionScale: 0.5,
+      });
+      composer.addPass(godraysPass);
+    }
+
     const effects: import("postprocessing").Effect[] = [];
+
+    if (isOcean) {
+      effects.push(new WaterAbsorptionEffect());
+      effects.push(new RefractionCausticsEffect());
+      effects.push(new UnderwaterDistortionEffect());
+    }
 
     if (enableBloom) {
       effects.push(
@@ -118,15 +146,14 @@
     if (composer) {
       composer.dispose();
       composer = null;
-      // The postprocessing EffectComposer sets renderer.autoClear = false on
-      // init and never restores it. Without this, preserveDrawingBuffer keeps
-      // stale frames visible (ghosting) after switching away from Ocean.
       renderer.autoClear = true;
+      renderer.shadowMap.enabled = false;
     }
   }
 
   $effect(() => {
     const cam = camera.current;
+    const _godLight = godraysLightStore.light;
     if (shouldCompose && cam) {
       buildComposer();
     } else {
