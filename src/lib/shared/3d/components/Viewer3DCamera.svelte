@@ -173,10 +173,47 @@
   // smoothing instead of a hand-rolled rAF lerp.
   let controlsInstance: CameraControls | null = null;
 
+  const ORBIT_COLLAPSE_THRESHOLD = 0.5;
+  const _healthPos = new Vector3();
+  const _healthTgt = new Vector3();
+  let lastHealthCheck = 0;
+
+  function checkOrbitHealth(controls: CameraControls): boolean {
+    controls.getPosition(_healthPos);
+    controls.getTarget(_healthTgt);
+    const d = _healthPos.distanceTo(_healthTgt);
+    if (d < ORBIT_COLLAPSE_THRESHOLD) {
+      console.error(
+        `[Viewer3DCamera] 🔴 ORBIT COLLAPSED — distance=${d.toFixed(4)}`,
+        `\n  camera: (${_healthPos.x.toFixed(3)}, ${_healthPos.y.toFixed(3)}, ${_healthPos.z.toFixed(3)})`,
+        `\n  target: (${_healthTgt.x.toFixed(3)}, ${_healthTgt.y.toFixed(3)}, ${_healthTgt.z.toFixed(3)})`,
+        `\n  persisted:`, JSON.parse(localStorage.getItem("tka-viewer3d-camera") ?? "null"),
+        `\n  Auto-recovering to defaults.`,
+      );
+      controls.setLookAt(
+        defaultPosition.x, defaultPosition.y, defaultPosition.z,
+        defaultTarget.x, defaultTarget.y, defaultTarget.z,
+        true,
+      );
+      localStorage.removeItem("tka-viewer3d-camera");
+      return true;
+    }
+    return false;
+  }
+
   // Debounce persistence - only save after user stops orbiting for 500ms.
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingSnapshot: CameraStateSnapshot | null = null;
   const _endPos = new Vector3();
   const _endTgt = new Vector3();
+
+  function flushCameraSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    if (pendingSnapshot) {
+      viewer3DState.updateCameraSnapshot(pendingSnapshot);
+      pendingSnapshot = null;
+    }
+  }
 
   function handleControlEnd(controls: CameraControls) {
     const camera = cameraRef;
@@ -184,22 +221,31 @@
 
     controls.getPosition(_endPos);
     controls.getTarget(_endTgt);
-    // Snapshot the vectors immediately - the debounced save runs
-    // after 500ms by which point the user may have started another
-    // drag that mutates them.
+    const d = _endPos.distanceTo(_endTgt);
+    if (d < ORBIT_COLLAPSE_THRESHOLD) {
+      console.error(
+        `[Viewer3DCamera] 🔴 Blocked save of collapsed orbit state — distance=${d.toFixed(4)}`,
+        `\n  pos: (${_endPos.x.toFixed(3)}, ${_endPos.y.toFixed(3)}, ${_endPos.z.toFixed(3)})`,
+        `\n  tgt: (${_endTgt.x.toFixed(3)}, ${_endTgt.y.toFixed(3)}, ${_endTgt.z.toFixed(3)})`,
+      );
+      checkOrbitHealth(controls);
+      return;
+    }
+
     const pos = { x: _endPos.x, y: _endPos.y, z: _endPos.z };
     const tgt = { x: _endTgt.x, y: _endTgt.y, z: _endTgt.z };
 
+    pendingSnapshot = {
+      position: pos,
+      rotation: { x: camera.rotation.x, y: camera.rotation.y, z: camera.rotation.z },
+      fov: camera.fov ?? 50,
+      target: tgt,
+      timestamp: Date.now(),
+    };
+
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
-      const snapshot: CameraStateSnapshot = {
-        position: pos,
-        rotation: { x: camera.rotation.x, y: camera.rotation.y, z: camera.rotation.z },
-        fov: camera.fov ?? 50,
-        target: tgt,
-        timestamp: Date.now(),
-      };
-      viewer3DState.updateCameraSnapshot(snapshot);
+      flushCameraSave();
     }, 500);
   }
 
@@ -233,6 +279,27 @@
 
   onMount(() => {
     viewer3DState.registerSnapTo(snapTo);
+
+    function onVisibilityChange() {
+      if (document.hidden && controlsInstance) {
+        const p = new Vector3();
+        const t = new Vector3();
+        controlsInstance.getPosition(p);
+        controlsInstance.getTarget(t);
+        const cam = cameraRef;
+        if (cam && distSq(p, t) >= MIN_ORBIT_RADIUS_SQ) {
+          viewer3DState.updateCameraSnapshot({
+            position: { x: p.x, y: p.y, z: p.z },
+            rotation: { x: cam.rotation.x, y: cam.rotation.y, z: cam.rotation.z },
+            fov: cam.fov ?? 50,
+            target: { x: t.x, y: t.y, z: t.z },
+            timestamp: Date.now(),
+          });
+        }
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
   });
 
   // Per-frame tick for the camera-choreography driver. Runs every frame;
@@ -243,10 +310,18 @@
   useTask((delta) => {
     if (viewer3DState.isExporting) return;
     viewer3DState.cameraChoreography.tick(delta);
+
+    if (controlsInstance) {
+      lastHealthCheck += delta;
+      if (lastHealthCheck >= 1.0) {
+        lastHealthCheck = 0;
+        checkOrbitHealth(controlsInstance);
+      }
+    }
   });
 
   onDestroy(() => {
-    if (saveTimer) clearTimeout(saveTimer);
+    flushCameraSave();
   });
 </script>
 
@@ -265,21 +340,24 @@
     paused={viewer3DState.isExporting}
     oncreate={(c) => {
       controlsInstance = c;
-      // Place the camera at the persisted / computed initial pose
-      // with no transition - we want the scene to render at the
-      // saved spot on first paint.
+      const live = viewer3DState.persistedCamera;
+      const pos = live?.position ?? initialPosition;
+      const tgt = live?.target ?? initialTarget;
+      const pOk = isFinitePoint(pos) && isFinitePoint(tgt) && distSq(pos, tgt) >= MIN_ORBIT_RADIUS_SQ;
+      const usePos = pOk ? pos : defaultPosition;
+      const useTgt = pOk ? tgt : defaultTarget;
       c.setLookAt(
-        initialPosition.x,
-        initialPosition.y,
-        initialPosition.z,
-        initialTarget.x,
-        initialTarget.y,
-        initialTarget.z,
+        usePos.x, usePos.y, usePos.z,
+        useTgt.x, useTgt.y, useTgt.z,
         false,
       );
-      // Register this controls instance with the camera-choreography
-      // state so recording presets can drive it during Pass 1 of the
-      // 3D export pipeline.
+      if (!pOk) {
+        console.warn(
+          `[Viewer3DCamera] Persisted camera state was invalid — reset to defaults.`,
+          `\n  raw pos:`, pos, `\n  raw tgt:`, tgt,
+        );
+      }
+      checkOrbitHealth(c);
       viewer3DState.cameraChoreography.registerControls(c);
       return () => {
         viewer3DState.cameraChoreography.unregisterControls(c);

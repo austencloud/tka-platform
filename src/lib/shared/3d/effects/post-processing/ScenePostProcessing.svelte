@@ -111,16 +111,6 @@
       );
     }
 
-    if (enableChromaticAberration) {
-      effects.push(
-        new ChromaticAberrationEffect({
-          offset: new Vector2(0.0006, 0.0006),
-          radialModulation: true,
-          modulationOffset: 0.2,
-        }),
-      );
-    }
-
     effects.push(
       new VignetteEffect({
         darkness: 0.5,
@@ -130,6 +120,19 @@
 
     if (effects.length > 0) {
       composer.addPass(new EffectPass(cam, ...effects));
+    }
+
+    if (enableChromaticAberration) {
+      composer.addPass(
+        new EffectPass(
+          cam,
+          new ChromaticAberrationEffect({
+            offset: new Vector2(0.0006, 0.0006),
+            radialModulation: true,
+            modulationOffset: 0.2,
+          }),
+        ),
+      );
     }
 
     renderer.getSize(_sizeVec);

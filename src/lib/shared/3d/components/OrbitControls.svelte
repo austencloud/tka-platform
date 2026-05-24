@@ -233,10 +233,11 @@
 
   useTask((delta) => {
     if (!controls || paused) return;
+    const clampedDelta = Math.min(delta, 0.1);
     if (autoRotate) {
-      controls.azimuthAngle += delta * AUTO_ROTATE_RAD_PER_SEC * autoRotateSpeed;
+      controls.azimuthAngle += clampedDelta * AUTO_ROTATE_RAD_PER_SEC * autoRotateSpeed;
     }
-    controls.update(delta);
+    controls.update(clampedDelta);
   });
 
   onDestroy(() => {

@@ -1028,7 +1028,7 @@ export function createViewer3DState() {
       return _persistedMode;
     },
     get persistedCamera() {
-      return _persistedCamera;
+      return cameraSnapshot ?? _persistedCamera;
     },
     get renderMode() {
       return renderMode;
