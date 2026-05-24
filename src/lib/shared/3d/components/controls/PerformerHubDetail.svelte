@@ -137,32 +137,25 @@
     <!-- Prop -->
     <div class="col col-prop">
       <div class="col-header">Prop</div>
-      <div class="prop-tiles">
-        {#each PROP_CATEGORIES as cat, ci}
+      <div class="prop-grid">
+        {#each PROP_CATEGORIES as cat}
           {@const bases = propCategories.get(cat.id) ?? []}
-          {#if bases.length > 0}
-            {#if ci > 0}
-              <div class="tile-divider"></div>
-            {/if}
-            <div class="tile-row">
-              {#each bases as base}
-                {@const info = getPropTypeDisplayInfo(base)}
-                {@const isSelected = expandedFamily !== null ? expandedFamily === base : selectedBase === base}
-                <button
-                  class="prop-tile"
-                  class:selected={isSelected}
-                  aria-pressed={isSelected}
-                  aria-label={info.label}
-                  title={info.label}
-                  onclick={() => handleFamilyClick(base)}
-                >
-                  <div class="tile-icon">
-                    <PropCompositionPreview propType={base} size={36} darkBackground />
-                  </div>
-                </button>
-              {/each}
-            </div>
-          {/if}
+          {#each bases as base}
+            {@const info = getPropTypeDisplayInfo(base)}
+            {@const isSelected = expandedFamily !== null ? expandedFamily === base : selectedBase === base}
+            <button
+              class="prop-tile"
+              class:selected={isSelected}
+              aria-pressed={isSelected}
+              aria-label={info.label}
+              title={info.label}
+              onclick={() => handleFamilyClick(base)}
+            >
+              <div class="tile-icon">
+                <PropCompositionPreview propType={base} size={34} darkBackground />
+              </div>
+            </button>
+          {/each}
         {/each}
       </div>
 
@@ -234,7 +227,7 @@
   }
 
   .col-prop {
-    width: 200px;
+    width: 340px;
     flex-shrink: 0;
   }
 
@@ -414,27 +407,16 @@
     text-overflow: ellipsis;
   }
 
-  /* Prop tiles */
-  .prop-tiles {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .tile-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.06);
-  }
-
-  .tile-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+  /* Prop grid — flat flow */
+  .prop-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
   }
 
   .prop-tile {
-    width: 48px;
-    height: 48px;
+    width: 100%;
+    aspect-ratio: 1;
     background: rgba(0, 0, 0, 0.3);
     border: 1.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 10px;
