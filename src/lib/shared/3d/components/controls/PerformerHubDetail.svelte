@@ -189,8 +189,7 @@
   .hub-detail {
     display: flex;
     flex-direction: row;
-    align-items: stretch;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    align-items: flex-start;
     min-height: 0;
   }
 
