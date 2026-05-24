@@ -178,7 +178,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
     // Block pull-to-refresh on mobile
     if (isMobile) {
-      registerDrawer(drawerId, handleBack);
+      registerDrawer(drawerId, handleClose);
     }
 
     // Start sequence loading immediately - don't wait for services
@@ -434,7 +434,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   // NAVIGATION
   // ============================================================================
 
-  function handleBack() {
+  function handleClose() {
     const returnPath = handoffData?.returnPath || "/browse/gallery";
     goto(returnPath);
   }
@@ -464,7 +464,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         await new Promise((r) => setTimeout(r, 200));
       }
       setSkipNextViewTransition();
-      ctx.onBack();
+      ctx.onClose();
     } else {
       currentSwipeY = 0;
       currentIsSwiping = false;
@@ -524,7 +524,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handPathMode={urlHandPathMode}
     initialBlueVisible={urlInitialBlueVisible}
     initialRedVisible={urlInitialRedVisible}
-    onBack={handleBack}
+    onClose={handleClose}
     onUrlParamChange={updateUrlParam}
     blockClicks={swipeDismiss.state.blockClicks}
   >
@@ -545,7 +545,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
           isFullscreen={ctx.isFullscreen}
           {isMobile}
           returnLabel={handoffData?.returnLabel || "Back"}
-          onBack={ctx.onBack}
+          onClose={ctx.onClose}
           onExitEditMode={ctx.exitEditMode}
           sequence={sequence}
           isFavorite={ctx.isFavorite}

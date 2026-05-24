@@ -127,7 +127,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handleUnifiedDarkModeToggle: () => void;
     handlePracticeStart: () => void;
     handlePracticeStop: () => void;
-    onBack: () => void;
+    onClose: () => void;
     stepHalfBeatBackward: () => void;
     stepHalfBeatForward: () => void;
     stepFullBeatBackward: () => void;
@@ -211,7 +211,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     initialBpm?: number;
     initialStep?: number;
     initialViewMode?: ViewMode;
-    onBack: () => void;
+    onClose: () => void;
     onUrlParamChange?: (key: string, value: string) => void;
     blockClicks?: boolean;
     viewingContext?: ViewingContext;
@@ -229,7 +229,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     initialBpm = 60,
     initialStep = 0,
     initialViewMode,
-    onBack,
+    onClose,
     onUrlParamChange,
     blockClicks = false,
     viewingContext = "notation",
@@ -405,7 +405,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     getRedPropType: () => redPropType,
     getCatDogModeEnabled: () => catDogModeEnabled,
     getHapticService: () => hapticService,
-    onDeleteSuccess: () => handleBackInternal(),
+    onDeleteSuccess: () => handleClose(),
   });
 
   const isPublished = $derived((sequence as LibrarySequence | null)?.visibility === "public");
@@ -644,7 +644,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   }
 
-  let wasPlayingBeforeImageExport = false;
+  let playbackRestoreOnExit = false;
 
   function enterEditMode(pane: 'animation' | 'image' | 'video-upload') {
     hapticService?.trigger("selection");
@@ -656,14 +656,15 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       if (!playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
       }
+      playbackRestoreOnExit = false;
     } else if (pane === 'image') {
-      wasPlayingBeforeImageExport = playback.isPlayingLocal;
+      playbackRestoreOnExit = playback.isPlayingLocal;
       if (playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
       }
       viewerState.enterExport('image-export');
     } else if (pane === 'video-upload') {
-      wasPlayingBeforeImageExport = playback.isPlayingLocal;
+      playbackRestoreOnExit = playback.isPlayingLocal;
       if (playback.isPlayingLocal && playbackControllerRef) {
         playbackControllerRef.togglePlayback();
       }
@@ -680,14 +681,13 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
   function exitEditMode() {
     hapticService?.trigger("selection");
-    const wasPaneImage = editingPane === "image" || editingPane === "video-upload";
     viewerState.exitExport();
     exportCoord.dismissPreview();
 
-    if (wasPaneImage && wasPlayingBeforeImageExport && !playback.isPlayingLocal && playbackControllerRef) {
+    if (playbackRestoreOnExit && !playback.isPlayingLocal && playbackControllerRef) {
       playbackControllerRef.togglePlayback();
     }
-    wasPlayingBeforeImageExport = false;
+    playbackRestoreOnExit = false;
 
     accessibilityHelper.announce("Export closed");
   }
@@ -762,7 +762,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       returnPath: browser ? window.location.pathname : "/browse/gallery",
     });
 
-    handleBackInternal();
+    handleClose();
 
     const message = preset === 'combo-export'
       ? "Opening in Compose for combined export..."
@@ -781,7 +781,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     hapticService?.trigger("selection");
 
     localStorage.setItem("tka-pending-edit-sequence", JSON.stringify(sequence));
-    handleBackInternal();
+    handleClose();
 
     showToast({ message: "Opening for editing...", type: "info", duration: 2000 });
     void handleModuleChange("create", "construct");
@@ -918,10 +918,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
       event.preventDefault();
       if (fullscreen.isFullscreen) {
         fullscreen.exitFullscreen();
-      } else if (editingPane) {
-        exitEditMode();
       } else {
-        handleBackInternal();
+        handleClose();
       }
       return;
     }
@@ -938,7 +936,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
   }
 
-  function handleBackInternal() {
+  function handleClose() {
     playback.stopPracticeIfActive();
 
     if (playback.isPlayingLocal && playbackControllerRef) {
@@ -951,7 +949,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     }
 
     accessibilityHelper.restoreFocus();
-    onBack();
+    onClose();
   }
 
   function handleVideoTimeUpdate(currentTime: number) {
@@ -1095,7 +1093,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handleUnifiedDarkModeToggle,
     handlePracticeStart: () => playback.handlePracticeStart(sequence),
     handlePracticeStop: () => playback.handlePracticeStop(sequence),
-    onBack: handleBackInternal,
+    onClose: handleClose,
     stepHalfBeatBackward: playback.stepHalfBeatBackward,
     stepHalfBeatForward: playback.stepHalfBeatForward,
     stepFullBeatBackward: playback.stepFullBeatBackward,

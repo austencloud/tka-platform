@@ -13,16 +13,15 @@
     sequenceTitle: string;
     renderMode: "2d" | "3d";
     onRenderModeChange: (mode: "2d" | "3d") => void;
-    onBack: () => void;
+    onClose: () => void;
   }
-  let { sequenceTitle, renderMode, onRenderModeChange, onBack }: Props = $props();
+  let { sequenceTitle, renderMode, onRenderModeChange, onClose }: Props = $props();
 </script>
 
 <header class="viewer-header">
   <div class="header-left">
-    <button class="icon-btn" onclick={onBack} aria-label="Back">
-      <i class="fas fa-chevron-left"></i>
-      <span>Back</span>
+    <button class="icon-btn" onclick={onClose} aria-label="Close">
+      <i class="fas fa-times"></i>
     </button>
     <RenderModeToggle {renderMode} onchange={onRenderModeChange} />
   </div>

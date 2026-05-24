@@ -18,6 +18,14 @@
     onPracticeToggle?: () => void;
     onVideoUpload?: () => void;
     variant?: 'header' | 'footer';
+    dropDown?: boolean;
+    isFavorite?: boolean;
+    onFavoriteToggle?: () => void;
+    isSaved?: boolean;
+    onSave?: () => void;
+    onRemix?: () => void;
+    onCopyData?: () => void;
+    copyDataFeedback?: boolean;
   }
 
   let {
@@ -32,6 +40,14 @@
     onPracticeToggle,
     onVideoUpload,
     variant = 'header',
+    dropDown = false,
+    isFavorite = false,
+    onFavoriteToggle,
+    isSaved = true,
+    onSave,
+    onRemix,
+    onCopyData,
+    copyDataFeedback = false,
   }: Props = $props();
 
   let isOpen = $state(false);
@@ -84,12 +100,35 @@
   let menuItems = $derived.by(() => {
     const items: Array<{ label: string; icon: string; action: () => void; className?: string; dividerBefore?: boolean }> = [];
 
+    if (onFavoriteToggle) {
+      items.push({
+        label: isFavorite ? "Unfavorite" : "Favorite",
+        icon: "fa-heart",
+        action: onFavoriteToggle,
+        className: isFavorite ? "favorited" : undefined,
+      });
+    }
+    if (onSave && !isSaved) {
+      items.push({ label: "Save", icon: "fa-floppy-disk", action: onSave, className: "save" });
+    }
+    if (onRemix) {
+      items.push({ label: "Remix", icon: "fa-pen-to-square", action: onRemix, className: "remix" });
+    }
+    if (onCopyData) {
+      items.push({
+        label: copyDataFeedback ? "Copied!" : "Copy Data",
+        icon: copyDataFeedback ? "fa-check" : "fa-terminal",
+        action: onCopyData,
+        className: copyDataFeedback ? "copied" : undefined,
+      });
+    }
     if (onPracticeToggle) {
       items.push({
         label: practiceActive ? "Stop Practice" : "Practice Mode",
         icon: practiceActive ? "fa-stop" : "fa-signal",
         action: onPracticeToggle,
         className: practiceActive ? "practice-active" : undefined,
+        dividerBefore: items.length > 0,
       });
     }
     if (onVideoUpload) {
@@ -132,7 +171,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if hasItems}
-  <div class="overflow-wrapper" onkeydown={handleKeydown}>
+  <div class="overflow-wrapper" class:drop-down={dropDown} onkeydown={handleKeydown}>
     <button
       bind:this={triggerEl}
       type="button"
@@ -229,6 +268,11 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   }
 
+  .overflow-wrapper.drop-down .overflow-popover {
+    bottom: auto;
+    top: calc(100% + 8px);
+  }
+
   .overflow-item {
     display: flex;
     align-items: center;
@@ -273,6 +317,18 @@
 
   .overflow-item.copied {
     color: var(--semantic-success, #22c55e);
+  }
+
+  .overflow-item.favorited {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .overflow-item.save {
+    color: #22c55e;
+  }
+
+  .overflow-item.remix {
+    color: #f59e0b;
   }
 
   .overflow-item.practice-active {

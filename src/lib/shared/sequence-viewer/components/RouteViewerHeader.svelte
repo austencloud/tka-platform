@@ -16,7 +16,7 @@
     isFullscreen: boolean;
     isMobile: boolean;
     returnLabel: string;
-    onBack: () => void;
+    onClose: () => void;
     onExitEditMode: () => void;
     sequence?: SequenceData | null;
     isFavorite?: boolean;
@@ -40,7 +40,7 @@
     isFullscreen,
     isMobile,
     returnLabel,
-    onBack,
+    onClose,
     onExitEditMode,
     sequence,
     isFavorite = false,
@@ -90,7 +90,7 @@
     <button
       type="button"
       class="back-button"
-      onclick={onBack}
+      onclick={onClose}
       aria-label={editingPane ? "Close viewer" : `Back to ${returnLabel}`}
     >
       <i class="fas fa-arrow-left" aria-hidden="true"></i>

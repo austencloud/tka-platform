@@ -55,15 +55,6 @@ export function createViewerState() {
 		exportContext = null;
 	}
 
-	function backToSplit() {
-		if (viewerMode === 'animation' || viewerMode === 'animation-3d') {
-			splitConfig = { ...splitConfig, leftPane: viewerMode as ContentType };
-			persistSplitConfig(splitConfig);
-		}
-		viewerMode = 'split';
-		exportContext = null;
-		persistViewerMode('split');
-	}
 
 	const wants3D = $derived(
 		viewerMode === 'animation-3d' ||
@@ -87,7 +78,6 @@ export function createViewerState() {
 		setExportContext,
 		setSplitPaneContent,
 		enterExport,
-		exitExport,
-		backToSplit
+		exitExport
 	};
 }
