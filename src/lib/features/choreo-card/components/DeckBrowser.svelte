@@ -22,11 +22,14 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
   import type { CardPair } from "../services/types";
+  import type { CardFooter } from "../domain/models/DeckRelease";
   import {
     resolveVtgFamilyId as resolveVtgFamily,
     computeTkaDesignation as computeTkaLabel,
     computeVtgDesignation as computeVtgLabel,
-    computeDeckLeftLabel as computeLeftLabel,
+    ABBR_TO_FAMILY_ID,
+    parseDeckTurnRatio,
+    computeVtgCardFooter,
   } from "../domain/deck-vtg-labels";
   import { calculateVTG } from "$lib/shared/pictograph/shared/domain/utils/vtg-calculator";
   import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -261,62 +264,24 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
-  // VTG deck label for card footer (e.g. "QS 1:1")
-  // Icon replaces the "VTG" prefix - just abbreviation + ratio
-  const deckLeftLabel = $derived.by(() => {
-    if (!selectedDeck || !resolvedVtgFamilyId) return undefined;
-    const abbr = VTG_ABBREVIATIONS[resolvedVtgFamilyId];
-    if (!abbr) return undefined;
-    // Parse turn pattern into VTG ratio format
-    const turn = selectedDeck.turnPattern;
-    if (turn) {
-      // Already in ratio format (e.g. "1:1")
-      if (/^\d+:\d+$/.test(turn)) return `${abbr} ${turn}`;
-      // VTG uniform format (e.g. "uniform-0t" = 0 turns → ratio "1:1")
-      const uniformMatch = turn.match(/^uniform[- ](\d+)t$/i);
-      if (uniformMatch) {
-        const turns = parseInt(uniformMatch[1] ?? "0", 10);
-        const ratio = TURNS_TO_RATIO[turns] ?? `${turns}t`;
-        return `${abbr} ${ratio}`;
-      }
-    }
-    return abbr;
-  });
 
-  /**
-   * Per-sequence VTG label for deck cards. Calculates the actual VTG mode
-   * for each sequence's first step so cards show their correct family
-   * (e.g. "TS 1:1") instead of the uniform deck-level label.
-   */
-  function getSequenceLeftLabel(seq: SequenceData): string | undefined {
-    if (!resolvedVtgFamilyId) return undefined; // Only for VTG decks
+  function resolveSequenceVtgFooter(seq: SequenceData): CardFooter | undefined {
+    if (!resolvedVtgFamilyId || !selectedDeck) return undefined;
+    const turnRatio = parseDeckTurnRatio(selectedDeck.turnPattern);
 
-    // Get first step's letter and start position
     const firstStep = seq.steps?.[0];
-    if (!firstStep?.letter || !firstStep?.startPosition) return deckLeftLabel ?? undefined;
-
-    // Get grid mode from sequence or deck
-    const gm = (seq.gridMode ?? selectedDeck?.gridMode) === "box" ? GridMode.BOX : GridMode.DIAMOND;
-
-    // Calculate VTG for this specific sequence
-    const result = calculateVTG(firstStep.letter as Letter, gm, firstStep.startPosition as GridPosition);
-    if (!result.vtgMode) return deckLeftLabel ?? undefined;
-
-    // VTGMode enum values are already the abbreviations ("SS", "SO", etc.)
-    const abbr = result.vtgMode;
-
-    // Append ratio from deck turn pattern
-    const turn = selectedDeck?.turnPattern;
-    if (turn) {
-      if (/^\d+:\d+$/.test(turn)) return `${abbr} ${turn}`;
-      const uniformMatch = turn.match(/^uniform[- ](\d+)t$/i);
-      if (uniformMatch) {
-        const turns = parseInt(uniformMatch[1] ?? "0", 10);
-        const ratio = TURNS_TO_RATIO[turns] ?? `${turns}t`;
-        return `${abbr} ${ratio}`;
-      }
+    if (!firstStep?.letter || !firstStep?.startPosition) {
+      return computeVtgCardFooter(resolvedVtgFamilyId, turnRatio);
     }
-    return abbr;
+
+    const gm = (seq.gridMode ?? selectedDeck.gridMode) === "box" ? GridMode.BOX : GridMode.DIAMOND;
+    const result = calculateVTG(firstStep.letter as Letter, gm, firstStep.startPosition as GridPosition);
+    if (!result.vtgMode) {
+      return computeVtgCardFooter(resolvedVtgFamilyId, turnRatio);
+    }
+
+    const familyId = ABBR_TO_FAMILY_ID[result.vtgMode] ?? resolvedVtgFamilyId;
+    return computeVtgCardFooter(familyId, turnRatio);
   }
 
   // ── Level 2: Deck Interior State ──
@@ -347,6 +312,9 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   const isLargeDeck = $derived(selectedDeck ? selectedDeck.totalSequences >= 500 : false);
 
+  const sequenceFooters = $derived<CardFooter[]>(
+    filteredSequences.map(seq => resolveSequenceVtgFooter(seq) ?? { center: "The Kinetic Alphabet" })
+  );
 
   // Group sequences for display
   interface SequenceGroup {
@@ -683,8 +651,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             {showWord}
             {includeStartPosition}
             deckMode={true}
-            leftLabel={deckLeftLabel}
-            getLeftLabel={resolvedVtgFamilyId ? getSequenceLeftLabel : undefined}
+            footers={sequenceFooters}
             onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
             onCardClick={(seq, frontUrl, rerender) => {
               inspectedFrontImageUrl = frontUrl ?? null;
@@ -707,8 +674,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             {includeStartPosition}
             deckMode={true}
             displayMode="grid"
-            leftLabel={deckLeftLabel}
-            getLeftLabel={resolvedVtgFamilyId ? getSequenceLeftLabel : undefined}
+            footers={sequenceFooters}
             onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
             onCardClick={(seq, frontUrl, rerender) => {
               inspectedFrontImageUrl = frontUrl ?? null;

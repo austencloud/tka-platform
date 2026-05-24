@@ -4,10 +4,12 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 import { aggregateFamilySequences } from "$lib/features/choreo-card/services/vtg-family-aggregator";
 
   import type { Deck } from "../domain/models/Deck";
+  import type { CardFooter } from "../domain/models/DeckRelease";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { FamilyRatioGroup } from "../services/types";
 import type { CardPair } from "../services/types";
   import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
+  import { computeVtgCardFooter } from "../domain/deck-vtg-labels";
   import ChoreoCard from "./ChoreoCard.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
@@ -42,17 +44,9 @@ import type { CardPair } from "../services/types";
     onBack,
   }: Props = $props();
 
-  // VTG abbreviation for card footer labels
-  const VTG_ABBREVIATIONS: Record<string, string> = {
-    "split-same": "SS", "tog-same": "TS",
-    "split-opp": "SO", "tog-opp": "TO",
-    "quarter-same": "QS", "quarter-opp": "QO",
-  };
-
   const theme = $derived(
     VTG_ELEMENTAL_THEMES.find((t) => t.familyId === familyId),
   );
-  const vtgAbbreviation = $derived(VTG_ABBREVIATIONS[familyId]);
   const familyLabel = $derived(
     theme
       ? `${theme.familyId.split("-").map((w) => (w[0]?.toUpperCase() ?? "") + w.slice(1)).join("-")} (${theme.element[0]?.toUpperCase()}${theme.element.slice(1)})`
@@ -129,6 +123,12 @@ import type { CardPair } from "../services/types";
 
   // Flatten all sequences across ratio groups for print view
   let allSequences = $derived(ratioGroups.flatMap(g => g.sequences));
+
+  const allFooters = $derived<CardFooter[]>(
+    ratioGroups.flatMap(g =>
+      g.sequences.map(() => computeVtgCardFooter(familyId, g.ratio))
+    )
+  );
 
   function turnsLabel(turns: number): string {
     if (turns === 0) return "0 turns";
@@ -260,7 +260,7 @@ import type { CardPair } from "../services/types";
       {showTKA}
       {showWord}
       {includeStartPosition}
-      leftLabel={vtgAbbreviation ? `VTG ${vtgAbbreviation}` : undefined}
+      footers={allFooters}
       onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
       onPairsReady={(pairs) => { renderedPairs = pairs; }}
       onRenderStateChange={(state) => {

@@ -2,6 +2,7 @@
 
 import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { CardFooter } from "../../domain/models/DeckRelease";
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/types";
   import type { PrintRenderOptions } from "../../services/types";
@@ -24,11 +25,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
     elementTheme?: ElementalTheme;
-    /** Left-side footer label (e.g. "QS 1:1" for deck cards) */
-    leftLabel?: string;
-    /** Per-sequence label callback. When provided, called for each sequence to compute
-     *  the left footer label instead of using the uniform `leftLabel`. */
-    getLeftLabel?: (seq: SequenceData) => string | undefined;
+    /** Per-card footer data, index-aligned with sequences */
+    footers?: CardFooter[];
     /** Use deck layout policy instead of user composition settings */
     deckMode?: boolean;
     /** Bump to force a full re-render of all cards */
@@ -54,8 +52,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     includeStartPosition = true,
     handPointsVisible = true,
     elementTheme,
-    leftLabel,
-    getLeftLabel,
+    footers,
     deckMode = false,
     rerenderKey = 0,
     onCardContextMenu,
@@ -85,7 +82,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     return result;
   });
 
-  function buildRenderOptions(stepCount?: number, overrideLeftLabel?: string): PrintRenderOptions {
+  function buildRenderOptions(stepCount?: number, footer?: CardFooter): PrintRenderOptions {
     const imageComposition = getImageCompositionManager();
     return {
       showGrid,
@@ -105,7 +102,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       elementTheme,
       bluePropType: settingsService.settings.bluePropType,
       redPropType: settingsService.settings.redPropType,
-      leftLabel: overrideLeftLabel ?? leftLabel,
+      leftLabel: footer?.left,
+      rightLabel: footer?.right,
+      notes: footer?.center,
       bleedPx: 36,
     };
   }
@@ -114,8 +113,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     return canvas.toDataURL("image/png");
   }
 
-  function buildCacheKey(seq: SequenceData, stepCount: number | undefined, seqLeftLabel?: string): string {
+  function buildCacheKey(seq: SequenceData, stepCount: number | undefined, index: number): string {
     const seqId = seq.id ?? seq.word ?? seq.name ?? "";
+    const footer = footers?.[index];
     const layout = deckMode && stepCount != null
       ? getDeckLayoutPolicy(stepCount)
       : "row";
@@ -127,11 +127,17 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       settingsService.settings.redPropType,
       settingsService.settings.backgroundType ?? "",
       stepCount,
-      seqLeftLabel ?? leftLabel ?? "",
+      footer?.left ?? "",
+      footer?.center ?? "",
+      footer?.right ?? "",
       layout,
-      "v3",
+      "v5",
     ].join("|");
     return `${seqId}::${optsPart}`;
+  }
+
+  function seqFooter(index: number): CardFooter | undefined {
+    return footers?.[index];
   }
 
   // Compute mirrored column for back pages (long-edge duplex flip)
@@ -196,9 +202,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
     // Phase 1: Hydrate in-memory cache from IndexedDB for any misses
     const missKeys: string[] = [];
-    for (const seq of seqs) {
-      const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
-      const key = buildCacheKey(seq, seq.steps?.length, seqLabel);
+    for (let idx = 0; idx < seqs.length; idx++) {
+      const seq = seqs[idx]!;
+      const key = buildCacheKey(seq, seq.steps?.length, idx);
       if (!cardCache.has(key)) missKeys.push(key);
     }
 
@@ -222,17 +228,16 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     }
 
     // Phase 2: Fast path if every card is now in memory (from either tier)
-    const allCached = seqs.every((seq) => {
-      const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
-      return cardCache.has(buildCacheKey(seq, seq.steps?.length, seqLabel));
+    const allCached = seqs.every((seq, idx) => {
+      return cardCache.has(buildCacheKey(seq, seq.steps?.length, idx));
     });
 
     if (allCached) {
       console.log(`[CardCache] All ${seqs.length} cards cached — instant display`);
       const cards: RenderedCard[] = [];
-      for (const seq of seqs) {
-        const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
-        const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, seqLabel))!;
+      for (let idx = 0; idx < seqs.length; idx++) {
+        const seq = seqs[idx]!;
+        const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, idx))!;
         cards.push(cached.rendered);
       }
       renderedCards = cards;
@@ -261,8 +266,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
       const seq = seqs[i]!;
       const stepCount = seq.steps?.length;
-      const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
-      const cacheKey = buildCacheKey(seq, stepCount, seqLabel);
+      const footer = seqFooter(i);
+      const cacheKey = buildCacheKey(seq, stepCount, i);
       const cached = cardCache.get(cacheKey);
 
       if (cached) {
@@ -275,7 +280,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           pairs.push(pair);
         }
       } else {
-        const options = buildRenderOptions(stepCount, seqLabel);
+        const options = buildRenderOptions(stepCount, footer);
         const frontCanvas = await renderer.renderFront(seq, options);
         const backCanvas = await renderer.renderBack(seq, options);
 
@@ -310,10 +315,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   async function rebuildPairs(seqs: SequenceData[], generation: number): Promise<CardPair[] | null> {
     const pairs: CardPair[] = [];
-    for (const seq of seqs) {
+    for (let idx = 0; idx < seqs.length; idx++) {
+      const seq = seqs[idx]!;
       if (generation !== renderGeneration) return null;
-      const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
-      const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, seqLabel));
+      const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, idx));
       if (!cached) return null;
       if (cached.pair) {
         pairs.push(cached.pair);
@@ -355,10 +360,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
     const renderer = getPrintCardRenderer();
     const stepCount = seq.steps?.length;
-    const seqLabel = getLeftLabel?.(seq) ?? leftLabel;
-    const options = buildRenderOptions(stepCount, seqLabel);
+    const footer = seqFooter(index);
+    const options = buildRenderOptions(stepCount, footer);
 
-    const cacheKey = buildCacheKey(seq, stepCount, seqLabel);
+    const cacheKey = buildCacheKey(seq, stepCount, index);
     cardCache.delete(cacheKey);
     deckCardBlobCache.delete(cacheKey).catch(() => {});
 

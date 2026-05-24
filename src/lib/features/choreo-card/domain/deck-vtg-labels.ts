@@ -1,10 +1,15 @@
 import type { Deck } from "./models/Deck";
+import type { CardFooter } from "./models/DeckRelease";
 
 export const VTG_ABBREVIATIONS: Record<string, string> = {
   "split-same": "SS", "tog-same": "TS",
   "split-opp": "SO", "tog-opp": "TO",
   "quarter-same": "QS", "quarter-opp": "QO",
 };
+
+export const ABBR_TO_FAMILY_ID: Record<string, string> = Object.fromEntries(
+  Object.entries(VTG_ABBREVIATIONS).map(([k, v]) => [v, k]),
+);
 
 export const VTG_FAMILY_LABELS: Record<string, string> = {
   "split-same": "Split-Same", "tog-same": "Tog-Same",
@@ -83,6 +88,34 @@ export function computeDeckLeftLabel(deck: Deck, vtgFamilyId: string | undefined
     }
   }
   return abbr;
+}
+
+const VTG_ELEMENT_MAP: Record<string, { name: string; emoji: string }> = {
+  "split-same":   { name: "Split-Same", emoji: "🌊" },
+  "tog-same":     { name: "Tog-Same", emoji: "🌍" },
+  "quarter-same": { name: "Quarter-Same", emoji: "☀️" },
+  "split-opp":    { name: "Split-Opp", emoji: "🔥" },
+  "tog-opp":      { name: "Tog-Opp", emoji: "💨" },
+  "quarter-opp":  { name: "Quarter-Opp", emoji: "🌙" },
+};
+
+export function parseDeckTurnRatio(turnPattern: string | undefined): string {
+  if (!turnPattern) return "0:1";
+  if (/^\d+:\d+$/.test(turnPattern)) return turnPattern;
+  const uniformMatch = turnPattern.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
+  if (uniformMatch) {
+    const turns = parseFloat(uniformMatch[1] ?? "0");
+    return TURNS_TO_RATIO[turns] ?? `${turns + 1}:1`;
+  }
+  return "0:1";
+}
+
+export function computeVtgCardFooter(familyId: string, turnRatio: string): CardFooter {
+  const el = VTG_ELEMENT_MAP[familyId];
+  const center = el
+    ? `${el.name} ${turnRatio} - ${el.emoji}`
+    : `${familyId} ${turnRatio}`;
+  return { center };
 }
 
 function capitalize(s: string): string {

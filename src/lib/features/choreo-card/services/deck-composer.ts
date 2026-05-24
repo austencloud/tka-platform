@@ -1,5 +1,5 @@
 import type { Deck } from "../domain/models/Deck";
-import type { DeckReleaseCard, StepCountWeight } from "../domain/models/DeckRelease";
+import type { CardFooter, DeckReleaseCard, StepCountWeight } from "../domain/models/DeckRelease";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -102,6 +102,7 @@ export function composeDeck(
   pool: Map<number, PoolEntry[]>,
   weights: StepCountWeight[],
   totalCards: number,
+  footer: CardFooter = { center: "The Kinetic Alphabet" },
 ): DeckReleaseCard[] {
   const totalWeight = weights.reduce((sum, w) => sum + w.weight, 0);
   if (totalWeight === 0) return [];
@@ -158,6 +159,7 @@ export function composeDeck(
     stepCount: entry.stepCount,
     word: entry.word,
     position: i + 1,
+    footer,
   }));
 }
 
@@ -184,6 +186,7 @@ export function swapCard(
     stepCount: replacement.stepCount,
     word: replacement.word,
     position: card.position,
+    footer: card.footer,
   };
   return updated;
 }
@@ -209,29 +212,72 @@ function shuffle<T>(arr: T[]): void {
 // VTG deck helpers
 // ---------------------------------------------------------------------------
 
+export interface VtgSequenceEntry {
+  sequenceId: string;
+  sourceDeckId: string;
+  turnRatio: string;
+}
+
 export interface VtgFamilyOption {
   familyId: string;
   label: string;
   sequenceCount: number;
-  sequenceIds: readonly string[];
-  sourceDeckId: string;
+  entries: readonly VtgSequenceEntry[];
+}
+
+function parseTurnRatio(deckName: string): string {
+  const match = deckName.match(/\((\d+:\d+)/);
+  return match?.[1] ?? "0:1";
 }
 
 export function getVtgFamilyOptions(decks: Deck[]): VtgFamilyOption[] {
-  const options: VtgFamilyOption[] = [];
+  const merged = new Map<string, { label: string; entries: VtgSequenceEntry[] }>();
   for (const deck of decks) {
     if (deck.collection !== "VTG") continue;
+    const turnRatio = parseTurnRatio(deck.name);
     for (const family of deck.families) {
-      options.push({
-        familyId: family.id,
-        label: family.label,
-        sequenceCount: family.sequenceIds.length,
-        sequenceIds: family.sequenceIds,
-        sourceDeckId: deck.id,
-      });
+      if (!family.id || family.id === "unknown") continue;
+      const existing = merged.get(family.id);
+      const newEntries = family.sequenceIds.map(id => ({ sequenceId: id, sourceDeckId: deck.id, turnRatio }));
+      if (existing) {
+        existing.entries.push(...newEntries);
+      } else {
+        merged.set(family.id, { label: family.label, entries: newEntries });
+      }
     }
   }
-  return options;
+  for (const [, data] of merged) {
+    const seen = new Set<string>();
+    data.entries = data.entries.filter(e => {
+      if (seen.has(e.sequenceId)) return false;
+      seen.add(e.sequenceId);
+      return true;
+    });
+  }
+
+  return [...merged.entries()].map(([id, { label, entries }]) => ({
+    familyId: id,
+    label,
+    sequenceCount: entries.length,
+    entries,
+  }));
+}
+
+const VTG_ELEMENT_MAP: Record<string, { name: string; emoji: string }> = {
+  "split-same":   { name: "Split-Same", emoji: "🌊" },
+  "tog-same":     { name: "Tog-Same", emoji: "🌍" },
+  "quarter-same": { name: "Quarter-Same", emoji: "☀️" },
+  "split-opp":    { name: "Split-Opp", emoji: "🔥" },
+  "tog-opp":      { name: "Tog-Opp", emoji: "💨" },
+  "quarter-opp":  { name: "Quarter-Opp", emoji: "🌙" },
+};
+
+export function vtgFooter(familyId: string, turnRatio: string): CardFooter {
+  const el = VTG_ELEMENT_MAP[familyId];
+  const center = el
+    ? `${el.name} ${turnRatio} - ${el.emoji}`
+    : `${familyId} ${turnRatio}`;
+  return { center };
 }
 
 export function buildVtgCards(
@@ -241,13 +287,14 @@ export function buildVtgCards(
   const cards: DeckReleaseCard[] = [];
   for (const fam of vtgFamilies) {
     if (!selectedFamilies.has(fam.familyId)) continue;
-    for (const seqId of fam.sequenceIds) {
+    for (const entry of fam.entries) {
       cards.push({
-        sequenceId: seqId,
-        sourceDeckId: fam.sourceDeckId,
+        sequenceId: entry.sequenceId,
+        sourceDeckId: entry.sourceDeckId,
         stepCount: 4,
-        word: seqId,
+        word: entry.sequenceId,
         position: 0,
+        footer: vtgFooter(fam.familyId, entry.turnRatio),
       });
     }
   }

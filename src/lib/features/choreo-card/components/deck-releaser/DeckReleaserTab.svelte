@@ -50,6 +50,8 @@
   let deckMode = $state<'loop' | 'vtg'>('loop');
   let selectedVtgFamilies = $state<Set<string>>(new Set());
 
+  const footers = $derived(cards.map(c => c.footer));
+
   function rebuildPool() {
     const filter: DeckPoolFilter = { sliceTypes: selectedSliceTypes };
     pool = buildSequencePool(decks, filter);
@@ -111,6 +113,7 @@
     buildVtgCards(vtgFamilies, selectedVtgFamilies).length
   );
 
+
   function handleWeightChange(stepCount: number, weight: number) {
     weights = weights.map((w) =>
       w.stepCount === stepCount ? { ...w, weight } : w
@@ -118,11 +121,11 @@
   }
 
   function composeFullDeck(): DeckReleaseCard[] {
-    const vtg = vtgEnabled ? buildVtgCards(vtgFamilies, selectedVtgFamilies) : [];
-    const loopSlots = Math.max(0, totalCards - vtg.length);
-    const loopCards = composeDeck(pool, weights, loopSlots);
-    const all = [...vtg, ...loopCards];
-    return all.map((c, i) => ({ ...c, position: i + 1 }));
+    if (deckMode === 'vtg') {
+      const vtgCards = buildVtgCards(vtgFamilies, selectedVtgFamilies);
+      return vtgCards.map((c, i) => ({ ...c, position: i + 1 }));
+    }
+    return composeDeck(pool, weights, totalCards, { center: notes });
   }
 
   async function handleDraw() {
@@ -217,21 +220,21 @@
 <div class="deck-releaser">
   {#if step === "configure"}
     <ConfigureStep
+      {deckMode}
       {weights}
       {totalCards}
       {notes}
       {sourceSummaries}
       {selectedSliceTypes}
       {vtgFamilies}
-      {vtgEnabled}
       {selectedVtgFamilies}
       {vtgCardCount}
       isLoading={isLoadingPools}
+      onModeChange={handleModeChange}
       onWeightChange={handleWeightChange}
       onTotalCardsChange={(t) => { totalCards = t; }}
       onNotesChange={(n) => { notes = n; }}
       onSliceTypeToggle={handleSliceTypeToggle}
-      onVtgToggle={handleVtgToggle}
       onVtgFamilyToggle={handleVtgFamilyToggle}
       onDraw={handleDraw}
     />
@@ -242,6 +245,7 @@
       {theme}
       {nextDeckNumber}
       {isReleasing}
+      {footers}
       onSwapCard={handleSwapCard}
       onRedraw={handleRedraw}
       onRelease={handleRelease}

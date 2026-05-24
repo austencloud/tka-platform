@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { DeckReleaseCard } from "../../domain/models/DeckRelease";
+  import type { CardFooter, DeckReleaseCard } from "../../domain/models/DeckRelease";
   import type { CardPair } from "../../services/types";
   import PrintPreviewPages from "../print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "../print-preview/PrintPreviewToolbar.svelte";
+  import CardInspectModal from "../CardInspectModal.svelte";
   import type { CardSizeId } from "../../domain/card-sizes";
 
   interface Props {
@@ -16,6 +17,7 @@
     onRelease: () => void;
     onBack: () => void;
     isReleasing: boolean;
+    footers?: CardFooter[];
   }
 
   let {
@@ -28,6 +30,7 @@
     onRelease,
     onBack,
     isReleasing,
+    footers,
   }: Props = $props();
 
   let cardSize = $state<CardSizeId>("poker");
@@ -38,6 +41,9 @@
   let isExporting = $state(false);
   let rerenderKey = $state(0);
 
+  let inspectedSequence = $state<SequenceData | null>(null);
+  let inspectedFrontImageUrl = $state<string | null>(null);
+
   const distribution = $derived.by(() => {
     const dist: Record<number, number> = {};
     for (const c of cards) {
@@ -47,6 +53,21 @@
       .sort(([a], [b]) => Number(b) - Number(a))
       .map(([step, count]) => ({ step: Number(step), count }));
   });
+
+  function handleCardClick(sequence: SequenceData, frontImageUrl?: string) {
+    inspectedFrontImageUrl = frontImageUrl ?? null;
+    inspectedSequence = sequence;
+  }
+
+  function handleSwapInspected() {
+    if (!inspectedSequence) return;
+    const idx = sequences.findIndex(s => s.id === inspectedSequence!.id);
+    if (idx >= 0) {
+      onSwapCard(idx);
+      inspectedSequence = null;
+      inspectedFrontImageUrl = null;
+    }
+  }
 
   function handlePairsReady(pairs: CardPair[]) {
     renderedPairs = pairs;
@@ -148,6 +169,7 @@
       {cardSize}
       {theme}
       {rerenderKey}
+      {footers}
       isLoading={false}
       showGrid={true}
       showTKA={true}
@@ -156,11 +178,31 @@
       handPointsVisible={true}
       deckMode={true}
       displayMode="sheets"
+      onCardClick={handleCardClick}
       onPairsReady={handlePairsReady}
       onRenderStateChange={handleRenderState}
     />
   </div>
 </div>
+
+{#if inspectedSequence}
+  <CardInspectModal
+    sequence={inspectedSequence}
+    frontImageUrl={inspectedFrontImageUrl}
+    handPointsVisible={true}
+    showGrid={true}
+    showTKA={true}
+    showWord={true}
+    includeStartPosition={true}
+    onClose={() => { inspectedSequence = null; inspectedFrontImageUrl = null; }}
+  >
+    {#snippet extraActions()}
+      <button class="copy-btn swap-btn" onclick={handleSwapInspected} aria-label="Swap card">
+        <i class="fas fa-random"></i> Swap Card
+      </button>
+    {/snippet}
+  </CardInspectModal>
+{/if}
 
 <style>
   .review-step {
@@ -296,6 +338,18 @@
     min-height: 0;
     overflow: auto;
     padding: 16px;
+  }
+
+  .swap-btn {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    color: var(--theme-accent, #a78bfa);
+  }
+
+  .swap-btn:hover {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: rgba(139, 92, 246, 0.5);
+    color: #fff;
   }
 
   @media (max-width: 768px) {

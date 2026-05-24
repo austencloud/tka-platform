@@ -101,8 +101,12 @@ export interface PrintRenderOptions {
   elementTheme?: ElementalTheme;
   /** Show mandala fills in empty grid cells */
   showMandala?: boolean;
-  /** Left-side barter label (e.g. "QS 1:1" for deck cards) */
+  /** Left-side footer label */
   leftLabel?: string;
+  /** Right-side footer label */
+  rightLabel?: string;
+  /** Center footer text (overrides hardcoded notes) */
+  notes?: string;
 }
 
 export interface CardPair {

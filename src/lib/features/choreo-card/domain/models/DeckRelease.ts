@@ -1,9 +1,16 @@
+export interface CardFooter {
+  left?: string;
+  center?: string;
+  right?: string;
+}
+
 export interface DeckReleaseCard {
   sequenceId: string;
   sourceDeckId: string;
   stepCount: number;
   word: string;
   position: number;
+  footer: CardFooter;
 }
 
 export interface DeckRelease {
