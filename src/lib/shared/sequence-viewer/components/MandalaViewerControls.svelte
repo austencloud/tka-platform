@@ -63,16 +63,19 @@
 </script>
 
 <div class="mandala-controls">
-  <div class="transport">
+  <div class="transport-row">
     <button
-      class="transport-btn"
+      type="button"
+      class="chip transport-chip"
       class:active={!paused}
       onclick={() => onPausedChange(!paused)}
       aria-label={paused ? "Play" : "Pause"}
+      aria-pressed={!paused}
     >
       <i class="fas {paused ? 'fa-play' : 'fa-pause'}" aria-hidden="true"></i>
     </button>
-    <div class="speed-control">
+    <div class="speed-row">
+      <span class="setting-label">Speed</span>
       <input
         type="range"
         min="1"
@@ -80,82 +83,85 @@
         step="0.5"
         value={period}
         oninput={(e) => onPeriodChange(Number((e.target as HTMLInputElement).value))}
-        class="speed-slider"
+        class="slider"
       />
-      <span class="speed-label">{period}s</span>
+      <span class="slider-value">{period}s</span>
     </div>
   </div>
 
   <div class="control-group">
-    <span class="group-label">Path Shape</span>
-    <div class="pill-row">
+    <span class="setting-label">Path Shape</span>
+    <div class="chip-grid cols-4">
       {#each PATH_SHAPES as shape}
         <button
-          class="pill"
+          type="button"
+          class="chip"
           class:active={pathShape === shape.id}
           onclick={() => onPathShapeChange(shape.id)}
-        >
-          {shape.label}
-        </button>
+          aria-pressed={pathShape === shape.id}
+        >{shape.label}</button>
       {/each}
     </div>
   </div>
 
   <div class="control-group">
-    <span class="group-label">Easing</span>
-    <div class="pill-grid">
+    <span class="setting-label">Easing</span>
+    <div class="chip-grid cols-4">
       {#each EASINGS as e}
         <button
-          class="pill"
+          type="button"
+          class="chip"
           class:active={easing === e.id}
           onclick={() => onEasingChange(e.id)}
-        >
-          {e.label}
-        </button>
+          aria-pressed={easing === e.id}
+        >{e.label}</button>
       {/each}
     </div>
   </div>
 
   <div class="control-group">
-    <span class="group-label">Rotation</span>
-    <div class="pill-row">
+    <span class="setting-label">Rotation</span>
+    <div class="chip-grid cols-5">
       {#each ROTATIONS as r}
         <button
-          class="pill"
+          type="button"
+          class="chip"
           class:active={rotation === r.value}
           onclick={() => onRotationChange(r.value)}
-        >
-          {r.label}
-        </button>
+          aria-pressed={rotation === r.value}
+        >{r.label}</button>
       {/each}
     </div>
   </div>
 
   <div class="control-group">
-    <span class="group-label">Range</span>
-    <div class="range-row">
-      <div class="range-field">
+    <span class="setting-label">Range</span>
+    <div class="range-sliders">
+      <div class="range-slider-row">
         <span class="range-hint">Min</span>
         <input
-          type="number"
+          type="range"
           min="0"
           max="150"
+          step="5"
           value={rangeMin}
           oninput={(e) => onRangeMinChange(Number((e.target as HTMLInputElement).value))}
-          class="num-input"
+          class="slider"
         />
+        <span class="slider-value">{rangeMin}</span>
       </div>
-      <span class="range-sep">–</span>
-      <div class="range-field">
+      <div class="range-slider-row">
         <span class="range-hint">Max</span>
         <input
-          type="number"
+          type="range"
           min="100"
           max="300"
+          step="5"
           value={rangeMax}
           oninput={(e) => onRangeMaxChange(Number((e.target as HTMLInputElement).value))}
-          class="num-input"
+          class="slider"
         />
+        <span class="slider-value">{rangeMax}</span>
       </div>
     </div>
   </div>
@@ -165,82 +171,25 @@
   .mandala-controls {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 16px;
-    color: var(--theme-text, #e2e8f0);
+    gap: 16px;
+    padding: 14px 16px;
   }
 
-  .transport {
+  .transport-row {
     display: flex;
     align-items: center;
     gap: 12px;
   }
 
-  .transport-btn {
-    width: 40px;
-    height: 40px;
+  .transport-chip {
     flex-shrink: 0;
-    border-radius: 50%;
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    background: rgba(139, 92, 246, 0.08);
-    color: rgba(196, 181, 253, 0.7);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.15s ease;
   }
 
-  .transport-btn.active {
-    border-color: rgba(139, 92, 246, 0.5);
-    background: rgba(139, 92, 246, 0.15);
-    color: #c4b5fd;
-  }
-
-  .transport-btn:hover {
-    background: rgba(139, 92, 246, 0.25);
-    border-color: rgba(139, 92, 246, 0.6);
-    color: #ddd6fe;
-  }
-
-  .speed-control {
+  .speed-row {
     flex: 1;
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  .speed-slider {
-    flex: 1;
-    height: 4px;
-    appearance: none;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 2px;
-    cursor: pointer;
-  }
-
-  .speed-slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #a78bfa;
-    border: 2px solid rgba(10, 10, 26, 0.6);
-    cursor: pointer;
-    transition: transform 0.1s ease;
-  }
-
-  .speed-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-  }
-
-  .speed-label {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.4);
-    font-variant-numeric: tabular-nums;
-    min-width: 28px;
-    text-align: right;
   }
 
   .control-group {
@@ -249,92 +198,125 @@
     gap: 8px;
   }
 
-  .group-label {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(255, 255, 255, 0.35);
-  }
-
-  .pill-row {
-    display: flex;
-    gap: 4px;
-  }
-
-  .pill-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 4px;
-  }
-
-  .pill {
-    padding: 6px 0;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.03);
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 11px;
+  .setting-label {
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .chip-grid {
+    display: grid;
+    gap: 6px;
+  }
+
+  .chip-grid.cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .chip-grid.cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 6px 4px;
+    background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%, transparent);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
-    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .chip:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, white);
+  }
+
+  .chip:active {
+    transform: scale(0.92);
+    transition-duration: 50ms;
+  }
+
+  .chip.active {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
+    color: white;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+  }
+
+  .chip:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+    outline-offset: 2px;
+  }
+
+  .slider {
     flex: 1;
+    height: 4px;
+    appearance: none;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 2px;
+    cursor: pointer;
   }
 
-  .pill:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.8);
-    border-color: rgba(255, 255, 255, 0.12);
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--theme-accent, #6366f1);
+    border: 2px solid var(--theme-panel-bg, rgba(10, 10, 26, 0.9));
+    cursor: pointer;
+    transition: transform 0.1s ease;
   }
 
-  .pill.active {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #c4b5fd;
+  .slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
   }
 
-  .range-row {
+  .slider-value {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-variant-numeric: tabular-nums;
+    min-width: 32px;
+    text-align: right;
+  }
+
+  .range-sliders {
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
     gap: 8px;
   }
 
-  .range-field {
-    flex: 1;
+  .range-slider-row {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 8px;
   }
 
   .range-hint {
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(255, 255, 255, 0.25);
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    min-width: 28px;
   }
 
-  .range-sep {
-    color: rgba(255, 255, 255, 0.2);
-    font-size: 14px;
-    padding-bottom: 6px;
-  }
-
-  .num-input {
-    width: 100%;
-    padding: 6px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    background: rgba(0, 0, 0, 0.3);
-    color: inherit;
-    font-size: 12px;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    transition: border-color 0.15s ease;
-  }
-
-  .num-input:focus {
-    outline: none;
-    border-color: rgba(139, 92, 246, 0.4);
+  @media (prefers-reduced-motion: reduce) {
+    .chip {
+      transition: none !important;
+    }
+    .chip:active {
+      transform: none !important;
+    }
   }
 </style>

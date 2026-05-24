@@ -99,10 +99,10 @@
     top: 0;
     right: 0;
     height: 100%;
-    width: 260px;
+    width: 300px;
     overflow-y: auto;
-    background: rgba(10, 10, 26, 0.88);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     backdrop-filter: blur(12px);
-    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 </style>
