@@ -290,8 +290,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                 <button
                   type="button"
                   class="drawer-back-button"
-                  onclick={handleDismiss}
-                  aria-label="Close viewer"
+                  onclick={() => ctx.viewerState.exitExport()}
+                  aria-label="Exit export mode"
                 >
                   <i class="fas fa-arrow-left" aria-hidden="true"></i>
                   <span class="drawer-back-label">Back</span>

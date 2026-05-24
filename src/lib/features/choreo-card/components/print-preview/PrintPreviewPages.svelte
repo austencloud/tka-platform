@@ -244,7 +244,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
       rebuildPairs(seqs, generation).then(pairs => {
         if (pairs && generation === renderGeneration) onPairsReady?.(pairs);
-      });
+      }).catch(err => console.error("[PrintPreview] rebuildPairs failed:", err));
       return;
     }
 
@@ -337,7 +337,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   }
 
   function dataUrlToCanvas(dataUrl: string): Promise<HTMLCanvasElement> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
@@ -346,6 +346,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
         canvas.getContext("2d")!.drawImage(img, 0, 0);
         resolve(canvas);
       };
+      img.onerror = () => reject(new Error("Failed to load image from data URL"));
       img.src = dataUrl;
     });
   }

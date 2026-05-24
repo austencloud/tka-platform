@@ -167,7 +167,7 @@ export class ImageFormatConverter {
   }
 
   validateFormatOptions(options: ImageFormatOptions): boolean {
-    return options && ["PNG", "JPEG", "WEBP"].includes(options.format);
+    return options && ["png", "jpeg", "webp"].includes(options.format);
   }
 
   getSupportedFormats(): string[] {

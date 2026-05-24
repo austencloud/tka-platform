@@ -499,11 +499,23 @@ export class MandalaGeometryCalculator {
 			const r = step.motions?.red;
 			if (b)
 				parts.push(
-					b.motionType + b.startLocation + b.endLocation + (b.turns ?? 0)
+					b.motionType +
+					b.rotationDirection +
+					b.startLocation +
+					b.endLocation +
+					(b.startOrientation ?? '') +
+					(b.endOrientation ?? '') +
+					(b.turns ?? 0)
 				);
 			if (r)
 				parts.push(
-					r.motionType + r.startLocation + r.endLocation + (r.turns ?? 0)
+					r.motionType +
+					r.rotationDirection +
+					r.startLocation +
+					r.endLocation +
+					(r.startOrientation ?? '') +
+					(r.endOrientation ?? '') +
+					(r.turns ?? 0)
 				);
 		}
 		parts.push(bluePropType ?? "staff", redPropType ?? "staff");
