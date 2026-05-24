@@ -16,9 +16,34 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
+import { reportErrorTelemetry } from "$lib/shared/error/services/error-telemetry-reporter";
 import { stripUndefined } from "./firestore-helpers";
-import type { ListOptions, WriteOptions } from "./firestore-types";
+import type { ListOptions, ReadOptions, WriteOptions } from "./firestore-types";
 import type { Firestore, QueryConstraint } from 'firebase/firestore';
+
+function handleCrudError(
+  err: unknown,
+  action: string,
+  path: string,
+  onError?: (error: Error) => void,
+): never {
+  const error = err instanceof Error ? err : new Error(String(err));
+  if (onError) {
+    onError(error);
+  } else {
+    reportErrorTelemetry({
+      message: `Firestore ${action} failed: ${error.message.slice(0, 200)}`,
+      severity: "warning",
+      context: {
+        module: "firestore",
+        action,
+        additionalData: { path },
+      },
+      error,
+    });
+  }
+  throw error;
+}
 
 function buildQuery(
   collectionPath: string,
@@ -70,27 +95,36 @@ export async function firestoreGet<T>(
   collectionPath: string,
   id: string,
   schema: SchemaLike<T>,
+  options?: ReadOptions,
 ): Promise<T | null> {
-  const db = await getFirestoreInstance();
-  const snap = await getDoc(doc(db, collectionPath, id));
-  if (!snap.exists()) return null;
-  return parseDoc(schema, snap.id, snap.data() as Record<string, unknown>, collectionPath);
+  try {
+    const db = await getFirestoreInstance();
+    const snap = await getDoc(doc(db, collectionPath, id));
+    if (!snap.exists()) return null;
+    return parseDoc(schema, snap.id, snap.data() as Record<string, unknown>, collectionPath);
+  } catch (err) {
+    handleCrudError(err, "get", `${collectionPath}/${id}`, options?.onError);
+  }
 }
 
 export async function firestoreList<T>(
   collectionPath: string,
   schema: SchemaLike<T>,
-  options?: ListOptions,
+  options?: ListOptions & ReadOptions,
 ): Promise<T[]> {
-  const db = await getFirestoreInstance();
-  const q = buildQuery(collectionPath, db, options);
-  const snap = await getDocs(q);
-  const items: T[] = [];
-  for (const d of snap.docs) {
-    const parsed = parseDoc(schema, d.id, d.data() as Record<string, unknown>, collectionPath);
-    if (parsed !== null) items.push(parsed);
+  try {
+    const db = await getFirestoreInstance();
+    const q = buildQuery(collectionPath, db, options);
+    const snap = await getDocs(q);
+    const items: T[] = [];
+    for (const d of snap.docs) {
+      const parsed = parseDoc(schema, d.id, d.data() as Record<string, unknown>, collectionPath);
+      if (parsed !== null) items.push(parsed);
+    }
+    return items;
+  } catch (err) {
+    handleCrudError(err, "list", collectionPath, options?.onError);
   }
-  return items;
 }
 
 export async function firestoreSet<T extends Record<string, unknown>>(
@@ -99,53 +133,61 @@ export async function firestoreSet<T extends Record<string, unknown>>(
   data: T,
   options?: WriteOptions,
 ): Promise<string> {
-  const db = await getFirestoreInstance();
-  const cleaned = stripUndefined({ ...data });
+  try {
+    const db = await getFirestoreInstance();
+    const cleaned = stripUndefined({ ...data });
 
-  const isCreate = id === null;
-  const timestamps: Record<string, unknown> = {
-    updatedAt: serverTimestamp(),
-  };
-  if (isCreate) {
-    timestamps.createdAt = serverTimestamp();
-  }
-
-  const docData = { ...cleaned, ...timestamps };
-
-  const doWrite = async () => {
+    const isCreate = id === null;
+    const timestamps: Record<string, unknown> = {
+      updatedAt: serverTimestamp(),
+    };
     if (isCreate) {
-      const ref = await addDoc(collection(db, collectionPath), docData);
-      return ref.id;
+      timestamps.createdAt = serverTimestamp();
     }
-    const ref = doc(db, collectionPath, id);
-    if (options?.merge) {
-      await setDoc(ref, docData, { merge: true });
-    } else {
-      await setDoc(ref, docData);
-    }
-    return id;
-  };
 
-  if (options?.trackOffline) {
-    return trackWrite(doWrite, options.repoName);
+    const docData = { ...cleaned, ...timestamps };
+
+    const doWrite = async () => {
+      if (isCreate) {
+        const ref = await addDoc(collection(db, collectionPath), docData);
+        return ref.id;
+      }
+      const ref = doc(db, collectionPath, id);
+      if (options?.merge) {
+        await setDoc(ref, docData, { merge: true });
+      } else {
+        await setDoc(ref, docData);
+      }
+      return id;
+    };
+
+    if (options?.trackOffline) {
+      return await trackWrite(doWrite, options.repoName);
+    }
+    return await doWrite();
+  } catch (err) {
+    handleCrudError(err, "set", `${collectionPath}/${id ?? "(auto)"}`, options?.onError);
   }
-  return doWrite();
 }
 
 export async function firestoreDelete(
   collectionPath: string,
   id: string,
-  options?: { trackOffline?: boolean; repoName?: string },
+  options?: { trackOffline?: boolean; repoName?: string; onError?: (error: Error) => void },
 ): Promise<void> {
-  const db = await getFirestoreInstance();
-  const ref = doc(db, collectionPath, id);
+  try {
+    const db = await getFirestoreInstance();
+    const ref = doc(db, collectionPath, id);
 
-  const doDelete = () => deleteDoc(ref);
+    const doDelete = () => deleteDoc(ref);
 
-  if (options?.trackOffline) {
-    await trackWrite(doDelete, options.repoName);
-  } else {
-    await doDelete();
+    if (options?.trackOffline) {
+      await trackWrite(doDelete, options.repoName);
+    } else {
+      await doDelete();
+    }
+  } catch (err) {
+    handleCrudError(err, "delete", `${collectionPath}/${id}`, options?.onError);
   }
 }
 
@@ -179,7 +221,16 @@ export function firestoreListen<T>(
         if (onError) {
           onError(error);
         } else {
-          console.warn(`[firestore] Listener error on ${collectionPath}:`, error);
+          reportErrorTelemetry({
+            message: `Firestore listen failed: ${error.message.slice(0, 200)}`,
+            severity: "warning",
+            context: {
+              module: "firestore",
+              action: "listen",
+              additionalData: { path: collectionPath },
+            },
+            error,
+          });
         }
       },
     );

@@ -10,4 +10,4 @@ export {
   requireAuth,
   firestoreDate,
 } from "./firestore-helpers";
-export type { WhereClause, ListOptions, WriteOptions } from "./firestore-types";
+export type { WhereClause, ListOptions, WriteOptions, ReadOptions } from "./firestore-types";

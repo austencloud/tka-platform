@@ -41,6 +41,11 @@ vi.mock("$lib/shared/offline/state/sync-status-state.svelte", () => ({
   trackWrite: vi.fn(async (fn: () => Promise<unknown>, _name?: string) => fn()),
 }));
 
+const mockReportErrorTelemetry = vi.fn();
+vi.mock("$lib/shared/error/services/error-telemetry-reporter", () => ({
+  reportErrorTelemetry: (...args: unknown[]) => mockReportErrorTelemetry(...args),
+}));
+
 import {
   firestoreGet,
   firestoreList,
@@ -220,5 +225,87 @@ describe("firestoreDelete", () => {
       repoName: "test-repo",
     });
     expect(trackWrite).toHaveBeenCalledWith(expect.any(Function), "test-repo");
+  });
+});
+
+describe("error telemetry", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("firestoreGet reports telemetry and re-throws on error", async () => {
+    mockDoc.mockReturnValue("doc-ref");
+    mockGetDoc.mockRejectedValue(new Error("permission-denied"));
+
+    await expect(firestoreGet("items", "abc", TestSchema)).rejects.toThrow("permission-denied");
+    expect(mockReportErrorTelemetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("Firestore get failed"),
+        severity: "warning",
+        context: expect.objectContaining({
+          module: "firestore",
+          action: "get",
+          additionalData: { path: "items/abc" },
+        }),
+      }),
+    );
+  });
+
+  it("firestoreGet calls custom onError instead of telemetry", async () => {
+    mockDoc.mockReturnValue("doc-ref");
+    mockGetDoc.mockRejectedValue(new Error("custom-error"));
+    const customOnError = vi.fn();
+
+    await expect(
+      firestoreGet("items", "abc", TestSchema, { onError: customOnError }),
+    ).rejects.toThrow("custom-error");
+    expect(customOnError).toHaveBeenCalledWith(expect.any(Error));
+    expect(mockReportErrorTelemetry).not.toHaveBeenCalled();
+  });
+
+  it("firestoreSet reports telemetry on error", async () => {
+    mockCollection.mockReturnValue("col-ref");
+    mockAddDoc.mockRejectedValue(new Error("quota-exceeded"));
+
+    await expect(
+      firestoreSet("items", null, { name: "Fail" } as Record<string, unknown>),
+    ).rejects.toThrow("quota-exceeded");
+    expect(mockReportErrorTelemetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({
+          action: "set",
+          additionalData: { path: "items/(auto)" },
+        }),
+      }),
+    );
+  });
+
+  it("firestoreDelete reports telemetry on error", async () => {
+    mockDoc.mockReturnValue("doc-ref");
+    mockDeleteDoc.mockRejectedValue(new Error("not-found"));
+
+    await expect(firestoreDelete("items", "gone")).rejects.toThrow("not-found");
+    expect(mockReportErrorTelemetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({
+          action: "delete",
+          additionalData: { path: "items/gone" },
+        }),
+      }),
+    );
+  });
+
+  it("firestoreList reports telemetry on error", async () => {
+    mockQuery.mockReturnValue("query-ref");
+    mockCollection.mockReturnValue("col-ref");
+    mockGetDocs.mockRejectedValue(new Error("unavailable"));
+
+    await expect(firestoreList("items", TestSchema)).rejects.toThrow("unavailable");
+    expect(mockReportErrorTelemetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({
+          action: "list",
+          additionalData: { path: "items" },
+        }),
+      }),
+    );
   });
 });

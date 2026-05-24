@@ -17,4 +17,9 @@ export interface WriteOptions {
   merge?: boolean;
   trackOffline?: boolean;
   repoName?: string;
+  onError?: (error: Error) => void;
+}
+
+export interface ReadOptions {
+  onError?: (error: Error) => void;
 }
