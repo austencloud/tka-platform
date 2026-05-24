@@ -138,8 +138,6 @@
   let AnimationPlayerComponent: typeof import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte").default | null = $state(null);
   let playbackController = $state<AnimationPlaybackController | null>(null);
   let animPanelState = $state<AnimationPanelState | null>(null);
-  let isAnimPlaying = $state(false);
-  let currentAnimStep = $state(0);
   let isDownloading = $state(false);
   let downloadProgress = $state(0);
 
@@ -151,10 +149,9 @@
       ? pageState.word
       : data?.meta?.word) || "Sequence"
   );
-  const ogWord = $derived(rawWord);
   const ogDesc = $derived(
-    ogWord !== "Sequence"
-      ? `Watch the ${ogWord} flow sequence`
+    rawWord !== "Sequence"
+      ? `Watch the ${rawWord} flow sequence`
       : "Watch this flow sequence"
   );
   const ogImage = $derived(
@@ -325,10 +322,10 @@
 </script>
 
 <svelte:head>
-  <title>{ogWord} - TKA</title>
+  <title>{rawWord} - TKA</title>
   <meta name="description" content={ogDesc} />
   <meta property="og:type" content="video.other" />
-  <meta property="og:title" content="{ogWord} - TKA" />
+  <meta property="og:title" content="{rawWord} - TKA" />
   <meta property="og:description" content={ogDesc} />
   <meta property="og:image" content={ogImage} />
   <meta
@@ -336,7 +333,7 @@
     content="https://tkaflowarts.com/q/{$page.params.code}"
   />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{ogWord} - TKA" />
+  <meta name="twitter:title" content="{rawWord} - TKA" />
   <meta name="twitter:description" content={ogDesc} />
   <meta name="twitter:image" content={ogImage} />
   <meta name="theme-color" content="#0f0f1a" />
@@ -386,10 +383,7 @@
             playbackController = ctrl;
             animPanelState = state;
           }}
-          onStepChange={(stepIndex, playing) => {
-            currentAnimStep = stepIndex ?? 0;
-            isAnimPlaying = playing;
-          }}
+          onStepChange={() => {}}
         />
       </div>
 
