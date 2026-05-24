@@ -1,5 +1,8 @@
 <script lang="ts">
   import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
+  import { Popover } from "bits-ui";
+  import { scale } from "svelte/transition";
+  import { backOut, cubicOut } from "svelte/easing";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { getPerformerColor } from "../../constants/performer-colors";
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
@@ -44,11 +47,11 @@
       : sequenceWord ?? (sequenceBeats !== null ? `${sequenceBeats} beats` : null),
   );
 
-  let showAvatarPicker = $state(false);
+  let avatarPickerOpen = $state(false);
 
   function pickAvatar(id: AvatarId) {
     performer?.setAvatarModel(id);
-    showAvatarPicker = false;
+    avatarPickerOpen = false;
   }
 
   // Prop type selection (mirrors PropPopover logic)
@@ -106,32 +109,58 @@
         <span class="badge" style:background-color={performerColor}>{badgeLabel}</span>
       </div>
 
-      <button
-        class="change-avatar-btn"
-        aria-expanded={showAvatarPicker}
-        onclick={() => (showAvatarPicker = !showAvatarPicker)}
-      >
-        <i class="fas fa-exchange-alt" aria-hidden="true"></i>
-        <span>Change Avatar</span>
-      </button>
-
-      {#if showAvatarPicker}
-        <div class="avatar-picker" role="radiogroup" aria-label="Select avatar">
-          {#each AVATAR_DEFINITIONS as def (def.id)}
+      <Popover.Root bind:open={avatarPickerOpen}>
+        <Popover.Trigger>
+          {#snippet child({ props })}
             <button
-              class="avatar-option"
-              class:selected={performer.avatarModelId === def.id}
-              role="radio"
-              aria-checked={performer.avatarModelId === def.id}
-              onclick={() => pickAvatar(def.id as AvatarId)}
-              title={def.description}
+              {...props}
+              class="change-avatar-btn"
+              aria-expanded={avatarPickerOpen}
             >
-              <i class="fas {def.icon ?? 'fa-user'}" aria-hidden="true"></i>
-              <span class="avatar-option-name">{def.name}</span>
+              <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+              <span>Change Avatar</span>
             </button>
-          {/each}
-        </div>
-      {/if}
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content
+          side="top"
+          sideOffset={8}
+          align="start"
+          avoidCollisions={true}
+          collisionPadding={12}
+          forceMount
+        >
+          {#snippet child({ open, wrapperProps, props })}
+            <div {...wrapperProps}>
+              {#if open}
+                <div
+                  {...props}
+                  class="avatar-popover"
+                  in:scale={{ duration: 200, start: 0.92, opacity: 0, easing: backOut }}
+                  out:scale={{ duration: 140, start: 0.95, opacity: 0, easing: cubicOut }}
+                >
+                  <div class="avatar-pop-header">Select Avatar</div>
+                  <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
+                    {#each AVATAR_DEFINITIONS as def (def.id)}
+                      <button
+                        class="avatar-card"
+                        class:selected={performer.avatarModelId === def.id}
+                        role="radio"
+                        aria-checked={performer.avatarModelId === def.id}
+                        onclick={() => pickAvatar(def.id as AvatarId)}
+                        title={def.description}
+                      >
+                        <i class="fas {def.icon ?? 'fa-user'}" aria-hidden="true"></i>
+                        <span class="avatar-card-name">{def.name}</span>
+                      </button>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {/snippet}
+        </Popover.Content>
+      </Popover.Root>
     </div>
 
     <!-- Prop -->
@@ -359,52 +388,71 @@
     font-size: 12px;
   }
 
-  .avatar-picker {
+  .avatar-popover {
+    width: 320px;
+    border-radius: 16px;
+    background: #0c0e16;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    padding: 12px;
+  }
+
+  .avatar-pop-header {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 0 4px 10px;
+  }
+
+  .avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .avatar-card {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-  }
-
-  .avatar-option {
-    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border-radius: 7px;
-    border: 1px solid transparent;
-    background: transparent;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    min-height: 56px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px solid transparent;
+    border-radius: 10px;
     color: rgba(255, 255, 255, 0.6);
-    font-size: 12px;
-    font-weight: 500;
     cursor: pointer;
-    transition: background 120ms, color 120ms, border-color 120ms;
-    text-align: left;
-    width: 100%;
-    min-height: 36px;
+    transition: all 140ms ease;
   }
 
-  .avatar-option:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.85);
+  .avatar-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
   }
 
-  .avatar-option.selected {
-    background: color-mix(in srgb, var(--performer-color) 15%, transparent);
-    border-color: color-mix(in srgb, var(--performer-color) 40%, transparent);
+  .avatar-card.selected {
+    background: color-mix(in srgb, var(--performer-color) 18%, transparent);
+    border-color: color-mix(in srgb, var(--performer-color) 45%, transparent);
     color: var(--performer-color);
   }
 
-  .avatar-option i {
-    font-size: 13px;
-    width: 16px;
-    text-align: center;
-    flex-shrink: 0;
+  .avatar-card i {
+    font-size: 16px;
   }
 
-  .avatar-option-name {
+  .avatar-card-name {
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   /* Prop grid — flat flow */
