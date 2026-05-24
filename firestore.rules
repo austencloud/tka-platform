@@ -287,15 +287,10 @@ service cloud.firestore {
       // Allow updates for:
       // 1. Owner updating their own profile
       // 2. Admins updating any user's profile (role changes, moderation)
-      // 3. Authenticated users incrementing/decrementing followerCount (for follow/unfollow)
-      allow update: if isOwner(userId)
-        || isAdmin()
-        || (isAuthenticated()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount'])
-            && request.resource.data.followerCount == resource.data.followerCount + 1)
-        || (isAuthenticated()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount'])
-            && request.resource.data.followerCount == resource.data.followerCount - 1);
+      // NOTE: followerCount manipulation removed from client-side rules.
+      // Follow/unfollow must update counts via an Admin SDK endpoint (Cloud Function)
+      // to prevent arbitrary count manipulation by any authenticated user.
+      allow update: if isOwner(userId) || isAdmin();
 
       // Users can delete their own profile, admins can delete any user (for testing)
       allow delete: if isOwner(userId) || isAdmin();
@@ -909,20 +904,20 @@ service cloud.firestore {
       // No deletion - short codes are permanent
       allow delete: if isAdmin();
 
-      // Scan event log is a top-level collectionGroup rule below,
-      // because the admin live-feed runs a collectionGroup query over
-      // every shortcodes/*/scanEvents subcollection. A nested rule
-      // here wouldn't authorize that query.
+      // Scan event log — scoped creation under shortcodes only.
+      // The collectionGroup read rule above covers admin live-feed queries.
+      match /scanEvents/{eventId} {
+        allow create: if true;
+        allow read: if isAdmin();
+        allow update, delete: if false;
+      }
     }
 
-    // Scan event log — append-only analytics per QR scan.
-    // Top-level so collectionGroup queries (admin live feed) are covered.
-    // Anyone may create (fire-and-forget telemetry from public scanners);
-    // only admins may read; no updates or deletes.
+    // Scan event log — collectionGroup read-only for admin live feed.
+    // Creation is only allowed under shortcodes/{code}/scanEvents (see below).
     match /{path=**}/scanEvents/{eventId} {
       allow read: if isAdmin();
-      allow create: if true;
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
     // ============================================================================
@@ -992,15 +987,15 @@ service cloud.firestore {
     // ============================================================================
 
     // App-wide metrics like global counters for the endless spinner
-    // Public read/write for anonymous users to participate in global counters
+    // Public read, constrained increment-only writes for anonymous counters
     match /appMetrics/{metricId} {
       // ANYONE can read metrics (for displaying global counters)
       allow read: if true;
 
-      // ANYONE can write (atomic increment of totalGenerated counter)
-      // This is intentionally permissive to allow anonymous users
-      // to contribute to the "sequences ever generated" counter
-      allow write: if true;
+      // Only allow atomic +1 increment of totalGenerated — no other field changes
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalGenerated'])
+        && request.resource.data.totalGenerated == resource.data.totalGenerated + 1;
+      allow create, delete: if false;
     }
 
     // ============================================================================

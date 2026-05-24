@@ -1,10 +1,13 @@
 /**
  * Agent Feedback Ingest Endpoint
  *
- * GET /api/feedback/ingest?key=<SECRET>&title=<TITLE>&description=<DESC>&...
+ * POST /api/feedback/ingest
+ *   Header: x-api-key: <SECRET>
+ *   Body JSON: { title, description, type?, priority?, module?, tab?, agent? }
  *
- * Allows LLM agents and external tools to submit feedback by visiting a URL.
- * Auth is via a shared secret in the `key` query param (not Firebase Auth).
+ * Allows LLM agents and external tools to submit feedback.
+ * Auth is via a shared secret in the `x-api-key` header (not query params,
+ * which leak to logs, CDN, and Referer headers).
  */
 
 import type { RequestHandler } from "@sveltejs/kit";
@@ -49,10 +52,26 @@ function isValidPriority(value: string): value is FeedbackPriority {
 	return (VALID_PRIORITIES as readonly string[]).includes(value);
 }
 
+// ── Tombstone: old GET endpoint ─────────────────────────────────────
+
+/** @deprecated Migrated to POST with x-api-key header. */
+export const GET: RequestHandler = async () => {
+	return json(
+		{
+			ok: false,
+			error:
+				"This endpoint has been migrated from GET to POST. " +
+				"Send a POST request with the API key in the x-api-key header " +
+				"and parameters in the JSON request body.",
+		},
+		{ status: 410 },
+	);
+};
+
 // ── Handler ──────────────────────────────────────────────────────────
 
-export const GET: RequestHandler = async (event) => {
-	// 1. Auth: validate API key
+export const POST: RequestHandler = async (event) => {
+	// 1. Auth: validate API key from header (not query params)
 	const FEEDBACK_INGEST_KEY = env.FEEDBACK_INGEST_KEY;
 	if (!FEEDBACK_INGEST_KEY) {
 		return json(
@@ -61,8 +80,8 @@ export const GET: RequestHandler = async (event) => {
 		);
 	}
 
-	const key = event.url.searchParams.get("key");
-	if (!key || key !== FEEDBACK_INGEST_KEY) {
+	const apiKey = event.request.headers.get("x-api-key");
+	if (!apiKey || apiKey !== FEEDBACK_INGEST_KEY) {
 		return json(
 			{ ok: false, error: "Invalid or missing API key" },
 			{ status: 401 },
@@ -73,25 +92,41 @@ export const GET: RequestHandler = async (event) => {
 	const blocked = withRateLimit(event, RATE_LIMITS.FEEDBACK_INGEST, "ip");
 	if (blocked) return blocked;
 
-	// 3. Parse and validate params
-	const rawTitle = event.url.searchParams.get("title");
-	const rawDescription = event.url.searchParams.get("description");
-	const rawType = event.url.searchParams.get("type") ?? "general";
-	const rawPriority = event.url.searchParams.get("priority") ?? "medium";
-	const rawModule = event.url.searchParams.get("module") ?? "system";
-	const rawTab = event.url.searchParams.get("tab") ?? "general";
-	const rawAgent = event.url.searchParams.get("agent") ?? "claude-chat";
+	// 3. Parse and validate body
+	let body: Record<string, unknown>;
+	try {
+		body = (await event.request.json()) as Record<string, unknown>;
+	} catch {
+		return json(
+			{ ok: false, error: "Invalid JSON body" },
+			{ status: 400 },
+		);
+	}
+
+	const rawTitle = typeof body.title === "string" ? body.title : null;
+	const rawDescription =
+		typeof body.description === "string" ? body.description : null;
+	const rawType =
+		typeof body.type === "string" ? body.type : "general";
+	const rawPriority =
+		typeof body.priority === "string" ? body.priority : "medium";
+	const rawModule =
+		typeof body.module === "string" ? body.module : "system";
+	const rawTab =
+		typeof body.tab === "string" ? body.tab : "general";
+	const rawAgent =
+		typeof body.agent === "string" ? body.agent : "claude-chat";
 
 	if (!rawTitle) {
 		return json(
-			{ ok: false, error: "Missing required parameter: title" },
+			{ ok: false, error: "Missing required field: title" },
 			{ status: 400 },
 		);
 	}
 
 	if (!rawDescription) {
 		return json(
-			{ ok: false, error: "Missing required parameter: description" },
+			{ ok: false, error: "Missing required field: description" },
 			{ status: 400 },
 		);
 	}

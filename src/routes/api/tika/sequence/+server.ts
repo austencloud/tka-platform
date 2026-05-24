@@ -399,8 +399,9 @@ export const POST: RequestHandler = async (event) => {
       });
     }
 
-    // Build the sequence
-    const maxAttempts = body.maxAttempts ?? 100;
+    // Build the sequence (clamp to prevent unbounded CPU work)
+    const MAX_ATTEMPTS_CEILING = 200;
+    const maxAttempts = Math.min(body.maxAttempts ?? 100, MAX_ATTEMPTS_CEILING);
     const result = buildSequenceFromLetters(letters, maxAttempts);
 
     if (!result.isValid) {

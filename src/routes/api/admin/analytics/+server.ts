@@ -50,6 +50,11 @@ function getPeriodInterval(period: TimePeriod): string {
   }
 }
 
+/** Escape a value for safe interpolation into a HogQL single-quoted string literal. */
+function escapeHogQL(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
 async function executeHogQLQuery(
   query: string
 ): Promise<{ results: unknown[][] } | null> {
@@ -79,17 +84,19 @@ async function executeHogQLQuery(
 }
 
 function buildEngagementQuery(userId: string): string {
+  const safeId = escapeHogQL(userId);
   return `
     SELECT
       max(timestamp) as last_active,
       count(distinct $session_id) as sessions_count
     FROM events
-    WHERE distinct_id = '${userId}'
+    WHERE distinct_id = '${safeId}'
       AND timestamp > now() - interval 30 day
   `;
 }
 
 function buildActivityQuery(userId: string, period: TimePeriod): string {
+  const safeId = escapeHogQL(userId);
   const interval = getPeriodInterval(period);
   // Derive module from the first URL path segment of pageview events.
   // Works with existing autocapture data without custom properties.
@@ -98,7 +105,7 @@ function buildActivityQuery(userId: string, period: TimePeriod): string {
       splitByChar('/', ifNull(path(properties."$current_url"), ''))[2] as module,
       count() as event_count
     FROM events
-    WHERE distinct_id = '${userId}'
+    WHERE distinct_id = '${safeId}'
       AND timestamp > now() - interval ${interval}
       AND event = '$pageview'
       AND properties."$current_url" IS NOT NULL
@@ -110,12 +117,13 @@ function buildActivityQuery(userId: string, period: TimePeriod): string {
 }
 
 function buildContentQuery(userId: string): string {
+  const safeId = escapeHogQL(userId);
   return `
     SELECT
       event,
       count() as count
     FROM events
-    WHERE distinct_id = '${userId}'
+    WHERE distinct_id = '${safeId}'
       AND event IN (
         'sequence_create',
         'sequence_save',
@@ -128,6 +136,7 @@ function buildContentQuery(userId: string): string {
 }
 
 function buildSessionsQuery(userId: string, limit: number): string {
+  const safeId = escapeHogQL(userId);
   // Derive modules from pageview URLs instead of properties.module
   return `
     SELECT
@@ -147,7 +156,7 @@ function buildSessionsQuery(userId: string, limit: number): string {
         )
       ) as modules
     FROM events
-    WHERE distinct_id = '${userId}'
+    WHERE distinct_id = '${safeId}'
       AND "$session_id" IS NOT NULL
       AND timestamp > now() - interval 30 day
     GROUP BY "$session_id"
@@ -174,8 +183,8 @@ export const POST: RequestHandler = async (event) => {
       throw error(400, "type and userId are required");
     }
 
-    // Validate userId - must be a reasonable string (Firebase UIDs are alphanumeric)
-    if (typeof userId !== "string" || userId.length > 128 || !/^[\w.-]+$/.test(userId)) {
+    // Validate userId - Firebase UIDs are alphanumeric, typically 28 chars
+    if (typeof userId !== "string" || !/^[a-zA-Z0-9]{1,128}$/.test(userId)) {
       throw error(400, "Invalid userId format");
     }
 

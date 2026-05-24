@@ -1,10 +1,13 @@
 /**
  * Agent Feedback Ingest — Cloudflare Pages Function
  *
- * GET /api/feedback/ingest?key=<SECRET>&title=<TITLE>&description=<DESC>&...
+ * POST /api/feedback/ingest
+ *   Header: x-api-key: <SECRET>
+ *   Body JSON: { title, description, type?, priority?, module?, tab?, agent? }
  *
  * Writes directly to Firestore via REST API (no Node SDK needed).
- * Auth is via a shared secret in the `key` query param.
+ * Auth is via a shared secret in the `x-api-key` header (not query params,
+ * which leak to logs, CDN, and Referer headers).
  */
 
 interface Env {
@@ -174,19 +177,34 @@ function toFirestoreValue(value: unknown): unknown {
 	return { stringValue: String(value) };
 }
 
+// ── Tombstone: old GET endpoint ─────────────────────────────────────
+
+/** @deprecated Migrated to POST with x-api-key header. */
+export const onRequestGet: PagesFunction<Env> = async () => {
+	return jsonResponse(
+		{
+			ok: false,
+			error:
+				"This endpoint has been migrated from GET to POST. " +
+				"Send a POST request with the API key in the x-api-key header " +
+				"and parameters in the JSON request body.",
+		},
+		410
+	);
+};
+
 // ── Handler ──────────────────────────────────────────────────────────
 
-export const onRequest: PagesFunction<Env> = async (context) => {
+export const onRequestPost: PagesFunction<Env> = async (context) => {
 	const { request, env } = context;
-	const url = new URL(request.url);
 
-	// 1. Auth
+	// 1. Auth: validate API key from header (not query params)
 	if (!env.FEEDBACK_INGEST_KEY) {
 		return jsonResponse({ ok: false, error: "Ingest endpoint not configured" }, 500);
 	}
 
-	const key = url.searchParams.get("key");
-	if (!key || key !== env.FEEDBACK_INGEST_KEY) {
+	const apiKey = request.headers.get("x-api-key");
+	if (!apiKey || apiKey !== env.FEEDBACK_INGEST_KEY) {
 		return jsonResponse({ ok: false, error: "Invalid or missing API key" }, 401);
 	}
 
@@ -201,12 +219,19 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 		);
 	}
 
-	// 3. Parse and validate
-	const rawTitle = url.searchParams.get("title");
-	const rawDescription = url.searchParams.get("description");
+	// 3. Parse and validate body
+	let body: Record<string, unknown>;
+	try {
+		body = (await request.json()) as Record<string, unknown>;
+	} catch {
+		return jsonResponse({ ok: false, error: "Invalid JSON body" }, 400);
+	}
 
-	if (!rawTitle) return jsonResponse({ ok: false, error: "Missing required parameter: title" }, 400);
-	if (!rawDescription) return jsonResponse({ ok: false, error: "Missing required parameter: description" }, 400);
+	const rawTitle = typeof body.title === "string" ? body.title : null;
+	const rawDescription = typeof body.description === "string" ? body.description : null;
+
+	if (!rawTitle) return jsonResponse({ ok: false, error: "Missing required field: title" }, 400);
+	if (!rawDescription) return jsonResponse({ ok: false, error: "Missing required field: description" }, 400);
 
 	const title = sanitize(rawTitle, MAX_TITLE_LENGTH);
 	const description = sanitize(rawDescription, MAX_DESCRIPTION_LENGTH);
@@ -214,11 +239,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 	if (!title) return jsonResponse({ ok: false, error: "Title is empty after sanitization" }, 400);
 	if (!description) return jsonResponse({ ok: false, error: "Description is empty after sanitization" }, 400);
 
-	const rawType = url.searchParams.get("type") ?? "general";
-	const rawPriority = url.searchParams.get("priority") ?? "medium";
-	const rawModule = url.searchParams.get("module") ?? "system";
-	const rawTab = url.searchParams.get("tab") ?? "general";
-	const rawAgent = url.searchParams.get("agent") ?? "claude-chat";
+	const rawType = typeof body.type === "string" ? body.type : "general";
+	const rawPriority = typeof body.priority === "string" ? body.priority : "medium";
+	const rawModule = typeof body.module === "string" ? body.module : "system";
+	const rawTab = typeof body.tab === "string" ? body.tab : "general";
+	const rawAgent = typeof body.agent === "string" ? body.agent : "claude-chat";
 
 	const type = VALID_TYPES.includes(rawType) ? rawType : "general";
 	const priority = VALID_PRIORITIES.includes(rawPriority) ? rawPriority : "medium";

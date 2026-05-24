@@ -1,9 +1,14 @@
 import type { RequestHandler } from "./$types";
+import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
 
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 const HASH_RE = /^[0-9a-f]{64}$/;
 
-export const PUT: RequestHandler = async ({ params, request, platform }) => {
+export const PUT: RequestHandler = async (event) => {
+  // Require authenticated user — prevents anonymous R2 uploads
+  await requireFirebaseUser(event);
+
+  const { params, request, platform } = event;
   const hash = params.hash;
   if (!hash || !HASH_RE.test(hash)) {
     return new Response("Invalid hash", { status: 400 });

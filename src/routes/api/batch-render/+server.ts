@@ -14,6 +14,12 @@ import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
 import { withRateLimit } from "$lib/server/security/withRateLimit";
+import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
+
+/** Hard ceilings to prevent resource exhaustion */
+const MAX_BATCH_STEPS = 50;
+const MAX_STEP_SIZE = 512;
+const MIN_STEP_SIZE = 32;
 
 /**
  * Check if a sequence requires non-radial points to be shown
@@ -117,8 +123,11 @@ export const GET: RequestHandler = async () => {
 };
 
 export const POST: RequestHandler = async (event) => {
+  // Require authenticated user - rendering is CPU-intensive
+  const caller = await requireFirebaseUser(event);
+
   // Rate limit to prevent resource exhaustion (rendering is CPU-intensive)
-  const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, "ip");
+  const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, "user", caller.uid);
   if (blocked) return blocked;
 
   const { request } = event;
@@ -135,13 +144,25 @@ export const POST: RequestHandler = async (event) => {
     const {
       sequence,
       propType,
-      stepSize = 120,
+      stepSize: rawStepSize = 120,
       format = "WebP",
-      quality = 0.9,
+      quality: rawQuality = 0.9,
     } = body;
+
+    // Clamp user-supplied rendering parameters
+    const stepSize = Math.max(MIN_STEP_SIZE, Math.min(rawStepSize, MAX_STEP_SIZE));
+    const quality = Math.max(0, Math.min(rawQuality, 1));
 
     if (!sequence?.steps || sequence.steps.length === 0) {
       return json({ error: "Invalid sequence data" }, { status: 400 });
+    }
+
+    // Reject sequences with too many steps to prevent CPU exhaustion
+    if (sequence.steps.length > MAX_BATCH_STEPS) {
+      return json(
+        { error: `Sequence exceeds maximum of ${MAX_BATCH_STEPS} steps` },
+        { status: 400 }
+      );
     }
 
     // Resolve rendering service
