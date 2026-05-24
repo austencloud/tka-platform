@@ -197,7 +197,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 14px 16px;
+    padding: 16px 18px;
   }
 
   /* Column separators */
@@ -207,27 +207,27 @@
 
   /* Fixed widths for identity + controls; effects takes remaining space */
   .col-identity {
-    width: 160px;
+    width: 190px;
     flex-shrink: 0;
   }
 
   .col-controls {
-    width: 160px;
+    width: 180px;
     flex-shrink: 0;
   }
 
   .col-effects {
     flex: 1;
-    min-width: 0;
+    min-width: 280px;
   }
 
   /* ── Column header ───────────────────────────────────────── */
   .col-header {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.5);
     line-height: 1;
   }
 
@@ -251,7 +251,7 @@
   }
 
   .avatar-initials {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 800;
     color: var(--performer-color, rgba(255, 255, 255, 0.7));
     letter-spacing: 0.04em;
@@ -267,37 +267,37 @@
   }
 
   .performer-name {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.95);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.2;
+    line-height: 1.3;
   }
 
   .sequence-label {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.55);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.2;
+    line-height: 1.3;
   }
 
   .sequence-label.no-seq {
     font-style: italic;
-    color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.35);
   }
 
   .badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 2px 6px;
+    padding: 3px 8px;
     border-radius: 5px;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
     color: rgba(0, 0, 0, 0.85);
     letter-spacing: 0.04em;
@@ -311,17 +311,18 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     background: transparent;
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: background 140ms, border-color 140ms, color 140ms;
     width: 100%;
     justify-content: center;
+    min-height: 36px;
   }
 
   .change-avatar-btn:hover {
@@ -337,7 +338,7 @@
   }
 
   .change-avatar-btn i {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   /* ── Avatar picker ───────────────────────────────────────── */
@@ -350,18 +351,19 @@
   .avatar-option {
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 5px 8px;
+    gap: 8px;
+    padding: 6px 10px;
     border-radius: 7px;
     border: 1px solid transparent;
     background: transparent;
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: background 120ms, color 120ms, border-color 120ms;
     text-align: left;
     width: 100%;
+    min-height: 36px;
   }
 
   .avatar-option:hover {
@@ -376,8 +378,8 @@
   }
 
   .avatar-option i {
-    font-size: 12px;
-    width: 14px;
+    font-size: 13px;
+    width: 16px;
     text-align: center;
     flex-shrink: 0;
   }
@@ -392,7 +394,7 @@
   .effects-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    gap: 8px;
   }
 
   .effect-chip {
@@ -400,40 +402,40 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    min-height: 44px;
-    padding: 6px 4px;
-    border-radius: 9px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 5px;
+    min-height: 52px;
+    padding: 8px 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     background: transparent;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
     transition: background 140ms, border-color 140ms, color 140ms;
   }
 
   .effect-chip i {
-    font-size: 13px;
+    font-size: 16px;
     transition: color 140ms;
   }
 
   .chip-label {
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.02em;
     line-height: 1;
     text-align: center;
   }
 
   .effect-chip:hover {
     background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.75);
-    border-color: rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.22);
   }
 
   .effect-chip.active {
     background: color-mix(in srgb, var(--eff-color) 20%, transparent);
     border-color: color-mix(in srgb, var(--eff-color) 60%, transparent);
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.95);
   }
 
   .effect-chip.active i {

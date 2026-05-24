@@ -58,6 +58,6 @@
     border-radius: 14px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
     overflow: hidden;
-    max-width: calc(100vw - 180px);
+    max-width: calc(100vw - 140px);
   }
 </style>
