@@ -55,12 +55,21 @@ export class ArrowAdjustmentCalculator {
     motionData: MotionData,
     letter: string,
     location: GridLocation,
-    arrowColor?: string
+    arrowColor?: string,
+    soloMode?: boolean
   ): Promise<Point> {
-    /**
-     * Calculate arrow position adjustment - IDENTICAL logic to original.
-     */
     try {
+      if (soloMode) {
+        const defaultAdjustment = await this.calculateDefaultAdjustment(
+          motionData,
+          pictographData
+        );
+        return this.tupleProcessor.processDirectionalTuples(
+          defaultAdjustment,
+          motionData,
+          location
+        );
+      }
       return await this.calculateAdjustmentResult(
         pictographData,
         motionData,

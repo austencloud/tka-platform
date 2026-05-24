@@ -22,7 +22,8 @@ import { arrowAdjustmentCalculator } from "../../positioning/calculation/service
 export async function calculateArrowPoint(
   pictographData: PictographData,
   motionData: MotionData,
-  gridMode?: GridMode
+  gridMode?: GridMode,
+  soloMode?: boolean
 ): Promise<[number, number, number]> {
   try {
     const motion = motionData;
@@ -53,7 +54,8 @@ export async function calculateArrowPoint(
       motion,
       pictographData.letter || "A",
       location,
-      motion.color
+      motion.color,
+      soloMode
     );
 
     const [adjustmentX, adjustmentY] = extractAdjustmentValues(adjustment);

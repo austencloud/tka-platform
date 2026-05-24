@@ -75,11 +75,11 @@ export class ArrowLifecycleManager {
     pictographData: PictographData,
     options?: ArrowLifecycleOptions
   ): Promise<ArrowPosition> {
-    const [x, y, rotation] =
-      await calculateArrowPoint(
+    const [x, y, rotation] = await calculateArrowPoint(
         pictographData,
         motionData,
-        options?.gridMode
+        options?.gridMode,
+        options?.soloMode
       );
 
     // IMPORTANT: calculateArrowPoint() returns the base position + calculated

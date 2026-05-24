@@ -19,6 +19,9 @@ export interface ArrowLifecycleOptions {
   themeMode?: ThemeMode;
   /** Grid mode for positioning. Derived from motion locations if not provided. */
   gridMode?: GridMode;
+  /** When true, only one arrow is visible — skip conflict-resolution tiers (1-3)
+   *  and use default placement only, since there's no second arrow to collide with. */
+  soloMode?: boolean;
 }
 
 /**

@@ -106,9 +106,13 @@ export class PictographPreparer {
       motions: Object.fromEntries(overriddenMotions) as PictographData["motions"],
     };
 
+    const showBlue = options?.showBlueMotion ?? true;
+    const showRed = options?.showRedMotion ?? true;
+    const soloMode = (showBlue !== showRed);
+
     const arrowResult = await this.arrowManager.coordinateArrowLifecycle(
       pictographWithPropOverrides,
-      { themeMode: options?.themeMode, gridMode }
+      { themeMode: options?.themeMode, gridMode, soloMode }
     );
     const { propPositions, propAssets } = await this.calculateProps(
       effectivePictograph,
