@@ -26,6 +26,7 @@ import {
   HAND_PATH_TABS,
   VIDEO_TABS,
   SOCIAL_TABS,
+  STAGE_TABS,
 } from "./tab-definitions";
 
 /**
@@ -286,6 +287,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: VIDEO_TABS,
   },
   {
+    id: "stage",
+    label: "Stage",
+    icon: '<i class="fas fa-people-group" style="color: #06b6d4;" aria-hidden="true"></i>',
+    color: "#06b6d4",
+    description: "Choreograph multi-performer formations on stage",
+    isMain: true,
+    sections: STAGE_TABS,
+  },
+  {
     id: "lab",
     label: "Lab",
     icon: '<i class="fas fa-flask" style="color: #10b981;" aria-hidden="true"></i>',
@@ -336,6 +346,7 @@ const FEATURE_ENABLED: Record<string, boolean> = {
   levels: typeof __FEATURE_LEVELS__ !== "undefined" ? __FEATURE_LEVELS__ : true,
   "hand-paths": typeof __FEATURE_HAND_PATHS__ !== "undefined" ? __FEATURE_HAND_PATHS__ : true,
   video: typeof __FEATURE_VIDEO__ !== "undefined" ? __FEATURE_VIDEO__ : true,
+  stage: typeof __FEATURE_STAGE__ !== "undefined" ? __FEATURE_STAGE__ : true,
   lab: typeof __FEATURE_LAB__ !== "undefined" ? __FEATURE_LAB__ : true,
   settings: typeof __FEATURE_SETTINGS__ !== "undefined" ? __FEATURE_SETTINGS__ : true,
 };

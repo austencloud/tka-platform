@@ -995,3 +995,21 @@ export const LAB_TABS: Section[] = [
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
 // since it's embedded in Lab module (Jan 2026)
+
+// Stage module tabs configuration
+export const STAGE_TABS: Section[] = [
+  {
+    id: "editor",
+    label: "Editor",
+    icon: '<i class="fas fa-map" aria-hidden="true"></i>',
+    description: "Formation editor and timeline",
+    color: "#06b6d4",
+  },
+  {
+    id: "preview",
+    label: "3D Preview",
+    icon: '<i class="fas fa-cube" aria-hidden="true"></i>',
+    description: "Live 3D choreography preview",
+    color: "#06b6d4",
+  },
+];

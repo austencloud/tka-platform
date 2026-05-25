@@ -100,6 +100,7 @@
     tika: () => import("$lib/features/tika/TikaModule.svelte"),
     festivals: () => import("$lib/features/festivals/FestivalModule.svelte"),
     admin: () => import("$lib/features/admin/components/AdminDashboard.svelte"),
+    stage: () => import("$lib/features/stage/StageModule.svelte"),
   };
 
   function startActiveModulePreload(): void {
