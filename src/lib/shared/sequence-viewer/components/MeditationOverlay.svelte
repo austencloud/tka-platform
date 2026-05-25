@@ -33,7 +33,7 @@
 		: false;
 
 	const phaseLabel = $derived.by(() => {
-		if (pattern.inhaleSubCueAt != null && currentPhase === "inhale" && phaseElapsed >= pattern.inhaleSubCueAt) {
+		if (pattern?.inhaleSubCueAt != null && currentPhase === "inhale" && phaseElapsed >= pattern.inhaleSubCueAt) {
 			return "Inhale Again";
 		}
 		switch (currentPhase) {
@@ -45,7 +45,7 @@
 	});
 
 	const ariaLabel = $derived.by(() => {
-		if (pattern.inhaleSubCueAt != null && currentPhase === "inhale" && phaseElapsed >= pattern.inhaleSubCueAt) {
+		if (pattern?.inhaleSubCueAt != null && currentPhase === "inhale" && phaseElapsed >= pattern.inhaleSubCueAt) {
 			return "Inhale again";
 		}
 		switch (currentPhase) {
