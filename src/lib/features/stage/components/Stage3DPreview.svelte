@@ -1,43 +1,61 @@
 <script lang="ts">
+  import { Canvas } from "@threlte/core";
+  import { T } from "@threlte/core";
+  import { OrbitControls } from "@threlte/extras";
   import { getStageChoreographyState } from "../state/stage-choreography-state.svelte";
+  import LocomotingPerformer from "./LocomotingPerformer.svelte";
 
   const state = getStageChoreographyState();
+  const { choreography, interpolatedPositions } = $derived(state);
+
+  const avatarPath = "/models/avatars/ch01.glb";
 </script>
 
-<div class="stage-3d-preview">
-  <div class="placeholder">
-    <i class="fas fa-cube" aria-hidden="true"></i>
-    <p>3D Preview</p>
-    <p class="hint">Coming soon — Threlte-based live formation preview</p>
-  </div>
+<div class="preview-3d">
+  <Canvas>
+    <!-- Camera -->
+    <T.PerspectiveCamera
+      makeDefault
+      position={[choreography.stageWidth / 2, 12, choreography.stageDepth + 5]}
+      fov={50}
+    >
+      <OrbitControls
+        target={[choreography.stageWidth / 2, 0, choreography.stageDepth / 2]}
+        enableDamping
+      />
+    </T.PerspectiveCamera>
+
+    <!-- Lighting -->
+    <T.AmbientLight intensity={0.4} />
+    <T.DirectionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
+
+    <!-- Stage floor -->
+    <T.Mesh rotation.x={-Math.PI / 2} receiveShadow>
+      <T.PlaneGeometry args={[choreography.stageWidth, choreography.stageDepth]} />
+      <T.MeshStandardMaterial color="#1e2a3a" />
+    </T.Mesh>
+
+    <!-- Stage grid lines -->
+    <T.GridHelper
+      args={[Math.max(choreography.stageWidth, choreography.stageDepth), 10, "#3a5a7a", "#2a3a4a"]}
+      position={[choreography.stageWidth / 2, 0.01, choreography.stageDepth / 2]}
+    />
+
+    <!-- Performers -->
+    {#each interpolatedPositions as pose, i (choreography.performers[i]?.id)}
+      <LocomotingPerformer
+        {pose}
+        {avatarPath}
+        facing={pose.facing}
+      />
+    {/each}
+  </Canvas>
 </div>
 
 <style>
-  .stage-3d-preview {
+  .preview-3d {
     width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-bg-primary, #0f0f1a);
-  }
-  .placeholder {
-    text-align: center;
-    color: #4a4a6a;
-  }
-  .placeholder i {
-    font-size: 48px;
-    color: #06b6d4;
-    margin-bottom: 16px;
-    display: block;
-  }
-  .placeholder p {
-    font-size: 16px;
-    color: #8888aa;
-    margin: 4px 0;
-  }
-  .hint {
-    font-size: 12px;
-    color: #5a5a7a;
+    min-height: 400px;
   }
 </style>
