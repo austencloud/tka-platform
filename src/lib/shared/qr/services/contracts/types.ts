@@ -184,4 +184,8 @@ export interface ShortCodeURLOptions {
    *  without it the resolver would fail because users/{uid}/sequences/{id}
    *  doesn't exist yet. */
   embedSequenceData?: boolean;
+  /** Deck ID this card belongs to (stamped at deck composition time) */
+  deckId?: string;
+  /** Human-readable deck name for analytics */
+  deckName?: string;
 }
