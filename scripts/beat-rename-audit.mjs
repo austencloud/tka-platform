@@ -76,7 +76,7 @@ const RENAME_PATHS = [
   "src/lib/features/disassemble-lab/",
   "src/lib/features/levels/",
   "src/lib/features/loop-labeler/",
-  "src/lib/features/mandala-generator/",
+  "src/lib/features/mandala/",
   "src/lib/features/phrase-effort-lab/",
   "src/lib/features/effort-lab/",
   "src/lib/shared/pictograph/",
