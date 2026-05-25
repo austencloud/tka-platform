@@ -33,7 +33,8 @@ import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 
 import { featureFlagService } from "../services/PostHogFeatureFlagService.svelte";
 import type { UserRole } from "../domain/models/UserRole";
-import { identifyUser, resetUser } from "../../analytics/services/posthog";
+import { identifyUser, resetUser, captureEvent } from "../../analytics/services/posthog";
+import { getScanSourceCode } from "../../analytics/scan-attribution";
 
 import { linkDeviceToUser } from "$lib/shared/auth/services/device-id-service";
 import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
@@ -418,6 +419,19 @@ export async function initializeAuthListener() {
           isTester: role === "tester" || role === "admin",
           isAdmin,
         });
+
+        const creationTime = user.metadata.creationTime
+          ? new Date(user.metadata.creationTime).getTime()
+          : 0;
+        const isNewSignup = Date.now() - creationTime < 60_000;
+        if (isNewSignup) {
+          const scanCode = getScanSourceCode();
+          if (scanCode) {
+            captureEvent("user_signed_up", {
+              scan_source_code: scanCode,
+            });
+          }
+        }
       } else {
         // User logged out - reset PostHog identity
         resetUser();
