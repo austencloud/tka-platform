@@ -1,4 +1,4 @@
-// src/lib/features/choreo-card/state/deck-browse-types.ts
+// src/lib/features/choreo-card/state/catalog-browse-types.ts
 
 export interface FilterState {
   loopTypes: string[];
@@ -18,10 +18,13 @@ export interface AvailableFilters {
   turnPatterns: string[];
 }
 
-export interface SavedDeckBrowseState {
+export type VtgViewMode = 'turns' | 'family';
+
+export interface SavedCatalogBrowseState {
   collection: 'LOOPs' | 'VTG';
   filters: FilterState;
   scrollY: number;
+  vtgViewMode?: VtgViewMode;
 }
 
 export const EMPTY_FILTERS: FilterState = {

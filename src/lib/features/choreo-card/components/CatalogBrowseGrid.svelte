@@ -1,16 +1,27 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
-  import DeckCard from "./DeckCard.svelte";
+  import type { Catalog } from "../domain/models/Catalog";
+  import type { VtgViewMode } from "../state/catalog-browse-types";
+  import CatalogCard from "./CatalogCard.svelte";
+  import VtgTurnMatrix from "./VtgTurnMatrix.svelte";
+  import VtgFamilyBrowser from "./VtgFamilyBrowser.svelte";
   import { LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import { VTG_FAMILY_LABELS } from "../state/deck-browse-types";
+  import { VTG_FAMILY_LABELS } from "../state/catalog-browse-types";
 
   interface Props {
-    groupedDecks: Map<string, Deck[]>;
+    groupedCatalogs: Map<string, Catalog[]>;
     collection: 'LOOPs' | 'VTG';
-    onSelectDeck: (deck: Deck) => void;
+    vtgViewMode?: VtgViewMode;
+    allVtgCatalogs?: Catalog[];
+    onSelectCatalog: (catalog: Catalog) => void;
   }
 
-  const { groupedDecks, collection, onSelectDeck }: Props = $props();
+  const {
+    groupedCatalogs,
+    collection,
+    vtgViewMode = 'turns',
+    allVtgCatalogs = [],
+    onSelectCatalog,
+  }: Props = $props();
 
   function groupLabel(key: string): string {
     if (collection === 'LOOPs') {
@@ -28,58 +39,64 @@
     return m ? `${m[1]}T` : capitalize(turn.replace(/-/g, ' '));
   }
 
-  function computeVaryingAxes(decks: Deck[]) {
-    if (decks.length <= 1) return { stepCount: false, turn: false, reversal: false, slice: false, grid: false };
+  function computeVaryingAxes(catalogs: Catalog[]) {
+    if (catalogs.length <= 1) return { stepCount: false, turn: false, reversal: false, slice: false, grid: false };
     return {
-      stepCount: new Set(decks.map(d => d.stepCount)).size > 1,
-      turn: new Set(decks.map(d => d.turnPattern)).size > 1,
-      reversal: new Set(decks.map(d => d.reversalPattern)).size > 1,
-      slice: new Set(decks.map(d => d.sliceType)).size > 1,
-      grid: new Set(decks.map(d => d.gridMode)).size > 1,
+      stepCount: new Set(catalogs.map(d => d.stepCount)).size > 1,
+      turn: new Set(catalogs.map(d => d.turnPattern)).size > 1,
+      reversal: new Set(catalogs.map(d => d.reversalPattern)).size > 1,
+      slice: new Set(catalogs.map(d => d.sliceType)).size > 1,
+      grid: new Set(catalogs.map(d => d.gridMode)).size > 1,
     };
   }
 
-  function contextTags(deck: Deck, axes: ReturnType<typeof computeVaryingAxes>): string {
+  function contextTags(catalog: Catalog, axes: ReturnType<typeof computeVaryingAxes>): string {
     const parts: string[] = [];
-    if (axes.stepCount) parts.push(`${deck.stepCount}-step`);
-    if (axes.slice) parts.push(capitalize(deck.sliceType));
-    if (axes.turn) parts.push(formatTurn(deck.turnPattern));
-    if (axes.grid) parts.push(capitalize(deck.gridMode));
+    if (axes.stepCount) parts.push(`${catalog.stepCount}-step`);
+    if (axes.slice) parts.push(capitalize(catalog.sliceType));
+    if (axes.turn) parts.push(formatTurn(catalog.turnPattern));
+    if (axes.grid) parts.push(capitalize(catalog.gridMode));
     if (parts.length === 0 && !axes.reversal) {
-      parts.push(formatTurn(deck.turnPattern));
+      parts.push(formatTurn(catalog.turnPattern));
     }
     return parts.join(' · ');
   }
 </script>
 
+{#if collection === 'VTG' && vtgViewMode === 'turns'}
+  <VtgTurnMatrix catalogs={allVtgCatalogs} {onSelectCatalog} />
+{:else if collection === 'VTG' && vtgViewMode === 'family'}
+  <VtgFamilyBrowser catalogs={allVtgCatalogs} {onSelectCatalog} />
+{:else}
 <div class="browse-grid-container">
-  {#each [...groupedDecks.entries()] as [key, decks] (key)}
-    {@const axes = computeVaryingAxes(decks)}
-    <section class="deck-group">
+  {#each [...groupedCatalogs.entries()] as [key, items] (key)}
+    {@const axes = computeVaryingAxes(items)}
+    <section class="catalog-group">
       <div class="group-header">
         <span class="group-name">{groupLabel(key)}</span>
         <span class="group-rule" aria-hidden="true"></span>
-        <span class="group-count">{decks.length} {decks.length === 1 ? 'deck' : 'decks'}</span>
+        <span class="group-count">{items.length} {items.length === 1 ? 'catalog' : 'catalogs'}</span>
       </div>
-      <div class="deck-grid">
-        {#each decks as deck (deck.id)}
-          <DeckCard
-            {deck}
-            tags={contextTags(deck, axes)}
-            onSelect={() => onSelectDeck(deck)}
+      <div class="catalog-grid">
+        {#each items as catalog (catalog.id)}
+          <CatalogCard
+            {catalog}
+            tags={contextTags(catalog, axes)}
+            onSelect={() => onSelectCatalog(catalog)}
           />
         {/each}
       </div>
     </section>
   {/each}
 
-  {#if groupedDecks.size === 0}
+  {#if groupedCatalogs.size === 0}
     <div class="empty-state">
       <i class="fas fa-search empty-icon" aria-hidden="true"></i>
-      <p class="empty-text">No decks match these filters</p>
+      <p class="empty-text">No catalogs match these filters</p>
     </div>
   {/if}
 </div>
+{/if}
 
 <style>
   .browse-grid-container {
@@ -91,7 +108,7 @@
     gap: 32px;
   }
 
-  .deck-group {
+  .catalog-group {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -122,7 +139,7 @@
     white-space: nowrap;
   }
 
-  .deck-grid {
+  .catalog-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 10px;
@@ -150,6 +167,6 @@
 
   @media (max-width: 768px) {
     .browse-grid-container { padding: 16px; gap: 24px; }
-    .deck-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
   }
 </style>

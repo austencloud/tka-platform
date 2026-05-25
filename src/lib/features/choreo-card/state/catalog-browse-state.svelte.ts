@@ -1,23 +1,23 @@
-// src/lib/features/choreo-card/state/deck-browse-state.svelte.ts
+// src/lib/features/choreo-card/state/catalog-browse-state.svelte.ts
 
-import type { Deck } from '../domain/models/Deck';
-import type { FilterState, AvailableFilters, SavedDeckBrowseState } from './deck-browse-types';
-import { EMPTY_FILTERS, VTG_FAMILY_KEYS } from './deck-browse-types';
+import type { Catalog } from '../domain/models/Catalog';
+import type { FilterState, AvailableFilters, SavedCatalogBrowseState, VtgViewMode } from './catalog-browse-types';
+import { EMPTY_FILTERS, VTG_FAMILY_KEYS } from './catalog-browse-types';
 
 const STORAGE_KEY = 'deckBrowser.state';
 const DEBOUNCE_MS = 300;
 
-function loadFromStorage(): SavedDeckBrowseState | null {
+function loadFromStorage(): SavedCatalogBrowseState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as SavedDeckBrowseState;
+    return JSON.parse(raw) as SavedCatalogBrowseState;
   } catch {
     return null;
   }
 }
 
-function saveToStorage(state: SavedDeckBrowseState): void {
+function saveToStorage(state: SavedCatalogBrowseState): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch { /* quota exceeded */ }
@@ -33,8 +33,8 @@ export function toggleInArray<T>(arr: T[], value: T): T[] {
   return [...arr, value];
 }
 
-export function applyFilters(decks: Deck[], filters: FilterState, collection: 'LOOPs' | 'VTG'): Deck[] {
-  let result = decks;
+export function applyFilters(catalogs: Catalog[], filters: FilterState, collection: 'LOOPs' | 'VTG'): Catalog[] {
+  let result = catalogs;
 
   if (collection === 'LOOPs' && filters.loopTypes.length > 0) {
     result = result.filter(d => filters.loopTypes.includes(d.loopType));
@@ -64,56 +64,57 @@ export function applyFilters(decks: Deck[], filters: FilterState, collection: 'L
   return result;
 }
 
-export function computeAvailableFilters(decks: Deck[], collection: 'LOOPs' | 'VTG'): AvailableFilters {
+export function computeAvailableFilters(catalogs: Catalog[], collection: 'LOOPs' | 'VTG'): AvailableFilters {
   return {
-    loopTypes: collection === 'LOOPs' ? unique(decks.map(d => d.loopType)).sort() : [],
+    loopTypes: collection === 'LOOPs' ? unique(catalogs.map(d => d.loopType)).sort() : [],
     vtgFamilies: collection === 'VTG'
-      ? VTG_FAMILY_KEYS.filter(key => decks.some(d => d.families.some(f => f.id.toLowerCase().includes(key))))
+      ? VTG_FAMILY_KEYS.filter(key => catalogs.some(d => d.families.some(f => f.id.toLowerCase().includes(key))))
       : [],
-    sliceTypes: unique(decks.map(d => d.sliceType)).sort(),
-    gridModes: unique(decks.map(d => d.gridMode)).sort(),
-    stepCounts: unique(decks.map(d => d.stepCount)).sort((a, b) => a - b),
-    turnPatterns: unique(decks.map(d => d.turnPattern)).sort(),
+    sliceTypes: unique(catalogs.map(d => d.sliceType)).sort(),
+    gridModes: unique(catalogs.map(d => d.gridMode)).sort(),
+    stepCounts: unique(catalogs.map(d => d.stepCount)).sort((a, b) => a - b),
+    turnPatterns: unique(catalogs.map(d => d.turnPattern)).sort(),
   };
 }
 
-export function inferVtgFamily(deck: Deck): string {
+export function inferVtgFamily(catalog: Catalog): string {
   for (const key of VTG_FAMILY_KEYS) {
-    if (deck.families.some(f => f.id.toLowerCase().includes(key))) return key;
+    if (catalog.families.some(f => f.id.toLowerCase().includes(key))) return key;
   }
-  return deck.loopType || 'unknown';
+  return catalog.loopType || 'unknown';
 }
 
-export function groupDecks(decks: Deck[], collection: 'LOOPs' | 'VTG'): Map<string, Deck[]> {
-  const groups = new Map<string, Deck[]>();
-  for (const deck of decks) {
-    const key = collection === 'LOOPs' ? deck.loopType : inferVtgFamily(deck);
+export function groupCatalogs(catalogs: Catalog[], collection: 'LOOPs' | 'VTG'): Map<string, Catalog[]> {
+  const groups = new Map<string, Catalog[]>();
+  for (const catalog of catalogs) {
+    const key = collection === 'LOOPs' ? catalog.loopType : inferVtgFamily(catalog);
     if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(deck);
+    groups.get(key)!.push(catalog);
   }
   return groups;
 }
 
-export function createDeckBrowseState(allDecksOrGetter: Deck[] | (() => Deck[])) {
-  const getAllDecks = typeof allDecksOrGetter === 'function' ? allDecksOrGetter : () => allDecksOrGetter;
+export function createCatalogBrowseState(allCatalogsOrGetter: Catalog[] | (() => Catalog[])) {
+  const getAllCatalogs = typeof allCatalogsOrGetter === 'function' ? allCatalogsOrGetter : () => allCatalogsOrGetter;
 
   const saved = typeof window !== 'undefined' ? loadFromStorage() : null;
 
   let collection = $state<'LOOPs' | 'VTG'>(saved?.collection ?? 'LOOPs');
   let filters = $state<FilterState>(saved?.filters ? { ...saved.filters } : { ...EMPTY_FILTERS });
   let scrollY = $state(saved?.scrollY ?? 0);
+  let vtgViewMode = $state<VtgViewMode>(saved?.vtgViewMode ?? 'turns');
 
-  const collectionDecks = $derived(getAllDecks().filter(d => d.collection === collection));
-  const filteredDecks = $derived(applyFilters(collectionDecks, filters, collection));
-  const groupedDecks = $derived(groupDecks(filteredDecks, collection));
-  const availableFilters = $derived(computeAvailableFilters(collectionDecks, collection));
-  const totalCount = $derived(filteredDecks.length);
-  const totalSequences = $derived(filteredDecks.reduce((sum, d) => sum + d.totalSequences, 0));
+  const collectionCatalogs = $derived(getAllCatalogs().filter(d => d.collection === collection));
+  const filteredCatalogs = $derived(applyFilters(collectionCatalogs, filters, collection));
+  const groupedCatalogs = $derived(groupCatalogs(filteredCatalogs, collection));
+  const availableFilters = $derived(computeAvailableFilters(collectionCatalogs, collection));
+  const totalCount = $derived(filteredCatalogs.length);
+  const totalSequences = $derived(filteredCatalogs.reduce((sum, d) => sum + d.totalSequences, 0));
 
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
   $effect(() => {
-    const snapshot: SavedDeckBrowseState = { collection, filters, scrollY };
+    const snapshot: SavedCatalogBrowseState = { collection, filters, scrollY, vtgViewMode };
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => saveToStorage(snapshot), DEBOUNCE_MS);
     return () => clearTimeout(saveTimer);
@@ -122,12 +123,15 @@ export function createDeckBrowseState(allDecksOrGetter: Deck[] | (() => Deck[]))
   return {
     get collection() { return collection; },
     get filters() { return filters; },
-    get filteredDecks() { return filteredDecks; },
-    get groupedDecks() { return groupedDecks; },
+    get filteredCatalogs() { return filteredCatalogs; },
+    get groupedCatalogs() { return groupedCatalogs; },
     get availableFilters() { return availableFilters; },
     get totalCount() { return totalCount; },
     get totalSequences() { return totalSequences; },
     get scrollY() { return scrollY; },
+    get vtgViewMode() { return vtgViewMode; },
+
+    setVtgViewMode(mode: VtgViewMode) { vtgViewMode = mode; },
 
     setCollection(c: 'LOOPs' | 'VTG') {
       collection = c;
@@ -150,4 +154,4 @@ export function createDeckBrowseState(allDecksOrGetter: Deck[] | (() => Deck[]))
   };
 }
 
-export type DeckBrowseState = ReturnType<typeof createDeckBrowseState>;
+export type CatalogBrowseState = ReturnType<typeof createCatalogBrowseState>;

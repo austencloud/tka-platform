@@ -1,23 +1,23 @@
 <!--
-  DeckBrowser.svelte - Browse and explore curated sequence decks.
+  CatalogBrowser.svelte - Browse and explore curated sequence catalogs.
 
   Two modes:
-  - Browse: full-width filter bar + grouped grid of all decks
-  - Deck interior: filterable sequence grid with family/position chips
+  - Browse: full-width filter bar + grouped grid of all catalogs
+  - Catalog interior: filterable sequence grid with family/position chips
 -->
 <script lang="ts">
 
 import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-exporter";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import DeckInteriorFilterPanel from "./filters/DeckInteriorFilterPanel.svelte";
+  import CatalogInteriorFilterPanel from "./filters/CatalogInteriorFilterPanel.svelte";
   import CardInspectModal from "./CardInspectModal.svelte";
-  import DeckBrowseFilterBar from "./DeckBrowseFilterBar.svelte";
-  import DeckBrowseGrid from "./DeckBrowseGrid.svelte";
+  import CatalogBrowseFilterBar from "./CatalogBrowseFilterBar.svelte";
+  import CatalogBrowseGrid from "./CatalogBrowseGrid.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";
-  import { createDeckBrowseState } from "../state/deck-browse-state.svelte";
-  import { setBrowseContext } from "../context/deck-browse-context";
+  import { createCatalogBrowseState } from "../state/catalog-browse-state.svelte";
+  import { setBrowseContext } from "../context/catalog-browse-context";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
@@ -30,15 +30,15 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     ABBR_TO_FAMILY_ID,
     parseDeckTurnRatio,
     computeVtgCardFooter,
-  } from "../domain/deck-vtg-labels";
+  } from "../domain/catalog-vtg-labels";
   import { calculateVTG } from "$lib/shared/pictograph/shared/domain/utils/vtg-calculator";
   import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   interface Props {
-    decks: Deck[];
-    selectedDeckId: string | null;
-    deckSequences: SequenceData[];
+    catalogs: Catalog[];
+    selectedCatalogId: string | null;
+    catalogSequences: SequenceData[];
     isLoading: boolean;
     handPointsVisible?: boolean;
     showGrid?: boolean;
@@ -46,7 +46,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     showWord?: boolean;
     includeStartPosition?: boolean;
     onBackToCollections: () => void;
-    onSelectDeck: (deckId: string, vtgFamily?: string | null) => void;
+    onSelectCatalog: (catalogId: string, vtgFamily?: string | null) => void;
     onSelectSequence: (sequence: SequenceData) => void;
     onLoadFamilySequences: (familyIds: string[]) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
@@ -55,9 +55,9 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   }
 
   let {
-    decks,
-    selectedDeckId,
-    deckSequences,
+    catalogs,
+    selectedCatalogId,
+    catalogSequences,
     isLoading,
     handPointsVisible = true,
     showGrid = true,
@@ -65,30 +65,30 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     showWord = true,
     includeStartPosition = true,
     onBackToCollections,
-    onSelectDeck,
+    onSelectCatalog,
     onSelectSequence,
     onLoadFamilySequences,
     onContextMenu,
     vtgFamilyId,
   }: Props = $props();
 
-  const browseState = createDeckBrowseState(() => decks);
+  const browseState = createCatalogBrowseState(() => catalogs);
   setBrowseContext(browseState);
 
   let scrollContainer: HTMLDivElement | null = $state(null);
 
-  function handleBrowseDeckSelect(deck: Deck) {
-    onSelectDeck(deck.id, null);
+  function handleBrowseCatalogSelect(catalog: Catalog) {
+    onSelectCatalog(catalog.id, null);
   }
 
   function handleBrowseScroll() {
-    if (scrollContainer && !selectedDeckId) {
+    if (scrollContainer && !selectedCatalogId) {
       browseState.setScrollY(scrollContainer.scrollTop);
     }
   }
 
   $effect(() => {
-    if (scrollContainer && !selectedDeckId && browseState.scrollY > 0) {
+    if (scrollContainer && !selectedCatalogId && browseState.scrollY > 0) {
       requestAnimationFrame(() => {
         scrollContainer?.scrollTo(0, browseState.scrollY);
       });
@@ -140,16 +140,16 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       const { exportHomePrintPDF } = await import(
         "$lib/features/choreo-card/services/print-pdf-exporter"
       );
-      const deckName = selectedDeck?.name ?? "deck";
-      const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize);
+      const catalogName = selectedCatalog?.name ?? "catalog";
+      const blob = await exportHomePrintPDF(renderedPairs, catalogName, cardSize);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${deckName.replace(/[^a-zA-Z0-9]/g, "_")}_print.pdf`;
+      a.download = `${catalogName.replace(/[^a-zA-Z0-9]/g, "_")}_print.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.warn("[DeckBrowser] PDF export failed:", err);
+      console.warn("[CatalogBrowser] PDF export failed:", err);
       toast.error("PDF export failed. Try re-rendering cards first.");
     } finally {
       isExporting = false;
@@ -160,16 +160,16 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     if (renderedPairs.length === 0) return;
     isExporting = true;
     try {
-      const deckName = selectedDeck?.name ?? "deck";
-      const blob = await exportDeckZIP(renderedPairs, deckName);
+      const catalogName = selectedCatalog?.name ?? "catalog";
+      const blob = await exportDeckZIP(renderedPairs, catalogName);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${deckName.replace(/[^a-zA-Z0-9]/g, "_")}_cards.zip`;
+      a.download = `${catalogName.replace(/[^a-zA-Z0-9]/g, "_")}_cards.zip`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.warn("[DeckBrowser] ZIP export failed:", err);
+      console.warn("[CatalogBrowser] ZIP export failed:", err);
       toast.error("ZIP export failed. Try re-rendering cards first.");
     } finally {
       isExporting = false;
@@ -188,22 +188,22 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     0: "1:1", 0.5: "2:1", 1: "3:1", 1.5: "4:1", 2: "5:1", 2.5: "6:1", 3: "7:1",
   };
 
-  // Derived deck/family lookups
-  let selectedDeck = $derived(decks.find((d) => d.id === selectedDeckId) ?? null);
+  // Derived catalog/family lookups
+  let selectedCatalog = $derived(catalogs.find((d) => d.id === selectedCatalogId) ?? null);
 
-  // All known VTG family keys for scanning deck data
+  // All known VTG family keys for scanning catalog data
   const VTG_FAMILY_KEYS = Object.keys(VTG_ABBREVIATIONS);
 
-  // Resolve VTG family ID from drilldown context, localStorage, or deck data
+  // Resolve VTG family ID from drilldown context, localStorage, or catalog data
   const resolvedVtgFamilyId = $derived.by(() => {
     // 1. Drilldown context (set during navigation)
     if (vtgFamilyId) return vtgFamilyId;
-    // 2. Deck's loopType matches a VTG family directly
-    if (selectedDeck && VTG_ABBREVIATIONS[selectedDeck.loopType]) return selectedDeck.loopType;
-    // 3. For VTG decks, infer from family IDs (e.g. family.id contains "quarter-same")
-    if (selectedDeck?.collection === "VTG") {
+    // 2. Catalog's loopType matches a VTG family directly
+    if (selectedCatalog && VTG_ABBREVIATIONS[selectedCatalog.loopType]) return selectedCatalog.loopType;
+    // 3. For VTG catalogs, infer from family IDs (e.g. family.id contains "quarter-same")
+    if (selectedCatalog?.collection === "VTG") {
       for (const key of VTG_FAMILY_KEYS) {
-        if (selectedDeck.families.some((f) => f.id.toLowerCase().includes(key))) {
+        if (selectedCatalog.families.some((f) => f.id.toLowerCase().includes(key))) {
           return key;
         }
       }
@@ -226,28 +226,28 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     return turn.replace(/^(\d+)t$/i, "$1T");
   }
 
-  // TKA designation: mechanical properties from deck fields
+  // TKA designation: mechanical properties from catalog fields
   // e.g. "Halved Rotated 0T Continuous Diamond"
   const tkaDesignation = $derived.by(() => {
-    if (!selectedDeck) return "";
+    if (!selectedCatalog) return "";
     const parts: string[] = [];
-    if (selectedDeck.sliceType) parts.push(capitalize(selectedDeck.sliceType));
-    // VTG decks are always rotated LOOPs - use that when loopType is missing
-    const loopType = selectedDeck.loopType || (selectedDeck.collection === "VTG" ? "rotated" : "");
+    if (selectedCatalog.sliceType) parts.push(capitalize(selectedCatalog.sliceType));
+    // VTG catalogs are always rotated LOOPs - use that when loopType is missing
+    const loopType = selectedCatalog.loopType || (selectedCatalog.collection === "VTG" ? "rotated" : "");
     if (loopType) parts.push(capitalize(loopType));
-    if (selectedDeck.stepCount) parts.push(`${selectedDeck.stepCount}-Step`);
-    if (selectedDeck.turnPattern) parts.push(formatTurnForTKA(selectedDeck.turnPattern));
-    if (selectedDeck.reversalPattern) parts.push(capitalize(selectedDeck.reversalPattern));
-    if (selectedDeck.gridMode) parts.push(capitalize(selectedDeck.gridMode));
-    return parts.join(" ") || selectedDeck.canonicalName || selectedDeck.name;
+    if (selectedCatalog.stepCount) parts.push(`${selectedCatalog.stepCount}-Step`);
+    if (selectedCatalog.turnPattern) parts.push(formatTurnForTKA(selectedCatalog.turnPattern));
+    if (selectedCatalog.reversalPattern) parts.push(capitalize(selectedCatalog.reversalPattern));
+    if (selectedCatalog.gridMode) parts.push(capitalize(selectedCatalog.gridMode));
+    return parts.join(" ") || selectedCatalog.canonicalName || selectedCatalog.name;
   });
 
   // VTG designation: family name + ratio
   // e.g. "VTG Tog-Same 1:1"
   const vtgDesignation = $derived.by(() => {
-    if (!selectedDeck || !resolvedVtgFamilyId) return "";
+    if (!selectedCatalog || !resolvedVtgFamilyId) return "";
     const label = VTG_FAMILY_LABELS[resolvedVtgFamilyId] ?? resolvedVtgFamilyId;
-    const turn = selectedDeck.turnPattern;
+    const turn = selectedCatalog.turnPattern;
     if (turn) {
       const uniformMatch = turn.match(/^uniform[- ](\d+)t$/i);
       if (uniformMatch) {
@@ -266,15 +266,15 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
 
   function resolveSequenceVtgFooter(seq: SequenceData): CardFooter | undefined {
-    if (!resolvedVtgFamilyId || !selectedDeck) return undefined;
-    const turnRatio = parseDeckTurnRatio(selectedDeck.turnPattern);
+    if (!resolvedVtgFamilyId || !selectedCatalog) return undefined;
+    const turnRatio = parseDeckTurnRatio(selectedCatalog.turnPattern);
 
     const firstStep = seq.steps?.[0];
     if (!firstStep?.letter || !firstStep?.startPosition) {
       return computeVtgCardFooter(resolvedVtgFamilyId, turnRatio);
     }
 
-    const gm = (seq.gridMode ?? selectedDeck.gridMode) === "box" ? GridMode.BOX : GridMode.DIAMOND;
+    const gm = (seq.gridMode ?? selectedCatalog.gridMode) === "box" ? GridMode.BOX : GridMode.DIAMOND;
     const result = calculateVTG(firstStep.letter as Letter, gm, firstStep.startPosition as GridPosition);
     if (!result.vtgMode) {
       return computeVtgCardFooter(resolvedVtgFamilyId, turnRatio);
@@ -284,17 +284,17 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     return computeVtgCardFooter(familyId, turnRatio);
   }
 
-  // ── Level 2: Deck Interior State ──
+  // ── Level 2: Catalog Interior State ──
 
   let interiorFilters = $state({ familyIds: [] as string[], position: null as string | null });
   let interiorFiltersOpen = $state(false);
   let selectedTypeCombo = $state<TypeComboGroup | null>(null);
 
   const filteredSequences = $derived.by(() => {
-    let seqs = deckSequences;
-    if (interiorFilters.familyIds.length > 0 && selectedDeck) {
+    let seqs = catalogSequences;
+    if (interiorFilters.familyIds.length > 0 && selectedCatalog) {
       const allowedIds = new Set(
-        selectedDeck.families
+        selectedCatalog.families
           .filter((f) => interiorFilters.familyIds.includes(f.id))
           .flatMap((f) => [...f.sequenceIds]),
       );
@@ -310,7 +310,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     return seqs;
   });
 
-  const isLargeDeck = $derived(selectedDeck ? selectedDeck.totalSequences >= 500 : false);
+  const isLargeCatalog = $derived(selectedCatalog ? selectedCatalog.totalSequences >= 500 : false);
 
   const sequenceFooters = $derived<CardFooter[]>(
     filteredSequences.map(seq => resolveSequenceVtgFooter(seq) ?? { center: "The Kinetic Alphabet" })
@@ -347,9 +347,9 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       .map((g) => ({ label: START_POS_LABELS[g] ?? g, sequences: groups[g]! }));
   }
 
-  function groupByFamily(seqs: SequenceData[], deck: Deck): SequenceGroup[] {
+  function groupByFamily(seqs: SequenceData[], catalog: Catalog): SequenceGroup[] {
     const seqMap = new Map(seqs.map((s) => [s.id, s]));
-    return deck.families
+    return catalog.families
       .map((f) => ({
         label: f.label || f.typeCombo,
         sequences: f.sequenceIds
@@ -360,11 +360,11 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   }
 
   const sequenceGroups = $derived.by((): SequenceGroup[] => {
-    if (!selectedDeck || filteredSequences.length === 0) return [];
+    if (!selectedCatalog || filteredSequences.length === 0) return [];
     if (interiorFilters.familyIds.length > 0) {
       return groupByStartPosition(filteredSequences);
     }
-    return groupByFamily(filteredSequences, selectedDeck);
+    return groupByFamily(filteredSequences, selectedCatalog);
   });
 
   interface TypeComboGroup {
@@ -375,11 +375,11 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   }
 
   const typeComboGroups = $derived.by((): TypeComboGroup[] => {
-    if (!selectedDeck || !isLargeDeck) return [];
+    if (!selectedCatalog || !isLargeCatalog) return [];
 
     const groups = new Map<string, TypeComboGroup>();
 
-    for (const family of selectedDeck.families) {
+    for (const family of selectedCatalog.families) {
       const key = family.typeCombo || family.label;
       const existing = groups.get(key);
       if (existing) {
@@ -402,11 +402,11 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     selectedTypeCombo = null;
     interiorFilters = { familyIds: [], position: null };
     interiorFiltersOpen = false;
-    if (selectedDeckId) saveTypeCombo(selectedDeckId, null);
-    if (isLargeDeck) onLoadFamilySequences([]);
+    if (selectedCatalogId) saveTypeCombo(selectedCatalogId, null);
+    if (isLargeCatalog) onLoadFamilySequences([]);
   }
 
-  // Persist type combo selection per deck
+  // Persist type combo selection per catalog
   function saveTypeCombo(deckId: string, combo: TypeComboGroup | null) {
     if (typeof window === 'undefined') return;
     if (combo) {
@@ -421,12 +421,12 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     return localStorage.getItem(`choreoCard.typeCombo.${deckId}`);
   }
 
-  // Reset interior filters when deck changes, but restore saved type combo
+  // Reset interior filters when catalog changes, but restore saved type combo
   $effect(() => {
-    if (selectedDeckId) {
+    if (selectedCatalogId) {
       interiorFiltersOpen = false;
 
-      const savedKey = loadSavedTypeCombo(selectedDeckId);
+      const savedKey = loadSavedTypeCombo(selectedCatalogId);
       if (savedKey && typeComboGroups.length > 0) {
         const match = typeComboGroups.find(g => g.typeCombo === savedKey);
         if (match) {
@@ -449,17 +449,17 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   }
 </script>
 
-<div class="deck-browser" bind:this={scrollContainer} onscroll={handleBrowseScroll}>
-  {#if selectedDeck}
+<div class="catalog-browser" bind:this={scrollContainer} onscroll={handleBrowseScroll}>
+  {#if selectedCatalog}
     <div class="level-container level-interior">
       <div class="top-bar">
-        <nav class="breadcrumb" aria-label="Deck navigation">
+        <nav class="breadcrumb" aria-label="Catalog navigation">
           <button
             class="crumb"
             type="button"
-            aria-label={isLargeDeck && selectedTypeCombo ? 'Back to type combos' : 'Back to browser'}
+            aria-label={isLargeCatalog && selectedTypeCombo ? 'Back to type combos' : 'Back to browser'}
             onclick={() => {
-              if (isLargeDeck && selectedTypeCombo) {
+              if (isLargeCatalog && selectedTypeCombo) {
                 resetToPicker();
               } else {
                 onBackToCollections();
@@ -470,7 +470,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             Back
           </button>
           <span class="crumb-sep" aria-hidden="true">›</span>
-          {#if isLargeDeck && selectedTypeCombo}
+          {#if isLargeCatalog && selectedTypeCombo}
             <button class="crumb" type="button" onclick={resetToPicker} aria-label="Back to type combos">
               {tkaDesignation}
             </button>
@@ -489,25 +489,27 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       </div>
       {@render deckInterior()}
     </div>
-  {:else if isLoading || decks.length === 0}
-    <div class="skeleton-grid deck-skeleton" role="status" aria-live="polite" aria-label="Loading decks">
+  {:else if isLoading || catalogs.length === 0}
+    <div class="skeleton-grid catalog-skeleton" role="status" aria-live="polite" aria-label="Loading catalogs">
       {#each { length: 8 } as _}
-        <div class="skeleton-card deck-card-skeleton"></div>
+        <div class="skeleton-card catalog-card-skeleton"></div>
       {/each}
     </div>
   {:else}
-    <DeckBrowseFilterBar state={browseState} />
-    <DeckBrowseGrid
-      groupedDecks={browseState.groupedDecks}
+    <CatalogBrowseFilterBar state={browseState} />
+    <CatalogBrowseGrid
+      groupedCatalogs={browseState.groupedCatalogs}
       collection={browseState.collection}
-      onSelectDeck={handleBrowseDeckSelect}
+      vtgViewMode={browseState.vtgViewMode}
+      allVtgCatalogs={browseState.collection === 'VTG' ? browseState.filteredCatalogs : []}
+      onSelectCatalog={handleBrowseCatalogSelect}
     />
   {/if}
 </div>
 
-<!-- Shared deck interior content used by both desktop and mobile -->
+<!-- Shared catalog interior content used by both desktop and mobile -->
 {#snippet deckInterior()}
-  {#if selectedDeck}
+  {#if selectedCatalog}
     <div class="interior-content">
       <div class="top-bar-actions">
         <div class="view-toggle" role="radiogroup" aria-label="View mode">
@@ -564,19 +566,19 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
         </button>
       </div>
 
-      <p class="deck-meta-line">
-        {formatCount(selectedDeck.totalSequences)} sequences across {selectedDeck.families.length}
-        {selectedDeck.families.length === 1 ? "family" : "families"} · {selectedDeck.gridMode} grid
+      <p class="catalog-meta-line">
+        {formatCount(selectedCatalog.totalSequences)} sequences across {selectedCatalog.families.length}
+        {selectedCatalog.families.length === 1 ? "family" : "families"} · {selectedCatalog.gridMode} grid
       </p>
 
-      <DeckInteriorFilterPanel
+      <CatalogInteriorFilterPanel
         isOpen={interiorFiltersOpen}
-        families={selectedDeck.families}
+        families={selectedCatalog.families}
         selectedFamilyIds={interiorFilters.familyIds}
         activePosition={interiorFilters.position}
         onFamilyChange={(ids) => {
           interiorFilters = { ...interiorFilters, familyIds: ids };
-          if (isLargeDeck && ids.length > 0) {
+          if (isLargeCatalog && ids.length > 0) {
             onLoadFamilySequences(ids);
           }
         }}
@@ -587,15 +589,15 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
       {#if isLoading}
         <div class="skeleton-grid" role="status" aria-live="polite" aria-label="Loading sequences">
-          {#each { length: Math.min(selectedDeck?.totalSequences ?? 12, 12) } as _}
+          {#each { length: Math.min(selectedCatalog?.totalSequences ?? 12, 12) } as _}
             <div class="skeleton-card"></div>
           {/each}
         </div>
       {:else if filteredSequences.length === 0}
-        {#if isLargeDeck && interiorFilters.familyIds.length === 0 && typeComboGroups.length > 0}
+        {#if isLargeCatalog && interiorFilters.familyIds.length === 0 && typeComboGroups.length > 0}
           <div class="type-combo-picker">
             <p class="picker-heading">
-              {formatCount(selectedDeck.totalSequences)} sequences across {typeComboGroups.length}
+              {formatCount(selectedCatalog.totalSequences)} sequences across {typeComboGroups.length}
               type {typeComboGroups.length === 1 ? 'combo' : 'combos'}
             </p>
             <div class="picker-grid">
@@ -608,7 +610,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
                     selectedTypeCombo = group;
                     interiorFilters = { ...interiorFilters, familyIds: group.familyIds };
                     onLoadFamilySequences(group.familyIds);
-                    if (selectedDeckId) saveTypeCombo(selectedDeckId, group);
+                    if (selectedCatalogId) saveTypeCombo(selectedCatalogId, group);
                   }}
                 >
                   <span class="picker-label"><MotionTypePills label={group.displayLabel} fontSize="12px" /></span>
@@ -626,7 +628,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             <button
               class="clear-filters-btn"
               onclick={() => {
-                if (isLargeDeck) {
+                if (isLargeCatalog) {
                   resetToPicker();
                 } else {
                   interiorFilters = { familyIds: [], position: null };
@@ -765,7 +767,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   /* ── Root ── */
 
-  .deck-browser {
+  .catalog-browser {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -779,10 +781,10 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     gap: 12px;
   }
 
-  .deck-browser::-webkit-scrollbar { width: 8px; }
-  .deck-browser::-webkit-scrollbar-track { background: var(--scrollbar-track, transparent); }
-  .deck-browser::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)); border-radius: 4px; }
-  .deck-browser::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35)); }
+  .catalog-browser::-webkit-scrollbar { width: 8px; }
+  .catalog-browser::-webkit-scrollbar-track { background: var(--scrollbar-track, transparent); }
+  .catalog-browser::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)); border-radius: 4px; }
+  .catalog-browser::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35)); }
 
   .level-container {
     display: flex;
@@ -913,15 +915,15 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     border-color: var(--vtg-accent-border, rgba(183, 99, 205, 0.25));
   }
 
-  /* ── Deck meta line ── */
+  /* ── Catalog meta line ── */
 
-  .deck-meta-line {
+  .catalog-meta-line {
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     margin: 0;
   }
 
-  /* ── Deck List (Level 1) ── */
+  /* ── Catalog List (Level 1) ── */
 
   /* ── Sequence Sections (Level 2) ── */
 
@@ -974,11 +976,11 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   }
 
-  .deck-skeleton {
+  .catalog-skeleton {
     padding: var(--spacing-lg, 16px);
   }
 
-  .deck-card-skeleton {
+  .catalog-card-skeleton {
     aspect-ratio: 3 / 2;
   }
 

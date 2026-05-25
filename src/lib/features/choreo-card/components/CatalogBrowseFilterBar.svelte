@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { DeckBrowseState } from "../state/deck-browse-state.svelte";
+  import type { CatalogBrowseState } from "../state/catalog-browse-state.svelte";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import FilterChipRow from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipRow.svelte";
   import { LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import { VTG_FAMILY_LABELS } from "../state/deck-browse-types";
+  import { VTG_FAMILY_LABELS } from "../state/catalog-browse-types";
 
   interface Props {
-    state: DeckBrowseState;
+    state: CatalogBrowseState;
   }
 
-  const { state: deckState }: Props = $props();
+  const { state: catalogState }: Props = $props();
 
   let expanded = $state(true);
 
@@ -26,15 +26,15 @@
     return m ? `${m[1]}T` : capitalize(turn.replace(/-/g, ' '));
   }
 
-  const chipColor = $derived(deckState.collection === 'VTG' ? '#b763cd' : '#63b7cd');
+  const chipColor = $derived(catalogState.collection === 'VTG' ? '#b763cd' : '#63b7cd');
 
   const hasActiveFilters = $derived(
-    deckState.filters.loopTypes.length > 0 ||
-    deckState.filters.vtgFamilies.length > 0 ||
-    deckState.filters.sliceTypes.length > 0 ||
-    deckState.filters.gridModes.length > 0 ||
-    deckState.filters.stepCounts.length > 0 ||
-    deckState.filters.turnPatterns.length > 0
+    catalogState.filters.loopTypes.length > 0 ||
+    catalogState.filters.vtgFamilies.length > 0 ||
+    catalogState.filters.sliceTypes.length > 0 ||
+    catalogState.filters.gridModes.length > 0 ||
+    catalogState.filters.stepCounts.length > 0 ||
+    catalogState.filters.turnPatterns.length > 0
   );
 </script>
 
@@ -43,21 +43,42 @@
     <div class="collection-toggle">
       <button
         class="collection-pill"
-        class:active={deckState.collection === 'LOOPs'}
-        onclick={() => deckState.setCollection('LOOPs')}
+        class:active={catalogState.collection === 'LOOPs'}
+        onclick={() => catalogState.setCollection('LOOPs')}
         type="button"
         aria-label="Browse LOOPs collection"
       >LOOPs</button>
       <button
         class="collection-pill vtg"
-        class:active={deckState.collection === 'VTG'}
-        onclick={() => deckState.setCollection('VTG')}
+        class:active={catalogState.collection === 'VTG'}
+        onclick={() => catalogState.setCollection('VTG')}
         type="button"
         aria-label="Browse VTG collection"
       >VTG</button>
     </div>
 
-    <span class="deck-count">{deckState.totalCount} decks</span>
+    {#if catalogState.collection === 'VTG'}
+      <div class="vtg-view-toggle" role="radiogroup" aria-label="VTG view mode">
+        <button
+          class="view-pill"
+          class:active={catalogState.vtgViewMode === 'turns'}
+          type="button"
+          role="radio"
+          aria-checked={catalogState.vtgViewMode === 'turns'}
+          onclick={() => catalogState.setVtgViewMode('turns')}
+        >By Turns</button>
+        <button
+          class="view-pill"
+          class:active={catalogState.vtgViewMode === 'family'}
+          type="button"
+          role="radio"
+          aria-checked={catalogState.vtgViewMode === 'family'}
+          onclick={() => catalogState.setVtgViewMode('family')}
+        >By Family</button>
+      </div>
+    {/if}
+
+    <span class="catalog-count">{catalogState.totalCount} catalogs</span>
 
     <button
       class="collapse-toggle mobile-only"
@@ -69,85 +90,73 @@
     </button>
   </div>
 
-  {#if expanded}
+  {#if expanded && catalogState.collection === 'LOOPs'}
     <div class="filter-rows">
       <FilterChipRow>
-        {#if deckState.collection === 'LOOPs'}
-          {#each deckState.availableFilters.loopTypes as type (type)}
-            <FilterChipBase
-              label={loopTypeLabel(type)}
-              active={deckState.filters.loopTypes.includes(type)}
-              mode="toggle"
-              chipColor={chipColor}
-              onclick={() => deckState.toggleFilter('loopTypes', type)}
-            />
-          {/each}
-        {:else}
-          {#each deckState.availableFilters.vtgFamilies as family (family)}
-            <FilterChipBase
-              label={VTG_FAMILY_LABELS[family] ?? capitalize(family)}
-              active={deckState.filters.vtgFamilies.includes(family)}
-              mode="toggle"
-              chipColor={chipColor}
-              onclick={() => deckState.toggleFilter('vtgFamilies', family)}
-            />
-          {/each}
-        {/if}
+        {#each catalogState.availableFilters.loopTypes as type (type)}
+          <FilterChipBase
+            label={loopTypeLabel(type)}
+            active={catalogState.filters.loopTypes.includes(type)}
+            mode="toggle"
+            chipColor={chipColor}
+            onclick={() => catalogState.toggleFilter('loopTypes', type)}
+          />
+        {/each}
       </FilterChipRow>
 
       <FilterChipRow>
-        {#each deckState.availableFilters.sliceTypes as slice (slice)}
+        {#each catalogState.availableFilters.sliceTypes as slice (slice)}
           <FilterChipBase
             label={capitalize(slice)}
-            active={deckState.filters.sliceTypes.includes(slice)}
+            active={catalogState.filters.sliceTypes.includes(slice)}
             mode="toggle"
             chipColor={chipColor}
-            onclick={() => deckState.toggleFilter('sliceTypes', slice)}
+            onclick={() => catalogState.toggleFilter('sliceTypes', slice)}
           />
         {/each}
 
-        {#if deckState.availableFilters.gridModes.length > 1}
+        {#if catalogState.availableFilters.gridModes.length > 1}
           <span class="chip-divider" aria-hidden="true">·</span>
-          {#each deckState.availableFilters.gridModes as grid (grid)}
+          {#each catalogState.availableFilters.gridModes as grid (grid)}
             <FilterChipBase
               label={capitalize(grid)}
-              active={deckState.filters.gridModes.includes(grid)}
+              active={catalogState.filters.gridModes.includes(grid)}
               mode="toggle"
               chipColor={chipColor}
-              onclick={() => deckState.toggleFilter('gridModes', grid)}
+              onclick={() => catalogState.toggleFilter('gridModes', grid)}
             />
           {/each}
         {/if}
 
-        {#if deckState.availableFilters.stepCounts.length > 1}
+        {#if catalogState.availableFilters.stepCounts.length > 1}
           <span class="chip-divider" aria-hidden="true">·</span>
-          {#each deckState.availableFilters.stepCounts as count (count)}
+          {#each catalogState.availableFilters.stepCounts as count (count)}
             <FilterChipBase
               label={String(count)}
-              active={deckState.filters.stepCounts.includes(count)}
+              active={catalogState.filters.stepCounts.includes(count)}
               mode="toggle"
               chipColor={chipColor}
-              onclick={() => deckState.toggleFilter('stepCounts', count)}
+              onclick={() => catalogState.toggleFilter('stepCounts', count)}
             />
           {/each}
         {/if}
 
-        {#if deckState.availableFilters.turnPatterns.length > 1}
+        {#if catalogState.availableFilters.turnPatterns.length > 1}
           <span class="chip-divider" aria-hidden="true">·</span>
-          {#each deckState.availableFilters.turnPatterns as turn (turn)}
+          {#each catalogState.availableFilters.turnPatterns as turn (turn)}
             <FilterChipBase
               label={formatTurn(turn)}
-              active={deckState.filters.turnPatterns.includes(turn)}
+              active={catalogState.filters.turnPatterns.includes(turn)}
               mode="toggle"
               chipColor={chipColor}
-              onclick={() => deckState.toggleFilter('turnPatterns', turn)}
+              onclick={() => catalogState.toggleFilter('turnPatterns', turn)}
             />
           {/each}
         {/if}
       </FilterChipRow>
 
       {#if hasActiveFilters}
-        <button class="clear-btn" onclick={() => deckState.clearFilters()} type="button" aria-label="Clear all filters">
+        <button class="clear-btn" onclick={() => catalogState.clearFilters()} type="button" aria-label="Clear all filters">
           <i class="fas fa-times" aria-hidden="true"></i> Clear filters
         </button>
       {/if}
@@ -200,7 +209,7 @@
     border-color: var(--vtg-accent-border, rgba(183, 99, 205, 0.4));
   }
 
-  .deck-count {
+  .catalog-count {
     font-size: 13px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     margin-left: auto;
@@ -237,6 +246,31 @@
 
   .clear-btn:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, #fff);
+  }
+
+  .vtg-view-toggle {
+    display: flex;
+  }
+
+  .view-pill {
+    padding: 8px 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .view-pill:first-child { border-radius: 8px 0 0 8px; }
+  .view-pill:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
+
+  .view-pill.active {
+    background: var(--vtg-accent-bg, rgba(183, 99, 205, 0.15));
+    border-color: var(--vtg-accent-border, rgba(183, 99, 205, 0.4));
     color: var(--theme-text, #fff);
   }
 
