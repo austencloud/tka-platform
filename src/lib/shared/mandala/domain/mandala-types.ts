@@ -61,6 +61,8 @@ export interface MandalaRenderOptions {
 	overlap?: MandalaOverlapConfig;
 	/** Current tip dx for dynamic viewBox scaling during animation */
 	tipDx?: number;
+	/** Per-path gradient colors: each path's stroke shifts from one color to the next */
+	gradient?: { blue: [string, string]; red: [string, string]; purple: [string, string] };
 }
 
 export type MandalaMode = "card-back" | "gallery" | "animated";

@@ -56,25 +56,24 @@
       {/each}
     </defs>
 
-    <!-- Stage boundary -->
     <rect
       x={margin}
       y={margin}
       width={canvasWidth - margin * 2}
       height={canvasHeight - margin * 2}
-      fill="#1e2a3a"
-      stroke="#3a5a7a"
-      stroke-width="2"
+      fill="rgba(255, 255, 255, 0.02)"
+      stroke="rgba(255, 255, 255, 0.1)"
+      stroke-width="1.5"
+      rx="4"
     />
 
-    <!-- Grid lines -->
     {#each Array.from({ length: Math.floor(stageWidth) + 1 }, (_, i) => i) as x}
       <line
         x1={stageToSvgX(x)}
         y1={margin}
         x2={stageToSvgX(x)}
         y2={canvasHeight - margin}
-        stroke="#2a3a4a"
+        stroke="rgba(255, 255, 255, 0.06)"
         stroke-width="0.5"
       />
     {/each}
@@ -84,16 +83,14 @@
         y1={stageToSvgY(z)}
         x2={canvasWidth - margin}
         y2={stageToSvgY(z)}
-        stroke="#2a3a4a"
+        stroke="rgba(255, 255, 255, 0.06)"
         stroke-width="0.5"
       />
     {/each}
 
-    <!-- Labels -->
-    <text x={(canvasWidth) / 2} y={margin - 12} text-anchor="middle" fill="#6a6a8a" font-size="11">AUDIENCE</text>
-    <text x={(canvasWidth) / 2} y={canvasHeight - margin + 18} text-anchor="middle" fill="#6a6a8a" font-size="11">BACKSTAGE</text>
+    <text x={(canvasWidth) / 2} y={margin - 12} text-anchor="middle" fill="rgba(255, 255, 255, 0.35)" font-size="11" font-weight="600" letter-spacing="1">AUDIENCE</text>
+    <text x={(canvasWidth) / 2} y={canvasHeight - margin + 18} text-anchor="middle" fill="rgba(255, 255, 255, 0.35)" font-size="11" font-weight="600" letter-spacing="1">BACKSTAGE</text>
 
-    <!-- Path lines to next formation -->
     {#if activeFormation && nextFormation}
       {#each activeFormation.positions as fromPose, i}
         {@const toPose = nextFormation.positions[i]}
@@ -111,7 +108,6 @@
       {/each}
     {/if}
 
-    <!-- Performer dots -->
     {#each displayPositions as pose, i}
       <PerformerDot
         {pose}
@@ -133,10 +129,9 @@
   .stage-canvas-container {
     flex: 1;
     min-height: 300px;
-    background: #12121f;
-    border-radius: 8px;
     overflow: hidden;
   }
+
   svg {
     display: block;
     width: 100%;

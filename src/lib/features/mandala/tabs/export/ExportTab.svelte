@@ -23,14 +23,14 @@
 	const BACKGROUNDS = ["transparent", "black", "white"] as const;
 	type Background = (typeof BACKGROUNDS)[number];
 
-	// State
 	let selectedId = $state(DEFAULT_MANDALAS[0]?.id ?? "");
 	let resolution = $state<number>(1080);
 	let background = $state<Background>("transparent");
 	let strokeWidth = $state(2.5);
 	let exporting = $state(false);
+	let previewEl = $state<HTMLElement | null>(null);
+	let previewSize = $state(400);
 
-	// Derived sources list
 	const sources = $derived.by((): MandalaSource[] => {
 		const defaults: MandalaSource[] = DEFAULT_MANDALAS.map((m) => ({
 			id: m.id,
@@ -59,6 +59,18 @@
 		RESOLUTIONS.find((r) => r.size === resolution)?.label ?? "2x",
 	);
 
+	$effect(() => {
+		if (!previewEl) return;
+		const ro = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				const { width, height } = entry.contentRect;
+				previewSize = Math.min(width, height) * 0.8;
+			}
+		});
+		ro.observe(previewEl);
+		return () => ro.disconnect();
+	});
+
 	async function handleExport() {
 		if (!selected || exporting) return;
 		exporting = true;
@@ -83,27 +95,33 @@
 	<div class="controls-panel">
 		<h3 class="panel-title">Export Settings</h3>
 
-		<!-- Source Picker -->
+		<!-- Source Picker: visual grid, not dropdown -->
 		<div class="control-group">
-			<label class="control-label" for="mandala-source">Mandala</label>
-			<select
-				id="mandala-source"
-				class="source-select"
-				bind:value={selectedId}
-			>
-				<optgroup label="Defaults">
-					{#each sources.filter((s) => s.group === "default") as src (src.id)}
-						<option value={src.id}>{src.name}</option>
-					{/each}
-				</optgroup>
-				{#if sources.some((s) => s.group === "collection")}
-					<optgroup label="My Collection">
-						{#each sources.filter((s) => s.group === "collection") as src (src.id)}
-							<option value={src.id}>{src.name}</option>
-						{/each}
-					</optgroup>
-				{/if}
-			</select>
+			<span class="control-label">Mandala</span>
+			<div class="source-grid" role="radiogroup" aria-label="Select mandala to export">
+				{#each sources as src (src.id)}
+					<button
+						type="button"
+						class="source-card"
+						class:active={selectedId === src.id}
+						role="radio"
+						aria-checked={selectedId === src.id}
+						aria-label={src.name}
+						onclick={() => (selectedId = src.id)}
+					>
+						<div class="source-thumb">
+							<SequenceMandala
+								sequence={{ steps: src.steps }}
+								size={48}
+								show="both"
+								bluePropType={src.bluePropType}
+								redPropType={src.redPropType}
+							/>
+						</div>
+						<span class="source-name">{src.name}</span>
+					</button>
+				{/each}
+			</div>
 		</div>
 
 		<!-- Resolution -->
@@ -142,7 +160,7 @@
 						{#if bg === "transparent"}
 							<span class="bg-swatch transparent-swatch"></span>
 						{:else}
-							<span class="bg-swatch" style="background:{bg}"></span>
+							<span class="bg-swatch" style:background={bg}></span>
 						{/if}
 						{bg}
 					</button>
@@ -184,19 +202,19 @@
 		</button>
 	</div>
 
-	<div class="preview-area">
+	<div class="preview-area" bind:this={previewEl}>
 		{#if selected}
 			<div class="preview-mandala">
 				<SequenceMandala
 					sequence={{ steps: selected.steps }}
-					size={400}
+					size={previewSize}
 					show="both"
 					bluePropType={selected.bluePropType}
 					redPropType={selected.redPropType}
 					strokeWidth={strokeWidth}
 				/>
 			</div>
-			<span class="resolution-label">{resolutionLabel} &middot; {resolution}px</span>
+			<span class="resolution-label">{resolutionLabel} · {resolution}px</span>
 		{:else}
 			<p class="empty-state">No mandalas available</p>
 		{/if}
@@ -208,15 +226,15 @@
 		display: flex;
 		width: 100%;
 		height: 100%;
-		background: #0a0a1a;
+		background: transparent;
 		overflow: hidden;
 	}
 
 	.controls-panel {
-		width: 280px;
+		width: 300px;
 		flex-shrink: 0;
 		padding: 24px 20px;
-		border-right: 1px solid rgba(255, 255, 255, 0.06);
+		border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
@@ -226,7 +244,7 @@
 	.panel-title {
 		font-size: 14px;
 		font-weight: 600;
-		color: rgba(255, 255, 255, 0.8);
+		color: var(--theme-text, white);
 		letter-spacing: 0.02em;
 		margin: 0;
 	}
@@ -240,7 +258,7 @@
 	.control-label {
 		font-size: 12px;
 		font-weight: 500;
-		color: rgba(255, 255, 255, 0.5);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		display: flex;
@@ -249,36 +267,66 @@
 	}
 
 	.control-value {
-		color: rgba(255, 255, 255, 0.7);
+		color: var(--theme-text, rgba(255, 255, 255, 0.7));
 		font-variant-numeric: tabular-nums;
 	}
 
-	.source-select {
-		width: 100%;
-		height: 44px;
-		padding: 0 12px;
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 8px;
-		color: white;
-		font-size: 14px;
+	/* Source grid: visual thumbnails instead of dropdown */
+	.source-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+		gap: 8px;
+	}
+
+	.source-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 8px 4px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		border-radius: 10px;
 		cursor: pointer;
-		transition: border-color 0.15s ease;
+		transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
+		min-height: var(--min-touch-target, 44px);
 	}
 
-	.source-select:hover {
-		border-color: rgba(255, 255, 255, 0.2);
+	.source-card:hover {
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
 	}
 
-	.source-select:focus-visible {
+	.source-card.active {
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+		border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
+		box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+	}
+
+	.source-card:focus-visible {
 		outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
 		outline-offset: 2px;
 	}
 
-	.source-select option,
-	.source-select optgroup {
-		background: #1a1a2e;
-		color: white;
+	.source-thumb {
+		width: 48px;
+		height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.source-name {
+		font-size: 10px;
+		font-weight: 500;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+		text-align: center;
+		line-height: 1.2;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.chip-row {
@@ -291,28 +339,28 @@
 		display: flex;
 		align-items: center;
 		gap: 4px;
-		height: 44px;
+		min-height: var(--min-touch-target, 44px);
 		padding: 0 14px;
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 8px;
-		color: rgba(255, 255, 255, 0.6);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 10px;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
 		font-size: 13px;
 		font-weight: 500;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
 		white-space: nowrap;
 	}
 
 	.chip:hover {
-		background: rgba(255, 255, 255, 0.08);
-		border-color: rgba(255, 255, 255, 0.2);
-		color: rgba(255, 255, 255, 0.85);
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		color: var(--theme-text, white);
 	}
 
 	.chip.active {
-		background: rgba(99, 102, 241, 0.15);
-		border-color: rgba(99, 102, 241, 0.4);
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+		border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
 		color: white;
 	}
 
@@ -330,7 +378,7 @@
 		width: 14px;
 		height: 14px;
 		border-radius: 3px;
-		border: 1px solid rgba(255, 255, 255, 0.2);
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
 		flex-shrink: 0;
 	}
 
@@ -343,7 +391,7 @@
 
 	.range-input {
 		width: 100%;
-		height: 44px;
+		height: var(--min-touch-target, 44px);
 		-webkit-appearance: none;
 		appearance: none;
 		background: transparent;
@@ -352,7 +400,7 @@
 
 	.range-input::-webkit-slider-runnable-track {
 		height: 4px;
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 2px;
 	}
 
@@ -361,10 +409,10 @@
 		width: 18px;
 		height: 18px;
 		border-radius: 50%;
-		background: #6366f1;
+		background: var(--theme-accent, #6366f1);
 		border: 2px solid rgba(255, 255, 255, 0.9);
 		margin-top: -7px;
-		transition: transform 0.1s ease;
+		transition: transform var(--duration-instant, 100ms) ease;
 	}
 
 	.range-input::-webkit-slider-thumb:hover {
@@ -373,7 +421,7 @@
 
 	.range-input::-moz-range-track {
 		height: 4px;
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 2px;
 		border: none;
 	}
@@ -382,7 +430,7 @@
 		width: 18px;
 		height: 18px;
 		border-radius: 50%;
-		background: #6366f1;
+		background: var(--theme-accent, #6366f1);
 		border: 2px solid rgba(255, 255, 255, 0.9);
 	}
 
@@ -397,25 +445,28 @@
 		justify-content: center;
 		gap: 8px;
 		width: 100%;
-		height: 48px;
+		min-height: 48px;
 		margin-top: auto;
-		background: #6366f1;
-		border: none;
-		border-radius: 10px;
+		background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 80%, #8b5cf6));
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		border-radius: 12px;
 		color: white;
 		font-size: 14px;
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-normal, 200ms) var(--ease-out, ease);
+		box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
 	}
 
-	.download-btn:hover:not(:disabled) {
-		background: #5558e6;
-		transform: translateY(-1px);
+	@media (hover: hover) {
+		.download-btn:hover:not(:disabled) {
+			transform: translateY(-1px);
+			box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+		}
 	}
 
 	.download-btn:active:not(:disabled) {
-		transform: translateY(0);
+		transform: scale(0.98);
 		transition-duration: 50ms;
 	}
 
@@ -449,12 +500,12 @@
 	.resolution-label {
 		font-size: 13px;
 		font-weight: 500;
-		color: rgba(255, 255, 255, 0.4);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
 		letter-spacing: 0.02em;
 	}
 
 	.empty-state {
-		color: rgba(255, 255, 255, 0.4);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
 		font-size: 14px;
 	}
 
@@ -467,7 +518,7 @@
 			width: 100%;
 			max-height: 55%;
 			border-right: none;
-			border-top: 1px solid rgba(255, 255, 255, 0.06);
+			border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
 		}
 
 		.preview-area {
@@ -480,7 +531,7 @@
 	@media (prefers-reduced-motion: reduce) {
 		.chip,
 		.download-btn,
-		.source-select {
+		.source-card {
 			transition: none;
 		}
 

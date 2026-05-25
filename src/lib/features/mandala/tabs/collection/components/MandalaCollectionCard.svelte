@@ -95,8 +95,8 @@
 		position: absolute;
 		top: 6px;
 		right: 6px;
-		width: 28px;
-		height: 28px;
+		width: var(--min-touch-target-compact, 32px);
+		height: var(--min-touch-target-compact, 32px);
 		display: flex;
 		align-items: center;
 		justify-content: center;

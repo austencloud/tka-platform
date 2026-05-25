@@ -111,6 +111,12 @@
 		pathShape?: MandalaPathShape;
 		/** Fixed tip dx override (bypasses standard and animation) */
 		tipDx?: number;
+		/** Override palette colors */
+		palette?: MandalaPalette;
+		/** Override stroke width (default 2.5) */
+		strokeWidth?: number;
+		/** Per-path gradient colors for gradient color mode */
+		gradient?: { blue: [string, string]; red: [string, string]; purple: [string, string] };
 	}
 
 	let {
@@ -131,6 +137,9 @@
 		animateRotation = 90,
 		pathShape = "arc",
 		tipDx,
+		palette: paletteOverride,
+		strokeWidth,
+		gradient,
 	}: Props = $props();
 
 	const DARK_MOTION_PALETTE: MandalaPalette = {
@@ -237,8 +246,10 @@
 			showGridDots: !isCardBack,
 			show,
 			transparentBackground: isCardBack,
-			palette: effectiveDarkMode ? DARK_MOTION_PALETTE : LIGHT_MOTION_PALETTE,
+			palette: paletteOverride ?? (effectiveDarkMode ? DARK_MOTION_PALETTE : LIGHT_MOTION_PALETTE),
 			tipDx: effectiveDx,
+			strokeWidth,
+			gradient,
 		};
 	});
 

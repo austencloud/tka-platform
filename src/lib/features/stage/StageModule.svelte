@@ -1,27 +1,12 @@
 <script lang="ts">
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import StageEditorPanel from "./components/StageEditorPanel.svelte";
-  import Stage3DPreview from "./components/Stage3DPreview.svelte";
   import { getStageChoreographyState } from "./state/stage-choreography-state.svelte";
 
   getStageChoreographyState();
-
-  let activeView: "editor" | "preview" = $state("editor");
-
-  $effect(() => {
-    const tab = navigationState.activeTab;
-    if (tab === "editor" || tab === "preview") {
-      activeView = tab;
-    }
-  });
 </script>
 
 <div class="stage-module">
-  {#if activeView === "editor"}
-    <StageEditorPanel />
-  {:else}
-    <Stage3DPreview />
-  {/if}
+  <StageEditorPanel />
 </div>
 
 <style>

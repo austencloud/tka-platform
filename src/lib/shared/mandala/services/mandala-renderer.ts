@@ -137,6 +137,22 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 		parts.push(`    </mask>`);
 	}
 
+	if (options.gradient) {
+		const g = options.gradient;
+		parts.push(`    <linearGradient id="gBlue${uid}" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1">`);
+		parts.push(`      <stop offset="0%" stop-color="${g.blue[0]}"/>`);
+		parts.push(`      <stop offset="100%" stop-color="${g.blue[1]}"/>`);
+		parts.push(`    </linearGradient>`);
+		parts.push(`    <linearGradient id="gRed${uid}" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1">`);
+		parts.push(`      <stop offset="0%" stop-color="${g.red[0]}"/>`);
+		parts.push(`      <stop offset="100%" stop-color="${g.red[1]}"/>`);
+		parts.push(`    </linearGradient>`);
+		parts.push(`    <linearGradient id="gPurple${uid}" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1">`);
+		parts.push(`      <stop offset="0%" stop-color="${g.purple[0]}"/>`);
+		parts.push(`      <stop offset="100%" stop-color="${g.purple[1]}"/>`);
+		parts.push(`    </linearGradient>`);
+	}
+
 	parts.push(`  </defs>`);
 
 	if (!transparentBackground) {
@@ -163,11 +179,14 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 		purpleFill: PURPLE_FILL,
 	};
 
+	const blueColor = options.gradient ? `url(#gBlue${uid})` : palette.blueStroke;
+	const redColor = options.gradient ? `url(#gRed${uid})` : palette.redStroke;
+
 	if (show === "blue" || show === "both") {
 		for (const pathData of paths.blue) {
 			const attrs = style === "filled"
-				? filledAttributes(palette.blueStroke, palette.blueFill, strokeWidth)
-				: strokeAttributes(palette.blueStroke, strokeWidth);
+				? filledAttributes(blueColor, palette.blueFill, strokeWidth)
+				: strokeAttributes(blueColor, strokeWidth);
 			parts.push(`    <path d="${pathData.d}" ${attrs}/>`);
 		}
 	}
@@ -175,16 +194,17 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 	if (show === "red" || show === "both") {
 		for (const pathData of paths.red) {
 			const attrs = style === "filled"
-				? filledAttributes(palette.redStroke, palette.redFill, strokeWidth)
-				: strokeAttributes(palette.redStroke, strokeWidth);
+				? filledAttributes(redColor, palette.redFill, strokeWidth)
+				: strokeAttributes(redColor, strokeWidth);
 			parts.push(`    <path d="${pathData.d}" ${attrs}/>`);
 		}
 	}
 
 	if (needsMask) {
+		const purpleColor = options.gradient ? `url(#gPurple${uid})` : palette.purpleStroke;
 		const purpleCore = style === "filled"
-			? `fill="${palette.purpleFill}" stroke="${palette.purpleStroke}" stroke-width="${(strokeWidth * 0.6).toFixed(2)}" stroke-linecap="round"`
-			: `fill="none" stroke="${palette.purpleStroke}" stroke-width="${strokeWidth}" stroke-linecap="round"`;
+			? `fill="${palette.purpleFill}" stroke="${purpleColor}" stroke-width="${(strokeWidth * 0.6).toFixed(2)}" stroke-linecap="round"`
+			: `fill="none" stroke="${purpleColor}" stroke-width="${strokeWidth}" stroke-linecap="round"`;
 		parts.push(`    <g mask="url(#bom${uid})" opacity="${ov.coreOpacity}">`);
 		for (const pathData of paths.red) {
 			parts.push(`      <path d="${pathData.d}" ${purpleCore}/>`);
@@ -194,7 +214,7 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 		const bloomWidth = style === "filled" ? strokeWidth : strokeWidth * ov.bloomWidth;
 		parts.push(`    <g mask="url(#bom${uid})" filter="url(#bloom${uid})" opacity="${ov.bloomOpacity}">`);
 		for (const pathData of paths.red) {
-			parts.push(`      <path d="${pathData.d}" fill="none" stroke="${palette.purpleStroke}" stroke-width="${bloomWidth}" stroke-linecap="round"/>`);
+			parts.push(`      <path d="${pathData.d}" fill="none" stroke="${purpleColor}" stroke-width="${bloomWidth}" stroke-linecap="round"/>`);
 		}
 		parts.push(`    </g>`);
 	}

@@ -225,6 +225,9 @@ export function createStageChoreographyState() {
     addFormation,
     updatePerformerPosition,
     setTransition,
+    setBpm(newBpm: number) {
+      choreography.bpm = Math.max(15, Math.min(180, newBpm));
+    },
     play,
     stop,
   };

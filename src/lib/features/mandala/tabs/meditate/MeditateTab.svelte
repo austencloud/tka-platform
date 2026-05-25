@@ -238,7 +238,7 @@
 	.meditate-tab {
 		width: 100%;
 		height: 100%;
-		background: #0a0a1a;
+		background: transparent;
 		overflow: hidden;
 	}
 
@@ -268,7 +268,7 @@
 	.controls-rail {
 		width: 300px;
 		flex-shrink: 0;
-		border-left: 1px solid rgba(255, 255, 255, 0.06);
+		border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
 		overflow-y: auto;
 	}
 
@@ -288,22 +288,24 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 44px;
-		height: 44px;
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		width: var(--min-touch-target, 44px);
+		height: var(--min-touch-target, 44px);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 10px;
-		color: rgba(255, 255, 255, 0.5);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 		font-size: 16px;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
 		z-index: 30;
 	}
 
-	.session-exit-btn:hover {
-		background: rgba(255, 255, 255, 0.1);
-		border-color: rgba(255, 255, 255, 0.2);
-		color: white;
+	@media (hover: hover) {
+		.session-exit-btn:hover {
+			background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+			border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+			color: var(--theme-text, white);
+		}
 	}
 
 	.session-exit-btn:active {
@@ -330,7 +332,7 @@
 			width: 100%;
 			max-height: 50%;
 			border-left: none;
-			border-top: 1px solid rgba(255, 255, 255, 0.06);
+			border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
 		}
 	}
 

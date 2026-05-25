@@ -319,19 +319,22 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		padding: 6px 10px;
+		min-height: var(--min-touch-target, 44px);
+		padding: 8px 14px;
 		background: none;
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 8px;
+		border-radius: 10px;
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
 		font-size: 13px;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
 	}
 
-	.back-btn:hover {
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-		color: white;
+	@media (hover: hover) {
+		.back-btn:hover {
+			border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+			color: var(--theme-text, white);
+		}
 	}
 
 	.panel-title {
@@ -399,7 +402,7 @@
 		font-size: 13px;
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
 		-webkit-tap-highlight-color: transparent;
 	}
 
@@ -432,8 +435,8 @@
 	}
 
 	.mini-chip {
-		min-height: 32px;
-		padding: 4px 8px;
+		min-height: var(--min-touch-target, 44px);
+		padding: 4px 10px;
 		font-size: 12px;
 	}
 
@@ -577,7 +580,7 @@
 		font-size: 14px;
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
 	}
 
 	.start-btn {

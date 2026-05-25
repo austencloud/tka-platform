@@ -112,6 +112,7 @@
 		padding: 24px;
 		height: 100%;
 		overflow-y: auto;
+		background: transparent;
 	}
 
 	.selector-header {
@@ -131,22 +132,24 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		min-height: 44px;
+		min-height: var(--min-touch-target, 44px);
 		padding: 8px 16px;
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
 		border-radius: 10px;
-		color: rgba(255, 255, 255, 0.7);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
 		font-size: 13px;
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
 	}
 
-	.random-btn:hover {
-		background: rgba(255, 255, 255, 0.1);
-		border-color: rgba(255, 255, 255, 0.2);
-		color: white;
+	@media (hover: hover) {
+		.random-btn:hover {
+			background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+			border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+			color: var(--theme-text, white);
+		}
 	}
 
 	.random-btn:active {
@@ -186,18 +189,20 @@
 		align-items: center;
 		gap: 8px;
 		padding: 12px 8px;
-		background: rgba(255, 255, 255, 0.03);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 		border-radius: 12px;
 		cursor: pointer;
-		transition: all 0.15s ease;
-		min-height: 44px;
+		transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
+		min-height: var(--min-touch-target, 44px);
 	}
 
-	.mandala-card:hover {
-		background: rgba(255, 255, 255, 0.07);
-		border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-		transform: translateY(-2px);
+	@media (hover: hover) {
+		.mandala-card:hover {
+			background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
+			border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+			transform: translateY(-2px);
+		}
 	}
 
 	.mandala-card:active {
@@ -222,7 +227,7 @@
 	.mandala-name {
 		font-size: 12px;
 		font-weight: 500;
-		color: rgba(255, 255, 255, 0.7);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
 		text-align: center;
 		line-height: 1.3;
 		max-width: 100%;
