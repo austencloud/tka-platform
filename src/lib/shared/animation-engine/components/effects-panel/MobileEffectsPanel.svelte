@@ -87,17 +87,19 @@
     }
   }
 
-  let activeEffect = $state<string>(vm.getActiveEffect());
+  let activeEffect = $state<string>(effectsConfigState?.activeEffect ?? vm.getActiveEffect());
   let activePresetId = $state<string | null>(
-    vm.getActiveEffect() === "led" ? vm.getActivePresetId() : null,
+    (effectsConfigState?.activeEffect ?? vm.getActiveEffect()) === "led"
+      ? (effectsConfigState?.activePresets.led ?? null)
+      : null,
   );
   let customizeOpen = $state(false);
   // Tick bumps when VM state changes OR slider moves, so $derived recomputes.
   let syncTick = $state(0);
 
   function syncFromVM(): void {
-    activeEffect = vm.getActiveEffect();
-    if (activeEffect === "led") activePresetId = vm.getActivePresetId();
+    activeEffect = effectsConfigState?.activeEffect ?? vm.getActiveEffect();
+    if (activeEffect === "led") activePresetId = effectsConfigState?.activePresets.led ?? null;
     syncTick++;
   }
 
@@ -155,12 +157,14 @@
   function handleEffectSelect(effectId: string): void {
     customizeOpen = false;
     if (effectId === activeEffect) {
-      vm.setActiveEffect("none" as EffectType);
+      if (effectsConfigState) effectsConfigState.setActiveEffect("none");
+      else vm.setActiveEffect("none" as EffectType);
       activeEffect = "none";
       activePresetId = null;
       return;
     }
-    vm.setActiveEffect(effectId as EffectType);
+    if (effectsConfigState) effectsConfigState.setActiveEffect(effectId);
+    else vm.setActiveEffect(effectId as EffectType);
     activeEffect = effectId;
     activePresetId = null;
   }
@@ -170,7 +174,7 @@
     if (!group) return;
     const preset = group.presets.find((p) => p.id === presetId);
     if (!preset) return;
-    preset.apply(vm, effectsConfigState);
+    if (effectsConfigState) preset.apply(effectsConfigState);
     activePresetId = presetId;
     savePresetId(activeEffect, presetId);
     syncTick++;

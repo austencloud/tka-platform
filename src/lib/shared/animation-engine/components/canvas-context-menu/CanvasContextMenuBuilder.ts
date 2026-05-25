@@ -25,10 +25,12 @@ import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { animationSettings } from "../../state/animation-settings-state.svelte";
 import { TrackingMode } from "../../domain/types/TrailTypes";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 
 interface CanvasContextMenuDeps {
   visibilityManager: AnimationVisibilityStateManager;
+  effectsConfigState?: EffectsConfigState | null;
   disassembled?: boolean;
   onToggleDisassemble?: () => void;
   /** Captures a diagnostic snapshot of the effect pipeline state */
@@ -42,21 +44,26 @@ interface CanvasContextMenuDeps {
 
 type ActiveEffect = "fire" | "charcoal" | "led" | "trails" | "none";
 
-function getActiveEffect(vm: AnimationVisibilityStateManager): ActiveEffect {
-  return vm.getActiveEffect() as ActiveEffect;
+function getActiveEffect(vm: AnimationVisibilityStateManager, ecs?: EffectsConfigState | null): ActiveEffect {
+  return (ecs?.activeEffect ?? vm.getActiveEffect()) as ActiveEffect;
 }
 
 function buildEffectChildren(
   vm: AnimationVisibilityStateManager,
-  active: ActiveEffect
+  active: ActiveEffect,
+  ecs?: EffectsConfigState | null,
 ): ContextMenuItem[] {
+  const setEffect = (effect: string) => {
+    if (ecs) ecs.setActiveEffect(effect);
+    else vm.setActiveEffect(effect as Parameters<typeof vm.setActiveEffect>[0]);
+  };
   return [
     {
       id: "effect-none",
       label: "None",
       icon: "fa-ban",
       checked: active === "none",
-      action: () => vm.setActiveEffect("none"),
+      action: () => setEffect("none"),
     },
     {
       id: "effect-fire",
@@ -64,7 +71,7 @@ function buildEffectChildren(
       icon: "fa-fire-flame-curved",
       iconColor: "#f97316",
       checked: active === "fire",
-      action: () => vm.setActiveEffect("fire"),
+      action: () => setEffect("fire"),
     },
     {
       id: "effect-charcoal",
@@ -72,7 +79,7 @@ function buildEffectChildren(
       icon: "fa-fire",
       iconColor: "#a855f7",
       checked: active === "charcoal",
-      action: () => vm.setActiveEffect("charcoal"),
+      action: () => setEffect("charcoal"),
     },
     {
       id: "effect-led",
@@ -80,14 +87,14 @@ function buildEffectChildren(
       icon: "fa-lightbulb",
       iconColor: "#22c55e",
       checked: active === "led",
-      action: () => vm.setActiveEffect("led"),
+      action: () => setEffect("led"),
     },
     {
       id: "effect-trails",
       label: "Trails",
       icon: "fa-route",
       checked: active === "trails",
-      action: () => vm.setActiveEffect("trails"),
+      action: () => setEffect("trails"),
     },
   ];
 }
@@ -288,8 +295,9 @@ export function buildCanvasContextMenuItems(
   deps: CanvasContextMenuDeps
 ): ContextMenuEntry[] {
   const vm = deps.visibilityManager;
+  const ecs = deps.effectsConfigState;
   const settings = vm.getSettings();
-  const active = getActiveEffect(vm);
+  const active = getActiveEffect(vm, ecs);
 
   const items: ContextMenuEntry[] = [
     // Visibility toggles submenu
@@ -319,7 +327,7 @@ export function buildCanvasContextMenuItems(
       id: "effects-submenu",
       label: "Effects",
       icon: "fa-wand-magic-sparkles",
-      children: buildEffectChildren(vm, active),
+      children: buildEffectChildren(vm, active, ecs),
     },
   ];
 

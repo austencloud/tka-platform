@@ -285,7 +285,11 @@ Last audit: 2025-12-27
   // customize panel (Zap/Sparkle/Echo/Bloom) actually drives this canvas.
   const inheritedEffectsConfig = getEffectsConfigContext();
   $effect.pre(() => {
-    engine.setEffectsConfigState(effectsConfigState ?? inheritedEffectsConfig ?? null);
+    const ecs = effectsConfigState ?? inheritedEffectsConfig ?? null;
+    engine.setEffectsConfigState(ecs);
+    // Wire to the global VM singleton so the fallback getActiveEffect/setActiveEffect
+    // delegates work in UI contexts that don't use the effects-config-context provider.
+    getAnimationVisibilityManager().effectsConfigState = ecs;
   });
 
   // Push viewer-scoped motion visibility into the engine whenever the toggle
@@ -316,7 +320,8 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    fireEffectEnabled = visibilityManager.hasEffect("fire");
+    const tipMap = visibilityManager.effectsConfigState?.tipEffectMap ?? {};
+    fireEffectEnabled = Object.values(tipMap).some(a => a.effect === "fire");
     pathLinesVisible = visibilityManager.getVisibility("pathLines");
   });
 
@@ -341,7 +346,8 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    fireEffectEnabled = visibilityManager.hasEffect("fire");
+    const tipMap = visibilityManager.effectsConfigState?.tipEffectMap ?? {};
+    fireEffectEnabled = Object.values(tipMap).some(a => a.effect === "fire");
     pathLinesVisible = visibilityManager.getVisibility("pathLines");
   }
 
@@ -726,11 +732,7 @@ Last audit: 2025-12-27
   onpointercancel={cancelLongPress}
 >
   <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
-    <!-- Always mounted. Unmounting via suppress2DOverlays would re-fire the
-         WordHeader's slide-in animation each time the user flips from 3D
-         back to 2D, which reads as an unwanted glitch mid-session. The 3D
-         canvas layer (z-index:2, inset:0) visually covers this when 3D is
-         active, so there's no cost to leaving it mounted. -->
+    <!-- Always mounted so 3D→2D flips don't re-mount the header. -->
     <div class="header-slot">
       <WordHeader
         {word}
@@ -898,20 +900,14 @@ Last audit: 2025-12-27
     container-type: inline-size;
     border-radius: 4px;
     overflow: hidden;
-    /* Smooth width change during disassemble (content-wrapper narrows to fit split row) */
-    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Header slot: in portrait, takes natural height at top */
   .header-slot {
     flex-shrink: 0;
     overflow: hidden;
-    /* Smooth collapse/expand for constrained ↔ focused transitions */
     max-height: 100px;
     opacity: 1;
-    transition: max-height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-                opacity 0.2s ease-out;
   }
 
   /* Canvas wrapper: square in portrait mode. Owns the background color so the
@@ -978,6 +974,8 @@ Last audit: 2025-12-27
   .animation-container[data-view="disassembled"] .content-wrapper {
     width: min(calc(100cqw - 12px), calc((100cqh - 7rem) * 2 / 3));
     max-width: calc((100cqh - 7rem) * 2 / 3);
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Progress slot: in portrait, takes natural height at bottom */
@@ -1069,6 +1067,8 @@ Last audit: 2025-12-27
   .animation-container[data-focused][data-view="disassembled"] .content-wrapper {
     width: min(calc(100cqw - 12px), calc((100cqh - 8.5rem) * 2 / 3));
     max-width: calc((100cqh - 8.5rem) * 2 / 3);
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* ===========================================

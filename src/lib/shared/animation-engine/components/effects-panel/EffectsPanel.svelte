@@ -108,22 +108,24 @@
   }
 
   // Internal state
-  // Initialize synchronously from the VM so the preset section renders on
+  // Initialize synchronously from EffectsConfigState so the preset section renders on
   // first paint instead of appearing after onMount (which caused CLS - the
-  // panel would grow once the VM's active effect came back as non-"none").
-  let activeEffect = $state<string>(vm.getActiveEffect());
+  // panel would grow once the active effect came back as non-"none").
+  let activeEffect = $state<string>(effectsConfigState?.activeEffect ?? vm.getActiveEffect());
   let customizeOpen = $state(false);
   let activePresetId = $state<string | null>(
-    vm.getActiveEffect() === "led" ? vm.getActivePresetId() : null
+    (effectsConfigState?.activeEffect ?? vm.getActiveEffect()) === "led"
+      ? (effectsConfigState?.activePresets.led ?? null)
+      : null
   );
   // Tick counter to force summary recompute when VM state changes
   let summaryTick = $state(0);
 
 
   function syncFromVM(): void {
-    activeEffect = vm.getActiveEffect();
+    activeEffect = effectsConfigState?.activeEffect ?? vm.getActiveEffect();
     if (activeEffect === "led") {
-      activePresetId = vm.getActivePresetId();
+      activePresetId = effectsConfigState?.activePresets.led ?? null;
     }
     summaryTick++;
   }
@@ -147,12 +149,14 @@
     customizeOpen = false;
     // Click the active chip to disable - round-trip to "none"
     if (effectId === activeEffect) {
-      vm.setActiveEffect("none" as EffectType);
+      if (effectsConfigState) effectsConfigState.setActiveEffect("none");
+      else vm.setActiveEffect("none" as EffectType);
       activeEffect = "none";
       activePresetId = null;
       return;
     }
-    vm.setActiveEffect(effectId as EffectType);
+    if (effectsConfigState) effectsConfigState.setActiveEffect(effectId);
+    else vm.setActiveEffect(effectId as EffectType);
     activeEffect = effectId;
     activePresetId = null;
   }
@@ -184,7 +188,7 @@
     if (!group) return;
     const preset = group.presets.find((p) => p.id === presetId);
     if (!preset) return;
-    preset.apply(vm, effectsConfigState);
+    if (effectsConfigState) preset.apply(effectsConfigState);
     activePresetId = presetId;
     savePresetId(activeEffect, presetId);
   }
@@ -193,8 +197,8 @@
     // summaryTick makes this reactive to VM observer changes
     summaryTick;
     const group = getPresetGroup(activeEffect);
-    if (!group) return "";
-    return group.getSummary(vm, effectsConfigState);
+    if (!group || !effectsConfigState) return "";
+    return group.getSummary(effectsConfigState);
   });
 
 

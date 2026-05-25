@@ -78,14 +78,16 @@
   });
 
   // Get current trail visibility from visibility manager (global state)
-  let currentPreset = $state<TrailVisibility>(
-    animationVisibilityManager.isTrailsActive() ? "on" : "off"
-  );
+  function isTrailsActive(): boolean {
+    const tipMap = animationVisibilityManager.effectsConfigState?.tipEffectMap ?? {};
+    return Object.values(tipMap).some(a => a.effect === "trails");
+  }
+  let currentPreset = $state<TrailVisibility>(isTrailsActive() ? "on" : "off");
 
   // Register as observer to get notified when trail style changes
   onMount(() => {
     const handleVisibilityChange = () => {
-      currentPreset = animationVisibilityManager.isTrailsActive() ? "on" : "off";
+      currentPreset = isTrailsActive() ? "on" : "off";
     };
 
     animationVisibilityManager.registerObserver(handleVisibilityChange);

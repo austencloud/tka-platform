@@ -7,6 +7,7 @@
 
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 /**
  * All visibility settings as a single object
@@ -34,6 +35,8 @@ export class AnimationVisibilitySynchronizer {
   private manager: AnimationVisibilityStateManager;
   private callbacks: Set<VisibilityStateCallback> = new Set();
   private boundObserver: () => void;
+  /** When set, activeEffect, tipEffectMap, and trails are read from here. */
+  effectsConfigState: EffectsConfigState | null = null;
 
   constructor(managerOverride?: AnimationVisibilityStateManager) {
     this.manager = managerOverride ?? getAnimationVisibilityManager();
@@ -42,16 +45,20 @@ export class AnimationVisibilitySynchronizer {
   }
 
   getState(): AnimationVisibilityState {
+    const ecs = this.effectsConfigState;
+    const tipEffectMap: TipEffectMap = ecs?.tipEffectMap ?? {};
+    const trailsActive = Object.values(tipEffectMap).some(a => a.effect === "trails");
+    const activeEffect = (ecs?.activeEffect ?? "none") as EffectType;
     return {
       grid: this.manager.isGridVisible(),
       stepNumbers: this.manager.getVisibility("stepNumbers"),
       props: this.manager.getVisibility("props"),
-      trails: this.manager.isTrailsActive(),
+      trails: trailsActive,
       tkaGlyph: this.manager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       darkMode: this.manager.isDarkMode(),
       wordHeader: this.manager.getVisibility("wordHeader"),
-      activeEffect: this.manager.getActiveEffect(),
-      tipEffectMap: this.manager.getTipEffectMap(),
+      activeEffect,
+      tipEffectMap,
     };
   }
 

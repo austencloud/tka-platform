@@ -173,10 +173,7 @@
   const shortCodeManager = new ShortCodeManager(stubBrowseLoader);
 
   function applyEffectToConfig(effect: EffectType) {
-    const map: import("$lib/shared/animation-engine/domain/types/TipEffectTypes").TipEffectMap =
-      effect === "none" ? {} : { "*": { effect } };
-    effectsConfig.setTipEffectMap(map);
-    getAnimationVisibilityManager().setTipEffectMap(map);
+    effectsConfig.setActiveEffect(effect as string);
   }
 
   function handleEffectChange(effect: EffectType) {

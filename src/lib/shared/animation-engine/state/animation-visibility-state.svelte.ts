@@ -3,16 +3,15 @@
  *
  * Manages visibility settings specifically for animation playback.
  * Independent from pictograph visibility but can sync from it.
+ *
+ * Effects v2 note: fire/charcoal/LED/tipEffectMap/effectLayerOverrides are
+ * owned by EffectsConfigState. This class retains thin delegates for
+ * getActiveEffect/setActiveEffect as fallbacks in contexts without the
+ * effects config context provider. All other effect delegates are removed.
  */
 
-import type { CharcoalSparkParams } from "../domain/types/CharcoalSparkTypes";
-import { DEFAULT_CHARCOAL_PARAMS, semanticToCharcoalParams, charcoalParamsToSemantic } from "../domain/types/CharcoalSparkTypes";
-import type { FireColorCurve } from "../domain/types/FireTypes";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
-import { findPreset, type LedColorPreset } from "../domain/types/LedColorPresets";
-import type { EffectLayerMode } from "../services/effect-layer";
-import type { PropFlameColor } from '../domain/types/FireTypes';
+import type { EffectType, TipEffortMap } from "../domain/types/TipEffectTypes";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 type VisibilityObserver = () => void;
@@ -28,9 +27,7 @@ export interface MotionColorsCache {
 }
 
 /**
- * Trail toggle type - still used by settings UI components to represent
- * the on/off state that drives the trail section of tipEffectMap.
- * The manager itself no longer stores this as a field; use isTrailsActive() instead.
+ * Trail toggle type - used by settings UI components to represent on/off trail state.
  */
 export type TrailVisibility = "off" | "on";
 export type GridMode = "none" | "8point" | "auto";
@@ -71,18 +68,11 @@ const STORAGE_KEY = "animation-visibility-settings";
 export class AnimationVisibilityStateManager {
   private settings: AnimationVisibilitySettings;
   private observers: Set<VisibilityObserver> = new Set();
-  /** Tracks dark mode state before an effect forced it on, so we can restore on disable. null = no effect override active. */
-  private darkModeBeforeEffect: boolean | null = null;
-  /** Delegated effects config state. Set by host via setEffectsConfigState(). */
-  private effectsState: EffectsConfigState | null = null;
-
   /**
-   * Wire the shared EffectsConfigState so effect getters/setters delegate to it
-   * instead of storing locally. Call before any effect methods are invoked.
+   * Thin delegate to EffectsConfigState. Used as fallback for getActiveEffect/setActiveEffect
+   * in contexts without the effects-config-context provider. Set by AnimatorCanvas.
    */
-  setEffectsConfigState(state: EffectsConfigState | null): void {
-    this.effectsState = state;
-  }
+  effectsConfigState: EffectsConfigState | null = null;
 
   /**
    * Cached motion colors - computed once when dark mode changes.
@@ -469,238 +459,6 @@ export class AnimationVisibilityStateManager {
   }
 
   // ============================================================================
-  // FIRE SLIDERS: Color Blend, Intensity, Turbulence
-  // Delegates to EffectsConfigState.fire
-  // ============================================================================
-
-  getFireColorBlend(): number {
-    return this.effectsState?.fire.colorBlend ?? 0.5;
-  }
-
-  setFireColorBlend(value: number): void {
-    this.effectsState?.updateFire({ colorBlend: Math.max(0, Math.min(1, value)) });
-    this.notifyObservers();
-  }
-
-  getFireIntensity(): number {
-    return this.effectsState?.fire.intensity ?? 0.7;
-  }
-
-  setFireIntensity(intensity: number): void {
-    this.effectsState?.updateFire({ intensity: Math.max(0, Math.min(1, intensity)) });
-    this.notifyObservers();
-  }
-
-  getFireTurbulence(): number {
-    return this.effectsState?.fire.turbulence ?? 0.5;
-  }
-
-  setFireTurbulence(value: number): void {
-    this.effectsState?.updateFire({ turbulence: Math.max(0, Math.min(1, value)) });
-    this.notifyObservers();
-  }
-
-  getFireColorCurve(): FireColorCurve | null {
-    return this.effectsState?.fire.colorCurve ?? null;
-  }
-
-  setFireColorCurve(curve: FireColorCurve | null): void {
-    this.effectsState?.updateFire({ colorCurve: curve });
-    this.notifyObservers();
-  }
-
-  getFirePropColors(): [PropFlameColor, PropFlameColor] | null {
-    return this.effectsState?.fire.propColors ?? null;
-  }
-
-  setFirePropColors(colors: [PropFlameColor, PropFlameColor] | null): void {
-    this.effectsState?.updateFire({ propColors: colors });
-    this.notifyObservers();
-  }
-
-  /** Reset fire controls to defaults. */
-  resetFireDefaults(): void {
-    this.effectsState?.updateFire({ intensity: 0.7, colorBlend: 0.5, turbulence: 0.5, colorCurve: null });
-    this.notifyObservers();
-  }
-
-  // ============================================================================
-  // CHARCOAL EFFECT TUNING
-  // Delegates to EffectsConfigState.charcoal (semantic: intensity/spread/glow)
-  // ============================================================================
-
-  getCharcoalParams(): CharcoalSparkParams {
-    if (this.effectsState) {
-      const { intensity, spread, glow, coreColor, midColor, coolColor } = this.effectsState.charcoal;
-      return semanticToCharcoalParams({ intensity, spread, glow }, { coreColor, midColor, coolColor });
-    }
-    return { ...DEFAULT_CHARCOAL_PARAMS };
-  }
-
-  setCharcoalParams(params: CharcoalSparkParams): void {
-    if (this.effectsState) {
-      this.effectsState.updateCharcoal(charcoalParamsToSemantic(params));
-      this.notifyObservers();
-    }
-  }
-
-  updateCharcoalParam<K extends keyof CharcoalSparkParams>(key: K, value: CharcoalSparkParams[K]): void {
-    if (this.effectsState) {
-      const current = semanticToCharcoalParams(this.effectsState.charcoal);
-      const updated = { ...current, [key]: value };
-      this.effectsState.updateCharcoal(charcoalParamsToSemantic(updated));
-      this.notifyObservers();
-    }
-  }
-
-  /** Reset charcoal controls to defaults. */
-  resetCharcoalDefaults(): void {
-    this.effectsState?.updateCharcoal({ intensity: 0.5, spread: 0.5, glow: 0.6 });
-    this.notifyObservers();
-  }
-
-  // ============================================================================
-  // LED EFFECT TUNING
-  // Delegates to EffectsConfigState.led
-  // ============================================================================
-
-  /**
-   * Get current LED pattern ID
-   */
-  getLedPatternId(): string {
-    return this.effectsState?.led.patternId ?? "solid";
-  }
-
-  /**
-   * Set LED pattern ID
-   */
-  setLedPatternId(patternId: string): void {
-    this.effectsState?.updateLed({ patternId });
-    this.notifyObservers();
-  }
-
-  /**
-   * Get current LED primary color
-   */
-  getLedPrimaryColor(): string {
-    return this.effectsState?.led.primaryColor ?? "#00ff88";
-  }
-
-  /**
-   * Set LED primary color
-   */
-  setLedPrimaryColor(color: string): void {
-    this.effectsState?.updateLed({ primaryColor: color });
-    this.notifyObservers();
-  }
-
-  /**
-   * Get LED brightness level (1-5)
-   */
-  getLedBrightness(): number {
-    return this.effectsState?.led.brightness ?? 5;
-  }
-
-  /**
-   * Set LED brightness level (1-5, clamped)
-   */
-  setLedBrightness(level: number): void {
-    this.effectsState?.updateLed({ brightness: Math.max(1, Math.min(5, Math.round(level))) });
-    this.notifyObservers();
-  }
-
-  /**
-   * Get current LED secondary color
-   */
-  getLedSecondaryColor(): string {
-    return this.effectsState?.led.secondaryColor ?? "#ffffff";
-  }
-
-  /**
-   * Set LED secondary color
-   */
-  setLedSecondaryColor(color: string): void {
-    if (this.effectsState?.led.secondaryColor === color) return;
-    this.effectsState?.updateLed({ secondaryColor: color });
-    this.notifyObservers();
-  }
-
-  /**
-   * Get the currently active color preset ID (null if no preset is active)
-   */
-  getActivePresetId(): string | null {
-    return this.effectsState?.activePresets.led ?? null;
-  }
-
-  /**
-   * Activate a color preset by ID, applying its colors to the LED settings.
-   * No-op if effectsState is not wired yet.
-   * Note: Full preset application (color lookup) is handled by EffectsConfigState.applyPreset.
-   * This thin delegate applies the preset if it can be found in the built-in or user list.
-   */
-  setActivePreset(presetId: string): void {
-    if (!this.effectsState) return;
-    // Find the preset in the LED user presets or built-ins via findPreset
-    const userPresets = this.getUserPresets();
-    const preset = findPreset(presetId, userPresets);
-    if (!preset) return;
-    this.effectsState.updateLed({ primaryColor: preset.primaryColor });
-    if (preset.secondaryColor) {
-      this.effectsState.updateLed({ secondaryColor: preset.secondaryColor });
-    }
-    this.notifyObservers();
-  }
-
-  /**
-   * Get all user-created color presets.
-   * Note: LED user presets are no longer stored in the VM. Returns empty array
-   * since preset management is now owned by EffectsConfigState / preset panels.
-   */
-  getUserPresets(): LedColorPreset[] {
-    return [];
-  }
-
-  /**
-   * Create and persist a new user color preset.
-   * No-op: preset management is now owned by EffectsConfigState.
-   */
-  addUserPreset(_name: string, _primaryColor: string): void {
-    // No-op: LED user preset management moved to EffectsConfigState
-  }
-
-  /**
-   * Remove a user-created preset by ID.
-   * No-op: preset management is now owned by EffectsConfigState.
-   */
-  removeUserPreset(_presetId: string): void {
-    // No-op: LED user preset management moved to EffectsConfigState
-  }
-
-  /**
-   * Get the LED pattern animation speed multiplier (0.1-5.0, default 1.0)
-   */
-  getLedPatternSpeed(): number {
-    return this.effectsState?.led.patternSpeed ?? 1.0;
-  }
-
-  /**
-   * Set the LED pattern animation speed multiplier, clamped to 0.1-5.0
-   */
-  setLedPatternSpeed(speed: number): void {
-    this.effectsState?.updateLed({ patternSpeed: Math.max(0.1, Math.min(5.0, speed)) });
-    this.notifyObservers();
-  }
-
-  getLedColorMode(): "unified" | "per-hand" | "prop-matched" {
-    return this.effectsState?.led.colorMode ?? "unified";
-  }
-
-  setLedColorMode(mode: "unified" | "per-hand" | "prop-matched"): void {
-    this.effectsState?.updateLed({ colorMode: mode });
-    this.notifyObservers();
-  }
-
-  // ============================================================================
   // EFFORT PRESET
   // ============================================================================
 
@@ -721,21 +479,9 @@ export class AnimationVisibilityStateManager {
   }
 
   // ============================================================================
-  // PER-TIP EFFECT / EFFORT MAPS
-  // tipEffectMap delegates to EffectsConfigState; tipEffortMap stays in settings.
+  // PER-TIP EFFORT MAP
+  // (tipEffectMap moved to EffectsConfigState; tipEffortMap stays here)
   // ============================================================================
-
-  getTipEffectMap(): TipEffectMap {
-    return this.effectsState?.tipEffectMap ?? {};
-  }
-
-  setTipEffectMap(map: TipEffectMap): void {
-    if (this.effectsState) {
-      this.effectsState.setTipEffectMap(map);
-    }
-    this.syncDarkModeFromMap();
-    this.notifyObservers();
-  }
 
   getTipEffortMap(): TipEffortMap {
     return this.settings.tipEffortMap;
@@ -747,76 +493,26 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
+  // ============================================================================
+  // ACTIVE EFFECT — thin delegates kept for fallback contexts without provider
+  // ============================================================================
+
   /**
    * Set a single active effect across all tips. Passing "none" clears the map.
-   * Delegates to EffectsConfigState.setActiveEffect.
+   * Delegates to effectsConfigState when wired; no-op otherwise.
+   * Fallback for UI contexts that don't have the effects-config-context provider.
    */
   setActiveEffect(effect: EffectType): void {
-    if (this.effectsState) {
-      this.effectsState.setActiveEffect(effect as string);
-    }
-    this.syncDarkModeFromMap();
+    this.effectsConfigState?.setActiveEffect(effect as string);
     this.notifyObservers();
   }
 
   /**
-   * Return the globally-active effect, or "none" if the map is empty or has no wildcard.
+   * Return the globally-active effect, or "none" if not wired.
+   * Fallback for UI contexts that don't have the effects-config-context provider.
    */
   getActiveEffect(): EffectType {
-    return (this.effectsState?.activeEffect ?? "none") as EffectType;
-  }
-
-  /**
-   * Return true if any tip assignment uses the given effect.
-   */
-  hasEffect(effect: EffectType): boolean {
-    const map = this.effectsState?.tipEffectMap ?? {};
-    return Object.values(map).some(a => a.effect === effect);
-  }
-
-  /**
-   * Return true if trails are the active effect in the map.
-   */
-  isTrailsActive(): boolean {
-    return this.hasEffect("trails");
-  }
-
-  /**
-   * Return true if any dark-mode-requiring effect (fire, charcoal, LED) is in the map.
-   */
-  isAnyDarkModeEffectActive(): boolean {
-    const darkEffects: EffectType[] = ["fire", "charcoal", "led"];
-    const map = this.effectsState?.tipEffectMap ?? {};
-    return Object.values(map).some(a => darkEffects.includes(a.effect as EffectType));
-  }
-
-  /**
-   * Sync dark mode based on the current tipEffectMap contents.
-   * Forces dark mode on when a dark-requiring effect is active, and restores
-   * the previous dark mode state when the last such effect is removed.
-   */
-  private syncDarkModeFromMap(): void {
-    const needsDarkMode = this.isAnyDarkModeEffectActive();
-    if (needsDarkMode) {
-      if (this.darkModeBeforeEffect === null) {
-        this.darkModeBeforeEffect = this.settings.darkMode;
-      }
-      if (!this.settings.darkMode) {
-        this.settings.darkMode = true;
-        this.syncDarkModeClass();
-        this.updateMotionColorsCache();
-      }
-    } else {
-      if (this.darkModeBeforeEffect !== null) {
-        const restore = this.darkModeBeforeEffect;
-        this.darkModeBeforeEffect = null;
-        if (this.settings.darkMode !== restore) {
-          this.settings.darkMode = restore;
-          this.syncDarkModeClass();
-          this.updateMotionColorsCache();
-        }
-      }
-    }
+    return (this.effectsConfigState?.activeEffect ?? "none") as EffectType;
   }
 
   // ============================================================================
@@ -851,33 +547,6 @@ export class AnimationVisibilityStateManager {
 
   toggleMotionAwarePaths(): void {
     this.setMotionAwarePaths(!this.settings.motionAwarePaths);
-  }
-
-  // ============================================================================
-  // PER-EFFECT LAYER OVERRIDES (behind/front props)
-  // Delegates to EffectsConfigState.
-  // ============================================================================
-
-  getEffectLayer(effectId: string): EffectLayerMode {
-    if (this.effectsState) {
-      return this.effectsState.getEffectLayer(effectId);
-    }
-    return "behind";
-  }
-
-  setEffectLayer(effectId: string, mode: EffectLayerMode): void {
-    if (this.effectsState) {
-      this.effectsState.setEffectLayer(effectId, mode);
-    }
-    this.notifyObservers();
-  }
-
-  toggleEffectLayer(effectId: string): void {
-    this.setEffectLayer(effectId, this.getEffectLayer(effectId) === "behind" ? "front" : "behind");
-  }
-
-  getEffectLayerOverrides(): Readonly<Record<string, EffectLayerMode>> {
-    return this.effectsState?.effectLayerOverrides ?? {};
   }
 
   /**

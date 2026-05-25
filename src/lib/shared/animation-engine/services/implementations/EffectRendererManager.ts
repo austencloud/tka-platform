@@ -600,27 +600,28 @@ export class EffectRendererManager {
   }
 
   /**
-   * Initialize LED state from visibility manager values.
+   * Initialize LED state from EffectsConfigState values.
    */
-  initLedConfigFromVM(vm: AnimationVisibilityStateManager): void {
-    this.ledConfig.enabled = vm.hasEffect("led");
-    this.ledConfig.patternId = vm.getLedPatternId();
-    this.ledConfig.primaryColor = vm.getLedPrimaryColor();
-    this.ledConfig.secondaryColor = vm.getLedSecondaryColor();
-    this.ledConfig.colorMode = vm.getLedColorMode();
+  initLedConfigFromEffectsState(ecs: EffectsConfigState | null): void {
+    const tipMap = ecs?.tipEffectMap ?? {};
+    this.ledConfig.enabled = Object.values(tipMap).some(a => a.effect === "led");
+    this.ledConfig.patternId = ecs?.led.patternId ?? "solid";
+    this.ledConfig.primaryColor = ecs?.led.primaryColor ?? "#00ff88";
+    this.ledConfig.secondaryColor = ecs?.led.secondaryColor ?? "#ffffff";
+    this.ledConfig.colorMode = ecs?.led.colorMode ?? "unified";
   }
 
   /**
-   * Sync LED config from visibility manager. Returns a partial diff for
+   * Sync LED config from EffectsConfigState. Returns a partial diff for
    * batched setLedConfig() call.
    */
-  diffLedConfigFromVM(vm: AnimationVisibilityStateManager): Partial<LedOverlayConfig> {
+  diffLedConfigFromEffectsState(ecs: EffectsConfigState | null): Partial<LedOverlayConfig> {
     const ledEnabled = this.hasEffectInEffectiveMap("led");
-    const ledPatternId = vm.getLedPatternId();
-    const ledColor = vm.getLedPrimaryColor();
-    const ledSecondaryColor = vm.getLedSecondaryColor();
-    const ledBrightness = ledBrightnessToFloat(vm.getLedBrightness());
-    const ledColorMode = vm.getLedColorMode();
+    const ledPatternId = ecs?.led.patternId ?? "solid";
+    const ledColor = ecs?.led.primaryColor ?? "#00ff88";
+    const ledSecondaryColor = ecs?.led.secondaryColor ?? "#ffffff";
+    const ledBrightness = ledBrightnessToFloat(ecs?.led.brightness ?? 5);
+    const ledColorMode = ecs?.led.colorMode ?? "unified";
 
     const ledDiff: Partial<LedOverlayConfig> = {};
     if (ledEnabled !== this.ledConfig.enabled) ledDiff.enabled = ledEnabled;

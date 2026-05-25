@@ -45,11 +45,15 @@
   // Visibility state
   const visibilityManager = getAnimationVisibilityManager();
   let updateCounter = $state(0);
-  let currentTrailStyle = $state<TrailVisibility>(visibilityManager.isTrailsActive() ? "on" : "off");
+  function isTrailsActive(): boolean {
+    const tipMap = visibilityManager.effectsConfigState?.tipEffectMap ?? {};
+    return Object.values(tipMap).some(a => a.effect === "trails");
+  }
+  let currentTrailStyle = $state<TrailVisibility>(isTrailsActive() ? "on" : "off");
 
   onMount(() => {
     const handleChange = () => {
-      currentTrailStyle = visibilityManager.isTrailsActive() ? "on" : "off";
+      currentTrailStyle = isTrailsActive() ? "on" : "off";
       updateCounter++;
     };
     visibilityManager.registerObserver(handleChange);

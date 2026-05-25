@@ -23,6 +23,7 @@
   import "./pill-nav/pill-nav.css";
   import TempoControl from "./TempoControl.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
   import { EFFECT_LABELS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
@@ -140,6 +141,12 @@
 
   // ── Reactive bridge to animation visibility manager ──
   const vm = getAnimationVisibilityManager();
+  let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null = null;
+  try {
+    effectsConfigState = getEffectsConfigContext();
+  } catch {
+    // Context may not be available in all host environments
+  }
   let vmVersion = $state(0);
   function onVmChanged(): void { vmVersion++; }
   vm.registerObserver(onVmChanged);
@@ -155,7 +162,8 @@
   // ── Section summaries ──
   const effectsSummary = $derived.by(() => {
     void vmVersion;
-    return computeEffectsSummary(vm.getActiveEffect(), EFFECT_LABELS);
+    const activeEffect = effectsConfigState?.activeEffect ?? vm.getActiveEffect();
+    return computeEffectsSummary(activeEffect, EFFECT_LABELS);
   });
 
   const effortSummary = $derived(activeEffort.label);

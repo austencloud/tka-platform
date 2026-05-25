@@ -137,12 +137,14 @@
   // The visibility manager uses an observer pattern (not Svelte runes), so we
   // bridge it into reactive state with $state + registerObserver.
   const visibilityManager = getAnimationVisibilityManager();
-  let globalTipEffectMap = $state<TipEffectMap>(visibilityManager.getTipEffectMap());
+  let globalTipEffectMap = $state<TipEffectMap>(
+    visibilityManager.effectsConfigState?.tipEffectMap ?? {}
+  );
 
   $effect(() => {
     // Sync on mount and whenever visibility settings change
     const updateMap = () => {
-      globalTipEffectMap = visibilityManager.getTipEffectMap();
+      globalTipEffectMap = visibilityManager.effectsConfigState?.tipEffectMap ?? {};
     };
     visibilityManager.registerObserver(updateMap);
     updateMap();
@@ -342,30 +344,6 @@
   let ringPulsePhase = $state(0);
   const ringPulse = $derived(0.6 + 0.4 * Math.sin(ringPulsePhase));
 
-  let cameraFocusInitialized = false;
-  $effect(() => {
-    const idx = viewer3DState.selectedPerformerIndex;
-    if (!cameraFocusInitialized) {
-      cameraFocusInitialized = true;
-      return;
-    }
-    if (idx !== null) {
-      const p = performerManager.performers[idx];
-      if (!p) return;
-      const wx = p.position.x;
-      const wz = p.position.z + stageZOffset;
-      const gridY = stageGroundOffset;
-      viewer3DState.snapCameraTo(
-        { x: wx, y: gridY + 2.5, z: wz + 5.0 },
-        { x: wx, y: gridY - 0.2, z: wz },
-      );
-    } else {
-      viewer3DState.snapCameraTo(
-        { x: 0, y: stageGroundOffset, z: stageZOffset + 3.5 },
-        { x: 0, y: stageGroundOffset, z: stageZOffset },
-      );
-    }
-  });
 
   // Reset environment readiness when the background type changes so scenes
   // that need async loading (GLB models, textures) can re-report progress.
@@ -423,6 +401,7 @@
       facingAngle={performer.facingAngle}
       planeMode={performer.planeMode}
       avatarState={performer}
+      avatarId={performer.avatarModelId}
       visiblePlanes={explicitPlanes}
       gridMode={performerGridMode}
       bluePropType={resolvePerformerProp(performer, bluePropType)}
@@ -446,60 +425,62 @@
       {/snippet}
     </PerformerRig>
 
-    {#if viewer3DState.selectedPerformerIndex === i}
-      {@const glowColor = Number.parseInt(getPerformerColor(i).slice(1), 16)}
-      {@const groundLevel = userProportionsState.groundY + stageGroundOffset}
+    {@const isSelected = viewer3DState.selectedPerformerIndex === i}
+    {@const isAllMode = viewer3DState.selectedPerformerIndex === null}
+    {@const glowColor = Number.parseInt(getPerformerColor(i).slice(1), 16)}
+    {@const groundLevel = userProportionsState.groundY + stageGroundOffset}
 
-      <T.PointLight
-        position={[performer.position.x, stageGroundOffset + 2.5, performer.position.z + 0.3]}
-        intensity={6}
-        color={0xfff5e6}
-        distance={5}
-        decay={1.5}
-      />
+    <T.PointLight
+      position={[performer.position.x, stageGroundOffset + 2.5, performer.position.z + 0.3]}
+      intensity={isSelected ? 6 : 0}
+      color={0xfff5e6}
+      distance={5}
+      decay={1.5}
+    />
 
-      <T.Group
-        position={[performer.position.x, groundLevel + 0.015, performer.position.z]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
-        <T.Mesh>
-          <T.RingGeometry args={[0.42, 0.58, 64]} />
-          <T.MeshBasicMaterial
-            color={glowColor}
-            transparent
-            opacity={ringPulse * 0.9}
-            blending={AdditiveBlending}
-            depthWrite={false}
-          />
-        </T.Mesh>
-        <T.Mesh>
-          <T.RingGeometry args={[0.58, 1.0, 64]} />
-          <T.MeshBasicMaterial
-            color={glowColor}
-            transparent
-            opacity={ringPulse * 0.3}
-            blending={AdditiveBlending}
-            depthWrite={false}
-          />
-        </T.Mesh>
-        <T.Mesh>
-          <T.CircleGeometry args={[0.42, 64]} />
-          <T.MeshBasicMaterial
-            color={glowColor}
-            transparent
-            opacity={0.15}
-          />
-        </T.Mesh>
-      </T.Group>
-    {:else if viewer3DState.selectedPerformerIndex === null}
-      <T.Mesh
-        position={[performer.position.x, userProportionsState.groundY + stageGroundOffset + 0.01, performer.position.z]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
-        <T.CircleGeometry args={[0.35, 32]} />
-        <T.MeshBasicMaterial color={0x6b7280} transparent opacity={0.15} />
+    <T.Group
+      position={[performer.position.x, groundLevel + 0.015, performer.position.z]}
+      rotation={[-Math.PI / 2, 0, 0]}
+      visible={isSelected}
+    >
+      <T.Mesh>
+        <T.RingGeometry args={[0.42, 0.58, 64]} />
+        <T.MeshBasicMaterial
+          color={glowColor}
+          transparent
+          opacity={ringPulse * 0.9}
+          blending={AdditiveBlending}
+          depthWrite={false}
+        />
       </T.Mesh>
-    {/if}
+      <T.Mesh>
+        <T.RingGeometry args={[0.58, 1.0, 64]} />
+        <T.MeshBasicMaterial
+          color={glowColor}
+          transparent
+          opacity={ringPulse * 0.3}
+          blending={AdditiveBlending}
+          depthWrite={false}
+        />
+      </T.Mesh>
+      <T.Mesh>
+        <T.CircleGeometry args={[0.42, 64]} />
+        <T.MeshBasicMaterial
+          color={glowColor}
+          transparent
+          opacity={0.15}
+        />
+      </T.Mesh>
+    </T.Group>
+
+    <T.Mesh
+      position={[performer.position.x, userProportionsState.groundY + stageGroundOffset + 0.01, performer.position.z]}
+      rotation={[-Math.PI / 2, 0, 0]}
+      visible={isAllMode}
+    >
+      <T.CircleGeometry args={[0.35, 32]} />
+      <T.MeshBasicMaterial color={0x6b7280} transparent opacity={0.15} />
+    </T.Mesh>
 
     <!-- Floating numbered badge above performer head -->
     <T.Group

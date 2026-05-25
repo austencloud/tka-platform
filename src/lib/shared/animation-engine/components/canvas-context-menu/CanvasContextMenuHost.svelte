@@ -12,6 +12,7 @@
   import { buildCanvasContextMenuItems } from "./CanvasContextMenuBuilder";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   interface Props {
     disassembled?: boolean;
     onToggleDisassemble?: () => void;
@@ -41,6 +42,12 @@
   let menuItemsVersion: number = $state(0);
 
   const visibilityManager = getAnimationVisibilityManager();
+  let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null = null;
+  try {
+    effectsConfigState = getEffectsConfigContext();
+  } catch {
+    // Context not available in some host environments
+  }
 
   function onSettingsChanged(): void {
     menuItemsVersion++;
@@ -62,6 +69,7 @@
 
     return buildCanvasContextMenuItems({
       visibilityManager,
+      effectsConfigState,
       disassembled,
       onToggleDisassemble,
       captureEffectDiagnostics,

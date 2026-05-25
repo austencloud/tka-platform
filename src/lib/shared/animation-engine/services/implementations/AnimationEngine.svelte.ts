@@ -39,7 +39,7 @@ import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/serv
 import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
+import type { TipEffortMap } from "../../domain/types/TipEffectTypes";
 
 // Services
 import { CanvasResizer } from "./CanvasResizer.svelte";
@@ -85,8 +85,26 @@ import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpo
 import { EffectRendererManager } from "./EffectRendererManager";
 import { FrameParameterBuilder } from "./FrameParameterBuilder";
 import { PropTypeManager } from "./PropTypeManager";
-import type { EffectType } from '../../domain/types/TipEffectTypes';
+import type { EffectType, TipEffectMap } from '../../domain/types/TipEffectTypes';
 import type { FireColorCurve } from '../../domain/types/FireTypes';
+import { semanticToCharcoalParams, type CharcoalSparkParams } from '../../domain/types/CharcoalSparkTypes';
+
+// ── Effects helper utilities ────────────────────────────────────────────────
+
+/** Returns true if any entry in the map has the given effect type. */
+function hasEffectInMap(map: TipEffectMap | undefined, effect: string): boolean {
+  if (!map) return false;
+  return Object.values(map).some(a => a.effect === effect);
+}
+
+/** Extract CharcoalSparkParams from EffectsConfigState, with defaults. */
+function getCharcoalParamsFromConfig(ecs: EffectsConfigState | null | undefined): CharcoalSparkParams {
+  if (!ecs) {
+    return semanticToCharcoalParams({ intensity: 0.5, spread: 0.5, glow: 0.6 });
+  }
+  const { intensity, spread, glow, coreColor, midColor, coolColor } = ecs.charcoal;
+  return semanticToCharcoalParams({ intensity, spread, glow }, { coreColor, midColor, coolColor });
+}
 
 /**
  * Props passed to engine.update()
@@ -329,6 +347,9 @@ export class AnimationEngine {
   setEffectsConfigState(state: EffectsConfigState | null): void {
     this.effectsConfigState = state;
     this.effectRendererManager.effectsConfigState = state;
+    if (this.visibilitySyncService) {
+      this.visibilitySyncService.effectsConfigState = state;
+    }
   }
 
   /**
@@ -394,30 +415,31 @@ export class AnimationEngine {
 
     // Initialize visibility manager
     const vm = this.getVM();
+    const ecs = this.effectsConfigState;
     this.prevDarkMode = vm.isDarkMode();
-    this.prevTrailsActive = vm.isTrailsActive();
+    this.prevTrailsActive = hasEffectInMap(ecs?.tipEffectMap, "trails");
     this.prevPropsVisible = vm.getVisibility("props");
-    this.prevColorBlend = vm.getFireColorBlend();
-    this.prevFireIntensity = vm.getFireIntensity();
-    this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
+    this.prevColorBlend = ecs?.fire.colorBlend ?? 0.5;
+    this.prevFireIntensity = ecs?.fire.intensity ?? 0.7;
+    this.prevCharcoalParamsJson = JSON.stringify(getCharcoalParamsFromConfig(ecs));
     this.prevEffortPreset = vm.getEffortPreset();
 
-    // Initialize effect renderer manager's prev* flags from VM
+    // Initialize effect renderer manager's prev* flags from EffectsConfigState
     const erm = this.effectRendererManager;
-    erm.prevHasFireTips = vm.hasEffect("fire");
-    erm.prevHasCharcoalTips = vm.hasEffect("charcoal");
-    erm.prevHasZapTips = vm.hasEffect("zap");
-    erm.prevHasSparklesTips = vm.hasEffect("sparkles");
-    erm.prevHasEchoTips = vm.hasEffect("echo");
-    erm.prevHasBloomTips = vm.hasEffect("bloom");
-    erm.prevHasWaterTips = vm.hasEffect("water");
-    erm.prevHasBubblesTips = vm.hasEffect("bubbles");
-    erm.prevHasPetalsTips = vm.hasEffect("petals");
-    erm.prevHasSmokeTips = vm.hasEffect("smoke");
-    erm.prevHasInkTips = vm.hasEffect("ink");
-    erm.prevHasFrostTips = vm.hasEffect("frost");
-    erm.prevHasSilkTips = vm.hasEffect("silk");
-    erm.prevHasPulseTips = vm.hasEffect("pulse");
+    erm.prevHasFireTips = hasEffectInMap(ecs?.tipEffectMap, "fire");
+    erm.prevHasCharcoalTips = hasEffectInMap(ecs?.tipEffectMap, "charcoal");
+    erm.prevHasZapTips = hasEffectInMap(ecs?.tipEffectMap, "zap");
+    erm.prevHasSparklesTips = hasEffectInMap(ecs?.tipEffectMap, "sparkles");
+    erm.prevHasEchoTips = hasEffectInMap(ecs?.tipEffectMap, "echo");
+    erm.prevHasBloomTips = hasEffectInMap(ecs?.tipEffectMap, "bloom");
+    erm.prevHasWaterTips = hasEffectInMap(ecs?.tipEffectMap, "water");
+    erm.prevHasBubblesTips = hasEffectInMap(ecs?.tipEffectMap, "bubbles");
+    erm.prevHasPetalsTips = hasEffectInMap(ecs?.tipEffectMap, "petals");
+    erm.prevHasSmokeTips = hasEffectInMap(ecs?.tipEffectMap, "smoke");
+    erm.prevHasInkTips = hasEffectInMap(ecs?.tipEffectMap, "ink");
+    erm.prevHasFrostTips = hasEffectInMap(ecs?.tipEffectMap, "frost");
+    erm.prevHasSilkTips = hasEffectInMap(ecs?.tipEffectMap, "silk");
+    erm.prevHasPulseTips = hasEffectInMap(ecs?.tipEffectMap, "pulse");
 
     // fireDefaultsLoader - load on demand via getter
     try {
@@ -428,7 +450,7 @@ export class AnimationEngine {
     }
 
     // Build fireConfig from base params + slider mappings
-    this.prevFireTurbulence = vm.getFireTurbulence();
+    this.prevFireTurbulence = ecs?.fire.turbulence ?? 0.5;
     erm.fireConfig.colorBlend = this.prevColorBlend;
     erm.fireConfig.intensity = this.prevFireIntensity;
     erm.fireConfig.flameHeight = this.prevFireIntensity;
@@ -441,26 +463,27 @@ export class AnimationEngine {
       ...basePhysics,
       ...intensityOverrides,
     };
-    erm.fireConfig.colorCurve = vm.getFireColorCurve() ?? BASE_COLOR_CURVE;
-    erm.fireConfig.charcoalParams = vm.getCharcoalParams();
+    erm.fireConfig.colorCurve = ecs?.fire.colorCurve ?? BASE_COLOR_CURVE;
+    erm.fireConfig.charcoalParams = getCharcoalParamsFromConfig(ecs);
 
-    // Initialize LED state from visibility manager
-    erm.initLedConfigFromVM(vm);
+    // Initialize LED state from EffectsConfigState
+    erm.initLedConfigFromEffectsState(ecs);
 
     this.state.visibilityState = {
       grid: vm.getGridMode() !== "none",
       stepNumbers: vm.getVisibility("stepNumbers"),
       props: vm.getVisibility("props"),
-      trails: vm.isTrailsActive(),
+      trails: hasEffectInMap(ecs?.tipEffectMap, "trails"),
       tkaGlyph: vm.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       darkMode: vm.isDarkMode(),
       wordHeader: vm.getVisibility("wordHeader"),
-      activeEffect: vm.getActiveEffect(),
-      tipEffectMap: vm.getTipEffectMap(),
+      activeEffect: (ecs?.activeEffect ?? "none") as EffectType,
+      tipEffectMap: ecs?.tipEffectMap ?? {},
     };
 
     // Initialize services that don't need renderer
     this.visibilitySyncService = new AnimationVisibilitySynchronizer(this.visibilityManagerOverride ?? undefined);
+    this.visibilitySyncService.effectsConfigState = this.effectsConfigState;
     this.unsubscribeVisibility = this.visibilitySyncService.subscribe(
       (state) => this.handleVisibilityChange(state)
     );
@@ -846,8 +869,8 @@ export class AnimationEngine {
         canvasSize: this.canvasSize,
       },
       visibility: {
-        activeEffect: vm.getActiveEffect(),
-        tipEffectMap: vm.getTipEffectMap(),
+        activeEffect: this.effectsConfigState?.activeEffect ?? "none",
+        tipEffectMap: this.effectsConfigState?.tipEffectMap ?? {},
         effortPreset: settings.effortPreset,
         pathShape: settings.pathShape,
       },
@@ -1226,7 +1249,7 @@ export class AnimationEngine {
     }
 
     // Trigger render when trails visibility changes
-    const trailsInMap = vm.isTrailsActive();
+    const trailsInMap = hasEffectInMap(this.effectsConfigState?.tipEffectMap, "trails");
     if (trailsInMap !== this.prevTrailsActive) {
       const trailsTurnedOff = this.prevTrailsActive && !trailsInMap;
       this.prevTrailsActive = trailsInMap;
@@ -1267,10 +1290,11 @@ export class AnimationEngine {
     erm.syncEffectFlagsFromEffectiveMap();
 
     // Sync fire slider values + color curve -> physics
-    const colorBlend = vm.getFireColorBlend();
-    const fireIntensity = vm.getFireIntensity();
-    const fireTurbulence = vm.getFireTurbulence();
-    const fireColorCurve = vm.getFireColorCurve();
+    const ecs = this.effectsConfigState;
+    const colorBlend = ecs?.fire.colorBlend ?? 0.5;
+    const fireIntensity = ecs?.fire.intensity ?? 0.7;
+    const fireTurbulence = ecs?.fire.turbulence ?? 0.5;
+    const fireColorCurve = ecs?.fire.colorCurve ?? null;
 
     const slidersChanged =
       colorBlend !== this.prevColorBlend ||
@@ -1369,15 +1393,16 @@ export class AnimationEngine {
 
     // Sync charcoal params independently
     if (erm.prevHasCharcoalTips && erm.charcoalRenderer?.isInitialized()) {
-      const currentCharcoalJson = JSON.stringify(vm.getCharcoalParams());
+      const currentCharcoalParams = getCharcoalParamsFromConfig(this.effectsConfigState);
+      const currentCharcoalJson = JSON.stringify(currentCharcoalParams);
       if (currentCharcoalJson !== this.prevCharcoalParamsJson) {
         this.prevCharcoalParamsJson = currentCharcoalJson;
-        erm.charcoalRenderer.setParams(vm.getCharcoalParams());
+        erm.charcoalRenderer.setParams(currentCharcoalParams);
       }
     }
 
-    // Sync LED effect from visibility manager
-    const ledDiff = erm.diffLedConfigFromVM(vm);
+    // Sync LED effect from EffectsConfigState
+    const ledDiff = erm.diffLedConfigFromEffectsState(this.effectsConfigState);
     if (Object.keys(ledDiff).length > 0) {
       erm.setLedConfig(ledDiff);
     }

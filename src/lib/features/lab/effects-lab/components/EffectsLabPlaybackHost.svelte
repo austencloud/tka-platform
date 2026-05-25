@@ -114,12 +114,11 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   >("none");
 
   function syncActiveMode() {
-    const active = visibilityManager.getActiveEffect();
+    const active = effectsConfigState.activeEffect ?? "none";
     vmActiveMode = active === "none" ? "none" : active;
   }
 
-  // Poll the VM to keep vmActiveMode in sync (the VM uses an observer
-  // pattern but $effect doesn't auto-track method calls on plain objects).
+  // Poll effectsConfigState to keep vmActiveMode in sync.
   $effect(() => {
     syncActiveMode();
     visibilityManager.registerObserver(syncActiveMode);
@@ -134,7 +133,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   let animationState = $derived(playback?.animationState ?? null);
 
   // Save global effect states so we can restore them when leaving the Effects Lab.
-  const savedEffectMap = { ...visibilityManager.getTipEffectMap() };
+  const savedEffectMap = { ...(effectsConfigState.tipEffectMap ?? {}) };
 
   // Playback state polling
   $effect(() => {
@@ -255,7 +254,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
     playback?.dispose();
 
     // Restore global effect states that were active before the Effects Lab took over
-    visibilityManager.setTipEffectMap(savedEffectMap);
+    effectsConfigState.setTipEffectMap(savedEffectMap);
   });
 
   // ─── Sequence loading ─────────────────────────────────────────────────

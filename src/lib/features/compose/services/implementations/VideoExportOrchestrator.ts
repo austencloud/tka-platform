@@ -266,9 +266,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // zeroed state. Without warmup, the pressure field is unresolved and
       // produces concentric ring artifacts. Run a short warmup at step 0
       // so the simulation reaches steady state before capture begins.
+      const ecs = visibilityManager.effectsConfigState;
+      const tipMap = ecs?.tipEffectMap ?? {};
+      const hasEffectInMap = (effect: string) => Object.values(tipMap).some(a => a.effect === effect);
       const needsFluidWarmup =
-        visibilityManager.hasEffect("fire") ||
-        visibilityManager.hasEffect("charcoal");
+        hasEffectInMap("fire") ||
+        hasEffectInMap("charcoal");
       if (needsFluidWarmup) {
         const WARMUP_FRAMES = 60;
         for (let w = 0; w < WARMUP_FRAMES; w++) {
@@ -772,20 +775,21 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   ): TipEffectMap | null {
     if (!overrides) return null;
 
-    const saved = { ...visibilityManager.getTipEffectMap() };
+    const ecs = visibilityManager.effectsConfigState;
+    const saved = { ...(ecs?.tipEffectMap ?? {}) };
 
     // Determine which single effect (if any) should be active for the export.
     // Priority: fire > charcoal > led > trails > none.
-    if (overrides.fire) {
-      visibilityManager.setActiveEffect("fire");
-    } else if (overrides.charcoal) {
-      visibilityManager.setActiveEffect("charcoal");
-    } else if (overrides.led) {
-      visibilityManager.setActiveEffect("led");
-    } else if (overrides.trails) {
-      visibilityManager.setActiveEffect("trails");
+    const effect = overrides.fire ? "fire"
+      : overrides.charcoal ? "charcoal"
+      : overrides.led ? "led"
+      : overrides.trails ? "trails"
+      : "none";
+
+    if (ecs) {
+      ecs.setActiveEffect(effect);
     } else {
-      visibilityManager.setActiveEffect("none");
+      visibilityManager.setActiveEffect(effect as Parameters<typeof visibilityManager.setActiveEffect>[0]);
     }
 
     return saved;
@@ -799,7 +803,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     saved: TipEffectMap | null
   ): void {
     if (!saved) return;
-    visibilityManager.setTipEffectMap(saved);
+    const ecs = visibilityManager.effectsConfigState;
+    if (ecs) {
+      ecs.setTipEffectMap(saved);
+    }
   }
 
   private waitForAnimationFrame(): Promise<void> {

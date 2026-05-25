@@ -24,10 +24,17 @@
   import PictographPanel from "./visibility/PictographPanel.svelte";
   import AnimationPanel from "./visibility/AnimationPanel.svelte";
   import ImagePanel from "./visibility/ImagePanel.svelte";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
 
   const vm = getVisibilityStateManager();
   const avm = getAnimationVisibilityManager();
   const icm = getImageCompositionManager();
+  let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null = null;
+  try {
+    effectsConfigState = getEffectsConfigContext();
+  } catch {
+    // Context may not be set in all host environments
+  }
 
   let haptic: HapticFeedback | null = null;
 
@@ -78,7 +85,12 @@
   const animPathLines = $derived.by(() => { void version; return avm.getSettings().pathLines; });
   const animWordHeader = $derived.by(() => { void version; return avm.getSettings().wordHeader; });
   const animProgressBar = $derived.by(() => { void version; return avm.getSettings().progressBar; });
-  const animTrailStyle = $derived.by(() => { void version; return avm.isTrailsActive() ? "on" : "off"; });
+  const animTrailStyle = $derived.by(() => {
+    void version;
+    const tipMap = effectsConfigState?.tipEffectMap ?? {};
+    const trailsActive = Object.values(tipMap).some(a => a.effect === "trails");
+    return trailsActive ? "on" : "off";
+  });
   const animPlaybackMode = $derived.by(() => { void version; return avm.getPlaybackMode(); });
   const animBpm = $derived.by(() => { void version; return avm.getBpm(); });
   const animTkaGlyph = $derived.by(() => { void version; return avm.getSettings().tkaGlyph; });
@@ -139,7 +151,11 @@
 
   // ── Animation specialized handlers ──
   function handleTrailStyleChange(style: TrailVisibility) {
-    tap(() => avm.setActiveEffect(style === "on" ? "trails" : "none"));
+    tap(() => {
+      const effect = style === "on" ? "trails" : "none";
+      if (effectsConfigState) effectsConfigState.setActiveEffect(effect);
+      else avm.setActiveEffect(effect as Parameters<typeof avm.setActiveEffect>[0]);
+    });
   }
 
   function handlePlaybackModeChange(mode: PlaybackMode) {
