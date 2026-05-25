@@ -36,6 +36,7 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
@@ -170,9 +171,10 @@
   const shortCodeManager = new ShortCodeManager(stubBrowseLoader);
 
   function applyEffectToConfig(effect: EffectType) {
-    // Effects are toggled via the tipEffectMap — set the cell-wide ("*") key
-    // to the selected effect. "none" disables all effects.
-    effectsConfig.setTipEffectMap({ "*": { effect } });
+    const map: import("$lib/shared/animation-engine/domain/types/TipEffectTypes").TipEffectMap =
+      effect === "none" ? {} : { "*": { effect } };
+    effectsConfig.setTipEffectMap(map);
+    getAnimationVisibilityManager().setTipEffectMap(map);
   }
 
   function handleEffectChange(effect: EffectType) {
