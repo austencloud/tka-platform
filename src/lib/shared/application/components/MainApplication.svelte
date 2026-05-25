@@ -19,7 +19,6 @@ import { getApplicationInitializer } from "$lib/shared/application/getApplicatio
   import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
-  import { getAttributionPromptState } from "../../attribution/state/attribution-prompt-state.svelte";
   import SendSequenceSheetHost from "../../inbox/components/SendSequenceSheetHost.svelte";
   import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
   import { PropType } from "../../pictograph/prop/domain/enums/PropType";
@@ -66,10 +65,10 @@ import type { SheetType } from "../../navigation/services/contracts/types";
   import type { ModuleId } from "../../navigation/domain/types";
   import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
   import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
-  import { getAttributionPromptTrigger } from "../../attribution/getAttributionPromptTrigger";
   import { isModuleAccessible } from "../../auth/domain/guest-access-config";
   import { resolveAccessTier } from "../../auth/domain/AccessTier";
   import { isPremiumOrAbove } from "../../auth/domain/models/UserRole";
+  import { detectAndCaptureScanEntry } from "../../analytics/scan-attribution";
   // Get DI container from context
 // Services - resolved lazily
   let initService: ApplicationInitializer | null = $state(null);
@@ -300,20 +299,8 @@ import type { SheetType } from "../../navigation/services/contracts/types";
 
         // Progress: Fully ready - triggers loading screen fade out with random ready message
         (window as any).__tkaLoadProgress?.(100, "Ready");
+        detectAndCaptureScanEntry();
 
-        // Record session start for attribution prompt trigger. On first-ever
-        // boot this also locks in the "eligibleAfter" date so the deferred
-        // prompt actually becomes eligible instead of drifting forward.
-        try {
-          getAttributionPromptTrigger().recordSessionStart();
-        } catch {
-          // Non-critical
-        }
-
-        // Check if deferred prompts should show (after app settles)
-        setTimeout(() => {
-          getAttributionPromptState().checkAndMaybeShow();
-        }, 5000); // Wait 5 seconds after init for smoother UX
       } catch (error) {
         console.error("Application initialization failed:", error);
         setInitializationError(
@@ -593,11 +580,6 @@ import type { SheetType } from "../../navigation/services/contracts/types";
     <ErrorModal />
     <!-- Non-blocking error toasts (warnings, info) -->
     <ErrorToast />
-
-    <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
-    {#await import("../../attribution/components/AttributionPrompt.svelte") then mod}
-      <mod.default />
-    {/await}
 
     <!-- Global Prop Selection Drawer (P key shortcut) -->
     {#if propDrawerState.isOpen}
