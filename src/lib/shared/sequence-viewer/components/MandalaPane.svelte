@@ -1,19 +1,13 @@
 <script lang="ts">
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import MandalaViewerControls from "./MandalaViewerControls.svelte";
-  import MeditationPanel from "./MeditationPanel.svelte";
-  import MeditationOverlay from "./MeditationOverlay.svelte";
   import type { MandalaColorMode, MandalaPresetId } from "./MandalaViewerControls.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { MandalaPathShape, UndulationEasing } from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import type { MandalaPathShape } from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import type { MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
   import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
   import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
   import type { MandalaPathOptions } from "$lib/shared/mandala/services/contracts/types";
-  import { createMeditationSession } from "../state/meditation-session.svelte";
-  import { createMeditationAudioService } from "../services/meditation-audio";
-  import { getPatternCycleTime, type BreathingPattern, type AmbientTrack } from "../domain/meditation-types";
-  import { onMount } from "svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -40,108 +34,10 @@
   const bgColor = "#000000";
   let exporting: boolean = $state(false);
 
-  // ── Meditation state ──────────────────────────────────────────
-  let meditationMode: boolean = $state(false);
-  const meditationSession = createMeditationSession();
-  let audioService: ReturnType<typeof createMeditationAudioService> | null = null;
-
-  onMount(() => {
-    audioService = createMeditationAudioService();
-    return () => {
-      audioService?.dispose();
-      meditationSession.dispose();
-    };
-  });
-
-  const reducedMotion = typeof window !== "undefined"
-    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    : false;
-
   // ── Derived animation params ──────────────────────────────────
   const BASE_PERIOD = 5;
   const period = $derived(BASE_PERIOD / speed);
   const rangeMax = $derived(depth * 2.5);
-
-  const effectiveAnimatePeriod = $derived.by((): number => {
-    if (meditationMode && meditationSession.status === "running" && meditationSession.pattern) {
-      return getPatternCycleTime(meditationSession.pattern);
-    }
-    return period;
-  });
-
-  const effectiveAnimateEasing = $derived.by((): UndulationEasing => {
-    if (meditationMode && meditationSession.status === "running" && meditationSession.pattern) {
-      return meditationSession.pattern.defaultEasing;
-    }
-    return "breathe";
-  });
-
-  const effectiveRotation = $derived.by((): number => {
-    if (meditationMode && reducedMotion) return 0;
-    return rotation;
-  });
-
-  const effectiveTipDx = $derived.by((): number | undefined => {
-    if (meditationMode && meditationSession.holdPulseDx !== undefined) {
-      return meditationSession.holdPulseDx;
-    }
-    return undefined;
-  });
-
-  // ── Meditation handlers ───────────────────────────────────────
-  function enterMeditationMode() {
-    meditationMode = true;
-  }
-
-  function exitMeditationMode() {
-    if (meditationSession.status === "running") {
-      meditationSession.stop();
-    }
-    audioService?.stopAmbient();
-    meditationMode = false;
-  }
-
-  function handleMeditationStart(pattern: BreathingPattern, durationMinutes: number) {
-    meditationSession.start(
-      pattern,
-      durationMinutes,
-      0,
-      rangeMax,
-      handleSessionComplete,
-    );
-  }
-
-  function handleSessionComplete() {
-    audioService?.playCompletionBell();
-    audioService?.stopAmbient();
-  }
-
-  function handleMeditationStop() {
-    meditationSession.stop();
-    audioService?.stopAmbient();
-  }
-
-  function handleAmbientChange(track: AmbientTrack) {
-    if (track === "none") {
-      audioService?.stopAmbient();
-    } else {
-      audioService?.startAmbient(track);
-    }
-  }
-
-  function handleVolumeChange(vol: number) {
-    audioService?.setVolume(vol);
-  }
-
-  function handleMeditateAgain() {
-    if (meditationSession.pattern) {
-      handleMeditationStart(meditationSession.pattern, meditationSession.durationMinutes);
-    }
-  }
-
-  function handleBackToMandala() {
-    exitMeditationMode();
-  }
 
   // ── Color palette system (unchanged) ──────────────────────────
   const PRESET_COLORS: Record<Exclude<MandalaPresetId, "custom">, { pair: [string, string]; morph: string[] }> = {
@@ -450,9 +346,9 @@
       animate={!paused}
       animateMin={0}
       animateMax={rangeMax}
-      animatePeriod={effectiveAnimatePeriod}
-      animateEasing={effectiveAnimateEasing}
-      animateRotation={effectiveRotation}
+      animatePeriod={period}
+      animateEasing="breathe"
+      animateRotation={rotation}
       {pathShape}
       size={containerSize}
       {bluePropType}
@@ -463,61 +359,33 @@
       {palette}
       strokeWidth={lineWeight}
       gradient={gradientColors}
-      tipDx={effectiveTipDx}
     />
-
-    {#if meditationMode}
-      <MeditationOverlay
-        status={meditationSession.status}
-        currentPhase={meditationSession.currentPhase}
-        phaseElapsed={meditationSession.phaseElapsed}
-        phaseDuration={meditationSession.phaseDuration}
-        pattern={meditationSession.pattern}
-        elapsedSeconds={meditationSession.elapsedSeconds}
-        durationMinutes={meditationSession.durationMinutes}
-        breathCount={meditationSession.breathCount}
-        onMeditateAgain={handleMeditateAgain}
-        onBackToMandala={handleBackToMandala}
-      />
-    {/if}
   </div>
 
   <aside class="controls-rail">
-    {#if meditationMode}
-      <MeditationPanel
-        status={meditationSession.status}
-        onStart={handleMeditationStart}
-        onStop={handleMeditationStop}
-        onExit={exitMeditationMode}
-        onAmbientChange={handleAmbientChange}
-        onVolumeChange={handleVolumeChange}
-      />
-    {:else}
-      <MandalaViewerControls
-        {paused}
-        {pathShape}
-        {rotation}
-        {speed}
-        {depth}
-        {colorMode}
-        {preset}
-        {customBlue}
-        {customRed}
-        strokeWidth={lineWeight}
-        onPausedChange={(v) => { paused = v; }}
-        onPathShapeChange={(v) => { pathShape = v; }}
-        onRotationChange={(v) => { rotation = v; }}
-        onSpeedChange={(v) => { speed = v; }}
-        onDepthChange={(v) => { depth = v; }}
-        onColorModeChange={(v) => { colorMode = v; }}
-        onPresetChange={(v) => { preset = v; }}
-        onCustomBlueChange={(v) => { customBlue = v; }}
-        onCustomRedChange={(v) => { customRed = v; }}
-        onStrokeWidthChange={(v) => { lineWeight = v; }}
-        onDownload={exporting ? undefined : handleDownload}
-        onMeditateClick={enterMeditationMode}
-      />
-    {/if}
+    <MandalaViewerControls
+      {paused}
+      {pathShape}
+      {rotation}
+      {speed}
+      {depth}
+      {colorMode}
+      {preset}
+      {customBlue}
+      {customRed}
+      strokeWidth={lineWeight}
+      onPausedChange={(v) => { paused = v; }}
+      onPathShapeChange={(v) => { pathShape = v; }}
+      onRotationChange={(v) => { rotation = v; }}
+      onSpeedChange={(v) => { speed = v; }}
+      onDepthChange={(v) => { depth = v; }}
+      onColorModeChange={(v) => { colorMode = v; }}
+      onPresetChange={(v) => { preset = v; }}
+      onCustomBlueChange={(v) => { customBlue = v; }}
+      onCustomRedChange={(v) => { customRed = v; }}
+      onStrokeWidthChange={(v) => { lineWeight = v; }}
+      onDownload={exporting ? undefined : handleDownload}
+    />
   </aside>
 </div>
 

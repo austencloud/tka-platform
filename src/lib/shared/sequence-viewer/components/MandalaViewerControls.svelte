@@ -37,7 +37,6 @@
     onCustomRedChange: (v: string) => void;
     onStrokeWidthChange: (v: number) => void;
     onDownload?: () => void;
-    onMeditateClick?: () => void;
   }
 
   let {
@@ -62,7 +61,6 @@
     onCustomRedChange,
     onStrokeWidthChange,
     onDownload,
-    onMeditateClick,
   }: Props = $props();
 
   const PATH_SHAPES: { id: MandalaPathShape; label: string }[] = [
@@ -265,17 +263,6 @@
     </button>
   {/if}
 
-  {#if onMeditateClick}
-    <button
-      type="button"
-      class="meditate-btn"
-      onclick={onMeditateClick}
-      aria-label="Enter meditation mode"
-    >
-      <i class="fas fa-spa" aria-hidden="true"></i>
-      <span>Meditate</span>
-    </button>
-  {/if}
 </div>
 
 <style>
@@ -516,50 +503,13 @@
     outline-offset: 2px;
   }
 
-  .meditate-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 48px;
-    margin-top: 12px;
-    padding: 12px 16px;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
-    border-radius: 10px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .meditate-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 55%, transparent);
-    color: white;
-  }
-
-  .meditate-btn:active {
-    transform: scale(0.96);
-    transition-duration: 50ms;
-  }
-
-  .meditate-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-    outline-offset: 2px;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .chip,
-    .download-btn,
-    .meditate-btn {
+    .download-btn {
       transition: none !important;
     }
     .chip:active,
-    .download-btn:active,
-    .meditate-btn:active {
+    .download-btn:active {
       transform: none !important;
     }
   }
