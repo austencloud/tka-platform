@@ -9,11 +9,11 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { fade } from "svelte/transition";
-  import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
+  import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
-  import RailBentoSheet from "./bento/RailBentoSheet.svelte";
-  import "./bento/rail-tile.css";
+  import RailBentoSheet from "$lib/shared/animation-panel/bento/RailBentoSheet.svelte";
+  import "$lib/shared/animation-panel/bento/rail-tile.css";
   import { nextColumnValue, prevColumnValue } from "./bento/columns-stepper";
 
   type PanelLayout = "sidebar" | "bottom";

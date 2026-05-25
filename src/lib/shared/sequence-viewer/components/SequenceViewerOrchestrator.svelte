@@ -51,7 +51,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
     isExportMode: boolean;
     exportType: ExportType | null;
-    exportOptions: ReturnType<typeof import("$lib/shared/sequence-viewer/state/export-options-state.svelte").getExportOptionsState>;
+    exportOptions: ReturnType<typeof import("$lib/shared/animation-panel/state/export-options-state.svelte").getExportOptionsState>;
     isExporting: boolean;
     exportProgress: VideoExportProgress | null;
     exportError: string | null;

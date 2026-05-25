@@ -145,10 +145,9 @@ const REVEAL_DISTANCE_MULT = 1.4;
 /** Reveal start target sits at this Y above stage ground (chest height). */
 const REVEAL_TARGET_HEIGHT = 1.5;
 
-const PERFORMER_BEHIND_DIST = 1.5;
-const PERFORMER_LOOK_AHEAD = 3.0;
-const PERFORMER_EYE_HEIGHT = 1.6;
-const PERFORMER_LOOK_HEIGHT = 0.3;
+const PERFORMER_BEHIND_DIST = 6.5;
+const PERFORMER_EYE_HEIGHT = 2.0;
+const GRID_FORWARD_OFFSET = 0.3;
 
 /**
  * Choreographer POV: behind and above the performer group, looking
@@ -226,16 +225,17 @@ export function computeBehindPerformerShot(
   const fa = performer.facingAngle;
   const px = performer.position.x;
   const pz = performer.position.z;
+  const sinFa = Math.sin(fa);
+  const cosFa = Math.cos(fa);
 
+  const gridCenterX = px + sinFa * GRID_FORWARD_OFFSET;
+  const gridCenterZ = pz + cosFa * GRID_FORWARD_OFFSET;
+
+  const target = new Vector3(gridCenterX, stageGroundOffset, gridCenterZ);
   const eye = new Vector3(
-    px + Math.sin(fa) * PERFORMER_BEHIND_DIST,
+    gridCenterX - sinFa * PERFORMER_BEHIND_DIST,
     stageGroundOffset + PERFORMER_EYE_HEIGHT,
-    pz + Math.cos(fa) * PERFORMER_BEHIND_DIST,
-  );
-  const target = new Vector3(
-    px - Math.sin(fa) * PERFORMER_LOOK_AHEAD,
-    stageGroundOffset + PERFORMER_LOOK_HEIGHT,
-    pz - Math.cos(fa) * PERFORMER_LOOK_AHEAD,
+    gridCenterZ - cosFa * PERFORMER_BEHIND_DIST,
   );
   return { eye, target };
 }

@@ -7,7 +7,7 @@
   - full: TransportControls + SettingsTogglePanel
 -->
 <script lang="ts">
-	import TempoControl from "./TempoControl.svelte";
+	import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
 	import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
 	import SettingsTogglePanel from "$lib/shared/animation-engine/components/controls/SettingsTogglePanel.svelte";
 	import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";

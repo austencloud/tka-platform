@@ -195,16 +195,10 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
-    transition:
-      opacity var(--duration-normal, 200ms) var(--ease-out, ease-out),
-      transform var(--duration-normal, 200ms) var(--ease-out, ease-out);
   }
 
   .route-header[data-hidden="true"] {
-    opacity: 0;
-    transform: translateY(-100%);
-    pointer-events: none;
-    position: absolute;
+    display: none;
   }
 
   /* Swipe handle - visual affordance for swipe-to-dismiss */

@@ -16,8 +16,16 @@
     animation: { from: DOMRect; to: DOMRect },
     params: Parameters<typeof flip>[2]
   ): AnimationConfig {
-    if (!animation.from.width || !animation.from.height ||
-        !animation.to.width || !animation.to.height) {
+    const { from, to } = animation;
+    if (!from.width || !from.height || !to.width || !to.height) {
+      return { duration: 0 };
+    }
+    if (Math.abs(from.width - to.width) > 2 || Math.abs(from.height - to.height) > 2) {
+      return { duration: 0 };
+    }
+    const dx = Math.abs(from.left - to.left);
+    const dy = Math.abs(from.top - to.top);
+    if (dx > to.width * 3 || dy > to.height * 3) {
       return { duration: 0 };
     }
     return flip(node, animation, params);
@@ -30,6 +38,7 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import CellRenderer from "./CellRenderer.svelte";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import { getQRCellScale } from "$lib/shared/qr/qr-cell-scale";
 
   interface CellData {
     index: number;
@@ -130,6 +139,7 @@
 
   const scaleDuration = $derived(flipDuration > 0 ? 200 : 0);
   const isLightBackground = $derived(settingsService.settings.backgroundType === BackgroundType.CELESTIAL);
+  const qrScalePct = $derived(`${getQRCellScale(sequence?.steps?.length ?? 0) * 100}%`);
 
   // Bind helper: forward the scroll ref to the parent
   function bindGridScrollRef(node: HTMLDivElement) {
@@ -177,7 +187,7 @@
             {#if showQRCode}
               <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
                 {#if qrDataUrl}
-                  <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
+                  <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
                 {/if}
               </div>
             {/if}
@@ -281,7 +291,7 @@
           </div>
           {#if showQRCode && qrDataUrl}
             <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
-              <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
+              <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
             </div>
           {/if}
         </div>
@@ -460,7 +470,7 @@
           transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
         >
           <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode}>
-            <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
+            <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
           </div>
         </div>
       {/if}
@@ -590,7 +600,7 @@
         transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
       >
         <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode}>
-          <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
+          <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
         </div>
       </div>
     {/if}
@@ -837,8 +847,6 @@
   }
 
   .qr-code-image {
-    width: 80%;
-    height: 80%;
     object-fit: contain;
     -webkit-user-drag: none;
     user-select: none;

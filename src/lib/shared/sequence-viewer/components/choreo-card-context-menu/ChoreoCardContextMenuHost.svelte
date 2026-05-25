@@ -6,7 +6,7 @@
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildChoreoCardContextMenuItems } from "$lib/shared/choreo-card/services/CardDesignerContextMenuBuilder";
-  import type { ExportOptionsStateManager } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
+  import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 
   interface Props {
     onRerender?: () => void;

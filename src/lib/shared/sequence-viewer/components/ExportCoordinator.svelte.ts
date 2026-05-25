@@ -16,7 +16,7 @@ import type { HapticFeedback } from "$lib/shared/application/services/implementa
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { sequenceModalExporter, type Video3DExportDependencies } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter.svelte";
-import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
+import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";

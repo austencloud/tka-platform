@@ -1086,6 +1086,7 @@
   // while preserving aspect ratio. Never suppressed: the container root is
   // parent-sized (width/height: 100%) and unaffected by cell content swaps.
   // The ResizeObserver on containerElement is the sole trigger.
+  let _containerWasZero = false;
   function updateContainedDimensions() {
     if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) {
       return;
@@ -1097,7 +1098,15 @@
     const containerHeight = containerElement.clientHeight
       - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
 
-    if (containerWidth === 0 || containerHeight === 0) return;
+    if (containerWidth === 0 || containerHeight === 0) {
+      _containerWasZero = true;
+      containedWidth = null;
+      containedHeight = null;
+      return;
+    }
+
+    const revealedFromZero = _containerWasZero;
+    _containerWasZero = false;
 
     let newWidth: number | null;
     let newHeight: number | null;
@@ -1136,6 +1145,16 @@
 
     if (widthChanged) containedWidth = newWidth;
     if (heightChanged) containedHeight = newHeight;
+
+    if (revealedFromZero) {
+      suppressFlip = true;
+      requestAnimationFrame(() => {
+        updateCellWidth();
+        requestAnimationFrame(() => {
+          suppressFlip = false;
+        });
+      });
+    }
   }
 
   function updateCellWidth() {
@@ -1143,6 +1162,7 @@
 
     if (previewStackElement && columns > 0) {
       const stackWidth = previewStackElement.clientWidth;
+      if (stackWidth < 1) return;
       const newCellWidth = Number.isFinite(stackWidth / columns) ? stackWidth / columns : 0;
       if (Math.abs(newCellWidth - cellWidth) > 0.5) {
         cellWidth = newCellWidth;
@@ -1430,7 +1450,7 @@
     <div
       class="preview-stack"
       class:scroll-mode={needsScroll}
-      style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};${(!containedWidth && !containedHeight) ? ' visibility: hidden;' : ''}`}
+      style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};${(!containedWidth || !containedHeight || cellWidth < 1) ? ' visibility: hidden;' : ''}`}
       bind:this={previewStackElement}
     >
       <!-- Header section -->

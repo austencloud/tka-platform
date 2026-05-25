@@ -201,12 +201,49 @@
     onUnfocusPane();
   }
 
-  // Persist the 3D canvas once it's been activated — avoids full WebGL/GLB/SDF
-  // teardown+rebuild on every pane switch.
+  // Persist canvases once activated — avoids full teardown+rebuild on pane switch.
   let _3dLeftMounted = $state(false);
   const _3dLeftActive = $derived(splitConfig.leftPane === 'animation-3d');
   $effect(() => {
     if (_3dLeftActive) _3dLeftMounted = true;
+  });
+
+  let _2dLeftMounted = $state(false);
+  const _2dLeftActive = $derived(splitConfig.leftPane === 'animation');
+  $effect(() => {
+    if (_2dLeftActive) _2dLeftMounted = true;
+  });
+
+  let _2dRightMounted = $state(false);
+  const _2dRightActive = $derived(splitConfig.rightPane === 'animation');
+  $effect(() => {
+    if (_2dRightActive) _2dRightMounted = true;
+  });
+
+  let _pane2d: HTMLDivElement | undefined = $state();
+  let _pane3d: HTMLDivElement | undefined = $state();
+  let _rail2d: HTMLDivElement | undefined = $state();
+  let _rail3d: HTMLDivElement | undefined = $state();
+  let _prevLeftPane = $state(splitConfig.leftPane);
+
+  $effect(() => {
+    const cur = splitConfig.leftPane;
+    if (cur === _prevLeftPane) return;
+    const from = _prevLeftPane;
+    _prevLeftPane = cur;
+
+    const outPane = from === 'animation' ? _pane2d : from === 'animation-3d' ? _pane3d : null;
+    const outRail = from === 'animation' ? _rail2d : from === 'animation-3d' ? _rail3d : null;
+    if (!outPane) return;
+
+    const w = outPane.getBoundingClientRect().width + 'px';
+    outPane.style.width = w;
+    if (outRail) outRail.style.width = w;
+
+    setTimeout(() => {
+      outPane.style.width = '';
+      if (outRail) outRail.style.width = '';
+    }, 250);
   });
 
 </script>
@@ -241,6 +278,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
          WebGL context, loaded GLBs, and generated SDF textures across pane switches. -->
     {#if _3dLeftMounted}
       <div
+        bind:this={_pane3d}
         class="media-pane animation-pane persistent-3d"
         class:persistent-3d-hidden={!_3dLeftActive}
       >
@@ -281,11 +319,13 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
       </div>
     {/if}
 
-    {#if splitConfig.leftPane === 'animation'}
+    {#if _2dLeftMounted}
       <div
-        class="media-pane animation-pane"
+        bind:this={_pane2d}
+        class="media-pane animation-pane persistent-2d"
+        class:persistent-2d-hidden={!_2dLeftActive}
       >
-        {#if layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
+        {#if _2dLeftActive && layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
           <div
             class="pane-close-btn"
             role="button"
@@ -338,12 +378,21 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
         {/if}
 
       </div>
+    {/if}
 
-      <RightRail renderMode="2d" />
-    {:else if splitConfig.leftPane === 'animation-3d'}
-      <RightRail renderMode="3d" />
-      <PerformerHub />
-    {:else if splitConfig.leftPane === 'card'}
+    {#if _2dLeftMounted}
+      <div bind:this={_rail2d} class="persistent-rail" class:persistent-rail-hidden={!_2dLeftActive}>
+        <RightRail renderMode="2d" />
+      </div>
+    {/if}
+    {#if _3dLeftMounted}
+      <div bind:this={_rail3d} class="persistent-rail" class:persistent-rail-hidden={!_3dLeftActive}>
+        <RightRail renderMode="3d" />
+        <PerformerHub />
+      </div>
+    {/if}
+
+    {#if splitConfig.leftPane === 'card'}
       <div class="media-pane preview-pane">
         <ChoreoCard
           {sequence}
@@ -409,6 +458,38 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     {/if}
 
     <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
+      {#if _2dRightMounted}
+        <div
+          class="media-pane animation-pane persistent-2d"
+          class:persistent-2d-hidden={!_2dRightActive}
+        >
+          <div class="canvas-layer canvas-2d-layer" style="opacity:1;pointer-events:auto;">
+            <AnimatorCanvas
+              sequenceData={playback.animationState.sequenceData}
+              currentStep={playback.currentStep}
+              isPlaying={playback.isPlaying}
+              blueProp={playback.animationState.bluePropState}
+              redProp={playback.animationState.redPropState}
+              gridMode={sequence?.gridMode}
+              letter={playback.currentLetter}
+              stepData={playback.currentStepData}
+              word={sequence?.word}
+              bluePropType={propRendering.bluePropType}
+              redPropType={propRendering.redPropType}
+              trailSettings={trailSettings}
+              onCanvasReady={() => {}}
+              onPlaybackToggle={onPlaybackToggle}
+              onProgressBarSeek={onProgressBarSeek ?? null}
+              onProgressBarScrubStart={onProgressBarScrubStart ?? null}
+              onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
+              focused={false}
+              suppress2DOverlays={false}
+              hideProgressBar={true}
+            />
+          </div>
+        </div>
+      {/if}
+
       {#if splitConfig.rightPane === 'card'}
         <div
           class="media-pane preview-pane"
@@ -456,33 +537,6 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             onContextMenu={onChoreoCardContextMenu}
           />
 
-        </div>
-      {:else if splitConfig.rightPane === 'animation'}
-        <div class="media-pane animation-pane">
-          <div class="canvas-layer canvas-2d-layer" style="opacity:1;pointer-events:auto;">
-            <AnimatorCanvas
-              sequenceData={playback.animationState.sequenceData}
-              currentStep={playback.currentStep}
-              isPlaying={playback.isPlaying}
-              blueProp={playback.animationState.bluePropState}
-              redProp={playback.animationState.redPropState}
-              gridMode={sequence?.gridMode}
-              letter={playback.currentLetter}
-              stepData={playback.currentStepData}
-              word={sequence?.word}
-              bluePropType={propRendering.bluePropType}
-              redPropType={propRendering.redPropType}
-              trailSettings={trailSettings}
-              onCanvasReady={() => {}}
-              onPlaybackToggle={onPlaybackToggle}
-              onProgressBarSeek={onProgressBarSeek ?? null}
-              onProgressBarScrubStart={onProgressBarScrubStart ?? null}
-              onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
-              focused={false}
-              suppress2DOverlays={false}
-              hideProgressBar={true}
-            />
-          </div>
         </div>
       {:else if splitConfig.rightPane === 'animation-3d'}
         <div class="media-pane animation-pane">
@@ -553,10 +607,48 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
        ResizeObserver to fire on every frame, producing a tiny→expand resize cascade. */
   }
 
-  .media-pane.persistent-3d-hidden {
-    visibility: hidden;
+  .media-pane.persistent-3d,
+  .media-pane.persistent-2d {
     position: absolute;
     inset: 0;
+    opacity: 1;
+    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+                visibility 0s linear 0s;
+  }
+
+  .media-pane.persistent-3d-hidden,
+  .media-pane.persistent-2d-hidden {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+                visibility 0s linear 200ms;
+  }
+
+  .persistent-rail {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9;
+    opacity: 1;
+    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+                visibility 0s linear 0s;
+  }
+
+  .persistent-rail > :global(*) {
+    pointer-events: auto;
+  }
+
+  .persistent-rail-hidden {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+                visibility 0s linear 200ms;
+  }
+
+  .persistent-rail-hidden > :global(*) {
     pointer-events: none;
   }
 
@@ -877,7 +969,13 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     .split-view,
     .split-column,
     .preview-column,
-    .pane-close-btn {
+    .pane-close-btn,
+    .media-pane.persistent-3d,
+    .media-pane.persistent-2d,
+    .media-pane.persistent-3d-hidden,
+    .media-pane.persistent-2d-hidden,
+    .persistent-rail,
+    .persistent-rail-hidden {
       transition: none !important;
     }
 

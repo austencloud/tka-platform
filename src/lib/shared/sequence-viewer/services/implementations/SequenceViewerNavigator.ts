@@ -13,7 +13,6 @@ import type { SequenceData } from '$lib/shared/foundation/domain/models/Sequence
 import type { ViewingContext } from "../presentation-resolver";
 import { openSequenceOverlay } from '../../state/sequence-viewer-overlay-state.svelte';
 import { cellPreWarmer } from './CellPreWarmer';
-import { getAttributionPromptTrigger } from "$lib/shared/attribution/getAttributionPromptTrigger";
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
 
 export interface OpenSequenceViewerOptions {
@@ -49,16 +48,6 @@ export function openSequenceViewer(
 	sequence: SequenceData,
 	options: OpenSequenceViewerOptions
 ): void {
-	// Track sequence view for attribution prompt eligibility
-	try {
-		const promptTrigger = getAttributionPromptTrigger();
-		if (promptTrigger?.recordInteraction) {
-			promptTrigger.recordInteraction('sequence_view');
-		}
-	} catch {
-		// Silently fail - attribution tracking is non-critical
-	}
-
 	// Use prefetched hydrated data if available (hover prefetch completed)
 	// Preserve ownership metadata from the original sequence since cached/hydrated
 	// versions loaded from IndexedDB or public index may lack ownerId.

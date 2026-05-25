@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
-  import TempoControl from "./TempoControl.svelte";
+  import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
 
   interface Props {
     visible: boolean;

@@ -4,7 +4,7 @@
     type VideoFps,
     type VideoResolution,
     type VideoQuality,
-  } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
+  } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import { slide } from "svelte/transition";
 
   const opts = getExportOptionsState();

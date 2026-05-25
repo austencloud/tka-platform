@@ -16,7 +16,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import ViewerContentRail from "./ViewerContentRail.svelte";
   import VideoGallery from "./VideoGallery.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
-  import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
+  import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import PracticeProgressIndicator from "./PracticeProgressIndicator.svelte";
@@ -568,6 +568,10 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                             bpm={ctx.bpmLocal}
                             renderMode={ctx.renderMode}
                             playbackMode={ctx.playbackMode}
+                            selectedPropType={ctx.bluePropType}
+                            onPropChange={(propType) => {
+                              settingsService.updateSettings({ bluePropType: propType, redPropType: propType });
+                            }}
                             onPlaybackToggle={ctx.handlePlaybackToggle}
                             onPlaybackModeChange={ctx.handlePlaybackModeChange}
                             onBpmChange={ctx.handleBpmChange}
