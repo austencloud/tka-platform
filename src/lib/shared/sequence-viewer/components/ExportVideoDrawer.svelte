@@ -16,7 +16,6 @@
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
-  import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
   import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import "./bento/rail-tile.css";
@@ -263,17 +262,14 @@
 
 {#snippet pillBody()}
   {#if activePill === "effects"}
-    {#if layout === "bottom"}
-      <MobileEffectsPanel />
-    {:else}
-      <EffectsPanel
-        {bpm}
-        onBpmChange={onBpmChange ?? (() => {})}
-        {isPlaying}
-        onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-        showPlayback={!!(onPlaybackToggle && onBpmChange)}
-      />
-    {/if}
+    <EffectsPanel
+      layout={layout === "bottom" ? "strip" : "sidebar"}
+      {bpm}
+      onBpmChange={onBpmChange ?? (() => {})}
+      {isPlaying}
+      onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+      showPlayback={!!(onPlaybackToggle && onBpmChange)}
+    />
   {:else if activePill === "effort"}
     <div class="section-pad">
       {#if layout === "sidebar"}

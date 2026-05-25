@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getViewer3DContext } from "../../context/viewer-3d-context";
-  import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
+  import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import CascadeBadge from "./CascadeBadge.svelte";
 
   const viewer = getViewer3DContext();
@@ -25,7 +25,7 @@
     <CascadeBadge mode="default" />
   {/if}
 
-  <MobileEffectsPanel layout="grid" />
+  <EffectsPanel layout="grid" bpm={0} onBpmChange={() => {}} isPlaying={false} onPlaybackToggle={() => {}} showPlayback={false} />
 </div>
 
 <style>
