@@ -36,7 +36,6 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
