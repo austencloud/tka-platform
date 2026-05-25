@@ -49,6 +49,8 @@
         word: string | null;
         creator: string | null;
         thumbnailUrl: string | null;
+        deckId: string | null;
+        deckName: string | null;
       };
     };
   }
@@ -300,10 +302,13 @@
       AnimationPlayerComponent = PlayerModule.default;
 
       if (!isInlineEncoded(shortCode) && isGenuineScan(shortCode)) {
-        captureEvent("qr_video_scanned", {
+        captureEvent("card_scanned", {
           short_code: shortCode,
           sequence_word: word,
+          deck_id: data?.meta?.deckId || null,
+          deck_name: data?.meta?.deckName || null,
           country: data?.geo?.country || null,
+          city: data?.geo?.city || null,
         });
       }
 
@@ -439,7 +444,7 @@
             <span class="grid-btn-label">{isDownloading ? `${downloadProgress}%` : 'Download'}</span>
           </button>
 
-          <a href="/browse/gallery" class="grid-btn cta">
+          <a href="/browse/gallery?from=scan&code={shortCode}" class="grid-btn cta">
             <i class="fa-solid fa-compass grid-btn-fa"></i>
             <span class="grid-btn-label">Open TKA</span>
           </a>
@@ -515,7 +520,7 @@
               <i class="fa-solid {isDownloading ? 'fa-spinner fa-spin' : 'fa-download'} grid-btn-fa"></i>
               <span class="grid-btn-label">{isDownloading ? `${downloadProgress}%` : 'Download'}</span>
             </button>
-            <a href="/browse/gallery" class="grid-btn cta">
+            <a href="/browse/gallery?from=scan&code={shortCode}" class="grid-btn cta">
               <i class="fa-solid fa-compass grid-btn-fa"></i>
               <span class="grid-btn-label">Open TKA</span>
             </a>
