@@ -39,9 +39,9 @@ export class LocomotionController {
       try {
         const gltf = await loader.loadAsync(meta.path);
         if (gltf.animations.length > 0) {
-          const clip = gltf.animations[0];
+          const clip = gltf.animations[0]!;
           this.clips[name] = clip;
-          const action = this.mixer.clipAction(clip);
+          const action = this.mixer!.clipAction(clip);
           action.play();
           action.setEffectiveWeight(name === "idle" ? 1 : 0);
           action.setLoop(THREE.LoopRepeat, Infinity);
@@ -70,7 +70,7 @@ export class LocomotionController {
       this.actions.walk.setEffectiveWeight(weights.walk);
       if (weights.walk > 0) {
         this.actions.walk.setEffectiveTimeScale(
-          computeTimeScale(currentSpeed, LOCOMOTION_CLIPS.walk.speedMs)
+          computeTimeScale(currentSpeed, LOCOMOTION_CLIPS.walk!.speedMs)
         );
       }
     }
@@ -78,7 +78,7 @@ export class LocomotionController {
       this.actions.run.setEffectiveWeight(weights.run);
       if (weights.run > 0) {
         this.actions.run.setEffectiveTimeScale(
-          computeTimeScale(currentSpeed, LOCOMOTION_CLIPS.run.speedMs)
+          computeTimeScale(currentSpeed, LOCOMOTION_CLIPS.run!.speedMs)
         );
       }
     }

@@ -15,7 +15,7 @@
 
   const gltf = useGltf(avatarPath);
   let controller: LocomotionController | null = $state(null);
-  let group = $state<THREE.Group | null>(null);
+  let group: THREE.Group | undefined = $state(undefined);
 
   $effect(() => {
     if (!$gltf) return;

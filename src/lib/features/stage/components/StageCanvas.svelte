@@ -3,16 +3,16 @@
   import PerformerDot from "./PerformerDot.svelte";
   import PathLine from "./PathLine.svelte";
 
-  const state = getStageChoreographyState();
+  const stageState = getStageChoreographyState();
 
-  let containerEl = $state<HTMLDivElement | null>(null);
+  let containerEl: HTMLDivElement | null = $state(null);
   let canvasWidth = $state(800);
   let canvasHeight = $state(500);
 
   $effect(() => {
     if (!containerEl) return;
     const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
+      const entry = entries[0]!;
       canvasWidth = entry.contentRect.width;
       canvasHeight = entry.contentRect.height;
     });
@@ -20,8 +20,10 @@
     return () => observer.disconnect();
   });
 
-  const { choreography, activeFormationIndex, activeFormation } = $derived(state);
-  const nextFormation = $derived(state.nextFormation);
+  const choreography = $derived(stageState.choreography);
+  const activeFormationIndex = $derived(stageState.activeFormationIndex);
+  const activeFormation = $derived(stageState.activeFormation);
+  const nextFormation = $derived(stageState.nextFormation);
   const stageWidth = $derived(choreography.stageWidth);
   const stageDepth = $derived(choreography.stageDepth);
   const margin = 40;
@@ -102,9 +104,9 @@
           {stageDepth}
           {canvasWidth}
           {canvasHeight}
-          isSelected={state.selectedPerformerIndex === i}
-          onDrag={(x, z) => state.updatePerformerPosition(activeFormationIndex, pose.performerId, x, z)}
-          onSelect={() => { state.selectedPerformerIndex = i; }}
+          isSelected={stageState.selectedPerformerIndex === i}
+          onDrag={(x, z) => stageState.updatePerformerPosition(activeFormationIndex, pose.performerId, x, z)}
+          onSelect={() => { stageState.selectedPerformerIndex = i; }}
         />
       {/each}
     {/if}

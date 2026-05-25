@@ -4,9 +4,9 @@
   import Stage3DPreview from "./components/Stage3DPreview.svelte";
   import { getStageChoreographyState } from "./state/stage-choreography-state.svelte";
 
-  const state = getStageChoreographyState();
+  getStageChoreographyState();
 
-  let activeView = $state<"editor" | "preview">("editor");
+  let activeView: "editor" | "preview" = $state("editor");
 
   $effect(() => {
     const tab = navigationState.activeTab;

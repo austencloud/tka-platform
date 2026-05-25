@@ -12,7 +12,7 @@ export function generateFormation(
 ): PerformerPose[] {
   const normalized = PRESET_GENERATORS[preset](performerCount);
   return normalized.slice(0, performerCount).map((p, i) => ({
-    performerId: performerIds[i],
+    performerId: performerIds[i]!,
     x: p.x * stageWidth,
     z: p.z * stageDepth,
     facing: p.facing,

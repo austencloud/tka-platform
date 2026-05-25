@@ -4,8 +4,8 @@
   import { getStageChoreographyState } from "../state/stage-choreography-state.svelte";
   import type { FormationPresetId } from "../domain/stage-types";
 
-  const state = getStageChoreographyState();
-  const { choreography } = $derived(state);
+  const stageState = getStageChoreographyState();
+  const choreography = $derived(stageState.choreography);
 
   const presets: { id: FormationPresetId; label: string }[] = [
     { id: "line", label: "Line" },
@@ -20,8 +20,8 @@
 
   function initDefault() {
     if (choreography.formations.length === 0) {
-      state.addFormation(0, "line");
-      state.addFormation(4, "triangle");
+      stageState.addFormation(0, "line");
+      stageState.addFormation(4, "triangle");
     }
   }
 
@@ -39,7 +39,7 @@
           min="2"
           max="8"
           value={choreography.performers.length}
-          oninput={(e) => state.setPerformerCount(+(e.target as HTMLInputElement).value)}
+          oninput={(e) => stageState.setPerformerCount(+(e.target as HTMLInputElement).value)}
         />
       </label>
     </section>
@@ -50,7 +50,7 @@
         {#each presets as preset}
           <button
             class="preset-btn"
-            onclick={() => state.applyPreset(preset.id)}
+            onclick={() => stageState.applyPreset(preset.id)}
           >
             {preset.label}
           </button>
@@ -61,7 +61,7 @@
     <section>
       <h3>Formations</h3>
       <p class="hint">{choreography.formations.length} keyframe{choreography.formations.length === 1 ? "" : "s"}</p>
-      <p class="hint">Active: F{state.activeFormationIndex + 1} (beat {state.activeFormation?.beat ?? 0})</p>
+      <p class="hint">Active: F{stageState.activeFormationIndex + 1} (beat {stageState.activeFormation?.beat ?? 0})</p>
     </section>
   </aside>
 

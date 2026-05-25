@@ -33,7 +33,7 @@ export function createStageChoreographyState() {
     performers: performerIds.map((id, i) => ({
       id,
       index: i,
-      color: PERFORMER_COLORS[i],
+      color: PERFORMER_COLORS[i] ?? "#888",
     })),
     formations: [],
   });
@@ -75,7 +75,7 @@ export function createStageChoreographyState() {
     choreography.performers = ids.map((id, i) => ({
       id,
       index: i,
-      color: PERFORMER_COLORS[i],
+      color: PERFORMER_COLORS[i] ?? "#888",
     }));
     choreography.formations = choreography.formations.map((f) => ({
       ...f,
@@ -92,8 +92,9 @@ export function createStageChoreographyState() {
       choreography.stageDepth,
       ids
     );
-    if (choreography.formations[activeFormationIndex]) {
-      choreography.formations[activeFormationIndex].positions = positions;
+    const current = choreography.formations[activeFormationIndex];
+    if (current) {
+      current.positions = positions;
     } else {
       choreography.formations.push({
         id: crypto.randomUUID(),

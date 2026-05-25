@@ -5,8 +5,9 @@
   import { getStageChoreographyState } from "../state/stage-choreography-state.svelte";
   import LocomotingPerformer from "./LocomotingPerformer.svelte";
 
-  const state = getStageChoreographyState();
-  const { choreography, interpolatedPositions } = $derived(state);
+  const stageState = getStageChoreographyState();
+  const choreography = $derived(stageState.choreography);
+  const interpolatedPositions = $derived(stageState.interpolatedPositions);
 
   const avatarPath = "/models/avatars/ch01.glb";
 </script>

@@ -31,8 +31,8 @@ export function computeBlendWeights(speed: number): {
   walk: number;
   run: number;
 } {
-  const walkSpeed = LOCOMOTION_CLIPS.walk.speedMs;
-  const runSpeed = LOCOMOTION_CLIPS.run.speedMs;
+  const walkSpeed = LOCOMOTION_CLIPS.walk!.speedMs;
+  const runSpeed = LOCOMOTION_CLIPS.run!.speedMs;
 
   if (speed <= 0.01) return { idle: 1, walk: 0, run: 0 };
   if (speed <= walkSpeed) {

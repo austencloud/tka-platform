@@ -2,8 +2,11 @@
   import { getStageChoreographyState } from "../state/stage-choreography-state.svelte";
   import type { FormationPresetId } from "../domain/stage-types";
 
-  const state = getStageChoreographyState();
-  const { choreography, activeFormationIndex, isPlaying, playProgress } = $derived(state);
+  const stageState = getStageChoreographyState();
+  const choreography = $derived(stageState.choreography);
+  const activeFormationIndex = $derived(stageState.activeFormationIndex);
+  const isPlaying = $derived(stageState.isPlaying);
+  const playProgress = $derived(stageState.playProgress);
 
   const totalBeats = $derived(
     Math.max(
@@ -22,9 +25,9 @@
     const beat = Math.round(pct * totalBeats);
     const existing = choreography.formations.findIndex((f) => f.beat === beat);
     if (existing === -1) {
-      state.addFormation(beat, "line" as FormationPresetId);
+      stageState.addFormation(beat, "line" as FormationPresetId);
     }
-    state.activeFormationIndex = choreography.formations.findIndex(
+    stageState.activeFormationIndex = choreography.formations.findIndex(
       (f) => f.beat === beat
     );
   }
@@ -32,7 +35,7 @@
 
 <div class="beat-timeline">
   <div class="controls">
-    <button class="play-btn" onclick={() => isPlaying ? state.stop() : state.play()}>
+    <button class="play-btn" onclick={() => isPlaying ? stageState.stop() : stageState.play()}>
       {isPlaying ? "Stop" : "Play"}
     </button>
     <span class="bpm-display">{choreography.bpm} BPM</span>
@@ -56,7 +59,7 @@
         class="formation-marker"
         class:active={i === activeFormationIndex}
         style="left: {beatToPercent(formation.beat)}%"
-        onclick={(e) => { e.stopPropagation(); state.activeFormationIndex = i; }}
+        onclick={(e) => { e.stopPropagation(); stageState.activeFormationIndex = i; }}
       >
         F{i + 1}
       </button>
