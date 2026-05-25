@@ -1,6 +1,8 @@
 <script lang="ts">
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { animationSettings } from "../../state/animation-settings-state.svelte";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 	import {
 		TrackingMode,
 		TAIL_LENGTH_MIN,
@@ -12,6 +14,7 @@
 	import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 	const settingsState = settingsService;
+	const effectsConfig = getEffectsConfigContext();
 
 	const hasBilateralProp = $derived.by(() => {
 		const blue = settingsState.settings.bluePropType;
@@ -51,11 +54,14 @@
 		hasBilateralProp ? storedTrackingMode : TrackingMode.RIGHT_END
 	);
 
-	let lineWidth = $derived(animationSettings.trail.lineWidth);
-	let maxOpacity = $derived(animationSettings.trail.maxOpacity);
-	let tailLength = $derived(animationSettings.trail.tailLength);
-	let blueColor = $derived(animationSettings.trail.blueColor);
-	let redColor = $derived(animationSettings.trail.redColor);
+	// Visual props — owned by EffectsConfigState
+	const lineWidth = $derived(effectsConfig?.trails.thickness ?? DEFAULT_EFFECTS_CONFIG.trails.thickness);
+	const maxOpacity = $derived(effectsConfig?.trails.brightness ?? DEFAULT_EFFECTS_CONFIG.trails.brightness);
+	const blueColor = $derived(effectsConfig?.trails.blueColor ?? DEFAULT_EFFECTS_CONFIG.trails.blueColor);
+	const redColor = $derived(effectsConfig?.trails.redColor ?? DEFAULT_EFFECTS_CONFIG.trails.redColor);
+
+	// Rendering params — stay in animationSettings
+	const tailLength = $derived(animationSettings.trail.tailLength);
 
 	const defaultBlue = getMotionColor(MotionColor.BLUE, "dark");
 	const defaultRed = getMotionColor(MotionColor.RED, "dark");
@@ -69,8 +75,8 @@
 	}
 
 	const isDefault = $derived(
-		Math.abs(lineWidth - 5) < 0.2 &&
-		Math.abs(maxOpacity - 1.0) < 0.03 &&
+		Math.abs(lineWidth - DEFAULT_EFFECTS_CONFIG.trails.thickness) < 0.2 &&
+		Math.abs(maxOpacity - DEFAULT_EFFECTS_CONFIG.trails.brightness) < 0.03 &&
 		tailLength === DEFAULT_TRAIL_SETTINGS.tailLength &&
 		trackingMode === TrackingMode.RIGHT_END &&
 		blueColor === defaultBlue &&
@@ -78,9 +84,9 @@
 	);
 
 	function resetDefaults(): void {
-		animationSettings.setTrailAppearance({
-			lineWidth: 5,
-			maxOpacity: 1.0,
+		effectsConfig?.updateTrails({
+			thickness: DEFAULT_EFFECTS_CONFIG.trails.thickness,
+			brightness: DEFAULT_EFFECTS_CONFIG.trails.brightness,
 			blueColor: defaultBlue,
 			redColor: defaultRed,
 		});
@@ -120,7 +126,7 @@
 			max="12"
 			step="0.5"
 			value={lineWidth}
-			oninput={(e) => animationSettings.setTrailAppearance({ lineWidth: Number((e.target as HTMLInputElement).value) })}
+			oninput={(e) => effectsConfig?.updateTrails({ thickness: Number((e.target as HTMLInputElement).value) })}
 		/>
 		<span class="slider-value">{formatWidth(lineWidth)}</span>
 	</div>
@@ -136,11 +142,7 @@
 			value={maxOpacity}
 			oninput={(e) => {
 				const v = Number((e.target as HTMLInputElement).value);
-				animationSettings.setTrailAppearance({
-					maxOpacity: v,
-					minOpacity: v * 0.3,
-					glowBlur: v * 5,
-				});
+				effectsConfig?.updateTrails({ brightness: v });
 			}}
 		/>
 		<span class="slider-value">{formatBrightness(maxOpacity)}</span>
@@ -170,7 +172,7 @@
 				<input
 					type="color"
 					value={blueColor}
-					oninput={(e) => animationSettings.setTrailAppearance({ blueColor: (e.target as HTMLInputElement).value })}
+					oninput={(e) => effectsConfig?.updateTrails({ blueColor: (e.target as HTMLInputElement).value })}
 				/>
 				<span class="color-hand">Blue</span>
 			</label>
@@ -178,7 +180,7 @@
 				<input
 					type="color"
 					value={redColor}
-					oninput={(e) => animationSettings.setTrailAppearance({ redColor: (e.target as HTMLInputElement).value })}
+					oninput={(e) => effectsConfig?.updateTrails({ redColor: (e.target as HTMLInputElement).value })}
 				/>
 				<span class="color-hand">Red</span>
 			</label>

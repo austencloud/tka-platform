@@ -1,41 +1,18 @@
 <script lang="ts">
-	import { onDestroy } from "svelte";
-	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
-	import {
-		charcoalParamsToSemantic,
-		semanticToCharcoalParams,
-		DEFAULT_CHARCOAL_SEMANTIC,
-	} from "../../domain/types/CharcoalSparkTypes";
+	import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+	import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
-	const vm = getAnimationVisibilityManager();
-
-	let intensity = $state(0);
-	let spread = $state(0);
-	let glow = $state(0);
-
-	function syncFromParams(): void {
-		const semantic = charcoalParamsToSemantic(vm.getCharcoalParams());
-		intensity = semantic.intensity;
-		spread = semantic.spread;
-		glow = semantic.glow;
-	}
-
-	syncFromParams();
-	vm.registerObserver(syncFromParams);
-	onDestroy(() => vm.unregisterObserver(syncFromParams));
-
-	function applySemanticChange(): void {
-		vm.setCharcoalParams(semanticToCharcoalParams({ intensity, spread, glow }));
-	}
+	const effectsConfig = getEffectsConfigContext();
 
 	function resetDefaults(): void {
-		vm.resetCharcoalDefaults();
+		effectsConfig?.updateCharcoal(DEFAULT_EFFECTS_CONFIG.charcoal);
 	}
 
 	const isDefault = $derived(
-		Math.abs(intensity - DEFAULT_CHARCOAL_SEMANTIC.intensity) < 0.02 &&
-		Math.abs(spread - DEFAULT_CHARCOAL_SEMANTIC.spread) < 0.02 &&
-		Math.abs(glow - DEFAULT_CHARCOAL_SEMANTIC.glow) < 0.02
+		effectsConfig != null &&
+		Math.abs(effectsConfig.charcoal.intensity - DEFAULT_EFFECTS_CONFIG.charcoal.intensity) < 0.02 &&
+		Math.abs(effectsConfig.charcoal.spread - DEFAULT_EFFECTS_CONFIG.charcoal.spread) < 0.02 &&
+		Math.abs(effectsConfig.charcoal.glow - DEFAULT_EFFECTS_CONFIG.charcoal.glow) < 0.02
 	);
 </script>
 
@@ -48,10 +25,10 @@
 			min="0"
 			max="1"
 			step="0.02"
-			value={intensity}
-			oninput={(e) => { intensity = Number((e.target as HTMLInputElement).value); applySemanticChange(); }}
+			value={effectsConfig?.charcoal.intensity ?? DEFAULT_EFFECTS_CONFIG.charcoal.intensity}
+			oninput={(e) => effectsConfig?.updateCharcoal({ intensity: Number((e.target as HTMLInputElement).value) })}
 		/>
-		<span class="slider-value">{Math.round(intensity * 100)}%</span>
+		<span class="slider-value">{Math.round((effectsConfig?.charcoal.intensity ?? DEFAULT_EFFECTS_CONFIG.charcoal.intensity) * 100)}%</span>
 	</div>
 
 	<div class="slider-row">
@@ -62,10 +39,10 @@
 			min="0"
 			max="1"
 			step="0.02"
-			value={spread}
-			oninput={(e) => { spread = Number((e.target as HTMLInputElement).value); applySemanticChange(); }}
+			value={effectsConfig?.charcoal.spread ?? DEFAULT_EFFECTS_CONFIG.charcoal.spread}
+			oninput={(e) => effectsConfig?.updateCharcoal({ spread: Number((e.target as HTMLInputElement).value) })}
 		/>
-		<span class="slider-value">{Math.round(spread * 100)}%</span>
+		<span class="slider-value">{Math.round((effectsConfig?.charcoal.spread ?? DEFAULT_EFFECTS_CONFIG.charcoal.spread) * 100)}%</span>
 	</div>
 
 	<div class="slider-row">
@@ -76,10 +53,10 @@
 			min="0"
 			max="1"
 			step="0.02"
-			value={glow}
-			oninput={(e) => { glow = Number((e.target as HTMLInputElement).value); applySemanticChange(); }}
+			value={effectsConfig?.charcoal.glow ?? DEFAULT_EFFECTS_CONFIG.charcoal.glow}
+			oninput={(e) => effectsConfig?.updateCharcoal({ glow: Number((e.target as HTMLInputElement).value) })}
 		/>
-		<span class="slider-value">{Math.round(glow * 100)}%</span>
+		<span class="slider-value">{Math.round((effectsConfig?.charcoal.glow ?? DEFAULT_EFFECTS_CONFIG.charcoal.glow) * 100)}%</span>
 	</div>
 
 	<button

@@ -1,21 +1,8 @@
 <script lang="ts">
-	import { onDestroy } from "svelte";
-	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+	import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+	import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
-	const vm = getAnimationVisibilityManager();
-
-	let intensity = $state(vm.getFireIntensity());
-	let colorBlend = $state(vm.getFireColorBlend());
-	let turbulence = $state(vm.getFireTurbulence());
-
-	function handleVisibilityChange(): void {
-		intensity = vm.getFireIntensity();
-		colorBlend = vm.getFireColorBlend();
-		turbulence = vm.getFireTurbulence();
-	}
-
-	vm.registerObserver(handleVisibilityChange);
-	onDestroy(() => vm.unregisterObserver(handleVisibilityChange));
+	const effectsConfig = getEffectsConfigContext();
 
 	function formatIntensity(v: number): string {
 		const pct = Math.round(((v - 0.45) / (1 - 0.45)) * 100);
@@ -35,13 +22,14 @@
 	}
 
 	function resetDefaults(): void {
-		vm.resetFireDefaults();
+		effectsConfig?.updateFire(DEFAULT_EFFECTS_CONFIG.fire);
 	}
 
 	const isDefault = $derived(
-		Math.abs(intensity - 0.7) < 0.03 &&
-		Math.abs(colorBlend - 0.5) < 0.03 &&
-		Math.abs(turbulence - 0.5) < 0.03
+		effectsConfig != null &&
+		Math.abs(effectsConfig.fire.intensity - DEFAULT_EFFECTS_CONFIG.fire.intensity) < 0.03 &&
+		Math.abs(effectsConfig.fire.colorBlend - DEFAULT_EFFECTS_CONFIG.fire.colorBlend) < 0.03 &&
+		Math.abs(effectsConfig.fire.turbulence - DEFAULT_EFFECTS_CONFIG.fire.turbulence) < 0.03
 	);
 </script>
 
@@ -54,10 +42,10 @@
 			min="0.45"
 			max="1"
 			step="0.05"
-			value={intensity}
-			oninput={(e) => vm.setFireIntensity(Number((e.target as HTMLInputElement).value))}
+			value={effectsConfig?.fire.intensity ?? DEFAULT_EFFECTS_CONFIG.fire.intensity}
+			oninput={(e) => effectsConfig?.updateFire({ intensity: Number((e.target as HTMLInputElement).value) })}
 		/>
-		<span class="slider-value">{formatIntensity(intensity)}</span>
+		<span class="slider-value">{formatIntensity(effectsConfig?.fire.intensity ?? DEFAULT_EFFECTS_CONFIG.fire.intensity)}</span>
 	</div>
 
 	<div class="slider-row">
@@ -68,10 +56,10 @@
 			min="0"
 			max="1"
 			step="0.05"
-			value={colorBlend}
-			oninput={(e) => vm.setFireColorBlend(Number((e.target as HTMLInputElement).value))}
+			value={effectsConfig?.fire.colorBlend ?? DEFAULT_EFFECTS_CONFIG.fire.colorBlend}
+			oninput={(e) => effectsConfig?.updateFire({ colorBlend: Number((e.target as HTMLInputElement).value) })}
 		/>
-		<span class="slider-value">{formatColorBlend(colorBlend)}</span>
+		<span class="slider-value">{formatColorBlend(effectsConfig?.fire.colorBlend ?? DEFAULT_EFFECTS_CONFIG.fire.colorBlend)}</span>
 	</div>
 
 	<div class="slider-row">
@@ -82,10 +70,10 @@
 			min="0"
 			max="1"
 			step="0.05"
-			value={turbulence}
-			oninput={(e) => vm.setFireTurbulence(Number((e.target as HTMLInputElement).value))}
+			value={effectsConfig?.fire.turbulence ?? DEFAULT_EFFECTS_CONFIG.fire.turbulence}
+			oninput={(e) => effectsConfig?.updateFire({ turbulence: Number((e.target as HTMLInputElement).value) })}
 		/>
-		<span class="slider-value">{formatTurbulence(turbulence)}</span>
+		<span class="slider-value">{formatTurbulence(effectsConfig?.fire.turbulence ?? DEFAULT_EFFECTS_CONFIG.fire.turbulence)}</span>
 	</div>
 
 	<button

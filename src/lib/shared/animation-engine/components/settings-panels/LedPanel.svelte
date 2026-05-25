@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
-  import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { BUILT_IN_COLOR_PRESETS, type LedColorPreset } from "../../domain/types/LedColorPresets";
   import {
     CATEGORY_LABELS,
@@ -9,50 +8,33 @@
     getPatternDescriptor,
   } from "../../domain/patterns/registry";
 
-  const vm = getAnimationVisibilityManager();
+  const effectsConfig = getEffectsConfigContext();
 
-  let brightness = $state(vm.getLedBrightness());
-  let patternSpeed = $state(vm.getLedPatternSpeed());
-  let activePatternId = $state(vm.getLedPatternId());
-  let primaryColor = $state(vm.getLedPrimaryColor());
-  let activePresetId = $state(vm.getActivePresetId());
-  let userPresets = $state(vm.getUserPresets());
   let patternPickerOpen = $state(false);
   let colorInputRef: HTMLInputElement | null = $state(null);
 
-  function handleChange(): void {
-    brightness = vm.getLedBrightness();
-    patternSpeed = vm.getLedPatternSpeed();
-    activePatternId = vm.getLedPatternId();
-    primaryColor = vm.getLedPrimaryColor();
-    activePresetId = vm.getActivePresetId();
-    userPresets = vm.getUserPresets();
-  }
-
-  vm.registerObserver(handleChange);
-  onDestroy(() => vm.unregisterObserver(handleChange));
+  const activePatternId = $derived(effectsConfig?.led.patternId ?? "solid");
+  const brightness = $derived(effectsConfig?.led.brightness ?? 5);
+  const patternSpeed = $derived(effectsConfig?.led.patternSpeed ?? 1.0);
+  const primaryColor = $derived(effectsConfig?.led.primaryColor ?? "#00ff88");
+  const activePresetId = $derived(effectsConfig?.activePresets.led ?? null);
 
   const activeDescriptor = $derived(getPatternDescriptor(activePatternId));
-  const allPresets = $derived([...BUILT_IN_COLOR_PRESETS, ...userPresets]);
+  const allPresets = $derived([...BUILT_IN_COLOR_PRESETS]);
   const categories = Object.keys(CATEGORY_LABELS) as PatternCategory[];
 
   function selectPreset(preset: LedColorPreset) {
-    vm.setActivePreset(preset.id);
+    effectsConfig?.updateLed({ primaryColor: preset.primaryColor });
   }
 
   function selectPattern(id: string) {
-    vm.setLedPatternId(id);
+    effectsConfig?.updateLed({ patternId: id });
     patternPickerOpen = false;
   }
 
   function addCustomColor(e: Event) {
     const color = (e.target as HTMLInputElement).value;
-    vm.setLedPrimaryColor(color);
-  }
-
-  function removePreset(e: MouseEvent, id: string) {
-    e.preventDefault();
-    vm.removeUserPreset(id);
+    effectsConfig?.updateLed({ primaryColor: color });
   }
 </script>
 
@@ -66,7 +48,6 @@
         style:background={preset.primaryColor}
         title={preset.name}
         onclick={() => selectPreset(preset)}
-        oncontextmenu={!preset.builtIn ? (e) => removePreset(e, preset.id) : undefined}
       ></button>
     {/each}
     <button type="button" class="swatch add-swatch" title="Custom color" onclick={() => colorInputRef?.click()}>+</button>
@@ -116,7 +97,7 @@
       max="5.0"
       step="0.1"
       value={patternSpeed}
-      oninput={(e) => vm.setLedPatternSpeed(parseFloat((e.target as HTMLInputElement).value))}
+      oninput={(e) => effectsConfig?.updateLed({ patternSpeed: parseFloat((e.target as HTMLInputElement).value) })}
       aria-label="Pattern speed"
     />
     <span class="speed-label">{patternSpeed.toFixed(1)}x</span>
@@ -125,7 +106,7 @@
         type="button"
         class="bright-btn"
         class:active={brightness === level}
-        onclick={() => vm.setLedBrightness(level)}
+        onclick={() => effectsConfig?.updateLed({ brightness: level })}
         aria-label="Brightness {level}"
       >
         {level}
