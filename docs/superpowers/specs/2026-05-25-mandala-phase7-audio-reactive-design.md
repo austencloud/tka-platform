@@ -24,7 +24,7 @@ System audio is excluded — the browser cannot capture it reliably cross-platfo
 
 ### AudioContext Lifecycle
 
-One `AudioContext` per session. Created on first source activation, reused when switching sources, closed on component teardown or when audio is explicitly stopped.
+One `AudioContext` per session. Created on first source activation (inside the user-gesture-triggered `startMic()` or `startFile()` methods — never created eagerly, as browsers require a user gesture before audio can play). Reused when switching sources, closed on component teardown or when audio is explicitly stopped.
 
 ```
 getUserMedia / file input
@@ -38,21 +38,39 @@ AudioContext.destination (file source only — mic must NOT reach destination)
 
 Mic source is never connected to `destination` (prevents feedback). File source is connected so the user hears playback.
 
-**FFT_SIZE = 2048** → 1024 frequency bins. With typical 44.1 kHz sample rate, each bin = 43 Hz. This gives adequate resolution across all five bands without being expensive.
+**Mobile `AudioContext` resume:** All mobile browsers (Chrome Android, Safari iOS, Firefox Android) suspend `AudioContext` until a user gesture. After creating or reusing the context inside `startMic()`/`startFile()`, always call:
+
+```typescript
+if (audioContext.state === 'suspended') {
+  await audioContext.resume();
+}
+```
+
+This must be awaited before connecting nodes or reading FFT data. Safari iOS 16 and older are stricter — the `AudioContext` must be created inside the `getUserMedia` success callback. `MandalaAudioEngine` should handle this by creating the context after `getUserMedia` resolves, not before.
+
+**Safari iOS timing — `audioContext.resume()` must be synchronous:** On Safari iOS, `audioContext.resume()` must be called within the same synchronous call stack as the user gesture — not deferred into a `getUserMedia` promise `.then()` chain. Call `audioContext.resume()` synchronously inside the click handler before awaiting `getUserMedia`. The awaited form above is safe on Chrome/Firefox, but on Safari iOS the gesture association is broken by the time the promise resolves.
+
+**Multiple `getUserMedia` calls in WebKit:** If the user switches audio sources, triggering a second `getUserMedia` call while a prior stream is active causes the previous track's `muted` property to be silently set to `true` in WebKit. `MandalaAudioEngine.stop()` must explicitly call `track.stop()` on all prior stream tracks before calling `getUserMedia` again.
+
+**FFT_SIZE = 2048** → 1024 frequency bins. With typical 44.1 kHz sample rate, each bin = `sampleRate / fftSize = 44100 / 2048 ≈ 21.5 Hz`. This gives adequate resolution across all five bands without being expensive.
+
+**FFT windowing:** The `AnalyserNode` applies a **Blackman** window (3-term, ~−58 dB sidelobe attenuation) — not the 4-term Blackman-Harris variant. The W3C Web Audio API 1.1 spec explicitly names this as a Blackman window. There is no API to select a different window function. Do not refer to it as "Blackman-Harris" in code comments or documentation.
 
 ### FFT Bin Ranges
 
-Bin resolution at 44.1 kHz, FFT_SIZE 2048: each bin covers ~21.5 Hz. Bin index = `floor(Hz / (sampleRate / fftSize))`.
+Bin resolution at 44.1 kHz, FFT_SIZE 2048: each bin covers `sampleRate / fftSize = 44100 / 2048 ≈ 21.5 Hz`. Bin index = `floor(Hz / (sampleRate / fftSize))`.
 
 | Band | Hz Range | Bin Range (44.1 kHz, 2048 FFT) | Maps To |
 |------|----------|--------------------------------|---------|
 | Sub-bass | 20–60 Hz | bins 1–2 | Depth / expansion amplitude |
 | Bass | 60–250 Hz | bins 3–11 | Breathing speed |
-| Mids | 250–2000 Hz | bins 12–93 | Rotation / spin speed |
-| High-mids | 2000–6000 Hz | bins 93–279 | Color phase shift rate |
-| Highs | 6000–20000 Hz | bins 279–465 | Line weight / stroke opacity |
+| Mids | 250–2000 Hz | bins 12–92 | Rotation / spin speed |
+| High-mids | 2000–6000 Hz | bins 93–278 | Color phase shift rate |
+| Highs | 6000–20000 Hz | bins 279–928 | Line weight / stroke opacity |
 
-Each band energy = average of byte values (0–255) across its bin range, normalized to 0–1. Actual sample rate is read from `audioContext.sampleRate` at runtime — bin indices are computed dynamically, not hardcoded, to handle 48 kHz sources.
+Derivation: `floor(250 / 21.533) = 11` → Mids start at bin 12, end at bin 92 (`floor(2000 / 21.533) - 1 = 92`). High-mids start at bin 93, end at bin 278 (`floor(6000 / 21.533) - 1 = 278`). Highs start at bin 279, end at bin 928 (`floor(20000 / 21.533) = 928`), well within the 1024-bin range. No band boundaries overlap.
+
+Each band energy = average of byte values (0–255) across its bin range, normalized to 0–1. Actual sample rate is read from `audioContext.sampleRate` at runtime — bin indices are computed dynamically, not hardcoded, to handle 48 kHz sources (at 48 kHz, bin resolution = `48000 / 2048 ≈ 23.4 Hz`, shifting all upper bin indices down by roughly 8%).
 
 ---
 
@@ -130,7 +148,9 @@ Raw FFT data is jittery. Each band value is smoothed with a per-tick EMA:
 smoothed[band] = smoothed[band] * alpha + raw[band] * (1 - alpha)
 ```
 
-- `alpha` is the **smoothing factor** (0 = no smoothing / instant response, 1 = frozen)
+- `alpha` here is the **decay weight** — the weight given to the *previous* smoothed value. This is the inverse of the standard EMA convention (where alpha = weight of the *new* value). To avoid confusion: higher `alpha` = more smoothing / slower response; lower `alpha` = faster response. The slider label should read "Smoothing" with low=fast and high=slow.
+  - `alpha = 0` → fully instant (raw value passes through unchanged)
+  - `alpha = 0.95` → very heavy smoothing / nearly frozen
 - Default: `0.75` (quarter-second feel at 60fps)
 - Global smoothing slider in the controls panel, range 0–0.95
 - Heavy smoothing (0.85–0.95) works for ambient/slow music; light (0.5–0.65) for percussion-driven
@@ -172,12 +192,14 @@ Beat detection provides an optional discrete pulse on top of the continuous FFT 
 `realtime-bpm-analyzer` (already in `package.json`, used by `bpm-analyzer.ts`) handles offline BPM estimation and is used to populate the informational BPM badge when a file source is loaded. For live onset detection — which must run in the RAF loop with zero blocking — we use **spectral flux**, a lightweight real-time algorithm:
 
 1. Store the previous FFT frame
-2. For each bin, compute `max(0, current[bin] - previous[bin])` (positive flux only)
+2. For each bin, compute `max(0, current[bin] - previous[bin])` (positive flux only — half-wave rectified)
 3. Sum flux across the bass band (bins 1–30)
 4. Compare against a running average + threshold multiplier
 5. If sum > `runningAvg * beatSensitivity`, fire beat event
 
 The running average uses a 2-second window (120 frames at 60fps). `beatSensitivity` is a slider (1.2–3.0, default 1.6). Higher = fewer false positives.
+
+**Optional enhancement — all-bins flux with bass weighting:** The default bass-only flux (bins 1–30) misses hi-hats and cymbals, which register as energy spikes in the high-frequency bins. Expanding flux computation to all bins and weighting bass bins 3× before summing (e.g. `bassWeight = 3.0` for bins 1–30, `weight = 1.0` for all others) handles percussion-heavy material more robustly without triggering on sustained mid/high energy. This is a parameter tweak in `spectral-flux-detector.ts`, not an architecture change.
 
 ### Beat Impulse
 
@@ -292,27 +314,72 @@ All mandalas still receive all bands at reduced weight; the "primary band" just 
 
 The existing `handleDownload` in `MandalaPane.svelte` renders a predetermined animation. Audio-reactive export is fundamentally different: it must capture a **live session** as it happens.
 
-**Mechanism: MediaRecorder + Canvas stream**
+**Recording architecture: WebCodecs primary, MediaRecorder fallback**
 
-1. When recording starts, call `canvas.captureStream(30)` to get a `MediaStream` from the mandala's canvas.
-2. If audio source is a file: mix the audio track into the stream via `AudioContext.createMediaStreamDestination()` → add its audio track to the canvas stream.
-3. If audio source is mic: optionally include mic audio track (user choice — some users don't want to record ambient sound).
-4. Pass the combined stream to `MediaRecorder` with `{ mimeType: 'video/webm; codecs=vp9,opus' }` (or VP8 as fallback).
-5. Collect `ondataavailable` chunks into a Blob.
-6. On stop: assemble Blob, trigger download as `.webm`.
+WebCodecs `VideoEncoder` is production-ready in 2026 across Chrome 94+, Edge 94+, Firefox 130+ desktop, and Safari 26 beta (shipping fall 2026). For festival material that must reach Instagram/TikTok/iMessage, shipping WebM-only with a "convert with ffmpeg" tooltip is poor UX. The existing `WebCodecsVideoEncoder` in the codebase is the primary recording path.
 
-**Why WebM, not MP4:**
-`MediaRecorder` cannot write MP4 in the browser. The existing `h264-mp4-encoder` workflow (offline frame-by-frame) cannot be used for live sessions — it requires all frames in advance. WebM is the correct format for live browser recording. If MP4 is required, the user can convert via ffmpeg post-download.
+**Path selection at runtime:**
+
+```typescript
+const useWebCodecs = typeof VideoEncoder !== 'undefined';
+// Primary: WebCodecs → MP4 (Chrome, Edge, Firefox desktop, Safari 26)
+// Fallback: MediaRecorder → WebM (Firefox Android, anything that fails VideoEncoder construction)
+```
+
+**Primary path — WebCodecs → MP4:**
+
+1. When recording starts, the RAF loop calls `new VideoFrame(canvas, { timestamp: performance.now() * 1000 })` each tick and passes it to `WebCodecsVideoEncoder`.
+2. Audio is captured via `AudioContext.createMediaStreamDestination()` and encoded alongside.
+3. On stop: the encoder is flushed, the muxer assembles the MP4 container, and the result is downloaded as `.mp4`.
+4. Use the existing `WebCodecsVideoEncoder` infrastructure in the codebase rather than hand-rolling muxer integration.
+
+**Fallback path — MediaRecorder → WebM (Firefox Android only):**
+
+1. Call `canvas.captureStream(30)` to get a `MediaStream`.
+2. Before constructing `MediaRecorder`, check format support:
+   ```typescript
+   const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9,opus')
+     ? 'video/webm; codecs=vp9,opus'
+     : MediaRecorder.isTypeSupported('video/mp4')
+       ? 'video/mp4'
+       : '';
+   ```
+   Safari throws `NotSupportedError` on `video/webm; codecs=vp9`. Passing `{ mimeType: 'video/mp4' }` on Safari desktop works where `captureStream` is functional. Passing an empty string lets the browser choose its own default.
+3. If audio source is a file: mix the audio track into the stream via `AudioContext.createMediaStreamDestination()`.
+4. If audio source is mic: optionally include mic audio track (user choice).
+5. Collect `ondataavailable` chunks into a Blob. On stop: assemble Blob, trigger download as `.webm` or `.mp4` depending on the selected mimeType.
+
+**Safari / iOS `captureStream()` edge cases:**
+
+`canvas.captureStream()` is not fully supported in Safari. Detection requires two checks:
+
+```typescript
+const streamOk =
+  typeof canvas.captureStream === 'function' &&
+  (() => { const s = canvas.captureStream(30); return s.getVideoTracks().length > 0; })();
+```
+
+Some WebKit builds expose `captureStream` as a no-op that returns a stream with zero video tracks without throwing. Testing `stream.getVideoTracks().length > 0` after calling `captureStream(30)` is the definitive guard. If the stream has no video tracks, treat `captureStream` as unsupported and fall back to the WebCodecs path (which does not require `captureStream`).
+
+For iOS Safari where WebCodecs is also unavailable, show: "Recording is not supported on this browser. Open in Chrome or use the Scripted Preview export."
+
+**iOS audio output routing warning:** When `getUserMedia({ audio: true })` is active on iOS Safari, the OS reroutes audio output from headphones/Bluetooth to the built-in speaker. If a file source is playing while mic is active, the user will hear the file audio through the phone speaker regardless of connected audio devices. Display a warning banner: "iOS routes audio to speaker while mic is active. Disconnect mic source to restore headphone playback."
 
 **Canvas requirement:**
-The mandala currently renders as SVG injected into a `<img>` tag. For `captureStream` to work, the final composition must be on an `HTMLCanvasElement`. The existing `svgToCanvas` helper in `MandalaPane.svelte` already handles SVG→Canvas conversion per-frame. Audio-reactive mode promotes the canvas to a persistent element (not created per-export) so `captureStream` has a stable surface.
+The mandala currently renders as SVG injected via `{@html}` into a `<div>`. For both recording paths, the final composition must be on an `HTMLCanvasElement`. This requires a per-frame SVG-to-canvas pipeline:
 
-This requires a minor refactor: `MandalaPane` maintains a persistent `<canvas>` element that the RAF loop writes to. The SVG is still generated by `SequenceMandala` but composited to canvas each tick instead of inserted as an `<img>`.
+- The existing `svgToCanvas` helper in `MandalaPane.svelte` is designed for one-shot export, not 60fps continuous compositing. Running it at 60fps creates a `Blob`, `URL.createObjectURL`, an `Image` element, and a `URL.revokeObjectURL` call every frame — roughly 60 object allocations per second, causing significant GC pressure and potential frame drops.
+- **Recommended approach:** replace the `Image`-based path with `createImageBitmap(new Blob([svgString], { type: 'image/svg+xml' }))`. `createImageBitmap` returns a `Promise<ImageBitmap>`, avoids the Image element and its layout-triggering load cycle, and the resulting `ImageBitmap` can be drawn directly to canvas via `ctx.drawImage`. Alternatively, maintain a single reusable `Image` element and set `src` each tick, skipping the re-allocation.
+- Benchmark both approaches at 60fps against the current `svgToCanvas` before committing to one.
+
+Audio-reactive mode promotes the canvas to a persistent element (not created per-export) so both recording paths have a stable surface.
+
+This requires a meaningful refactor: `MandalaPane` maintains a persistent `<canvas>` element in the DOM. The existing `SequenceMandala` component continues to drive the SVG string via its RAF loop. `MandalaPane` composites that SVG to the canvas each tick instead of inserted as `{@html}`. The canvas is positioned off-screen (or behind the visible SVG) during normal viewing and becomes the capture surface when recording starts.
 
 **Record controls:**
 ```
 [ ● Record ]  ← starts recording, turns red while active
-[ ■ Stop ]    ← stops and downloads .webm
+[ ■ Stop ]    ← stops and downloads .mp4 (or .webm on Firefox Android)
 ```
 
 Recording badge shows elapsed time (MM:SS). Max session: 30 minutes (safety cap to prevent browser memory issues with large Blobs).
@@ -425,7 +492,11 @@ Web Audio API input latency is typically 10–50ms. At 60fps, one frame = 16.7ms
 
 ## Accessibility and Permissions
 
-- Mic permission: browser permission prompt fires on first "Mic" activation. If denied, show an inline error state ("Microphone access denied — check browser permissions").
+- Mic permission — pre-prompt UX: Before calling `getUserMedia`, show an informational callout explaining why mic access is needed: "Tap 'Allow' when the browser asks — your mic is used for real-time visualization only and is never recorded or transmitted." This explanation appears the first time the user clicks the Mic button, before the browser prompt fires. Chrome research shows this dramatically improves accept rates; once the user clicks "Block," future `getUserMedia` calls silently reject without re-prompting.
+- Mic permission — error state branching: After a `NotAllowedError`, check `navigator.permissions.query({ name: 'microphone' })` to distinguish states:
+  - State `'prompt'` (denied this session): show "Click 'Allow' in the browser prompt that appears when you try again."
+  - State `'denied'` (already blocked at browser level): show "Open browser settings → Site permissions → Microphone and allow this site. On macOS (non-Safari), also check System Settings → Privacy & Security → Microphone."
+  - State `'granted'` with error: indicates an OS-level or `Permissions-Policy` block — show "Microphone access may be blocked by your system or hosting environment."
 - File input: standard `<input type="file">` — no special permissions required.
 - All sensitivity sliders have `aria-label` and numeric value display.
 - Spectrum overlay is decorative (`aria-hidden="true"`).

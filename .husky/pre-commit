@@ -37,3 +37,15 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 echo "✅ Type check passed"
+
+# Verify module/tab definitions have matching i18n keys
+echo "🔍 Checking i18n structural coverage..."
+node scripts/validate-i18n-structure.cjs --ci 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "  ❌ Missing i18n keys for module/tab definitions."
+  echo "  Run: npm run i18n:structure:fix"
+  echo ""
+  exit 1
+fi
+echo "✅ i18n structure check passed"

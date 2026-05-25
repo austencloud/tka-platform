@@ -22,8 +22,12 @@ const rules = [
   { pattern: /git\s+add\s+-A/, msg: "git add -A stages EVERYTHING including other sessions' work. Add specific files by name." },
   { pattern: /git\s+add\s+\.\s*($|[;&|])/, msg: "git add . stages EVERYTHING including other sessions' work. Add specific files by name." },
 
-  // Stash (any form — requires explicit user permission per CLAUDE.md)
-  { pattern: /git\s+stash\b/, msg: "ABSOLUTELY FORBIDDEN. git stash destroys other sessions' uncommitted work. NEVER stash. Commit specific files instead." },
+  // Stash — BLOCKED unless user explicitly confirms all other agents are stopped
+  { pattern: /git\s+stash\b/, msg: "BLOCKED. git stash is unsafe with multiple agents. Austen runs 10+ concurrent agents — stash WILL destroy their uncommitted work. Before asking to override: (1) Tell the user they MUST stop ALL other Claude Code sessions first. (2) Ask them to confirm all sessions are stopped. (3) Only then proceed. Do NOT say 'this won't affect your files' — it WILL." },
+
+  // History-rewriting operations that require exclusive git access
+  { pattern: /git\s+lfs\s+migrate\b/, msg: "EXCLUSIVE ACCESS REQUIRED. git lfs migrate rewrites commit history. You MUST tell the user: 'This requires stopping ALL other Claude Code sessions first.' Then confirm they are stopped before proceeding. Do NOT run this while other agents are active." },
+  { pattern: /git\s+rebase\b/, msg: "EXCLUSIVE ACCESS REQUIRED. git rebase rewrites commit history and requires a clean working directory. You MUST tell the user: 'This requires stopping ALL other Claude Code sessions first.'" },
 
   // Branch creation (ALL work happens on main per CLAUDE.md)
   { pattern: /git\s+checkout\s+-b\s/, msg: "Branch creation is forbidden. All work happens on main." },

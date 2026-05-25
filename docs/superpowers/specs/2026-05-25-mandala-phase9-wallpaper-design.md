@@ -9,7 +9,7 @@ Phase 9 depends on Phase 1 only for static export. Animated tessellation benefit
 ### Goals
 
 - Ship pixel-perfect static wallpapers at 4K without any server-side rendering.
-- Ship seamlessly looping animated wallpapers at 1080p via the existing `h264-mp4-encoder` pipeline.
+- Ship seamlessly looping animated wallpapers at Standard resolution (1170×2532) via the existing `VideoExporter` class (WebCodecs hardware acceleration with WASM `h264-mp4-encoder` fallback).
 - Add zero runtime cost to the sequence viewer — the entire tessellation system is instantiated only when the export panel is open.
 
 ### Non-Goals
@@ -31,7 +31,7 @@ Rows and columns on a regular Cartesian grid. Tile origin at `(col * tileSize, r
 
 ### Hexagonal Honeycomb
 
-Offset rows. Even rows start at x=0; odd rows start at x=tileRadius (horizontal hex layout). Vertical spacing = `tileRadius * sqrt(3)`. Each tile is a circle/mandala inscribed in a hexagon cell. This is the most visually distinctive pattern — recommended as the featured preset.
+Offset rows. Even rows start at x=0; odd rows start at x=`tileSize / 2` (horizontal hex layout). `tileSize` is the flat-to-flat measurement (distance between parallel sides) of the hexagon — this is the standard hex grid convention. For pointy-top orientation, vertical pitch = `tileSize * sqrt(3) / 2` and horizontal pitch = `tileSize * 3 / 4 * sqrt(4/3)`. Concretely: pointy-top row height = `tileSize * sqrt(3)`, column offset = `tileSize * 3 / 2`. Each tile is a circle/mandala inscribed in a hexagon cell. This is the most visually distinctive pattern — recommended as the featured preset.
 
 Two sub-variants:
 - **Flat-top:** hexagons have flat edges at top and bottom.
@@ -83,12 +83,18 @@ All four patterns share these controls:
 
 High-res PNG skips video encoding entirely. The pipeline:
 
-1. Compute tile layout for target dimensions (aspect ratio + resolution).
+1. Compute tile layout for target dimensions (aspect ratio + resolution). Set the export canvas dimensions directly to the target preset pixel values (e.g., 1170×2532 for Standard, 3840×2160 for Desktop 4K). **Do not multiply by `devicePixelRatio`.** DPR reflects the physical pixel density of the screen running the export — applying it to an export canvas would double the resolution on a 2× DPR display, producing an oversized file. DPR is only relevant for the live preview canvas (on-screen rendering), where `previewWidthPx × devicePixelRatio` makes the preview crisp.
 2. For each tile, call `calculator.calculate(steps, ..., { dx: tipDxSnapshot })` at a single frozen `tipDx` value (the value at the moment the user clicks export, i.e., the current breath phase of the live preview).
-3. Render each mandala to the shared `OffscreenCanvas` via `renderMandalaToCanvas()` with `offsetX/offsetY` positioned per the tessellation layout.
-4. Serialize to PNG via `canvas.toBlob('image/png')` at native resolution.
+3. Render each tile to a **per-tile `OffscreenCanvas`** sized to `tile.size × tile.size` (not a shared full-canvas). This avoids the overlap-mask bleed bug in `renderMandalaToCanvas`: that function allocates full-canvas-sized `maskB`/`maskR` OffscreenCanvases and composites them at identity transform, which causes purple-overlap pixels from adjacent tiles to bleed across the full canvas when tiles share a large export canvas.
 
-The renderer already supports `offsetX`/`offsetY` in `renderMandalaToCanvas`. The tessellation exporter iterates tile positions and calls this for each tile without creating intermediate per-tile canvases — one shared canvas, many draw calls. This keeps memory flat regardless of tile count.
+   Per-tile pipeline:
+   - Create a `tile.size × tile.size` OffscreenCanvas.
+   - Call `renderMandalaToCanvas(tileCanvas, paths, { offsetX: 0, offsetY: 0, ... })` — origin always 0,0 within the tile canvas.
+   - Apply `tileRotation` and `rotationJitter` by wrapping the call in `ctx.save()` / `ctx.translate(cx, cy)` / `ctx.rotate(rad)` / `ctx.translate(-cx, -cy)` on the main export canvas, then stamp with `exportCtx.drawImage(tileCanvas, tile.cx - tile.size / 2, tile.cy - tile.size / 2)`.
+
+4. Serialize to PNG via `exportCanvas.convertToBlob({ type: 'image/png' })` (the correct method for `OffscreenCanvas`; `toBlob()` is for `HTMLCanvasElement`).
+
+**Prerequisite — `renderMandalaToCanvas` tipDx fix (shared with Phase 5/8):** The canvas renderer currently hardcodes scale using `MANDALA_STANDARD_TIP_DX` instead of reading `options.tipDx`. Port the dynamic scaling from `renderMandalaSVG` (`const effectiveTipDx = Math.max(options.tipDx ?? MANDALA_STANDARD_TIP_DX, MANDALA_STANDARD_TIP_DX)`) into `renderMandalaToCanvas` before building the tessellation exporter. Without this fix, tiles with `tipDx > 130` will clip at edges.
 
 For very large exports (>4K or high tile density), tiles are rendered in row-batches to avoid blocking the main thread. Each batch is wrapped in a `setTimeout(0)` yield.
 
@@ -96,24 +102,26 @@ For very large exports (>4K or high tile density), tiles are rendered in row-bat
 
 ### Animated MP4 (Frame Loop)
 
-Extends the existing `handleDownload` logic in `MandalaPane.svelte`:
+Uses the existing `VideoExporter` class (`animation-engine/services/implementations/VideoExporter.ts`) via `VideoExporter.createManualExporter()`. This is the production-tested path already used by the sequence viewer; it auto-detects WebCodecs hardware acceleration (Chrome/Edge/Safari) and falls back to WASM `h264-mp4-encoder` for Firefox. It also enforces even dimensions (H.264 requirement), provides cancel support, and handles cleanup on error. Do not import `h264-mp4-encoder` directly — that duplicates encoder-creation logic already in `VideoExporter`.
 
-1. Compute tile layout.
-2. For each frame `i` of `totalFrames`:
+Pipeline:
+
+1. Compute tile layout. Cap resolution at Standard (1170×2532) — no DPR multiplication.
+2. Instantiate `VideoExporter.createManualExporter({ width, height, fps })`.
+3. For each frame `i` of `totalFrames`:
    a. For each tile `t`, compute its local phase: `localPhase = (globalPhase + tile.phaseOffset) % 1`.
    b. Compute `tipDx` from `localPhase` using the active easing function.
    c. Compute rotation from `localPhase`.
    d. Call `calculator.calculate(...)` with that tile's `tipDx`.
-   e. Render tile to the shared canvas at its `offsetX/offsetY`.
-3. Capture the full canvas frame and feed to `h264-mp4-encoder`.
+   e. Render each tile to its own per-tile OffscreenCanvas (same per-tile approach as static export — see Static PNG section for rationale and rotation transform pattern).
+   f. Stamp completed tiles onto the shared `HTMLCanvasElement`.
+   g. Feed the canvas frame to `VideoExporter.addFrame(canvas)`.
+   h. Yield main thread: `await new Promise(r => setTimeout(r, 0))` every 10 frames so the progress indicator DOM actually updates.
+4. Call `VideoExporter.finish()` → triggers browser download.
 
-Geometry calculation is the bottleneck. A 1080p wallpaper with 16 tiles at 30 fps for 5 seconds = 2,400 geometry calculations. Each `calculate()` call is ~0.5 ms, so total geometry time ≈ 1.2 s — acceptable. At 64 tiles this reaches ~5 s, which is acceptable given the "exporting..." progress indicator.
+Geometry calculation is the bottleneck. A Standard-resolution wallpaper with 16 tiles at 30 fps for 5 seconds = 2,400 geometry calculations. Each `calculate()` call is ~0.5 ms, so total geometry time ≈ 1.2 s — acceptable. At 64 tiles this reaches ~5 s, which is acceptable given the "exporting..." progress indicator.
 
 **Seamless loop requirement:** The animation is inherently seamless because both the breath oscillation (`phase % 1`) and the color phase (`phase % 1`) are periodic. The last frame at `i = totalFrames - 1` produces state equivalent to `i = -1` (one frame before frame 0). MP4 loops cleanly.
-
-### Encoder Reuse
-
-`h264-mp4-encoder` is loaded as a dynamic import (already done in `MandalaPane.svelte`). The tessellation exporter imports and uses the same encoder. No new dependency.
 
 ---
 
@@ -134,14 +142,21 @@ Phone Portrait is the default — it has the most immediate shareable value.
 
 ### Resolution Presets
 
-| Label | Pixels | Notes |
+| Label | Pixels (Portrait) | Primary Use |
 |---|---|---|
-| 1080p | 1080 × 1920 (portrait) | Fast export, ~2 MB PNG |
-| 1440p | 1440 × 2560 | Good for recent Android/iOS |
-| 4K | 2160 × 3840 | Maximum quality, ~8 MB PNG |
+| Standard | 1170 × 2532 | iPhone 14/15/16 native resolution |
+| QHD | 1440 × 3120 | Android flagships (Galaxy S25, Pixel 9 Pro) |
+| Desktop 4K | 3840 × 2160 | Desktop monitors (landscape) |
+| Classic | 1080 × 1920 | Legacy option for older devices |
 | Custom | user-entered W×H | Validated: max 4096×4096 |
 
-For animated exports, resolution is capped at 1080p regardless of selection. 4K animated would require per-tile geometry at each frame at full resolution — acceptable for static but impractical for video export with the client-side encoder.
+Notes:
+- 1080×1920 ("Classic") is undersized for modern flagship phones — the iPhone 16 Pro Max native resolution is 1320×2868 and the Pixel 9 Pro is 1344×2992. A 1080p wallpaper will be upscaled and appear slightly soft on these devices. The "Standard" preset at 1170×2532 is the practical minimum for current iPhone models.
+- QHD (1440×3120) covers all current Android flagships and exceeds all current iPhone native resolutions.
+- Desktop 4K (3840×2160) is landscape; the aspect ratio preset must be set to "Desktop 16:9" for this to fill a monitor correctly.
+- The "4K portrait" (2160×3840) from the earlier draft is removed — no phone wallpaper surface exceeds 1440×3120 as of 2026, making 4K portrait unnecessarily large for phone use. If a user needs it, the Custom option covers it.
+
+For animated exports, resolution is capped at Standard (1170×2532) regardless of selection. Higher-resolution animated export would require full-resolution geometry per frame — acceptable for static but impractical for the client-side encoder.
 
 ---
 
@@ -167,10 +182,12 @@ Toggle button: Static / Animated. Static is default. When Animated is selected, 
 `colorVariant` selector (Uniform / Hue Rotate / Alternate / Gradient X / Gradient Radial). When not Uniform, a secondary intensity slider appears (how much variation across the pattern).
 
 **4. Canvas**
-Aspect ratio preset buttons. Resolution preset buttons. For animated, resolution is locked to 1080p with an explanatory note.
+Aspect ratio preset buttons. Resolution preset buttons. For animated, resolution is locked to Standard (1170×2532) with an explanatory note.
 
 **5. Export**
 A single "Export" button. When exporting, it becomes a progress indicator ("Rendering frame 12 / 150..."). On completion, the browser download is triggered automatically.
+
+When "Phone Portrait" is the selected aspect ratio, display a single-line note beneath the Export button: "iPhone users: use intoLive or a similar app to convert the MP4 to a Live Photo before setting as wallpaper." iOS has no direct "set MP4 as wallpaper" path in any version through iOS 19 — the Live Photo conversion step is required. Android 14+ (Pixel Launcher and most OEM launchers) accepts MP4 directly as an animated wallpaper with no extra app needed.
 
 ### Preview
 
@@ -264,7 +281,7 @@ export async function exportAnimatedMP4(
   steps: StepData[],
   viewerSettings: MandalaViewerSettings,
   config: TessellationConfig,
-  resolution: { width: number; height: number },  // capped at 1080p
+  resolution: { width: number; height: number },  // capped at Standard (1170×2532)
   fps: number,
   onProgress?: (frame: number, total: number) => void
 ): Promise<void>
@@ -272,7 +289,7 @@ export async function exportAnimatedMP4(
 
 `MandalaViewerSettings` is an extracted interface (currently inline in `MandalaPane.svelte`) covering: `pathShape`, `preset`, `colorMode`, `speed`, `depth`, `lineWeight`, `customBlue`, `customRed`.
 
-Both functions manage their own `OffscreenCanvas` (static) or `HTMLCanvasElement` (animated, required by the encoder). Both trigger a browser download on completion. Both clean up all intermediate resources before resolving.
+Both functions create per-tile `OffscreenCanvas` instances (sized to individual tile dimensions, not full export resolution) for rendering. Static export uses a full-size `OffscreenCanvas` as the final composition target; animated export uses an `HTMLCanvasElement` as the composition target (required by `VideoExporter.addFrame`). Both trigger a browser download on completion. Both clean up all intermediate resources before resolving.
 
 ### TessellationPreviewRenderer
 
@@ -287,6 +304,19 @@ For animated export, geometry for tile `t` at frame `i` depends on `(steps, tipD
 ### MandalaViewerSettings Extraction
 
 Before building `WallpaperExportDrawer`, extract `MandalaViewerSettings` as a shared interface from `MandalaPane.svelte`. This lets the drawer receive all the mandala styling context it needs via props without reaching into parent state.
+
+### Image Compression Format
+
+Phase 9 exports PNG only. This is correct for the current scope:
+
+- `canvas.toBlob('image/webp')` lacks Firefox and Safari support — a fallback to PNG is required for cross-browser use, adding format-detection complexity not worth Phase 9 scope.
+- `canvas.toBlob('image/avif')` is Chrome-only and encodes a 4K canvas in 15–60 seconds client-side — unacceptable UX.
+
+Post-Phase-9: add optional WebP export for Chrome/Edge with PNG fallback, behind a format picker in the Canvas section of the drawer. Skip AVIF.
+
+### Tile Stamping: `createPattern` Not Applicable
+
+`ctx.createPattern(image, 'repeat')` cannot express per-tile variation. It hands tiling to the GPU compositing pipeline and is faster only when every tile is identical. Phase 9's `rotationJitter`, `colorVariant`, and `phaseOffset` features all require per-tile state — the manual `drawImage` loop is the only viable approach. `createPattern` is not worth reconsidering unless a future "uniform" mode with no jitter, no color variation, and no phase offsets is added.
 
 ---
 

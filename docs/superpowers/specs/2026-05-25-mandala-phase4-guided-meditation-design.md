@@ -25,6 +25,7 @@ This is not a superficial overlay. The breathing schedule drives the animation, 
 | Coherence | Equal in/out, no hold | Heart-rate variability training. Equal inhale and exhale at 5–6 BPM. |
 | Box Breathing | 4–4–4–4 | Inhale 4s / Hold 4s / Exhale 4s / Hold 4s. Military standard, stress relief. |
 | 4-7-8 | 4–7–8 | Inhale 4s / Hold 7s / Exhale 8s. Sleep-promoting, activates parasympathetic. |
+| Physiological Sigh | 2–1–6–0 | Double nasal inhale (2s + 1s) + long exhale (6s). Stanford RCT (Balban et al., 2023, *Cell Reports Medicine*) found cyclic sighing outperforms box breathing and mindfulness for acute stress relief. High 2026 cultural recognition (Huberman Lab, Oura, Whoop). |
 | Custom | User-defined | Separate second-counts for each phase: inhale, hold-in, exhale, hold-out. |
 
 ### BPM Selector
@@ -65,6 +66,18 @@ The animation position within the cycle maps to phases:
 
 For Coherence mode (no holds), the triangle wave maps directly: 0–0.5 is inhale, 0.5–1.0 is exhale.
 
+**Physiological Sigh — inhale sub-phase:**
+The Physiological Sigh pattern splits the inhale into two consecutive nasal inhale segments: `inhale1` (2s, primary) and `inhale2` (1s, secondary top-up). Both map to the same `inhale` ramp on the mandala (dx continues ramping to `animateMax`), but the overlay renders a mid-inhale sub-cue:
+
+```
+Phase label sequence:
+  "Inhale"        ← inhale1 segment (0–2s into inhale)
+  "Inhale again"  ← inhale2 segment (2–3s into inhale)
+  "Exhale"        ← exhale phase (3–9s)
+```
+
+The `inhale2` sub-cue fires at `elapsed >= inhale1Duration` within the inhale phase. No change to `BreathPhase` — this is a display-layer detail handled in `MeditationOverlay` for the `physiological-sigh` pattern only. The aria-live announcement at the `inhale2` boundary is `"Inhale again"`.
+
 ---
 
 ## Easing Curve Mapping
@@ -76,6 +89,7 @@ Each breathing pattern has a recommended default easing that physiology justifie
 | Coherence | `sine` | Symmetric, smooth, no hesitation. Matches the consistent cadence of resonance breathing. |
 | Box Breathing | `ease` (cubicInOut) | Smooth ramp at start/end of each phase. The "box" implies deliberate, controlled transitions. |
 | 4-7-8 | `bloom` | Fast exhale onset (bloom = quick early expansion inverted). The extended exhale benefits from front-loading. |
+| Physiological Sigh | `sine` | The double inhale is sharp by nature; a sine curve keeps the ramp smooth without fighting the pattern's inherent speed differential. The long exhale resolves naturally. |
 | Custom | `breathe` | Default organic breathe easing. User can override in advanced settings. |
 
 In meditation mode, the easing is auto-set based on pattern selection. Advanced users can override it via a collapsed "Advanced" section.
@@ -102,11 +116,13 @@ Replaces the standard controls rail. Has a back arrow ("Exit" / `fa-arrow-left`)
 
 **Section 1: Pattern**
 
-Four buttons: Coherence / Box / 4-7-8 / Custom. Default: Coherence.
+Five buttons: Coherence / Box / 4-7-8 / Sigh / Custom. Default: Coherence.
 
 For Coherence: shows a BPM row (3–8 BPM, button group or pill slider).
-For Box/4-7-8: shows the fixed ratio as a read-only annotation ("4s · 4s · 4s · 4s") with no editable fields. The durations are fixed per pattern.
+For Box/4-7-8/Sigh: shows the fixed ratio as a read-only annotation — e.g. Box shows "4s · 4s · 4s · 4s", Sigh shows "2s + 1s · 6s" — with no editable fields. The durations are fixed per pattern.
 For Custom: shows four numeric inputs (seconds) for Inhale / Hold In / Exhale / Hold Out. Min 1s per phase, Hold phases can be set to 0.
+
+The Sigh pattern label reads "Physiological Sigh" on wider screens; truncates to "Sigh" on narrow. A tooltip on hover/focus: "Double nasal inhale + long exhale. Stanford 2023 study: most effective pattern for acute stress."
 
 **Section 2: Session**
 
@@ -220,7 +236,9 @@ interface MeditationSessionState {
 
 ### Tick Clock
 
-The session clock runs inside a `requestAnimationFrame` loop separate from the mandala animation. The two clocks are not merged — the mandala animation is driven by its own raf loop inside `SequenceMandala`. The session clock reads elapsed time and calls a callback that updates `currentPhase`, `phaseElapsed`, and the prompt overlay. The two loops run in parallel; they share the same absolute `startTime` reference to stay synchronized.
+The session clock runs inside a `requestAnimationFrame` loop separate from the mandala animation. The two clocks are not merged — the mandala animation is driven by its own raf loop inside `SequenceMandala`. The session clock reads elapsed time and calls a callback that updates `currentPhase`, `phaseElapsed`, and the prompt overlay.
+
+**Timing approach:** `performance.now()` delta-based — not raf tick counting. The session stores `sessionStartMs = performance.now()` on start, and each raf tick computes `elapsedSeconds = (performance.now() - sessionStartMs - totalPausedMs) / 1000`. This ensures the timer does not drift when raf is throttled (background tab) and gives accurate elapsed time on visibility restore. See "Session Lifecycle & Platform Concerns" for pause/resume mechanics.
 
 ### Session History
 
@@ -287,7 +305,7 @@ src/lib/shared/sequence-viewer/
   services/
     meditation-audio.ts               — MeditationAudioService factory + types
   state/
-    meditation-session.svelte.ts      — MeditationSessionState, tick clock, session history
+    meditation-session.svelte.ts      — MeditationSessionState, tick clock, session history, visibility handling, wake lock
   domain/
     meditation-types.ts               — BreathingPattern, BreathPhase, PatternConfig, CompletedSession
 ```
@@ -318,8 +336,9 @@ MandalaPane
   │     └── renders: phase label + arc indicator + aria-live region
   │
   ├── SequenceMandala (unchanged API)
-  │     ├── animatePeriod ← derived from MeditationSessionState.pattern.totalCycleSecs
+  │     ├── animatePeriod ← getPatternCycleTime(meditationSession.pattern)
   │     ├── animateEasing ← derived from pattern default easing
+  │     ├── tipDx ← holdPulseTipDx (set during hold phases; undefined during inhale/exhale)
   │     └── animateRotation ← 90° normally, 0° under prefers-reduced-motion
   │
   └── MeditationAudioService
@@ -332,7 +351,7 @@ MandalaPane
 
 ```typescript
 export interface BreathingPattern {
-  id: "coherence" | "box" | "4-7-8" | "custom";
+  id: "coherence" | "box" | "4-7-8" | "physiological-sigh" | "custom";
   label: string;
   /** Duration of each phase in seconds. 0 = phase is skipped. */
   inhale: number;
@@ -341,16 +360,33 @@ export interface BreathingPattern {
   holdOut: number;
   /** Recommended easing curve for this pattern */
   defaultEasing: UndulationEasing;
+  /**
+   * For patterns where the inhale phase has a distinct sub-cue midpoint.
+   * When set, MeditationOverlay switches the phase label from "Inhale" to
+   * "Inhale again" at this many seconds into the inhale phase.
+   * Currently only used by "physiological-sigh" (inhale1: 2s, inhale2: 1s).
+   */
+  inhaleSubCueAt?: number;
+}
+
+/** Total cycle duration in seconds. Single source of truth — never store this as a field. */
+export function getPatternCycleTime(p: BreathingPattern): number {
+  return p.inhale + p.holdIn + p.exhale + p.holdOut;
 }
 
 export const BREATHING_PATTERNS: Record<string, BreathingPattern> = {
-  coherence: { id: "coherence", label: "Coherence", inhale: 5, holdIn: 0, exhale: 5, holdOut: 0, defaultEasing: "sine" },
-  box:       { id: "box",       label: "Box",        inhale: 4, holdIn: 4, exhale: 4, holdOut: 4, defaultEasing: "ease" },
-  "4-7-8":   { id: "4-7-8",    label: "4-7-8",      inhale: 4, holdIn: 7, exhale: 8, holdOut: 0, defaultEasing: "bloom" },
+  coherence:           { id: "coherence",           label: "Coherence",          inhale: 5, holdIn: 0, exhale: 5, holdOut: 0, defaultEasing: "sine" },
+  box:                 { id: "box",                 label: "Box",                inhale: 4, holdIn: 4, exhale: 4, holdOut: 4, defaultEasing: "ease" },
+  "4-7-8":             { id: "4-7-8",               label: "4-7-8",              inhale: 4, holdIn: 7, exhale: 8, holdOut: 0, defaultEasing: "bloom" },
+  // Balban et al. 2023, Cell Reports Medicine — double nasal inhale (2s + 1s) + long exhale (6s).
+  // inhaleSubCueAt: 2 triggers the "Inhale again" sub-label at 2s into the inhale phase.
+  "physiological-sigh": { id: "physiological-sigh", label: "Physiological Sigh", inhale: 3, holdIn: 0, exhale: 6, holdOut: 0, defaultEasing: "sine", inhaleSubCueAt: 2 },
 };
 ```
 
 The `coherence` pattern's `inhale` and `exhale` values are computed from the selected BPM (not hardcoded to 5s).
+
+`getPatternCycleTime` is the only way to get total cycle time — do not add a `totalCycleSecs` field to the interface (that would duplicate data and can drift on custom patterns).
 
 ### SequenceMandala Integration
 
@@ -359,7 +395,7 @@ No changes to `SequenceMandala.svelte`. It is driven purely through its existing
 ```typescript
 const animatePeriod = $derived(
   meditationMode
-    ? meditationSession.pattern.totalCycleSecs
+    ? getPatternCycleTime(meditationSession.pattern)
     : BASE_PERIOD / speed
 );
 
@@ -370,14 +406,121 @@ const animateEasing = $derived(
 );
 ```
 
-The hold phases are handled by the `MeditationOverlay` and `MeditationSessionState` — not by `SequenceMandala`. The mandala continues its triangle wave unmodified; the hold visual effect (micro-pulse at ±3% dx) is implemented by momentarily modulating `animateMax` by a small sinusoid in `MandalaPane` during hold phases.
+The hold phases are handled by the `MeditationOverlay` and `MeditationSessionState` — not by `SequenceMandala`. `SequenceMandala` is not changed.
+
+**Hold phase micro-pulse — implementation via `tipDx` bypass:**
+
+`SequenceMandala`'s `effectiveDx` is `tipDx ?? (animate ? animatedDx : MANDALA_STANDARD_TIP_DX)`. When `tipDx` is set, it takes precedence regardless of `animate`. This means:
+- During hold phases, `MandalaPane` sets `tipDx` to the pulsed value computed by its own RAF loop
+- `animate` remains `true` throughout — the internal `$effect` is never re-triggered by hold-phase changes
+- During inhale/exhale ramp phases, `MandalaPane` clears `tipDx` (passes `undefined`) and the mandala animation drives `animatedDx` normally
+
+This avoids the `$effect` dependency problem entirely: `animateMax`, `animateMin`, `animatePeriod`, and `animateEasing` are set once per session start and never mutated during the session. No animation restarts, no clock desync.
+
+**Micro-pulse computation in `MandalaPane`:**
+
+```typescript
+// MandalaPane maintains its own hold-pulse state
+let holdPulseTipDx: number | undefined = $state(undefined);
+
+// Inside MeditationSessionState tick callback, for hold-in:
+//   amplitude = (animateMax - animateMin) * 0.03  (±3%)
+//   holdPulseTipDx = animateMax + Math.sin(2 * Math.PI * 0.2 * elapsedInHold) * amplitude
+// For hold-out:
+//   holdPulseTipDx = animateMin + Math.sin(2 * Math.PI * 0.2 * elapsedInHold) * amplitude
+// For inhale/exhale:
+//   holdPulseTipDx = undefined  (animation drives dx)
+```
+
+`MandalaPane` passes `holdPulseTipDx` as the `tipDx` prop to `SequenceMandala`. The micro-pulse runs at 0.2 Hz (5-second oscillation), giving the held breath a living quality without touching any animated prop.
+
+---
+
+## Session Lifecycle & Platform Concerns
+
+### Page Visibility — Pause/Resume on Tab Switch
+
+`requestAnimationFrame` is throttled (or stopped entirely) in background tabs by all major browsers. Without handling this, the session timer drifts and audio desynchronizes from the visual.
+
+**Timer implementation:** The session clock uses `performance.now()` delta-based timing — not raf tick counting. Each raf tick computes `elapsed = performance.now() - sessionStartTime - totalPausedMs`, where `totalPausedMs` accumulates paused intervals. This keeps the session clock accurate regardless of raf throttling.
+
+**Visibility change handler:**
+
+```typescript
+// In MeditationSessionState
+let tabHiddenAt: number | null = null;
+
+function onVisibilityChange() {
+  if (document.hidden) {
+    tabHiddenAt = performance.now();
+    // Pause mandala animation to avoid stale frames on return
+    pauseAnimation();
+    // Fade ambient audio immediately (no graceful fade — tab is hidden)
+    meditationAudioService.setVolume(0);
+  } else {
+    if (tabHiddenAt !== null) {
+      totalPausedMs += performance.now() - tabHiddenAt;
+      tabHiddenAt = null;
+    }
+    resumeAnimation();
+    meditationAudioService.setVolume(masterVolume);
+  }
+}
+
+// Registered in session start, removed on session end
+document.addEventListener('visibilitychange', onVisibilityChange);
+```
+
+The session does not auto-end when the tab is hidden. Time while hidden is excluded from `elapsedSeconds`. The user returns to the same phase they left. This is the correct behavior for a meditation context — users may glance away or put the device face-down.
+
+### Screen Wake Lock — Prevent Display Sleep
+
+A 30-minute meditation session will trigger screen sleep on mobile devices. The Screen Wake Lock API (`navigator.wakeLock.request('screen')`) prevents this.
+
+**Lifecycle:**
+
+```typescript
+// In MeditationSessionState
+let wakeLock: WakeLockSentinel | null = null;
+
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return; // graceful degradation
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+
+    // NOTE: On iOS 16.4–18.3 in installed PWAs (Home Screen Web Apps),
+    // wakeLock.request() resolves successfully and returns a WakeLockSentinel
+    // without throwing — but the screen still sleeps. This is WebKit bug #254545,
+    // fixed in iOS 18.4 (released early 2025). Users on older iOS in a PWA
+    // context will see the API "succeed" while the screen dims anyway.
+    // The release-event re-acquisition pattern below is the best available
+    // mitigation — do NOT remove it thinking it's redundant.
+    wakeLock.addEventListener('release', () => {
+      if (sessionState.status === 'running') acquireWakeLock();
+    });
+  } catch {
+    // Permission denied or API unsupported — silently degrade, session continues
+  }
+}
+
+function releaseWakeLock() {
+  wakeLock?.release();
+  wakeLock = null;
+}
+```
+
+- `acquireWakeLock()` is called on session start (after the user-gesture "Start" press — required for the API).
+- `releaseWakeLock()` is called on session complete, on "End Session" press, and on meditation mode exit.
+- The `release` event listener inside `acquireWakeLock` handles two cases: browser-initiated release (e.g., battery critical) and the iOS 16.4–18.3 PWA silent-failure window described above.
+
+**Support:** Chrome 84+, Edge 84+, Safari 16.4+ (browser tabs); Safari 18.4+ for reliable PWA support (WebKit bug #254545). Graceful degradation for older Safari — screen may dim but session continues.
 
 ---
 
 ## Scope Boundaries
 
 **In Phase 4:**
-- Four breathing patterns (Coherence, Box, 4-7-8, Custom)
+- Five breathing patterns (Coherence, Box, 4-7-8, Physiological Sigh, Custom)
 - BPM selector for Coherence
 - Session timer (5–30 min)
 - Breathing prompt overlay (phase label + arc indicator)

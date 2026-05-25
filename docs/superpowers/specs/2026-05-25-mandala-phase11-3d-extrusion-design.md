@@ -100,26 +100,65 @@ The active method is a UI toggle. Default is Tube.
 
 The 2D undulation oscillates `tipDx` between 0 and `animateMax` on an easing curve. In 3D this maps to three simultaneous modulations:
 
-### Radial expansion (primary)
-The `tipDx` parameter drives the geometry update exactly as it does in 2D: each frame, call `calculator.calculatePoints()` with the current `tipDx`, get updated `MandalaPoint[][]`, rebuild `CatmullRomCurve3` objects, update geometry.
+### Radial expansion (primary) — morph target approach
 
-**Performance concern:** Rebuilding `TubeGeometry` or the ribbon `BufferGeometry` every frame for 4 paths is the core perf challenge. Strategy: pre-allocate geometry with the maximum vertex count (at `animateMax` dx), then update vertex positions via `BufferAttribute.needsUpdate = true` rather than creating new geometry objects. `TubeGeometry` buffers are accessible as `position`, `normal`, `uv` `BufferAttribute` instances — update `position` in-place.
+The `tipDx` parameter drives the geometry update. Naively rebuilding `TubeGeometry` every frame requires recomputing the Frenet frame at every tubular segment for every ring vertex — this is the entire TubeGeometry construction algorithm in ~60 lines of math, not a trivial buffer write. Instead, use Three.js native morph targets:
 
-### Z-axis elevation (secondary)
-During the inhale phase, paths also rise off the XY plane. Each vertex gets a Z offset:
+**Pre-computation at initialization:**  
+Call `calculator.calculatePoints()` at 6 evenly-spaced `dx` keyframes across the breath range (e.g., `dx = [0, animateMax*0.2, animateMax*0.4, animateMax*0.6, animateMax*0.8, animateMax]`). For each keyframe, build a `TubeGeometry` from the resulting `CatmullRomCurve3`. The keyframe geometries become morph targets on the base mesh. Cap at 6 — see texture budget note in Performance Strategy.
+
+```typescript
+// Initialization (once)
+const keyframeDx = Array.from({ length: 6 }, (_, i) => animateMax * (i / 5));
+const baseGeometry = buildTubeGeometry(calculator.calculatePoints(..., { dx: 0 }));
+baseGeometry.morphAttributes.position = keyframeDx.map(dx => {
+  const kfGeo = buildTubeGeometry(calculator.calculatePoints(..., { dx }));
+  return kfGeo.getAttribute('position') as BufferAttribute;
+});
+
+mesh.morphTargetInfluences = new Array(keyframeDx.length).fill(0);
+mesh.morphTargetDictionary = Object.fromEntries(keyframeDx.map((_, i) => [`kf${i}`, i]));
+```
+
+> **Threlte mount timing caveat:** `mesh.morphTargetInfluences` must be set AFTER the mesh is added to the scene graph. Threlte's reconciliation pass processes `morphAttributes` during the first render, and any influences set before mount risk being overwritten. The safe pattern: `MandalaExtruder.initialize()` adds meshes to the scene via `scene.current.add(mesh)`, then `setBreathPhase()` is only ever called from `useTask` (which runs post-mount) or a `$effect` guarded by an `onMount` flag. Do not call `setBreathPhase()` synchronously during `initialize()`.
+
+**Per-frame animation (GPU-side):**  
+Each breath frame, compute which two keyframes straddle the current `breathPhase` and set their influences to blend between them. All other influences are zero.
+
+```typescript
+// Inside useTask — no geometry rebuild, no CPU Frenet math
+const normalizedPhase = breathPhase; // 0→1
+const kfFloat = normalizedPhase * (keyframeDx.length - 1);
+const kfLow = Math.floor(kfFloat);
+const kfHigh = Math.min(kfLow + 1, keyframeDx.length - 1);
+const t = kfFloat - kfLow;
+
+mesh.morphTargetInfluences!.fill(0);
+mesh.morphTargetInfluences![kfLow] = 1 - t;
+mesh.morphTargetInfluences![kfHigh] = t;
+```
+
+The GPU interpolates vertex positions between keyframes entirely on-chip. No `BufferAttribute.needsUpdate`, no `computeVertexNormals()` per frame (morph target normals can be pre-baked into `morphAttributes.normal` at the same keyframes).
+
+### Z-axis elevation (secondary) — morph target
+
+Z-lift is a second independent morph target layered on top of the radial expansion. Pre-compute a single Z-lifted geometry at `breathPhase = 1` where each vertex receives:
 
 ```
 zOffset = sin(phase * π) * maxZLift * (distFromCenter / maxRadius)
 ```
 
-Where `distFromCenter` is the vertex's XY distance from origin, normalized 0–1. This makes the outer edges of the mandala lift higher than the center — like a flower opening toward the viewer.
+Where `distFromCenter` is the vertex's XY distance from origin, normalized 0–1. This makes the outer edges lift higher than the center — like a flower opening toward the viewer. `maxZLift` = 0.4 world units.
 
-`maxZLift` = 0.4 world units. This is additive to the base Z position (0).
+Store the Z-lift offsets as a dedicated morph target (index `keyframeDx.length`). Its influence tracks `breathPhase` directly:
+```typescript
+mesh.morphTargetInfluences![zLiftIndex] = breathPhase;
+```
 
 ### Tube radius / ribbon width pulsing (tertiary)
-During the inhale, tube radius and ribbon width expand slightly:  
-`currentRadius = baseRadius * (1 + 0.3 * breathPhase)`  
-This gives the paths a sense of pressure — they thicken as the mandala expands.
+
+During the inhale, tube radius expands via a uniform rather than geometry: pass `breathPhase` as a `userData` float and drive it in a `onBeforeRender` callback or a lightweight custom `ShaderMaterial` layer. Alternatively, bake the radius swell into the morph target keyframes (larger tube radius at higher dx keyframes) so the GPU handles it automatically.  
+`currentRadius = baseRadius * (1 + 0.3 * breathPhase)`
 
 All three modulations share the same easing function and period as the 2D pane (breathe easing, 5s default period). They are synchronized to a single `breathPhase` value (0→1 per half-cycle) driven by `useTask`.
 
@@ -138,7 +177,9 @@ Three material presets, matching the premium aesthetic vocabulary:
 `MeshStandardMaterial` with `metalness = 1`, `roughness = 0.08`, `envMapIntensity = 1`. Requires an environment map for reflections. Use `THREE.PMREMGenerator` to bake the scene's dark environment into a CubeRenderTarget. Color matches the path color but is visible only as reflection tint. Appearance: brushed-metal sacred geometry.
 
 **Glass**  
-`MeshPhysicalMaterial` with `transmission = 1`, `thickness = 0.3`, `roughness = 0`, `ior = 1.5`, `transparent = true`. Requires `renderer.physicallyCorrectLights = true`. The path becomes a refractive glass tube — slightly distorts whatever is behind it. Appearance: crystal mandala. More expensive to render (~2x) but visually spectacular. Gate behind quality check.
+`MeshPhysicalMaterial` with `transmission = 1`, `thickness = 0.3`, `roughness = 0`, `ior = 1.5`, `transparent = true`. The path becomes a refractive glass tube — slightly distorts whatever is behind it. Appearance: crystal mandala. More expensive to render (~2x) but visually spectacular. Gate behind quality check.
+
+> Note: `renderer.physicallyCorrectLights` was removed in Three.js r155. As of r182 (this project's version), physically correct light decay is the default behavior — no renderer flag is needed. `MeshPhysicalMaterial` transmission works out of the box.
 
 Color morphing works for all three: every frame during Flow mode, update `material.color` and `material.emissiveColor` via the same palette interpolation used by `MandalaPane`. Materials are shared per path group (one material per path, 4 materials total) rather than per vertex.
 
@@ -193,12 +234,20 @@ All transitions use `enableTransition = true` (camera-controls animated lerp, ~0
 
 ## Post-Processing
 
-Uses the existing `ScenePostProcessing.svelte` infrastructure but with a dedicated configuration for the mandala scene — lighter than the ocean pipeline:
+The mandala scene requires its own `Mandala3DPostProcessing.svelte` component. **Do not reuse `ScenePostProcessing.svelte`** — that component is ocean-gated: it only activates when `backgroundType === BackgroundType.OCEAN` and will not fire for the mandala canvas at all.
 
-- **Bloom** — `BloomEffect`, `intensity = 2.0`, `luminanceThreshold = 0.3`, `radius = 0.8`, `levels = 8`. Bloom is the primary visual differentiator for Neon mode. Threshold is lower than the stage scene (0.3 vs 0.4) because the emissive-only geometry has precise bright pixels rather than broad environmental brightness.
+`Mandala3DPostProcessing.svelte` uses pmndrs/postprocessing (`EffectComposer`) directly, identical pattern to `ScenePostProcessing.svelte` but without ocean-specific effects:
+
+- **Bloom** — `BloomEffect`, `intensity = 2.0`, `luminanceThreshold = 0.3`, `radius = 0.8`, `levels = 8`, `mipmapBlur: true`. Bloom is the primary visual differentiator for Neon mode. Threshold is lower than the stage scene (0.3 vs 0.4) because the emissive-only geometry has precise bright pixels rather than broad environmental brightness.
 - **Vignette** — `VignetteEffect`, `darkness = 0.7`, `offset = 0.3`. Darker than stage (0.5) because the background is pure black and the vignette blends to it.
 - **No chromatic aberration** — too distracting at close camera distances on geometric shapes.
 - **No god rays** — no light sources that qualify.
+
+### WebGPU post-processing divergence
+
+pmndrs/postprocessing (`EffectComposer`) is WebGL-only and has no WebGPU migration path. Three.js r183 introduced `RenderPipeline` as the WebGPU-native post-processing system — a node-based pipeline built on TSL with automatic WebGL2 fallback. `bloom()` and vignette are first-class TSL nodes in `RenderPipeline`.
+
+The project already has `WebGPUCanvas.svelte`. **For Phase 11 initial implementation: use pmndrs/postprocessing (WebGL2).** This is proven and already in `package.json`. When the project migrates its primary renderer to WebGPU, replace `Mandala3DPostProcessing.svelte` with a `RenderPipeline`-based equivalent — the bloom parameters (intensity, threshold) translate directly to TSL node equivalents.
 
 Glass material requires `renderer.outputColorSpace = THREE.SRGBColorSpace` and a `PMREMGenerator`-backed `envMap`. These are already true in the Threlte canvas defaults.
 
@@ -210,31 +259,45 @@ Glass material requires `renderer.outputColorSpace = THREE.SRGBColorSpace` and a
 
 60fps at 4 paths × ~640 vertices each (64 samples/beat × 10 beats, typical mandala) = ~2560 total vertices before extrusion. After TubeGeometry (8 radial segments × 640 tubular × 2 triangles = ~10k triangles per path, ~40k total) — lightweight by modern standards. The bottleneck is not vertex count.
 
-### The real bottleneck: per-frame geometry updates
+### The real bottleneck: per-frame geometry updates — solved by morph targets
 
-Naively creating new `TubeGeometry` every frame costs GC pressure. Solution: morphable geometry.
+Naively creating new `TubeGeometry` every frame costs GC pressure. Updating vertices in-place requires reimplementing the full TubeGeometry construction algorithm (Frenet frame computation at every tubular segment — ~60 lines of math per path per frame). Both approaches are bypassed by the morph target strategy described in the Animation System section above.
 
-Pre-allocate geometry at initialization with vertex count matching `MAX_SAMPLES * radialSegments`. On each breath frame, update only the `position` buffer attribute in place:
+With morph targets, per-frame CPU work is:
+- Advance `breathPhase` scalar: < 0.1ms
+- Set 2 non-zero `morphTargetInfluences` entries per mesh: < 0.1ms
+- GPU interpolates all vertex positions and normals between keyframes: 0ms CPU
+
+The one-time initialization cost (building 6 `TubeGeometry` keyframes for each of 4 paths = 24 geometry builds) runs on mount and is not on the render-loop critical path.
+
+### Morph target texture budget
+
+Three.js stores morph target data as `DataTexture` rows internally since r143+. The budget for Phase 11:
+
+- 6 keyframes × 2 attributes (position + normal) × 4 meshes = **48 DataTextures** at initialization
+- Each texture is `(vertexCount × 1)` RGBA32F — at 650 vertices per path, trivially small per texture
+- The project already hits texture unit warnings at r182 (see GitHub issue linked from forum)
+
+**Guard required on mount:**
 
 ```typescript
-const posAttr = geometry.getAttribute('position') as BufferAttribute;
-// overwrite Float32Array values directly:
-for (let i = 0; i < vertexCount; i++) {
-  posAttr.setXYZ(i, newX, newY, newZ);
-}
-posAttr.needsUpdate = true;
-geometry.computeVertexNormals(); // required for lighting in non-Neon modes
+onMount(() => {
+  const { renderer } = useThrelte();
+  const maxTex = renderer.capabilities.maxTextures;
+  // 48 morph textures + scene textures (envMap, etc.) — verify headroom
+  if (maxTex < 64) {
+    console.warn(`[Mandala3D] maxTextures=${maxTex}; capping keyframes to avoid texture unit overflow`);
+    // Reduce to 4 keyframes × 2 × 4 = 32 textures
+  }
+});
 ```
 
-Normal recomputation (`computeVertexNormals`) is the one non-trivial step — it iterates triangles to average face normals. For 10k triangles this runs in < 0.5ms. In Neon mode (no lighting), skip normal recomputation entirely.
+Cap morph keyframes at 6 per mesh (not 7–8). This keeps the morph texture total at 48 — well under the universal WebGL2 minimum of 96 texture units, with headroom for scene textures.
 
 Frame budget allocation (target 60fps = 16.67ms):
-- Physics/animation state: ~0.5ms
-- Point recomputation (calculator): ~1ms (64 samples × 4 paths)
-- Vertex buffer writes: ~0.5ms
-- Normal recomputation (Chrome/Glass only): ~2ms
+- Animation state + morph weight update: ~0.2ms
 - Three.js render + postprocessing: ~8ms
-- Overhead/reserve: ~4ms
+- Overhead/reserve: ~8ms
 
 ### LOD for complex mandalas
 
@@ -331,8 +394,10 @@ src/lib/shared/mandala/services/contracts/
 
 src/lib/shared/sequence-viewer/components/
   Mandala3DPane.svelte        — top-level pane, canvas + controls layout
-  Mandala3DScene.svelte       — Threlte scene: geometry, lights, camera, post-processing
+  Mandala3DScene.svelte       — Threlte scene: geometry, lights, camera
   Mandala3DControls.svelte    — right-rail settings panel
+  Mandala3DPostProcessing.svelte — dedicated EffectComposer for bloom + vignette
+                                   (DO NOT reuse ScenePostProcessing.svelte — ocean-gated)
 ```
 
 ### Modified files
@@ -344,30 +409,65 @@ src/lib/shared/mandala/services/implementations/MandalaGeometryCalculator.ts
 src/lib/shared/mandala/services/contracts/types.ts
   — add MandalaPaths3D interface
 
-src/lib/shared/sequence-viewer/...
-  — add "mandala-3d" to ContentType union + pane routing
-  — add Mandala3DPane to content type selector
+src/lib/shared/sequence-viewer/services/viewer-state-persistence.ts
+  — ContentType union: add 'mandala-3d' to the type alias (line 1)
+  — loadViewerMode() validation: add 'mandala-3d' to the raw === ... chain (line 47)
+  — isValidContentType() guard: add value === 'mandala-3d' check (line 90)
+
+src/lib/shared/sequence-viewer/components/PaneContentSelector.svelte
+  — options array: add { id: 'mandala-3d', icon: 'fa-cube', label: '3D' } entry (line 13)
+
+src/lib/shared/sequence-viewer/components/ViewerContentRail.svelte
+  — allModes array: add { id: 'mandala-3d', icon: 'fa-cube', label: '3D Sculpt' } after the
+    existing 'mandala' entry (line 22-29)
+  — webgl2 filter: 'mandala-3d' should also be gated behind webgl2Available (same as
+    'animation-3d') — add to the filter predicate
+
+src/lib/shared/sequence-viewer/components/ViewerSplitPane.svelte
+  — Left pane routing: add {:else if splitConfig.leftPane === 'mandala-3d'} branch after the
+    'mandala' branch (lines 381-391) — mounts Mandala3DPane
+  — Right pane routing: add {:else if splitConfig.rightPane === 'mandala-3d'} branch after the
+    'mandala' branch (lines 515+) — mounts Mandala3DPane
+  — _3dLeftActive derived: extend to include 'mandala-3d' if it uses a separate canvas that
+    needs the same persistent-3d treatment
+
+src/lib/shared/sequence-viewer/state/viewer-state.svelte.ts
+  — wants3D derived: add || viewerMode === 'mandala-3d' and the split-pane 'mandala-3d' check
+    (lines 59-61) so the canvas mount lifecycle is correct
+  — deriveInitialExportContext: 'mandala-3d' should not map to 'animation-export'; it is a
+    view mode only — no action needed unless export is in scope for Phase 11
+
+src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte
+  — Rail mode handler: add else if (mode === 'mandala-3d') branch alongside the existing
+    'mandala' handler (line 445) — calls ctx.viewerState.setViewerMode('mandala-3d')
+  — splitConfig prop: include 'mandala-3d' in the viewerMode condition list alongside
+    'animation', 'animation-3d', 'mandala' (line 497)
 ```
+
+> Audit note (C3): The original spec listed only the persistence file and a vague "add to content type selector." The full grep of `ContentType` across `src/lib/shared/sequence-viewer/` reveals 5 components + 2 state files that switch on this union. Missing any one of them will leave the tab unreachable or break mode switching.
 
 ### MandalaExtruder interface
 
 ```typescript
-// Stateful service — holds pre-allocated geometry objects
+// Stateful service — holds pre-allocated geometry with morph target keyframes
 class MandalaExtruder {
   constructor(method: ExtrusionMethod, quality: ExtruderQuality) {}
 
-  // First call allocates geometry; subsequent calls update in place
-  updateGeometry(paths: MandalaPaths3D, breathPhase: number): void;
+  // Called once at mount: computes keyframe geometries and bakes morph targets
+  initialize(calculator: MandalaGeometryCalculator, steps: StepData[], options: PathOptions, animateMax: number): void;
+
+  // Called every frame: sets morphTargetInfluences on all 4 meshes (CPU cost ≈ 0)
+  setBreathPhase(breathPhase: number): void;
 
   // Access pre-allocated Three.js meshes for scene mounting
   readonly meshes: { blue: Mesh[], red: Mesh[] };
 
-  // Release GPU resources
+  // Release GPU resources (geometries, materials, morph targets)
   dispose(): void;
 }
 ```
 
-The `Mandala3DScene.svelte` component owns a single `MandalaExtruder` instance, creates it on mount, calls `updateGeometry` in the `useTask` loop, and calls `dispose` on `onDestroy`.
+The `Mandala3DScene.svelte` component owns a single `MandalaExtruder` instance, creates and initializes it on mount, calls `setBreathPhase` in the `useTask` loop, and calls `dispose` on `onDestroy`.
 
 ### Geometry update loop
 
@@ -379,15 +479,10 @@ useTask((delta) => {
   const cyclePos = (breathTime % period) / period;
   const triangle = cyclePos < 0.5 ? cyclePos * 2 : 2 - cyclePos * 2;
   const breathPhase = breatheEase(triangle);
-  const currentDx = animateMax * breathPhase;
 
-  // Recompute paths for current dx
-  const paths3d = calculator.calculatePoints(
-    sequence.steps, bluePropType, redPropType, pathOptions, { dx: currentDx, dy: 0 }
-  );
-
-  // Update geometry in place
-  extruder.updateGeometry(paths3d, breathPhase);
+  // Update morph target influences — no geometry rebuild, no calculator call
+  // calculator.calculatePoints() was called at initialization to pre-bake keyframes
+  extruder.setBreathPhase(breathPhase); // sets morphTargetInfluences on all 4 meshes
 
   // Color update (Flow mode only)
   if (colorMode === 'flow') {
@@ -412,11 +507,50 @@ The `Mandala3DPane` tab is visible to all users but shows a locked overlay to no
 
 ---
 
+## Future Upgrades
+
+These are explicitly **not Phase 11 scope** but are worth tracking before the code is written, as they affect architectural decisions downstream.
+
+### TSL positionNode — eliminate Z-lift morph target
+
+Three.js TSL (Three Shading Language) has been production-ready since r171 and is the 2026-recommended way to customize materials. TSL compiles to GLSL for WebGL and WGSL for WebGPU from the same JavaScript.
+
+TSL's `positionNode` override could replace the Z-lift morph target entirely. Instead of pre-baking a Z-lift geometry and storing it as a morph target (costing 2 DataTextures per mesh × 4 meshes = 8 DataTextures), the offset can be computed analytically per-vertex on the GPU:
+
+```typescript
+import { MeshStandardNodeMaterial } from 'three/webgpu'; // works with WebGL via node backend (r175+)
+import { positionLocal, vec3, sin, uniform, float } from 'three/tsl';
+
+const breathPhaseUniform = uniform(0.0);
+const mat = new MeshStandardNodeMaterial();
+// zOffset = sin(breathPhase * PI) * maxZLift * (distFromCenter / maxRadius)
+mat.positionNode = positionLocal.add(
+  vec3(0, 0, sin(breathPhaseUniform.mul(Math.PI)).mul(0.4).mul(positionLocal.xy.length().div(2.0)))
+);
+```
+
+Updating the breath phase becomes a single uniform write per frame — no morph target index needed. This saves 8 DataTextures and simplifies the `setBreathPhase()` implementation.
+
+**When to apply:** When the project migrates to WebGPU as primary renderer, or when `THREE.REVISION >= 175` is confirmed in the lockfile and `MeshStandardNodeMaterial` is available without the WebGPU renderer. The standard materials specified for Phase 11 are safe and correct; this is a performance and architecture improvement for a future pass.
+
+### RenderPipeline post-processing (WebGPU)
+
+When `Mandala3DScene.svelte` migrates to `WebGPURenderer`, replace `Mandala3DPostProcessing.svelte` with a `RenderPipeline` equivalent. The bloom parameters map directly:
+
+```typescript
+import { bloom } from 'three/tsl';
+// intensity=2.0, threshold=0.3 → direct RenderPipeline equivalents
+```
+
+`RenderPipeline` also eliminates the `EffectComposer` / `EffectPass` boilerplate and handles tone mapping and color space automatically.
+
+---
+
 ## Spec Notes
 
-- `MandalaExtruder` holds pre-allocated `BufferGeometry` objects — callers must not create new geometries per frame.
+- `MandalaExtruder` holds pre-allocated `BufferGeometry` objects with baked morph target keyframes — callers must not create new geometries per frame.
 - Glass material's `transmission` requires `WebGLRenderer` with `logarithmicDepthBuffer = false` (Threlte default). Verify at runtime; fall back to Chrome if transmission is unsupported.
-- `computeVertexNormals()` on every frame is acceptable for Tube geometry (no texture seams). Ribbon geometry has analytically defined normals (always [0,0,1] for the flat ribbon) — can skip `computeVertexNormals` and set normal attribute directly.
+- Normals are baked into `morphAttributes.normal` alongside `morphAttributes.position` for each keyframe — `computeVertexNormals()` is not called per frame. Ribbon geometry uses analytically defined normals (always [0,0,1]) set once at initialization.
 - The 3D canvas uses a separate `<Canvas>` element from the stage viewer. Do not attempt to share a renderer or WebGL context between them.
 - The `Lathe` extrusion method is visually experimental — it only makes geometric sense for paths that are roughly radially symmetric. Surface this as an "Experimental" badge in the UI. LOOP sequences are radially symmetric by construction so this will always produce valid geometry.
 - Z-lift during breathing means the mandala clips through a hypothetical floor plane. There is no floor in this scene — pure void with radial gradient skybox.

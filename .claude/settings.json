@@ -15,6 +15,17 @@
         ]
       },
       {
+        "matcher": "PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/git-safety-check.js",
+            "timeout": 10,
+            "statusMessage": "Git safety check..."
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
