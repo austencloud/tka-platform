@@ -24,8 +24,11 @@
   const activeFormationIndex = $derived(stageState.activeFormationIndex);
   const activeFormation = $derived(stageState.activeFormation);
   const nextFormation = $derived(stageState.nextFormation);
+  const interpolatedPositions = $derived(stageState.interpolatedPositions);
+  const isPlaying = $derived(stageState.isPlaying);
   const stageWidth = $derived(choreography.stageWidth);
   const stageDepth = $derived(choreography.stageDepth);
+  const displayPositions = $derived(isPlaying ? interpolatedPositions : (activeFormation?.positions ?? []));
   const margin = 40;
 
   function stageToSvgX(x: number): number {
@@ -38,6 +41,21 @@
 
 <div class="stage-canvas-container" bind:this={containerEl}>
   <svg width={canvasWidth} height={canvasHeight} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      {#each choreography.performers as performer}
+        <marker
+          id="arrowhead-{performer.color.slice(1)}"
+          markerWidth="8"
+          markerHeight="6"
+          refX="7"
+          refY="3"
+          orient="auto"
+        >
+          <polygon points="0 0, 8 3, 0 6" fill="{performer.color}88" />
+        </marker>
+      {/each}
+    </defs>
+
     <!-- Stage boundary -->
     <rect
       x={margin}
@@ -94,22 +112,20 @@
     {/if}
 
     <!-- Performer dots -->
-    {#if activeFormation}
-      {#each activeFormation.positions as pose, i}
-        <PerformerDot
-          {pose}
-          color={choreography.performers[i]?.color ?? "#888"}
-          index={i}
-          {stageWidth}
-          {stageDepth}
-          {canvasWidth}
-          {canvasHeight}
-          isSelected={stageState.selectedPerformerIndex === i}
-          onDrag={(x, z) => stageState.updatePerformerPosition(activeFormationIndex, pose.performerId, x, z)}
-          onSelect={() => { stageState.selectedPerformerIndex = i; }}
-        />
-      {/each}
-    {/if}
+    {#each displayPositions as pose, i}
+      <PerformerDot
+        {pose}
+        color={choreography.performers[i]?.color ?? "#888"}
+        index={i}
+        {stageWidth}
+        {stageDepth}
+        {canvasWidth}
+        {canvasHeight}
+        isSelected={stageState.selectedPerformerIndex === i}
+        onDrag={(x, z) => stageState.updatePerformerPosition(activeFormationIndex, pose.performerId, x, z)}
+        onSelect={() => { stageState.selectedPerformerIndex = i; }}
+      />
+    {/each}
   </svg>
 </div>
 

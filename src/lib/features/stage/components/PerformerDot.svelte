@@ -21,6 +21,11 @@
   const cx = $derived(margin + (pose.x / stageWidth) * (canvasWidth - margin * 2));
   const cy = $derived(margin + (pose.z / stageDepth) * (canvasHeight - margin * 2));
 
+  const wedgeDistance = 14;
+  const wedgeAngle = $derived(-pose.facing - Math.PI / 2);
+  const wx = $derived(cx + Math.cos(wedgeAngle) * wedgeDistance);
+  const wy = $derived(cy + Math.sin(wedgeAngle) * wedgeDistance);
+
   let isDragging = $state(false);
 
   function handlePointerDown(e: PointerEvent) {
@@ -59,6 +64,8 @@
   <text x={cx} y={cy} text-anchor="middle" dominant-baseline="central" fill="#000" font-size="11" font-weight="bold">
     {index + 1}
   </text>
+  <!-- Facing indicator wedge -->
+  <circle cx={wx} cy={wy} r={3} fill="#fff" opacity="0.8" />
 </g>
 
 <style>

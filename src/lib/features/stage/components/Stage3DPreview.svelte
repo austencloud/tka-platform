@@ -51,6 +51,10 @@
       />
     {/each}
   </Canvas>
+
+  <div class="overlay-hint">
+    <span>Orbit: drag | Zoom: scroll | Pan: right-drag</span>
+  </div>
 </div>
 
 <style>
@@ -58,5 +62,18 @@
     width: 100%;
     height: 100%;
     min-height: 400px;
+    position: relative;
+  }
+  .overlay-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0008;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #8888aa;
+    pointer-events: none;
   }
 </style>

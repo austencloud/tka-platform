@@ -30,6 +30,10 @@
 
 <div class="stage-editor-panel">
   <aside class="sidebar">
+    <div class="module-header">
+      <i class="fas fa-people-group" aria-hidden="true"></i>
+      <span>Stage</span>
+    </div>
     <section>
       <h3>Performers</h3>
       <label>
@@ -100,6 +104,29 @@
   .sidebar input[type="range"] {
     width: 100%;
     margin-top: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: #2a2a4a;
+    border-radius: 2px;
+    outline: none;
+  }
+  .sidebar input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #06b6d4;
+    cursor: pointer;
+  }
+  .sidebar input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #06b6d4;
+    border: none;
+    cursor: pointer;
   }
   .preset-grid {
     display: grid;
@@ -124,6 +151,23 @@
     font-size: 11px;
     color: #6a6a8a;
     margin: 4px 0;
+  }
+  .module-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #2a2a4a;
+    margin-bottom: 4px;
+  }
+  .module-header i {
+    color: #06b6d4;
+    font-size: 16px;
+  }
+  .module-header span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e0e0ff;
   }
   .editor-main {
     display: flex;
