@@ -786,11 +786,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       : overrides.trails ? "trails"
       : "none";
 
-    if (ecs) {
-      ecs.setActiveEffect(effect);
-    } else {
-      visibilityManager.setActiveEffect(effect as Parameters<typeof visibilityManager.setActiveEffect>[0]);
-    }
+    ecs?.setActiveEffect(effect);
 
     return saved;
   }

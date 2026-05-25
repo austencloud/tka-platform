@@ -161,7 +161,7 @@
   // ── Section summaries ──
   const effectsSummary = $derived.by(() => {
     void vmVersion;
-    const activeEffect = effectsConfigState?.activeEffect ?? vm.getActiveEffect();
+    const activeEffect = effectsConfigState?.activeEffect ?? "none";
     return computeEffectsSummary(activeEffect, EFFECT_LABELS);
   });
 

@@ -44,18 +44,16 @@ interface CanvasContextMenuDeps {
 
 type ActiveEffect = "fire" | "charcoal" | "led" | "trails" | "none";
 
-function getActiveEffect(vm: AnimationVisibilityStateManager, ecs?: EffectsConfigState | null): ActiveEffect {
-  return (ecs?.activeEffect ?? vm.getActiveEffect()) as ActiveEffect;
+function getActiveEffect(ecs?: EffectsConfigState | null): ActiveEffect {
+  return (ecs?.activeEffect ?? "none") as ActiveEffect;
 }
 
 function buildEffectChildren(
-  vm: AnimationVisibilityStateManager,
   active: ActiveEffect,
   ecs?: EffectsConfigState | null,
 ): ContextMenuItem[] {
   const setEffect = (effect: string) => {
-    if (ecs) ecs.setActiveEffect(effect);
-    else vm.setActiveEffect(effect as Parameters<typeof vm.setActiveEffect>[0]);
+    ecs?.setActiveEffect(effect);
   };
   return [
     {
@@ -297,7 +295,7 @@ export function buildCanvasContextMenuItems(
   const vm = deps.visibilityManager;
   const ecs = deps.effectsConfigState;
   const settings = vm.getSettings();
-  const active = getActiveEffect(vm, ecs);
+  const active = getActiveEffect(ecs);
 
   const items: ContextMenuEntry[] = [
     // Visibility toggles submenu
@@ -327,7 +325,7 @@ export function buildCanvasContextMenuItems(
       id: "effects-submenu",
       label: "Effects",
       icon: "fa-wand-magic-sparkles",
-      children: buildEffectChildren(vm, active, ecs),
+      children: buildEffectChildren(active, ecs),
     },
   ];
 

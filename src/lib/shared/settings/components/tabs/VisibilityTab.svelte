@@ -153,8 +153,7 @@
   function handleTrailStyleChange(style: TrailVisibility) {
     tap(() => {
       const effect = style === "on" ? "trails" : "none";
-      if (effectsConfigState) effectsConfigState.setActiveEffect(effect);
-      else avm.setActiveEffect(effect as Parameters<typeof avm.setActiveEffect>[0]);
+      effectsConfigState?.setActiveEffect(effect);
     });
   }
 
