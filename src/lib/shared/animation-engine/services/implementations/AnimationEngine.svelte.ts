@@ -847,7 +847,7 @@ export class AnimationEngine {
       },
       visibility: {
         activeEffect: vm.getActiveEffect(),
-        tipEffectMap: settings.tipEffectMap,
+        tipEffectMap: vm.getTipEffectMap(),
         effortPreset: settings.effortPreset,
         pathShape: settings.pathShape,
       },

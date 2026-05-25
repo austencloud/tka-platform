@@ -6,13 +6,14 @@
  */
 
 import type { CharcoalSparkParams } from "../domain/types/CharcoalSparkTypes";
-import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/CharcoalSparkTypes";
+import { DEFAULT_CHARCOAL_PARAMS, semanticToCharcoalParams, charcoalParamsToSemantic } from "../domain/types/CharcoalSparkTypes";
 import type { FireColorCurve } from "../domain/types/FireTypes";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
-import { findPreset, validatePreset, type LedColorPreset } from "../domain/types/LedColorPresets";
+import { findPreset, type LedColorPreset } from "../domain/types/LedColorPresets";
 import type { EffectLayerMode } from "../services/effect-layer";
 import type { PropFlameColor } from '../domain/types/FireTypes';
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 type VisibilityObserver = () => void;
 
@@ -50,26 +51,6 @@ interface AnimationVisibilitySettings {
   // Dark Mode: dark background, inverted grid, white text/outlines
   darkMode: boolean;
 
-  // Fire Effect tuning
-  fireColorBlend: number; // 0 = natural fire, 1 = prop-colored (continuous slider)
-  fireIntensity: number; // User intensity slider value (0.0-1.0)
-  fireTurbulence: number; // Curl noise turbulence strength (0.0-1.0), how much idle fire flickers
-  fireColorCurve: FireColorCurve | null; // Custom 4-stop color gradient (null = use default)
-  firePropColors: [PropFlameColor, PropFlameColor] | null; // Per-hand flame colors (null = default blue/red)
-
-  // Charcoal Effect tuning
-  charcoalParams: CharcoalSparkParams; // Charcoal spark tuning params
-
-  // LED Effect tuning
-  ledBrightness: number; // 1-5 discrete level (maps to 0.2-1.0 float)
-  ledPatternId: string; // Active LED pattern ID
-  ledPrimaryColor: string; // Primary color (hex)
-  ledSecondaryColor: string; // Secondary color (hex)
-  ledActivePresetId: string | null; // Currently active color preset
-  ledUserPresets: LedColorPreset[]; // User-created color presets
-  ledPatternSpeed: number; // Pattern animation speed multiplier (0.1-5.0, default 1.0)
-  ledColorMode: "unified" | "per-hand" | "prop-matched"; // How LED colors map to props
-
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
   reversalIndicators: boolean;
@@ -81,14 +62,8 @@ interface AnimationVisibilitySettings {
   /** Show path shape lines on canvas during animation */
   pathLines: boolean;
 
-  // Per-tip effect/effort assignments (global level)
-  // tipEffectMap is the sole authority for which effect is active.
-  tipEffectMap: TipEffectMap;
+  // Per-tip effort assignments (global level)
   tipEffortMap: TipEffortMap;
-
-  /** Per-effect override of the z-stack position. Missing entry = "behind" (default).
-   * When "front", the effect's canvas renders above the main props canvas. */
-  effectLayerOverrides: Record<string, EffectLayerMode>;
 }
 
 const STORAGE_KEY = "animation-visibility-settings";
@@ -98,6 +73,16 @@ export class AnimationVisibilityStateManager {
   private observers: Set<VisibilityObserver> = new Set();
   /** Tracks dark mode state before an effect forced it on, so we can restore on disable. null = no effect override active. */
   private darkModeBeforeEffect: boolean | null = null;
+  /** Delegated effects config state. Set by host via setEffectsConfigState(). */
+  private effectsState: EffectsConfigState | null = null;
+
+  /**
+   * Wire the shared EffectsConfigState so effect getters/setters delegate to it
+   * instead of storing locally. Call before any effect methods are invoked.
+   */
+  setEffectsConfigState(state: EffectsConfigState | null): void {
+    this.effectsState = state;
+  }
 
   /**
    * Cached motion colors - computed once when dark mode changes.
@@ -159,26 +144,6 @@ export class AnimationVisibilityStateManager {
       // Global effects
       darkMode: true, // Dark Mode enabled by default (better first impression)
 
-      // Fire Effect tuning
-      fireColorBlend: 0.5, // Halfway between natural and prop-colored
-      fireIntensity: 0.7, // 0-1 range, 0.7 = normal fire
-      fireTurbulence: 0.5, // 0-1 range, how much idle fire flickers
-      fireColorCurve: null, // null = use default BASE_COLOR_CURVE
-      firePropColors: null, // null = default blue/red
-
-      // Charcoal Effect tuning
-      charcoalParams: { ...DEFAULT_CHARCOAL_PARAMS }, // Default charcoal spark params
-
-      // LED Effect tuning
-      ledBrightness: 5,
-      ledPatternId: "solid",
-      ledPrimaryColor: "#00ff88",
-      ledSecondaryColor: "#ffffff",
-      ledActivePresetId: null,
-      ledUserPresets: [],
-      ledPatternSpeed: 1.0,
-      ledColorMode: "unified",
-
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
       reversalIndicators: false, // Less clutter during animation
@@ -187,13 +152,7 @@ export class AnimationVisibilityStateManager {
       motionAwarePaths: false,
       pathLines: false,
 
-      // tipEffectMap is the sole authority for which effect is active.
-      // Default: trails on so new users see motion paths.
-      tipEffectMap: { "*": { effect: "trails" } },
       tipEffortMap: {},
-
-      // All effects default to "behind" props - user opts individual effects into "front".
-      effectLayerOverrides: {},
     };
   }
 
@@ -219,80 +178,6 @@ export class AnimationVisibilityStateManager {
         // Force stepNumbers to true (re-enabled for export and preview)
         parsed.stepNumbers = true;
 
-        // Migrate old flameColorMode (binary) → continuous fireColorBlend
-        if ("flameColorMode" in parsed && !("fireColorBlend" in parsed)) {
-          parsed.fireColorBlend = parsed.flameColorMode === "natural" ? 0 : 1.0;
-          delete parsed.flameColorMode;
-        }
-        if ("coloredFlames" in parsed && !("fireColorBlend" in parsed)) {
-          parsed.fireColorBlend = parsed.coloredFlames ? 1.0 : 0;
-          delete parsed.coloredFlames;
-        }
-
-        // Migrate old fuelSourceId → charcoalEffect
-        if ("fuelSourceId" in parsed && !("charcoalEffect" in parsed)) {
-          parsed.charcoalEffect = parsed.fuelSourceId === "charcoal";
-          if (parsed.charcoalEffect) parsed.fireEffect = false;
-          delete parsed.fuelSourceId;
-        }
-
-        // Migrate old firePreset (small/medium/large) → 0-1 intensity
-        if ("firePreset" in parsed && !("fireIntensity" in parsed)) {
-          const tierToIntensity: Record<string, number> = {
-            small: 0.3, medium: 0.5, large: 0.8,
-            candlewick: 0.3, "fire-spin": 0.5, torch: 0.8,
-          };
-          parsed.fireIntensity = tierToIntensity[parsed.firePreset as string] ?? 0.7;
-          delete (parsed as Record<string, unknown>).firePreset;
-        }
-
-        // Migrate old 0.1-3.0 intensity range → 0-1 range
-        if ("fireIntensity" in parsed && parsed.fireIntensity > 1.0) {
-          parsed.fireIntensity = Math.min(1.0, parsed.fireIntensity / 3.0);
-        }
-
-        // Ensure new slider properties exist
-        if (!("fireColorBlend" in parsed)) parsed.fireColorBlend = 0.5;
-        // Remove legacy fireSmokeLevel if present (smoke feature removed)
-        if ("fireSmokeLevel" in parsed) delete parsed.fireSmokeLevel;
-
-        // Migrate old fireUseCharcoal → charcoalEffect (separate effect)
-        if ("fireUseCharcoal" in parsed && !("charcoalEffect" in parsed)) {
-          if (parsed.fireUseCharcoal && parsed.fireEffect) {
-            parsed.charcoalEffect = true;
-            parsed.fireEffect = false; // They were sharing fireEffect; give it to charcoal
-          } else {
-            parsed.charcoalEffect = false;
-          }
-          delete parsed.fireUseCharcoal;
-        }
-        if (!("charcoalEffect" in parsed)) parsed.charcoalEffect = false;
-        // Migrate old charcoalPresetId → charcoalParams
-        if ("charcoalPresetId" in parsed) {
-          delete parsed.charcoalPresetId;
-        }
-        if (!("charcoalParams" in parsed)) {
-          parsed.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
-        } else if ("tangentialBias" in (parsed.charcoalParams as Record<string, unknown>)) {
-          // Migrate from old tangentialBias/initialSpeed model → velocity-inheritance model
-          parsed.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
-        }
-        if (!("fireIntensity" in parsed)) parsed.fireIntensity = 0.7;
-        if (!("fireTurbulence" in parsed)) parsed.fireTurbulence = 0.5;
-
-        // Clean up removed keys
-        delete parsed.fuelSourceId;
-        delete parsed.flameColorMode;
-        delete parsed.fireUseCharcoal;
-
-        // Ensure new properties exist with defaults if missing
-        const defaults = this.getDefaultSettings();
-
-        // Deep-merge charcoalParams so newly added keys get their defaults
-        if (parsed.charcoalParams) {
-          parsed.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS, ...parsed.charcoalParams };
-        }
-
         if (!("pathShape" in parsed)) parsed.pathShape = "arc";
         if (!("motionAwarePaths" in parsed)) parsed.motionAwarePaths = false;
         if (!("pathLines" in parsed)) parsed.pathLines = false;
@@ -302,20 +187,6 @@ export class AnimationVisibilityStateManager {
           parsed.gridMode = "8point";
         }
 
-        // Migrate legacy booleans → tipEffectMap (one-time, on load)
-        if (!parsed.tipEffectMap || Object.keys(parsed.tipEffectMap).length === 0) {
-          if (parsed.fireEffect) parsed.tipEffectMap = { "*": { effect: "fire" } };
-          else if (parsed.charcoalEffect) parsed.tipEffectMap = { "*": { effect: "charcoal" } };
-          else if (parsed.ledEffect) parsed.tipEffectMap = { "*": { effect: "led" } };
-          else if (parsed.trailStyle === "on") parsed.tipEffectMap = { "*": { effect: "trails" } };
-          else parsed.tipEffectMap = {};
-        }
-
-        // Clean up legacy fields (they'll be omitted on next save)
-        delete parsed.fireEffect;
-        delete parsed.charcoalEffect;
-        delete parsed.ledEffect;
-        delete parsed.trailStyle;
         if (!parsed.tipEffortMap) {
           parsed.tipEffortMap = {};
           if (parsed.effortPreset && parsed.effortPreset !== "linear") {
@@ -323,14 +194,8 @@ export class AnimationVisibilityStateManager {
           }
         }
 
-        // Validate user presets from storage (reject malformed entries)
-        if (Array.isArray(parsed.ledUserPresets)) {
-          parsed.ledUserPresets = parsed.ledUserPresets.filter(validatePreset);
-        }
-
-        if (!parsed.effectLayerOverrides || typeof parsed.effectLayerOverrides !== "object") {
-          parsed.effectLayerOverrides = {};
-        }
+        // Ensure new properties exist with defaults if missing
+        const defaults = this.getDefaultSettings();
 
         return {
           ...defaults,
@@ -400,7 +265,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve" | "effectLayerOverrides"
+      "gridMode" | "playbackMode" | "speed" | "darkMode" | "effortPreset" | "pathShape" | "tipEffortMap"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -425,7 +290,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve" | "effectLayerOverrides"
+      "gridMode" | "playbackMode" | "speed" | "effortPreset" | "pathShape" | "tipEffortMap"
     >,
     visible: boolean
   ): void {
@@ -605,112 +470,111 @@ export class AnimationVisibilityStateManager {
 
   // ============================================================================
   // FIRE SLIDERS: Color Blend, Intensity, Turbulence
+  // Delegates to EffectsConfigState.fire
   // ============================================================================
 
   getFireColorBlend(): number {
-    return this.settings.fireColorBlend;
+    return this.effectsState?.fire.colorBlend ?? 0.5;
   }
 
   setFireColorBlend(value: number): void {
-    this.settings.fireColorBlend = Math.max(0, Math.min(1, value));
-    this.saveToStorage();
-    this.notifyObservers();
-  }
-
-  // ============================================================================
-  // CHARCOAL EFFECT TUNING
-  // ============================================================================
-
-  getCharcoalParams(): CharcoalSparkParams {
-    return { ...this.settings.charcoalParams };
-  }
-
-  setCharcoalParams(params: CharcoalSparkParams): void {
-    this.settings.charcoalParams = { ...params };
-    this.saveToStorage();
-    this.notifyObservers();
-  }
-
-  updateCharcoalParam<K extends keyof CharcoalSparkParams>(key: K, value: CharcoalSparkParams[K]): void {
-    this.settings.charcoalParams[key] = value;
-    this.saveToStorage();
+    this.effectsState?.updateFire({ colorBlend: Math.max(0, Math.min(1, value)) });
     this.notifyObservers();
   }
 
   getFireIntensity(): number {
-    return this.settings.fireIntensity;
+    return this.effectsState?.fire.intensity ?? 0.7;
   }
 
   setFireIntensity(intensity: number): void {
-    this.settings.fireIntensity = Math.max(0, Math.min(1, intensity));
-    this.saveToStorage();
+    this.effectsState?.updateFire({ intensity: Math.max(0, Math.min(1, intensity)) });
     this.notifyObservers();
   }
 
   getFireTurbulence(): number {
-    return this.settings.fireTurbulence;
+    return this.effectsState?.fire.turbulence ?? 0.5;
   }
 
   setFireTurbulence(value: number): void {
-    this.settings.fireTurbulence = Math.max(0, Math.min(1, value));
-    this.saveToStorage();
+    this.effectsState?.updateFire({ turbulence: Math.max(0, Math.min(1, value)) });
     this.notifyObservers();
   }
 
   getFireColorCurve(): FireColorCurve | null {
-    return this.settings.fireColorCurve;
+    return this.effectsState?.fire.colorCurve ?? null;
   }
 
   setFireColorCurve(curve: FireColorCurve | null): void {
-    this.settings.fireColorCurve = curve;
-    this.saveToStorage();
+    this.effectsState?.updateFire({ colorCurve: curve });
     this.notifyObservers();
   }
 
   getFirePropColors(): [PropFlameColor, PropFlameColor] | null {
-    return this.settings.firePropColors;
+    return this.effectsState?.fire.propColors ?? null;
   }
 
   setFirePropColors(colors: [PropFlameColor, PropFlameColor] | null): void {
-    this.settings.firePropColors = colors;
-    this.saveToStorage();
+    this.effectsState?.updateFire({ propColors: colors });
     this.notifyObservers();
   }
 
   /** Reset fire controls to defaults. */
   resetFireDefaults(): void {
-    this.settings.fireIntensity = 0.7;
-    this.settings.fireColorBlend = 0.5;
-    this.settings.fireTurbulence = 0.5;
-    this.settings.fireColorCurve = null;
-    this.saveToStorage();
+    this.effectsState?.updateFire({ intensity: 0.7, colorBlend: 0.5, turbulence: 0.5, colorCurve: null });
     this.notifyObservers();
+  }
+
+  // ============================================================================
+  // CHARCOAL EFFECT TUNING
+  // Delegates to EffectsConfigState.charcoal (semantic: intensity/spread/glow)
+  // ============================================================================
+
+  getCharcoalParams(): CharcoalSparkParams {
+    if (this.effectsState) {
+      return semanticToCharcoalParams(this.effectsState.charcoal);
+    }
+    return { ...DEFAULT_CHARCOAL_PARAMS };
+  }
+
+  setCharcoalParams(params: CharcoalSparkParams): void {
+    if (this.effectsState) {
+      this.effectsState.updateCharcoal(charcoalParamsToSemantic(params));
+      this.notifyObservers();
+    }
+  }
+
+  updateCharcoalParam<K extends keyof CharcoalSparkParams>(key: K, value: CharcoalSparkParams[K]): void {
+    if (this.effectsState) {
+      const current = semanticToCharcoalParams(this.effectsState.charcoal);
+      const updated = { ...current, [key]: value };
+      this.effectsState.updateCharcoal(charcoalParamsToSemantic(updated));
+      this.notifyObservers();
+    }
   }
 
   /** Reset charcoal controls to defaults. */
   resetCharcoalDefaults(): void {
-    this.settings.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
-    this.saveToStorage();
+    this.effectsState?.updateCharcoal({ intensity: 0.5, spread: 0.5, glow: 0.6 });
     this.notifyObservers();
   }
 
   // ============================================================================
   // LED EFFECT TUNING
+  // Delegates to EffectsConfigState.led
   // ============================================================================
 
   /**
    * Get current LED pattern ID
    */
   getLedPatternId(): string {
-    return this.settings.ledPatternId;
+    return this.effectsState?.led.patternId ?? "solid";
   }
 
   /**
    * Set LED pattern ID
    */
   setLedPatternId(patternId: string): void {
-    this.settings.ledPatternId = patternId;
-    this.saveToStorage();
+    this.effectsState?.updateLed({ patternId });
     this.notifyObservers();
   }
 
@@ -718,15 +582,14 @@ export class AnimationVisibilityStateManager {
    * Get current LED primary color
    */
   getLedPrimaryColor(): string {
-    return this.settings.ledPrimaryColor;
+    return this.effectsState?.led.primaryColor ?? "#00ff88";
   }
 
   /**
    * Set LED primary color
    */
   setLedPrimaryColor(color: string): void {
-    this.settings.ledPrimaryColor = color;
-    this.saveToStorage();
+    this.effectsState?.updateLed({ primaryColor: color });
     this.notifyObservers();
   }
 
@@ -734,15 +597,14 @@ export class AnimationVisibilityStateManager {
    * Get LED brightness level (1-5)
    */
   getLedBrightness(): number {
-    return this.settings.ledBrightness;
+    return this.effectsState?.led.brightness ?? 5;
   }
 
   /**
    * Set LED brightness level (1-5, clamped)
    */
   setLedBrightness(level: number): void {
-    this.settings.ledBrightness = Math.max(1, Math.min(5, Math.round(level)));
-    this.saveToStorage();
+    this.effectsState?.updateLed({ brightness: Math.max(1, Math.min(5, Math.round(level))) });
     this.notifyObservers();
   }
 
@@ -750,16 +612,15 @@ export class AnimationVisibilityStateManager {
    * Get current LED secondary color
    */
   getLedSecondaryColor(): string {
-    return this.settings.ledSecondaryColor;
+    return this.effectsState?.led.secondaryColor ?? "#ffffff";
   }
 
   /**
    * Set LED secondary color
    */
   setLedSecondaryColor(color: string): void {
-    if (this.settings.ledSecondaryColor === color) return;
-    this.settings.ledSecondaryColor = color;
-    this.saveToStorage();
+    if (this.effectsState?.led.secondaryColor === color) return;
+    this.effectsState?.updateLed({ secondaryColor: color });
     this.notifyObservers();
   }
 
@@ -767,80 +628,74 @@ export class AnimationVisibilityStateManager {
    * Get the currently active color preset ID (null if no preset is active)
    */
   getActivePresetId(): string | null {
-    return this.settings.ledActivePresetId;
+    return this.effectsState?.activePresets.led ?? null;
   }
 
   /**
    * Activate a color preset by ID, applying its colors to the LED settings.
-   * No-op if the preset ID is not found in built-in or user presets.
+   * No-op if effectsState is not wired yet.
+   * Note: Full preset application (color lookup) is handled by EffectsConfigState.applyPreset.
+   * This thin delegate applies the preset if it can be found in the built-in or user list.
    */
   setActivePreset(presetId: string): void {
-    const preset = findPreset(presetId, this.settings.ledUserPresets);
+    if (!this.effectsState) return;
+    // Find the preset in the LED user presets or built-ins via findPreset
+    const userPresets = this.getUserPresets();
+    const preset = findPreset(presetId, userPresets);
     if (!preset) return;
-    this.settings.ledActivePresetId = presetId;
-    this.settings.ledPrimaryColor = preset.primaryColor;
+    this.effectsState.updateLed({ primaryColor: preset.primaryColor });
     if (preset.secondaryColor) {
-      this.settings.ledSecondaryColor = preset.secondaryColor;
+      this.effectsState.updateLed({ secondaryColor: preset.secondaryColor });
     }
-    this.saveToStorage();
     this.notifyObservers();
   }
 
   /**
-   * Get all user-created color presets
+   * Get all user-created color presets.
+   * Note: LED user presets are no longer stored in the VM. Returns empty array
+   * since preset management is now owned by EffectsConfigState / preset panels.
    */
   getUserPresets(): LedColorPreset[] {
-    return this.settings.ledUserPresets;
+    return [];
   }
 
   /**
-   * Create and persist a new user color preset
+   * Create and persist a new user color preset.
+   * No-op: preset management is now owned by EffectsConfigState.
    */
-  addUserPreset(name: string, primaryColor: string): void {
-    const id = `user-${Date.now()}`;
-    this.settings.ledUserPresets = [
-      ...this.settings.ledUserPresets,
-      { id, name, primaryColor, builtIn: false },
-    ];
-    this.saveToStorage();
-    this.notifyObservers();
+  addUserPreset(_name: string, _primaryColor: string): void {
+    // No-op: LED user preset management moved to EffectsConfigState
   }
 
   /**
-   * Remove a user-created preset by ID. Clears active preset if it was the removed one.
+   * Remove a user-created preset by ID.
+   * No-op: preset management is now owned by EffectsConfigState.
    */
-  removeUserPreset(presetId: string): void {
-    this.settings.ledUserPresets = this.settings.ledUserPresets.filter((p) => p.id !== presetId);
-    if (this.settings.ledActivePresetId === presetId) {
-      this.settings.ledActivePresetId = null;
-    }
-    this.saveToStorage();
-    this.notifyObservers();
+  removeUserPreset(_presetId: string): void {
+    // No-op: LED user preset management moved to EffectsConfigState
   }
 
   /**
    * Get the LED pattern animation speed multiplier (0.1-5.0, default 1.0)
    */
   getLedPatternSpeed(): number {
-    return this.settings.ledPatternSpeed;
+    return this.effectsState?.led.patternSpeed ?? 1.0;
   }
 
   /**
    * Set the LED pattern animation speed multiplier, clamped to 0.1-5.0
    */
   setLedPatternSpeed(speed: number): void {
-    this.settings.ledPatternSpeed = Math.max(0.1, Math.min(5.0, speed));
-    this.saveToStorage();
+    this.effectsState?.updateLed({ patternSpeed: Math.max(0.1, Math.min(5.0, speed)) });
     this.notifyObservers();
   }
 
   getLedColorMode(): "unified" | "per-hand" | "prop-matched" {
-    return this.settings.ledColorMode;
+    return this.effectsState?.led.colorMode ?? "unified";
   }
 
   setLedColorMode(mode: "unified" | "per-hand" | "prop-matched"): void {
-    this.settings.ledColorMode = mode;
-    this.saveToStorage();
+    this.effectsState?.updateLed({ colorMode: mode });
     this.notifyObservers();
   }
 
@@ -866,16 +721,18 @@ export class AnimationVisibilityStateManager {
 
   // ============================================================================
   // PER-TIP EFFECT / EFFORT MAPS
+  // tipEffectMap delegates to EffectsConfigState; tipEffortMap stays in settings.
   // ============================================================================
 
   getTipEffectMap(): TipEffectMap {
-    return this.settings.tipEffectMap;
+    return this.effectsState?.tipEffectMap ?? {};
   }
 
   setTipEffectMap(map: TipEffectMap): void {
-    this.settings.tipEffectMap = map;
+    if (this.effectsState) {
+      this.effectsState.setTipEffectMap(map);
+    }
     this.syncDarkModeFromMap();
-    this.saveToStorage();
     this.notifyObservers();
   }
 
@@ -891,16 +748,13 @@ export class AnimationVisibilityStateManager {
 
   /**
    * Set a single active effect across all tips. Passing "none" clears the map.
-   * This is the tipEffectMap-based replacement for setFireEffect/setCharcoalEffect/setLedEffect.
+   * Delegates to EffectsConfigState.setActiveEffect.
    */
   setActiveEffect(effect: EffectType): void {
-    if (effect === "none") {
-      this.settings.tipEffectMap = {};
-    } else {
-      this.settings.tipEffectMap = { "*": { effect } };
+    if (this.effectsState) {
+      this.effectsState.setActiveEffect(effect as string);
     }
     this.syncDarkModeFromMap();
-    this.saveToStorage();
     this.notifyObservers();
   }
 
@@ -908,16 +762,15 @@ export class AnimationVisibilityStateManager {
    * Return the globally-active effect, or "none" if the map is empty or has no wildcard.
    */
   getActiveEffect(): EffectType {
-    const cellWide = this.settings.tipEffectMap["*"];
-    return cellWide?.effect ?? "none";
+    return (this.effectsState?.activeEffect ?? "none") as EffectType;
   }
 
   /**
    * Return true if any tip assignment uses the given effect.
    */
   hasEffect(effect: EffectType): boolean {
-    return Object.values(this.settings.tipEffectMap)
-      .some(a => a.effect === effect);
+    const map = this.effectsState?.tipEffectMap ?? {};
+    return Object.values(map).some(a => a.effect === effect);
   }
 
   /**
@@ -932,8 +785,8 @@ export class AnimationVisibilityStateManager {
    */
   isAnyDarkModeEffectActive(): boolean {
     const darkEffects: EffectType[] = ["fire", "charcoal", "led"];
-    return Object.values(this.settings.tipEffectMap)
-      .some(a => darkEffects.includes(a.effect as EffectType));
+    const map = this.effectsState?.tipEffectMap ?? {};
+    return Object.values(map).some(a => darkEffects.includes(a.effect as EffectType));
   }
 
   /**
@@ -1001,24 +854,20 @@ export class AnimationVisibilityStateManager {
 
   // ============================================================================
   // PER-EFFECT LAYER OVERRIDES (behind/front props)
+  // Delegates to EffectsConfigState.
   // ============================================================================
 
   getEffectLayer(effectId: string): EffectLayerMode {
-    return this.settings.effectLayerOverrides[effectId] ?? "behind";
+    if (this.effectsState) {
+      return this.effectsState.getEffectLayer(effectId);
+    }
+    return "behind";
   }
 
   setEffectLayer(effectId: string, mode: EffectLayerMode): void {
-    if (mode === "behind") {
-      // Keep the map small - absence encodes the default.
-      const { [effectId]: _omit, ...rest } = this.settings.effectLayerOverrides;
-      this.settings.effectLayerOverrides = rest;
-    } else {
-      this.settings.effectLayerOverrides = {
-        ...this.settings.effectLayerOverrides,
-        [effectId]: mode,
-      };
+    if (this.effectsState) {
+      this.effectsState.setEffectLayer(effectId, mode);
     }
-    this.saveToStorage();
     this.notifyObservers();
   }
 
@@ -1027,7 +876,7 @@ export class AnimationVisibilityStateManager {
   }
 
   getEffectLayerOverrides(): Readonly<Record<string, EffectLayerMode>> {
-    return this.settings.effectLayerOverrides;
+    return this.effectsState?.effectLayerOverrides ?? {};
   }
 
   /**
@@ -1036,7 +885,7 @@ export class AnimationVisibilityStateManager {
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve" | "effectLayerOverrides"
+      "gridMode" | "playbackMode" | "speed" | "darkMode" | "effortPreset" | "pathShape" | "tipEffortMap"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));
