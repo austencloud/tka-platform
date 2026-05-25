@@ -159,6 +159,8 @@
     mandala: () => import("../../features/lab/LabModule.svelte"),
     "background-builder": () => import("../../features/lab/LabModule.svelte"),
     "landing-preview": () => import("../../features/lab/LabModule.svelte"),
+    // Stage module - multi-performer formation locomotion
+    stage: () => import("../../features/stage/StageModule.svelte"),
     // ========================================================================
     // REMOVED: Standalone 3D modules (now accessible via Realm destinations)
     // ========================================================================

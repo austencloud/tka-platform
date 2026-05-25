@@ -29,9 +29,9 @@ declare global {
       filterMode?: string;
       // WordInputOverlay back-button support
       wordInputOverlay?: boolean;
-      // Deck navigation (ChoreoCardTab)
-      deckNavId?: string | null;
-      deckNavVtgFamily?: string | null;
+      // Catalog navigation (ChoreoCardTab)
+      catalogNavId?: string | null;
+      catalogNavVtgFamily?: string | null;
     }
     interface Platform {
       env: {
@@ -63,6 +63,7 @@ declare global {
   const __FEATURE_HAND_PATHS__: boolean;
   const __FEATURE_VIDEO__: boolean;
   const __FEATURE_LAB__: boolean;
+  const __FEATURE_STAGE__: boolean;
   const __FEATURE_TIKA__: boolean;
   const __FEATURE_SETTINGS__: boolean;
   const __FEATURE_CONNECT__: boolean;

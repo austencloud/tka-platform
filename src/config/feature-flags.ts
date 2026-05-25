@@ -154,6 +154,11 @@ export const FEATURES: FeatureDefinition[] = [
     modulePaths: ["features/video/"],
   },
   {
+    id: "stage",
+    tier: "dev",
+    modulePaths: ["features/stage/"],
+  },
+  {
     id: "lab",
     tier: "dev",
     modulePaths: ["features/lab/"],
