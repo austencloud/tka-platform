@@ -156,7 +156,7 @@
     museum: () => import("../../features/museum/MuseumModule.svelte"),
     // The Kinetic Archive - 3D indoor scene (promoted from realm destination, Apr 2026)
     archive: () => import("../../features/archive/ArchiveDestination.svelte"),
-    mandala: () => import("../../features/lab/LabModule.svelte"),
+    mandala: () => import("../../features/mandala/MandalaModule.svelte"),
     "background-builder": () => import("../../features/lab/LabModule.svelte"),
     "landing-preview": () => import("../../features/lab/LabModule.svelte"),
     // Stage module - multi-performer formation locomotion

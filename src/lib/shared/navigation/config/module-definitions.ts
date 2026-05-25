@@ -27,6 +27,7 @@ import {
   VIDEO_TABS,
   SOCIAL_TABS,
   STAGE_TABS,
+  MANDALA_TABS,
 } from "./tab-definitions";
 
 /**
@@ -48,7 +49,8 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   // polished former destination). Campground + 3D Controls moved to Lab;
   // Archive promoted to its own main module.
   realm: "museum",
-  mandala: "lab",
+  "mandala-generator": "mandala",
+  "mandala-collection": "mandala",
   "background-builder": "lab",
   "landing-preview": "lab",
   // ml-training removed (Mar 2026)
@@ -141,6 +143,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Compose sequences into animations",
     isMain: true,
     sections: COMPOSE_TABS, // TODO: Rename to COMPOSE_TABS
+  },
+  {
+    id: "mandala",
+    label: "Mandala",
+    icon: '<i class="fas fa-dharmachakra" style="color: #f472b6;" aria-hidden="true"></i>',
+    color: "#f472b6",
+    description: "Create, collect, and meditate with mandalas",
+    isMain: true,
+    sections: MANDALA_TABS,
   },
   {
     id: "watch",
@@ -347,6 +358,7 @@ const FEATURE_ENABLED: Record<string, boolean> = {
   "hand-paths": typeof __FEATURE_HAND_PATHS__ !== "undefined" ? __FEATURE_HAND_PATHS__ : true,
   video: typeof __FEATURE_VIDEO__ !== "undefined" ? __FEATURE_VIDEO__ : true,
   stage: typeof __FEATURE_STAGE__ !== "undefined" ? __FEATURE_STAGE__ : true,
+  mandala: typeof __FEATURE_MANDALA__ !== "undefined" ? __FEATURE_MANDALA__ : true,
   lab: typeof __FEATURE_LAB__ !== "undefined" ? __FEATURE_LAB__ : true,
   settings: typeof __FEATURE_SETTINGS__ !== "undefined" ? __FEATURE_SETTINGS__ : true,
 };

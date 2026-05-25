@@ -133,5 +133,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   social: false, // Social module: community map + nearby spinner sync (graduated from Lab)
   museum: false, // The Archive - walkable museum with 2D/3D flip
   stage: false, // Stage choreography - multi-performer formation locomotion (unreleased)
-  lab: false, // Experimental features lab (admin-only) - consolidates mandala, skewlab, poi-lab, background-builder, landing-preview, ml-training
+  mandala: false, // Mandala creation, collection, meditation, export (unreleased)
+  lab: false, // Experimental features lab (admin-only) - consolidates skewlab, poi-lab, background-builder, landing-preview, ml-training
 };

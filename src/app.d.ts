@@ -64,6 +64,7 @@ declare global {
   const __FEATURE_VIDEO__: boolean;
   const __FEATURE_LAB__: boolean;
   const __FEATURE_STAGE__: boolean;
+  const __FEATURE_MANDALA__: boolean;
   const __FEATURE_TIKA__: boolean;
   const __FEATURE_SETTINGS__: boolean;
   const __FEATURE_CONNECT__: boolean;

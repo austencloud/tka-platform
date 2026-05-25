@@ -870,22 +870,7 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
   },
   // level4, level5, level6, level7 graduated to Levels module (Mar 2026)
-  {
-    id: "mandala",
-    label: "Arrow Mandalas",
-    icon: '<i class="fas fa-dharmachakra" aria-hidden="true"></i>',
-    description: "Kaleidoscope art with arrow glyphs",
-    color: "#f472b6",
-    gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
-  },
-  {
-    id: "mandala-collection",
-    label: "Mandala Collection",
-    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
-    description: "Saved sequence mandalas",
-    color: "#e879f9",
-    gradient: "linear-gradient(135deg, #e879f9 0%, #c084fc 100%)",
-  },
+  // mandala + mandala-collection graduated to Mandala module (May 2026)
   // mandala-drawing removed (Apr 2026) - was just a placeholder notes tab
   // ml-training removed (Mar 2026)
   // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
@@ -1005,11 +990,40 @@ export const STAGE_TABS: Section[] = [
     description: "Formation editor and timeline",
     color: "#06b6d4",
   },
+];
+
+// Mandala module tabs configuration
+export const MANDALA_TABS: Section[] = [
   {
-    id: "preview",
-    label: "3D Preview",
-    icon: '<i class="fas fa-cube" aria-hidden="true"></i>',
-    description: "Live 3D choreography preview",
-    color: "#06b6d4",
+    id: "studio",
+    label: "Studio",
+    icon: '<i class="fas fa-palette" aria-hidden="true"></i>',
+    description: "Create and customize mandalas",
+    color: "#f472b6",
+    gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
+  },
+  {
+    id: "collection",
+    label: "Collection",
+    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
+    description: "Saved sequence mandalas",
+    color: "#e879f9",
+    gradient: "linear-gradient(135deg, #e879f9 0%, #c084fc 100%)",
+  },
+  {
+    id: "meditate",
+    label: "Meditate",
+    icon: '<i class="fas fa-spa" aria-hidden="true"></i>',
+    description: "Meditative mandala visualization",
+    color: "#818cf8",
+    gradient: "linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%)",
+  },
+  {
+    id: "export",
+    label: "Export",
+    icon: '<i class="fas fa-download" aria-hidden="true"></i>',
+    description: "Export mandalas as images or prints",
+    color: "#34d399",
+    gradient: "linear-gradient(135deg, #6ee7b7 0%, #34d399 100%)",
   },
 ];
