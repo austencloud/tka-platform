@@ -12,7 +12,7 @@
 		applyCustomFireColors,
 		type CustomFireColors,
 	} from "./presets/fire-presets";
-	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+	import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
 
 	interface Props {
 		presetGroup: EffectPresetGroup;
@@ -26,7 +26,7 @@
 
 	const { presetGroup, activePresetId, onSelectPreset, onCustomize, effectLabel, accentColor, summary }: Props = $props();
 
-	const vm = getAnimationVisibilityManager();
+	const effectsConfigState = getEffectsConfigContext();
 
 	// ── Trail custom colors ────────────────────────────────────────────
 	let customTrailColors = $state<CustomTrailColors>(loadCustomTrailColors());
@@ -34,8 +34,8 @@
 	function handleTrailColorChange(which: "blue" | "red", value: string) {
 		customTrailColors = { ...customTrailColors, [which]: value };
 		saveCustomTrailColors(customTrailColors);
-		if (activePresetId === "trail-custom") {
-			applyCustomTrailColors(customTrailColors);
+		if (activePresetId === "trail-custom" && effectsConfigState) {
+			applyCustomTrailColors(effectsConfigState, customTrailColors);
 		}
 	}
 
@@ -45,8 +45,8 @@
 	function handleFireColorChange(which: "left" | "right", value: string) {
 		customFireColors = { ...customFireColors, [which]: value };
 		saveCustomFireColors(customFireColors);
-		if (activePresetId === "fire-custom") {
-			applyCustomFireColors(vm, customFireColors);
+		if (activePresetId === "fire-custom" && effectsConfigState) {
+			applyCustomFireColors(effectsConfigState, customFireColors);
 		}
 	}
 </script>

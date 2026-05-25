@@ -4,11 +4,10 @@ import type { PulseIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyPulse(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<PulseIntent>,
 ): void {
-  if (!state) return;
   state.updatePulse(patch);
   state.applyPreset({
     id: presetId,
@@ -22,7 +21,7 @@ export const PULSE_PRESETS = [
     id: "pulse-sonar",
     name: "Sonar",
     previewColor: "#38bdf8",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyPulse(state, "pulse-sonar", {
         trigger: "beat",
         style: "stroke",
@@ -38,7 +37,7 @@ export const PULSE_PRESETS = [
     id: "pulse-shockwave",
     name: "Shockwave",
     previewColor: "#ff6000",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyPulse(state, "pulse-shockwave", {
         trigger: "velocity",
         style: "glow",
@@ -54,7 +53,7 @@ export const PULSE_PRESETS = [
     id: "pulse-heartbeat",
     name: "Heartbeat",
     previewColor: "#f0abfc",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyPulse(state, "pulse-heartbeat", {
         trigger: "continuous",
         style: "glow",
@@ -69,7 +68,7 @@ export const PULSE_PRESETS = [
     id: "pulse-radar",
     name: "Radar",
     previewColor: "#a855f7",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyPulse(state, "pulse-radar", {
         trigger: "beat",
         style: "stroke",
@@ -85,7 +84,7 @@ export const PULSE_PRESETS = [
     id: "pulse-ripple",
     name: "Ripple",
     previewColor: "#93c5fd",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyPulse(state, "pulse-ripple", {
         trigger: "continuous",
         style: "glow",
@@ -100,7 +99,7 @@ export const PULSE_PRESETS = [
     id: "pulse-void",
     name: "Void",
     previewColor: "#404060",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyPulse(state, "pulse-void", {
         trigger: "velocity",
         style: "stroke",
@@ -123,8 +122,7 @@ export const PULSE_PRESETS = [
 export const PULSE_PRESET_GROUP: EffectPresetGroup = {
   effectType: "pulse",
   presets: PULSE_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const p = state.pulse;
     return `${p.trigger} · ${p.style} · ${p.palette}`;
   },

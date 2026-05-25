@@ -5,7 +5,6 @@
  * shown as quick-select options before the user taps "Customize".
  */
 
-import type { AnimationVisibilityStateManager } from "../../../state/animation-visibility-state.svelte";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 export interface EffectPreset {
@@ -17,16 +16,15 @@ export interface EffectPreset {
   previewColor2?: string;
   /**
    * Apply this preset's settings.
-   * `state` is the unified EffectsConfigState (or null for legacy effects that only use vm).
    * Captured by EffectsPanel via getContext at init time - Svelte 5 forbids
    * getContext() inside event handlers, so presets must NOT call it themselves.
    */
-  apply: (vm: AnimationVisibilityStateManager, state: EffectsConfigState | null) => void;
+  apply: (state: EffectsConfigState) => void;
 }
 
 export interface EffectPresetGroup {
   effectType: string;
   presets: EffectPreset[];
   /** One-line summary of current settings. Same context rules as `apply`. */
-  getSummary: (vm: AnimationVisibilityStateManager, state: EffectsConfigState | null) => string;
+  getSummary: (state: EffectsConfigState) => string;
 }

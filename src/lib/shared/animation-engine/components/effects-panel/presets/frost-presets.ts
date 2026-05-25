@@ -4,11 +4,10 @@ import type { FrostIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyFrost(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<FrostIntent>,
 ): void {
-  if (!state) return;
   state.updateFrost(patch);
   state.applyPreset({
     id: presetId,
@@ -22,7 +21,7 @@ export const FROST_PRESETS = [
     id: "frost-classic",
     name: "Classic",
     previewColor: "#a0d8ff",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyFrost(state, "frost-classic", {
         palette: "glacial",
         ambientEmission: 0.4,
@@ -37,7 +36,7 @@ export const FROST_PRESETS = [
     id: "frost-breath",
     name: "Breath",
     previewColor: "#d0e8f0",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyFrost(state, "frost-breath", {
         palette: "breath",
         ambientEmission: 0.7,
@@ -52,7 +51,7 @@ export const FROST_PRESETS = [
     id: "frost-flash-freeze",
     name: "Flash Freeze",
     previewColor: "#e0f4ff",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyFrost(state, "frost-flash-freeze", {
         palette: "glacial",
         ambientEmission: 0.2,
@@ -67,7 +66,7 @@ export const FROST_PRESETS = [
     id: "frost-black-ice",
     name: "Black Ice",
     previewColor: "#202830",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyFrost(state, "frost-black-ice", {
         palette: "black_ice",
         ambientEmission: 0.3,
@@ -82,7 +81,7 @@ export const FROST_PRESETS = [
     id: "frost-aurora",
     name: "Aurora",
     previewColor: "#60ff80",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyFrost(state, "frost-aurora", {
         palette: "aurora",
         ambientEmission: 0.5,
@@ -97,7 +96,7 @@ export const FROST_PRESETS = [
     id: "frost-cursed",
     name: "Cursed",
     previewColor: "#4020a0",
-    apply: (_vm: unknown, state: EffectsConfigState | null) =>
+    apply: (state: EffectsConfigState) =>
       applyFrost(state, "frost-cursed", {
         palette: "cursed",
         ambientEmission: 0.3,
@@ -119,8 +118,7 @@ export const FROST_PRESETS = [
 export const FROST_PRESET_GROUP: EffectPresetGroup = {
   effectType: "frost",
   presets: FROST_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const f = state.frost;
     return `${f.palette} · size ${Math.round(f.crystallinity * 100)}% · trail ${Math.round(f.spreadRate * 100)}%`;
   },

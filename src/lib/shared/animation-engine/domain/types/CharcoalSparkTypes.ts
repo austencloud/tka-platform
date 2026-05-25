@@ -234,8 +234,17 @@ function invLerp(a: number, b: number, v: number): number {
 	return Math.max(0, Math.min(1, (v - a) / (b - a)));
 }
 
-/** Convert a semantic intensity/spread/glow (0-1) to concrete CharcoalSparkParams. */
-export function semanticToCharcoalParams(semantic: CharcoalSemanticValues): CharcoalSparkParams {
+/** Convert a semantic intensity/spread/glow (0-1) to concrete CharcoalSparkParams.
+ * Accepts an optional `colorOverrides` to pass through custom color triplets from
+ * CharcoalIntent when presets inject their own palette. */
+export function semanticToCharcoalParams(
+	semantic: CharcoalSemanticValues,
+	colorOverrides?: {
+		coreColor?: [number, number, number];
+		midColor?: [number, number, number];
+		coolColor?: [number, number, number];
+	},
+): CharcoalSparkParams {
 	const { intensity, spread, glow } = semantic;
 
 	return {
@@ -265,10 +274,10 @@ export function semanticToCharcoalParams(semantic: CharcoalSemanticValues): Char
 		emberGlowRadius: Math.round(lerp(10, 40, glow)),
 		emberGlowIntensity: Number(lerp(0.4, 3.0, glow).toFixed(2)),
 
-		// Colors stay fixed (steel-wool palette)
-		coreColor: [255, 242, 210],
-		midColor: [255, 150, 35],
-		coolColor: [170, 45, 2],
+		// Colors: use overrides if supplied, otherwise default steel-wool palette
+		coreColor: colorOverrides?.coreColor ?? [255, 242, 210],
+		midColor: colorOverrides?.midColor ?? [255, 150, 35],
+		coolColor: colorOverrides?.coolColor ?? [170, 45, 2],
 	};
 }
 

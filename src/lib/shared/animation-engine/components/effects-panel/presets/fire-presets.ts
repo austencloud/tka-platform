@@ -11,7 +11,7 @@
  */
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
-import type { AnimationVisibilityStateManager } from "../../../state/animation-visibility-state.svelte";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { FireColorCurve } from "../../../domain/types/FireTypes";
 import { hexToFlameColor } from "../../../domain/types/FireTypes";
 
@@ -67,14 +67,11 @@ export function saveCustomFireColors(colors: CustomFireColors): void {
   } catch { /* ignore */ }
 }
 
-export function applyCustomFireColors(vm: AnimationVisibilityStateManager, colors: CustomFireColors): void {
-  // Set colorBlend to 1.0 so per-prop colors fully tint the fire
-  vm.setFireColorBlend(1.0);
-  // Set per-prop flame colors
-  vm.setFirePropColors([
-    hexToFlameColor(colors.left),
-    hexToFlameColor(colors.right),
-  ]);
+export function applyCustomFireColors(state: EffectsConfigState, colors: CustomFireColors): void {
+  state.updateFire({
+    colorBlend: 1.0,
+    propColors: [hexToFlameColor(colors.left), hexToFlameColor(colors.right)],
+  });
 }
 
 // ── Presets (color only - no intensity/turbulence changes) ─────────────
@@ -84,36 +81,33 @@ export const FIRE_PRESETS: EffectPreset[] = [
     id: "fire-classic",
     name: "Classic",
     previewColor: "#f97316",
-    apply: (vm) => {
-      vm.setFireColorCurve(CLASSIC_CURVE);
-      vm.setFirePropColors(null);
+    apply: (state) => {
+      state.updateFire({ colorCurve: CLASSIC_CURVE, propColors: null });
     },
   },
   {
     id: "fire-blue-flame",
     name: "Blue Flame",
     previewColor: "#60a5fa",
-    apply: (vm) => {
-      vm.setFireColorCurve(BLUE_CURVE);
-      vm.setFirePropColors(null);
+    apply: (state) => {
+      state.updateFire({ colorCurve: BLUE_CURVE, propColors: null });
     },
   },
   {
     id: "fire-spirit",
     name: "Spirit",
     previewColor: "#a855f7",
-    apply: (vm) => {
-      vm.setFireColorCurve(SPIRIT_CURVE);
-      vm.setFirePropColors(null);
+    apply: (state) => {
+      state.updateFire({ colorCurve: SPIRIT_CURVE, propColors: null });
     },
   },
   {
     id: "fire-custom",
     name: "Custom",
     previewColor: "custom",
-    apply: (vm) => {
+    apply: (state) => {
       const colors = loadCustomFireColors();
-      applyCustomFireColors(vm, colors);
+      applyCustomFireColors(state, colors);
     },
   },
 ];
@@ -121,9 +115,9 @@ export const FIRE_PRESETS: EffectPreset[] = [
 export const FIRE_PRESET_GROUP: EffectPresetGroup = {
   effectType: "fire",
   presets: FIRE_PRESETS,
-  getSummary: (vm: AnimationVisibilityStateManager): string => {
-    const intensityPct = Math.round(vm.getFireIntensity() * 100);
-    const blend = vm.getFireColorBlend();
+  getSummary: (state): string => {
+    const intensityPct = Math.round(state.fire.intensity * 100);
+    const blend = state.fire.colorBlend;
     const colorMode = blend < 0.15 ? "Natural" : blend < 0.5 ? "Tinted" : "Prop-colored";
     return `Intensity ${intensityPct}% · ${colorMode}`;
   },

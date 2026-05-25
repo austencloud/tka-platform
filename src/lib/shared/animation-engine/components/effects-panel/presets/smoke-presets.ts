@@ -4,11 +4,10 @@ import type { SmokeIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applySmoke(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<SmokeIntent>,
 ): void {
-  if (!state) return;
   state.updateSmoke(patch);
   // updateSmoke nulls activePresets.smoke; restore so the chip stays highlighted.
   state.applyPreset({
@@ -23,7 +22,7 @@ export const SMOKE_PRESETS: EffectPreset[] = [
     id: "smoke-classic",
     name: "Classic",
     previewColor: "#d8d8d8",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applySmoke(state, "smoke-classic", {
         palette: "incense",
         ambientEmission: 0.5,
@@ -38,7 +37,7 @@ export const SMOKE_PRESETS: EffectPreset[] = [
     id: "smoke-fog-wall",
     name: "Fog Wall",
     previewColor: "#c0c0c8",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applySmoke(state, "smoke-fog-wall", {
         palette: "fog",
         ambientEmission: 0.9,
@@ -53,7 +52,7 @@ export const SMOKE_PRESETS: EffectPreset[] = [
     id: "smoke-genie-burst",
     name: "Genie Burst",
     previewColor: "#a060ff",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applySmoke(state, "smoke-genie-burst", {
         palette: "genie",
         ambientEmission: 0.2,
@@ -68,7 +67,7 @@ export const SMOKE_PRESETS: EffectPreset[] = [
     id: "smoke-cursed",
     name: "Cursed",
     previewColor: "#202020",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applySmoke(state, "smoke-cursed", {
         palette: "cursed",
         ambientEmission: 0.4,
@@ -83,7 +82,7 @@ export const SMOKE_PRESETS: EffectPreset[] = [
     id: "smoke-spirit-veil",
     name: "Spirit Veil",
     previewColor: "#80c8ff",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applySmoke(state, "smoke-spirit-veil", {
         palette: "spirit",
         ambientEmission: 0.6,
@@ -98,7 +97,7 @@ export const SMOKE_PRESETS: EffectPreset[] = [
     id: "smoke-campfire",
     name: "Campfire",
     previewColor: "#805040",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applySmoke(state, "smoke-campfire", {
         palette: "campfire",
         ambientEmission: 0.5,
@@ -122,8 +121,7 @@ export const SMOKE_PRESETS: EffectPreset[] = [
 export const SMOKE_PRESET_GROUP: EffectPresetGroup = {
   effectType: "smoke",
   presets: SMOKE_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const s = state.smoke;
     return `${s.palette} · amb ${Math.round(s.ambientEmission * 100)}% · mot ${Math.round(s.motionEmission * 100)}% · curl ${Math.round(s.curlStrength * 100)}%`;
   },

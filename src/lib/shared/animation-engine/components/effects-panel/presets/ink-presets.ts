@@ -4,11 +4,10 @@ import type { InkIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyInk(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<InkIntent>,
 ): void {
-  if (!state) return;
   state.updateInk(patch);
   // updateInk nulls activePresets.ink; restore so the chip stays highlighted.
   state.applyPreset({
@@ -23,7 +22,7 @@ export const INK_PRESETS: EffectPreset[] = [
     id: "ink-classic",
     name: "Classic",
     previewColor: "#0a0a0a",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyInk(state, "ink-classic", {
         palette: "india",
         ambientEmission: 0.2,
@@ -38,7 +37,7 @@ export const INK_PRESETS: EffectPreset[] = [
     id: "ink-drip",
     name: "Drip",
     previewColor: "#1a1a1a",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyInk(state, "ink-drip", {
         palette: "india",
         ambientEmission: 0.3,
@@ -53,7 +52,7 @@ export const INK_PRESETS: EffectPreset[] = [
     id: "ink-watercolor-wash",
     name: "Watercolor",
     previewColor: "#4080c0",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyInk(state, "ink-watercolor-wash", {
         palette: "watercolor",
         ambientEmission: 0.1,
@@ -68,7 +67,7 @@ export const INK_PRESETS: EffectPreset[] = [
     id: "ink-neon-tag",
     name: "Neon Tag",
     previewColor: "#ff2080",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyInk(state, "ink-neon-tag", {
         palette: "neon",
         ambientEmission: 0.1,
@@ -83,7 +82,7 @@ export const INK_PRESETS: EffectPreset[] = [
     id: "ink-splatter",
     name: "Splatter",
     previewColor: "#8a1818",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyInk(state, "ink-splatter", {
         palette: "blood",
         ambientEmission: 0.1,
@@ -98,7 +97,7 @@ export const INK_PRESETS: EffectPreset[] = [
     id: "ink-toxic",
     name: "Toxic",
     previewColor: "#7fd94a",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyInk(state, "ink-toxic", {
         palette: "acid",
         ambientEmission: 0.2,
@@ -122,8 +121,7 @@ export const INK_PRESETS: EffectPreset[] = [
 export const INK_PRESET_GROUP: EffectPresetGroup = {
   effectType: "ink",
   presets: INK_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const s = state.ink;
     return `${s.palette} · amb ${Math.round(s.ambientEmission * 100)}% · mot ${Math.round(s.motionEmission * 100)}% · int ${Math.round(s.intensity * 100)}%`;
   },

@@ -4,11 +4,10 @@ import type { WaterIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyWater(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<WaterIntent>,
 ): void {
-  if (!state) return;
   state.updateWater(patch);
   // updateWater nulls activePresets.water; restore so the chip stays highlighted.
   state.applyPreset({
@@ -23,7 +22,7 @@ export const WATER_PRESETS: EffectPreset[] = [
     id: "water-classic",
     name: "Classic",
     previewColor: "#3a7fd9",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyWater(state, "water-classic", {
         palette: "classic",
         ambientEmission: 0.4,
@@ -38,7 +37,7 @@ export const WATER_PRESETS: EffectPreset[] = [
     id: "water-fountain",
     name: "Fountain",
     previewColor: "#6fb3ff",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyWater(state, "water-fountain", {
         palette: "classic",
         ambientEmission: 0.9,
@@ -53,7 +52,7 @@ export const WATER_PRESETS: EffectPreset[] = [
     id: "water-whip",
     name: "Whip",
     previewColor: "#e8f4ff",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyWater(state, "water-whip", {
         palette: "classic",
         ambientEmission: 0.0,
@@ -68,7 +67,7 @@ export const WATER_PRESETS: EffectPreset[] = [
     id: "water-mercury",
     name: "Mercury",
     previewColor: "#9a9fa8",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyWater(state, "water-mercury", {
         palette: "mercury",
         ambientEmission: 0.3,
@@ -83,7 +82,7 @@ export const WATER_PRESETS: EffectPreset[] = [
     id: "water-acid",
     name: "Acid",
     previewColor: "#7fd94a",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyWater(state, "water-acid", {
         palette: "acid",
         ambientEmission: 0.6,
@@ -98,7 +97,7 @@ export const WATER_PRESETS: EffectPreset[] = [
     id: "water-blood",
     name: "Ritual",
     previewColor: "#8a1818",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyWater(state, "water-blood", {
         palette: "blood",
         ambientEmission: 0.2,
@@ -113,7 +112,7 @@ export const WATER_PRESETS: EffectPreset[] = [
     id: "water-spirit",
     name: "Spirit",
     previewColor: "#80ffe8",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyWater(state, "water-spirit", {
         palette: "spirit",
         ambientEmission: 0.7,
@@ -137,8 +136,7 @@ export const WATER_PRESETS: EffectPreset[] = [
 export const WATER_PRESET_GROUP: EffectPresetGroup = {
   effectType: "water",
   presets: WATER_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const w = state.water;
     return `${w.palette} · amb ${Math.round(w.ambientEmission * 100)}% · mot ${Math.round(w.motionEmission * 100)}%`;
   },

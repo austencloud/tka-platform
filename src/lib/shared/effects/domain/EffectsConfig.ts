@@ -89,6 +89,12 @@ export interface CharcoalIntent {
   spread: number;
   /** 0-1. Semantic glow. */
   glow: number;
+  /** Optional hottest spark color override (RGB 0-255). Null = use default curve. */
+  coreColor?: [number, number, number];
+  /** Optional mid-temperature spark color override (RGB 0-255). */
+  midColor?: [number, number, number];
+  /** Optional coolest spark color override (RGB 0-255). */
+  coolColor?: [number, number, number];
 }
 
 export interface ZapIntent {

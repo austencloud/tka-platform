@@ -290,8 +290,8 @@ export class EffectRendererManager {
   /** Expose charcoal params from EffectsConfigState for the registry onInit hook. */
   getCharcoalParamsFromConfig(): CharcoalSparkParams | undefined {
     if (!this.effectsConfigState) return undefined;
-    const intent = this.effectsConfigState.charcoal;
-    return semanticToCharcoalParams(intent);
+    const { intensity, spread, glow, coreColor, midColor, coolColor } = this.effectsConfigState.charcoal;
+    return semanticToCharcoalParams({ intensity, spread, glow }, { coreColor, midColor, coolColor });
   }
 
   /** Check whether a given overlay effect is currently enabled. */

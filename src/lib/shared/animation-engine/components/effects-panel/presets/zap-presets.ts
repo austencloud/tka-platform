@@ -4,11 +4,10 @@ import type { ZapIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyZap(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<ZapIntent>,
 ): void {
-  if (!state) return;
   state.updateZap(patch);
   // updateZap nulls activePresets.zap; restore it so the chip stays highlighted.
   state.applyPreset({
@@ -23,7 +22,7 @@ export const ZAP_PRESETS: EffectPreset[] = [
     id: "zap-thunder",
     name: "Thunder",
     previewColor: "#88ccff",
-    apply: (_vm, state) => applyZap(state, "zap-thunder", {
+    apply: (state) => applyZap(state, "zap-thunder", {
       intensity: 0.9, leftColor: "#88ccff", rightColor: "#88ccff",
       frequency: 8, mode: "arc", branching: 0.4,
     }),
@@ -32,7 +31,7 @@ export const ZAP_PRESETS: EffectPreset[] = [
     id: "zap-tesla",
     name: "Tesla",
     previewColor: "#a855f7",
-    apply: (_vm, state) => applyZap(state, "zap-tesla", {
+    apply: (state) => applyZap(state, "zap-tesla", {
       intensity: 1.0, leftColor: "#a855f7", rightColor: "#a855f7",
       frequency: 20, mode: "arc", branching: 0.6,
     }),
@@ -41,7 +40,7 @@ export const ZAP_PRESETS: EffectPreset[] = [
     id: "zap-plasma",
     name: "Plasma",
     previewColor: "#ec4899",
-    apply: (_vm, state) => applyZap(state, "zap-plasma", {
+    apply: (state) => applyZap(state, "zap-plasma", {
       intensity: 0.7, leftColor: "#ec4899", rightColor: "#22d3ee",
       frequency: 16, mode: "crackle", branching: 0.2,
     }),
@@ -59,8 +58,7 @@ export const ZAP_PRESETS: EffectPreset[] = [
 export const ZAP_PRESET_GROUP: EffectPresetGroup = {
   effectType: "zap",
   presets: ZAP_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const z = state.zap;
     return `${z.mode} · freq ${z.frequency}/s · ${Math.round(z.intensity * 100)}%`;
   },

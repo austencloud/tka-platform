@@ -4,11 +4,10 @@ import type { PetalsIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyPetals(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<PetalsIntent>,
 ): void {
-  if (!state) return;
   state.updatePetals(patch);
   // updatePetals nulls activePresets.petals; restore so the chip stays highlighted.
   state.applyPreset({
@@ -23,7 +22,7 @@ export const PETALS_PRESETS: EffectPreset[] = [
     id: "petals-classic",
     name: "Classic",
     previewColor: "#ffc0d8",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyPetals(state, "petals-classic", {
         palette: "blossom",
         ambientEmission: 0.5,
@@ -38,7 +37,7 @@ export const PETALS_PRESETS: EffectPreset[] = [
     id: "petals-storm",
     name: "Storm",
     previewColor: "#d84820",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyPetals(state, "petals-storm", {
         palette: "autumn",
         ambientEmission: 0.8,
@@ -53,7 +52,7 @@ export const PETALS_PRESETS: EffectPreset[] = [
     id: "petals-jungle",
     name: "Jungle Drift",
     previewColor: "#408840",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyPetals(state, "petals-jungle", {
         palette: "jungle",
         ambientEmission: 0.4,
@@ -68,7 +67,7 @@ export const PETALS_PRESETS: EffectPreset[] = [
     id: "petals-ember",
     name: "Ember Ash",
     previewColor: "#ff6020",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyPetals(state, "petals-ember", {
         palette: "ash",
         ambientEmission: 0.3,
@@ -83,7 +82,7 @@ export const PETALS_PRESETS: EffectPreset[] = [
     id: "petals-gilded",
     name: "Gilded",
     previewColor: "#ffd060",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyPetals(state, "petals-gilded", {
         palette: "gold",
         ambientEmission: 0.2,
@@ -98,7 +97,7 @@ export const PETALS_PRESETS: EffectPreset[] = [
     id: "petals-tornado",
     name: "Tornado",
     previewColor: "#c86828",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyPetals(state, "petals-tornado", {
         palette: "autumn",
         ambientEmission: 0.4,
@@ -122,8 +121,7 @@ export const PETALS_PRESETS: EffectPreset[] = [
 export const PETALS_PRESET_GROUP: EffectPresetGroup = {
   effectType: "petals",
   presets: PETALS_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const p = state.petals;
     return `${p.palette} · amb ${Math.round(p.ambientEmission * 100)}% · mot ${Math.round(p.motionEmission * 100)}% · sway ${Math.round(p.swayAmplitude * 100)}%`;
   },

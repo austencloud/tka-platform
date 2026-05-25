@@ -531,7 +531,8 @@ export class AnimationVisibilityStateManager {
 
   getCharcoalParams(): CharcoalSparkParams {
     if (this.effectsState) {
-      return semanticToCharcoalParams(this.effectsState.charcoal);
+      const { intensity, spread, glow, coreColor, midColor, coolColor } = this.effectsState.charcoal;
+      return semanticToCharcoalParams({ intensity, spread, glow }, { coreColor, midColor, coolColor });
     }
     return { ...DEFAULT_CHARCOAL_PARAMS };
   }

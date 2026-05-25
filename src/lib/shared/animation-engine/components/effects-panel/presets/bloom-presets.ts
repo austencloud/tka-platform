@@ -4,11 +4,10 @@ import type { BloomIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyBloom(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<BloomIntent>,
 ): void {
-  if (!state) return;
   state.updateBloom(patch);
   // updateBloom nulls activePresets.bloom; restore it so the chip stays highlighted.
   state.applyPreset({
@@ -23,7 +22,7 @@ export const BLOOM_PRESETS: EffectPreset[] = [
     id: "bloom-candle",
     name: "Candle",
     previewColor: "#fbbf24",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBloom(state, "bloom-candle", {
         intensity: 0.95,
         radius: 100,
@@ -39,7 +38,7 @@ export const BLOOM_PRESETS: EffectPreset[] = [
     id: "bloom-halo",
     name: "Halo",
     previewColor: "#ffffff",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBloom(state, "bloom-halo", {
         intensity: 0.9,
         radius: 130,
@@ -55,7 +54,7 @@ export const BLOOM_PRESETS: EffectPreset[] = [
     id: "bloom-prism",
     name: "Prism",
     previewColor: "rainbow",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBloom(state, "bloom-prism", {
         intensity: 0.95,
         radius: 95,
@@ -71,7 +70,7 @@ export const BLOOM_PRESETS: EffectPreset[] = [
     id: "bloom-twin-stars",
     name: "Twin Stars",
     previewColor: "#a5b4fc",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBloom(state, "bloom-twin-stars", {
         intensity: 1.0,
         radius: 110,
@@ -96,8 +95,7 @@ export const BLOOM_PRESETS: EffectPreset[] = [
 export const BLOOM_PRESET_GROUP: EffectPresetGroup = {
   effectType: "bloom",
   presets: BLOOM_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const b = state.bloom;
     return `${b.colorMode} · ${b.falloff} · r${b.radius}px`;
   },

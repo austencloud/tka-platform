@@ -4,11 +4,10 @@ import type { EchoIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyEcho(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<EchoIntent>,
 ): void {
-  if (!state) return;
   state.updateEcho(patch);
   // updateEcho nulls activePresets.echo; restore it so the chip stays highlighted.
   state.applyPreset({
@@ -23,7 +22,7 @@ export const ECHO_PRESETS: EffectPreset[] = [
     id: "echo-stroboscope",
     name: "Stroboscope",
     previewColor: "#ffffff",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyEcho(state, "echo-stroboscope", {
         intensity: 0.7,
         decay: 4,
@@ -38,7 +37,7 @@ export const ECHO_PRESETS: EffectPreset[] = [
     id: "echo-rainbow-trail",
     name: "Rainbow Trail",
     previewColor: "rainbow",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyEcho(state, "echo-rainbow-trail", {
         intensity: 0.75,
         decay: 6,
@@ -53,7 +52,7 @@ export const ECHO_PRESETS: EffectPreset[] = [
     id: "echo-twin-ghosts",
     name: "Twin Ghosts",
     previewColor: "#a5b4fc",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyEcho(state, "echo-twin-ghosts", {
         intensity: 0.65,
         decay: 3,
@@ -68,7 +67,7 @@ export const ECHO_PRESETS: EffectPreset[] = [
     id: "echo-pulse",
     name: "Pulse",
     previewColor: "#22d3ee",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyEcho(state, "echo-pulse", {
         intensity: 0.9,
         decay: 2,
@@ -92,8 +91,7 @@ export const ECHO_PRESETS: EffectPreset[] = [
 export const ECHO_PRESET_GROUP: EffectPresetGroup = {
   effectType: "echo",
   presets: ECHO_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const e = state.echo;
     return `${e.shape} · decay ${e.decay}b · every ${e.interval}b`;
   },

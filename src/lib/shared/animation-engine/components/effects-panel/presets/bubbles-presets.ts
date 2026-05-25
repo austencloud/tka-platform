@@ -4,11 +4,10 @@ import type { BubblesIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyBubbles(
-  state: EffectsConfigState | null,
+  state: EffectsConfigState,
   presetId: string,
   patch: Partial<BubblesIntent>,
 ): void {
-  if (!state) return;
   state.updateBubbles(patch);
   // updateBubbles nulls activePresets.bubbles; restore so the chip stays highlighted.
   state.applyPreset({
@@ -23,7 +22,7 @@ export const BUBBLES_PRESETS: EffectPreset[] = [
     id: "bubbles-classic",
     name: "Classic",
     previewColor: "#c8e0ff",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBubbles(state, "bubbles-classic", {
         palette: "soap",
         ambientEmission: 0.3,
@@ -38,7 +37,7 @@ export const BUBBLES_PRESETS: EffectPreset[] = [
     id: "bubbles-fizz",
     name: "Fizz",
     previewColor: "#f4e8c8",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBubbles(state, "bubbles-fizz", {
         palette: "champagne",
         ambientEmission: 0.6,
@@ -53,7 +52,7 @@ export const BUBBLES_PRESETS: EffectPreset[] = [
     id: "bubbles-dream",
     name: "Dream",
     previewColor: "#e8f4ff",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBubbles(state, "bubbles-dream", {
         palette: "soap",
         ambientEmission: 0.5,
@@ -68,7 +67,7 @@ export const BUBBLES_PRESETS: EffectPreset[] = [
     id: "bubbles-iridescent",
     name: "Iridescent",
     previewColor: "#c080ff",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBubbles(state, "bubbles-iridescent", {
         palette: "oil",
         ambientEmission: 0.4,
@@ -83,7 +82,7 @@ export const BUBBLES_PRESETS: EffectPreset[] = [
     id: "bubbles-acid",
     name: "Acid Fizz",
     previewColor: "#b8ff6f",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBubbles(state, "bubbles-acid", {
         palette: "acid",
         ambientEmission: 0.5,
@@ -98,7 +97,7 @@ export const BUBBLES_PRESETS: EffectPreset[] = [
     id: "bubbles-spirit",
     name: "Spirit",
     previewColor: "#c0fff4",
-    apply: (_vm, state) =>
+    apply: (state) =>
       applyBubbles(state, "bubbles-spirit", {
         palette: "spirit",
         ambientEmission: 0.6,
@@ -122,8 +121,7 @@ export const BUBBLES_PRESETS: EffectPreset[] = [
 export const BUBBLES_PRESET_GROUP: EffectPresetGroup = {
   effectType: "bubbles",
   presets: BUBBLES_PRESETS,
-  getSummary: (_vm, state) => {
-    if (!state) return "";
+  getSummary: (state) => {
     const b = state.bubbles;
     return `${b.palette} · amb ${Math.round(b.ambientEmission * 100)}% · mot ${Math.round(b.motionEmission * 100)}% · rise ${Math.round(b.buoyancy * 100)}%`;
   },
