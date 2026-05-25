@@ -107,6 +107,12 @@ export interface PrintRenderOptions {
   rightLabel?: string;
   /** Center footer text (overrides hardcoded notes) */
   notes?: string;
+  /** Icon image path drawn on both sides of center text */
+  iconPath?: string;
+  /** Deck ID for QR attribution tracking */
+  deckId?: string;
+  /** Deck name for QR attribution tracking */
+  deckName?: string;
 }
 
 export interface CardPair {

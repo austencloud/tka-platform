@@ -112,6 +112,10 @@ export interface QRCodeOptions {
   redPropType?: string;
   /** Encoded BrowseViewMode string (e.g., "hsb" = hands-solo-blue). */
   viewMode?: string;
+  /** Deck ID for attribution tracking */
+  deckId?: string;
+  /** Deck name for attribution tracking */
+  deckName?: string;
 }
 
 /**

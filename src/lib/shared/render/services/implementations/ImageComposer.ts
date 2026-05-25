@@ -443,7 +443,9 @@ export class ImageComposer {
           isDarkMode,
           effectiveBluePropType,
           effectiveRedPropType,
-          gridOffsetX
+          gridOffsetX,
+          options.deckId,
+          options.deckName,
         );
       }
     }
@@ -567,7 +569,7 @@ export class ImageComposer {
     }
 
     if (hasAnyFooterContent && footerHeight > 0) {
-      this.TextRenderer.renderUserInfo(
+      await this.TextRenderer.renderUserInfo(
         canvas,
         {
           userName: options.userName || "",
@@ -592,6 +594,7 @@ export class ImageComposer {
         options.deckCard ? DECK_BORDER_COLOR : undefined,
         options.leftLabel,
         options.rightLabel,
+        options.iconPath,
       );
     }
 
@@ -831,7 +834,9 @@ export class ImageComposer {
     isDarkMode: boolean,
     bluePropType?: PropType,
     redPropType?: PropType,
-    horizontalOffset: number = 0
+    horizontalOffset: number = 0,
+    deckId?: string,
+    deckName?: string,
   ): Promise<void> {
     if (!this.qrCodeGenerator) {
       return;
@@ -850,6 +855,8 @@ export class ImageComposer {
           darkMode: isDarkMode,
           bluePropType: bluePropType,
           redPropType: redPropType,
+          deckId,
+          deckName,
         }
       );
 

@@ -25,6 +25,8 @@ export interface SequenceExportOptions {
   leftLabel?: string;
   /** Right-side label override (e.g. "1:1" turn ratio) */
   rightLabel?: string;
+  /** Icon image path drawn on both sides of center text */
+  iconPath?: string;
 
   propTypeOverride?: PropType;
 
@@ -84,6 +86,11 @@ export interface SequenceExportOptions {
   /** Use 5:7 playing card layout (composeCardImage) for physical card export.
    *  Different from printMode (white background). cardMode = card aspect ratio. */
   cardMode?: boolean;
+
+  /** Deck ID stamped on QR short codes generated for deck cards */
+  deckId?: string;
+  /** Human-readable deck name stamped on QR short codes for analytics */
+  deckName?: string;
 
   /** Render at fixed playing card dimensions with consistent header/footer sizing.
    *  contentWidth/contentHeight = the content area inside the bleed (e.g. 750×1050 poker). */

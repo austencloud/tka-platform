@@ -17,6 +17,7 @@
     onRelease: () => void;
     onBack: () => void;
     isReleasing: boolean;
+    readOnly?: boolean;
     footers?: CardFooter[];
   }
 
@@ -30,6 +31,7 @@
     onRelease,
     onBack,
     isReleasing,
+    readOnly = false,
     footers,
   }: Props = $props();
 
@@ -120,7 +122,7 @@
   <div class="review-header">
     <button type="button" class="back-btn" onclick={onBack}>
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      Back
+      {readOnly ? "Back to Composer" : "Back"}
     </button>
 
     <div class="deck-info">
@@ -133,21 +135,23 @@
       </div>
     </div>
 
-    <div class="action-buttons">
-      <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
-        <i class="fas fa-dice" aria-hidden="true"></i>
-        Redraw
-      </button>
-      <button type="button" class="release-btn" onclick={onRelease} disabled={isReleasing || isRendering}>
-        {#if isReleasing}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Releasing...
-        {:else}
-          <i class="fas fa-stamp" aria-hidden="true"></i>
-          Release Deck #{String(nextDeckNumber).padStart(3, "0")}
-        {/if}
-      </button>
-    </div>
+    {#if !readOnly}
+      <div class="action-buttons">
+        <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
+          <i class="fas fa-dice" aria-hidden="true"></i>
+          Redraw
+        </button>
+        <button type="button" class="release-btn" onclick={onRelease} disabled={isReleasing || isRendering}>
+          {#if isReleasing}
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            Releasing...
+          {:else}
+            <i class="fas fa-stamp" aria-hidden="true"></i>
+            Release Deck #{String(nextDeckNumber).padStart(3, "0")}
+          {/if}
+        </button>
+      </div>
+    {/if}
   </div>
 
   <PrintPreviewToolbar
@@ -178,6 +182,8 @@
       handPointsVisible={true}
       deckMode={true}
       displayMode="sheets"
+      deckId={String(nextDeckNumber).padStart(3, "0")}
+      deckName={`LOOP Deck #${nextDeckNumber}`}
       onCardClick={handleCardClick}
       onPairsReady={handlePairsReady}
       onRenderStateChange={handleRenderState}
@@ -197,9 +203,11 @@
     onClose={() => { inspectedSequence = null; inspectedFrontImageUrl = null; }}
   >
     {#snippet extraActions()}
-      <button class="copy-btn swap-btn" onclick={handleSwapInspected} aria-label="Swap card">
-        <i class="fas fa-random"></i> Swap Card
-      </button>
+      {#if !readOnly}
+        <button class="copy-btn swap-btn" onclick={handleSwapInspected} aria-label="Swap card">
+          <i class="fas fa-random"></i> Swap Card
+        </button>
+      {/if}
     {/snippet}
   </CardInspectModal>
 {/if}

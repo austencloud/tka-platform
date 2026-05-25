@@ -158,6 +158,8 @@ export class QRCodeGenerator {
       bluePropType: options?.bluePropType,
       redPropType: options?.redPropType,
       viewMode: options?.viewMode,
+      deckId: options?.deckId,
+      deckName: options?.deckName,
     };
 
     // Check if offline mode is requested

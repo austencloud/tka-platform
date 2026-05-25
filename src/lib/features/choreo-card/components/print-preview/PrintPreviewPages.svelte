@@ -10,7 +10,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { getDeckLayoutPolicy } from "../../domain/deck-layout-policy";
+  import { getCatalogLayoutPolicy } from "../../domain/catalog-layout-policy";
   import { cardCache, type RenderedCard, type CachedCard } from "./print-preview-cache";
   import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
 
@@ -39,6 +39,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
     /** "sheets" = print-ready pages with fronts+backs, "grid" = flowing card grid (fronts only) */
     displayMode?: "sheets" | "grid";
+    /** Deck ID for QR attribution tracking */
+    deckId?: string;
+    /** Deck name for QR attribution tracking */
+    deckName?: string;
   }
 
   let {
@@ -60,6 +64,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onPairsReady,
     onRenderStateChange,
     displayMode = "sheets",
+    deckId,
+    deckName,
   }: Props = $props();
 
   let lastSeenRerenderKey = rerenderKey;
@@ -92,7 +98,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       includeStartPosition,
       startPositionLayout:
         deckMode && stepCount != null
-          ? getDeckLayoutPolicy(stepCount)
+          ? getCatalogLayoutPolicy(stepCount)
           : stepCount != null
             ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
             : imageComposition.startPositionLayout,
@@ -105,7 +111,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       leftLabel: footer?.left,
       rightLabel: footer?.right,
       notes: footer?.center,
+      iconPath: footer?.iconPath,
       bleedPx: 36,
+      deckId,
+      deckName,
     };
   }
 
@@ -117,7 +126,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const seqId = seq.id ?? seq.word ?? seq.name ?? "";
     const footer = footers?.[index];
     const layout = deckMode && stepCount != null
-      ? getDeckLayoutPolicy(stepCount)
+      ? getCatalogLayoutPolicy(stepCount)
       : "row";
     const optsPart = [
       cardSize, theme, showGrid, showTKA, showWord,
