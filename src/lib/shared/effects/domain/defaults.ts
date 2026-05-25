@@ -1,8 +1,11 @@
-import type { EffectsConfig } from "./EffectsConfig";
+import type { EffectsConfig, EffectType } from "./EffectsConfig";
 import { EFFECTS_CONFIG_VERSION } from "./EffectsConfig";
 
 export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   version: EFFECTS_CONFIG_VERSION,
+
+  activeEffect: "none" as EffectType,
+  effectLayerOverrides: {},
 
   // Trails on as the global default - new users see motion paths.
   tipEffectMap: { "*": { effect: "trails" } },

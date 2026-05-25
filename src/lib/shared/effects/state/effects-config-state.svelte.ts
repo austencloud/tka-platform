@@ -74,6 +74,8 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
     activePresets: patch.activePresets
       ? { ...base.activePresets, ...patch.activePresets }
       : base.activePresets,
+    activeEffect: patch.activeEffect ?? base.activeEffect,
+    effectLayerOverrides: patch.effectLayerOverrides ?? base.effectLayerOverrides,
     tipEffectMap: patch.tipEffectMap ?? base.tipEffectMap,
     overrides: patch.overrides ?? base.overrides,
   };

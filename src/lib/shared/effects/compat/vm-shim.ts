@@ -30,6 +30,10 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
   return {
     version: EFFECTS_CONFIG_VERSION,
 
+    // New schema fields - vm has no concept of these; seed from defaults.
+    activeEffect: DEFAULT_EFFECTS_CONFIG.activeEffect,
+    effectLayerOverrides: { ...DEFAULT_EFFECTS_CONFIG.effectLayerOverrides },
+
     tipEffectMap: vm.getTipEffectMap() ?? DEFAULT_EFFECTS_CONFIG.tipEffectMap,
 
     // Trails live in animationSettings, not vm. This snapshot returns
