@@ -77,6 +77,8 @@ Note: NO new popover, chip, selector, collapsible, context menu, transport, or B
 
 ## 3. Data Model
 
+> **Updated 2026-05-25:** Switched from global-formation model to per-performer marks model, validated via playground prototype. Each performer owns their own path of waypoints ("marks"), each with independent beat timing and walk style. This is more expressive than synchronized global formations and matches industry tools (Pyware, DrillWeaver).
+
 ```typescript
 interface StageChoreography {
   id: string;
@@ -84,39 +86,35 @@ interface StageChoreography {
   bpm: number;
   stageWidth: number;   // meters
   stageDepth: number;   // meters
-  performers: PerformerSlot[];
-  formations: Formation[];
+  performers: Performer[];
   sharedSequenceId: string | null;
 }
 
-interface PerformerSlot {
+interface Performer {
   id: string;
-  index: number;
+  index: number;        // 0-7
+  label: string;        // 'A'–'H'
   color: string;
+  marks: Mark[];        // ordered waypoints — marks[0] is starting position
   sequenceId: string | null;  // null = use sharedSequenceId (future)
 }
 
-interface Formation {
+interface Mark {
   id: string;
-  beat: number;                     // absolute beat position
-  positions: PerformerPose[];
-  transition: TransitionConfig;     // how to ARRIVE at this formation
-}
-
-interface PerformerPose {
-  performerId: string;
-  x: number;    // stage coords, meters
+  x: number;            // stage coords, meters
   z: number;
-  facing: number;  // radians, 0 = facing audience
-}
-
-interface TransitionConfig {
+  beats: number;        // beats to arrive here from previous mark (0 for starting position)
   walkStyle: 'crab' | 'direct';
   easing: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
 }
 ```
 
-**Key:** `Formation.transition` describes how performers arrive at THIS formation from the previous one. First formation has no meaningful transition (starting position).
+**Key concepts:**
+- Performers labeled A–H (letters), marks labeled 1, 2, 3... (numbers) — no collision
+- `marks[0]` = starting position (beats=0, no transition)
+- Each mark stores its own beat duration and walk style — transitions are per-mark, not global
+- Deletion: removing mark 3 reconnects path from mark 2 → mark 4 (standard keyframe behavior)
+- Formation presets set all performers' `marks[0]` to preset positions, clearing subsequent marks
 
 ---
 
@@ -151,15 +149,21 @@ No custom lerp/slerp needed. `camera-controls` handles interpolation natively. R
 ### FormationOverlay SVG (the one genuinely new visual component)
 
 - Absolute-positioned `<svg>` over Threlte canvas (same pattern as `PathLinesOverlay`, `Recording3DOverlay`)
-- Container: `pointer-events: none`; dots: `pointer-events: all`
+- Container: `pointer-events: none`; dots/marks: `pointer-events: all`
 - Drag pattern: `pointerdown` → `setPointerCapture` → `pointermove` → `pointerup` (same as `UnifiedTimeline.svelte` scrubber)
 - Elements:
-  - Stage boundary: dashed rect
-  - Grid: subtle lines at 1m intervals
-  - Performer dots: 24px circles, performer color fill, white stroke
-  - Facing wedge: small triangle on dot edge
-  - Path preview: dotted lines to next-formation positions
+  - Stage boundary: rounded rect with double-ring border
+  - Grid: dot grid at 1m intervals (not lines — validated in playground)
+  - Center crosshair: subtle dashed guides
+  - Performer origin dots: 48px touch targets, performer color fill, letter label (A–H)
+  - Path marks: numbered 1, 2, 3..., smaller radius, same color as parent performer
+  - Path lines: solid when selected, dashed when not
+  - Beat labels: "4b" midpoint between marks (visible when performer selected)
+  - Walk style indicator: ⇄ icon below crab-walk marks
 - Coordinate transform: stage meters → SVG pixels via container dimensions + margins
+- Selection: click performer button or origin dot → enter per-performer mode → click stage to place marks
+- Multi-select: Shift+click performer buttons → alignment toolbar (top/mid/btm, left/ctr/right, distribute H/V)
+- Accessibility: 48px touch targets, 16px min font, AAA contrast (7:1+), focus-visible rings, prefers-reduced-motion, ARIA landmarks + aria-pressed toggles
 
 ---
 
@@ -178,12 +182,15 @@ import { Timeline } from 'animation-timeline-js';
 let container: HTMLDivElement;
 $effect(() => {
   const timeline = new Timeline({ id: container });
+  // One row per performer — each row's keyframes are that performer's marks
   timeline.setModel({
-    rows: [{
-      keyframes: formations.map(f => ({ val: f.beat }))
-    }]
+    rows: choreography.performers.map(p => ({
+      keyframes: p.marks.slice(1).map(m => ({
+        val: accumulatedBeat(p, m)  // absolute beat position
+      }))
+    }))
   });
-  // Wire events: onTimeChanged → update playhead, onSelected → select formation
+  // Wire events: onTimeChanged → update playhead, onSelected → select mark
 });
 ```
 
@@ -191,9 +198,9 @@ $effect(() => {
 
 | Action | `animation-timeline-js` feature |
 |--------|-------------------------------|
-| Click keyframe | `onSelected` event → select formation |
-| Drag keyframe | Built-in drag with snap → retime formation |
-| Double-click empty | `onDoubleClick` → add formation at beat |
+| Click keyframe | `onSelected` event → select mark on that performer's row |
+| Drag keyframe | Built-in drag with snap → retime mark (update beats) |
+| Double-click empty | `onDoubleClick` → add mark at beat position |
 | Zoom/pan | Built-in mouse wheel + drag |
 | Playhead animation | `setTime()` API driven by playback state |
 
@@ -203,25 +210,31 @@ Use existing `ContextMenu.svelte` (bits-ui), triggered by `onContextMenu` event 
 
 ---
 
-## 6. Transition Popover
+## 6. Mark Properties (replaces Transition Popover)
 
-**Architecture:** Same pattern as `TempoPopover.svelte` — button triggers visibility, popover content positioned via CSS/floating-ui.
+> **Updated:** With per-performer marks model, transition properties (walk style, easing, beats) live on each Mark directly, not in a separate popover. The sidebar shows these when a mark is selected.
 
-**Trigger:** Click gap between two keyframe markers on timeline (or a dedicated "transition settings" button that appears on selection).
-
-**Contents:**
-- **Walk style:** Two-button toggle with icons (side-stepping / forward figure)
-- **Easing:** 4 curve-icon buttons (linear, ease-in, ease-out, ease-in-out)
-- **Duration display:** Read-only — "4 beats (2.0s at 120 BPM)"
-- **Preview button:** Plays only this transition segment
+**When a mark is selected in the overlay or timeline, the sidebar "Mark" section shows:**
+- **Header:** "A — Mark 3" (performer letter + mark number)
+- **Beats to arrive:** Stepper (1–32), default 4
+- **Walk style:** Two-button toggle (Direct / Crab) with `aria-pressed`
+- **Easing:** 4 buttons (linear, ease-in, ease-out, ease-in-out) — v1 ships with Direct/Crab only, easing future
+- **Position:** Read-only coordinate display (x, z in meters)
+- **Delete Mark:** Danger button, reconnects path
 
 ---
 
 ## 7. Right Sidebar
 
-Grid layout: `grid-template-columns: 1fr clamp(280px, 20vw, 340px)` (same as ArrangeTab).
+Grid layout: `grid-template-columns: 1fr clamp(340px, 25vw, 480px)` (validated in playground — wider than ArrangeTab to accommodate 16px minimum text).
 
 ### Sections (using `CollapsibleSection.svelte`)
+
+**Performers:**
+- Performer buttons A–H, 48px touch targets, performer color
+- Add/remove buttons (1–8 range)
+- Shift+click for multi-select → alignment toolbar appears
+- Alignment: Top/Mid/Btm, Left/Ctr/Right, Distribute H/V (operates on each performer's last mark)
 
 **Transport + BPM:**
 - `TransportControls` component — reused directly
@@ -230,14 +243,16 @@ Grid layout: `grid-template-columns: 1fr clamp(280px, 20vw, 340px)` (same as Arr
 
 **Formation Presets:**
 - `FormationSelector.svelte` — reused directly (already has Grid, Line, Circle, V-Shape, Diagonal + count-awareness + disabled states)
-- Performer count: `ParamSlider` or `StepperCard` (2–8)
+- Applying a preset resets all paths to single mark at preset positions
 
-**Selected Performer (conditional):**
-- Visible when a dot is selected in overlay
-- Color swatch + index
-- Position fields (x, z) — number inputs
-- Facing angle — rotary input or degree stepper
-- Future: sequence assignment (disabled in v1)
+**Selected Mark (conditional):**
+- Visible when a mark is clicked in overlay or timeline
+- Header: performer letter + mark number (gradient text)
+- Beats stepper (1–32)
+- Walk style toggle (Direct/Crab) with `aria-pressed`
+- Position display (x, z in meters, read-only)
+- Delete Mark button
+- Future: facing angle, easing curve, sequence assignment
 
 **Stage Settings (collapsible):**
 - Dimensions: width × depth
@@ -256,12 +271,12 @@ Grid layout: `grid-template-columns: 1fr clamp(280px, 20vw, 340px)` (same as Arr
 // stage-choreography-state satisfies:
 interface UnifiedPlaybackContext {
   overallProgress: number;      // 0–1 across entire choreography
-  currentStep: number;          // active formation index
-  totalSteps: number;           // formation count
+  currentStep: number;          // active mark index (longest performer path)
+  totalSteps: number;           // max mark count across all performers
   isPlaying: boolean;
-  duration: number;             // total seconds
+  duration: number;             // total seconds (derived from max accumulated beats / BPM)
   elapsed: number;              // current seconds
-  beatMarkerPositions: number[]; // normalized [0–1] positions of each formation
+  beatMarkerPositions: number[]; // normalized [0–1] positions of marks on longest path
   bpm: number;
   seek(progress: number): void;
   togglePlay(): void;

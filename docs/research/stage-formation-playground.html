@@ -2,437 +2,1226 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Stage Formation Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stage Choreography — Mark Editing Playground</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-void: #050507;
+  --bg-surface: #0a0b10;
+  --bg-elevated: rgba(255,255,255,0.025);
+  --bg-glass: rgba(255,255,255,0.035);
+  --bg-glass-hover: rgba(255,255,255,0.06);
+  --border: rgba(255,255,255,0.06);
+  --border-hover: rgba(255,255,255,0.12);
+  /* AAA contrast tokens — all ≥7:1 on #0a0b10 */
+  --text-1: #f0f1f5;           /* ~17.5:1 */
+  --text-2: rgba(255,255,255,0.65); /* ~7.5:1 */
+  --text-3: rgba(255,255,255,0.58); /* ~7.1:1 */
+  --accent: #7b9cff;           /* ~7.3:1 */
+  --accent-bright: #96b3ff;    /* ~9.7:1 */
+  --accent-dim: rgba(123,156,255,0.12);
+  --accent-glow: rgba(123,156,255,0.06);
+  --danger: #ff8a8a;           /* ~7.2:1 on #0a0b10 */
+  --danger-dim: rgba(255,138,138,0.1);
+  --focus-ring: var(--accent-bright);
+  --min-touch: 48px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  background: #1a1a2e;
-  color: #e0e0e0;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-size: 16px;
+  background: var(--bg-void);
+  color: var(--text-1);
   height: 100vh;
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 1fr clamp(340px, 25vw, 480px);
   grid-template-rows: 1fr auto;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
 }
-.sidebar {
+
+/* === FOCUS — AAA 2.4.12 === */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+.performer-btn:focus-visible,
+.play-btn:focus-visible,
+.performer-add-remove:focus-visible {
+  outline-offset: 4px;
+  border-radius: inherit;
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* === SIDEBAR === */
+aside.sidebar {
+  grid-column: 2;
   grid-row: 1 / 3;
-  background: #16213e;
-  padding: 16px;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
   overflow-y: auto;
-  border-right: 1px solid #2a2a4a;
-}
-.sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #8888aa; margin: 16px 0 8px; }
-.sidebar h2:first-child { margin-top: 0; }
-.canvas-area {
+  overflow-x: hidden;
   position: relative;
-  display: flex;
-  flex-direction: column;
 }
-canvas {
-  flex: 1;
-  cursor: crosshair;
+@media (pointer: fine) {
+  aside.sidebar { scrollbar-width: none; }
+  aside.sidebar::-webkit-scrollbar { display: none; }
 }
-.prompt-area {
-  background: #0f0f23;
-  border-top: 1px solid #2a2a4a;
-  padding: 12px 16px;
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-.prompt-text {
-  flex: 1;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #a0d0ff;
-  white-space: pre-wrap;
-  max-height: 80px;
-  overflow-y: auto;
-}
-.copy-btn {
-  background: #2a4a7a;
-  color: #fff;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  white-space: nowrap;
-}
-.copy-btn:hover { background: #3a5a9a; }
-.copy-btn.copied { background: #2a7a4a; }
-
-/* Controls */
-.control-group { margin-bottom: 12px; }
-.control-group label {
-  display: block;
-  font-size: 11px;
-  color: #8888aa;
-  margin-bottom: 4px;
-}
-.control-group input[type="range"] { width: 100%; }
-.control-group select, .control-group input[type="number"] {
-  width: 100%;
-  background: #1a1a2e;
-  color: #e0e0e0;
-  border: 1px solid #3a3a5a;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-}
-.preset-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.preset-btn {
-  background: #2a2a4a;
-  color: #c0c0e0;
-  border: 1px solid #3a3a5a;
-  padding: 6px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 11px;
-  text-align: center;
-}
-.preset-btn:hover { background: #3a3a6a; border-color: #5a5a8a; }
-.preset-btn.active { background: #3a5a9a; border-color: #5a8acc; color: #fff; }
-
-.timeline {
-  height: 60px;
-  background: #0f0f23;
-  border-top: 1px solid #2a2a4a;
-  position: relative;
-  padding: 8px 16px;
-}
-.timeline-bar {
-  height: 4px;
-  background: #2a2a4a;
-  border-radius: 2px;
-  position: relative;
-  top: 20px;
-}
-.beat-marker {
-  position: absolute;
-  width: 3px;
-  height: 16px;
-  background: #4a6a9a;
-  top: -6px;
-  border-radius: 2px;
-  cursor: pointer;
-}
-.beat-marker.has-formation { background: #7acc7a; }
-.beat-marker.active { background: #ffaa44; box-shadow: 0 0 6px #ffaa44; }
-.playhead {
-  position: absolute;
-  width: 2px;
-  height: 30px;
-  background: #ff6644;
-  top: -13px;
-  transition: left 0.05s linear;
-}
-.timeline-labels {
-  position: absolute;
-  bottom: 4px;
-  left: 16px;
-  right: 16px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: #6a6a8a;
-}
-.info-bar {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 11px;
-  color: #6a8aaa;
-  pointer-events: none;
-}
-.legend {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  color: #8888aa;
-}
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-.toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.toggle-row label { margin: 0; font-size: 12px; color: #c0c0e0; }
-.toggle {
-  width: 32px;
-  height: 18px;
-  background: #3a3a5a;
-  border-radius: 9px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.toggle.on { background: #3a7acc; }
-.toggle::after {
+aside.sidebar::before {
   content: '';
   position: absolute;
-  width: 14px;
-  height: 14px;
-  background: #fff;
-  border-radius: 50%;
-  top: 2px;
-  left: 2px;
-  transition: left 0.2s;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(180deg, rgba(123,156,255,0.03) 0%, transparent 100%);
+  pointer-events: none;
 }
-.toggle.on::after { left: 16px; }
+
+.sidebar-inner {
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+}
+
+.sidebar-section {
+  padding: 14px;
+  border-radius: var(--r-lg);
+  background: transparent;
+  transition: background 0.3s var(--ease);
+}
+.sidebar-section:hover { background: var(--bg-elevated); }
+
+.section-header {
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-3);
+  margin-bottom: 12px;
+  padding-left: 2px;
+}
+
+/* === PERFORMERS === */
+.performer-list {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.performer-btn {
+  width: var(--min-touch);
+  height: var(--min-touch);
+  border-radius: var(--r-md);
+  border: 1.5px solid transparent;
+  background: var(--bg-glass);
+  color: var(--text-1);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.35s var(--ease);
+  position: relative;
+}
+.performer-btn:hover {
+  transform: translateY(-2px);
+  background: var(--bg-glass-hover);
+}
+.performer-btn.selected {
+  transform: translateY(-2px) scale(1.04);
+}
+
+.performer-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+.performer-add-remove {
+  width: var(--min-touch);
+  height: var(--min-touch);
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s var(--ease);
+}
+.performer-add-remove:hover {
+  border-color: var(--border-hover);
+  color: var(--text-2);
+  background: var(--bg-glass);
+}
+.performer-add-remove:disabled { opacity: 0.15; cursor: not-allowed; }
+.performer-count-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-3);
+  min-width: 100px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* === ALIGNMENT === */
+.align-section { display: none; }
+.align-section.visible { display: block; }
+.align-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.align-btn {
+  flex: 1;
+  min-height: var(--min-touch);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s var(--ease);
+  font-family: inherit;
+}
+.align-btn:hover {
+  background: var(--accent-dim);
+  border-color: rgba(123,156,255,0.2);
+  color: var(--accent-bright);
+}
+
+/* === MARK INFO === */
+.mark-info {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+}
+.mark-info.visible { display: flex; }
+.mark-info-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-bright);
+}
+.mark-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+}
+.mark-field span.label {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.mark-field-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-glass);
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  font-family: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', monospace;
+}
+
+/* === WALK TOGGLE === */
+.walk-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-glass);
+  border-radius: var(--r-md);
+  padding: 3px;
+}
+.walk-toggle button {
+  flex: 1;
+  min-height: var(--min-touch);
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s var(--ease);
+  font-family: inherit;
+}
+.walk-toggle button:hover { color: var(--text-2); }
+.walk-toggle button.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(123,156,255,0.35), 0 0 0 1px rgba(255,255,255,0.1) inset;
+}
+
+/* === BEATS STEPPER === */
+.beats-stepper {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  background: var(--bg-glass);
+  border-radius: var(--r-md);
+  padding: 3px;
+}
+.beats-stepper button {
+  width: var(--min-touch);
+  height: var(--min-touch);
+  border-radius: 11px;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s var(--ease);
+  font-family: inherit;
+}
+.beats-stepper button:hover { background: var(--bg-glass-hover); color: var(--text-1); }
+.beats-stepper .beats-value {
+  font-size: 18px;
+  font-weight: 800;
+  min-width: 36px;
+  text-align: center;
+  color: var(--accent-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+/* === DELETE === */
+.delete-btn {
+  min-height: var(--min-touch);
+  border: 1px solid rgba(255,138,138,0.2);
+  border-radius: var(--r-md);
+  background: var(--danger-dim);
+  color: var(--danger);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  transition: all 0.25s var(--ease);
+}
+.delete-btn:hover {
+  background: rgba(255,138,138,0.18);
+  border-color: rgba(255,138,138,0.3);
+}
+
+/* === CANVAS === */
+main.canvas-area {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-void);
+}
+main.canvas-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(123,156,255,0.02) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  z-index: 1;
+}
+canvas:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.canvas-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  background: rgba(10,11,16,0.75);
+  border: 1px solid var(--border);
+  padding: 10px 24px;
+  border-radius: 100px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-2);
+  pointer-events: none;
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* === FOOTER === */
+footer.instructions {
+  grid-column: 1;
+  grid-row: 2;
+  background: rgba(10,11,16,0.85);
+  border-top: 1px solid var(--border);
+  padding: 10px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-3);
+  line-height: 1.7;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+footer.instructions kbd {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+/* === PRESETS === */
+.preset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+.preset-btn {
+  min-height: var(--min-touch);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s var(--ease);
+  font-family: inherit;
+}
+.preset-btn:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
+  color: var(--text-2);
+}
+.preset-btn.active {
+  border-color: rgba(123,156,255,0.3);
+  background: var(--accent-dim);
+  color: var(--accent-bright);
+}
+
+/* === PLAYBACK === */
+.playback-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.play-btn {
+  width: var(--min-touch);
+  height: var(--min-touch);
+  border-radius: 50%;
+  border: 1.5px solid rgba(123,156,255,0.3);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s var(--ease);
+  flex-shrink: 0;
+}
+.play-btn:hover {
+  background: rgba(123,156,255,0.2);
+  border-color: rgba(123,156,255,0.4);
+  transform: scale(1.06);
+  box-shadow: 0 0 24px rgba(123,156,255,0.15);
+}
+.bpm-display {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+.bpm-display strong {
+  color: var(--text-1);
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.mark-empty {
+  text-align: center;
+  padding: 12px 8px;
+  color: var(--text-3);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 14px;
+}
 </style>
 </head>
 <body>
 
-<div class="sidebar">
-  <h2>Performers</h2>
-  <div class="control-group">
-    <label>Count: <span id="countLabel">4</span></label>
-    <input type="range" id="performerCount" min="1" max="8" value="4">
-  </div>
+<main class="canvas-area" aria-label="Stage editor workspace">
+  <canvas id="stage" tabindex="0" aria-label="Stage formation editor — use pointer to place and drag marks"></canvas>
+  <div class="canvas-hint" id="hint" role="status" aria-live="polite">Select a performer to start placing marks</div>
+</main>
 
-  <h2>Formation Presets</h2>
-  <div class="preset-grid">
-    <button class="preset-btn active" data-preset="line">Line</button>
-    <button class="preset-btn" data-preset="triangle">Triangle</button>
-    <button class="preset-btn" data-preset="diamond">Diamond</button>
-    <button class="preset-btn" data-preset="circle">Circle</button>
-    <button class="preset-btn" data-preset="v-shape">V-Shape</button>
-    <button class="preset-btn" data-preset="grid">Grid</button>
-    <button class="preset-btn" data-preset="stagger">Stagger</button>
-    <button class="preset-btn" data-preset="cluster">Cluster</button>
-  </div>
+<aside class="sidebar" aria-label="Choreography controls">
+  <div class="sidebar-inner">
 
-  <h2>Stage</h2>
-  <div class="control-group">
-    <label>Width (meters): <span id="stageWLabel">10</span></label>
-    <input type="range" id="stageWidth" min="4" max="20" value="10">
-  </div>
-  <div class="control-group">
-    <label>Depth (meters): <span id="stageDLabel">8</span></label>
-    <input type="range" id="stageDepth" min="4" max="16" value="8">
-  </div>
+    <div class="sidebar-section">
+      <h2 class="section-header">Performers</h2>
+      <div class="performer-list" id="performerList" role="group" aria-label="Performer selection"></div>
+      <div class="performer-controls">
+        <button class="performer-add-remove" id="removePerformer" aria-label="Remove performer">−</button>
+        <span class="performer-count-label" id="performerCountLabel" role="status" aria-live="polite">4 performers</span>
+        <button class="performer-add-remove" id="addPerformer" aria-label="Add performer">+</button>
+      </div>
+    </div>
 
-  <h2>Transition</h2>
-  <div class="control-group">
-    <label>Interpolation</label>
-    <select id="interpType">
-      <option value="linear">Linear</option>
-      <option value="ease">Ease In-Out</option>
-      <option value="spline">Catmull-Rom Spline</option>
-      <option value="arc">Arc</option>
-    </select>
-  </div>
-  <div class="control-group">
-    <label>Duration (beats): <span id="durLabel">4</span></label>
-    <input type="range" id="transitionBeats" min="1" max="16" value="4">
-  </div>
+    <div class="sidebar-section align-section" id="alignSection">
+      <h2 class="section-header">Align</h2>
+      <div class="align-row">
+        <button class="align-btn" data-align="top">↑ Top</button>
+        <button class="align-btn" data-align="middle">— Mid</button>
+        <button class="align-btn" data-align="bottom">↓ Btm</button>
+      </div>
+      <div class="align-row">
+        <button class="align-btn" data-align="left">← Left</button>
+        <button class="align-btn" data-align="center">| Ctr</button>
+        <button class="align-btn" data-align="right">→ Right</button>
+      </div>
+      <div class="align-row">
+        <button class="align-btn" data-align="distribute-h">⟷ Dist H</button>
+        <button class="align-btn" data-align="distribute-v">↕ Dist V</button>
+      </div>
+    </div>
 
-  <h2>Display</h2>
-  <div class="toggle-row">
-    <div class="toggle on" id="showPaths"></div>
-    <label>Show paths</label>
-  </div>
-  <div class="toggle-row">
-    <div class="toggle on" id="showGhosts"></div>
-    <label>Ghost positions</label>
-  </div>
-  <div class="toggle-row">
-    <div class="toggle" id="showFacing"></div>
-    <label>Facing arrows</label>
-  </div>
-  <div class="toggle-row">
-    <div class="toggle on" id="showGrid"></div>
-    <label>Stage grid</label>
-  </div>
+    <div class="section-divider" role="separator"></div>
 
-  <h2>Playback</h2>
-  <div class="control-group">
-    <label>BPM: <span id="bpmLabel">120</span></label>
-    <input type="range" id="bpm" min="60" max="180" value="120">
-  </div>
-  <button class="preset-btn" id="playBtn" style="width:100%;margin-top:4px;">Play Transition</button>
+    <div class="sidebar-section">
+      <h2 class="section-header">Mark</h2>
+      <div class="mark-info" id="markInfo">
+        <div class="mark-info-header" id="markHeader" role="heading" aria-level="3">Performer A — Mark 2</div>
+        <div class="mark-field">
+          <span class="label">Beats to arrive</span>
+          <div class="beats-stepper">
+            <button id="beatsMinus" aria-label="Decrease beats">−</button>
+            <span class="beats-value" id="beatsValue" role="status" aria-live="polite" aria-label="Beats: 4">4</span>
+            <button id="beatsPlus" aria-label="Increase beats">+</button>
+          </div>
+        </div>
+        <div class="mark-field"><span class="label">Walk style</span></div>
+        <div class="walk-toggle" role="group" aria-label="Walk style">
+          <button id="walkDirect" class="active" aria-pressed="true">Direct</button>
+          <button id="walkCrab" aria-pressed="false">Crab</button>
+        </div>
+        <div class="mark-field">
+          <span class="label">Position</span>
+          <span class="mark-field-value" id="markPos">x: 3.2  z: 4.1</span>
+        </div>
+        <button class="delete-btn" id="deleteMark">Delete Mark</button>
+      </div>
+      <div class="mark-empty" id="markEmpty">Select a mark to edit</div>
+    </div>
 
-  <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>1</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>2</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffe66d"></div>3</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#a06cd5"></div>4</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff9a76"></div>5</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#6bcf7f"></div>6</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#7eb8da"></div>7</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#e87ea1"></div>8</div>
-  </div>
-</div>
+    <div class="section-divider" role="separator"></div>
 
-<div class="canvas-area">
-  <canvas id="stage"></canvas>
-  <div class="info-bar" id="info"></div>
-  <div class="timeline">
-    <div class="timeline-bar" id="timelineBar"></div>
-    <div class="timeline-labels" id="timelineLabels"></div>
-  </div>
-</div>
+    <div class="sidebar-section">
+      <h2 class="section-header">Presets</h2>
+      <div class="preset-grid" role="group" aria-label="Formation presets" id="presetGrid">
+        <button class="preset-btn" data-preset="line" aria-pressed="false">Line</button>
+        <button class="preset-btn" data-preset="triangle" aria-pressed="false">Triangle</button>
+        <button class="preset-btn" data-preset="diamond" aria-pressed="false">Diamond</button>
+        <button class="preset-btn" data-preset="circle" aria-pressed="false">Circle</button>
+        <button class="preset-btn" data-preset="v-shape" aria-pressed="false">V-Shape</button>
+        <button class="preset-btn" data-preset="grid" aria-pressed="false">Grid</button>
+      </div>
+    </div>
 
-<div class="prompt-area">
-  <div class="prompt-text" id="promptOutput">Drag performers to set formation positions. Use presets or place manually.</div>
-  <button class="copy-btn" id="copyBtn">Copy</button>
-</div>
+    <div class="section-divider" role="separator"></div>
+
+    <div class="sidebar-section">
+      <h2 class="section-header">Playback</h2>
+      <div class="playback-bar">
+        <button class="play-btn" id="playBtn" aria-label="Play choreography">&#9654;</button>
+        <div class="bpm-display" aria-label="Tempo: 120 BPM"><strong id="bpmValue">120</strong> BPM</div>
+      </div>
+    </div>
+
+  </div>
+</aside>
+
+<footer class="instructions" id="instructions" role="status" aria-live="polite">
+  Click performer to select · Click stage to place marks · Drag to reposition · <kbd>Del</kbd> remove · <kbd>Esc</kbd> deselect
+</footer>
 
 <script>
-const COLORS = ['#ff6b6b','#4ecdc4','#ffe66d','#a06cd5','#ff9a76','#6bcf7f','#7eb8da','#e87ea1'];
+const PERFORMER_COLORS = ['#ff6b6b','#4ecdc4','#fbbf24','#a78bfa','#fb923c','#34d399','#60a5fa','#f472b6'];
+const PERFORMER_LABELS = ['A','B','C','D','E','F','G','H'];
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 const state = {
-  performers: 4,
+  performerCount: 4,
   stageWidth: 10,
   stageDepth: 8,
   bpm: 120,
-  transitionBeats: 4,
-  interpType: 'linear',
-  showPaths: true,
-  showGhosts: true,
-  showFacing: false,
-  showGrid: true,
-  activePreset: 'line',
-  formations: [],  // array of formation keyframes
-  currentFormation: 0,
-  playProgress: 0,
-  isPlaying: false,
+  selectedPerformer: null,
+  selectedPerformers: [],
+  selectedMark: null,
   dragging: null,
-  positions: [],  // current [{x, z, facing}] in meters (stage coords)
+  isPlaying: false,
+  playProgress: 0,
+  paths: [],
 };
 
-// Formation presets (normalized 0-1 coordinates)
-const PRESETS = {
-  line: (n) => Array.from({length: n}, (_, i) => ({
-    x: (i + 1) / (n + 1), z: 0.5, facing: 0
-  })),
-  triangle: (n) => {
-    if (n <= 2) return PRESETS.line(n);
-    const rows = [];
-    let remaining = n, row = 0, perRow = 1;
-    while (remaining > 0) {
-      const count = Math.min(perRow, remaining);
-      for (let i = 0; i < count; i++) {
-        rows.push({ x: 0.5 + (i - (count-1)/2) * 0.15, z: 0.3 + row * 0.2, facing: 0 });
+function initPaths() {
+  state.paths = [];
+  const preset = generatePreset('line', state.performerCount);
+  for (let i = 0; i < state.performerCount; i++) {
+    state.paths.push([{
+      x: preset[i].x * state.stageWidth,
+      z: preset[i].z * state.stageDepth,
+      beats: 0,
+      walkStyle: 'direct'
+    }]);
+  }
+}
+
+function generatePreset(name, n) {
+  const presets = {
+    line: (n) => Array.from({length: n}, (_, i) => ({ x: (i+1)/(n+1), z: 0.5 })),
+    triangle: (n) => {
+      const pts = [];
+      let remaining = n, row = 0, perRow = 1;
+      while (remaining > 0) {
+        const count = Math.min(perRow, remaining);
+        for (let i = 0; i < count; i++) {
+          pts.push({ x: 0.5 + (i-(count-1)/2)*0.15, z: 0.3 + row*0.18 });
+        }
+        remaining -= count; row++; perRow++;
       }
-      remaining -= count;
-      row++;
-      perRow++;
-    }
-    return rows;
-  },
-  diamond: (n) => {
-    const pts = [];
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 - Math.PI/2;
-      pts.push({ x: 0.5 + Math.cos(a) * 0.25, z: 0.5 + Math.sin(a) * 0.3, facing: 0 });
-    }
-    return pts;
-  },
-  circle: (n) => {
-    const pts = [];
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 - Math.PI/2;
-      pts.push({ x: 0.5 + Math.cos(a) * 0.3, z: 0.5 + Math.sin(a) * 0.3, facing: 0 });
-    }
-    return pts;
-  },
-  'v-shape': (n) => {
-    const pts = [];
-    const half = Math.ceil(n / 2);
-    for (let i = 0; i < n; i++) {
-      const side = i < half ? -1 : 1;
-      const idx = i < half ? i : i - half;
-      pts.push({
-        x: 0.5 + side * (idx + 1) * 0.12,
-        z: 0.3 + (idx) * 0.15,
-        facing: 0
-      });
-    }
-    return pts;
-  },
-  grid: (n) => {
-    const cols = Math.ceil(Math.sqrt(n));
-    const rows = Math.ceil(n / cols);
-    const pts = [];
-    for (let i = 0; i < n; i++) {
-      const r = Math.floor(i / cols);
-      const c = i % cols;
-      pts.push({
-        x: (c + 1) / (cols + 1),
-        z: (r + 1) / (rows + 1),
-        facing: 0
-      });
-    }
-    return pts;
-  },
-  stagger: (n) => {
-    const pts = [];
-    const rows = 2;
-    const perRow = Math.ceil(n / rows);
-    for (let i = 0; i < n; i++) {
-      const r = Math.floor(i / perRow);
-      const c = i % perRow;
-      const offset = r % 2 === 1 ? 0.06 : 0;
-      pts.push({
-        x: (c + 1) / (perRow + 1) + offset,
-        z: 0.35 + r * 0.3,
-        facing: 0
-      });
-    }
-    return pts;
-  },
-  cluster: (n) => {
-    const pts = [];
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      const r = 0.08 + Math.random() * 0.1;
-      pts.push({ x: 0.5 + Math.cos(a) * r, z: 0.5 + Math.sin(a) * r, facing: 0 });
-    }
-    return pts;
-  }
-};
-
-function initPositions() {
-  const preset = PRESETS[state.activePreset];
-  if (preset) {
-    const norm = preset(state.performers);
-    state.positions = norm.map(p => ({
-      x: p.x * state.stageWidth,
-      z: p.z * state.stageDepth,
-      facing: p.facing
-    }));
-  }
-  // Store as formation keyframe
-  if (state.formations.length === 0) {
-    state.formations.push({ beat: 0, positions: JSON.parse(JSON.stringify(state.positions)) });
-    state.formations.push({ beat: state.transitionBeats, positions: null }); // placeholder
-  }
-  state.formations[state.currentFormation] = {
-    beat: state.formations[state.currentFormation]?.beat || 0,
-    positions: JSON.parse(JSON.stringify(state.positions))
+      return pts;
+    },
+    diamond: (n) => Array.from({length: n}, (_, i) => {
+      const a = (i/n)*Math.PI*2 - Math.PI/2;
+      return { x: 0.5 + Math.cos(a)*0.25, z: 0.5 + Math.sin(a)*0.3 };
+    }),
+    circle: (n) => Array.from({length: n}, (_, i) => {
+      const a = (i/n)*Math.PI*2 - Math.PI/2;
+      return { x: 0.5 + Math.cos(a)*0.3, z: 0.5 + Math.sin(a)*0.3 };
+    }),
+    'v-shape': (n) => {
+      const pts = [];
+      const half = Math.ceil(n/2);
+      for (let i = 0; i < n; i++) {
+        const side = i < half ? -1 : 1;
+        const idx = i < half ? i : i - half;
+        pts.push({ x: 0.5 + side*(idx+1)*0.12, z: 0.3 + idx*0.15 });
+      }
+      return pts;
+    },
+    grid: (n) => {
+      const cols = Math.ceil(Math.sqrt(n));
+      const rows = Math.ceil(n/cols);
+      return Array.from({length: n}, (_, i) => ({
+        x: (i%cols+1)/(cols+1),
+        z: (Math.floor(i/cols)+1)/(rows+1)
+      }));
+    },
   };
+  return (presets[name] || presets.line)(n);
+}
+
+function getStageMetrics() {
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  const margin = 80;
+  const maxPx = Math.min(w - margin*2, h - margin*2, 620);
+  const scaleX = maxPx / state.stageWidth;
+  const scaleZ = maxPx / state.stageDepth;
+  const scale = Math.min(scaleX, scaleZ);
+  const ox = (w - state.stageWidth * scale) / 2;
+  const oz = (h - state.stageDepth * scale) / 2;
+  return { w, h, scale, ox, oz };
+}
+
+function stageToCanvas(x, z) {
+  const { scale, ox, oz } = getStageMetrics();
+  return { cx: ox + x * scale, cy: oz + z * scale };
+}
+
+function canvasToStage(cx, cy) {
+  const { scale, ox, oz } = getStageMetrics();
+  return {
+    x: Math.max(0, Math.min(state.stageWidth, (cx - ox) / scale)),
+    z: Math.max(0, Math.min(state.stageDepth, (cy - oz) / scale))
+  };
+}
+
+function draw() {
+  const { w, h, scale, ox, oz } = getStageMetrics();
+  ctx.clearRect(0, 0, w, h);
+
+  const sw = state.stageWidth * scale;
+  const sh = state.stageDepth * scale;
+
+  // Ambient haze
+  const haze = ctx.createRadialGradient(ox + sw/2, oz + sh/2, 0, ox + sw/2, oz + sh/2, Math.max(sw, sh) * 0.8);
+  haze.addColorStop(0, 'rgba(123,156,255,0.018)');
+  haze.addColorStop(0.5, 'rgba(123,156,255,0.006)');
+  haze.addColorStop(1, 'transparent');
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, 0, w, h);
+
+  // Stage floor
+  const floorGrad = ctx.createLinearGradient(ox, oz, ox, oz + sh);
+  floorGrad.addColorStop(0, '#0d1220');
+  floorGrad.addColorStop(1, '#080c16');
+  ctx.fillStyle = floorGrad;
+  ctx.beginPath();
+  ctx.roundRect(ox, oz, sw, sh, 6);
+  ctx.fill();
+
+  // Stage border
+  ctx.strokeStyle = 'rgba(255,255,255,0.055)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(ox, oz, sw, sh, 6);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.beginPath();
+  ctx.roundRect(ox - 4, oz - 4, sw + 8, sh + 8, 10);
+  ctx.stroke();
+
+  // Dot grid
+  for (let x = 1; x < state.stageWidth; x++) {
+    for (let z = 1; z < state.stageDepth; z++) {
+      const px = ox + x * scale;
+      const py = oz + z * scale;
+      ctx.beginPath();
+      ctx.arc(px, py, 1, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.045)';
+      ctx.fill();
+    }
+  }
+
+  // Center cross
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 8]);
+  ctx.beginPath(); ctx.moveTo(ox + sw/2, oz); ctx.lineTo(ox + sw/2, oz + sh); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox, oz + sh/2); ctx.lineTo(ox + sw, oz + sh/2); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Edge labels (decorative — not informational UI text, contrast exemption applies)
+  ctx.font = '600 9px Inter, system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  ctx.fillText('A U D I E N C E', ox + sw/2, oz - 18);
+  ctx.fillStyle = 'rgba(255,255,255,0.07)';
+  ctx.fillText('B A C K S T A G E', ox + sw/2, oz + sh + 26);
+
+  // Performer paths
+  for (let p = 0; p < state.performerCount; p++) {
+    const path = state.paths[p];
+    if (!path || path.length === 0) continue;
+    const isSelected = state.selectedPerformer === p || state.selectedPerformers.includes(p);
+    const hasSelection = state.selectedPerformer !== null || state.selectedPerformers.length > 0;
+    const alpha = (hasSelection && !isSelected) ? 0.15 : 1;
+    const color = PERFORMER_COLORS[p];
+
+    if (path.length > 1) {
+      ctx.beginPath();
+      const start = stageToCanvas(path[0].x, path[0].z);
+      ctx.moveTo(start.cx, start.cy);
+      for (let m = 1; m < path.length; m++) {
+        const pt = stageToCanvas(path[m].x, path[m].z);
+        ctx.lineTo(pt.cx, pt.cy);
+      }
+      ctx.strokeStyle = color + (alpha < 1 ? '20' : (isSelected ? '80' : '44'));
+      ctx.lineWidth = isSelected ? 2 : 1.5;
+      if (!isSelected) ctx.setLineDash([5, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (isSelected && alpha === 1) {
+        ctx.beginPath();
+        ctx.moveTo(start.cx, start.cy);
+        for (let m = 1; m < path.length; m++) {
+          const pt = stageToCanvas(path[m].x, path[m].z);
+          ctx.lineTo(pt.cx, pt.cy);
+        }
+        ctx.strokeStyle = color + '18';
+        ctx.lineWidth = 8;
+        ctx.stroke();
+      }
+    }
+
+    for (let m = 0; m < path.length; m++) {
+      const mark = path[m];
+      const { cx, cy } = stageToCanvas(mark.x, mark.z);
+      const isMarkSelected = state.selectedMark &&
+        state.selectedMark.performer === p && state.selectedMark.mark === m;
+      const isOrigin = m === 0;
+      const radius = isMarkSelected ? 16 : (isOrigin ? 14 : 10);
+
+      if (isMarkSelected) {
+        const g = ctx.createRadialGradient(cx, cy, radius, cx, cy, radius + 18);
+        g.addColorStop(0, color + '25');
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius + 18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      const markGrad = ctx.createRadialGradient(cx - radius*0.3, cy - radius*0.3, 0, cx, cy, radius);
+      markGrad.addColorStop(0, color + (alpha < 1 ? '30' : 'ff'));
+      markGrad.addColorStop(1, color + (alpha < 1 ? '25' : (isOrigin ? 'dd' : 'bb')));
+      ctx.fillStyle = markGrad;
+      ctx.fill();
+
+      if (isMarkSelected) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else if (isOrigin) {
+        ctx.strokeStyle = 'rgba(255,255,255,' + (alpha * 0.25) + ')';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = alpha < 1 ? 'rgba(255,255,255,0.2)' : '#fff';
+      ctx.font = `${isOrigin ? 800 : 700} ${isOrigin ? 13 : 10}px Inter, system-ui`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(isOrigin ? PERFORMER_LABELS[p] : String(m), cx, cy + 0.5);
+
+      if (m > 0 && isSelected && mark.walkStyle === 'crab') {
+        ctx.fillStyle = color + '55';
+        ctx.font = '500 9px Inter, system-ui';
+        ctx.fillText('⇄', cx, cy + radius + 10);
+      }
+
+      if (m > 0 && isSelected) {
+        const prev = path[m-1];
+        const mid = stageToCanvas((mark.x + prev.x)/2, (mark.z + prev.z)/2);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.font = '600 9px Inter, system-ui';
+        ctx.fillText(mark.beats + 'b', mid.cx, mid.cy - 10);
+      }
+    }
+  }
+
+  if (state.isPlaying) drawPlayback();
+}
+
+function drawPlayback() {
+  const totalBeats = getMaxBeats();
+  if (totalBeats === 0) return;
+  for (let p = 0; p < state.performerCount; p++) {
+    const path = state.paths[p];
+    if (!path || path.length < 2) continue;
+    let beatsElapsed = state.playProgress * totalBeats;
+    let accumulated = 0;
+    let pos = { x: path[0].x, z: path[0].z };
+    for (let m = 1; m < path.length; m++) {
+      const segBeats = path[m].beats;
+      if (beatsElapsed <= accumulated + segBeats) {
+        const t = (beatsElapsed - accumulated) / segBeats;
+        pos = {
+          x: path[m-1].x + (path[m].x - path[m-1].x) * easeInOutCubic(t),
+          z: path[m-1].z + (path[m].z - path[m-1].z) * easeInOutCubic(t)
+        };
+        break;
+      }
+      accumulated += segBeats;
+      pos = { x: path[m].x, z: path[m].z };
+    }
+    const { cx, cy } = stageToCanvas(pos.x, pos.z);
+    const color = PERFORMER_COLORS[p];
+
+    const trail = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
+    trail.addColorStop(0, color + '30');
+    trail.addColorStop(1, 'transparent');
+    ctx.fillStyle = trail;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 16, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '800 12px Inter, system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(PERFORMER_LABELS[p], cx, cy + 0.5);
+  }
+}
+
+function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2; }
+
+function getMaxBeats() {
+  let max = 0;
+  for (const path of state.paths) {
+    let total = 0;
+    for (let m = 1; m < path.length; m++) total += path[m].beats;
+    max = Math.max(max, total);
+  }
+  return max;
+}
+
+function hitTest(cx, cy) {
+  for (let p = 0; p < state.performerCount; p++) {
+    const path = state.paths[p];
+    if (!path) continue;
+    for (let m = path.length - 1; m >= 0; m--) {
+      const pt = stageToCanvas(path[m].x, path[m].z);
+      const dx = cx - pt.cx, dy = cy - pt.cy;
+      const r = m === 0 ? 14 : 10;
+      if (dx*dx + dy*dy <= (r + 10) * (r + 10)) return { performer: p, mark: m };
+    }
+  }
+  return null;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (state.isPlaying) return;
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const hit = hitTest(cx, cy);
+  if (hit) {
+    state.selectedPerformer = hit.performer;
+    state.selectedMark = hit;
+    state.dragging = hit;
+    canvas.setPointerCapture(e.pointerId);
+    updateUI(); draw();
+  } else if (state.selectedPerformer !== null) {
+    const stagePos = canvasToStage(cx, cy);
+    const { ox, oz, scale } = getStageMetrics();
+    const sw = state.stageWidth * scale, sh = state.stageDepth * scale;
+    if (cx >= ox && cx <= ox + sw && cy >= oz && cy <= oz + sh) {
+      const path = state.paths[state.selectedPerformer];
+      path.push({ x: stagePos.x, z: stagePos.z, beats: 4, walkStyle: 'direct' });
+      state.selectedMark = { performer: state.selectedPerformer, mark: path.length - 1 };
+      updateUI(); draw();
+    }
+  }
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!state.dragging) return;
+  const rect = canvas.getBoundingClientRect();
+  const pos = canvasToStage(e.clientX - rect.left, e.clientY - rect.top);
+  const mark = state.paths[state.dragging.performer][state.dragging.mark];
+  mark.x = pos.x; mark.z = pos.z;
+  updateUI(); draw();
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  if (state.dragging) { canvas.releasePointerCapture(e.pointerId); state.dragging = null; }
+});
+
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedMark && state.selectedMark.mark > 0) {
+    state.paths[state.selectedMark.performer].splice(state.selectedMark.mark, 1);
+    state.selectedMark = null;
+    updateUI(); draw();
+  }
+  if (e.key === 'Escape') {
+    state.selectedPerformer = null;
+    state.selectedPerformers = [];
+    state.selectedMark = null;
+    updateUI(); draw();
+  }
+});
+
+function updateUI() {
+  document.querySelectorAll('.performer-btn').forEach((btn, i) => {
+    const sel = state.selectedPerformer === i || state.selectedPerformers.includes(i);
+    btn.classList.toggle('selected', sel);
+    btn.setAttribute('aria-pressed', String(sel));
+    const c = PERFORMER_COLORS[i];
+    if (sel) {
+      btn.style.borderColor = c;
+      btn.style.boxShadow = `0 0 20px ${c}22, 0 4px 16px ${c}15`;
+      btn.style.background = `${c}15`;
+    } else {
+      btn.style.borderColor = `${c}30`;
+      btn.style.boxShadow = 'none';
+      btn.style.background = 'var(--bg-glass)';
+    }
+  });
+
+  document.getElementById('alignSection').classList.toggle('visible', state.selectedPerformers.length >= 2);
+
+  const info = document.getElementById('markInfo');
+  const empty = document.getElementById('markEmpty');
+  if (state.selectedMark && state.selectedMark.mark > 0) {
+    const mark = state.paths[state.selectedMark.performer][state.selectedMark.mark];
+    info.classList.add('visible');
+    empty.style.display = 'none';
+    document.getElementById('markHeader').textContent =
+      `${PERFORMER_LABELS[state.selectedMark.performer]} — Mark ${state.selectedMark.mark}`;
+    document.getElementById('beatsValue').textContent = mark.beats;
+    document.getElementById('beatsValue').setAttribute('aria-label', `Beats: ${mark.beats}`);
+    document.getElementById('markPos').textContent = `${mark.x.toFixed(1)}, ${mark.z.toFixed(1)}`;
+
+    const walkDirect = document.getElementById('walkDirect');
+    const walkCrab = document.getElementById('walkCrab');
+    walkDirect.classList.toggle('active', mark.walkStyle === 'direct');
+    walkCrab.classList.toggle('active', mark.walkStyle === 'crab');
+    walkDirect.setAttribute('aria-pressed', String(mark.walkStyle === 'direct'));
+    walkCrab.setAttribute('aria-pressed', String(mark.walkStyle === 'crab'));
+  } else {
+    info.classList.remove('visible');
+    empty.style.display = 'block';
+  }
+
+  const hint = document.getElementById('hint');
+  if (state.selectedPerformers.length >= 2) {
+    hint.textContent = `${state.selectedPerformers.length} selected — use alignment tools`;
+  } else if (state.selectedPerformer === null) {
+    hint.textContent = 'Select a performer to begin';
+  } else if (state.paths[state.selectedPerformer].length === 1) {
+    hint.textContent = `${PERFORMER_LABELS[state.selectedPerformer]} — click stage to place first mark`;
+  } else {
+    hint.textContent = `${PERFORMER_LABELS[state.selectedPerformer]} — click to add marks, drag to reposition`;
+  }
+
+  const instr = document.getElementById('instructions');
+  if (state.selectedMark) {
+    instr.innerHTML = `<kbd>Del</kbd> remove · <kbd>Esc</kbd> deselect · Drag to move · Sidebar for beats and walk style`;
+  } else if (state.selectedPerformers.length >= 2) {
+    instr.innerHTML = `<kbd>Shift</kbd>+click to toggle · Alignment tools in sidebar · <kbd>Esc</kbd> clear`;
+  } else if (state.selectedPerformer !== null) {
+    instr.innerHTML = `Click stage to add marks · Click mark to select · <kbd>Shift</kbd>+click for multi-select · <kbd>Esc</kbd> deselect`;
+  } else {
+    instr.innerHTML = `Click performer to select · Click stage to place marks · Drag to reposition · <kbd>Shift</kbd>+click multi-select`;
+  }
+
+  // Update play button label
+  document.getElementById('playBtn').setAttribute('aria-label', state.isPlaying ? 'Stop playback' : 'Play choreography');
+}
+
+function buildPerformerList() {
+  const list = document.getElementById('performerList');
+  list.innerHTML = '';
+  for (let i = 0; i < state.performerCount; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'performer-btn';
+    btn.textContent = PERFORMER_LABELS[i];
+    btn.style.color = PERFORMER_COLORS[i];
+    btn.style.borderColor = PERFORMER_COLORS[i] + '30';
+    btn.setAttribute('aria-label', `Performer ${PERFORMER_LABELS[i]}`);
+    btn.setAttribute('aria-pressed', 'false');
+    btn.addEventListener('click', (e) => {
+      if (e.shiftKey) {
+        const idx = state.selectedPerformers.indexOf(i);
+        if (idx >= 0) state.selectedPerformers.splice(idx, 1);
+        else state.selectedPerformers.push(i);
+        if (state.selectedPerformer !== null && !state.selectedPerformers.includes(state.selectedPerformer))
+          state.selectedPerformers.push(state.selectedPerformer);
+        state.selectedPerformer = null;
+        state.selectedMark = null;
+      } else {
+        state.selectedPerformers = [];
+        state.selectedPerformer = state.selectedPerformer === i ? null : i;
+        state.selectedMark = null;
+      }
+      updateUI(); draw();
+    });
+    list.appendChild(btn);
+  }
+}
+
+document.getElementById('addPerformer').addEventListener('click', () => {
+  if (state.performerCount >= 8) return;
+  state.performerCount++;
+  const preset = generatePreset('line', state.performerCount);
+  state.paths.push([{
+    x: preset[state.performerCount - 1].x * state.stageWidth,
+    z: preset[state.performerCount - 1].z * state.stageDepth,
+    beats: 0, walkStyle: 'direct'
+  }]);
+  buildPerformerList(); updatePerformerControls(); updateUI(); draw();
+});
+
+document.getElementById('removePerformer').addEventListener('click', () => {
+  if (state.performerCount <= 1) return;
+  if (state.selectedPerformer === state.performerCount - 1) { state.selectedPerformer = null; state.selectedMark = null; }
+  state.selectedPerformers = state.selectedPerformers.filter(i => i < state.performerCount - 1);
+  state.performerCount--; state.paths.pop();
+  buildPerformerList(); updatePerformerControls(); updateUI(); draw();
+});
+
+function updatePerformerControls() {
+  document.getElementById('performerCountLabel').textContent = state.performerCount + (state.performerCount === 1 ? ' performer' : ' performers');
+  document.getElementById('removePerformer').disabled = state.performerCount <= 1;
+  document.getElementById('addPerformer').disabled = state.performerCount >= 8;
+}
+
+document.querySelectorAll('.align-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const action = btn.dataset.align;
+    if (state.selectedPerformers.length < 2) return;
+    const targets = state.selectedPerformers.map(p => {
+      const path = state.paths[p];
+      return { performer: p, mark: path[path.length - 1] };
+    });
+    switch (action) {
+      case 'top': { const v = Math.min(...targets.map(t => t.mark.z)); targets.forEach(t => t.mark.z = v); break; }
+      case 'bottom': { const v = Math.max(...targets.map(t => t.mark.z)); targets.forEach(t => t.mark.z = v); break; }
+      case 'middle': { const v = targets.reduce((s,t) => s+t.mark.z, 0)/targets.length; targets.forEach(t => t.mark.z = v); break; }
+      case 'left': { const v = Math.min(...targets.map(t => t.mark.x)); targets.forEach(t => t.mark.x = v); break; }
+      case 'right': { const v = Math.max(...targets.map(t => t.mark.x)); targets.forEach(t => t.mark.x = v); break; }
+      case 'center': { const v = targets.reduce((s,t) => s+t.mark.x, 0)/targets.length; targets.forEach(t => t.mark.x = v); break; }
+      case 'distribute-h': {
+        if (targets.length < 3) break;
+        targets.sort((a,b) => a.mark.x - b.mark.x);
+        const s = targets[0].mark.x, e = targets[targets.length-1].mark.x, step = (e-s)/(targets.length-1);
+        targets.forEach((t,i) => t.mark.x = s + i*step); break;
+      }
+      case 'distribute-v': {
+        if (targets.length < 3) break;
+        targets.sort((a,b) => a.mark.z - b.mark.z);
+        const s = targets[0].mark.z, e = targets[targets.length-1].mark.z, step = (e-s)/(targets.length-1);
+        targets.forEach((t,i) => t.mark.z = s + i*step); break;
+      }
+    }
+    draw();
+  });
+});
+
+document.getElementById('beatsMinus').addEventListener('click', () => {
+  if (!state.selectedMark || state.selectedMark.mark === 0) return;
+  const m = state.paths[state.selectedMark.performer][state.selectedMark.mark];
+  m.beats = Math.max(1, m.beats - 1); updateUI(); draw();
+});
+document.getElementById('beatsPlus').addEventListener('click', () => {
+  if (!state.selectedMark || state.selectedMark.mark === 0) return;
+  const m = state.paths[state.selectedMark.performer][state.selectedMark.mark];
+  m.beats = Math.min(32, m.beats + 1); updateUI(); draw();
+});
+document.getElementById('walkDirect').addEventListener('click', () => {
+  if (!state.selectedMark || state.selectedMark.mark === 0) return;
+  state.paths[state.selectedMark.performer][state.selectedMark.mark].walkStyle = 'direct'; updateUI(); draw();
+});
+document.getElementById('walkCrab').addEventListener('click', () => {
+  if (!state.selectedMark || state.selectedMark.mark === 0) return;
+  state.paths[state.selectedMark.performer][state.selectedMark.mark].walkStyle = 'crab'; updateUI(); draw();
+});
+document.getElementById('deleteMark').addEventListener('click', () => {
+  if (!state.selectedMark || state.selectedMark.mark === 0) return;
+  state.paths[state.selectedMark.performer].splice(state.selectedMark.mark, 1);
+  state.selectedMark = null; updateUI(); draw();
+});
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const positions = generatePreset(btn.dataset.preset, state.performerCount);
+    for (let i = 0; i < state.performerCount; i++) {
+      state.paths[i] = [{ x: positions[i].x * state.stageWidth, z: positions[i].z * state.stageDepth, beats: 0, walkStyle: 'direct' }];
+    }
+    state.selectedMark = null;
+    document.querySelectorAll('.preset-btn').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-pressed', 'false');
+    });
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
+    updateUI(); draw();
+  });
+});
+
+let animFrame = null, lastTime = 0;
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (state.isPlaying) {
+    state.isPlaying = false;
+    if (animFrame) cancelAnimationFrame(animFrame);
+    updateUI(); draw();
+    return;
+  }
+  if (getMaxBeats() === 0) return;
+  state.isPlaying = true;
+  state.playProgress = 0;
+  updateUI();
+
+  if (prefersReducedMotion.matches) {
+    state.playProgress = 1;
+    draw();
+    state.isPlaying = false;
+    state.playProgress = 0;
+    updateUI();
+    return;
+  }
+
+  lastTime = performance.now();
+  tickPlay();
+});
+
+function tickPlay() {
+  if (!state.isPlaying) return;
+  const now = performance.now(), dt = (now - lastTime) / 1000;
+  lastTime = now;
+  state.playProgress += dt / (getMaxBeats() * 60 / state.bpm);
+  if (state.playProgress >= 1) {
+    state.isPlaying = false;
+    state.playProgress = 0;
+    updateUI(); draw();
+    return;
+  }
+  draw();
+  animFrame = requestAnimationFrame(tickPlay);
 }
 
 function resize() {
@@ -441,451 +1230,9 @@ function resize() {
   ctx.scale(devicePixelRatio, devicePixelRatio);
   draw();
 }
-
-function stageToCanvas(x, z) {
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  const margin = 40;
-  const scaleX = (w - margin * 2) / state.stageWidth;
-  const scaleZ = (h - margin * 2) / state.stageDepth;
-  const scale = Math.min(scaleX, scaleZ);
-  const ox = (w - state.stageWidth * scale) / 2;
-  const oz = (h - state.stageDepth * scale) / 2;
-  return { cx: ox + x * scale, cy: oz + z * scale, scale };
-}
-
-function canvasToStage(cx, cy) {
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  const margin = 40;
-  const scaleX = (w - margin * 2) / state.stageWidth;
-  const scaleZ = (h - margin * 2) / state.stageDepth;
-  const scale = Math.min(scaleX, scaleZ);
-  const ox = (w - state.stageWidth * scale) / 2;
-  const oz = (h - state.stageDepth * scale) / 2;
-  return { x: (cx - ox) / scale, z: (cy - oz) / scale };
-}
-
-function draw() {
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  ctx.clearRect(0, 0, w, h);
-
-  // Stage outline
-  const tl = stageToCanvas(0, 0);
-  const br = stageToCanvas(state.stageWidth, state.stageDepth);
-
-  // Stage floor
-  ctx.fillStyle = '#1e2a3a';
-  ctx.fillRect(tl.cx, tl.cy, br.cx - tl.cx, br.cy - tl.cy);
-  ctx.strokeStyle = '#3a5a7a';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(tl.cx, tl.cy, br.cx - tl.cx, br.cy - tl.cy);
-
-  // Audience indicator
-  ctx.fillStyle = '#4a4a6a';
-  ctx.font = '11px system-ui';
-  ctx.textAlign = 'center';
-  ctx.fillText('AUDIENCE', (tl.cx + br.cx) / 2, tl.cy - 10);
-
-  // Backstage
-  ctx.fillText('BACKSTAGE', (tl.cx + br.cx) / 2, br.cy + 18);
-
-  // Grid
-  if (state.showGrid) {
-    ctx.strokeStyle = '#2a3a4a';
-    ctx.lineWidth = 0.5;
-    for (let x = 0; x <= state.stageWidth; x++) {
-      const p = stageToCanvas(x, 0);
-      const p2 = stageToCanvas(x, state.stageDepth);
-      ctx.beginPath(); ctx.moveTo(p.cx, p.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
-    }
-    for (let z = 0; z <= state.stageDepth; z++) {
-      const p = stageToCanvas(0, z);
-      const p2 = stageToCanvas(state.stageWidth, z);
-      ctx.beginPath(); ctx.moveTo(p.cx, p.cy); ctx.lineTo(p2.cx, p2.cy); ctx.stroke();
-    }
-  }
-
-  // Ghost positions (other formation)
-  if (state.showGhosts && state.formations.length > 1) {
-    const otherIdx = state.currentFormation === 0 ? 1 : 0;
-    const other = state.formations[otherIdx];
-    if (other && other.positions) {
-      other.positions.forEach((p, i) => {
-        if (i >= state.performers) return;
-        const {cx, cy} = stageToCanvas(p.x, p.z);
-        ctx.beginPath();
-        ctx.arc(cx, cy, 12, 0, Math.PI * 2);
-        ctx.strokeStyle = COLORS[i] + '44';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      });
-    }
-  }
-
-  // Paths between formations
-  if (state.showPaths && state.formations.length > 1) {
-    const f0 = state.formations[0];
-    const f1 = state.formations[1];
-    if (f0?.positions && f1?.positions) {
-      for (let i = 0; i < state.performers; i++) {
-        if (!f0.positions[i] || !f1.positions[i]) continue;
-        const start = stageToCanvas(f0.positions[i].x, f0.positions[i].z);
-        const end = stageToCanvas(f1.positions[i].x, f1.positions[i].z);
-        ctx.beginPath();
-        ctx.strokeStyle = COLORS[i] + '66';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([3, 5]);
-        if (state.interpType === 'arc') {
-          const mx = (start.cx + end.cx) / 2;
-          const my = (start.cy + end.cy) / 2 - 30;
-          ctx.moveTo(start.cx, start.cy);
-          ctx.quadraticCurveTo(mx, my, end.cx, end.cy);
-        } else {
-          ctx.moveTo(start.cx, start.cy);
-          ctx.lineTo(end.cx, end.cy);
-        }
-        ctx.stroke();
-        ctx.setLineDash([]);
-        // Arrow head at end
-        const angle = Math.atan2(end.cy - start.cy, end.cx - start.cx);
-        ctx.beginPath();
-        ctx.moveTo(end.cx - 14 * Math.cos(angle), end.cy - 14 * Math.sin(angle));
-        ctx.lineTo(end.cx - 20 * Math.cos(angle - 0.3), end.cy - 20 * Math.sin(angle - 0.3));
-        ctx.lineTo(end.cx - 20 * Math.cos(angle + 0.3), end.cy - 20 * Math.sin(angle + 0.3));
-        ctx.fillStyle = COLORS[i] + '66';
-        ctx.fill();
-      }
-    }
-  }
-
-  // Animated positions during playback
-  let drawPositions = state.positions;
-  if (state.isPlaying && state.formations[0]?.positions && state.formations[1]?.positions) {
-    drawPositions = interpolateFormations(state.playProgress);
-  }
-
-  // Performers
-  drawPositions.forEach((p, i) => {
-    if (i >= state.performers) return;
-    const {cx, cy} = stageToCanvas(p.x, p.z);
-
-    // Glow
-    ctx.beginPath();
-    ctx.arc(cx, cy, 18, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS[i] + '22';
-    ctx.fill();
-
-    // Body
-    ctx.beginPath();
-    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS[i];
-    ctx.fill();
-    ctx.strokeStyle = '#fff3';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Number
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 11px system-ui';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(i + 1, cx, cy);
-
-    // Facing arrow
-    if (state.showFacing) {
-      const fa = p.facing || 0;
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.sin(fa) * 14, cy - Math.cos(fa) * 14);
-      ctx.lineTo(cx + Math.sin(fa) * 24, cy - Math.cos(fa) * 24);
-      ctx.strokeStyle = COLORS[i];
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-  });
-
-  // Distance annotations
-  if (state.performers >= 2) {
-    let minDist = Infinity;
-    for (let i = 0; i < state.performers; i++) {
-      for (let j = i + 1; j < state.performers; j++) {
-        const dx = drawPositions[i].x - drawPositions[j].x;
-        const dz = drawPositions[i].z - drawPositions[j].z;
-        const d = Math.sqrt(dx*dx + dz*dz);
-        if (d < minDist) minDist = d;
-      }
-    }
-    document.getElementById('info').textContent =
-      `Min spacing: ${minDist.toFixed(1)}m | Stage: ${state.stageWidth}x${state.stageDepth}m | Beat ${state.formations[state.currentFormation]?.beat || 0}`;
-  }
-}
-
-function interpolateFormations(t) {
-  const f0 = state.formations[0].positions;
-  const f1 = state.formations[1].positions;
-  if (!f0 || !f1) return state.positions;
-
-  let eased = t;
-  if (state.interpType === 'ease') {
-    eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
-  }
-
-  return f0.map((p0, i) => {
-    const p1 = f1[i] || p0;
-    return {
-      x: p0.x + (p1.x - p0.x) * eased,
-      z: p0.z + (p1.z - p0.z) * eased,
-      facing: p0.facing + (p1.facing - p0.facing) * eased
-    };
-  });
-}
-
-// Drag handling
-let dragOffset = {x: 0, z: 0};
-
-canvas.addEventListener('mousedown', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-
-  for (let i = state.performers - 1; i >= 0; i--) {
-    const {cx, cy} = stageToCanvas(state.positions[i].x, state.positions[i].z);
-    const dx = mx - cx, dy = my - cy;
-    if (dx*dx + dy*dy < 20*20) {
-      state.dragging = i;
-      const stage = canvasToStage(mx, my);
-      dragOffset.x = state.positions[i].x - stage.x;
-      dragOffset.z = state.positions[i].z - stage.z;
-      canvas.style.cursor = 'grabbing';
-      return;
-    }
-  }
-});
-
-canvas.addEventListener('mousemove', (e) => {
-  if (state.dragging === null) return;
-  const rect = canvas.getBoundingClientRect();
-  const stage = canvasToStage(e.clientX - rect.left, e.clientY - rect.top);
-  state.positions[state.dragging].x = Math.max(0, Math.min(state.stageWidth, stage.x + dragOffset.x));
-  state.positions[state.dragging].z = Math.max(0, Math.min(state.stageDepth, stage.z + dragOffset.z));
-  state.formations[state.currentFormation].positions = JSON.parse(JSON.stringify(state.positions));
-  draw();
-  updatePrompt();
-});
-
-canvas.addEventListener('mouseup', () => {
-  state.dragging = null;
-  canvas.style.cursor = 'crosshair';
-});
-
-// Playback
-let animFrame = null;
-let lastTime = 0;
-
-function playTransition() {
-  if (!state.formations[0]?.positions || !state.formations[1]?.positions) return;
-  state.isPlaying = true;
-  state.playProgress = 0;
-  lastTime = performance.now();
-  document.getElementById('playBtn').textContent = 'Playing...';
-  animate();
-}
-
-function animate() {
-  const now = performance.now();
-  const dt = (now - lastTime) / 1000;
-  lastTime = now;
-
-  const beatDuration = 60 / state.bpm;
-  const totalDuration = state.transitionBeats * beatDuration;
-  state.playProgress += dt / totalDuration;
-
-  if (state.playProgress >= 1) {
-    state.playProgress = 0;
-    state.isPlaying = false;
-    document.getElementById('playBtn').textContent = 'Play Transition';
-    draw();
-    return;
-  }
-
-  draw();
-  animFrame = requestAnimationFrame(animate);
-}
-
-// Timeline
-function updateTimeline() {
-  const bar = document.getElementById('timelineBar');
-  const labels = document.getElementById('timelineLabels');
-  const totalBeats = Math.max(state.transitionBeats + 4, 8);
-
-  bar.innerHTML = '';
-  labels.innerHTML = '';
-
-  for (let b = 0; b <= totalBeats; b++) {
-    const pct = (b / totalBeats) * 100;
-    const marker = document.createElement('div');
-    marker.className = 'beat-marker';
-    marker.style.left = pct + '%';
-
-    // Check if formation exists at this beat
-    const hasFormation = state.formations.some(f => f.beat === b && f.positions);
-    if (hasFormation) marker.classList.add('has-formation');
-    if (state.formations[state.currentFormation]?.beat === b) marker.classList.add('active');
-
-    marker.onclick = () => {
-      state.currentFormation = state.formations.findIndex(f => f.beat === b);
-      if (state.currentFormation === -1) {
-        state.formations.push({ beat: b, positions: JSON.parse(JSON.stringify(state.positions)) });
-        state.currentFormation = state.formations.length - 1;
-      }
-      state.positions = JSON.parse(JSON.stringify(state.formations[state.currentFormation].positions));
-      updateTimeline();
-      draw();
-    };
-
-    bar.appendChild(marker);
-
-    if (b % 4 === 0 || b === totalBeats) {
-      const lbl = document.createElement('span');
-      lbl.textContent = b;
-      lbl.style.position = 'absolute';
-      lbl.style.left = pct + '%';
-      lbl.style.transform = 'translateX(-50%)';
-      labels.appendChild(lbl);
-    }
-  }
-}
-
-function updatePrompt() {
-  const parts = [];
-  parts.push(`${state.performers} performers on a ${state.stageWidth}x${state.stageDepth}m stage.`);
-
-  if (state.formations[0]?.positions) {
-    parts.push(`\nFormation at beat ${state.formations[0].beat}:`);
-    state.formations[0].positions.slice(0, state.performers).forEach((p, i) => {
-      parts.push(`  P${i+1}: (${p.x.toFixed(1)}, ${p.z.toFixed(1)})`);
-    });
-  }
-
-  if (state.formations[1]?.positions) {
-    parts.push(`\nFormation at beat ${state.formations[1].beat}:`);
-    state.formations[1].positions.slice(0, state.performers).forEach((p, i) => {
-      parts.push(`  P${i+1}: (${p.x.toFixed(1)}, ${p.z.toFixed(1)})`);
-    });
-    parts.push(`\nTransition: ${state.interpType}, ${state.transitionBeats} beats at ${state.bpm} BPM`);
-  }
-
-  document.getElementById('promptOutput').textContent = parts.join('\n');
-}
-
-// Event bindings
-document.getElementById('performerCount').oninput = (e) => {
-  state.performers = +e.target.value;
-  document.getElementById('countLabel').textContent = state.performers;
-  initPositions();
-  draw();
-  updatePrompt();
-};
-
-document.getElementById('stageWidth').oninput = (e) => {
-  state.stageWidth = +e.target.value;
-  document.getElementById('stageWLabel').textContent = state.stageWidth;
-  initPositions();
-  draw();
-  updatePrompt();
-};
-
-document.getElementById('stageDepth').oninput = (e) => {
-  state.stageDepth = +e.target.value;
-  document.getElementById('stageDLabel').textContent = state.stageDepth;
-  initPositions();
-  draw();
-  updatePrompt();
-};
-
-document.getElementById('bpm').oninput = (e) => {
-  state.bpm = +e.target.value;
-  document.getElementById('bpmLabel').textContent = state.bpm;
-  updatePrompt();
-};
-
-document.getElementById('transitionBeats').oninput = (e) => {
-  state.transitionBeats = +e.target.value;
-  document.getElementById('durLabel').textContent = state.transitionBeats;
-  if (state.formations[1]) state.formations[1].beat = state.transitionBeats;
-  updateTimeline();
-  updatePrompt();
-};
-
-document.getElementById('interpType').onchange = (e) => {
-  state.interpType = e.target.value;
-  draw();
-  updatePrompt();
-};
-
-document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.preset-btn[data-preset]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.activePreset = btn.dataset.preset;
-    initPositions();
-    draw();
-    updatePrompt();
-  };
-});
-
-document.getElementById('playBtn').onclick = playTransition;
-
-// Toggles
-['showPaths','showGhosts','showFacing','showGrid'].forEach(id => {
-  const el = document.getElementById(id);
-  el.onclick = () => {
-    state[id] = !state[id];
-    el.classList.toggle('on');
-    draw();
-  };
-});
-
-// Copy
-document.getElementById('copyBtn').onclick = () => {
-  navigator.clipboard.writeText(document.getElementById('promptOutput').textContent);
-  const btn = document.getElementById('copyBtn');
-  btn.textContent = 'Copied!';
-  btn.classList.add('copied');
-  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
-};
-
-// Second formation setup - click a preset while holding Shift to set formation 2
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    state.currentFormation = state.currentFormation === 0 ? 1 : 0;
-    if (state.formations[state.currentFormation]?.positions) {
-      state.positions = JSON.parse(JSON.stringify(state.formations[state.currentFormation].positions));
-    }
-    updateTimeline();
-    draw();
-  }
-});
-
-// Init
 window.addEventListener('resize', resize);
-initPositions();
-// Set formation 2 to circle for demo
-state.formations[1] = {
-  beat: state.transitionBeats,
-  positions: PRESETS.circle(state.performers).map(p => ({
-    x: p.x * state.stageWidth,
-    z: p.z * state.stageDepth,
-    facing: 0
-  }))
-};
-resize();
-updateTimeline();
-updatePrompt();
+
+initPaths(); buildPerformerList(); updatePerformerControls(); updateUI(); resize();
 </script>
 </body>
 </html>
