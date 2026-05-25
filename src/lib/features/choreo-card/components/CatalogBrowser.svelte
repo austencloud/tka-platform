@@ -242,10 +242,23 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     return parts.join(" ") || selectedCatalog.canonicalName || selectedCatalog.name;
   });
 
-  // VTG designation: family name + ratio
-  // e.g. "VTG Tog-Same 1:1"
+  // VTG turn-pair title for breadcrumb — uses blue/red turn terminology
+  const vtgTurnTitle = $derived.by(() => {
+    if (!selectedCatalog || selectedCatalog.collection !== "VTG") return "";
+    const turn = selectedCatalog.turnPattern;
+    if (!turn) return "VTG Motions";
+    const uniformMatch = turn.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
+    if (uniformMatch) return `VTG ${uniformMatch[1]}T (Symmetric)`;
+    const pipeMatch = turn.match(/^(\d+(?:\.\d+)?)\|(\d+(?:\.\d+)?)$/);
+    if (pipeMatch) return `VTG Blue ${pipeMatch[1]} | Red ${pipeMatch[2]}`;
+    return `VTG ${turn}`;
+  });
+
+  // VTG designation: family name + ratio — only shown when a single family is relevant
   const vtgDesignation = $derived.by(() => {
     if (!selectedCatalog || !resolvedVtgFamilyId) return "";
+    // Don't show single-family badge when catalog has all 6 families
+    if (selectedCatalog.families.length >= 6) return "";
     const label = VTG_FAMILY_LABELS[resolvedVtgFamilyId] ?? resolvedVtgFamilyId;
     const turn = selectedCatalog.turnPattern;
     if (turn) {
@@ -472,14 +485,14 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
           <span class="crumb-sep" aria-hidden="true">›</span>
           {#if isLargeCatalog && selectedTypeCombo}
             <button class="crumb" type="button" onclick={resetToPicker} aria-label="Back to type combos">
-              {tkaDesignation}
+              {selectedCatalog?.collection === 'VTG' && vtgTurnTitle ? vtgTurnTitle : tkaDesignation}
             </button>
             <span class="crumb-sep" aria-hidden="true">›</span>
             <span class="crumb current">
               <MotionTypePills label={selectedTypeCombo.displayLabel} fontSize="13px" />
             </span>
           {:else}
-            <span class="crumb current">{tkaDesignation}</span>
+            <span class="crumb current">{selectedCatalog?.collection === 'VTG' && vtgTurnTitle ? vtgTurnTitle : tkaDesignation}</span>
           {/if}
           {#if vtgDesignation}
             <span class="crumb-sep" aria-hidden="true">·</span>
@@ -568,7 +581,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
       <p class="catalog-meta-line">
         {formatCount(selectedCatalog.totalSequences)} sequences across {selectedCatalog.families.length}
-        {selectedCatalog.families.length === 1 ? "family" : "families"} · {selectedCatalog.gridMode} grid
+        {selectedCatalog.families.length === 1 ? "family" : "families"}{selectedCatalog.collection !== 'VTG' ? ` · ${selectedCatalog.gridMode} grid` : ''}
       </p>
 
       <CatalogInteriorFilterPanel
