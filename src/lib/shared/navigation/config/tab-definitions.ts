@@ -379,14 +379,6 @@ export const ADMIN_TABS: Section[] = [
     color: "#f97316",
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
-  {
-    id: "attribution",
-    label: "Attribution",
-    icon: '<i class="fas fa-compass" aria-hidden="true"></i>',
-    description: "Where users discover TKA Composer",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
 ];
 
 // Settings tabs configuration - shown in sidebar like other modules
@@ -555,10 +547,10 @@ export const ARENA_TABS: Section[] = [
 // Choreo Card tabs configuration
 export const CHOREO_CARD_TABS: Section[] = [
   {
-    id: "decks",
-    label: "Decks",
+    id: "catalogs",
+    label: "Catalogs",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
-    description: "Pre-built card decks",
+    description: "Browse sequence catalogs",
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
@@ -816,14 +808,6 @@ export const SOCIAL_TABS: Section[] = [
 export const LAB_TABS: Section[] = [
   // ascii-pictograph graduated to Retro module (Mar 2026)
   // assemble-lab removed - functionality lives in Create module's Assemble tab
-  {
-    id: "attribution",
-    label: "Attribution",
-    icon: '<i class="fas fa-compass" aria-hidden="true"></i>',
-    description: "Test deferred attribution prompt",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
   // avatar removed (Mar 2026)
   {
     id: "themes",
