@@ -1,24 +1,17 @@
 <!--
-  MandalaModule.svelte - Mandala creation, collection, meditation, and export
-
-  A first-class module for mandala experiences. Tabs:
-  - Studio: Create and customize mandalas (wraps existing MandalaGeneratorModule)
-  - Collection: Browse saved mandalas (wraps existing MandalaCollectionGallery)
-  - Meditate: Meditative mandala visualization
-  - Export: Export mandalas as images or prints
+  MandalaModule.svelte - Mandala collection, meditation, and export
 -->
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { MANDALA_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
-    studio: () => import("./tabs/studio/StudioTab.svelte"),
     collection: () => import("./tabs/collection/CollectionTab.svelte"),
     meditate: () => import("./tabs/meditate/MeditateTab.svelte"),
     export: () => import("./tabs/export/ExportTab.svelte"),
   };
 
-  const activeTab = $derived(navigationState.activeTab || MANDALA_TABS[0]?.id || "studio");
+  const activeTab = $derived(navigationState.activeTab || MANDALA_TABS[0]?.id || "collection");
 
   let TabComponent = $state<any>(null);
   let loadError = $state<string | null>(null);

@@ -995,14 +995,6 @@ export const STAGE_TABS: Section[] = [
 // Mandala module tabs configuration
 export const MANDALA_TABS: Section[] = [
   {
-    id: "studio",
-    label: "Studio",
-    icon: '<i class="fas fa-palette" aria-hidden="true"></i>',
-    description: "Create and customize mandalas",
-    color: "#f472b6",
-    gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
-  },
-  {
     id: "collection",
     label: "Collection",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
