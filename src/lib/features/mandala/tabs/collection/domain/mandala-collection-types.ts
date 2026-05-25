@@ -10,6 +10,7 @@ export interface CollectedMandala {
 	bluePropType: string;
 	redPropType: string;
 	createdAt: number;
+	source?: "studio" | "sequence" | "default";
 }
 
 export const CollectedMandalaSchema = z.object({
@@ -21,6 +22,7 @@ export const CollectedMandalaSchema = z.object({
 	redPropType: z.string(),
 	createdAt: z.any(),
 	updatedAt: z.any().optional(),
+	source: z.enum(["studio", "sequence", "default"]).optional(),
 });
 
 export const MANDALA_COLLECTION_STORAGE_KEY = "tka:mandala-collection";
