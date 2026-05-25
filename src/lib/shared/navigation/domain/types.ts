@@ -5,6 +5,8 @@
  * This is the canonical source for ModuleId, TabId, and related navigation types.
  */
 
+import type { TranslationKey } from "../../i18n/i18n-types.js";
+
 /**
  * Metadata for tabs that controls behavior-based filtering
  * Rather than hardcoding tab IDs in business logic, mark tabs with semantic metadata
@@ -20,13 +22,15 @@ export interface SectionMetadata {
  */
 export interface Section {
   id: string;
+  labelKey: TranslationKey;
+  descKey: TranslationKey;
   label: string;
   icon: string;
   description?: string;
   color?: string;
-  gradient?: string; // Optional gradient for colorful icons
-  disabled?: boolean; // For conditional tab accessibility
-  metadata?: SectionMetadata; // Semantic metadata for behavior-based filtering
+  gradient?: string;
+  disabled?: boolean;
+  metadata?: SectionMetadata;
 }
 
 // Module-based navigation types
@@ -66,15 +70,17 @@ export type ModuleId =
  */
 export interface ModuleDefinition {
   id: ModuleId;
+  labelKey: TranslationKey;
+  descKey: TranslationKey;
   label: string;
   icon: string;
-  color?: string; // Module theme color (e.g., "#f59e0b" for amber)
+  color?: string;
   description?: string;
   isMain: boolean;
-  sections: Section[]; // Sections within this module
-  disabled?: boolean; // For conditional module accessibility (e.g., coming soon for non-admin)
-  disabledMessage?: string; // Message to show when module is disabled
-  adminOnly?: boolean; // Admin-only modules skip translation warnings (not user-facing)
+  sections: Section[];
+  disabled?: boolean;
+  disabledMessage?: string;
+  adminOnly?: boolean;
 }
 
 export interface ModuleSelectorState {

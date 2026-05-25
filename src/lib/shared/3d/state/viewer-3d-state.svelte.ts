@@ -789,6 +789,19 @@ export function createViewer3DState() {
   let threltePauseAutoLoop = $state<(() => void) | null>(null);
   let threlteResumeAutoLoop = $state<(() => void) | null>(null);
 
+  // Pause the Threlte render loop when in 2D mode so the hidden 3D canvas
+  // doesn't eat CPU/GPU time and stutter the active 2D animation.
+  let _loopPausedFor2D = false;
+  $effect(() => {
+    if (renderMode === '2d' && threltePauseAutoLoop && !isExporting) {
+      threltePauseAutoLoop();
+      _loopPausedFor2D = true;
+    } else if (renderMode === '3d' && threlteResumeAutoLoop && _loopPausedFor2D) {
+      threlteResumeAutoLoop();
+      _loopPausedFor2D = false;
+    }
+  });
+
   // When true, the puppet loop in Viewer3DScene skips performer state updates
   // so the offline exporter can drive performers deterministically. IK and
   // effects still run normally during advance().

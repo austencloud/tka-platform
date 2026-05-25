@@ -11,7 +11,7 @@
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   // 🚀 Performance: Intent-based prefetching
   import { prefetchOnIntent } from "../../utils/module-prefetch";
-  import { translateModule } from "$lib/shared/i18n/translate";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
 
   let {
@@ -63,8 +63,8 @@
 
   // Translated module label (reactive to locale changes)
   const translatedLabel = $derived.by(() => {
-    getReactiveLocale(); // Creates reactive dependency on locale
-    return translateModule(module.id);
+    getReactiveLocale();
+    return t(module.labelKey);
   });
 
   // Get effective user info (previewed user takes priority over actual user)

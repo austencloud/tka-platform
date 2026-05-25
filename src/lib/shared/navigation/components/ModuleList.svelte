@@ -18,7 +18,7 @@
   import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
 import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   import { onMount } from "svelte";
-  import { translateModule } from "$lib/shared/i18n/translate";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
 
   // Reactive locale for re-rendering translations
@@ -183,7 +183,7 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
         <!-- Content layer -->
         <div class="cell-content">
           <span class="cell-icon">{@html module.icon}</span>
-          <span class="cell-label">{translateModule(module.id)}</span>
+          <span class="cell-label">{t(module.labelKey)}</span>
 
           <!-- Unread badge -->
           {#if badgeCount > 0}
@@ -232,7 +232,7 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
           <!-- Content layer -->
           <div class="cell-content">
             <span class="cell-icon">{@html module.icon}</span>
-            <span class="cell-label">{translateModule(module.id)}</span>
+            <span class="cell-label">{t(module.labelKey)}</span>
 
             <!-- Disabled badge -->
             {#if isDisabled && module.disabledMessage}

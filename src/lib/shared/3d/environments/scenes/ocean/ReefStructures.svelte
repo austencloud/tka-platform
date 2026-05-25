@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { T } from "@threlte/core";
+  import { T, useThrelte } from "@threlte/core";
   import { useGltf, useDraco } from "@threlte/extras";
   import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
   import { userProportionsState } from "@austencloud/scene-3d";
   import { terrainHeightForPlacement } from "./terrain-height";
   import { Color, Object3D, Mesh, Material, Vector3, Matrix4 } from "three";
+  import type { WebGLRenderer } from "three";
   import { generateSDFTexture, type SDFResult } from "./sdf-generator";
+  import { sdfCacheKey, loadCachedSDF, storeSDF } from "./sdf-cache";
 
   export interface ReefSDFData {
     results: SDFResult[];
@@ -28,6 +30,12 @@
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
+
+  const { renderer } = useThrelte();
+  const gl = $derived(
+    (renderer as { current?: WebGLRenderer })?.current ??
+    (renderer as unknown as WebGLRenderer)
+  );
 
   const dracoLoader = useDraco("/draco/");
   const opts = { dracoLoader, meshoptDecoder: MeshoptDecoder };
@@ -152,10 +160,11 @@
     };
   });
 
-  // ── SDF Generation ─────────────────────────────────────────────────
-  // Generate SDF textures once all 4 models are loaded. We build a
-  // temporary Object3D with the final world transform for each structure
-  // and pass it to the CPU-based SDF generator.
+  // ── SDF Generation (GPU, IndexedDB-cached) ─────────────────────────
+  // Check IndexedDB first. On cache hit, reconstruct Data3DTexture from
+  // stored Uint16Array (~0ms). On miss, run GPU BVH pipeline and store.
+
+  const SDF_RESOLUTION = 32;
 
   let sdfGenerated = false;
 
@@ -165,14 +174,21 @@
     if (!allLoaded || sdfGenerated || !onSdfReady) return;
 
     sdfGenerated = true;
-    let aborted = false;
 
-    (async () => {
+    const cacheKey = sdfCacheKey(placements, SDF_RESOLUTION);
+
+    loadCachedSDF(cacheKey).then((cached) => {
+      if (cached && cached.length > 0) {
+        onSdfReady!({ results: cached });
+        return;
+      }
+
+      if (!gl) return;
+
       const t0 = performance.now();
       const sdfResults: SDFResult[] = [];
 
       for (let i = 0; i < placements.length; i++) {
-        if (aborted) return;
         const model = models[i];
         const p = placements[i]!;
         if (!model) continue;
@@ -191,22 +207,18 @@
         wrapper.updateMatrixWorld(true);
 
         try {
-          const result = await generateSDFTexture(wrapper, { resolution: 32, padding: 2.0 });
+          const result = generateSDFTexture(wrapper, gl, { resolution: SDF_RESOLUTION, padding: 2.0 });
           sdfResults.push(result);
-          console.log(`[ReefStructures] SDF ${i + 1}/${placements.length} done`);
         } catch (e) {
-          console.warn(`[ReefStructures] SDF generation failed for structure ${i}:`, e);
+          console.warn(`[ReefStructures] GPU SDF failed for structure ${i}:`, e);
         }
       }
 
-      if (!aborted && sdfResults.length > 0 && onSdfReady) {
-        const elapsed = (performance.now() - t0).toFixed(1);
-        console.log(`[ReefStructures] Generated ${sdfResults.length} SDF textures in ${elapsed}ms`);
+      if (sdfResults.length > 0 && onSdfReady) {
         onSdfReady({ results: sdfResults });
+        storeSDF(cacheKey, sdfResults, SDF_RESOLUTION);
       }
-    })();
-
-    return () => { aborted = true; };
+    });
   });
 
   // Cleanup is handled by the $effect teardown for structures.

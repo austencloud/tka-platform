@@ -2,6 +2,12 @@
   import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { getPerformerColor } from "../../constants/performer-colors";
+
+  const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
+  function avatarThumbUrl(id: string): string {
+    return `${R2_CDN}/models/avatars/thumbnails/${id}.webp`;
+  }
+  let thumbErrors = $state(new Set<string>());
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
   import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
   import EffectsSettingsPanel from "./EffectsSettingsPanel.svelte";
@@ -20,19 +26,21 @@
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
+  const isAllMode = $derived(selectedIndex === null);
+  const allPerformers = $derived(viewer.performerManager.performers);
   const performer = $derived(
     selectedIndex !== null
-      ? (viewer.performerManager.performers[selectedIndex] ?? null)
+      ? (allPerformers[selectedIndex] ?? null)
       : null,
   );
 
   const performerColor = $derived(
-    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#6b7280",
+    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff",
   );
   const badgeLabel = $derived(
-    selectedIndex !== null ? `P${selectedIndex + 1}` : "",
+    selectedIndex !== null ? `P${selectedIndex + 1}` : "ALL",
   );
-  const canRemove = $derived(viewer.performerManager.performers.length > 1);
+  const canRemove = $derived(allPerformers.length > 1);
 
   const avatarDef = $derived(
     AVATAR_DEFINITIONS.find((a) => a.id === performer?.avatarModelId) ??
@@ -54,7 +62,7 @@
   type HubTab = "prop" | "planes" | "effort" | "effects" | "avatar" | "sequence";
   let activeTab = $state<HubTab>("prop");
 
-  const TABS: { id: HubTab; label: string; icon: string }[] = [
+  const ALL_TABS: { id: HubTab; label: string; icon: string }[] = [
     { id: "avatar", label: "Avatar", icon: "fa-user" },
     { id: "sequence", label: "Seq", icon: "fa-film" },
     { id: "prop", label: "Prop", icon: "fa-shapes" },
@@ -63,7 +71,21 @@
     { id: "effects", label: "FX", icon: "fa-wand-sparkles" },
   ];
 
+  const GLOBAL_TABS: { id: HubTab; label: string; icon: string }[] = [
+    { id: "prop", label: "Prop", icon: "fa-shapes" },
+    { id: "planes", label: "Planes", icon: "fa-layer-group" },
+    { id: "effort", label: "Effort", icon: "fa-gauge-high" },
+    { id: "effects", label: "FX", icon: "fa-wand-sparkles" },
+  ];
+
+  const TABS = $derived(isAllMode ? GLOBAL_TABS : ALL_TABS);
   const tabIndex = $derived(TABS.findIndex((t) => t.id === activeTab));
+
+  $effect(() => {
+    if (isAllMode && (activeTab === "avatar" || activeTab === "sequence")) {
+      activeTab = "prop";
+    }
+  });
 
   // ─── Prop ───
   const currentProp = $derived(
@@ -78,10 +100,18 @@
       : [],
   );
 
+  function applyToScope(fn: (p: typeof performer) => void) {
+    if (isAllMode) {
+      for (const p of allPerformers) fn(p);
+    } else {
+      fn(performer);
+    }
+  }
+
   function handleFamilyClick(base: PropType) {
     const activeVariants = getAllVariations(base).filter(isPropActive);
     if (activeVariants.length <= 1) {
-      performer?.setProp(base);
+      applyToScope((p) => p?.setProp(base));
       expandedFamily = null;
     } else {
       expandedFamily = base;
@@ -89,7 +119,7 @@
   }
 
   function handleVariantClick(variant: PropType) {
-    performer?.setProp(variant);
+    applyToScope((p) => p?.setProp(variant));
   }
 
   // ─── Effort ───
@@ -98,11 +128,10 @@
   );
 
   function handleEffortSelect(effortId: EffortId) {
-    performer?.setEffort(effortId);
+    applyToScope((p) => p?.setEffort(effortId));
   }
 </script>
 
-{#if performer !== null && selectedIndex !== null}
   <div
     class="hub-detail"
     style:--performer-color={performerColor}
@@ -112,91 +141,119 @@
 
     <!-- ─── Header (compact identity) ─── -->
     <div class="header">
-      <div class="identity">
-        <div class="avatar-circle" aria-hidden="true">
-          <span class="avatar-initials">{avatarInitials}</span>
-        </div>
-        <div class="identity-meta">
-          <span class="performer-name">{avatarDef?.name ?? "—"}</span>
-          <div class="sub-row">
-            <span class="badge" style:background-color={performerColor}
-              >{badgeLabel}</span
-            >
-            {#if sequenceWord}
-              <span class="seq-chip">{sequenceWord}</span>
-            {/if}
-            {#if sequenceBeats !== null}
-              <span class="seq-beats">{sequenceBeats}b</span>
-            {/if}
+      {#if isAllMode}
+        <div class="identity">
+          <div class="avatar-circle all-mode" aria-hidden="true">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="identity-meta">
+            <span class="performer-name">All Performers</span>
+            <div class="sub-row">
+              <span class="badge" style:background-color={performerColor}>{allPerformers.length}</span>
+              <span class="all-hint">Changes apply to everyone</span>
+            </div>
           </div>
         </div>
-      </div>
+      {:else if performer !== null}
+        <div class="identity">
+          <div class="avatar-circle" aria-hidden="true">
+            <span class="avatar-initials">{avatarInitials}</span>
+          </div>
+          <div class="identity-meta">
+            <span class="performer-name">{avatarDef?.name ?? "—"}</span>
+            <div class="sub-row">
+              <span class="badge" style:background-color={performerColor}
+                >{badgeLabel}</span
+              >
+              {#if sequenceWord}
+                <span class="seq-chip">{sequenceWord}</span>
+              {/if}
+              {#if sequenceBeats !== null}
+                <span class="seq-beats">{sequenceBeats}b</span>
+              {/if}
+            </div>
+          </div>
+        </div>
+      {/if}
     </div>
 
     <div class="header-divider" aria-hidden="true"></div>
 
     <!-- ─── Tab panes ─── -->
     <div class="tab-content">
-      <!-- Avatar tab -->
-      <div class="tab-pane" class:active={activeTab === "avatar"} role="tabpanel">
-        <div class="avatar-section">
-          <div class="section-label">Select Avatar</div>
-          <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
-            {#each AVATAR_DEFINITIONS as def (def.id)}
+      {#if !isAllMode}
+        <!-- Avatar tab -->
+        <div class="tab-pane" class:active={activeTab === "avatar"} role="tabpanel">
+          <div class="avatar-section">
+            <div class="section-label">Select Avatar</div>
+            <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
+              {#each AVATAR_DEFINITIONS as def (def.id)}
+                <button
+                  class="avatar-card"
+                  class:selected={performer?.avatarModelId === def.id}
+                  class:has-thumb={!thumbErrors.has(def.id)}
+                  role="radio"
+                  aria-checked={performer?.avatarModelId === def.id}
+                  onclick={() => pickAvatar(def.id as AvatarId)}
+                  title={def.description}
+                >
+                  {#if !thumbErrors.has(def.id)}
+                    <img
+                      class="avatar-thumb"
+                      src={avatarThumbUrl(def.id)}
+                      alt={def.name}
+                      loading="lazy"
+                      onerror={() => { thumbErrors = new Set([...thumbErrors, def.id]); }}
+                    />
+                  {:else}
+                    <i
+                      class="fas {def.icon ?? 'fa-user'}"
+                      aria-hidden="true"
+                    ></i>
+                  {/if}
+                  <span class="avatar-card-name">{def.name}</span>
+                </button>
+              {/each}
+            </div>
+            {#if canRemove}
               <button
-                class="avatar-card"
-                class:selected={performer.avatarModelId === def.id}
-                role="radio"
-                aria-checked={performer.avatarModelId === def.id}
-                onclick={() => pickAvatar(def.id as AvatarId)}
-                title={def.description}
+                class="remove-btn"
+                onclick={() => viewer.removePerformerFromUI()}
               >
-                <i
-                  class="fas {def.icon ?? 'fa-user'}"
-                  aria-hidden="true"
-                ></i>
-                <span class="avatar-card-name">{def.name}</span>
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                <span>Remove Performer</span>
               </button>
-            {/each}
+            {/if}
           </div>
-          {#if canRemove}
-            <button
-              class="remove-btn"
-              onclick={() => viewer.removePerformerFromUI()}
-            >
-              <i class="fas fa-trash-alt" aria-hidden="true"></i>
-              <span>Remove Performer</span>
-            </button>
-          {/if}
         </div>
-      </div>
 
-      <!-- Sequence tab -->
-      <div class="tab-pane" class:active={activeTab === "sequence"} role="tabpanel">
-        <div class="sequence-section">
-          {#if sequenceWord}
-            <div class="seq-display">
-              <div class="seq-word-large">{sequenceWord}</div>
-              {#if sequenceBeats !== null}
-                <div class="seq-beat-count">{sequenceBeats} beats</div>
-              {/if}
-            </div>
-            <button
-              class="seq-action-btn"
-              onclick={() => performer?.clearSequence()}
-            >
-              <i class="fas fa-times" aria-hidden="true"></i>
-              <span>Clear Sequence</span>
-            </button>
-          {:else}
-            <div class="seq-empty">
-              <i class="fas fa-film" aria-hidden="true"></i>
-              <span>No sequence loaded</span>
-              <span class="seq-hint">Load a sequence from the library to animate this performer</span>
-            </div>
-          {/if}
+        <!-- Sequence tab -->
+        <div class="tab-pane" class:active={activeTab === "sequence"} role="tabpanel">
+          <div class="sequence-section">
+            {#if sequenceWord}
+              <div class="seq-display">
+                <div class="seq-word-large">{sequenceWord}</div>
+                {#if sequenceBeats !== null}
+                  <div class="seq-beat-count">{sequenceBeats} beats</div>
+                {/if}
+              </div>
+              <button
+                class="seq-action-btn"
+                onclick={() => performer?.clearSequence()}
+              >
+                <i class="fas fa-times" aria-hidden="true"></i>
+                <span>Clear Sequence</span>
+              </button>
+            {:else}
+              <div class="seq-empty">
+                <i class="fas fa-film" aria-hidden="true"></i>
+                <span>No sequence loaded</span>
+                <span class="seq-hint">Load a sequence from the library to animate this performer</span>
+              </div>
+            {/if}
+          </div>
         </div>
-      </div>
+      {/if}
 
       <!-- Prop tab -->
       <div class="tab-pane" class:active={activeTab === "prop"} role="tabpanel">
@@ -255,7 +312,11 @@
             </div>
           {/if}
 
-          <PerformerPropSizeSlider {performer} />
+          {#if performer}
+            <PerformerPropSizeSlider {performer} />
+          {:else if allPerformers[0]}
+            <PerformerPropSizeSlider performer={allPerformers[0]} />
+          {/if}
         </div>
       </div>
 
@@ -291,7 +352,7 @@
         role="tabpanel"
       >
         <div class="effects-section">
-          <EffectsSettingsPanel {performer} />
+          <EffectsSettingsPanel performer={performer ?? allPerformers[0] ?? null} />
         </div>
       </div>
     </div>
@@ -299,7 +360,7 @@
     <div class="tab-divider" aria-hidden="true"></div>
 
     <!-- ─── Tab bar (bottom-anchored) ─── -->
-    <div class="tab-bar" role="tablist" style:--active-index={tabIndex}>
+    <div class="tab-bar" role="tablist" style:--active-index={tabIndex} style:--tab-count={TABS.length}>
       <div class="tab-indicator" aria-hidden="true"></div>
       {#each TABS as tab}
         <button
@@ -315,7 +376,6 @@
       {/each}
     </div>
   </div>
-{/if}
 
 <style>
   .hub-detail {
@@ -363,12 +423,26 @@
     box-shadow: 0 0 12px color-mix(in srgb, var(--performer-color) 20%, transparent);
   }
 
+  .avatar-circle.all-mode {
+    border-color: #4a9eff;
+    background: color-mix(in srgb, #4a9eff 14%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, #4a9eff 20%, transparent);
+    color: #8fc3ff;
+    font-size: 14px;
+  }
+
   .avatar-initials {
     font-size: 13px;
     font-weight: 800;
     color: var(--performer-color);
     line-height: 1;
     letter-spacing: 0.03em;
+  }
+
+  .all-hint {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
   }
 
   .identity-meta {
@@ -443,7 +517,7 @@
   .tab-bar {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(var(--tab-count, 6), 1fr);
     margin: 0 10px 8px;
     padding: 3px;
     background: rgba(0, 0, 0, 0.28);
@@ -455,8 +529,8 @@
     position: absolute;
     top: 3px;
     bottom: 3px;
-    width: calc((100% - 6px) / 6);
-    left: calc(3px + var(--active-index) * (100% - 6px) / 6);
+    width: calc((100% - 6px) / var(--tab-count, 6));
+    left: calc(3px + var(--active-index) * (100% - 6px) / var(--tab-count, 6));
     border-radius: 7px;
     background: color-mix(
       in srgb,
@@ -569,12 +643,45 @@
     border-radius: 10px;
     color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
+    overflow: hidden;
+    position: relative;
     transition:
       background 140ms ease,
       border-color 140ms ease,
       color 140ms ease,
       transform 160ms ease,
       box-shadow 200ms ease;
+  }
+
+  .avatar-card.has-thumb {
+    padding: 0;
+    min-height: 72px;
+    justify-content: flex-end;
+  }
+
+  .avatar-thumb {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    opacity: 0.75;
+    transition: opacity 160ms ease;
+  }
+
+  .avatar-card.has-thumb:hover .avatar-thumb,
+  .avatar-card.has-thumb.selected .avatar-thumb {
+    opacity: 1;
+  }
+
+  .avatar-card.has-thumb .avatar-card-name {
+    position: relative;
+    z-index: 1;
+    padding: 2px 6px 4px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    width: 100%;
+    text-align: center;
   }
 
   .avatar-card:hover {
@@ -589,6 +696,13 @@
     border-color: color-mix(in srgb, var(--performer-color) 55%, transparent);
     color: var(--performer-color);
     box-shadow: 0 0 12px color-mix(in srgb, var(--performer-color) 20%, transparent);
+  }
+
+  .avatar-card.has-thumb.selected {
+    border-color: var(--performer-color);
+    box-shadow:
+      0 0 12px color-mix(in srgb, var(--performer-color) 30%, transparent),
+      inset 0 0 20px color-mix(in srgb, var(--performer-color) 15%, transparent);
   }
 
   .avatar-card i {

@@ -1051,7 +1051,7 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       reefAxisAngle: Math.PI,
     },
     coral: {
-      enabled: true,
+      enabled: false,
       count: 280,
       glowColor: "#e87090",
       glowBlend: 0.35,

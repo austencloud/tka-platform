@@ -83,6 +83,8 @@ export function normalizeModuleId(rawModuleId: string): ModuleId | undefined {
 export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   {
     id: "create",
+    labelKey: "module_create",
+    descKey: "module_desc_create",
     label: "Create",
     icon: '<i class="fas fa-tools" style="color: #f59e0b;" aria-hidden="true"></i>',
     color: "#f59e0b", // Amber - construction/creation
@@ -92,6 +94,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "browse",
+    labelKey: "module_browse",
+    descKey: "module_desc_browse",
     label: "Browse",
     icon: '<i class="fas fa-compass" style="color: #a855f7;" aria-hidden="true"></i>',
     color: "#a855f7", // Purple - browsing
@@ -101,6 +105,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "social",
+    labelKey: "module_social",
+    descKey: "module_desc_social",
     label: "Social",
     icon: '<i class="fas fa-users" style="color: #14b8a6;" aria-hidden="true"></i>',
     color: "#14b8a6",
@@ -110,6 +116,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "learn",
+    labelKey: "module_learn",
+    descKey: "module_desc_learn",
     label: "Learn",
     icon: '<i class="fas fa-graduation-cap" style="color: #3b82f6;" aria-hidden="true"></i>',
     color: "#3b82f6", // Blue - education/knowledge
@@ -119,6 +127,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "tika",
+    labelKey: "module_tika",
+    descKey: "module_desc_tika",
     label: "Tika",
     icon: '<i class="fas fa-brain" style="color: #6366f1;" aria-hidden="true"></i>',
     color: "#6366f1", // Indigo - AI/assistant
@@ -128,6 +138,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "premium",
+    labelKey: "module_premium",
+    descKey: "module_desc_premium",
     label: "Go Premium",
     icon: '<i class="fas fa-crown" style="color: #fbbf24;" aria-hidden="true"></i>',
     color: "#fbbf24", // Gold - premium/upgrade
@@ -137,6 +149,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "compose",
+    labelKey: "module_compose",
+    descKey: "module_desc_compose",
     label: "Compose",
     icon: '<i class="fas fa-photo-film" style="color: #ec4899;" aria-hidden="true"></i>',
     color: "#ec4899", // Pink - composition/choreography
@@ -146,6 +160,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "mandala",
+    labelKey: "module_mandala",
+    descKey: "module_desc_mandala",
     label: "Mandala",
     icon: '<i class="fas fa-dharmachakra" style="color: #f472b6;" aria-hidden="true"></i>',
     color: "#f472b6",
@@ -155,6 +171,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "watch",
+    labelKey: "module_watch",
+    descKey: "module_desc_watch",
     label: "Watch",
     icon: '<i class="fas fa-play-circle" style="color: #ef4444;" aria-hidden="true"></i>',
     color: "#ef4444", // Red - video/playback
@@ -165,6 +183,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "arena",
+    labelKey: "module_arena",
+    descKey: "module_desc_arena",
     label: "Arena",
     icon: '<i class="fas fa-trophy" style="color: #e11d48;" aria-hidden="true"></i>',
     color: "#e11d48", // Rose - competition
@@ -174,6 +194,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "train",
+    labelKey: "module_train",
+    descKey: "module_desc_train",
     label: "Train",
     icon: '<i class="fas fa-running" style="color: #ef4444;" aria-hidden="true"></i>',
     color: "#ef4444", // Red - action/training
@@ -188,6 +210,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   // Removed: about module (content moved to Dashboard > Support widget)
   {
     id: "choreo_card",
+    labelKey: "module_choreo_card",
+    descKey: "module_desc_choreo_card",
     label: "Choreo Cards",
     icon: '<i class="fas fa-id-card" style="color: #6366f1;" aria-hidden="true"></i>',
     color: "#6366f1", // Indigo - flashcards/learning
@@ -197,6 +221,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "write",
+    labelKey: "module_write",
+    descKey: "module_desc_write",
     label: "Write",
     icon: '<i class="fas fa-pen-nib" style="color: #f43f5e;" aria-hidden="true"></i>',
     color: "#f43f5e", // Rose - creative writing/composition
@@ -206,6 +232,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "feedback",
+    labelKey: "module_feedback",
+    descKey: "module_desc_feedback",
     label: "Feedback",
     icon: '<i class="fas fa-comment-dots" style="color: #14b8a6;" aria-hidden="true"></i>',
     color: "#14b8a6", // Teal - feedback/communication
@@ -215,6 +243,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "moderation",
+    labelKey: "module_moderation",
+    descKey: "module_desc_moderation",
     label: "Moderation",
     icon: '<i class="fas fa-shield-halved" style="color: #ef4444;" aria-hidden="true"></i>',
     color: "#ef4444", // Red - moderation/safety
@@ -226,6 +256,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   // ml-training module consolidated into Lab (Feb 2026)
   {
     id: "admin",
+    labelKey: "module_admin",
+    descKey: "module_desc_admin",
     label: "Admin",
     icon: '<i class="fas fa-crown" style="color: #ffd700;" aria-hidden="true"></i>',
     color: "#ffd700", // Gold - admin/privileged
@@ -236,6 +268,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "festivals",
+    labelKey: "module_festivals",
+    descKey: "module_desc_festivals",
     label: "Festivals",
     icon: '<i class="fas fa-fire" style="color: #f97316;" aria-hidden="true"></i>',
     color: "#f97316",
@@ -245,6 +279,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "museum",
+    labelKey: "module_museum",
+    descKey: "module_desc_museum",
     label: "Museum",
     icon: '<i class="fas fa-landmark" style="color: #f59e0b;" aria-hidden="true"></i>',
     color: "#f59e0b",
@@ -254,6 +290,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "archive",
+    labelKey: "module_archive",
+    descKey: "module_desc_archive",
     label: "Archive",
     icon: '<i class="fas fa-scroll" style="color: #c8a050;" aria-hidden="true"></i>',
     color: "#c8a050",
@@ -263,6 +301,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "retro",
+    labelKey: "module_retro",
+    descKey: "module_desc_retro",
     label: "Retro",
     icon: '<i class="fas fa-desktop" style="color: #008080;" aria-hidden="true"></i>',
     color: "#008080",
@@ -272,6 +312,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "levels",
+    labelKey: "module_levels",
+    descKey: "module_desc_levels",
     label: "Levels",
     icon: '<i class="fas fa-layer-group" style="color: #8b5cf6;" aria-hidden="true"></i>',
     color: "#8b5cf6",
@@ -281,6 +323,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "hand-paths",
+    labelKey: "module_hand_paths",
+    descKey: "module_desc_hand_paths",
     label: "Hand Paths",
     icon: '<i class="fas fa-route" style="color: #10b981;" aria-hidden="true"></i>',
     color: "#10b981",
@@ -290,6 +334,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "video",
+    labelKey: "module_video",
+    descKey: "module_desc_video",
     label: "Video",
     icon: '<i class="fas fa-film" style="color: #f43f5e;" aria-hidden="true"></i>',
     color: "#f43f5e",
@@ -299,6 +345,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "stage",
+    labelKey: "module_stage",
+    descKey: "module_desc_stage",
     label: "Stage",
     icon: '<i class="fas fa-people-group" style="color: #06b6d4;" aria-hidden="true"></i>',
     color: "#06b6d4",
@@ -308,6 +356,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "lab",
+    labelKey: "module_lab",
+    descKey: "module_desc_lab",
     label: "Lab",
     icon: '<i class="fas fa-flask" style="color: #10b981;" aria-hidden="true"></i>',
     color: "#10b981", // Emerald - experimental
@@ -318,6 +368,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   },
   {
     id: "settings",
+    labelKey: "module_settings",
+    descKey: "module_desc_settings",
     label: "Settings",
     icon: '<i class="fas fa-cog" style="color: #64748b;" aria-hidden="true"></i>',
     color: "#64748b", // Slate - neutral settings color

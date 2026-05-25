@@ -10,8 +10,6 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
 Supports letter highlighting during animation playback.
 -->
 <script lang="ts">
-  import { cubicOut } from "svelte/easing";
-  import { safeSlide } from "$lib/shared/utils/transitions";
   import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
   import { untrack } from "svelte";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
@@ -191,7 +189,6 @@ Supports letter highlighting during animation playback.
     class="word-header"
     class:dark-mode={darkMode}
     data-controlled="true"
-    transition:safeSlide={{ duration: 350, easing: cubicOut }}
   >
     {#if difficultyLevel != null}
       <div class="badge-wrapper">

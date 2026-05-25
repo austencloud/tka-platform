@@ -7,6 +7,7 @@ import type {
 import {
   renderHeader,
   renderFooter,
+  loadFooterIcon,
   FOOTER_FONT_SCALE,
   type LOOPComponentId,
   type LoopRotationPeriod,
@@ -234,7 +235,7 @@ export class TextRenderer {
     });
   }
 
-  renderUserInfo(
+  async renderUserInfo(
     canvas: RenderCanvas,
     userInfo: UserExportInfo,
     _options: TextRenderOptions,
@@ -251,12 +252,13 @@ export class TextRenderer {
     borderColor?: string,
     leftLabel?: string,
     rightLabel?: string,
-  ): void {
+    iconPath?: string,
+  ): Promise<void> {
     const showCreatorName = showFlags?.showCreatorName ?? true;
     const showNotes = showFlags?.showNotes ?? true;
     const showBirthday = showFlags?.showBirthday ?? true;
 
-    if (!showCreatorName && !showNotes && !showBirthday) {
+    if (!showCreatorName && !showNotes && !showBirthday && !iconPath) {
       return;
     }
 
@@ -276,6 +278,8 @@ export class TextRenderer {
         ? new Date(userInfo.exportDate)
         : undefined;
 
+    const iconImage = iconPath ? await loadFooterIcon(iconPath) : undefined;
+
     renderFooter(ctx, {
       canvasWidth: canvas.width,
       canvasHeight: canvas.height,
@@ -291,6 +295,8 @@ export class TextRenderer {
       borderColor,
       leftLabel,
       rightLabel,
+      iconPath,
+      iconImage,
     });
   }
 

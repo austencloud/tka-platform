@@ -29,6 +29,7 @@ import type { LayerCompositor } from "./LayerCompositor";
 import { calculateLayout } from "../layout-calculator";
 import { drawStepNumber } from "../step-number-renderer";
 import type { QRCodeGenerator } from "../../../qr/services/implementations/QRCodeGenerator";
+import { getQRCellScale } from "../../../qr/qr-cell-scale";
 import {
   calculateHeaderHeight as sharedHeaderHeight,
   calculateFooterHeight as sharedFooterHeight,
@@ -843,7 +844,8 @@ export class ImageComposer {
     }
 
     try {
-      const qrSize = Math.floor(stepSize * 0.96);
+      const stepCount = sequence.steps?.length ?? 0;
+      const qrSize = Math.floor(stepSize * getQRCellScale(stepCount));
       const padding = (stepSize - qrSize) / 2;
 
       const qrImage = await this.qrCodeGenerator.generateAsImage(

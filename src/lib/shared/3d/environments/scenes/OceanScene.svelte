@@ -32,13 +32,13 @@
   import ProceduralJellyfish from "./ocean/ProceduralJellyfish.svelte";
   import BoatSilhouette from "./ocean/BoatSilhouette.svelte";
   import HeroKelp from "./ocean/HeroKelp.svelte";
-  import OceanClickInspect from "./ocean/OceanClickInspect.svelte";
   import type { ReefSDFData } from "./ocean/ReefStructures.svelte";
   import OceanLoadingScreen from "./ocean/OceanLoadingScreen.svelte";
   import OceanAmbientAudio from "./ocean/OceanAmbientAudio.svelte";
   import { generateRockVariants, type RockVariant } from "./ocean/procedural-rock";
   import { generateDLAMask, type DLAMask } from "../utils/dla";
   import { densityCurve, selectSpecies, vonMisesSample } from "../utils/reef-ecology";
+  import { hashPlacementInputs, loadCachedPlacements, storePlacements } from "./ocean/placement-cache";
   import {
     FogExp2,
     Color,
@@ -153,6 +153,7 @@
   let reefSdfData = $state<ReefSDFData | null>(null);
   const sdfReady = $derived(reefSdfData !== null);
   const sceneReady = $derived(modelsLoaded);
+  $effect(() => { if (modelsLoaded) _mark('models-loaded'); });
   const loadingProgress = $derived.by(() => {
     if (allGlbs.length === 0) return 0;
     return loadedCount / allGlbs.length;
@@ -180,6 +181,15 @@
     sceneFeatures = getSceneFeatureContext();
   } catch {
     // May render outside scene feature system
+  }
+
+  // ── Performance Instrumentation ────────────────────────────────────
+  const _t0 = performance.now();
+  const _perf: Record<string, number> = {};
+  function _mark(label: string) { _perf[label] = performance.now() - _t0; }
+  function _logPerf() {
+    const entries = Object.entries(_perf).sort((a, b) => a[1] - b[1]);
+    const lines = entries.map(([k, v]) => `  ${k}: ${v.toFixed(0)}ms`);
   }
 
   const groundY = $derived(userProportionsState.groundY);
@@ -306,7 +316,44 @@
     rockVariants.length > 0 ? Math.max(...rockVariants.map(v => v.xzRadius)) : 1.0,
   );
 
+  // ── Placement cache ──────────────────────────────────────────────────
+  const placementHash = $derived.by(() => hashPlacementInputs({
+    v: variant,
+    z: zones,
+    p: activeConfig.placement,
+    dla: activeConfig.dla,
+    coral: { e: activeConfig.coral.enabled, c: activeConfig.coral.count },
+    kelp: { e: activeConfig.kelp.enabled, m: activeConfig.kelp.midCount, b: activeConfig.kelp.backgroundCount },
+    rocks: { e: activeConfig.rocks.enabled, c: activeConfig.rocks.count },
+    deco: { e: activeConfig.decorations.enabled, c: activeConfig.decorations.count },
+    meshy: { e: activeConfig.meshyFormations.enabled, c: activeConfig.meshyFormations.count, m: activeConfig.meshyFormations.models.map(m => m.name) },
+    cd: activeConfig.currentDirection,
+    cs: activeConfig.coralSpecies,
+    q: { mc: qualityConfig.maxCoralCount, hr: qualityConfig.maxHeroRocks, mk: qualityConfig.maxMidKelp, bk: qualityConfig.maxBackgroundKelp },
+    glb: hasGlbRocks,
+    gs: rockGlbScales.map(s => Math.round(s * 1000)),
+    rx: Math.round(maxRockXzRadius * 1000),
+  }));
+
+  let _placementCache = $state<{ hash: string; data: ScenePlacements } | null>(null);
+
+  $effect(() => {
+    if (!modelsLoaded) return;
+    const hash = placementHash;
+    loadCachedPlacements<ScenePlacements>(hash).then((cached) => {
+      if (cached && placementHash === hash) {
+        _placementCache = { hash, data: cached };
+        _mark('placement-cache-hit');
+      }
+    });
+  });
+
+  const EMPTY_PLACEMENTS: ScenePlacements = { coral: [], kelp: [], backgroundKelp: [], rocks: [], boulders: [], heroRocks: [], meshyFormations: [], decorations: [] };
+
   const scenePlacements = $derived.by((): ScenePlacements => {
+    if (!modelsLoaded) return EMPTY_PLACEMENTS;
+    if (_placementCache?.hash === placementHash) return _placementCache.data;
+    const _pt0 = performance.now();
     // Grid only tracks LARGE items (hero rocks, boulders, large procedural rocks).
     // Coral, kelp, decorations CHECK against large items but DON'T register —
     // they cluster freely among themselves, just like a real reef.
@@ -790,7 +837,11 @@
       }
     }
 
-    return { coral, kelp, backgroundKelp, rocks, boulders, heroRocks, meshyFormations, decorations };
+    const result = { coral, kelp, backgroundKelp, rocks, boulders, heroRocks, meshyFormations, decorations };
+    const _pElapsed = performance.now() - _pt0;
+    _mark('placement-computed');
+    storePlacements(placementHash, result);
+    return result;
   });
 
   const coralPlacements = $derived(scenePlacements.coral);
@@ -1423,6 +1474,19 @@
   });
 
 
+  // ── Instancing timing ─────────────────────────────────────────────────
+  let _instancingMarked = false;
+  $effect(() => {
+    if (_instancingMarked || !modelsLoaded) return;
+    const hasCorals = coralInstances.length > 0 || !activeConfig.coral.enabled;
+    const hasKelp = midKelpInstances.length > 0 || !activeConfig.kelp.enabled;
+    const hasRocks = rockInstances.length > 0 || rockVariants.length === 0;
+    if (hasCorals && hasKelp && hasRocks) {
+      _instancingMarked = true;
+      _mark('instancing-done');
+    }
+  });
+
   // ── Fog ───────────────────────────────────────────────────────────────
 
   let fogInstance: FogExp2 | null = null;
@@ -1446,14 +1510,28 @@
 
   // ── Loading Progress ──────────────────────────────────────────────────
 
+  let compileStarted = false;
   $effect(() => {
     if (!sceneFeatures) return;
     sceneFeatures.reportProgress("environment", loadingProgress);
-    if (sceneReady) {
-      if (renderer.current && camera.current && scene.current) {
-        renderer.current.compile(scene.current, camera.current);
+    if (sceneReady && !compileStarted) {
+      compileStarted = true;
+      _mark('compile-start');
+      const gl = renderer.current;
+      const cam = camera.current;
+      const sc = scene.current;
+      if (gl && cam && sc) {
+        gl.compileAsync(sc, cam).then(() => {
+          _mark('compile-done');
+          _mark('scene-ready');
+          _logPerf();
+          sceneFeatures!.reportReady("environment");
+        });
+      } else {
+        _mark('scene-ready');
+        _logPerf();
+        sceneFeatures.reportReady("environment");
       }
-      sceneFeatures.reportReady("environment");
     }
   });
 
@@ -1533,8 +1611,6 @@
 <OceanLoadingScreen progress={loadingProgress} visible={!sceneReady} />
 
 {#if modelsLoaded}
-<OceanClickInspect />
-
 <!-- Procedural ambient audio (per-variant underwater soundscape) -->
 <OceanAmbientAudio {variant} />
 
@@ -1780,7 +1856,7 @@
     clearingRadius={zones.clearingRadius}
     tintColor={activeConfig.rocks.tintColor}
     tintBlend={activeConfig.rocks.tintBlend}
-    onSdfReady={(data) => { reefSdfData = data; }}
+    onSdfReady={(data) => { reefSdfData = data; _mark('sdf-ready'); _logPerf(); }}
   />
 {/if}
 

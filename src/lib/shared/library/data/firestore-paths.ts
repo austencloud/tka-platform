@@ -122,42 +122,42 @@ export function getSequenceMetadataPath(sequenceId: string): string {
 }
 
 // ============================================================================
-// SYSTEM DECK PATHS
+// SYSTEM CATALOG PATHS
 // ============================================================================
 
 /**
- * Path to the system decks collection
+ * Path to the system catalogs collection (stored as "decks" in Firestore)
  * @example "decks"
  */
-export function getSystemDecksPath(): string {
+export function getSystemCatalogsPath(): string {
   return "decks";
 }
 
 /**
- * Path to a specific system deck
+ * Path to a specific system catalog
  * @example "decks/l1-quartered-loop"
  */
-export function getSystemDeckPath(deckId: string): string {
-  return `decks/${deckId}`;
+export function getSystemCatalogPath(catalogId: string): string {
+  return `decks/${catalogId}`;
 }
 
 /**
- * Path to sequences within a system deck
+ * Path to sequences within a system catalog
  * @example "decks/l1-quartered-loop/sequences"
  */
-export function getSystemDeckSequencesPath(deckId: string): string {
-  return `decks/${deckId}/sequences`;
+export function getSystemCatalogSequencesPath(catalogId: string): string {
+  return `decks/${catalogId}/sequences`;
 }
 
 /**
- * Path to a specific sequence within a system deck
+ * Path to a specific sequence within a system catalog
  * @example "decks/l1-quartered-loop/sequences/alpha1-AB"
  */
-export function getSystemDeckSequencePath(
-  deckId: string,
+export function getSystemCatalogSequencePath(
+  catalogId: string,
   sequenceId: string
 ): string {
-  return `decks/${deckId}/sequences/${sequenceId}`;
+  return `decks/${catalogId}/sequences/${sequenceId}`;
 }
 
 // ============================================================================

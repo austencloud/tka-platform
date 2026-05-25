@@ -26,6 +26,7 @@
   import { attachSceneUndoKeyboard } from "../undo/scene-undo-keyboard";
   import { getSceneUndoManager } from "../undo/getSceneUndoManager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import AvatarSwapTransition from "./AvatarSwapTransition.svelte";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -395,35 +396,45 @@
     {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
     {@const perfStaffCm = performer.settings.staffLengthCm}
     {@const propLength = perfStaffCm != null ? cmToUnits(perfStaffCm) : undefined}
-    <PerformerRig
-      position={performer.position}
+    <AvatarSwapTransition
+      {performer}
+      performerIndex={i}
       groundOffset={stageGroundOffset}
-      facingAngle={performer.facingAngle}
-      planeMode={performer.planeMode}
-      avatarState={performer}
-      avatarId={performer.avatarModelId}
-      visiblePlanes={explicitPlanes}
-      gridMode={performerGridMode}
-      bluePropType={resolvePerformerProp(performer, bluePropType)}
-      redPropType={resolvePerformerProp(performer, redPropType)}
-      bluePropState={performer.bluePropState}
-      redPropState={performer.redPropState}
-      tipEffectMap={globalTipEffectMap}
-      {propLength}
-      {isPlaying}
-      enableLocomotion={true}
-      enableFootPlanting={true}
     >
-      {#snippet gridSlot()}
-        <T.Group position.z={performerGridOffset}>
-          <Grid3D
-            visiblePlanes={explicitPlanes}
-            gridMode={performerGridMode}
-            showLabels={viewer3DState.showGridLabels}
-          />
-        </T.Group>
+      {#snippet children({ onAvatarSwapped, avatarOpacity })}
+        <PerformerRig
+          position={performer.position}
+          groundOffset={stageGroundOffset}
+          facingAngle={performer.facingAngle}
+          planeMode={performer.planeMode}
+          avatarState={performer}
+          avatarId={performer.avatarModelId}
+          visiblePlanes={explicitPlanes}
+          gridMode={performerGridMode}
+          bluePropType={resolvePerformerProp(performer, bluePropType)}
+          redPropType={resolvePerformerProp(performer, redPropType)}
+          bluePropState={performer.bluePropState}
+          redPropState={performer.redPropState}
+          tipEffectMap={globalTipEffectMap}
+          {propLength}
+          {isPlaying}
+          enableLocomotion={true}
+          enableFootPlanting={true}
+          {onAvatarSwapped}
+          {avatarOpacity}
+        >
+          {#snippet gridSlot()}
+            <T.Group position.z={performerGridOffset}>
+              <Grid3D
+                visiblePlanes={explicitPlanes}
+                gridMode={performerGridMode}
+                showLabels={viewer3DState.showGridLabels}
+              />
+            </T.Group>
+          {/snippet}
+        </PerformerRig>
       {/snippet}
-    </PerformerRig>
+    </AvatarSwapTransition>
 
     {@const isSelected = viewer3DState.selectedPerformerIndex === i}
     {@const isAllMode = viewer3DState.selectedPerformerIndex === null}

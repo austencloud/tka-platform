@@ -239,6 +239,7 @@
     tex.type = HalfFloatType;
     tex.minFilter = LinearFilter;
     tex.magFilter = LinearFilter;
+    tex.unpackAlignment = 1;
     tex.generateMipmaps = false;
     tex.needsUpdate = true;
     return tex;
@@ -523,7 +524,6 @@
       }
 
       if (import.meta.env.DEV) {
-        console.log('[FishSchool] GPU init OK —', loaded.length, 'species,', spawnOffset, 'fish, texSize', localTexSize);
         const glCtx = gl.getContext?.() ?? gl;
         if (glCtx instanceof WebGL2RenderingContext || glCtx instanceof WebGLRenderingContext) {
           const origShaderError = (gl as any).debug?.onShaderError;
@@ -682,7 +682,6 @@
       velU[matKeys[i]!].value = r.inverseMatrix;
     }
 
-    if (import.meta.env.DEV) console.log(`[FishSchool] Bound ${count} reef SDF textures to velocity shader`);
   });
 
   // ── Reactive scene-wide SDF update ───────────────────────────────────
@@ -692,7 +691,6 @@
     velU.uSceneSDF.value = sceneSdfTexture;
     velU.uSceneSDFInvMatrix.value = sceneSdfInvMatrix;
     velU.uSceneSDFEnabled.value = 1;
-    if (import.meta.env.DEV) console.log(`[FishSchool] Bound scene-wide SDF texture`);
   });
 
   function createVisitorMesh(

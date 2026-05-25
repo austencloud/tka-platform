@@ -5,7 +5,7 @@
   import EffectPresetsSection from "./EffectPresetsSection.svelte";
   import { EFFECT_COLORS, EFFECT_LABELS, EFFECTS, getRegistration } from "./effect-registry";
   import type { EffectRegistration } from "./effect-registry";
-  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
+  import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import type { PrimaryParamSpec } from "./effect-primary-param";
 

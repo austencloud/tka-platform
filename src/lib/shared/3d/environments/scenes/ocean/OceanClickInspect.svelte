@@ -43,25 +43,12 @@
     raycaster.setFromCamera(ndc, cam);
     const hits = raycaster.intersectObjects(sc.children, true);
 
-    if (hits.length === 0) {
-      console.log("[OceanInspect] No hit");
-      return;
-    }
+    if (hits.length === 0) return;
 
     const hit = hits[0]!;
     const obj = hit.object;
     const pos = hit.point;
 
-    console.log(
-      `%c[OceanInspect] CLICKED`,
-      "background: #0066ff; color: white; padding: 2px 6px; border-radius: 3px;",
-      `\n  Object: ${obj.name || obj.type}`,
-      `\n  Hierarchy: ${getModelName(obj)}`,
-      `\n  Material: ${getMaterialInfo(hit)}`,
-      `\n  World pos: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})`,
-      `\n  Object type: ${obj.type}`,
-      `\n  UUID: ${obj.uuid.substring(0, 8)}`,
-    );
   }
 
   onMount(() => {
@@ -69,7 +56,6 @@
     const el = gl?.domElement as HTMLCanvasElement | undefined;
     if (!el) return;
     el.addEventListener("click", onClick);
-    console.log("[OceanInspect] Click-to-identify active");
     return () => el.removeEventListener("click", onClick);
   });
 </script>

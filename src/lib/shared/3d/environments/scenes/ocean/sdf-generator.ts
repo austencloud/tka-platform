@@ -1,12 +1,17 @@
 /**
- * Async SDF texture generator for reef obstacle avoidance.
+ * GPU-accelerated SDF texture generator for reef obstacle avoidance.
  *
- * Merges child meshes → BVH → samples signed distance on a 3D voxel grid,
- * yielding to the main thread between Z-slices so the scene stays interactive.
+ * Uses three-mesh-bvh's GPU BVH traversal (MeshBVHUniformStruct +
+ * bvhClosestPointToPoint GLSL) to compute signed distance on the GPU.
+ * Each Z-slice of the 3D volume is rendered as a fullscreen quad —
+ * the fragment shader runs the BVH closest-point query per texel.
+ *
+ * ~50-100ms on GPU vs multi-second on CPU.
  */
 
 import {
   Box3,
+  BufferAttribute,
   BufferGeometry,
   Data3DTexture,
   HalfFloatType,
@@ -14,11 +19,19 @@ import {
   Matrix4,
   Mesh,
   Object3D,
+  OrthographicCamera,
+  PlaneGeometry,
   RedFormat,
+  Scene,
+  ShaderMaterial,
   Vector3,
+  WebGL3DRenderTarget,
+  type WebGLRenderer,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { MeshBVH } from 'three-mesh-bvh';
+import { MeshBVH, MeshBVHUniformStruct, BVHShaderGLSL } from 'three-mesh-bvh';
+
+const { common_functions, bvh_struct_definitions, bvh_distance_functions } = BVHShaderGLSL;
 
 export interface SDFResult {
   texture: Data3DTexture;
@@ -31,16 +44,72 @@ export interface SDFGeneratorOptions {
   padding?: number;
 }
 
-function yieldFrame(): Promise<void> {
-  return new Promise((r) => requestAnimationFrame(() => r()));
+const sdfVertexShader = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const sdfFragmentShader = /* glsl */ `
+  precision highp float;
+  precision highp usampler2D;
+
+  ${common_functions}
+  ${bvh_struct_definitions}
+  ${bvh_distance_functions}
+
+  uniform BVH bvh;
+  uniform vec3 uBoundsMin;
+  uniform vec3 uBoundsSize;
+  uniform float uZSlice;
+
+  varying vec2 vUv;
+
+  void main() {
+    vec3 worldPos = uBoundsMin + vec3(vUv.x, vUv.y, uZSlice) * uBoundsSize;
+
+    uvec4 faceIndices = uvec4(0u);
+    vec3 faceNormal = vec3(0.0);
+    vec3 barycoord = vec3(0.0);
+    float side = 1.0;
+    vec3 outPoint = vec3(0.0);
+
+    float distSq = bvhClosestPointToPoint(
+      bvh,
+      worldPos, INFINITY,
+      faceIndices, faceNormal, barycoord, side, outPoint
+    );
+
+    float dist = sqrt(distSq) * side;
+    gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
+  }
+`;
+
+let sharedQuadScene: Scene | null = null;
+let sharedCamera: OrthographicCamera | null = null;
+let sharedQuadMesh: Mesh | null = null;
+
+function getQuadSetup(): { scene: Scene; camera: OrthographicCamera; mesh: Mesh } {
+  if (!sharedQuadScene) {
+    sharedQuadScene = new Scene();
+    sharedCamera = new OrthographicCamera(-0.5, 0.5, 0.5, -0.5, 0, 1);
+    const geo = new PlaneGeometry(1, 1);
+    sharedQuadMesh = new Mesh(geo);
+    sharedQuadScene.add(sharedQuadMesh);
+  }
+  return { scene: sharedQuadScene, camera: sharedCamera!, mesh: sharedQuadMesh! };
 }
 
-export async function generateSDFTexture(
+export function generateSDFTexture(
   object: Object3D,
+  renderer: WebGLRenderer,
   options: SDFGeneratorOptions = {},
-): Promise<SDFResult> {
+): SDFResult {
   const resolution = options.resolution ?? 64;
   const padding = options.padding ?? 1.5;
+  const t0 = performance.now();
 
   object.updateMatrixWorld(true);
 
@@ -51,10 +120,19 @@ export async function generateSDFTexture(
     if (!mesh.geometry) return;
     const geo = mesh.geometry.clone();
     geo.applyMatrix4(mesh.matrixWorld);
-    const posAttr = geo.getAttribute('position');
+    // GLTF models use InterleavedBufferAttribute whose .count is read-only.
+    // Extract to a plain BufferAttribute so MeshBVH can operate on it.
+    const srcPos = geo.getAttribute('position');
+    const count = srcPos.count;
+    const arr = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      arr[i * 3] = srcPos.getX(i);
+      arr[i * 3 + 1] = srcPos.getY(i);
+      arr[i * 3 + 2] = srcPos.getZ(i);
+    }
     const indexAttr = geo.getIndex();
     const stripped = new BufferGeometry();
-    stripped.setAttribute('position', posAttr);
+    stripped.setAttribute('position', new BufferAttribute(arr, 3));
     if (indexAttr) stripped.setIndex(indexAttr);
     geometries.push(stripped);
   });
@@ -76,127 +154,72 @@ export async function generateSDFTexture(
 
   const size = new Vector3();
   bounds.getSize(size);
-  const origin = bounds.min.clone();
 
   const inverseMatrix = new Matrix4();
   inverseMatrix.set(
-    1 / size.x, 0, 0, -origin.x / size.x,
-    0, 1 / size.y, 0, -origin.y / size.y,
-    0, 0, 1 / size.z, -origin.z / size.z,
+    1 / size.x, 0, 0, -bounds.min.x / size.x,
+    0, 1 / size.y, 0, -bounds.min.y / size.y,
+    0, 0, 1 / size.z, -bounds.min.z / size.z,
     0, 0, 0, 1,
   );
 
+  const bvhStruct = new MeshBVHUniformStruct();
+  bvhStruct.updateFrom(bvh);
+
+  // MeshBVHUniformStruct exposes index, position, bvhBounds, bvhContents
+  // at runtime but the type declarations don't list them.
+  const bvhAny = bvhStruct as any;
+
+  const material = new ShaderMaterial({
+    vertexShader: sdfVertexShader,
+    fragmentShader: sdfFragmentShader,
+    uniforms: {
+      'bvh.index': { value: bvhAny.index },
+      'bvh.position': { value: bvhAny.position },
+      'bvh.bvhBounds': { value: bvhAny.bvhBounds },
+      'bvh.bvhContents': { value: bvhAny.bvhContents },
+      uBoundsMin: { value: bounds.min },
+      uBoundsSize: { value: size },
+      uZSlice: { value: 0 },
+    },
+  });
+
   const dim = resolution;
-  const sdfData = new Float32Array(dim * dim * dim);
-  const samplePoint = new Vector3();
-  const hitTarget = { point: new Vector3(), distance: 0, faceIndex: 0 };
-  const stepX = size.x / dim;
-  const stepY = size.y / dim;
-  const stepZ = size.z / dim;
+  const renderTarget = new WebGL3DRenderTarget(dim, dim, dim);
+  renderTarget.texture.format = RedFormat;
+  renderTarget.texture.type = HalfFloatType;
+  renderTarget.texture.minFilter = LinearFilter;
+  renderTarget.texture.magFilter = LinearFilter;
+  renderTarget.texture.generateMipmaps = false;
 
-  const positionAttr = merged.getAttribute('position');
-  const indexArr = merged.getIndex();
-  const triA = new Vector3(), triB = new Vector3(), triC = new Vector3();
-  const edgeAB = new Vector3(), edgeAC = new Vector3(), faceNormal = new Vector3();
-  const toPoint = new Vector3();
-  const fallbackDist = size.length();
+  const { scene, camera, mesh } = getQuadSetup();
+  mesh.material = material;
 
-  function getTriangleNormal(faceIndex: number): Vector3 {
-    let i0: number, i1: number, i2: number;
-    if (indexArr) {
-      i0 = indexArr.getX(faceIndex * 3);
-      i1 = indexArr.getX(faceIndex * 3 + 1);
-      i2 = indexArr.getX(faceIndex * 3 + 2);
-    } else {
-      i0 = faceIndex * 3;
-      i1 = faceIndex * 3 + 1;
-      i2 = faceIndex * 3 + 2;
-    }
-    triA.fromBufferAttribute(positionAttr, i0);
-    triB.fromBufferAttribute(positionAttr, i1);
-    triC.fromBufferAttribute(positionAttr, i2);
-    edgeAB.subVectors(triB, triA);
-    edgeAC.subVectors(triC, triA);
-    faceNormal.crossVectors(edgeAB, edgeAC).normalize();
-    return faceNormal;
-  }
+  const savedRenderTarget = renderer.getRenderTarget();
+  const savedAutoClear = renderer.autoClear;
+  renderer.autoClear = false;
 
-  // Process Z-slices, yielding between each so the main thread stays responsive
   for (let z = 0; z < dim; z++) {
-    const wz = origin.z + (z + 0.5) * stepZ;
-    for (let y = 0; y < dim; y++) {
-      const wy = origin.y + (y + 0.5) * stepY;
-      for (let x = 0; x < dim; x++) {
-        const wx = origin.x + (x + 0.5) * stepX;
-        samplePoint.set(wx, wy, wz);
-
-        const hit = bvh.closestPointToPoint(samplePoint, hitTarget, 0, Infinity);
-        if (!hit) {
-          sdfData[z * dim * dim + y * dim + x] = fallbackDist;
-          continue;
-        }
-
-        const normal = getTriangleNormal(hit.faceIndex);
-        toPoint.subVectors(samplePoint, hit.point);
-        const sign = toPoint.dot(normal) >= 0 ? 1 : -1;
-        sdfData[z * dim * dim + y * dim + x] = hit.distance * sign;
-      }
-    }
-    if (z % 2 === 1) await yieldFrame();
+    material.uniforms.uZSlice!.value = (z + 0.5) / dim;
+    renderer.setRenderTarget(renderTarget, z);
+    renderer.clear();
+    renderer.render(scene, camera);
   }
 
-  const halfData = float32ToHalf(sdfData);
+  renderer.setRenderTarget(savedRenderTarget);
+  renderer.autoClear = savedAutoClear;
+  renderer.resetState();
 
-  const texture = new Data3DTexture(halfData, dim, dim, dim);
-  texture.format = RedFormat;
-  texture.type = HalfFloatType;
-  texture.minFilter = LinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.generateMipmaps = false;
+  const texture = renderTarget.texture;
   texture.needsUpdate = true;
 
+  material.dispose();
+  bvhStruct.dispose();
+  for (const geo of geometries) geo.dispose();
+  merged.dispose();
+
+  const elapsed = (performance.now() - t0).toFixed(1);
+  console.log(`[sdf-generator] GPU SDF ${dim}³ in ${elapsed}ms`);
+
   return { texture, inverseMatrix, bounds };
-}
-
-function float32ToHalf(float32Array: Float32Array): Uint16Array {
-  const len = float32Array.length;
-  const result = new Uint16Array(len);
-  const view = new DataView(new ArrayBuffer(4));
-
-  for (let i = 0; i < len; i++) {
-    view.setFloat32(0, float32Array[i]!, false);
-    const bits = view.getUint32(0, false);
-
-    const sign = (bits >>> 31) & 0x1;
-    const exp = (bits >>> 23) & 0xff;
-    const mantissa = bits & 0x7fffff;
-
-    let halfSign = sign << 15;
-    let halfExp: number;
-    let halfMantissa: number;
-
-    if (exp === 0) {
-      halfExp = 0;
-      halfMantissa = 0;
-    } else if (exp === 0xff) {
-      halfExp = 0x1f;
-      halfMantissa = mantissa ? 0x200 : 0;
-    } else {
-      const newExp = exp - 127 + 15;
-      if (newExp >= 0x1f) {
-        halfExp = 0x1f;
-        halfMantissa = 0;
-      } else if (newExp <= 0) {
-        halfExp = 0;
-        halfMantissa = 0;
-      } else {
-        halfExp = newExp;
-        halfMantissa = mantissa >> 13;
-      }
-    }
-
-    result[i] = halfSign | (halfExp << 10) | halfMantissa;
-  }
-
-  return result;
 }

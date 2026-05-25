@@ -782,9 +782,9 @@ export function createAvatarInstanceState(
   // problem that a shared "performer" domain would have.
 
   function setEffort(effortId: EffortId): void {
-    const before = structuredClone(_settings);
+    const before = $state.snapshot(_settings);
     _settings = { ..._settings, effortId };
-    const after = structuredClone(_settings);
+    const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-effort", `Effort: ${effortId}`, {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },
@@ -792,9 +792,9 @@ export function createAvatarInstanceState(
   }
 
   function setProp(prop: PropType): void {
-    const before = structuredClone(_settings);
+    const before = $state.snapshot(_settings);
     _settings = { ..._settings, prop };
-    const after = structuredClone(_settings);
+    const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-prop", `Prop: ${prop}`, {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },
@@ -802,13 +802,13 @@ export function createAvatarInstanceState(
   }
 
   function toggleEffect(effect: EffectId): void {
-    const before = structuredClone(_settings);
+    const before = $state.snapshot(_settings);
     const current = _settings.effects ?? new Set(getDefaults().effects);
     const next = new Set(current);
     if (next.has(effect)) next.delete(effect);
     else next.add(effect);
     _settings = { ..._settings, effects: next };
-    const after = structuredClone(_settings);
+    const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("toggle-effect", `Toggle ${effect}`, {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },
@@ -816,9 +816,9 @@ export function createAvatarInstanceState(
   }
 
   function setStaffLengthCm(cm: number | null): void {
-    const before = structuredClone(_settings);
+    const before = $state.snapshot(_settings);
     _settings = { ..._settings, staffLengthCm: cm };
-    const after = structuredClone(_settings);
+    const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntryCoalescing("change-staff-length", "Staff length", {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },
@@ -830,9 +830,9 @@ export function createAvatarInstanceState(
   // ============================================
 
   function resetProp(): void {
-    const before = structuredClone(_settings);
+    const before = $state.snapshot(_settings);
     _settings = { ..._settings, prop: null };
-    const after = structuredClone(_settings);
+    const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-prop", "Reset prop to default", {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },
@@ -840,9 +840,9 @@ export function createAvatarInstanceState(
   }
 
   function resetEffort(): void {
-    const before = structuredClone(_settings);
+    const before = $state.snapshot(_settings);
     _settings = { ..._settings, effortId: null };
-    const after = structuredClone(_settings);
+    const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-effort", "Reset effort to default", {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },
@@ -850,9 +850,9 @@ export function createAvatarInstanceState(
   }
 
   function resetEffects(): void {
-    const before = structuredClone(_settings);
+    const before = $state.snapshot(_settings);
     _settings = { ..._settings, effects: null };
-    const after = structuredClone(_settings);
+    const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("toggle-effect", "Reset effects to default", {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },

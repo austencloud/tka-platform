@@ -26,7 +26,7 @@ import type { HapticFeedback } from "../../application/services/implementations/
     SETTINGS_TABS,
   } from "../state/navigation-state.svelte";
   import { featureFlagService } from "../../auth/services/PostHogFeatureFlagService.svelte";
-  import { translateSettingsTab } from "../../i18n/translate";
+  import { t } from "../../i18n/i18n.svelte";
   import { getReactiveLocale } from "../../i18n/locale-state.svelte";
 
   let {
@@ -393,7 +393,7 @@ import type { HapticFeedback } from "../../application/services/implementations/
                 style="--section-color: {section.color || '#64748b'};"
               >
                 <span class="section-icon">{@html section.icon}</span>
-                <span class="section-label">{translateSettingsTab(section.id)}</span>
+                <span class="section-label">{t(section.labelKey)}</span>
               </button>
             {/each}
           </div>

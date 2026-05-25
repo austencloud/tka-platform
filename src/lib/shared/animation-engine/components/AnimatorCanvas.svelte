@@ -294,11 +294,12 @@ Last audit: 2025-12-27
 
   // Re-sync the engine whenever effects config changes (fire sliders, presets, etc.).
   // EffectsConfigState mutations don't notify the VM observer, so we bridge here.
+  // untrack the notification so observer-triggered mutations don't re-enter this effect.
   $effect(() => {
     const ecs = effectsConfigState ?? inheritedEffectsConfig ?? null;
     if (!ecs) return;
     void ecs.version;
-    getAnimationVisibilityManager().notifyObservers();
+    untrack(() => getAnimationVisibilityManager().notifyObservers());
   });
 
   // Push viewer-scoped motion visibility into the engine whenever the toggle

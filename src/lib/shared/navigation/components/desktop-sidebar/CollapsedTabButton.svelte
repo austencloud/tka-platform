@@ -2,7 +2,7 @@
 <!-- Icon-only tab button for collapsed sidebar (VS Code style) -->
 <script lang="ts">
   import type { Section } from "../../domain/types";
-  import { translateTab } from "$lib/shared/i18n/translate";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
 
   let { section, moduleId, isActive, onClick, onContextMenu } = $props<{
@@ -15,8 +15,8 @@
 
   // Translated label (reactive to locale changes)
   const translatedLabel = $derived.by(() => {
-    getReactiveLocale(); // Creates reactive dependency on locale
-    return translateTab(moduleId, section.id, section.label);
+    getReactiveLocale();
+    return t(section.labelKey);
   });
 </script>
 

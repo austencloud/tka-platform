@@ -19,6 +19,8 @@ export const DEFAULT_CREATE_TAB = "construct";
 export const CREATE_TABS: Section[] = [
   {
     id: "assemble",
+    labelKey: "tab_create_assemble",
+    descKey: "tab_desc_create_assemble",
     label: "Assemble",
     icon: '<i class="fas fa-puzzle-piece" aria-hidden="true"></i>',
     description: "Click grid points to build sequences visually",
@@ -28,6 +30,8 @@ export const CREATE_TABS: Section[] = [
   },
   {
     id: "construct",
+    labelKey: "tab_create_construct",
+    descKey: "tab_desc_create_construct",
     label: "Construct",
     icon: '<i class="fas fa-hammer" aria-hidden="true"></i>',
     description: "Create sequences step by step (all options)",
@@ -37,6 +41,8 @@ export const CREATE_TABS: Section[] = [
   },
   {
     id: "generate",
+    labelKey: "tab_create_generate",
+    descKey: "tab_desc_create_generate",
     label: "Generate",
     icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
     description: "Auto-create sequences",
@@ -46,6 +52,8 @@ export const CREATE_TABS: Section[] = [
   },
   {
     id: "fuse",
+    labelKey: "tab_create_fuse",
+    descKey: "tab_desc_create_fuse",
     label: "Fuse",
     icon: '<i class="fas fa-fire" aria-hidden="true"></i>',
     description: "Combine two sequences into one",
@@ -62,6 +70,8 @@ export const CREATE_TABS: Section[] = [
 export const LEARN_TABS: Section[] = [
   {
     id: "concepts",
+    labelKey: "tab_learn_concepts",
+    descKey: "tab_desc_learn_concepts",
     label: "Concepts",
     icon: '<i class="fas fa-lightbulb" aria-hidden="true"></i>',
     description: "Lessons that build on each other",
@@ -70,6 +80,8 @@ export const LEARN_TABS: Section[] = [
   },
   {
     id: "play",
+    labelKey: "tab_learn_play",
+    descKey: "tab_desc_learn_play",
     label: "Play",
     icon: '<i class="fas fa-gamepad" aria-hidden="true"></i>',
     description: "Fun games to test your pictograph skills",
@@ -78,6 +90,8 @@ export const LEARN_TABS: Section[] = [
   },
   {
     id: "codex",
+    labelKey: "tab_learn_codex",
+    descKey: "tab_desc_learn_codex",
     label: "Codex",
     icon: '<i class="fas fa-book-open" aria-hidden="true"></i>',
     description: "Browse all letters and pictographs",
@@ -86,6 +100,8 @@ export const LEARN_TABS: Section[] = [
   },
   {
     id: "guide",
+    labelKey: "tab_learn_guide",
+    descKey: "tab_desc_learn_guide",
     label: "Guide",
     icon: '<i class="fas fa-book" aria-hidden="true"></i>',
     description: "Level 1 interactive textbook",
@@ -99,6 +115,8 @@ export const LEARN_TABS: Section[] = [
 export const BROWSE_TABS: Section[] = [
   {
     id: "gallery",
+    labelKey: "tab_browse_gallery",
+    descKey: "tab_desc_browse_gallery",
     label: "Gallery",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
     description: "Browse community sequences",
@@ -107,6 +125,8 @@ export const BROWSE_TABS: Section[] = [
   },
   {
     id: "collections",
+    labelKey: "tab_browse_collections",
+    descKey: "tab_desc_browse_collections",
     label: "Collections",
     icon: '<i class="fas fa-folder" aria-hidden="true"></i>',
     description: "Browse curated playlists",
@@ -115,6 +135,8 @@ export const BROWSE_TABS: Section[] = [
   },
   {
     id: "creators",
+    labelKey: "tab_browse_creators",
+    descKey: "tab_desc_browse_creators",
     label: "Creators",
     icon: '<i class="fas fa-users" aria-hidden="true"></i>',
     description: "Find creators and their work",
@@ -123,6 +145,8 @@ export const BROWSE_TABS: Section[] = [
   },
   {
     id: "hall-of-shame",
+    labelKey: "tab_browse_hall_of_shame",
+    descKey: "tab_desc_browse_hall_of_shame",
     label: "Hall of Shame",
     icon: '<i class="fas fa-skull" aria-hidden="true"></i>',
     description: "Naughty words and crude humor",
@@ -147,6 +171,8 @@ export const EXPLORE_TABS = BROWSE_TABS;
 export const INBOX_TABS: Section[] = [
   {
     id: "messages",
+    labelKey: "tab_inbox_messages",
+    descKey: "tab_desc_inbox_messages",
     label: "Messages",
     icon: '<i class="fas fa-envelope" aria-hidden="true"></i>',
     description: "Conversations with other users",
@@ -155,6 +181,8 @@ export const INBOX_TABS: Section[] = [
   },
   {
     id: "notifications",
+    labelKey: "tab_inbox_notifications",
+    descKey: "tab_desc_inbox_notifications",
     label: "Notifications",
     icon: '<i class="fas fa-bell" aria-hidden="true"></i>',
     description: "System alerts and updates",
@@ -167,6 +195,8 @@ export const INBOX_TABS: Section[] = [
 export const COMMUNITY_TABS: Section[] = [
   {
     id: "creators",
+    labelKey: "tab_community_creators",
+    descKey: "tab_desc_community_creators",
     label: "Creators",
     icon: '<i class="fas fa-users" aria-hidden="true"></i>',
     description: "Find creators and their work",
@@ -175,6 +205,8 @@ export const COMMUNITY_TABS: Section[] = [
   },
   {
     id: "challenges",
+    labelKey: "tab_community_challenges",
+    descKey: "tab_desc_community_challenges",
     label: "Challenges",
     icon: '<i class="fas fa-bolt" aria-hidden="true"></i>',
     description: "Daily and weekly challenges",
@@ -183,6 +215,8 @@ export const COMMUNITY_TABS: Section[] = [
   },
   {
     id: "support",
+    labelKey: "tab_community_support",
+    descKey: "tab_desc_community_support",
     label: "Support",
     icon: '<i class="fas fa-heart" aria-hidden="true"></i>',
     description: "Support TKA development",
@@ -206,6 +240,8 @@ export const COLLECTION_TABS = LIBRARY_TABS; // Legacy name
 export const COMPOSE_TABS: Section[] = [
   {
     id: "arrange",
+    labelKey: "tab_compose_arrange",
+    descKey: "tab_desc_compose_arrange",
     label: "Arrange",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
     description: "Arrange sequences into compositions",
@@ -214,6 +250,8 @@ export const COMPOSE_TABS: Section[] = [
   },
   {
     id: "browse",
+    labelKey: "tab_compose_browse",
+    descKey: "tab_desc_compose_browse",
     label: "Browse",
     icon: '<i class="fas fa-film" aria-hidden="true"></i>',
     description: "Browse saved compositions",
@@ -222,6 +260,8 @@ export const COMPOSE_TABS: Section[] = [
   },
   {
     id: "timeline",
+    labelKey: "tab_compose_timeline",
+    descKey: "tab_desc_compose_timeline",
     label: "Timeline",
     icon: '<i class="fas fa-timeline" aria-hidden="true"></i>',
     description: "DAW-style timeline editor for precise clip arrangement",
@@ -234,6 +274,8 @@ export const COMPOSE_TABS: Section[] = [
 export const TRAIN_TABS: Section[] = [
   {
     id: "practice",
+    labelKey: "tab_train_practice",
+    descKey: "tab_desc_train_practice",
     label: "Practice",
     icon: '<i class="fas fa-dumbbell" aria-hidden="true"></i>',
     description: "Free practice with adaptive, step, and timed modes",
@@ -241,6 +283,8 @@ export const TRAIN_TABS: Section[] = [
   },
   {
     id: "challenges",
+    labelKey: "tab_train_challenges",
+    descKey: "tab_desc_train_challenges",
     label: "Challenges",
     icon: '<i class="fas fa-trophy" aria-hidden="true"></i>',
     description: "Structured challenges with XP rewards",
@@ -248,6 +292,8 @@ export const TRAIN_TABS: Section[] = [
   },
   {
     id: "progress",
+    labelKey: "tab_train_progress",
+    descKey: "tab_desc_train_progress",
     label: "Progress",
     icon: '<i class="fas fa-chart-line" aria-hidden="true"></i>',
     description: "View stats and performance history",
@@ -262,6 +308,8 @@ export const ABOUT_TABS: Section[] = [];
 export const ACCOUNT_TABS: Section[] = [
   {
     id: "overview",
+    labelKey: "tab_account_overview",
+    descKey: "tab_desc_account_overview",
     label: "Overview",
     icon: '<i class="fas fa-user" aria-hidden="true"></i>',
     description: "Profile info, stats, and achievements",
@@ -270,6 +318,8 @@ export const ACCOUNT_TABS: Section[] = [
   },
   {
     id: "library",
+    labelKey: "tab_account_library",
+    descKey: "tab_desc_account_library",
     label: "Library",
     icon: '<i class="fas fa-book" aria-hidden="true"></i>',
     description: "Your sequences, favorites, and collections",
@@ -278,6 +328,8 @@ export const ACCOUNT_TABS: Section[] = [
   },
   {
     id: "preferences",
+    labelKey: "tab_account_preferences",
+    descKey: "tab_desc_account_preferences",
     label: "Preferences",
     icon: '<i class="fas fa-sliders-h" aria-hidden="true"></i>',
     description: "App settings and customization",
@@ -286,6 +338,8 @@ export const ACCOUNT_TABS: Section[] = [
   },
   {
     id: "security",
+    labelKey: "tab_account_security",
+    descKey: "tab_desc_account_security",
     label: "Security",
     icon: '<i class="fas fa-shield-alt" aria-hidden="true"></i>',
     description: "Sign in, accounts, and privacy",
@@ -305,6 +359,8 @@ export const EDIT_TABS: Section[] = [];
 export const ML_TRAINING_TABS: Section[] = [
   {
     id: "capture",
+    labelKey: "tab_ml_training_capture",
+    descKey: "tab_desc_ml_training_capture",
     label: "Capture",
     icon: '<i class="fas fa-video" aria-hidden="true"></i>',
     description: "Record prop training data",
@@ -313,6 +369,8 @@ export const ML_TRAINING_TABS: Section[] = [
   },
   {
     id: "sessions",
+    labelKey: "tab_ml_training_sessions",
+    descKey: "tab_desc_ml_training_sessions",
     label: "Sessions",
     icon: '<i class="fas fa-folder-open" aria-hidden="true"></i>',
     description: "Manage captured sessions",
@@ -325,6 +383,8 @@ export const ML_TRAINING_TABS: Section[] = [
 export const ADMIN_TABS: Section[] = [
   {
     id: "users",
+    labelKey: "tab_admin_users",
+    descKey: "tab_desc_admin_users",
     label: "Users",
     icon: '<i class="fas fa-users" aria-hidden="true"></i>',
     description: "Manage users and view activity",
@@ -333,6 +393,8 @@ export const ADMIN_TABS: Section[] = [
   },
   {
     id: "challenges",
+    labelKey: "tab_admin_challenges",
+    descKey: "tab_desc_admin_challenges",
     label: "Challenges",
     icon: '<i class="fas fa-calendar-day" aria-hidden="true"></i>',
     description: "Manage daily challenges",
@@ -341,6 +403,8 @@ export const ADMIN_TABS: Section[] = [
   },
   {
     id: "train-challenges",
+    labelKey: "tab_admin_train_challenges",
+    descKey: "tab_desc_admin_train_challenges",
     label: "Train",
     icon: '<i class="fas fa-dumbbell" aria-hidden="true"></i>',
     description: "Manage training challenges",
@@ -349,6 +413,8 @@ export const ADMIN_TABS: Section[] = [
   },
   {
     id: "flags",
+    labelKey: "tab_admin_flags",
+    descKey: "tab_desc_admin_flags",
     label: "Flags",
     icon: '<i class="fas fa-flag" aria-hidden="true"></i>',
     description: "Manage feature flags and access control",
@@ -357,6 +423,8 @@ export const ADMIN_TABS: Section[] = [
   },
   {
     id: "announcements",
+    labelKey: "tab_admin_announcements",
+    descKey: "tab_desc_admin_announcements",
     label: "Announcements",
     icon: '<i class="fas fa-bullhorn" aria-hidden="true"></i>',
     description: "Create and manage system announcements",
@@ -365,6 +433,8 @@ export const ADMIN_TABS: Section[] = [
   },
   {
     id: "loop-labeler",
+    labelKey: "tab_admin_loop_labeler",
+    descKey: "tab_desc_admin_loop_labeler",
     label: "LOOP Labeler",
     icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
     description: "Label sequences with LOOP patterns",
@@ -373,6 +443,8 @@ export const ADMIN_TABS: Section[] = [
   },
   {
     id: "analytics",
+    labelKey: "tab_admin_analytics",
+    descKey: "tab_desc_admin_analytics",
     label: "Analytics",
     icon: '<i class="fas fa-chart-pie" aria-hidden="true"></i>',
     description: "Product analytics via PostHog",
@@ -385,6 +457,8 @@ export const ADMIN_TABS: Section[] = [
 export const SETTINGS_TABS: Section[] = [
   {
     id: "visibility",
+    labelKey: "tab_settings_visibility",
+    descKey: "tab_desc_settings_visibility",
     label: "Visibility",
     icon: '<i class="fas fa-eye" aria-hidden="true"></i>',
     description: "Pictograph, animation, and card display settings",
@@ -393,6 +467,8 @@ export const SETTINGS_TABS: Section[] = [
   },
   {
     id: "profile",
+    labelKey: "tab_settings_profile",
+    descKey: "tab_desc_settings_profile",
     label: "Profile",
     icon: '<i class="fas fa-user" aria-hidden="true"></i>',
     description: "Account and profile settings",
@@ -401,6 +477,8 @@ export const SETTINGS_TABS: Section[] = [
   },
   {
     id: "release-notes",
+    labelKey: "tab_settings_release_notes",
+    descKey: "tab_desc_settings_release_notes",
     label: "Release Notes",
     icon: '<i class="fas fa-gift" aria-hidden="true"></i>',
     description: "Version history and release notes",
@@ -409,6 +487,8 @@ export const SETTINGS_TABS: Section[] = [
   },
   {
     id: "props",
+    labelKey: "tab_settings_props",
+    descKey: "tab_desc_settings_props",
     label: "Props",
     icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
     description: "Prop type preferences",
@@ -417,6 +497,8 @@ export const SETTINGS_TABS: Section[] = [
   },
   {
     id: "theme",
+    labelKey: "tab_settings_theme",
+    descKey: "tab_desc_settings_theme",
     label: "Theme",
     icon: '<i class="fas fa-palette" aria-hidden="true"></i>',
     description: "Theme and visual settings",
@@ -425,6 +507,8 @@ export const SETTINGS_TABS: Section[] = [
   },
   {
     id: "keyboard",
+    labelKey: "tab_settings_keyboard",
+    descKey: "tab_desc_settings_keyboard",
     label: "Keyboard",
     icon: '<i class="fas fa-keyboard" aria-hidden="true"></i>',
     description: "Keyboard shortcuts and customization",
@@ -433,6 +517,8 @@ export const SETTINGS_TABS: Section[] = [
   },
   {
     id: "notifications",
+    labelKey: "tab_settings_notifications",
+    descKey: "tab_desc_settings_notifications",
     label: "Notifications",
     icon: '<i class="fas fa-bell" aria-hidden="true"></i>',
     description: "Push notifications and alert preferences",
@@ -441,6 +527,8 @@ export const SETTINGS_TABS: Section[] = [
   },
   {
     id: "preferences",
+    labelKey: "tab_settings_preferences",
+    descKey: "tab_desc_settings_preferences",
     label: "Preferences",
     icon: '<i class="fas fa-sliders" aria-hidden="true"></i>',
     description: "Workflow and behavior preferences",
@@ -449,6 +537,8 @@ export const SETTINGS_TABS: Section[] = [
   },
   {
     id: "language",
+    labelKey: "tab_settings_language",
+    descKey: "tab_desc_settings_language",
     label: "Language",
     icon: '<i class="fas fa-globe" aria-hidden="true"></i>',
     description: "App language and translations",
@@ -463,6 +553,8 @@ export const SETTINGS_TABS: Section[] = [
 export const FEEDBACK_TABS: Section[] = [
   {
     id: "submit",
+    labelKey: "tab_feedback_submit",
+    descKey: "tab_desc_feedback_submit",
     label: "Submit",
     icon: '<i class="fas fa-paper-plane" aria-hidden="true"></i>',
     description: "Submit feedback, bug reports, or feature requests",
@@ -471,6 +563,8 @@ export const FEEDBACK_TABS: Section[] = [
   },
   {
     id: "my-feedback",
+    labelKey: "tab_feedback_my_feedback",
+    descKey: "tab_desc_feedback_my_feedback",
     label: "My Feedback",
     icon: '<i class="fas fa-list-check" aria-hidden="true"></i>',
     description: "Track your submitted feedback and confirmations",
@@ -479,6 +573,8 @@ export const FEEDBACK_TABS: Section[] = [
   },
   {
     id: "tracker",
+    labelKey: "tab_feedback_tracker",
+    descKey: "tab_desc_feedback_tracker",
     label: "Tracker",
     icon: '<i class="fas fa-binoculars" aria-hidden="true"></i>',
     description: "See reported bugs, features in progress, and recent fixes",
@@ -487,6 +583,8 @@ export const FEEDBACK_TABS: Section[] = [
   },
   {
     id: "manage",
+    labelKey: "tab_feedback_manage",
+    descKey: "tab_desc_feedback_manage",
     label: "Manage",
     icon: '<i class="fas fa-inbox" aria-hidden="true"></i>',
     description: "Review and manage submitted feedback",
@@ -500,6 +598,8 @@ export const FEEDBACK_TABS: Section[] = [
 export const WATCH_TABS: Section[] = [
   {
     id: "feed",
+    labelKey: "tab_watch_feed",
+    descKey: "tab_desc_watch_feed",
     label: "Feed",
     icon: '<i class="fas fa-stream" aria-hidden="true"></i>',
     description: "Videos from the community",
@@ -508,6 +608,8 @@ export const WATCH_TABS: Section[] = [
   },
   {
     id: "library",
+    labelKey: "tab_watch_library",
+    descKey: "tab_desc_watch_library",
     label: "Library",
     icon: '<i class="fas fa-photo-video" aria-hidden="true"></i>',
     description: "Your videos and saved performances",
@@ -520,6 +622,8 @@ export const WATCH_TABS: Section[] = [
 export const ARENA_TABS: Section[] = [
   {
     id: "battle",
+    labelKey: "tab_arena_battle",
+    descKey: "tab_desc_arena_battle",
     label: "Battle",
     icon: '<i class="fas fa-crosshairs" aria-hidden="true"></i>',
     description: "Vote on head-to-head matchups",
@@ -528,6 +632,8 @@ export const ARENA_TABS: Section[] = [
   },
   {
     id: "leaderboard",
+    labelKey: "tab_arena_leaderboard",
+    descKey: "tab_desc_arena_leaderboard",
     label: "Leaderboard",
     icon: '<i class="fas fa-ranking-star" aria-hidden="true"></i>',
     description: "Top-rated sequences ranked by the community",
@@ -536,6 +642,8 @@ export const ARENA_TABS: Section[] = [
   },
   {
     id: "stats",
+    labelKey: "tab_arena_stats",
+    descKey: "tab_desc_arena_stats",
     label: "Stats",
     icon: '<i class="fas fa-chart-bar" aria-hidden="true"></i>',
     description: "Your voting history and arena statistics",
@@ -548,6 +656,8 @@ export const ARENA_TABS: Section[] = [
 export const CHOREO_CARD_TABS: Section[] = [
   {
     id: "catalogs",
+    labelKey: "tab_choreo_card_catalogs",
+    descKey: "tab_desc_choreo_card_catalogs",
     label: "Catalogs",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
     description: "Browse sequence catalogs",
@@ -556,6 +666,8 @@ export const CHOREO_CARD_TABS: Section[] = [
   },
   {
     id: "designer",
+    labelKey: "tab_choreo_card_designer",
+    descKey: "tab_desc_choreo_card_designer",
     label: "Card Designer",
     icon: '<i class="fas fa-pen-ruler" aria-hidden="true"></i>',
     description: "Design custom choreo cards",
@@ -564,6 +676,8 @@ export const CHOREO_CARD_TABS: Section[] = [
   },
   {
     id: "scan-activity",
+    labelKey: "tab_choreo_card_scan_activity",
+    descKey: "tab_desc_choreo_card_scan_activity",
     label: "Scan Activity",
     icon: '<i class="fas fa-satellite-dish" aria-hidden="true"></i>',
     description: "Live feed of Choreo Card scans worldwide",
@@ -572,6 +686,8 @@ export const CHOREO_CARD_TABS: Section[] = [
   },
   {
     id: "theme-lab",
+    labelKey: "tab_choreo_card_theme_lab",
+    descKey: "tab_desc_choreo_card_theme_lab",
     label: "Theme Lab",
     icon: '<i class="fas fa-palette" aria-hidden="true"></i>',
     description: "Compare card back theme variations side by side",
@@ -580,6 +696,8 @@ export const CHOREO_CARD_TABS: Section[] = [
   },
   {
     id: "releaser",
+    labelKey: "tab_choreo_card_releaser",
+    descKey: "tab_desc_choreo_card_releaser",
     label: "Deck Releaser",
     icon: '<i class="fas fa-stamp" aria-hidden="true"></i>',
     description: "Compose and release unique physical card decks",
@@ -592,6 +710,8 @@ export const CHOREO_CARD_TABS: Section[] = [
 export const FESTIVAL_TABS: Section[] = [
   {
     id: "discover",
+    labelKey: "tab_festivals_discover",
+    descKey: "tab_desc_festivals_discover",
     label: "Discover",
     icon: '<i class="fas fa-compass" aria-hidden="true"></i>',
     description: "Browse flow festivals worldwide",
@@ -600,6 +720,8 @@ export const FESTIVAL_TABS: Section[] = [
   },
   {
     id: "map",
+    labelKey: "tab_festivals_map",
+    descKey: "tab_desc_festivals_map",
     label: "Map",
     icon: '<i class="fas fa-globe" aria-hidden="true"></i>',
     description: "Festival locations worldwide",
@@ -608,6 +730,8 @@ export const FESTIVAL_TABS: Section[] = [
   },
   {
     id: "calendar",
+    labelKey: "tab_festivals_calendar",
+    descKey: "tab_desc_festivals_calendar",
     label: "Calendar",
     icon: '<i class="fas fa-calendar-alt" aria-hidden="true"></i>',
     description: "Tracked festival dates and deadlines",
@@ -616,6 +740,8 @@ export const FESTIVAL_TABS: Section[] = [
   },
   {
     id: "portfolio",
+    labelKey: "tab_festivals_portfolio",
+    descKey: "tab_desc_festivals_portfolio",
     label: "Portfolio",
     icon: '<i class="fas fa-briefcase" aria-hidden="true"></i>',
     description: "Workshops, acts, bios, and application materials",
@@ -627,6 +753,8 @@ export const FESTIVAL_TABS: Section[] = [
 export const RETRO_TABS: Section[] = [
   {
     id: "dos",
+    labelKey: "tab_retro_dos",
+    descKey: "tab_desc_retro_dos",
     label: "1989",
     icon: '<i class="fas fa-terminal" aria-hidden="true"></i>',
     description: "DOS-era terminal with SCRIBE notation utility",
@@ -635,6 +763,8 @@ export const RETRO_TABS: Section[] = [
   },
   {
     id: "desktop",
+    labelKey: "tab_retro_desktop",
+    descKey: "tab_desc_retro_desktop",
     label: "1995",
     icon: '<i class="fas fa-desktop" aria-hidden="true"></i>',
     description: "Windows 95-era desktop environment",
@@ -643,6 +773,8 @@ export const RETRO_TABS: Section[] = [
   },
   {
     id: "timeline",
+    labelKey: "tab_retro_timeline",
+    descKey: "tab_desc_retro_timeline",
     label: "Pictograph Timeline",
     icon: '<i class="fas fa-clock-rotate-left" aria-hidden="true"></i>',
     description: "Compare pictographs across eras: 1989, 1995, 2026",
@@ -651,6 +783,8 @@ export const RETRO_TABS: Section[] = [
   },
   {
     id: "history",
+    labelKey: "tab_retro_history",
+    descKey: "tab_desc_retro_history",
     label: "Pictograph History",
     icon: '<i class="fas fa-scroll" aria-hidden="true"></i>',
     description: "TKA notation across 40,000 years of art history",
@@ -662,6 +796,8 @@ export const RETRO_TABS: Section[] = [
 export const ARCHIVE_TABS: Section[] = [
   {
     id: "play",
+    labelKey: "tab_museum_play",
+    descKey: "tab_desc_museum_play",
     label: "Play",
     icon: '<i class="fas fa-gamepad" aria-hidden="true"></i>',
     description: "Walk the museum in top-down or 3D",
@@ -670,6 +806,8 @@ export const ARCHIVE_TABS: Section[] = [
   },
   {
     id: "edit",
+    labelKey: "tab_museum_edit",
+    descKey: "tab_desc_museum_edit",
     label: "Edit",
     icon: '<i class="fas fa-pen" aria-hidden="true"></i>',
     description: "Edit the museum floor plan",
@@ -678,6 +816,8 @@ export const ARCHIVE_TABS: Section[] = [
   },
   {
     id: "showroom",
+    labelKey: "tab_museum_showroom",
+    descKey: "tab_desc_museum_showroom",
     label: "Showroom",
     icon: '<i class="fas fa-cubes" aria-hidden="true"></i>',
     description: "Preview all available 3D props and textures",
@@ -686,6 +826,8 @@ export const ARCHIVE_TABS: Section[] = [
   },
   {
     id: "3p-test",
+    labelKey: "tab_museum_3p_test",
+    descKey: "tab_desc_museum_3p_test",
     label: "3P Test",
     icon: '<i class="fas fa-flask" aria-hidden="true"></i>',
     description: "Test third-person character controller",
@@ -699,6 +841,8 @@ export const ARCHIVE_TABS: Section[] = [
 export const LEVELS_TABS: Section[] = [
   {
     id: "level4",
+    labelKey: "tab_levels_level4",
+    descKey: "tab_desc_levels_level4",
     label: "Level 4",
     icon: '<i class="fas fa-bullseye" aria-hidden="true"></i>',
     description: "Centric positions (Tau & Terra)",
@@ -707,6 +851,8 @@ export const LEVELS_TABS: Section[] = [
   },
   {
     id: "level5",
+    labelKey: "tab_levels_level5",
+    descKey: "tab_desc_levels_level5",
     label: "Level 5",
     icon: '<i class="fas fa-bezier-curve" aria-hidden="true"></i>',
     description: "Skewed positions (Zeta & Eta)",
@@ -715,6 +861,8 @@ export const LEVELS_TABS: Section[] = [
   },
   {
     id: "level6",
+    labelKey: "tab_levels_level6",
+    descKey: "tab_desc_levels_level6",
     label: "Level 6",
     icon: '<i class="fas fa-magnet" aria-hidden="true"></i>',
     description: "Interradial orientations (completes 2D mastery)",
@@ -723,6 +871,8 @@ export const LEVELS_TABS: Section[] = [
   },
   {
     id: "conjoined-grid",
+    labelKey: "tab_levels_conjoined_grid",
+    descKey: "tab_desc_levels_conjoined_grid",
     label: "Conjoined Grid",
     icon: '<i class="fas fa-link" aria-hidden="true"></i>',
     description: "N-grid topology explorer with real pictograph data",
@@ -731,6 +881,8 @@ export const LEVELS_TABS: Section[] = [
   },
   {
     id: "poi",
+    labelKey: "tab_levels_poi",
+    descKey: "tab_desc_levels_poi",
     label: "Poi",
     icon: '<i class="fas fa-circle-notch" aria-hidden="true"></i>',
     description: "Poi constraints with VTG terminology",
@@ -742,6 +894,8 @@ export const LEVELS_TABS: Section[] = [
 export const HAND_PATH_TABS: Section[] = [
   {
     id: "hand-path-explorer",
+    labelKey: "tab_hand_paths_hand_path_explorer",
+    descKey: "tab_desc_hand_paths_hand_path_explorer",
     label: "Path Explorer",
     icon: '<i class="fas fa-route" aria-hidden="true"></i>',
     description: "Browse unique hand paths across your sequence library",
@@ -750,6 +904,8 @@ export const HAND_PATH_TABS: Section[] = [
   },
   {
     id: "hand-path-builder",
+    labelKey: "tab_hand_paths_hand_path_builder",
+    descKey: "tab_desc_hand_paths_hand_path_builder",
     label: "Hand Path Builder",
     icon: '<i class="fas fa-draw-polygon" aria-hidden="true"></i>',
     description: "Tap grid locations to draw spatial hand paths and save them to the library",
@@ -762,6 +918,8 @@ export const HAND_PATH_TABS: Section[] = [
 export const VIDEO_TABS: Section[] = [
   {
     id: "video-trails",
+    labelKey: "tab_video_video_trails",
+    descKey: "tab_desc_video_video_trails",
     label: "Video Trails",
     icon: '<i class="fas fa-magic-wand-sparkles" aria-hidden="true"></i>',
     description: "Detect prop endpoints in video, apply fire/LED/trail effects, build training data",
@@ -770,6 +928,8 @@ export const VIDEO_TABS: Section[] = [
   },
   {
     id: "video-lab",
+    labelKey: "tab_video_video_lab",
+    descKey: "tab_desc_video_video_lab",
     label: "Video Lab",
     icon: '<i class="fas fa-film" aria-hidden="true"></i>',
     description: "Beat mapping, BPM-synced playback, and video-to-notation alignment",
@@ -778,6 +938,8 @@ export const VIDEO_TABS: Section[] = [
   },
   {
     id: "skel2tka",
+    labelKey: "tab_video_skel2tka",
+    descKey: "tab_desc_video_skel2tka",
     label: "Skel2TKA",
     icon: '<i class="fas fa-video" aria-hidden="true"></i>',
     description: "Video-to-TKA notation pipeline",
@@ -789,6 +951,8 @@ export const VIDEO_TABS: Section[] = [
 export const SOCIAL_TABS: Section[] = [
   {
     id: "community",
+    labelKey: "tab_social_community",
+    descKey: "tab_desc_social_community",
     label: "Community",
     icon: '<i class="fas fa-globe" aria-hidden="true"></i>',
     description: "Global TKA community map",
@@ -797,6 +961,8 @@ export const SOCIAL_TABS: Section[] = [
   },
   {
     id: "connect",
+    labelKey: "tab_social_connect",
+    descKey: "tab_desc_social_connect",
     label: "Connect",
     icon: '<i class="fas fa-users" aria-hidden="true"></i>',
     description: "Sync with nearby spinners",
@@ -811,6 +977,8 @@ export const LAB_TABS: Section[] = [
   // avatar removed (Mar 2026)
   {
     id: "themes",
+    labelKey: "tab_lab_themes",
+    descKey: "tab_desc_lab_themes",
     label: "Themes",
     icon: '<i class="fas fa-palette" aria-hidden="true"></i>',
     description: "Unified theme designer — 2D backgrounds and 3D scenes",
@@ -820,6 +988,8 @@ export const LAB_TABS: Section[] = [
   // community graduated to Social module (Mar 2026)
   {
     id: "composition",
+    labelKey: "tab_lab_composition",
+    descKey: "tab_desc_lab_composition",
     label: "Composition",
     icon: '<i class="fas fa-vector-square" aria-hidden="true"></i>',
     description: "Composition layout engine experiment",
@@ -830,6 +1000,8 @@ export const LAB_TABS: Section[] = [
   // contact-ball removed (Mar 2026)
   {
     id: "disassemble",
+    labelKey: "tab_lab_disassemble",
+    descKey: "tab_desc_lab_disassemble",
     label: "Disassemble",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
     description: "Isolate and study individual hand paths",
@@ -838,6 +1010,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "duration",
+    labelKey: "tab_lab_duration",
+    descKey: "tab_desc_lab_duration",
     label: "Duration",
     icon: '<i class="fas fa-wave-square" aria-hidden="true"></i>',
     description: "Visual duration template experimenter",
@@ -846,6 +1020,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "effects",
+    labelKey: "tab_lab_effects",
+    descKey: "tab_desc_lab_effects",
     label: "Effects",
     icon: '<i class="fas fa-fire" aria-hidden="true"></i>',
     description: "Visual effects: trails, fire, LED overlays",
@@ -855,6 +1031,8 @@ export const LAB_TABS: Section[] = [
   // hand-path-builder graduated to Hand Paths module (Mar 2026)
   {
     id: "hand-pose",
+    labelKey: "tab_lab_hand_pose",
+    descKey: "tab_desc_lab_hand_pose",
     label: "Hand Pose",
     icon: '<i class="fas fa-hand-paper" aria-hidden="true"></i>',
     description: "Author finger grip poses for 3D avatars",
@@ -863,6 +1041,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "landing",
+    labelKey: "tab_lab_landing",
+    descKey: "tab_desc_lab_landing",
     label: "Landing",
     icon: '<i class="fas fa-rocket" aria-hidden="true"></i>',
     description: "Landing page preview and iteration",
@@ -877,6 +1057,8 @@ export const LAB_TABS: Section[] = [
   // hand-path-explorer graduated to Hand Paths module (Mar 2026)
   {
     id: "path-mandalas",
+    labelKey: "tab_lab_path_mandalas",
+    descKey: "tab_desc_lab_path_mandalas",
     label: "Path Mandalas",
     icon: '<i class="fas fa-atom" style="color: #a78bfa;" aria-hidden="true"></i>',
     description: "Tune tip-path mandala overlap rendering with live sliders",
@@ -885,6 +1067,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "phrase-effort",
+    labelKey: "tab_lab_phrase_effort",
+    descKey: "tab_desc_lab_phrase_effort",
     label: "Phrase Effort",
     icon: '<i class="fas fa-music" aria-hidden="true"></i>',
     description: "Paint effort qualities across beats to shape how a sequence moves",
@@ -894,6 +1078,8 @@ export const LAB_TABS: Section[] = [
   // poi graduated to Levels module (Mar 2026)
   {
     id: "prop-buttons",
+    labelKey: "tab_lab_prop_buttons",
+    descKey: "tab_desc_lab_prop_buttons",
     label: "Prop Buttons",
     icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
     description: "Paired prop composition tuning for buttons",
@@ -905,6 +1091,8 @@ export const LAB_TABS: Section[] = [
   // skel2tka graduated to Video module (Mar 2026)
   {
     id: "trigrid",
+    labelKey: "tab_lab_trigrid",
+    descKey: "tab_desc_lab_trigrid",
     label: "Trigrid",
     icon: '<i class="fas fa-draw-polygon" aria-hidden="true"></i>',
     description: "3-point equilateral triangle grid (triad's native grid)",
@@ -914,6 +1102,8 @@ export const LAB_TABS: Section[] = [
   // video-lab, video-trails graduated to Video module (Mar 2026)
   {
     id: "voice",
+    labelKey: "tab_lab_voice",
+    descKey: "tab_desc_lab_voice",
     label: "Voice",
     icon: '<i class="fas fa-microphone" aria-hidden="true"></i>',
     description: "Test Hey Tika voice control",
@@ -922,6 +1112,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "vtg",
+    labelKey: "tab_lab_vtg",
+    descKey: "tab_desc_lab_vtg",
     label: "VTG",
     icon: '<i class="fas fa-circle-half-stroke" aria-hidden="true"></i>',
     description: "Map VTG modes to TKA letters and terminology",
@@ -930,6 +1122,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "village",
+    labelKey: "tab_lab_village",
+    descKey: "tab_desc_lab_village",
     label: "Village",
     icon: '<i class="fas fa-users" style="color: #e8a87c;" aria-hidden="true"></i>',
     description: "Generational cultural simulation",
@@ -938,6 +1132,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "pov-pattern",
+    labelKey: "tab_lab_pov_pattern",
+    descKey: "tab_desc_lab_pov_pattern",
     label: "POV Pattern",
     icon: '<i class="fas fa-lightbulb" style="color: #06b6d4;" aria-hidden="true"></i>',
     description: "LED strip pattern engine for pixel poi",
@@ -946,6 +1142,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "collision-lab",
+    labelKey: "tab_lab_collision_lab",
+    descKey: "tab_desc_lab_collision_lab",
     label: "Collision Lab",
     icon: '<i class="fas fa-shield-halved" style="color: #ef4444;" aria-hidden="true"></i>',
     description: "Catalog and label 3D poses for collision safety",
@@ -954,6 +1152,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "spatial-lab",
+    labelKey: "tab_lab_spatial_lab",
+    descKey: "tab_desc_lab_spatial_lab",
     label: "Spatial Lab",
     icon: '<i class="fas fa-eye" style="color: #6a6aff;" aria-hidden="true"></i>',
     description: "Bird's eye exploration of body rotation and arm reachability",
@@ -962,6 +1162,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "stickers",
+    labelKey: "tab_lab_stickers",
+    descKey: "tab_desc_lab_stickers",
     label: "Stickers",
     icon: '<i class="fas fa-circle" aria-hidden="true"></i>',
     description: "Turn LOOP mandalas into printable stickers",
@@ -970,6 +1172,8 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "coral-lab",
+    labelKey: "tab_lab_coral_lab",
+    descKey: "tab_desc_lab_coral_lab",
     label: "Coral Lab",
     icon: '<i class="fas fa-seedling" aria-hidden="true"></i>',
     description: "Procedural coral prototyping with EZ-Tree",
@@ -985,6 +1189,8 @@ export const LAB_TABS: Section[] = [
 export const STAGE_TABS: Section[] = [
   {
     id: "editor",
+    labelKey: "tab_stage_editor",
+    descKey: "tab_desc_stage_editor",
     label: "Editor",
     icon: '<i class="fas fa-map" aria-hidden="true"></i>',
     description: "Formation editor and timeline",
@@ -996,6 +1202,8 @@ export const STAGE_TABS: Section[] = [
 export const MANDALA_TABS: Section[] = [
   {
     id: "collection",
+    labelKey: "tab_mandala_collection",
+    descKey: "tab_desc_mandala_collection",
     label: "Collection",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
     description: "Saved sequence mandalas",
@@ -1004,6 +1212,8 @@ export const MANDALA_TABS: Section[] = [
   },
   {
     id: "meditate",
+    labelKey: "tab_mandala_meditate",
+    descKey: "tab_desc_mandala_meditate",
     label: "Meditate",
     icon: '<i class="fas fa-spa" aria-hidden="true"></i>',
     description: "Meditative mandala visualization",
@@ -1012,6 +1222,8 @@ export const MANDALA_TABS: Section[] = [
   },
   {
     id: "export",
+    labelKey: "tab_mandala_export",
+    descKey: "tab_desc_mandala_export",
     label: "Export",
     icon: '<i class="fas fa-download" aria-hidden="true"></i>',
     description: "Export mandalas as images or prints",

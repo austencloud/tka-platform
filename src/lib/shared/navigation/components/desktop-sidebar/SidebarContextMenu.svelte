@@ -12,7 +12,7 @@
   import { getAllTabsForModule, hideTab, showTab } from "../../getSidebarTabToggler";
 import type { TabVisibilityInfo } from "../../services/contracts/types";
   import type { ModuleId } from "../../domain/types";
-  import { translateTab } from "$lib/shared/i18n/translate";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
   import { featureFlagService, featureFlagState } from "../../../auth/services/PostHogFeatureFlagService.svelte";
   import { MODULE_DEFINITIONS } from "../../config/module-definitions";
@@ -99,7 +99,7 @@ import type { TabVisibilityInfo } from "../../services/contracts/types";
       ];
 
       for (const info of tabInfos) {
-        const label = translateTab(menuState.moduleId, info.section.id, info.section.label);
+        const label = t(info.section.labelKey);
         items.push({
           id: `tab-${info.section.id}`,
           label,

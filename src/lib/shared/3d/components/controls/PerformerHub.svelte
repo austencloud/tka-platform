@@ -8,10 +8,11 @@
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
-  const hasSelection = $derived(selectedIndex !== null);
+  const isAllMode = $derived(selectedIndex === null);
+  const showDetail = $derived(true);
   const performers = $derived(viewer.performerManager.performers);
   const performerColor = $derived(
-    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#6b7280",
+    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff",
   );
 
   let detailCollapsed = $state(false);
@@ -31,11 +32,11 @@
 
 {#if performers.length >= 1}
   <div class="hub-anchor" style:--panel-color={performerColor}>
-    <div class="spine-panel" class:has-detail={hasSelection && !detailCollapsed}>
+    <div class="spine-panel" class:has-detail={showDetail && !detailCollapsed}>
       <PerformerSpine />
     </div>
 
-    {#if hasSelection && !detailCollapsed}
+    {#if showDetail && !detailCollapsed}
       <div
         class="detail-panel"
         transition:slide={{ axis: "x", duration: 260, easing: cubicOut }}

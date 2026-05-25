@@ -114,7 +114,12 @@ export const TRAIL_PRESETS: EffectPreset[] = [
     previewColor: "custom",
     apply: (state) => {
       const colors = loadCustomTrailColors();
-      applyCustomTrailColors(state, colors);
+      applyTrail(state, "trail-custom", {
+        thickness: 5,
+        brightness: 1.0,
+        blueColor: colors.blue,
+        redColor: colors.red,
+      });
     },
   },
 ];
