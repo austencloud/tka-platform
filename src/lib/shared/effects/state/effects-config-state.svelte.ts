@@ -35,6 +35,11 @@ import { getSceneUndoManager } from "$lib/shared/3d/undo/getSceneUndoManager";
 
 const STORAGE_KEY = "tka_effects_config";
 
+const EFFECT_IDS = [
+  "trails", "fire", "led", "charcoal", "zap", "sparkles", "echo", "bloom",
+  "water", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
+] as const;
+
 function loadStoredConfig(): EffectsConfig | null {
   if (typeof window === "undefined") return null;
   try {
@@ -75,6 +80,10 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
       ? { ...base.activePresets, ...patch.activePresets }
       : base.activePresets,
     tipEffectMap: patch.tipEffectMap ?? base.tipEffectMap,
+    activeEffect: patch.activeEffect ?? base.activeEffect,
+    effectLayerOverrides: patch.effectLayerOverrides
+      ? { ...base.effectLayerOverrides, ...patch.effectLayerOverrides }
+      : base.effectLayerOverrides,
     overrides: patch.overrides ?? base.overrides,
   };
 }
@@ -235,6 +244,47 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     sceneUndo.commitStateCoalescing("effects-pulse");
   }
 
+  function updateEffect(effectId: string, patch: Record<string, unknown>) {
+    if (!EFFECT_IDS.includes(effectId as any)) {
+      throw new Error(`Unknown effect id: "${effectId}"`);
+    }
+    sceneUndo.captureState("update-effect-config", `Update ${effectId}`);
+    (config as any)[effectId] = { ...(config as any)[effectId], ...patch };
+    config.activePresets[effectId as keyof typeof config.activePresets] = null;
+    scheduleSave();
+    sceneUndo.commitStateCoalescing(`effects-${effectId}`);
+  }
+
+  function setActiveEffect(effect: string) {
+    sceneUndo.captureState("set-active-effect", "Set active effect");
+    if (effect === "none") {
+      config.activeEffect = "none" as any;
+      config.tipEffectMap = {};
+    } else {
+      config.activeEffect = effect as any;
+      config.tipEffectMap = { "*": { effect: effect as any } };
+    }
+    scheduleSave();
+    sceneUndo.commitState();
+  }
+
+  function getEffectLayer(effectId: string): "behind" | "front" {
+    return config.effectLayerOverrides[effectId] ?? "behind";
+  }
+
+  function setEffectLayer(effectId: string, mode: "behind" | "front") {
+    if (mode === "behind") {
+      const { [effectId]: _omit, ...rest } = config.effectLayerOverrides;
+      config.effectLayerOverrides = rest;
+    } else {
+      config.effectLayerOverrides = {
+        ...config.effectLayerOverrides,
+        [effectId]: mode,
+      };
+    }
+    scheduleSave();
+  }
+
   function setTipEffectMap(map: TipEffectMap) {
     sceneUndo.captureState("toggle-effect", "Toggle tip effects");
     config.tipEffectMap = map;
@@ -290,7 +340,13 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get pulse() { return config.pulse; },
     get overrides() { return config.overrides; },
     get activePresets() { return config.activePresets; },
+    get activeEffect() { return config.activeEffect; },
+    get effectLayerOverrides() { return config.effectLayerOverrides; },
 
+    updateEffect,
+    setActiveEffect,
+    getEffectLayer,
+    setEffectLayer,
     updateTrails,
     updateFire,
     updateLed,

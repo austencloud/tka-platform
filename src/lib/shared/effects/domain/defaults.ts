@@ -203,4 +203,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     silk: null,
     pulse: null,
   },
+
+  activeEffect: "none",
+  effectLayerOverrides: {},
 };

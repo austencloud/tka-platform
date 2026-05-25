@@ -432,5 +432,9 @@ export interface EffectsConfig {
     silk: string | null;
     pulse: string | null;
   };
+  /** Which effect is currently active. "none" = no effect selected. */
+  activeEffect: EffectType;
+  /** Per-effect render-layer override. Missing key = default ("behind"). */
+  effectLayerOverrides: Record<string, "behind" | "front">;
   overrides?: EffectsOverrides;
 }
