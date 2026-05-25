@@ -20,6 +20,7 @@ import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifi
 import { VTG_TURNS_RATIO_MAP } from "../../domain/elemental-theme";
 import { getReversalPattern } from "../../domain/reversal-patterns";
 import { matchReversalPatternId } from "../../domain/reversal-matcher";
+import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 
 // The anatomy grid shows which elements appear in the sequence.
 // Each field is a set of string values; the card renders present
@@ -421,7 +422,8 @@ export function deriveCardBackData(
   _converter: unknown = null,
   _explainerUnused: unknown = null
 ): CardBackData {
-  const levelNum = sequence.level ?? 1;
+  const steps = sequence.steps ?? [];
+  const levelNum = steps.length > 0 ? calculateDifficultyLevel([...steps]) : (sequence.level ?? 1);
   const badge = LEVEL_BADGES[levelNum] ?? LEVEL_BADGES[1]!;
   const anatomy = deriveAnatomy(sequence);
   const reason = deriveLevelReason(levelNum, anatomy);

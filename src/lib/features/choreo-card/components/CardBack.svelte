@@ -15,6 +15,7 @@
     LOOP_TYPE_LABELS,
     ROTATED_LOOP_TYPES,
   } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 
   interface Props {
     sequence: SequenceData;
@@ -29,7 +30,10 @@
   const loopPeriod = $derived(loopDisplay.period);
 
   const hasLoop = $derived(loopComponents.size > 0);
-  const level = $derived(sequence.level ?? 1);
+  const level = $derived.by(() => {
+    const steps = sequence.steps ?? [];
+    return steps.length > 0 ? calculateDifficultyLevel([...steps]) : (sequence.level ?? 1);
+  });
   const word = $derived(sequence.word ?? sequence.name ?? "");
   const beats = $derived(sequence.sequenceLength ?? sequence.steps?.length ?? 0);
 
