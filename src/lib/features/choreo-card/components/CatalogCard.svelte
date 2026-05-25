@@ -1,17 +1,17 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import { getReversalPattern } from "../domain/reversal-patterns";
 
   interface Props {
-    deck: Deck;
+    catalog: Catalog;
     tags: string;
     onSelect: () => void;
   }
 
-  const { deck, tags, onSelect }: Props = $props();
+  const { catalog, tags, onSelect }: Props = $props();
 
   const patternDef = $derived(
-    deck.reversalPattern ? getReversalPattern(deck.reversalPattern) : null
+    catalog.reversalPattern ? getReversalPattern(catalog.reversalPattern) : null
   );
 
   const displayLabel = $derived(patternDef?.label ?? "Continuous");
@@ -39,8 +39,8 @@
 
 <button
   type="button"
-  class="deck-card"
-  aria-label="Open {displayLabel} deck with {deck.totalSequences} sequences"
+  class="catalog-card"
+  aria-label="Open {displayLabel} catalog with {catalog.totalSequences} sequences"
   onclick={onSelect}
 >
   <div class="card-picto" aria-hidden="true">
@@ -55,7 +55,7 @@
   <div class="card-center">
     <span class="card-name">{displayLabel}</span>
     <span class="card-meta">
-      {formatCount(deck.totalSequences)} seq · {deck.stepCount}-step{#if tags} · {tags}{/if}
+      {formatCount(catalog.totalSequences)} seq · {catalog.stepCount}-step{#if tags} · {tags}{/if}
     </span>
   </div>
 
@@ -71,7 +71,7 @@
 </button>
 
 <style>
-  .deck-card {
+  .catalog-card {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -87,11 +87,11 @@
     transition: border-color 0.15s ease;
   }
 
-  .deck-card:hover {
+  .catalog-card:hover {
     border-color: var(--accent, #63b7cd);
   }
 
-  .deck-card:focus-visible {
+  .catalog-card:focus-visible {
     outline: 2px solid var(--accent, #63b7cd);
     outline-offset: 2px;
   }
@@ -153,6 +153,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .deck-card { transition: none; }
+    .catalog-card { transition: none; }
   }
 </style>

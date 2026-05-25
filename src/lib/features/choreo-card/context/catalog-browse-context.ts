@@ -1,14 +1,12 @@
-// src/lib/features/choreo-card/context/deck-browse-context.ts
-
 import { getContext, setContext } from 'svelte';
-import type { DeckBrowseState } from '../state/deck-browse-state.svelte';
+import type { CatalogBrowseState } from '../state/catalog-browse-state.svelte';
 
-const KEY = Symbol('deck-browse');
+const KEY = Symbol('catalog-browse');
 
-export function setBrowseContext(state: DeckBrowseState): void {
+export function setBrowseContext(state: CatalogBrowseState): void {
   setContext(KEY, state);
 }
 
-export function getBrowseContext(): DeckBrowseState {
-  return getContext<DeckBrowseState>(KEY);
+export function getBrowseContext(): CatalogBrowseState {
+  return getContext<CatalogBrowseState>(KEY);
 }

@@ -1,6 +1,6 @@
 import { collection, getDocs, query, where, limit, startAfter, orderBy, type QueryDocumentSnapshot } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { Deck } from "../domain/models/Deck";
+import type { Catalog } from "../domain/models/Catalog";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
@@ -10,8 +10,8 @@ import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pic
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
-  getSystemDecksPath,
-  getSystemDeckSequencesPath,
+  getSystemCatalogsPath,
+  getSystemCatalogSequencesPath,
 } from "$lib/shared/library/data/firestore-paths";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 
@@ -63,13 +63,13 @@ function hydrateSteps(
   });
 }
 
-const DECK_CACHE_KEY = "deckLoader.cachedDecks";
+const CATALOG_CACHE_KEY = "catalogLoader.cachedCatalogs";
 
-export function getCachedDecks(): Deck[] | null {
+export function getCachedCatalogs(): Catalog[] | null {
   try {
-    const raw = localStorage.getItem(DECK_CACHE_KEY);
+    const raw = localStorage.getItem(CATALOG_CACHE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as Deck[];
+    return JSON.parse(raw) as Catalog[];
   } catch {
     return null;
   }
@@ -90,14 +90,14 @@ function purgeStaleKeys(): void {
 
 let hasPurged = false;
 
-function cacheDecks(decks: Deck[]): void {
+function cacheCatalogs(catalogs: Catalog[]): void {
   try {
     if (!hasPurged) {
       purgeStaleKeys();
       hasPurged = true;
     }
-    localStorage.removeItem(DECK_CACHE_KEY);
-    const trimmed = decks.map(d => ({
+    localStorage.removeItem(CATALOG_CACHE_KEY);
+    const trimmed = catalogs.map(d => ({
       ...d,
       families: d.families.map(f => ({
         ...f,
@@ -105,29 +105,29 @@ function cacheDecks(decks: Deck[]): void {
       })),
     }));
     const json = JSON.stringify(trimmed);
-    localStorage.setItem(DECK_CACHE_KEY, json);
-  } catch (e) {
-    console.warn('[deck-perf] cache write failed:', e);
+    localStorage.setItem(CATALOG_CACHE_KEY, json);
+  } catch {
+    // quota exceeded
   }
 }
 
-export async function loadDecks(): Promise<Deck[]> {
+export async function loadCatalogs(): Promise<Catalog[]> {
   const db = await getFirestoreInstance();
-  const decksRef = collection(db, getSystemDecksPath());
-  const snapshot = await getDocs(decksRef);
-  const decks = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Deck);
-  cacheDecks(decks);
-  return decks;
+  const catalogsRef = collection(db, getSystemCatalogsPath());
+  const snapshot = await getDocs(catalogsRef);
+  const catalogs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Catalog);
+  cacheCatalogs(catalogs);
+  return catalogs;
 }
 
-export async function loadDeckSequences(deckId: string): Promise<SequenceData[]> {
+export async function loadCatalogSequences(catalogId: string): Promise<SequenceData[]> {
   const db = await getFirestoreInstance();
-  const seqRef = collection(db, getSystemDeckSequencesPath(deckId));
+  const seqRef = collection(db, getSystemCatalogSequencesPath(catalogId));
   const snapshot = await getDocs(seqRef);
   return snapshot.docs.map((d) => hydrateDoc(d));
 }
 
-export async function loadSequencesByIds(deckId: string, sequenceIds: string[]): Promise<SequenceData[]> {
+export async function loadSequencesByIds(catalogId: string, sequenceIds: string[]): Promise<SequenceData[]> {
   if (sequenceIds.length === 0) return [];
 
   const db = await getFirestoreInstance();
@@ -137,7 +137,7 @@ export async function loadSequencesByIds(deckId: string, sequenceIds: string[]):
   for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
     const batch = sequenceIds.slice(i, i + BATCH_SIZE);
     const q = query(
-      collection(db, getSystemDeckSequencesPath(deckId)),
+      collection(db, getSystemCatalogSequencesPath(catalogId)),
       where("__name__", "in", batch)
     );
     const snapshot = await getDocs(q);
@@ -149,13 +149,13 @@ export async function loadSequencesByIds(deckId: string, sequenceIds: string[]):
   return results;
 }
 
-export async function loadDeckSequencesPage(
-  deckId: string,
+export async function loadCatalogSequencesPage(
+  catalogId: string,
   pageSize: number,
   afterDoc?: QueryDocumentSnapshot,
 ): Promise<{ sequences: SequenceData[]; lastDoc: QueryDocumentSnapshot | null }> {
   const db = await getFirestoreInstance();
-  const seqRef = collection(db, getSystemDeckSequencesPath(deckId));
+  const seqRef = collection(db, getSystemCatalogSequencesPath(catalogId));
   const q = afterDoc
     ? query(seqRef, orderBy("__name__"), startAfter(afterDoc), limit(pageSize))
     : query(seqRef, orderBy("__name__"), limit(pageSize));

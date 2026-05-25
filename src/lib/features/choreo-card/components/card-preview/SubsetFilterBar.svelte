@@ -1,13 +1,13 @@
 <script lang="ts">
-  import type { DeckFamily } from "../../domain/models/Deck";
+  import type { CatalogFamily } from "../../domain/models/Catalog";
 
   interface Props {
-    families: readonly DeckFamily[];
+    families: readonly CatalogFamily[];
     selectedFamilyIds: string[];
     activePosition: string | null;
     totalFiltered: number;
     totalSequences: number;
-    isLargeDeck: boolean;
+    isLargeCatalog: boolean;
     onFamilyChange: (familyIds: string[]) => void;
     onPositionChange: (position: string | null) => void;
   }
@@ -18,7 +18,7 @@
     activePosition,
     totalFiltered,
     totalSequences,
-    isLargeDeck,
+    isLargeCatalog,
     onFamilyChange,
     onPositionChange,
   }: Props = $props();
@@ -80,8 +80,8 @@
     {totalFiltered} of {totalSequences.toLocaleString()} cards
   </div>
 
-  {#if isLargeDeck && selectedFamilyIds.length === 0}
-    <div class="large-deck-hint">
+  {#if isLargeCatalog && selectedFamilyIds.length === 0}
+    <div class="large-catalog-hint">
       Select a family to view cards ({totalSequences.toLocaleString()} total)
     </div>
   {/if}
@@ -148,7 +148,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
-  .large-deck-hint {
+  .large-catalog-hint {
     width: 100%;
     text-align: center;
     padding: 12px;

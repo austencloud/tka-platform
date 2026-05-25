@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
-  import type { DeckSourceSummary, VtgFamilyOption } from "../../services/deck-composer";
+  import type { CatalogSourceSummary, VtgFamilyOption } from "../../services/deck-composer";
 
   type DeckMode = "loop" | "vtg";
 
@@ -9,7 +9,7 @@
     weights: StepCountWeight[];
     totalCards: number;
     notes: string;
-    sourceSummaries: DeckSourceSummary[];
+    sourceSummaries: CatalogSourceSummary[];
     selectedSliceTypes: Set<'halved' | 'quartered'>;
     vtgFamilies: VtgFamilyOption[];
     selectedVtgFamilies: Set<string>;
@@ -78,12 +78,12 @@
 <div class="configure-step">
   <h2 class="step-title">
     <i class="fas fa-sliders-h" aria-hidden="true"></i>
-    Compose Your Deck
+    Compose Your Catalog
   </h2>
 
   <div class="controls">
     <div class="control-group">
-      <label class="control-label">Deck Type</label>
+      <label class="control-label">Catalog Type</label>
       <div class="mode-row">
         <button
           type="button"
@@ -146,7 +146,7 @@
                 onclick={() => onSliceTypeToggle(source.sliceType)}
               >
                 <span class="source-name">{source.sliceType}</span>
-                <span class="source-stats">{source.deckCount} decks · {source.sequenceCount.toLocaleString()} seq</span>
+                <span class="source-stats">{source.catalogCount} catalogs · {source.sequenceCount.toLocaleString()} seq</span>
               </button>
             {/each}
           </div>

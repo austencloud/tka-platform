@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 
-import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, loadSequencesByIds } from "$lib/features/choreo-card/services/deck-loader";
+import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences, loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
@@ -19,9 +19,9 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   import ChoreoCardFilters from "./ChoreoCardFilters.svelte";
   import ChoreoCardExport from "./ChoreoCardExport.svelte";
   import PageDisplay from "./PageDisplay.svelte";
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import type { ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/ThumbnailRenderOrchestrator";
-  import DeckBrowser from "./DeckBrowser.svelte";
+  import CatalogBrowser from "./CatalogBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
   import ScanActivityTab from "./scan-activity/ScanActivityTab.svelte";
   import CardBackThemeLab from "./card-back/CardBackThemeLab.svelte";
@@ -48,7 +48,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   const STORAGE_KEY_SHOW_TKA = "choreoCard.showTKA";
   const STORAGE_KEY_SHOW_WORD = "choreoCard.showWord";
   const STORAGE_KEY_INCLUDE_START_POS = "choreoCard.includeStartPosition";
-  const STORAGE_KEY_SELECTED_DECK = "choreoCard.selectedDeckId";
+  const STORAGE_KEY_SELECTED_CATALOG = "choreoCard.selectedCatalogId";
   const STORAGE_KEY_VTG_FAMILY = "choreoCard.vtgFamily";
 
   // Legacy keys for migration
@@ -157,23 +157,23 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   );
 
   // Mode state - synced with global navigation
-  type ChoreoCardMode = "decks" | "designer" | "scan-activity" | "theme-lab" | "releaser";
-  let mode = $state<ChoreoCardMode>("decks");
+  type ChoreoCardMode = "catalogs" | "designer" | "scan-activity" | "theme-lab" | "releaser";
+  let mode = $state<ChoreoCardMode>("catalogs");
 
   let browseSequencesLoaded = false;
 
   // Sync with navigation state (sidebar tab selection)
   $effect(() => {
     const navTab = navigationState.activeTab;
-    if (navTab === "decks" || navTab === "designer" || navTab === "scan-activity" || navTab === "theme-lab" || navTab === "releaser") {
+    if (navTab === "catalogs" || navTab === "designer" || navTab === "scan-activity" || navTab === "theme-lab" || navTab === "releaser") {
       const newMode = navTab as ChoreoCardMode;
       if (newMode !== mode) {
         mode = newMode;
-        if (newMode !== "designer" && decks.length === 0) {
-          loadDecks();
+        if (newMode !== "designer" && catalogs.length === 0) {
+          loadCatalogMetadata();
         }
         // Lazy-load browse sequences when user first enters a mode that needs them
-        if (newMode !== "decks" && !browseSequencesLoaded && loaderService) {
+        if (newMode !== "catalogs" && !browseSequencesLoaded && loaderService) {
           browseSequencesLoaded = true;
           loadSequences();
         }
@@ -181,54 +181,54 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     }
   });
 
-  // Deck state — seed deck metadata from localStorage so first render skips "Loading deck..." spinner.
-  // Cached decks have sequenceIds stripped (too large for localStorage) — enough to show the
-  // deck shell (name, breadcrumbs, family labels) while Firestore loads full data + sequences.
-  const _initDecks = getCachedDecks();
-  const _initDeckId = getPersistedString(STORAGE_KEY_SELECTED_DECK);
-  let decks = $state<Deck[]>(_initDecks ?? []);
-  let selectedDeckId = $state<string | null>(_initDeckId);
+  // Catalog state — seed catalog metadata from localStorage so first render skips "Loading catalog..." spinner.
+  // Cached catalogs have sequenceIds stripped (too large for localStorage) — enough to show the
+  // catalog shell (name, breadcrumbs, family labels) while Firestore loads full data + sequences.
+  const _initCatalogs = getCachedCatalogs();
+  const _initDeckId = getPersistedString(STORAGE_KEY_SELECTED_CATALOG);
+  let catalogs = $state<Catalog[]>(_initCatalogs ?? []);
+  let selectedCatalogId = $state<string | null>(_initDeckId);
   let selectedVtgFamily = $state<string | null>(getPersistedString(STORAGE_KEY_VTG_FAMILY));
-  let deckSequences = $state<SequenceData[]>([]);
-  // Start in loading state if we have a saved deck — sequences must come from Firestore
-  let isDeckLoading = $state(!!_initDeckId);
-  let deckErrorMessage = $state<string | null>(null);
+  let catalogSequences = $state<SequenceData[]>([]);
+  // Start in loading state if we have a saved catalog — sequences must come from Firestore
+  let isCatalogLoading = $state(!!_initDeckId);
+  let catalogErrorMessage = $state<string | null>(null);
 
-  // In-memory cache of loaded deck sequences so returning to a previously-visited
-  // deck is instant instead of refetching from Firestore and showing a loading skeleton.
-  const deckSequenceCache = new Map<string, SequenceData[]>();
+  // In-memory cache of loaded catalog sequences so returning to a previously-visited
+  // catalog is instant instead of refetching from Firestore and showing a loading skeleton.
+  const catalogSequenceCache = new Map<string, SequenceData[]>();
 
-  // ── Browser history (back/forward) for deck navigation ──
+  // ── Browser history (back/forward) for catalog navigation ──
 
   // Prevents re-pushing state when we're already restoring from a popstate event.
   let isRestoringFromHistory = false;
 
-  interface DeckNavState {
-    deckId: string | null;
+  interface CatalogNavState {
+    catalogId: string | null;
     vtgFamily: string | null;
   }
 
-  function buildCurrentNavState(): DeckNavState {
+  function buildCurrentNavState(): CatalogNavState {
     return {
-      deckId: selectedDeckId,
+      catalogId: selectedCatalogId,
       vtgFamily: selectedVtgFamily,
     };
   }
 
-  function encodeNavHash(state: DeckNavState): string {
+  function encodeNavHash(state: CatalogNavState): string {
     const params = new URLSearchParams();
-    if (state.deckId) params.set("deck", state.deckId);
+    if (state.catalogId) params.set("catalog", state.catalogId);
     if (state.vtgFamily) params.set("vtgFamily", state.vtgFamily);
     const str = params.toString();
-    return str ? `deck-nav:${str}` : "";
+    return str ? `catalog-nav:${str}` : "";
   }
 
-  function decodeNavHash(hash: string): DeckNavState | null {
-    if (!hash.startsWith("#deck-nav:")) return null;
+  function decodeNavHash(hash: string): CatalogNavState | null {
+    if (!hash.startsWith("#catalog-nav:")) return null;
     try {
-      const params = new URLSearchParams(hash.slice("#deck-nav:".length));
+      const params = new URLSearchParams(hash.slice("#catalog-nav:".length));
       return {
-        deckId: params.get("deck"),
+        catalogId: params.get("catalog"),
         vtgFamily: params.get("vtgFamily"),
       };
     } catch {
@@ -242,27 +242,27 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     const url = new URL(window.location.href);
     const encoded = encodeNavHash(state);
     url.hash = encoded;
-    pushState(url.toString(), { deckNavId: state.deckId, deckNavVtgFamily: state.vtgFamily });
+    pushState(url.toString(), { catalogNavId: state.catalogId, catalogNavVtgFamily: state.vtgFamily });
   }
 
-  async function restoreNavState(state: DeckNavState) {
+  async function restoreNavState(state: CatalogNavState) {
     isRestoringFromHistory = true;
     try {
-      selectedDeckId = state.deckId;
+      selectedCatalogId = state.catalogId;
       selectedVtgFamily = state.vtgFamily;
-      persist(STORAGE_KEY_SELECTED_DECK, state.deckId);
-      if (state.deckId) {
-        const cached = deckSequenceCache.get(state.deckId);
+      persist(STORAGE_KEY_SELECTED_CATALOG, state.catalogId);
+      if (state.catalogId) {
+        const cached = catalogSequenceCache.get(state.catalogId);
         if (cached) {
-          deckSequences = cached;
-          isDeckLoading = false;
+          catalogSequences = cached;
+          isCatalogLoading = false;
         } else {
-          deckSequences = [];
-          if (decks.length === 0) await loadDecks();
-          await handleSelectDeckSequences(state.deckId);
+          catalogSequences = [];
+          if (catalogs.length === 0) await loadCatalogMetadata();
+          await handleSelectCatalogSequences(state.catalogId);
         }
       } else {
-        deckSequences = [];
+        catalogSequences = [];
       }
     } finally {
       isRestoringFromHistory = false;
@@ -272,13 +272,13 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   $effect(() => {
     function handlePopState(event: PopStateEvent) {
       const raw = event.state as Record<string, unknown> | null;
-      if (raw && "deckNavId" in raw) {
+      if (raw && "catalogNavId" in raw) {
         void restoreNavState({
-          deckId: (raw.deckNavId as string) ?? null,
-          vtgFamily: (raw.deckNavVtgFamily as string) ?? null,
+          catalogId: (raw.catalogNavId as string) ?? null,
+          vtgFamily: (raw.catalogNavVtgFamily as string) ?? null,
         });
       } else {
-        void restoreNavState({ deckId: null, vtgFamily: null });
+        void restoreNavState({ catalogId: null, vtgFamily: null });
       }
     }
 
@@ -385,30 +385,30 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
   onMount(async () => {
     loaderService = getBrowseLoader();
 
-    // Defer browse sequence loading — only needed for designer/export modes, not decks
-    if (mode !== "decks") {
+    // Defer browse sequence loading — only needed for designer/export modes, not catalogs
+    if (mode !== "catalogs") {
       loadSequences();
     }
 
     const hashState = decodeNavHash(window.location.hash);
     if (hashState) {
       isRestoringFromHistory = true;
-      selectedDeckId = hashState.deckId;
+      selectedCatalogId = hashState.catalogId;
       selectedVtgFamily = hashState.vtgFamily;
-      persist(STORAGE_KEY_SELECTED_DECK, hashState.deckId);
+      persist(STORAGE_KEY_SELECTED_CATALOG, hashState.catalogId);
       isRestoringFromHistory = false;
     }
 
     const initialState = buildCurrentNavState();
     const url = new URL(window.location.href);
     url.hash = encodeNavHash(initialState);
-    replaceState(url.toString(), { deckNavId: initialState.deckId, deckNavVtgFamily: initialState.vtgFamily });
+    replaceState(url.toString(), { catalogNavId: initialState.catalogId, catalogNavVtgFamily: initialState.vtgFamily });
 
-    // Load deck metadata first, then sequences for the selected deck.
-    // Cached (trimmed) decks are already in state for instant shell render.
-    await loadDecks();
-    if (selectedDeckId) {
-      await handleSelectDeckSequences(selectedDeckId);
+    // Load catalog metadata first, then sequences for the selected catalog.
+    // Cached (trimmed) catalogs are already in state for instant shell render.
+    await loadCatalogMetadata();
+    if (selectedCatalogId) {
+      await handleSelectCatalogSequences(selectedCatalogId);
     }
   });
 
@@ -475,115 +475,115 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
     });
   }
 
-  let isLoadingDeckMetadata = $state(false);
+  let isLoadingCatalogMetadata = $state(false);
 
-  async function loadDecks() {
+  async function loadCatalogMetadata() {
     try {
-      isLoadingDeckMetadata = true;
-      deckErrorMessage = null;
-      decks = await deckLoaderLoadDecks();
-      if (selectedDeckId && !decks.some((d) => d.id === selectedDeckId)) {
-        selectedDeckId = null;
-        deckSequences = [];
-        persist(STORAGE_KEY_SELECTED_DECK, null);
+      isLoadingCatalogMetadata = true;
+      catalogErrorMessage = null;
+      catalogs = await fetchCatalogs();
+      if (selectedCatalogId && !catalogs.some((d) => d.id === selectedCatalogId)) {
+        selectedCatalogId = null;
+        catalogSequences = [];
+        persist(STORAGE_KEY_SELECTED_CATALOG, null);
       }
     } catch (err) {
-      console.warn("Failed to load decks:", err);
-      deckErrorMessage = "Failed to load decks. Check your connection and try again.";
+      console.warn("Failed to load catalogs:", err);
+      catalogErrorMessage = "Failed to load catalogs. Check your connection and try again.";
     } finally {
-      isLoadingDeckMetadata = false;
+      isLoadingCatalogMetadata = false;
     }
   }
 
   function handleBackToCollections() {
     (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
-    selectedDeckId = null;
+    selectedCatalogId = null;
     selectedVtgFamily = null;
-    deckSequences = [];
-    persist(STORAGE_KEY_SELECTED_DECK, null);
+    catalogSequences = [];
+    persist(STORAGE_KEY_SELECTED_CATALOG, null);
     persist(STORAGE_KEY_VTG_FAMILY, null);
     pushNavState();
   }
 
-  function filterContinuousReversals(seqs: SequenceData[], deck: Deck | undefined): SequenceData[] {
-    if (!deck || deck.reversalPattern !== "continuous") return seqs;
+  function filterContinuousReversals(seqs: SequenceData[], catalog: Catalog | undefined): SequenceData[] {
+    if (!catalog || catalog.reversalPattern !== "continuous") return seqs;
     return seqs.filter((seq) => !seq.steps.some((s) => s.blueReversal || s.redReversal));
   }
 
-  async function handleSelectDeckSequences(deckId: string) {
-    isDeckLoading = true;
-    deckErrorMessage = null;
+  async function handleSelectCatalogSequences(catalogId: string) {
+    isCatalogLoading = true;
+    catalogErrorMessage = null;
     try {
-      const deck = decks.find((d) => d.id === deckId);
-      if (deck && deck.totalSequences < 500) {
-        deckSequences = filterContinuousReversals(await loadDeckSequences(deckId), deck);
+      const catalog = catalogs.find((d) => d.id === catalogId);
+      if (catalog && catalog.totalSequences < 500) {
+        catalogSequences = filterContinuousReversals(await loadCatalogSequences(catalogId), catalog);
       } else {
-        deckSequences = [];
+        catalogSequences = [];
       }
-      if (deckSequences.length > 0) {
-        deckSequenceCache.set(deckId, deckSequences);
+      if (catalogSequences.length > 0) {
+        catalogSequenceCache.set(catalogId, catalogSequences);
       }
     } catch (err) {
-      console.warn("Failed to load deck sequences:", err);
-      deckErrorMessage = "Failed to load sequences for this deck. Try again.";
+      console.warn("Failed to load catalog sequences:", err);
+      catalogErrorMessage = "Failed to load sequences for this catalog. Try again.";
     } finally {
-      isDeckLoading = false;
+      isCatalogLoading = false;
     }
   }
 
-  async function handleSelectDeck(deckId: string, vtgFamily?: string | null) {
+  async function handleSelectCatalog(catalogId: string, vtgFamily?: string | null) {
     (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
-    selectedDeckId = deckId;
+    selectedCatalogId = catalogId;
     selectedVtgFamily = vtgFamily ?? null;
-    persist(STORAGE_KEY_SELECTED_DECK, deckId);
+    persist(STORAGE_KEY_SELECTED_CATALOG, catalogId);
     persist(STORAGE_KEY_VTG_FAMILY, vtgFamily ?? null);
     pushNavState();
 
-    const cached = deckSequenceCache.get(deckId);
+    const cached = catalogSequenceCache.get(catalogId);
     if (cached) {
-      deckSequences = cached;
-      isDeckLoading = false;
+      catalogSequences = cached;
+      isCatalogLoading = false;
       return;
     }
 
-    deckSequences = [];
-    await handleSelectDeckSequences(deckId);
+    catalogSequences = [];
+    await handleSelectCatalogSequences(catalogId);
   }
 
-  function handleBackToDeckList() {
+  function handleBackToCatalogList() {
     (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
-    selectedDeckId = null;
-    deckSequences = [];
-    persist(STORAGE_KEY_SELECTED_DECK, null);
+    selectedCatalogId = null;
+    catalogSequences = [];
+    persist(STORAGE_KEY_SELECTED_CATALOG, null);
     pushNavState();
   }
 
   async function handleLoadFamilySequences(familyIds: string[]) {
-    const deck = decks.find((d) => d.id === selectedDeckId);
-    if (!deck || !selectedDeckId) return;
+    const catalog = catalogs.find((d) => d.id === selectedCatalogId);
+    if (!catalog || !selectedCatalogId) return;
 
     if (familyIds.length === 0) {
-      deckSequences = [];
+      catalogSequences = [];
       return;
     }
 
-    isDeckLoading = true;
+    isCatalogLoading = true;
     try {
-      const seqIds = deck.families
+      const seqIds = catalog.families
         .filter((f) => familyIds.includes(f.id))
         .flatMap((f) => [...f.sequenceIds]);
       if (seqIds.length > 0) {
-        deckSequences = filterContinuousReversals(await loadSequencesByIds(selectedDeckId, seqIds), deck);
+        catalogSequences = filterContinuousReversals(await loadSequencesByIds(selectedCatalogId, seqIds), catalog);
       } else {
-        deckSequences = filterContinuousReversals(await loadDeckSequences(selectedDeckId), deck);
+        catalogSequences = filterContinuousReversals(await loadCatalogSequences(selectedCatalogId), catalog);
       }
-      if (deckSequences.length > 0) {
-        deckSequenceCache.set(selectedDeckId, deckSequences);
+      if (catalogSequences.length > 0) {
+        catalogSequenceCache.set(selectedCatalogId, catalogSequences);
       }
     } catch (err) {
       console.warn("Failed to load family sequences:", err);
     } finally {
-      isDeckLoading = false;
+      isCatalogLoading = false;
     }
   }
 
@@ -594,19 +594,19 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
 <div class="choreo-card-tab">
   <!-- Main content -->
   <div class="main-content">
-    {#if deckErrorMessage}
+    {#if catalogErrorMessage}
       <div class="error-banner" role="alert">
-        <span>{deckErrorMessage}</span>
-        <button type="button" onclick={() => { deckErrorMessage = null; loadDecks(); }}>Retry</button>
+        <span>{catalogErrorMessage}</span>
+        <button type="button" onclick={() => { catalogErrorMessage = null; loadCatalogMetadata(); }}>Retry</button>
       </div>
     {/if}
-    {#if mode === "decks"}
+    {#if mode === "catalogs"}
       <main class="content-area">
-        <DeckBrowser
-          {decks}
-          {selectedDeckId}
-          {deckSequences}
-          isLoading={isDeckLoading || (isLoadingDeckMetadata && decks.length === 0)}
+        <CatalogBrowser
+          {catalogs}
+          {selectedCatalogId}
+          {catalogSequences}
+          isLoading={isCatalogLoading || (isLoadingCatalogMetadata && catalogs.length === 0)}
           {handPointsVisible}
           {showGrid}
           {showTKA}
@@ -614,7 +614,7 @@ import { getCachedDecks, loadDecks as deckLoaderLoadDecks, loadDeckSequences, lo
           {includeStartPosition}
           vtgFamilyId={selectedVtgFamily}
           onBackToCollections={handleBackToCollections}
-          onSelectDeck={handleSelectDeck}
+          onSelectCatalog={handleSelectCatalog}
           onSelectSequence={handleSelectSequence}
           onLoadFamilySequences={handleLoadFamilySequences}
           onContextMenu={openCardContextMenu}

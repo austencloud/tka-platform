@@ -1,28 +1,28 @@
-import type { Deck } from "../domain/models/Deck";
-import { loadSequencesByIds } from "./deck-loader";
+import type { Catalog } from "../domain/models/Catalog";
+import { loadSequencesByIds } from "./catalog-loader";
 import type { FamilyRatioGroup } from "./types";
 import { VTG_RATIO_TURNS_MAP } from "../domain/elemental-theme";
 
 export async function aggregateFamilySequences(
   familyId: string,
-  decks: Deck[],
+  catalogs: Catalog[],
 ): Promise<FamilyRatioGroup[]> {
-  const deckFamilyPairs = decks
-    .map((deck) => {
-      const family = deck.families.find((f) => f.id === familyId);
-      return family ? { deck, family } : null;
+  const catalogFamilyPairs = catalogs
+    .map((catalog) => {
+      const family = catalog.families.find((f) => f.id === familyId);
+      return family ? { catalog, family } : null;
     })
     .filter(
       (pair): pair is NonNullable<typeof pair> => pair !== null,
     );
 
   const results = await Promise.all(
-    deckFamilyPairs.map(async ({ deck, family }) => {
+    catalogFamilyPairs.map(async ({ catalog, family }) => {
       const sequences = await loadSequencesByIds(
-        deck.id,
+        catalog.id,
         family.sequenceIds as string[],
       );
-      const ratio = deck.name.match(/\((\d+:\d+)/)?.[1] ?? "?";
+      const ratio = catalog.name.match(/\((\d+:\d+)/)?.[1] ?? "?";
       const turns = VTG_RATIO_TURNS_MAP[ratio] ?? 0;
       return { ratio, turns, sequences };
     }),

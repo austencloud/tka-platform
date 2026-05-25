@@ -2,11 +2,13 @@ export interface CardFooter {
   left?: string;
   center?: string;
   right?: string;
+  /** Path to an icon image drawn on both sides of center text */
+  iconPath?: string;
 }
 
 export interface DeckReleaseCard {
   sequenceId: string;
-  sourceDeckId: string;
+  sourceCatalogId: string;
   stepCount: number;
   word: string;
   position: number;

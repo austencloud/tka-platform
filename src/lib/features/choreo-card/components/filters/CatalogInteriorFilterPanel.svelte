@@ -1,5 +1,5 @@
 <!--
-  DeckInteriorFilterPanel.svelte - Filter bar for the deck interior (Level 2).
+  CatalogInteriorFilterPanel.svelte - Filter bar for the deck interior (Level 2).
   Family multi-select + start position filter.
 -->
 <script lang="ts">
@@ -7,13 +7,13 @@
   import FilterChipRow from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipRow.svelte";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import FamilyFilterChip from "./FamilyFilterChip.svelte";
-  import type { DeckFamily } from "../../domain/models/Deck";
+  import type { CatalogFamily } from "../../domain/models/Catalog";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
 
   interface Props {
     isOpen: boolean;
-    families: readonly DeckFamily[];
+    families: readonly CatalogFamily[];
     selectedFamilyIds: string[];
     activePosition: string | null;
     onFamilyChange: (familyIds: string[]) => void;

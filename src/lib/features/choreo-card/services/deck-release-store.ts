@@ -60,14 +60,20 @@ export async function releaseDeck(
   return release;
 }
 
-export async function getAllReleasedSequenceIds(): Promise<Set<string>> {
+export async function getAllReleases(): Promise<DeckRelease[]> {
   const db = await getFirestoreInstance();
   const manifestsRef = collection(db, getDeckReleaseManifestsPath());
   const snapshot = await getDocs(manifestsRef);
+  return snapshot.docs
+    .map(d => d.data() as DeckRelease)
+    .sort((a, b) => b.deckNumber - a.deckNumber);
+}
+
+export async function getAllReleasedSequenceIds(): Promise<Set<string>> {
+  const releases = await getAllReleases();
   const ids = new Set<string>();
-  for (const d of snapshot.docs) {
-    const data = d.data() as DeckRelease;
-    for (const card of data.sequences ?? []) {
+  for (const release of releases) {
+    for (const card of release.sequences ?? []) {
       ids.add(card.sequenceId);
     }
   }

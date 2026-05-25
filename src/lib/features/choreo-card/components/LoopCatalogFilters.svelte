@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
 
   interface Props {
-    decks: Deck[];
+    catalogs: Catalog[];
     activeSliceType: string;
     activeGridMode: string;
     filteredCount: number;
@@ -11,7 +11,7 @@
   }
 
   const {
-    decks,
+    catalogs,
     activeSliceType,
     activeGridMode,
     filteredCount,
@@ -29,25 +29,25 @@
     box: 'Box',
   };
 
-  // Derive available options from actual deck data
-  function getSliceType(d: Deck): string | null {
+  // Derive available options from actual catalog data
+  function getSliceType(d: Catalog): string | null {
     return d.sliceType ?? (d.id.includes('halved') ? 'halved' : d.id.includes('quartered') ? 'quartered' : null);
   }
 
   const availableSliceTypes = $derived<string[]>(
     [...new Set(
-      decks.map(getSliceType).filter((s): s is string => s !== null)
+      catalogs.map(getSliceType).filter((s): s is string => s !== null)
     )].sort()
   );
 
   const availableGridModes = $derived<string[]>(
-    [...new Set(decks.map(d => String(d.gridMode)))].sort()
+    [...new Set(catalogs.map(d => String(d.gridMode)))].sort()
   );
 
-  const totalCount = $derived(decks.length);
+  const totalCount = $derived(catalogs.length);
 </script>
 
-<div class="loop-deck-filters" role="toolbar" aria-label="Deck filters">
+<div class="loop-catalog-filters" role="toolbar" aria-label="Catalog filters">
   {#if availableSliceTypes.length > 1}
     <div class="filter-group" role="radiogroup" aria-label="Slice type">
       {#each availableSliceTypes as sliceType (sliceType)}
@@ -87,12 +87,12 @@
   {/if}
 
   <span class="filter-count" aria-live="polite">
-    {filteredCount} of {totalCount} {totalCount === 1 ? 'deck' : 'decks'}
+    {filteredCount} of {totalCount} {totalCount === 1 ? 'catalog' : 'catalogs'}
   </span>
 </div>
 
 <style>
-  .loop-deck-filters {
+  .loop-catalog-filters {
     display: flex;
     align-items: center;
     gap: 12px;

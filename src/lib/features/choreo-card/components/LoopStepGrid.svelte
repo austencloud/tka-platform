@@ -1,26 +1,26 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
 
   interface Props {
-    decks: Deck[];
+    catalogs: Catalog[];
     onSelectBeatCount: (stepCount: number) => void;
   }
 
-  const { decks, onSelectBeatCount }: Props = $props();
+  const { catalogs, onSelectBeatCount }: Props = $props();
 
   const beatGroups = $derived((() => {
-    const groups = new Map<number, Deck[]>();
-    for (const deck of decks) {
-      const bc = deck.stepCount;
+    const groups = new Map<number, Catalog[]>();
+    for (const catalog of catalogs) {
+      const bc = catalog.stepCount;
       if (!groups.has(bc)) groups.set(bc, []);
-      groups.get(bc)!.push(deck);
+      groups.get(bc)!.push(catalog);
     }
     return [...groups.entries()]
-      .map(([stepCount, groupDecks]) => ({
+      .map(([stepCount, groupCatalogs]) => ({
         stepCount,
-        deckCount: groupDecks.length,
-        totalSequences: groupDecks.reduce((s, d) => s + d.totalSequences, 0),
-        familyCount: new Set(groupDecks.flatMap(d => d.families.map(f => f.label))).size,
+        catalogCount: groupCatalogs.length,
+        totalSequences: groupCatalogs.reduce((s, d) => s + d.totalSequences, 0),
+        familyCount: new Set(groupCatalogs.flatMap(d => d.families.map(f => f.label))).size,
       }))
       .sort((a, b) => a.stepCount - b.stepCount);
   })());

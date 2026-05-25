@@ -1,4 +1,4 @@
-import type { Deck } from "../domain/models/Deck";
+import type { Catalog } from "../domain/models/Catalog";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { CardSizeId } from "../domain/card-sizes";
 import type { CardPair } from "../services/types";
@@ -30,7 +30,7 @@ function readViewMode(): ViewMode {
   return "grid";
 }
 
-export function createDeckInteriorState() {
+export function createCatalogInteriorState() {
   let viewMode = $state<ViewMode>(readViewMode());
   let cardSize = $state<CardSizeId>(
     (typeof window !== "undefined" ? localStorage.getItem("cardPreview.cardSize") : null) as CardSizeId ?? "poker"
@@ -120,14 +120,14 @@ export function createDeckInteriorState() {
 }
 
 export function filterSequences(
-  deckSequences: SequenceData[],
+  catalogSequences: SequenceData[],
   filters: InteriorFilters,
-  deck: Deck | null,
+  catalog: Catalog | null,
 ): SequenceData[] {
-  let seqs = deckSequences;
-  if (filters.familyIds.length > 0 && deck) {
+  let seqs = catalogSequences;
+  if (filters.familyIds.length > 0 && catalog) {
     const allowedIds = new Set(
-      deck.families
+      catalog.families
         .filter((f) => filters.familyIds.includes(f.id))
         .flatMap((f) => [...f.sequenceIds]),
     );
@@ -158,9 +158,9 @@ export function groupByStartPosition(seqs: SequenceData[]): SequenceGroup[] {
     .map((g) => ({ label: START_POS_LABELS[g] ?? g, sequences: groups[g]! }));
 }
 
-export function groupByFamily(seqs: SequenceData[], deck: Deck): SequenceGroup[] {
+export function groupByFamily(seqs: SequenceData[], catalog: Catalog): SequenceGroup[] {
   const seqMap = new Map(seqs.map((s) => [s.id, s]));
-  return deck.families
+  return catalog.families
     .map((f) => ({
       label: f.label || f.typeCombo,
       sequences: f.sequenceIds
@@ -175,4 +175,4 @@ export function formatCount(n: number): string {
   return n.toLocaleString();
 }
 
-export type DeckInteriorState = ReturnType<typeof createDeckInteriorState>;
+export type CatalogInteriorState = ReturnType<typeof createCatalogInteriorState>;

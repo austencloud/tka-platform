@@ -1,25 +1,25 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
 
   interface Props {
-    decks: Deck[];
+    catalogs: Catalog[];
     onSelectTurns: (turns: string) => void;
   }
 
-  const { decks, onSelectTurns }: Props = $props();
+  const { catalogs, onSelectTurns }: Props = $props();
 
   const turnsGroups = $derived((() => {
-    const groups = new Map<string, Deck[]>();
-    for (const deck of decks) {
-      const t = deck.turnPattern;
+    const groups = new Map<string, Catalog[]>();
+    for (const catalog of catalogs) {
+      const t = catalog.turnPattern;
       if (!groups.has(t)) groups.set(t, []);
-      groups.get(t)!.push(deck);
+      groups.get(t)!.push(catalog);
     }
     return [...groups.entries()]
-      .map(([turns, groupDecks]) => ({
+      .map(([turns, groupCatalogs]) => ({
         turns,
-        deckCount: groupDecks.length,
-        totalSequences: groupDecks.reduce((s, d) => s + d.totalSequences, 0),
+        catalogCount: groupCatalogs.length,
+        totalSequences: groupCatalogs.reduce((s, d) => s + d.totalSequences, 0),
       }))
       .sort((a, b) => a.turns.localeCompare(b.turns));
   })());

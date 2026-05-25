@@ -6,12 +6,12 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
-  import type { DeckFamily } from "$lib/features/choreo-card/domain/models/Deck";
+  import type { CatalogFamily } from "$lib/features/choreo-card/domain/models/Catalog";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
 
   interface Props {
-    families: readonly DeckFamily[];
+    families: readonly CatalogFamily[];
     selectedFamilyIds: string[];
     onFilterChange: (familyIds: string[]) => void;
   }

@@ -1,5 +1,5 @@
 <!--
-  DeckListFilterPanel.svelte - Filter bar for the collection page (Level 1).
+  CatalogListFilterPanel.svelte - Filter bar for the collection page (Level 1).
   Composes FilterChipRow + individual chips from Browse module.
 -->
 <script lang="ts">
@@ -20,7 +20,7 @@
 </script>
 
 {#if isOpen}
-  <div class="deck-list-filters">
+  <div class="catalog-list-filters">
     <FilterChipRow>
       {#snippet children()}
         <LevelFilterChip activeLevel={activeLevel} onSelect={onLevelChange} />
@@ -31,7 +31,7 @@
 {/if}
 
 <style>
-  .deck-list-filters {
+  .catalog-list-filters {
     padding: 0 4px;
   }
 </style>

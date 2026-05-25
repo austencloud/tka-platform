@@ -1,5 +1,5 @@
 <!--
-  DeckFamilySection.svelte - Collapsible section for one hand-path family within a deck
+  CatalogFamilySection.svelte - Collapsible section for one hand-path family within a deck
 
   Renders a header with family name, type combo, and sequence count.
   When expanded, shows hand path summary cards (one per unique spatial pattern)
@@ -10,17 +10,17 @@
 
 import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-path-data-builder";
   import { resolveCollisions } from "$lib/features/choreo-card/services/arrow-collision-resolver";
-  import type { DeckFamily } from "../domain/models/Deck";
+  import type { CatalogFamily } from "../domain/models/Catalog";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import ChoreoCard from "./ChoreoCard.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";
-  import { getDeckLayoutPolicy } from "../domain/deck-layout-policy";
+  import { getCatalogLayoutPolicy } from "../domain/catalog-layout-policy";
 
   interface Props {
-    family: DeckFamily;
+    family: CatalogFamily;
     sequences: SequenceData[];
     handPointsVisible?: boolean;
     showGrid?: boolean;
@@ -134,7 +134,7 @@ import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-pat
    * - Everything else: column (default portrait layout)
    */
   function getStartPositionLayout(seq: SequenceData): "row" | "column" {
-    return getDeckLayoutPolicy(seq.steps.length);
+    return getCatalogLayoutPolicy(seq.steps.length);
   }
 
   function toggle() {
@@ -243,7 +243,7 @@ import { buildFromHandPathId } from "$lib/features/choreo-card/services/hand-pat
                 showTKA={false}
                 showWord={false}
                 {includeStartPosition}
-                startPositionLayout={getDeckLayoutPolicy(hpSeq.steps?.length ?? 0)}
+                startPositionLayout={getCatalogLayoutPolicy(hpSeq.steps?.length ?? 0)}
                 onSelect={onSelectSequence}
                 {onContextMenu}
               />

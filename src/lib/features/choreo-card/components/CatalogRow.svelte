@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
 
   interface Props {
-    deck: Deck;
+    catalog: Catalog;
     accentColor: string;
     accentIcon: string;
-    onSelect: (deckId: string) => void;
+    onSelect: (catalogId: string) => void;
   }
 
-  const { deck, accentColor, accentIcon, onSelect }: Props = $props();
+  const { catalog, accentColor, accentIcon, onSelect }: Props = $props();
 
   function formatCount(n: number): string {
     if (n >= 1000) {
@@ -21,9 +21,9 @@
 
 <button
   type="button"
-  class="deck-row"
-  aria-label="Open {deck.name} deck"
-  onclick={() => onSelect(deck.id)}
+  class="catalog-row"
+  aria-label="Open {catalog.name} catalog"
+  onclick={() => onSelect(catalog.id)}
 >
   <span class="left">
     <i
@@ -31,22 +31,22 @@
       style="color: {accentColor};"
       aria-hidden="true"
     ></i>
-    <span class="deck-name">{deck.name}</span>
+    <span class="catalog-name">{catalog.name}</span>
   </span>
 
   <span class="meta">
-    <DifficultyBadge level={deck.level} />
-    <span class="chip">{deck.gridMode}</span>
-    <span class="chip">{deck.families.length} families</span>
+    <DifficultyBadge level={catalog.level} />
+    <span class="chip">{catalog.gridMode}</span>
+    <span class="chip">{catalog.families.length} families</span>
   </span>
 
-  <span class="count" aria-label="{deck.totalSequences} sequences">
-    {formatCount(deck.totalSequences)}
+  <span class="count" aria-label="{catalog.totalSequences} sequences">
+    {formatCount(catalog.totalSequences)}
   </span>
 </button>
 
 <style>
-  .deck-row {
+  .catalog-row {
     display: grid;
     grid-template-columns: 1fr auto auto;
     align-items: center;
@@ -62,11 +62,11 @@
     color: var(--theme-text, #fff);
   }
 
-  .deck-row:hover {
+  .catalog-row:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
-  .deck-row:focus-visible {
+  .catalog-row:focus-visible {
     outline: 2px solid var(--theme-accent, #6c8ee8);
     outline-offset: 2px;
   }
@@ -84,7 +84,7 @@
     font-size: var(--font-size-sm, 14px);
   }
 
-  .deck-name {
+  .catalog-name {
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     white-space: nowrap;

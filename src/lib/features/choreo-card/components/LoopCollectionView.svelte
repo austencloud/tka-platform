@@ -1,17 +1,17 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import LoopStepGrid from "./LoopStepGrid.svelte";
   import LoopTurnsGrid from "./LoopTurnsGrid.svelte";
   import LoopReversalGrid from "./LoopReversalGrid.svelte";
-  import LoopDeckFilters from "./LoopDeckFilters.svelte";
-  import DeckCard from "./DeckCard.svelte";
+  import LoopCatalogFilters from "./LoopCatalogFilters.svelte";
+  import CatalogCard from "./CatalogCard.svelte";
 
   interface Props {
-    decks: Deck[];
-    onSelectDeck: (deck: Deck) => void;
+    catalogs: Catalog[];
+    onSelectCatalog: (catalog: Catalog) => void;
   }
 
-  const { decks, onSelectDeck }: Props = $props();
+  const { catalogs, onSelectCatalog }: Props = $props();
 
   // Loop type pill bar state
   type LoopType = 'rotated' | 'mirrored' | 'swapped' | 'inverted' | 'rewound';
@@ -37,20 +37,18 @@
   // Drill-down filter: when set, shows a filtered list of decks
   let drillFilter = $state<{ axis: AxisView; value: string | number } | null>(null);
 
-  // Which loop types have any matching decks
   const populatedLoopTypes = $derived(
-    new Set(decks.map(d => d.loopType))
+    new Set(catalogs.map(d => d.loopType))
   );
 
-  // Decks filtered by active loop type
-  const filteredDecks = $derived(
-    decks.filter(d => d.loopType === activeLoopType)
+  const filteredCatalogs = $derived(
+    catalogs.filter(d => d.loopType === activeLoopType)
   );
 
   // Count distinct values per axis to hide single-option tabs
-  const distinctBeatCounts = $derived(new Set(filteredDecks.map(d => d.stepCount)).size);
-  const distinctTurnCounts = $derived(new Set(filteredDecks.map(d => d.turnPattern)).size);
-  const distinctReversalPatterns = $derived(new Set(filteredDecks.map(d => d.reversalPattern)).size);
+  const distinctBeatCounts = $derived(new Set(filteredCatalogs.map(d => d.stepCount)).size);
+  const distinctTurnCounts = $derived(new Set(filteredCatalogs.map(d => d.turnPattern)).size);
+  const distinctReversalPatterns = $derived(new Set(filteredCatalogs.map(d => d.reversalPattern)).size);
 
   // Axes worth showing (more than one distinct value)
   type AxisDef = { id: AxisView; label: string };
@@ -71,7 +69,7 @@
 
   // Apply slice type and grid mode filters on top of loop type
   const sliceAndGridFiltered = $derived(
-    filteredDecks.filter(d => {
+    filteredCatalogs.filter(d => {
       const matchesSlice = d.sliceType === activeSliceType;
       const matchesGrid = d.gridMode === activeGridMode;
       return matchesSlice && matchesGrid;
@@ -79,7 +77,7 @@
   );
 
   // Decks filtered by drill-down selection (uses sliceAndGridFiltered as base)
-  const drilledDecks = $derived(
+  const drilledCatalogs = $derived(
     drillFilter
       ? sliceAndGridFiltered.filter(d => {
           if (drillFilter!.axis === 'beats') return d.stepCount === drillFilter!.value;
@@ -98,9 +96,9 @@
       : ''
   );
 
-  function drillOrSelect(axis: AxisView, value: string | number, matchingDecks: Deck[]): void {
-    if (matchingDecks.length === 1) {
-      onSelectDeck(matchingDecks[0]!);
+  function drillOrSelect(axis: AxisView, value: string | number, matchingCatalogs: Catalog[]): void {
+    if (matchingCatalogs.length === 1) {
+      onSelectCatalog(matchingCatalogs[0]!);
     } else {
       drillFilter = { axis, value };
     }
@@ -169,8 +167,8 @@
   {/if}
 
   <!-- Slice type + grid mode filter bar -->
-  <LoopDeckFilters
-    decks={filteredDecks}
+  <LoopCatalogFilters
+    catalogs={filteredCatalogs}
     {activeSliceType}
     {activeGridMode}
     filteredCount={sliceAndGridFiltered.length}
@@ -188,26 +186,26 @@
           Back
         </button>
         <span class="drill-label">{drillLabel}</span>
-        <span class="drill-count">{drilledDecks.length} {drilledDecks.length === 1 ? 'deck' : 'decks'}</span>
+        <span class="drill-count">{drilledCatalogs.length} {drilledCatalogs.length === 1 ? 'catalog' : 'catalogs'}</span>
       </div>
-      <div class="deck-grid">
-        {#each drilledDecks as deck (deck.id)}
-          <DeckCard
-            {deck}
+      <div class="catalog-grid">
+        {#each drilledCatalogs as catalog (catalog.id)}
+          <CatalogCard
+            {catalog}
             tags=""
-            onSelect={() => onSelectDeck(deck)}
+            onSelect={() => onSelectCatalog(catalog)}
           />
         {/each}
-        {#if drilledDecks.length === 0}
-          <div class="empty-state">No decks match this filter.</div>
+        {#if drilledCatalogs.length === 0}
+          <div class="empty-state">No catalogs match this filter.</div>
         {/if}
       </div>
     {:else if activeAxis === 'beats'}
-      <LoopStepGrid decks={sliceAndGridFiltered} onSelectBeatCount={handleSelectBeatCount} />
+      <LoopStepGrid catalogs={sliceAndGridFiltered} onSelectBeatCount={handleSelectBeatCount} />
     {:else if activeAxis === 'turns'}
-      <LoopTurnsGrid decks={sliceAndGridFiltered} onSelectTurns={handleSelectTurns} />
+      <LoopTurnsGrid catalogs={sliceAndGridFiltered} onSelectTurns={handleSelectTurns} />
     {:else}
-      <LoopReversalGrid decks={sliceAndGridFiltered} onSelectPattern={handleSelectPattern} />
+      <LoopReversalGrid catalogs={sliceAndGridFiltered} onSelectPattern={handleSelectPattern} />
     {/if}
   </div>
 </div>
@@ -349,7 +347,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
-  .deck-grid {
+  .catalog-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 12px;

@@ -1,21 +1,21 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import { SIMPLE_PATTERNS } from "../domain/reversal-patterns";
   import ReversalPatternCard from "./ReversalPatternCard.svelte";
 
   interface Props {
-    decks: Deck[];
+    catalogs: Catalog[];
     onSelectPattern: (patternId: string) => void;
   }
 
-  const { decks, onSelectPattern }: Props = $props();
+  const { catalogs, onSelectPattern }: Props = $props();
 
   const patternGroups = $derived(
     SIMPLE_PATTERNS.map((pattern) => {
-      const matchingDecks = decks.filter(
+      const matching = catalogs.filter(
         (d) => (d.reversalPattern || "continuous") === pattern.id,
       );
-      const sequenceCount = matchingDecks.reduce(
+      const sequenceCount = matching.reduce(
         (sum, d) => sum + d.totalSequences,
         0,
       );

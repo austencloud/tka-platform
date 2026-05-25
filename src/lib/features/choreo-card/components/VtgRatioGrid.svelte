@@ -1,26 +1,26 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import { VTG_RATIO_LEVEL_MAP } from "../domain/elemental-theme";
   import VtgRatioCard from "./VtgRatioCard.svelte";
 
   interface Props {
-    decks: Deck[];
-    onSelectDeck: (deckId: string) => void;
+    catalogs: Catalog[];
+    onSelectCatalog: (catalogId: string) => void;
   }
 
-  const { decks, onSelectDeck }: Props = $props();
+  const { catalogs, onSelectCatalog }: Props = $props();
 
-  function getRatio(deck: Deck): string {
-    return deck.name.match(/\((\d+:\d+)/)?.[1] ?? "1:1";
+  function getRatio(catalog: Catalog): string {
+    return catalog.name.match(/\((\d+:\d+)/)?.[1] ?? "1:1";
   }
 
-  function groupByLevel(allDecks: Deck[]): { level: number; decks: Deck[] }[] {
-    const groups = new Map<number, Deck[]>();
-    for (const deck of allDecks) {
-      const ratio = getRatio(deck);
-      const level = VTG_RATIO_LEVEL_MAP[ratio] ?? deck.level;
+  function groupByLevel(all: Catalog[]): { level: number; catalogs: Catalog[] }[] {
+    const groups = new Map<number, Catalog[]>();
+    for (const catalog of all) {
+      const ratio = getRatio(catalog);
+      const level = VTG_RATIO_LEVEL_MAP[ratio] ?? catalog.level;
       if (!groups.has(level)) groups.set(level, []);
-      groups.get(level)!.push(deck);
+      groups.get(level)!.push(catalog);
     }
 
     const ratioOrder = ["1:1", "3:1", "5:1", "7:1", "2:1", "4:1", "6:1"];
@@ -34,17 +34,17 @@
 
     return [1, 2, 3]
       .filter((level) => groups.has(level))
-      .map((level) => ({ level, decks: groups.get(level)! }));
+      .map((level) => ({ level, catalogs: groups.get(level)! }));
   }
 
-  const levelGroups = $derived(groupByLevel(decks));
+  const levelGroups = $derived(groupByLevel(catalogs));
 </script>
 
 <div class="ratio-layout">
   {#each levelGroups as group (group.level)}
     <div class="ratio-row">
-      {#each group.decks as deck (deck.id)}
-        <VtgRatioCard {deck} onSelect={() => onSelectDeck(deck.id)} />
+      {#each group.catalogs as catalog (catalog.id)}
+        <VtgRatioCard {catalog} onSelect={() => onSelectCatalog(catalog.id)} />
       {/each}
     </div>
   {/each}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import {
@@ -8,16 +8,16 @@
   } from "../domain/elemental-theme";
 
   interface Props {
-    deck: Deck;
+    catalog: Catalog;
     onSelect: () => void;
   }
 
-  const { deck, onSelect }: Props = $props();
+  const { catalog, onSelect }: Props = $props();
 
   const ratio = $derived(
-    deck.name.match(/\((\d+:\d+)/)?.[1] ?? "1:1",
+    catalog.name.match(/\((\d+:\d+)/)?.[1] ?? "1:1",
   );
-  const correctLevel = $derived(VTG_RATIO_LEVEL_MAP[ratio] ?? deck.level);
+  const correctLevel = $derived(VTG_RATIO_LEVEL_MAP[ratio] ?? catalog.level);
   const levelStyle = $derived(
     DIFFICULTY_LEVELS[correctLevel] ?? DEFAULT_DIFFICULTY_STYLE,
   );
@@ -38,7 +38,7 @@
   style="
     --tint: {tintColor};
   "
-  aria-label="Open {deck.name} deck, {turnsLabel}"
+  aria-label="Open {catalog.name} catalog, {turnsLabel}"
   onclick={onSelect}
 >
   <header class="card-header">
@@ -51,7 +51,7 @@
   </span>
 
   <footer class="card-footer">
-    <span class="stat">{deck.totalSequences} sequences</span>
+    <span class="stat">{catalog.totalSequences} sequences</span>
   </footer>
 </button>
 

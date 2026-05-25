@@ -1,5 +1,5 @@
 <!--
-  InfoCardBack - "Your Deck" reference card
+  InfoCardBack - "Your Catalog" reference card
 
   Back side of the rules card. Explains corner badges, levels,
   LOOPs, and chaining. Better spacing, real badge visuals,
@@ -27,7 +27,7 @@
 
       <div class="spacer-sm"></div>
 
-      <h1 class="title">Your Deck</h1>
+      <h1 class="title">Your Catalog</h1>
 
       <div class="spacer-md"></div>
 

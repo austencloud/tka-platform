@@ -1,4 +1,4 @@
-import type { Deck } from "../domain/models/Deck";
+import type { Catalog } from "../domain/models/Catalog";
 import type { CardFooter, DeckReleaseCard, StepCountWeight } from "../domain/models/DeckRelease";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
@@ -7,18 +7,18 @@ import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
 
 interface PoolEntry {
   sequenceId: string;
-  sourceDeckId: string;
+  sourceCatalogId: string;
   stepCount: number;
   word: string;
 }
 
-export interface DeckPoolFilter {
+export interface CatalogPoolFilter {
   sliceTypes: Set<'halved' | 'quartered'>;
 }
 
-function isZeroTurnDeck(deck: Deck): boolean {
-  if (!deck.turnPattern) return false;
-  const m = deck.turnPattern.match(/(\d+(?:\.\d+)?)/);
+function isZeroTurnCatalog(catalog: Catalog): boolean {
+  if (!catalog.turnPattern) return false;
+  const m = catalog.turnPattern.match(/(\d+(?:\.\d+)?)/);
   return m ? Number(m[1]) === 0 : false;
 }
 
@@ -33,23 +33,23 @@ function containsType6(word: string): boolean {
   });
 }
 
-export function buildSequencePool(decks: Deck[], filter?: DeckPoolFilter): Map<number, PoolEntry[]> {
+export function buildSequencePool(catalogs: Catalog[], filter?: CatalogPoolFilter): Map<number, PoolEntry[]> {
   const pool = new Map<number, PoolEntry[]>();
 
-  for (const deck of decks) {
-    if (deck.collection !== "LOOPs") continue;
-    if (filter?.sliceTypes && !filter.sliceTypes.has(deck.sliceType)) continue;
-    const stepCount = deck.stepCount;
-    const zeroTurn = isZeroTurnDeck(deck);
+  for (const catalog of catalogs) {
+    if (catalog.collection !== "LOOPs") continue;
+    if (filter?.sliceTypes && !filter.sliceTypes.has(catalog.sliceType)) continue;
+    const stepCount = catalog.stepCount;
+    const zeroTurn = isZeroTurnCatalog(catalog);
     if (!pool.has(stepCount)) pool.set(stepCount, []);
     const bucket = pool.get(stepCount)!;
 
-    for (const family of deck.families) {
+    for (const family of catalog.families) {
       for (const seqId of family.sequenceIds) {
         if (zeroTurn && containsType6(seqId)) continue;
         bucket.push({
           sequenceId: seqId,
-          sourceDeckId: deck.id,
+          sourceCatalogId: catalog.id,
           stepCount,
           word: seqId,
         });
@@ -60,20 +60,20 @@ export function buildSequencePool(decks: Deck[], filter?: DeckPoolFilter): Map<n
   return pool;
 }
 
-export interface DeckSourceSummary {
+export interface CatalogSourceSummary {
   sliceType: 'halved' | 'quartered';
-  deckCount: number;
+  catalogCount: number;
   sequenceCount: number;
 }
 
-export function getDeckSourceSummaries(decks: Deck[]): DeckSourceSummary[] {
-  const map = new Map<string, { deckCount: number; sequenceCount: number }>();
-  for (const deck of decks) {
-    if (deck.collection !== "LOOPs") continue;
-    const entry = map.get(deck.sliceType) ?? { deckCount: 0, sequenceCount: 0 };
-    entry.deckCount++;
-    entry.sequenceCount += deck.totalSequences;
-    map.set(deck.sliceType, entry);
+export function getCatalogSourceSummaries(catalogs: Catalog[]): CatalogSourceSummary[] {
+  const map = new Map<string, { catalogCount: number; sequenceCount: number }>();
+  for (const catalog of catalogs) {
+    if (catalog.collection !== "LOOPs") continue;
+    const entry = map.get(catalog.sliceType) ?? { catalogCount: 0, sequenceCount: 0 };
+    entry.catalogCount++;
+    entry.sequenceCount += catalog.totalSequences;
+    map.set(catalog.sliceType, entry);
   }
   return Array.from(map.entries()).map(([sliceType, stats]) => ({
     sliceType: sliceType as 'halved' | 'quartered',
@@ -155,7 +155,7 @@ export function composeDeck(
 
   return selected.map((entry, i) => ({
     sequenceId: entry.sequenceId,
-    sourceDeckId: entry.sourceDeckId,
+    sourceCatalogId: entry.sourceCatalogId,
     stepCount: entry.stepCount,
     word: entry.word,
     position: i + 1,
@@ -182,7 +182,7 @@ export function swapCard(
   const updated = [...cards];
   updated[index] = {
     sequenceId: replacement.sequenceId,
-    sourceDeckId: replacement.sourceDeckId,
+    sourceCatalogId: replacement.sourceCatalogId,
     stepCount: replacement.stepCount,
     word: replacement.word,
     position: card.position,
@@ -214,7 +214,7 @@ function shuffle<T>(arr: T[]): void {
 
 export interface VtgSequenceEntry {
   sequenceId: string;
-  sourceDeckId: string;
+  sourceCatalogId: string;
   turnRatio: string;
 }
 
@@ -230,15 +230,15 @@ function parseTurnRatio(deckName: string): string {
   return match?.[1] ?? "0:1";
 }
 
-export function getVtgFamilyOptions(decks: Deck[]): VtgFamilyOption[] {
+export function getVtgFamilyOptions(catalogs: Catalog[]): VtgFamilyOption[] {
   const merged = new Map<string, { label: string; entries: VtgSequenceEntry[] }>();
-  for (const deck of decks) {
-    if (deck.collection !== "VTG") continue;
-    const turnRatio = parseTurnRatio(deck.name);
-    for (const family of deck.families) {
+  for (const catalog of catalogs) {
+    if (catalog.collection !== "VTG") continue;
+    const turnRatio = parseTurnRatio(catalog.name);
+    for (const family of catalog.families) {
       if (!family.id || family.id === "unknown") continue;
       const existing = merged.get(family.id);
-      const newEntries = family.sequenceIds.map(id => ({ sequenceId: id, sourceDeckId: deck.id, turnRatio }));
+      const newEntries = family.sequenceIds.map(id => ({ sequenceId: id, sourceCatalogId: catalog.id, turnRatio }));
       if (existing) {
         existing.entries.push(...newEntries);
       } else {
@@ -263,21 +263,20 @@ export function getVtgFamilyOptions(decks: Deck[]): VtgFamilyOption[] {
   }));
 }
 
-const VTG_ELEMENT_MAP: Record<string, { name: string; emoji: string }> = {
-  "split-same":   { name: "Split-Same", emoji: "🌊" },
-  "tog-same":     { name: "Tog-Same", emoji: "🌍" },
-  "quarter-same": { name: "Quarter-Same", emoji: "☀️" },
-  "split-opp":    { name: "Split-Opp", emoji: "🔥" },
-  "tog-opp":      { name: "Tog-Opp", emoji: "💨" },
-  "quarter-opp":  { name: "Quarter-Opp", emoji: "🌙" },
+const VTG_ELEMENT_MAP: Record<string, { name: string; iconPath: string }> = {
+  "split-same":   { name: "Split-Same", iconPath: "/images/elements/water-v2.png" },
+  "tog-same":     { name: "Tog-Same", iconPath: "/images/elements/earth-v2.png" },
+  "quarter-same": { name: "Quarter-Same", iconPath: "/images/elements/sun-v2.png" },
+  "split-opp":    { name: "Split-Opp", iconPath: "/images/elements/fire-v2.png" },
+  "tog-opp":      { name: "Tog-Opp", iconPath: "/images/elements/air-v2.png" },
+  "quarter-opp":  { name: "Quarter-Opp", iconPath: "/images/elements/moon-v2.png" },
 };
 
-export function vtgFooter(familyId: string, turnRatio: string): CardFooter {
+export function vtgFooter(familyId: string, _turnRatio: string): CardFooter {
   const el = VTG_ELEMENT_MAP[familyId];
-  const center = el
-    ? `${el.name} ${turnRatio} - ${el.emoji}`
-    : `${familyId} ${turnRatio}`;
-  return { center };
+  return el
+    ? { center: el.name, iconPath: el.iconPath }
+    : { center: familyId };
 }
 
 export function buildVtgCards(
@@ -290,7 +289,7 @@ export function buildVtgCards(
     for (const entry of fam.entries) {
       cards.push({
         sequenceId: entry.sequenceId,
-        sourceDeckId: entry.sourceDeckId,
+        sourceCatalogId: entry.sourceCatalogId,
         stepCount: 4,
         word: entry.sequenceId,
         position: 0,

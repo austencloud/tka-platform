@@ -1,6 +1,6 @@
-import type { Deck } from "../domain/models/Deck";
+import type { Catalog } from "../domain/models/Catalog";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { loadDeckSequences, loadSequencesByIds } from "../services/deck-loader";
+import { loadCatalogSequences, loadSequencesByIds } from "../services/catalog-loader";
 import type { PrintRenderOptions } from "../services/types";
 import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
 
@@ -22,11 +22,10 @@ interface BreadcrumbSegment {
 
 const STORAGE_CARD_SIZE = 'cardPreview.cardSize';
 const STORAGE_SOURCE = 'cardPreview.source';
-const STORAGE_DECK_ID = 'cardPreview.deckId';
+const STORAGE_CATALOG_ID = 'cardPreview.deckId';
 
-// Decks with this many sequences or more use lazy-loading per family subset
-// rather than loading everything upfront on deck selection.
-const LARGE_DECK_THRESHOLD = 500;
+// Catalogs with this many sequences or more use lazy-loading per family subset.
+const LARGE_CATALOG_THRESHOLD = 500;
 
 function getStored(key: string): string | null {
   if (typeof window === 'undefined') return null;
@@ -40,14 +39,14 @@ function persist(key: string, value: string | null) {
 }
 
 export function createCardPreviewState(
-  _allDecks: Deck[]
+  _allCatalogs: Catalog[]
 ) {
   // ── Navigation ──────────────────────────────────────────────────────────────
   let level = $state<0 | 1 | 2>(0);
   let selectedSource = $state<CardPreviewSource | null>(
     (getStored(STORAGE_SOURCE) as CardPreviewSource) ?? null
   );
-  let selectedDeck = $state<Deck | null>(null);
+  let selectedCatalog = $state<Catalog | null>(null);
 
   // ── Card configuration ───────────────────────────────────────────────────────
   let cardSize = $state<CardSizeId>(
@@ -66,9 +65,8 @@ export function createCardPreviewState(
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
-  // True when the selected deck is large enough to warrant on-demand family loading.
-  const isLargeDeck = $derived(
-    (selectedDeck?.totalSequences ?? 0) >= LARGE_DECK_THRESHOLD
+  const isLargeCatalog = $derived(
+    (selectedCatalog?.totalSequences ?? 0) >= LARGE_CATALOG_THRESHOLD
   );
 
   // Applies active family and start-position filters to the loaded sequence set.
@@ -78,7 +76,7 @@ export function createCardPreviewState(
     if (selectedFamilyIds.length > 0) {
       const idSet = new Set(selectedFamilyIds);
       const seqIds = new Set(
-        selectedDeck?.families
+        selectedCatalog?.families
           .filter(f => idSet.has(f.id))
           .flatMap(f => [...f.sequenceIds]) ?? []
       );
@@ -99,23 +97,23 @@ export function createCardPreviewState(
     const crumbs: BreadcrumbSegment[] = [{ label: 'Card Preview', level: 0 }];
     if (selectedSource) {
       crumbs.push({
-        label: selectedSource === 'loops' ? 'LOOP Decks' : 'VTG Decks',
+        label: selectedSource === 'loops' ? 'LOOP Catalogs' : 'VTG Catalogs',
         level: 1,
       });
     }
-    if (selectedDeck) {
-      crumbs.push({ label: selectedDeck.name, level: 2 });
+    if (selectedCatalog) {
+      crumbs.push({ label: selectedCatalog.name, level: 2 });
     }
     return crumbs;
   });
 
   // ── Private helpers ──────────────────────────────────────────────────────────
 
-  async function loadDeckSequencesForDeck(deck: Deck) {
+  async function loadCatalogSequencesForCatalog(catalog: Catalog) {
     isLoading = true;
     sequences = [];
     try {
-      const loaded = await loadDeckSequences(deck.id);
+      const loaded = await loadCatalogSequences(catalog.id);
       sequences = loaded;
     } finally {
       isLoading = false;
@@ -123,13 +121,13 @@ export function createCardPreviewState(
   }
 
   // Merges newly-fetched family sequences into the existing list without duplicates.
-  async function loadFamilySequences(deck: Deck, familyIds: string[]) {
+  async function loadFamilySequences(catalog: Catalog, familyIds: string[]) {
     isLoading = true;
     try {
-      const seqIds = deck.families
+      const seqIds = catalog.families
         .filter(f => familyIds.includes(f.id))
         .flatMap(f => [...f.sequenceIds]);
-      const loaded = await loadSequencesByIds(deck.id, seqIds);
+      const loaded = await loadSequencesByIds(catalog.id, seqIds);
       const existingIds = new Set(sequences.map(s => s.id));
       const newSeqs = loaded.filter(s => !existingIds.has(s.id));
       sequences = [...sequences, ...newSeqs];
@@ -144,14 +142,14 @@ export function createCardPreviewState(
     // Getters
     get level() { return level; },
     get selectedSource() { return selectedSource; },
-    get selectedDeck() { return selectedDeck; },
+    get selectedCatalog() { return selectedCatalog; },
     get breadcrumbs() { return breadcrumbs; },
     get cardSize() { return cardSize; },
     get selectedFamilyIds() { return selectedFamilyIds; },
     get startPositionFilter() { return startPositionFilter; },
     get filteredSequences() { return filteredSequences; },
     get isLoading() { return isLoading; },
-    get isLargeDeck() { return isLargeDeck; },
+    get isLargeCatalog() { return isLargeCatalog; },
     get renderProgress() { return renderProgress; },
     get renderTotal() { return renderTotal; },
 
@@ -171,22 +169,21 @@ export function createCardPreviewState(
       persist(STORAGE_SOURCE, source);
     },
 
-    async selectDeck(deck: Deck) {
-      selectedDeck = deck;
+    async selectCatalog(catalog: Catalog) {
+      selectedCatalog = catalog;
       level = 2;
       selectedFamilyIds = [];
       startPositionFilter = null;
-      persist(STORAGE_DECK_ID, deck.id);
+      persist(STORAGE_CATALOG_ID, catalog.id);
 
-      // Small decks load eagerly; large decks wait until the user picks a family.
-      if ((deck.totalSequences ?? 0) < LARGE_DECK_THRESHOLD) {
-        await loadDeckSequencesForDeck(deck);
+      if ((catalog.totalSequences ?? 0) < LARGE_CATALOG_THRESHOLD) {
+        await loadCatalogSequencesForCatalog(catalog);
       }
     },
 
     navigateTo(targetLevel: 0 | 1 | 2) {
       if (targetLevel <= 1) {
-        selectedDeck = null;
+        selectedCatalog = null;
         sequences = [];
         selectedFamilyIds = [];
         startPositionFilter = null;
@@ -201,13 +198,13 @@ export function createCardPreviewState(
     async setFamilyFilter(ids: string[]) {
       selectedFamilyIds = ids;
 
-      // For large decks, fetch the families that haven't been loaded yet.
+      // For large catalogs, fetch the families that haven't been loaded yet.
       if (
-        (selectedDeck?.totalSequences ?? 0) >= LARGE_DECK_THRESHOLD &&
-        selectedDeck &&
+        (selectedCatalog?.totalSequences ?? 0) >= LARGE_CATALOG_THRESHOLD &&
+        selectedCatalog &&
         ids.length > 0
       ) {
-        await loadFamilySequences(selectedDeck, ids);
+        await loadFamilySequences(selectedCatalog, ids);
       }
     },
 

@@ -1,7 +1,7 @@
 /**
  * Info Card Canvas Renderer
  *
- * Draws the "How to Read a Choreo Card" (front) and "Your Deck" (back)
+ * Draws the "How to Read a Choreo Card" (front) and "Your Catalog" (back)
  * info cards on Canvas 2D at MPC print dimensions.
  *
  * Content is static - no per-sequence data - so canvases are cached
@@ -213,13 +213,13 @@ export async function renderInfoCardBack(options: InfoCardCanvasOptions): Promis
   const cX = innerX + padX;
   let curY = innerY + padY;
 
-  // Title: "Your Deck"
+  // Title: "Your Catalog"
   curY += 8 * REF_SCALE;
   ctx.fillStyle = "#ffffff";
   ctx.font = `800 ${28 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText("Your Deck", innerX + innerW / 2, curY);
+  ctx.fillText("Your Catalog", innerX + innerW / 2, curY);
   curY += 28 * REF_SCALE + 14 * REF_SCALE;
 
   // "Every Card Has Four Corners" label

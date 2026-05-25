@@ -1,18 +1,18 @@
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-export interface DeckFamily {
+export interface CatalogFamily {
   readonly id: string;
   readonly label: string;
   readonly typeCombo: string;
   readonly sequenceIds: readonly string[];
 }
 
-export interface Deck {
+export interface Catalog {
   readonly id: string;
   readonly name: string;
   readonly canonicalName: string;
   readonly description: string;
-  readonly families: readonly DeckFamily[];
+  readonly families: readonly CatalogFamily[];
   readonly totalSequences: number;
   readonly gridMode: GridMode;
   readonly level: number;

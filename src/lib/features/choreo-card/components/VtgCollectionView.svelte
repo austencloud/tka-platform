@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import VtgFamilyGrid from "./VtgFamilyGrid.svelte";
   import VtgRatioGrid from "./VtgRatioGrid.svelte";
   import VtgReversalGrid from "./VtgReversalGrid.svelte";
@@ -7,8 +7,8 @@
   type VtgView = "family" | "ratio" | "reversal";
 
   interface Props {
-    decks: Deck[];
-    onSelectDeck: (deckId: string) => void;
+    catalogs: Catalog[];
+    onSelectCatalog: (catalogId: string) => void;
     onSelectFamily: (familyId: string) => void;
     initialView?: VtgView;
     onViewChange?: (view: VtgView) => void;
@@ -25,17 +25,14 @@
     props.onViewChange?.(view);
   }
 
-  // Family and Ratio views only show continuous decks.
-  // Reversal variants are browsed via the BY REVERSAL view.
-  const continuousDecks = $derived(
-    props.decks.filter(d => !d.reversalPattern || d.reversalPattern === 'continuous')
+  const continuousCatalogs = $derived(
+    props.catalogs.filter(d => !d.reversalPattern || d.reversalPattern === 'continuous')
   );
 
   function handleSelectPattern(patternId: string): void {
-    // Find the deck matching this reversal pattern and select it
-    const matchingDeck = props.decks.find(d => d.reversalPattern === patternId);
-    if (matchingDeck) {
-      props.onSelectDeck(matchingDeck.id);
+    const matching = props.catalogs.find(d => d.reversalPattern === patternId);
+    if (matching) {
+      props.onSelectCatalog(matching.id);
     }
   }
 </script>
@@ -73,11 +70,11 @@
 
   <div class="grid-content">
     {#if activeView === "family"}
-      <VtgFamilyGrid decks={continuousDecks} onSelectFamily={props.onSelectFamily} />
+      <VtgFamilyGrid catalogs={continuousCatalogs} onSelectFamily={props.onSelectFamily} />
     {:else if activeView === "ratio"}
-      <VtgRatioGrid decks={continuousDecks} onSelectDeck={props.onSelectDeck} />
+      <VtgRatioGrid catalogs={continuousCatalogs} onSelectCatalog={props.onSelectCatalog} />
     {:else}
-      <VtgReversalGrid decks={props.decks} onSelectPattern={handleSelectPattern} />
+      <VtgReversalGrid catalogs={props.catalogs} onSelectPattern={handleSelectPattern} />
     {/if}
   </div>
 </div>

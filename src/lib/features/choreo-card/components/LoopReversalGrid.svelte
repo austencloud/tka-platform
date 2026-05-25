@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import {
     REVERSAL_PATTERNS,
     REVERSAL_FAMILIES,
@@ -8,19 +8,19 @@
   import ReversalPatternCard from "./ReversalPatternCard.svelte";
 
   interface Props {
-    decks: Deck[];
+    catalogs: Catalog[];
     onSelectPattern: (patternId: string) => void;
   }
 
-  const { decks, onSelectPattern }: Props = $props();
+  const { catalogs, onSelectPattern }: Props = $props();
 
   const patternGroups = $derived(
     REVERSAL_PATTERNS
       .map(pattern => {
-        const matchingDecks = decks.filter(d =>
+        const matching = catalogs.filter(d =>
           (d.reversalPattern || 'continuous') === pattern.id
         );
-        const sequenceCount = matchingDecks.reduce((sum, d) => sum + d.totalSequences, 0);
+        const sequenceCount = matching.reduce((sum, d) => sum + d.totalSequences, 0);
         return { pattern, sequenceCount };
       })
       .filter(g => g.sequenceCount > 0)

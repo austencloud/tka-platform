@@ -1,48 +1,45 @@
-// deck-sort.ts - Sort methods and comparators for deck list.
+import type { Catalog } from "./models/Catalog";
 
-import type { Deck } from "./models/Deck";
-
-export enum DeckSortMethod {
+export enum CatalogSortMethod {
   NAME = "name",
   LEVEL = "level",
   SEQUENCE_COUNT = "count",
 }
 
-export const DECK_SORT_LABELS: Record<DeckSortMethod, string> = {
-  [DeckSortMethod.NAME]: "Name",
-  [DeckSortMethod.LEVEL]: "Level",
-  [DeckSortMethod.SEQUENCE_COUNT]: "Cards",
+export const CATALOG_SORT_LABELS: Record<CatalogSortMethod, string> = {
+  [CatalogSortMethod.NAME]: "Name",
+  [CatalogSortMethod.LEVEL]: "Level",
+  [CatalogSortMethod.SEQUENCE_COUNT]: "Cards",
 };
 
-export const DECK_SORT_ICONS: Record<DeckSortMethod, string> = {
-  [DeckSortMethod.NAME]: "fa-sort-alpha-down",
-  [DeckSortMethod.LEVEL]: "fa-layer-group",
-  [DeckSortMethod.SEQUENCE_COUNT]: "fa-sort-numeric-down",
+export const CATALOG_SORT_ICONS: Record<CatalogSortMethod, string> = {
+  [CatalogSortMethod.NAME]: "fa-sort-alpha-down",
+  [CatalogSortMethod.LEVEL]: "fa-layer-group",
+  [CatalogSortMethod.SEQUENCE_COUNT]: "fa-sort-numeric-down",
 };
 
-const comparators: Record<DeckSortMethod, (a: Deck, b: Deck) => number> = {
-  [DeckSortMethod.NAME]: (a, b) => a.name.localeCompare(b.name),
-  [DeckSortMethod.LEVEL]: (a, b) => a.level - b.level || a.name.localeCompare(b.name),
-  [DeckSortMethod.SEQUENCE_COUNT]: (a, b) => a.totalSequences - b.totalSequences || a.name.localeCompare(b.name),
+const comparators: Record<CatalogSortMethod, (a: Catalog, b: Catalog) => number> = {
+  [CatalogSortMethod.NAME]: (a, b) => a.name.localeCompare(b.name),
+  [CatalogSortMethod.LEVEL]: (a, b) => a.level - b.level || a.name.localeCompare(b.name),
+  [CatalogSortMethod.SEQUENCE_COUNT]: (a, b) => a.totalSequences - b.totalSequences || a.name.localeCompare(b.name),
 };
 
-export function sortDecks(decks: Deck[], method: DeckSortMethod): Deck[] {
-  return [...decks].sort(comparators[method]);
+export function sortCatalogs(catalogs: Catalog[], method: CatalogSortMethod): Catalog[] {
+  return [...catalogs].sort(comparators[method]);
 }
 
-/** Generate section labels for SectionIndexSidebar based on sort method. */
-export function getDeckSectionKey(deck: Deck, method: DeckSortMethod): string {
+export function getCatalogSectionKey(catalog: Catalog, method: CatalogSortMethod): string {
   switch (method) {
-    case DeckSortMethod.LEVEL:
-      return `Level ${deck.level}`;
-    case DeckSortMethod.SEQUENCE_COUNT: {
-      if (deck.totalSequences < 100) return "< 100";
-      if (deck.totalSequences < 1000) return "100-999";
-      if (deck.totalSequences < 10000) return "1k-10k";
+    case CatalogSortMethod.LEVEL:
+      return `Level ${catalog.level}`;
+    case CatalogSortMethod.SEQUENCE_COUNT: {
+      if (catalog.totalSequences < 100) return "< 100";
+      if (catalog.totalSequences < 1000) return "100-999";
+      if (catalog.totalSequences < 10000) return "1k-10k";
       return "10k+";
     }
-    case DeckSortMethod.NAME:
+    case CatalogSortMethod.NAME:
     default:
-      return deck.name.charAt(0).toUpperCase();
+      return catalog.name.charAt(0).toUpperCase();
   }
 }

@@ -1,21 +1,21 @@
 <script lang="ts">
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
   import VtgFamilyCard from "./VtgFamilyCard.svelte";
 
   interface Props {
-    decks: Deck[];
+    catalogs: Catalog[];
     onSelectFamily: (familyId: string) => void;
   }
 
-  const { decks, onSelectFamily }: Props = $props();
+  const { catalogs, onSelectFamily }: Props = $props();
 
   const familyStats = $derived(
     VTG_ELEMENTAL_THEMES.map((theme) => {
       let ratioCount = 0;
       let sequenceCount = 0;
-      for (const deck of decks) {
-        const family = deck.families.find((f) => f.id === theme.familyId);
+      for (const catalog of catalogs) {
+        const family = catalog.families.find((f) => f.id === theme.familyId);
         if (family) {
           ratioCount++;
           sequenceCount += family.sequenceIds.length;

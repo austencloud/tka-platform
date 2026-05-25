@@ -3,13 +3,13 @@
 import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-exporter";
 import { aggregateFamilySequences } from "$lib/features/choreo-card/services/vtg-family-aggregator";
 
-  import type { Deck } from "../domain/models/Deck";
+  import type { Catalog } from "../domain/models/Catalog";
   import type { CardFooter } from "../domain/models/DeckRelease";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { FamilyRatioGroup } from "../services/types";
 import type { CardPair } from "../services/types";
   import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
-  import { computeVtgCardFooter } from "../domain/deck-vtg-labels";
+  import { computeVtgCardFooter } from "../domain/catalog-vtg-labels";
   import ChoreoCard from "./ChoreoCard.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
@@ -20,7 +20,7 @@ import type { CardPair } from "../services/types";
 
   interface Props {
     familyId: string;
-    decks: Deck[];
+    catalogs: Catalog[];
     handPointsVisible?: boolean;
     showGrid?: boolean;
     showTKA?: boolean;
@@ -33,7 +33,7 @@ import type { CardPair } from "../services/types";
 
   const {
     familyId,
-    decks,
+    catalogs,
     handPointsVisible = true,
     showGrid = true,
     showTKA = true,
@@ -60,7 +60,7 @@ import type { CardPair } from "../services/types";
   $effect(() => {
     loading = true;
     error = null;
-    aggregateFamilySequences(familyId, decks)
+    aggregateFamilySequences(familyId, catalogs)
       .then((groups) => {
         ratioGroups = groups;
         loading = false;
@@ -175,7 +175,7 @@ import type { CardPair } from "../services/types";
 
 <div class="vtg-family-drilldown">
   <div class="top-bar">
-    <nav class="breadcrumb" aria-label="Deck navigation">
+    <nav class="breadcrumb" aria-label="Catalog navigation">
       <button class="crumb" onclick={onBack} type="button" aria-label="Go back to VTG">VTG</button>
       <span class="crumb-sep" aria-hidden="true">›</span>
       <span class="crumb current">{familyLabel}</span>
