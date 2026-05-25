@@ -13,52 +13,25 @@
    * The parent must have called setViewer3DContext() before mounting this.
    */
 
-  import { untrack } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import Viewer3DCanvas from "./Viewer3DCanvas.svelte";
   import Viewer3DEffectPills from "./Viewer3DEffectPills.svelte";
-  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
-  import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
 
   // Canonical effects config - single source of truth for both 2D canvas
-  // and 3D viewer effect parameters. Seeded from existing state (vm +
-  // animationSettings) and kept in sync via a compat shim while Phase A
-  // is in flight. Shim deleted in Phase B.
-  const effectsVm = getAnimationVisibilityManager();
-  const effectsConfigState = createEffectsConfigState(snapshotConfigFromVm(effectsVm));
-  seedTrailsFromAnimationSettings(effectsConfigState);
+  // and 3D viewer effect parameters. One-time migration from the old VM
+  // localStorage key happens inside createEffectsConfigState.
+  const effectsConfigState = createEffectsConfigState();
   setEffectsConfigContext(effectsConfigState);
 
   // Scene-wide 3D render modifiers (motion blur + speed lines).
   // Separate from per-tip EffectsConfig because these are whole-scene passes.
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
-
-  $effect(() => {
-    const dispose = bindVmToEffectsConfig(effectsVm, effectsConfigState);
-    return dispose;
-  });
-
-  // Re-seed trails when animationSettings changes (runes track deps).
-  // The reads above establish reactive dependencies; the write happens inside
-  // `untrack` so the state mutation on effectsConfigState doesn't get tracked
-  // as part of this effect's own dependency set (which would loop).
-  $effect(() => {
-    // Touch the fields Svelte needs to track for the $effect to re-run.
-    animationSettings.trail.lineWidth;
-    animationSettings.trail.maxOpacity;
-    animationSettings.trail.blueColor;
-    animationSettings.trail.redColor;
-    animationSettings.trail.trackingMode;
-    untrack(() => seedTrailsFromAnimationSettings(effectsConfigState));
-  });
 
   interface Props {
     sequenceData: SequenceData | null;

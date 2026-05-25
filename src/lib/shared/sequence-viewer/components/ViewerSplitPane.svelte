@@ -6,7 +6,7 @@
   Supports focus mode (tap to expand one pane).
 -->
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type {
     ViewerPlaybackState,
@@ -27,13 +27,10 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext, getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext, getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
-  import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
   import { startSceneAssetPreload } from "$lib/shared/3d/services/scene-asset-preloader.svelte";
 
   // Derive trail settings from the global singleton so canvas settings changes
@@ -67,17 +64,12 @@
   });
 
   // Canonical effects config - single source of truth for both 2D canvas
-  // and 3D viewer effect parameters. Seeded from existing state (vm +
-  // animationSettings) and kept in sync via a compat shim while Phase A
-  // is in flight. Shim deleted in Phase B.
-  const effectsVm = getAnimationVisibilityManager();
-  // Reuse the parent context if one is set (SequenceViewerOrchestrator now
-  // owns this so ExportVideoDrawer's EffectsPanel can read the same state).
-  // Fall back to creating our own when used standalone (e.g. legacy hosts).
+  // and 3D viewer effect parameters. Reuse the parent context if one is set
+  // (SequenceViewerOrchestrator owns this so ExportVideoDrawer's EffectsPanel
+  // can read the same state). Fall back to creating our own when standalone.
   const inheritedEffectsConfig = getEffectsConfigContext();
-  const effectsConfigState = inheritedEffectsConfig ?? createEffectsConfigState(snapshotConfigFromVm(effectsVm));
+  const effectsConfigState = inheritedEffectsConfig ?? createEffectsConfigState();
   if (!inheritedEffectsConfig) {
-    seedTrailsFromAnimationSettings(effectsConfigState);
     setEffectsConfigContext(effectsConfigState);
   }
 
@@ -87,27 +79,6 @@
   if (!inheritedScene3DRender) {
     setScene3DRenderContext(createScene3DRenderState());
   }
-
-  $effect(() => {
-    if (inheritedEffectsConfig) return; // parent owns the binding
-    const dispose = bindVmToEffectsConfig(effectsVm, effectsConfigState);
-    return dispose;
-  });
-
-  // Re-seed trails when animationSettings changes (runes track deps).
-  // The reads above establish reactive dependencies; the write happens inside
-  // `untrack` so the state mutation on effectsConfigState doesn't get tracked
-  // as part of this effect's own dependency set (which would loop).
-  $effect(() => {
-    if (inheritedEffectsConfig) return; // parent owns the seeding
-    // Touch the fields Svelte needs to track for the $effect to re-run.
-    animationSettings.trail.lineWidth;
-    animationSettings.trail.maxOpacity;
-    animationSettings.trail.blueColor;
-    animationSettings.trail.redColor;
-    animationSettings.trail.trackingMode;
-    untrack(() => seedTrailsFromAnimationSettings(effectsConfigState));
-  });
 
   interface Props {
     sequence: SequenceData;

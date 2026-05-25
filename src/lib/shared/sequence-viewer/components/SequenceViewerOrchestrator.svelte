@@ -171,9 +171,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
-  import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
-  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
@@ -331,28 +328,11 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     });
   });
 
-  const animationVisibility = getAnimationVisibilityManager();
-
-  const effectsConfigState = createEffectsConfigState(snapshotConfigFromVm(animationVisibility));
-  seedTrailsFromAnimationSettings(effectsConfigState);
+  const effectsConfigState = createEffectsConfigState();
   setEffectsConfigContext(effectsConfigState);
 
   const scene3DRenderState = createScene3DRenderState();
   setScene3DRenderContext(scene3DRenderState);
-
-  $effect(() => {
-    const dispose = bindVmToEffectsConfig(animationVisibility, effectsConfigState);
-    return dispose;
-  });
-
-  $effect(() => {
-    animationSettings.trail.lineWidth;
-    animationSettings.trail.maxOpacity;
-    animationSettings.trail.blueColor;
-    animationSettings.trail.redColor;
-    animationSettings.trail.trackingMode;
-    untrack(() => seedTrailsFromAnimationSettings(effectsConfigState));
-  });
 
   const activeContext = $derived(propContext.getActiveContext(viewingContext));
 
@@ -910,7 +890,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     const newValue = !imgComp.imgDarkMode;
     void updateSettings({ darkMode: newValue });
     imgComp.imageComposition.setDarkMode(newValue);
-    animationVisibility.setDarkMode(newValue);
+    getAnimationVisibilityManager().setDarkMode(newValue);
   }
 
   function handleKeydown(event: KeyboardEvent) {

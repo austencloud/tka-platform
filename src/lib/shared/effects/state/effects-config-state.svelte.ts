@@ -32,13 +32,82 @@ import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/Tip
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
 import { EFFECTS_CONFIG_VERSION } from "../domain/EffectsConfig";
 import { getSceneUndoManager } from "$lib/shared/3d/undo/getSceneUndoManager";
+import { charcoalParamsToSemantic } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
 
 const STORAGE_KEY = "tka_effects_config";
+const VM_STORAGE_KEY = "animation-visibility-settings";
 
 const EFFECT_IDS = [
   "trails", "fire", "led", "charcoal", "zap", "sparkles", "echo", "bloom",
   "water", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
 ] as const;
+
+/**
+ * One-time migration from the old VM localStorage key.
+ * If the user has non-default fire/LED/charcoal/tipEffectMap/effectLayerOverrides
+ * persisted under the VM key but missing from the new EffectsConfig key, snapshot
+ * them into the config once.
+ */
+function migrateFromVmStorageOnce(config: EffectsConfig): EffectsConfig {
+  if (typeof window === "undefined") return config;
+  try {
+    const vmRaw = localStorage.getItem(VM_STORAGE_KEY);
+    if (!vmRaw) return config;
+    const vm = JSON.parse(vmRaw);
+    const migrated = { ...config };
+
+    // Fire
+    if (vm.fireIntensity !== undefined) {
+      migrated.fire = {
+        ...migrated.fire,
+        intensity: vm.fireIntensity ?? migrated.fire.intensity,
+        colorBlend: vm.fireColorBlend ?? migrated.fire.colorBlend,
+        turbulence: vm.fireTurbulence ?? migrated.fire.turbulence,
+        colorCurve: vm.fireColorCurve ?? migrated.fire.colorCurve,
+        propColors: vm.firePropColors ?? migrated.fire.propColors,
+      };
+    }
+
+    // LED
+    if (vm.ledPatternId !== undefined) {
+      migrated.led = {
+        ...migrated.led,
+        brightness: vm.ledBrightness ?? migrated.led.brightness,
+        patternId: vm.ledPatternId ?? migrated.led.patternId,
+        patternSpeed: vm.ledPatternSpeed ?? migrated.led.patternSpeed,
+        primaryColor: vm.ledPrimaryColor ?? migrated.led.primaryColor,
+        secondaryColor: vm.ledSecondaryColor ?? migrated.led.secondaryColor,
+        colorMode: vm.ledColorMode ?? migrated.led.colorMode,
+      };
+    }
+
+    // Charcoal — VM stores raw CharcoalSparkParams; convert to semantic scalars
+    if (vm.charcoalParams) {
+      const semantic = charcoalParamsToSemantic(vm.charcoalParams);
+      migrated.charcoal = { ...migrated.charcoal, ...semantic };
+    }
+
+    // tipEffectMap
+    if (vm.tipEffectMap && Object.keys(vm.tipEffectMap).length > 0) {
+      migrated.tipEffectMap = vm.tipEffectMap;
+    }
+
+    // effectLayerOverrides
+    if (vm.effectLayerOverrides && Object.keys(vm.effectLayerOverrides).length > 0) {
+      migrated.effectLayerOverrides = vm.effectLayerOverrides;
+    }
+
+    // activeEffect — derive from tipEffectMap wildcard
+    const wildcard = migrated.tipEffectMap["*"];
+    if (wildcard) {
+      migrated.activeEffect = wildcard.effect as typeof migrated.activeEffect;
+    }
+
+    return migrated;
+  } catch {
+    return config;
+  }
+}
 
 function loadStoredConfig(): EffectsConfig | null {
   if (typeof window === "undefined") return null;
@@ -46,10 +115,10 @@ function loadStoredConfig(): EffectsConfig | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<EffectsConfig>;
-    if (parsed.version !== EFFECTS_CONFIG_VERSION) {
-      return mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed);
-    }
-    return mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed);
+    const merged = parsed.version !== EFFECTS_CONFIG_VERSION
+      ? mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed)
+      : mergeConfig(DEFAULT_EFFECTS_CONFIG, parsed);
+    return migrateFromVmStorageOnce(merged);
   } catch {
     return null;
   }
@@ -90,7 +159,7 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
 
 export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECTS_CONFIG) {
   const stored = loadStoredConfig();
-  let config = $state<EffectsConfig>(stored ?? structuredClone(initial));
+  let config = $state<EffectsConfig>(stored ?? migrateFromVmStorageOnce(structuredClone(initial)));
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   const sceneUndo = getSceneUndoManager();
 
