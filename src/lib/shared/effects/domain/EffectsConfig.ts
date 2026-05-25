@@ -397,11 +397,6 @@ export interface EffectsOverrides {
 
 export interface EffectsConfig {
   version: number;
-  /** The globally-active effect, or "none" if no effect is selected. */
-  activeEffect: EffectType;
-  /** Per-effect z-layer override. Missing entry = "behind" (default).
-   *  When "front", the effect's canvas renders above the main props canvas. */
-  effectLayerOverrides: Record<string, "behind" | "front">;
   tipEffectMap: TipEffectMap;
   trails: TrailsIntent;
   fire: FireIntent;
