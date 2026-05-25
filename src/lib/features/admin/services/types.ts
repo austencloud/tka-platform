@@ -2,8 +2,6 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { UserAttribution } from "$lib/shared/attribution/domain/types";
-
 // === From IAuditLogger ===
 
 export type AuditActionType =
@@ -50,7 +48,7 @@ export interface CachedUserMetadata {
   disabled: boolean;
   role: string;
   /** Attribution record captured at signup + any self-reported updates. Null for older accounts. */
-  attribution: UserAttribution | null;
+  attribution: Record<string, unknown> | null;
 }
 export interface CachedChallenge {
   id: string;

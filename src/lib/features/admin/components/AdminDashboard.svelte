@@ -21,11 +21,6 @@
   let PostHogDashboard: typeof import("./analytics/PostHogDashboard.svelte").default | null =
     $state(null);
 
-  // Lazy load Attribution Dashboard
-  let AttributionDashboard:
-    | typeof import("./analytics/AttributionDashboard.svelte").default
-    | null = $state(null);
-
   $effect(() => {
     if (activeSection === "loop-labeler" && !LOOPLabelerModule) {
       import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte")
@@ -44,16 +39,6 @@
         })
         .catch((err) => {
           console.error("Failed to load PostHog Dashboard:", err);
-        });
-    }
-
-    if (activeSection === "attribution" && !AttributionDashboard) {
-      import("./analytics/AttributionDashboard.svelte")
-        .then((mod) => {
-          AttributionDashboard = mod.default;
-        })
-        .catch((err) => {
-          console.error("Failed to load Attribution Dashboard:", err);
         });
     }
 
@@ -146,21 +131,6 @@
             <div class="loading-state">
               <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
               <p>Loading Analytics...</p>
-            </div>
-          {/if}
-        </div>
-      {:else if activeSection === "attribution"}
-        <div
-          id="attribution-panel"
-          role="tabpanel"
-          aria-labelledby="attribution-tab"
-        >
-          {#if AttributionDashboard}
-            <AttributionDashboard />
-          {:else}
-            <div class="loading-state">
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-              <p>Loading Attribution...</p>
             </div>
           {/if}
         </div>

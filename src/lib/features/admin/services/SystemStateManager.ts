@@ -11,7 +11,6 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import type { UserAttribution } from "$lib/shared/attribution/domain/types";
 import type { SystemState, CachedUserMetadata, CachedChallenge, CachedAnnouncement } from "./types";
 
 // Cache TTL: 2-3 minutes for ops work (stale data is acceptable)
@@ -164,7 +163,7 @@ export class SystemStateManager {
       createdAt: createdAtDate,
       disabled: (data["disabled"] as boolean) ?? false,
       role: (data["role"] as string) ?? "user",
-      attribution: (data["attribution"] as UserAttribution | undefined) ?? null,
+      attribution: (data["attribution"] as Record<string, unknown> | undefined) ?? null,
     };
   }
 

@@ -12,7 +12,6 @@ import { getProviderIds } from '../profile-picture-manager';
 import { generateUniqueUsername, claimUsername } from '../username-validator';
 import { formatUsername } from "../../domain/models/UsernameValidation";
 
-import { getAttributionPersister } from "$lib/shared/attribution/getAttributionPersister";
 import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
 
 /**
@@ -132,24 +131,6 @@ export class UserDocumentManager {
           }
         );
 
-        // Finalize attribution for new user (async, non-blocking)
-        // Converts anonymous session data to user attribution record
-        void (async () => {
-          try {
-            const persister = getAttributionPersister();
-            if (persister) {
-              const { detectDeviceCategory } = await import("$lib/shared/attribution/config/referrer-patterns");
-              const signupContext = {
-                timestamp: new Date().toISOString(),
-                method: this.detectSignupMethod(user),
-                device: detectDeviceCategory(),
-              };
-              await persister.finalizeForUser(user.uid, signupContext);
-            }
-          } catch (err) {
-            console.warn(`[UserDocumentManager] Attribution finalization failed:`, err);
-          }
-        })();
       } else {
         // EXISTING USER: Preserve username, update other fields
         const existingData = userDoc.data();
