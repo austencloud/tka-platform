@@ -306,17 +306,6 @@
     initPostHog();
     bootProfiler.end("posthog");
 
-    // Attribution tracking
-    try {
-      const { getAttributionPersister } = await import("$lib/shared/attribution/getAttributionPersister");
-      const persister = getAttributionPersister();
-      if (persister) {
-        (persister as any).getOrCreateSession();
-      }
-    } catch (error) {
-      console.warn("Attribution capture failed:", error);
-    }
-
     // i18n
     bootProfiler.mark("i18n");
     const { initI18n } = await imports.i18n;
