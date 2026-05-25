@@ -70,6 +70,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     activeContext: ViewingContext;
 
     handleSetAsIntended: () => Promise<void>;
+    handlePropTypeChange: (propType: PropType) => void;
 
     imgShowWord: boolean;
     imgShowStartPos: boolean;
@@ -1007,6 +1008,10 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     activeContext,
 
     handleSetAsIntended,
+    handlePropTypeChange: (propType: PropType) => {
+      updateSettings({ bluePropType: propType, redPropType: propType });
+      propContext.syncPropsToOrchestrator(propType, propType, animationServicesReady);
+    },
 
     imgShowWord: imgComp.imgShowWord,
     imgShowStepNumbers: imgComp.imgShowStepNumbers,

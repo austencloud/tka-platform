@@ -569,9 +569,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                             renderMode={ctx.renderMode}
                             playbackMode={ctx.playbackMode}
                             selectedPropType={ctx.bluePropType}
-                            onPropChange={(propType) => {
-                              settingsService.updateSettings({ bluePropType: propType, redPropType: propType });
-                            }}
+                            onPropChange={ctx.handlePropTypeChange}
                             onPlaybackToggle={ctx.handlePlaybackToggle}
                             onPlaybackModeChange={ctx.handlePlaybackModeChange}
                             onBpmChange={ctx.handleBpmChange}

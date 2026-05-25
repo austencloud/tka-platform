@@ -201,7 +201,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   async function renderAll(seqs: SequenceData[], generation: number) {
     if (rerenderKey !== lastSeenRerenderKey) {
-      console.log(`[CardCache] rerenderKey changed ${lastSeenRerenderKey} → ${rerenderKey}, flushing caches`);
       cardCache.clear();
       deckCardBlobCache.clear().catch(() => {});
       lastSeenRerenderKey = rerenderKey;
@@ -218,11 +217,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     }
 
     if (missKeys.length > 0) {
-      console.log(`[CardCache] ${missKeys.length}/${seqs.length} not in memory, checking IndexedDB…`);
       const idbHits = await deckCardBlobCache.getMultiple(missKeys);
       if (generation !== renderGeneration) return;
 
-      console.log(`[CardCache] IndexedDB returned ${idbHits.size}/${missKeys.length} hits`);
       for (const [key, entry] of idbHits) {
         const frontUrl = await blobToDataUrl(entry.frontBlob);
         const backUrl = await blobToDataUrl(entry.backBlob);
@@ -232,8 +229,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
         });
       }
       if (generation !== renderGeneration) return;
-    } else {
-      console.log(`[CardCache] All ${seqs.length} cards found in memory`);
     }
 
     // Phase 2: Fast path if every card is now in memory (from either tier)
@@ -242,7 +237,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     });
 
     if (allCached) {
-      console.log(`[CardCache] All ${seqs.length} cards cached — instant display`);
       const cards: RenderedCard[] = [];
       for (let idx = 0; idx < seqs.length; idx++) {
         const seq = seqs[idx]!;

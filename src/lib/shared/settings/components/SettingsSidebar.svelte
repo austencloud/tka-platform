@@ -3,7 +3,8 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
   import { onMount } from "svelte";
-  import { translateSettingsTab } from "$lib/shared/i18n/translate";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+  import type { TranslationKey } from "$lib/shared/i18n/i18n-types";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
 
   // Reactive locale for re-rendering translations
@@ -83,7 +84,7 @@
       <!-- Icon-above-text pattern (3-5 tabs) - Current implementation -->
       {#key locale}
       {#each tabs as tab}
-        {@const translatedLabel = translateSettingsTab(tab.id)}
+        {@const translatedLabel = t(`tab_settings_${tab.id}` as TranslationKey) || tab.label}
         <button
           class="settings-sidebar-item"
           class:active={activeTab === tab.id}

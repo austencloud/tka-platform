@@ -2,8 +2,8 @@
 	import { onMount } from "svelte";
 	import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
 	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
-	import { loadDecks, loadDeckSequences } from "$lib/features/choreo-card/services/deck-loader";
-	import type { Deck } from "$lib/features/choreo-card/domain/models/Deck";
+	import { loadCatalogs, loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
+	import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 	import type { MandalaRenderOptions, MandalaPalette, MandalaOverlapConfig, MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 	import { DEFAULT_OVERLAP_CONFIG } from "$lib/shared/mandala/domain/mandala-types";
 	import {
@@ -43,7 +43,7 @@
 	}
 
 	let calculator: MandalaGeometryCalculator | null = $state(null);
-	let decks: Deck[] = $state([]);
+	let decks: Catalog[] = $state([]);
 	let selectedDeckId: string = $state("");
 	let sequences: any[] = $state([]);
 	let loading: boolean = $state(false);
@@ -195,7 +195,7 @@
 	onMount(async () => {
 		calculator = getMandalaGeometryCalculator();
 		try {
-			decks = await loadDecks();
+			decks = await loadCatalogs();
 			const first = decks[0];
 			if (first) {
 				selectedDeckId = first.id;
@@ -210,7 +210,7 @@
 		loading = true;
 		error = "";
 		expandedShape = null;
-		loadDeckSequences(selectedDeckId)
+		loadCatalogSequences(selectedDeckId)
 			.then((seqs) => {
 				sequences = seqs;
 				spotlightIndex = 0;
@@ -225,17 +225,17 @@
 
 	interface DeckGroup {
 		key: string;
-		decks: Deck[];
+		decks: Catalog[];
 	}
 
-	const filteredDecks = $derived.by((): Deck[] => {
+	const filteredDecks = $derived.by((): Catalog[] => {
 		if (tierFilter === "all") return decks;
 		if (tierFilter === "unrated") return decks.filter((d) => !deckTiers[d.id]);
 		return decks.filter((d) => deckTiers[d.id] === tierFilter);
 	});
 
 	const deckGroups = $derived.by((): DeckGroup[] => {
-		const map = new Map<string, Deck[]>();
+		const map = new Map<string, Catalog[]>();
 		for (const d of filteredDecks) {
 			const key = d.loopType || "other";
 			const list = map.get(key) ?? [];
@@ -313,7 +313,7 @@
 </script>
 
 <div class="lab-root">
-	<!-- LEFT: Deck triage (full height) -->
+	<!-- LEFT: Catalog triage (full height) -->
 	<aside class="deck-panel">
 		<div class="tier-filters">
 			<button class="tier-btn" class:active={tierFilter === "all"} onclick={() => (tierFilter = "all")}>
@@ -588,7 +588,7 @@
 			radial-gradient(ellipse at 70% 80%, rgba(167, 139, 250, 0.04) 0%, transparent 50%);
 	}
 
-	/* --- Deck Panel (left) --- */
+	/* --- Catalog Panel (left) --- */
 	aside.deck-panel {
 		flex-shrink: 0;
 		width: 320px;
@@ -675,7 +675,7 @@
 		opacity: 0.6;
 	}
 
-	/* Deck list */
+	/* Catalog list */
 	.deck-list {
 		flex: 1;
 		overflow-y: auto;

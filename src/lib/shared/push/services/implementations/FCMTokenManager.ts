@@ -56,7 +56,6 @@ export class FCMTokenManager {
 			await this.storeToken(userId, token);
 			this.currentToken = token;
 
-			console.log("[FCMTokenManager] Token registered successfully");
 			return token;
 		} catch (error) {
 			console.error("[FCMTokenManager] Token registration failed:", error);
@@ -73,7 +72,6 @@ export class FCMTokenManager {
 				await deleteToken(messaging);
 
 				this.currentToken = null;
-				console.log("[FCMTokenManager] Token unregistered");
 			}
 		} catch (error) {
 			console.error("[FCMTokenManager] Token unregistration failed:", error);
