@@ -565,7 +565,7 @@ export async function signOut() {
 
     try {
       const { mandalaCollectionState } =
-        await import("$lib/features/mandala-collection/state/mandala-collection-state.svelte");
+        await import("$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte");
       mandalaCollectionState.teardown();
     } catch {
       // Mandala collection may not be loaded - that's ok

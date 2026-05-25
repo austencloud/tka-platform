@@ -3,11 +3,11 @@
 	import { cubicInOut } from "svelte/easing";
 	import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
 	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
-	import { loadDecks, loadDeckSequences } from "$lib/features/choreo-card/services/deck-loader";
-	import { mandalaCollectionState } from "$lib/features/mandala-collection/state/mandala-collection-state.svelte";
+	import { loadCatalogs, loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
+	import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
 	import { MANDALA_STANDARD_TIP_DX } from "$lib/shared/mandala/domain/mandala-constants";
 	import type { UndulationEasing, MandalaPathShape } from "$lib/shared/mandala/components/SequenceMandala.svelte";
-	import type { Deck } from "$lib/features/choreo-card/domain/models/Deck";
+	import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 	import type { MandalaPaths, MandalaPalette, MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
 	import type { MandalaPathOptions } from "$lib/shared/mandala/services/contracts/types";
 	import {
@@ -101,7 +101,7 @@
 	];
 
 	let calculator: MandalaGeometryCalculator | null = $state(null);
-	let decks: Deck[] = $state([]);
+	let decks: Catalog[] = $state([]);
 	let selectedDeckId: string = $state("");
 	let deckSequences: any[] = $state([]);
 	let loading: boolean = $state(false);
@@ -214,7 +214,7 @@
 
 	onMount(() => {
 		calculator = getMandalaGeometryCalculator();
-		loadDecks()
+		loadCatalogs()
 			.then((d) => {
 				decks = d;
 				const first = d[0];
@@ -234,7 +234,7 @@
 		loading = true;
 		error = "";
 		currentIndex = 0;
-		loadDeckSequences(selectedDeckId)
+		loadCatalogSequences(selectedDeckId)
 			.then((seqs) => { deckSequences = seqs; })
 			.catch((e: any) => { error = e.message ?? "Failed to load sequences"; })
 			.finally(() => { loading = false; });

@@ -104,7 +104,7 @@ export async function initializeChildServices(
   })();
 
   // Initialize mandala collection Firebase sync (non-blocking)
-  import("$lib/features/mandala-collection/state/mandala-collection-state.svelte")
+  import("$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte")
     .then(async ({ mandalaCollectionState }) => {
       const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();

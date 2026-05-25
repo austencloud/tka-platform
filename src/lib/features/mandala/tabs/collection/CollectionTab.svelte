@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MandalaCollectionGallery from "$lib/features/mandala-collection/components/MandalaCollectionGallery.svelte";
+  import MandalaCollectionGallery from "./components/MandalaCollectionGallery.svelte";
 </script>
 
 <MandalaCollectionGallery />

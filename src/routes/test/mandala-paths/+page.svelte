@@ -2,9 +2,9 @@
 	import { onMount } from "svelte";
 	import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
 	import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
-	import { loadDecks, loadDeckSequences } from "$lib/features/choreo-card/services/deck-loader";
-	import { mandalaCollectionState } from "$lib/features/mandala-collection/state/mandala-collection-state.svelte";
-	import type { Deck } from "$lib/features/choreo-card/domain/models/Deck";
+	import { loadCatalogs, loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
+	import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
+	import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 	import type {
 		MandalaRenderOptions,
 		MandalaPalette,
@@ -40,7 +40,7 @@
 	];
 
 	let calculator: MandalaGeometryCalculator | null = $state(null);
-	let decks: Deck[] = $state([]);
+	let decks: Catalog[] = $state([]);
 	let selectedDeckId: string = $state("");
 	let deckSequences: any[] = $state([]);
 	let loading: boolean = $state(false);
@@ -129,7 +129,7 @@
 	onMount(async () => {
 		calculator = getMandalaGeometryCalculator();
 		try {
-			decks = await loadDecks();
+			decks = await loadCatalogs();
 			const first = decks[0];
 			if (first) selectedDeckId = first.id;
 		} catch (e: any) {
@@ -142,7 +142,7 @@
 		loading = true;
 		error = "";
 		currentIndex = 0;
-		loadDeckSequences(selectedDeckId)
+		loadCatalogSequences(selectedDeckId)
 			.then((seqs) => { deckSequences = seqs; })
 			.catch((e: any) => { error = e.message ?? "Failed to load sequences"; })
 			.finally(() => { loading = false; });

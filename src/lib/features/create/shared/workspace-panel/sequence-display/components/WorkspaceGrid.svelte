@@ -26,7 +26,7 @@
     ContextMenuEntry,
     ContextMenuState,
   } from "$lib/shared/components/context-menu/context-menu-types";
-  import { mandalaCollectionState } from "$lib/features/mandala-collection/state/mandala-collection-state.svelte";
+  import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
