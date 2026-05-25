@@ -292,6 +292,15 @@ Last audit: 2025-12-27
     getAnimationVisibilityManager().effectsConfigState = ecs;
   });
 
+  // Re-sync the engine whenever effects config changes (fire sliders, presets, etc.).
+  // EffectsConfigState mutations don't notify the VM observer, so we bridge here.
+  $effect(() => {
+    const ecs = effectsConfigState ?? inheritedEffectsConfig ?? null;
+    if (!ecs) return;
+    void ecs.version;
+    getAnimationVisibilityManager().notifyObservers();
+  });
+
   // Push viewer-scoped motion visibility into the engine whenever the toggle
   // changes. Reads tryGet so AnimatorCanvas still works outside the viewer
   // (landing page, browse previews) - context absent → method never called.

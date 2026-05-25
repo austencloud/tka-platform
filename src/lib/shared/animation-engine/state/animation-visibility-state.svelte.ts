@@ -229,10 +229,7 @@ export class AnimationVisibilityStateManager {
     this.observers.delete(callback);
   }
 
-  /**
-   * Notify observers of changes
-   */
-  private notifyObservers(): void {
+  notifyObservers(): void {
     this.observers.forEach((callback) => {
       try {
         callback();

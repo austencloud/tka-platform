@@ -160,6 +160,7 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
 export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECTS_CONFIG) {
   const stored = loadStoredConfig();
   let config = $state<EffectsConfig>(stored ?? migrateFromVmStorageOnce(structuredClone(initial)));
+  let version = $state(0);
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   const sceneUndo = getSceneUndoManager();
 
@@ -171,11 +172,13 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     restore: (snapshot) => {
       try { config = structuredClone(snapshot); }
       catch { config = JSON.parse(JSON.stringify(snapshot)); }
+      version++;
       scheduleSave();
     },
   });
 
   function scheduleSave() {
+    version++;
     if (typeof window === "undefined") return;
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
@@ -411,6 +414,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get activePresets() { return config.activePresets; },
     get activeEffect() { return config.activeEffect; },
     get effectLayerOverrides() { return config.effectLayerOverrides; },
+    get version() { return version; },
 
     updateEffect,
     setActiveEffect,
