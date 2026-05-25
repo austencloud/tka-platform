@@ -21,7 +21,7 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
-  import { getDeckIdForSequence } from "../services/sequence-question-generator";
+  import { getCatalogIdForSequence } from "../services/sequence-question-generator";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
     onAnswerSubmit?: (event: QuizAnswerEvent) => void;
@@ -65,10 +65,10 @@
 
   async function copyDiagnostic() {
     if (!currentSequence) return;
-    const deckId = getDeckIdForSequence(currentSequence.id) ?? "unknown";
+    const catalogId = getCatalogIdForSequence(currentSequence.id) ?? "unknown";
     const diag = {
       sequenceId: currentSequence.id,
-      deckId,
+      catalogId,
       word: currentSequence.word,
       stepCount: currentSequence.steps?.length ?? 0,
       gridMode: currentSequence.gridMode ?? "unknown",

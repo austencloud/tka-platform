@@ -46,7 +46,7 @@
   import PhraseTimeline from "./components/PhraseTimeline.svelte";
   import PhraseEasingCurveOverlay from "./components/PhraseEasingCurveOverlay.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
-  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
+  import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
   import type { CreatorIntent } from "$lib/shared/foundation/domain/models/CreatorIntent";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";

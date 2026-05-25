@@ -8,9 +8,9 @@
   } from "$lib/shared/animation-engine/domain/compose-types";
   import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-  import type { PillId } from "$lib/shared/sequence-viewer/components/pill-nav/pill-types";
-  import { buildPillSpecs } from "$lib/shared/sequence-viewer/components/pill-nav/pill-types";
-  import IconRailNav from "$lib/shared/sequence-viewer/components/pill-nav/IconRailNav.svelte";
+  import type { PillId } from "$lib/shared/animation-panel/pill-nav/pill-types";
+  import { buildPillSpecs } from "$lib/shared/animation-panel/pill-nav/pill-types";
+  import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
   import ScopeBreadcrumb, { type BreadcrumbSegment } from "./ScopeBreadcrumb.svelte";
   import { createCellEditorPanelState, type ScopeLevel } from "./state/cell-editor-panel-state.svelte";
   import LayerSection from "./LayerSection.svelte";
@@ -146,7 +146,7 @@
   // ── Breadcrumb ──
 
   const pillLabels: Record<PillId, string> = {
-    grid: "Grid", layers: "Layers", effects: "Effects",
+    grid: "Grid", layers: "Layers", props: "Props", effects: "Effects",
     effort: "Style", playback: "Playback", display: "Display", export: "Export",
   };
 

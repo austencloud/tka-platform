@@ -34,7 +34,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   // Components
   import ViewerSplitPane from "$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte";
   import FullscreenControls from "$lib/shared/sequence-viewer/components/FullscreenControls.svelte";
-  import ExportVideoDrawer from "$lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte";
+  import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
   import PracticeProgressIndicator from "$lib/shared/sequence-viewer/components/PracticeProgressIndicator.svelte";

@@ -1,6 +1,6 @@
-import type { Deck } from "$lib/features/choreo-card/domain/models/Deck";
+import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { getCachedDecks, loadDecks, loadDeckSequencesPage } from "$lib/features/choreo-card/services/deck-loader";
+import { getCachedCatalogs, loadCatalogs, loadCatalogSequencesPage } from "$lib/features/choreo-card/services/catalog-loader";
 import { QuizAnswerFormat, QuizQuestionFormat, QuizType } from "../domain/enums/quiz-enums";
 import type { QuizAnswerOption, QuizQuestionData } from "../domain/models/quiz-models";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -10,15 +10,15 @@ let isInitialized = false;
 const recentWords: string[] = [];
 const RECENT_WORD_HISTORY = 5;
 const LOAD_TIMEOUT_MS = 15_000;
-const SEQS_PER_DECK = 8;
+const SEQS_PER_CATALOG = 8;
 
-const sequenceDeckMap = new Map<string, string>();
+const sequenceCatalogMap = new Map<string, string>();
 
-export function getDeckIdForSequence(sequenceId: string): string | undefined {
-  return sequenceDeckMap.get(sequenceId);
+export function getCatalogIdForSequence(sequenceId: string): string | undefined {
+  return sequenceCatalogMap.get(sequenceId);
 }
 
-function isMatchingDeck(d: Deck): boolean {
+function isMatchingCatalog(d: Catalog): boolean {
   return d.level === 1;
 }
 
@@ -34,50 +34,50 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 export async function initialize(): Promise<void> {
   if (isInitialized) return;
 
-  const cached = getCachedDecks();
-  let allDecks: Deck[];
+  const cached = getCachedCatalogs();
+  let allCatalogs: Catalog[];
 
   if (cached && cached.length > 0) {
-    allDecks = cached;
+    allCatalogs = cached;
   } else {
-    allDecks = await withTimeout(loadDecks(), LOAD_TIMEOUT_MS, "loadDecks");
+    allCatalogs = await withTimeout(loadCatalogs(), LOAD_TIMEOUT_MS, "loadCatalogs");
   }
 
-  const matchingDecks = allDecks.filter(isMatchingDeck);
+  const matchingCatalogs = allCatalogs.filter(isMatchingCatalog);
 
-  if (matchingDecks.length === 0) {
-    throw new Error("No L1 rotated quartered 16-count decks found");
+  if (matchingCatalogs.length === 0) {
+    throw new Error("No L1 rotated quartered 16-count catalogs found");
   }
 
-  shuffleArray(matchingDecks);
-  const decksToLoad = matchingDecks.slice(0, 20);
+  shuffleArray(matchingCatalogs);
+  const catalogsToLoad = matchingCatalogs.slice(0, 20);
 
-  const loads = decksToLoad.map((deck) =>
+  const loads = catalogsToLoad.map((catalog) =>
     withTimeout(
-      loadDeckSequencesPage(deck.id, SEQS_PER_DECK),
+      loadCatalogSequencesPage(catalog.id, SEQS_PER_CATALOG),
       LOAD_TIMEOUT_MS,
-      `loadDeckSequencesPage(${deck.id})`
+      `loadCatalogSequencesPage(${catalog.id})`
     )
-      .then((r) => ({ deckId: deck.id, sequences: r.sequences }))
-      .catch(() => ({ deckId: deck.id, sequences: [] as SequenceData[] }))
+      .then((r) => ({ catalogId: catalog.id, sequences: r.sequences }))
+      .catch(() => ({ catalogId: catalog.id, sequences: [] as SequenceData[] }))
   );
 
   const results = await Promise.all(loads);
 
-  sequenceDeckMap.clear();
+  sequenceCatalogMap.clear();
   sequencePool = [];
-  for (const { deckId, sequences } of results) {
+  for (const { catalogId, sequences } of results) {
     for (const seq of sequences) {
       if (seq.word && seq.word.length > 0) {
         sequencePool.push(seq);
-        sequenceDeckMap.set(seq.id, deckId);
+        sequenceCatalogMap.set(seq.id, catalogId);
       }
     }
   }
 
   if (sequencePool.length < 4) {
     throw new Error(
-      `Need at least 4 sequences with distinct words across ${matchingDecks.length} decks, found ${sequencePool.length}`
+      `Need at least 4 sequences with distinct words across ${matchingCatalogs.length} catalogs, found ${sequencePool.length}`
     );
   }
 
@@ -122,7 +122,7 @@ export async function generateSequenceToWordQuestion(
 export function resetState(): void {
   recentWords.length = 0;
   sequencePool = [];
-  sequenceDeckMap.clear();
+  sequenceCatalogMap.clear();
   isInitialized = false;
 }
 

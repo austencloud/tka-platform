@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { PillId } from '$lib/shared/sequence-viewer/components/pill-nav/pill-types';
+  import type { PillId } from '$lib/shared/animation-panel/pill-nav/pill-types';
   import { type ScopeLevel, PILL_SCOPE_CONFIG } from '../state/cell-editor-panel-state.svelte';
 
   let {

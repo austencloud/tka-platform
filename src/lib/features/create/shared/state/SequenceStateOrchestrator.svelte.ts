@@ -42,8 +42,6 @@ import { createSequencePersistenceCoordinator } from "./persistence/SequencePers
 import { createSequenceSelectionState } from "./selection/SequenceSelectionState.svelte";
 import { isStep } from "$lib/features/create/shared/domain/type-guards/pictograph-type-guards";
 
-import { getAttributionPromptTrigger } from "$lib/shared/attribution/getAttributionPromptTrigger";
-
 /**
  * Clean service configuration - no more type gymnastics!
  */
@@ -215,16 +213,6 @@ export function createSequenceState(services: SequenceStateServices) {
         });
       } catch {
         // Silently fail - activity logging is non-critical
-      }
-
-      // Track sequence creation for attribution prompt eligibility
-      try {
-        const promptTrigger = getAttributionPromptTrigger() as { recordInteraction: (type: string) => void } | undefined;
-        if (promptTrigger?.recordInteraction) {
-          promptTrigger.recordInteraction("sequence_create");
-        }
-      } catch {
-        // Silently fail - attribution tracking is non-critical
       }
 
       return sequence;

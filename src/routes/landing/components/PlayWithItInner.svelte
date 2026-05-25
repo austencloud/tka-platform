@@ -31,7 +31,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { RANDOM_PROPS } from "../landing-content";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
+  import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { EFFORTS, type EffortId as EffortPresetId } from "$lib/shared/effort/domain/effort-types";
 

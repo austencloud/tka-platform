@@ -2,11 +2,11 @@
   import { onMount } from "svelte";
   import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
   import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
-  import { loadDecks, loadDeckSequencesPage, getCachedDecks } from "$lib/features/choreo-card/services/deck-loader";
+  import { loadCatalogs, loadCatalogSequencesPage, getCachedCatalogs } from "$lib/features/choreo-card/services/catalog-loader";
   import { getStickerLabContext } from "../context/sticker-lab-context";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { cachePrimitivePaths } from "../state/mandala-paths-cache.svelte";
-  import type { Deck } from "$lib/features/choreo-card/domain/models/Deck";
+  import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { MandalaPaths, MandalaPalette, SVGPathData } from "$lib/shared/mandala/domain/mandala-types";
   import type { QueryDocumentSnapshot } from "firebase/firestore";
@@ -126,10 +126,10 @@
 
   type View =
     | { kind: "decks" }
-    | { kind: "solos"; deck: Deck }
-    | { kind: "members"; deck: Deck; group: SoloGroup };
+    | { kind: "solos"; deck: Catalog }
+    | { kind: "members"; deck: Catalog; group: SoloGroup };
 
-  let decks = $state<Deck[]>([]);
+  let decks = $state<Catalog[]>([]);
   let loading = $state(true);
   let view = $state<View>({ kind: "decks" });
   let groups = $state<SoloGroup[]>([]);
@@ -140,14 +140,14 @@
   );
 
   onMount(async () => {
-    const cached = getCachedDecks();
+    const cached = getCachedCatalogs();
     if (cached && cached.length > 0) decks = cached;
-    const fresh = await loadDecks();
+    const fresh = await loadCatalogs();
     decks = fresh;
     loading = false;
   });
 
-  async function openDeck(deck: Deck) {
+  async function openDeck(deck: Catalog) {
     view = { kind: "solos", deck };
     groups = [];
     scanProgress = "Loading...";
@@ -158,7 +158,7 @@
     let loaded = 0;
 
     while (hasMore) {
-      const page = await loadDeckSequencesPage(deck.id, FETCH_PAGE, lastDoc ?? undefined);
+      const page = await loadCatalogSequencesPage(deck.id, FETCH_PAGE, lastDoc ?? undefined);
       for (const seq of page.sequences) {
         if (!seq.steps || seq.steps.length === 0) continue;
         const paths = calc.calculate(seq.steps, "staff", "staff");
@@ -183,7 +183,7 @@
     scanProgress = "";
   }
 
-  function openMembers(group: SoloGroup, deck: Deck) {
+  function openMembers(group: SoloGroup, deck: Catalog) {
     view = { kind: "members", deck, group };
   }
 
@@ -225,7 +225,7 @@
     return { svg, paths };
   }
 
-  function deckLabel(deck: Deck): string {
+  function deckLabel(deck: Catalog): string {
     return deck.name ?? `${deck.turnPattern ?? ""}`.replace("uniform-", "").replace("t", " Turn");
   }
 
