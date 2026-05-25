@@ -224,6 +224,8 @@ export class ShortCodeManager {
     if (sequence.id) record.sequenceId = sequence.id;
     if (sequence.ownerId) record.ownerId = sequence.ownerId;
     if (encoderHash) record.encoderHash = encoderHash;
+    if (options?.deckId) record.deckId = options.deckId;
+    if (options?.deckName) record.deckName = options.deckName;
 
     const shouldEmbed = options?.embedSequenceData || !sequence.ownerId;
     if (shouldEmbed && sequence.steps && sequence.steps.length > 0) {
