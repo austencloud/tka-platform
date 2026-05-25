@@ -328,6 +328,7 @@ export class AnimationEngine {
    */
   setEffectsConfigState(state: EffectsConfigState | null): void {
     this.effectsConfigState = state;
+    this.effectRendererManager.effectsConfigState = state;
   }
 
   /**
@@ -1138,6 +1139,7 @@ export class AnimationEngine {
       getFrameParams: () => this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS),
       getVM: () => this.getVM(),
     });
+    erm.effectsConfigState = this.effectsConfigState;
 
     // Wire prop type manager
     this.propTypeManager.wire({

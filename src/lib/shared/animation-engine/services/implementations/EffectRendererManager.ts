@@ -22,6 +22,9 @@ import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import { DEFAULT_LED_CONFIG, ledBrightnessToFloat } from "../../domain/types/LedTypes";
 import { resolveEffectZ } from "../effect-layer";
 import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
+import type { CharcoalSparkParams } from "../../domain/types/CharcoalSparkTypes";
+import { semanticToCharcoalParams } from "../../domain/types/CharcoalSparkTypes";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { RenderFrameParams, RenderLoopConfig } from "../contracts/IAnimationRenderLoop";
 
 import { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
@@ -91,7 +94,7 @@ const OVERLAY_REGISTRY: readonly OverlayEffectEntry[] = [
     configKey: "charcoalRenderer",
     RendererClass: CharcoalSparkRenderer,
     onInit: (mgr, renderer) => {
-      const charcoalParams = mgr.getCharcoalParamsFromVM();
+      const charcoalParams = mgr.getCharcoalParamsFromConfig();
       if (charcoalParams) (renderer as CharcoalSparkRenderer).setParams(charcoalParams);
     },
     onDisable: (mgr) => {
@@ -246,6 +249,7 @@ export class EffectRendererManager {
   private renderLoopService: IAnimationRenderLoop | null = null;
   private getFrameParams: FrameParamsProvider | null = null;
   private getVM: (() => AnimationVisibilityStateManager) | null = null;
+  effectsConfigState: EffectsConfigState | null = null;
 
   // ── Registry helpers (consolidate dynamic property access) ──────────
   private getOverlayRenderer(field: OverlayEffectEntry["rendererField"]): OverlayRenderer | null {
@@ -283,9 +287,11 @@ export class EffectRendererManager {
     if (refs.canvasSize !== undefined) this.canvasSize = refs.canvasSize;
   }
 
-  /** Expose charcoal params from VM for the registry onInit hook. */
-  getCharcoalParamsFromVM(): ReturnType<AnimationVisibilityStateManager["getCharcoalParams"]> | undefined {
-    return this.getVM?.().getCharcoalParams();
+  /** Expose charcoal params from EffectsConfigState for the registry onInit hook. */
+  getCharcoalParamsFromConfig(): CharcoalSparkParams | undefined {
+    if (!this.effectsConfigState) return undefined;
+    const intent = this.effectsConfigState.charcoal;
+    return semanticToCharcoalParams(intent);
   }
 
   /** Check whether a given overlay effect is currently enabled. */
@@ -474,7 +480,7 @@ export class EffectRendererManager {
    */
   hasEffectInEffectiveMap(effect: EffectType): boolean {
     const effectiveMap = this.cellTipEffectMap ??
-      (this.getVM ? this.getVM().getTipEffectMap() : {});
+      this.effectsConfigState?.tipEffectMap ?? {};
     return Object.values(effectiveMap).some(a => a.effect === effect);
   }
 
@@ -506,11 +512,11 @@ export class EffectRendererManager {
    * Safe to call any time; renderers that aren't initialized yet are skipped.
    */
   syncEffectLayers(): void {
-    if (!this.getVM) return;
-    const vm = this.getVM();
+    if (!this.effectsConfigState) return;
+    const state = this.effectsConfigState;
     const apply = (id: string, renderer: { setCanvasZIndex?: (z: number) => void } | null) => {
       if (!renderer?.setCanvasZIndex) return;
-      renderer.setCanvasZIndex(resolveEffectZ(id, vm.getEffectLayer(id)));
+      renderer.setCanvasZIndex(resolveEffectZ(id, state.getEffectLayer(id)));
     };
     apply("trails", this.trailOverlay);
     apply("led", this.ledRenderer);

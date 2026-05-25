@@ -247,8 +247,8 @@ export class FrameParameterBuilder {
     // Fire/charcoal overlay config - pass when either effect is active
     fp.fireConfig = (prevHasFireTips || prevHasCharcoalTips) ? erm.fireConfig : null;
     fp.darkMode = prevDarkMode;
-    // Prop colors for colored flames - use VM's custom colors if set, else default blue/red
-    fp.propColors = getVM()?.getFirePropColors() ?? DEFAULT_PROP_FLAME_COLORS;
+    // Prop colors for colored flames - read from EffectsConfigState, else default blue/red
+    fp.propColors = effectsConfigState?.fire.propColors ?? DEFAULT_PROP_FLAME_COLORS;
 
     // LED overlay config
     fp.ledConfig = erm.ledConfig.enabled ? erm.ledConfig : null;
@@ -386,7 +386,7 @@ export class FrameParameterBuilder {
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.
-    fp.tipEffectMap = erm.cellTipEffectMap ?? getVM()?.getTipEffectMap() ?? {};
+    fp.tipEffectMap = erm.cellTipEffectMap ?? effectsConfigState?.tipEffectMap ?? {};
 
     // Suppress 2D effect overlays when 3D mode is active
     fp.suppress2DOverlays = state.suppress2DOverlays ?? false;
