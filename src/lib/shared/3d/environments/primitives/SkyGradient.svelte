@@ -32,7 +32,7 @@
     topColor = "#1e1b4b",
     bottomColor = "#0a0a12",
     midColor,
-    radius = 80,
+    radius = 200,
   }: Props = $props();
 
   const geometry = untrack(() => new SphereGeometry(radius, 32, 32));

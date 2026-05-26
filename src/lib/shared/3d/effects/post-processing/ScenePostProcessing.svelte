@@ -94,7 +94,6 @@
     if (isOcean) {
       effects.push(new WaterAbsorptionEffect());
       effects.push(new RefractionCausticsEffect());
-      effects.push(new UnderwaterDistortionEffect());
     }
 
     if (enableBloom) {
@@ -120,6 +119,10 @@
 
     if (effects.length > 0) {
       composer.addPass(new EffectPass(cam, ...effects));
+    }
+
+    if (isOcean) {
+      composer.addPass(new EffectPass(cam, new UnderwaterDistortionEffect()));
     }
 
     if (enableChromaticAberration) {

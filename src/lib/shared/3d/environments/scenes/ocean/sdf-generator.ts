@@ -14,7 +14,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   Data3DTexture,
-  HalfFloatType,
+  FloatType,
   LinearFilter,
   Matrix4,
   Mesh,
@@ -25,7 +25,7 @@ import {
   Scene,
   ShaderMaterial,
   Vector3,
-  WebGL3DRenderTarget,
+  WebGLRenderTarget,
   type WebGLRenderer,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -109,7 +109,6 @@ export function generateSDFTexture(
 ): SDFResult {
   const resolution = options.resolution ?? 64;
   const padding = options.padding ?? 1.5;
-  const t0 = performance.now();
 
   object.updateMatrixWorld(true);
 
@@ -185,12 +184,15 @@ export function generateSDFTexture(
   });
 
   const dim = resolution;
-  const renderTarget = new WebGL3DRenderTarget(dim, dim, dim);
-  renderTarget.texture.format = RedFormat;
-  renderTarget.texture.type = HalfFloatType;
-  renderTarget.texture.minFilter = LinearFilter;
-  renderTarget.texture.magFilter = LinearFilter;
-  renderTarget.texture.generateMipmaps = false;
+
+  // Render each Z-slice to a 2D target and read pixels back to CPU.
+  // WebGL3DRenderTarget textures are framebuffer-backed (image.data = null),
+  // so using them as shader uniforms causes per-frame texSubImage3D errors.
+  const readbackTarget = new WebGLRenderTarget(dim, dim, {
+    type: FloatType,
+    depthBuffer: false,
+    stencilBuffer: false,
+  });
 
   const { scene, camera, mesh } = getQuadSetup();
   mesh.material = material;
@@ -199,27 +201,39 @@ export function generateSDFTexture(
   const savedAutoClear = renderer.autoClear;
   renderer.autoClear = false;
 
+  const sliceTexels = dim * dim;
+  const cpuData = new Float32Array(sliceTexels * dim);
+  const sliceBuffer = new Float32Array(sliceTexels * 4);
+
   for (let z = 0; z < dim; z++) {
     material.uniforms.uZSlice!.value = (z + 0.5) / dim;
-    renderer.setRenderTarget(renderTarget, z);
+    renderer.setRenderTarget(readbackTarget);
     renderer.clear();
     renderer.render(scene, camera);
+
+    renderer.readRenderTargetPixels(readbackTarget, 0, 0, dim, dim, sliceBuffer);
+    for (let i = 0; i < sliceTexels; i++) {
+      cpuData[z * sliceTexels + i] = sliceBuffer[i * 4]!;
+    }
   }
 
   renderer.setRenderTarget(savedRenderTarget);
   renderer.autoClear = savedAutoClear;
   renderer.resetState();
 
-  const texture = renderTarget.texture;
+  const texture = new Data3DTexture(cpuData, dim, dim, dim);
+  texture.format = RedFormat;
+  texture.type = FloatType;
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
+  texture.generateMipmaps = false;
   texture.needsUpdate = true;
 
+  readbackTarget.dispose();
   material.dispose();
   bvhStruct.dispose();
   for (const geo of geometries) geo.dispose();
   merged.dispose();
-
-  const elapsed = (performance.now() - t0).toFixed(1);
-  console.log(`[sdf-generator] GPU SDF ${dim}³ in ${elapsed}ms`);
 
   return { texture, inverseMatrix, bounds };
 }

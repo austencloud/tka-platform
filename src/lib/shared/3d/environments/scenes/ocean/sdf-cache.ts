@@ -8,7 +8,7 @@
 import {
   Box3,
   Data3DTexture,
-  HalfFloatType,
+  FloatType,
   LinearFilter,
   Matrix4,
   RedFormat,
@@ -51,7 +51,7 @@ export function sdfCacheKey(
   const parts = placements.map(
     (p) => `${p.x},${p.z},${p.rotY.toFixed(2)},${p.targetHeight}`,
   );
-  return `sdf-v1-r${resolution}-${parts.join('|')}`;
+  return `sdf-v2-r${resolution}-${parts.join('|')}`;
 }
 
 export async function loadCachedSDF(key: string): Promise<SDFResult[] | null> {
@@ -71,11 +71,11 @@ export async function loadCachedSDF(key: string): Promise<SDFResult[] | null> {
 
         const results: SDFResult[] = record.entries.map((entry) => {
           const dim = entry.resolution;
-          const typedData = new Uint16Array(entry.data);
+          const typedData = new Float32Array(entry.data);
 
           const texture = new Data3DTexture(typedData, dim, dim, dim);
           texture.format = RedFormat;
-          texture.type = HalfFloatType;
+          texture.type = FloatType;
           texture.minFilter = LinearFilter;
           texture.magFilter = LinearFilter;
           texture.generateMipmaps = false;
@@ -108,11 +108,11 @@ export async function storeSDF(
 ): Promise<void> {
   try {
     const entries: CachedSDF[] = results.map((r, i) => {
-      const texData = r.texture.image.data as Uint16Array;
+      const texData = r.texture.image.data as Float32Array;
       return {
         key: `${key}-${i}`,
         resolution,
-        data: new Uint16Array(texData).buffer,
+        data: new Float32Array(texData).buffer,
         inverseMatrix: r.inverseMatrix.toArray(),
         boundsMin: [r.bounds.min.x, r.bounds.min.y, r.bounds.min.z] as [number, number, number],
         boundsMax: [r.bounds.max.x, r.bounds.max.y, r.bounds.max.z] as [number, number, number],

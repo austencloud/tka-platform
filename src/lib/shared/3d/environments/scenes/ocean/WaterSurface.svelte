@@ -19,10 +19,12 @@
     uniform float uWaveScale;
     uniform float uWaveSpeed;
     uniform float uWaveAmplitude;
+    uniform float uSize;
     varying vec2 vUv;
     varying vec3 vWorldPosition;
     varying float vDisplacement;
     varying vec3 vNormal;
+    varying float vEdgeFade;
 
     // Gerstner wave: returns (displacement.xyz, partial derivatives for normal)
     // D = direction, w = frequency, A = amplitude, Q = steepness, phi = phase speed
@@ -74,8 +76,12 @@
       disp += gerstnerWave(normalize(vec2(-0.6, -0.8)), baseW * 3.2, baseA * 0.15,
                            0.3, speed * 2.0, p, uTime, tangent, binormal);
 
-      pos += disp;
-      vDisplacement = disp.y;
+      float edgeDist = length(pos.xz);
+      float halfSize = uSize * 0.5;
+      float dispFade = 1.0 - smoothstep(halfSize * 0.35, halfSize * 0.65, edgeDist);
+      pos += disp * dispFade;
+      vDisplacement = disp.y * dispFade;
+      vEdgeFade = dispFade;
 
       // Analytical normal from accumulated Gerstner partials
       vNormal = normalize(cross(binormal, tangent));
@@ -102,11 +108,13 @@
     uniform float uNoiseScale;
     uniform float uNoiseSpeed;
     uniform float uNoiseAmplitude;
+    uniform float uSize;
 
     varying vec2 vUv;
     varying vec3 vWorldPosition;
     varying float vDisplacement;
     varying vec3 vNormal;
+    varying float vEdgeFade;
 
     // Simple 2D hash noise
     float hash(vec2 p) {
@@ -135,7 +143,9 @@
     }
 
     void main() {
-      float edgeFade = 1.0 - smoothstep(0.3, 0.5, length(vUv - 0.5));
+      float edgeDist = length(vWorldPosition.xz);
+      float halfSize = uSize * 0.5;
+      float edgeFade = 1.0 - smoothstep(halfSize * 0.3, halfSize * 0.6, edgeDist);
 
       if (!uSnellEnabled) {
         float highlight = smoothstep(0.0, 0.1, vDisplacement) * 0.3;
@@ -208,6 +218,7 @@
       uWaveScale: { value: 0 },
       uWaveSpeed: { value: 0 },
       uWaveAmplitude: { value: 0 },
+      uSize: { value: size },
       uCameraPosition: { value: new Vector3() },
       uSnellEnabled: { value: false },
       uSkyColor: { value: new Color() },
@@ -229,6 +240,7 @@
     material.uniforms.uWaveScale!.value = config.waveScale;
     material.uniforms.uWaveSpeed!.value = config.waveSpeed;
     material.uniforms.uWaveAmplitude!.value = config.waveAmplitude;
+    material.uniforms.uSize!.value = size;
 
     const snell = config.snellWindow;
     if (snell?.enabled) {

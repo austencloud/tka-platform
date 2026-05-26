@@ -69,7 +69,11 @@
       const ly = pos.getY(i);
       const wx = lx;
       const wz = -ly;
-      const h = terrainHeightWithMounds(wx, wz, stageRadius, clearingRadius);
+      let h = terrainHeightWithMounds(wx, wz, stageRadius, clearingRadius);
+      const edgeDist = Math.sqrt(wx * wx + wz * wz);
+      const halfSize = size * 0.5;
+      const edgeFade = 1.0 - Math.max(0, Math.min(1, (edgeDist - halfSize * 0.4) / (halfSize * 0.3)));
+      h *= edgeFade;
       pos.setZ(i, h);
 
       let prox = 0;
@@ -363,7 +367,7 @@
       outgoingLight *= absorption;
 
       // Fade to terminal fog color at distance (converges with scene fog + sky bottom)
-      float distFade = smoothstep(30.0, 55.0, fogDist);
+      float distFade = smoothstep(30.0, 65.0, fogDist);
       outgoingLight = mix(outgoingLight, uFogColor, distFade);
 
       gl_FragColor = vec4(outgoingLight, diffuseColor.a);

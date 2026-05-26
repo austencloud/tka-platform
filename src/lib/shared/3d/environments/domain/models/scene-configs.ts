@@ -1029,14 +1029,14 @@ const OCEAN_KELP_RINGS: TreeRingConfig[] = [
 export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
   return {
     sky: {
-      topColor: "#0a2050",
-      midColor: "#2070a0",
-      bottomColor: "#1a5580",
+      topColor: "#1e6898",
+      midColor: "#1a5580",
+      bottomColor: "#0a2050",
     },
-    fog: { color: "#1a5580", density: 0.035 },
+    fog: { color: "#1a5580", density: 0.008 },
     ground: {
       color: "#5a8898",
-      size: 120,
+      size: 180,
       textured: false,
       opacity: 1,
     },
