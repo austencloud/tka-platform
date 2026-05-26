@@ -14,7 +14,7 @@
   import AutumnScene from "../scenes/AutumnScene.svelte";
   import CosmicScene from "../scenes/CosmicScene.svelte";
   import WinterScene from "../scenes/WinterScene.svelte";
-  import OceanScene from "../scenes/ocean-v2/OceanScene.svelte";
+  import OceanScene from "../scenes/ocean/OceanScene.svelte";
   import EmberScene from "../scenes/EmberScene.svelte";
   import BlossomScene from "../scenes/BlossomScene.svelte";
   import RainbowScene from "../scenes/RainbowScene.svelte";

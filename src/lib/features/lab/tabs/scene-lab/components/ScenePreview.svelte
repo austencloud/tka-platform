@@ -22,7 +22,7 @@
   import AutumnScene from "$lib/shared/3d/environments/scenes/AutumnScene.svelte";
   import WinterScene from "$lib/shared/3d/environments/scenes/WinterScene.svelte";
   import CosmicScene from "$lib/shared/3d/environments/scenes/CosmicScene.svelte";
-  import OceanScene from "$lib/shared/3d/environments/scenes/ocean-v2/OceanScene.svelte";
+  import OceanScene from "$lib/shared/3d/environments/scenes/ocean/OceanScene.svelte";
   import EmberScene from "$lib/shared/3d/environments/scenes/EmberScene.svelte";
   import BlossomScene from "$lib/shared/3d/environments/scenes/BlossomScene.svelte";
   import RainbowScene from "$lib/shared/3d/environments/scenes/RainbowScene.svelte";
