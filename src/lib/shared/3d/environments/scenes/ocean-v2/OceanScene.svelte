@@ -8,7 +8,7 @@
     getOceanQualityConfig,
   } from "./quality/ocean-quality";
   import FloraInstances from "./authored/FloraInstances.svelte";
-  import OceanLoading from "./runtime/loading/OceanLoading.svelte";
+  import OceanRuntimeSystems from "./runtime/OceanRuntimeSystems.svelte";
 
   // ── Props ─────────────────────────────────────────────────────────────
 
@@ -40,8 +40,6 @@
     { meshoptDecoder: MeshoptDecoder }
   );
 
-  const loadingProgress = $derived($environmentGlb ? 1 : 0);
-
   // ── Fog ───────────────────────────────────────────────────────────────
 
   $effect(() => {
@@ -60,4 +58,4 @@
 
 <FloraInstances {quality} />
 
-<!-- Runtime systems (atmosphere, fauna, interaction) mounted in Phase 2 -->
+<OceanRuntimeSystems {quality} {performerCount} {stageWidth} {stageDepth} {stageZOffset} />
