@@ -1,35 +1,30 @@
-import type {
-  FormationPresetId,
-  PerformerPose,
-} from "../domain/stage-types";
+import type { FormationPresetId } from '../domain/stage-types';
 
-export function generateFormation(
+export interface PresetPosition {
+  x: number;
+  z: number;
+}
+
+export function generatePresetPositions(
   preset: FormationPresetId,
   performerCount: number,
   stageWidth: number,
-  stageDepth: number,
-  performerIds: string[]
-): PerformerPose[] {
+  stageDepth: number
+): PresetPosition[] {
   const normalized = PRESET_GENERATORS[preset](performerCount);
-  return normalized.slice(0, performerCount).map((p, i) => ({
-    performerId: performerIds[i]!,
+  return normalized.slice(0, performerCount).map((p) => ({
     x: p.x * stageWidth,
     z: p.z * stageDepth,
-    facing: p.facing,
   }));
 }
 
-type NormalizedPoint = { x: number; z: number; facing: number };
+type NormalizedPoint = { x: number; z: number };
 
-const PRESET_GENERATORS: Record<
-  FormationPresetId,
-  (n: number) => NormalizedPoint[]
-> = {
+const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoint[]> = {
   line: (n) =>
     Array.from({ length: n }, (_, i) => ({
       x: (i + 1) / (n + 1),
       z: 0.5,
-      facing: 0,
     })),
 
   triangle: (n) => {
@@ -44,7 +39,6 @@ const PRESET_GENERATORS: Record<
         pts.push({
           x: 0.5 + (i - (count - 1) / 2) * 0.15,
           z: 0.3 + row * 0.2,
-          facing: 0,
         });
       }
       remaining -= count;
@@ -57,16 +51,16 @@ const PRESET_GENERATORS: Record<
   diamond: (n) =>
     Array.from({ length: n }, (_, i) => {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-      return { x: 0.5 + Math.cos(a) * 0.25, z: 0.5 + Math.sin(a) * 0.3, facing: 0 };
+      return { x: 0.5 + Math.cos(a) * 0.25, z: 0.5 + Math.sin(a) * 0.3 };
     }),
 
   circle: (n) =>
     Array.from({ length: n }, (_, i) => {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-      return { x: 0.5 + Math.cos(a) * 0.3, z: 0.5 + Math.sin(a) * 0.3, facing: 0 };
+      return { x: 0.5 + Math.cos(a) * 0.3, z: 0.5 + Math.sin(a) * 0.3 };
     }),
 
-  "v-shape": (n) => {
+  'v-shape': (n) => {
     const pts: NormalizedPoint[] = [];
     const half = Math.ceil(n / 2);
     for (let i = 0; i < n; i++) {
@@ -75,7 +69,6 @@ const PRESET_GENERATORS: Record<
       pts.push({
         x: 0.5 + side * (idx + 1) * 0.12,
         z: 0.3 + idx * 0.15,
-        facing: 0,
       });
     }
     return pts;
@@ -87,7 +80,6 @@ const PRESET_GENERATORS: Record<
     return Array.from({ length: n }, (_, i) => ({
       x: ((i % cols) + 1) / (cols + 1),
       z: (Math.floor(i / cols) + 1) / (rows + 1),
-      facing: 0,
     }));
   },
 
@@ -100,7 +92,6 @@ const PRESET_GENERATORS: Record<
       return {
         x: (col + 1) / (perRow + 1) + offset,
         z: 0.35 + row * 0.3,
-        facing: 0,
       };
     });
   },
@@ -109,6 +100,6 @@ const PRESET_GENERATORS: Record<
     Array.from({ length: n }, (_, i) => {
       const a = (i / n) * Math.PI * 2;
       const r = 0.1;
-      return { x: 0.5 + Math.cos(a) * r, z: 0.5 + Math.sin(a) * r, facing: 0 };
+      return { x: 0.5 + Math.cos(a) * r, z: 0.5 + Math.sin(a) * r };
     }),
 };
