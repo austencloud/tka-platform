@@ -838,21 +838,6 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     font-size: 0.85rem;
   }
 
-  .editor-coord {
-    color: #8b949e;
-  }
-
-  .editor-coord strong {
-    color: #e6edf3;
-    font-weight: 700;
-  }
-
-  .editor-empty {
-    color: #484f58;
-    font-size: 0.75rem;
-    font-style: italic;
-  }
-
   .editor-target-label {
     text-align: center;
     font-size: 0.7rem;

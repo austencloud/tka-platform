@@ -352,8 +352,7 @@
         <TKAWordGlyph word={rawWord} height={28} darkMode />
       </div>
       <div class="canvas-area">
-        <svelte:component
-          this={AnimationPlayerComponent}
+        <AnimationPlayerComponent
           sequence={resolvedSeq}
           autoPlay={true}
           showControls={false}

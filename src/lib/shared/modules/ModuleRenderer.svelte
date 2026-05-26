@@ -17,6 +17,7 @@
   import type { Component } from "svelte";
   import { onMount, onDestroy } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
   import { authState } from "../auth/state/authState.svelte";
   import { resolveAccessTier } from "../auth/domain/AccessTier";
   import { isModuleAccessible } from "../auth/domain/guest-access-config";
@@ -232,8 +233,7 @@
     </div>
   {:else}
     <div class="module-loading" role="status" aria-live="polite" aria-busy="true">
-      <ProgressRing percent={-1} size={32} strokeWidth={3} />
-      <p>Loading {MODULE_DEFINITIONS.find((m) => m.id === activeModule)?.label ?? activeModule}...</p>
+      <IndeterminateBar height={3} />
     </div>
   {/if}
 {:else}
@@ -270,8 +270,7 @@
                 aria-live="polite"
                 aria-busy="true"
               >
-                <ProgressRing percent={-1} size={32} strokeWidth={3} />
-                <p>Loading {MODULE_DEFINITIONS.find((m) => m.id === activeModule)?.label ?? activeModule}...</p>
+                <IndeterminateBar height={3} />
               </div>
             {/if}
           {:then LoadedModule}
@@ -340,23 +339,9 @@
   }
 
   .module-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    position: relative;
     height: 100%;
     min-height: 200px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  .module-loading :global(.progress-ring) {
-    margin-bottom: 16px;
-  }
-
-  .module-loading p {
-    margin: 0;
-    font-size: var(--font-size-sm);
-    opacity: 0.7;
   }
 
   .module-error {

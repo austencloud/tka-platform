@@ -130,6 +130,7 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   let shouldUseSideBySideLayout = $state<boolean>(false);
   let error = $state<string | null>(null);
   let servicesInitialized = $state<boolean>(false);
+  let initProgress = $state<string>("");
 
   // Confirmation dialog states
   let showTransferConfirmation = $state(false);
@@ -274,10 +275,13 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
       let hasDeepLink = false;
 
       try {
-        // Create services available synchronously via ITI
+        const initStart = performance.now();
+        initProgress = "Resolving services...";
         const initService = getCreateModuleInitializer();
 
+        initProgress = "Initializing workspace...";
         const result = await initService.initialize();
+        logger.log(`Create init took ${Math.round(performance.now() - initStart)}ms`);
 
         // Extract all services and state from initialization result
         services = {
@@ -805,7 +809,10 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 {:else}
   <!-- Loading state while async initialization completes -->
   <div class="create-tab create-loading">
-    <ProgressRing percent={-1} size={32} strokeWidth={3} />
+    <IndeterminateBar height={3} position="top" />
+    {#if initProgress}
+      <p class="init-status">{initProgress}</p>
+    {/if}
   </div>
 {/if}
 

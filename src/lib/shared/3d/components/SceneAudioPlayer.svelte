@@ -91,15 +91,15 @@
     onpointerenter={resetIdle}
     onpointermove={resetIdle}
   >
-    <!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_tabindex -->
     <div
       class="player-shell"
       class:expanded
       class:playing={sceneAudioState.playing && sceneAudioState.audioUnlocked && !expanded}
       onclick={() => { if (!expanded) toggle(); }}
-      role={expanded ? undefined : "button"}
-      tabindex={expanded ? undefined : 0}
-      aria-label={expanded ? undefined : "Open audio player"}
+      onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!expanded) toggle(); } }}
+      role="button"
+      tabindex={0}
+      aria-label={expanded ? "Audio player" : "Open audio player"}
     >
       <div class="collapsed-icon" class:hidden={expanded}>
         <i class="fa-solid {sceneAudioState.muted ? 'fa-volume-xmark' : 'fa-music'}"></i>

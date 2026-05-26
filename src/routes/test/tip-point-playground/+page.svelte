@@ -6,7 +6,7 @@
 	import { loadCatalogs, loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
 	import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
 	import { MANDALA_STANDARD_TIP_DX } from "$lib/shared/mandala/domain/mandala-constants";
-	import type { UndulationEasing, MandalaPathShape } from "$lib/shared/mandala/components/SequenceMandala.svelte";
+	import type { UndulationEasing, MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
 	import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 	import type { MandalaPaths, MandalaPalette, MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
 	import type { MandalaPathOptions } from "$lib/shared/mandala/services/contracts/types";
@@ -174,9 +174,7 @@
 		return renderMandalaSVG(paths, {
 			size: MANDALA_SIZE,
 			style: "stroke",
-			showGridDots: false,
 			show: "both",
-			transparentBackground: true,
 			palette: PALETTE,
 			tipDx: dx,
 		});

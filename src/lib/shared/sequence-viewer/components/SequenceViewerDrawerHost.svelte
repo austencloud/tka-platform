@@ -693,7 +693,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     pointer-events: none;
   }
 
-  .drawer-header > .drawer-header-title {
+  .drawer-header-title-group > .drawer-header-title {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
