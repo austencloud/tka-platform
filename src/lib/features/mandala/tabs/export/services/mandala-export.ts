@@ -36,10 +36,8 @@ export async function exportMandalaPNG(
 	const renderOptions: MandalaRenderOptions = {
 		size: opts.size,
 		style: "stroke",
-		showGridDots: false,
 		show: "both",
 		strokeWidth: opts.strokeWidth,
-		transparentBackground: opts.background === "transparent",
 	};
 
 	const svgString = renderMandalaSVG(paths, renderOptions);

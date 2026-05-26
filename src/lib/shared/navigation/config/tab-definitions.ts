@@ -1198,36 +1198,3 @@ export const STAGE_TABS: Section[] = [
   },
 ];
 
-// Mandala module tabs configuration
-export const MANDALA_TABS: Section[] = [
-  {
-    id: "collection",
-    labelKey: "tab_mandala_collection",
-    descKey: "tab_desc_mandala_collection",
-    label: "Collection",
-    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
-    description: "Saved sequence mandalas",
-    color: "#e879f9",
-    gradient: "linear-gradient(135deg, #e879f9 0%, #c084fc 100%)",
-  },
-  {
-    id: "meditate",
-    labelKey: "tab_mandala_meditate",
-    descKey: "tab_desc_mandala_meditate",
-    label: "Meditate",
-    icon: '<i class="fas fa-spa" aria-hidden="true"></i>',
-    description: "Meditative mandala visualization",
-    color: "#818cf8",
-    gradient: "linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%)",
-  },
-  {
-    id: "export",
-    labelKey: "tab_mandala_export",
-    descKey: "tab_desc_mandala_export",
-    label: "Export",
-    icon: '<i class="fas fa-download" aria-hidden="true"></i>',
-    description: "Export mandalas as images or prints",
-    color: "#34d399",
-    gradient: "linear-gradient(135deg, #6ee7b7 0%, #34d399 100%)",
-  },
-];

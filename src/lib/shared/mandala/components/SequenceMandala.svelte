@@ -9,6 +9,8 @@
 		MandalaRenderOptions,
 		MandalaPaths,
 		MandalaPalette,
+		MandalaPathShape,
+		UndulationEasing,
 	} from "../domain/mandala-types";
 	import {
 		MANDALA_DEFAULT_SIZE,
@@ -29,17 +31,7 @@
 	import type { MandalaGeometryCalculator } from "../services/implementations/MandalaGeometryCalculator";
 	import type { MandalaPathOptions } from "../services/contracts/types";
 
-	export type MandalaPathShape = "arc" | "linear" | "concave" | "motion-aware";
-
-	export type UndulationEasing =
-		| "sine"
-		| "ease"
-		| "soft-elastic"
-		| "breathe"
-		| "heartbeat"
-		| "drift"
-		| "bloom"
-		| "tidal";
+	export type { MandalaPathShape, UndulationEasing } from "../domain/mandala-types";
 
 	function softElasticEase(t: number): number {
 		if (t === 0 || t === 1) return t;
@@ -239,13 +231,10 @@
 	const effectiveDarkMode = $derived(darkMode ?? settingsService.settings.darkMode);
 
 	const renderOptions = $derived.by((): MandalaRenderOptions => {
-		const isCardBack = mode === "card-back";
 		return {
 			size,
 			style,
-			showGridDots: !isCardBack,
 			show,
-			transparentBackground: isCardBack,
 			palette: paletteOverride ?? (effectiveDarkMode ? DARK_MOTION_PALETTE : LIGHT_MOTION_PALETTE),
 			tipDx: effectiveDx,
 			strokeWidth,

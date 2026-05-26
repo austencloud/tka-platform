@@ -20,19 +20,6 @@ import {
 import { DEFAULT_OVERLAP_CONFIG } from "../domain/mandala-types";
 import type { MandalaPaths, MandalaRenderOptions } from "../domain/mandala-types";
 
-const GRID_DOT_ANGLES = [
-	0,
-	Math.PI / 4,
-	Math.PI / 2,
-	(3 * Math.PI) / 4,
-	Math.PI,
-	(5 * Math.PI) / 4,
-	(3 * Math.PI) / 2,
-	(7 * Math.PI) / 4,
-];
-
-const GRID_DOT_RADIUS = 2.5;
-
 let maskIdCounter = 0;
 
 function strokeAttributes(color: string, strokeWidth: number): string {
@@ -94,7 +81,7 @@ function drawMaskPath(
 }
 
 export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOptions): string {
-	const { size, style, showGridDots, show, strokeWidth = 2.5, transparentBackground = false } = options;
+	const { size, style, show, strokeWidth = 2.5 } = options;
 	const center = size / 2;
 
 	const effectiveTipDx = Math.max(options.tipDx ?? MANDALA_STANDARD_TIP_DX, MANDALA_STANDARD_TIP_DX);
@@ -155,20 +142,8 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 
 	parts.push(`  </defs>`);
 
-	if (!transparentBackground) {
-		parts.push(`  <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>`);
-	}
-
 	parts.push(`  <g transform="translate(${center}, ${center}) scale(${scale.toFixed(4)})" filter="url(#glow)">`);
 
-	if (showGridDots) {
-		for (const angle of GRID_DOT_ANGLES) {
-			const cx = (Math.cos(angle) * MANDALA_GRID_RADIUS).toFixed(2);
-			const cy = (Math.sin(angle) * MANDALA_GRID_RADIUS).toFixed(2);
-			parts.push(`    <circle cx="${cx}" cy="${cy}" r="${GRID_DOT_RADIUS}" fill="rgba(255,255,255,0.3)"/>`);
-		}
-		parts.push(`    <circle cx="0" cy="0" r="${GRID_DOT_RADIUS}" fill="rgba(255,255,255,0.3)"/>`);
-	}
 
 	const palette = options.palette ?? {
 		blueStroke: BLUE_STROKE,
@@ -230,7 +205,7 @@ export function renderMandalaToCanvas(
 	paths: MandalaPaths,
 	options: MandalaRenderOptions & { offsetX: number; offsetY: number },
 ): void {
-	const { size, style, showGridDots, show, strokeWidth = 2, offsetX, offsetY, transparentBackground = false } = options;
+	const { size, style, show, strokeWidth = 2, offsetX, offsetY } = options;
 	const center = size / 2;
 	const tipReach = MANDALA_STANDARD_TIP_DX * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
 	const maxExtent = MANDALA_GRID_RADIUS + tipReach;
@@ -238,29 +213,8 @@ export function renderMandalaToCanvas(
 
 	ctx.save();
 
-	if (!transparentBackground) {
-		ctx.fillStyle = "#0d0d1a";
-		ctx.beginPath();
-		ctx.roundRect(offsetX, offsetY, size, size, 12);
-		ctx.fill();
-	}
-
 	ctx.translate(offsetX + center, offsetY + center);
 	ctx.scale(scale, scale);
-
-	if (showGridDots) {
-		ctx.fillStyle = "rgba(255,255,255,0.3)";
-		for (const angle of GRID_DOT_ANGLES) {
-			const cx = Math.cos(angle) * MANDALA_GRID_RADIUS;
-			const cy = Math.sin(angle) * MANDALA_GRID_RADIUS;
-			ctx.beginPath();
-			ctx.arc(cx, cy, GRID_DOT_RADIUS, 0, Math.PI * 2);
-			ctx.fill();
-		}
-		ctx.beginPath();
-		ctx.arc(0, 0, GRID_DOT_RADIUS, 0, Math.PI * 2);
-		ctx.fill();
-	}
 
 	const palette = options.palette ?? {
 		blueStroke: BLUE_STROKE,

@@ -8,8 +8,6 @@ export interface MandalaOverlayConfig {
 	strokeWidth: number;
 	/** Which hands to draw */
 	show: "blue" | "red" | "both";
-	/** Show cardinal/intercardinal reference dots */
-	showGridDots: boolean;
 	/** Global opacity of the overlay (0-1, default: 0.9) */
 	opacity: number;
 	/** Hide prop rendering for pure mandala view */
@@ -21,7 +19,6 @@ export const DEFAULT_MANDALA_OVERLAY_CONFIG: MandalaOverlayConfig = {
 	fadeDurationMultiplier: 1.0,
 	strokeWidth: 2.5,
 	show: "both",
-	showGridDots: false,
 	opacity: 0.9,
 	hideProps: false,
 };

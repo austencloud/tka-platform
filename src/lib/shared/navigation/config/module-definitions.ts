@@ -27,7 +27,6 @@ import {
   VIDEO_TABS,
   SOCIAL_TABS,
   STAGE_TABS,
-  MANDALA_TABS,
 } from "./tab-definitions";
 
 /**
@@ -165,9 +164,9 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: "Mandala",
     icon: '<i class="fas fa-dharmachakra" style="color: #f472b6;" aria-hidden="true"></i>',
     color: "#f472b6",
-    description: "Create, collect, and meditate with mandalas",
+    description: "Your mandala collection",
     isMain: true,
-    sections: MANDALA_TABS,
+    sections: [],
   },
   {
     id: "watch",

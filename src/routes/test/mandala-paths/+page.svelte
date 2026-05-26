@@ -93,9 +93,7 @@
 		const opts: MandalaRenderOptions = {
 			size: mandalaSize,
 			style: "stroke",
-			showGridDots: false,
 			show: "both",
-			transparentBackground: true,
 			palette: PALETTE,
 		};
 		return sequences.map((seq, i) => ({
@@ -119,9 +117,7 @@
 		return renderMandalaSVG(paths, {
 			size,
 			style: "stroke",
-			showGridDots: false,
 			show: "both",
-			transparentBackground: true,
 			palette: PALETTE,
 		});
 	}

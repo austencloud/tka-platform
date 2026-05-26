@@ -27,10 +27,8 @@ export function renderStickerUnitSVG(unit: StickerUnit, mandalaPaths: MandalaPat
   const mandalaSvg = renderMandalaSVG(mandalaPaths, {
     size: STICKER_ART_DIAMETER_PX,
     style: "stroke",
-    showGridDots: false,
     show: toMandalaShow(unit.variant),
     strokeWidth: STICKER_STROKE_WIDTH,
-    transparentBackground: true,
     palette: LIGHT_MODE_PALETTE,
   });
 

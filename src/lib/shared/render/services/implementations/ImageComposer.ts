@@ -950,10 +950,8 @@ export class ImageComposer {
         renderMandalaToCanvas(ctx, paths, {
           size: mandalaSize,
           style: "stroke",
-          showGridDots: false,
           show,
           strokeWidth: 3,
-          transparentBackground: true,
           palette,
           offsetX: x,
           offsetY: y,

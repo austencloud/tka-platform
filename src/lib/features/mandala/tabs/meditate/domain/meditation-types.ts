@@ -1,4 +1,4 @@
-import type { UndulationEasing } from "$lib/shared/mandala/components/SequenceMandala.svelte";
+import type { UndulationEasing } from "$lib/shared/mandala/domain/mandala-types";
 
 export type BreathPhase = "inhale" | "hold-in" | "exhale" | "hold-out";
 

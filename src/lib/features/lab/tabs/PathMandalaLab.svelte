@@ -50,7 +50,6 @@
 	let error: string = $state("");
 
 	let renderStyle: "stroke" | "filled" = $state("stroke");
-	let showGridDots: boolean = $state(false);
 	let strokeWidth: number = $state(2.5);
 	type ViewMode = "grid" | "spotlight";
 	let viewMode: ViewMode = $state<ViewMode>("grid");
@@ -151,10 +150,8 @@
 		const opts: MandalaRenderOptions = {
 			size: mandalaSize,
 			style: renderStyle,
-			showGridDots,
 			show: "both",
 			strokeWidth,
-			transparentBackground: true,
 			overlap,
 		};
 		if (!dedupe) {
@@ -443,15 +440,6 @@
 					<button class:active={renderStyle === "stroke"} onclick={() => (renderStyle = "stroke")}>Stroke</button>
 					<button class:active={renderStyle === "filled"} onclick={() => (renderStyle = "filled")}>Filled</button>
 				</div>
-				<button
-					class="pill-toggle"
-					class:active={showGridDots}
-					onclick={() => (showGridDots = !showGridDots)}
-					aria-pressed={showGridDots}
-					aria-label="Toggle grid dots"
-				>
-					<span class="pill-thumb"></span>
-				</button>
 				<button
 					class="pill-toggle"
 					class:active={dedupe}

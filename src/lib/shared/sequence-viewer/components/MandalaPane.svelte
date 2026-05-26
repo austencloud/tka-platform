@@ -3,7 +3,7 @@
   import MandalaViewerControls from "./MandalaViewerControls.svelte";
   import type { MandalaColorMode, MandalaPresetId } from "./MandalaViewerControls.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { MandalaPathShape } from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
   import type { MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
   import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
   import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
@@ -310,7 +310,6 @@
 
         const svgStr = renderMandalaSVG(paths, {
           size: exportSize, style: "stroke", show: "both",
-          showGridDots: false, transparentBackground: true,
           palette: framePalette, strokeWidth: lineWeight, tipDx,
           gradient: frameGradient,
         });

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { MandalaPathShape } from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
 
   export type MandalaColorMode = "solid" | "flow";
   export type MandalaPresetId = "aurora" | "neon" | "ember" | "twilight" | "ice" | "solar" | "custom";

@@ -47,14 +47,10 @@ export interface MandalaRenderOptions {
 	size: number;
 	/** Stroke or filled petal rendering */
 	style: "stroke" | "filled";
-	/** Show cardinal/intercardinal grid dots + center */
-	showGridDots: boolean;
 	/** Which hands to render */
 	show: "blue" | "red" | "both";
 	/** SVG stroke width */
 	strokeWidth?: number;
-	/** Transparent background (no dark rect) - use when embedding in themed containers */
-	transparentBackground?: boolean;
 	/** Override the default dark-mode prop colors (e.g. for light-mode backgrounds) */
 	palette?: MandalaPalette;
 	/** Overlap rendering parameters */
@@ -64,6 +60,18 @@ export interface MandalaRenderOptions {
 	/** Per-path gradient colors: each path's stroke shifts from one color to the next */
 	gradient?: { blue: [string, string]; red: [string, string]; purple: [string, string] };
 }
+
+export type MandalaPathShape = "arc" | "linear" | "concave" | "motion-aware";
+
+export type UndulationEasing =
+	| "sine"
+	| "ease"
+	| "soft-elastic"
+	| "breathe"
+	| "heartbeat"
+	| "drift"
+	| "bloom"
+	| "tidal";
 
 export type MandalaMode = "card-back" | "gallery" | "animated";
 

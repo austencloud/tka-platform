@@ -58,10 +58,8 @@
     const svg = renderMandalaSVG(asMandala, {
       size: 300,
       style: "stroke",
-      showGridDots: false,
       show: "both",
       strokeWidth: 2.5,
-      transparentBackground: true,
       palette: MONO_PALETTE,
     });
     svgCache.set(key, svg);
@@ -215,10 +213,8 @@
     const svg = renderMandalaSVG(paths, {
       size: 300,
       style: "stroke",
-      showGridDots: false,
       show: "both",
       strokeWidth: 2.5,
-      transparentBackground: true,
       palette: COLOR_PALETTE,
     });
     svgCache.set(key, svg);
