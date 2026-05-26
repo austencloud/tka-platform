@@ -16,7 +16,6 @@
   import { registerModuleCacheClear } from "../hmr-helper";
   import type { Component } from "svelte";
   import { onMount, onDestroy } from "svelte";
-  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
   import { authState } from "../auth/state/authState.svelte";
   import { resolveAccessTier } from "../auth/domain/AccessTier";
