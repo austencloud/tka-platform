@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head><title>SW Reset</title></head>
+<body>
+<p>Unregistering service workers...</p>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+        document.body.innerHTML = '<p>Done. Redirecting...</p>';
+        setTimeout(function() { window.location.href = '/app'; }, 500);
+      });
+    });
+  } else {
+    document.body.innerHTML = '<p>No SW support. Redirecting...</p>';
+    setTimeout(function() { window.location.href = '/app'; }, 500);
+  }
+</script>
+</body>
+</html>
