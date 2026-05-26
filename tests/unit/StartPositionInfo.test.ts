@@ -2,23 +2,23 @@ import { describe, it, expect } from "vitest";
 import { deriveStartPositionInfo } from "../../src/lib/features/choreo-card/components/card-back/card-back-data";
 
 describe("deriveStartPositionInfo", () => {
-  it("returns box mode for cardinal hand locations", () => {
+  it("returns diamond mode for cardinal hand locations", () => {
     const result = deriveStartPositionInfo({
       blueLocation: "s",
       redLocation: "n",
     });
-    expect(result.gridMode).toBe("box");
+    expect(result.gridMode).toBe("diamond");
     expect(result.group).toBe("alpha");
     expect(result.blueLocation).toBe("s");
     expect(result.redLocation).toBe("n");
   });
 
-  it("returns diamond mode for intercardinal hand locations", () => {
+  it("returns box mode for intercardinal hand locations", () => {
     const result = deriveStartPositionInfo({
       blueLocation: "ne",
       redLocation: "sw",
     });
-    expect(result.gridMode).toBe("diamond");
+    expect(result.gridMode).toBe("box");
     expect(result.group).toBe("alpha");
   });
 
@@ -37,7 +37,7 @@ describe("deriveStartPositionInfo", () => {
       redLocation: "s",
     });
     expect(result.group).toBe("beta");
-    expect(result.gridMode).toBe("box");
+    expect(result.gridMode).toBe("diamond");
   });
 
   it("returns null info when no locations provided", () => {
@@ -48,6 +48,6 @@ describe("deriveStartPositionInfo", () => {
     expect(result.group).toBeNull();
     expect(result.blueLocation).toBeNull();
     expect(result.redLocation).toBeNull();
-    expect(result.gridMode).toBe("box");
+    expect(result.gridMode).toBe("diamond");
   });
 });

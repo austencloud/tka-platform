@@ -83,120 +83,30 @@ describe("formation-presets: new presets", () => {
     });
   });
 
-  describe("arc", () => {
-    it("produces N slots for N=3..8", () => {
-      for (let n = 3; n <= 8; n++) {
-        const slots = getSlotsForPreset("arc", n);
+  describe("side-by-side", () => {
+    it("produces N slots for N=2..8", () => {
+      for (let n = 2; n <= 8; n++) {
+        const slots = getSlotsForPreset("side-by-side", n);
         expect(slots.length).toBe(n);
       }
     });
-
-    it("center slot is most upstage (lowest Z)", () => {
-      const slots = getSlotsForPreset("arc", 6);
-      const centerIdx = Math.floor(slots.length / 2);
-      const centerZ = slots[centerIdx]!.position.z;
-      const edgeZ = slots[0]!.position.z;
-      expect(centerZ).toBeLessThan(edgeZ);
-    });
-
-    it("falls back to solo for count < 3", () => {
-      const slots = getSlotsForPreset("arc", 2);
-      expect(slots.length).toBe(1);
-    });
   });
 
-  describe("triangle", () => {
-    it("produces N slots for N=3..8", () => {
-      for (let n = 3; n <= 8; n++) {
-        const slots = getSlotsForPreset("triangle", n);
-        expect(slots.length).toBe(n);
-      }
-    });
-
-    it("row distributions match spec for count=6: [1, 2, 3]", () => {
-      const slots = getSlotsForPreset("triangle", 6);
-      expect(slots.length).toBe(6);
-      // First row has 1 slot at x=0
-      expect(slots[0]!.position.x).toBeCloseTo(0, 6);
-    });
-
-    it("falls back to line for count < 3", () => {
-      const slots = getSlotsForPreset("triangle", 2);
-      expect(slots.length).toBe(2);
-    });
-  });
-
-  describe("diamond", () => {
-    it("produces N slots for N=3..8", () => {
-      for (let n = 3; n <= 8; n++) {
-        const slots = getSlotsForPreset("diamond", n);
-        expect(slots.length).toBe(n);
-      }
-    });
-
-    it("4-count produces cardinal positions — front, left, right, back", () => {
-      const slots = getSlotsForPreset("diamond", 4);
-      expect(slots.length).toBe(4);
-      // Front at x=0 with highest z
-      expect(slots[0]!.position.x).toBeCloseTo(0, 6);
-      // Left is negative x, right is positive x
-      expect(slots[1]!.position.x).toBeLessThan(0);
-      expect(slots[2]!.position.x).toBeGreaterThan(0);
-    });
-
-    it("falls back to line for count < 3", () => {
-      const slots = getSlotsForPreset("diamond", 2);
-      expect(slots.length).toBe(2);
-    });
-  });
-
-  describe("staggered", () => {
-    it("produces N slots for N=4..8", () => {
-      for (let n = 4; n <= 8; n++) {
-        const slots = getSlotsForPreset("staggered", n);
-        expect(slots.length).toBe(n);
-      }
-    });
-
-    it("back row is offset by half a column spacing from front row", () => {
-      const slots = getSlotsForPreset("staggered", 6);
-      // Front row: indices 0-2, back row: indices 3-5
-      const frontX0 = slots[0]!.position.x;
-      const backX0 = slots[3]!.position.x;
-      // Back row should be offset by ~0.9m (half of 1.8m colSpacing)
-      const offset = Math.abs(backX0 - frontX0);
-      expect(offset).toBeGreaterThan(0.5);
-      expect(offset).toBeLessThan(1.5);
-    });
-
-    it("back row is deeper (lower Z) than front row", () => {
-      const slots = getSlotsForPreset("staggered", 4);
-      const frontZ = slots[0]!.position.z;
-      const backZ = slots[2]!.position.z;
-      expect(backZ).toBeLessThan(frontZ);
-    });
-
-    it("falls back to line for count < 4", () => {
-      const slots = getSlotsForPreset("staggered", 3);
-      expect(slots.length).toBe(3);
-    });
-  });
-
-  describe("circle facing outward", () => {
-    it("uses angle - PI/2 formula (outward facing) for counts 3-8", () => {
+  describe("circle facing center", () => {
+    it("uses angle + PI/2 formula (facing center) for counts 3-8", () => {
       for (let n = 3; n <= 8; n++) {
         const slots = getSlotsForPreset("circle", n);
         for (let i = 0; i < slots.length; i++) {
           const slot = slots[i]!;
           const expectedAngle = (i / n) * Math.PI * 2 - Math.PI / 2;
-          const expectedFacing = expectedAngle - Math.PI / 2;
+          const expectedFacing = expectedAngle + Math.PI / 2;
           expect(slot.facingAngle).toBeDefined();
           expect(slot.facingAngle).toBeCloseTo(expectedFacing, 6);
         }
       }
     });
 
-    it("count=2 still faces outward (left faces left, right faces right)", () => {
+    it("count=2 faces inward (left faces right, right faces left)", () => {
       const slots = getSlotsForPreset("circle", 2);
       expect(slots[0]!.facingAngle).toBe(Math.PI / 2);
       expect(slots[1]!.facingAngle).toBe(-Math.PI / 2);
@@ -210,10 +120,7 @@ describe("formation-presets: new presets", () => {
       "back-to-back",
       "facing-each-other",
       "stage-lr",
-      "arc",
-      "triangle",
-      "diamond",
-      "staggered",
+      "side-by-side",
     ];
 
     for (const preset of newPresets) {
@@ -225,15 +132,8 @@ describe("formation-presets: new presets", () => {
           // cardinality presets (back-to-back, facing-each-other, stage-lr) always
           // return 2. solo always returns 1.
           const fixedTwo = new Set(["back-to-back", "facing-each-other", "stage-lr"]);
-          const fallsBackToSolo = (preset === "arc" && count < 3);
-          const fallsBackToLine = (
-            (preset === "triangle" && count < 3) ||
-            (preset === "diamond" && count < 3) ||
-            (preset === "staggered" && count < 4)
-          );
-          const expectedLength = preset === "solo" || fallsBackToSolo ? 1
+          const expectedLength = preset === "solo" ? 1
             : fixedTwo.has(preset) ? 2
-            : fallsBackToLine ? count
             : count;
           expect(slots.length).toBe(expectedLength);
 
@@ -264,10 +164,7 @@ describe("formation-presets: new presets", () => {
         "back-to-back",
         "facing-each-other",
         "stage-lr",
-        "arc",
-        "triangle",
-        "diamond",
-        "staggered",
+        "side-by-side",
       ];
       for (const p of allPresets) {
         expect(PRESET_VALID_COUNTS[p]).toBeDefined();
@@ -277,17 +174,14 @@ describe("formation-presets: new presets", () => {
   });
 
   describe("FORMATION_PRESET_INFO", () => {
-    it("includes entries for all six new presets", () => {
+    it("includes entries for new presets", () => {
       const ids = FORMATION_PRESET_INFO.map((e) => e.id);
       expect(ids).toContain("solo");
       expect(ids).toContain("tunnel-stack");
       expect(ids).toContain("back-to-back");
       expect(ids).toContain("facing-each-other");
       expect(ids).toContain("stage-lr");
-      expect(ids).toContain("arc");
-      expect(ids).toContain("triangle");
-      expect(ids).toContain("diamond");
-      expect(ids).toContain("staggered");
+      expect(ids).toContain("side-by-side");
     });
   });
 

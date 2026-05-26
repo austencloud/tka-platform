@@ -1,5 +1,12 @@
 import { sveltekit } from "@sveltejs/kit/vite";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { defineConfig } from "vitest/config";
+
+const projectRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
 
 export default defineConfig({
   plugins: [sveltekit()],
@@ -23,9 +30,11 @@ export default defineConfig({
     ],
 
     alias: {
-      $lib: new URL("./src/lib", import.meta.url).pathname,
-      $app: new URL("./src/app", import.meta.url).pathname,
-      $shared: new URL("./src/lib/shared", import.meta.url).pathname,
+      $lib: path.resolve(projectRoot, "src/lib"),
+      "$app/environment": path.resolve(projectRoot, "tests/setup/stubs/app-environment.ts"),
+      "$app/navigation": path.resolve(projectRoot, "tests/setup/stubs/app-navigation.ts"),
+      "$app/stores": path.resolve(projectRoot, "tests/setup/stubs/app-stores.ts"),
+      $shared: path.resolve(projectRoot, "src/lib/shared"),
     },
 
     // Vitest 4.0: poolOptions deprecated, use pool config directly

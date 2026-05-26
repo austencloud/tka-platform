@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { Viewer3DUndoManager } from "@austencloud/scene-3d";
 import type { ViewerSnapshot } from "@austencloud/scene-3d";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 
 function snap(label: string): ViewerSnapshot {
   return {

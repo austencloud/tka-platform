@@ -135,13 +135,13 @@ describe("createThemesLabState", () => {
     );
   });
 
-  it("setTheme with pride maps to rainbow sceneId", () => {
+  it("setTheme with rainbow maps to rainbow sceneId", () => {
     const state = createThemesLabState();
-    state.setTheme("pride");
+    state.setTheme("rainbow");
     expect(mockSetSceneId).toHaveBeenCalledWith("rainbow");
     expect(mockUpdateSetting).toHaveBeenCalledWith(
       "backgroundType",
-      "pride"
+      "rainbow"
     );
   });
 });

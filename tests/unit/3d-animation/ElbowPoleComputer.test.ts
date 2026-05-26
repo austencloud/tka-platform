@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Vector3 } from "three";
 import { computePoleVector } from "$lib/shared/3d/services/elbow-pole-computer";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 
 /**
  * Coordinate convention (TKA / Mixamo):

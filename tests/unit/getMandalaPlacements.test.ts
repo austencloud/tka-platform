@@ -42,39 +42,32 @@ describe("getMandalaPlacements — toggle/off cases", () => {
 	});
 });
 
-describe("getMandalaPlacements — 4-count horizontal", () => {
-	it("produces 4×2 horizontal with blue + red when both visible and QR on", () => {
+describe("getMandalaPlacements — 4-count", () => {
+	// The source now returns EMPTY for stepCount <= 4 (early exit at line 54).
+	// 4-count sequences no longer get mandala placements or layout overrides.
+	it("returns empty for stepCount 4 (below threshold)", () => {
 		const res = getMandalaPlacements(args({ stepCount: 4, cols: 3, rows: 2 }));
-		expect(res.layoutOverride).not.toBeNull();
-		expect(res.layoutOverride!.cols).toBe(4);
-		expect(res.layoutOverride!.rows).toBe(2);
-		expect(res.layoutOverride!.startPos).toEqual({ col: 1, row: 1 });
-		expect(res.layoutOverride!.qrPos).toEqual({ col: 4, row: 1 });
-		expect(res.layoutOverride!.stepPositions).toHaveLength(4);
-		expect(res.layoutOverride!.stepPositions[0]).toEqual({ col: 1, row: 2 });
-		expect(res.layoutOverride!.stepPositions[3]).toEqual({ col: 4, row: 2 });
-		expect(res.placements).toEqual([
-			{ row: 1, col: 2, variant: "blue" },
-			{ row: 1, col: 3, variant: "red" },
-		]);
+		expect(res.placements).toEqual([]);
+		expect(res.layoutOverride).toBeNull();
 	});
 
-	it("drops red slot when red hidden", () => {
+	it("returns empty for stepCount 4 even when red hidden", () => {
 		const res = getMandalaPlacements(
 			args({ stepCount: 4, cols: 3, rows: 2, redVisible: false }),
 		);
-		expect(res.layoutOverride).not.toBeNull();
-		expect(res.placements).toEqual([{ row: 1, col: 2, variant: "blue" }]);
+		expect(res.placements).toEqual([]);
+		expect(res.layoutOverride).toBeNull();
 	});
 
-	it("drops blue slot when blue hidden", () => {
+	it("returns empty for stepCount 4 even when blue hidden", () => {
 		const res = getMandalaPlacements(
 			args({ stepCount: 4, cols: 3, rows: 2, blueVisible: false }),
 		);
-		expect(res.placements).toEqual([{ row: 1, col: 3, variant: "red" }]);
+		expect(res.placements).toEqual([]);
+		expect(res.layoutOverride).toBeNull();
 	});
 
-	it("does not trigger horizontal when QR is off", () => {
+	it("returns empty for stepCount 4 when QR is off", () => {
 		const res = getMandalaPlacements(
 			args({ stepCount: 4, cols: 3, rows: 2, showQRCode: false }),
 		);

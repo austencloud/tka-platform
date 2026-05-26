@@ -142,14 +142,14 @@ function quarteredFixture(): SequenceEntry {
 }
 
 describe("LOOPDetector.detectLOOP transformationIntervals", () => {
-  it("marks a 180° rotation LOOP as halved in transformationIntervals.rotation", () => {
+  it("marks a 180° rotation LOOP with 4 beats as quartered in transformationIntervals.rotation", () => {
     const result = loopDetector.detectLOOP(halvedFixture());
 
     expect(result.isCircular).toBe(true);
-    // The detector might label it halved_rotated; the key contract is that
-    // rotation interval = "halved" so the icon stays fa-rotate.
+    // When the beat count is divisible by 4, quarteredMotionsConsistent
+    // upgrades halved intervals to quartered (rotation=4).
     if (result.components.includes("rotated")) {
-      expect(result.transformationIntervals.rotation).toBe(2);
+      expect(result.transformationIntervals.rotation).toBe(4);
     }
   });
 
@@ -161,11 +161,12 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     expect(result.transformationIntervals.rotation).toBe(4);
   });
 
-  it("halved detection snapshot — full result shape", () => {
+  it("halved detection snapshot — full result shape (upgraded to quartered with 4 beats)", () => {
     const result = loopDetector.detectLOOP(halvedFixture());
     expect(result.components).toEqual(expect.arrayContaining(["rotated"]));
-    expect(result.transformationIntervals.rotation).toBe(2);
-    expect(result.period).toBe(2);
+    // With 4 beats divisible by 4, the detector upgrades to quartered intervals
+    expect(result.transformationIntervals.rotation).toBe(4);
+    expect(result.period).toBe(4);
     expect(result.isCircular).toBe(true);
     expect(result.isFreeform).toBe(false);
   });

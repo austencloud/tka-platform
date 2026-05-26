@@ -39,6 +39,7 @@ vi.mock("$lib/shared/pictograph/shared/services/implementations/StartPositionDer
   StartPositionDeriver: class {},
 }));
 
+import { effect_root } from "svelte/internal/client";
 import { createEndlessPlayback } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
 
 describe("createEndlessPlayback", () => {
@@ -64,30 +65,34 @@ describe("createEndlessPlayback", () => {
       dispose: vi.fn(),
     };
 
-    const state = createEndlessPlayback({
-      modes: ["library", "infinite"],
-      defaultMode: "library",
-      spinnerOrchestrator: mockSpinner,
-      infiniteGenerator: mockGenerator,
-      playbackController: mockPlaybackController as any,
+    let state: ReturnType<typeof createEndlessPlayback>;
+    const cleanup = effect_root(() => {
+      state = createEndlessPlayback({
+        modes: ["library", "infinite"],
+        defaultMode: "library",
+        spinnerOrchestrator: mockSpinner,
+        infiniteGenerator: mockGenerator,
+        playbackController: mockPlaybackController as any,
+      });
     });
 
-    expect(state.currentSequence).toBeNull();
-    expect(state.sourceMode).toBe("library");
-    expect(state.history).toEqual([]);
-    expect(state.isChainingNow).toBe(false);
-    expect(state.isPreloading).toBe(false);
-    expect(state.servicesReady).toBe(false);
-    expect(typeof state.initialize).toBe("function");
-    expect(typeof state.setSourceMode).toBe("function");
-    expect(typeof state.setPropType).toBe("function");
-    expect(typeof state.skip).toBe("function");
-    expect(typeof state.shuffle).toBe("function");
-    expect(typeof state.copyForAI).toBe("function");
-    expect(typeof state.copyHistoryEntry).toBe("function");
-    expect(typeof state.hotSwapSequence).toBe("function");
-    expect(typeof state.dispose).toBe("function");
+    expect(state!.currentSequence).toBeNull();
+    expect(state!.sourceMode).toBe("library");
+    expect(state!.history).toEqual([]);
+    expect(state!.isChainingNow).toBe(false);
+    expect(state!.isPreloading).toBe(false);
+    expect(state!.servicesReady).toBe(false);
+    expect(typeof state!.initialize).toBe("function");
+    expect(typeof state!.setSourceMode).toBe("function");
+    expect(typeof state!.setPropType).toBe("function");
+    expect(typeof state!.skip).toBe("function");
+    expect(typeof state!.shuffle).toBe("function");
+    expect(typeof state!.copyForAI).toBe("function");
+    expect(typeof state!.copyHistoryEntry).toBe("function");
+    expect(typeof state!.hotSwapSequence).toBe("function");
+    expect(typeof state!.dispose).toBe("function");
 
-    state.dispose();
+    state!.dispose();
+    cleanup();
   });
 });

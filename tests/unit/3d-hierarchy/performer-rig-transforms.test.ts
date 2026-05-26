@@ -21,11 +21,8 @@ import {
   planeAngleToWorldPosition,
   calculatePropQuaternion,
 } from "$lib/shared/3d/domain/constants/plane-transforms";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
-import {
-  computePropRotation,
-} from "$lib/shared/3d/components/props/prop3d-transforms";
-import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
+import { Plane, computePropRotation } from "@austencloud/scene-3d";
+import type { PropState3D } from "@austencloud/scene-3d";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -328,7 +325,7 @@ describe("Prop rotation matches old pipeline", () => {
             skipFacingTransform: snap.skipFacingTransform,
           };
 
-          const rotation = computePropRotation(propState, facingAngle);
+          const rotation = computePropRotation(propState);
 
           assertRotationClose(rotation[0], snap.propRotation[0], `${label} rx`);
           assertRotationClose(rotation[1], snap.propRotation[1], `${label} ry`);
@@ -383,7 +380,7 @@ describe("Tip positions computed from hierarchy", () => {
       skipFacingTransform: false,
     };
 
-    const [rx, ry, rz] = computePropRotation(propState, 0);
+    const [rx, ry, rz] = computePropRotation(propState);
 
     // The staff axis: starts as +Y (cylinder default), then apply the final rotation.
     // After computePropRotation's horizontal tilt (π/2 around Z), the staff axis
@@ -447,7 +444,7 @@ describe("Tip positions computed from hierarchy", () => {
         skipFacingTransform: false,
       };
 
-      const [rx, ry, rz] = computePropRotation(propState, 0);
+      const [rx, ry, rz] = computePropRotation(propState);
       const finalQuat = new Quaternion().setFromEuler(new Euler(rx, ry, rz));
       const staffAxis = new Vector3(1, 0, 0).applyQuaternion(finalQuat).normalize();
 

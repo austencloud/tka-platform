@@ -1,4 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("$lib/shared/3d/undo/getSceneUndoManager", () => ({
+  getSceneUndoManager: () => ({
+    registerDomain: vi.fn(),
+    captureState: vi.fn(),
+    commitStateCoalescing: vi.fn(),
+  }),
+}));
+
 import { createScene3DRenderState } from "../../src/lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
 
 describe("scene-3d-render-state", () => {

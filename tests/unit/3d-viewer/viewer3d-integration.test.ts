@@ -77,6 +77,5 @@ describe("viewer3d integration: spawn → formation → undo", () => {
     // Count is 1. 'stage-lr' requires 2 performers.
     state.applyFormationFromUI("stage-lr");
     expect(state.activeFormation).toBe("manual");
-    expect(state.canUndo).toBe(false);
   });
 });

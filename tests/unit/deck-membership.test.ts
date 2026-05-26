@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { buildSignals, resolveDeckMembership } from "$lib/features/choreo-card/domain/deck-membership";
+import { buildSignals, resolveCatalogMembership } from "$lib/features/choreo-card/domain/catalog-membership";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { Deck } from "$lib/features/choreo-card/domain/models/Deck";
+import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 
 function seq(partial: Partial<SequenceData>): SequenceData {
   return {
@@ -18,7 +18,7 @@ function seq(partial: Partial<SequenceData>): SequenceData {
   } as SequenceData;
 }
 
-function deck(p: Partial<Deck>): Deck {
+function catalog(p: Partial<Catalog>): Catalog {
   return {
     id: "d",
     name: "",
@@ -35,7 +35,7 @@ function deck(p: Partial<Deck>): Deck {
     turnPattern: "",
     reversalPattern: "continuous",
     ...p,
-  } as Deck;
+  } as Catalog;
 }
 
 const providers = {
@@ -70,9 +70,9 @@ describe("buildSignals", () => {
   });
 });
 
-describe("resolveDeckMembership", () => {
+describe("resolveCatalogMembership", () => {
   it("refuses to match any deck when level is null (L4+ sequence)", () => {
-    const decks = [deck({ id: "l1-deck", level: 1 }), deck({ id: "l2-deck", level: 2 })];
+    const catalogs = [catalog({ id: "l1-deck", level: 1 }), catalog({ id: "l2-deck", level: 2 })];
     const signals = {
       level: null,
       beyondLevel3Features: ["gridMode:centric"],
@@ -82,33 +82,33 @@ describe("resolveDeckMembership", () => {
       stepCount: 8,
       reversalPatternId: "continuous",
     };
-    expect(resolveDeckMembership(signals, decks)).toEqual([]);
+    expect(resolveCatalogMembership(signals, catalogs)).toEqual([]);
   });
 
   it("matches an exact deck when all signals align", () => {
-    const decks = [
-      deck({ id: "match", level: 1, gridMode: "diamond", loopType: "rotated", sliceType: "halved", stepCount: 8, reversalPattern: "continuous" }),
-      deck({ id: "miss",  level: 2, gridMode: "diamond", loopType: "rotated", sliceType: "halved", stepCount: 8, reversalPattern: "continuous" }),
+    const catalogs = [
+      catalog({ id: "match", level: 1, gridMode: "diamond", loopType: "rotated", sliceType: "halved", stepCount: 8, reversalPattern: "continuous" }),
+      catalog({ id: "miss",  level: 2, gridMode: "diamond", loopType: "rotated", sliceType: "halved", stepCount: 8, reversalPattern: "continuous" }),
     ];
     const signals = {
       level: 1, beyondLevel3Features: [], gridMode: "diamond",
       loopType: "rotated", sliceType: "halved" as const, stepCount: 8,
       reversalPatternId: "continuous",
     };
-    const results = resolveDeckMembership(signals, decks);
+    const results = resolveCatalogMembership(signals, catalogs);
     expect(results).toHaveLength(1);
-    expect(results[0]!.deck.id).toBe("match");
+    expect(results[0]!.catalog.id).toBe("match");
     expect(results[0]!.exact).toBe(true);
   });
 
   it("returns partial matches when non-essential signals are null", () => {
-    const decks = [deck({ id: "d1", level: 1, loopType: "rotated", sliceType: "halved", stepCount: 8 })];
+    const catalogs = [catalog({ id: "d1", level: 1, loopType: "rotated", sliceType: "halved", stepCount: 8 })];
     const signals = {
       level: 1, beyondLevel3Features: [], gridMode: "diamond",
       loopType: null, sliceType: null, stepCount: 8,
       reversalPatternId: "continuous",
     };
-    const results = resolveDeckMembership(signals, decks);
+    const results = resolveCatalogMembership(signals, catalogs);
     expect(results).toHaveLength(1);
     expect(results[0]!.exact).toBe(false);
     expect(results[0]!.missingFields).toContain("loopType");

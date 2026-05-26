@@ -849,6 +849,33 @@ export default defineConfig(({ mode }) => ({
       "qr-code-styling",
       "posthog-js",
       "mediabunny",
+
+      // 3D scene deps: discovered mid-session → browserHash changes → 504 on refresh
+      "three",
+      "postprocessing",
+      "camera-controls",
+      "three-good-godrays",
+      "three-mesh-bvh",
+      "miniplex",
+      "three/examples/jsm/loaders/GLTFLoader.js",
+      "three/examples/jsm/loaders/DRACOLoader.js",
+      "three/examples/jsm/libs/meshopt_decoder.module.js",
+      "three/examples/jsm/misc/GPUComputationRenderer.js",
+      "three/examples/jsm/objects/Reflector.js",
+      "three/examples/jsm/utils/BufferGeometryUtils.js",
+
+      // Media/networking deps discovered late
+      "h264-mp4-encoder",
+      "peerjs",
+      "wavesurfer.js",
+      "web-vitals",
+
+      // Capacitor plugins (mobile)
+      "@capacitor/app",
+      "@capacitor/haptics",
+      "@capacitor/keyboard",
+      "@capacitor/splash-screen",
+      "@capacitor/status-bar",
     ],
     exclude: [
       "pdfjs-dist",

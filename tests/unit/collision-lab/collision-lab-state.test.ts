@@ -10,7 +10,7 @@ import type {
   PoseLabel,
   CollisionSnapshot,
 } from "$lib/features/lab/tabs/collision-lab/domain/types";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 
 class InMemoryLabelRepo {
   store: Record<string, PoseLabel> = {};

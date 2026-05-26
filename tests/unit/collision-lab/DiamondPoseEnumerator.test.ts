@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { enumerateDiamondInOut } from "$lib/features/lab/tabs/collision-lab/services/diamond-pose-enumerator";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 import type {
   DiamondPosition,
   HandOrientation,

@@ -5,7 +5,7 @@ import { dirname, join } from "path";
 import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/implementations/MandalaGeometryCalculator";
 import type { StepLike } from "$lib/shared/mandala/services/contracts/IMandalaGeometryCalculator";
 import {
-  DEFAULT_TIP_INSET_PX,
+  MANDALA_STANDARD_TIP_DX,
   ENGINE_GRID_RADIUS,
   MANDALA_GRID_RADIUS,
   BASE_SAMPLES_PER_BEAT,
@@ -469,9 +469,9 @@ describe("MandalaGeometryCalculator", () => {
       const maxR = Math.max(...radii);
 
       // All tip points should lie at roughly the same radius.
-      // The tip is offset from the hand position by (ENGINE_GRID_RADIUS - DEFAULT_TIP_INSET_PX)
+      // The tip is offset from the hand position by MANDALA_STANDARD_TIP_DX (130)
       // scaled to mandala space. This is approximately:
-      //   (150 - 20) * (80/150) = 130 * 0.533 ≈ 69.3px
+      //   130 * (80/150) = 130 * 0.533 ≈ 69.3px
       // Allow a generous tolerance for numerical rounding (±2px).
       expect(maxR - minR).toBeLessThan(2);
     });
@@ -650,33 +650,26 @@ describe("MandalaGeometryCalculator", () => {
     });
   });
 
-  describe("tip inset applied", () => {
-    it("tip radius is reduced by DEFAULT_TIP_INSET_PX relative to raw staff length", () => {
-      // For a static motion with out orientation, the tip points directly away
-      // from center. At south (angle=90°, y-axis), with staffAngle=out=90°+180°=270°:
-      //   handPos = (0, gridRadius)
-      //   tipOffset = (dx, 0) where dx = -(halfLength - inset) for left tip
-      //   After rotation by staffAngle 270°: cos(270°)=0, sin(270°)=-1
-      //     tipX = handX + dx*cos - 0*sin = 0 + dx*0 = 0
-      //     tipY = handY + dx*sin - 0 = gridRadius + dx*(-1) = gridRadius - dx (for left)
-      //
-      // Actually we just verify the maximum tip-to-center distance is less than
-      // what it would be with no inset (gridRadius + halfLength * scale) and
-      // consistent with (halfLength - inset) * scale.
+  describe("tip offset applied (MANDALA_STANDARD_TIP_DX)", () => {
+    it("tip radius matches MANDALA_STANDARD_TIP_DX scaled to mandala space", () => {
+      // The calculator uses MANDALA_STANDARD_TIP_DX (130) as the tip offset
+      // in engine coordinates, scaled to mandala space by
+      // (MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS).
 
       const result = calc.calculate(SINGLE_STATIC_STEP);
       expect(result.blue.length).toBeGreaterThan(0);
 
-      const path = result.blue[1]!; // right tip (tipIndex 1, dx = +(halfLength - inset))
+      const path = result.blue[1]!; // right tip (tipIndex 1, dx = +MANDALA_STANDARD_TIP_DX)
       const pts = parseSVGEndpoints(path.d);
       const maxDist = Math.max(...pts.map((p) => Math.sqrt(p.x ** 2 + p.y ** 2)));
 
-      // Expected max reach = gridRadius + (halfLength - inset) * scale
+      // Expected max reach = gridRadius + MANDALA_STANDARD_TIP_DX * scale
       const scale = MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
-      const tipReach = MANDALA_GRID_RADIUS + (ENGINE_GRID_RADIUS - DEFAULT_TIP_INSET_PX) * scale;
+      const tipReach = MANDALA_GRID_RADIUS + MANDALA_STANDARD_TIP_DX * scale;
       const fullReach = MANDALA_GRID_RADIUS + ENGINE_GRID_RADIUS * scale;
 
-      // The inset reduces the reach: tipReach < fullReach
+      // The standardized tip dx (130) is less than ENGINE_GRID_RADIUS (150),
+      // so the tip reach is less than the full staff reach
       expect(tipReach).toBeLessThan(fullReach);
       // The actual tip is within the expected reach
       expect(maxDist).toBeLessThanOrEqual(tipReach + 0.1);
@@ -684,10 +677,10 @@ describe("MandalaGeometryCalculator", () => {
       expect(maxDist).toBeGreaterThan(MANDALA_GRID_RADIUS);
     });
 
-    it("DEFAULT_TIP_INSET_PX is 15 (pin the constant)", () => {
+    it("MANDALA_STANDARD_TIP_DX is 130 (pin the constant)", () => {
       // If someone changes this constant, the visual output changes significantly.
       // Pin it explicitly so any change requires updating the tests too.
-      expect(DEFAULT_TIP_INSET_PX).toBe(15);
+      expect(MANDALA_STANDARD_TIP_DX).toBe(130);
     });
   });
 

@@ -11,7 +11,7 @@ import { describe, it, expect } from "vitest";
 import { Vector3, Quaternion, Euler } from "three";
 import { Orientation, MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
 import {
   planeAngleToWorldPosition,

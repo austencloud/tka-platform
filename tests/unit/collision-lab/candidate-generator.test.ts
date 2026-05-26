@@ -14,7 +14,7 @@ import type {
   PoseDefinition,
   StancePose,
 } from "$lib/features/lab/tabs/collision-lab/domain/types";
-import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import { Plane } from "@austencloud/scene-3d";
 import { Vector3 } from "three";
 
 const BOUNDS: OptimizerBounds = {
