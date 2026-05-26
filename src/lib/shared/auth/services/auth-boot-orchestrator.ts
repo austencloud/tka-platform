@@ -60,6 +60,17 @@ export async function initializeChildServices(
       console.warn("⚠️ [authState] Prop geometry adjustments initialization failed:", error);
     });
 
+  // Initialize special arrow placement overrides (non-blocking)
+  import("$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton")
+    .then(async ({ initializeSpecialOverrides }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await initializeSpecialOverrides();
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Special placement overrides initialization failed:", error);
+    });
+
   // Sync first-run status FROM cloud
   import("$lib/shared/onboarding/state/first-run-state.svelte")
     .then(async ({ firstRunState }) => {
