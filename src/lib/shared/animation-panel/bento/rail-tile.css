@@ -240,6 +240,28 @@
   cursor: not-allowed;
 }
 
+.rt-download.rt-secondary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-color: #7c3aed;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+  text-decoration: none;
+}
+
+.rt-download.rt-secondary:hover {
+  filter: brightness(1.08);
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.action-row .rt-download {
+  flex: 1;
+  min-width: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rt-tile,
   .rt-step-btn,

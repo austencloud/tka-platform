@@ -28,6 +28,8 @@
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
@@ -117,9 +119,14 @@
       ? pageState.word
       : data?.meta?.word) || "Sequence"
   );
-  const ogDesc = $derived(
+  const displayWord = $derived(
     rawWord !== "Sequence"
-      ? `Watch the ${rawWord} flow sequence`
+      ? greekToAscii(simplifyRepeatedWord(rawWord))
+      : "Sequence"
+  );
+  const ogDesc = $derived(
+    displayWord !== "Sequence"
+      ? `Watch the ${displayWord} flow sequence`
       : "Watch this flow sequence"
   );
   const ogImage = $derived(
@@ -296,10 +303,10 @@
 </script>
 
 <svelte:head>
-  <title>{rawWord} - TKA</title>
+  <title>{displayWord} · TKA</title>
   <meta name="description" content={ogDesc} />
   <meta property="og:type" content="video.other" />
-  <meta property="og:title" content="{rawWord} - TKA" />
+  <meta property="og:title" content="{displayWord} · TKA" />
   <meta property="og:description" content={ogDesc} />
   <meta property="og:image" content={ogImage} />
   <meta
@@ -307,7 +314,7 @@
     content="https://tkaflowarts.com/q/{$page.params.code}"
   />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{rawWord} - TKA" />
+  <meta name="twitter:title" content="{displayWord} · TKA" />
   <meta name="twitter:description" content={ogDesc} />
   <meta name="twitter:image" content={ogImage} />
   <meta name="theme-color" content="#0f0f1a" />
@@ -362,11 +369,6 @@
       </div>
 
       <div class="controls-column">
-        <a href="/browse/gallery?from=scan&code={shortCode}" class="open-tka-link">
-          <i class="fa-solid fa-compass"></i>
-          <span>Open TKA</span>
-        </a>
-
         <div class="drawer-host">
           {#await import("$lib/shared/animation-panel/components/AnimationPanel.svelte") then mod}
             <mod.default
@@ -386,6 +388,7 @@
               onPlaybackModeChange={handlePlaybackModeChange}
               onBpmChange={handleBpmChange}
               onExport={handleDownload}
+              secondaryAction={{ label: "Open TKA", href: `/browse/gallery?from=scan&code=${shortCode}`, icon: "fa-compass" }}
             />
           {/await}
         </div>
@@ -532,32 +535,6 @@
 
   .drawer-host {
     width: 100%;
-  }
-
-  /* ── Open TKA link ── */
-
-  .open-tka-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    min-height: var(--min-touch-target);
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border: 1px solid #7c3aed;
-    border-radius: 10px;
-    color: #fff;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    transition: background 120ms ease;
-    flex-shrink: 0;
-  }
-
-  .open-tka-link:hover {
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
   }
 
   /* ── Sidebar mode (landscape + desktop) ── */

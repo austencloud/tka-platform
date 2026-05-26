@@ -64,6 +64,7 @@
     onPropChange?: (propType: PropType) => void;
     onExport: () => void;
     onCancel?: () => void;
+    secondaryAction?: { label: string; href: string; icon?: string };
   }
 
   let {
@@ -84,12 +85,13 @@
     onPropChange,
     onExport,
     onCancel,
+    secondaryAction,
   }: Props = $props();
 
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
 
   // ── Active pill state ──
-  let activePill = $state<PillId | null>("effects");
+  let activePill = $state<PillId | null>(null);
   let panelDirection = $state(1);
 
   function handlePillSelect(id: PillId): void {
@@ -511,21 +513,29 @@
           onNavMount={(el) => { pillNavEl = el; }}
         />
 
-        <button
-          type="button"
-          class="rt-download"
-          onclick={onExport}
-          disabled={exportDisabled}
-          aria-label={exportButtonLabel}
-        >
-          {#if !canvasReady}
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Preparing...
-          {:else}
-            <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
-            {exportButtonLabel}
+        <div class="action-row">
+          {#if secondaryAction}
+            <a href={secondaryAction.href} class="rt-download rt-secondary">
+              {#if secondaryAction.icon}<i class="fas {secondaryAction.icon}" aria-hidden="true"></i>{/if}
+              {secondaryAction.label}
+            </a>
           {/if}
-        </button>
+          <button
+            type="button"
+            class="rt-download"
+            onclick={onExport}
+            disabled={exportDisabled}
+            aria-label={exportButtonLabel}
+          >
+            {#if !canvasReady}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              Preparing...
+            {:else}
+              <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
+              {exportButtonLabel}
+            {/if}
+          </button>
+        </div>
       </div>
     {/if}
   </div>
