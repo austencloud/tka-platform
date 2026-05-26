@@ -3,7 +3,7 @@
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { getPerformerColor } from "../../constants/performer-colors";
 
-  const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
+  import { R2_CDN } from "../../constants/r2-cdn";
   function avatarThumbUrl(id: string): string {
     return `${R2_CDN}/models/avatars/thumbnails/${id}.webp`;
   }
@@ -87,6 +87,19 @@
     }
   });
 
+  function handleTabKeydown(e: KeyboardEvent) {
+    const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    const next = (tabIndex + dir + TABS.length) % TABS.length;
+    const nextTab = TABS[next];
+    if (nextTab) {
+      activeTab = nextTab.id;
+      const btn = (e.currentTarget as HTMLElement).querySelector<HTMLElement>(`#hub-tab-${nextTab.id}`);
+      btn?.focus();
+    }
+  }
+
   // ─── Prop ───
   const currentProp = $derived(
     performer?.effectiveProp ?? viewer.defaultSettings.prop,
@@ -129,6 +142,10 @@
 
   function handleEffortSelect(effortId: EffortId) {
     applyToScope((p) => p?.setEffort(effortId));
+  }
+
+  function handlePropSizeChange(cm: number) {
+    applyToScope((p) => p?.setStaffLengthCm(cm));
   }
 </script>
 
@@ -181,9 +198,8 @@
 
     <!-- ─── Tab panes ─── -->
     <div class="tab-content">
-      {#if !isAllMode}
-        <!-- Avatar tab -->
-        <div class="tab-pane" class:active={activeTab === "avatar"} role="tabpanel">
+      {#if !isAllMode && activeTab === "avatar"}
+        <div id="hub-panel-avatar" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-avatar">
           <div class="avatar-section">
             <div class="section-label">Select Avatar</div>
             <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
@@ -203,7 +219,7 @@
                       src={avatarThumbUrl(def.id)}
                       alt={def.name}
                       loading="lazy"
-                      onerror={() => { thumbErrors = new Set([...thumbErrors, def.id]); }}
+                      onerror={() => { thumbErrors.add(def.id); thumbErrors = thumbErrors; }}
                     />
                   {:else}
                     <i
@@ -226,9 +242,10 @@
             {/if}
           </div>
         </div>
+      {/if}
 
-        <!-- Sequence tab -->
-        <div class="tab-pane" class:active={activeTab === "sequence"} role="tabpanel">
+      {#if !isAllMode && activeTab === "sequence"}
+        <div id="hub-panel-sequence" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-sequence">
           <div class="sequence-section">
             {#if sequenceWord}
               <div class="seq-display">
@@ -255,119 +272,115 @@
         </div>
       {/if}
 
-      <!-- Prop tab -->
-      <div class="tab-pane" class:active={activeTab === "prop"} role="tabpanel">
-        <div class="prop-section">
-          <div class="prop-grid">
-            {#each PROP_CATEGORIES as cat}
-              {@const bases = propCategories.get(cat.id) ?? []}
-              {#each bases as base}
-                {@const info = getPropTypeDisplayInfo(base)}
-                {@const isSelected =
-                  expandedFamily !== null
-                    ? expandedFamily === base
-                    : selectedBase === base}
-                <button
-                  class="prop-tile"
-                  class:selected={isSelected}
-                  aria-pressed={isSelected}
-                  aria-label={info.label}
-                  title={info.label}
-                  onclick={() => handleFamilyClick(base)}
-                >
-                  <PropCompositionPreview
-                    propType={base}
-                    size={28}
-                    darkBackground
-                  />
-                </button>
-              {/each}
-            {/each}
-          </div>
-
-          {#if expandedFamily && familyVariants.length > 1}
-            <div class="variant-strip">
-              <span class="variant-header"
-                >{getPropTypeDisplayInfo(expandedFamily).label}</span
-              >
-              <div class="variant-row">
-                {#each familyVariants as variant}
-                  {@const vInfo = getPropTypeDisplayInfo(variant)}
+      {#if activeTab === "prop"}
+        <div id="hub-panel-prop" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-prop">
+          <div class="prop-section">
+            <div class="prop-grid">
+              {#each PROP_CATEGORIES as cat}
+                {@const bases = propCategories.get(cat.id) ?? []}
+                {#each bases as base}
+                  {@const info = getPropTypeDisplayInfo(base)}
+                  {@const isSelected =
+                    expandedFamily !== null
+                      ? expandedFamily === base
+                      : selectedBase === base}
                   <button
-                    class="variant-chip"
-                    class:active={currentProp === variant}
-                    onclick={() => handleVariantClick(variant)}
+                    class="prop-tile"
+                    class:selected={isSelected}
+                    aria-pressed={isSelected}
+                    aria-label={info.label}
+                    title={info.label}
+                    onclick={() => handleFamilyClick(base)}
                   >
-                    <div class="variant-icon">
-                      <PropCompositionPreview
-                        propType={variant}
-                        size={22}
-                        darkBackground
-                      />
-                    </div>
-                    <span>{vInfo.label}</span>
+                    <PropCompositionPreview
+                      propType={base}
+                      size={28}
+                      darkBackground
+                    />
                   </button>
                 {/each}
-              </div>
+              {/each}
             </div>
-          {/if}
 
-          {#if performer}
-            <PerformerPropSizeSlider {performer} />
-          {:else if allPerformers[0]}
-            <PerformerPropSizeSlider performer={allPerformers[0]} />
-          {/if}
-        </div>
-      </div>
+            {#if expandedFamily && familyVariants.length > 1}
+              <div class="variant-strip">
+                <span class="variant-header"
+                  >{getPropTypeDisplayInfo(expandedFamily).label}</span
+                >
+                <div class="variant-row">
+                  {#each familyVariants as variant}
+                    {@const vInfo = getPropTypeDisplayInfo(variant)}
+                    <button
+                      class="variant-chip"
+                      class:selected={currentProp === variant}
+                      aria-pressed={currentProp === variant}
+                      onclick={() => handleVariantClick(variant)}
+                    >
+                      <div class="variant-icon">
+                        <PropCompositionPreview
+                          propType={variant}
+                          size={22}
+                          darkBackground
+                        />
+                      </div>
+                      <span>{vInfo.label}</span>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
 
-      <!-- Planes tab -->
-      <div
-        class="tab-pane"
-        class:active={activeTab === "planes"}
-        role="tabpanel"
-      >
-        <div class="planes-section">
-          <PlanesPopover />
+            {#if performer}
+              <PerformerPropSizeSlider {performer} />
+            {:else if allPerformers[0]}
+              <PerformerPropSizeSlider performer={allPerformers[0]} onSizeChange={handlePropSizeChange} />
+            {/if}
+          </div>
         </div>
-      </div>
+      {/if}
 
-      <!-- Effort tab -->
-      <div
-        class="tab-pane"
-        class:active={activeTab === "effort"}
-        role="tabpanel"
-      >
-        <div class="effort-section">
-          <EffortPalette
-            selectedEffort={currentEffort}
-            onSelect={handleEffortSelect}
-          />
+      {#if activeTab === "planes"}
+        <div id="hub-panel-planes" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-planes">
+          <div class="planes-section">
+            <PlanesPopover />
+          </div>
         </div>
-      </div>
+      {/if}
 
-      <!-- Effects tab -->
-      <div
-        class="tab-pane"
-        class:active={activeTab === "effects"}
-        role="tabpanel"
-      >
-        <div class="effects-section">
-          <EffectsSettingsPanel performer={performer ?? allPerformers[0] ?? null} />
+      {#if activeTab === "effort"}
+        <div id="hub-panel-effort" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-effort">
+          <div class="effort-section">
+            <EffortPalette
+              selectedEffort={currentEffort}
+              onSelect={handleEffortSelect}
+            />
+          </div>
         </div>
-      </div>
+      {/if}
+
+      {#if activeTab === "effects"}
+        <div id="hub-panel-effects" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-effects">
+          <div class="effects-section">
+            <EffectsSettingsPanel performer={performer ?? allPerformers[0] ?? null} />
+          </div>
+        </div>
+      {/if}
     </div>
 
     <div class="tab-divider" aria-hidden="true"></div>
 
     <!-- ─── Tab bar (bottom-anchored) ─── -->
-    <div class="tab-bar" role="tablist" style:--active-index={tabIndex} style:--tab-count={TABS.length}>
+    <div class="tab-bar" role="tablist" tabindex={0} style:--active-index={tabIndex} style:--tab-count={TABS.length} onkeydown={handleTabKeydown}>
       <div class="tab-indicator" aria-hidden="true"></div>
       {#each TABS as tab}
         <button
+          id="hub-tab-{tab.id}"
           class="tab-btn"
           class:active={activeTab === tab.id}
           role="tab"
           aria-selected={activeTab === tab.id}
+          tabindex={activeTab === tab.id ? 0 : -1}
+          aria-controls="hub-panel-{tab.id}"
           onclick={() => (activeTab = tab.id)}
         >
           <i class="fas {tab.icon}" aria-hidden="true"></i>
@@ -440,7 +453,7 @@
   }
 
   .all-hint {
-    font-size: 10px;
+    font-size: 11px;
     color: rgba(255, 255, 255, 0.4);
     font-style: italic;
   }
@@ -471,7 +484,7 @@
   .badge {
     padding: 1px 6px;
     border-radius: 4px;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 800;
     color: rgba(0, 0, 0, 0.85);
     line-height: 1.3;
@@ -487,7 +500,7 @@
   }
 
   .seq-beats {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.35);
   }
@@ -557,7 +570,7 @@
     border: none;
     background: transparent;
     color: rgba(255, 255, 255, 0.4);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition:
@@ -588,11 +601,6 @@
   }
 
   .tab-pane {
-    display: none;
-  }
-
-  .tab-pane.active {
-    display: block;
     animation: pane-in 160ms cubic-bezier(0, 0, 0.2, 1);
   }
 
@@ -609,7 +617,7 @@
 
   /* ─── Section label ─── */
   .section-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -710,7 +718,7 @@
   }
 
   .avatar-card-name {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     text-align: center;
     line-height: 1.2;
@@ -890,7 +898,7 @@
   }
 
   .variant-header {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -927,7 +935,7 @@
     color: white;
   }
 
-  .variant-chip.active {
+  .variant-chip.selected {
     border-color: var(--pop-accent);
     border-width: 2px;
     background: color-mix(in srgb, var(--pop-accent) 15%, rgba(0, 0, 0, 0.3));
@@ -999,5 +1007,21 @@
   .effects-section :global(.intensity-control),
   .effects-section :global(.active-count) {
     margin-top: 0;
+  }
+
+  /* ─── Focus-visible ─── */
+  button:focus-visible {
+    outline: 2px solid var(--performer-color, #4a9eff);
+    outline-offset: 2px;
+  }
+
+  /* ─── Reduced motion ─── */
+  @media (prefers-reduced-motion: reduce) {
+    .tab-indicator {
+      transition: none;
+    }
+    .tab-pane {
+      animation: none;
+    }
   }
 </style>

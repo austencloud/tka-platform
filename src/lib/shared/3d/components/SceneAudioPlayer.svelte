@@ -21,7 +21,6 @@
   });
 
   let expanded = $state(false);
-  let hasAutoExpanded = false;
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   let idle = $state(false);
 
@@ -81,13 +80,6 @@
     return () => { if (idleTimer) clearTimeout(idleTimer); };
   });
 
-  $effect(() => {
-    if (sceneAudioState.audioUnlocked && sceneAudioState.playing && !expanded && !hasAutoExpanded) {
-      hasAutoExpanded = true;
-      expanded = true;
-      resetIdle();
-    }
-  });
 </script>
 
 {#if isOcean}
@@ -99,7 +91,7 @@
     onpointerenter={resetIdle}
     onpointermove={resetIdle}
   >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_tabindex -->
     <div
       class="player-shell"
       class:expanded
@@ -110,7 +102,7 @@
       aria-label={expanded ? undefined : "Open audio player"}
     >
       <div class="collapsed-icon" class:hidden={expanded}>
-        <i class="fa-solid fa-music"></i>
+        <i class="fa-solid {sceneAudioState.muted ? 'fa-volume-xmark' : 'fa-music'}"></i>
       </div>
 
       <div class="expanded-content" class:visible={expanded}>

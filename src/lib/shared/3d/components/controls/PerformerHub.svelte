@@ -8,22 +8,18 @@
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
-  const isAllMode = $derived(selectedIndex === null);
-  const showDetail = $derived(true);
   const performers = $derived(viewer.performerManager.performers);
   const performerColor = $derived(
     selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff",
   );
 
-  let detailCollapsed = $state(false);
-  let prevIndex = $state<number | null>(null);
+  let detailCollapsed = $state(true);
+  let hasInteracted = $state(false);
 
-  $effect(() => {
-    if (selectedIndex !== prevIndex) {
-      detailCollapsed = false;
-      prevIndex = selectedIndex;
-    }
-  });
+  function handleSpineInteract() {
+    hasInteracted = true;
+    detailCollapsed = false;
+  }
 
   function collapseDetail() {
     detailCollapsed = true;
@@ -32,11 +28,11 @@
 
 {#if performers.length >= 1}
   <div class="hub-anchor" style:--panel-color={performerColor}>
-    <div class="spine-panel" class:has-detail={showDetail && !detailCollapsed}>
-      <PerformerSpine />
+    <div class="spine-panel" class:has-detail={!detailCollapsed}>
+      <PerformerSpine onInteract={handleSpineInteract} {hasInteracted} />
     </div>
 
-    {#if showDetail && !detailCollapsed}
+    {#if !detailCollapsed}
       <div
         class="detail-panel"
         transition:slide={{ axis: "x", duration: 260, easing: cubicOut }}
@@ -117,9 +113,9 @@
     top: -1px;
     right: -1px;
     z-index: 5;
-    width: 28px;
-    height: 28px;
-    border-radius: 0 14px 0 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 0 14px 0 14px;
     border: none;
     background: color-mix(in srgb, var(--panel-color) 15%, rgba(0, 0, 0, 0.4));
     color: rgba(255, 255, 255, 0.4);
@@ -140,6 +136,19 @@
   }
 
   .close-tab i {
-    font-size: 10px;
+    font-size: 12px;
+  }
+
+  /* ─── Focus-visible ─── */
+  button:focus-visible {
+    outline: 2px solid var(--panel-color, #4a9eff);
+    outline-offset: 2px;
+  }
+
+  /* ─── Reduced motion ─── */
+  @media (prefers-reduced-motion: reduce) {
+    .spine-panel {
+      transition: none;
+    }
   }
 </style>

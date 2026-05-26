@@ -3,6 +3,12 @@
   import { STAGE } from "@austencloud/scene-3d";
   import { getPerformerColor } from "../../constants/performer-colors";
 
+  interface Props {
+    onInteract?: () => void;
+    hasInteracted?: boolean;
+  }
+  let { onInteract, hasInteracted = false }: Props = $props();
+
   const viewer = getViewer3DContext();
   const performers = $derived(viewer.performerManager.performers);
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
@@ -11,12 +17,14 @@
   function selectAll(): void {
     viewer.selectPerformerScope(null);
     viewer.closePopover();
+    onInteract?.();
   }
 
   function selectPerformer(i: number): void {
     const newIndex = selectedIndex === i ? null : i;
     viewer.selectPerformerScope(newIndex);
     if (newIndex === null) viewer.closePopover();
+    onInteract?.();
   }
 
   function addPerformer(): void {
@@ -31,7 +39,7 @@
     <button
       class="spine-chip add-chip"
       aria-label="Add performer"
-      data-tooltip="Add performer"
+      title="Add performer"
       disabled={!canAdd}
       onclick={addPerformer}
     >
@@ -46,9 +54,9 @@
       {@const color = getPerformerColor(i)}
       <button
         class="spine-chip performer-chip"
-        aria-pressed={selectedIndex === i}
+        aria-pressed={hasInteracted && selectedIndex === i}
         aria-label="Performer {i + 1}"
-        data-tooltip="Performer {i + 1}"
+        title="Performer {i + 1}"
         style:--performer-color={color}
         onclick={() => selectPerformer(i)}
       >
@@ -62,9 +70,9 @@
     <!-- All button at bottom -->
     <button
       class="spine-chip all-chip"
-      aria-pressed={selectedIndex === null}
+      aria-pressed={hasInteracted && selectedIndex === null}
       aria-label="All performers"
-      data-tooltip="All performers"
+      title="All performers"
       onclick={selectAll}
     >
       <i class="fas fa-users"></i>
@@ -101,28 +109,6 @@
     background: rgba(255, 255, 255, 0.06);
   }
 
-  /* Tooltip appears to the right */
-  .spine-chip:hover:not(:disabled)::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: calc(100% + 10px);
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: white;
-    padding: 6px 10px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 100;
-  }
-
-  .spine-chip[aria-pressed="true"]::after {
-    display: none;
-  }
 
   .spine-chip i {
     font-size: 18px;
@@ -186,5 +172,18 @@
     height: 1px;
     background: rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
+  }
+
+  /* ─── Focus-visible ─── */
+  .spine-chip:focus-visible {
+    outline: 2px solid var(--performer-color, #4a9eff);
+    outline-offset: 2px;
+  }
+
+  /* ─── Reduced motion ─── */
+  @media (prefers-reduced-motion: reduce) {
+    .spine-chip {
+      transition: none;
+    }
   }
 </style>

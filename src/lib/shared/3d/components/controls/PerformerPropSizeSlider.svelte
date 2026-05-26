@@ -2,10 +2,23 @@
   import { inchesToCm } from "@austencloud/scene-3d";
   import type { AvatarInstanceState } from "../../state/avatar-instance-state.svelte";
 
-  let { performer }: { performer: AvatarInstanceState } = $props();
+  interface Props {
+    performer: AvatarInstanceState;
+    onSizeChange?: (cm: number) => void;
+  }
+  let { performer, onSizeChange }: Props = $props();
 
   const currentCm = $derived(performer.settings.staffLengthCm ?? 81);
   const displayInches = $derived(Math.round(currentCm / 2.54));
+
+  function handleInput(e: Event) {
+    const cm = Number((e.currentTarget as HTMLInputElement).value);
+    if (onSizeChange) {
+      onSizeChange(cm);
+    } else {
+      performer.setStaffLengthCm(cm);
+    }
+  }
 </script>
 
 <div class="prop-size">
@@ -20,7 +33,7 @@
     max={inchesToCm(60)}
     step="1"
     value={currentCm}
-    oninput={(e) => performer.setStaffLengthCm(Number(e.currentTarget.value))}
+    oninput={handleInput}
     aria-label="Prop size"
   />
 </div>
