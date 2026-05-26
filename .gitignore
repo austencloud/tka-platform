@@ -2,6 +2,9 @@
 .worktrees/
 .claude/worktrees/
 
+# Blender source files (dev-only, too large for git)
+blender/
+
 # Capacitor native projects (commit when CI is ready)
 # ios/
 # android/
