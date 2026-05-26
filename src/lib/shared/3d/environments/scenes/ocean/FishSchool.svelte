@@ -228,13 +228,11 @@
     });
   }
 
-  /** Create a minimal 1x1x1 Data3DTexture with value 999 (far outside) */
   function createPlaceholder3DTexture(): Data3DTexture {
-    const data = new Uint16Array(1);
-    // HalfFloat encoding of 999.0 — approximate, but any large positive works
-    // For simplicity we encode a large value; the shader checks dist > 998
-    data[0] = 0x63E7; // ~999 in half-float
-    const tex = new Data3DTexture(data, 1, 1, 1);
+    const S = 4;
+    const data = new Uint16Array(S * S * S);
+    data.fill(0x63E7); // ~999 in half-float = "far from surface"
+    const tex = new Data3DTexture(data, S, S, S);
     tex.format = RedFormat;
     tex.type = HalfFloatType;
     tex.minFilter = LinearFilter;
@@ -944,6 +942,11 @@
     }
 
     gpuCompute.compute();
+
+    // Detach the GPGPU framebuffer so the EffectComposer's RenderPass doesn't
+    // trigger a feedback loop when it binds GPGPU textures as fish-shader samplers.
+    const gl = (renderer as any).current ?? renderer;
+    gl.setRenderTarget(null);
 
     const posTex = gpuCompute.getCurrentRenderTarget(posVar).texture;
     const velTex = gpuCompute.getCurrentRenderTarget(velVar).texture;

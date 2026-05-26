@@ -432,11 +432,11 @@ void main() {
   vec4 posData = texture2D(texturePosition, uv);
   vec3 vel = texture2D(textureVelocity, uv).xyz;
 
-  // NaN firewall: if velocity is NaN, zero it; if position is NaN, respawn
-  if (any(isnan(vel)) || any(isinf(vel))) vel = vec3(0.0);
+  // NaN/Inf firewall — uses arithmetic checks to avoid HLSL X3577 warning
+  if (vel != vel || any(greaterThan(abs(vel), vec3(1e38)))) vel = vec3(0.0);
   posData.xyz += vel * uDelta;
 
-  if (any(isnan(posData.xyz)) || any(isinf(posData.xyz))) {
+  if (posData.xyz != posData.xyz || any(greaterThan(abs(posData.xyz), vec3(1e38)))) {
     float hash1 = fract(sin(uv.x * 12.9898 + uv.y * 78.233) * 43758.5453);
     float hash2 = fract(sin(uv.x * 39.346 + uv.y * 11.135) * 43758.5453);
     float hash3 = fract(sin(uv.x * 73.156 + uv.y * 29.984) * 43758.5453);

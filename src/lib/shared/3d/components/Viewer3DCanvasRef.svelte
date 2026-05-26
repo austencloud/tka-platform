@@ -21,12 +21,44 @@
   // mounts, so no timing dance is required. Cast through `unknown` because
   // the threlte 8.3.1 ThrelteContext .d.ts in this repo's types resolution
   // doesn't surface the `canvas` field even though it exists at runtime.
-  const threlte = useThrelte() as unknown as { canvas: HTMLCanvasElement };
+  const threlte = useThrelte() as unknown as {
+    canvas: HTMLCanvasElement;
+    renderer: { current: import("three").WebGLRenderer };
+  };
   const viewer3DState = getViewer3DContext();
 
   viewer3DState.setWebglCanvas(threlte.canvas);
 
+  // Aggressively tear down WebGL on page unload to prevent Chrome navigation hang.
+  // The fish GPUComputationRenderer creates a framebuffer feedback loop
+  // (GL_INVALID_OPERATION) that hangs Chrome's GPU process. When the user
+  // presses F5, Chrome waits for GPU teardown that never completes.
+  // Fix: dispose the renderer (stops animation loop + frees GPU), then
+  // force context loss as a belt-and-suspenders measure.
+  function teardownWebGLOnUnload() {
+    try {
+      const r = threlte.renderer?.current;
+      if (r) {
+        r.dispose();
+        r.forceContextLoss();
+      }
+    } catch {
+      // Last resort: raw context loss
+      const gl = threlte.canvas?.getContext("webgl2") || threlte.canvas?.getContext("webgl");
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", teardownWebGLOnUnload);
+    window.addEventListener("pagehide", teardownWebGLOnUnload);
+  }
+
   onDestroy(() => {
     viewer3DState.setWebglCanvas(null);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("beforeunload", teardownWebGLOnUnload);
+      window.removeEventListener("pagehide", teardownWebGLOnUnload);
+    }
   });
 </script>
