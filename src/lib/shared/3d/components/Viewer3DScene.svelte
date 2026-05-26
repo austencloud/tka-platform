@@ -368,7 +368,7 @@
 
 <!-- Environment (gated by scene feature toggle) -->
 {#if hasEnvironment && sceneFeatures.isEnabled("environment")}
-  <Environment3D {backgroundType} {performerCount} stageWidth={stageDimensions.width} stageDepth={stageDimensions.depth} {stageZOffset} oceanVariant={viewer3DState.oceanVariant} />
+  <Environment3D {backgroundType} {performerCount} stageWidth={stageDimensions.width} stageDepth={stageDimensions.depth} {stageZOffset} />
 {/if}
 
 <!-- Seated audience (gated by scene feature toggle) -->

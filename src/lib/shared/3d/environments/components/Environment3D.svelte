@@ -14,13 +14,12 @@
   import AutumnScene from "../scenes/AutumnScene.svelte";
   import CosmicScene from "../scenes/CosmicScene.svelte";
   import WinterScene from "../scenes/WinterScene.svelte";
-  import OceanScene from "../scenes/OceanScene.svelte";
+  import OceanScene from "../scenes/ocean-v2/OceanScene.svelte";
   import EmberScene from "../scenes/EmberScene.svelte";
   import BlossomScene from "../scenes/BlossomScene.svelte";
   import RainbowScene from "../scenes/RainbowScene.svelte";
   import CelestialScene from "../scenes/CelestialScene.svelte";
   import VoidScene from "../scenes/VoidScene.svelte";
-  import type { OceanVariant } from "../domain/enums/environment-enums";
 
   interface Props {
     /** Background type from settings */
@@ -33,11 +32,9 @@
     stageDepth?: number;
     /** Z offset for stage expansion (keeps front edge fixed). */
     stageZOffset?: number;
-    /** Ocean sub-variant selection */
-    oceanVariant?: OceanVariant;
   }
 
-  let { backgroundType, performerCount = 1, stageWidth = 6, stageDepth = 6, stageZOffset = 0, oceanVariant }: Props = $props();
+  let { backgroundType, performerCount = 1, stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
 
   const { scene, renderer } = useThrelte();
 
@@ -47,7 +44,7 @@
     | { scene: "autumn" }
     | { scene: "cosmic"; variant: "night" | "aurora" }
     | { scene: "winter" }
-    | { scene: "ocean"; variant: "abyss" | "reef" | "mystical" | "cinematic" }
+    | { scene: "ocean" }
     | { scene: "ember" }
     | { scene: "blossom" }
     | { scene: "rainbow" }
@@ -66,7 +63,7 @@
       case BackgroundType.WINTER:
         return { scene: "winter" };
       case BackgroundType.OCEAN:
-        return { scene: "ocean", variant: (oceanVariant ?? "abyss") as "abyss" | "reef" | "mystical" | "cinematic" };
+        return { scene: "ocean" };
       case BackgroundType.EMBER:
         return { scene: "ember" };
       case BackgroundType.BLOSSOM:
@@ -130,7 +127,7 @@
   {:else if config.scene === "winter"}
     <WinterScene {stageWidth} {stageDepth} {stageZOffset} />
   {:else if config.scene === "ocean"}
-    <OceanScene variant={config.variant} {performerCount} {stageWidth} {stageDepth} {stageZOffset} />
+    <OceanScene {performerCount} {stageWidth} {stageDepth} {stageZOffset} />
   {:else if config.scene === "ember"}
     <EmberScene {stageWidth} {stageDepth} {stageZOffset} />
   {:else if config.scene === "blossom"}
