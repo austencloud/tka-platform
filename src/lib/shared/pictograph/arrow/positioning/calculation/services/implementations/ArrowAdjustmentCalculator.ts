@@ -37,6 +37,11 @@ import type {
   SpecialJsonTierInfo,
 } from "../../domain/PipelineDiagnostics";
 import { getGlobalAdjustmentRepository } from "../../../global/services/global-adjustment-singleton";
+import { getSpecialOverrideRepository } from "../../../special-override/services/special-override-singleton";
+import {
+  generateSpecialOverrideKey,
+  extractOriFolderFromPath,
+} from "../../../special-override/domain/SpecialArrowPlacement";
 
 export class ArrowAdjustmentCalculator {
   /**
@@ -260,7 +265,7 @@ export class ArrowAdjustmentCalculator {
       }
     }
 
-    // --- Tier 2: Special JSON (static per-letter files) ---
+    // --- Tier 2: Special JSON (static per-letter files + Firestore overrides) ---
     if (letter) {
       try {
         const [, , attrKey] = this.generateLookupKeys(
@@ -274,13 +279,79 @@ export class ArrowAdjustmentCalculator {
             arrowColor,
             attrKey
           );
+
         if (jsonResult) {
           const specialJsonInfo: SpecialJsonTierInfo = {
             value: { x: jsonResult.adjustment.x, y: jsonResult.adjustment.y },
             filePath: jsonResult.filePath,
             turnsTupleKey: String(jsonResult.turnsTupleKey),
+            firestoreOverride: null,
           };
+
+          const specialOverrideRepo = getSpecialOverrideRepository();
+          if (specialOverrideRepo?.isInitialized) {
+            const oriFolder = extractOriFolderFromPath(jsonResult.filePath);
+            const gridMode =
+              motionData.gridMode ||
+              (pictographData.motions.blue && pictographData.motions.red
+                ? _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
+                : "diamond");
+            const overrideKey = generateSpecialOverrideKey({
+              gridMode,
+              oriFolder,
+              letter: pictographData.letter || "",
+              turnsTuple: String(jsonResult.turnsTupleKey),
+              motionType: motionData.motionType?.toLowerCase() || "",
+            });
+            const fullOverride = specialOverrideRepo.getFullOverride(overrideKey);
+            if (fullOverride) {
+              specialJsonInfo.firestoreOverride = {
+                value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
+                original: { x: jsonResult.adjustment.x, y: jsonResult.adjustment.y },
+                updatedBy: fullOverride.updatedBy,
+              };
+              specialJsonInfo.value = { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY };
+            }
+          }
+
           diagnostics.specialJson = specialJsonInfo;
+        } else {
+          // No static JSON entry — check for Firestore-only override
+          const specialOverrideRepo = getSpecialOverrideRepository();
+          if (specialOverrideRepo?.isInitialized && pictographData.letter) {
+            const rawOriKey = generateOrientationKey(motionData, pictographData);
+            const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
+            const gridMode =
+              motionData.gridMode ||
+              (pictographData.motions.blue && pictographData.motions.red
+                ? _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
+                : "diamond");
+            const turnsTupleArr = generateTurnsTuple(pictographData);
+
+            for (const folder of [oriKey, mapToLegacyBucket(oriKey)]) {
+              const overrideKey = generateSpecialOverrideKey({
+                gridMode,
+                oriFolder: folder,
+                letter: pictographData.letter,
+                turnsTuple: turnsTupleArr.join(","),
+                motionType: motionData.motionType?.toLowerCase() || "",
+              });
+              const fullOverride = specialOverrideRepo.getFullOverride(overrideKey);
+              if (fullOverride) {
+                diagnostics.specialJson = {
+                  value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
+                  filePath: `${gridMode}/special/${folder}/${pictographData.letter}_placements.json`,
+                  turnsTupleKey: turnsTupleArr.join(","),
+                  firestoreOverride: {
+                    value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
+                    original: null,
+                    updatedBy: fullOverride.updatedBy,
+                  },
+                };
+                break;
+              }
+            }
+          }
         }
       } catch (error) {
         console.warn("[getDiagnostics] Special JSON tier probe failed:", error);
@@ -479,11 +550,40 @@ export class ArrowAdjustmentCalculator {
     arrowColor?: string,
     attributeKey?: string
   ): Promise<Point | null> {
-    /**
-     * Look up special placement using exact legacy logic.
-     * IDENTICAL to ArrowAdjustmentLookup.lookupSpecialPlacement()
-     */
     try {
+      // Check Firestore special overrides first
+      const specialOverrideRepo = getSpecialOverrideRepository();
+      if (specialOverrideRepo?.isInitialized && pictographData.letter) {
+        const jsonResult = await this.SpecialPlacer.getSpecialJsonAdjustmentOnly(
+          motionData,
+          pictographData,
+          arrowColor,
+          attributeKey
+        );
+
+        if (jsonResult) {
+          const oriFolder = extractOriFolderFromPath(jsonResult.filePath);
+          const gridMode =
+            motionData.gridMode ||
+            (pictographData.motions.blue && pictographData.motions.red
+              ? _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
+              : "diamond");
+          const overrideKey = generateSpecialOverrideKey({
+            gridMode,
+            oriFolder,
+            letter: pictographData.letter,
+            turnsTuple: String(jsonResult.turnsTupleKey),
+            motionType: motionData.motionType?.toLowerCase() || "",
+          });
+
+          const override = specialOverrideRepo.getOverride(overrideKey);
+          if (override) {
+            return new Point(override.x, override.y);
+          }
+        }
+      }
+
+      // Fall through to static JSON + global override
       const adjustment = await this.SpecialPlacer.getSpecialAdjustment(
         motionData,
         pictographData,
