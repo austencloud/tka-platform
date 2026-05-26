@@ -1,0 +1,68 @@
+// src/lib/features/stage/state/stage-edit-mode.svelte.ts
+
+export type CameraMode = 'orbit' | 'top-down';
+
+export function createStageEditMode() {
+	let cameraMode = $state<CameraMode>('orbit');
+	let selectedPerformerId = $state<string | null>(null);
+	let selectedMarkId = $state<string | null>(null);
+	let multiSelectedPerformerIds = $state<Set<string>>(new Set());
+	let isDragging = $state(false);
+
+	function toggleCameraMode() {
+		cameraMode = cameraMode === 'orbit' ? 'top-down' : 'orbit';
+	}
+
+	function selectPerformer(id: string, addToSelection = false) {
+		if (addToSelection) {
+			const next = new Set(multiSelectedPerformerIds);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			multiSelectedPerformerIds = next;
+			selectedPerformerId = id;
+		} else {
+			multiSelectedPerformerIds = new Set([id]);
+			selectedPerformerId = id;
+		}
+		selectedMarkId = null;
+	}
+
+	function selectMark(performerId: string, markId: string) {
+		selectedPerformerId = performerId;
+		selectedMarkId = markId;
+		multiSelectedPerformerIds = new Set([performerId]);
+	}
+
+	function clearSelection() {
+		selectedPerformerId = null;
+		selectedMarkId = null;
+		multiSelectedPerformerIds = new Set();
+	}
+
+	return {
+		get cameraMode() {
+			return cameraMode;
+		},
+		get selectedPerformerId() {
+			return selectedPerformerId;
+		},
+		get selectedMarkId() {
+			return selectedMarkId;
+		},
+		get multiSelectedPerformerIds() {
+			return multiSelectedPerformerIds;
+		},
+		get isDragging() {
+			return isDragging;
+		},
+		set isDragging(v: boolean) {
+			isDragging = v;
+		},
+		toggleCameraMode,
+		selectPerformer,
+		selectMark,
+		clearSelection
+	};
+}
+
+export type StageEditMode = ReturnType<typeof createStageEditMode>;
