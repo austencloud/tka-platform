@@ -43,6 +43,18 @@
       })();
     </script>
 
+    <!-- Dev mode: kill stale service workers BEFORE any module scripts load.
+         hooks.client.ts also does this, but it runs too late — a stale SW can
+         intercept the navigation request that loads the page in the first place,
+         creating a deadlock where the page never loads and the SW never unregisters. -->
+    <script>
+      if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
+        });
+      }
+    </script>
+
     <!-- 🚀 Preconnect to external origins for faster requests (app mode only) -->
     <!-- Landing visitors don't need Firebase/Google APIs - skip these to save ~500ms -->
     <script>

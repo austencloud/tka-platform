@@ -1,12 +1,21 @@
 /**
  * Client-side hooks
  */
-
 import { browser, dev } from "$app/environment";
 if (typeof window !== 'undefined' && 'Capacitor' in window) {
   import('@capgo/capacitor-updater').then(({ CapacitorUpdater }) => {
     CapacitorUpdater.notifyAppReady();
   }).catch(() => {});
+}
+
+// Suppress Three.js "Multiple instances" warning caused by Vite optimizer
+// bundling globe.gl's three-globe with a separate copy despite pnpm dedupe.
+if (browser) {
+  const _origWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    if (typeof args[0] === "string" && args[0].includes("Multiple instances of Three.js being imported")) return;
+    _origWarn.apply(console, args);
+  };
 }
 
 // Always expose cache benchmark utility globally (in both dev and prod for testing)
@@ -21,14 +30,16 @@ if (browser) {
     });
 }
 
-// Dev mode: register a minimal FCM-only service worker for push notification testing
-// This doesn't use the full PWA/Workbox SW - just the Firebase messaging handler
+// Dev mode: unregister ALL service workers to prevent stale production SWs
+// from intercepting navigation requests and causing infinite page-load hangs.
+// (sw.js wraps navigate fetches with no timeout — if Vite is busy with HMR,
+// the fetch never resolves and the page spinner spins forever.)
 if (browser && dev && "serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("/firebase-messaging-sw.js", { scope: "/" })
-    .catch((err) => {
-      console.warn("[FCM-Dev] Messaging service worker registration failed:", err);
-    });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const reg of registrations) {
+      reg.unregister();
+    }
+  });
 }
 
 // Production: auto-recover from stale chunks after a deploy.
@@ -86,7 +97,6 @@ if (browser && !dev && "serviceWorker" in navigator) {
   navigator.serviceWorker
     .register("/sw.js", { scope: "/" })
     .then((registration) => {
-      console.log("[SW] Registered");
       if (registration.active && "sync" in registration) {
         (registration as ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } })
           .sync.register("tka-sync-queue")

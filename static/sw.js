@@ -30,6 +30,11 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
+  // Dev mode: never intercept requests on localhost — Vite serves everything.
+  // A stale production SW on localhost blocks page refreshes because
+  // hooks.client.ts can only unregister AFTER the page loads (deadlock).
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return;
+
   // Skip non-GET requests
   if (event.request.method !== "GET") return;
 
@@ -93,7 +98,7 @@ self.addEventListener("fetch", (event) => {
 
     if (!isPublicRoute) {
       event.respondWith(
-        fetch(event.request).catch(() =>
+        fetchWithTimeout(event.request, 10000).catch(() =>
           caches.match("/app").then((cached) => cached || new Response("Offline", { status: 503 }))
         )
       );
@@ -150,6 +155,16 @@ async function staleWhileRevalidate(request) {
     })
     .catch(() => cached);
   return cached || fetchPromise;
+}
+
+function fetchWithTimeout(request, ms) {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    fetch(request, { signal: controller.signal })
+      .then((res) => { clearTimeout(timer); resolve(res); })
+      .catch((err) => { clearTimeout(timer); reject(err); });
+  });
 }
 
 // Firebase Cloud Messaging handler (push notifications)
