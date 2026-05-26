@@ -9,6 +9,7 @@
     getAvailableWeights,
     getCatalogSourceSummaries,
     getVtgFamilyOptions,
+    getVtgTurnPatternOptions,
     buildVtgCards,
     composeDeck,
     swapCard,
@@ -27,7 +28,6 @@
   let releasedIds = $state<Set<string>>(new Set());
   let releases = $state<DeckRelease[]>([]);
   let isLoadingReleases = $state(true);
-  let viewingRelease = $state<DeckRelease | null>(null);
 
   const footers = $derived(rs.cards.map(c => c.footer));
 
@@ -49,6 +49,8 @@
   }
 
   onMount(async () => {
+    const savedDeckNumber = rs.savedViewingDeckNumber;
+
     const releasesPromise = getAllReleases().then(r => {
       releases = r;
       releasedIds = extractReleasedIds(r);
@@ -58,6 +60,7 @@
     if (rs.poolsLoaded) {
       rs.isLoadingPools = false;
       await releasesPromise;
+      restoreViewedRelease(savedDeckNumber);
       return;
     }
 
@@ -65,6 +68,7 @@
       catalogs = await loadCatalogs();
       rs.sourceSummaries = getCatalogSourceSummaries(catalogs);
       rs.vtgFamilies = getVtgFamilyOptions(catalogs);
+      rs.vtgTurnPatterns = getVtgTurnPatternOptions(catalogs);
       await releasesPromise;
       rebuildPool();
     } catch (err) {
@@ -79,7 +83,15 @@
     } catch {
       rs.nextDeckNumber = 1;
     }
+
+    restoreViewedRelease(savedDeckNumber);
   });
+
+  function restoreViewedRelease(deckNumber: number | null) {
+    if (!deckNumber || rs.viewingRelease) return;
+    const match = releases.find(r => r.deckNumber === deckNumber);
+    if (match) handleSelectRelease(match);
+  }
 
   function handleSliceTypeToggle(sliceType: 'halved' | 'quartered') {
     const next = new Set(rs.selectedSliceTypes);
@@ -97,6 +109,9 @@
     if (mode === 'vtg' && rs.selectedVtgFamilies.size === 0) {
       rs.selectedVtgFamilies = new Set(rs.vtgFamilies.map(f => f.familyId));
     }
+    if (mode === 'vtg' && rs.selectedVtgTurnPatterns.size === 0) {
+      rs.selectedVtgTurnPatterns = new Set(rs.vtgTurnPatterns.map(tp => tp.turnPattern));
+    }
   }
 
   function handleVtgFamilyToggle(familyId: string) {
@@ -109,8 +124,18 @@
     rs.selectedVtgFamilies = next;
   }
 
+  function handleVtgTurnPatternToggle(tp: string) {
+    const next = new Set(rs.selectedVtgTurnPatterns);
+    if (next.has(tp)) {
+      next.delete(tp);
+    } else {
+      next.add(tp);
+    }
+    rs.selectedVtgTurnPatterns = next;
+  }
+
   const vtgCardCount = $derived(
-    buildVtgCards(rs.vtgFamilies, rs.selectedVtgFamilies).length
+    buildVtgCards(rs.vtgFamilies, rs.selectedVtgFamilies, rs.selectedVtgTurnPatterns).length
   );
 
   function handleWeightChange(stepCount: number, weight: number) {
@@ -121,7 +146,7 @@
 
   function composeFullDeck() {
     if (rs.deckMode === 'vtg') {
-      const vtgCards = buildVtgCards(rs.vtgFamilies, rs.selectedVtgFamilies);
+      const vtgCards = buildVtgCards(rs.vtgFamilies, rs.selectedVtgFamilies, rs.selectedVtgTurnPatterns);
       return vtgCards.map((c, i) => ({ ...c, position: i + 1 }));
     }
     return composeDeck(pool, rs.weights, rs.totalCards, { center: rs.notes });
@@ -133,6 +158,7 @@
     await loadSelectedSequences(gen);
     if (gen !== rs.drawGeneration) return;
     rs.step = "review";
+    rs.persist();
   }
 
   async function handleRedraw() {
@@ -201,6 +227,7 @@
       releases = [release, ...releases];
       for (const card of release.sequences ?? []) releasedIds.add(card.sequenceId);
       rs.step = "released";
+      rs.persist();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Release failed";
       const isPermission = msg.includes("permission") || msg.includes("PERMISSION_DENIED");
@@ -211,16 +238,16 @@
   }
 
   function handleStartNew() {
-    viewingRelease = null;
     rs.reset();
   }
 
   async function handleSelectRelease(release: DeckRelease) {
-    viewingRelease = release;
+    rs.viewingRelease = release;
     rs.cards = release.sequences;
     rs.notes = release.notes;
     rs.nextDeckNumber = release.deckNumber;
     rs.step = "review";
+    rs.persist();
 
     const gen = ++rs.drawGeneration;
     await loadSelectedSequences(gen);
@@ -239,6 +266,8 @@
         selectedSliceTypes={rs.selectedSliceTypes}
         vtgFamilies={rs.vtgFamilies}
         selectedVtgFamilies={rs.selectedVtgFamilies}
+        vtgTurnPatterns={rs.vtgTurnPatterns}
+        selectedVtgTurnPatterns={rs.selectedVtgTurnPatterns}
         {vtgCardCount}
         isLoading={rs.isLoadingPools}
         onModeChange={handleModeChange}
@@ -247,6 +276,7 @@
         onNotesChange={(n) => { rs.notes = n; }}
         onSliceTypeToggle={handleSliceTypeToggle}
         onVtgFamilyToggle={handleVtgFamilyToggle}
+        onVtgTurnPatternToggle={handleVtgTurnPatternToggle}
         onDraw={handleDraw}
       />
     {:else if rs.step === "review"}
@@ -256,12 +286,12 @@
         theme={rs.theme}
         nextDeckNumber={rs.nextDeckNumber}
         isReleasing={rs.isReleasing}
-        readOnly={viewingRelease !== null}
+        readOnly={rs.viewingRelease !== null}
         {footers}
         onSwapCard={handleSwapCard}
         onRedraw={handleRedraw}
         onRelease={handleRelease}
-        onBack={() => { viewingRelease = null; rs.step = "configure"; }}
+        onBack={() => { rs.viewingRelease = null; rs.step = "configure"; rs.persist(); }}
       />
     {:else if rs.step === "released"}
       <div class="released-step">
@@ -289,7 +319,7 @@
     <ReleaseHistoryPanel
       {releases}
       isLoading={isLoadingReleases}
-      activeDeckNumber={viewingRelease?.deckNumber ?? null}
+      activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
       onSelectRelease={handleSelectRelease}
     />
   </div>

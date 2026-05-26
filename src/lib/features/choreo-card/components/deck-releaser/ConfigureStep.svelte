@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
-  import type { CatalogSourceSummary, VtgFamilyOption } from "../../services/deck-composer";
+  import type { CatalogSourceSummary, VtgFamilyOption, VtgTurnPatternOption } from "../../services/deck-composer";
 
   type DeckMode = "loop" | "vtg";
 
@@ -13,6 +13,8 @@
     selectedSliceTypes: Set<'halved' | 'quartered'>;
     vtgFamilies: VtgFamilyOption[];
     selectedVtgFamilies: Set<string>;
+    vtgTurnPatterns: VtgTurnPatternOption[];
+    selectedVtgTurnPatterns: Set<string>;
     vtgCardCount: number;
     onModeChange: (mode: DeckMode) => void;
     onWeightChange: (stepCount: number, weight: number) => void;
@@ -20,6 +22,7 @@
     onNotesChange: (notes: string) => void;
     onSliceTypeToggle: (sliceType: 'halved' | 'quartered') => void;
     onVtgFamilyToggle: (familyId: string) => void;
+    onVtgTurnPatternToggle: (tp: string) => void;
     onDraw: () => void;
     isLoading: boolean;
   }
@@ -33,6 +36,8 @@
     selectedSliceTypes,
     vtgFamilies,
     selectedVtgFamilies,
+    vtgTurnPatterns,
+    selectedVtgTurnPatterns,
     vtgCardCount,
     onModeChange,
     onWeightChange,
@@ -40,6 +45,7 @@
     onNotesChange,
     onSliceTypeToggle,
     onVtgFamilyToggle,
+    onVtgTurnPatternToggle,
     onDraw,
     isLoading,
   }: Props = $props();
@@ -83,7 +89,7 @@
 
   <div class="controls">
     <div class="control-group">
-      <label class="control-label">Catalog Type</label>
+      <span class="control-label">Catalog Type</span>
       <div class="mode-row">
         <button
           type="button"
@@ -107,8 +113,9 @@
     </div>
 
     <div class="control-group">
-      <label class="control-label">Edition Notes</label>
+      <label class="control-label" for="edition-notes">Edition Notes</label>
       <input
+        id="edition-notes"
         type="text"
         class="notes-input"
         value={notes}
@@ -119,7 +126,7 @@
 
     {#if deckMode === "loop"}
       <div class="control-group">
-        <label class="control-label">Total Cards</label>
+        <span class="control-label">Total Cards</span>
         <div class="card-count-row">
           {#each [26, 36, 52] as count (count)}
             <button
@@ -136,7 +143,7 @@
 
       {#if sourceSummaries.length > 0}
         <div class="control-group">
-          <label class="control-label">Source Decks</label>
+          <span class="control-label">Source Decks</span>
           <div class="source-row">
             {#each sourceSummaries as source (source.sliceType)}
               <button
@@ -154,7 +161,7 @@
       {/if}
 
       <div class="control-group">
-        <label class="control-label">Step Count Mix</label>
+        <span class="control-label">Step Count Mix</span>
         <div class="preset-row">
           {#each PRESETS as preset (preset.id)}
             <button
@@ -190,7 +197,24 @@
       </div>
     {:else}
       <div class="control-group">
-        <label class="control-label">VTG Families</label>
+        <span class="control-label">Turn Patterns</span>
+        <div class="vtg-turns">
+          {#each vtgTurnPatterns as tp (tp.turnPattern)}
+            <button
+              type="button"
+              class="vtg-turn-btn"
+              class:selected={selectedVtgTurnPatterns.has(tp.turnPattern)}
+              onclick={() => onVtgTurnPatternToggle(tp.turnPattern)}
+            >
+              <span class="vtg-turn-label">{tp.label}</span>
+              <span class="vtg-turn-count">{tp.sequenceCount}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="control-group">
+        <span class="control-label">VTG Families</span>
         <div class="vtg-families">
           {#each vtgFamilies as fam (fam.familyId)}
             <button
@@ -392,6 +416,50 @@
   .source-stats {
     font-size: 11px;
     opacity: 0.7;
+  }
+
+  .vtg-turns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .vtg-turn-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 56px;
+    min-height: 44px;
+    padding: 8px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
+  }
+
+  .vtg-turn-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .vtg-turn-btn.selected {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #10b981;
+  }
+
+  .vtg-turn-label {
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .vtg-turn-count {
+    font-size: 10px;
+    opacity: 0.6;
   }
 
   .vtg-families {

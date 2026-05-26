@@ -1,8 +1,31 @@
-import type { DeckReleaseCard, StepCountWeight } from "../../domain/models/DeckRelease";
+import type { DeckRelease, DeckReleaseCard, StepCountWeight } from "../../domain/models/DeckRelease";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { CatalogSourceSummary, VtgFamilyOption } from "../../services/deck-composer";
+import type { CatalogSourceSummary, VtgFamilyOption, VtgTurnPatternOption } from "../../services/deck-composer";
 
 type Step = "configure" | "review" | "released";
+
+const STORAGE_KEY = "deckReleaser.session";
+
+interface PersistedSession {
+  step: Step;
+  viewingDeckNumber: number | null;
+  deckMode: "loop" | "vtg";
+  totalCards: number;
+  notes: string;
+}
+
+function loadSession(): PersistedSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveSession(s: PersistedSession) {
+  if (typeof window === "undefined") return;
+  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+}
 
 class DeckReleaserState {
   step = $state<Step>("configure");
@@ -21,19 +44,48 @@ class DeckReleaserState {
   sourceSummaries = $state<CatalogSourceSummary[]>([]);
   selectedSliceTypes = $state<Set<"halved" | "quartered">>(new Set(["quartered"]));
   vtgFamilies = $state<VtgFamilyOption[]>([]);
+  vtgTurnPatterns = $state<VtgTurnPatternOption[]>([]);
   deckMode = $state<"loop" | "vtg">("loop");
   selectedVtgFamilies = $state<Set<string>>(new Set());
+  selectedVtgTurnPatterns = $state<Set<string>>(new Set());
+  viewingRelease = $state<DeckRelease | null>(null);
   isReleasing = $state(false);
   isLoadingSequences = $state(false);
   isLoadingPools = $state(true);
   drawGeneration = 0;
   poolsLoaded = false;
 
+  constructor() {
+    const saved = loadSession();
+    if (saved) {
+      this.step = saved.step;
+      this.deckMode = saved.deckMode;
+      this.totalCards = saved.totalCards;
+      this.notes = saved.notes;
+    }
+  }
+
+  persist() {
+    saveSession({
+      step: this.step,
+      viewingDeckNumber: this.viewingRelease?.deckNumber ?? null,
+      deckMode: this.deckMode,
+      totalCards: this.totalCards,
+      notes: this.notes,
+    });
+  }
+
+  get savedViewingDeckNumber(): number | null {
+    return loadSession()?.viewingDeckNumber ?? null;
+  }
+
   reset() {
     this.cards = [];
     this.sequences = [];
     this.releasedNumber = null;
+    this.viewingRelease = null;
     this.step = "configure";
+    this.persist();
   }
 }
 

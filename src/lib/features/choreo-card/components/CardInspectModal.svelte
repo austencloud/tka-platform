@@ -1,16 +1,13 @@
-<!--
-  CardInspectModal - Full-screen modal for inspecting a card's front and back.
-  Uses CardPreviewStack from the card designer for side-by-side display.
--->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { Snippet } from "svelte";
-  import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { getCatalogLayoutPolicy } from "../domain/catalog-layout-policy";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -21,9 +18,7 @@
     includeStartPosition?: boolean;
     onClose: () => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
-    /** Pre-rendered front image URL from the grid card - shows this instead of re-rendering */
     frontImageUrl?: string | null;
-    /** Additional action buttons rendered in the bottom bar */
     extraActions?: Snippet;
   }
 
@@ -41,26 +36,20 @@
   }: Props = $props();
 
   let stackEl: HTMLDivElement | undefined = $state();
-
-  // Copy state
-  let copyDataState = $state<"idle" | "success" | "error">("idle");
   let copyImageState = $state<"idle" | "copying" | "success" | "error">("idle");
+  let contextMenuVisible = $state(false);
+  let contextMenuX = $state(0);
+  let contextMenuY = $state(0);
 
-  let dataResetTimer: ReturnType<typeof setTimeout>;
-  let dataErrorTimer: ReturnType<typeof setTimeout>;
   let imageResetTimer: ReturnType<typeof setTimeout>;
   let imageErrorTimer: ReturnType<typeof setTimeout>;
   onDestroy(() => {
-    clearTimeout(dataResetTimer);
-    clearTimeout(dataErrorTimer);
     clearTimeout(imageResetTimer);
     clearTimeout(imageErrorTimer);
   });
 
   const word = $derived(sequence.word ?? sequence.name ?? '');
 
-  // QR code visibility - follows the user's global visibility setting so turning it off
-  // in the settings panel removes it from the export modal too.
   const imageComposition = getImageCompositionManager();
   let compositionVersion = $state(0);
   function onCompositionChanged(): void { compositionVersion++; }
@@ -70,32 +59,21 @@
   onDestroy(() => imageComposition.unregisterObserver(onCompositionChanged));
 
   const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
-  function toggleQRCode() { imageComposition.setShowQRCode(!showQRCode); }
 
-  /** Copy sequence data in Claude-optimized compact format */
-  async function copySequenceData() {
-    try {
-      const copier = getClaudeCodeCopier();
-      const result = await copier.copyForClaude(sequence);
-      copyDataState = result.success ? "success" : "error";
-      clearTimeout(dataResetTimer);
-      dataResetTimer = setTimeout(() => { copyDataState = "idle"; }, 2000);
-    } catch {
-      copyDataState = "error";
-      clearTimeout(dataErrorTimer);
-      dataErrorTimer = setTimeout(() => { copyDataState = "idle"; }, 2000);
-    }
+  function editSequence() {
+    localStorage.setItem("tka-pending-edit-sequence", JSON.stringify(sequence));
+    onClose();
+    toast.info("Opening for editing...", 2000);
+    void handleModuleChange("create", "construct");
   }
 
-  /** Capture the card stack as a PNG image and copy to clipboard */
   async function copyCardImage() {
     if (copyImageState === "copying" || !stackEl) return;
     copyImageState = "copying";
+    contextMenuVisible = false;
     try {
       const { domToBlob } = await import("modern-screenshot");
-      const blob = await domToBlob(stackEl, {
-        scale: 2,
-      });
+      const blob = await domToBlob(stackEl, { scale: 2 });
       await navigator.clipboard.write([
         new ClipboardItem({ "image/png": blob }),
       ]);
@@ -109,11 +87,26 @@
     }
   }
 
+  function handleStackContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    contextMenuX = e.clientX;
+    contextMenuY = e.clientY;
+    contextMenuVisible = true;
+  }
+
+  function dismissContextMenu() {
+    contextMenuVisible = false;
+  }
+
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') onClose();
+    if (e.key === 'Escape') {
+      if (contextMenuVisible) { contextMenuVisible = false; return; }
+      onClose();
+    }
   }
 
   function handleBackdropClick(e: MouseEvent) {
+    if (contextMenuVisible) { contextMenuVisible = false; return; }
     if ((e.target as HTMLElement).classList.contains('modal-backdrop')) {
       onClose();
     }
@@ -132,8 +125,7 @@
       <p class="modal-hint">Front and back side by side</p>
     </div>
 
-    <!-- Card stack - reuses the designer's CardPreviewStack -->
-    <div class="stack-wrapper" bind:this={stackEl}>
+    <div class="stack-wrapper" bind:this={stackEl} oncontextmenu={handleStackContextMenu} role="group" aria-label="Card preview">
       <CardPreviewStack
         {sequence}
         {handPointsVisible}
@@ -151,42 +143,10 @@
       />
     </div>
 
-    <!-- Actions + keyboard hints -->
     <div class="bottom-bar">
-      <div class="copy-actions">
-        <button class="copy-btn" onclick={copySequenceData} aria-label="Copy sequence data">
-          {#if copyDataState === "success"}
-            <i class="fas fa-check"></i> Copied
-          {:else if copyDataState === "error"}
-            <i class="fas fa-times"></i> Failed
-          {:else}
-            <i class="fas fa-code"></i> Copy Data
-          {/if}
-        </button>
-        <button
-          class="copy-btn"
-          onclick={copyCardImage}
-          disabled={copyImageState === "copying"}
-          aria-label="Copy card image"
-        >
-          {#if copyImageState === "copying"}
-            <i class="fas fa-spinner fa-spin"></i> Capturing...
-          {:else if copyImageState === "success"}
-            <i class="fas fa-check"></i> Copied
-          {:else if copyImageState === "error"}
-            <i class="fas fa-times"></i> Failed
-          {:else}
-            <i class="fas fa-image"></i> Copy Image
-          {/if}
-        </button>
-        <button
-          class="copy-btn toggle-btn"
-          class:on={showQRCode}
-          onclick={toggleQRCode}
-          aria-pressed={showQRCode}
-          aria-label="Toggle QR code"
-        >
-          <i class="fas fa-qrcode"></i> QR {showQRCode ? "On" : "Off"}
+      <div class="actions">
+        <button class="action-btn edit-btn" onclick={editSequence} aria-label="Edit sequence">
+          <i class="fas fa-pen"></i> Edit
         </button>
         {#if extraActions}
           {@render extraActions()}
@@ -194,15 +154,32 @@
       </div>
       <div class="hints">
         <span><kbd>Esc</kbd> close</span>
+        <span><kbd>Right-click</kbd> copy image</span>
       </div>
     </div>
   </div>
 
-  <!-- Close button -->
   <button class="close-btn" onclick={onClose} aria-label="Close">
     <i class="fas fa-times"></i>
   </button>
 </div>
+
+{#if contextMenuVisible}
+  <div class="context-backdrop" role="presentation" onclick={dismissContextMenu}></div>
+  <div class="context-menu" style="left: {contextMenuX}px; top: {contextMenuY}px;">
+    <button class="context-item" onclick={copyCardImage} disabled={copyImageState === "copying"}>
+      {#if copyImageState === "copying"}
+        <i class="fas fa-spinner fa-spin"></i> Capturing...
+      {:else if copyImageState === "success"}
+        <i class="fas fa-check"></i> Copied!
+      {:else if copyImageState === "error"}
+        <i class="fas fa-times"></i> Failed
+      {:else}
+        <i class="fas fa-image"></i> Copy Image
+      {/if}
+    </button>
+  </div>
+{/if}
 
 <style>
   .modal-backdrop {
@@ -288,46 +265,35 @@
     flex-shrink: 0;
   }
 
-  .copy-actions {
+  .actions {
     display: flex;
     gap: 8px;
   }
 
-  .copy-btn {
+  .action-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
+    padding: 8px 18px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 6px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: 13px;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
-  .copy-btn:hover:not(:disabled) {
+  .action-btn:hover {
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, rgba(255, 255, 255, 0.8));
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
     border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
   }
 
-  .copy-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .toggle-btn.on {
-    background: var(--theme-accent-bg, rgba(110, 180, 255, 0.14));
-    border-color: var(--theme-accent, rgba(110, 180, 255, 0.35));
-    color: var(--theme-text, rgba(200, 225, 255, 0.9));
-  }
-
-  .toggle-btn.on:hover {
-    background: var(--theme-accent-glow, rgba(110, 180, 255, 0.22));
-    border-color: var(--theme-accent-strong, rgba(110, 180, 255, 0.55));
-    color: var(--theme-text, #fff);
+  .edit-btn:hover {
+    background: rgba(183, 99, 205, 0.15);
+    border-color: rgba(183, 99, 205, 0.35);
+    color: #fff;
   }
 
   .hints {
@@ -347,6 +313,48 @@
     font-size: 12px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
     margin-right: 4px;
+  }
+
+  .context-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 10);
+  }
+
+  .context-menu {
+    position: fixed;
+    z-index: calc(var(--z-modal) + 11);
+    background: var(--theme-card-bg, rgba(30, 30, 35, 0.97));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+  }
+
+  .context-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.1s ease;
+  }
+
+  .context-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .context-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   @media (prefers-reduced-motion: reduce) {

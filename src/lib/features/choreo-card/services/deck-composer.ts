@@ -216,6 +216,7 @@ export interface VtgSequenceEntry {
   sequenceId: string;
   sourceCatalogId: string;
   turnRatio: string;
+  turnPattern: string;
 }
 
 export interface VtgFamilyOption {
@@ -238,7 +239,7 @@ export function getVtgFamilyOptions(catalogs: Catalog[]): VtgFamilyOption[] {
     for (const family of catalog.families) {
       if (!family.id || family.id === "unknown") continue;
       const existing = merged.get(family.id);
-      const newEntries = family.sequenceIds.map(id => ({ sequenceId: id, sourceCatalogId: catalog.id, turnRatio }));
+      const newEntries = family.sequenceIds.map(id => ({ sequenceId: id, sourceCatalogId: catalog.id, turnRatio, turnPattern: catalog.turnPattern }));
       if (existing) {
         existing.entries.push(...newEntries);
       } else {
@@ -279,14 +280,50 @@ export function vtgFooter(familyId: string, _turnRatio: string): CardFooter {
     : { center: familyId };
 }
 
+export interface VtgTurnPatternOption {
+  turnPattern: string;
+  label: string;
+  sequenceCount: number;
+}
+
+export function getVtgTurnPatternOptions(catalogs: Catalog[]): VtgTurnPatternOption[] {
+  const counts = new Map<string, number>();
+  for (const catalog of catalogs) {
+    if (catalog.collection !== "VTG") continue;
+    const tp = catalog.turnPattern;
+    counts.set(tp, (counts.get(tp) ?? 0) + catalog.totalSequences);
+  }
+  return [...counts.entries()]
+    .map(([tp, count]) => ({ turnPattern: tp, label: formatTurnPatternLabel(tp), sequenceCount: count }))
+    .sort((a, b) => parseTurnPatternSort(a.turnPattern) - parseTurnPatternSort(b.turnPattern));
+}
+
+function formatTurnPatternLabel(tp: string): string {
+  const uniform = tp.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
+  if (uniform) return `${uniform[1]}T`;
+  const pipe = tp.match(/^(\d+(?:\.\d+)?)\|(\d+(?:\.\d+)?)$/);
+  if (pipe) return `${pipe[1]}|${pipe[2]}`;
+  return tp;
+}
+
+function parseTurnPatternSort(tp: string): number {
+  const uniform = tp.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
+  if (uniform) return parseFloat(uniform[1]!);
+  const pipe = tp.match(/^(\d+(?:\.\d+)?)\|(\d+(?:\.\d+)?)$/);
+  if (pipe) return parseFloat(pipe[1]!) * 10 + parseFloat(pipe[2]!);
+  return 999;
+}
+
 export function buildVtgCards(
   vtgFamilies: VtgFamilyOption[],
   selectedFamilies: Set<string>,
+  selectedTurnPatterns?: Set<string>,
 ): DeckReleaseCard[] {
   const cards: DeckReleaseCard[] = [];
   for (const fam of vtgFamilies) {
     if (!selectedFamilies.has(fam.familyId)) continue;
     for (const entry of fam.entries) {
+      if (selectedTurnPatterns && !selectedTurnPatterns.has(entry.turnPattern)) continue;
       cards.push({
         sequenceId: entry.sequenceId,
         sourceCatalogId: entry.sourceCatalogId,
