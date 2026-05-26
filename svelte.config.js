@@ -10,7 +10,8 @@ const config = {
       routes: {
         include: ['/*'],
         exclude: [
-          '/_app/*',
+          '/_app/immutable/*',
+          '/_app/version.json',
           '/.well-known/*',
           '/animations/*',
           '/assets/*',
