@@ -22,7 +22,7 @@
   import AutumnScene from "$lib/shared/3d/environments/scenes/AutumnScene.svelte";
   import WinterScene from "$lib/shared/3d/environments/scenes/WinterScene.svelte";
   import CosmicScene from "$lib/shared/3d/environments/scenes/CosmicScene.svelte";
-  import OceanScene from "$lib/shared/3d/environments/scenes/OceanScene.svelte";
+  import OceanScene from "$lib/shared/3d/environments/scenes/ocean-v2/OceanScene.svelte";
   import EmberScene from "$lib/shared/3d/environments/scenes/EmberScene.svelte";
   import BlossomScene from "$lib/shared/3d/environments/scenes/BlossomScene.svelte";
   import RainbowScene from "$lib/shared/3d/environments/scenes/RainbowScene.svelte";
@@ -282,7 +282,7 @@
       {:else if labState.sceneId === "cosmic"}
         <CosmicScene variant={labState.cosmicVariant} config={labState.cosmicVariant === "night" ? labState.cosmicNightConfig : labState.cosmicAuroraConfig} />
       {:else if labState.sceneId === "ocean"}
-        <OceanScene config={labState.oceanConfig} />
+        <OceanScene />
       {:else if labState.sceneId === "ember"}
         <EmberScene config={labState.emberConfig} />
       {:else if labState.sceneId === "blossom"}
