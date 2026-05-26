@@ -74,6 +74,6 @@ export async function reportErrorTelemetry(options: ShowErrorOptions): Promise<v
       });
     }
   } catch (err) {
-    console.error("[ErrorTelemetryReporter] Failed to report telemetry:", err);
+    console.warn("[ErrorTelemetryReporter] Failed to report telemetry:", err);
   }
 }

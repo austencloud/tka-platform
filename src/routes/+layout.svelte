@@ -10,45 +10,14 @@
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
 
-  onNavigate((navigation) => {
-    // Skip if browser doesn't support View Transitions API
-    if (!document.startViewTransition) return;
-
-    // If the sequence page already animated (swipe dismiss), skip the view transition
-    if (consumeSkipNextViewTransition()) return;
-
-    // Detect mobile drawer transitions for /sequence/ routes
-    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-    const fromPath = navigation.from?.url?.pathname ?? "";
-    const toPath = navigation.to?.url?.pathname ?? "";
-    const enteringSequence = !fromPath.startsWith("/sequence/") && toPath.startsWith("/sequence/");
-    const exitingSequence = fromPath.startsWith("/sequence/") && !toPath.startsWith("/sequence/");
-
-    // Add transition class for mobile drawer animation
-    if (isMobile && (enteringSequence || exitingSequence)) {
-      const cls = enteringSequence ? "sequence-drawer-enter" : "sequence-drawer-exit";
-      document.documentElement.classList.add(cls);
-
-      return new Promise((resolve) => {
-        const transition = document.startViewTransition(async () => {
-          resolve();
-          await navigation.complete;
-        });
-
-        transition.finished.then(() => {
-          document.documentElement.classList.remove(cls);
-        });
-      });
-    }
-
-    // Default: standard view transition (desktop morph, etc.)
-    return new Promise((resolve) => {
-      document.startViewTransition(async () => {
-        resolve();
-        await navigation.complete;
-      });
-    });
-  });
+  // View Transitions — DISABLED pending refresh deadlock investigation.
+  // startViewTransition wraps navigation.complete in a Promise that can
+  // deadlock when SvelteKit intercepts F5 as a same-page navigation.
+  // onNavigate((navigation) => {
+  //   if (!document.startViewTransition) return;
+  //   if (consumeSkipNextViewTransition()) return;
+  //   ...
+  // });
 
   const OWNED_PARAMS: Record<string, readonly string[]> = {
     // loop-labeler (/test/loop-labeler) uses these for deep-link state.

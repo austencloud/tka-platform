@@ -30,7 +30,12 @@ export class SpecialArrowPlacementPersister {
       );
       logger.success(`Loaded ${overrides.length} special placement overrides`);
       return overrides as unknown as SpecialArrowPlacement[];
-    } catch (error) {
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes("permission")) {
+        logger.warn("Insufficient permissions — using defaults");
+        return [];
+      }
       logger.error("Failed to load overrides:", error);
       throw error;
     }

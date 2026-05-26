@@ -84,9 +84,11 @@ export function handleHMRInit() {
       }, 100);
     });
 
-    // Handle errors during HMR
-    import.meta.hot.on("vite:error", (_error: unknown) => {
-      scheduleReload("Vite HMR error");
+    // Log HMR errors but do NOT auto-reload — auto-reload causes infinite
+    // loops when the current background (e.g. ocean) triggers the same error
+    // on every page load.
+    import.meta.hot.on("vite:error", (error: unknown) => {
+      console.error("[HMR] Vite error (no auto-reload):", error);
     });
   }
 
@@ -303,16 +305,12 @@ export async function restoreThemeFromSettings() {
     return;
   }
 
-  console.log("[HMR] Theme variables missing, restoring from settings...");
-
   try {
     // Restore theme CSS variables (--theme-panel-bg, --theme-accent, etc.)
     const { ensureThemeApplied } = await import(
       "./settings/utils/background-theme-calculator"
     );
     ensureThemeApplied();
-
-    console.log("[HMR] Theme variables restored");
   } catch (error) {
     console.warn("[HMR] Failed to restore theme:", error);
   }

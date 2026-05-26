@@ -38,7 +38,11 @@ export async function initializeAppState(): Promise<void> {
       initializationState.initializationProgress
     );
     await initializeAppServices();
-    setInitializationState(true, false, null, 100);
+    // Services ready — leave isInitialized false for MainApplication to set
+    // after full lifecycle (module persistence, settings, theme) completes.
+    // Setting it here caused a race: MainInterface saw "initialized + null module"
+    // before restoreApplicationState() had run.
+    setInitializationState(false, false, null, 100);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to initialize app state";

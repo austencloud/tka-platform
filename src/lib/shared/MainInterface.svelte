@@ -105,27 +105,6 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery"
   const activeModule = $derived(getActiveTab()); // Using legacy getActiveTab for now
   const isModuleLoading = $derived(activeModule === null);
 
-  // Safety mechanism: detect race condition where init completed but module is null
-  // This can happen when initializeModulePersistence() finishes after MainInterface mounts
-  import { getIsInitialized } from "./application/state/initialization-state.svelte";
-  import { initializeModulePersistence } from "./application/state/ui/module-state";
-
-  let moduleRecoveryAttempted = $state(false);
-
-  $effect(() => {
-    const initialized = getIsInitialized();
-    const module = activeModule;
-    const attempted = moduleRecoveryAttempted;
-
-    // If app is initialized but module is still null, retry module persistence
-    if (initialized && module === null && !attempted) {
-      moduleRecoveryAttempted = true;
-      console.warn('⚠️ [MainInterface] Module null after init - attempting recovery');
-      initializeModulePersistence().catch(err => {
-        console.error('❌ [MainInterface] Module recovery failed:', err);
-      });
-    }
-  });
   // Show banner offset when user preview OR admin toolbar is open
   const isAdmin = $derived(featureFlagService.userRole === "admin");
 
