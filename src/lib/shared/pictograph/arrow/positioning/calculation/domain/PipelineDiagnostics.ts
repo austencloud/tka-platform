@@ -33,6 +33,12 @@ export interface SpecialJsonTierInfo {
   filePath: string;
   /** e.g. "(2.5, 2.5)" */
   turnsTupleKey: string;
+  /** Non-null when a Firestore override exists for this key */
+  firestoreOverride: {
+    value: TierValue;
+    original: TierValue | null;
+    updatedBy: string;
+  } | null;
 }
 
 export interface PropGeometryTierInfo {
