@@ -81,6 +81,48 @@ export function createStageChoreographyState() {
     }
   });
 
+  const MAX_UNDO_STACK = 50;
+  let undoStack: string[] = [];
+  let redoStack: string[] = [];
+
+  function snapshotPerformers(): string {
+    return JSON.stringify(
+      choreography.performers.map((p) => ({
+        id: p.id,
+        index: p.index,
+        label: p.label,
+        color: p.color,
+        marks: p.marks.map((m) => ({ ...m })),
+        sequenceId: p.sequenceId,
+      }))
+    );
+  }
+
+  function pushUndo() {
+    undoStack.push(snapshotPerformers());
+    if (undoStack.length > MAX_UNDO_STACK) undoStack.shift();
+    redoStack = [];
+  }
+
+  function restorePerformers(json: string) {
+    const restored = JSON.parse(json) as Performer[];
+    choreography.performers = restored;
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return;
+    redoStack.push(snapshotPerformers());
+    const prev = undoStack.pop()!;
+    restorePerformers(prev);
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return;
+    undoStack.push(snapshotPerformers());
+    const next = redoStack.pop()!;
+    restorePerformers(next);
+  }
+
   let isPlaying = $state(false);
   let elapsed = $state(0);
   let animationFrame: number | null = null;
@@ -217,6 +259,7 @@ export function createStageChoreographyState() {
   }
 
   function setPerformerCount(count: number) {
+    pushUndo();
     const clamped = Math.max(2, Math.min(8, count));
     const current = choreography.performers.length;
     if (clamped > current) {
@@ -229,6 +272,7 @@ export function createStageChoreographyState() {
   }
 
   function applyPreset(preset: FormationPresetId) {
+    pushUndo();
     const positions = generatePresetPositions(
       preset,
       choreography.performers.length,
@@ -244,11 +288,16 @@ export function createStageChoreographyState() {
   }
 
   function addMark(performerId: string, x: number, z: number, beats = 4) {
+    pushUndo();
     const performer = choreography.performers.find((p) => p.id === performerId);
     if (!performer) return;
     const clampedX = Math.max(0, Math.min(choreography.stageWidth, x));
     const clampedZ = Math.max(0, Math.min(choreography.stageDepth, z));
     performer.marks.push(createMark(clampedX, clampedZ, beats));
+  }
+
+  function beginDrag() {
+    pushUndo();
   }
 
   function updateMarkPosition(markId: string, x: number, z: number) {
@@ -263,6 +312,7 @@ export function createStageChoreographyState() {
   }
 
   function updateMarkBeats(markId: string, beats: number) {
+    pushUndo();
     for (const performer of choreography.performers) {
       const mark = performer.marks.find((m) => m.id === markId);
       if (mark) {
@@ -273,6 +323,7 @@ export function createStageChoreographyState() {
   }
 
   function updateMarkWalkStyle(markId: string, walkStyle: WalkStyle) {
+    pushUndo();
     for (const performer of choreography.performers) {
       const mark = performer.marks.find((m) => m.id === markId);
       if (mark) {
@@ -283,6 +334,7 @@ export function createStageChoreographyState() {
   }
 
   function updateMarkEasing(markId: string, easing: EasingType) {
+    pushUndo();
     for (const performer of choreography.performers) {
       const mark = performer.marks.find((m) => m.id === markId);
       if (mark) {
@@ -293,6 +345,7 @@ export function createStageChoreographyState() {
   }
 
   function deleteMark(markId: string) {
+    pushUndo();
     for (const performer of choreography.performers) {
       const idx = performer.marks.findIndex((m) => m.id === markId);
       if (idx > 0) {
@@ -343,6 +396,12 @@ export function createStageChoreographyState() {
     get interpolatedPositions() {
       return interpolatedPositions;
     },
+    get canUndo() {
+      return undoStack.length > 0;
+    },
+    get canRedo() {
+      return redoStack.length > 0;
+    },
     seek,
     togglePlay,
     toggleLoop,
@@ -351,12 +410,15 @@ export function createStageChoreographyState() {
     setPerformerCount,
     applyPreset,
     addMark,
+    beginDrag,
     updateMarkPosition,
     updateMarkBeats,
     updateMarkWalkStyle,
     updateMarkEasing,
     deleteMark,
     setBpm,
+    undo,
+    redo,
   } satisfies UnifiedPlaybackContext & Record<string, unknown>;
 }
 

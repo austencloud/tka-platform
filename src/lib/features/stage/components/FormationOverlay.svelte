@@ -52,6 +52,7 @@
     draggingMarkId = markId;
     editMode.isDragging = true;
     editMode.selectMark(performerId, markId);
+    stageState.beginDrag();
   }
 
   function handlePointerMove(e: PointerEvent) {

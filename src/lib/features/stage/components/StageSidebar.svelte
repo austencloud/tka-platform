@@ -105,11 +105,11 @@
     {/snippet}
   </CollapsibleSection>
 
-  <CollapsibleSection title="Selected Mark" icon="fa-crosshairs" defaultOpen={true}>
-    {#snippet children()}
+  {#if editMode.selectedMarkId}
+    <div class="mark-section">
       <MarkProperties {editMode} />
-    {/snippet}
-  </CollapsibleSection>
+    </div>
+  {/if}
 </aside>
 
 <style>
@@ -199,6 +199,13 @@
 
   .bpm-section {
     margin-top: 8px;
+  }
+
+  .mark-section {
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   @media (prefers-reduced-motion: reduce) {

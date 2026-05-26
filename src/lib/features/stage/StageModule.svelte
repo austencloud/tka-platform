@@ -15,6 +15,18 @@
         editMode.toggleCameraMode();
       }
     }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      stageState.undo();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+      e.preventDefault();
+      stageState.redo();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+      e.preventDefault();
+      stageState.redo();
+    }
   }
 </script>
 
