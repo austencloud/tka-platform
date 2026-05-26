@@ -70,7 +70,7 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import SequenceDrawerHost from "./coordinators/SequenceDrawerHost.svelte";
   import OrientationPickerDrawer from "$lib/features/create/construct/start-position-picker/components/OrientationPickerDrawer.svelte";
   import SaveToLibraryPanel from "./SaveToLibraryPanel.svelte";
-  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
   import { SessionManager } from "../services/SessionManager.svelte";
   import { Autosaver } from "../services/Autosaver";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -830,6 +830,12 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   .create-loading {
     align-items: center;
     justify-content: center;
+  }
+
+  .init-status {
+    margin: 0;
+    font-size: var(--font-size-sm, 13px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .beat-cap-nudge-overlay {

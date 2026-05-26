@@ -107,6 +107,7 @@ export class CreateModuleInitializer {
   ) {}
 
   async initialize(): Promise<CreateModuleInitializationResult> {
+    const t0 = performance.now();
     // Wait a tick to ensure component context is fully established
     await new Promise((r) => setTimeout(r, 0));
 
@@ -157,15 +158,20 @@ export class CreateModuleInitializer {
     CreateModuleState.assembleTabState = assembleTabState;
 
     // Initialize services
+    const t1 = performance.now();
     await this.CreateModuleOrchestrator.initialize();
+    console.log(`[Create init] Orchestrator: ${Math.round(performance.now() - t1)}ms`);
 
     // Initialize all tab states + start positions in parallel (independent of each other)
+    const t2 = performance.now();
     await Promise.all([
       constructTabState.initializeConstructTab(),
       generatorTabState.initializeGeneratorTab(),
       assembleTabState.initializeAssembleTab(),
       this.loadStartPositions(GridMode.DIAMOND),
     ]);
+    console.log(`[Create init] Tabs + start positions: ${Math.round(performance.now() - t2)}ms`);
+    console.log(`[Create init] Total: ${Math.round(performance.now() - t0)}ms`);
 
     return {
       // State objects
