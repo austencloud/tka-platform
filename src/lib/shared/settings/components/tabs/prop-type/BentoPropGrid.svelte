@@ -1,9 +1,9 @@
 <!--
   BentoPropGrid.svelte - Family-first prop selection grid
 
-  Shows 16 prop families in a sectioned grid. Single-prop families
-  select immediately. Multi-variant families open a variant strip
-  at the bottom for drilling into specific variants.
+  Shows prop families in a sectioned grid. Single-prop families
+  select immediately. Multi-variant families open a floating popover
+  for drilling into specific variants.
 
   Variants:
   - "panel" (default): has border/background for standalone use (e.g. Settings tab)
@@ -12,11 +12,16 @@
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import {
+    PROP_CATEGORIES,
     getBasePropType,
     getAllVariations,
     getPropTypeDisplayInfo,
     isPropActive,
+    getBasePropsByCategory,
   } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { Popover } from "bits-ui";
+  import { scale } from "svelte/transition";
+  import { backOut, cubicOut } from "svelte/easing";
   import PropTypeButton from "./PropTypeButton.svelte";
 
   let {
@@ -27,84 +32,34 @@
     variant = "panel",
   } = $props<{
     selectedPropType: PropType;
-    /**
-     * Accent color for selection state. Accepts "blue" / "red" sentinels
-     * (legacy two-performer model, mapped to the prop-blue/prop-red tokens
-     * in PropTypeButton) or any CSS color string for N-performer palettes.
-     */
     color?: "blue" | "red" | (string & {});
     title?: string;
     onSelect: (propType: PropType) => void;
-    /** "panel" = bordered card (desktop settings), "inline" = no border (drawer) */
     variant?: "panel" | "inline";
   }>();
 
-  // Family definitions: one base prop per family, grouped by section.
-  // Deactivated props are filtered out - see DEACTIVATED_PROP_TYPES in registry.
-  const PROP_FAMILIES: { label: string; bases: PropType[] }[] = [
-    {
-      label: "Staves & Clubs",
-      bases: [PropType.STAFF, PropType.CLUB, PropType.FAN],
-    },
-    {
-      label: "Curved Props",
-      bases: [
-        PropType.BUUGENG,
-        PropType.TRIGENG,
-        PropType.MINIHOOP,
-        PropType.TRIAD,
-        PropType.TRIQUETRA,
-      ],
-    },
-    {
-      label: "Novelty",
-      bases: [
-        PropType.CHICKEN,
-        PropType.DOUBLESTAR,
-        PropType.EIGHTRINGS,
-        PropType.DOUBLECONTACTBALL,
-        PropType.TORCH,
-      ],
-    },
-    {
-      label: "Singles",
-      bases: [PropType.HAND, PropType.SWORD, PropType.QUIAD],
-    },
-  ].map(section => ({
-    ...section,
-    bases: section.bases.filter(isPropActive),
-  }));
+  const basePropsByCategory = $derived(getBasePropsByCategory());
 
-  let expandedFamily = $state<PropType | null>(null);
-
-  const selectedBase = $derived(getBasePropType(selectedPropType));
-  const familyVariants = $derived(
-    expandedFamily ? getAllVariations(expandedFamily).filter(isPropActive) : [],
+  const sections = $derived(
+    PROP_CATEGORIES.map((cat) => ({
+      label: cat.label,
+      bases: basePropsByCategory.get(cat.id) ?? [],
+    })).filter((s) => s.bases.length > 0),
   );
 
-  // No auto-expand on mount. Grid starts fully visible.
-  // expandedFamily is driven entirely by user clicks.
-
-  function handleFamilyClick(base: PropType) {
-    const activeVariants = getAllVariations(base).filter(isPropActive);
-    if (activeVariants.length <= 1) {
-      // Single active variant (or none): select immediately, collapse any strip
-      onSelect(base);
-      expandedFamily = null;
-    } else {
-      // Multiple active variants: expand strip without selecting yet.
-      // Visual highlight comes from expandedFamily check on the button.
-      expandedFamily = base;
-    }
-  }
-
-  function collapseVariants() {
-    expandedFamily = null;
-  }
+  const selectedBase = $derived(getBasePropType(selectedPropType));
 
   function variantCount(base: PropType): number | undefined {
     const count = getAllVariations(base).filter(isPropActive).length;
     return count > 1 ? count : undefined;
+  }
+
+  function getActiveVariants(base: PropType): PropType[] {
+    return getAllVariations(base).filter(isPropActive);
+  }
+
+  function isSingleVariant(base: PropType): boolean {
+    return getActiveVariants(base).length <= 1;
   }
 </script>
 
@@ -113,66 +68,92 @@
   class:panel={variant === "panel"}
   class:inline={variant === "inline"}
 >
-  <!-- Header (panel variant only) -->
   {#if variant === "panel"}
     <header class="grid-header">
       <h4 class="grid-title">{title}</h4>
     </header>
   {/if}
 
-  <!-- Scrollable family grid - clicking the dimmed backdrop collapses variants -->
-  <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-  <div
-    class="grid-scroll themed-scrollbar"
-    class:dimmed={expandedFamily !== null}
-    onclick={(e) => {
-      if (expandedFamily !== null && e.target === e.currentTarget) {
-        collapseVariants();
-      }
-    }}
-    onkeydown={(e) => {
-      if (expandedFamily !== null && e.key === "Escape") {
-        collapseVariants();
-      }
-    }}
-    role="presentation"
-  >
+  <div class="grid-scroll themed-scrollbar">
     <div class="grid-content">
-      {#each PROP_FAMILIES as section, i}
+      {#each sections as section, i}
         <div class="section-label" class:first={i === 0}>{section.label}</div>
         <div class="section-buttons">
           {#each section.bases as base}
-            <PropTypeButton
-              propType={base}
-              selected={expandedFamily !== null ? expandedFamily === base : selectedBase === base}
-              badge={variantCount(base)}
-              {color}
-              onSelect={() => handleFamilyClick(base)}
-            />
+            {#if isSingleVariant(base)}
+              <!-- Single-variant: select immediately -->
+              <PropTypeButton
+                propType={base}
+                selected={selectedBase === base}
+                {color}
+                onSelect={() => onSelect(base)}
+              />
+            {:else}
+              <!-- Multi-variant: open popover -->
+              <Popover.Root>
+                <Popover.Trigger>
+                  {#snippet child({ props })}
+                    <div {...props} class="popover-trigger-wrap">
+                      <PropTypeButton
+                        propType={base}
+                        selected={selectedBase === base}
+                        badge={variantCount(base)}
+                        {color}
+                      />
+                    </div>
+                  {/snippet}
+                </Popover.Trigger>
+                <Popover.Content
+                  side="bottom"
+                  sideOffset={6}
+                  avoidCollisions={true}
+                  collisionPadding={12}
+                  forceMount
+                >
+                  {#snippet child({ open, wrapperProps, props })}
+                    <div {...wrapperProps}>
+                      {#if open}
+                        <div
+                          {...props}
+                          class="variant-popover"
+                          in:scale={{
+                            duration: 200,
+                            start: 0.92,
+                            opacity: 0,
+                            easing: backOut,
+                          }}
+                          out:scale={{
+                            duration: 140,
+                            start: 0.95,
+                            opacity: 0,
+                            easing: cubicOut,
+                          }}
+                        >
+                          <span class="variant-popover-label">
+                            {getPropTypeDisplayInfo(base).label} Variants
+                          </span>
+                          <div class="variant-popover-buttons">
+                            {#each getActiveVariants(base) as variantProp}
+                              <PropTypeButton
+                                propType={variantProp}
+                                selected={selectedPropType === variantProp}
+                                {color}
+                                onSelect={() => onSelect(variantProp)}
+                              />
+                            {/each}
+                          </div>
+                        </div>
+                      {/if}
+                    </div>
+                  {/snippet}
+                </Popover.Content>
+              </Popover.Root>
+            {/if}
           {/each}
         </div>
       {/each}
     </div>
   </div>
-
-  <!-- Variant strip (shown when a multi-variant family is expanded) -->
-  {#if expandedFamily && familyVariants.length > 1}
-    <div class="variant-strip">
-      <span class="variant-label"
-        >{getPropTypeDisplayInfo(expandedFamily).label} Variants</span
-      >
-      <div class="variant-buttons">
-        {#each familyVariants as variantProp}
-          <PropTypeButton
-            propType={variantProp}
-            selected={selectedPropType === variantProp}
-            {color}
-            onSelect={() => onSelect(variantProp)}
-          />
-        {/each}
-      </div>
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -188,21 +169,18 @@
     container-name: prop-grid;
   }
 
-  /* Panel variant: bordered card for standalone use */
   .prop-grid-root.panel {
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
   }
 
-  /* Inline variant: no border, transparent -- drawer provides the container */
   .prop-grid-root.inline {
     background: transparent;
     border: none;
     border-radius: 0;
   }
 
-  /* Header (panel variant only) */
   .grid-header {
     display: flex;
     align-items: center;
@@ -220,142 +198,122 @@
     letter-spacing: 0.5px;
   }
 
-  /* Scrollable area */
   .grid-scroll {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 8px;
+    padding: 12px;
     scrollbar-width: thin;
-    transition: opacity var(--duration-normal, 200ms) ease;
   }
 
-  /* Dim the grid when variant strip is open to focus attention below */
-  .grid-scroll.dimmed {
-    opacity: 0.45;
-  }
-
-  /* Vertical stack of sections */
   .grid-content {
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
 
-  /* Section label -- lightweight text divider */
   .section-label {
-    font-size: var(--font-size-compact, 12px);
+    font-size: 10px;
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    opacity: 0.7;
+    opacity: 0.5;
     padding: 8px 4px 2px;
     text-align: center;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  /* First section has no top border */
   .section-label.first {
     border-top: none;
     padding-top: 0;
   }
 
-  /* Flex row of family buttons -- centered with wrapping */
   .section-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
     padding: 0 4px;
   }
 
-  /* Family buttons: fixed width so centering works */
-  .section-buttons :global(.prop-button) {
-    width: 80px;
+  .section-buttons :global(.prop-button),
+  .popover-trigger-wrap :global(.prop-button) {
+    width: 79px;
     flex-shrink: 0;
   }
 
-  /* === Variant strip === */
-  .variant-strip {
+  .popover-trigger-wrap {
+    width: 79px;
     flex-shrink: 0;
+  }
+
+  /* === Variant popover === */
+  .variant-popover {
+    z-index: 50;
+    border-radius: 14px;
+    background: var(--theme-card-bg, #0c0e16);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
     padding: 10px 12px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     display: flex;
     flex-direction: column;
     gap: 8px;
     align-items: center;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    animation: variant-strip-enter var(--duration-emphasis, 300ms)
-      cubic-bezier(0.36, 0.66, 0.04, 1);
   }
 
-  @keyframes variant-strip-enter {
-    0% {
-      opacity: 0;
-      transform: translateY(100%);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .variant-label {
-    font-size: var(--font-size-compact, 12px);
+  .variant-popover-label {
+    font-size: 10px;
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.4px;
+    opacity: 0.6;
   }
 
-  .variant-buttons {
+  .variant-popover-buttons {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
-    align-items: flex-start;
   }
 
-  /* Variant buttons: fixed explicit dimensions to guarantee SVG renders */
-  .variant-buttons :global(.prop-button) {
+  .variant-popover-buttons :global(.prop-button) {
     width: 70px;
-    height: 80px;
-    aspect-ratio: auto;
     flex-shrink: 0;
   }
 
-  /* Container query: widen family buttons on larger containers */
+  /* Container queries for larger containers */
   @container prop-grid (min-width: 400px) {
-    .section-buttons :global(.prop-button) {
+    .section-buttons :global(.prop-button),
+    .popover-trigger-wrap :global(.prop-button) {
+      width: 90px;
+    }
+    .popover-trigger-wrap {
       width: 90px;
     }
   }
 
   @container prop-grid (min-width: 550px) {
-    .section-buttons :global(.prop-button) {
+    .section-buttons :global(.prop-button),
+    .popover-trigger-wrap :global(.prop-button) {
       width: 100px;
     }
-
-    .variant-buttons :global(.prop-button) {
+    .popover-trigger-wrap {
+      width: 100px;
+    }
+    .variant-popover-buttons :global(.prop-button) {
       width: 80px;
-      height: 90px;
     }
   }
 
   @container prop-grid (min-width: 700px) {
-    .section-buttons :global(.prop-button) {
+    .section-buttons :global(.prop-button),
+    .popover-trigger-wrap :global(.prop-button) {
       width: 95px;
     }
-
-    .section-label {
-      font-size: var(--font-size-compact, 12px);
-    }
-  }
-
-  @container prop-grid (min-width: 900px) {
-    .section-buttons :global(.prop-button) {
-      width: 90px;
+    .popover-trigger-wrap {
+      width: 95px;
     }
   }
 
@@ -363,11 +321,6 @@
   @media (prefers-reduced-motion: reduce) {
     .grid-scroll {
       scroll-behavior: auto;
-      transition: none;
-    }
-
-    .variant-strip {
-      animation: none;
     }
   }
 </style>

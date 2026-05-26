@@ -60,7 +60,7 @@
   title={`${displayInfo.label} - Click to select this prop type`}
 >
   <div class="prop-image-container">
-    <PropCompositionPreview {propType} />
+    <PropCompositionPreview {propType} neutral />
   </div>
   <span class="prop-label">{displayInfo.label}</span>
 
@@ -100,52 +100,43 @@
 </button>
 
 <style>
-  /* iOS-native prop button - Inline Grid Optimized */
   .prop-button {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
-    transition: all var(--duration-normal) cubic-bezier(0.36, 0.66, 0.04, 1);
+    transition: all var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1);
     color: var(--theme-text);
     position: relative;
-    padding: 6px 5px 4px;
+    padding: 8px 4px 6px;
     gap: 4px;
-    border-radius: 10px;
+    border-radius: 12px;
     box-sizing: border-box;
-    /* Slightly taller than wide for label space */
-    aspect-ratio: 1 / 1.1;
+    aspect-ratio: 1 / 1.15;
     width: 100%;
     min-height: 44px;
     overflow: hidden;
   }
 
   .prop-button:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
     color: var(--theme-text);
-    transform: translateY(-1px) scale(1.01); /* iOS subtle lift */
-    box-shadow: var(--theme-shadow-hover, 0 6px 18px rgba(0, 0, 0, 0.14));
+    transform: translateY(-1px);
   }
 
-  /* Selected - Uses theme accent */
   .prop-button.selected {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
     color: var(--theme-text);
-    transform: scale(1.02); /* Slightly larger when selected */
-    box-shadow:
-      0 6px 20px color-mix(in srgb, var(--theme-accent) 25%, transparent),
-      0 2px 6px color-mix(in srgb, var(--theme-accent) 15%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--theme-accent) 12%, transparent);
   }
 
   .prop-button.selected:hover {
-    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
-    transform: translateY(-1px) scale(1.03);
+    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
   }
 
   .prop-button:focus-visible {
@@ -154,8 +145,8 @@
   }
 
   .prop-button:active {
-    transform: scale(0.98);
-    transition-duration: var(--duration-instant); /* iOS immediate feedback */
+    transform: scale(0.96);
+    transition-duration: 60ms;
   }
 
   .prop-image-container {
@@ -171,25 +162,24 @@
   }
 
   .prop-image-container :global(.prop-composition-preview) {
-    width: 85%;
+    width: 75%;
     height: auto;
     aspect-ratio: 1;
-    max-height: 85%;
-    opacity: 0.9;
-    transition: opacity var(--duration-normal) ease;
+    max-height: 75%;
+    opacity: 0.45;
+    transition: opacity var(--duration-normal, 200ms) ease;
   }
 
   .prop-button:hover .prop-image-container :global(.prop-composition-preview) {
-    opacity: 1;
+    opacity: 0.7;
   }
 
   .prop-button.selected
     .prop-image-container
     :global(.prop-composition-preview) {
-    opacity: 1;
+    opacity: 0.95;
   }
 
-  /* Label typography */
   .prop-label {
     text-align: center;
     white-space: nowrap;
@@ -197,14 +187,25 @@
     text-overflow: ellipsis;
     max-width: 100%;
     width: 100%;
-    font-size: clamp(var(--font-size-compact, 12px), 2.5cqi, var(--font-size-sm, 14px));
-    font-weight: 600;
+    font-size: 10px;
+    font-weight: 500;
     letter-spacing: -0.1px;
     line-height: 1.2;
     flex-shrink: 0;
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text-dim);
+    opacity: 0.4;
+    transition: all var(--duration-normal, 200ms) ease;
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  }
+
+  .prop-button:hover .prop-label {
+    opacity: 0.65;
+  }
+
+  .prop-button.selected .prop-label {
+    opacity: 1;
+    color: var(--theme-accent);
   }
 
   /* Variant count badge */
@@ -237,35 +238,28 @@
     z-index: 10;
   }
 
-  /* Compact checkmark for inline grid */
   .ios-checkmark {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: var(--font-size-compact);
+    font-size: 9px;
     font-weight: 700;
-    animation: ios-checkmark-pop var(--duration-emphasis)
-      cubic-bezier(0.36, 0.66, 0.04, 1);
+    animation: ios-checkmark-pop var(--duration-emphasis, 300ms)
+      cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .ios-checkmark.blue {
-    background: var(--prop-blue-text, #818cf8);
-    box-shadow:
-      0 3px 10px
-        color-mix(in srgb, var(--prop-blue-text, #818cf8) 50%, transparent),
-      0 1px 3px var(--theme-shadow);
+    background: var(--theme-accent, #818cf8);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent, #818cf8) 40%, transparent);
   }
 
   .ios-checkmark.red {
     background: var(--prop-red-text, #f87171);
-    box-shadow:
-      0 3px 10px
-        color-mix(in srgb, var(--prop-red-text, #f87171) 50%, transparent),
-      0 1px 3px var(--theme-shadow);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--prop-red-text, #f87171) 40%, transparent);
   }
 
   /* When both checkmarks are present, offset the red one slightly */

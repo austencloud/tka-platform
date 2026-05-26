@@ -23,12 +23,15 @@
     size = 64,
     recipeOverride = undefined,
     darkBackground = false,
+    neutral = false,
   }: {
     propType: PropType;
     size?: number;
     /** Override the default recipe (used by lab tab for live tuning) */
     recipeOverride?: CompositionRecipe;
     darkBackground?: boolean;
+    /** Render a single white silhouette instead of blue+red pair */
+    neutral?: boolean;
   } = $props();
 
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
@@ -61,38 +64,58 @@
   const imgOffset = -(imgSize / 2);
 </script>
 
-<svg
-  class="prop-composition-preview"
-  class:dark-bg={darkBackground}
-  width={size}
-  height={size}
-  viewBox="0 0 100 100"
-  xmlns="http://www.w3.org/2000/svg"
-  aria-hidden="true"
->
-  <!-- Blue prop (native color from SVG) -->
-  <g transform={blueTransform}>
-    <image
-      href={displayInfo.image}
-      x={imgOffset}
-      y={imgOffset}
-      width={imgSize}
-      height={imgSize}
-    />
-  </g>
+{#if neutral}
+  <svg
+    class="prop-composition-preview neutral"
+    class:dark-bg={darkBackground}
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <g transform={blueTransform}>
+      <image
+        href={displayInfo.image}
+        x={imgOffset}
+        y={imgOffset}
+        width={imgSize}
+        height={imgSize}
+      />
+    </g>
+  </svg>
+{:else}
+  <svg
+    class="prop-composition-preview"
+    class:dark-bg={darkBackground}
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <g transform={blueTransform}>
+      <image
+        href={displayInfo.image}
+        x={imgOffset}
+        y={imgOffset}
+        width={imgSize}
+        height={imgSize}
+      />
+    </g>
 
-  <!-- Red prop (hue-rotated to match existing red prop coloring) -->
-  <g transform={redTransform}>
-    <image
-      class="red-prop"
-      href={displayInfo.image}
-      x={imgOffset}
-      y={imgOffset}
-      width={imgSize}
-      height={imgSize}
-    />
-  </g>
-</svg>
+    <g transform={redTransform}>
+      <image
+        class="red-prop"
+        href={displayInfo.image}
+        x={imgOffset}
+        y={imgOffset}
+        width={imgSize}
+        height={imgSize}
+      />
+    </g>
+  </svg>
+{/if}
 
 <style>
   .prop-composition-preview {
@@ -108,5 +131,9 @@
 
   .prop-composition-preview.dark-bg {
     filter: brightness(1.8) saturate(1.4);
+  }
+
+  .prop-composition-preview.neutral {
+    filter: brightness(0) invert(1);
   }
 </style>
