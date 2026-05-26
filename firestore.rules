@@ -982,6 +982,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Special arrow placement overrides - per-letter Firestore overrides for static JSON
+    // Document ID format: {gridMode}|{oriFolder}|{letter}|{turnsTuple}|{motionType}
+    match /special_arrow_placements/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // ============================================================================
     // APP METRICS (Public Counters)
     // ============================================================================
