@@ -23,6 +23,18 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+  import { getSpecialOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton";
+  import {
+    generateSpecialOverrideKey,
+    extractOriFolderFromPath,
+    type SpecialArrowPlacementInput,
+  } from "$lib/shared/pictograph/arrow/positioning/special-override/domain/SpecialArrowPlacement";
+  import {
+    generateOrientationKey,
+    resolveEffectiveOriKey,
+  } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
+  import { generateTurnsTuple } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/turns-tuple-key-generator";
+  import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
 
   const logger = createComponentLogger("PipelineTraceSection");
 
@@ -40,6 +52,9 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   let activeLayer = $state<1 | 2 | 3>(2);
   let hasLocalChanges = $state(false);
   let saveState = $state<"idle" | "saving" | "saved">("idle");
+  let editTarget = $state<"global" | "special-json">("global");
+  let editX = $state(0);
+  let editY = $state(0);
 
   // Services
   let orchestrator: ArrowAdjustmentOrchestrator | null = null;
@@ -70,6 +85,44 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     const settingsPropType = otherColor === "blue" ? settings.bluePropType : settings.redPropType;
     const otherMotion = stepData.motions?.[otherColor];
     return (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff";
+  });
+
+  const specialOverrideKey = $derived.by((): string | null => {
+    if (!diagnostics || !stepData.letter) return null;
+    const motion = stepData.motions?.[color];
+    if (!motion) return null;
+
+    if (diagnostics.specialJson) {
+      const oriFolder = extractOriFolderFromPath(diagnostics.specialJson.filePath);
+      const gridMode = motion.gridMode || "diamond";
+      return generateSpecialOverrideKey({
+        gridMode,
+        oriFolder,
+        letter: stepData.letter,
+        turnsTuple: diagnostics.specialJson.turnsTupleKey,
+        motionType: motion.motionType?.toLowerCase() || "",
+      });
+    }
+
+    const pictographData: PictographData = {
+      id: stepData.id,
+      letter: stepData.letter,
+      startPosition: stepData.startPosition,
+      endPosition: stepData.endPosition,
+      motions: stepData.motions as PictographData["motions"],
+    };
+    const rawOriKey = generateOrientationKey(motion, pictographData);
+    const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
+    const gridMode = motion.gridMode || (stepData.motions.blue && stepData.motions.red
+      ? _deriveGridMode(stepData.motions.blue, stepData.motions.red) : "diamond");
+    const turnsTupleArr = generateTurnsTuple(pictographData);
+    return generateSpecialOverrideKey({
+      gridMode,
+      oriFolder: oriKey,
+      letter: stepData.letter,
+      turnsTuple: turnsTupleArr.join(","),
+      motionType: motion.motionType?.toLowerCase() || "",
+    });
   });
 
   // Layer value checks for the tab bar dots
@@ -136,10 +189,45 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
       }
       const defaultLayer = orchestrator.getDefaultSaveLayer(thisPropType, otherPropType);
       activeLayer = defaultLayer;
+      editTarget = "global";
+      syncNumericInputs();
     }
     isEditing = !isEditing;
     hasLocalChanges = false;
     saveState = "idle";
+  }
+
+  function syncNumericInputs() {
+    if (editTarget === "global") {
+      const val = currentLayerValue;
+      editX = val?.x ?? 0;
+      editY = val?.y ?? 0;
+    } else if (editTarget === "special-json") {
+      const repo = getSpecialOverrideRepository();
+      if (repo?.isInitialized && specialOverrideKey) {
+        const override = repo.getOverride(specialOverrideKey);
+        if (override) {
+          editX = override.x;
+          editY = override.y;
+        } else if (diagnostics?.specialJson) {
+          editX = diagnostics.specialJson.value.x;
+          editY = diagnostics.specialJson.value.y;
+        } else {
+          editX = 0;
+          editY = 0;
+        }
+      } else if (diagnostics?.specialJson) {
+        editX = diagnostics.specialJson.value.x;
+        editY = diagnostics.specialJson.value.y;
+      }
+    }
+  }
+
+  function selectEditTarget(tier: "global" | "special-json") {
+    editTarget = tier;
+    hasLocalChanges = false;
+    saveState = "idle";
+    syncNumericInputs();
   }
 
   function handleLayerChange(layer: 1 | 2 | 3) {
@@ -164,20 +252,6 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   }
 
   async function handleWASDMovement(key: "w" | "a" | "s" | "d", increment: number) {
-    if (!selectedArrowContext || !orchestrator) return;
-
-    const repo = getGlobalAdjustmentRepository();
-    if (!repo) return;
-
-    const targetKey = orchestrator.generateTargetKey(
-      selectedArrowContext, activeLayer, thisPropType, otherPropType
-    );
-    if (!targetKey) return;
-
-    const current = repo.getAdjustment(targetKey);
-    let currentX = current?.x ?? 0;
-    let currentY = current?.y ?? 0;
-
     const directionMap: Record<string, { dx: number; dy: number }> = {
       w: { dx: 0, dy: -increment },
       s: { dx: 0, dy: increment },
@@ -185,33 +259,31 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
       d: { dx: increment, dy: 0 },
     };
     const dir = directionMap[key]!;
+    editX += dir.dx;
+    editY += dir.dy;
 
-    repo.saveAdjustmentLocal({
-      ...targetKey,
-      adjustmentX: currentX + dir.dx,
-      adjustmentY: currentY + dir.dy,
-    });
-
-    pictographPreparer.clearCache();
-    globalAdjustmentVersion.increment();
-    hasLocalChanges = true;
+    if (editTarget === "global") {
+      handleGlobalNumericUpdate();
+    } else {
+      handleSpecialJsonNumericUpdate();
+    }
 
     const haptic = getHapticFeedback();
     haptic?.trigger("selection");
   }
 
   async function handleSave() {
+    if (editTarget === "special-json") {
+      return handleSpecialJsonSave();
+    }
     const repo = getGlobalAdjustmentRepository();
     if (!repo || !orchestrator || !selectedArrowContext) return;
-
     const targetKey = orchestrator.generateTargetKey(
       selectedArrowContext, activeLayer, thisPropType, otherPropType
     );
     if (!targetKey) return;
-
     const adj = repo.getAdjustment(targetKey);
     if (!adj) return;
-
     try {
       saveState = "saving";
       await repo.saveAdjustment({
@@ -223,10 +295,7 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
       hasLocalChanges = false;
       const haptic = getHapticFeedback();
       haptic?.trigger("success");
-
-      // Refresh diagnostics
       onDiagnosticsChanged?.();
-
       setTimeout(() => { saveState = "idle"; }, 2000);
     } catch (error) {
       logger.error("Save failed:", error);
@@ -235,14 +304,15 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   }
 
   async function handleDelete() {
+    if (editTarget === "special-json") {
+      return handleSpecialJsonDelete();
+    }
     const repo = getGlobalAdjustmentRepository();
     if (!repo || !orchestrator || !selectedArrowContext) return;
-
     const targetKey = orchestrator.generateTargetKey(
       selectedArrowContext, activeLayer, thisPropType, otherPropType
     );
     if (!targetKey) return;
-
     try {
       repo.deleteAdjustmentLocal(targetKey);
       await repo.deleteAdjustment(targetKey);
@@ -254,6 +324,129 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
       onDiagnosticsChanged?.();
     } catch (error) {
       logger.error("Delete failed:", error);
+    }
+  }
+
+  function handleNumericChange() {
+    if (editTarget === "global") {
+      handleGlobalNumericUpdate();
+    } else {
+      handleSpecialJsonNumericUpdate();
+    }
+  }
+
+  function handleGlobalNumericUpdate() {
+    if (!orchestrator || !selectedArrowContext) return;
+    const repo = getGlobalAdjustmentRepository();
+    if (!repo) return;
+    const targetKey = orchestrator.generateTargetKey(
+      selectedArrowContext, activeLayer, thisPropType, otherPropType
+    );
+    if (!targetKey) return;
+    repo.saveAdjustmentLocal({
+      ...targetKey,
+      adjustmentX: editX,
+      adjustmentY: editY,
+    });
+    pictographPreparer.clearCache();
+    globalAdjustmentVersion.increment();
+    hasLocalChanges = true;
+  }
+
+  function handleSpecialJsonNumericUpdate() {
+    const repo = getSpecialOverrideRepository();
+    if (!repo || !specialOverrideKey) return;
+    const originalValue = diagnostics?.specialJson?.firestoreOverride?.original
+      ?? (diagnostics?.specialJson ? diagnostics.specialJson.value : null);
+    const input = buildSpecialJsonInput(editX, editY, originalValue);
+    if (!input) return;
+    repo.saveOverrideLocal(input);
+    pictographPreparer.clearCache();
+    globalAdjustmentVersion.increment();
+    hasLocalChanges = true;
+  }
+
+  function buildSpecialJsonInput(
+    x: number, y: number,
+    original: { x: number; y: number } | null
+  ): SpecialArrowPlacementInput | null {
+    const motion = stepData.motions?.[color];
+    if (!motion || !stepData.letter) return null;
+
+    let oriFolder: string;
+    let turnsTuple: string;
+    let gridMode: string;
+
+    if (diagnostics?.specialJson) {
+      oriFolder = extractOriFolderFromPath(diagnostics.specialJson.filePath);
+      turnsTuple = diagnostics.specialJson.turnsTupleKey;
+      gridMode = motion.gridMode || "diamond";
+    } else {
+      const pictographData: PictographData = {
+        id: stepData.id,
+        letter: stepData.letter,
+        startPosition: stepData.startPosition,
+        endPosition: stepData.endPosition,
+        motions: stepData.motions as PictographData["motions"],
+      };
+      const rawOriKey = generateOrientationKey(motion, pictographData);
+      oriFolder = resolveEffectiveOriKey(rawOriKey, pictographData);
+      const turnsTupleArr = generateTurnsTuple(pictographData);
+      turnsTuple = turnsTupleArr.join(",");
+      gridMode = motion.gridMode || (stepData.motions.blue && stepData.motions.red
+        ? _deriveGridMode(stepData.motions.blue, stepData.motions.red) : "diamond");
+    }
+
+    return {
+      gridMode,
+      oriFolder,
+      letter: stepData.letter,
+      turnsTuple,
+      motionType: motion.motionType?.toLowerCase() || "",
+      adjustmentX: x,
+      adjustmentY: y,
+      originalX: original?.x ?? 0,
+      originalY: original?.y ?? 0,
+    };
+  }
+
+  async function handleSpecialJsonSave() {
+    const repo = getSpecialOverrideRepository();
+    if (!repo || !specialOverrideKey) return;
+    const originalValue = diagnostics?.specialJson?.firestoreOverride?.original
+      ?? (diagnostics?.specialJson && !diagnostics.specialJson.firestoreOverride
+        ? diagnostics.specialJson.value : null);
+    const input = buildSpecialJsonInput(editX, editY, originalValue);
+    if (!input) return;
+    try {
+      saveState = "saving";
+      await repo.saveOverride(input);
+      saveState = "saved";
+      hasLocalChanges = false;
+      const haptic = getHapticFeedback();
+      haptic?.trigger("success");
+      onDiagnosticsChanged?.();
+      setTimeout(() => { saveState = "idle"; }, 2000);
+    } catch (error) {
+      logger.error("Special JSON save failed:", error);
+      saveState = "idle";
+    }
+  }
+
+  async function handleSpecialJsonDelete() {
+    const repo = getSpecialOverrideRepository();
+    if (!repo || !specialOverrideKey) return;
+    try {
+      repo.deleteOverrideLocal(specialOverrideKey);
+      await repo.deleteOverride(specialOverrideKey);
+      pictographPreparer.clearCache();
+      globalAdjustmentVersion.increment();
+      hasLocalChanges = false;
+      const haptic = getHapticFeedback();
+      haptic?.trigger("warning");
+      onDiagnosticsChanged?.();
+    } catch (error) {
+      logger.error("Special JSON delete failed:", error);
     }
   }
 </script>
@@ -286,11 +479,21 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
 
     {#each tiers as { tier, info, detail }}
       {@const isActive = diagnostics.activeTier === tier}
-      <div
+      {@const isEditable = tier === "global" || tier === "special-json"}
+      {@const isEditTarget = isEditing && editTarget === tier}
+      <button
         class="tier-row"
         class:active={isActive}
         class:has-value={info != null}
+        class:edit-target={isEditTarget}
+        class:editable={isEditing && isEditable}
         style="--tier-color: {tierColor(tier)}"
+        onclick={() => {
+          if (isEditing && isEditable) {
+            selectEditTarget(tier as "global" | "special-json");
+          }
+        }}
+        disabled={!isEditing || !isEditable}
       >
         <span class="tier-icon">
           {#if isActive}
@@ -300,13 +503,26 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
           {/if}
         </span>
         <span class="tier-name">{tierLabel(tier)}</span>
+        {#if tier === "special-json" && diagnostics.specialJson?.firestoreOverride}
+          <span class="tier-badge">(override)</span>
+        {/if}
         {#if detail}
           <span class="tier-detail">{detail}</span>
         {/if}
         <span class="tier-value" class:none={!info}>
           {info ? formatValue(info.value) : "none"}
         </span>
-      </div>
+      </button>
+
+      {#if tier === "special-json" && diagnostics.specialJson?.firestoreOverride?.original}
+        <div class="original-row">
+          <span class="original-icon">└</span>
+          <span class="original-label">original</span>
+          <span class="original-value">
+            {formatValue(diagnostics.specialJson.firestoreOverride.original)}
+          </span>
+        </div>
+      {/if}
     {/each}
 
     <!-- Summary row -->
@@ -324,23 +540,41 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   <!-- Inline WASD Editor -->
   {#if isEditing}
     <div class="editor-section">
-      <LayerTabBar
-        {activeLayer}
-        onLayerChange={handleLayerChange}
-        {layer1HasValue}
-        {layer2HasValue}
-        {layer3HasValue}
-        {thisPropType}
-        {otherPropType}
-      />
+      {#if editTarget === "global"}
+        <LayerTabBar
+          {activeLayer}
+          onLayerChange={handleLayerChange}
+          {layer1HasValue}
+          {layer2HasValue}
+          {layer3HasValue}
+          {thisPropType}
+          {otherPropType}
+        />
+      {:else}
+        <div class="editor-target-label">
+          Special JSON Override
+        </div>
+      {/if}
 
       <div class="editor-values">
-        {#if currentLayerValue}
-          <span class="editor-coord">X: <strong>{currentLayerValue.x}</strong></span>
-          <span class="editor-coord">Y: <strong>{currentLayerValue.y}</strong></span>
-        {:else}
-          <span class="editor-empty">No value at Layer {activeLayer}</span>
-        {/if}
+        <label class="editor-input-label">
+          X:
+          <input
+            type="number"
+            class="editor-input"
+            bind:value={editX}
+            onchange={handleNumericChange}
+          />
+        </label>
+        <label class="editor-input-label">
+          Y:
+          <input
+            type="number"
+            class="editor-input"
+            bind:value={editY}
+            onchange={handleNumericChange}
+          />
+        </label>
       </div>
 
       <div class="editor-hint">
@@ -354,7 +588,11 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
       {/if}
 
       <div class="editor-actions">
-        {#if currentLayerValue || layer1HasValue || layer2HasValue || layer3HasValue}
+        {#if editTarget === "special-json" && diagnostics?.specialJson?.firestoreOverride}
+          <button class="btn btn-delete" onclick={handleDelete} title="Revert to original">
+            <i class="fas fa-undo" aria-hidden="true"></i> Revert
+          </button>
+        {:else if editTarget === "global" && (currentLayerValue || layer1HasValue || layer2HasValue || layer3HasValue)}
           <button class="btn btn-delete" onclick={handleDelete} title="Delete at this layer">
             <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete
           </button>
@@ -362,7 +600,7 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
         <button
           class="btn btn-save"
           onclick={handleSave}
-          disabled={!hasLocalChanges && !currentLayerValue}
+          disabled={!hasLocalChanges && !(editTarget === "global" && currentLayerValue)}
         >
           {#if saveState === "saving"}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -443,6 +681,26 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     font-size: 0.7rem;
     color: #484f58;
     transition: background 0.15s ease;
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: default;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .tier-row.editable {
+    cursor: pointer;
+  }
+
+  .tier-row.editable:hover {
+    background: rgba(56, 139, 253, 0.06);
+    border-color: #30363d;
+  }
+
+  .tier-row.edit-target {
+    background: rgba(56, 139, 253, 0.1);
+    border-color: #58a6ff;
   }
 
   .tier-row.active {
@@ -490,6 +748,39 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   .tier-value.none {
     color: #484f58;
     font-style: italic;
+  }
+
+  .tier-badge {
+    font-size: 0.55rem;
+    color: #a78bfa;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .original-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1px 6px 1px 24px;
+    font-size: 0.6rem;
+    color: #484f58;
+  }
+
+  .original-icon {
+    color: #30363d;
+    font-family: "SF Mono", Monaco, monospace;
+  }
+
+  .original-label {
+    font-style: italic;
+  }
+
+  .original-value {
+    margin-left: auto;
+    font-family: "SF Mono", Monaco, monospace;
+    text-decoration: line-through;
+    color: #484f58;
   }
 
   .summary-row {
@@ -560,6 +851,40 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     color: #484f58;
     font-size: 0.75rem;
     font-style: italic;
+  }
+
+  .editor-target-label {
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #a78bfa;
+    padding: 4px 0;
+  }
+
+  .editor-input-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #8b949e;
+    font-family: "SF Mono", Monaco, monospace;
+    font-size: 0.85rem;
+  }
+
+  .editor-input {
+    width: 70px;
+    padding: 2px 6px;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: "SF Mono", Monaco, monospace;
+    font-size: 0.85rem;
+    text-align: right;
+  }
+
+  .editor-input:focus {
+    outline: none;
+    border-color: #58a6ff;
   }
 
   .editor-hint {
