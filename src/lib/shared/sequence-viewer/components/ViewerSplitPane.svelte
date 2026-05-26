@@ -220,6 +220,102 @@
     if (_2dRightActive) _2dRightMounted = true;
   });
 
+  let _cardLeftMounted = $state(false);
+  let _cardLeftShown = $state(false);
+  const _cardLeftActive = $derived(splitConfig.leftPane === 'card');
+  $effect(() => {
+    if (_cardLeftActive) {
+      if (!_cardLeftMounted) {
+        _cardLeftMounted = true;
+        requestAnimationFrame(() => { _cardLeftShown = true; });
+      } else {
+        _cardLeftShown = true;
+      }
+    } else {
+      _cardLeftShown = false;
+    }
+  });
+
+  let _videosLeftMounted = $state(false);
+  let _videosLeftShown = $state(false);
+  const _videosLeftActive = $derived(splitConfig.leftPane === 'videos');
+  $effect(() => {
+    if (_videosLeftActive) {
+      if (!_videosLeftMounted) {
+        _videosLeftMounted = true;
+        requestAnimationFrame(() => { _videosLeftShown = true; });
+      } else {
+        _videosLeftShown = true;
+      }
+    } else {
+      _videosLeftShown = false;
+    }
+  });
+
+  let _mandalaLeftMounted = $state(false);
+  let _mandalaLeftShown = $state(false);
+  const _mandalaLeftActive = $derived(splitConfig.leftPane === 'mandala');
+  $effect(() => {
+    if (_mandalaLeftActive) {
+      if (!_mandalaLeftMounted) {
+        _mandalaLeftMounted = true;
+        requestAnimationFrame(() => { _mandalaLeftShown = true; });
+      } else {
+        _mandalaLeftShown = true;
+      }
+    } else {
+      _mandalaLeftShown = false;
+    }
+  });
+
+  let _cardRightMounted = $state(false);
+  let _cardRightShown = $state(false);
+  const _cardRightActive = $derived(splitConfig.rightPane === 'card');
+  $effect(() => {
+    if (_cardRightActive) {
+      if (!_cardRightMounted) {
+        _cardRightMounted = true;
+        requestAnimationFrame(() => { _cardRightShown = true; });
+      } else {
+        _cardRightShown = true;
+      }
+    } else {
+      _cardRightShown = false;
+    }
+  });
+
+  let _videosRightMounted = $state(false);
+  let _videosRightShown = $state(false);
+  const _videosRightActive = $derived(splitConfig.rightPane === 'videos');
+  $effect(() => {
+    if (_videosRightActive) {
+      if (!_videosRightMounted) {
+        _videosRightMounted = true;
+        requestAnimationFrame(() => { _videosRightShown = true; });
+      } else {
+        _videosRightShown = true;
+      }
+    } else {
+      _videosRightShown = false;
+    }
+  });
+
+  let _mandalaRightMounted = $state(false);
+  let _mandalaRightShown = $state(false);
+  const _mandalaRightActive = $derived(splitConfig.rightPane === 'mandala');
+  $effect(() => {
+    if (_mandalaRightActive) {
+      if (!_mandalaRightMounted) {
+        _mandalaRightMounted = true;
+        requestAnimationFrame(() => { _mandalaRightShown = true; });
+      } else {
+        _mandalaRightShown = true;
+      }
+    } else {
+      _mandalaRightShown = false;
+    }
+  });
+
   let _pane2d: HTMLDivElement | undefined = $state();
   let _pane3d: HTMLDivElement | undefined = $state();
   let _rail2d: HTMLDivElement | undefined = $state();
@@ -241,8 +337,8 @@
     if (outRail) outRail.style.width = w;
 
     setTimeout(() => {
-      outPane.style.width = '';
-      if (outRail) outRail.style.width = '';
+      if (outPane.isConnected) outPane.style.width = '';
+      if (outRail?.isConnected) outRail.style.width = '';
     }, 250);
   });
 
@@ -392,8 +488,8 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
       </div>
     {/if}
 
-    {#if splitConfig.leftPane === 'card'}
-      <div class="media-pane preview-pane">
+    {#if _cardLeftMounted}
+      <div class="media-pane preview-pane content-overlay" class:content-overlay-hidden={!_cardLeftShown}>
         <ChoreoCard
           {sequence}
           highlightedStepIndex={playback.highlightedStepIndex}
@@ -423,12 +519,14 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
           onContextMenu={onChoreoCardContextMenu}
         />
       </div>
-    {:else if splitConfig.leftPane === 'videos'}
-      <div class="media-pane">
+    {/if}
+    {#if _videosLeftMounted}
+      <div class="media-pane content-overlay" class:content-overlay-hidden={!_videosLeftShown}>
         <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
       </div>
-    {:else if splitConfig.leftPane === 'mandala'}
-      <div class="media-pane">
+    {/if}
+    {#if _mandalaLeftMounted}
+      <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaLeftShown}>
         <MandalaPane
           {sequence}
           bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
@@ -490,12 +588,9 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
         </div>
       {/if}
 
-      {#if splitConfig.rightPane === 'card'}
-        <div
-          class="media-pane preview-pane"
-        >
-          <!-- Close button - shown when focused (desktop only) -->
-          {#if layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
+      {#if _cardRightMounted}
+        <div class="media-pane preview-pane content-overlay" class:content-overlay-hidden={!_cardRightShown}>
+          {#if _cardRightActive && layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
             <div
               class="pane-close-btn"
               role="button"
@@ -536,10 +631,10 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             {rerenderTrigger}
             onContextMenu={onChoreoCardContextMenu}
           />
-
         </div>
-      {:else if splitConfig.rightPane === 'animation-3d'}
-        <div class="media-pane animation-pane">
+      {/if}
+      {#if splitConfig.rightPane === 'animation-3d'}
+        <div class="media-pane animation-pane content-overlay">
           <div
             class="canvas-layer canvas-3d-layer"
             style="opacity:1;pointer-events:auto;"
@@ -562,12 +657,14 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             />
           </div>
         </div>
-      {:else if splitConfig.rightPane === 'videos'}
-        <div class="media-pane">
+      {/if}
+      {#if _videosRightMounted}
+        <div class="media-pane content-overlay" class:content-overlay-hidden={!_videosRightShown}>
           <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
         </div>
-      {:else if splitConfig.rightPane === 'mandala'}
-        <div class="media-pane">
+      {/if}
+      {#if _mandalaRightMounted}
+        <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaRightShown}>
           <MandalaPane
             {sequence}
             bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
@@ -614,6 +711,23 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     opacity: 1;
     transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
                 visibility 0s linear 0s;
+  }
+
+  .content-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    opacity: 1;
+    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+                visibility 0s linear 0s;
+  }
+
+  .content-overlay-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+                visibility 0s linear 200ms;
   }
 
   .media-pane.persistent-3d-hidden,
@@ -975,7 +1089,9 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     .media-pane.persistent-3d-hidden,
     .media-pane.persistent-2d-hidden,
     .persistent-rail,
-    .persistent-rail-hidden {
+    .persistent-rail-hidden,
+    .content-overlay,
+    .content-overlay-hidden {
       transition: none !important;
     }
 
