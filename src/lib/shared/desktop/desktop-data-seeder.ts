@@ -44,7 +44,6 @@ async function seed(appVersion: string): Promise<void> {
 			seeded += batch.length;
 
 			if (seeded % 2000 === 0) {
-				console.log(`[DesktopDataSeeder] Progress: ${seeded}/${total}`);
 				await new Promise((r) => setTimeout(r, 0));
 			}
 		}
@@ -55,7 +54,6 @@ async function seed(appVersion: string): Promise<void> {
 		bundleVersion: appVersion,
 	} as unknown as AppSettings & { id: string });
 
-	console.log(`[DesktopDataSeeder] Done. Seeded ${seeded} sequences.`);
 }
 
 export async function seedIfNeeded(appVersion: string): Promise<void> {
@@ -64,6 +62,5 @@ export async function seedIfNeeded(appVersion: string): Promise<void> {
 		return;
 	}
 
-	console.log("[DesktopDataSeeder] Seeding bundled sequence data...");
 	await seed(appVersion);
 }

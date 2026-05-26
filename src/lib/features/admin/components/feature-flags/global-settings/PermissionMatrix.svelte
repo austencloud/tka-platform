@@ -119,9 +119,7 @@
         toast.success(message, 4000);
 
         // Open PostHog dashboard if available (optional - could make this a click action)
-        if (result.dashboardUrl) {
-          console.log(`[PermissionMatrix] PostHog dashboard: ${result.dashboardUrl}`);
-        }
+        // PostHog dashboard URL available in result.dashboardUrl if needed
       } else if (result.action === "updated") {
         // Existing flag toggled
         const newState = updates.enabled ? "enabled" : "disabled";

@@ -59,7 +59,6 @@ export class GPUChunkGenerator {
 
   private async doInit(): Promise<boolean> {
     if (this.config.forceCPU) {
-      console.log("[GPUChunkGenerator] Forced CPU mode");
       this.isGPUEnabled = false;
       return false;
     }
@@ -67,7 +66,6 @@ export class GPUChunkGenerator {
     // Check WebGPU availability
     const gpuAvailable = await isWebGPUAvailable();
     if (!gpuAvailable) {
-      console.log("[GPUChunkGenerator] WebGPU not available, using CPU");
       this.isGPUEnabled = false;
       return false;
     }
@@ -82,10 +80,7 @@ export class GPUChunkGenerator {
     const success = await this.computeGenerator.init();
     this.isGPUEnabled = success;
 
-    if (success) {
-      console.log("[GPUChunkGenerator] GPU compute enabled");
-    } else {
-      console.log("[GPUChunkGenerator] GPU init failed, using CPU fallback");
+    if (!success) {
       this.computeGenerator.dispose();
       this.computeGenerator = null;
     }

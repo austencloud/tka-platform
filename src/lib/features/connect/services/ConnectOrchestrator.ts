@@ -105,7 +105,6 @@ export class ConnectOrchestrator {
 			timestamp: Date.now()
 		});
 
-		console.log('[ConnectOrchestrator] Started sharing:', sessionId);
 		return sessionId;
 	}
 
@@ -125,7 +124,6 @@ export class ConnectOrchestrator {
 		const session = this.sessionManager.currentSession!;
 		await this.lanSyncCoordinator.joinRoomByCode(session.peerJsRoomCode);
 
-		console.log('[ConnectOrchestrator] Joined session:', sessionId);
 	}
 
 	async joinFromInvite(inviteId: string): Promise<void> {
@@ -148,7 +146,6 @@ export class ConnectOrchestrator {
 
 		this._isSoloMode = false;
 
-		console.log('[ConnectOrchestrator] Left session');
 	}
 
 	async toggleSoloMode(): Promise<void> {
@@ -156,7 +153,6 @@ export class ConnectOrchestrator {
 
 		// When in solo mode, don't sync with LanSyncCoordinator
 		// The playback state stays local
-		console.log('[ConnectOrchestrator] Solo mode:', this._isSoloMode);
 	}
 
 	async setDisplayPreference(preference: DisplayPreference): Promise<void> {
@@ -279,7 +275,6 @@ export class ConnectOrchestrator {
 		// Start listening for invites
 		this.inviteHandler.startListening();
 
-		console.log('[ConnectOrchestrator] Initialized');
 	}
 
 	destroy(): void {
@@ -297,6 +292,5 @@ export class ConnectOrchestrator {
 			console.warn('[ConnectOrchestrator] Cleanup error:', err);
 		});
 
-		console.log('[ConnectOrchestrator] Destroyed');
 	}
 }

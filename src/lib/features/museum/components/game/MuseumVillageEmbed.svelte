@@ -40,7 +40,6 @@
 
 	// Get or create the persistent village manager
 	const manager = getMuseumVillageManager();
-	console.log("[MuseumVillage] Embed mounted, manager:", manager ? "ready" : "null");
 
 	if (manager) {
 		setVillageContext(manager.villageState);

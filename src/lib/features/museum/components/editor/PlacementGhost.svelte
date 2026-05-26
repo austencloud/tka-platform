@@ -229,9 +229,7 @@
 
   // ── Event handlers ──
 
-  let _moveCount = 0;
   function onPointerMove(event: PointerEvent): void {
-    const _t0 = performance.now();
     const ren = getRenderer();
     if (!ren?.domElement) return;
     const domElement = ren.domElement;
@@ -345,10 +343,6 @@
       hoveredPlacementId = newHoverId;
     }
 
-    _moveCount++;
-    if (_moveCount % 30 === 0) {
-      console.log(`[Ghost] onPointerMove=${(performance.now() - _t0).toFixed(1)}ms (sample #${_moveCount})`);
-    }
   }
 
   function onPointerDown(event: PointerEvent): void {

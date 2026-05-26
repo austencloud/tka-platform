@@ -287,7 +287,6 @@
   .transport-pill {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
     gap: 8px 12px;
     padding: 10px 14px;
     width: 100%;
@@ -341,16 +340,15 @@
   }
 
   .pill-track {
-    flex: 1 1 100%;
+    flex: 1 1 0;
     height: var(--min-touch-target, 44px);
     background: transparent;
     position: relative;
     cursor: pointer;
-    min-width: 120px;
+    min-width: 80px;
     touch-action: none;
     display: flex;
     align-items: center;
-    order: 10;
   }
 
   .pill-track::before {

@@ -159,17 +159,13 @@ export class CreateModuleInitializer {
     // Initialize services
     await this.CreateModuleOrchestrator.initialize();
 
-    // Initialize tab states (but NOT persistence - that's done after deep link check)
-    await constructTabState.initializeConstructTab();
-    await generatorTabState.initializeGeneratorTab();
-    // REMOVED: spellTabState.initializeSpellTab() - Spell mode unified into Generate tab (Feb 2026)
-    await assembleTabState.initializeAssembleTab();
-
-    // Note: Event callbacks configured separately via configureEventCallbacks()
-    // after component has created panelState
-
-    // Load start positions
-    await this.loadStartPositions(GridMode.DIAMOND);
+    // Initialize all tab states + start positions in parallel (independent of each other)
+    await Promise.all([
+      constructTabState.initializeConstructTab(),
+      generatorTabState.initializeGeneratorTab(),
+      assembleTabState.initializeAssembleTab(),
+      this.loadStartPositions(GridMode.DIAMOND),
+    ]);
 
     return {
       // State objects

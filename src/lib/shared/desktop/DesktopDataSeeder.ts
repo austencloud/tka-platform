@@ -28,7 +28,6 @@ export class DesktopDataSeeder {
 			return;
 		}
 
-		console.log("[DesktopDataSeeder] Seeding bundled sequence data...");
 		await this.seed(appVersion);
 	}
 
@@ -55,7 +54,6 @@ export class DesktopDataSeeder {
 				seeded += batch.length;
 
 				if (seeded % 2000 === 0) {
-					console.log(`[DesktopDataSeeder] Progress: ${seeded}/${total}`);
 					await new Promise((r) => setTimeout(r, 0));
 				}
 			}
@@ -66,6 +64,5 @@ export class DesktopDataSeeder {
 			bundleVersion: appVersion,
 		} as unknown as AppSettings & { id: string });
 
-		console.log(`[DesktopDataSeeder] Done. Seeded ${seeded} sequences.`);
 	}
 }

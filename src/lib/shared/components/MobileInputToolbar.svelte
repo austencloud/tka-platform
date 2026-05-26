@@ -120,8 +120,6 @@
     const vk = event.target as any;
     const rect = vk.boundingRect;
     const newHeight = rect.height;
-    console.log('[MIT] VK geometrychange:', { height: newHeight, x: rect.x, y: rect.y, width: rect.width });
-
     // Debounce to prevent jank during keyboard animation
     if (keyboardDebounceTimer) {
       clearTimeout(keyboardDebounceTimer);
@@ -191,7 +189,6 @@
   $effect(() => {
     // Add toolbar height (~60px) to keyboard height for total bottom inset
     const totalHeight = keyboardHeight > 0 ? keyboardHeight + 60 : 0;
-    console.log('[MIT] reporting totalHeight:', totalHeight, '(kb:', keyboardHeight, '+ 60)');
     onKeyboardHeightChange?.(totalHeight);
   });
 

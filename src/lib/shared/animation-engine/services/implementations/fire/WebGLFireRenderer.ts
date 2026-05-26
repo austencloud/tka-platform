@@ -301,7 +301,7 @@ export class WebGLFireRenderer {
   snapshotFireCanvas(): void {
     const gl = this.gl;
     const c = this.canvas;
-    if (!gl || !c) { console.log('[fire-snapshot] no gl/canvas'); return; }
+    if (!gl || !c) { return; }
 
     // 1. Fire canvas only
     c.toBlob((blob) => {
@@ -312,7 +312,6 @@ export class WebGLFireRenderer {
       a.download = `fire-canvas-${Date.now()}.png`;
       a.click();
       URL.revokeObjectURL(url);
-      console.log(`[fire-snapshot] fire canvas saved (${c.width}x${c.height})`);
     });
 
     // 2. Composited frame (main + fire) using export blend
@@ -338,7 +337,6 @@ export class WebGLFireRenderer {
           a.download = `fire-composited-lighter-${Date.now()}.png`;
           a.click();
           URL.revokeObjectURL(url);
-          console.log(`[fire-snapshot] composited (lighter blend) saved`);
         });
         // Also save source-over version for comparison
         const comp2 = document.createElement('canvas');
@@ -355,7 +353,6 @@ export class WebGLFireRenderer {
           a.download = `fire-composited-srcover-${Date.now()}.png`;
           a.click();
           URL.revokeObjectURL(url);
-          console.log(`[fire-snapshot] composited (source-over blend) saved`);
         });
       }
     }
@@ -379,7 +376,6 @@ export class WebGLFireRenderer {
       lines.push(`  ${name}(${x},${y}): rgba(${px[0]},${px[1]},${px[2]},${px[3]})`);
     }
     const result = lines.join('\n');
-    console.log(result);
     return result;
   }
 

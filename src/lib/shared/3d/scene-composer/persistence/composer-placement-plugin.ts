@@ -50,7 +50,6 @@ export function composerPlacementPlugin(): Plugin {
 						);
 						mkdirSync(dirname(outPath), { recursive: true });
 						writeFileSync(outPath, body, "utf-8");
-						console.log(`[composer] Wrote placements for ${sceneId} → ${outPath}`);
 						res.statusCode = 200;
 						res.end("OK");
 					} catch (err) {

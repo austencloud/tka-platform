@@ -203,8 +203,6 @@ export class MuseumGeometryStreamer {
     callbacks.addChunkToScene(chunk);
     this.activeRoomChunks.set(roomId, chunk);
 
-    console.log("[Museum] activateRoom done:", roomId);
-
     if (!this.firstRoomActivated) {
       this.firstRoomActivated = true;
       void import("$lib/shared/analytics/boot-profiler").then(({ bootProfiler }) =>
@@ -284,12 +282,6 @@ export class MuseumGeometryStreamer {
       .filter((id) => id !== this.spawnRoomId)
       .sort((a, b) => (distances.get(a) ?? 99) - (distances.get(b) ?? 99));
 
-    console.log("[Museum] Initial load - spawn:", this.spawnRoomId);
-    console.log(
-      "[Museum] Building all rooms progressively:",
-      sortedRooms.map((id) => `${id}(d=${distances.get(id)})`),
-    );
-
     for (const roomId of sortedRooms) {
       const dist = distances.get(roomId) ?? 99;
       this.activateRoom(roomId, dist, callbacks); // fire-and-forget
@@ -324,7 +316,6 @@ export class MuseumGeometryStreamer {
 
     if (detectedRoomId && detectedRoomId !== this.lastPlayerRoomId) {
       this.lastPlayerRoomId = detectedRoomId;
-      console.log("[Museum] Player entered room:", detectedRoomId);
     }
   }
 

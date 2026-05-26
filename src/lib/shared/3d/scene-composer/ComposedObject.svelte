@@ -62,16 +62,13 @@
 		castShadow
 		receiveShadow
 		onclick={(e: any) => {
-			console.log('[ComposedObject] CLICKED', placement.id, placement.objectKey);
 			e.stopPropagation();
 			if (groupRef) onselect?.(groupRef);
 		}}
 		onpointerenter={() => {
-			console.log('[ComposedObject] HOVER ENTER', placement.id, placement.objectKey);
 			if (groupRef) onhoverstart?.(groupRef);
 		}}
 		onpointerleave={() => {
-			console.log('[ComposedObject] HOVER LEAVE', placement.id);
 			onhoverend?.();
 		}}
 	/>

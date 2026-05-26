@@ -148,7 +148,6 @@ export class SessionManager {
 		// Start watching for participant changes
 		this.watchSession(sessionId);
 
-		console.log('[SessionManager] Created session:', sessionId);
 		return sessionId;
 	}
 
@@ -223,7 +222,6 @@ export class SessionManager {
 		// Start watching for changes
 		this.watchSession(sessionId);
 
-		console.log('[SessionManager] Joined session:', sessionId);
 	}
 
 	async leaveSession(): Promise<void> {
@@ -267,7 +265,6 @@ export class SessionManager {
 			this._participants = [];
 			this._isHost = false;
 
-			console.log('[SessionManager] Left session:', sessionId);
 		}
 	}
 

@@ -82,10 +82,6 @@ function migrateData(version: number): void {
     return;
   }
 
-  console.log(
-    `[SpellPersistence] Migrating from v${version} to v${SCHEMA_VERSION}`
-  );
-
   // Clean up legacy keys from all versions
   try {
     LEGACY_KEYS.forEach((key) => {

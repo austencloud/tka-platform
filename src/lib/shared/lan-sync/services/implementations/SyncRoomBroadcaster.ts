@@ -79,7 +79,6 @@ export class SyncRoomBroadcaster {
 		this._currentRoom = roomData;
 		this._isBroadcasting = true;
 
-		console.log('[SyncRoomBroadcaster] Broadcasting room:', roomId, sequenceWord);
 	}
 
 	async stopBroadcasting(): Promise<void> {
@@ -96,7 +95,6 @@ export class SyncRoomBroadcaster {
 
 			// Remove the room from Firebase
 			await remove(this.roomRef);
-			console.log('[SyncRoomBroadcaster] Stopped broadcasting');
 		} catch (error) {
 			console.error('[SyncRoomBroadcaster] Error stopping broadcast:', error);
 		} finally {

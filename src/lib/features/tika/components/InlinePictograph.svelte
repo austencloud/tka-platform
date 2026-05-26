@@ -231,10 +231,7 @@
       const base64 = data.imageBase64 as string;
 
       // Save to static directory for production (dev only)
-      const saved = await saveStaticPictograph(staticKey, base64);
-      if (saved) {
-        console.log(`[InlinePictograph] Saved to static: ${pictograph.letter}-${variation}`);
-      }
+      await saveStaticPictograph(staticKey, base64);
 
       // Also cache in IndexedDB for this session
       await tikaPictographCache.set(cacheKey, base64);

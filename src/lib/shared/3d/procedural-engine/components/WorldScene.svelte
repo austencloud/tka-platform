@@ -306,9 +306,8 @@
       // Auto-connect to MCP server
       try {
         await bridge.connect();
-        console.log("[WorldScene] MCP Game Bridge connected");
       } catch {
-        console.log("[WorldScene] MCP Game Bridge not available (run the MCP server to enable)");
+        // MCP Game Bridge not available — ignored silently
       }
     });
   });
@@ -404,7 +403,6 @@
           });
           playerYaw = hmrState.yaw;
           pendingHMRTeleport = false;
-          console.log("[WorldScene] Restored HMR position:", hmrState);
         }
       }, 100);
     }

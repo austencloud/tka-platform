@@ -237,24 +237,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       }
       playbackController.jumpToStep(0);
 
-      // --- EXPORT DIAGNOSTIC: flat strings only (Objects collapse in console paste) ---
-      const diagContainer = canvas.parentElement;
-      console.log(`[export-diag] === EXPORT START === main=${canvas.width}x${canvas.height} output=${outputWidth}x${outputHeight} scale=${(outputWidth / sourceWidth).toFixed(3)}`);
-      if (diagContainer) {
-        const overlays = diagContainer.querySelectorAll("canvas");
-        overlays.forEach((ov, idx) => {
-          if (ov === canvas) return;
-          const el = ov as HTMLCanvasElement;
-          const isWebGL = !!el.getContext('webgl2');
-          console.log(`[export-diag] overlay[${idx}]: ${el.width}x${el.height} webgl=${isWebGL} z=${el.style.zIndex} data-type=${el.dataset?.overlayType ?? 'NONE'}`);
-        });
-      }
-
       // Enable fire renderer diagnostics
       const fireDiag = typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>).__tka_fire_diag as { enable(): void; reset(): void; disable(): void } | undefined : undefined;
       if (fireDiag) {
         fireDiag.enable();
-        console.log('[export-diag] fire diagnostics enabled');
       }
 
       // Clear fire/charcoal simulation FBOs, display canvas, and frame cache.
@@ -286,7 +272,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         // Reset fire diagnostic counter so export frames get logged (warmup consumed the first 5)
         if (fireDiag) {
           fireDiag.reset();
-          console.log('[export-diag] fire diag counter reset after warmup');
         }
       }
 
@@ -531,18 +516,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           }
         }
 
-        // --- LED EXPORT DIAGNOSTIC ---
-        const isDiagFrame = i < 5 || (i >= 28 && i <= 32);
-        const ledDiag = isDiagFrame && typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>).__tka_led_diag as { stats(): Record<string, unknown> } | undefined : undefined;
-        if (ledDiag) {
-          try {
-            const diag = ledDiag.stats();
-            if (diag) {
-              console.log(`[led-export-diag] frame=${i} step=${stepIndex} beat=${playbackPosition.toFixed(2)} ledPixels: maxR=${diag.maxR} maxA=${diag.maxA} nonZero=${diag.nonZero}/${diag.total}`);
-            }
-          } catch { /* ignore */ }
-        }
-
         // Render frame to offscreen canvas (only if live canvas is available).
         // When the canvas is temporarily unavailable, the offscreen canvas keeps
         // its previous content, producing a duplicated frame in the video.
@@ -568,26 +541,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             stepDurations,
             i
           );
-        }
-
-        // --- LED EXPORT DIAGNOSTIC: check composite result ---
-        if (isDiagFrame && typeof window !== 'undefined') {
-          try {
-            const px = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
-            let cMaxR = 0, cMaxG = 0, cMaxB = 0, cMaxA = 0;
-            let aboveA5 = 0, aboveA25 = 0, aboveA100 = 0;
-            for (let p = 0; p < px.length; p += 4) {
-              if (px[p]! > cMaxR) cMaxR = px[p]!;
-              if (px[p + 1]! > cMaxG) cMaxG = px[p + 1]!;
-              if (px[p + 2]! > cMaxB) cMaxB = px[p + 2]!;
-              if (px[p + 3]! > cMaxA) cMaxA = px[p + 3]!;
-              const a = px[p + 3]!;
-              if (a > 5) aboveA5++;
-              if (a > 25) aboveA25++;
-              if (a > 100) aboveA100++;
-            }
-            console.log(`[led-export-diag] composite frame=${i}: maxRGBA=${cMaxR},${cMaxG},${cMaxB},${cMaxA} alphaDistrib(>5/>25/>100)=${aboveA5}/${aboveA25}/${aboveA100} size=${offscreenCanvas.width}x${offscreenCanvas.height}`);
-          } catch { /* ignore */ }
         }
 
         // -----------------------------------------------------------------------

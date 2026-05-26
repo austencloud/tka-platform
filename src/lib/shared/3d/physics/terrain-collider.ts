@@ -156,7 +156,6 @@ export class TerrainPhysicsManager {
 			chunkZ: 0,
 		});
 
-		console.log(`[TerrainPhysics] Added stage ground collider at (${centerX}, ${centerZ}) height=${height}m radius=${radius}m`);
 	}
 
 	/**

@@ -55,7 +55,6 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
     // Auto-start recording when command mode is entered
     if (sessionRecorder && !sessionRecorder.isRecording()) {
       sessionRecorder.startSession();
-      console.log("[HeyTika] Auto-started session recording");
     }
 
     // voiceControlState.enterCommandMode() calls onEnterCommandMode callback,
@@ -94,12 +93,10 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
     const lastCommands = voiceControlState.lastResolvedCommands;
     const previousCommand = lastCommands.length > 0 ? lastCommands[lastCommands.length - 1] : undefined;
 
-    console.log(`[HeyTika] Tier 2: Resolving "${rawText}" via LLM`);
     const resolution = await resolveIntent(rawText, context, previousCommand);
 
     // If LLM says this is a question, route to Tier 3 (voice-to-chat)
     if (resolution.escalateToChat) {
-      console.log(`[HeyTika] Tier 2 → Tier 3: "${rawText}" is a question, escalating to chat`);
       await resolveTier3(rawText, rawEvent, startMs);
       return;
     }
@@ -111,7 +108,6 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
       && firstCommand?.action === "unknown";
 
     if (isUnknown || resolution.commands.length === 0) {
-      console.log(`[HeyTika] Tier 2 failed: "${rawText}" not recognized`);
       voiceControlState.showFeedback("error", `"${rawText}"?`, rawEvent);
 
       // Record unresolved event
@@ -157,7 +153,6 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
       });
 
       if (result.success) {
-        console.log(`[HeyTika] ${result.message}`);
         voiceControlState.showFeedback("success", result.message, rawEvent);
       } else {
         console.warn(`[HeyTika] Command failed: ${result.message}`);
@@ -325,13 +320,11 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
     // Auto-save sessions when they end (always-on recording)
     sessionRecorder.onSessionEnded(async (session) => {
       if (session.events.length === 0) {
-        console.log("[HeyTika] Skipping auto-save: empty session");
         return;
       }
 
       try {
         await sessionRepository!.saveSession(session);
-        console.log(`[HeyTika] Auto-saved session ${session.id} (${session.events.length} events)`);
 
         // Enforce session limit in background (don't block)
         sessionRepository!.enforceSessionLimit().catch((err) => {
@@ -410,12 +403,9 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
 
       // Unknown command (no interpreter matched) → escalate to Tier 2/3
       if (command.category === "system" && command.action === "unknown") {
-        console.log(`[HeyTika] Tier 1 miss: "${event.command}"`);
-
         const tier = classifyTier(event.command);
 
         if (tier === "question") {
-          console.log(`[HeyTika] Tier 3: "${event.command}" classified as question`);
           await resolveTier3(event.command, event.command, commandStartMs);
           return;
         }
@@ -441,7 +431,6 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
       });
 
       if (result.success) {
-        console.log(`[HeyTika] ${result.message}`);
         voiceControlState.showFeedback("success", result.message, event.command);
       } else {
         console.warn(`[HeyTika] Command failed: ${result.message}`);
@@ -460,7 +449,6 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
       if (state === "idle" && voiceControlState.enabled && !wakeWordDetector!.isListening()) {
         voiceControlState.setEnabled(false);
         voiceControlState.exitCommandMode();
-        console.log("[HeyTika] Detector auto-paused, showing inactive mic");
       }
     });
 
@@ -469,7 +457,6 @@ import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetect
 
     // Restore command mode if it was active before HMR
     if (voiceControlState.shouldRestoreCommandMode()) {
-      console.log("[HeyTika] Restoring command mode after HMR");
       wakeWordDetector.start();
       voiceControlState.setEnabled(true);
       voiceControlState.setDetectorState("listening");

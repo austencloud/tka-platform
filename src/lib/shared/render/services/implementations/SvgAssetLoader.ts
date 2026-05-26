@@ -163,15 +163,12 @@ export class SvgAssetLoader {
 
   private async loadLetterAsset(letterPath: string): Promise<LetterAsset | null> {
     try {
-      // Get SVG content - detect environment (browser vs Node.js)
       let svgText: string;
       if (typeof fetch !== 'undefined') {
-        // Browser or Worker: use fetch
         const response = await fetch(letterPath);
         if (!response.ok) return null;
         svgText = await response.text();
       } else {
-        // Node.js: read from file system
         const fs = await import('fs');
         const path = await import('path');
 
@@ -180,7 +177,6 @@ export class SvgAssetLoader {
         svgText = fs.readFileSync(filePath, 'utf-8');
       }
 
-      // Parse viewBox to get dimensions
       const viewBoxMatch = svgText.match(
         /viewBox\s*=\s*"[\d.-]+\s+[\d.-]+\s+([\d.-]+)\s+([\d.-]+)"/i
       );
@@ -188,15 +184,14 @@ export class SvgAssetLoader {
         ? { width: parseFloat(viewBoxMatch[1] || "100"), height: parseFloat(viewBoxMatch[2] || "100") }
         : { width: 100, height: 100 };
 
-      // Load image from cache
+      // Create image from already-fetched SVG text (single request, no duplicate fetch)
       const cache = getSvgImageCache();
-      const image = await cache.getImageFromUrl(letterPath);
+      const image = await cache.getImage(svgText, letterPath);
 
       const asset: LetterAsset = { image, dimensions };
       this.assets.letters.set(letterPath, asset);
       return asset;
     } catch (error) {
-      // Only log in main thread (avoid flooding worker console)
       if (typeof window !== "undefined") {
         console.warn(`[SvgAssetLoader] Failed to load letter ${letterPath}:`, error);
       }

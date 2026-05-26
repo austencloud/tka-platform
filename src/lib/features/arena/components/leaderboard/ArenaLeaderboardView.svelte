@@ -46,9 +46,8 @@
     }
   });
 
-  function handleSelect(entryId: string) {
+  function handleSelect(_entryId: string) {
     // Future: navigate to detail view
-    console.log("[Arena] Selected entry:", entryId);
   }
 </script>
 

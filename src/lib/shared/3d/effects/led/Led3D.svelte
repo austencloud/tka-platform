@@ -52,9 +52,6 @@
   const centroid = new Vector3();
   const avgColor = new Color();
 
-  // DEBUG: track initialization
-  let debugLogCount = 0;
-
   useTask(() => {
     if (!enabled || tips.length === 0) {
       if (lightHandle && lightManager) {
@@ -73,17 +70,10 @@
     if (!initialized) {
       renderer.initialize(s, materialOptions);
       initialized = true;
-      console.log(`[Led3D:${propId}] Initialized with scene. Tips: ${tips.length}`);
     }
 
     const cam = camera.current;
     if (!cam) return;
-
-    // DEBUG: log first few frames
-    if (debugLogCount < 3) {
-      debugLogCount++;
-      console.log(`[Led3D:${propId}] Frame ${debugLogCount}: ${tips.length} tips, pos:`, tips[0]?.position);
-    }
 
     const now = performance.now() / 1000;
     renderer.update(tips, cam, now);

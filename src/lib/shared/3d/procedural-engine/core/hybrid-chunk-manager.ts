@@ -87,11 +87,7 @@ export class HybridChunkManager extends ChunkManager {
 
       this.useGPUMode = await this.gpuGenerator.init();
 
-      if (this.useGPUMode) {
-        console.log("[HybridChunkManager] GPU mode enabled");
-      } else {
-        console.log("[HybridChunkManager] GPU unavailable, using workers");
-      }
+      // GPU mode status determined by this.useGPUMode
     } catch (error) {
       console.warn("[HybridChunkManager] GPU init failed:", error);
       this.useGPUMode = false;

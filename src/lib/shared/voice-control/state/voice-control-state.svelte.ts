@@ -64,7 +64,6 @@ function createVoiceControlState() {
       detectorState = "listening";
       commandModeTimer = null;
       try { sessionStorage.removeItem(COMMAND_MODE_KEY); } catch { /* SSR / private browsing */ }
-      console.log("[HeyTika] Command mode timed out");
       onCommandModeExpired?.();
     }, COMMAND_MODE_TIMEOUT_MS);
   }

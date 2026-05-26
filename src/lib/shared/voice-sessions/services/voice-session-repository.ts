@@ -163,9 +163,6 @@ export async function enforceSessionLimit(): Promise<number> {
       deleted++;
     }
 
-    console.log(
-      `[VoiceSessionRepository] Enforced session limit: deleted ${deleted} oldest sessions`,
-    );
     return deleted;
   } catch (error) {
     console.error(

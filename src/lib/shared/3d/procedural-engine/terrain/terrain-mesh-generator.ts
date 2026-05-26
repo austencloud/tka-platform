@@ -158,15 +158,6 @@ export function createTerrainMesh(terrainData: TerrainData): TerrainMeshResult {
 	const boundsWidth = worldDimensions.width;
 	const boundsDepth = worldDimensions.depth;
 
-	console.log(`[terrain-mesh-generator] Creating terrain mesh (1:1 METER SCALE)`);
-	console.log(`[terrain-mesh-generator] Heightmap: ${width}x${height}`);
-	console.log(
-		`[terrain-mesh-generator] Elevation: ${minElevation.toFixed(1)}m to ${maxElevation.toFixed(1)}m (${(maxElevation - minElevation).toFixed(1)}m range)`,
-	);
-	console.log(
-		`[terrain-mesh-generator] Size: ${boundsWidth.toFixed(0)}m x ${boundsDepth.toFixed(0)}m`,
-	);
-
 	const geometry = new BufferGeometry();
 	const vertexCount = width * height;
 	const vertices = new Float32Array(vertexCount * 3);

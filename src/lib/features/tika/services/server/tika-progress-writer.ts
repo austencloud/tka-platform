@@ -164,9 +164,6 @@ export async function writeCompletions(
 
   try {
     await batch.commit();
-    console.log(
-      `[tika-progress-writer] Wrote ${valid.length} verified concepts for user ${userId}: ${valid.join(", ")}`
-    );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[tika-progress-writer] Firestore write failed: ${message}`);

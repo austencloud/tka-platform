@@ -8,8 +8,7 @@
 
   const { children }: Props = $props();
 
-  const ctx = interactivity();
-  console.log('[ComposerInteractivity] initialized', { interactiveObjects: ctx.interactiveObjects, enabled: ctx.enabled.current });
+  interactivity();
 </script>
 
 {@render children()}

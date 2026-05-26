@@ -85,7 +85,6 @@ export class UserFeatureFlagPersister {
         (localOverrides.moduleOrder && localOverrides.moduleOrder.length > 0);
 
       if (hasLocalData) {
-        console.log(`${LOG_PREFIX} Migrating localStorage user overrides to Firestore for ${userId}`);
         await this.writeToFirestore(userId, localOverrides);
       }
 

@@ -150,7 +150,6 @@ export class VegetationManager {
 
         this.initCategoryBatches();
         this.useNewSystem = true;
-        console.log("[VegetationManager] Initialized with new 329-model system");
       } catch (error) {
         console.warn("[VegetationManager] Failed to initialize new model system, falling back to legacy", error);
         await this.initLegacySystem();
@@ -200,20 +199,17 @@ export class VegetationManager {
           if (cachedModel) {
             geometry = cachedModel.geometry;
             material = cachedModel.material;
-            console.log(`[VegetationManager] Using GLB model for ${category}: ${models[0]!.id}`);
           } else {
             // Model not cached yet, fall back to procedural
             const procedural = this.getProceduralGeometryForCategory(category);
             geometry = procedural.geometry;
             material = procedural.material;
-            console.log(`[VegetationManager] Model not cached for ${category}, using procedural`);
           }
         } else {
           // No models in this category, use procedural
           const procedural = this.getProceduralGeometryForCategory(category);
           geometry = procedural.geometry;
           material = procedural.material;
-          console.log(`[VegetationManager] No models for ${category}, using procedural`);
         }
       } else {
         // Registry not ready, use procedural

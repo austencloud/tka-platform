@@ -392,17 +392,9 @@ export class ChunkManager {
 
     candidates.sort((a, b) => a.state.lastAccessTime - b.state.lastAccessTime);
 
-    let evicted = 0;
     for (const { key, state } of candidates) {
       if (this.totalMemoryBytes <= budgetBytes) break;
       this.unloadChunk(key, state);
-      evicted++;
-    }
-
-    if (evicted > 0) {
-      const usedMB = (this.totalMemoryBytes / 1024 / 1024).toFixed(1);
-      const budgetMB = this.config.memoryBudgetMB;
-      console.log(`[ChunkManager] Evicted ${evicted} chunks for memory (${usedMB}MB / ${budgetMB}MB)`);
     }
   }
 

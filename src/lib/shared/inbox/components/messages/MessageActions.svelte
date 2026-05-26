@@ -51,9 +51,7 @@
   // which doesn't reliably fire inside <dialog> elements opened with .show()
   $effect(() => {
     if (!wrapperEl) return;
-    console.log("[MessageActions] attaching direct click listener to wrapper, isMobile:", isMobile);
     const handler = (e: MouseEvent) => {
-      console.log("[MessageActions] DIRECT click handler fired");
       handleClick(e);
     };
     wrapperEl.addEventListener("click", handler);
@@ -93,14 +91,12 @@
 
   // Click to toggle reactions on desktop (supplements hover)
   function handleClick(event: MouseEvent) {
-    console.log("[MessageActions] handleClick fired - isMobile:", isMobile, "showReactions:", showReactions, "target:", (event.target as HTMLElement).tagName, (event.target as HTMLElement).className);
     if (isMobile) return;
     // Don't toggle if clicking inside the reaction bar itself
     const target = event.target as HTMLElement;
     if (target.closest(".reaction-bar")) return;
 
     showReactions = !showReactions;
-    console.log("[MessageActions] showReactions toggled to:", showReactions);
     if (!showReactions) showMoreMenu = false;
   }
 

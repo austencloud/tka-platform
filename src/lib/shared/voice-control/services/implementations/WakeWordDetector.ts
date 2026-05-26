@@ -105,7 +105,6 @@ export class WakeWordDetector {
     this.consecutiveSilentRestarts = 0;
     this.warmUpAudioContext();
     this.startRecognition();
-    console.log("[HeyTika] Wake word detector started");
   }
 
   stop(): void {
@@ -125,7 +124,6 @@ export class WakeWordDetector {
       this.gestureHandler = null;
     }
     this.setState("idle");
-    console.log("[HeyTika] Wake word detector stopped");
   }
 
   isListening(): boolean {
@@ -146,7 +144,6 @@ export class WakeWordDetector {
     if (enabled && !wasCommandMode) {
       this.playCommandModeChime();
     }
-    console.log(`[HeyTika] Command mode: ${enabled ? "ON" : "OFF"}`);
   }
 
   isCommandMode(): boolean {
@@ -228,7 +225,6 @@ export class WakeWordDetector {
           const stripped = this.stripWakePhrase(transcript);
           const commandText = stripped !== null ? stripped : transcript;
           if (commandText.length > 0) {
-            console.log(`[HeyTika] Command mode: "${commandText}" (confidence: ${confidence.toFixed(2)})`);
             this.emitCommand(commandText, confidence);
           }
         } else {
@@ -236,10 +232,8 @@ export class WakeWordDetector {
           const wakeResult = this.checkWakePhrase(transcript);
           if (wakeResult === "command_with_wake") {
             const command = this.stripWakePhrase(transcript)!;
-            console.log(`[HeyTika] Wake word + command: "${command}" (confidence: ${confidence.toFixed(2)})`);
             this.emitCommand(command, confidence);
           } else if (wakeResult === "wake_only") {
-            console.log("[HeyTika] Wake word detected (no command) - entering command mode");
             this.emitWakeWordOnly();
           }
           // Otherwise: not a wake word transcript, ignore
@@ -294,7 +288,6 @@ export class WakeWordDetector {
       // Session had speech - restart quickly to keep the conversation flowing.
       // Reset silent counter since the user is actively speaking.
       this.consecutiveSilentRestarts = 0;
-      console.log("[HeyTika] Session had results, restarting quickly");
       setTimeout(() => {
         if (this.intentionallyStopped || !this.listening) return;
         this.startRecognition();
@@ -306,10 +299,6 @@ export class WakeWordDetector {
     this.consecutiveSilentRestarts++;
 
     if (this.consecutiveSilentRestarts > MAX_CONSECUTIVE_SILENT_RESTARTS) {
-      console.log(
-        `[HeyTika] ${MAX_CONSECUTIVE_SILENT_RESTARTS} consecutive silent sessions. ` +
-        "Pausing auto-restart - tap mic to resume."
-      );
       this.listening = false;
       this.setState("idle");
       return;
@@ -318,11 +307,6 @@ export class WakeWordDetector {
     // Use a longer delay for silent restarts to avoid the rapid on/off cycle
     // that causes browser audio indicators on mobile.
     const delay = SILENCE_RESTART_DELAY_MS;
-    console.log(
-      `[HeyTika] Silent session, restarting in ${delay}ms ` +
-      `(silent restart ${this.consecutiveSilentRestarts}/${MAX_CONSECUTIVE_SILENT_RESTARTS})`
-    );
-
     setTimeout(() => {
       if (this.intentionallyStopped || !this.listening) return;
       this.startRecognition();

@@ -70,15 +70,6 @@ export class TerrainMeshGenerator {
 		const boundsWidth = worldDimensions.width;
 		const boundsDepth = worldDimensions.depth;
 
-		console.log(`[TerrainMeshGenerator] Creating terrain mesh (1:1 METER SCALE)`);
-		console.log(`[TerrainMeshGenerator] Heightmap: ${width}x${height}`);
-		console.log(
-			`[TerrainMeshGenerator] Elevation: ${minElevation.toFixed(1)}m to ${maxElevation.toFixed(1)}m (${(maxElevation - minElevation).toFixed(1)}m range)`
-		);
-		console.log(
-			`[TerrainMeshGenerator] Size: ${boundsWidth.toFixed(0)}m x ${boundsDepth.toFixed(0)}m`
-		);
-
 		// Create geometry
 		const geometry = new BufferGeometry();
 		const vertexCount = width * height;

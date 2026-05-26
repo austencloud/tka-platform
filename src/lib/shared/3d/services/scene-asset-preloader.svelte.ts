@@ -7,7 +7,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 // the network entirely.
 Cache.enabled = true;
 
-const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
+import { R2_CDN } from "../constants/r2-cdn";
 
 const FOREST_URLS = [
 	`${R2_CDN}/models/forest/Tree_1_A_Color1.gltf`,

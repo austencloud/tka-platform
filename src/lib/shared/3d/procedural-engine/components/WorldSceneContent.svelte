@@ -16,6 +16,7 @@
 
   import { onMount, onDestroy, getContext } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
+  import { R2_CDN } from "../../constants/r2-cdn";
 
   // Physics
   import {
@@ -381,17 +382,6 @@
           const chunkWorldX = Math.round(chunk.chunkX * chunkSize);
           const chunkWorldZ = Math.round(chunk.chunkZ * chunkSize);
 
-          // DEBUG: Check what drainage data we have
-          const hasDrainage = !!state.meshData.drainage;
-          const hasWaterMask = !!state.meshData.drainage?.waterMask;
-          const waterMaskLength = state.meshData.drainage?.waterMask?.length ?? 0;
-          const hasWater = state.meshData.drainage?.waterMask
-            ? Array.from(state.meshData.drainage.waterMask).some((v) => v > 0.3)
-            : false;
-          console.log(
-            `[Chunk ${chunk.chunkX},${chunk.chunkZ}] Drainage: ${hasDrainage}, WaterMask: ${hasWaterMask}, Length: ${waterMaskLength}, HasWater: ${hasWater}, Veg: ${state.meshData.vegetation.length}`
-          );
-
           // Filter vegetation to exclude water areas
           let filteredVegetation = state.meshData.vegetation;
           if (state.meshData.drainage?.waterMask) {
@@ -413,12 +403,6 @@
               const water = waterMask[idx] ?? 0;
               return water < 0.3;
             });
-
-            if (filteredVegetation.length < state.meshData.vegetation.length) {
-              console.log(
-                `[Chunk ${chunk.chunkX},${chunk.chunkZ}] Filtered ${state.meshData.vegetation.length - filteredVegetation.length} vegetation items in water`
-              );
-            }
           }
 
           vegetationManager.addChunkVegetation(key, chunkWorldX, chunkWorldZ, filteredVegetation);
@@ -501,7 +485,7 @@
         get scene() { return rawScene; },
         get camera() { return camera.current; },
       };
-      console.log("[Archive] Debug state exposed on window.__archiveDebug");
+      // Debug state exposed on window.__archiveDebug
     }
 
     // Place campground objects (spawn clearing was already set above)
@@ -679,7 +663,6 @@
     // Logging disabled
 
     // Model paths (R2 CDN)
-    const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
     const MODELS = {
       firePit: `${R2_CDN}/models/camping/campfire-pit.glb`,
       tent: `${R2_CDN}/models/camping/tent-canvas.glb`,

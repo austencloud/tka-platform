@@ -200,7 +200,6 @@
   function animateReassemble(
     assembled: { left: number; top: number; width: number; height: number }
   ) {
-    console.log(`[DISASM] ${performance.now().toFixed(1)}ms - animateReassemble() START`);
     const heroRect = heroSlotEl.getBoundingClientRect();
     const leftRect = smallLeftSlotEl.getBoundingClientRect();
     const rightRect = smallRightSlotEl.getBoundingClientRect();
@@ -264,7 +263,6 @@
     // a progress bar that wasn't in the FLIP end state.
 
     mainAnim.finished.then(() => {
-      console.log(`[DISASM] ${performance.now().toFixed(1)}ms - reassemble FLIP finished. Cancelling animations, calling oncomplete`);
       cancelAllAnimations();
       oncomplete();
     });
@@ -294,11 +292,8 @@
         return;
       }
 
-      console.log(`[DISASM] ${performance.now().toFixed(1)}ms - $effect fired, direction="${dir}". Scheduling rAF`);
       const frameId = requestAnimationFrame(() => {
-        console.log(`[DISASM] ${performance.now().toFixed(1)}ms - rAF for ${dir}. Elements present: view=${!!viewElement} hero=${!!heroSlotEl} left=${!!smallLeftSlotEl} right=${!!smallRightSlotEl}`);
         if (!viewElement || !heroSlotEl || !smallLeftSlotEl || !smallRightSlotEl) {
-          console.log(`[DISASM] ${performance.now().toFixed(1)}ms - Missing elements! Calling oncomplete immediately`);
           oncomplete();
           return;
         }

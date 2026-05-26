@@ -349,13 +349,11 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
         // Lazy session creation - only when authenticated and online.
         // A real Firestore session is best-effort; autosave never depends on it.
         if (authState.isAuthenticated && networkStatusState.isOnline) {
-          try {
-            sessionManager = new SessionManager();
-            await sessionManager.createSession();
-            logger.success("Firestore session created");
-          } catch (sessionError) {
-            logger.warn("[CreateModule] Session creation deferred:", sessionError);
-          }
+          sessionManager = new SessionManager();
+          sessionManager.createSession().then(
+            () => logger.success("Firestore session created"),
+            (e) => logger.warn("[CreateModule] Session creation deferred:", e)
+          );
         } else {
           logger.info("Session creation skipped (not authenticated or offline)");
         }

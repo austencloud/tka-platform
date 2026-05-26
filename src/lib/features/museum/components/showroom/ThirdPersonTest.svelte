@@ -97,7 +97,6 @@
       player.setMaxCamDistance(8);
       player.setPlayerSpeed(5);
 
-      console.log("[3P Test] Initialized - WASD move, mouse orbit, V toggle 1st/3rd, Shift run, Space jump");
     } catch (err) {
       console.error("[3P Test] Failed to init player controller:", err);
     }

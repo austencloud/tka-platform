@@ -7,9 +7,7 @@ export async function signInWithDesktopOAuth(): Promise<void> {
 	const { open } = await import("@tauri-apps/plugin-shell");
 	const { listen } = await import("@tauri-apps/api/event");
 
-	console.log("[DesktopOAuth] Starting OAuth server...");
 	const port: number = await invoke("start_oauth_server");
-	console.log("[DesktopOAuth] Server started on port", port);
 
 	const redirectUri = `http://127.0.0.1:${port}`;
 	const nonce = crypto.randomUUID();
@@ -33,25 +31,20 @@ export async function signInWithDesktopOAuth(): Promise<void> {
 		rejectToken!(new Error("OAuth timed out after 2 minutes"));
 	}, 120_000);
 
-	console.log("[DesktopOAuth] Registering event listener...");
 	const unlisten = await listen<{ id_token: string }>(
 		"oauth-callback",
 		(event) => {
 			clearTimeout(timeout);
-			console.log("[DesktopOAuth] Received oauth-callback event");
 			resolveToken!(event.payload.id_token);
 		}
 	);
-	console.log("[DesktopOAuth] Event listener registered, opening browser...");
 
 	await open(authUrl.toString());
 
 	try {
 		const idToken = await tokenPromise;
-		console.log("[DesktopOAuth] Got token, signing in with Firebase...");
 		const credential = GoogleAuthProvider.credential(idToken);
 		await signInWithCredential(auth, credential);
-		console.log("[DesktopOAuth] Firebase sign-in successful!");
 	} catch (err) {
 		console.error("[DesktopOAuth] Sign-in failed:", err);
 		throw err;

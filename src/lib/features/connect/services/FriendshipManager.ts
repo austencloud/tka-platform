@@ -88,7 +88,6 @@ export class FriendshipManager {
 		// Start watching their presence
 		this.presenceTracker.watchUser(userId);
 
-		console.log('[FriendshipManager] Added friend:', userId);
 	}
 
 	async removeFriend(userId: string): Promise<void> {
@@ -106,7 +105,6 @@ export class FriendshipManager {
 		// Stop watching their presence
 		this.presenceTracker.unwatchUser(userId);
 
-		console.log('[FriendshipManager] Removed friend:', userId);
 	}
 
 	isFriend(userId: string): boolean {
@@ -140,7 +138,6 @@ export class FriendshipManager {
 
 		await set(friendRef, friendData);
 
-		console.log('[FriendshipManager] Set nickname for:', userId, nickname);
 	}
 
 	async searchUsers(queryStr: string): Promise<UserSearchResult[]> {
@@ -292,7 +289,6 @@ export class FriendshipManager {
 			}
 		);
 
-		console.log('[FriendshipManager] Loaded friends');
 	}
 
 	destroy(): void {

@@ -116,8 +116,6 @@
     if (!bloomPreWarmed) {
       if (props.geometryReady) {
         bloomPreWarmed = true;
-        console.log("[PostProcess] Pre-warming bloom shaders behind overlay...");
-        const t0 = performance.now();
         gl.getSize(sizeVec);
         const dpr = gl.getPixelRatio();
         composer.setSize(Math.floor(sizeVec.x * dpr), Math.floor(sizeVec.y * dpr));
@@ -154,7 +152,6 @@
           perspCam.updateProjectionMatrix();
         }
 
-        console.log(`[PostProcess] Pre-warm complete: ${(performance.now() - t0).toFixed(0)}ms (absorbed by overlay)`);
         return;
       }
       // Geometry still loading - plain render

@@ -671,9 +671,8 @@
 
       try {
         await bridge.connect();
-        console.log("[Museum3DScene] MCP Game Bridge connected");
       } catch {
-        console.log("[Museum3DScene] MCP Game Bridge not available (run the MCP server to enable)");
+        // MCP Game Bridge not available
       }
     });
 

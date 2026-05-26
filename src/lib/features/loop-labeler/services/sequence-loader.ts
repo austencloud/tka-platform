@@ -53,7 +53,6 @@ export async function loadSequences(): Promise<SequenceEntry[]> {
 }
 
 export async function loadSequenceDetail(sourceRef: string): Promise<RawStepData[] | null> {
-  console.log(`[SequenceLoader] Loading detail from: ${sourceRef}`);
   try {
     const firestore = await getFirestoreInstance();
     const docSnap = await getDoc(doc(firestore, sourceRef));
@@ -64,15 +63,7 @@ export async function loadSequenceDetail(sourceRef: string): Promise<RawStepData
     }
 
     const data = docSnap.data();
-    const keys = Object.keys(data);
-    console.log(`[SequenceLoader] Doc fields: ${keys.join(", ")}`);
-    const steps = data["steps"] as Array<unknown> | undefined;
-    const sequence = data["sequence"] as Array<unknown> | undefined;
-    const startPos = data["startPosition"] || data["startingPosition"];
-    console.log(`[SequenceLoader] steps: ${steps?.length ?? 0}, sequence: ${sequence?.length ?? 0}, startPosition: ${!!startPos}, gridMode: ${data["gridMode"]}`);
-
     const result = convertToRawSequence(data);
-    console.log(`[SequenceLoader] Converted to ${result.length} raw elements`);
     return result;
   } catch (error) {
     console.error(`[SequenceLoader] Failed to load detail from ${sourceRef}:`, error);
@@ -101,7 +92,6 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
       ("blueAttributes" in firstStep || "beat" in firstStep || "word" in firstStep);
 
     if (isRawFormat) {
-      console.log(`[SequenceLoader] Using raw beats format (${beats.length} elements)`);
       // Already in the right format - validated by field checks above
       return beats as RawStepData[];
     }
@@ -111,7 +101,6 @@ function convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
       ("motions" in firstStep && "stepNumber" in firstStep);
 
     if (isLibraryBeatsFormat) {
-      console.log(`[SequenceLoader] Using library beats format (${beats.length} elements)`);
       return convertLibraryBeats(data, beats);
     }
   }

@@ -90,9 +90,6 @@ if (import.meta.hot) {
         messages = fresh;
       }
 
-      console.log(
-        `[i18n] ${locale} messages hot-reloaded ✓ (${Object.keys(fresh).length} keys)`
-      );
     }
   );
 }

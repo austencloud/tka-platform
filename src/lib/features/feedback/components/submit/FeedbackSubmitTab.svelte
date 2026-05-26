@@ -40,12 +40,6 @@
     // When keyboard appears (height > 0), enable input mode
     hasVirtualKeyboard = height > 0;
     keyboardHeight = height;
-    console.log('[FST] keyboardHeight:', height, 'isInputMode:', isInputMode);
-    const tab = document.querySelector('.submit-tab');
-    if (tab) {
-      const rect = tab.getBoundingClientRect();
-      console.log('[FST] tab rect:', { height: rect.height, bottom: rect.bottom });
-    }
   }
 </script>
 

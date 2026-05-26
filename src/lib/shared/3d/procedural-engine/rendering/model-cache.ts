@@ -35,8 +35,7 @@ export interface ModelDefinition {
 // LEGACY MODEL DEFINITIONS (for backward compatibility)
 // ============================================================================
 
-/** R2 CDN base URL for large assets */
-const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
+import { R2_CDN } from "../../constants/r2-cdn";
 
 /**
  * @deprecated Use ModelRegistry instead

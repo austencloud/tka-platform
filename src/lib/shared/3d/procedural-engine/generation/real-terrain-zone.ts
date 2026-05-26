@@ -108,11 +108,6 @@ export function createRealTerrainZone(data: ImportedTerrainData): RealTerrainZon
   const centerX = (minX + maxX) / 2;
   const centerZ = (minZ + maxZ) / 2;
 
-  console.log(`[RealTerrainZone] Creating zone "${name}"`);
-  console.log(`[RealTerrainZone] Bounds: X(${minX.toFixed(0)} to ${maxX.toFixed(0)}), Z(${minZ.toFixed(0)} to ${maxZ.toFixed(0)})`);
-  console.log(`[RealTerrainZone] Center: (${centerX.toFixed(0)}, ${centerZ.toFixed(0)})`);
-  console.log(`[RealTerrainZone] Dimensions: ${actualWidth.toFixed(0)} x ${actualDepth.toFixed(0)}`);
-
   return {
     name,
     boundary: boundaryWorld,

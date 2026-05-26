@@ -299,7 +299,6 @@ function logViolations(
   violations: DesignViolation[],
 ): void {
   if (violations.length === 0) {
-    console.log("[MuseumDesignValidator] All rooms pass design checks.");
     return;
   }
 
@@ -321,7 +320,7 @@ function logViolations(
     console.group(`${name} (${roomViolations.length})`);
     for (const v of roomViolations) {
       const icon = severityIcon[v.severity];
-      console.log(`[${icon}] ${v.rule}: ${v.message}`);
+      console.warn(`[${icon}] ${v.rule}: ${v.message}`);
     }
     console.groupEnd();
   }

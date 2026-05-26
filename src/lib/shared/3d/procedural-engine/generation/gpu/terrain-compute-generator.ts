@@ -82,7 +82,6 @@ export class TerrainComputeGenerator {
   private async doInit(): Promise<boolean> {
     const gpuAvailable = await isWebGPUAvailable();
     if (!gpuAvailable) {
-      console.log("[TerrainCompute] WebGPU not available, using CPU fallback");
       return false;
     }
 
@@ -105,7 +104,6 @@ export class TerrainComputeGenerator {
       );
 
       this.isInitialized = true;
-      console.log("[TerrainCompute] GPU compute initialized successfully");
       return true;
     } catch (error) {
       console.warn("[TerrainCompute] GPU init failed:", error);

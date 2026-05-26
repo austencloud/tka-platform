@@ -80,7 +80,6 @@ export function loadScene3DState(): Partial<Scene3DPersistedState> {
     if (state.cameraPosition) {
       const maxCoord = Math.max(...state.cameraPosition.map(Math.abs));
       if (maxCoord > 20) {
-        console.log('[scene3d-persister] Clearing legacy camera position:', state.cameraPosition);
         delete state.cameraPosition;
         delete state.cameraTarget;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));

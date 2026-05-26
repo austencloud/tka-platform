@@ -13,8 +13,6 @@
 
   const { editorState, onSave }: Props = $props();
 
-  console.log('[GenericSceneEditor] MOUNTED');
-
   const _tempVec = new Vector3();
   const _worldPos = new Vector3();
 

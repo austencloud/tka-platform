@@ -224,8 +224,6 @@ export class WebGLLedRenderer {
 		const gl = this.gl;
 
 		if (this._diagFrameCount < 3) {
-			const es = computeEffectScale(input.canvasWidth, input.canvasHeight);
-			console.log(`[led-render-diag] frame=${this._diagFrameCount} canvasW=${input.canvasWidth} canvasH=${input.canvasHeight} displayW=${this.displayWidth} displayH=${this.displayHeight} effectScale=${es.toFixed(3)} glowRadius=${(config.glowRadius * 60 * es).toFixed(1)} tips=${input.tips.length} bloomIntensity=${config.bloomIntensity}`);
 			this._diagFrameCount++;
 		}
 

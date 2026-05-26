@@ -199,7 +199,6 @@ export class KeyboardShortcutManager {
     }
 
     // Recover context from active module if still at default "global"
-    // due to module-init race condition (MainInterface "Module null after init")
     if (this.currentContext === "global") {
       const module = getActiveModule();
       if (module) {

@@ -202,7 +202,6 @@
   // Lazy-fetch full sequence data when current sequence changes
   $effect(() => {
     if (currentSequence && !currentSequence.fullMetadata?.sequence) {
-      console.log(`[LOOPLabeler] Fetching detail for "${currentSequence.word}" (sourceRef: ${currentSequence.sourceRef ?? "MISSING"})`);
       loopLabelerController.ensureSequenceDetail();
     }
   });

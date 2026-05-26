@@ -80,12 +80,10 @@ export function createVillageState(
 
 	// Seed initial sequences into the first N avatars
 	const entities = orchestrator.entities;
-	console.log(`[Village] Seeding ${seedSequences.length} sequences into ${entities.length} avatars`);
 	for (let i = 0; i < Math.min(seedSequences.length, entities.length); i++) {
 		const seq = seedSequences[i];
 		const entity = entities[i];
 		if (!seq || !entity) continue;
-		console.log(`[Village] Seeded "${seq.word ?? seq.id}" (${seq.steps?.length ?? 0} steps) into ${entity.identity.name}`);
 		entity.knowledge.knownSequences.set(seq.id ?? `seed-${i}`, {
 			sequenceId: seq.id ?? `seed-${i}`,
 			sequenceData: seq,

@@ -217,7 +217,6 @@ if (typeof window !== "undefined") {
   window.tikaPictographCache = tikaPictographCache;
   window.clearTikaCache = async () => {
     await tikaPictographCache.clear();
-    console.log("[TikaPictographCache] Cache cleared. Refresh the page to reload images.");
     return "Cache cleared";
   };
 }

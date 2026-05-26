@@ -1366,15 +1366,6 @@ export class AnimationRenderLoop {
           : "off";
         const trailsOn = hasTrailTips(params.tipEffectMap);
         const trailCount = this.reusableBlueTrailPoints.length + this.reusableRedTrailPoints.length;
-        console.log(
-          `[FPS] ${avgFps.toFixed(1)}fps over ${elapsed.toFixed(0)}ms ` +
-          `(${this.fpsWindowFrames} frames) | ` +
-          `frame: min=${this.fpsWindowMinFrameMs === Infinity ? "-" : this.fpsWindowMinFrameMs.toFixed(1)}ms ` +
-          `max=${this.fpsWindowMaxFrameMs.toFixed(1)}ms | ` +
-          `render: avg=${avgRender.toFixed(1)}ms max=${this.fpsWindowMaxRenderMs.toFixed(1)}ms | ` +
-          `drops=${this.fpsWindowDrops} longtasks=${this.fpsWindowLongTaskMs.toFixed(0)}ms | ` +
-          `fire=${fireState} trails=${trailsOn ? trailCount : "off"} tier=${this.previousQualityTier ?? "?"}`
-        );
         this.fpsWindowStart = currentTime;
         this.fpsWindowFrames = 0;
         this.fpsWindowMinFrameMs = Infinity;

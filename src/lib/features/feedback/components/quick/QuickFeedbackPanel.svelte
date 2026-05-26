@@ -225,14 +225,6 @@
           onInputFocusChange={(focused) => { isInputFocused = focused; }}
           onKeyboardHeightChange={(height) => {
             keyboardHeight = height;
-            console.log('[QFP] keyboardHeight set to:', height, 'isInputMode:', isInputMode);
-            const panel = document.querySelector('.quick-feedback-panel');
-            if (panel) {
-              const rect = panel.getBoundingClientRect();
-              console.log('[QFP] panel rect:', { height: rect.height, bottom: rect.bottom, top: rect.top });
-              console.log('[QFP] window.innerHeight:', window.innerHeight);
-              console.log('[QFP] visualViewport height:', window.visualViewport?.height, 'offsetTop:', window.visualViewport?.offsetTop);
-            }
           }}
         />
       </main>

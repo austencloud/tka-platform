@@ -78,8 +78,6 @@ export class ModelRegistry {
       // Index models by category
       this.indexModels();
       this.initialized = true;
-
-      console.log(`[ModelRegistry] Initialized with ${this.manifest!.totalModels} models`);
     } catch (error) {
       console.error("[ModelRegistry] Failed to initialize:", error);
       throw error;
@@ -188,11 +186,8 @@ export class ModelRegistry {
 
   async preloadCategory(category: VegetationCategory): Promise<void> {
     const models = this.getModelsInCategory(category);
-    console.log(`[ModelRegistry] Preloading ${models.length} models for category: ${category}`);
     const promises = models.map(m => this.loadModel(m.id));
-    const results = await Promise.all(promises);
-    const loaded = results.filter(r => r !== undefined).length;
-    console.log(`[ModelRegistry] Loaded ${loaded}/${models.length} models for ${category}`);
+    await Promise.all(promises);
   }
 
   getCachedModel(modelId: string): CachedModel | undefined {

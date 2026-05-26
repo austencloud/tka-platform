@@ -61,8 +61,6 @@ export function createPostHogFlagAdminService(
           console.error(`[PostHogFeatureFlagService] Failed to persist role override:`, err);
           toast.error("Failed to save role change. Other users won't see this update.");
         });
-        console.log(`[PostHogFeatureFlagService] Flag ${flagKey} minimumRole set to: ${updates.minimumRole} (persisted to Firestore)`);
-
         if (typeof updates.enabled !== "boolean") {
           return { action: "role_updated", flagKey };
         }
@@ -109,7 +107,6 @@ export function createPostHogFlagAdminService(
           }
 
           const result = await response.json();
-          console.log(`[PostHogFeatureFlagService] Flag ${flagKey} ${result.action}:`, result.flag);
           reloadFeatureFlags();
 
           let dashboardUrl: string | undefined;

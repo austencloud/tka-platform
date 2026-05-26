@@ -107,7 +107,6 @@ export class InviteHandler {
 		// Watch for response
 		this.watchInviteResponse(toUserId, inviteId);
 
-		console.log('[InviteHandler] Sent invite:', inviteId, 'to:', toUserId);
 		return inviteId;
 	}
 
@@ -126,7 +125,6 @@ export class InviteHandler {
 		await remove(inviteRef);
 
 		this._sentInvites = this._sentInvites.filter((i) => i.inviteId !== inviteId);
-		console.log('[InviteHandler] Cancelled invite:', inviteId);
 	}
 
 	async acceptInvite(inviteId: string): Promise<string> {
@@ -164,7 +162,6 @@ export class InviteHandler {
 		// Remove from pending
 		this._pendingInvites = this._pendingInvites.filter((i) => i.inviteId !== inviteId);
 
-		console.log('[InviteHandler] Accepted invite:', inviteId);
 		return invite.sessionId;
 	}
 
@@ -195,7 +192,6 @@ export class InviteHandler {
 		// Remove from pending
 		this._pendingInvites = this._pendingInvites.filter((i) => i.inviteId !== inviteId);
 
-		console.log('[InviteHandler] Declined invite:', inviteId);
 	}
 
 	dismissInvite(inviteId: string): void {
@@ -330,7 +326,6 @@ export class InviteHandler {
 		// Start expiry checker
 		this.startExpiryChecker();
 
-		console.log('[InviteHandler] Started listening');
 	}
 
 	stopListening(): void {
@@ -345,7 +340,6 @@ export class InviteHandler {
 		}
 
 		this.invitesRef = null;
-		console.log('[InviteHandler] Stopped listening');
 	}
 
 	destroy(): void {

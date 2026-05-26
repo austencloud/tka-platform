@@ -347,28 +347,22 @@
 
     const wasLocked = isPointerLocked;
     isPointerLocked = document.pointerLockElement === canvas;
-    console.log(`[CameraCtrl] POINTERLOCK CHANGE: wasLocked=${wasLocked} isLocked=${isPointerLocked} mode=${mode} element=${document.pointerLockElement?.tagName ?? 'NONE'}`);
 
     // If we lost pointer lock, return to orbit — unless orbit is excluded
     // from allowedModes (e.g., Scene Lab walk mode). In that case stay in
     // the current game mode; the "click to look around" hint reappears.
     if (wasLocked && !isPointerLocked && mode !== CameraMode.ORBIT) {
       if (!allowedModes || allowedModes.includes(CameraMode.ORBIT)) {
-        console.log(`[CameraCtrl] LOST POINTER LOCK → returnToOrbit()`);
         returnToOrbit();
-      } else {
-        console.log(`[CameraCtrl] LOST POINTER LOCK — orbit excluded from allowedModes, staying in ${mode}`);
       }
     }
   }
 
   function handleCanvasClick() {
-    console.log(`[CameraCtrl] CANVAS CLICK: enabled=${enabled} mode=${mode}`);
-    if (!enabled) { console.log(`[CameraCtrl] CLICK IGNORED: not enabled`); return; }
+    if (!enabled) { return; }
 
     // In orbit mode, clicking enters third-person mode
     if (mode === CameraMode.ORBIT) {
-      console.log(`[CameraCtrl] SWITCHING: ORBIT → THIRD_PERSON`);
       cameraPreferences.setModeForDestination(destinationId, CameraMode.THIRD_PERSON);
       mode = CameraMode.THIRD_PERSON;
     }
@@ -377,10 +371,8 @@
     props.onModeChange?.(mode);
 
     const canLock = isGameMode(mode) && inputCaps.canUsePointerLock();
-    console.log(`[CameraCtrl] POINTER LOCK CHECK: isGameMode=${isGameMode(mode)} canUsePointerLock=${inputCaps.canUsePointerLock()} → requesting=${canLock}`);
     if (canLock) {
       const canvas = cachedCanvas ?? renderer.current?.domElement;
-      console.log(`[CameraCtrl] REQUESTING POINTER LOCK on canvas=${!!canvas}`);
       if (canvas?.isConnected) {
         try { canvas.requestPointerLock(); } catch { /* canvas detached during navigation */ }
       }
@@ -429,7 +421,6 @@
         }
       });
     }
-    console.log(`[CameraCtrl] DETACHED`);
   }
 
   $effect(() => {
@@ -437,7 +428,6 @@
       // Defer attachment to next microtask so the Svelte effect cascade
       // (ceiling toggle, Avatar3D visibility, etc.) completes first.
       // This prevents event listener setup from blocking the flip animation frame.
-      console.log(`[CameraCtrl] ENABLING (deferred): mode=${mode} destId=${destinationId}`);
       queueMicrotask(() => {
         if (!enabled || attached) return; // guard: state may have changed
         const canvas = findCanvas();
@@ -462,8 +452,6 @@
   });
 
   function attachToCanvas(canvas: HTMLCanvasElement) {
-    console.log(`[CameraCtrl] ATTACHED: canvas=${canvas.tagName} ${canvas.width}x${canvas.height}`);
-
     // Cache for use in onDestroy (renderer.current may be gone by then)
     cachedCanvas = canvas;
 
@@ -502,7 +490,6 @@
   }
 
   onDestroy(() => {
-    console.log(`[CameraCtrl] DESTROY: mode=${mode} destId=${destinationId}`);
     detachFromCanvas();
   });
 

@@ -38,7 +38,6 @@ export class LOOPLabelsFirebaseRepository {
       );
 
       this.syncStatus = "synced";
-      console.log(`[LOOP Labels] Saved "${word}" to Firebase`);
     } catch (error) {
       console.error(`[LOOP Labels] Failed to save "${word}" to Firebase:`, error);
       this.syncStatus = "error";
@@ -56,7 +55,6 @@ export class LOOPLabelsFirebaseRepository {
       });
 
       this.syncStatus = "synced";
-      console.log(`[LOOP Labels] Deleted "${word}" from Firebase`);
     } catch (error) {
       console.error(`[LOOP Labels] Failed to delete "${word}" from Firebase:`, error);
       this.syncStatus = "error";
@@ -70,18 +68,12 @@ export class LOOPLabelsFirebaseRepository {
     // Load and merge data from Firebase and localStorage
     this.loadAndMergeLabels()
       .then((labels) => {
-        console.log(
-          `[LOOP Labels] Loaded ${labels.size} labels (Firebase + localStorage merge)`
-        );
         callback(labels);
       })
       .catch((error) => {
         console.error("[LOOP Labels] Failed to load from Firebase:", error);
         // Fall back to localStorage only
         const localLabels = this.loadFromLocalStorage();
-        console.log(
-          `[LOOP Labels] Falling back to localStorage: ${localLabels.size} labels`
-        );
         callback(localLabels);
       });
 
@@ -109,9 +101,6 @@ export class LOOPLabelsFirebaseRepository {
 
     // Sync any local-only labels to Firebase (recovery)
     if (localOnlyWords.length > 0) {
-      console.log(
-        `[LOOP Labels] Found ${localOnlyWords.length} local-only labels, syncing to Firebase...`
-      );
       for (const word of localOnlyWords) {
         const label = localLabels.get(word)!;
         try {

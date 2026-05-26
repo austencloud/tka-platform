@@ -443,11 +443,6 @@ export class ShortCodeManager {
             map.set(doc._id, doc as ShortCodeData);
           }
         }
-        console.log(
-          `[ShortCode] Loaded ${source.label} (${map.size} codes, exported ${
-            envelope._meta?.exportedAt ?? "unknown"
-          })`
-        );
         return map;
       } catch (error) {
         console.warn(`[ShortCode] Failed to load ${source.label}:`, error);
@@ -462,23 +457,15 @@ export class ShortCodeManager {
    * to full sequence data using the same multi-strategy approach.
    */
   private async hydrateFromRecord(code: string, data: ShortCodeData): Promise<SequenceData | null> {
-    console.log(`[ShortCode] Record for "${code}":`, {
-      sequence: data.sequence,
-      sequenceId: data.sequenceId ?? "MISSING",
-      ownerId: data.ownerId ?? "MISSING",
-      encoded: data.encoded ? `${data.encoded.slice(0, 16)}…` : "MISSING",
-    });
-
     // Strategy 0: Self-contained encoded blob (zero Firestore dependency).
     // Preferred path - fastest, and the only strategy that survives a full
     // Firestore outage when resolving from the static snapshot.
     if (data.encoded) {
       try {
         const decoded = await decodeSequenceFromQR(data.encoded);
-        console.log(`[ShortCode] ✓ Resolved "${code}" via encoded blob`);
         return { ...decoded, id: code } as SequenceData;
       } catch (err) {
-        console.log(`[ShortCode] ✗ encoded blob failed to decode for "${code}":`, err);
+        // encoded blob failed to decode — fall through to other strategies
       }
     }
 
@@ -489,12 +476,10 @@ export class ShortCodeManager {
         data.sequenceId
       );
       if (fullSequence) {
-        console.log(`[ShortCode] ✓ Resolved "${code}" via public index (word="${data.sequence}")`);
         return fullSequence;
       }
-      console.log(`[ShortCode] ✗ Public index returned null for word="${data.sequence}", id="${data.sequenceId}"`);
     } catch (err) {
-      console.log(`[ShortCode] ✗ Public index threw for word="${data.sequence}":`, err);
+      // Public index lookup failed — fall through
     }
 
     // Strategy 2: The stored word may be expanded (e.g., "AAKEAAKEAAKEAAKE").
@@ -506,12 +491,10 @@ export class ShortCodeManager {
           data.sequenceId
         );
         if (byId) {
-          console.log(`[ShortCode] ✓ Resolved "${code}" via sequenceId-as-word="${data.sequenceId}"`);
           return byId;
         }
-        console.log(`[ShortCode] ✗ sequenceId-as-word lookup returned null for "${data.sequenceId}"`);
       } catch (err) {
-        console.log(`[ShortCode] ✗ sequenceId-as-word threw for "${data.sequenceId}":`, err);
+        // sequenceId-as-word lookup failed — fall through
       }
     }
 
@@ -522,7 +505,6 @@ export class ShortCodeManager {
         const directRef = doc(firestore, `users/${data.ownerId}/sequences/${data.sequenceId}`);
         const directSnap = await getDoc(directRef);
         if (directSnap.exists()) {
-          console.log(`[ShortCode] ✓ Resolved "${code}" via direct Firestore load (owner=${data.ownerId})`);
           const seqData = directSnap.data();
           return {
             ...seqData,
@@ -530,19 +512,18 @@ export class ShortCodeManager {
             ownerId: data.ownerId,
           } as SequenceData;
         }
-        console.log(`[ShortCode] ✗ Direct Firestore doc not found: users/${data.ownerId}/sequences/${data.sequenceId}`);
+        // Direct Firestore doc not found — fall through
       } catch (error) {
         console.error(`[ShortCode] ✗ Direct Firestore load failed:`, error);
       }
     } else {
-      console.log(`[ShortCode] ✗ Skipping direct load - ownerId=${data.ownerId ?? "MISSING"}, sequenceId=${data.sequenceId ?? "MISSING"}`);
+      // Skipping direct load — missing ownerId or sequenceId
     }
 
     // Strategy 4: Embedded sequence data (deck sequences without ownerId).
     // When a shortcode was created for a deck sequence, the essential fields
     // were stored inline so we can hydrate without searching deck collections.
     if (data.sequenceData) {
-      console.log(`[ShortCode] ✓ Resolved "${code}" via embedded sequence data`);
       return createSequenceData({ id: code, ...data.sequenceData });
     }
 

@@ -156,7 +156,7 @@
   });
 
   function handleReplay(): void {
-    console.log("Replay durations:", timingState.durations);
+    // Replay uses current timingState.durations
   }
 
   function handleReRecord(): void {

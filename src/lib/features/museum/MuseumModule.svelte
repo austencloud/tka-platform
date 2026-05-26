@@ -177,14 +177,12 @@
 
         const violations = validateAll(placedRooms as any, MUSEUM_EDGES, grid);
         if (violations.length > 0) {
-          console.group("%c🏛️ Museum Design Violations", "font-weight: bold; color: #d4b878");
+          console.group("%c Museum Design Violations", "font-weight: bold; color: #d4b878");
           for (const v of violations) {
-            const icon = v.severity === "error" ? "❌" : v.severity === "warning" ? "⚠️" : "ℹ️";
-            console.log(`${icon} [${v.roomId}] ${v.rule}: ${v.message}`);
+            const icon = v.severity === "error" ? "X" : v.severity === "warning" ? "!" : "i";
+            console.warn(`${icon} [${v.roomId}] ${v.rule}: ${v.message}`);
           }
           console.groupEnd();
-        } else {
-          console.log("%c🏛️ Museum Design: All rooms pass", "color: #4a8");
         }
       });
     });

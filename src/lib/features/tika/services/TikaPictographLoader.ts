@@ -148,9 +148,6 @@ export class TikaPictographLoader {
 
       this.allPictographs = [...this.diamondPictographs, ...this.boxPictographs];
 
-      console.log(
-        `[TikaPictographLoader] Loaded ${this.allPictographs.length} pictographs`
-      );
     } catch (error) {
       console.error("[TikaPictographLoader] Failed to load dataframe:", error);
     }
@@ -282,11 +279,6 @@ export class TikaPictographLoader {
       }
       this.bridgeLettersByTransition = lettersByTransition;
 
-      console.log(
-        `[TikaPictographLoader] Loaded position mappings for ${
-          Object.keys(this.letterPositionMappings).length
-        } letters`
-      );
     } catch (error) {
       console.error(
         "[TikaPictographLoader] Failed to load letter-mappings.json:",

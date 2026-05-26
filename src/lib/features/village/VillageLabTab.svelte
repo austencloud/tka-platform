@@ -46,8 +46,7 @@
 		const vs = visualState; // capture for closures
 
 		// Wire ECS events to visual toasts and death marks
-		villageState.orchestrator.on("teaching:completed", (teacher, learner, seqId) => {
-			console.log(`[Village] ${teacher.identity.name} taught "${seqId}" to ${learner.identity.name}`);
+		villageState.orchestrator.on("teaching:completed", (teacher, learner, _seqId) => {
 			vs.pushToast(
 				`${teacher.identity.name} taught ${learner.identity.name}`,
 				"#4ade80",
@@ -56,7 +55,6 @@
 			);
 		});
 		villageState.orchestrator.on("entity:died", (entity) => {
-			console.log(`[Village] ${entity.identity.name} (gen ${entity.identity.generation}) passed. Knew ${entity.knowledge.knownSequences.size} sequences.`);
 			vs.addDeathMark(entity, villageState!.orchestrator.currentTick);
 		});
 		villageState.orchestrator.on("sequence:invented", (inventor, seqId) => {

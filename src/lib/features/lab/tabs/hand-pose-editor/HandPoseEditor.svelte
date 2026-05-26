@@ -316,14 +316,11 @@
   }
 
   function autoGrasp() {
-    console.log("[HandPoseEditor] autoGrasp called, skeleton:", !!skeleton);
     if (!skeleton) return;
     const state = skeleton.getState();
-    console.log("[HandPoseEditor] fingerChains:", !!state.fingerChains, "bones:", state.fingerChains?.left.size);
     if (!state.fingerChains) return;
 
     const result = solveCylinderGrasp(state.fingerChains.left, STAFF_RADIUS, gripTightness);
-    console.log("[HandPoseEditor] grasp result:", result.eulerAngles.slice(0, 3));
     eulerAngles = result.eulerAngles;
     activeTaxonomyPose = "";
     selectedPreset = GripType.SQUARE;

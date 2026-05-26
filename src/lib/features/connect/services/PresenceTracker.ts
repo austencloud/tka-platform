@@ -96,7 +96,6 @@ export class PresenceTracker {
 		this.startHeartbeat();
 
 		this._isTracking = true;
-		console.log('[PresenceTracker] Online');
 	}
 
 	async goOffline(): Promise<void> {
@@ -125,7 +124,6 @@ export class PresenceTracker {
 			this.myPresenceRef = null;
 			this._myPresence = null;
 			this._isTracking = false;
-			console.log('[PresenceTracker] Offline');
 		}
 	}
 

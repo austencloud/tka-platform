@@ -87,7 +87,6 @@ export class GlobalFeatureFlagPersister {
 
       if (hasLocalData) {
         // Migrate localStorage data to Firestore (one-time)
-        console.log(`${LOG_PREFIX} Migrating localStorage overrides to Firestore`);
         await this.writeToFirestore(localOverrides);
       }
 
