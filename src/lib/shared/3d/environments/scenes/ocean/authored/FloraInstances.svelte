@@ -58,6 +58,10 @@
     "meshy-photorealistic-coral-1": "/models/ocean/meshy/photorealistic_coral_1.glb",
     "meshy-photorealistic-coral-2": "/models/ocean/meshy/photorealistic_coral_2.glb",
     "meshy-photorealistic-coral-3": "/models/ocean/meshy/photorealistic_coral_3.glb",
+    "struct-coral-arch": "/models/ocean/structures/coral-arch.glb",
+    "struct-coral-bommie": "/models/ocean/structures/coral-bommie.glb",
+    "struct-coral-tower": "/models/ocean/structures/coral-tower.glb",
+    "struct-reef-wall": "/models/ocean/structures/reef-wall.glb",
   };
 
   const opts = { meshoptDecoder: MeshoptDecoder };

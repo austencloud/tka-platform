@@ -1,6 +1,7 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import { Vector3 } from "three";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import type { OceanQualityConfig } from "../quality/ocean-quality";
   import WaterSurface from "./water/WaterSurface.svelte";
   import AtmosphereSystem from "./atmosphere/AtmosphereSystem.svelte";
@@ -23,8 +24,15 @@
     stageZOffset = 0,
   }: Props = $props();
 
+  const groundY = $derived(userProportionsState.groundY);
   let rayPosition = $state(new Vector3(0, -999, 0));
 </script>
+
+<!-- Seabed ground plane -->
+<T.Mesh position.y={groundY - 0.01} rotation.x={-Math.PI / 2} receiveShadow>
+  <T.CircleGeometry args={[30, 64]} />
+  <T.MeshStandardMaterial color="#0d1f2d" roughness={0.95} metalness={0} />
+</T.Mesh>
 
 <!-- Lighting -->
 <T.HemisphereLight args={["#1a4060", "#0a1a2a", 0.6]} />
