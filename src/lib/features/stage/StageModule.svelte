@@ -3,11 +3,23 @@
   import FormationOverlay from './components/FormationOverlay.svelte';
   import StageTimeline from './components/StageTimeline.svelte';
   import StageSidebar from './components/StageSidebar.svelte';
+  import PanelGroup from '$lib/shared/panels/PanelGroup.svelte';
+  import type { PanelDefinition } from '$lib/shared/panels/PanelGroup.svelte';
   import { getStageChoreographyState } from './state/stage-choreography-state.svelte';
   import { createStageEditMode } from './state/stage-edit-mode.svelte';
 
   const stageState = getStageChoreographyState();
   const editMode = createStageEditMode();
+
+  const canvasAreaPanels: PanelDefinition[] = [
+    { content: viewerPanel, defaultSize: 3, minSize: 200, id: 'viewer' },
+    { content: timelinePanel, defaultSize: 1, minSize: 120, maxSize: 400, id: 'timeline' },
+  ];
+
+  const mainPanels: PanelDefinition[] = [
+    { content: canvasPanel, defaultSize: 3, minSize: 400, id: 'canvas' },
+    { content: sidebarPanel, defaultSize: 1, minSize: 280, maxSize: 520, id: 'sidebar' },
+  ];
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 't' || e.key === 'T') {
@@ -30,19 +42,15 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<div class="stage-module" role="main" aria-label="Stage choreography editor">
-  <div class="canvas-area">
-    <div class="viewer-container">
-      {#if editMode.cameraMode === 'orbit'}
-        <StageViewer />
-      {:else}
-        <div class="top-down-canvas">
-          <FormationOverlay {editMode} />
-        </div>
-      {/if}
-    </div>
+{#snippet viewerPanel()}
+  <div class="viewer-container">
+    {#if editMode.cameraMode === 'orbit'}
+      <StageViewer />
+    {:else}
+      <div class="top-down-canvas">
+        <FormationOverlay {editMode} />
+      </div>
+    {/if}
 
     <div class="mode-toolbar">
       <button
@@ -58,28 +66,33 @@
         <span>{editMode.cameraMode === 'top-down' ? '3D View' : 'Edit'}</span>
       </button>
     </div>
-
-    <StageTimeline {editMode} />
   </div>
+{/snippet}
 
+{#snippet timelinePanel()}
+  <StageTimeline {editMode} />
+{/snippet}
+
+{#snippet canvasPanel()}
+  <PanelGroup direction="vertical" panels={canvasAreaPanels} />
+{/snippet}
+
+{#snippet sidebarPanel()}
   <StageSidebar {editMode} />
+{/snippet}
+
+<svelte:window onkeydown={handleKeydown} />
+
+<div class="stage-module" role="main" aria-label="Stage choreography editor">
+  <PanelGroup direction="horizontal" panels={mainPanels} />
 </div>
 
 <style>
   .stage-module {
-    display: grid;
-    grid-template-columns: 1fr clamp(340px, 25vw, 480px);
+    display: flex;
     height: 100%;
     overflow: hidden;
     background: var(--color-bg-primary, #0a0b10);
-  }
-
-  .canvas-area {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-    position: relative;
   }
 
   .viewer-container {

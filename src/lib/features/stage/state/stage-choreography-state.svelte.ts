@@ -271,20 +271,82 @@ export function createStageChoreographyState() {
     }
   }
 
-  function applyPreset(preset: FormationPresetId) {
+  function positionAtBeat(performer: Performer, targetBeat: number): { x: number; z: number } {
+    if (performer.marks.length === 0) {
+      return { x: choreography.stageWidth / 2, z: choreography.stageDepth / 2 };
+    }
+    if (performer.marks.length === 1) {
+      return { x: performer.marks[0]!.x, z: performer.marks[0]!.z };
+    }
+    let accumulated = 0;
+    for (let i = 1; i < performer.marks.length; i++) {
+      const mark = performer.marks[i]!;
+      const prevAccumulated = accumulated;
+      accumulated += mark.beats;
+      if (accumulated >= targetBeat || i === performer.marks.length - 1) {
+        const fromMark = performer.marks[i - 1]!;
+        const t = mark.beats > 0 ? Math.min(1, (targetBeat - prevAccumulated) / mark.beats) : 1;
+        const eased = applyEasing(t, mark.easing);
+        return {
+          x: fromMark.x + (mark.x - fromMark.x) * eased,
+          z: fromMark.z + (mark.z - fromMark.z) * eased,
+        };
+      }
+    }
+    const last = performer.marks.at(-1)!;
+    return { x: last.x, z: last.z };
+  }
+
+  function insertFormationAtPlayhead(preset: FormationPresetId, transitionBeats = 4) {
     pushUndo();
+    const currentBeat = overallProgress * maxTotalBeats;
     const positions = generatePresetPositions(
       preset,
       choreography.performers.length,
       choreography.stageWidth,
       choreography.stageDepth
     );
+
     choreography.performers.forEach((performer, i) => {
-      const pos = positions[i];
-      if (pos) {
-        performer.marks = [createMark(pos.x, pos.z, 0)];
+      const targetPos = positions[i];
+      if (!targetPos) return;
+
+      const totalPerformerBeats = totalBeatsForPerformer(performer);
+
+      if (currentBeat <= 0 && performer.marks.length <= 1) {
+        performer.marks = [createMark(targetPos.x, targetPos.z, 0)];
+        return;
+      }
+
+      if (currentBeat >= totalPerformerBeats) {
+        performer.marks.push(createMark(targetPos.x, targetPos.z, transitionBeats));
+      } else {
+        const currentPos = positionAtBeat(performer, currentBeat);
+        let accumulated = 0;
+        let insertIdx = performer.marks.length;
+        for (let j = 1; j < performer.marks.length; j++) {
+          accumulated += performer.marks[j]!.beats;
+          if (accumulated > currentBeat) {
+            const remaining = accumulated - currentBeat;
+            performer.marks[j]!.beats = Math.round(currentBeat - (accumulated - performer.marks[j]!.beats));
+            const splitMark = createMark(currentPos.x, currentPos.z, 0);
+            performer.marks.splice(j + 1, 0, splitMark);
+            insertIdx = j + 2;
+            const targetMark = createMark(targetPos.x, targetPos.z, transitionBeats);
+            performer.marks.splice(insertIdx, 0, targetMark);
+            if (insertIdx + 1 < performer.marks.length) {
+              performer.marks[insertIdx + 1]!.beats = Math.max(1, Math.round(remaining));
+            }
+            return;
+          }
+        }
+        performer.marks.push(createMark(targetPos.x, targetPos.z, transitionBeats));
       }
     });
+  }
+
+  function applyPreset(preset: FormationPresetId) {
+    insertFormationAtPlayhead(preset);
   }
 
   function addMark(performerId: string, x: number, z: number, beats = 4) {
@@ -409,6 +471,7 @@ export function createStageChoreographyState() {
     getPerformer,
     setPerformerCount,
     applyPreset,
+    insertFormationAtPlayhead,
     addMark,
     beginDrag,
     updateMarkPosition,

@@ -32,7 +32,7 @@
 
   function handlePresetChange(preset: FormationPreset) {
     activePreset = preset;
-    stageState.applyPreset(preset as unknown as FormationPresetId);
+    stageState.applyPreset(preset as FormationPresetId);
   }
 
   function handlePerformerClick(e: MouseEvent, performerId: string) {

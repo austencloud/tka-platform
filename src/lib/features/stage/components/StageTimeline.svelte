@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getStageChoreographyState } from '../state/stage-choreography-state.svelte';
   import type { StageEditMode } from '../state/stage-edit-mode.svelte';
+  import { TimelineCapShape } from 'animation-timeline-js';
 
   interface Props {
     editMode: StageEditMode;
@@ -60,11 +61,14 @@
         },
         timelineStyle: {
           width: 2,
-          capWidth: 8,
-          capHeight: 8,
           fillColor: '#f59e0b',
           strokeColor: '#f59e0b',
-          capType: 'triangle',
+          capStyle: {
+            width: 8,
+            height: 8,
+            fillColor: '#f59e0b',
+            capType: TimelineCapShape.Triangle,
+          },
         },
       });
 
@@ -136,9 +140,8 @@
 <style>
   .stage-timeline {
     width: 100%;
-    height: 160px;
-    min-height: 120px;
-    flex-shrink: 0;
+    height: 100%;
+    min-height: 0;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 18, 28, 0.98)) 90%, black);
   }

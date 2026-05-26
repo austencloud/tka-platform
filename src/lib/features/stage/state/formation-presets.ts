@@ -102,4 +102,71 @@ const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoin
       const r = 0.1;
       return { x: 0.5 + Math.cos(a) * r, z: 0.5 + Math.sin(a) * r };
     }),
+
+  'grid-2x2': (n) => {
+    const cols = 2;
+    const rows = Math.ceil(n / cols);
+    return Array.from({ length: n }, (_, i) => ({
+      x: ((i % cols) + 1) / (cols + 1),
+      z: (Math.floor(i / cols) + 1) / (rows + 1),
+    }));
+  },
+
+  diagonal: (n) =>
+    Array.from({ length: n }, (_, i) => ({
+      x: (i + 1) / (n + 1),
+      z: (i + 1) / (n + 1),
+    })),
+
+  solo: () => [{ x: 0.5, z: 0.5 }],
+
+  'tunnel-stack': (n) =>
+    Array.from({ length: n }, (_, i) => ({
+      x: 0.5,
+      z: (i + 1) / (n + 1),
+    })),
+
+  'back-to-back': (n) => {
+    if (n === 1) return [{ x: 0.5, z: 0.5 }];
+    const pts: NormalizedPoint[] = [
+      { x: 0.5, z: 0.4 },
+      { x: 0.5, z: 0.6 },
+    ];
+    for (let i = 2; i < n; i++) {
+      pts.push({ x: 0.3 + (i - 2) * 0.2, z: 0.5 });
+    }
+    return pts;
+  },
+
+  'facing-each-other': (n) => {
+    if (n === 1) return [{ x: 0.5, z: 0.5 }];
+    const pts: NormalizedPoint[] = [
+      { x: 0.5, z: 0.35 },
+      { x: 0.5, z: 0.65 },
+    ];
+    for (let i = 2; i < n; i++) {
+      pts.push({ x: 0.3 + (i - 2) * 0.2, z: 0.5 });
+    }
+    return pts;
+  },
+
+  'stage-lr': (n) => {
+    const half = Math.ceil(n / 2);
+    return Array.from({ length: n }, (_, i) => ({
+      x: i < half ? 0.25 : 0.75,
+      z: (((i < half ? i : i - half) + 1) / (half + 1)),
+    }));
+  },
+
+  'side-by-side': (n) =>
+    Array.from({ length: n }, (_, i) => ({
+      x: (i + 1) / (n + 1),
+      z: 0.5,
+    })),
+
+  custom: (n) =>
+    Array.from({ length: n }, (_, i) => ({
+      x: (i + 1) / (n + 1),
+      z: 0.5,
+    })),
 };

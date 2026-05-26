@@ -36,8 +36,17 @@ export type FormationPresetId =
   | 'circle'
   | 'v-shape'
   | 'grid'
+  | 'grid-2x2'
   | 'stagger'
-  | 'cluster';
+  | 'cluster'
+  | 'diagonal'
+  | 'solo'
+  | 'tunnel-stack'
+  | 'back-to-back'
+  | 'facing-each-other'
+  | 'stage-lr'
+  | 'side-by-side'
+  | 'custom';
 
 export const PERFORMER_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const;
 
