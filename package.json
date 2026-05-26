@@ -263,6 +263,7 @@
     "@tka/tka-types": "file:./packages/tka-types",
     "@vtg/domain": "file:./packages/vtg-domain",
     "ai": "^6.0.0",
+    "animation-timeline-js": "^2.3.5",
     "bits-ui": "^2.14.4",
     "camera-controls": "^3.1.2",
     "date-fns": "^4.1.0",

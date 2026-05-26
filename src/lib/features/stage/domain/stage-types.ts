@@ -1,62 +1,58 @@
-import type { Plane } from "@austencloud/scene-3d";
-
 export interface StageChoreography {
   id: string;
   name: string;
   bpm: number;
   stageWidth: number;
   stageDepth: number;
-  performers: PerformerSlot[];
-  formations: FormationKeyframe[];
+  performers: Performer[];
+  sharedSequenceId: string | null;
 }
 
-export interface PerformerSlot {
+export interface Performer {
   id: string;
   index: number;
+  label: string;
   color: string;
+  marks: Mark[];
+  sequenceId: string | null;
 }
 
-export interface FormationKeyframe {
+export interface Mark {
   id: string;
-  beat: number;
-  positions: PerformerPose[];
-  transition?: TransitionConfig;
-}
-
-export interface PerformerPose {
-  performerId: string;
   x: number;
   z: number;
-  facing: number;
-  planeMode?: Plane;
+  beats: number;
+  walkStyle: WalkStyle;
+  easing: EasingType;
 }
 
-export interface TransitionConfig {
-  interpolation: "linear" | "ease" | "spline" | "arc";
-  easing: "linear" | "easeInOut" | "easeIn" | "easeOut";
-}
+export type WalkStyle = 'crab' | 'direct';
+export type EasingType = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
 
 export type FormationPresetId =
-  | "line"
-  | "triangle"
-  | "diamond"
-  | "circle"
-  | "v-shape"
-  | "grid"
-  | "stagger"
-  | "cluster";
+  | 'line'
+  | 'triangle'
+  | 'diamond'
+  | 'circle'
+  | 'v-shape'
+  | 'grid'
+  | 'stagger'
+  | 'cluster';
+
+export const PERFORMER_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const;
 
 export const PERFORMER_COLORS = [
-  "#ff6b6b",
-  "#4ecdc4",
-  "#ffe66d",
-  "#a06cd5",
-  "#ff9a76",
-  "#6bcf7f",
-  "#7eb8da",
-  "#e87ea1",
+  '#ff6b6b',
+  '#4ecdc4',
+  '#ffe66d',
+  '#a06cd5',
+  '#ff9a76',
+  '#6bcf7f',
+  '#7eb8da',
+  '#e87ea1',
 ] as const;
 
 export const DEFAULT_STAGE_WIDTH = 10;
 export const DEFAULT_STAGE_DEPTH = 8;
 export const DEFAULT_BPM = 120;
+export const DEFAULT_PERFORMER_COUNT = 4;
