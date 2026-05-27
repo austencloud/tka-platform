@@ -232,7 +232,8 @@
     </div>
   {:else}
     <div class="module-loading" role="status" aria-live="polite" aria-busy="true">
-      <IndeterminateBar height={3} />
+      <IndeterminateBar height={3} position="top" />
+      <p class="module-loading-label">Loading {MODULE_DEFINITIONS.find((m) => m.id === activeModule)?.label ?? activeModule}...</p>
     </div>
   {/if}
 {:else}
@@ -269,7 +270,8 @@
                 aria-live="polite"
                 aria-busy="true"
               >
-                <IndeterminateBar height={3} />
+                <IndeterminateBar height={3} position="top" />
+                <p class="module-loading-label">Loading {MODULE_DEFINITIONS.find((m) => m.id === activeModule)?.label ?? activeModule}...</p>
               </div>
             {/if}
           {:then LoadedModule}
@@ -339,8 +341,17 @@
 
   .module-loading {
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     height: 100%;
     min-height: 200px;
+  }
+
+  .module-loading-label {
+    margin: 0;
+    font-size: var(--font-size-sm, 13px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .module-error {

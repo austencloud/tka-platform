@@ -14,7 +14,6 @@
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { onMount, untrack } from "svelte";
-  import { page } from "$app/stores";
   import { replaceState } from "$app/navigation";
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";

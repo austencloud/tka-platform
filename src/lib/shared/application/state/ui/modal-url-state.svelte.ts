@@ -15,8 +15,7 @@
  */
 
 import { goto, replaceState } from "$app/navigation";
-import { page } from "$app/stores";
-import { get } from "svelte/store";
+import { page } from "$app/state";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 
 // ============================================================================
@@ -285,8 +284,7 @@ export function cacheSequence(sequence: SequenceData): void {
  * Shared between updateUrl and updateUrlFast.
  */
 function buildNewUrl(params: URLSearchParams): URL {
-  const currentPage = get(page);
-  const newUrl = new URL(currentPage.url);
+  const newUrl = new URL(page.url);
 
   // Clear existing modal params
   newUrl.searchParams.delete("modal");
@@ -341,32 +339,24 @@ function updateUrlFast(params: URLSearchParams): void {
 // ============================================================================
 
 let initialized = false;
-let unsubscribe: (() => void) | null = null;
+let cleanup: (() => void) | null = null;
 
-/**
- * Initialize modal URL state tracking.
- * Call this once in +layout.svelte.
- */
 export function initModalUrlState(): void {
   if (initialized) return;
   initialized = true;
 
-  // Subscribe to page store to track URL changes
-  unsubscribe = page.subscribe((pageData) => {
-    if (pageData?.url) {
-      currentState = parseUrlParams(pageData.url.searchParams);
-    }
+  cleanup = $effect.root(() => {
+    $effect(() => {
+      if (page.url) {
+        currentState = parseUrlParams(page.url.searchParams);
+      }
+    });
   });
 }
 
-/**
- * Cleanup (for testing or SSR)
- */
 export function cleanupModalUrlState(): void {
-  if (unsubscribe) {
-    unsubscribe();
-    unsubscribe = null;
-  }
   initialized = false;
+  cleanup?.();
+  cleanup = null;
   currentState = { ...DEFAULT_STATE };
 }

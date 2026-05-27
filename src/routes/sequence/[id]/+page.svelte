@@ -3,7 +3,7 @@
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { goto, replaceState } from "$app/navigation";
   import { browser } from "$app/environment";
   import { onMount, onDestroy } from "svelte";
@@ -68,30 +68,30 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   const { data }: Props = $props();
 
   // Route params
-  const sequenceId = $derived($page.params.id);
+  const sequenceId = $derived(page.params.id);
 
   // URL params for state restoration
-  const urlViewMode = $derived($page.url.searchParams.get("view") as "animation" | "image" | "split" | null);
-  const urlBpm = $derived(parseInt($page.url.searchParams.get("bpm") || "") || null);
-  const urlTime = $derived(parseInt($page.url.searchParams.get("t") || "") || null);
+  const urlViewMode = $derived(page.url.searchParams.get("view") as "animation" | "image" | "split" | null);
+  const urlBpm = $derived(parseInt(page.url.searchParams.get("bpm") || "") || null);
+  const urlTime = $derived(parseInt(page.url.searchParams.get("t") || "") || null);
 
   // URL metadata params (from share URLs)
-  const urlWord = $derived($page.url.searchParams.get("word"));
-  const urlCreator = $derived($page.url.searchParams.get("creator"));
-  const urlNotes = $derived($page.url.searchParams.get("notes"));
-  const urlDarkMode = $derived($page.url.searchParams.get("dark"));
-  const urlDifficulty = $derived($page.url.searchParams.get("difficulty"));
-  const urlBirthday = $derived($page.url.searchParams.get("birthday"));
+  const urlWord = $derived(page.url.searchParams.get("word"));
+  const urlCreator = $derived(page.url.searchParams.get("creator"));
+  const urlNotes = $derived(page.url.searchParams.get("notes"));
+  const urlDarkMode = $derived(page.url.searchParams.get("dark"));
+  const urlDifficulty = $derived(page.url.searchParams.get("difficulty"));
+  const urlBirthday = $derived(page.url.searchParams.get("birthday"));
 
   // URL render mode param (2D/3D)
-  const urlRenderMode = $derived($page.url.searchParams.get("render") as '2d' | '3d' | null);
+  const urlRenderMode = $derived(page.url.searchParams.get("render") as '2d' | '3d' | null);
 
   // URL prop params (from QR codes with prop info)
-  const urlBlueProp = $derived($page.url.searchParams.get("bp"));
-  const urlRedProp = $derived($page.url.searchParams.get("rp"));
+  const urlBlueProp = $derived(page.url.searchParams.get("bp"));
+  const urlRedProp = $derived(page.url.searchParams.get("rp"));
 
   // URL view mode param (from QR codes with browse view mode)
-  const urlViewModeParam = $derived($page.url.searchParams.get("vm"));
+  const urlViewModeParam = $derived(page.url.searchParams.get("vm"));
   const decodedBrowseViewMode = $derived(urlViewModeParam ? decodeViewMode(urlViewModeParam) : null);
   const urlHandPathMode = $derived(decodedBrowseViewMode?.subject === "hands");
   const urlInitialBlueVisible = $derived(
@@ -102,7 +102,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   );
 
   // Guest preview mode - forces unauthenticated view for debugging shared link UX
-  const forceGuest = $derived($page.url.searchParams.get("guest") === "1");
+  const forceGuest = $derived(page.url.searchParams.get("guest") === "1");
 
   // Sequence loading state
   let sequence = $state<SequenceData | null>(null);
@@ -242,7 +242,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   function applyUrlPropPreferences() {
     if (!urlBlueProp && !urlRedProp) return;
 
-    const parsed = parsePropsFromURL($page.url.searchParams);
+    const parsed = parsePropsFromURL(page.url.searchParams);
 
     if (parsed.bluePropType || parsed.redPropType) {
       const updates: { bluePropType?: PropType; redPropType?: PropType } = {};

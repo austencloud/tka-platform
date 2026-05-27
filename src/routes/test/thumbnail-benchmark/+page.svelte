@@ -17,7 +17,7 @@
    */
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { getThumbnailRenderOrchestrator } from '$lib/shared/browse/getThumbnailRenderOrchestrator';
   import { deriveKey as deriveThumbnailKey } from '$lib/shared/browse/services/thumbnail-key-deriver';
   import { getThumbnailMetricsCollector } from '$lib/shared/browse/getThumbnailMetricsCollector';
@@ -152,17 +152,17 @@
     localCache = getThumbnailLocalCache();
 
     // Check for autorun parameter
-    const autorun = $page.url.searchParams.get('autorun');
-    const count = $page.url.searchParams.get('count');
-    const iter = $page.url.searchParams.get('iterations');
-    const clearCache = $page.url.searchParams.get('clearCache');
+    const autorun = page.url.searchParams.get('autorun');
+    const count = page.url.searchParams.get('count');
+    const iter = page.url.searchParams.get('iterations');
+    const clearCache = page.url.searchParams.get('clearCache');
 
     if (count) sequenceCount = parseInt(count, 10) || DEFAULT_SEQUENCE_COUNT;
     if (iter) iterations = parseInt(iter, 10) || DEFAULT_ITERATIONS;
     if (clearCache === 'true') clearCacheBetweenIterations = true;
 
     // Check for benchmark mode parameter
-    const mode = $page.url.searchParams.get('mode');
+    const mode = page.url.searchParams.get('mode');
     if (mode === 'visibility') {
       benchmarkMode = 'visibility-change';
     }

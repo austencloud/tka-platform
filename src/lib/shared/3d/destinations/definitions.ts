@@ -8,6 +8,7 @@
 
 import { CameraMode } from "../camera/types";
 import type { Destination, DestinationCategory } from "./types";
+import { resilientLazyImport } from "$lib/shared/hmr-helper";
 
 /**
  * All available 3D destinations
@@ -26,8 +27,8 @@ export const DESTINATIONS: Destination[] = [
 		defaultCameraMode: CameraMode.FIRST_PERSON,
 		category: "exploration",
 		tags: ["procedural", "terrain", "campground", "exploration"],
-		component: () =>
-			import("../../../features/campground/CampgroundDestination.svelte"),
+		component: resilientLazyImport(() =>
+			import("../../../features/campground/CampgroundDestination.svelte")),
 		enabled: true,
 	},
 	{
@@ -41,7 +42,7 @@ export const DESTINATIONS: Destination[] = [
 		defaultCameraMode: CameraMode.FIRST_PERSON,
 		category: "exploration",
 		tags: ["museum", "narrative", "lore", "archive", "kinetic-history"],
-		component: () => import("../../../features/archive/ArchiveDestination.svelte"),
+		component: resilientLazyImport(() => import("../../../features/archive/ArchiveDestination.svelte")),
 		enabled: true,
 	},
 	{
@@ -55,7 +56,7 @@ export const DESTINATIONS: Destination[] = [
 		defaultCameraMode: CameraMode.FIRST_PERSON,
 		category: "social",
 		tags: ["museum", "gallery", "curation", "exhibits"],
-		component: () => import("../../../features/museum/scenes/procedural/MuseumDestination.svelte"),
+		component: resilientLazyImport(() => import("../../../features/museum/scenes/procedural/MuseumDestination.svelte")),
 		enabled: true,
 	},
 	{
@@ -70,8 +71,8 @@ export const DESTINATIONS: Destination[] = [
 		defaultCameraMode: CameraMode.ORBIT,
 		category: "creative",
 		tags: ["controls", "dev", "tuning", "props"],
-		component: () =>
-			import("../../../features/lab/tools/3d-controls/ThreeDControlsLab.svelte"),
+		component: resilientLazyImport(() =>
+			import("../../../features/lab/tools/3d-controls/ThreeDControlsLab.svelte")),
 		enabled: true,
 	},
 	// Disabled destinations (kept for future re-enabling)
@@ -87,8 +88,8 @@ export const DESTINATIONS: Destination[] = [
 		defaultCameraMode: CameraMode.FIRST_PERSON,
 		category: "exploration",
 		tags: ["real-terrain", "festival", "kinetic-fire", "ohio"],
-		component: () =>
-			import("../../../features/hannons-camp/HannonsCampDestination.svelte"),
+		component: resilientLazyImport(() =>
+			import("../../../features/hannons-camp/HannonsCampDestination.svelte")),
 		enabled: false,
 	},
 	// Future destinations:

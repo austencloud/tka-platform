@@ -97,7 +97,7 @@
 		{ id: "arc", label: "Arc", desc: "Classic circular path (default)" },
 		{ id: "linear", label: "Linear", desc: "Straight line between positions" },
 		{ id: "concave", label: "Concave", desc: "Inward-bowing path" },
-		{ id: "motion-aware", label: "Motion Aware", desc: "Pro=arc, Anti=concave" },
+		{ id: "hybrid", label: "Hybrid", desc: "Pro=arc, Anti=concave" },
 	];
 
 	let calculator: MandalaGeometryCalculator | null = $state(null);
@@ -140,7 +140,7 @@
 	const activeDx = $derived(animating ? animatedDx : tipDx);
 
 	const pathOptions = $derived.by((): MandalaPathOptions | undefined => {
-		if (selectedPathShape === "motion-aware") return { motionAware: true };
+		if (selectedPathShape === "hybrid") return { motionAware: true };
 		if (selectedPathShape !== "arc") return { pathShape: selectedPathShape };
 		return undefined;
 	});

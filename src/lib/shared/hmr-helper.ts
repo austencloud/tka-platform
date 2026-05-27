@@ -384,3 +384,51 @@ export function forceReloadIfNeeded(reason: string) {
     scheduleReload(reason);
   }
 }
+
+// ── Resilient dynamic imports ────────────────────────────────────────────
+
+let recentImportFailures = 0;
+let failureWindowStart = 0;
+
+function trackImportFailure() {
+  const now = Date.now();
+  if (now - failureWindowStart > 2000) {
+    recentImportFailures = 0;
+    failureWindowStart = now;
+  }
+  recentImportFailures++;
+
+  if (recentImportFailures >= 5) {
+    recentImportFailures = 0;
+    scheduleReload("Cascading dynamic import failures");
+  }
+}
+
+/**
+ * Wraps a dynamic import factory with retry + backoff for HMR resilience.
+ * Dev-only — production throws immediately (stale chunks handled by
+ * vite:preloadError in hooks.client.ts).
+ */
+export function resilientLazyImport<T>(
+  loader: () => Promise<T>,
+  retries = 3,
+): () => Promise<T> {
+  return async () => {
+    if (!import.meta.env.DEV) return loader();
+
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        return await loader();
+      } catch (err) {
+        lastError = err;
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+        }
+      }
+    }
+
+    trackImportFailure();
+    throw lastError;
+  };
+}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import ErrorScreen from "$lib/shared/foundation/ui/ErrorScreen.svelte";
 
   function handleRetry() {
@@ -7,7 +7,7 @@
   }
 
   const errorMessage = $derived(
-    $page.error?.message ?? "Something went wrong"
+    page.error?.message ?? "Something went wrong"
   );
 </script>
 

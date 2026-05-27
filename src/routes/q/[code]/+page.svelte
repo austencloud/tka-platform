@@ -16,7 +16,7 @@
   4. Lazy-load ExportVideoDrawer for shared controls
 -->
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
@@ -59,7 +59,7 @@
   }
 
   const { data }: Props = $props();
-  const shortCode = $derived($page.params["code"]);
+  const shortCode = $derived(page.params["code"]);
 
   type PageState =
     | { kind: "loading" }
@@ -311,7 +311,7 @@
   <meta property="og:image" content={ogImage} />
   <meta
     property="og:url"
-    content="https://tkaflowarts.com/q/{$page.params.code}"
+    content="https://tkaflowarts.com/q/{page.params.code}"
   />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="{displayWord} · TKA" />

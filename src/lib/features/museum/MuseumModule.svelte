@@ -12,7 +12,7 @@
   import SoundscapeBubble from "./components/audio/SoundscapeBubble.svelte";
 
   import { onMount, untrack } from "svelte";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { setDesktopSidebarForcedHidden } from "$lib/shared/layout/desktop-sidebar-state.svelte";
@@ -66,7 +66,7 @@
   // URL query param `?room=vulcan-cave` filters the museum to a single room.
   // null = full museum (all rooms + corridors).
   // Derived from SvelteKit's page store so it updates when goto() navigates.
-  let selectedRoom = $derived($page.url.searchParams.get("room"));
+  let selectedRoom = $derived(page.url.searchParams.get("room"));
 
   function handleRoomSelect(roomId: string | null) {
     const params = new URLSearchParams(window.location.search);

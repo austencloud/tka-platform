@@ -30,13 +30,13 @@
 		purpleFill: DARK_MOTION_PURPLE_FILL,
 	};
 
-	type PathMode = "arc" | "linear" | "concave" | "motion-aware";
+	type PathMode = "arc" | "linear" | "concave" | "hybrid";
 
 	const PATH_MODES: { key: PathMode; label: string; options: MandalaPathOptions }[] = [
 		{ key: "arc", label: "Arc", options: { pathShape: "arc" } },
 		{ key: "linear", label: "Linear", options: { pathShape: "linear" } },
 		{ key: "concave", label: "Concave", options: { pathShape: "concave" } },
-		{ key: "motion-aware", label: "Motion-Aware", options: { motionAware: true } },
+		{ key: "hybrid", label: "Hybrid", options: { motionAware: true } },
 	];
 
 	let calculator: MandalaGeometryCalculator | null = $state(null);

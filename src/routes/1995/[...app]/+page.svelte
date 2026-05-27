@@ -5,11 +5,11 @@
   Skips the boot sequence for deep links.
 -->
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import RetroDesktop from "$lib/features/retro/win95/components/shell/RetroDesktop.svelte";
 
   // Extract the app path from the catch-all route param
-  const appPath = $derived($page.params.app);
+  const appPath = $derived(page.params.app);
 </script>
 
 <svelte:head>

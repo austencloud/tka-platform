@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { guideChapters } from "./_data/nav-config";
 
   let {
@@ -12,7 +12,7 @@
     onChapterSelect?: (slug: string) => void;
   } = $props();
 
-  const currentPath = $derived($page.url.pathname);
+  const currentPath = $derived(page.url.pathname);
 
   function isChapterActive(slug: string): boolean {
     if (activeChapter !== null && activeChapter !== undefined) {

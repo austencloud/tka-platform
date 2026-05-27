@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { onMount, onDestroy } from "svelte";
   import { InAppBrowserDetector } from "../services/implementations/InAppBrowserDetector";
   import { setIabBannerVisible } from "../state/iab-banner-state.svelte";
@@ -10,7 +10,7 @@
   let copied = $state(false);
 
   // Debug override: ?forceIAB=true forces the prompt to show in any browser
-  const forceIAB = $derived($page.url.searchParams.has("forceIAB"));
+  const forceIAB = $derived(page.url.searchParams.has("forceIAB"));
 
   const detectedInApp = detector.isInAppBrowser();
   const isInAppBrowser = $derived(detectedInApp || forceIAB);
@@ -20,7 +20,7 @@
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
   // Route awareness: sequence viewer doesn't need sign-in, so show non-blocking banner
-  const isSequenceRoute = $derived($page.url.pathname.startsWith("/sequence/"));
+  const isSequenceRoute = $derived(page.url.pathname.startsWith("/sequence/"));
 
   // Check if running as installed PWA (forceIAB bypasses this check)
   const isInstalledPWA = $derived(

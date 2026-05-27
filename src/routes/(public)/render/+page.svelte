@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
 
   let status = $state('Loading...');
 
   onMount(async () => {
-    const letter = $page.url.searchParams.get('letter');
+    const letter = page.url.searchParams.get('letter');
 
     if (!letter) {
       status = 'Error: No letter specified. Use ?letter=A';
