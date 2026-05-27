@@ -143,6 +143,7 @@
             show="both"
             size={380}
             darkMode={isDarkTheme}
+            pathShape="arc"
           />
         </div>
       </div>
@@ -442,7 +443,7 @@
 
   .loop-row {
     position: absolute;
-    bottom: 27cqi;
+    bottom: 28cqi;
     left: 3cqi;
     right: 3cqi;
     display: flex;
@@ -460,7 +461,7 @@
 
   .level-badge-slot {
     position: absolute;
-    bottom: 16cqi;
+    bottom: 18cqi;
     left: 0;
     right: 0;
     display: flex;

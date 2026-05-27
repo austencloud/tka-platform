@@ -37,9 +37,6 @@
 
   let stackEl: HTMLDivElement | undefined = $state();
   let copyImageState = $state<"idle" | "copying" | "success" | "error">("idle");
-  let contextMenuVisible = $state(false);
-  let contextMenuX = $state(0);
-  let contextMenuY = $state(0);
 
   let imageResetTimer: ReturnType<typeof setTimeout>;
   let imageErrorTimer: ReturnType<typeof setTimeout>;
@@ -70,7 +67,6 @@
   async function copyCardImage() {
     if (copyImageState === "copying" || !stackEl) return;
     copyImageState = "copying";
-    contextMenuVisible = false;
     try {
       const { domToBlob } = await import("modern-screenshot");
       const blob = await domToBlob(stackEl, { scale: 2 });
@@ -87,26 +83,11 @@
     }
   }
 
-  function handleStackContextMenu(e: MouseEvent) {
-    e.preventDefault();
-    contextMenuX = e.clientX;
-    contextMenuY = e.clientY;
-    contextMenuVisible = true;
-  }
-
-  function dismissContextMenu() {
-    contextMenuVisible = false;
-  }
-
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (contextMenuVisible) { contextMenuVisible = false; return; }
-      onClose();
-    }
+    if (e.key === 'Escape') onClose();
   }
 
   function handleBackdropClick(e: MouseEvent) {
-    if (contextMenuVisible) { contextMenuVisible = false; return; }
     if ((e.target as HTMLElement).classList.contains('modal-backdrop')) {
       onClose();
     }
@@ -125,7 +106,7 @@
       <p class="modal-hint">Front and back side by side</p>
     </div>
 
-    <div class="stack-wrapper" bind:this={stackEl} oncontextmenu={handleStackContextMenu} role="group" aria-label="Card preview">
+    <div class="stack-wrapper" bind:this={stackEl} role="group" aria-label="Card preview">
       <CardPreviewStack
         {sequence}
         {handPointsVisible}
@@ -145,8 +126,19 @@
 
     <div class="bottom-bar">
       <div class="actions">
-        <button class="action-btn edit-btn" onclick={editSequence} aria-label="Edit sequence">
-          <i class="fas fa-pen"></i> Edit
+        <button class="action-btn edit-btn" onclick={editSequence} aria-label="Open sequence in construct for full editing">
+          <i class="fas fa-pen-to-square"></i> Edit in Construct
+        </button>
+        <button class="action-btn copy-image-btn" onclick={copyCardImage} disabled={copyImageState === "copying"} aria-label="Copy image">
+          {#if copyImageState === "copying"}
+            <i class="fas fa-spinner fa-spin"></i> Capturing...
+          {:else if copyImageState === "success"}
+            <i class="fas fa-check"></i> Copied!
+          {:else if copyImageState === "error"}
+            <i class="fas fa-times"></i> Failed
+          {:else}
+            <i class="fas fa-image"></i> Copy Image
+          {/if}
         </button>
         {#if extraActions}
           {@render extraActions()}
@@ -154,7 +146,6 @@
       </div>
       <div class="hints">
         <span><kbd>Esc</kbd> close</span>
-        <span><kbd>Right-click</kbd> copy image</span>
       </div>
     </div>
   </div>
@@ -164,22 +155,6 @@
   </button>
 </div>
 
-{#if contextMenuVisible}
-  <div class="context-backdrop" role="presentation" onclick={dismissContextMenu}></div>
-  <div class="context-menu" style="left: {contextMenuX}px; top: {contextMenuY}px;">
-    <button class="context-item" onclick={copyCardImage} disabled={copyImageState === "copying"}>
-      {#if copyImageState === "copying"}
-        <i class="fas fa-spinner fa-spin"></i> Capturing...
-      {:else if copyImageState === "success"}
-        <i class="fas fa-check"></i> Copied!
-      {:else if copyImageState === "error"}
-        <i class="fas fa-times"></i> Failed
-      {:else}
-        <i class="fas fa-image"></i> Copy Image
-      {/if}
-    </button>
-  </div>
-{/if}
 
 <style>
   .modal-backdrop {
@@ -290,9 +265,15 @@
     border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
   }
 
+  .edit-btn {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(124, 58, 237, 0.05));
+    border-color: rgba(124, 58, 237, 0.3);
+    color: rgba(124, 58, 237, 0.9);
+  }
+
   .edit-btn:hover {
-    background: rgba(183, 99, 205, 0.15);
-    border-color: rgba(183, 99, 205, 0.35);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(124, 58, 237, 0.1));
+    border-color: rgba(124, 58, 237, 0.5);
     color: #fff;
   }
 
@@ -315,46 +296,10 @@
     margin-right: 4px;
   }
 
-  .context-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: calc(var(--z-modal) + 10);
-  }
-
-  .context-menu {
-    position: fixed;
-    z-index: calc(var(--z-modal) + 11);
-    background: var(--theme-card-bg, rgba(30, 30, 35, 0.97));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 8px;
-    padding: 4px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(12px);
-  }
-
-  .context-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 8px 14px;
-    border: none;
-    border-radius: 5px;
-    background: transparent;
-    color: var(--theme-text, rgba(255, 255, 255, 0.85));
-    font-size: 13px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.1s ease;
-  }
-
-  .context-item:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .context-item:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .copy-image-btn:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.35);
+    color: #fff;
   }
 
   @media (prefers-reduced-motion: reduce) {

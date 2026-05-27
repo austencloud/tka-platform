@@ -19,6 +19,7 @@
     isReleasing: boolean;
     readOnly?: boolean;
     footers?: CardFooter[];
+    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
   let {
@@ -33,6 +34,7 @@
     isReleasing,
     readOnly = false,
     footers,
+    onContextMenu,
   }: Props = $props();
 
   let cardSize = $state<CardSizeId>("poker");
@@ -45,6 +47,7 @@
 
   let inspectedSequence = $state<SequenceData | null>(null);
   let inspectedFrontImageUrl = $state<string | null>(null);
+  let inspectedRerender = $state<(() => Promise<string | null>) | null>(null);
 
   const distribution = $derived.by(() => {
     const dist: Record<number, number> = {};
@@ -56,8 +59,9 @@
       .map(([step, count]) => ({ step: Number(step), count }));
   });
 
-  function handleCardClick(sequence: SequenceData, frontImageUrl?: string) {
+  function handleCardClick(sequence: SequenceData, frontImageUrl?: string, rerender?: () => Promise<string | null>) {
     inspectedFrontImageUrl = frontImageUrl ?? null;
+    inspectedRerender = rerender ?? null;
     inspectedSequence = sequence;
   }
 
@@ -200,7 +204,16 @@
     showTKA={true}
     showWord={true}
     includeStartPosition={true}
-    onClose={() => { inspectedSequence = null; inspectedFrontImageUrl = null; }}
+    onContextMenu={onContextMenu ? (x, y, _rerender) => {
+      onContextMenu(x, y, () => {
+        if (inspectedRerender) {
+          inspectedRerender().then(newUrl => {
+            if (newUrl) inspectedFrontImageUrl = newUrl;
+          });
+        }
+      });
+    } : undefined}
+    onClose={() => { inspectedSequence = null; inspectedFrontImageUrl = null; inspectedRerender = null; }}
   >
     {#snippet extraActions()}
       {#if !readOnly}

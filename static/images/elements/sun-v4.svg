@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <radialGradient id="disc" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#FFF9C4"/>
+      <stop offset="40%" stop-color="#FFD54F"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </radialGradient>
+    <radialGradient id="rays" cx="50%" cy="50%" r="50%">
+      <stop offset="30%" stop-color="#FFB300"/>
+      <stop offset="100%" stop-color="#E65100"/>
+    </radialGradient>
+  </defs>
+  <!--
+    16-point starburst: 8 ray tips at r=94, 8 valleys at r=50.
+    Angles: tips at 0/45/90/135/180/225/270/315 deg from North (clockwise).
+    Valleys at 22.5/67.5/112.5/... between each tip pair.
+    x = 100 + r*sin(θ), y = 100 - r*cos(θ)
+  -->
+  <polygon
+    fill="url(#rays)"
+    points="
+      100,6
+      120,52
+      166,34
+      148,80
+      194,100
+      148,120
+      166,166
+      120,148
+      100,194
+      80,148
+      34,166
+      52,120
+      6,100
+      52,80
+      34,34
+      80,52
+    "
+  />
+  <circle cx="100" cy="100" r="44" fill="url(#disc)" stroke="#D84315" stroke-width="2.5"/>
+  <ellipse cx="90" cy="86" rx="24" ry="22" fill="rgba(255,255,255,0.3)"/>
+</svg>

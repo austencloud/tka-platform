@@ -23,13 +23,28 @@
   import ReleaseHistoryPanel from "./ReleaseHistoryPanel.svelte";
   import { releaserState as rs } from "./deck-releaser-state.svelte";
 
+  interface Props {
+    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
+  }
+
+  let { onContextMenu }: Props = $props();
+
   let catalogs = $state<Catalog[]>([]);
   let pool = $state<Map<number, { sequenceId: string; sourceCatalogId: string; stepCount: number; word: string }[]>>(new Map());
   let releasedIds = $state<Set<string>>(new Set());
   let releases = $state<DeckRelease[]>([]);
   let isLoadingReleases = $state(true);
 
-  const footers = $derived(rs.cards.map(c => c.footer));
+  const ICON_UPGRADES: Record<string, string> = {
+    "/images/elements/sun-v2.png": "/images/elements/sun-v4.png",
+  };
+  const footers = $derived(rs.cards.map(c => {
+    const f = c.footer;
+    if (f.iconPath && ICON_UPGRADES[f.iconPath]) {
+      return { ...f, iconPath: ICON_UPGRADES[f.iconPath] };
+    }
+    return f;
+  }));
 
   function rebuildPool() {
     const filter: CatalogPoolFilter = { sliceTypes: rs.selectedSliceTypes };
@@ -288,6 +303,7 @@
         isReleasing={rs.isReleasing}
         readOnly={rs.viewingRelease !== null}
         {footers}
+        {onContextMenu}
         onSwapCard={handleSwapCard}
         onRedraw={handleRedraw}
         onRelease={handleRelease}
