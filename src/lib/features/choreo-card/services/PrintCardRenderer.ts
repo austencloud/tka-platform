@@ -99,8 +99,8 @@ export class PrintCardRenderer {
     const contentH = canvasH - bleed * 2;
 
     // Resolve element colors
-    const accent = options.elementTheme?.accentColor ?? "#999999";
-    const dark = options.elementTheme?.darkComplement ?? "#444444";
+    const accent = options.tndElement?.accentColor ?? "#999999";
+    const dark = options.tndElement?.darkComplement ?? "#444444";
 
     // Render the sequence image (keep all existing options)
     const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, {
@@ -129,6 +129,7 @@ export class PrintCardRenderer {
       leftLabel: options.leftLabel,
       rightLabel: options.rightLabel,
       iconPath: options.iconPath,
+      accentColor: options.tndElement?.accentColor,
       loopType: sequence.loopType ?? undefined,
       showLoopGlyph: false,
       ...(options.bluePropType && { bluePropTypeOverride: options.bluePropType }),

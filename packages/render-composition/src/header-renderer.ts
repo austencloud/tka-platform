@@ -26,6 +26,8 @@ export interface HeaderOptions {
   backgroundColor?: string;
   /** Override header border color */
   borderColor?: string;
+  /** Elemental accent hex color — auto-tinted for bg/border when no explicit overrides */
+  accentColor?: string;
   /** When present, word slot renders glyph images instead of Georgia text */
   glyphImages?: Map<string, GlyphImageData>;
   /** When present, renders compressed segments with bracket notation */
@@ -230,15 +232,23 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
     canvasWidth, headerHeight, word,
     difficultyLevel = 1, showDifficultyBadge = true,
     loopComponents, rotationPeriod, inversionPeriod, period, darkMode = true, letterStyles,
-    backgroundColor, borderColor, glyphImages, compressedSegments,
+    backgroundColor, borderColor, accentColor, glyphImages, compressedSegments,
   } = options;
 
-  // Background
-  ctx.fillStyle = backgroundColor ?? (darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)");
+  const accent = !backgroundColor && !darkMode ? accentColor : undefined;
+  let headerBg: string;
+  if (backgroundColor) {
+    headerBg = backgroundColor;
+  } else if (accent) {
+    headerBg = accent + "18";
+  } else {
+    headerBg = darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)";
+  }
+  ctx.fillStyle = headerBg;
   ctx.fillRect(0, 0, canvasWidth, headerHeight);
 
   // Bottom border
-  ctx.strokeStyle = borderColor ?? (darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
+  ctx.strokeStyle = borderColor ?? (accent ? accent + "40" : darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, headerHeight - 0.5);

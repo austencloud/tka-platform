@@ -9,6 +9,7 @@ const BLUE_HAND = "#3575E2";
 const RED_HAND = "#ED1C24";
 const PIPE_SEPARATOR = " | ";
 
+
 function drawPipeColoredText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -59,6 +60,8 @@ export interface FooterOptions {
   backgroundColor?: string;
   /** Override footer border color */
   borderColor?: string;
+  /** Elemental accent hex color — auto-tinted for bg/border when no explicit overrides */
+  accentColor?: string;
   /** Left-side label override (e.g. "SS 🌊" for VTG cards) */
   leftLabel?: string;
   /** Right-side label override (e.g. "1:1" turn ratio) */
@@ -94,19 +97,27 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
     userName, notes, birthday,
     darkMode = true,
     showCreatorName = true, showNotes = true, showBirthday = true,
-    backgroundColor, borderColor,
+    backgroundColor, borderColor, accentColor,
     leftLabel, rightLabel,
-    iconImage,
+    iconImage, iconPath,
   } = options;
 
   const footerTop = canvasHeight - footerHeight;
 
-  // Background
-  ctx.fillStyle = backgroundColor ?? (darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)");
+  const accent = !backgroundColor && !darkMode ? accentColor : undefined;
+  let footerBg: string;
+  if (backgroundColor) {
+    footerBg = backgroundColor;
+  } else if (accent) {
+    footerBg = accent + "18";
+  } else {
+    footerBg = darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)";
+  }
+  ctx.fillStyle = footerBg;
   ctx.fillRect(0, footerTop, canvasWidth, footerHeight);
 
   // Top border
-  ctx.strokeStyle = borderColor ?? (darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
+  ctx.strokeStyle = borderColor ?? (accent ? accent + "40" : darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, footerTop + 0.5);
@@ -152,19 +163,29 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
 
     if (iconImage) {
       const textWidth = ctx.measureText(centerText).width;
-      const iconH = Math.floor(footerHeight * 0.6);
-      const srcW = (iconImage as HTMLImageElement).naturalWidth || (iconImage as ImageBitmap).width || iconH;
-      const srcH = (iconImage as HTMLImageElement).naturalHeight || (iconImage as ImageBitmap).height || iconH;
-      const iconW = Math.round(iconH * (srcW / srcH));
-      const gap = Math.floor(fontSize * 0.4);
+      const maxH = Math.floor(footerHeight * 0.7);
+      const maxW = maxH;
+      const srcW = (iconImage as HTMLImageElement).naturalWidth || (iconImage as ImageBitmap).width || maxH;
+      const srcH = (iconImage as HTMLImageElement).naturalHeight || (iconImage as ImageBitmap).height || maxH;
+      const scale = Math.min(maxW / srcW, maxH / srcH);
+      const iconW = Math.round(srcW * scale);
+      const iconH = Math.round(srcH * scale);
+      const gap = Math.floor(fontSize * 0.35);
       const totalWidth = iconW + gap + textWidth + gap + iconW;
       const startX = (canvasWidth - totalWidth) / 2;
       const iconY = yPosition - iconH / 2;
 
+      ctx.save();
+      ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
+      ctx.shadowBlur = Math.max(2, Math.floor(maxH * 0.08));
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = Math.max(1, Math.floor(maxH * 0.03));
       ctx.drawImage(iconImage, startX, iconY, iconW, iconH);
+      ctx.drawImage(iconImage, startX + iconW + gap + textWidth + gap, iconY, iconW, iconH);
+      ctx.restore();
+
       ctx.textAlign = "left";
       ctx.fillText(centerText, startX + iconW + gap, yPosition);
-      ctx.drawImage(iconImage, startX + iconW + gap + textWidth + gap, iconY, iconW, iconH);
     } else {
       ctx.fillText(centerText, canvasWidth / 2, yPosition);
     }
