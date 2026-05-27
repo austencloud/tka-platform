@@ -1,0 +1,10 @@
+name = "tka-shortcode-redirect"
+main = "shortcode-redirect.js"
+compatibility_date = "2025-04-01"
+
+# Custom domains: tka.run, tka.to
+# Configure via Cloudflare dashboard: Workers > tka-shortcode-redirect > Triggers > Custom Domains
+
+[[kv_namespaces]]
+binding = "SHORTCODES"
+id = "c06e4b192f3c49f2a4e11cc44d012277"

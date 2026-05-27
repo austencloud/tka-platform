@@ -1,19 +1,69 @@
 /**
- * Cloudflare Worker: QR Short Code Redirect
+ * Cloudflare Worker: QR Short Code Redirect + Edge OG Meta
  *
  * Deployed on: tka.run, tka.to
- * Routes: /{code} → 302 → tkaflowarts.com/q/{code}
+ * Routes: /{code} → OG meta for crawlers, 302 → tkaflowarts.com/q/{code} for humans
  *         /       → 301 → tkaflowarts.com
  *
  * SACRED: This worker is the only thing between a printed QR code and the
  * sequence viewer. Every Choreo Card ever printed encodes a TKA.RUN/{code}
  * URL. If this worker breaks, every card in circulation is dead.
  *
- * The redirect target (/q/{code}) can be changed here without affecting
- * printed cards — cards encode the short domain, not the full target URL.
+ * KV binding: SHORTCODES — populated by the snapshotShortCodes Cloud Function.
+ * Each key is a short code, value is JSON: { word, creator, thumbnailUrl, deckName }
+ *
+ * When KV has metadata, social crawlers get a fully-rendered OG page at the edge
+ * (~5ms) instead of waiting for SvelteKit SSR (~300ms). Humans always get a 302
+ * redirect to the full viewer at /q/{code}.
+ *
+ * Fallback: if KV is unbound or the lookup misses, behavior is identical to
+ * the original dumb-redirect worker. No degradation path can break a printed card.
  */
+
+const SOCIAL_CRAWLER_UA =
+  /facebookexternalhit|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|TelegramBot|Applebot|Googlebot/i;
+
+function buildOGPage(code, meta) {
+  const word = meta.word || "Sequence";
+  const description = meta.creator
+    ? `Flow sequence by ${meta.creator}`
+    : "Watch this flow sequence";
+  const image =
+    meta.thumbnailUrl || "https://tkaflowarts.com/og-default.png";
+  const url = `https://tkaflowarts.com/q/${code}`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(word)} · TKA</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  <meta property="og:type" content="video.other">
+  <meta property="og:title" content="${escapeHtml(word)} · TKA">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:image" content="${escapeHtml(image)}">
+  <meta property="og:url" content="${escapeHtml(url)}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(word)} · TKA">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${escapeHtml(image)}">
+  <meta name="theme-color" content="#0f0f1a">
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(url)}">
+</head>
+<body></body>
+</html>`;
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -24,6 +74,26 @@ export default {
     const code = path.slice(1);
     if (code.includes("/") || code.includes(".")) {
       return new Response("Not Found", { status: 404 });
+    }
+
+    const ua = request.headers.get("user-agent") || "";
+    const isCrawler = SOCIAL_CRAWLER_UA.test(ua);
+
+    if (isCrawler && env.SHORTCODES) {
+      try {
+        const raw = await env.SHORTCODES.get(code);
+        if (raw) {
+          const meta = JSON.parse(raw);
+          return new Response(buildOGPage(code, meta), {
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+              "Cache-Control": "public, max-age=3600",
+            },
+          });
+        }
+      } catch {
+        // KV miss or parse error — fall through to redirect
+      }
     }
 
     const target = new URL(`https://tkaflowarts.com/q/${code}`);

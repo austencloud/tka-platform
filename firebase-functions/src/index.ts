@@ -37,6 +37,7 @@ export {
 } from "./feedbackClaims";
 
 export { snapshotShortCodes } from "./snapshotShortCodes";
+export { syncShortcodeToKV } from "./syncShortcodeToKV";
 
 export {
   r2PresignUrl,
