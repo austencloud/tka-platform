@@ -100,6 +100,27 @@ function pickRandom(arr, rng) {
 	return arr[Math.floor(rng() * arr.length)];
 }
 
+// ── Model base scale normalization ────────────────────────────────────────
+// Some Sketchfab models are 40-140m natively. This map normalizes them
+// so a scale of 1.0 = reasonable real-world size (~1-2m).
+// Measured in Blender from decompressed GLBs (2026-05-27).
+const MODEL_BASE_SCALE = {
+	"coral-0": 0.02,      // native 51.5m → ~1.0m
+	"coral-1": 0.02,      // native 50.7m → ~1.0m
+	"coral-2": 0.019,     // native 53.9m → ~1.0m
+	"coral-3": 0.025,     // native 39.7m → ~1.0m
+	"coral-4": 0.021,     // native 47.8m → ~1.0m
+	"coral-5": 0.015,     // native 68.1m → ~1.0m
+	"coral-6": 0.026,     // native 38.8m → ~1.0m
+	"kelp-plant": 0.035,  // native 141m  → ~5.0m
+	"sea-urchin": 0.35,   // native 2.8m  → ~1.0m
+	"shell": 0.15,        // native 2.1m  → ~0.3m
+};
+
+function getBaseScale(objectKey) {
+	return MODEL_BASE_SCALE[objectKey] || 1.0;
+}
+
 // ── Object keys ────────────────────────────────────────────────────────────
 const CORALS = ["coral-0", "coral-1", "coral-2", "coral-3", "coral-4", "coral-5", "coral-6", "coral-large"];
 const ROCKS = ["rock-0", "rock-1", "rock-2", "rock-3", "rock-4", "rock-5"];
@@ -133,13 +154,12 @@ function nextId() {
 
 function tryPlace(objectKey, x, z, scale, collisionRadius) {
 	const r = dist2D(x, z);
-	// Reject placements inside stage area
 	if (r < 3.0) return false;
 	if (!grid.isClear(x, z, collisionRadius)) return false;
 	grid.register(x, z, collisionRadius);
 
 	const rotY = rng() * Math.PI * 2;
-	const s = typeof scale === "number" ? scale : scale;
+	const s = scale * getBaseScale(objectKey);
 	placements.push({
 		id: nextId(),
 		objectKey,
