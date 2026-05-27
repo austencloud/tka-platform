@@ -732,6 +732,10 @@ export async function estimateOfflineQRSize(sequence: SequenceData): Promise<QRS
   return result;
 }
 
+export function encodePropForURL(propType: PropType): string {
+  return PROP_TYPE_ENCODE[propType] ?? PROP_TYPE_ENCODE[PropType.STAFF];
+}
+
 export function parsePropsFromURL(searchParams: URLSearchParams): URLPropOptions {
   const result: URLPropOptions = {};
 

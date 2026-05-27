@@ -174,8 +174,8 @@ function buildPathShapeChildren(
       action: () => { vm.setMotionAwarePaths(false); vm.setPathShape("concave"); },
     },
     {
-      id: "path-motion-aware",
-      label: "Motion-Aware",
+      id: "path-hybrid",
+      label: "Hybrid",
       icon: "fa-shuffle",
       checked: motionAware,
       action: () => vm.toggleMotionAwarePaths(),

@@ -326,6 +326,15 @@ export class ImageComposer {
 
     if (options.deckCard) {
       ctx.fillRect(0, headerHeight, canvasWidth, canvasHeight - headerHeight - footerHeight);
+
+      if (!isDarkMode && options.accentColor && gridOffsetX > 0) {
+        const contentTop = headerHeight;
+        const contentH = canvasHeight - headerHeight - footerHeight;
+        ctx.fillStyle = options.accentColor + "18";
+        ctx.fillRect(0, contentTop, gridOffsetX, contentH);
+        ctx.fillRect(gridOffsetX + gridWidth, contentTop, canvasWidth - gridOffsetX - gridWidth, contentH);
+        ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
+      }
     } else {
       ctx.fillRect(0, headerHeight, canvasWidth, gridHeight);
     }
@@ -549,54 +558,45 @@ export class ImageComposer {
             ? "halved"
             : undefined;
 
-      this.TextRenderer.renderWordHeader(
+      this.TextRenderer.renderWordHeader({
         canvas,
-        displayName,
-        {
-          margin: options.margin || 0,
-          stepScale: options.stepScale || 1,
-        },
+        word: displayName,
         headerHeight,
         difficultyLevel,
-        options.addDifficultyLevel,
-        isDarkMode,
-        showLoopGlyph ? loopComponents : undefined,
-        options.deckCard ? DECK_HEADER_BG : undefined,
-        options.deckCard ? DECK_BORDER_COLOR : undefined,
-        showLoopGlyph ? periodForRender : undefined,
-        showLoopGlyph ? inversionForRender : undefined,
-        showLoopGlyph ? loopPeriod : undefined
-      );
+        showDifficultyBadge: options.addDifficultyLevel,
+        darkMode: isDarkMode,
+        loopComponents: showLoopGlyph ? loopComponents : undefined,
+        backgroundColor: options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
+        borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
+        rotationPeriod: showLoopGlyph ? periodForRender : undefined,
+        inversionPeriod: showLoopGlyph ? inversionForRender : undefined,
+        period: showLoopGlyph ? loopPeriod : undefined,
+        accentColor: options.accentColor,
+      });
     }
 
     if (hasAnyFooterContent && footerHeight > 0) {
-      await this.TextRenderer.renderUserInfo(
+      await this.TextRenderer.renderUserInfo({
         canvas,
-        {
+        userInfo: {
           userName: options.userName || "",
           exportDate: options.exportDate || new Date().toISOString(),
           notes: options.notes || "",
           birthday: options.birthday,
         },
-        {
-          margin: options.margin || 10,
-          stepScale: options.stepScale || 1,
-        },
         footerHeight,
-        stepCount,
-        isDarkMode,
-        {
-          showCreatorName,
-          showNotes,
-          showBirthday,
-        },
-        options.customNotesText,
-        options.deckCard ? DECK_HEADER_BG : undefined,
-        options.deckCard ? DECK_BORDER_COLOR : undefined,
-        options.leftLabel,
-        options.rightLabel,
-        options.iconPath,
-      );
+        darkMode: isDarkMode,
+        showCreatorName,
+        showNotes,
+        showBirthday,
+        customNotesText: options.customNotesText,
+        backgroundColor: options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
+        borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
+        leftLabel: options.leftLabel,
+        rightLabel: options.rightLabel,
+        iconPath: options.iconPath,
+        accentColor: options.accentColor,
+      });
     }
 
     return canvas;

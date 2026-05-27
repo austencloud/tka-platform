@@ -6,14 +6,14 @@
  * Based on modern desktop app's enums.py
  */
 
-export enum VTGTiming {
+export enum Timing {
   TOG = "tog",
   SPLIT = "split",
   QUARTER = "quarter",
   NONE = "none",
 }
 
-export enum VTGDirection {
+export enum Direction {
   SAME = "same",
   OPP = "opp",
   NONE = "none",
@@ -135,7 +135,7 @@ export enum VectorDirection {
   DOWNLEFT = "downleft",
 }
 
-export enum VTGMode {
+export enum TNDMode {
   SPLIT_SAME = "SS",
   SPLIT_OPP = "SO",
   TOG_SAME = "TS",
@@ -156,7 +156,7 @@ export enum ElementalType {
 export enum GlyphType {
   TKA = "tka",
   REVERSALS = "reversals",
-  VTG = "vtg",
+  TND = "vtg",
   ELEMENTAL = "elemental",
   POSITIONS = "positions",
 }

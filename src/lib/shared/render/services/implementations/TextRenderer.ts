@@ -22,6 +22,39 @@ import { compressWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createRenderCanvas } from "./createRenderCanvas";
 import type { RenderCanvas } from "../contracts/types";
 
+export interface WordHeaderOptions {
+  canvas: RenderCanvas;
+  word: string;
+  headerHeight: number;
+  difficultyLevel?: number;
+  showDifficultyBadge?: boolean;
+  darkMode?: boolean;
+  loopComponents?: Set<LOOPComponent>;
+  backgroundColor?: string;
+  borderColor?: string;
+  rotationPeriod?: LoopRotationPeriod;
+  inversionPeriod?: LoopInversionPeriod;
+  period?: number;
+  accentColor?: string;
+}
+
+export interface UserInfoFooterOptions {
+  canvas: RenderCanvas;
+  userInfo: UserExportInfo;
+  footerHeight?: number;
+  darkMode?: boolean;
+  showCreatorName?: boolean;
+  showNotes?: boolean;
+  showBirthday?: boolean;
+  customNotesText?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  leftLabel?: string;
+  rightLabel?: string;
+  iconPath?: string;
+  accentColor?: string;
+}
+
 export class TextRenderer {
   private readonly titleFontFamily = "Georgia, serif";
   private readonly titleFontWeight = "600";
@@ -184,118 +217,86 @@ export class TextRenderer {
     ctx.fillText(word, centerX, centerY);
   }
 
-  renderWordHeader(
-    canvas: RenderCanvas,
-    word: string,
-    _options: TextRenderOptions,
-    headerHeight: number,
-    difficultyLevel: number = 1,
-    showDifficultyBadge: boolean = true,
-    darkMode: boolean = false,
-    loopComponents?: Set<LOOPComponent>,
-    backgroundColor?: string,
-    borderColor?: string,
-    rotationPeriod?: LoopRotationPeriod,
-    inversionPeriod?: LoopInversionPeriod,
-    period?: number
-  ): void {
-    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
-    if (!ctx) {
-      return;
-    }
+  renderWordHeader(opts: WordHeaderOptions): void {
+    const ctx = opts.canvas.getContext("2d") as CanvasRenderingContext2D | null;
+    if (!ctx) return;
 
     let packageComponents: Set<LOOPComponentId> | undefined;
-    if (loopComponents && loopComponents.size > 0) {
+    if (opts.loopComponents && opts.loopComponents.size > 0) {
       packageComponents = new Set<LOOPComponentId>();
-      for (const c of loopComponents) {
+      for (const c of opts.loopComponents) {
         packageComponents.add(c as unknown as LOOPComponentId);
       }
     }
 
-    const glyphImages = this.buildGlyphMap(word ?? "");
-    const segments = word ? compressWord(word) : undefined;
+    const glyphImages = this.buildGlyphMap(opts.word ?? "");
+    const segments = opts.word ? compressWord(opts.word) : undefined;
     const hasCompression =
       segments?.some((s: CompressedSegment) => s.repeat > 1);
 
     renderHeader(ctx, {
-      canvasWidth: canvas.width,
-      headerHeight,
-      word: word ?? "",
-      difficultyLevel,
-      showDifficultyBadge,
+      canvasWidth: opts.canvas.width,
+      headerHeight: opts.headerHeight,
+      word: opts.word ?? "",
+      difficultyLevel: opts.difficultyLevel ?? 1,
+      showDifficultyBadge: opts.showDifficultyBadge ?? true,
       loopComponents: packageComponents,
-      rotationPeriod,
-      inversionPeriod,
-      period,
-      darkMode,
-      backgroundColor,
-      borderColor,
+      rotationPeriod: opts.rotationPeriod,
+      inversionPeriod: opts.inversionPeriod,
+      period: opts.period,
+      darkMode: opts.darkMode ?? false,
+      backgroundColor: opts.backgroundColor,
+      borderColor: opts.borderColor,
+      accentColor: opts.accentColor,
       glyphImages: glyphImages.size > 0 ? glyphImages : undefined,
       compressedSegments: hasCompression ? segments : undefined,
     });
   }
 
-  async renderUserInfo(
-    canvas: RenderCanvas,
-    userInfo: UserExportInfo,
-    _options: TextRenderOptions,
-    footerHeight: number = 60,
-    _stepCount: number = 3,
-    darkMode: boolean = false,
-    showFlags?: {
-      showCreatorName?: boolean;
-      showNotes?: boolean;
-      showBirthday?: boolean;
-    },
-    customNotesText?: string,
-    backgroundColor?: string,
-    borderColor?: string,
-    leftLabel?: string,
-    rightLabel?: string,
-    iconPath?: string,
-  ): Promise<void> {
-    const showCreatorName = showFlags?.showCreatorName ?? true;
-    const showNotes = showFlags?.showNotes ?? true;
-    const showBirthday = showFlags?.showBirthday ?? true;
+  async renderUserInfo(opts: UserInfoFooterOptions): Promise<void> {
+    const showCreatorName = opts.showCreatorName ?? true;
+    const showNotes = opts.showNotes ?? true;
+    const showBirthday = opts.showBirthday ?? true;
 
-    if (!showCreatorName && !showNotes && !showBirthday && !iconPath) {
+    if (!showCreatorName && !showNotes && !showBirthday && !opts.iconPath) {
       return;
     }
 
-    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
+    const ctx = opts.canvas.getContext("2d") as CanvasRenderingContext2D | null;
     if (!ctx) return;
 
     const notes =
-      customNotesText && customNotesText.trim() !== ""
-        ? customNotesText
-        : userInfo.notes && userInfo.notes.trim() !== ""
-          ? userInfo.notes
+      opts.customNotesText && opts.customNotesText.trim() !== ""
+        ? opts.customNotesText
+        : opts.userInfo.notes && opts.userInfo.notes.trim() !== ""
+          ? opts.userInfo.notes
           : undefined;
 
-    const birthday = userInfo.birthday
-      ? userInfo.birthday
-      : userInfo.exportDate
-        ? new Date(userInfo.exportDate)
+    const birthday = opts.userInfo.birthday
+      ? opts.userInfo.birthday
+      : opts.userInfo.exportDate
+        ? new Date(opts.userInfo.exportDate)
         : undefined;
 
-    const iconImage = iconPath ? await loadFooterIcon(iconPath) : undefined;
+    const iconImage = opts.iconPath ? await loadFooterIcon(opts.iconPath) : undefined;
 
     renderFooter(ctx, {
-      canvasWidth: canvas.width,
-      canvasHeight: canvas.height,
-      footerHeight,
-      userName: userInfo.userName,
+      canvasWidth: opts.canvas.width,
+      canvasHeight: opts.canvas.height,
+      footerHeight: opts.footerHeight ?? 60,
+      userName: opts.userInfo.userName,
       notes,
       birthday,
-      darkMode,
+      darkMode: opts.darkMode ?? false,
       showCreatorName,
       showNotes,
       showBirthday,
-      backgroundColor,
-      borderColor,
-      leftLabel,
-      rightLabel,
-      iconPath,
+      backgroundColor: opts.backgroundColor,
+      borderColor: opts.borderColor,
+      accentColor: opts.accentColor,
+      leftLabel: opts.leftLabel,
+      rightLabel: opts.rightLabel,
+      iconPath: opts.iconPath,
       iconImage,
     });
   }

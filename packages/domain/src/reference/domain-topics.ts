@@ -238,17 +238,22 @@ Skews support all three shift motion types (pro, anti, float). Theoretically unb
 
 | Level | Concept | What it adds | Arc |
 |-------|---------|-------------|-----|
-| 1 | Foundation | 0 turns, basic positions | Foundation |
+| 1 | Foundation | 0 turns, alpha + beta + gamma positions | Foundation |
 | 2 | Whole turns | 0-3 whole turns | Foundation |
 | 3 | Half turns + float | Halves, float motion type | Foundation |
 | 4 | Centric | Center point, hash hand path, tau/terra positions | New grid point |
-| 5 | Skewed grid | 8-point grid, skew+ and skew- | Grid mixing |
+| 5 | Skewed grid | 8-point grid, zeta + eta (cross-grid asymmetry), skew+ and skew- | Grid mixing |
 | 6 | Interradial orientations | 8 orientations, quarter turns, completes single-grid 2D | Orientation freedom |
 | 7 | Conjoined grids | Dual grids sharing a junction point, extended dashes | Canvas expansion |
 | 8 | Atomics | Multi-plane / 3D (wall, wheel, overhead) | New dimension |
 | 9 | Rubik's cube | Skewed across intersecting planes | 3D COMPLETE |
 
 ### Why This Order
+
+**All three base positions from L1:**
+- Alpha (180°, symmetric), beta (0°, symmetric), and gamma (90°, asymmetric) are all present at Level 1 with 0 turns
+- Learners encounter asymmetry (leader/follower) immediately -- it is foundational, not advanced
+- L5's skewed grid adds cross-grid asymmetry (zeta, eta) where one hand is on diamond and the other on box, not asymmetry in general
 
 **Centric before skewed (L4 before L5):**
 - Center point adds 1 new location and 1 new hand path (hash) -- a +23% state space expansion

@@ -9,6 +9,7 @@ import type { Component } from "svelte";
 import type { EffectPresetGroup } from "./presets/types";
 import type { PrimaryParamSpec } from "./effect-primary-param";
 import { PRIMARY_PARAMS } from "./effect-primary-param";
+import { resilientLazyImport } from "$lib/shared/hmr-helper";
 import { TRAIL_PRESET_GROUP } from "./presets/trail-presets";
 import { FIRE_PRESET_GROUP } from "./presets/fire-presets";
 import { LED_PRESET_GROUP } from "./presets/led-presets";
@@ -110,22 +111,22 @@ const presetGroups: Record<string, EffectPresetGroup> = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const customizeLoaders: Record<string, () => Promise<{ default: Component<any> }>> = {
-  trails: () => import("./customize/TrailCustomize.svelte"),
-  fire: () => import("./customize/FireCustomize.svelte"),
-  led: () => import("./customize/LedCustomize.svelte"),
-  charcoal: () => import("./customize/CharcoalCustomize.svelte"),
-  zap: () => import("./customize/ZapCustomize.svelte"),
-  sparkles: () => import("./customize/SparklesCustomize.svelte"),
-  echo: () => import("./customize/EchoCustomize.svelte"),
-  bloom: () => import("./customize/BloomCustomize.svelte"),
-  water: () => import("./customize/WaterCustomize.svelte"),
-  bubbles: () => import("./customize/BubblesCustomize.svelte"),
-  petals: () => import("./customize/PetalsCustomize.svelte"),
-  smoke: () => import("./customize/SmokeCustomize.svelte"),
-  ink: () => import("./customize/InkCustomize.svelte"),
-  frost: () => import("./customize/FrostCustomize.svelte"),
-  silk: () => import("./customize/SilkCustomize.svelte"),
-  pulse: () => import("./customize/PulseCustomize.svelte"),
+  trails: resilientLazyImport(() => import("./customize/TrailCustomize.svelte")),
+  fire: resilientLazyImport(() => import("./customize/FireCustomize.svelte")),
+  led: resilientLazyImport(() => import("./customize/LedCustomize.svelte")),
+  charcoal: resilientLazyImport(() => import("./customize/CharcoalCustomize.svelte")),
+  zap: resilientLazyImport(() => import("./customize/ZapCustomize.svelte")),
+  sparkles: resilientLazyImport(() => import("./customize/SparklesCustomize.svelte")),
+  echo: resilientLazyImport(() => import("./customize/EchoCustomize.svelte")),
+  bloom: resilientLazyImport(() => import("./customize/BloomCustomize.svelte")),
+  water: resilientLazyImport(() => import("./customize/WaterCustomize.svelte")),
+  bubbles: resilientLazyImport(() => import("./customize/BubblesCustomize.svelte")),
+  petals: resilientLazyImport(() => import("./customize/PetalsCustomize.svelte")),
+  smoke: resilientLazyImport(() => import("./customize/SmokeCustomize.svelte")),
+  ink: resilientLazyImport(() => import("./customize/InkCustomize.svelte")),
+  frost: resilientLazyImport(() => import("./customize/FrostCustomize.svelte")),
+  silk: resilientLazyImport(() => import("./customize/SilkCustomize.svelte")),
+  pulse: resilientLazyImport(() => import("./customize/PulseCustomize.svelte")),
 };
 
 for (const meta of EFFECTS) {

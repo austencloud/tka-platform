@@ -8,7 +8,7 @@ Redesigned 2026-01-21: Switched from legacy SVG images to clean text labels
 that adapt to dark/light mode automatically.
 -->
 <script lang="ts">
-  import type { VTGMode } from "../domain/enums/pictograph-enums";
+  import type { TNDMode } from "../domain/enums/pictograph-enums";
   import { LetterType } from "../../../foundation/domain/models/LetterType";
   import {
     type Letter,
@@ -16,7 +16,7 @@ that adapt to dark/light mode automatically.
   } from "../../../foundation/domain/models/Letter";
 
   let {
-    vtgMode = null,
+    vtgMode: tndMode = null,
     letter = null,
     hasValidData = true,
     visible = true,
@@ -26,7 +26,7 @@ that adapt to dark/light mode automatically.
     darkMode = undefined,
   } = $props<{
     /** The VTG mode to display (SS, SO, TS, TO, QS, QO) */
-    vtgMode?: VTGMode | null;
+    tndMode?: TNDMode | null;
     /** The letter (used to check if Type1) */
     letter?: Letter | null;
     /** Whether the pictograph has valid data */
@@ -52,7 +52,7 @@ that adapt to dark/light mode automatically.
     if (!visible && !previewMode) {
       return false;
     }
-    if (!hasValidData || !vtgMode) {
+    if (!hasValidData || !tndMode) {
       return false;
     }
     // Only show for Type1 letters
@@ -88,18 +88,18 @@ that adapt to dark/light mode automatically.
   // ============================================================================
   // Track when VTG mode changes to trigger a subtle scale-pulse animation.
 
-  let prevVtgMode = $state<VTGMode | null | undefined>(undefined);
+  let prevTndMode = $state<TNDMode | null | undefined>(undefined);
   let isAnimating = $state(false);
 
   $effect(() => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     // Skip initial mount (prevVtgMode is undefined)
     // Animate when mode changes to a new value
-    if (prevVtgMode !== undefined && vtgMode !== prevVtgMode && vtgMode !== null) {
+    if (prevTndMode !== undefined && tndMode !== prevTndMode && tndMode !== null) {
       isAnimating = true;
       timeout = setTimeout(() => { isAnimating = false; }, 180);
     }
-    prevVtgMode = vtgMode;
+    prevTndMode = tndMode;
     return () => { if (timeout) clearTimeout(timeout); };
   });
 </script>
@@ -118,7 +118,7 @@ that adapt to dark/light mode automatically.
           "aria-label": "Toggle VTG glyph visibility",
         }
       : {
-          "aria-label": `VTG mode: ${vtgMode}`,
+          "aria-label": `VTG mode: ${tndMode}`,
         }}
   >
     <text
@@ -130,7 +130,7 @@ that adapt to dark/light mode automatically.
       dominant-baseline="text-bottom"
       style="transform-origin: {xPosition}px {yPosition}px; {explicitFill ? `fill: ${explicitFill}` : ''}"
     >
-      {vtgMode}
+      {tndMode}
     </text>
   </g>
 {/if}

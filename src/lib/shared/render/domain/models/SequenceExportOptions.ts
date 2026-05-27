@@ -27,6 +27,8 @@ export interface SequenceExportOptions {
   rightLabel?: string;
   /** Icon image path drawn on both sides of center text */
   iconPath?: string;
+  /** Elemental accent hex color for header/footer/margin tinting */
+  accentColor?: string;
 
   propTypeOverride?: PropType;
 

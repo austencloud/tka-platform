@@ -10,13 +10,13 @@
  * Based on legacy vtg_glyph.py implementation.
  */
 
-import { VTGMode, ElementalType } from "../enums/pictograph-enums";
+import { TNDMode as TNDMode, ElementalType } from "../enums/pictograph-enums";
 import type { Letter } from "../../../../foundation/domain/models/Letter";
 import type { PictographData } from "../models/PictographData";
 import { GridMode, GridPosition } from "../../../grid/domain/enums/grid-enums";
 
 export interface VTGCalculationResult {
-  vtgMode: VTGMode | null;
+  vtgMode: TNDMode | null;
   elementalType: ElementalType | null;
 }
 
@@ -35,13 +35,13 @@ const GAMMA_DIAG: GridPosition[] = [
  * Mapping from VTG mode to elemental type.
  * Based on legacy SVG_PATHS mapping from elemental_glyph.py
  */
-const VTG_TO_ELEMENTAL: Record<VTGMode, ElementalType> = {
-  [VTGMode.SPLIT_SAME]: ElementalType.WATER,
-  [VTGMode.SPLIT_OPP]: ElementalType.FIRE,
-  [VTGMode.TOG_SAME]: ElementalType.EARTH,
-  [VTGMode.TOG_OPP]: ElementalType.AIR,
-  [VTGMode.QUARTER_SAME]: ElementalType.SUN,
-  [VTGMode.QUARTER_OPP]: ElementalType.MOON,
+const TND_TO_ELEMENTAL: Record<TNDMode, ElementalType> = {
+  [TNDMode.SPLIT_SAME]: ElementalType.WATER,
+  [TNDMode.SPLIT_OPP]: ElementalType.FIRE,
+  [TNDMode.TOG_SAME]: ElementalType.EARTH,
+  [TNDMode.TOG_OPP]: ElementalType.AIR,
+  [TNDMode.QUARTER_SAME]: ElementalType.SUN,
+  [TNDMode.QUARTER_OPP]: ElementalType.MOON,
 };
 
 /**
@@ -55,95 +55,95 @@ const VTG_TO_ELEMENTAL: Record<VTGMode, ElementalType> = {
 // DIAMOND grid mode lookup
 const DIAMOND_MODE_MAP: Record<
   string,
-  VTGMode | ((startPos: GridPosition) => VTGMode)
+  TNDMode | ((startPos: GridPosition) => TNDMode)
 > = {
-  A: VTGMode.SPLIT_SAME,
-  B: VTGMode.SPLIT_SAME,
-  C: VTGMode.SPLIT_SAME,
+  A: TNDMode.SPLIT_SAME,
+  B: TNDMode.SPLIT_SAME,
+  C: TNDMode.SPLIT_SAME,
   D: (startPos: GridPosition) =>
     BETA_3_7.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
   E: (startPos: GridPosition) =>
     BETA_3_7.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
   F: (startPos: GridPosition) =>
     BETA_3_7.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
-  G: VTGMode.TOG_SAME,
-  H: VTGMode.TOG_SAME,
-  I: VTGMode.TOG_SAME,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
+  G: TNDMode.TOG_SAME,
+  H: TNDMode.TOG_SAME,
+  I: TNDMode.TOG_SAME,
   J: (startPos: GridPosition) =>
     ALPHA_1_5.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
   K: (startPos: GridPosition) =>
     ALPHA_1_5.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
   L: (startPos: GridPosition) =>
     ALPHA_1_5.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
-  M: VTGMode.QUARTER_OPP,
-  N: VTGMode.QUARTER_OPP,
-  O: VTGMode.QUARTER_OPP,
-  P: VTGMode.QUARTER_OPP,
-  Q: VTGMode.QUARTER_OPP,
-  R: VTGMode.QUARTER_OPP,
-  S: VTGMode.QUARTER_SAME,
-  T: VTGMode.QUARTER_SAME,
-  U: VTGMode.QUARTER_SAME,
-  V: VTGMode.QUARTER_SAME,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
+  M: TNDMode.QUARTER_OPP,
+  N: TNDMode.QUARTER_OPP,
+  O: TNDMode.QUARTER_OPP,
+  P: TNDMode.QUARTER_OPP,
+  Q: TNDMode.QUARTER_OPP,
+  R: TNDMode.QUARTER_OPP,
+  S: TNDMode.QUARTER_SAME,
+  T: TNDMode.QUARTER_SAME,
+  U: TNDMode.QUARTER_SAME,
+  V: TNDMode.QUARTER_SAME,
 };
 
 // BOX grid mode lookup
 const BOX_MODE_MAP: Record<
   string,
-  VTGMode | ((startPos: GridPosition) => VTGMode)
+  TNDMode | ((startPos: GridPosition) => TNDMode)
 > = {
-  A: VTGMode.SPLIT_SAME,
-  B: VTGMode.SPLIT_SAME,
-  C: VTGMode.SPLIT_SAME,
-  D: VTGMode.QUARTER_OPP,
-  E: VTGMode.QUARTER_OPP,
-  F: VTGMode.QUARTER_OPP,
-  G: VTGMode.TOG_SAME,
-  H: VTGMode.TOG_SAME,
-  I: VTGMode.TOG_SAME,
-  J: VTGMode.QUARTER_OPP,
-  K: VTGMode.QUARTER_OPP,
-  L: VTGMode.QUARTER_OPP,
+  A: TNDMode.SPLIT_SAME,
+  B: TNDMode.SPLIT_SAME,
+  C: TNDMode.SPLIT_SAME,
+  D: TNDMode.QUARTER_OPP,
+  E: TNDMode.QUARTER_OPP,
+  F: TNDMode.QUARTER_OPP,
+  G: TNDMode.TOG_SAME,
+  H: TNDMode.TOG_SAME,
+  I: TNDMode.TOG_SAME,
+  J: TNDMode.QUARTER_OPP,
+  K: TNDMode.QUARTER_OPP,
+  L: TNDMode.QUARTER_OPP,
   M: (startPos: GridPosition) =>
     GAMMA_DIAG.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
   N: (startPos: GridPosition) =>
     GAMMA_DIAG.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
   O: (startPos: GridPosition) =>
     GAMMA_DIAG.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
   P: (startPos: GridPosition) =>
     GAMMA_DIAG.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
   Q: (startPos: GridPosition) =>
     GAMMA_DIAG.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
   R: (startPos: GridPosition) =>
     GAMMA_DIAG.includes(startPos)
-      ? VTGMode.SPLIT_OPP
-      : VTGMode.TOG_OPP,
-  S: VTGMode.QUARTER_SAME,
-  T: VTGMode.QUARTER_SAME,
-  U: VTGMode.QUARTER_SAME,
-  V: VTGMode.QUARTER_SAME,
+      ? TNDMode.SPLIT_OPP
+      : TNDMode.TOG_OPP,
+  S: TNDMode.QUARTER_SAME,
+  T: TNDMode.QUARTER_SAME,
+  U: TNDMode.QUARTER_SAME,
+  V: TNDMode.QUARTER_SAME,
 };
 
 /**
@@ -221,7 +221,7 @@ export function calculateVTG(
       : modeOrFunction;
 
   // Map VTG mode to elemental type
-  const elementalType = VTG_TO_ELEMENTAL[vtgMode];
+  const elementalType = TND_TO_ELEMENTAL[vtgMode];
 
   return {
     vtgMode,

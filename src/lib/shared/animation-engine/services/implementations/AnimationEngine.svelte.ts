@@ -1337,7 +1337,7 @@ export class AnimationEngine {
       }
     }
 
-    // Path shape or motion-aware mode changed.
+    // Path shape or hybrid mode changed.
     const pathShape = vm.getPathShape();
     const motionAwarePaths = vm.getMotionAwarePaths();
     if (pathShape !== this.prevPathShape || motionAwarePaths !== this.prevMotionAwarePaths) {
