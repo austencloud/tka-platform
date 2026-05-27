@@ -103,9 +103,13 @@ function pickRandom(arr, rng) {
 // ── Object keys ────────────────────────────────────────────────────────────
 // FloraInstances normalizes all model geometry to 1-unit max extent.
 // Scale values here = direct world-space meters.
-const CORALS = ["coral-0", "coral-1", "coral-2", "coral-3", "coral-4", "coral-5", "coral-6", "coral-large"];
+const CORALS = [
+	"meshy-staghorn-coral", "meshy-brain-coral", "meshy-fan-coral", "meshy-table-coral",
+	"meshy-photorealistic-coral-0", "meshy-photorealistic-coral-1",
+	"meshy-photorealistic-coral-2", "meshy-photorealistic-coral-3",
+];
 const ROCKS = ["rock-0", "rock-1", "rock-2", "rock-3", "rock-4", "rock-5"];
-const KELP = ["seaweed", "kelp-plant"];
+const KELP = ["meshy-kelp", "kelp-plant"];
 const DECORATIONS = ["starfish", "sea-urchin", "shell", "anemone"];
 const MESHY = [
 	"meshy-basalt-pinnacle",
@@ -225,12 +229,9 @@ for (let pass = 0; pass < 12 && coralCount < targetCoral; pass++) {
 			scaleMult = lerp(0.5, 1.8, rng()); // larger in background
 		}
 
-		let species;
+		let species = CORALS[Math.floor(rng() * CORALS.length)];
 		if (rng() < 0.12 && distFromCenter > 8) {
-			species = "coral-large";
-			scaleMult *= 1.5;
-		} else {
-			species = CORALS[Math.floor(rng() * 7)];
+			scaleMult *= 1.5; // hero-size coral in background
 		}
 
 		if (tryPlace(species, x, z, scaleMult, scaleMult * 0.3)) {
@@ -357,6 +358,26 @@ while (decoCount < targetDeco) {
 }
 console.log(`Placed ${decoCount} decorations`);
 
+// ─── Step 8: Structure placements (hand-placed reef landmarks) ───────────
+const STRUCTURES = [
+	{ key: "struct-coral-arch", x: -12, z: -8, scale: 3.5 },
+	{ key: "struct-coral-bommie", x: 9, z: -14, scale: 4.0 },
+	{ key: "struct-coral-tower", x: -6, z: 16, scale: 5.0 },
+	{ key: "struct-reef-wall", x: 14, z: 6, scale: 6.0 },
+];
+for (const s of STRUCTURES) {
+	const rotY = rng() * Math.PI * 2;
+	placements.push({
+		id: nextId(),
+		objectKey: s.key,
+		position: [rd(s.x), 0, rd(s.z)],
+		rotation: [rd(0), rd(Math.sin(rotY / 2)), rd(0), rd(Math.cos(rotY / 2))],
+		scale: [rd(s.scale), rd(s.scale), rd(s.scale)],
+	});
+	grid.register(s.x, s.z, s.scale * 1.2);
+}
+console.log(`Placed ${STRUCTURES.length} reef structures`);
+
 // ── Write output ───────────────────────────────────────────────────────────
 console.log(`\nTotal placements: ${placements.length}`);
 
@@ -403,10 +424,12 @@ console.log(`\nWrote ${placements.length} placements to:\n  ${outPath}`);
 const categories = {};
 for (const p of placements) {
 	const cat =
-		p.objectKey.startsWith("coral") ? "coral" :
+		p.objectKey.startsWith("struct-") ? "structure" :
+		p.objectKey.includes("coral") || p.objectKey === "coral-large" ? "coral" :
 		p.objectKey.startsWith("rock") ? "rock" :
-		p.objectKey.startsWith("meshy") ? "meshy" :
-		p.objectKey.startsWith("kelp") || p.objectKey === "seaweed" ? "kelp/seaweed" :
+		p.objectKey.includes("kelp") || p.objectKey.includes("sea-grass") ? "kelp/seaweed" :
+		p.objectKey.startsWith("meshy-basalt") || p.objectKey.startsWith("meshy-underwater-rock") ? "meshy-rock" :
+		p.objectKey.startsWith("meshy-") ? "meshy-formation" :
 		"decoration";
 	categories[cat] = (categories[cat] || 0) + 1;
 }

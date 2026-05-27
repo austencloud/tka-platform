@@ -1,12 +1,11 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { useGltf } from "@threlte/extras";
   import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import {
     InstancedMesh,
     Matrix4,
     Vector3,
-    Box3,
     Quaternion,
     Object3D,
     Mesh,
@@ -27,15 +26,13 @@
   // Maps objectKey from ComposerPlacement to model GLB path.
   // Mirrors ocean-composer-plugin.ts catalog without coupling to plugin internals.
   const MODEL_PATHS: Record<string, string> = {
-    "coral-0": "/models/ocean/coral_0.glb",
-    "coral-1": "/models/ocean/coral_1.glb",
-    "coral-2": "/models/ocean/coral_2.glb",
-    "coral-3": "/models/ocean/coral_3.glb",
-    "coral-4": "/models/ocean/coral_4.glb",
-    "coral-5": "/models/ocean/coral_5.glb",
-    "coral-6": "/models/ocean/coral_6.glb",
-    "coral-large": "/models/ocean/coral_large.glb",
-    seaweed: "/models/ocean/seaweed.glb",
+    "meshy-staghorn-coral": "/models/ocean/meshy/staghorn_coral.glb",
+    "meshy-brain-coral": "/models/ocean/meshy/brain_coral.glb",
+    "meshy-fan-coral": "/models/ocean/meshy/fan_coral.glb",
+    "meshy-table-coral": "/models/ocean/meshy/table_coral.glb",
+    "meshy-kelp": "/models/ocean/meshy/kelp.glb",
+    "meshy-tall-kelp": "/models/ocean/meshy/tall_kelp.glb",
+    "meshy-sea-grass": "/models/ocean/meshy/sea_grass.glb",
     "kelp-plant": "/models/ocean/kelp_plant.glb",
     starfish: "/models/ocean/starfish.glb",
     "sea-urchin": "/models/ocean/sea_urchin.glb",
@@ -65,7 +62,8 @@
     "struct-reef-wall": "/models/ocean/structures/reef-wall.glb",
   };
 
-  const opts = { meshoptDecoder: MeshoptDecoder };
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
   // ── Group placements by objectKey ─────────────────────────────────────
   interface PlacementGroup {
@@ -97,16 +95,6 @@
     }
     return Array.from(map.values());
   });
-
-  // ── Load models for each unique objectKey ─────────────────────────────
-  // useGltf is called per unique modelPath. Since OCEAN_PLACEMENTS is currently
-  // empty, groups will be empty and no GLBs will be loaded.
-  // When Blender populates placements, the groups reactive chain triggers loading.
-
-  // We need to load models dynamically based on groups.
-  // Since useGltf must be called at component top level (Svelte store),
-  // and groups is currently empty, we pre-load nothing.
-  // Instead, we build instanced meshes in an $effect when data arrives.
 
   let instancedMeshes = $state<InstancedMesh[]>([]);
 
@@ -192,11 +180,6 @@
     return inst;
   }
 
-  // ── Dynamic model loading + instancing ────────────────────────────────
-  // For each group, we load the GLB dynamically and build an InstancedMesh.
-  // This approach handles the fact that groups are empty at init and may
-  // grow when Blender exports placements.
-
   $effect(() => {
     const currentGroups = groups;
     if (currentGroups.length === 0) {
@@ -208,36 +191,23 @@
     const meshes: InstancedMesh[] = [];
 
     Promise.all(
-      currentGroups.map(async (group) => {
-        const { useGltf: _ } = await import("@threlte/extras");
-        // useGltf is a store creator and can't be used imperatively.
-        // Instead, use Three.js GLTFLoader directly for dynamic loading.
-        const { GLTFLoader } = await import(
-          "three/examples/jsm/loaders/GLTFLoader.js"
-        );
-        const { MeshoptDecoder: Decoder } = await import(
-          "three/examples/jsm/libs/meshopt_decoder.module.js"
-        );
-
-        const loader = new GLTFLoader();
-        loader.setMeshoptDecoder(Decoder);
-
-        return new Promise<InstancedMesh | null>((resolve) => {
-          loader.load(
-            group.modelPath,
-            (gltf) => {
-              if (cancelled) {
-                resolve(null);
-                return;
-              }
-              const inst = buildInstancedMesh(gltf.scene, group.entries);
-              resolve(inst);
-            },
-            undefined,
-            () => resolve(null)
-          );
-        });
-      })
+      currentGroups.map(
+        (group) =>
+          new Promise<InstancedMesh | null>((resolve) => {
+            gltfLoader.load(
+              group.modelPath,
+              (gltf) => {
+                if (cancelled) {
+                  resolve(null);
+                  return;
+                }
+                resolve(buildInstancedMesh(gltf.scene, group.entries));
+              },
+              undefined,
+              () => resolve(null)
+            );
+          })
+      )
     ).then((results) => {
       if (cancelled) return;
       for (const m of results) {
