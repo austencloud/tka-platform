@@ -6,6 +6,7 @@
     InstancedMesh,
     Matrix4,
     Vector3,
+    Box3,
     Quaternion,
     Object3D,
     Mesh,
@@ -142,6 +143,23 @@
 
     const geo = extracted.geometry.clone();
     geo.applyMatrix4(extracted.worldMatrix);
+
+    // Normalize geometry so max extent = 1 unit, bottom at Y=0.
+    // Sketchfab models have wildly different native scales (0.6m to 141m).
+    // After normalization, placement scale directly = world-space meters.
+    geo.computeBoundingBox();
+    const bbox = geo.boundingBox!;
+    const size = new Vector3();
+    bbox.getSize(size);
+    const maxExtent = Math.max(size.x, size.y, size.z);
+    if (maxExtent > 0.001) {
+      const center = new Vector3();
+      bbox.getCenter(center);
+      geo.applyMatrix4(new Matrix4().makeTranslation(-center.x, -bbox.min.y, -center.z));
+      const ns = 1 / maxExtent;
+      geo.applyMatrix4(new Matrix4().makeScale(ns, ns, ns));
+    }
+
     const clonedMat = (
       extracted.material as import("three").MeshStandardMaterial
     ).clone();

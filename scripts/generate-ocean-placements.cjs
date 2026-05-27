@@ -100,28 +100,9 @@ function pickRandom(arr, rng) {
 	return arr[Math.floor(rng() * arr.length)];
 }
 
-// ── Model base scale normalization ────────────────────────────────────────
-// Some Sketchfab models are 40-140m natively. This map normalizes them
-// so a scale of 1.0 = reasonable real-world size (~1-2m).
-// Measured in Blender from decompressed GLBs (2026-05-27).
-const MODEL_BASE_SCALE = {
-	"coral-0": 0.02,      // native 51.5m → ~1.0m
-	"coral-1": 0.02,      // native 50.7m → ~1.0m
-	"coral-2": 0.019,     // native 53.9m → ~1.0m
-	"coral-3": 0.025,     // native 39.7m → ~1.0m
-	"coral-4": 0.021,     // native 47.8m → ~1.0m
-	"coral-5": 0.015,     // native 68.1m → ~1.0m
-	"coral-6": 0.026,     // native 38.8m → ~1.0m
-	"kelp-plant": 0.035,  // native 141m  → ~5.0m
-	"sea-urchin": 0.35,   // native 2.8m  → ~1.0m
-	"shell": 0.15,        // native 2.1m  → ~0.3m
-};
-
-function getBaseScale(objectKey) {
-	return MODEL_BASE_SCALE[objectKey] || 1.0;
-}
-
 // ── Object keys ────────────────────────────────────────────────────────────
+// FloraInstances normalizes all model geometry to 1-unit max extent.
+// Scale values here = direct world-space meters.
 const CORALS = ["coral-0", "coral-1", "coral-2", "coral-3", "coral-4", "coral-5", "coral-6", "coral-large"];
 const ROCKS = ["rock-0", "rock-1", "rock-2", "rock-3", "rock-4", "rock-5"];
 const KELP = ["seaweed", "kelp-plant"];
@@ -159,7 +140,7 @@ function tryPlace(objectKey, x, z, scale, collisionRadius) {
 	grid.register(x, z, collisionRadius);
 
 	const rotY = rng() * Math.PI * 2;
-	const s = scale * getBaseScale(objectKey);
+	const s = scale;
 	placements.push({
 		id: nextId(),
 		objectKey,
@@ -178,9 +159,9 @@ console.log(`Generated ${formationCenters.length} formation centers`);
 let heroRockCount = 0;
 const heroIndices = new Set();
 for (let i = 0; i < formationCenters.length && heroRockCount < 20; i++) {
-	if (rng() < 0.5) continue; // ~50% of formations get a hero rock
+	if (rng() < 0.5) continue;
 	const fc = formationCenters[i];
-	const scale = lerp(0.3, 1.5, rng());
+	const scale = lerp(0.6, 2.5, rng()); // meters — prominent reef rocks
 	const rock = pickRandom(ROCKS, rng);
 	if (tryPlace(rock, fc.x, fc.z, scale, scale * 0.8)) {
 		heroRockCount++;
@@ -197,7 +178,7 @@ for (let i = 0; i < formationCenters.length && meshyCount < 15; i++) {
 	if (heroIndices.has(i)) continue; // don't stack on hero rocks
 	if (rng() < 0.6) continue;
 	const fc = formationCenters[i];
-	const scale = lerp(0.5, 2.0, rng());
+	const scale = lerp(1.5, 4.0, rng()); // meters — large reef formations
 	const key = meshyFormations[meshyCount % meshyFormations.length];
 	if (tryPlace(key, fc.x, fc.z, scale, scale * 1.0)) {
 		meshyCount++;
@@ -209,7 +190,7 @@ while (meshyCount < 15) {
 	const r = lerp(8, 22, rng());
 	const x = Math.cos(angle) * r;
 	const z = Math.sin(angle) * r;
-	const scale = lerp(0.5, 2.0, rng());
+	const scale = lerp(1.5, 4.0, rng());
 	const key = meshyFormations[meshyCount % meshyFormations.length];
 	if (tryPlace(key, x, z, scale, scale * 1.0)) {
 		meshyCount++;
@@ -233,24 +214,23 @@ for (let pass = 0; pass < 12 && coralCount < targetCoral; pass++) {
 		const x = fc.x + offset.x;
 		const z = fc.z + offset.z;
 
-		// Scale varies: smaller coral near clearing, bigger in reef
+		// Scale in meters — smaller coral near clearing, bigger in reef
 		const distFromCenter = dist2D(x, z);
 		let scaleMult;
 		if (distFromCenter < 6) {
-			scaleMult = lerp(0.1, 0.3, rng()); // small near clearing edge
+			scaleMult = lerp(0.15, 0.4, rng()); // small near clearing edge
 		} else if (distFromCenter < 15) {
-			scaleMult = lerp(0.2, 1.2, rng()); // full range in reef
+			scaleMult = lerp(0.3, 1.2, rng()); // full range in reef
 		} else {
-			scaleMult = lerp(0.3, 1.5, rng()); // can be large in background
+			scaleMult = lerp(0.5, 1.8, rng()); // larger in background
 		}
 
-		// Pick species - coral-large only in reef zone and rarer
 		let species;
 		if (rng() < 0.12 && distFromCenter > 8) {
 			species = "coral-large";
-			scaleMult *= 1.3;
+			scaleMult *= 1.5;
 		} else {
-			species = CORALS[Math.floor(rng() * 7)]; // coral-0 through coral-6
+			species = CORALS[Math.floor(rng() * 7)];
 		}
 
 		if (tryPlace(species, x, z, scaleMult, scaleMult * 0.3)) {
@@ -277,12 +257,11 @@ for (let i = 0; i < formationCenters.length && kelpCount < targetKelp * 0.6; i++
 	const key = pickRandom(KELP, rng);
 	let scale;
 	if (distFromCenter > 15) {
-		// Background kelp: larger for silhouette
-		scale = lerp(0.8, 1.5, rng());
+		scale = lerp(3.0, 6.0, rng()); // meters — tall background kelp
 	} else {
-		scale = lerp(0.4, 1.0, rng());
+		scale = lerp(1.5, 4.0, rng()); // meters — reef kelp
 	}
-	if (tryPlace(key, x, z, scale, scale * 0.25)) {
+	if (tryPlace(key, x, z, scale, 0.5)) {
 		kelpCount++;
 	}
 }
@@ -294,8 +273,8 @@ while (kelpCount < targetKelp) {
 	const x = Math.cos(angle) * r;
 	const z = Math.sin(angle) * r;
 	const key = pickRandom(KELP, rng);
-	const scale = lerp(0.8, 1.5, rng());
-	if (tryPlace(key, x, z, scale, scale * 0.25)) {
+	const scale = lerp(3.0, 7.0, rng()); // meters — tall silhouette kelp
+	if (tryPlace(key, x, z, scale, 0.5)) {
 		kelpCount++;
 	}
 }
@@ -310,7 +289,7 @@ while (pebbleCount < targetPebbles) {
 	const x = Math.cos(angle) * r;
 	const z = Math.sin(angle) * r;
 	const rock = pickRandom(ROCKS, rng);
-	const scale = lerp(0.08, 0.2, rng());
+	const scale = lerp(0.1, 0.3, rng()); // meters — small pebbles near stage
 	if (tryPlace(rock, x, z, scale, scale * 0.5)) {
 		pebbleCount++;
 	}
@@ -350,14 +329,14 @@ for (let i = 0; i < formationCenters.length && decoCount < targetDeco; i++) {
 			const clearR = lerp(3.5, 5.5, rng());
 			const cx = Math.cos(clearAngle) * clearR;
 			const cz = Math.sin(clearAngle) * clearR;
-			const scale = lerp(0.15, 0.35, rng());
+			const scale = lerp(0.15, 0.4, rng()); // meters — small shells
 			if (tryPlace(key, cx, cz, scale, scale * 0.3)) {
 				decoCount++;
 				continue;
 			}
 		}
 
-		const scale = lerp(0.15, 0.5, rng());
+		const scale = lerp(0.2, 0.6, rng()); // meters
 		if (tryPlace(key, x, z, scale, scale * 0.3)) {
 			decoCount++;
 		}
@@ -371,7 +350,7 @@ while (decoCount < targetDeco) {
 	const x = Math.cos(angle) * r;
 	const z = Math.sin(angle) * r;
 	const key = pickRandom(DECORATIONS, rng);
-	const scale = lerp(0.15, 0.5, rng());
+	const scale = lerp(0.2, 0.6, rng()); // meters
 	if (tryPlace(key, x, z, scale, scale * 0.3)) {
 		decoCount++;
 	}
