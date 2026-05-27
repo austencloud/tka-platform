@@ -612,7 +612,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
           {showTKA}
           {showWord}
           {includeStartPosition}
-          vtgFamilyId={selectedVtgFamily}
+          tndFamilyId={selectedVtgFamily}
           onBackToCollections={handleBackToCollections}
           onSelectCatalog={handleSelectCatalog}
           onSelectSequence={handleSelectSequence}
@@ -633,7 +633,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
       </main>
     {:else if mode === "releaser"}
       <main class="content-area">
-        <DeckReleaserTab />
+        <DeckReleaserTab onContextMenu={openCardContextMenu} />
       </main>
     {/if}
   </div>

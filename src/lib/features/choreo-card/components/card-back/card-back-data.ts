@@ -17,7 +17,7 @@ import {
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-import { VTG_TURNS_RATIO_MAP } from "../../domain/elemental-theme";
+import { VTG_TURNS_RATIO_MAP } from "../../domain/tnd-element";
 import { getReversalPattern } from "../../domain/reversal-patterns";
 import { matchReversalPatternId } from "../../domain/reversal-matcher";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";

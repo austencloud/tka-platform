@@ -1,55 +1,65 @@
-export interface ElementalTheme {
+export interface TndElement {
   readonly familyId: string;
+  readonly name: string;
   readonly element: string;
   readonly accentColor: string;
   readonly darkComplement: string;
   readonly iconPath: string;
 }
 
-export const VTG_ELEMENTAL_THEMES: readonly ElementalTheme[] = [
+export const TND_ELEMENTS: readonly TndElement[] = [
   {
     familyId: "split-same",
+    name: "Split-Same",
     element: "water",
     accentColor: "#63b7cd",
     darkComplement: "#1a5276",
-    iconPath: "/images/elements/water.png",
+    iconPath: "/images/elements/water-v2.png",
   },
   {
     familyId: "tog-same",
+    name: "Tog-Same",
     element: "earth",
     accentColor: "#75A874",
     darkComplement: "#2a4a29",
-    iconPath: "/images/elements/earth.png",
+    iconPath: "/images/elements/earth-v2.png",
   },
   {
     familyId: "quarter-same",
+    name: "Quarter-Same",
     element: "sun",
     accentColor: "#ffde17",
     darkComplement: "#7a6a00",
-    iconPath: "/images/elements/sun.png",
+    iconPath: "/images/elements/sun-v4.png",
   },
   {
     familyId: "split-opp",
+    name: "Split-Opp",
     element: "fire",
     accentColor: "#f2673a",
     darkComplement: "#6b1a0a",
-    iconPath: "/images/elements/fire.png",
+    iconPath: "/images/elements/fire-v2.png",
   },
   {
     familyId: "tog-opp",
+    name: "Tog-Opp",
     element: "air",
     accentColor: "#78b7e3",
     darkComplement: "#1a4a6b",
-    iconPath: "/images/elements/air.png",
+    iconPath: "/images/elements/air-v2.png",
   },
   {
     familyId: "quarter-opp",
+    name: "Quarter-Opp",
     element: "moon",
     accentColor: "#6a4199",
     darkComplement: "#2a1540",
-    iconPath: "/images/elements/moon.png",
+    iconPath: "/images/elements/moon-v2.png",
   },
 ] as const;
+
+export const TND_BY_FAMILY: Readonly<Record<string, TndElement>> =
+  Object.fromEntries(TND_ELEMENTS.map(t => [t.familyId, t]));
 
 export const VTG_RATIO_LEVEL_MAP: Readonly<Record<string, number>> = {
   "1:1": 1,
@@ -82,6 +92,6 @@ export const VTG_TURNS_RATIO_MAP: Readonly<Record<number, string>> = {
   3: "7:1",
 };
 
-export function getElementalTheme(familyId: string): ElementalTheme | null {
-  return VTG_ELEMENTAL_THEMES.find((t) => t.familyId === familyId) ?? null;
+export function getTndElement(familyId: string): TndElement | null {
+  return TND_ELEMENTS.find((t) => t.familyId === familyId) ?? null;
 }

@@ -3,7 +3,7 @@ import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { SkewDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { ElementalTheme } from "../domain/elemental-theme";
+import type { TndElement } from "../domain/tnd-element";
 
 export interface CardBackDomRenderOptions {
   width: number;
@@ -98,7 +98,7 @@ export interface PrintRenderOptions {
   bluePropType?: PropType;
   redPropType?: PropType;
   /** VTG elemental theme for front frame coloring. Omit for neutral gray. */
-  elementTheme?: ElementalTheme;
+  tndElement?: TndElement;
   /** Show mandala fills in empty grid cells */
   showMandala?: boolean;
   /** Left-side footer label */

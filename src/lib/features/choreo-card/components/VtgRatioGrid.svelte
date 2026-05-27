@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
-  import { VTG_RATIO_LEVEL_MAP } from "../domain/elemental-theme";
+  import { VTG_RATIO_LEVEL_MAP } from "../domain/tnd-element";
   import VtgRatioCard from "./VtgRatioCard.svelte";
 
   interface Props {

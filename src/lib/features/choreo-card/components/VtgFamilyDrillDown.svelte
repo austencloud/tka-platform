@@ -8,7 +8,7 @@ import { aggregateFamilySequences } from "$lib/features/choreo-card/services/vtg
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { FamilyRatioGroup } from "../services/types";
 import type { CardPair } from "../services/types";
-  import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
+  import { TND_ELEMENTS } from "../domain/tnd-element";
   import { computeVtgCardFooter } from "../domain/catalog-vtg-labels";
   import ChoreoCard from "./ChoreoCard.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
@@ -45,7 +45,7 @@ import type { CardPair } from "../services/types";
   }: Props = $props();
 
   const theme = $derived(
-    VTG_ELEMENTAL_THEMES.find((t) => t.familyId === familyId),
+    TND_ELEMENTS.find((t) => t.familyId === familyId),
   );
   const familyLabel = $derived(
     theme
@@ -253,6 +253,7 @@ import type { CardPair } from "../services/types";
       sequences={allSequences}
       {cardSize}
       theme={selectedTheme}
+      tndElement={theme}
       {rerenderKey}
       isLoading={loading}
       {handPointsVisible}

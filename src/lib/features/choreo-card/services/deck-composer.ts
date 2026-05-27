@@ -1,5 +1,6 @@
 import type { Catalog } from "../domain/models/Catalog";
 import type { CardFooter, DeckReleaseCard, StepCountWeight } from "../domain/models/DeckRelease";
+import { TND_BY_FAMILY } from "../domain/tnd-element";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -264,19 +265,10 @@ export function getVtgFamilyOptions(catalogs: Catalog[]): VtgFamilyOption[] {
   }));
 }
 
-const VTG_ELEMENT_MAP: Record<string, { name: string; iconPath: string }> = {
-  "split-same":   { name: "Split-Same", iconPath: "/images/elements/water-v2.png" },
-  "tog-same":     { name: "Tog-Same", iconPath: "/images/elements/earth-v2.png" },
-  "quarter-same": { name: "Quarter-Same", iconPath: "/images/elements/sun-v2.png" },
-  "split-opp":    { name: "Split-Opp", iconPath: "/images/elements/fire-v2.png" },
-  "tog-opp":      { name: "Tog-Opp", iconPath: "/images/elements/air-v2.png" },
-  "quarter-opp":  { name: "Quarter-Opp", iconPath: "/images/elements/moon-v2.png" },
-};
-
 export function vtgFooter(familyId: string, _turnRatio: string): CardFooter {
-  const el = VTG_ELEMENT_MAP[familyId];
-  return el
-    ? { center: el.name, iconPath: el.iconPath }
+  const theme = TND_BY_FAMILY[familyId];
+  return theme
+    ? { center: theme.name, iconPath: theme.iconPath }
     : { center: familyId };
 }
 

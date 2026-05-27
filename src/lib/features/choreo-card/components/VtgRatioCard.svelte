@@ -5,7 +5,7 @@
   import {
     VTG_RATIO_TURNS_MAP,
     VTG_RATIO_LEVEL_MAP,
-  } from "../domain/elemental-theme";
+  } from "../domain/tnd-element";
 
   interface Props {
     catalog: Catalog;

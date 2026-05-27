@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
   import { VTG_FAMILY_KEYS, VTG_FAMILY_LABELS } from "../state/catalog-browse-types";
+  import { TND_BY_FAMILY } from "../domain/tnd-element";
   import { parseTurnPattern } from "../domain/turn-pattern-parser";
   import CatalogCard from "./CatalogCard.svelte";
 
@@ -17,15 +18,6 @@
   }
 
   const { catalogs, onSelectCatalog }: Props = $props();
-
-  const FAMILY_META: Record<string, { name: string; iconPath: string }> = {
-    "split-same":   { name: "Split-Same",   iconPath: "/images/elements/water-v2.png" },
-    "tog-same":     { name: "Tog-Same",     iconPath: "/images/elements/earth-v2.png" },
-    "quarter-same": { name: "Quarter-Same", iconPath: "/images/elements/sun-v2.png" },
-    "split-opp":    { name: "Split-Opp",    iconPath: "/images/elements/fire-v2.png" },
-    "tog-opp":      { name: "Tog-Opp",      iconPath: "/images/elements/air-v2.png" },
-    "quarter-opp":  { name: "Quarter-Opp",  iconPath: "/images/elements/moon-v2.png" },
-  };
 
   let selectedFamily = $state<string | null>(null);
 
@@ -46,8 +38,8 @@
       .filter(k => counts.has(k))
       .map(k => ({
         id: k,
-        name: FAMILY_META[k]?.name ?? k,
-        iconPath: FAMILY_META[k]?.iconPath ?? "",
+        name: TND_BY_FAMILY[k]?.name ?? k,
+        iconPath: TND_BY_FAMILY[k]?.iconPath ?? "",
         sequenceCount: counts.get(k) ?? 0,
       }));
   });

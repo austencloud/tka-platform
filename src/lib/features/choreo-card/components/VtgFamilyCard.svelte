@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { ElementalTheme } from "../domain/elemental-theme";
+  import type { TndElement } from "../domain/tnd-element";
 
   interface Props {
-    theme: ElementalTheme;
+    theme: TndElement;
     ratioCount: number;
     sequenceCount: number;
     onSelect: () => void;

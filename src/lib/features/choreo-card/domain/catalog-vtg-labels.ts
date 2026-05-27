@@ -1,5 +1,6 @@
 import type { Catalog } from "./models/Catalog";
 import type { CardFooter } from "./models/DeckRelease";
+import { TND_BY_FAMILY } from "./tnd-element";
 
 export const VTG_ABBREVIATIONS: Record<string, string> = {
   "split-same": "SS", "tog-same": "TS",
@@ -90,14 +91,6 @@ export function computeCatalogLeftLabel(catalog: Catalog, vtgFamilyId: string | 
   return abbr;
 }
 
-const VTG_ELEMENT_MAP: Record<string, { name: string; iconPath: string }> = {
-  "split-same":   { name: "Split-Same", iconPath: "/images/elements/water-v2.png" },
-  "tog-same":     { name: "Tog-Same", iconPath: "/images/elements/earth-v2.png" },
-  "quarter-same": { name: "Quarter-Same", iconPath: "/images/elements/sun-v2.png" },
-  "split-opp":    { name: "Split-Opp", iconPath: "/images/elements/fire-v2.png" },
-  "tog-opp":      { name: "Tog-Opp", iconPath: "/images/elements/air-v2.png" },
-  "quarter-opp":  { name: "Quarter-Opp", iconPath: "/images/elements/moon-v2.png" },
-};
 
 export function parseDeckTurnRatio(turnPattern: string | undefined): string {
   if (!turnPattern) return "1:1";
@@ -117,9 +110,9 @@ export function parseDeckTurnRatio(turnPattern: string | undefined): string {
 }
 
 export function computeVtgCardFooter(familyId: string, _turnRatio: string): CardFooter {
-  const el = VTG_ELEMENT_MAP[familyId];
-  return el
-    ? { center: el.name, iconPath: el.iconPath }
+  const theme = TND_BY_FAMILY[familyId];
+  return theme
+    ? { center: theme.name, iconPath: theme.iconPath }
     : { center: familyId };
 }
 

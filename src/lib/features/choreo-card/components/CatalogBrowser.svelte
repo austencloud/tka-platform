@@ -31,6 +31,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     parseDeckTurnRatio,
     computeVtgCardFooter,
   } from "../domain/catalog-vtg-labels";
+  import { getTndElement } from "../domain/tnd-element";
   import { calculateVTG } from "$lib/shared/pictograph/shared/domain/utils/vtg-calculator";
   import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -51,7 +52,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     onLoadFamilySequences: (familyIds: string[]) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
     /** VTG family ID from drilldown context (e.g. "split-same") for footer labels */
-    vtgFamilyId?: string | null;
+    tndFamilyId?: string | null;
   }
 
   let {
@@ -69,7 +70,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     onSelectSequence,
     onLoadFamilySequences,
     onContextMenu,
-    vtgFamilyId,
+    tndFamilyId: tndFamilyId,
   }: Props = $props();
 
   const browseState = createCatalogBrowseState(() => catalogs);
@@ -177,7 +178,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   }
 
   // VTG category abbreviation lookup
-  const VTG_ABBREVIATIONS: Record<string, string> = {
+  const TND_ABBREVIATIONS: Record<string, string> = {
     "split-same": "SS", "tog-same": "TS",
     "split-opp": "SO", "tog-opp": "TO",
     "quarter-same": "QS", "quarter-opp": "QO",
@@ -192,17 +193,17 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   let selectedCatalog = $derived(catalogs.find((d) => d.id === selectedCatalogId) ?? null);
 
   // All known VTG family keys for scanning catalog data
-  const VTG_FAMILY_KEYS = Object.keys(VTG_ABBREVIATIONS);
+  const TND_FAMILY_KEYS = Object.keys(TND_ABBREVIATIONS);
 
   // Resolve VTG family ID from drilldown context, localStorage, or catalog data
-  const resolvedVtgFamilyId = $derived.by(() => {
+  const resolvedTndFamilyId = $derived.by(() => {
     // 1. Drilldown context (set during navigation)
-    if (vtgFamilyId) return vtgFamilyId;
+    if (tndFamilyId) return tndFamilyId;
     // 2. Catalog's loopType matches a VTG family directly
-    if (selectedCatalog && VTG_ABBREVIATIONS[selectedCatalog.loopType]) return selectedCatalog.loopType;
+    if (selectedCatalog && TND_ABBREVIATIONS[selectedCatalog.loopType]) return selectedCatalog.loopType;
     // 3. For VTG catalogs, infer from family IDs (e.g. family.id contains "quarter-same")
     if (selectedCatalog?.collection === "VTG") {
-      for (const key of VTG_FAMILY_KEYS) {
+      for (const key of TND_FAMILY_KEYS) {
         if (selectedCatalog.families.some((f) => f.id.toLowerCase().includes(key))) {
           return key;
         }
@@ -210,6 +211,8 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     }
     return undefined;
   });
+
+  const tndElement = $derived(resolvedTndFamilyId ? getTndElement(resolvedTndFamilyId) : null);
 
   // Human-readable VTG family names for breadcrumbs
   const VTG_FAMILY_LABELS: Record<string, string> = {
@@ -256,10 +259,10 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
   // VTG designation: family name + ratio — only shown when a single family is relevant
   const vtgDesignation = $derived.by(() => {
-    if (!selectedCatalog || !resolvedVtgFamilyId) return "";
+    if (!selectedCatalog || !resolvedTndFamilyId) return "";
     // Don't show single-family badge when catalog has all 6 families
     if (selectedCatalog.families.length >= 6) return "";
-    const label = VTG_FAMILY_LABELS[resolvedVtgFamilyId] ?? resolvedVtgFamilyId;
+    const label = VTG_FAMILY_LABELS[resolvedTndFamilyId] ?? resolvedTndFamilyId;
     const turn = selectedCatalog.turnPattern;
     if (turn) {
       const uniformMatch = turn.match(/^uniform[- ](\d+)t$/i);
@@ -279,21 +282,21 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 
 
   function resolveSequenceVtgFooter(seq: SequenceData): CardFooter | undefined {
-    if (!resolvedVtgFamilyId || !selectedCatalog) return undefined;
+    if (!resolvedTndFamilyId || !selectedCatalog) return undefined;
     const turnRatio = parseDeckTurnRatio(selectedCatalog.turnPattern);
 
     const firstStep = seq.steps?.[0];
     if (!firstStep?.letter || !firstStep?.startPosition) {
-      return computeVtgCardFooter(resolvedVtgFamilyId, turnRatio);
+      return computeVtgCardFooter(resolvedTndFamilyId, turnRatio);
     }
 
     const gm = (seq.gridMode ?? selectedCatalog.gridMode) === "box" ? GridMode.BOX : GridMode.DIAMOND;
     const result = calculateVTG(firstStep.letter as Letter, gm, firstStep.startPosition as GridPosition);
     if (!result.vtgMode) {
-      return computeVtgCardFooter(resolvedVtgFamilyId, turnRatio);
+      return computeVtgCardFooter(resolvedTndFamilyId, turnRatio);
     }
 
-    const familyId = ABBR_TO_FAMILY_ID[result.vtgMode] ?? resolvedVtgFamilyId;
+    const familyId = ABBR_TO_FAMILY_ID[result.vtgMode] ?? resolvedTndFamilyId;
     return computeVtgCardFooter(familyId, turnRatio);
   }
 
@@ -658,6 +661,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             sequences={filteredSequences}
             {cardSize}
             theme={selectedTheme}
+            tndElement={tndElement ?? undefined}
             {rerenderKey}
             isLoading={false}
             {handPointsVisible}
@@ -680,6 +684,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             sequences={filteredSequences}
             {cardSize}
             theme={selectedTheme}
+            tndElement={tndElement ?? undefined}
             {rerenderKey}
             isLoading={false}
             {handPointsVisible}

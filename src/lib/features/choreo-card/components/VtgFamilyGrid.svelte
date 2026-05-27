@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
-  import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
+  import { TND_ELEMENTS } from "../domain/tnd-element";
   import VtgFamilyCard from "./VtgFamilyCard.svelte";
 
   interface Props {
@@ -11,7 +11,7 @@
   const { catalogs, onSelectFamily }: Props = $props();
 
   const familyStats = $derived(
-    VTG_ELEMENTAL_THEMES.map((theme) => {
+    TND_ELEMENTS.map((theme) => {
       let ratioCount = 0;
       let sequenceCount = 0;
       for (const catalog of catalogs) {
