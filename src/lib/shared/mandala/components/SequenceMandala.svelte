@@ -212,7 +212,7 @@
 	);
 
 	const pathOptions = $derived.by((): MandalaPathOptions | undefined => {
-		if (pathShape === "motion-aware") return { motionAware: true };
+		if (pathShape === "hybrid") return { motionAware: true };
 		if (pathShape !== "arc") return { pathShape };
 		return undefined;
 	});

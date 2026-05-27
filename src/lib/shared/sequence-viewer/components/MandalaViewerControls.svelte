@@ -67,7 +67,7 @@
     { id: "arc", label: "Arc" },
     { id: "linear", label: "Linear" },
     { id: "concave", label: "Concave" },
-    { id: "motion-aware", label: "Hybrid" },
+    { id: "hybrid", label: "Hybrid" },
   ];
 
   const SPEEDS: { value: number; label: string }[] = [

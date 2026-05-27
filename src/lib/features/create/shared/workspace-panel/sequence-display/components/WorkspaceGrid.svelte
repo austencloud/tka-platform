@@ -30,6 +30,7 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
 
   const MANDALA_CELL_SCALE = 0.78;
   const hapticService = getHapticFeedback();
@@ -196,12 +197,20 @@
   // --- Context menu ---
   let mandalaMenuState = $state<ContextMenuState>({ open: false });
   let mandalaMenuVariant = $state<MandalaShow>("both");
+  let mandalaPathShape = $state<MandalaPathShape>("arc");
 
   function handleMandalaContextMenu(event: MouseEvent, variant: MandalaShow) {
     event.preventDefault();
     mandalaMenuVariant = variant;
     mandalaMenuState = { open: true, x: event.clientX, y: event.clientY };
   }
+
+  const PATH_SHAPE_OPTIONS: { id: MandalaPathShape; label: string; icon: string }[] = [
+    { id: "hybrid", label: "Hybrid", icon: "fa-shuffle" },
+    { id: "arc", label: "Arc", icon: "fa-bezier-curve" },
+    { id: "linear", label: "Linear", icon: "fa-arrows-alt-h" },
+    { id: "concave", label: "Concave", icon: "fa-compress" },
+  ];
 
   const mandalaMenuItems = $derived<ContextMenuEntry[]>([
     {
@@ -226,6 +235,19 @@
         });
         toast.success(`Saved "${name}" to collection`);
       },
+    },
+    { type: "separator" },
+    {
+      id: "path-shape",
+      label: "Path Shape",
+      icon: "fa-bezier-curve",
+      children: PATH_SHAPE_OPTIONS.map((opt) => ({
+        id: `path-${opt.id}`,
+        label: opt.label,
+        icon: opt.icon,
+        checked: mandalaPathShape === opt.id,
+        action: () => { mandalaPathShape = opt.id; },
+      })),
     },
   ]);
 </script>
@@ -282,6 +304,7 @@
                 size={mandalaSize}
                 bluePropType={bluePropTypeOverride}
                 redPropType={redPropTypeOverride}
+                pathShape={mandalaPathShape}
               />
             </div>
           {/each}
@@ -424,6 +447,7 @@
             size={mandalaSize}
             bluePropType={bluePropTypeOverride}
             redPropType={redPropTypeOverride}
+            pathShape={mandalaPathShape}
           />
         </div>
       {/each}

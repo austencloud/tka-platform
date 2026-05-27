@@ -159,7 +159,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
-  import { generateViewerURL } from "$lib/shared/navigation/services/sequence-encoder";
+  import { generateViewerURL, encodePropForURL } from "$lib/shared/navigation/services/sequence-encoder";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
@@ -1011,6 +1011,9 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
     handlePropTypeChange: (propType: PropType) => {
       updateSettings({ bluePropType: propType, redPropType: propType });
       propContext.syncPropsToOrchestrator(propType, propType, animationServicesReady);
+      const encoded = encodePropForURL(propType);
+      onUrlParamChange?.("bp", encoded);
+      onUrlParamChange?.("rp", encoded);
     },
 
     imgShowWord: imgComp.imgShowWord,

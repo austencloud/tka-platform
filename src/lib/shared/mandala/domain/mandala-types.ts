@@ -61,7 +61,7 @@ export interface MandalaRenderOptions {
 	gradient?: { blue: [string, string]; red: [string, string]; purple: [string, string] };
 }
 
-export type MandalaPathShape = "arc" | "linear" | "concave" | "motion-aware";
+export type MandalaPathShape = "arc" | "linear" | "concave" | "hybrid";
 
 export type UndulationEasing =
 	| "sine"

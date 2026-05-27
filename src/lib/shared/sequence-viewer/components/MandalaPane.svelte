@@ -235,7 +235,7 @@
       const totalFrames = Math.ceil(fps * cyclePeriod);
 
       const pathOpts: MandalaPathOptions | undefined =
-        pathShape === "motion-aware" ? { motionAware: true }
+        pathShape === "hybrid" ? { motionAware: true }
         : pathShape !== "arc" ? { pathShape }
         : undefined;
 

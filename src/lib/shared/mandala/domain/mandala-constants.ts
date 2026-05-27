@@ -1,6 +1,6 @@
 /** Standardized tip point distance for all mandalas, regardless of prop type.
  * dx=125 is the sweet spot between fan (105) and staff (135). */
-export const MANDALA_STANDARD_TIP_DX = 130;
+export const MANDALA_STANDARD_TIP_DX = 120;
 
 /** Points sampled per beat per tip. Adaptive: multiplied by ceil(turns) for high-turn motions */
 export const BASE_SAMPLES_PER_BEAT = 64;

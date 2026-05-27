@@ -40,14 +40,14 @@
 </div>
 
 <button
-  class="motion-aware-btn"
+  class="hybrid-btn"
   class:active={motionAware}
   type="button"
   aria-pressed={motionAware}
   onclick={() => vm.toggleMotionAwarePaths()}
 >
   <span class="toggle-indicator" class:on={motionAware}></span>
-  Motion-Aware
+  Hybrid
 </button>
 
 {#if motionAware}
@@ -96,7 +96,7 @@
     outline-offset: 2px;
   }
 
-  .motion-aware-btn {
+  .hybrid-btn {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -114,19 +114,19 @@
     transition: all var(--duration-fast, 100ms) ease;
   }
 
-  .motion-aware-btn:hover {
+  .hybrid-btn:hover {
     background: color-mix(in srgb, var(--theme-text) 8%, transparent);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, white);
   }
 
-  .motion-aware-btn.active {
+  .hybrid-btn.active {
     background: color-mix(in srgb, #a78bfa 15%, transparent);
     border-color: color-mix(in srgb, #a78bfa 40%, transparent);
     color: var(--theme-text, white);
   }
 
-  .motion-aware-btn:focus-visible {
+  .hybrid-btn:focus-visible {
     outline: 2px solid #a78bfa;
     outline-offset: 2px;
   }
@@ -172,7 +172,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .path-btn,
-    .motion-aware-btn,
+    .hybrid-btn,
     .toggle-indicator,
     .toggle-indicator::after {
       transition: none;
