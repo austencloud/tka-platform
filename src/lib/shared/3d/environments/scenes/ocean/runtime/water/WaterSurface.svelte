@@ -45,10 +45,10 @@
   });
 
   useTask((delta) => {
-    material.uniforms.uTime.value += delta;
+    material.uniforms.uTime!.value += delta;
     const cam = camera.current;
     if (cam) {
-      material.uniforms.uCameraPosition.value.copy(cam.position);
+      material.uniforms.uCameraPosition!.value.copy(cam.position);
     }
   });
 
