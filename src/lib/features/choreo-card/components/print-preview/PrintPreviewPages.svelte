@@ -6,7 +6,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/types";
   import type { PrintRenderOptions } from "../../services/types";
-  import type { ElementalTheme } from "../../domain/elemental-theme";
+  import type { TndElement } from "../../domain/tnd-element";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -24,7 +24,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     showWord?: boolean;
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
-    elementTheme?: ElementalTheme;
+    tndElement?: TndElement;
     /** Per-card footer data, index-aligned with sequences */
     footers?: CardFooter[];
     /** Use deck layout policy instead of user composition settings */
@@ -55,7 +55,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     showWord = true,
     includeStartPosition = true,
     handPointsVisible = true,
-    elementTheme,
+    tndElement,
     footers,
     deckMode = false,
     rerenderKey = 0,
@@ -76,8 +76,32 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   let layout = $derived(getPageLayout(cardSize));
   let sizeSpec = $derived(CARD_SIZES[cardSize]);
-  let cardAspect = $derived(sizeSpec.widthInches / sizeSpec.heightInches);
+  let cardAspect = $derived(sizeSpec.canvasWidth / sizeSpec.canvasHeight);
   let colWidthPct = $derived((sizeSpec.widthInches / 8.5) * 100);
+
+  let cropMarks = $derived.by(() => {
+    const { cols, rows } = layout;
+    const marginX = (100 - cols * colWidthPct) / 2;
+    const rowHeightPct = colWidthPct * (8.5 / 11) / cardAspect;
+    const marginY = (100 - rows * rowHeightPct) / 2;
+    const markLen = 1.2;
+
+    const marks: { x: number; y: number; w: number; h: number }[] = [];
+
+    for (let col = 0; col <= cols; col++) {
+      const x = marginX + col * colWidthPct;
+      marks.push({ x: x, y: marginY - markLen, w: 0, h: markLen });
+      marks.push({ x: x, y: 100 - marginY, w: 0, h: markLen });
+    }
+
+    for (let row = 0; row <= rows; row++) {
+      const y = marginY + row * rowHeightPct;
+      marks.push({ x: marginX - markLen, y, w: markLen, h: 0 });
+      marks.push({ x: 100 - marginX, y, w: markLen, h: 0 });
+    }
+
+    return marks;
+  });
 
   // Group rendered cards into sheet batches, each producing a fronts + backs page
   let sheets = $derived.by(() => {
@@ -105,7 +129,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       handPointsVisible,
       showMandala: true,
       theme,
-      elementTheme,
+      tndElement,
       bluePropType: settingsService.settings.bluePropType,
       redPropType: settingsService.settings.redPropType,
       leftLabel: footer?.left,
@@ -131,7 +155,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const optsPart = [
       cardSize, theme, showGrid, showTKA, showWord,
       includeStartPosition, handPointsVisible,
-      elementTheme?.familyId ?? "none",
+      tndElement?.familyId ?? "none",
       settingsService.settings.bluePropType,
       settingsService.settings.redPropType,
       settingsService.settings.backgroundType ?? "",
@@ -452,10 +476,14 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       </div>
     {:else}
       <div class="pages-scroll">
+        <!-- ═══ PHASE 1: ALL FRONTS ═══ -->
         {#each sheets as sheet, sheetIndex (sheetIndex)}
-          <!-- Fronts page -->
-          <span class="page-label">Fronts - Sheet {sheetIndex + 1}</span>
+          <span class="page-label">Fronts · Sheet {sheetIndex + 1} of {sheets.length}</span>
           <div class="page">
+            <div class="page-guide page-guide-top">
+              {#if deckName}<span class="guide-text">{deckName}</span>{/if}
+              <span class="guide-text guide-bold">FRONTS · Sheet {sheetIndex + 1} of {sheets.length}</span>
+            </div>
             <div
               class="page-grid"
               style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
@@ -488,11 +516,40 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
                 </div>
               {/each}
             </div>
+            <div class="page-guide page-guide-bottom">
+              <span class="guide-text">FRONT SIDE</span>
+              <span class="guide-text">Sheet {sheetIndex + 1} of {sheets.length}</span>
+            </div>
+            {#each cropMarks as mark}
+              <div class="crop-mark" style="left:{mark.x}%;top:{mark.y}%;width:{mark.w || 0.1}%;height:{mark.h || 0.1}%"></div>
+            {/each}
           </div>
+        {/each}
 
-          <!-- Backs page (columns mirrored for duplex) -->
-          <span class="page-label">Backs - Sheet {sheetIndex + 1}</span>
+        <!-- ═══ FLIP DIVIDER ═══ -->
+        <div class="flip-divider">
+          <div class="flip-divider-line"></div>
+          <div class="flip-divider-content">
+            <span class="flip-divider-icon">↻</span>
+            <span class="flip-divider-title">FLIP YOUR PAPER</span>
+            <div class="flip-divider-steps">
+              <span>1. Remove printed fronts from output tray</span>
+              <span>2. Flip stack on the long edge</span>
+              <span>3. Reinsert — top edge goes in first</span>
+              <span>4. Print remaining pages (backs)</span>
+            </div>
+          </div>
+          <div class="flip-divider-line"></div>
+        </div>
+
+        <!-- ═══ PHASE 2: ALL BACKS ═══ -->
+        {#each sheets as sheet, sheetIndex (sheetIndex)}
+          <span class="page-label">Backs · Sheet {sheetIndex + 1} of {sheets.length}</span>
           <div class="page">
+            <div class="page-guide page-guide-top">
+              {#if deckName}<span class="guide-text">{deckName}</span>{/if}
+              <span class="guide-text guide-bold">BACKS · Sheet {sheetIndex + 1} of {sheets.length}</span>
+            </div>
             <div
               class="page-grid"
               style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
@@ -527,6 +584,13 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
                 </div>
               {/each}
             </div>
+            <div class="page-guide page-guide-bottom">
+              <span class="guide-text">BACK SIDE — columns mirrored for long-edge flip</span>
+              <span class="guide-text">↻ LONG EDGE</span>
+            </div>
+            {#each cropMarks as mark}
+              <div class="crop-mark" style="left:{mark.x}%;top:{mark.y}%;width:{mark.w || 0.1}%;height:{mark.h || 0.1}%"></div>
+            {/each}
           </div>
         {/each}
       </div>
@@ -559,13 +623,13 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   }
 
   .page {
+    position: relative;
     background: var(--print-bg, #ffffff);
     border-radius: 4px;
     box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.3));
     width: 100%;
     max-width: 800px;
     aspect-ratio: 8.5 / 11;
-    padding: 8px;
     box-sizing: border-box;
     display: flex;
     align-items: center;
@@ -574,7 +638,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   .page-grid {
     display: grid;
-    gap: 4px;
+    gap: 0;
     width: 100%;
     align-content: center;
     justify-content: center;
@@ -652,5 +716,100 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     height: 300px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-min, 14px);
+  }
+
+  /* Print guide overlays */
+  .crop-mark {
+    position: absolute;
+    background: #999;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .page-guide {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .page-guide-top {
+    top: 1px;
+  }
+
+  .page-guide-bottom {
+    bottom: 1px;
+  }
+
+  .guide-text {
+    font-size: 7px;
+    color: #a6a6a6;
+    font-family: Helvetica, Arial, sans-serif;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .guide-bold {
+    font-weight: 600;
+  }
+
+  /* Flip divider between fronts and backs */
+  .flip-divider {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px 0;
+  }
+
+  .flip-divider-line {
+    width: 100%;
+    height: 1px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--theme-text-dim, rgba(255, 255, 255, 0.3)) 0,
+      var(--theme-text-dim, rgba(255, 255, 255, 0.3)) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+  }
+
+  .flip-divider-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 24px;
+    border: 1px dashed var(--theme-text-dim, rgba(255, 255, 255, 0.2));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .flip-divider-icon {
+    font-size: 28px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    line-height: 1;
+  }
+
+  .flip-divider-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--theme-text, #ffffff);
+    letter-spacing: 0.08em;
+  }
+
+  .flip-divider-steps {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 </style>

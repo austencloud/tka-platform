@@ -64,28 +64,25 @@ export async function exportHomePrintPDF(
 	onProgress?: (current: number, total: number) => void
 ): Promise<Blob> {
 	const layout = getPageLayout(cardSize);
-	const { cols, rows, cardsPerPage, cardWidthPt, cardHeightPt, marginXPt, marginYPt } = layout;
+	const { cols, rows, cardsPerPage, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt } = layout;
 
 	const pdfDoc = await PDFDocument.create();
 	const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 	const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 	const totalSheets = Math.ceil(pairs.length / cardsPerPage);
 
-	addAlignmentTestFront(pdfDoc, font, fontBold, layout);
-	addAlignmentTestBack(pdfDoc, font, fontBold, layout);
-
+	// ── Phase 1: All fronts ──
 	for (let sheet = 0; sheet < totalSheets; sheet++) {
 		const start = sheet * cardsPerPage;
 		const sheetPairs = pairs.slice(start, start + cardsPerPage);
 
-		// ── Fronts page ──
 		const frontsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
 
 		for (let i = 0; i < sheetPairs.length; i++) {
 			const col = i % cols;
 			const row = Math.floor(i / cols);
-			const x = marginXPt + col * cardWidthPt;
-			const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt;
+			const x = marginXPt + col * (cardWidthPt + gutterPt);
+			const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
 
 			const img = await pdfDoc.embedPng(canvasToPngBytes(sheetPairs[i]!.front));
 			frontsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
@@ -93,17 +90,27 @@ export async function exportHomePrintPDF(
 
 		drawCropMarks(frontsPage, layout);
 		drawSheetLabel(frontsPage, font, fontBold, `FRONTS`, sheet + 1, totalSheets, deckName);
-		drawFlipHint(frontsPage, font, "FRONT SIDE — print this page first");
+		drawFlipHint(frontsPage, font, "FRONT SIDE");
 
-		// ── Backs page ──
+		onProgress?.(sheet + 1, totalSheets * 2);
+	}
+
+	// ── Separator: flip instruction page ──
+	addFlipInstructionPage(pdfDoc, font, fontBold);
+
+	// ── Phase 2: All backs ──
+	for (let sheet = 0; sheet < totalSheets; sheet++) {
+		const start = sheet * cardsPerPage;
+		const sheetPairs = pairs.slice(start, start + cardsPerPage);
+
 		const backsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
 
 		for (let i = 0; i < sheetPairs.length; i++) {
 			const col = i % cols;
 			const row = Math.floor(i / cols);
 			const mirroredCol = cols - 1 - col;
-			const x = marginXPt + mirroredCol * cardWidthPt;
-			const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt;
+			const x = marginXPt + mirroredCol * (cardWidthPt + gutterPt);
+			const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
 
 			const img = await pdfDoc.embedPng(canvasToPngBytes(sheetPairs[i]!.back));
 			backsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
@@ -111,43 +118,59 @@ export async function exportHomePrintPDF(
 
 		drawCropMarks(backsPage, layout);
 		drawSheetLabel(backsPage, font, fontBold, `BACKS`, sheet + 1, totalSheets, deckName);
-		drawFlipHint(backsPage, font, "BACK SIDE — reinsert paper, flip on long edge, top goes in first");
+		drawFlipHint(backsPage, font, "BACK SIDE — columns mirrored for long-edge flip");
 
-		onProgress?.(sheet + 1, totalSheets);
+		onProgress?.(totalSheets + sheet + 1, totalSheets * 2);
 	}
+
+	// ── Finishing tips page ──
+	addFinishingTipsPage(pdfDoc, font, fontBold);
 
 	const pdfBytes = await pdfDoc.save();
 	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
 }
 
-function drawCropMarks(
-	page: PDFPage,
-	layout: PageLayout,
-) {
-	const { cols, rows, cardWidthPt, cardHeightPt, marginXPt, marginYPt } = layout;
+function cardX(col: number, layout: PageLayout): number {
+	return layout.marginXPt + col * (layout.cardWidthPt + layout.gutterPt);
+}
+function cardY(row: number, layout: PageLayout): number {
+	return LETTER_H - layout.marginYPt - (row + 1) * layout.cardHeightPt - row * layout.gutterPt;
+}
 
-	for (let col = 0; col <= cols; col++) {
-		for (let row = 0; row <= rows; row++) {
-			const x = marginXPt + col * cardWidthPt;
-			const y = LETTER_H - marginYPt - row * cardHeightPt;
+function drawCropMarks(page: PDFPage, layout: PageLayout) {
+	const { cols, rows } = layout;
 
-			// Top tick
-			if (row === 0) {
-				page.drawLine({ start: { x, y: y + CROP_OFFSET }, end: { x, y: y + CROP_OFFSET + CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
-			}
-			// Bottom tick
-			if (row === rows) {
-				page.drawLine({ start: { x, y: y - CROP_OFFSET }, end: { x, y: y - CROP_OFFSET - CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
-			}
-			// Left tick
-			if (col === 0) {
-				page.drawLine({ start: { x: x - CROP_OFFSET, y }, end: { x: x - CROP_OFFSET - CROP_LEN, y }, thickness: 0.5, color: CROP_COLOR });
-			}
-			// Right tick
-			if (col === cols) {
-				page.drawLine({ start: { x: x + CROP_OFFSET, y }, end: { x: x + CROP_OFFSET + CROP_LEN, y }, thickness: 0.5, color: CROP_COLOR });
-			}
-		}
+	for (let col = 0; col < cols; col++) {
+		const left = cardX(col, layout);
+		const right = left + layout.cardWidthPt;
+
+		// Vertical marks at top and bottom margins for each card edge
+		const topEdge = LETTER_H - layout.marginYPt;
+		const botEdge = cardY(rows - 1, layout);
+
+		// Top margin marks
+		page.drawLine({ start: { x: left, y: topEdge + CROP_OFFSET }, end: { x: left, y: topEdge + CROP_OFFSET + CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
+		page.drawLine({ start: { x: right, y: topEdge + CROP_OFFSET }, end: { x: right, y: topEdge + CROP_OFFSET + CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
+
+		// Bottom margin marks
+		page.drawLine({ start: { x: left, y: botEdge - CROP_OFFSET }, end: { x: left, y: botEdge - CROP_OFFSET - CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
+		page.drawLine({ start: { x: right, y: botEdge - CROP_OFFSET }, end: { x: right, y: botEdge - CROP_OFFSET - CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
+	}
+
+	for (let row = 0; row < rows; row++) {
+		const top = cardY(row, layout) + layout.cardHeightPt;
+		const bot = cardY(row, layout);
+
+		const leftEdge = layout.marginXPt;
+		const rightEdge = cardX(cols - 1, layout) + layout.cardWidthPt;
+
+		// Left margin marks
+		page.drawLine({ start: { x: leftEdge - CROP_OFFSET, y: top }, end: { x: leftEdge - CROP_OFFSET - CROP_LEN, y: top }, thickness: 0.5, color: CROP_COLOR });
+		page.drawLine({ start: { x: leftEdge - CROP_OFFSET, y: bot }, end: { x: leftEdge - CROP_OFFSET - CROP_LEN, y: bot }, thickness: 0.5, color: CROP_COLOR });
+
+		// Right margin marks
+		page.drawLine({ start: { x: rightEdge + CROP_OFFSET, y: top }, end: { x: rightEdge + CROP_OFFSET + CROP_LEN, y: top }, thickness: 0.5, color: CROP_COLOR });
+		page.drawLine({ start: { x: rightEdge + CROP_OFFSET, y: bot }, end: { x: rightEdge + CROP_OFFSET + CROP_LEN, y: bot }, thickness: 0.5, color: CROP_COLOR });
 	}
 }
 
@@ -197,8 +220,7 @@ function drawFlipHint(
 	// Arrow in bottom-right indicating long-edge flip direction
 	const arrowX = LETTER_W - 30;
 	const arrowY = 10;
-	// Curved arrow symbol via text
-	page.drawText("↻ LONG EDGE", {
+	page.drawText(">> LONG EDGE", {
 		x: arrowX - 30,
 		y: arrowY - 4,
 		size: 6,
@@ -207,161 +229,94 @@ function drawFlipHint(
 	});
 }
 
-function addAlignmentTestFront(
+function addFlipInstructionPage(
 	pdfDoc: PDFDocument,
 	font: PDFFont,
 	fontBold: PDFFont,
-	layout: PageLayout,
 ) {
 	const page = pdfDoc.addPage([LETTER_W, LETTER_H]);
-	const { cols, rows, cardWidthPt, cardHeightPt, marginXPt, marginYPt } = layout;
+	const cx = LETTER_W / 2;
+	let y = LETTER_H / 2 + 60;
 
-	// Title
-	page.drawText("ALIGNMENT TEST — FRONT", {
-		x: marginXPt,
-		y: LETTER_H - marginYPt + 6,
-		size: 10,
-		font: fontBold,
-		color: GUIDE_COLOR,
-	});
+	const title = "STOP — FLIP YOUR PAPER";
+	const titleW = fontBold.widthOfTextAtSize(title, 16);
+	page.drawText(title, { x: cx - titleW / 2, y, size: 16, font: fontBold, color: GUIDE_COLOR });
 
-	// Draw grid outline
-	for (let col = 0; col <= cols; col++) {
-		const x = marginXPt + col * cardWidthPt;
-		page.drawLine({
-			start: { x, y: LETTER_H - marginYPt },
-			end: { x, y: LETTER_H - marginYPt - rows * cardHeightPt },
-			thickness: 0.5,
-			color: CROP_COLOR,
-		});
-	}
-	for (let row = 0; row <= rows; row++) {
-		const y = LETTER_H - marginYPt - row * cardHeightPt;
-		page.drawLine({
-			start: { x: marginXPt, y },
-			end: { x: marginXPt + cols * cardWidthPt, y },
-			thickness: 0.5,
-			color: CROP_COLOR,
-		});
-	}
-
-	// Label each cell with position number and "FRONT"
-	for (let row = 0; row < rows; row++) {
-		for (let col = 0; col < cols; col++) {
-			const i = row * cols + col + 1;
-			const cx = marginXPt + col * cardWidthPt + cardWidthPt / 2;
-			const cy = LETTER_H - marginYPt - row * cardHeightPt - cardHeightPt / 2;
-
-			const numText = String(i);
-			const numWidth = fontBold.widthOfTextAtSize(numText, 24);
-			page.drawText(numText, { x: cx - numWidth / 2, y: cy + 4, size: 24, font: fontBold, color: GUIDE_COLOR });
-
-			const subText = "FRONT";
-			const subWidth = font.widthOfTextAtSize(subText, 8);
-			page.drawText(subText, { x: cx - subWidth / 2, y: cy - 12, size: 8, font, color: GUIDE_COLOR });
-		}
-	}
-
-	// Corner registration marks (filled circles in corners of grid)
-	const markR = 4;
-	const corners = [
-		{ x: marginXPt, y: LETTER_H - marginYPt },
-		{ x: marginXPt + cols * cardWidthPt, y: LETTER_H - marginYPt },
-		{ x: marginXPt, y: LETTER_H - marginYPt - rows * cardHeightPt },
-		{ x: marginXPt + cols * cardWidthPt, y: LETTER_H - marginYPt - rows * cardHeightPt },
+	y -= 36;
+	const steps = [
+		"1.  Remove all printed fronts from the output tray",
+		"2.  Flip the stack on the LONG EDGE",
+		"3.  Reinsert into the paper tray — top edge goes in first",
+		"4.  Print the remaining pages (all backs)",
 	];
-	for (const c of corners) {
-		page.drawCircle({ x: c.x, y: c.y, size: markR, color: CROP_COLOR });
+	for (const step of steps) {
+		const w = font.widthOfTextAtSize(step, 10);
+		page.drawText(step, { x: cx - w / 2, y, size: 10, font, color: GUIDE_COLOR });
+		y -= 18;
 	}
 
-	// Instructions at bottom
-	const instructions = [
-		"1. Print this page",
-		"2. Reinsert the paper: flip on the LONG EDGE, feed top edge first",
-		"3. Print the next page (ALIGNMENT TEST — BACK)",
-		"4. Hold to light — if numbers and circles align, your flip is correct",
-		"5. If they don't align, try flipping the other way and reprint",
-	];
-	let iy = 52;
-	for (const line of instructions) {
-		page.drawText(line, { x: marginXPt, y: iy, size: 7, font, color: GUIDE_COLOR });
-		iy -= 10;
-	}
+	y -= 12;
+	const note = "This page does not print on card stock — it is an instruction separator.";
+	const noteW = font.widthOfTextAtSize(note, 7);
+	page.drawText(note, { x: cx - noteW / 2, y, size: 7, font, color: GUIDE_COLOR });
 }
 
-function addAlignmentTestBack(
+function addFinishingTipsPage(
 	pdfDoc: PDFDocument,
 	font: PDFFont,
 	fontBold: PDFFont,
-	layout: PageLayout,
 ) {
 	const page = pdfDoc.addPage([LETTER_W, LETTER_H]);
-	const { cols, rows, cardWidthPt, cardHeightPt, marginXPt, marginYPt } = layout;
+	const cx = LETTER_W / 2;
+	let y = LETTER_H - 72;
 
-	page.drawText("ALIGNMENT TEST — BACK", {
-		x: marginXPt,
-		y: LETTER_H - marginYPt + 6,
-		size: 10,
-		font: fontBold,
-		color: GUIDE_COLOR,
-	});
+	const title = "FINISHING YOUR DECK";
+	const titleW = fontBold.widthOfTextAtSize(title, 14);
+	page.drawText(title, { x: cx - titleW / 2, y, size: 14, font: fontBold, color: GUIDE_COLOR });
 
-	// Same grid outline
-	for (let col = 0; col <= cols; col++) {
-		const x = marginXPt + col * cardWidthPt;
-		page.drawLine({
-			start: { x, y: LETTER_H - marginYPt },
-			end: { x, y: LETTER_H - marginYPt - rows * cardHeightPt },
-			thickness: 0.5,
-			color: CROP_COLOR,
-		});
-	}
-	for (let row = 0; row <= rows; row++) {
-		const y = LETTER_H - marginYPt - row * cardHeightPt;
-		page.drawLine({
-			start: { x: marginXPt, y },
-			end: { x: marginXPt + cols * cardWidthPt, y },
-			thickness: 0.5,
-			color: CROP_COLOR,
-		});
-	}
-
-	// Same position numbers + "BACK" — but columns mirrored
-	for (let row = 0; row < rows; row++) {
-		for (let col = 0; col < cols; col++) {
-			const i = row * cols + col + 1;
-			const mirroredCol = cols - 1 - col;
-			const cx = marginXPt + mirroredCol * cardWidthPt + cardWidthPt / 2;
-			const cy = LETTER_H - marginYPt - row * cardHeightPt - cardHeightPt / 2;
-
-			const numText = String(i);
-			const numWidth = fontBold.widthOfTextAtSize(numText, 24);
-			page.drawText(numText, { x: cx - numWidth / 2, y: cy + 4, size: 24, font: fontBold, color: GUIDE_COLOR });
-
-			const subText = "BACK";
-			const subWidth = font.widthOfTextAtSize(subText, 8);
-			page.drawText(subText, { x: cx - subWidth / 2, y: cy - 12, size: 8, font, color: GUIDE_COLOR });
-		}
-	}
-
-	// Same corner registration marks — mirrored columns
-	const markR = 4;
-	const corners = [
-		{ x: marginXPt, y: LETTER_H - marginYPt },
-		{ x: marginXPt + cols * cardWidthPt, y: LETTER_H - marginYPt },
-		{ x: marginXPt, y: LETTER_H - marginYPt - rows * cardHeightPt },
-		{ x: marginXPt + cols * cardWidthPt, y: LETTER_H - marginYPt - rows * cardHeightPt },
+	y -= 28;
+	const sections: { heading: string; lines: string[] }[] = [
+		{
+			heading: "CUTTING",
+			lines: [
+				"Use a paper trimmer or metal ruler + craft knife for clean edges.",
+				"Cut along the crop marks. A self-healing cutting mat protects your surface.",
+				"Cut all sheets before assembling — batch work is faster than per-sheet.",
+			],
+		},
+		{
+			heading: "PROTECTION",
+			lines: [
+				"Sleeve cards in standard poker sleeves (66 x 91 mm) for durability and shuffle feel.",
+				"For unsleeved decks: clear spray sealant (matte or gloss) on both sides after cutting.",
+				"Self-adhesive laminate sheets also work — apply before cutting for cleaner edges.",
+			],
+		},
+		{
+			heading: "STORAGE",
+			lines: [
+				"A standard tuck box fits 52-60 sleeved poker cards.",
+				"Rubber band + card divider works for playtesting and gifting.",
+			],
+		},
 	];
-	for (const c of corners) {
-		page.drawCircle({ x: c.x, y: c.y, size: markR, color: CROP_COLOR });
+
+	for (const section of sections) {
+		const headW = fontBold.widthOfTextAtSize(section.heading, 9);
+		page.drawText(section.heading, { x: cx - headW / 2, y, size: 9, font: fontBold, color: GUIDE_COLOR });
+		y -= 14;
+		for (const line of section.lines) {
+			const lineW = font.widthOfTextAtSize(line, 8);
+			page.drawText(line, { x: cx - lineW / 2, y, size: 8, font, color: GUIDE_COLOR });
+			y -= 12;
+		}
+		y -= 8;
 	}
 
-	page.drawText("Hold to light — numbers should overlap their front-side counterparts", {
-		x: marginXPt, y: 42, size: 7, font, color: GUIDE_COLOR,
-	});
-	page.drawText("If misaligned: reinsert paper the other way and reprint this page", {
-		x: marginXPt, y: 32, size: 7, font, color: GUIDE_COLOR,
-	});
+	y -= 8;
+	const footer = "tkaflowarts.com";
+	const footerW = font.widthOfTextAtSize(footer, 7);
+	page.drawText(footer, { x: cx - footerW / 2, y, size: 7, font, color: GUIDE_COLOR });
 }
 
 function canvasToPngBytes(canvas: HTMLCanvasElement): Uint8Array {

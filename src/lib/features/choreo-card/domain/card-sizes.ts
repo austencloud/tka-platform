@@ -33,9 +33,12 @@ export interface PageLayout {
   cardsPerPage: number;
   cardWidthPt: number;
   cardHeightPt: number;
+  gutterPt: number;
   marginXPt: number;
   marginYPt: number;
 }
+
+const GUTTER_PT = 0;
 
 const PAGE_LAYOUTS: Record<CardSizeId, PageLayout> = {
   poker: buildLayout(CARD_SIZES.poker, 3, 3),
@@ -49,14 +52,15 @@ function buildLayout(
 ): PageLayout {
   const cardWidthPt = Math.round(size.widthInches * 72);
   const cardHeightPt = Math.round(size.heightInches * 72);
-  const gridW = cols * cardWidthPt;
-  const gridH = rows * cardHeightPt;
+  const gridW = cols * cardWidthPt + (cols - 1) * GUTTER_PT;
+  const gridH = rows * cardHeightPt + (rows - 1) * GUTTER_PT;
   return {
     cols,
     rows,
     cardsPerPage: cols * rows,
     cardWidthPt,
     cardHeightPt,
+    gutterPt: GUTTER_PT,
     marginXPt: (LETTER_W_PT - gridW) / 2,
     marginYPt: (LETTER_H_PT - gridH) / 2,
   };
