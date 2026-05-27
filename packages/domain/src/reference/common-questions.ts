@@ -106,7 +106,7 @@ In continuous spinning, you're always doing compound units. D alone is half a cy
 
 A word in TKA is a sequence of letters that spells out a choreographic phrase. Each letter is one beat of motion, and stringing them together creates a "word" - a complete movement sequence.
 
-**Example:** The word "CAKE" is 4 beats long: C → A → K → E, each letter representing one beat of dual-prop movement.
+**Example:** The word "STORM" is 5 beats long: S → T → O → R → M, each letter representing one beat of dual-prop movement. STORM is bridge-free -- every transition is direct with no bridge letters needed.
 
 **Key properties:**
 - Words can be any length (1 letter = 1 beat, 6 letters = 6 beats, etc.)

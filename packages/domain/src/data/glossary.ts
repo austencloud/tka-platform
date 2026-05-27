@@ -57,7 +57,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "word": {
     definition: "A sequence of TKA letters that spells out a choreographic phrase. Each letter in the word is one beat of motion. Words can be any length and may require bridge letters between certain transitions.",
-    examples: ["CAKE is a 4-letter word (4 beats)", "SMACKDOWN is a 9-letter word", "DJ is a 2-letter compound word"],
+    examples: ["STORM is a 5-letter bridge-free word (5 beats)", "MONSTROUS is a 9-letter bridge-free word", "TRUST is a 5-letter word", "DJ is a 2-letter compound word"],
     relatedTerms: ["letter", "sequence", "bridge", "compound"],
     category: "general"
   },
