@@ -22,49 +22,24 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
-import type { ISVGGenerator as SVGGenerator } from "$lib/shared/animation-engine/services/contracts/ISVGGenerator";
-import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import { type TrailSettings } from "../../domain/types/TrailTypes";
 import type { AdditionalLayerProps } from "../../domain/types/TrailCaptureTypes";
 import type { AnimationVisibilityState } from "./AnimationVisibilitySynchronizer";
 import type { PreRenderProgress } from "$lib/shared/animation-engine/services/implementations/SequenceFramePreRenderer";
 
-import { loadAnimatorServices as loadServices } from "../animator-loader";
-import { TrailCapturer } from "$lib/shared/animation-engine/services/implementations/TrailCapturer";
-import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
-import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { TipEffortMap } from "../../domain/types/TipEffectTypes";
 
 // Services
-import { CanvasResizer } from "./CanvasResizer.svelte";
 import {
   DEFAULT_CANVAS_SIZE,
 } from "./CanvasResizer.svelte";
-import {
-  type IPropTextureLoader,
-} from "../contracts/IPropTextureLoader";
-import { GlyphTextureLoader } from "./GlyphTextureLoader.svelte";
-import type { IGlyphTextureLoader } from "../contracts/IGlyphTextureLoader";
-import { AnimationPrecomputer } from "./AnimationPrecomputer.svelte";
-import type { IAnimationPrecomputer } from "../contracts/IAnimationPrecomputer";
-import { AnimationRenderLoop } from "./AnimationRenderLoop";
-import type { IAnimationRenderLoop } from "../contracts/IAnimationRenderLoop";
-
 import { FrameBudgetMonitor } from "./FrameBudgetMonitor";
 import { DeviceTierDetector } from "./DeviceTierDetector";
-import { AnimationVisibilitySynchronizer } from "./AnimationVisibilitySynchronizer";
-import { GlyphTransitionController } from "./GlyphTransitionController.svelte";
-import { SequenceCache } from "./SequenceCache.svelte";
-import { TrailSettingsSynchronizer } from "./TrailSettingsSynchronizer.svelte";
-import { PropTypeChanger } from "./PropTypeChanger.svelte";
 import { FrameBuilderService } from "./FrameBuilderService";
 import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
-import { FireTipTracker } from "./FireTipTracker";
 import type { FireOverlayConfig } from "../../domain/types/FireTypes";
 import type { FireDefaultsLoader } from "./FireDefaultsLoader";
 import {
@@ -72,11 +47,9 @@ import {
   BASE_COLOR_CURVE,
   intensityToPhysics,
 } from "../../domain/types/FireTypes";
-import { LedTipTracker } from "./LedTipTracker";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
-import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
 import { LiveRenderContext } from "./RenderContext";
 import type { RenderContext } from "./RenderContextRegistry";
 
@@ -87,7 +60,7 @@ import { FrameParameterBuilder } from "./FrameParameterBuilder";
 import { PropTypeManager } from "./PropTypeManager";
 import { StateSynchronizer } from "./StateSynchronizer";
 import { PropPipeline } from "./PropPipeline";
-import { CanvasLifecycleManager } from "./CanvasLifecycleManager";
+import { CanvasLifecycleManager, type LifecycleInitCtx } from "./CanvasLifecycleManager";
 import type { EffectType, TipEffectMap } from '../../domain/types/TipEffectTypes';
 import type { FireColorCurve } from '../../domain/types/FireTypes';
 import { semanticToCharcoalParams, type CharcoalSparkParams } from '../../domain/types/CharcoalSparkTypes';
@@ -183,25 +156,8 @@ export class AnimationEngine {
   // PRIVATE SERVICES
   // ============================================================================
   private readonly frameBuilderService = new FrameBuilderService();
-  private svgGenerator: SVGGenerator | null = null;
-  private settingsService: SettingsState | null = null;
-  private orchestrator: SequenceAnimationOrchestrator | null = null;
-  private trailCapturer: TrailCapturer | null = null;
-  private turnsTupleGenerator: TurnsTupleGenerator | null = null;
-  private animationRenderer: AnimationRenderer | null = null;
-
-  private canvasResizerService: CanvasResizer | null = null;
-  private propTextureService: IPropTextureLoader | null = null;
-  private glyphTextureService: IGlyphTextureLoader | null = null;
-  private precomputationService: IAnimationPrecomputer | null = null;
-  private renderLoopService: IAnimationRenderLoop | null = null;
-  private visibilitySyncService: AnimationVisibilitySynchronizer | null = null;
-  private glyphTransitionService: GlyphTransitionController | null = null;
-  private sequenceCacheService: SequenceCache | null = null;
-  private trailSettingsSyncService: TrailSettingsSynchronizer | null = null;
-  private propTypeChangeService: PropTypeChanger | null = null;
-  private canvasInitializer = new AnimatorCanvasInitializer();
-  private frameBudgetMonitor: FrameBudgetMonitor =
+  private readonly canvasInitializer = new AnimatorCanvasInitializer();
+  private readonly frameBudgetMonitor: FrameBudgetMonitor =
     new FrameBudgetMonitor(new DeviceTierDetector().detect());
   private fireDefaultsLoader: FireDefaultsLoader | null = null;
 
@@ -279,8 +235,9 @@ export class AnimationEngine {
   setEffectsConfigState(state: EffectsConfigState | null): void {
     this.effectsConfigState = state;
     this.effectRendererManager.effectsConfigState = state;
-    if (this.visibilitySyncService) {
-      this.visibilitySyncService.effectsConfigState = state;
+    const vss = this.lifecycleManager.visibilitySynchronizer;
+    if (vss) {
+      vss.effectsConfigState = state;
     }
   }
 
@@ -300,7 +257,7 @@ export class AnimationEngine {
     }
     this.state.setMotionVisibility(blue, red);
     if (this.state.isInitialized) {
-      this.renderLoopService?.triggerRender(() =>
+      this.lifecycleManager.renderLoop?.triggerRender(() =>
         this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
       );
     }
@@ -335,7 +292,11 @@ export class AnimationEngine {
   }
 
   /**
-   * Initialize the engine with a container element
+   * Initialize the engine with a container element.
+   *
+   * Assembles the LifecycleInitCtx and delegates all service creation/wiring to
+   * CanvasLifecycleManager.initialize(). The engine retains only the state,
+   * callbacks, and collaborator modules it needs for update() / dispose().
    */
   async initialize(
     containerElement: HTMLDivElement,
@@ -349,7 +310,8 @@ export class AnimationEngine {
       effectManager: this.effectRendererManager,
     });
 
-    // Initialize visibility manager
+    // Initialize visibility manager prev-state flags (engine owns these for
+    // change-detection in handleVisibilityChange / update()).
     const vm = this.getVM();
     const ecs = this.effectsConfigState;
     this.prevDarkMode = vm.isDarkMode();
@@ -417,30 +379,29 @@ export class AnimationEngine {
       tipEffectMap: ecs?.tipEffectMap ?? {},
     });
 
-    // Initialize services that don't need renderer
-    this.visibilitySyncService = new AnimationVisibilitySynchronizer(this.visibilityManagerOverride ?? undefined);
-    this.visibilitySyncService.effectsConfigState = this.effectsConfigState;
-    this.unsubscribeVisibility = this.visibilitySyncService.subscribe(
-      (state) => this.handleVisibilityChange(state)
-    );
-    this.lifecycleManager.configure({
-      visibilitySyncService: this.visibilitySyncService,
-      unsubscribeVisibility: this.unsubscribeVisibility,
-    });
+    // Build the init context and delegate service creation to the manager.
+    const ctx: LifecycleInitCtx = {
+      containerElement,
+      visibilityManagerOverride: this.visibilityManagerOverride,
+      effectsConfigState: this.effectsConfigState,
+      effectRendererManager: this.effectRendererManager,
+      propPipeline: this.propPipeline,
+      propTypeManager: this.propTypeManager,
+      frameBudgetMonitor: this.frameBudgetMonitor,
+      canvasSize: this.canvasSize,
+      getLastPropsRef: () => this.lastPropsRef,
+      state: this._animatorState,
+      callbacks,
+      prevDarkMode: this.prevDarkMode,
+      initialGridMode: this.lastPropsRef?.gridMode,
+      initialShowNonRadialPoints: this.lastPropsRef?.showNonRadialPoints ?? true,
+      buildFrameParams: (props) => this.buildFrameParams(props),
+      getVM: () => this.getVM(),
+      onVisibilityChange: (state) => this.handleVisibilityChange(state),
+      instanceId: this.instanceId,
+    };
 
-    this.glyphTransitionService = new GlyphTransitionController();
-    this.sequenceCacheService = new SequenceCache();
-    this.trailSettingsSyncService = new TrailSettingsSynchronizer();
-    this.propTypeChangeService = new PropTypeChanger();
-    this.lifecycleManager.configure({
-      glyphTransitionService: this.glyphTransitionService,
-      sequenceCacheService: this.sequenceCacheService,
-      trailSettingsSyncService: this.trailSettingsSyncService,
-      propTypeChangeService: this.propTypeChangeService,
-    });
-
-    // Initialize canvas (async process)
-    await this.initializeCanvas();
+    await this.lifecycleManager.initialize(ctx);
 
     // Sync previousGridMode with the grid texture loaded during initialization,
     // so the change-detection in update() doesn't redundantly reload the same texture.
@@ -477,10 +438,10 @@ export class AnimationEngine {
     const shouldInitTrailCapturer =
       this.state.currentBluePropType !== "staff" ||
       this.state.currentRedPropType !== "staff" ||
-      this.settingsService?.currentSettings ||
+      this.lifecycleManager.settingsService?.currentSettings ||
       props.externalTrailSettings !== undefined;
 
-    if (shouldInitTrailCapturer && this.trailCapturer && !this.trailCapturerInitialized) {
+    if (shouldInitTrailCapturer && this.lifecycleManager.trailCapturer && !this.trailCapturerInitialized) {
       if (!this.settingsLoaded) {
         this.settingsLoaded = true;
       }
@@ -494,7 +455,7 @@ export class AnimationEngine {
 
     // Handle trail settings changes - enforce unilateral constraint before syncing
     if (props.externalTrailSettings !== undefined) {
-      this.trailSettingsSyncService?.handleExternalSettingsSync(
+      this.lifecycleManager.trailSettingsSync?.handleExternalSettingsSync(
         this.frameParameterBuilder.enforceUnilateralConstraint(
           props.externalTrailSettings,
           this.state.currentBluePropType,
@@ -504,7 +465,7 @@ export class AnimationEngine {
     }
 
     // Handle synced trail settings from service
-    const syncedSettings = this.trailSettingsSyncService?.state.syncedSettings;
+    const syncedSettings = this.lifecycleManager.trailSettingsSync?.state.syncedSettings;
     if (syncedSettings) {
       // Only update and notify if settings actually changed (shallow comparison - faster than JSON.stringify)
       const settingsChanged = this.trailSettingsChanged(
@@ -520,7 +481,7 @@ export class AnimationEngine {
         // Only call handleSettingsChange if we're NOT using external settings
         // (external settings flow: parent -> engine; internal settings flow: engine -> parent)
         if (props.externalTrailSettings === undefined) {
-          this.trailSettingsSyncService?.handleSettingsChange(
+          this.lifecycleManager.trailSettingsSync?.handleSettingsChange(
             this.state.trailSettings,
             false
           );
@@ -532,13 +493,13 @@ export class AnimationEngine {
     }
 
     // Handle sequence changes
-    this.sequenceCacheService?.handleSequenceChange(props.sequenceData ?? null);
+    this.lifecycleManager.sequenceCache?.handleSequenceChange(props.sequenceData ?? null);
 
     // Detect sequence content changes and re-initialize orchestrator if needed
-    if (props.sequenceData && this.orchestrator) {
+    if (props.sequenceData && this.lifecycleManager.orchestrator) {
       const newHash = this.frameParameterBuilder.getSequenceContentHash(props.sequenceData);
       if (newHash !== this.frameParameterBuilder.lastSequenceContentHash) {
-        this.orchestrator.initializeWithDomainData(props.sequenceData);
+        this.lifecycleManager.orchestrator.initializeWithDomainData(props.sequenceData);
         this.frameParameterBuilder.lastSequenceContentHash = newHash;
 
         // Flush stale trail data so old ring buffer points don't draw
@@ -551,12 +512,12 @@ export class AnimationEngine {
         // Trigger path cache precomputation for smooth trails during stutters
         if (
           this.state.trailSettings.usePathCache &&
-          this.precomputationService
+          this.lifecycleManager.precomputer
         ) {
           const totalSteps = props.sequenceData.steps.length;
           const stepDurationMs = 1000;
 
-          this.precomputationService
+          this.lifecycleManager.precomputer
             .precomputeAnimationPaths(
               props.sequenceData,
               totalSteps,
@@ -564,9 +525,9 @@ export class AnimationEngine {
               this.state.trailSettings
             )
             .then(() => {
-              const pathCache = this.precomputationService?.getPathCache();
-              if (pathCache && this.renderLoopService) {
-                this.renderLoopService.updateConfig({ pathCache });
+              const pathCache = this.lifecycleManager.precomputer?.getPathCache();
+              if (pathCache && this.lifecycleManager.renderLoop) {
+                this.lifecycleManager.renderLoop.updateConfig({ pathCache });
               }
             })
             .catch((err) => {
@@ -577,11 +538,11 @@ export class AnimationEngine {
     }
 
     // Handle cache clear signals (only process once per signal)
-    const clearSignal = this.sequenceCacheService?.state.clearSignal ?? 0;
+    const clearSignal = this.lifecycleManager.sequenceCache?.state.clearSignal ?? 0;
     if (clearSignal > this.lastClearSignal) {
-      this.precomputationService?.clearCaches();
+      this.lifecycleManager.precomputer?.clearCaches();
       if (!this.effectRendererManager.trailOverlay) {
-        this.trailCapturer?.clearTrails();
+        this.lifecycleManager.trailCapturer?.clearTrails();
       }
       this.cacheSequenceId = null;
       this.lastClearSignal = clearSignal;
@@ -589,35 +550,35 @@ export class AnimationEngine {
 
     // Handle pre-render clear signals (only process once per signal)
     const preRenderClearSignal =
-      this.sequenceCacheService?.state.preRenderClearSignal ?? 0;
+      this.lifecycleManager.sequenceCache?.state.preRenderClearSignal ?? 0;
     if (preRenderClearSignal > this.lastPreRenderClearSignal) {
-      this.precomputationService?.clearPreRenderedFrames();
+      this.lifecycleManager.precomputer?.clearPreRenderedFrames();
       this.lastPreRenderClearSignal = preRenderClearSignal;
     }
 
     // Sync pre-rendered frames flag
-    this.sequenceCacheService?.setHasPreRenderedFrames(
-      this.precomputationService?.state.preRenderedFramesReady ?? false
+    this.lifecycleManager.sequenceCache?.setHasPreRenderedFrames(
+      this.lifecycleManager.precomputer?.state.preRenderedFramesReady ?? false
     );
 
     // Handle playback changes
-    this.sequenceCacheService?.handlePlaybackChange(props.isPlaying ?? false);
+    this.lifecycleManager.sequenceCache?.handlePlaybackChange(props.isPlaying ?? false);
 
     // Handle grid mode changes (also reload when nonradial visibility changes)
     const currentGridMode = props.gridMode?.toString() ?? null;
     const currentShowNonRadial = props.showNonRadialPoints ?? true;
     if (
       this.state.isInitialized &&
-      this.animationRenderer &&
+      this.lifecycleManager.animationRenderer &&
       (currentGridMode !== this.previousGridMode ||
         currentShowNonRadial !== this.previousShowNonRadialPoints)
     ) {
       this.previousGridMode = currentGridMode;
       this.previousShowNonRadialPoints = currentShowNonRadial;
-      this.animationRenderer
+      this.lifecycleManager.animationRenderer
         .loadGridTexture(currentGridMode ?? "diamond", currentShowNonRadial)
         .then(() => {
-          this.renderLoopService?.triggerRender(() =>
+          this.lifecycleManager.renderLoop?.triggerRender(() =>
             this.buildFrameParams(props)
           );
         });
@@ -629,15 +590,15 @@ export class AnimationEngine {
       const previewDarkMode = props.previewDarkMode;
       if (previewDarkMode !== this.prevDarkMode) {
         this.prevDarkMode = previewDarkMode;
-        this.animationRenderer?.setDarkMode(previewDarkMode);
+        this.lifecycleManager.animationRenderer?.setDarkMode(previewDarkMode);
 
         if (this.state.isInitialized) {
-          this.renderLoopService?.triggerRender(() =>
+          this.lifecycleManager.renderLoop?.triggerRender(() =>
             this.buildFrameParams(props)
           );
 
           this.propPipeline.loadTextures(this.state, this.prevDarkMode).then(() => {
-            this.renderLoopService?.triggerRender(() =>
+            this.lifecycleManager.renderLoop?.triggerRender(() =>
               this.buildFrameParams(props)
             );
           });
@@ -648,8 +609,8 @@ export class AnimationEngine {
     }
 
     // Update trail capturer with prop type and loopability changes
-    if (this.trailCapturer && this.settingsLoaded) {
-      this.trailCapturer.updateConfig({
+    if (this.lifecycleManager.trailCapturer && this.settingsLoaded) {
+      this.lifecycleManager.trailCapturer.updateConfig({
         bluePropType: this.state.currentBluePropType,
         redPropType: this.state.currentRedPropType,
         isSeamlesslyLoopable: props.isSeamlesslyLoopable,
@@ -660,7 +621,7 @@ export class AnimationEngine {
     const stepNumber = this.calculateBeatNumber(props);
     const turnsTuple = this.calculateTurnsTuple(props);
     const musicalPosition = this.calculateMusicalPosition(props);
-    this.glyphTransitionService?.updateTarget(
+    this.lifecycleManager.glyphTransition?.updateTarget(
       props.letter ?? null,
       turnsTuple,
       stepNumber,
@@ -668,8 +629,9 @@ export class AnimationEngine {
     );
 
     // Sync glyph state immediately after update so component sees new values
-    if (this.glyphTransitionService) {
-      const gs = this.glyphTransitionService.state;
+    const glyphTransition = this.lifecycleManager.glyphTransition;
+    if (glyphTransition) {
+      const gs = glyphTransition.state;
       this.state.setGlyphState({
         displayedLetter: gs.displayedLetter,
         displayedTurnsTuple: gs.displayedTurnsTuple,
@@ -684,7 +646,7 @@ export class AnimationEngine {
 
     // Trigger render if initialized
     if (this.state.isInitialized) {
-      this.renderLoopService?.triggerRender(() => this.buildFrameParams(props));
+      this.lifecycleManager.renderLoop?.triggerRender(() => this.buildFrameParams(props));
     }
   }
 
@@ -698,7 +660,7 @@ export class AnimationEngine {
     x: number,
     y: number
   ): void {
-    this.glyphTextureService?.handleGlyphSvgReady(
+    this.lifecycleManager.glyphTextureLoader?.handleGlyphSvgReady(
       svgString,
       width,
       height,
@@ -711,12 +673,13 @@ export class AnimationEngine {
    * Process pending glyph if any
    */
   processPendingGlyph(): void {
+    const glyphLoader = this.lifecycleManager.glyphTextureLoader;
     if (
       this.state.isInitialized &&
-      this.glyphTextureService?.getPendingGlyph() &&
-      this.animationRenderer
+      glyphLoader?.getPendingGlyph() &&
+      this.lifecycleManager.animationRenderer
     ) {
-      this.glyphTextureService.processPendingGlyph();
+      glyphLoader.processPendingGlyph();
     }
   }
 
@@ -725,7 +688,7 @@ export class AnimationEngine {
    * null = render at native refresh rate (no throttling).
    */
   setTargetFps(fps: number | null): void {
-    this.renderLoopService?.setTargetFps(fps);
+    this.lifecycleManager.renderLoop?.setTargetFps(fps);
   }
 
   /**
@@ -795,7 +758,7 @@ export class AnimationEngine {
         effortPreset: settings.effortPreset,
         pathShape: settings.pathShape,
       },
-      renderLoop: this.renderLoopService?.getDiagnostics() ?? null,
+      renderLoop: this.lifecycleManager.renderLoop?.getDiagnostics() ?? null,
       qualityHints: this.frameBudgetMonitor?.getQualityHints() ?? null,
       sequenceInfo: this.prevSequenceData ? {
         word: this.prevSequenceData.word,
@@ -811,8 +774,13 @@ export class AnimationEngine {
   }
 
   getRenderContext(id: string, container: HTMLDivElement): RenderContext | null {
-    const canvas = this.animationRenderer?.getCanvas();
-    if (!canvas || !this.renderLoopService || !this.trailCapturer || !this.canvasResizerService) {
+    const renderer = this.lifecycleManager.animationRenderer;
+    const renderLoop = this.lifecycleManager.renderLoop;
+    const trailCapturer = this.lifecycleManager.trailCapturer;
+    const resizer = this.lifecycleManager.resizer;
+    const precomputer = this.lifecycleManager.precomputer;
+    const canvas = renderer?.getCanvas();
+    if (!canvas || !renderLoop || !trailCapturer || !resizer) {
       return null;
     }
 
@@ -820,12 +788,12 @@ export class AnimationEngine {
       id,
       canvas,
       container,
-      renderer: this.animationRenderer!,
+      renderer: renderer!,
       effectManager: this.effectRendererManager,
-      trailCapturer: this.trailCapturer,
-      renderLoop: this.renderLoopService,
-      resizer: this.canvasResizerService,
-      precomputer: this.precomputationService!,
+      trailCapturer,
+      renderLoop,
+      resizer,
+      precomputer: precomputer!,
     });
   }
 
@@ -873,198 +841,9 @@ export class AnimationEngine {
   // PRIVATE METHODS
   // ============================================================================
 
-  private async initializeCanvas(): Promise<void> {
-    if (!this.containerElement) return;
-
-    const initialGridMode = this.lastPropsRef?.gridMode ?? GridMode.DIAMOND;
-    const initialShowNonRadial = this.lastPropsRef?.showNonRadialPoints ?? true;
-
-    await this.canvasInitializer.initialize(
-      {
-        containerElement: this.containerElement,
-        backgroundAlpha: 1,
-        gridMode: initialGridMode,
-        showNonRadialPoints: initialShowNonRadial,
-        loadAnimatorServices: () => this.loadAnimatorServices(),
-        initializePrecomputationService: () => {
-          this.initializePrecomputationService();
-          this.precomputationService?.initializeFramePreRenderer();
-        },
-        initializePropTextureLoader: () => {
-          this.initializePropTextureLoader();
-        },
-        initializeResizeService: () => {
-          this.initializeResizeService();
-          this.canvasResizerService?.setup();
-        },
-        initializeGlyphTextureLoader: () => this.initializeGlyphTextureLoader(),
-        initializeRenderLoopService: () => this.initializeRenderLoopService(),
-        loadPropTextures: () => this.propPipeline.loadTextures(this.state, this.prevDarkMode),
-        startRenderLoop: () =>
-          this.renderLoopService?.triggerRender(() =>
-            this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
-          ),
-      },
-      {
-        onPixiLoading: (loading) => {
-          this.state.setRendererLoading(loading);
-        },
-        onPixiError: (error) => {
-          this.state.setRendererError(error);
-        },
-        onPixiRendererReady: (renderer) => {
-          this.animationRenderer = renderer;
-          renderer.setDarkMode(this.prevDarkMode, false);
-        },
-        onInitialized: (initialized) => {
-          this.state.setInitialized(initialized);
-        },
-        onCanvasReady: (canvas) => {
-          this.callbacks.onCanvasReady?.(canvas);
-        },
-      }
-    );
-  }
-
-  private async loadAnimatorServices(): Promise<boolean> {
-    const result = await loadServices();
-
-    if (!result.success) {
-      this.state.setRendererError(
-        result.error || "Failed to load animator services"
-      );
-      return false;
-    }
-
-    const { services } = result;
-    if (!services.svgGenerator) {
-      this.state.setRendererError("Failed to load SVG generator service");
-      return false;
-    }
-    if (!services.TrailCapturer) {
-      this.state.setRendererError("Failed to load trail capture service");
-      return false;
-    }
-
-    this.svgGenerator = services.svgGenerator;
-    this.settingsService = services.settingsService;
-    this.orchestrator = new SequenceAnimationOrchestrator(
-      new AnimationStateManager(),
-      getPropInterpolator()
-    );
-    if (this.visibilityManagerOverride) {
-      this.orchestrator.setVisibilityManager(this.visibilityManagerOverride);
-    }
-    this.trailCapturer = new TrailCapturer();
-    this.lifecycleManager.configure({ trailCapturer: this.trailCapturer });
-    this.turnsTupleGenerator = services.turnsTupleGenerator;
-    this.state.setServicesReady(true);
-    return true;
-  }
-
-  private initializePrecomputationService(): void {
-    if (!this.orchestrator) return;
-
-    this.precomputationService = new AnimationPrecomputer();
-    this.lifecycleManager.configure({ precomputer: this.precomputationService });
-    this.precomputationService.initialize({
-      orchestrator: this.orchestrator,
-      TrailCapturer: this.trailCapturer,
-      renderer: this.animationRenderer,
-      propDimensions: this.state.bluePropDimensions,
-      canvasSize: this.canvasSize,
-      instanceId: this.instanceId,
-    });
-  }
-
-  private initializePropTextureLoader(): void {
-    if (!this.animationRenderer || !this.svgGenerator) {
-      this.state.setRendererError(
-        "Cannot initialize PropTextureLoader: missing dependencies"
-      );
-      return;
-    }
-
-    this.propTextureService = this.propPipeline.initializeTextureLoader(
-      this.animationRenderer,
-      this.svgGenerator,
-      this.trailCapturer
-    );
-    this.lifecycleManager.configure({ propTextureService: this.propTextureService });
-  }
-
-  private initializeResizeService(): void {
-    if (!this.containerElement || !this.animationRenderer) return;
-
-    this.canvasResizerService = new CanvasResizer();
-    this.lifecycleManager.configure({ resizer: this.canvasResizerService });
-    this.canvasResizerService.initialize(
-      this.containerElement,
-      this.animationRenderer
-    );
-  }
-
-  private initializeGlyphTextureLoader(): void {
-    if (!this.animationRenderer) return;
-
-    this.glyphTextureService = new GlyphTextureLoader();
-    this.lifecycleManager.configure({ glyphTextureService: this.glyphTextureService });
-    this.glyphTextureService.initialize(this.animationRenderer);
-  }
-
-  private initializeRenderLoopService(): void {
-    if (!this.animationRenderer) return;
-
-    const erm = this.effectRendererManager;
-
-    // Initialize fire/LED tip trackers
-    erm.fireTipTracker = new FireTipTracker();
-    erm.ledTipTracker = new LedTipTracker();
-
-    this.renderLoopService = new AnimationRenderLoop();
-    this.lifecycleManager.configure({ renderLoop: this.renderLoopService });
-    this.renderLoopService.initialize({
-      renderer: this.animationRenderer,
-      TrailCapturer: this.trailCapturer,
-      pathCache: this.precomputationService?.getPathCache() ?? null,
-      canvasSize: this.canvasSize,
-      frameBudgetMonitor: this.frameBudgetMonitor,
-      fireTipTracker: erm.fireTipTracker,
-      ledTipTracker: erm.ledTipTracker,
-      onEffectError: this.callbacks.onEffectError,
-    });
-
-    // Wire effect renderer manager with the render loop
-    erm.wire({
-      containerElement: this.containerElement!,
-      canvasSize: this.canvasSize,
-      renderLoopService: this.renderLoopService,
-      getFrameParams: () => this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS),
-      getVM: () => this.getVM(),
-    });
-    erm.effectsConfigState = this.effectsConfigState;
-
-    // Wire prop type manager
-    this.propTypeManager.wire({
-      settingsService: this.settingsService,
-      propTextureService: this.propTextureService,
-      trailCapturer: this.trailCapturer,
-      renderLoopService: this.renderLoopService,
-      precomputationService: this.precomputationService,
-      propTypeChangeService: this.propTypeChangeService,
-      fireTipTracker: erm.fireTipTracker,
-      animationRenderer: this.animationRenderer,
-    });
-
-    // Create trail overlay
-    erm.trailOverlay = erm.createTrailOverlay();
-    erm.trailOverlay.initialize(this.containerElement!, this.canvasSize, this.canvasSize);
-    this.renderLoopService.updateConfig({ trailOverlay: erm.trailOverlay });
-    erm.syncEffectLayers();
-  }
-
   private initializeTrailCapturer(props: AnimationEngineProps): void {
-    if (!this.trailCapturer || !this.settingsLoaded) return;
+    const trailCapturer = this.lifecycleManager.trailCapturer;
+    if (!trailCapturer || !this.settingsLoaded) return;
 
     // Use external trail settings if provided, otherwise use internal state
     const effectiveTrailSettings =
@@ -1075,7 +854,7 @@ export class AnimationEngine {
       this.state.setTrailSettings(props.externalTrailSettings);
     }
 
-    this.trailCapturer.initialize({
+    trailCapturer.initialize({
       canvasSize: this.canvasSize,
       bluePropDimensions: this.state.bluePropDimensions,
       redPropDimensions: this.state.redPropDimensions,
@@ -1088,13 +867,13 @@ export class AnimationEngine {
       redPropType: this.state.currentRedPropType,
     });
 
-    this.trailSettingsSyncService?.initialize(this.trailCapturer, () =>
-      this.renderLoopService?.triggerRender(() => this.buildFrameParams(props))
+    this.lifecycleManager.trailSettingsSync?.initialize(trailCapturer, () =>
+      this.lifecycleManager.renderLoop?.triggerRender(() => this.buildFrameParams(props))
     );
 
     // CRITICAL: Immediately sync external settings after initializing the sync service
     if (props.externalTrailSettings) {
-      this.trailSettingsSyncService?.handleExternalSettingsSync(
+      this.lifecycleManager.trailSettingsSync?.handleExternalSettingsSync(
         props.externalTrailSettings
       );
     }
@@ -1113,15 +892,15 @@ export class AnimationEngine {
     // Sync Dark Mode to renderer when it changes
     if (state.darkMode !== this.prevDarkMode && !this.previewDarkModeActive) {
       this.prevDarkMode = state.darkMode;
-      this.animationRenderer?.setDarkMode(state.darkMode);
+      this.lifecycleManager.animationRenderer?.setDarkMode(state.darkMode);
 
       if (this.state.isInitialized) {
-        this.renderLoopService?.triggerRender(() =>
+        this.lifecycleManager.renderLoop?.triggerRender(() =>
           this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
         );
 
         this.propPipeline.loadTextures(this.state, this.prevDarkMode).then(() => {
-          this.renderLoopService?.triggerRender(() =>
+          this.lifecycleManager.renderLoop?.triggerRender(() =>
             this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
           );
         });
@@ -1142,7 +921,7 @@ export class AnimationEngine {
       }
 
       if (this.state.isInitialized) {
-        this.renderLoopService?.triggerRender(() =>
+        this.lifecycleManager.renderLoop?.triggerRender(() =>
           this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
         );
       }
@@ -1154,11 +933,11 @@ export class AnimationEngine {
       this.prevPropsVisible = state.props;
 
       if (becameVisible) {
-        this.trailCapturer?.clearTrails();
+        this.lifecycleManager.trailCapturer?.clearTrails();
       }
 
       if (this.state.isInitialized) {
-        this.renderLoopService?.triggerRender(() =>
+        this.lifecycleManager.renderLoop?.triggerRender(() =>
           this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
         );
       }
@@ -1233,19 +1012,19 @@ export class AnimationEngine {
         erm.charcoalRenderer.clearSimulation();
       }
 
-      this.trailCapturer?.clearTrails();
+      this.lifecycleManager.trailCapturer?.clearTrails();
 
-      this.precomputationService?.clearCaches();
-      this.renderLoopService?.updateConfig({ pathCache: null });
+      this.lifecycleManager.precomputer?.clearCaches();
+      this.lifecycleManager.renderLoop?.updateConfig({ pathCache: null });
 
       if (
-        this.precomputationService &&
+        this.lifecycleManager.precomputer &&
         this.state.trailSettings.usePathCache &&
         this.prevSequenceData
       ) {
         const totalSteps = this.prevSequenceData.steps.length;
         const stepDurationMs = 1000;
-        this.precomputationService
+        this.lifecycleManager.precomputer
           .precomputeAnimationPaths(
             this.prevSequenceData,
             totalSteps,
@@ -1253,10 +1032,10 @@ export class AnimationEngine {
             this.state.trailSettings
           )
           .then(() => {
-            const pathCache = this.precomputationService?.getPathCache();
-            if (pathCache && this.renderLoopService) {
-              this.renderLoopService.updateConfig({ pathCache });
-              this.trailCapturer?.clearTrails();
+            const pathCache = this.lifecycleManager.precomputer?.getPathCache();
+            if (pathCache && this.lifecycleManager.renderLoop) {
+              this.lifecycleManager.renderLoop.updateConfig({ pathCache });
+              this.lifecycleManager.trailCapturer?.clearTrails();
             }
           })
           .catch(() => {
@@ -1265,7 +1044,7 @@ export class AnimationEngine {
       }
 
       if (this.state.isInitialized) {
-        this.renderLoopService?.triggerRender(() =>
+        this.lifecycleManager.renderLoop?.triggerRender(() =>
           this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
         );
       }
@@ -1292,16 +1071,18 @@ export class AnimationEngine {
   }
 
   private syncServiceState(): void {
-    if (this.precomputationService) {
-      const ps = this.precomputationService.state;
+    const precomputer = this.lifecycleManager.precomputer;
+    if (precomputer) {
+      const ps = precomputer.state;
       this.state.setPreRendering(ps.isPreRendering);
       this.state.setPreRenderProgress(ps.preRenderProgress);
       this.state.setPreRenderedFramesReady(ps.preRenderedFramesReady);
     }
 
     // Sync from glyph transition service
-    if (this.glyphTransitionService) {
-      const gs = this.glyphTransitionService.state;
+    const glyphTransition = this.lifecycleManager.glyphTransition;
+    if (glyphTransition) {
+      const gs = glyphTransition.state;
       this.state.setGlyphState({
         displayedLetter: gs.displayedLetter,
         displayedTurnsTuple: gs.displayedTurnsTuple,
@@ -1315,12 +1096,13 @@ export class AnimationEngine {
     }
 
     // Sync from prop type service - but ONLY when overrides are not active.
+    const propTypeChanger = this.lifecycleManager.propTypeChanger;
     if (
-      this.propTypeChangeService &&
+      propTypeChanger &&
       this.propTypeManager.propTypeOverrideBlue == null &&
       this.propTypeManager.propTypeOverrideRed == null
     ) {
-      const pts = this.propTypeChangeService.state;
+      const pts = propTypeChanger.state;
       this.state.setBluePropType(pts.bluePropType);
       this.state.setRedPropType(pts.redPropType);
       if (this.state.currentPropType !== pts.legacyPropType) {
@@ -1330,17 +1112,18 @@ export class AnimationEngine {
     }
 
     // Sync from prop texture service
-    if (this.propTextureService) {
-      const pts = this.propTextureService.state;
+    const propTextureLoader = this.lifecycleManager.propTextureLoader;
+    if (propTextureLoader) {
+      const pts = propTextureLoader.state;
       this.state.setBluePropDimensions(pts.blueDimensions);
       this.state.setRedPropDimensions(pts.redDimensions);
     }
 
     // Sync from resize service (delegated to StateSynchronizer)
     this.canvasSize = this.stateSynchronizer.syncResizeState({
-      canvasResizerService: this.canvasResizerService,
-      trailCapturer: this.trailCapturer,
-      renderLoopService: this.renderLoopService,
+      canvasResizerService: this.lifecycleManager.resizer,
+      trailCapturer: this.lifecycleManager.trailCapturer,
+      renderLoopService: this.lifecycleManager.renderLoop,
       effectRendererManager: this.effectRendererManager,
     });
   }
@@ -1355,7 +1138,7 @@ export class AnimationEngine {
   private calculateTurnsTuple(props: AnimationEngineProps): string {
     return this.frameBuilderService.calculateTurnsTuple(
       props.stepData ?? null,
-      this.turnsTupleGenerator ?? null
+      this.lifecycleManager.turnsTupleGenerator ?? null
     );
   }
 
@@ -1363,7 +1146,7 @@ export class AnimationEngine {
     return this.frameBuilderService.calculateMusicalPosition(
       props.sequenceData ?? null,
       props.stepData ?? null,
-      this.orchestrator ?? null
+      this.lifecycleManager.orchestrator ?? null
     );
   }
 
@@ -1400,10 +1183,10 @@ export class AnimationEngine {
       prevHasCharcoalTips: this.effectRendererManager.prevHasCharcoalTips,
       trailsSuppressedUntilTextureLoad: this.propTypeManager.trailsSuppressedUntilTextureLoad,
       effectsConfigState: this.effectsConfigState,
-      settingsService: this.settingsService,
+      settingsService: this.lifecycleManager.settingsService,
       effectRendererManager: this.effectRendererManager,
       getVM: () => this.getVM(),
-      orchestrator: this.orchestrator,
+      orchestrator: this.lifecycleManager.orchestrator,
     });
   }
 }
