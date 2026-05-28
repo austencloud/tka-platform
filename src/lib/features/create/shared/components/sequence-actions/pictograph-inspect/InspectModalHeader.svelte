@@ -28,17 +28,11 @@
 
 <header class="modal-header">
   <div class="header-left">
-    <div class="terminal-dots">
-      <span class="dot dot-red"></span>
-      <span class="dot dot-yellow"></span>
-      <span class="dot dot-green"></span>
-    </div>
-    <h2>inspect</h2>
-    <span class="separator">/</span>
-    <span class="beat-tag">beat:{displayData?.stepNumber ?? stepData.stepNumber}</span>
+    <span class="title-icon"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></span>
+    <h2>Inspect</h2>
+    <span class="beat-chip">Beat {displayData?.stepNumber ?? stepData.stepNumber}</span>
     {#if displayData?.letter ?? stepData.letter}
-      <span class="separator">/</span>
-      <span class="letter-tag">{displayData?.letter ?? stepData.letter}</span>
+      <span class="letter-chip">{displayData?.letter ?? stepData.letter}</span>
     {/if}
     {#if isCalculating}
       <span class="calculating">
@@ -52,7 +46,7 @@
       ariaLabel="Copy all data for AI"
       variant="icon-text"
       size="sm"
-      idleIcon="fa-terminal"
+      idleIcon="fa-robot"
       labels={{ idle: "Copy AI", success: "Copied!" }}
       disabled={isCalculating}
     />
@@ -61,7 +55,7 @@
       ariaLabel="Copy JSON"
       variant="icon-text"
       size="sm"
-      idleIcon="fa-brackets-curly"
+      idleIcon="fa-code"
       labels={{ idle: "JSON", success: "Copied!" }}
       disabled={isCalculating}
     />
@@ -76,13 +70,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px;
-    border-bottom: 1px solid #30363d;
-    background: #161b22;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    background: transparent;
     flex-wrap: wrap;
     gap: 10px;
-    font-family: "SF Mono", "Cascadia Code", "Fira Code", Monaco, Consolas,
-      monospace;
+    font-family: inherit;
   }
 
   .header-left {
@@ -91,59 +84,48 @@
     gap: 10px;
   }
 
-  .terminal-dots {
+  .title-icon {
     display: flex;
-    gap: 6px;
-    margin-right: 4px;
-  }
-
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-  }
-
-  .dot-red {
-    background: #ff5f57;
-  }
-
-  .dot-yellow {
-    background: #febc2e;
-  }
-
-  .dot-green {
-    background: #28c840;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--theme-accent, #58a6ff) 16%, transparent);
+    color: var(--theme-accent, #58a6ff);
+    font-size: var(--font-size-compact, 12px);
   }
 
   .header-left h2 {
     margin: 0;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #7ee787;
-    letter-spacing: 0.5px;
-  }
-
-  .separator {
-    color: #484f58;
-    font-size: 0.85rem;
-    font-weight: 400;
-  }
-
-  .beat-tag {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #8b949e;
-  }
-
-  .letter-tag {
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm, 14px);
     font-weight: 700;
-    color: #79c0ff;
+    color: var(--theme-text, #fff);
+    letter-spacing: 0.2px;
+  }
+
+  .beat-chip,
+  .letter-chip {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+  }
+
+  .beat-chip {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .letter-chip {
+    color: var(--theme-text, #fff);
+    font-weight: 700;
   }
 
   .calculating {
-    color: #8b949e;
-    font-size: 0.8rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
   }
 
   .header-actions {
@@ -155,36 +137,32 @@
   .close-btn {
     width: 36px;
     height: 36px;
-    border-radius: 6px;
-    border: 1px solid #30363d;
+    border-radius: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     background: transparent;
-    color: #8b949e;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all var(--duration-fast, 0.15s) ease;
     margin-left: 4px;
-    font-size: 0.8rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .close-btn:hover {
-    background: #21262d;
-    color: #e6edf3;
-    border-color: #484f58;
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, #fff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .close-btn:focus-visible {
-    outline: 2px solid #58a6ff;
+    outline: 2px solid var(--theme-accent, #58a6ff);
     outline-offset: 1px;
   }
 
   @media (max-width: 600px) {
     .header-left h2 {
-      display: none;
-    }
-
-    .terminal-dots {
       display: none;
     }
   }

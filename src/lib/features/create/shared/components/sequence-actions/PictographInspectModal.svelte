@@ -63,20 +63,24 @@
   let redOpen = $state(false);
 
   // When an arrow is clicked in the live pictograph, expand + edit that section.
-  // Plain (non-reactive) dedup guard: the effect must only depend on the
-  // selection, never on this — reading + writing a $state here would loop.
+  // Driven imperatively via the selection observer (same pattern ArrowSvg uses),
+  // NOT a reactive $effect — reading the global selection inside an effect that
+  // also writes open-state participates in cross-component update loops.
   let lastSelectedColor: string | null = null;
   $effect(() => {
-    const color = selectedArrowState.selectedArrow?.color ?? null;
-    if (color === lastSelectedColor) return;
-    lastSelectedColor = color;
-    if (color === "blue") {
-      blueOpen = true;
-      queueMicrotask(() => blueMotionColumnRef?.enterEditMode());
-    } else if (color === "red") {
-      redOpen = true;
-      queueMicrotask(() => redMotionColumnRef?.enterEditMode());
-    }
+    const unsubscribe = selectedArrowState.subscribe(() => {
+      const color = selectedArrowState.selectedArrow?.color ?? null;
+      if (color === lastSelectedColor) return;
+      lastSelectedColor = color;
+      if (color === "blue") {
+        blueOpen = true;
+        queueMicrotask(() => blueMotionColumnRef?.enterEditMode());
+      } else if (color === "red") {
+        redOpen = true;
+        queueMicrotask(() => redMotionColumnRef?.enterEditMode());
+      }
+    });
+    return unsubscribe;
   });
 
 
