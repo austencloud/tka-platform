@@ -20,6 +20,7 @@ import {
 } from "../../state/PropGeometryAdjustmentState.svelte";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import type { Timestamp } from "firebase/firestore";
 
 const logger = createComponentLogger("PropGeometryAdjustmentRepository");
 const ADMIN_EMAIL = "austencloud@gmail.com";
@@ -99,6 +100,61 @@ export class PropGeometryAdjustmentRepository {
     key: PropGeometryKey
   ): CascadingPropGeometryResult | null {
     return this.state.getAdjustmentCascading(key);
+  }
+
+  /** Exact (non-cascading) lookup. */
+  getAdjustment(key: PropGeometryKey): { x: number; y: number } | null {
+    return this.state.getAdjustment(key);
+  }
+
+  hasAdjustment(key: PropGeometryKey): boolean {
+    return this.state.hasAdjustment(key);
+  }
+
+  /** In-memory only — live WASD preview before persisting (admin only). */
+  saveAdjustmentLocal(input: PropGeometryAdjustmentInput): void {
+    if (!this.isAdmin()) {
+      throw new Error("Only admin can save prop geometry adjustments");
+    }
+    const fakeTimestamp = {
+      seconds: Math.floor(Date.now() / 1000),
+      nanoseconds: 0,
+      toDate: () => new Date(),
+      toMillis: () => Date.now(),
+      isEqual: () => false,
+    } as unknown as Timestamp;
+
+    this.state.setAdjustment({
+      gridMode: input.gridMode,
+      propType: input.propType,
+      otherPropType: input.otherPropType,
+      positionType: input.positionType,
+      endOrientation: input.endOrientation,
+      otherEndOrientation: input.otherEndOrientation,
+      motionType: input.motionType,
+      turns: input.turns,
+      arrowColor: input.arrowColor,
+      adjustmentX: input.adjustmentX,
+      adjustmentY: input.adjustmentY,
+      updatedAt: fakeTimestamp,
+      updatedBy: authState.user?.email ?? "unknown",
+    });
+  }
+
+  /** In-memory only — revert preview (admin only). */
+  deleteAdjustmentLocal(key: PropGeometryKey): void {
+    if (!this.isAdmin()) {
+      throw new Error("Only admin can delete prop geometry adjustments");
+    }
+    this.state.removeAdjustment(key);
+  }
+
+  /** Persist a delete (admin only). */
+  async deleteAdjustment(key: PropGeometryKey): Promise<void> {
+    if (!this.isAdmin()) {
+      throw new Error("Only admin can delete prop geometry adjustments");
+    }
+    await this.persister.delete(generatePropGeometryKeyString(key));
   }
 
   async saveAdjustment(input: PropGeometryAdjustmentInput): Promise<void> {
