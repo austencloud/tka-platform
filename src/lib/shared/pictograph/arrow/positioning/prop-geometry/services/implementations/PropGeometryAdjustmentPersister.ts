@@ -8,7 +8,7 @@
 
 import { collection, onSnapshot, type Unsubscribe } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { firestoreList, firestoreSet } from "$lib/shared/firestore";
+import { firestoreList, firestoreSet, firestoreDelete } from "$lib/shared/firestore";
 import { PropGeometryAdjustmentSchema } from "../../domain/prop-geometry-schemas";
 import {
   generatePropGeometryKeyString,
@@ -96,6 +96,16 @@ export class PropGeometryAdjustmentPersister {
       );
     } catch (error) {
       logger.error(`Failed to save prop geometry ${keyString}:`, error);
+      throw error;
+    }
+  }
+
+  async delete(keyString: string): Promise<void> {
+    try {
+      await firestoreDelete(COLLECTION_NAME, keyString);
+      logger.success(`Deleted prop geometry: ${keyString}`);
+    } catch (error) {
+      logger.error(`Failed to delete prop geometry ${keyString}:`, error);
       throw error;
     }
   }
