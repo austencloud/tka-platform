@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TKA Classification Pivot Table</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #0f1117;
+    color: #e0e0e0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .controls {
+    width: 300px;
+    min-width: 300px;
+    padding: 20px;
+    background: #16181f;
+    border-right: 1px solid #2a2d38;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .controls h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .controls h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #8b8fa3;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .section { display: flex; flex-direction: column; gap: 6px; }
+
+  select {
+    width: 100%;
+    padding: 8px 10px;
+    background: #1e2029;
+    border: 1px solid #2a2d38;
+    border-radius: 6px;
+    color: #e0e0e0;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  select:focus { outline: none; border-color: #4a6cf7; }
+
+  .filter-group { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .filter-btn {
+    padding: 4px 10px;
+    border: 1px solid #2a2d38;
+    border-radius: 14px;
+    background: #1e2029;
+    color: #8b8fa3;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .filter-btn.active {
+    background: #2a3a6e;
+    border-color: #4a6cf7;
+    color: #c0d0ff;
+  }
+  .filter-btn:hover { border-color: #4a6cf7; }
+
+  .preset-btn {
+    padding: 6px 12px;
+    border: 1px solid #2a2d38;
+    border-radius: 6px;
+    background: #1e2029;
+    color: #b0b4c8;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { background: #252838; border-color: #4a6cf7; }
+  .preset-btn.active { background: #2a3a6e; border-color: #4a6cf7; color: #fff; }
+
+  .preset-desc { font-size: 10px; color: #666; margin-top: 2px; }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .stats-bar {
+    padding: 10px 20px;
+    background: #1a1c24;
+    border-bottom: 1px solid #2a2d38;
+    font-size: 12px;
+    color: #8b8fa3;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .stats-bar .count { color: #4a6cf7; font-weight: 600; }
+
+  .grid-wrapper {
+    flex: 1;
+    overflow: auto;
+    padding: 20px;
+  }
+
+  .pivot-grid {
+    display: inline-grid;
+    gap: 2px;
+    min-width: 100%;
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    min-height: 44px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    transition: background 0.15s;
+  }
+
+  .cell-header {
+    background: #1a1c24;
+    color: #8b8fa3;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    position: sticky;
+  }
+  .cell-header.row-header {
+    left: 0;
+    z-index: 2;
+    justify-content: flex-end;
+    text-align: right;
+    min-width: 100px;
+  }
+  .cell-header.col-header {
+    top: 0;
+    z-index: 2;
+    writing-mode: horizontal-tb;
+  }
+  .cell-header.corner {
+    z-index: 3;
+    left: 0;
+    top: 0;
+    position: sticky;
+  }
+
+  .cell-data {
+    background: #1e2029;
+    cursor: pointer;
+    position: relative;
+  }
+  .cell-data:hover { background: #252838; }
+  .cell-data.empty { background: #14151b; color: #333; cursor: default; }
+  .cell-data .count-text { font-weight: 500; }
+
+  .cell-data.heat-1 { background: #1a2040; color: #7090ff; }
+  .cell-data.heat-2 { background: #1e2860; color: #90a8ff; }
+  .cell-data.heat-3 { background: #243080; color: #a0b8ff; }
+  .cell-data.heat-4 { background: #2a38a0; color: #fff; }
+  .cell-data.heat-5 { background: #3040c0; color: #fff; font-weight: 700; }
+
+  .cell-data.heat-1:hover { background: #202850; }
+  .cell-data.heat-2:hover { background: #243070; }
+  .cell-data.heat-3:hover { background: #2a3890; }
+  .cell-data.heat-4:hover { background: #3040b0; }
+  .cell-data.heat-5:hover { background: #3848d0; }
+
+  .prompt-area {
+    padding: 12px 20px;
+    background: #16181f;
+    border-top: 1px solid #2a2d38;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .prompt-text {
+    flex: 1;
+    font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: #b0b4c8;
+    line-height: 1.5;
+    min-height: 36px;
+  }
+
+  .copy-btn {
+    padding: 6px 14px;
+    background: #4a6cf7;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: #5a7cff; }
+  .copy-btn.copied { background: #2a8a4a; }
+
+  .detail-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 320px;
+    height: 100vh;
+    background: #16181f;
+    border-left: 1px solid #2a2d38;
+    padding: 20px;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+    z-index: 10;
+  }
+  .detail-panel.open { transform: translateX(0); }
+
+  .detail-panel h3 {
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .detail-panel .close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #8b8fa3;
+    font-size: 18px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .detail-item {
+    padding: 8px 10px;
+    background: #1e2029;
+    border-radius: 4px;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .detail-item .label { color: #8b8fa3; }
+  .detail-item .value { color: #c0d0ff; font-weight: 500; }
+
+  .legend {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 11px;
+    color: #666;
+  }
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="controls">
+  <div>
+    <h1>TKA Classification Pivot</h1>
+    <p style="font-size:11px;color:#666;margin-top:4px;">Multi-axis sequence explorer</p>
+  </div>
+
+  <div class="section">
+    <h2>Presets</h2>
+    <button class="preset-btn active" onclick="applyPreset('turnMatrix')">
+      Turn Matrix
+      <div class="preset-desc">7x7 blue vs red turns</div>
+    </button>
+    <button class="preset-btn" onclick="applyPreset('familyReversal')">
+      Family x Reversal
+      <div class="preset-desc">Which families have which patterns</div>
+    </button>
+    <button class="preset-btn" onclick="applyPreset('familyTurns')">
+      Family x Turn Level
+      <div class="preset-desc">Family distribution across turns</div>
+    </button>
+    <button class="preset-btn" onclick="applyPreset('reversalTurns')">
+      Reversal x Turns
+      <div class="preset-desc">Reversal patterns across turn levels</div>
+    </button>
+    <button class="preset-btn" onclick="applyPreset('propHand')">
+      Prop Orientation x Hand Family
+      <div class="preset-desc">Independence proof visualized</div>
+    </button>
+  </div>
+
+  <div class="section">
+    <h2>Row Axis</h2>
+    <select id="rowAxis" onchange="updateGrid()">
+      <option value="blueTurns">Blue Turns</option>
+      <option value="redTurns">Red Turns</option>
+      <option value="family">TnD Family</option>
+      <option value="handTiming">Hand Timing</option>
+      <option value="handDirection">Hand Direction</option>
+      <option value="reversalPattern">Reversal Pattern</option>
+      <option value="reversalFamily">Reversal Family</option>
+      <option value="propOrientation">Prop Orientation</option>
+      <option value="rotationStyle">Rotation Style</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <h2>Column Axis</h2>
+    <select id="colAxis" onchange="updateGrid()">
+      <option value="redTurns">Red Turns</option>
+      <option value="blueTurns">Blue Turns</option>
+      <option value="family">TnD Family</option>
+      <option value="handTiming">Hand Timing</option>
+      <option value="handDirection">Hand Direction</option>
+      <option value="reversalPattern">Reversal Pattern</option>
+      <option value="reversalFamily">Reversal Family</option>
+      <option value="propOrientation">Prop Orientation</option>
+      <option value="rotationStyle">Rotation Style</option>
+    </select>
+  </div>
+
+  <div class="section" id="filterSection"></div>
+</div>
+
+<div class="main">
+  <div class="stats-bar">
+    <span>Showing <span class="count" id="visibleCount">0</span> sequences</span>
+    <span>of <span class="count" id="totalCount">0</span> total</span>
+    <div class="legend" style="margin-left:auto;">
+      <div class="legend-swatch" style="background:#1e2029;"></div>0
+      <div class="legend-swatch" style="background:#1a2040;"></div>low
+      <div class="legend-swatch" style="background:#243080;"></div>mid
+      <div class="legend-swatch" style="background:#3040c0;"></div>high
+    </div>
+  </div>
+  <div class="grid-wrapper" id="gridWrapper"></div>
+  <div class="prompt-area">
+    <div class="prompt-text" id="promptText"></div>
+    <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy</button>
+  </div>
+</div>
+
+<div class="detail-panel" id="detailPanel">
+  <button class="close-btn" onclick="closeDetail()">&times;</button>
+  <h3 id="detailTitle"></h3>
+  <div class="detail-list" id="detailList"></div>
+</div>
+
+<script>
+const TURN_LEVELS = [0, 0.5, 1, 1.5, 2, 2.5, 3];
+const FAMILIES = ['split-same', 'split-opp', 'tog-same', 'tog-opp', 'quarter-same', 'quarter-opp'];
+const REVERSAL_PATTERNS = ['continuous', 'book', 'red-book', 'blue-book', 'long-book', 'alternating'];
+const REVERSAL_FAMILIES_MAP = {
+  'continuous': 'simple', 'book': 'simple', 'red-book': 'simple',
+  'blue-book': 'simple', 'long-book': 'simple', 'alternating': 'simple',
+};
+const PROP_ORIENTATIONS = ['same', 'opposite', 'perpendicular'];
+const ROTATION_STYLES = ['pro/pro', 'anti/anti', 'hybrid'];
+
+const BASE_LETTERS = [
+  { letter: 'A', family: 'split-same', handTiming: 'split', handDirection: 'same', rotationStyle: 'pro/pro', propOrientation: 'same' },
+  { letter: 'B', family: 'split-same', handTiming: 'split', handDirection: 'same', rotationStyle: 'anti/anti', propOrientation: 'opposite' },
+  { letter: 'C', family: 'split-same', handTiming: 'split', handDirection: 'same', rotationStyle: 'hybrid', propOrientation: 'perpendicular' },
+  { letter: 'D', family: 'tog-opp', handTiming: 'together', handDirection: 'opposite', rotationStyle: 'pro/pro', propOrientation: 'same' },
+  { letter: 'E', family: 'tog-opp', handTiming: 'together', handDirection: 'opposite', rotationStyle: 'anti/anti', propOrientation: 'opposite' },
+  { letter: 'F', family: 'tog-opp', handTiming: 'together', handDirection: 'opposite', rotationStyle: 'hybrid', propOrientation: 'same' },
+  { letter: 'G', family: 'tog-same', handTiming: 'together', handDirection: 'same', rotationStyle: 'pro/pro', propOrientation: 'opposite' },
+  { letter: 'H', family: 'tog-same', handTiming: 'together', handDirection: 'same', rotationStyle: 'anti/anti', propOrientation: 'same' },
+  { letter: 'I', family: 'tog-same', handTiming: 'together', handDirection: 'same', rotationStyle: 'hybrid', propOrientation: 'opposite' },
+  { letter: 'J', family: 'split-opp', handTiming: 'split', handDirection: 'opposite', rotationStyle: 'pro/pro', propOrientation: 'perpendicular' },
+  { letter: 'K', family: 'split-opp', handTiming: 'split', handDirection: 'opposite', rotationStyle: 'anti/anti', propOrientation: 'same' },
+  { letter: 'L', family: 'split-opp', handTiming: 'split', handDirection: 'opposite', rotationStyle: 'hybrid', propOrientation: 'opposite' },
+  { letter: 'M', family: 'quarter-opp', handTiming: 'quarter', handDirection: 'opposite', rotationStyle: 'pro/pro', propOrientation: 'perpendicular' },
+  { letter: 'N', family: 'quarter-opp', handTiming: 'quarter', handDirection: 'opposite', rotationStyle: 'anti/anti', propOrientation: 'perpendicular' },
+  { letter: 'O', family: 'quarter-opp', handTiming: 'quarter', handDirection: 'opposite', rotationStyle: 'hybrid', propOrientation: 'same' },
+  { letter: 'P', family: 'quarter-opp', handTiming: 'quarter', handDirection: 'opposite', rotationStyle: 'pro/pro', propOrientation: 'same' },
+  { letter: 'Q', family: 'quarter-opp', handTiming: 'quarter', handDirection: 'opposite', rotationStyle: 'anti/anti', propOrientation: 'opposite' },
+  { letter: 'R', family: 'quarter-opp', handTiming: 'quarter', handDirection: 'opposite', rotationStyle: 'hybrid', propOrientation: 'perpendicular' },
+  { letter: 'S', family: 'quarter-same', handTiming: 'quarter', handDirection: 'same', rotationStyle: 'pro/pro', propOrientation: 'perpendicular' },
+  { letter: 'T', family: 'quarter-same', handTiming: 'quarter', handDirection: 'same', rotationStyle: 'pro/pro', propOrientation: 'same' },
+  { letter: 'U', family: 'quarter-same', handTiming: 'quarter', handDirection: 'same', rotationStyle: 'anti/anti', propOrientation: 'opposite' },
+  { letter: 'V', family: 'quarter-same', handTiming: 'quarter', handDirection: 'same', rotationStyle: 'anti/anti', propOrientation: 'perpendicular' },
+];
+
+// Generate sequence entries: each base letter × each turn combo × each reversal pattern
+const DATA = [];
+let idCounter = 0;
+for (const letter of BASE_LETTERS) {
+  for (const bt of TURN_LEVELS) {
+    for (const rt of TURN_LEVELS) {
+      for (const rp of REVERSAL_PATTERNS) {
+        DATA.push({
+          id: idCounter++,
+          letter: letter.letter,
+          family: letter.family,
+          handTiming: letter.handTiming,
+          handDirection: letter.handDirection,
+          propOrientation: letter.propOrientation,
+          rotationStyle: letter.rotationStyle,
+          blueTurns: bt,
+          redTurns: rt,
+          reversalPattern: rp,
+          reversalFamily: REVERSAL_FAMILIES_MAP[rp] || 'simple',
+        });
+      }
+    }
+  }
+}
+
+const AXIS_META = {
+  blueTurns:       { label: 'Blue Turns', values: () => TURN_LEVELS.map(String), display: v => v },
+  redTurns:        { label: 'Red Turns', values: () => TURN_LEVELS.map(String), display: v => v },
+  family:          { label: 'TnD Family', values: () => FAMILIES, display: v => v },
+  handTiming:      { label: 'Hand Timing', values: () => ['split','together','quarter'], display: v => v },
+  handDirection:   { label: 'Hand Direction', values: () => ['same','opposite'], display: v => v },
+  reversalPattern: { label: 'Reversal Pattern', values: () => REVERSAL_PATTERNS, display: v => v },
+  reversalFamily:  { label: 'Reversal Family', values: () => ['simple'], display: v => v },
+  propOrientation: { label: 'Prop Orientation', values: () => PROP_ORIENTATIONS, display: v => v },
+  rotationStyle:   { label: 'Rotation Style', values: () => ROTATION_STYLES, display: v => v },
+};
+
+function getVal(entry, axis) {
+  return String(entry[axis]);
+}
+
+// State
+const state = {
+  rowAxis: 'blueTurns',
+  colAxis: 'redTurns',
+  filters: {},
+  activePreset: 'turnMatrix',
+};
+
+// Initialize filters: all values active for all axes
+function initFilters() {
+  state.filters = {};
+  for (const [key, meta] of Object.entries(AXIS_META)) {
+    state.filters[key] = new Set(meta.values());
+  }
+}
+initFilters();
+
+function getFilteredData() {
+  return DATA.filter(entry => {
+    for (const [axis, allowed] of Object.entries(state.filters)) {
+      if (!allowed.has(getVal(entry, axis))) return false;
+    }
+    return true;
+  });
+}
+
+function renderFilters() {
+  const section = document.getElementById('filterSection');
+  const usedAxes = new Set([state.rowAxis, state.colAxis]);
+  let html = '<h2>Filters</h2>';
+
+  for (const [key, meta] of Object.entries(AXIS_META)) {
+    if (usedAxes.has(key)) continue;
+    const vals = meta.values();
+    if (vals.length <= 1) continue;
+
+    html += `<div style="margin-bottom:8px;">
+      <div style="font-size:11px;color:#666;margin-bottom:4px;">${meta.label}</div>
+      <div class="filter-group">`;
+
+    for (const v of vals) {
+      const active = state.filters[key].has(v);
+      html += `<button class="filter-btn${active ? ' active' : ''}"
+        onclick="toggleFilter('${key}','${v}')">${meta.display(v)}</button>`;
+    }
+    html += '</div></div>';
+  }
+  section.innerHTML = html;
+}
+
+function toggleFilter(axis, value) {
+  if (state.filters[axis].has(value)) {
+    if (state.filters[axis].size > 1) {
+      state.filters[axis].delete(value);
+    }
+  } else {
+    state.filters[axis].add(value);
+  }
+  state.activePreset = null;
+  updatePresetButtons();
+  updateGrid();
+  renderFilters();
+}
+
+function updateGrid() {
+  state.rowAxis = document.getElementById('rowAxis').value;
+  state.colAxis = document.getElementById('colAxis').value;
+
+  const filtered = getFilteredData();
+  const rowMeta = AXIS_META[state.rowAxis];
+  const colMeta = AXIS_META[state.colAxis];
+
+  const rowVals = rowMeta.values().filter(v => state.filters[state.rowAxis]?.has(v) !== false);
+  const colVals = colMeta.values().filter(v => state.filters[state.colAxis]?.has(v) !== false);
+
+  // Build count matrix
+  const matrix = {};
+  let maxCount = 0;
+  for (const rv of rowVals) {
+    matrix[rv] = {};
+    for (const cv of colVals) {
+      matrix[rv][cv] = [];
+    }
+  }
+
+  for (const entry of filtered) {
+    const rv = getVal(entry, state.rowAxis);
+    const cv = getVal(entry, state.colAxis);
+    if (matrix[rv] && matrix[rv][cv] !== undefined) {
+      matrix[rv][cv].push(entry);
+      if (matrix[rv][cv].length > maxCount) maxCount = matrix[rv][cv].length;
+    }
+  }
+
+  // Render grid
+  const cols = colVals.length + 1;
+  const wrapper = document.getElementById('gridWrapper');
+  let html = `<div class="pivot-grid" style="grid-template-columns: 100px repeat(${colVals.length}, minmax(60px, 1fr));">`;
+
+  // Corner
+  html += `<div class="cell cell-header corner" style="font-size:10px;color:#555;">
+    ${rowMeta.label}<br>&#8595; &times; ${colMeta.label} &#8594;</div>`;
+
+  // Column headers
+  for (const cv of colVals) {
+    html += `<div class="cell cell-header col-header">${colMeta.display(cv)}</div>`;
+  }
+
+  // Rows
+  for (const rv of rowVals) {
+    html += `<div class="cell cell-header row-header">${rowMeta.display(rv)}</div>`;
+    for (const cv of colVals) {
+      const entries = matrix[rv][cv];
+      const count = entries.length;
+      if (count === 0) {
+        html += `<div class="cell cell-data empty">-</div>`;
+      } else {
+        const heat = maxCount > 0 ? Math.ceil((count / maxCount) * 5) : 0;
+        html += `<div class="cell cell-data heat-${heat}" onclick="showDetail('${rv}','${cv}')">
+          <span class="count-text">${count}</span></div>`;
+      }
+    }
+  }
+
+  html += '</div>';
+  wrapper.innerHTML = html;
+
+  // Update stats
+  document.getElementById('visibleCount').textContent = filtered.length.toLocaleString();
+  document.getElementById('totalCount').textContent = DATA.length.toLocaleString();
+
+  renderFilters();
+  updatePrompt(filtered, rowMeta, colMeta);
+}
+
+function showDetail(rowVal, colVal) {
+  const filtered = getFilteredData();
+  const entries = filtered.filter(e =>
+    getVal(e, state.rowAxis) === rowVal && getVal(e, state.colAxis) === colVal
+  );
+
+  const rowMeta = AXIS_META[state.rowAxis];
+  const colMeta = AXIS_META[state.colAxis];
+  const panel = document.getElementById('detailPanel');
+  const title = document.getElementById('detailTitle');
+  const list = document.getElementById('detailList');
+
+  title.textContent = `${rowMeta.display(rowVal)} × ${colMeta.display(colVal)} (${entries.length})`;
+
+  // Show axis distribution within this cell
+  const usedAxes = new Set([state.rowAxis, state.colAxis]);
+  const distributions = {};
+  for (const [key, meta] of Object.entries(AXIS_META)) {
+    if (usedAxes.has(key)) continue;
+    distributions[key] = {};
+    for (const e of entries) {
+      const v = getVal(e, key);
+      distributions[key][v] = (distributions[key][v] || 0) + 1;
+    }
+  }
+
+  let html = '';
+  for (const [key, counts] of Object.entries(distributions)) {
+    const meta = AXIS_META[key];
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    html += `<div style="margin-bottom:12px;">
+      <div style="font-size:11px;color:#666;margin-bottom:4px;">${meta.label}</div>`;
+    for (const [v, c] of Object.entries(counts).sort((a, b) => b[1] - a[1])) {
+      const pct = Math.round(c / total * 100);
+      html += `<div class="detail-item">
+        <span class="label">${meta.display(v)}</span>
+        <span class="value">${c} (${pct}%)</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  // Show letter breakdown
+  const letterCounts = {};
+  for (const e of entries) {
+    letterCounts[e.letter] = (letterCounts[e.letter] || 0) + 1;
+  }
+  html += `<div style="margin-bottom:12px;">
+    <div style="font-size:11px;color:#666;margin-bottom:4px;">Letters</div>`;
+  for (const [l, c] of Object.entries(letterCounts).sort((a, b) => a[0].localeCompare(b[0]))) {
+    html += `<div class="detail-item">
+      <span class="label">${l}</span>
+      <span class="value">${c}</span>
+    </div>`;
+  }
+  html += '</div>';
+
+  list.innerHTML = html;
+  panel.classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+function updatePrompt(filtered, rowMeta, colMeta) {
+  const activeFilters = [];
+  const usedAxes = new Set([state.rowAxis, state.colAxis]);
+
+  for (const [key, meta] of Object.entries(AXIS_META)) {
+    if (usedAxes.has(key)) continue;
+    const allVals = new Set(meta.values());
+    const active = state.filters[key];
+    if (active.size < allVals.size) {
+      activeFilters.push(`${meta.label}: ${[...active].join(', ')}`);
+    }
+  }
+
+  let text = `Showing ${filtered.length.toLocaleString()} TKA sequences grouped by ${rowMeta.label} (rows) × ${colMeta.label} (columns).`;
+  if (activeFilters.length > 0) {
+    text += ` Filtered to: ${activeFilters.join('; ')}.`;
+  }
+
+  document.getElementById('promptText').textContent = text;
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+}
+
+function applyPreset(name) {
+  state.activePreset = name;
+  initFilters();
+
+  switch (name) {
+    case 'turnMatrix':
+      document.getElementById('rowAxis').value = 'blueTurns';
+      document.getElementById('colAxis').value = 'redTurns';
+      break;
+    case 'familyReversal':
+      document.getElementById('rowAxis').value = 'family';
+      document.getElementById('colAxis').value = 'reversalPattern';
+      break;
+    case 'familyTurns':
+      document.getElementById('rowAxis').value = 'family';
+      document.getElementById('colAxis').value = 'blueTurns';
+      break;
+    case 'reversalTurns':
+      document.getElementById('rowAxis').value = 'reversalPattern';
+      document.getElementById('colAxis').value = 'blueTurns';
+      break;
+    case 'propHand':
+      document.getElementById('rowAxis').value = 'propOrientation';
+      document.getElementById('colAxis').value = 'family';
+      // Filter to continuous only + symmetric turns for clean view
+      state.filters.reversalPattern = new Set(['continuous']);
+      state.filters.blueTurns = new Set(['0']);
+      state.filters.redTurns = new Set(['0']);
+      break;
+  }
+  updatePresetButtons();
+  updateGrid();
+}
+
+function updatePresetButtons() {
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    const preset = btn.getAttribute('onclick')?.match(/'(\w+)'/)?.[1];
+    btn.classList.toggle('active', preset === state.activePreset);
+  });
+}
+
+// Init
+updateGrid();
+</script>
+</body>
+</html>
