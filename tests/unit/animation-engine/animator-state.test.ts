@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { createAnimationStore } from "$lib/shared/animation-engine/state/animation-store.svelte";
+import { createAnimatorState } from "$lib/shared/animation-engine/state/animator-state.svelte";
 
-describe("AnimationStore", () => {
+describe("AnimatorState", () => {
   it("exposes defaults and is independent per instance", () => {
-    const a = createAnimationStore();
-    const b = createAnimationStore();
+    const a = createAnimatorState();
+    const b = createAnimatorState();
 
     expect(a.isInitialized).toBe(false);
     expect(a.currentBluePropType).toBe("staff");
@@ -19,10 +19,10 @@ describe("AnimationStore", () => {
     expect(b.currentBluePropType).toBe("staff");
   });
 
-  it("only mutates on real changes (referential no-op guard)", () => {
-    const s = createAnimationStore();
+  it("keeps the object-dimension reference stable on an equal-value set", () => {
+    const s = createAnimatorState();
     const before = s.bluePropDimensions;
-    s.setBluePropDimensions(before); // same ref
-    expect(s.bluePropDimensions).toBe(before);
+    s.setBluePropDimensions({ ...before }); // new ref, equal w/h
+    expect(s.bluePropDimensions).toBe(before); // guard suppressed the reassignment
   });
 });

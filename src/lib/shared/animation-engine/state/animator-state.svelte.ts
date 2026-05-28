@@ -1,3 +1,18 @@
+/**
+ * Animator State
+ *
+ * Per-instance reactive state for a single animator canvas — the single
+ * source of truth the engine + its SRP managers read and write. Replaces the
+ * engine's internal `$state` object and the per-tick `syncServiceState`
+ * mirroring (the Svelte-5 anti-pattern that previously forced a synchronizer).
+ *
+ * Factory + getter/setter shape matches the codebase convention
+ * (see shared-animation-state.svelte.ts). Primitive setters assign directly —
+ * Svelte 5 `$state` already skips reactivity on `===`-equal writes, so manual
+ * no-op guards are redundant there. Object fields keep a value guard so a
+ * new-but-equal reference doesn't retrigger downstream effects every tick.
+ */
+
 import type { AnimationVisibilityState } from "../services/implementations/AnimationVisibilitySynchronizer";
 import type { PreRenderProgress } from "../services/implementations/SequenceFramePreRenderer";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -9,7 +24,7 @@ import {
 } from "../services/contracts/IPropTextureLoader";
 import type { EffectType, TipEffectMap } from "../domain/types/TipEffectTypes";
 
-export interface AnimationStore {
+export interface AnimatorState {
   readonly isInitialized: boolean;
   readonly rendererLoading: boolean;
   readonly rendererError: string | null;
@@ -64,7 +79,7 @@ export interface AnimationStore {
   setMotionVisibility(blue: boolean, red: boolean): void;
 }
 
-export function createAnimationStore(): AnimationStore {
+export function createAnimatorState(): AnimatorState {
   const state = $state({
     isInitialized: false,
     rendererLoading: false,
@@ -130,26 +145,27 @@ export function createAnimationStore(): AnimationStore {
     get blueMotionVisible() { return state.blueMotionVisible; },
     get redMotionVisible() { return state.redMotionVisible; },
 
-    setInitialized(v) { if (state.isInitialized !== v) state.isInitialized = v; },
-    setRendererLoading(v) { if (state.rendererLoading !== v) state.rendererLoading = v; },
-    setRendererError(v) { if (state.rendererError !== v) state.rendererError = v; },
-    setServicesReady(v) { if (state.servicesReady !== v) state.servicesReady = v; },
+    setInitialized(v) { state.isInitialized = v; },
+    setRendererLoading(v) { state.rendererLoading = v; },
+    setRendererError(v) { state.rendererError = v; },
+    setServicesReady(v) { state.servicesReady = v; },
     setVisibilityState(v) { state.visibilityState = v; },
-    setPreRendering(v) { if (state.isPreRendering !== v) state.isPreRendering = v; },
-    setPreRenderProgress(v) { if (state.preRenderProgress !== v) state.preRenderProgress = v; },
-    setPreRenderedFramesReady(v) { if (state.preRenderedFramesReady !== v) state.preRenderedFramesReady = v; },
+    setPreRendering(v) { state.isPreRendering = v; },
+    setPreRenderProgress(v) { state.preRenderProgress = v; },
+    setPreRenderedFramesReady(v) { state.preRenderedFramesReady = v; },
     setGlyphState(v) {
-      if (state.displayedLetter !== v.displayedLetter) state.displayedLetter = v.displayedLetter;
-      if (state.displayedTurnsTuple !== v.displayedTurnsTuple) state.displayedTurnsTuple = v.displayedTurnsTuple;
-      if (state.displayedStepNumber !== v.displayedStepNumber) state.displayedStepNumber = v.displayedStepNumber;
-      if (state.displayedMusicalPosition !== v.displayedMusicalPosition) state.displayedMusicalPosition = v.displayedMusicalPosition;
-      if (state.fadingOutLetter !== v.fadingOutLetter) state.fadingOutLetter = v.fadingOutLetter;
-      if (state.fadingOutTurnsTuple !== v.fadingOutTurnsTuple) state.fadingOutTurnsTuple = v.fadingOutTurnsTuple;
-      if (state.fadingOutStepNumber !== v.fadingOutStepNumber) state.fadingOutStepNumber = v.fadingOutStepNumber;
-      if (state.isNewLetter !== v.isNewLetter) state.isNewLetter = v.isNewLetter;
+      state.displayedLetter = v.displayedLetter;
+      state.displayedTurnsTuple = v.displayedTurnsTuple;
+      state.displayedStepNumber = v.displayedStepNumber;
+      state.displayedMusicalPosition = v.displayedMusicalPosition;
+      state.fadingOutLetter = v.fadingOutLetter;
+      state.fadingOutTurnsTuple = v.fadingOutTurnsTuple;
+      state.fadingOutStepNumber = v.fadingOutStepNumber;
+      state.isNewLetter = v.isNewLetter;
     },
     setTrailSettings(v) { state.trailSettings = v; },
     setBluePropDimensions(v) {
+      // Object guard: a new ref with equal w/h would otherwise retrigger every tick.
       if (state.bluePropDimensions.width !== v.width || state.bluePropDimensions.height !== v.height) {
         state.bluePropDimensions = v;
       }
@@ -159,13 +175,13 @@ export function createAnimationStore(): AnimationStore {
         state.redPropDimensions = v;
       }
     },
-    setBluePropType(v) { if (state.currentBluePropType !== v) state.currentBluePropType = v; },
-    setRedPropType(v) { if (state.currentRedPropType !== v) state.currentRedPropType = v; },
-    setLegacyPropType(v) { if (state.currentPropType !== v) state.currentPropType = v; },
-    setSuppress2DOverlays(v) { if (state.suppress2DOverlays !== v) state.suppress2DOverlays = v; },
+    setBluePropType(v) { state.currentBluePropType = v; },
+    setRedPropType(v) { state.currentRedPropType = v; },
+    setLegacyPropType(v) { state.currentPropType = v; },
+    setSuppress2DOverlays(v) { state.suppress2DOverlays = v; },
     setMotionVisibility(blue, red) {
-      if (state.blueMotionVisible !== blue) state.blueMotionVisible = blue;
-      if (state.redMotionVisible !== red) state.redMotionVisible = red;
+      state.blueMotionVisible = blue;
+      state.redMotionVisible = red;
     },
   };
 }
