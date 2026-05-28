@@ -35,6 +35,9 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
   import { generateTurnsTuple } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/turns-tuple-key-generator";
   import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
+  import { getPropGeometryRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton";
+  import { derivePropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-key-deriver";
+  import type { PropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/PropGeometryAdjustment";
 
   const logger = createComponentLogger("PipelineTraceSection");
 
@@ -52,7 +55,7 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   let activeLayer = $state<1 | 2 | 3>(2);
   let hasLocalChanges = $state(false);
   let saveState = $state<"idle" | "saving" | "saved">("idle");
-  let editTarget = $state<"global" | "special-json">("global");
+  let editTarget = $state<"global" | "special-json" | "prop-geometry">("global");
   let editX = $state(0);
   let editY = $state(0);
 
@@ -123,6 +126,19 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
       turnsTuple: turnsTupleArr.join(","),
       motionType: motion.motionType?.toLowerCase() || "",
     });
+  });
+
+  const propGeometryKey = $derived.by((): PropGeometryKey | null => {
+    const motion = stepData.motions?.[color];
+    if (!motion) return null;
+    const pictographData: PictographData = {
+      id: stepData.id,
+      letter: stepData.letter ?? null,
+      startPosition: stepData.startPosition,
+      endPosition: stepData.endPosition,
+      motions: stepData.motions as PictographData["motions"],
+    };
+    return derivePropGeometryKey(pictographData, motion, color);
   });
 
   // Layer value checks for the tab bar dots
@@ -220,10 +236,23 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
         editX = diagnostics.specialJson.value.x;
         editY = diagnostics.specialJson.value.y;
       }
+    } else if (editTarget === "prop-geometry") {
+      const repo = getPropGeometryRepository();
+      const existing = repo && propGeometryKey ? repo.getAdjustment(propGeometryKey) : null;
+      if (existing) {
+        editX = existing.x;
+        editY = existing.y;
+      } else if (diagnostics?.propGeometry) {
+        editX = diagnostics.propGeometry.value.x;
+        editY = diagnostics.propGeometry.value.y;
+      } else {
+        editX = 0;
+        editY = 0;
+      }
     }
   }
 
-  function selectEditTarget(tier: "global" | "special-json") {
+  function selectEditTarget(tier: "global" | "special-json" | "prop-geometry") {
     editTarget = tier;
     hasLocalChanges = false;
     saveState = "idle";
@@ -264,8 +293,10 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
 
     if (editTarget === "global") {
       handleGlobalNumericUpdate();
-    } else {
+    } else if (editTarget === "special-json") {
       handleSpecialJsonNumericUpdate();
+    } else {
+      handlePropGeometryNumericUpdate();
     }
 
     const haptic = getHapticFeedback();
@@ -275,6 +306,9 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   async function handleSave() {
     if (editTarget === "special-json") {
       return handleSpecialJsonSave();
+    }
+    if (editTarget === "prop-geometry") {
+      return handlePropGeometrySave();
     }
     const repo = getGlobalAdjustmentRepository();
     if (!repo || !orchestrator || !selectedArrowContext) return;
@@ -307,6 +341,9 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     if (editTarget === "special-json") {
       return handleSpecialJsonDelete();
     }
+    if (editTarget === "prop-geometry") {
+      return handlePropGeometryDelete();
+    }
     const repo = getGlobalAdjustmentRepository();
     if (!repo || !orchestrator || !selectedArrowContext) return;
     const targetKey = orchestrator.generateTargetKey(
@@ -330,8 +367,10 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   function handleNumericChange() {
     if (editTarget === "global") {
       handleGlobalNumericUpdate();
-    } else {
+    } else if (editTarget === "special-json") {
       handleSpecialJsonNumericUpdate();
+    } else {
+      handlePropGeometryNumericUpdate();
     }
   }
 
@@ -449,6 +488,55 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
       logger.error("Special JSON delete failed:", error);
     }
   }
+
+  function buildPropGeometryInput(x: number, y: number) {
+    if (!propGeometryKey) return null;
+    return { ...propGeometryKey, adjustmentX: x, adjustmentY: y };
+  }
+
+  function handlePropGeometryNumericUpdate() {
+    const repo = getPropGeometryRepository();
+    const input = buildPropGeometryInput(editX, editY);
+    if (!repo || !input) return;
+    repo.saveAdjustmentLocal(input);
+    pictographPreparer.clearCache();
+    globalAdjustmentVersion.increment();
+    hasLocalChanges = true;
+  }
+
+  async function handlePropGeometrySave() {
+    const repo = getPropGeometryRepository();
+    const input = buildPropGeometryInput(editX, editY);
+    if (!repo || !input) return;
+    try {
+      saveState = "saving";
+      await repo.saveAdjustment(input);
+      saveState = "saved";
+      hasLocalChanges = false;
+      getHapticFeedback()?.trigger("success");
+      onDiagnosticsChanged?.();
+      setTimeout(() => { saveState = "idle"; }, 2000);
+    } catch (error) {
+      logger.error("Prop geometry save failed:", error);
+      saveState = "idle";
+    }
+  }
+
+  async function handlePropGeometryDelete() {
+    const repo = getPropGeometryRepository();
+    if (!repo || !propGeometryKey) return;
+    try {
+      repo.deleteAdjustmentLocal(propGeometryKey);
+      await repo.deleteAdjustment(propGeometryKey);
+      pictographPreparer.clearCache();
+      globalAdjustmentVersion.increment();
+      hasLocalChanges = false;
+      getHapticFeedback()?.trigger("warning");
+      onDiagnosticsChanged?.();
+    } catch (error) {
+      logger.error("Prop geometry delete failed:", error);
+    }
+  }
 </script>
 
 <div class="pipeline-trace">
@@ -479,7 +567,7 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
 
     {#each tiers as { tier, info, detail }}
       {@const isActive = diagnostics.activeTier === tier}
-      {@const isEditable = tier === "global" || tier === "special-json"}
+      {@const isEditable = tier === "global" || tier === "special-json" || tier === "prop-geometry"}
       {@const isEditTarget = isEditing && editTarget === tier}
       <button
         class="tier-row"
@@ -490,7 +578,7 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
         style="--tier-color: {tierColor(tier)}"
         onclick={() => {
           if (isEditing && isEditable) {
-            selectEditTarget(tier as "global" | "special-json");
+            selectEditTarget(tier as "global" | "special-json" | "prop-geometry");
           }
         }}
         disabled={!isEditing || !isEditable}
