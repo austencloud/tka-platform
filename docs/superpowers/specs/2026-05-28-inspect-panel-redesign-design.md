@@ -55,7 +55,7 @@ Global and Special JSON repos support the full live-edit cycle: an in-memory `sa
 2. **A delete-persist path** — `deleteAdjustment(key)`. Verify `PropGeometryAdjustmentPersister` has a delete; add if missing.
 3. **A key generator from arrow context** — build the `PropGeometryKey` (gridMode, propType, otherPropType, positionType, endOrientation, otherEndOrientation, motionType, turns, arrowColor) from the selected arrow's `MotionData` + `PictographData`. The diagnostics already compute the prop-geometry tier value, so the key-construction logic exists in the calculation layer and should be extracted/reused, not re-derived.
 
-If parity work proves larger than expected during planning, the fallback is to ship Global + Special JSON live editing first (already functional) and land Prop Geometry editing as an immediate follow-up — the tier picker shows all tiers regardless; only Prop Geometry's editor wiring would lag. This is a planning decision, not a design compromise.
+Prop Geometry ships with **full parity** to Global and Special JSON — live WASD preview, persist, and revert. No phasing, no "coming soon" stub. The tier is a first-class editable target on day one.
 
 ---
 
@@ -144,7 +144,7 @@ No new files anticipated beyond possibly a small key-generator module if extract
 
 - **Arrow click while a different section is open:** clicking red while blue is expanded should expand red and enter red edit mode; blue may stay open (multiple sections open is fine — the accordion is not exclusive). Confirm during impl that two open editors don't both capture WASD. `PictographInspectModal:296` delegates WASD blue-first then red; selection should scope WASD to the selected color's section only. Adjust delegation to route by `selectedArrowState` color.
 - **No motion for a color:** section shows existing empty state; not selectable.
-- **Prop-geometry parity not done:** tier still listed; its editor either wired (goal) or shows "editing coming soon" (fallback). Decide in planning.
+- **Prop-geometry parity:** required in full — live preview, save, revert. Verify the persister delete path and key generator early in planning since they are the only genuinely new code.
 - **Sticky pictograph on short viewports:** ensure it doesn't overlap the header; cap its height with the grid.
 - **Theme-token fallbacks:** every `var(--theme-*)` keeps a sensible fallback (the modal currently has no theme context guarantee). Verify the modal sits inside a theme-providing tree; if not, set the theme vars at the modal root.
 - **Admin gate:** the modal is admin-only already; prop-geometry save is admin-gated in the repo. Consistent.
