@@ -45,7 +45,7 @@
   $effect(() => {
     const s = scene.current;
     if (!s) return;
-    s.fog = new FogExp2(new Color("#0a1a2a").getHex(), 0.04);
+    s.fog = new FogExp2(new Color("#0c2a3a").getHex(), 0.035);
     return () => {
       if (s) s.fog = null;
     };

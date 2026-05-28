@@ -11,11 +11,14 @@
     Object3D,
     Mesh,
     Sphere,
+    Box3,
+    BufferAttribute,
     type BufferGeometry,
     type Material,
   } from "three";
   import { OCEAN_PLACEMENTS } from "./placements";
   import type { OceanQualityConfig } from "../quality/ocean-quality";
+  import { userProportionsState } from "@austencloud/scene-3d";
 
   interface Props {
     quality: OceanQualityConfig;
@@ -23,9 +26,9 @@
 
   let { quality }: Props = $props();
 
+  const groundY = $derived(userProportionsState.groundY);
+
   // ── Model path lookup ─────────────────────────────────────────────────
-  // Maps objectKey from ComposerPlacement to model GLB path.
-  // Mirrors ocean-composer-plugin.ts catalog without coupling to plugin internals.
   const MODEL_PATHS: Record<string, string> = {
     "meshy-staghorn-coral": "/models/ocean/meshy/staghorn_coral.glb",
     "meshy-brain-coral": "/models/ocean/meshy/brain_coral.glb",
@@ -74,7 +77,6 @@
   gltfLoader.setDRACOLoader(dracoLoader);
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
-
   // ── Group placements by objectKey ─────────────────────────────────────
   interface PlacementGroup {
     objectKey: string;
@@ -108,86 +110,128 @@
 
   let instancedMeshes = $state<InstancedMesh[]>([]);
 
-  function extractFirstMesh(
-    root: Object3D
-  ): { geometry: BufferGeometry; material: Material; worldMatrix: Matrix4 } | null {
-    root.updateMatrixWorld(true);
-    let result: {
-      geometry: BufferGeometry;
-      material: Material;
-      worldMatrix: Matrix4;
-    } | null = null;
-    root.traverse((child) => {
-      if (result) return;
-      const m = child as Mesh;
-      if (!m.isMesh || !m.geometry) return;
-      const mat = Array.isArray(m.material) ? m.material[0]! : m.material;
-      result = {
-        geometry: m.geometry,
-        material: mat,
-        worldMatrix: m.matrixWorld.clone(),
-      };
-    });
-    return result;
+  // ── Dequantize KHR_mesh_quantization INT16 positions to Float32 ──────
+  // Prevents integer overflow when applyMatrix4 shifts values outside [-1,1].
+  function dequantizePositions(geo: BufferGeometry): void {
+    const pos = geo.getAttribute("position");
+    if (!pos || pos.array instanceof Float32Array) return;
+    const count = pos.count;
+    const f32 = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      f32[i * 3] = pos.getX(i);
+      f32[i * 3 + 1] = pos.getY(i);
+      f32[i * 3 + 2] = pos.getZ(i);
+    }
+    geo.setAttribute("position", new BufferAttribute(f32, 3));
   }
 
-  function buildInstancedMesh(
+  // ── Build InstancedMesh array for ALL meshes within a model ──────────
+  // Creates one InstancedMesh per mesh in the GLB. All share the same
+  // instance matrices so multi-part models stay assembled at each placement.
+  function buildInstancedMeshesForModel(
     modelScene: Object3D,
     entries: PlacementGroup["entries"]
-  ): InstancedMesh | null {
-    if (entries.length === 0) return null;
-    const extracted = extractFirstMesh(modelScene);
-    if (!extracted) return null;
+  ): InstancedMesh[] {
+    if (entries.length === 0) return [];
 
-    const geo = extracted.geometry.clone();
-    geo.applyMatrix4(extracted.worldMatrix);
+    modelScene.updateMatrixWorld(true);
 
-    // Normalize geometry so max extent = 1 unit, bottom at Y=0.
-    // Sketchfab models have wildly different native scales (0.6m to 141m).
-    // After normalization, placement scale directly = world-space meters.
-    geo.computeBoundingBox();
-    const bbox = geo.boundingBox!;
-    const size = new Vector3();
-    bbox.getSize(size);
-    const maxExtent = Math.max(size.x, size.y, size.z);
-    if (maxExtent > 0.001) {
-      const center = new Vector3();
-      bbox.getCenter(center);
-      geo.applyMatrix4(new Matrix4().makeTranslation(-center.x, -bbox.min.y, -center.z));
-      const ns = 1 / maxExtent;
-      geo.applyMatrix4(new Matrix4().makeScale(ns, ns, ns));
+    // 1. Collect all mesh geometries in world space
+    const parts: { geo: BufferGeometry; material: Material }[] = [];
+
+    modelScene.traverse((child) => {
+      const m = child as Mesh;
+      if (!m.isMesh || !m.geometry) return;
+
+      const geo = m.geometry.clone();
+      dequantizePositions(geo);
+      geo.applyMatrix4(m.matrixWorld);
+
+      const mat = Array.isArray(m.material)
+        ? (m.material[0] as Material).clone()
+        : (m.material as Material).clone();
+      parts.push({ geo, material: mat });
+    });
+
+    if (parts.length === 0) return [];
+
+    // Debug: log model info to diagnose sizing
+    console.log(`[Flora] Model loaded: ${parts.length} mesh(es)`);
+
+    // 2. Compute COMBINED bounding box across all parts
+    const combinedBox = new Box3();
+    for (const { geo } of parts) {
+      geo.computeBoundingBox();
+      combinedBox.union(geo.boundingBox!);
     }
 
-    const clonedMat = (
-      extracted.material as import("three").MeshStandardMaterial
-    ).clone();
-    const inst = new InstancedMesh(geo, clonedMat, entries.length);
-    inst.frustumCulled = true;
+    // 3. Build shared normalization matrix: bottom at Y=0, centered XZ, max extent = 1
+    const size = new Vector3();
+    combinedBox.getSize(size);
+    const maxExtent = Math.max(size.x, size.y, size.z);
 
-    const mat = new Matrix4();
+    if (maxExtent > 0.001) {
+      const center = new Vector3();
+      combinedBox.getCenter(center);
+
+      console.log(`[Flora]   bbox: [${size.x.toFixed(3)}, ${size.y.toFixed(3)}, ${size.z.toFixed(3)}] maxExtent=${maxExtent.toFixed(3)}`);
+
+      const translation = new Matrix4().makeTranslation(
+        -center.x,
+        -combinedBox.min.y,
+        -center.z
+      );
+      const ns = 1 / maxExtent;
+      const scale = new Matrix4().makeScale(ns, ns, ns);
+      const normMatrix = new Matrix4().multiplyMatrices(scale, translation);
+
+      // 4. Apply SAME normalization to ALL parts
+      for (const { geo } of parts) {
+        geo.applyMatrix4(normMatrix);
+      }
+    }
+
+    // 5. Compute shared instance matrices + bounding sphere
+    const mat4 = new Matrix4();
     const q = new Quaternion();
     const s = new Vector3();
     const pos = new Vector3();
     let maxDist = 0;
 
+    const instanceMatrices: Matrix4[] = [];
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i]!;
       pos.set(e.position[0], e.position[1], e.position[2]);
       q.set(e.rotation[0], e.rotation[1], e.rotation[2], e.rotation[3]);
       s.set(e.scale[0], e.scale[1], e.scale[2]);
-      mat.compose(pos, q, s);
-      inst.setMatrixAt(i, mat);
+      const m = new Matrix4();
+      m.compose(pos, q, s);
+      instanceMatrices.push(m);
+
       const dist =
-        Math.sqrt(
-          e.position[0] ** 2 + e.position[1] ** 2 + e.position[2] ** 2
-        ) +
+        Math.sqrt(e.position[0] ** 2 + e.position[1] ** 2 + e.position[2] ** 2) +
         Math.max(e.scale[0], e.scale[1], e.scale[2]) * 2;
       if (dist > maxDist) maxDist = dist;
     }
 
-    inst.instanceMatrix.needsUpdate = true;
-    inst.geometry.boundingSphere = new Sphere(new Vector3(0, 0, 0), maxDist);
-    return inst;
+    const boundingSphere = new Sphere(new Vector3(0, 0, 0), maxDist);
+
+    // 6. Create one InstancedMesh per part, all sharing the same transforms
+    const result: InstancedMesh[] = [];
+    for (const { geo, material } of parts) {
+      const inst = new InstancedMesh(geo, material, entries.length);
+      inst.frustumCulled = true;
+
+      for (let i = 0; i < instanceMatrices.length; i++) {
+        inst.setMatrixAt(i, instanceMatrices[i]!);
+      }
+
+      inst.instanceMatrix.needsUpdate = true;
+      inst.geometry.boundingSphere = boundingSphere.clone();
+      result.push(inst);
+    }
+
+    return result;
   }
 
   $effect(() => {
@@ -205,9 +249,9 @@
         group.modelPath,
         (gltf) => {
           if (cancelled) return;
-          const im = buildInstancedMesh(gltf.scene, group.entries);
-          if (im) {
-            activeMeshes.push(im);
+          const meshes = buildInstancedMeshesForModel(gltf.scene, group.entries);
+          if (meshes.length > 0) {
+            activeMeshes.push(...meshes);
             instancedMeshes = [...activeMeshes];
           }
         },
@@ -233,6 +277,8 @@
   });
 </script>
 
-{#each instancedMeshes as mesh (mesh.uuid)}
-  <T is={mesh} />
-{/each}
+<T.Group position.y={groundY}>
+  {#each instancedMeshes as mesh (mesh.uuid)}
+    <T is={mesh} />
+  {/each}
+</T.Group>

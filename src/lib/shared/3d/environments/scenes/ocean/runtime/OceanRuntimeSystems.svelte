@@ -28,7 +28,7 @@
 
   const groundY = $derived(userProportionsState.groundY);
   let rayPosition = $state(new Vector3(0, -999, 0));
-  let sunLight = $state<DirectionalLight | null>(null);
+  let sunLight = $state<DirectionalLight | undefined>(undefined);
 
   $effect(() => {
     if (!sunLight) return;

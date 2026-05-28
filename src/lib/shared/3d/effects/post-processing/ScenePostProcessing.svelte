@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { Color, HalfFloatType, PerspectiveCamera, Vector2 } from "three";
+  import { HalfFloatType, Vector2 } from "three";
   import {
     EffectComposer,
     RenderPass,
@@ -11,7 +11,7 @@
     ChromaticAberrationEffect,
     VignetteEffect,
   } from "postprocessing";
-  import { GodraysPass } from "three-good-godrays";
+  // import { GodraysPass } from "three-good-godrays"; // re-enable after depth-copy fix
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
@@ -72,21 +72,14 @@
 
     composer.addPass(new RenderPass(scn, cam));
 
-    // Volumetric god rays (pass-level, composites before per-pixel effects)
-    const godLight = godraysLightStore.light;
-    if (isOcean && godLight && cam instanceof PerspectiveCamera) {
+    // Volumetric god rays — disabled pending depth-copy fix.
+    // GodraysPass adds an extra swap that creates odd parity: the next
+    // depth-reading EffectPass writes to the same target that holds the
+    // depth texture, triggering GL_INVALID_OPERATION feedback-loop errors.
+    // TODO: add a DepthCopyPass or implement god rays as an Effect (not Pass)
+    // to maintain even ping-pong parity.
+    if (isOcean) {
       renderer.shadowMap.enabled = true;
-      const godraysPass = new GodraysPass(godLight, cam, {
-        density: 1 / 128,
-        maxDensity: 0.5,
-        distanceAttenuation: 2,
-        color: new Color(0x88bbdd),
-        raymarchSteps: 60,
-        blur: true,
-        gammaCorrection: true,
-        resolutionScale: 0.5,
-      });
-      composer.addPass(godraysPass);
     }
 
     const effects: import("postprocessing").Effect[] = [];
