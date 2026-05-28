@@ -87,6 +87,7 @@ import type { RenderContext } from "./RenderContextRegistry";
 import { EffectRendererManager } from "./EffectRendererManager";
 import { FrameParameterBuilder } from "./FrameParameterBuilder";
 import { PropTypeManager } from "./PropTypeManager";
+import { CanvasLifecycleManager } from "./CanvasLifecycleManager";
 import type { EffectType, TipEffectMap } from '../../domain/types/TipEffectTypes';
 import type { FireColorCurve } from '../../domain/types/FireTypes';
 import { semanticToCharcoalParams, type CharcoalSparkParams } from '../../domain/types/CharcoalSparkTypes';
@@ -252,6 +253,7 @@ export class AnimationEngine {
   private readonly effectRendererManager = new EffectRendererManager();
   private readonly frameParameterBuilder = new FrameParameterBuilder();
   private readonly propTypeManager = new PropTypeManager();
+  private readonly lifecycleManager = new CanvasLifecycleManager();
 
   // ============================================================================
   // PRIVATE SERVICES
@@ -418,6 +420,9 @@ export class AnimationEngine {
     this.containerElement = containerElement;
     this.callbacks = callbacks;
 
+    this.lifecycleManager.setCanvasInitializer(this.canvasInitializer);
+    this.lifecycleManager.setEffectManager(this.effectRendererManager);
+
     // Initialize visibility manager
     const vm = this.getVM();
     const ecs = this.effectsConfigState;
@@ -492,11 +497,17 @@ export class AnimationEngine {
     this.unsubscribeVisibility = this.visibilitySyncService.subscribe(
       (state) => this.handleVisibilityChange(state)
     );
+    this.lifecycleManager.setVisibilitySyncService(this.visibilitySyncService);
+    this.lifecycleManager.setUnsubscribeVisibility(this.unsubscribeVisibility);
 
     this.glyphTransitionService = new GlyphTransitionController();
+    this.lifecycleManager.setGlyphTransitionService(this.glyphTransitionService);
     this.sequenceCacheService = new SequenceCache();
+    this.lifecycleManager.setSequenceCacheService(this.sequenceCacheService);
     this.trailSettingsSyncService = new TrailSettingsSynchronizer();
+    this.lifecycleManager.setTrailSettingsSyncService(this.trailSettingsSyncService);
     this.propTypeChangeService = new PropTypeChanger();
+    this.lifecycleManager.setPropTypeChangeService(this.propTypeChangeService);
 
     // Initialize canvas (async process)
     await this.initializeCanvas();
@@ -918,49 +929,12 @@ export class AnimationEngine {
     });
   }
 
-  /**
-   * Dispose all resources
-   */
   dispose(): void {
-    // Unsubscribe from visibility
-    this.unsubscribeVisibility?.();
-    this.unsubscribeVisibility = null;
-
-    // Dispose services
-    this.visibilitySyncService?.dispose();
-    this.glyphTransitionService?.dispose();
-    this.sequenceCacheService?.dispose();
-    this.trailSettingsSyncService?.dispose();
-    this.propTypeChangeService?.dispose();
-
-    // Dispose render loop
-    this.renderLoopService?.dispose();
-    this.canvasResizerService?.teardown();
-
-    // Dispose texture services
-    this.glyphTextureService?.dispose?.();
-    this.propTextureService?.dispose?.();
-
-    // Dispose precomputation
-    this.precomputationService?.dispose?.();
-
-    // Dispose effect renderers
-    this.effectRendererManager.dispose();
-
-    // Clear trails
-    this.trailCapturer?.clearTrails();
-
-    // Destroy canvas
-    this.canvasInitializer.destroy({
-      onCanvasReady: (canvas) => {
-        this.callbacks.onCanvasReady?.(canvas);
-      },
-      onInitialized: (initialized) => {
-        this.state.isInitialized = initialized;
-      },
+    this.lifecycleManager.dispose({
+      onCanvasReady: (canvas) => this.callbacks.onCanvasReady?.(canvas),
+      onInitialized: (initialized) => { this.state.isInitialized = initialized; },
     });
 
-    // Clear references
     this.containerElement = null;
     this.lastPropsRef = null;
     this.prevStepData = null;
@@ -968,20 +942,8 @@ export class AnimationEngine {
     this.frameParameterBuilder.resetHandPresenceCache();
   }
 
-  /**
-   * Pause canvas resize observation during CSS transitions.
-   * Prevents canvas buffer clears that cause black frames.
-   */
-  pauseResize(): void {
-    this.canvasResizerService?.pauseObservation();
-  }
-
-  /**
-   * Resume canvas resize observation after transitions complete.
-   */
-  resumeResize(): void {
-    this.canvasResizerService?.resumeObservation();
-  }
+  pauseResize(): void { this.lifecycleManager.pauseResize(); }
+  resumeResize(): void { this.lifecycleManager.resumeResize(); }
 
   /**
    * Set fire overlay configuration. Called by visibility state changes.
@@ -1112,6 +1074,7 @@ export class AnimationEngine {
       this.orchestrator.setVisibilityManager(this.visibilityManagerOverride);
     }
     this.trailCapturer = new TrailCapturer();
+    this.lifecycleManager.setTrailCapturer(this.trailCapturer);
     this.turnsTupleGenerator = services.turnsTupleGenerator;
     this.state.servicesReady = true;
     return true;
@@ -1121,6 +1084,7 @@ export class AnimationEngine {
     if (!this.orchestrator) return;
 
     this.precomputationService = new AnimationPrecomputer();
+    this.lifecycleManager.setPrecomputer(this.precomputationService);
     this.precomputationService.initialize({
       orchestrator: this.orchestrator,
       TrailCapturer: this.trailCapturer,
@@ -1139,6 +1103,7 @@ export class AnimationEngine {
     }
 
     this.propTextureService = new PropTextureLoader();
+    this.lifecycleManager.setPropTextureService(this.propTextureService);
     this.propTextureService.initialize(
       this.animationRenderer,
       this.svgGenerator,
@@ -1150,6 +1115,7 @@ export class AnimationEngine {
     if (!this.containerElement || !this.animationRenderer) return;
 
     this.canvasResizerService = new CanvasResizer();
+    this.lifecycleManager.setResizer(this.canvasResizerService);
     this.canvasResizerService.initialize(
       this.containerElement,
       this.animationRenderer
@@ -1160,6 +1126,7 @@ export class AnimationEngine {
     if (!this.animationRenderer) return;
 
     this.glyphTextureService = new GlyphTextureLoader();
+    this.lifecycleManager.setGlyphTextureService(this.glyphTextureService);
     this.glyphTextureService.initialize(this.animationRenderer);
   }
 
@@ -1173,6 +1140,7 @@ export class AnimationEngine {
     erm.ledTipTracker = new LedTipTracker();
 
     this.renderLoopService = new AnimationRenderLoop();
+    this.lifecycleManager.setRenderLoop(this.renderLoopService);
     this.renderLoopService.initialize({
       renderer: this.animationRenderer,
       TrailCapturer: this.trailCapturer,
