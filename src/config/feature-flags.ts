@@ -185,7 +185,7 @@ export const FEATURES: FeatureDefinition[] = [
   },
   {
     id: "assemble-lab",
-    tier: "dev",
+    tier: "shipped",
     modulePaths: ["features/assemble-lab/"],
   },
   {

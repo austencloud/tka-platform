@@ -123,10 +123,6 @@ export function moduleSections() {
   if (module === "create") {
     // Filter sections based on user's feature access (role-based)
     const availableSections = baseSections.filter((section) => {
-      // Assemble is admin-only (not ready for public)
-      if (section.id === "assemble") {
-        return featureFlagService.isAdmin;
-      }
       return featureFlagService.canAccessTab("create", section.id);
     });
 

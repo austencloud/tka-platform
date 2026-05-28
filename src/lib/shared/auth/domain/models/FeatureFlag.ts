@@ -84,7 +84,7 @@ const CORE_USER_MODULES: ModuleId[] = ["create", "browse", "settings", "feedback
  * regardless of the parent module's role.
  * Format: "moduleId:tabId"
  */
-const ADMIN_ONLY_TABS: string[] = ["create:assemble", "create:fuse"];
+const ADMIN_ONLY_TABS: string[] = ["create:fuse"];
 
 /**
  * Get the default role for a feature
