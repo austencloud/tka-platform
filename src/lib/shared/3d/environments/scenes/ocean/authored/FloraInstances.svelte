@@ -2,6 +2,7 @@
   import { T } from "@threlte/core";
   import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+  import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
   import {
     InstancedMesh,
     Matrix4,
@@ -60,10 +61,19 @@
     "struct-coral-bommie": "/models/ocean/structures/coral-bommie.glb",
     "struct-coral-tower": "/models/ocean/structures/coral-tower.glb",
     "struct-reef-wall": "/models/ocean/structures/reef-wall.glb",
+    "ph-boulder-01": "/models/ocean/polyhaven/boulder_01.glb",
+    "ph-rock-07": "/models/ocean/polyhaven/rock_07.glb",
+    "ph-stone-01": "/models/ocean/polyhaven/stone_01.glb",
+    "ph-sand-rocks": "/models/ocean/polyhaven/sand_rocks_small_01.glb",
+    "ph-coast-rocks-05": "/models/ocean/polyhaven/coast_rocks_05.glb",
   };
 
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath("/draco/");
   const gltfLoader = new GLTFLoader();
+  gltfLoader.setDRACOLoader(dracoLoader);
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+
 
   // ── Group placements by objectKey ─────────────────────────────────────
   interface PlacementGroup {
@@ -188,37 +198,29 @@
     }
 
     let cancelled = false;
-    const meshes: InstancedMesh[] = [];
+    const activeMeshes: InstancedMesh[] = [];
 
-    Promise.all(
-      currentGroups.map(
-        (group) =>
-          new Promise<InstancedMesh | null>((resolve) => {
-            gltfLoader.load(
-              group.modelPath,
-              (gltf) => {
-                if (cancelled) {
-                  resolve(null);
-                  return;
-                }
-                resolve(buildInstancedMesh(gltf.scene, group.entries));
-              },
-              undefined,
-              () => resolve(null)
-            );
-          })
-      )
-    ).then((results) => {
-      if (cancelled) return;
-      for (const m of results) {
-        if (m) meshes.push(m);
-      }
-      instancedMeshes = meshes;
-    });
+    for (const group of currentGroups) {
+      gltfLoader.load(
+        group.modelPath,
+        (gltf) => {
+          if (cancelled) return;
+          const im = buildInstancedMesh(gltf.scene, group.entries);
+          if (im) {
+            activeMeshes.push(im);
+            instancedMeshes = [...activeMeshes];
+          }
+        },
+        undefined,
+        (err) => {
+          console.error(`[FloraInstances] Failed: ${group.modelPath}`, err);
+        }
+      );
+    }
 
     return () => {
       cancelled = true;
-      for (const m of meshes) {
+      for (const m of activeMeshes) {
         m.geometry.dispose();
         if (m.material instanceof Array) {
           m.material.forEach((mat) => mat.dispose());

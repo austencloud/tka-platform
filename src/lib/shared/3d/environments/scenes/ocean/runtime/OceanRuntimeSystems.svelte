@@ -1,12 +1,14 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { Vector3 } from "three";
+  import { Vector3, type DirectionalLight } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import type { OceanQualityConfig } from "../quality/ocean-quality";
+  import TexturedGroundPlane from "../../../primitives/TexturedGroundPlane.svelte";
   import WaterSurface from "./water/WaterSurface.svelte";
   import AtmosphereSystem from "./atmosphere/AtmosphereSystem.svelte";
   import FaunaSystem from "./fauna/FaunaSystem.svelte";
   import OceanInteraction from "./interaction/OceanInteraction.svelte";
+  import { godraysLightStore } from "../../../effects/post-processing/godrays-light-store.svelte";
 
   interface Props {
     quality: OceanQualityConfig;
@@ -26,13 +28,38 @@
 
   const groundY = $derived(userProportionsState.groundY);
   let rayPosition = $state(new Vector3(0, -999, 0));
+  let sunLight = $state<DirectionalLight | null>(null);
+
+  $effect(() => {
+    if (!sunLight) return;
+    sunLight.shadow.mapSize.set(512, 512);
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 80;
+    sunLight.shadow.camera.left = -20;
+    sunLight.shadow.camera.right = 20;
+    sunLight.shadow.camera.top = 20;
+    sunLight.shadow.camera.bottom = -20;
+    sunLight.shadow.camera.updateProjectionMatrix();
+    godraysLightStore.light = sunLight;
+    return () => {
+      godraysLightStore.light = null;
+    };
+  });
 </script>
 
-<!-- Seabed ground plane -->
-<T.Mesh position.y={groundY - 0.01} rotation.x={-Math.PI / 2} receiveShadow>
-  <T.CircleGeometry args={[30, 64]} />
-  <T.MeshStandardMaterial color="#0d1f2d" roughness={0.95} metalness={0} />
-</T.Mesh>
+<!-- Seabed ground plane — PBR sand with underwater tint -->
+<TexturedGroundPlane
+  diffuseMap="/textures/terrain/sand/diffuse.jpg"
+  normalMap="/textures/terrain/sand/normal.jpg"
+  roughnessMap="/textures/terrain/sand/roughness.jpg"
+  aoMap="/textures/terrain/sand/ao.jpg"
+  color="#1a3a4a"
+  size={30}
+  textureRepeat={12}
+  normalScale={2.0}
+  aoIntensity={0.8}
+  receiveShadow
+/>
 
 <!-- Lighting -->
 <T.HemisphereLight args={["#1a4060", "#0a1a2a", 0.6]} />

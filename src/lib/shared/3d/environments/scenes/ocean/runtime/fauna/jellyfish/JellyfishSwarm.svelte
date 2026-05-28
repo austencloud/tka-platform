@@ -14,7 +14,7 @@
 
   // ── Constants ──────────────────────────────────────────────────────────
 
-  const SCALE = 0.06;
+  const SCALE = 0.012;
   const DRIFT_SPEED = 0.15;
   const FIXED_STEP = 1000 / 30;
   const STAGE_CLEAR_RADIUS = 6;
