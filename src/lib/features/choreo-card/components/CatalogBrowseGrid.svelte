@@ -3,7 +3,7 @@
   import type { TnDViewMode } from "../state/catalog-browse-types";
   import CatalogCard from "./CatalogCard.svelte";
   import TnDTurnMatrix from "./TnDTurnMatrix.svelte";
-  import TnDFamilyBrowser from "./TnDFamilyBrowser.svelte";
+  import TnDFamilyGrid from "./TnDFamilyGrid.svelte";
   import { LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { TND_FAMILY_LABELS } from "../state/catalog-browse-types";
 
@@ -13,6 +13,10 @@
     tndViewMode?: TnDViewMode;
     allTnDCatalogs?: Catalog[];
     onSelectCatalog: (catalog: Catalog) => void;
+    onSelectFamily?: (familyId: string) => void;
+    activePatternId?: string | null;
+    onPatternChange?: (resolved: import("../domain/reversal-transform").ResolvedReversalPattern) => void;
+    seedPanel?: import("svelte").Snippet;
   }
 
   const {
@@ -21,6 +25,10 @@
     tndViewMode = 'turns',
     allTnDCatalogs = [],
     onSelectCatalog,
+    onSelectFamily,
+    activePatternId = null,
+    onPatternChange,
+    seedPanel,
   }: Props = $props();
 
   function groupLabel(key: string): string {
@@ -66,7 +74,13 @@
 {#if collection === 'TnD' && tndViewMode === 'turns'}
   <TnDTurnMatrix catalogs={allTnDCatalogs} {onSelectCatalog} />
 {:else if collection === 'TnD' && tndViewMode === 'family'}
-  <TnDFamilyBrowser catalogs={allTnDCatalogs} {onSelectCatalog} />
+  <TnDFamilyGrid
+    catalogs={allTnDCatalogs}
+    onSelectFamily={(id) => onSelectFamily?.(id)}
+    {activePatternId}
+    onPatternChange={(r) => onPatternChange?.(r)}
+    {seedPanel}
+  />
 {:else}
 <div class="browse-grid-container">
   {#each [...groupedCatalogs.entries()] as [key, items] (key)}

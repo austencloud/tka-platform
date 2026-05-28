@@ -15,13 +15,17 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import CardInspectModal from "./CardInspectModal.svelte";
   import CatalogBrowseFilterBar from "./CatalogBrowseFilterBar.svelte";
   import CatalogBrowseGrid from "./CatalogBrowseGrid.svelte";
+  import TnDFamilyDrillDown from "./TnDFamilyDrillDown.svelte";
   import MotionTypePills from "./MotionTypePills.svelte";
   import { createCatalogBrowseState } from "../state/catalog-browse-state.svelte";
   import { setBrowseContext } from "../context/catalog-browse-context";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
+  import PrintDialog from "./print-preview/PrintDialog.svelte";
+  import type { PrintPDFMode } from "../services/print-pdf-exporter";
   import { type CardSizeId } from "../domain/card-sizes";
   import type { CardPair } from "../services/types";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import type { CardFooter } from "../domain/models/DeckRelease";
   import {
     resolveTnDFamilyId as resolveTnDFamily,
@@ -35,6 +39,8 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   import { calculateTnD } from "$lib/shared/pictograph/shared/domain/utils/tnd-calculator";
   import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import { seedReversalPattern, type SeedProgress } from "../services/reversal-seed-service";
+  import type { ResolvedReversalPattern } from "../domain/reversal-transform";
 
   interface Props {
     catalogs: Catalog[];
@@ -77,6 +83,48 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   setBrowseContext(browseState);
 
   let scrollContainer: HTMLDivElement | null = $state(null);
+  let activeTnDFamilyId = $state<string | null>(null);
+  const tndCatalogs = $derived(catalogs.filter(c => c.collection === 'TnD'));
+
+  // ── Reversal pattern (By Family) ─────────────────────────────────────────
+  let activeReversal = $state<ResolvedReversalPattern | null>(null);
+  let isSeeding = $state(false);
+  let seedProgress = $state<SeedProgress>({ written: 0, total: 0 });
+  let seedError = $state("");
+
+  const tndMaterializedCatalogs = $derived(
+    tndCatalogs.filter((c) => c.asymmetric !== true),
+  );
+  const needsSeed = $derived(
+    activeReversal?.isCleanLoop === true &&
+      activeReversal.id !== "continuous" &&
+      browseState.filteredCatalogs.length === 0,
+  );
+
+  function handlePatternChange(resolved: ResolvedReversalPattern) {
+    activeReversal = resolved;
+    seedError = "";
+    if (!resolved.isCleanLoop) return;
+    browseState.setReversalPattern(resolved.id === "continuous" ? null : resolved.id);
+  }
+
+  async function runSeed() {
+    if (!activeReversal || isSeeding) return;
+    isSeeding = true;
+    seedError = "";
+    try {
+      await seedReversalPattern(tndMaterializedCatalogs, activeReversal, (p) => { seedProgress = p; });
+      const { loadCatalogs } = await import("../services/catalog-loader");
+      await loadCatalogs();
+      toast.success("Pattern seeded.");
+    } catch (err) {
+      seedError = `Seed failed: ${err instanceof Error ? err.message : err}`;
+      toast.error("Seeding failed. See the panel for details.");
+    } finally {
+      isSeeding = false;
+      seedProgress = { written: 0, total: 0 };
+    }
+  }
 
   function handleBrowseCatalogSelect(catalog: Catalog) {
     onSelectCatalog(catalog.id, null);
@@ -111,8 +159,12 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.cardSize') : null) as CardSizeId ?? 'poker'
   );
 
-  let selectedTheme = $state(typeof window !== 'undefined' ? localStorage.getItem('cardPreview.theme') ?? 'cosmic' : 'cosmic');
+  let selectedTheme = $derived(settingsService.settings.backgroundType ?? 'cosmic');
+  let showPrintDialog = $state(false);
   let isExporting = $state(false);
+  let exportProgress = $state(0);
+  let exportTotal = $state(0);
+  let exportError = $state("");
   let renderedPairs = $state<CardPair[]>([]);
   let isRendering = $state(false);
   let renderProgress = $state(0);
@@ -132,48 +184,64 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', size);
   }
 
-  async function handleExportPDF() {
+  function triggerDownload(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleExportPDF(mode: PrintPDFMode = 'combined') {
     if (renderedPairs.length === 0) return;
     isExporting = true;
+    exportError = "";
+    exportProgress = 0;
+    exportTotal = 0;
     try {
-      // Lazy-load print-pdf-exporter - it pulls pdf-lib (~400KB + CSP-violating
-      // runtime codegen). Only loaded when the user actually exports.
       const { exportHomePrintPDF } = await import(
         "$lib/features/choreo-card/services/print-pdf-exporter"
       );
       const catalogName = selectedCatalog?.name ?? "catalog";
-      const blob = await exportHomePrintPDF(renderedPairs, catalogName, cardSize);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${catalogName.replace(/[^a-zA-Z0-9]/g, "_")}_print.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const safeName = catalogName.replace(/[^a-zA-Z0-9]/g, "_");
+      const suffix = mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print";
+      const blob = await exportHomePrintPDF(renderedPairs, catalogName, cardSize, (current, total) => {
+        exportProgress = current;
+        exportTotal = total;
+      }, mode);
+      triggerDownload(blob, `${safeName}${suffix}.pdf`);
     } catch (err) {
-      console.warn("[CatalogBrowser] PDF export failed:", err);
+      exportError = `PDF export failed: ${err instanceof Error ? err.message : err}`;
       toast.error("PDF export failed. Try re-rendering cards first.");
     } finally {
       isExporting = false;
+      exportProgress = 0;
+      exportTotal = 0;
     }
   }
 
   async function handleExportZIP() {
     if (renderedPairs.length === 0) return;
     isExporting = true;
+    exportError = "";
+    exportProgress = 0;
+    exportTotal = 0;
     try {
       const catalogName = selectedCatalog?.name ?? "catalog";
-      const blob = await exportDeckZIP(renderedPairs, catalogName);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${catalogName.replace(/[^a-zA-Z0-9]/g, "_")}_cards.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const safeName = catalogName.replace(/[^a-zA-Z0-9]/g, "_");
+      const blob = await exportDeckZIP(renderedPairs, catalogName, (current, total) => {
+        exportProgress = current;
+        exportTotal = total;
+      });
+      triggerDownload(blob, `${safeName}_cards.zip`);
     } catch (err) {
-      console.warn("[CatalogBrowser] ZIP export failed:", err);
+      exportError = `ZIP export failed: ${err instanceof Error ? err.message : err}`;
       toast.error("ZIP export failed. Try re-rendering cards first.");
     } finally {
       isExporting = false;
+      exportProgress = 0;
+      exportTotal = 0;
     }
   }
 
@@ -505,6 +573,21 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       </div>
       {@render deckInterior()}
     </div>
+  {:else if activeTnDFamilyId}
+    <div class="level-container level-interior">
+      <TnDFamilyDrillDown
+        familyId={activeTnDFamilyId}
+        catalogs={tndCatalogs}
+        {handPointsVisible}
+        {showGrid}
+        {showTKA}
+        {showWord}
+        {includeStartPosition}
+        onSelectSequence={onSelectSequence}
+        onContextMenu={onContextMenu}
+        onBack={() => { activeTnDFamilyId = null; }}
+      />
+    </div>
   {:else if isLoading || catalogs.length === 0}
     <div class="skeleton-grid catalog-skeleton" role="status" aria-live="polite" aria-label="Loading catalogs">
       {#each { length: 8 } as _}
@@ -519,6 +602,10 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       tndViewMode={browseState.tndViewMode}
       allTnDCatalogs={browseState.collection === 'TnD' ? browseState.filteredCatalogs : []}
       onSelectCatalog={handleBrowseCatalogSelect}
+      onSelectFamily={(familyId) => { activeTnDFamilyId = familyId; }}
+      activePatternId={activeReversal?.id ?? null}
+      onPatternChange={handlePatternChange}
+      {seedPanel}
     />
   {/if}
 </div>
@@ -560,13 +647,11 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             {cardSize}
             totalCards={filteredSequences.length}
             {isRendering}
-            {isExporting}
             {renderProgress}
             {renderTotal}
             onCardSizeChange={setCardSize}
-            onExportPDF={handleExportPDF}
-            onExportZIP={handleExportZIP}
             onRerender={() => { rerenderKey++; }}
+            onPrint={() => { showPrintDialog = true; }}
           />
         {/if}
 
@@ -709,6 +794,20 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   {/if}
 {/snippet}
 
+{#snippet seedPanel()}
+  {#if needsSeed && activeReversal}
+    <div class="seed-panel">
+      <p class="seed-text">Pattern <strong>{activeReversal.sequence}</strong> isn't seeded yet.</p>
+      {#if isSeeding}
+        <p class="seed-progress">Seeding… {seedProgress.written}/{seedProgress.total} catalogs</p>
+      {:else}
+        <button class="seed-btn" type="button" onclick={runSeed}>Seed it</button>
+      {/if}
+      {#if seedError}<p class="seed-error">{seedError}</p>{/if}
+    </div>
+  {/if}
+{/snippet}
+
 {#if inspectedSequence}
   <CardInspectModal
     sequence={inspectedSequence}
@@ -728,6 +827,24 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     } : undefined}
     frontImageUrl={inspectedFrontImageUrl}
     onClose={() => { inspectedSequence = null; inspectedFrontImageUrl = null; inspectedRerender = null; }}
+  />
+{/if}
+
+{#if showPrintDialog && selectedCatalog}
+  <PrintDialog
+    title="Print {selectedCatalog.name}"
+    subtitle="{filteredSequences.length} sequences"
+    cardCount={filteredSequences.length}
+    {cardSize}
+    theme={selectedTheme}
+    {isExporting}
+    exportProgress={exportProgress}
+    exportTotal={exportTotal}
+    exportError={exportError}
+    onExportPDF={handleExportPDF}
+    onExportZIP={handleExportZIP}
+    onCardSizeChange={setCardSize}
+    onClose={() => { if (!isExporting) showPrintDialog = false; }}
   />
 {/if}
 
@@ -1025,4 +1142,11 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   @media (prefers-reduced-motion: reduce) {
     .skeleton-card { animation: none; opacity: 0.6; }
   }
+
+  /* ── Reversal seed empty-state ── */
+  .seed-panel { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 20px; border: 1px dashed var(--tnd-accent-border, rgba(183, 99, 205, 0.35)); border-radius: 12px; background: var(--tnd-accent-bg, rgba(183, 99, 205, 0.08)); }
+  .seed-text { margin: 0; font-size: 13px; color: var(--theme-text, #fff); }
+  .seed-progress { margin: 0; font-size: 12px; color: var(--theme-text-muted, rgba(255, 255, 255, 0.6)); }
+  .seed-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--tnd-accent-border, rgba(183, 99, 205, 0.5)); background: var(--tnd-accent-bg, rgba(183, 99, 205, 0.15)); color: var(--theme-text, #fff); font: inherit; font-size: 13px; cursor: pointer; }
+  .seed-error { margin: 0; font-size: 12px; color: #f87171; }
 </style>
