@@ -222,6 +222,10 @@ tmpclaude-*
 *.m4v
 downloads/
 
+# Exception: baked Level 1 Guide hand-motion loops are small, deterministic,
+# generated assets that the guide page ships (see guide-motion-configs.ts).
+!static/guide/level-1/motions/*.mp4
+
 # Temporary output files
 stdout.txt
 stderr.txt

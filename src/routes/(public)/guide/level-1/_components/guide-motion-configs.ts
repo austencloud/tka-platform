@@ -200,9 +200,12 @@ function makeMotion(
   endLoc: GridLocation,
   type: MotionType,
 ): MotionData {
-  // Shifts (pro/anti) arc along the perimeter — the curved arc is what
-  // distinguishes a shift from a dash. Dashes cut straight across the center.
-  const pathShape = type === MotionType.DASH ? "linear" : "arc";
+  // Guide demos hard-code a linear path archetype for every hand motion: the
+  // Level 1 illustrations teach the grid points themselves, so a straight
+  // point-to-point path reads cleaner than a curved shift arc. This per-motion
+  // pathShape wins over the global path-shape setting in PropInterpolator's
+  // resolvePathType, so the bake is deterministic regardless of user settings.
+  const pathShape = "linear" as const;
   return {
     motionType: type,
     rotationDirection: RotationDirection.NO_ROTATION,

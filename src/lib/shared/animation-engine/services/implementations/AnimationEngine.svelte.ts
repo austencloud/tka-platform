@@ -40,11 +40,6 @@ import { DeviceTierDetector } from "./DeviceTierDetector";
 import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
 import type { FireOverlayConfig } from "../../domain/types/FireTypes";
 import type { FireDefaultsLoader } from "./FireDefaultsLoader";
-import {
-  BASE_FIRE_PHYSICS,
-  BASE_COLOR_CURVE,
-  intensityToPhysics,
-} from "../../domain/types/FireTypes";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
@@ -52,15 +47,12 @@ import { LiveRenderContext } from "./RenderContext";
 import type { RenderContext } from "./RenderContextRegistry";
 
 // Extracted modules
-import { EffectRendererManager } from "./EffectRendererManager";
-import { EffectController } from "./EffectController";
 import { StateSynchronizer } from "./StateSynchronizer";
 import { CanvasLifecycleManager, type LifecycleInitCtx } from "./CanvasLifecycleManager";
 import { PropSystem } from "./managers/PropSystem";
 import { FrameSystem } from "./managers/FrameSystem";
+import { EffectSystem } from "./managers/EffectSystem";
 import type { EffectType, TipEffectMap } from '../../domain/types/TipEffectTypes';
-import type { FireColorCurve } from '../../domain/types/FireTypes';
-import { semanticToCharcoalParams, type CharcoalSparkParams } from '../../domain/types/CharcoalSparkTypes';
 import { createAnimatorState, type AnimatorState } from '../../state/animator-state.svelte';
 
 // ── Effects helper utilities ────────────────────────────────────────────────
@@ -69,15 +61,6 @@ import { createAnimatorState, type AnimatorState } from '../../state/animator-st
 function hasEffectInMap(map: TipEffectMap | undefined, effect: string): boolean {
   if (!map) return false;
   return Object.values(map).some(a => a.effect === effect);
-}
-
-/** Extract CharcoalSparkParams from EffectsConfigState, with defaults. */
-function getCharcoalParamsFromConfig(ecs: EffectsConfigState | null | undefined): CharcoalSparkParams {
-  if (!ecs) {
-    return semanticToCharcoalParams({ intensity: 0.5, spread: 0.5, glow: 0.6 });
-  }
-  const { intensity, spread, glow, coreColor, midColor, coolColor } = ecs.charcoal;
-  return semanticToCharcoalParams({ intensity, spread, glow }, { coreColor, midColor, coolColor });
 }
 
 /**
@@ -141,10 +124,9 @@ export class AnimationEngine {
   // ============================================================================
   // EXTRACTED MODULES
   // ============================================================================
-  private readonly effectRendererManager = new EffectRendererManager();
-  private readonly effectController = new EffectController(this.effectRendererManager);
-  private readonly stateSynchronizer = new StateSynchronizer();
   private readonly lifecycleManager = new CanvasLifecycleManager();
+  private readonly effectSystem = new EffectSystem(this._animatorState, { lifecycleManager: this.lifecycleManager });
+  private readonly stateSynchronizer = new StateSynchronizer();
   private readonly propSystem = new PropSystem(this._animatorState, { lifecycleManager: this.lifecycleManager });
   private readonly frameSystem = new FrameSystem(this._animatorState, {
     lifecycleManager: this.lifecycleManager,
@@ -188,23 +170,12 @@ export class AnimationEngine {
   private previewDarkModeActive: boolean = false; // true when previewDarkMode prop overrides global
   private prevTrailsActive: boolean = true;
   private prevPropsVisible: boolean = true;
-  private prevColorBlend: number = 0.5;
-  private prevFireIntensity: number = 0.7;
-  private prevFireTurbulence: number = 0.5;
-  private prevFireColorCurve: FireColorCurve | null = null;
-  private prevCharcoalParamsJson: string = "";
-  private prevEffortPreset: EffortId = "linear";
   private prevPathShape: "arc" | "linear" | "concave" = "arc";
   private prevMotionAwarePaths: boolean = false;
 
   /** Per-performer effort resolver. When set, getEffortForPerformer() calls it
    *  instead of reading the global visibility manager. */
   private _performerEffortResolver: ((performerId: string) => EffortId) | null = null;
-
-  // Live effects config state (zap intent, plus other intents in later phases).
-  // Wired by the host via setEffectsConfigState() before initialize() runs.
-  // Optional - when null, zapConfig stays at defaults (sequence viewer, etc.).
-  private effectsConfigState: EffectsConfigState | null = null;
 
   // Simple reference to last props for initial render (not a copy - avoids GC)
   private lastPropsRef: AnimationEngineProps | null = null;
@@ -230,8 +201,7 @@ export class AnimationEngine {
    * Call before initialize() so first-frame render uses the correct params.
    */
   setEffectsConfigState(state: EffectsConfigState | null): void {
-    this.effectsConfigState = state;
-    this.effectRendererManager.effectsConfigState = state;
+    this.effectSystem.setEffectsConfigState(state);
     const vss = this.lifecycleManager.visibilitySynchronizer;
     if (vss) {
       vss.effectsConfigState = state;
@@ -304,37 +274,19 @@ export class AnimationEngine {
 
     this.lifecycleManager.configure({
       canvasInitializer: this.canvasInitializer,
-      effectManager: this.effectRendererManager,
+      effectManager: this.effectSystem.rendererManager,
     });
 
     // Initialize visibility manager prev-state flags (engine owns these for
     // change-detection in handleVisibilityChange / update()).
     const vm = this.getVM();
-    const ecs = this.effectsConfigState;
+    const ecs = this.effectSystem.effectsConfigState;
     this.propSystem.initPrevDarkMode(vm.isDarkMode());
     this.prevTrailsActive = hasEffectInMap(ecs?.tipEffectMap, "trails");
     this.prevPropsVisible = vm.getVisibility("props");
-    this.prevColorBlend = ecs?.fire.colorBlend ?? 0.5;
-    this.prevFireIntensity = ecs?.fire.intensity ?? 0.7;
-    this.prevCharcoalParamsJson = JSON.stringify(getCharcoalParamsFromConfig(ecs));
-    this.prevEffortPreset = vm.getEffortPreset();
 
-    // Initialize effect renderer manager's prev* flags from EffectsConfigState
-    const erm = this.effectRendererManager;
-    erm.prevHasFireTips = hasEffectInMap(ecs?.tipEffectMap, "fire");
-    erm.prevHasCharcoalTips = hasEffectInMap(ecs?.tipEffectMap, "charcoal");
-    erm.prevHasZapTips = hasEffectInMap(ecs?.tipEffectMap, "zap");
-    erm.prevHasSparklesTips = hasEffectInMap(ecs?.tipEffectMap, "sparkles");
-    erm.prevHasEchoTips = hasEffectInMap(ecs?.tipEffectMap, "echo");
-    erm.prevHasBloomTips = hasEffectInMap(ecs?.tipEffectMap, "bloom");
-    erm.prevHasWaterTips = hasEffectInMap(ecs?.tipEffectMap, "water");
-    erm.prevHasBubblesTips = hasEffectInMap(ecs?.tipEffectMap, "bubbles");
-    erm.prevHasPetalsTips = hasEffectInMap(ecs?.tipEffectMap, "petals");
-    erm.prevHasSmokeTips = hasEffectInMap(ecs?.tipEffectMap, "smoke");
-    erm.prevHasInkTips = hasEffectInMap(ecs?.tipEffectMap, "ink");
-    erm.prevHasFrostTips = hasEffectInMap(ecs?.tipEffectMap, "frost");
-    erm.prevHasSilkTips = hasEffectInMap(ecs?.tipEffectMap, "silk");
-    erm.prevHasPulseTips = hasEffectInMap(ecs?.tipEffectMap, "pulse");
+    // Initialize effect-system prev-state (fire sliders, charcoal, effort, ERM flags)
+    this.effectSystem.initPrevState(ecs);
 
     // fireDefaultsLoader - load on demand via getter
     try {
@@ -343,26 +295,6 @@ export class AnimationEngine {
     } catch {
       console.warn("[AnimationEngine] Fire defaults loader not available");
     }
-
-    // Build fireConfig from base params + slider mappings
-    this.prevFireTurbulence = ecs?.fire.turbulence ?? 0.5;
-    erm.fireConfig.colorBlend = this.prevColorBlend;
-    erm.fireConfig.intensity = this.prevFireIntensity;
-    erm.fireConfig.flameHeight = this.prevFireIntensity;
-    erm.fireConfig.turbulence = this.prevFireTurbulence;
-    erm.fireConfig.fuelRendererType = "fluid";
-
-    const basePhysics = BASE_FIRE_PHYSICS;
-    const intensityOverrides = intensityToPhysics(this.prevFireIntensity);
-    erm.fireConfig.physicsPreset = {
-      ...basePhysics,
-      ...intensityOverrides,
-    };
-    erm.fireConfig.colorCurve = ecs?.fire.colorCurve ?? BASE_COLOR_CURVE;
-    erm.fireConfig.charcoalParams = getCharcoalParamsFromConfig(ecs);
-
-    // Initialize LED state from EffectsConfigState
-    erm.initLedConfigFromEffectsState(ecs);
 
     this.state.setVisibilityState({
       grid: vm.getGridMode() !== "none",
@@ -380,8 +312,8 @@ export class AnimationEngine {
     const ctx: LifecycleInitCtx = {
       containerElement,
       visibilityManagerOverride: this.visibilityManagerOverride,
-      effectsConfigState: this.effectsConfigState,
-      effectRendererManager: this.effectRendererManager,
+      effectsConfigState: this.effectSystem.effectsConfigState,
+      effectRendererManager: this.effectSystem.rendererManager,
       propSystem: this.propSystem,
       frameBudgetMonitor: this.frameBudgetMonitor,
       canvasSize: this.canvasSize,
@@ -407,11 +339,11 @@ export class AnimationEngine {
 
     // Wire overlay renderers that may have been created during the async
     // initializeCanvas gap.
-    erm.wirePostInitOverlays();
+    this.effectSystem.rendererManager.wirePostInitOverlays();
 
     // Create overlays that weren't created yet (e.g. enabled before HMR/reload
     // but the $effect hasn't triggered, or the rAF hasn't fired yet).
-    erm.ensureEnabledOverlays();
+    this.effectSystem.rendererManager.ensureEnabledOverlays();
   }
 
   /**
@@ -500,10 +432,10 @@ export class AnimationEngine {
 
         // Flush stale trail data so old ring buffer points don't draw
         // artifact lines to the new prop positions.
-        this.effectRendererManager.trailOverlay?.clearBuffers();
-        this.effectRendererManager.fireTipTracker?.reset();
-        this.effectRendererManager.fireRenderer?.clearSimulation();
-        this.effectRendererManager.charcoalRenderer?.clearSimulation();
+        this.effectSystem.trailOverlay?.clearBuffers();
+        this.effectSystem.fireTipTracker?.reset();
+        this.effectSystem.fireRenderer?.clearSimulation();
+        this.effectSystem.charcoalRenderer?.clearSimulation();
 
         // Trigger path cache precomputation for smooth trails during stutters
         if (
@@ -537,7 +469,7 @@ export class AnimationEngine {
     const clearSignal = this.lifecycleManager.sequenceCache?.state.clearSignal ?? 0;
     if (clearSignal > this.lastClearSignal) {
       this.lifecycleManager.precomputer?.clearCaches();
-      if (!this.effectRendererManager.trailOverlay) {
+      if (!this.effectSystem.trailOverlay) {
         this.lifecycleManager.trailCapturer?.clearTrails();
       }
       this.cacheSequenceId = null;
@@ -682,7 +614,7 @@ export class AnimationEngine {
    * stale cached fire frames from replaying when normal playback resumes.
    */
   invalidateFireCache(): void {
-    this.effectController.invalidateFireCache();
+    this.effectSystem.invalidateFireCache();
   }
 
   /**
@@ -691,30 +623,30 @@ export class AnimationEngine {
    * Navier-Stokes simulation retains its warm (steady-state) fluid fields.
    */
   invalidateFireFrameCacheOnly(): void {
-    this.effectController.invalidateFireFrameCacheOnly();
+    this.effectSystem.invalidateFireFrameCacheOnly();
   }
 
   clearFireThermalFields(): void {
-    this.effectController.clearFireThermalFields();
+    this.effectSystem.clearFireThermalFields();
   }
 
   // --- EXPORT DIAGNOSTIC (remove after debugging) ---
-  getLedRenderer() { return this.effectRendererManager.ledRenderer; }
+  getLedRenderer() { return this.effectSystem.getLedRenderer(); }
 
   enableFireDiagnostics(): void {
-    this.effectRendererManager.fireRenderer?.enableDiagnostics();
+    this.effectSystem.enableFireDiagnostics();
   }
   disableFireDiagnostics(): void {
-    this.effectRendererManager.fireRenderer?.disableDiagnostics();
+    this.effectSystem.disableFireDiagnostics();
   }
   resetFireDiagnosticCounter(): void {
-    this.effectRendererManager.fireRenderer?.resetDiagnosticCounter?.();
+    this.effectSystem.resetFireDiagnosticCounter();
   }
   sampleFireCanvas(): string {
-    return this.effectRendererManager.fireRenderer?.sampleFireCanvas?.() ?? 'no fire renderer';
+    return this.effectSystem.sampleFireCanvas();
   }
   snapshotFireCanvas(): void {
-    this.effectRendererManager.fireRenderer?.snapshotFireCanvas?.();
+    this.effectSystem.snapshotFireCanvas();
   }
 
   /**
@@ -727,7 +659,7 @@ export class AnimationEngine {
     const settings = vm.getSettings();
     const lastProps = this.lastPropsRef;
 
-    const core = this.effectController.captureDiagnostics({
+    const core = this.effectSystem.captureDiagnostics({
       isInitialized: this.state.isInitialized,
       isPlaying: lastProps?.isPlaying ?? false,
       currentStep: lastProps?.currentStep ?? 0,
@@ -738,8 +670,8 @@ export class AnimationEngine {
     return {
       ...core,
       visibility: {
-        activeEffect: this.effectsConfigState?.activeEffect ?? "none",
-        tipEffectMap: this.effectsConfigState?.tipEffectMap ?? {},
+        activeEffect: this.effectSystem.effectsConfigState?.activeEffect ?? "none",
+        tipEffectMap: this.effectSystem.effectsConfigState?.tipEffectMap ?? {},
         effortPreset: settings.effortPreset,
         pathShape: settings.pathShape,
       },
@@ -774,7 +706,7 @@ export class AnimationEngine {
       canvas,
       container,
       renderer: renderer!,
-      effectManager: this.effectRendererManager,
+      effectManager: this.effectSystem.rendererManager,
       trailCapturer,
       renderLoop,
       resizer,
@@ -799,27 +731,27 @@ export class AnimationEngine {
   resumeResize(): void { this.lifecycleManager.resumeResize(); }
 
   setFireConfig(config: Partial<FireOverlayConfig>): void {
-    this.effectController.setFireConfig(config);
+    this.effectSystem.setFireConfig(config);
   }
 
   getFireConfig(): FireOverlayConfig {
-    return this.effectController.getFireConfig();
+    return this.effectSystem.getFireConfig();
   }
 
   setLedConfig(config: Partial<LedOverlayConfig>): void {
-    this.effectController.setLedConfig(config);
+    this.effectSystem.setLedConfig(config);
   }
 
   getLedConfig(): LedOverlayConfig {
-    return this.effectController.getLedConfig();
+    return this.effectSystem.getLedConfig();
   }
 
   setCellTipEffectMap(map: TipEffectMap | undefined): void {
-    this.effectController.setCellTipEffectMap(map);
+    this.effectSystem.setCellTipEffectMap(map);
   }
 
   setCellTipEffortMap(map: TipEffortMap | undefined): void {
-    this.effectController.setCellTipEffortMap(map);
+    this.effectSystem.setCellTipEffortMap(map);
   }
 
   // ============================================================================
@@ -873,7 +805,6 @@ export class AnimationEngine {
   private handleVisibilityChange(state: AnimationVisibilityState): void {
     this.state.setVisibilityState(state);
 
-    const erm = this.effectRendererManager;
     const vm = this.getVM();
 
     // Sync Dark Mode to renderer when it changes
@@ -895,16 +826,16 @@ export class AnimationEngine {
     }
 
     // Trigger render when trails visibility changes
-    const trailsInMap = hasEffectInMap(this.effectsConfigState?.tipEffectMap, "trails");
+    const trailsInMap = hasEffectInMap(this.effectSystem.effectsConfigState?.tipEffectMap, "trails");
     if (trailsInMap !== this.prevTrailsActive) {
       const trailsTurnedOff = this.prevTrailsActive && !trailsInMap;
       this.prevTrailsActive = trailsInMap;
 
-      if (trailsTurnedOff && erm.trailOverlay) {
-        erm.trailOverlay.clear();
-        erm.trailOverlay.setVisible(false);
-      } else if (trailsInMap && erm.trailOverlay) {
-        erm.trailOverlay.setVisible(true);
+      if (trailsTurnedOff && this.effectSystem.trailOverlay) {
+        this.effectSystem.trailOverlay.clear();
+        this.effectSystem.trailOverlay.setVisible(false);
+      } else if (trailsInMap && this.effectSystem.trailOverlay) {
+        this.effectSystem.trailOverlay.setVisible(true);
       }
 
       if (this.state.isInitialized) {
@@ -930,58 +861,8 @@ export class AnimationEngine {
       }
     }
 
-    // Sync effect toggles - use the effective map (cell-level override
-    // takes priority over global VM map) so per-cell assignments properly
-    // spin up / tear down overlay renderers.
-    erm.syncEffectFlagsFromEffectiveMap();
-
-    // Sync fire slider values + color curve -> physics
-    const ecs = this.effectsConfigState;
-    const colorBlend = ecs?.fire.colorBlend ?? 0.5;
-    const fireIntensity = ecs?.fire.intensity ?? 0.7;
-    const fireTurbulence = ecs?.fire.turbulence ?? 0.5;
-    const fireColorCurve = ecs?.fire.colorCurve ?? null;
-
-    const slidersChanged =
-      colorBlend !== this.prevColorBlend ||
-      fireIntensity !== this.prevFireIntensity ||
-      fireTurbulence !== this.prevFireTurbulence ||
-      fireColorCurve !== this.prevFireColorCurve;
-
-    if (slidersChanged) {
-      this.prevColorBlend = colorBlend;
-      this.prevFireIntensity = fireIntensity;
-      this.prevFireTurbulence = fireTurbulence;
-      this.prevFireColorCurve = fireColorCurve;
-
-      const basePhysics = BASE_FIRE_PHYSICS;
-      const intOverrides = intensityToPhysics(fireIntensity);
-      erm.setFireConfig({
-        colorBlend,
-        fuelRendererType: "fluid",
-        intensity: fireIntensity,
-        flameHeight: fireIntensity,
-        turbulence: fireTurbulence,
-        physicsPreset: {
-          ...basePhysics,
-          ...intOverrides,
-        },
-        colorCurve: fireColorCurve ?? BASE_COLOR_CURVE,
-      });
-    }
-
-    // Reset fire tip tracker when effort preset changes.
-    const effortPreset = vm.getEffortPreset();
-    if (effortPreset !== this.prevEffortPreset) {
-      this.prevEffortPreset = effortPreset;
-      erm.fireTipTracker?.reset();
-      if (erm.fireRenderer?.isInitialized()) {
-        erm.fireRenderer.clearSimulation();
-      }
-      if (erm.charcoalRenderer?.isInitialized()) {
-        erm.charcoalRenderer.clearSimulation();
-      }
-    }
+    // Delegate all effect-specific sync to EffectSystem
+    this.effectSystem.syncEffects(state, vm);
 
     // Path shape or hybrid mode changed.
     const pathShape = vm.getPathShape();
@@ -990,13 +871,13 @@ export class AnimationEngine {
       this.prevPathShape = pathShape;
       this.prevMotionAwarePaths = motionAwarePaths;
 
-      erm.fireTipTracker?.reset();
+      this.effectSystem.fireTipTracker?.reset();
 
-      if (erm.fireRenderer?.isInitialized()) {
-        erm.fireRenderer.clearSimulation();
+      if (this.effectSystem.fireRenderer?.isInitialized()) {
+        this.effectSystem.fireRenderer.clearSimulation();
       }
-      if (erm.charcoalRenderer?.isInitialized()) {
-        erm.charcoalRenderer.clearSimulation();
+      if (this.effectSystem.charcoalRenderer?.isInitialized()) {
+        this.effectSystem.charcoalRenderer.clearSimulation();
       }
 
       this.lifecycleManager.trailCapturer?.clearTrails();
@@ -1036,25 +917,6 @@ export class AnimationEngine {
         );
       }
     }
-
-    // Sync charcoal params independently
-    if (erm.prevHasCharcoalTips && erm.charcoalRenderer?.isInitialized()) {
-      const currentCharcoalParams = getCharcoalParamsFromConfig(this.effectsConfigState);
-      const currentCharcoalJson = JSON.stringify(currentCharcoalParams);
-      if (currentCharcoalJson !== this.prevCharcoalParamsJson) {
-        this.prevCharcoalParamsJson = currentCharcoalJson;
-        erm.charcoalRenderer.setParams(currentCharcoalParams);
-      }
-    }
-
-    // Sync LED effect from EffectsConfigState
-    const ledDiff = erm.diffLedConfigFromEffectsState(this.effectsConfigState);
-    if (Object.keys(ledDiff).length > 0) {
-      erm.setLedConfig(ledDiff);
-    }
-
-    // Sync effect layer ordering
-    erm.syncEffectLayers();
   }
 
   private syncServiceState(): void {
@@ -1085,7 +947,7 @@ export class AnimationEngine {
       canvasResizerService: this.lifecycleManager.resizer,
       trailCapturer: this.lifecycleManager.trailCapturer,
       renderLoopService: this.lifecycleManager.renderLoop,
-      effectRendererManager: this.effectRendererManager,
+      effectRendererManager: this.effectSystem.rendererManager,
     });
   }
 
@@ -1118,8 +980,8 @@ export class AnimationEngine {
    */
   private buildFrameDeps() {
     return {
-      effectsConfigState: this.effectsConfigState,
-      effectRendererManager: this.effectRendererManager,
+      effectsConfigState: this.effectSystem.effectsConfigState,
+      effectRendererManager: this.effectSystem.rendererManager,
       getVM: () => this.getVM(),
     };
   }

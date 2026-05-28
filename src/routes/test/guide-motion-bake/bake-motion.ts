@@ -15,6 +15,8 @@ import {
   generateRedPropSvg,
 } from "$lib/shared/animation-engine/services/svg-generator";
 import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import {
   buildGuideMotionSequence,
   type GuideMotionConfig,
@@ -58,6 +60,9 @@ export async function bakeGuideMotion(
   const exporter = getVideoExporter();
   let manual: Awaited<ReturnType<typeof exporter.createManualExporter>> | null =
     null;
+  // Restores the orchestrator's real visibility manager after the bake so the
+  // forced-glide override never leaks into the shared singleton (set below).
+  let restoreVisibilityManager: (() => void) | null = null;
 
   try {
     // ── Renderer setup ────────────────────────────────────────────────────
@@ -85,6 +90,24 @@ export async function bakeGuideMotion(
 
     // ── Orchestrator ──────────────────────────────────────────────────────
     const orchestrator = getSequenceAnimationOrchestrator();
+
+    // Force the "glide" effort easing for every baked demo, regardless of the
+    // user's selected effort preset. The orchestrator reads its effort preset
+    // from (visibilityManagerOverride ?? global manager).getEffortPreset(), so a
+    // delegating Proxy that only overrides getEffortPreset gives deterministic
+    // output without mutating (and persisting) the user's real setting. Restored
+    // in the finally block so the override can't leak into live playback.
+    const realVm = getAnimationVisibilityManager();
+    const glideVm = new Proxy(realVm, {
+      get(target, prop, receiver) {
+        if (prop === "getEffortPreset") return () => "glide";
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    orchestrator.setVisibilityManager(glideVm);
+    restoreVisibilityManager = () => orchestrator.setVisibilityManager(realVm);
+
     if (!orchestrator.initializeWithDomainData(sequence)) {
       throw new Error(`Orchestrator init failed for config "${config.id}"`);
     }
@@ -102,18 +125,32 @@ export async function bakeGuideMotion(
     // ── Frame loop ────────────────────────────────────────────────────────
     // Trails are disabled; hoist the settings clone so we don't allocate per frame.
     const trailSettings = { ...DEFAULT_TRAIL_SETTINGS };
-    const totalSteps = sequence.steps.length || 1;
-    const totalFrames = Math.ceil(totalSteps * fps);
 
-    // Inclusive bound: frameIndex runs 0..totalFrames, so the final frame sits at
-    // playbackPosition === 1.0 (the end pose). For a single STATIC/looping step the
-    // end pose equals the start pose, so this intentionally encodes one duplicate
-    // frame at the seam — <video loop> snaps end→start onto an identical frame for a
-    // jitter-free loop. The extra frame is ~3% of a sub-100KB clip. Mirrors VideoPreRenderer.
-    for (let frameIndex = 0; frameIndex <= totalFrames; frameIndex++) {
-      const playbackPosition = frameIndex / fps;
+    // Drive the bake exactly like the live demo's AnimationPlaybackController:
+    // advance a wall-clock-equivalent timePosition in "duration units" (1 unit =
+    // 1 second at speed 1.0) and map it through calculateStateDurationAware. The
+    // engine's calculateState() takes a *beat* number, not a time — feeding it
+    // seconds froze every frame at the start position (currentStep < 1). The
+    // duration-aware path is what actually animates the props.
+    //
+    // The captured cycle matches one full live loop:
+    //   start-position hold (1 unit) + motion (totalDuration) + end hold
+    // For non-loopable sequences the live controller adds a 1-unit end-position
+    // hold; seamlessly loopable sequences skip it. A single guide hand-motion does
+    // not return to its start, so it is non-loopable and gets the end hold.
+    const endPositionHold = isSeamlesslyLoopable(sequence) ? 0 : 1;
+    const totalDuration =
+      orchestrator.getTotalDurationWithStartPosition() + endPositionHold;
+    const totalFrames = Math.max(1, Math.round(totalDuration * fps));
 
-      orchestrator.calculateState(playbackPosition);
+    // Half-open bound: frameIndex runs 0..totalFrames-1 so the cycle's final frame
+    // sits just before timePosition === totalDuration. <video loop> wraps that frame
+    // straight back to frame 0 (the start pose) for a jitter-free seam with no
+    // duplicate frame.
+    for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+      const timePosition = frameIndex / fps;
+
+      orchestrator.calculateStateDurationAware(timePosition);
 
       renderer.renderScene({
         blueProp: orchestrator.getBluePropState(),
@@ -127,7 +164,14 @@ export async function bakeGuideMotion(
         blueTrailPoints: [],
         redTrailPoints: [],
         trailSettings,
-        currentTime: performance.now(),
+        // Baked frames must show fully-settled visibility, never a transitional
+        // fade. The renderer's Canvas2DVisibilityFadeManager initializes visible
+        // and fades OUT when blueMotionVisible flips false on frame 0 — at ~0ms
+        // elapsed that fade hasn't settled, so the blue hand flashes for the
+        // opening frames (visible on hm-shift-wn). Pushing currentTime far past
+        // the max fade duration forces elapsed ≥ duration every frame, so all
+        // fades read as complete and no transitional alpha is ever drawn.
+        currentTime: performance.now() + 10_000,
         visibility: {
           gridVisible: true,
           propsVisible: true,
@@ -135,8 +179,12 @@ export async function bakeGuideMotion(
           blueMotionVisible: config.showBlue,
           redMotionVisible: true,
         },
+        // Mirror the canonical FrameParameterBuilder: the red hand is the right
+        // hand and is always anatomically mirrored; the blue (left) hand never is.
+        // The live demo delegates this to the engine; the bake drives the renderer
+        // directly, so it must replicate the flip here or the red hand renders unmirrored.
         bluePropFlipped: false,
-        redPropFlipped: false,
+        redPropFlipped: true,
         bluePropType: "hand",
         redPropType: "hand",
       });
@@ -152,6 +200,7 @@ export async function bakeGuideMotion(
     manual?.cancel();
     throw error;
   } finally {
+    restoreVisibilityManager?.();
     renderer.destroy();
     container.remove();
   }

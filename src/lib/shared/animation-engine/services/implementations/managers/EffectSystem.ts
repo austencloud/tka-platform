@@ -1,0 +1,340 @@
+/**
+ * EffectSystem
+ *
+ * Owns the effect-rendering subsystem extracted from AnimationEngine:
+ *
+ *  - EffectRendererManager instance (14+ overlay renderers + lifecycle + configs)
+ *  - EffectController instance (fire/LED/cell-map API surface)
+ *  - effectsConfigState field + setter wiring
+ *  - Effect-specific change-detection prev-fields
+ *    (prevColorBlend, prevFireIntensity, prevFireTurbulence, prevFireColorCurve,
+ *     prevCharcoalParamsJson, prevEffortPreset)
+ *  - initPrevState() — initialise all the above from EffectsConfigState at startup
+ *  - syncEffects() — the effect-sync portion of handleVisibilityChange()
+ *  - Config/diagnostics passthroughs delegated to EffectController
+ *  - Renderer accessors used by retained engine branches
+ *
+ * Does NOT import AnimationEngine — keeps the dependency graph acyclic.
+ * CanvasLifecycleManager is imported as `import type` only.
+ */
+
+import { EffectRendererManager } from "../EffectRendererManager";
+import { EffectController } from "../EffectController";
+import type { AnimatorState } from "../../../state/animator-state.svelte";
+import type { CanvasLifecycleManager } from "../CanvasLifecycleManager";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { FireOverlayConfig, FireColorCurve } from "../../../domain/types/FireTypes";
+import {
+  BASE_FIRE_PHYSICS,
+  BASE_COLOR_CURVE,
+  intensityToPhysics,
+} from "../../../domain/types/FireTypes";
+import type { LedOverlayConfig } from "../../../domain/types/LedTypes";
+import type { TipEffectMap, TipEffortMap } from "../../../domain/types/TipEffectTypes";
+import { semanticToCharcoalParams, type CharcoalSparkParams } from "../../../domain/types/CharcoalSparkTypes";
+import type { EffortId } from "$lib/shared/effort/domain/effort-types";
+import type { AnimationVisibilityState } from "../AnimationVisibilitySynchronizer";
+import type { AnimationVisibilityStateManager } from "../../../state/animation-visibility-state.svelte";
+import type { ITrailOverlayCanvas } from "../../contracts/ITrailOverlayCanvas";
+import type { FireTipTracker } from "../FireTipTracker";
+import type { WebGLFireRenderer } from "../fire/WebGLFireRenderer";
+import type { CharcoalSparkRenderer } from "../charcoal/CharcoalSparkRenderer";
+import type { WebGLLedRenderer } from "../led/WebGLLedRenderer";
+
+// ── Helpers (mirrored from engine — keep in sync) ───────────────────────────
+
+/** Returns true if any entry in the map has the given effect type. */
+function hasEffectInMap(map: TipEffectMap | undefined, effect: string): boolean {
+  if (!map) return false;
+  return Object.values(map).some(a => a.effect === effect);
+}
+
+/** Extract CharcoalSparkParams from EffectsConfigState, with defaults. */
+function getCharcoalParamsFromConfig(ecs: EffectsConfigState | null | undefined): CharcoalSparkParams {
+  if (!ecs) {
+    return semanticToCharcoalParams({ intensity: 0.5, spread: 0.5, glow: 0.6 });
+  }
+  const { intensity, spread, glow, coreColor, midColor, coolColor } = ecs.charcoal;
+  return semanticToCharcoalParams({ intensity, spread, glow }, { coreColor, midColor, coolColor });
+}
+
+export class EffectSystem {
+  // ── Owned subsystems ────────────────────────────────────────────────────────
+  private readonly _rendererManager = new EffectRendererManager();
+  private readonly _controller = new EffectController(this._rendererManager);
+
+  // ── effectsConfigState (owned here; engine reads via getter) ────────────────
+  private _effectsConfigState: EffectsConfigState | null = null;
+
+  // ── Effect-specific change-detection prev-fields ────────────────────────────
+  private _prevColorBlend: number = 0.5;
+  private _prevFireIntensity: number = 0.7;
+  private _prevFireTurbulence: number = 0.5;
+  private _prevFireColorCurve: FireColorCurve | null = null;
+  private _prevCharcoalParamsJson: string = "";
+  private _prevEffortPreset: EffortId = "linear";
+
+  constructor(
+    private readonly _state: AnimatorState,
+    private readonly _deps: { lifecycleManager: CanvasLifecycleManager }
+  ) {}
+
+  // ── Subsystem accessors ─────────────────────────────────────────────────────
+
+  get rendererManager(): EffectRendererManager {
+    return this._rendererManager;
+  }
+
+  get controller(): EffectController {
+    return this._controller;
+  }
+
+  // ── effectsConfigState ──────────────────────────────────────────────────────
+
+  get effectsConfigState(): EffectsConfigState | null {
+    return this._effectsConfigState;
+  }
+
+  /**
+   * Wire the shared EffectsConfigState. Sets both the local field and
+   * rendererManager.effectsConfigState so renderer config queries stay in sync.
+   * The engine still sets vss.effectsConfigState directly (vss is engine-owned).
+   */
+  setEffectsConfigState(state: EffectsConfigState | null): void {
+    this._effectsConfigState = state;
+    this._rendererManager.effectsConfigState = state;
+  }
+
+  // ── Renderer accessors (for retained engine branches) ──────────────────────
+
+  get trailOverlay(): ITrailOverlayCanvas | null {
+    return this._rendererManager.trailOverlay;
+  }
+
+  get fireTipTracker(): FireTipTracker | null {
+    return this._rendererManager.fireTipTracker;
+  }
+
+  get fireRenderer(): WebGLFireRenderer | null {
+    return this._rendererManager.fireRenderer;
+  }
+
+  get charcoalRenderer(): CharcoalSparkRenderer | null {
+    return this._rendererManager.charcoalRenderer;
+  }
+
+  get ledRenderer(): WebGLLedRenderer | null {
+    return this._rendererManager.ledRenderer;
+  }
+
+  // ── Init prev-state (called from engine.initialize()) ──────────────────────
+
+  /**
+   * Initialise all effect-specific prev-fields and the EffectRendererManager's
+   * prevHas* flags from the current EffectsConfigState.
+   * Mirrors the block that was at engine.initialize() lines ~313-365.
+   */
+  initPrevState(ecs: EffectsConfigState | null): void {
+    this._prevColorBlend = ecs?.fire.colorBlend ?? 0.5;
+    this._prevFireIntensity = ecs?.fire.intensity ?? 0.7;
+    this._prevFireTurbulence = ecs?.fire.turbulence ?? 0.5;
+    this._prevCharcoalParamsJson = JSON.stringify(getCharcoalParamsFromConfig(ecs));
+
+    const erm = this._rendererManager;
+
+    erm.prevHasFireTips = hasEffectInMap(ecs?.tipEffectMap, "fire");
+    erm.prevHasCharcoalTips = hasEffectInMap(ecs?.tipEffectMap, "charcoal");
+    erm.prevHasZapTips = hasEffectInMap(ecs?.tipEffectMap, "zap");
+    erm.prevHasSparklesTips = hasEffectInMap(ecs?.tipEffectMap, "sparkles");
+    erm.prevHasEchoTips = hasEffectInMap(ecs?.tipEffectMap, "echo");
+    erm.prevHasBloomTips = hasEffectInMap(ecs?.tipEffectMap, "bloom");
+    erm.prevHasWaterTips = hasEffectInMap(ecs?.tipEffectMap, "water");
+    erm.prevHasBubblesTips = hasEffectInMap(ecs?.tipEffectMap, "bubbles");
+    erm.prevHasPetalsTips = hasEffectInMap(ecs?.tipEffectMap, "petals");
+    erm.prevHasSmokeTips = hasEffectInMap(ecs?.tipEffectMap, "smoke");
+    erm.prevHasInkTips = hasEffectInMap(ecs?.tipEffectMap, "ink");
+    erm.prevHasFrostTips = hasEffectInMap(ecs?.tipEffectMap, "frost");
+    erm.prevHasSilkTips = hasEffectInMap(ecs?.tipEffectMap, "silk");
+    erm.prevHasPulseTips = hasEffectInMap(ecs?.tipEffectMap, "pulse");
+
+    // Build fireConfig from base params + slider mappings
+    erm.fireConfig.colorBlend = this._prevColorBlend;
+    erm.fireConfig.intensity = this._prevFireIntensity;
+    erm.fireConfig.flameHeight = this._prevFireIntensity;
+    erm.fireConfig.turbulence = this._prevFireTurbulence;
+    erm.fireConfig.fuelRendererType = "fluid";
+
+    const basePhysics = BASE_FIRE_PHYSICS;
+    const intensityOverrides = intensityToPhysics(this._prevFireIntensity);
+    erm.fireConfig.physicsPreset = {
+      ...basePhysics,
+      ...intensityOverrides,
+    };
+    erm.fireConfig.colorCurve = ecs?.fire.colorCurve ?? BASE_COLOR_CURVE;
+    erm.fireConfig.charcoalParams = getCharcoalParamsFromConfig(ecs);
+
+    // Initialize LED state from EffectsConfigState
+    erm.initLedConfigFromEffectsState(ecs);
+  }
+
+  // ── syncEffects (effect-specific portion of handleVisibilityChange) ─────────
+
+  /**
+   * Sync all effect-specific state from the incoming visibility change.
+   * Extracted from engine.handleVisibilityChange() — covers:
+   *   - syncEffectFlagsFromEffectiveMap()
+   *   - fire slider sync block
+   *   - effort-preset reset
+   *   - charcoal param sync
+   *   - LED sync
+   *   - syncEffectLayers()
+   *
+   * The engine keeps the outer orchestration (dark-mode, trails, props, path-shape
+   * branches) and calls this method for the effect-specific work.
+   *
+   * @param state  The incoming AnimationVisibilityState from the subscriber.
+   * @param vm     The visibility manager for this engine instance.
+   */
+  syncEffects(
+    state: AnimationVisibilityState,
+    vm: AnimationVisibilityStateManager
+  ): void {
+    const erm = this._rendererManager;
+    const ecs = this._effectsConfigState;
+
+    // Sync effect toggles — cell-level override takes priority
+    erm.syncEffectFlagsFromEffectiveMap();
+
+    // Sync fire slider values + color curve -> physics
+    const colorBlend = ecs?.fire.colorBlend ?? 0.5;
+    const fireIntensity = ecs?.fire.intensity ?? 0.7;
+    const fireTurbulence = ecs?.fire.turbulence ?? 0.5;
+    const fireColorCurve = ecs?.fire.colorCurve ?? null;
+
+    const slidersChanged =
+      colorBlend !== this._prevColorBlend ||
+      fireIntensity !== this._prevFireIntensity ||
+      fireTurbulence !== this._prevFireTurbulence ||
+      fireColorCurve !== this._prevFireColorCurve;
+
+    if (slidersChanged) {
+      this._prevColorBlend = colorBlend;
+      this._prevFireIntensity = fireIntensity;
+      this._prevFireTurbulence = fireTurbulence;
+      this._prevFireColorCurve = fireColorCurve;
+
+      const basePhysics = BASE_FIRE_PHYSICS;
+      const intOverrides = intensityToPhysics(fireIntensity);
+      erm.setFireConfig({
+        colorBlend,
+        fuelRendererType: "fluid",
+        intensity: fireIntensity,
+        flameHeight: fireIntensity,
+        turbulence: fireTurbulence,
+        physicsPreset: {
+          ...basePhysics,
+          ...intOverrides,
+        },
+        colorCurve: fireColorCurve ?? BASE_COLOR_CURVE,
+      });
+    }
+
+    // Reset fire tip tracker when effort preset changes
+    const effortPreset = vm.getEffortPreset();
+    if (effortPreset !== this._prevEffortPreset) {
+      this._prevEffortPreset = effortPreset;
+      erm.fireTipTracker?.reset();
+      if (erm.fireRenderer?.isInitialized()) {
+        erm.fireRenderer.clearSimulation();
+      }
+      if (erm.charcoalRenderer?.isInitialized()) {
+        erm.charcoalRenderer.clearSimulation();
+      }
+    }
+
+    // Sync charcoal params independently
+    if (erm.prevHasCharcoalTips && erm.charcoalRenderer?.isInitialized()) {
+      const currentCharcoalParams = getCharcoalParamsFromConfig(ecs);
+      const currentCharcoalJson = JSON.stringify(currentCharcoalParams);
+      if (currentCharcoalJson !== this._prevCharcoalParamsJson) {
+        this._prevCharcoalParamsJson = currentCharcoalJson;
+        erm.charcoalRenderer.setParams(currentCharcoalParams);
+      }
+    }
+
+    // Sync LED effect from EffectsConfigState
+    const ledDiff = erm.diffLedConfigFromEffectsState(ecs);
+    if (Object.keys(ledDiff).length > 0) {
+      erm.setLedConfig(ledDiff);
+    }
+
+    // Sync effect layer ordering
+    erm.syncEffectLayers();
+  }
+
+  // ── Config / diagnostics passthroughs (public API; engine delegates here) ───
+
+  invalidateFireCache(): void {
+    this._controller.invalidateFireCache();
+  }
+
+  invalidateFireFrameCacheOnly(): void {
+    this._controller.invalidateFireFrameCacheOnly();
+  }
+
+  clearFireThermalFields(): void {
+    this._controller.clearFireThermalFields();
+  }
+
+  getLedRenderer(): WebGLLedRenderer | null {
+    return this._rendererManager.ledRenderer;
+  }
+
+  enableFireDiagnostics(): void {
+    this._rendererManager.fireRenderer?.enableDiagnostics();
+  }
+
+  disableFireDiagnostics(): void {
+    this._rendererManager.fireRenderer?.disableDiagnostics();
+  }
+
+  resetFireDiagnosticCounter(): void {
+    this._rendererManager.fireRenderer?.resetDiagnosticCounter?.();
+  }
+
+  sampleFireCanvas(): string {
+    return this._rendererManager.fireRenderer?.sampleFireCanvas?.() ?? "no fire renderer";
+  }
+
+  snapshotFireCanvas(): void {
+    this._rendererManager.fireRenderer?.snapshotFireCanvas?.();
+  }
+
+  captureDiagnostics(context: import("../EffectController").DiagnosticContext): Record<string, unknown> {
+    return this._controller.captureDiagnostics(context);
+  }
+
+  setFireConfig(config: Partial<FireOverlayConfig>): void {
+    this._controller.setFireConfig(config);
+  }
+
+  getFireConfig(): FireOverlayConfig {
+    return this._controller.getFireConfig();
+  }
+
+  setLedConfig(config: Partial<LedOverlayConfig>): void {
+    this._controller.setLedConfig(config);
+  }
+
+  getLedConfig(): LedOverlayConfig {
+    return this._controller.getLedConfig();
+  }
+
+  setCellTipEffectMap(map: TipEffectMap | undefined): void {
+    this._controller.setCellTipEffectMap(map);
+  }
+
+  setCellTipEffortMap(map: TipEffortMap | undefined): void {
+    this._controller.setCellTipEffortMap(map);
+  }
+}
