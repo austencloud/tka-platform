@@ -104,7 +104,7 @@ export function createCatalogBrowseState(allCatalogsOrGetter: Catalog[] | (() =>
   const saved = typeof window !== 'undefined' ? loadFromStorage() : null;
 
   let collection = $state<'LOOPs' | 'TnD'>(saved?.collection ?? 'LOOPs');
-  let filters = $state<FilterState>(saved?.filters ? { ...saved.filters } : { ...EMPTY_FILTERS });
+  let filters = $state<FilterState>(saved?.filters ? { ...EMPTY_FILTERS, ...saved.filters } : { ...EMPTY_FILTERS });
   let scrollY = $state(saved?.scrollY ?? 0);
   let tndViewMode = $state<TnDViewMode>(saved?.tndViewMode ?? 'turns');
 
@@ -146,6 +146,10 @@ export function createCatalogBrowseState(allCatalogsOrGetter: Catalog[] | (() =>
     toggleFilter(dimension: keyof FilterState, value: string | number) {
       const current = filters[dimension] as (string | number)[];
       filters = { ...filters, [dimension]: toggleInArray(current, value) };
+    },
+
+    setReversalPattern(id: string | null) {
+      filters = { ...filters, reversalPatterns: id ? [id] : [] };
     },
 
     clearFilters() {

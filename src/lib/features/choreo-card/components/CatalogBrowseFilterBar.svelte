@@ -38,27 +38,7 @@
     catalogState.filters.reversalPatterns.length > 0
   );
 
-  const REVERSAL_LABELS: Record<string, string> = {
-    continuous: 'Continuous',
-    book: 'Book',
-    'red-book': 'Red Book',
-    'blue-book': 'Blue Book',
-    'long-book': 'Long Book',
-    alternating: 'Alternating',
-    'solo-1': 'Solo 1',
-    'solo-2': 'Solo 2',
-    'solo-3': 'Solo 3',
-    'dense-weave-1': 'Dense Weave 1',
-    'dense-weave-2': 'Dense Weave 2',
-    'dense-weave-3': 'Dense Weave 3',
-    'sparse-weave-1': 'Sparse Weave 1',
-    'sparse-weave-2': 'Sparse Weave 2',
-    'sparse-weave-3': 'Sparse Weave 3',
-  };
 
-  function reversalLabel(id: string): string {
-    return REVERSAL_LABELS[id] ?? capitalize(id.replace(/-/g, ' '));
-  }
 </script>
 
 <div class="filter-bar">
@@ -112,28 +92,6 @@
       <i class="fas fa-chevron-{expanded ? 'up' : 'down'}" aria-hidden="true"></i>
     </button>
   </div>
-
-  {#if expanded && catalogState.collection === 'TnD' && catalogState.availableFilters.reversalPatterns.length > 1}
-    <div class="filter-rows">
-      <FilterChipRow>
-        {#each catalogState.availableFilters.reversalPatterns as pattern (pattern)}
-          <FilterChipBase
-            label={reversalLabel(pattern)}
-            active={catalogState.filters.reversalPatterns.includes(pattern)}
-            mode="toggle"
-            chipColor={chipColor}
-            onclick={() => catalogState.toggleFilter('reversalPatterns', pattern)}
-          />
-        {/each}
-      </FilterChipRow>
-
-      {#if hasActiveFilters}
-        <button class="clear-btn" onclick={() => catalogState.clearFilters()} type="button" aria-label="Clear all filters">
-          <i class="fas fa-times" aria-hidden="true"></i> Clear filters
-        </button>
-      {/if}
-    </div>
-  {/if}
 
   {#if expanded && catalogState.collection === 'LOOPs'}
     <div class="filter-rows">
