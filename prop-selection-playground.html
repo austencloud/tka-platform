@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prop Selection — Design Exploration</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Theme tokens (mirroring TKA theme system) ── */
+  :root {
+    /* Cosmic theme (default) */
+    --theme-accent: #818cf8;
+    --theme-accent-rgb: 129, 140, 248;
+    --theme-panel-bg: rgba(0, 0, 0, 0.75);
+    --theme-card-bg: rgba(0, 0, 0, 0.75);
+    --theme-card-hover-bg: rgba(0, 0, 0, 0.55);
+    --theme-stroke: rgba(255, 255, 255, 0.08);
+    --theme-stroke-strong: rgba(255, 255, 255, 0.14);
+    --theme-text: #ffffff;
+    --theme-text-dim: rgba(255, 255, 255, 0.75);
+    --theme-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+    --prop-blue-text: #818cf8;
+    --prop-red-text: #f87171;
+
+    --page-bg: #08080f;
+    --prop-tint: brightness(0) invert(1); /* white silhouettes */
+  }
+
+  body[data-theme="ocean"] {
+    --theme-accent: #22d3ee;
+    --theme-accent-rgb: 34, 211, 238;
+    --prop-blue-text: #22d3ee;
+    --page-bg: #060c14;
+  }
+  body[data-theme="forest"] {
+    --theme-accent: #22c55e;
+    --theme-accent-rgb: 34, 197, 94;
+    --prop-blue-text: #22c55e;
+    --page-bg: #060f08;
+  }
+  body[data-theme="blossom"] {
+    --theme-accent: #f472b6;
+    --theme-accent-rgb: 244, 114, 182;
+    --prop-blue-text: #f472b6;
+    --page-bg: #0f0610;
+  }
+  body[data-theme="ember"] {
+    --theme-accent: #ef4444;
+    --theme-accent-rgb: 239, 68, 68;
+    --prop-blue-text: #ef4444;
+    --page-bg: #0f0606;
+  }
+  body[data-theme="autumn"] {
+    --theme-accent: #d97706;
+    --theme-accent-rgb: 217, 119, 6;
+    --prop-blue-text: #d97706;
+    --page-bg: #0f0a04;
+  }
+  body[data-theme="void"] {
+    --theme-accent: #6b7280;
+    --theme-accent-rgb: 107, 114, 128;
+    --prop-blue-text: #6b7280;
+    --page-bg: #09090b;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--page-bg);
+    color: var(--theme-text);
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: 1fr auto;
+    overflow: hidden;
+  }
+
+  /* ── LEFT PANEL: Controls ── */
+  .controls {
+    grid-row: 1 / 3;
+    background: rgba(10,10,18,0.95);
+    border-right: 1px solid var(--theme-stroke);
+    overflow-y: auto;
+    padding: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 16px;
+  }
+
+  .section {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .section:last-child { border-bottom: none; }
+
+  .section h3 {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(var(--theme-accent-rgb), 0.7);
+    margin-bottom: 10px;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .row label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    flex-shrink: 0;
+  }
+
+  .row .val {
+    font-size: 11px;
+    color: rgba(var(--theme-accent-rgb), 0.8);
+    font-weight: 600;
+    min-width: 28px;
+    text-align: right;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    max-width: 110px;
+    accent-color: var(--theme-accent);
+    height: 3px;
+  }
+
+  select {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--theme-text);
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  /* Theme swatches */
+  .theme-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+
+  .theme-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .theme-swatch:hover { transform: scale(1.1); }
+  .theme-swatch.active {
+    border-color: var(--theme-text);
+    box-shadow: 0 0 8px rgba(var(--theme-accent-rgb), 0.4);
+  }
+
+  /* Toggle */
+  .tog {
+    position: relative; width: 34px; height: 18px; flex-shrink: 0;
+  }
+  .tog input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .tog-track {
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0.08);
+    border-radius: 9px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .tog-track::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; background: rgba(255,255,255,0.35);
+    border-radius: 50%; transition: transform 0.2s, background 0.2s;
+  }
+  .tog input:checked + .tog-track { background: rgba(var(--theme-accent-rgb), 0.6); }
+  .tog input:checked + .tog-track::after { transform: translateX(16px); background: #fff; }
+
+  /* Option cards */
+  .opts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+
+  .opt {
+    padding: 7px 4px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    font-family: inherit;
+    color: rgba(255,255,255,0.4);
+  }
+  .opt:hover { border-color: rgba(var(--theme-accent-rgb), 0.3); color: rgba(255,255,255,0.7); }
+  .opt.active {
+    border-color: rgba(var(--theme-accent-rgb), 0.5);
+    background: rgba(var(--theme-accent-rgb), 0.08);
+    color: var(--theme-text);
+  }
+  .opt-icon { font-size: 16px; margin-bottom: 2px; }
+  .opt-label { font-size: 9px; font-weight: 500; }
+
+  /* ── PREVIEW ── */
+  .preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .preview-label {
+    position: absolute;
+    top: 14px;
+    left: 20px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    font-weight: 500;
+  }
+
+  .size-btns {
+    position: absolute;
+    top: 12px;
+    right: 20px;
+    display: flex;
+    gap: 4px;
+  }
+
+  .sz-btn {
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    color: rgba(255,255,255,0.35);
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .sz-btn:hover { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.12); }
+  .sz-btn.active {
+    border-color: rgba(var(--theme-accent-rgb), 0.4);
+    color: var(--theme-text);
+    background: rgba(var(--theme-accent-rgb), 0.1);
+  }
+
+  /* Simulated container */
+  .sim {
+    display: flex;
+    flex-direction: column;
+    border-radius: 14px;
+    overflow: visible;
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    box-shadow: var(--theme-shadow);
+    transition: width 0.3s ease, height 0.3s ease;
+  }
+
+  .sim-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.06) transparent;
+    overflow: visible; /* let popovers escape */
+  }
+  .sim-body::-webkit-scrollbar { width: 3px; }
+  .sim-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+  /* ── Prop grid ── */
+  .grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cat-label {
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    color: var(--theme-text-dim);
+    opacity: 0.35;
+  }
+
+  .cat-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* PROP BUTTON */
+  .pb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    -webkit-tap-highlight-color: transparent;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+  }
+
+  .pb:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+    transform: translateY(-1px);
+  }
+
+  .pb:active {
+    transform: scale(0.96);
+    transition-duration: 0.06s;
+  }
+
+  .pb.selected {
+    background: rgba(var(--theme-accent-rgb), 0.1);
+    border-color: rgba(var(--theme-accent-rgb), 0.4);
+    box-shadow: 0 0 16px rgba(var(--theme-accent-rgb), 0.12);
+  }
+
+  .pb.selected:hover {
+    background: rgba(var(--theme-accent-rgb), 0.14);
+  }
+
+  .pb img {
+    pointer-events: none;
+    object-fit: contain;
+    filter: var(--prop-tint);
+    opacity: 0.45;
+    transition: opacity 0.2s ease;
+  }
+
+  .pb:hover img { opacity: 0.7; }
+  .pb.selected img { opacity: 0.95; }
+
+  .pb .name {
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-weight: 500;
+    color: var(--theme-text-dim);
+    opacity: 0.4;
+    transition: all 0.2s ease;
+  }
+  .pb:hover .name { opacity: 0.65; }
+  .pb.selected .name { opacity: 1; color: rgba(var(--theme-accent-rgb), 0.9); }
+
+  /* Checkmark */
+  .chk {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--theme-accent);
+    color: #fff;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(var(--theme-accent-rgb), 0.4);
+  }
+  .pb.selected .chk { opacity: 1; transform: scale(1); }
+
+  /* Variant badge */
+  .vb {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.4);
+    font-weight: 700;
+    pointer-events: none;
+  }
+
+  /* ── PROMPT BAR ── */
+  .prompt-bar {
+    border-top: 1px solid rgba(255,255,255,0.04);
+    background: rgba(10,10,18,0.95);
+    padding: 12px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .prompt-text {
+    flex: 1;
+    font-size: 11px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.4);
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    white-space: pre-wrap;
+    max-height: 90px;
+    overflow-y: auto;
+  }
+
+  .copy-btn {
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: none;
+    background: var(--theme-accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+    transition: filter 0.15s;
+  }
+  .copy-btn:hover { filter: brightness(1.15); }
+  .copy-btn.copied { background: #22c55e; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pb, .sim, .chk { transition: none !important; }
+  }
+</style>
+</head>
+<body data-theme="cosmic">
+
+<div class="controls">
+  <div class="panel-title">Prop Picker Design</div>
+
+  <!-- Theme -->
+  <div class="section">
+    <h3>Theme</h3>
+    <div class="theme-row" id="themeRow"></div>
+  </div>
+
+  <!-- Prop Tint -->
+  <div class="section">
+    <h3>Prop Image Tint</h3>
+    <div class="opts" id="tintOpts" style="grid-template-columns: 1fr 1fr 1fr;"></div>
+  </div>
+
+  <!-- Button Style -->
+  <div class="section">
+    <h3>Button Treatment</h3>
+    <div class="opts" id="styleOpts"></div>
+  </div>
+
+  <!-- Layout -->
+  <div class="section">
+    <h3>Layout</h3>
+    <div class="opts" style="grid-template-columns: 1fr 1fr;" id="layoutOpts"></div>
+    <div class="row" style="margin-top:8px">
+      <label>Section labels</label>
+      <div class="tog"><input type="checkbox" id="secLabels" checked onchange="s.showSections=this.checked;render()"><label class="tog-track" for="secLabels"></label></div>
+    </div>
+    <div class="row">
+      <label>Prop names</label>
+      <div class="tog"><input type="checkbox" id="propNames" checked onchange="s.showNames=this.checked;render()"><label class="tog-track" for="propNames"></label></div>
+    </div>
+  </div>
+
+  <!-- Sizing -->
+  <div class="section">
+    <h3>Sizing</h3>
+    <div class="row">
+      <label>Button</label>
+      <input type="range" min="48" max="100" value="74" oninput="s.btnW=+this.value;render()">
+      <span class="val" id="vBtnW">74</span>
+    </div>
+    <div class="row">
+      <label>Gap</label>
+      <input type="range" min="2" max="14" value="6" oninput="s.gap=+this.value;render()">
+      <span class="val" id="vGap">6</span>
+    </div>
+    <div class="row">
+      <label>Radius</label>
+      <input type="range" min="4" max="22" value="12" oninput="s.radius=+this.value;render()">
+      <span class="val" id="vRadius">12</span>
+    </div>
+    <div class="row">
+      <label>Padding</label>
+      <input type="range" min="4" max="20" value="12" oninput="s.pad=+this.value;render()">
+      <span class="val" id="vPad">12</span>
+    </div>
+    <div class="row">
+      <label>Image %</label>
+      <input type="range" min="35" max="80" value="55" oninput="s.imgPct=+this.value;render()">
+      <span class="val" id="vImg">55</span>
+    </div>
+  </div>
+
+  <!-- Selection State -->
+  <div class="section">
+    <h3>Selection State</h3>
+    <div class="row">
+      <label>Outer glow</label>
+      <div class="tog"><input type="checkbox" id="glow" checked onchange="s.glow=this.checked;render()"><label class="tog-track" for="glow"></label></div>
+    </div>
+    <div class="row">
+      <label>Checkmark</label>
+      <div class="tog"><input type="checkbox" id="check" checked onchange="s.check=this.checked;render()"><label class="tog-track" for="check"></label></div>
+    </div>
+    <div class="row">
+      <label>Scale up</label>
+      <div class="tog"><input type="checkbox" id="scaleUp" onchange="s.scaleUp=this.checked;render()"><label class="tog-track" for="scaleUp"></label></div>
+    </div>
+  </div>
+
+  <!-- Variant Handling -->
+  <div class="section">
+    <h3>Variant Handling</h3>
+    <div class="opts" style="grid-template-columns: 1fr 1fr;" id="varOpts"></div>
+  </div>
+</div>
+
+<!-- PREVIEW -->
+<div class="preview">
+  <div class="preview-label" id="previewLabel">Sidebar context</div>
+  <div class="size-btns">
+    <button class="sz-btn active" onclick="setSize('sidebar')">Sidebar</button>
+    <button class="sz-btn" onclick="setSize('panel')">Panel</button>
+    <button class="sz-btn" onclick="setSize('wide')">Wide</button>
+  </div>
+  <div class="sim" id="sim">
+    <div class="sim-body" id="simBody"></div>
+  </div>
+</div>
+
+<!-- PROMPT -->
+<div class="prompt-bar">
+  <div class="prompt-text" id="prompt"></div>
+  <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy</button>
+</div>
+
+<script>
+const IMG = 'http://localhost:5173/images/props/buttons/';
+
+const PROPS = [
+  { id:'staff', name:'Staff', cat:'Staves & Clubs', img:'staff.svg', v:3 },
+  { id:'club', name:'Club', cat:'Staves & Clubs', img:'club.svg', v:1 },
+  { id:'fan', name:'Fan', cat:'Staves & Clubs', img:'fan.svg', v:0 },
+  { id:'buugeng', name:'Buugeng', cat:'Curved', img:'buugeng.svg', v:2 },
+  { id:'trigeng', name:'Trigeng', cat:'Curved', img:'trigeng.svg', v:0 },
+  { id:'minihoop', name:'Mini Hoop', cat:'Curved', img:'minihoop.svg', v:1 },
+  { id:'triad', name:'Triad', cat:'Curved', img:'triad.svg', v:1 },
+  { id:'triquetra', name:'Triquetra', cat:'Curved', img:'triquetra.svg', v:1 },
+  { id:'chicken', name:'Chicken', cat:'Novelty', img:'chicken.svg', v:1 },
+  { id:'doublestar', name:'Dbl Star', cat:'Novelty', img:'doublestar.svg', v:1 },
+  { id:'eightrings', name:'8 Rings', cat:'Novelty', img:'eightrings.svg', v:1 },
+  { id:'torch', name:'Torch', cat:'Novelty', img:'torch.svg', v:1 },
+  { id:'hand', name:'Hand', cat:'Singles', img:'hand.svg', v:0 },
+  { id:'sword', name:'Sword', cat:'Singles', img:'sword.svg', v:0 },
+  { id:'quiad', name:'Quiad', cat:'Singles', img:'quiad.svg', v:0 },
+];
+const CATS = ['Staves & Clubs','Curved','Novelty','Singles'];
+
+const THEMES = [
+  { id:'cosmic', color:'#818cf8', label:'Cosmic' },
+  { id:'ocean', color:'#22d3ee', label:'Ocean' },
+  { id:'forest', color:'#22c55e', label:'Forest' },
+  { id:'blossom', color:'#f472b6', label:'Blossom' },
+  { id:'ember', color:'#ef4444', label:'Ember' },
+  { id:'autumn', color:'#d97706', label:'Autumn' },
+  { id:'void', color:'#6b7280', label:'Void' },
+];
+
+// State
+let s = {
+  theme: 'cosmic',
+  tint: 'white',        // white | dim | original
+  style: 'glass',       // glass | card | outline | bare
+  layout: 'grouped',    // grouped | flat
+  showSections: true,
+  showNames: true,
+  btnW: 74,
+  gap: 6,
+  radius: 12,
+  pad: 12,
+  imgPct: 55,
+  glow: true,
+  check: true,
+  scaleUp: false,
+  variants: 'popover',  // popover | none
+  selected: 'staff',
+  expanded: null,
+  containerW: 340,
+  containerH: 440,
+};
+
+// Init controls
+function initControls() {
+  // Themes
+  document.getElementById('themeRow').innerHTML = THEMES.map(t =>
+    `<div class="theme-swatch ${s.theme===t.id?'active':''}" style="background:${t.color}" title="${t.label}" onclick="setTheme('${t.id}')"></div>`
+  ).join('');
+
+  // Tint
+  const tints = [
+    { id:'white', label:'White' },
+    { id:'dim', label:'Dim White' },
+    { id:'original', label:'Original' },
+  ];
+  document.getElementById('tintOpts').innerHTML = tints.map(t =>
+    `<button class="opt ${s.tint===t.id?'active':''}" onclick="s.tint='${t.id}';render()"><div class="opt-label">${t.label}</div></button>`
+  ).join('');
+
+  // Style
+  const styles = [
+    { id:'glass', label:'Glass' },
+    { id:'card', label:'Filled' },
+    { id:'outline', label:'Outline' },
+  ];
+  document.getElementById('styleOpts').innerHTML = styles.map(st =>
+    `<button class="opt ${s.style===st.id?'active':''}" onclick="s.style='${st.id}';render()"><div class="opt-label">${st.label}</div></button>`
+  ).join('');
+
+  // Layout
+  const layouts = [
+    { id:'grouped', label:'Grouped' },
+    { id:'flat', label:'Flat' },
+  ];
+  document.getElementById('layoutOpts').innerHTML = layouts.map(l =>
+    `<button class="opt ${s.layout===l.id?'active':''}" onclick="s.layout='${l.id}';render()"><div class="opt-label">${l.label}</div></button>`
+  ).join('');
+
+  // Variants
+  const vars = [
+    { id:'popover', label:'Popover' },
+    { id:'none', label:'Base Only' },
+  ];
+  document.getElementById('varOpts').innerHTML = vars.map(v =>
+    `<button class="opt ${s.variants===v.id?'active':''}" onclick="s.variants='${v.id}';s.expanded=null;render()"><div class="opt-label">${v.label}</div></button>`
+  ).join('');
+}
+
+function setTheme(id) {
+  s.theme = id;
+  document.body.setAttribute('data-theme', id);
+  render();
+}
+
+function setSize(mode) {
+  const sizes = { sidebar:[340,440], panel:[460,480], wide:[620,500] };
+  const labels = { sidebar:'Sidebar context', panel:'Panel context', wide:'Wide / 4K context' };
+  [s.containerW, s.containerH] = sizes[mode];
+  document.getElementById('previewLabel').textContent = labels[mode];
+  document.querySelectorAll('.sz-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent.toLowerCase() === mode)
+  );
+  render();
+}
+
+function selectProp(id) {
+  const p = PROPS.find(x => x.id === id);
+  if (!p) return;
+  if (s.variants === 'popover' && p.v > 0) {
+    if (s.expanded === id) { s.selected = id; s.expanded = null; }
+    else { s.expanded = id; }
+  } else {
+    s.selected = id;
+    s.expanded = null;
+  }
+  render();
+}
+
+function render() {
+  initControls();
+  // Sync toggle states back to DOM after initControls rebuilds
+  document.getElementById('secLabels').checked = s.showSections;
+  document.getElementById('propNames').checked = s.showNames;
+  document.getElementById('glow').checked = s.glow;
+  document.getElementById('check').checked = s.check;
+  document.getElementById('scaleUp').checked = s.scaleUp;
+  renderGrid();
+  requestAnimationFrame(positionPopovers);
+  updatePrompt();
+  document.getElementById('vBtnW').textContent = s.btnW;
+  document.getElementById('vGap').textContent = s.gap;
+  document.getElementById('vRadius').textContent = s.radius;
+  document.getElementById('vPad').textContent = s.pad;
+  document.getElementById('vImg').textContent = s.imgPct;
+}
+
+function renderGrid() {
+  const sim = document.getElementById('sim');
+  sim.style.width = s.containerW + 'px';
+  sim.style.height = s.containerH + 'px';
+
+  const body = document.getElementById('simBody');
+  const imgFilter = s.tint === 'white' ? 'brightness(0) invert(1)'
+    : s.tint === 'dim' ? 'brightness(0) invert(1) opacity(0.6)'
+    : 'none';
+
+  let html = `<div class="grid" style="padding:${s.pad}px;gap:4px;">`;
+
+  if (s.layout === 'flat') {
+    html += `<div class="cat-row" style="gap:${s.gap}px;">`;
+    PROPS.forEach(p => { html += btn(p, imgFilter); });
+    html += '</div>';
+  } else {
+    CATS.forEach(cat => {
+      const cp = PROPS.filter(p => p.cat === cat);
+      if (s.showSections) {
+        html += `<div class="cat-label" style="font-size:10px;padding:8px 0 3px;">${cat}</div>`;
+      }
+      html += `<div class="cat-row" style="gap:${s.gap}px;">`;
+      cp.forEach(p => { html += btn(p, imgFilter); });
+      html += '</div>';
+    });
+  }
+
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function btn(p, imgFilter) {
+  const sel = s.selected === p.id;
+  const exp = s.expanded === p.id;
+  const h = s.showNames ? Math.round(s.btnW * 1.15) : s.btnW;
+
+  // Button bg
+  let bg, border;
+  if (s.style === 'glass') {
+    bg = 'rgba(255,255,255,0.025)'; border = 'rgba(255,255,255,0.05)';
+  } else if (s.style === 'card') {
+    bg = 'var(--theme-card-bg)'; border = 'var(--theme-stroke)';
+  } else { // outline
+    bg = 'transparent'; border = 'rgba(255,255,255,0.06)';
+  }
+
+  let extra = '';
+  if (sel || exp) {
+    bg = `rgba(var(--theme-accent-rgb), 0.1)`;
+    border = `rgba(var(--theme-accent-rgb), 0.4)`;
+    if (s.glow) extra += `box-shadow:0 0 16px rgba(var(--theme-accent-rgb),0.12);`;
+    if (s.scaleUp) extra += `transform:scale(1.04);`;
+  }
+
+  const imgSize = s.imgPct;
+  const nameSize = s.btnW < 60 ? 9 : 10;
+
+  let inner = `<img src="${IMG}${p.img}" alt="${p.name}" style="width:${imgSize}%;height:auto;filter:${imgFilter};${sel?'opacity:0.95;':''}">`;
+
+  if (s.showNames) {
+    inner += `<span class="name" style="font-size:${nameSize}px;${sel?'opacity:1;color:rgba(var(--theme-accent-rgb),0.9);':''}">${p.name}</span>`;
+  }
+
+  if (sel && s.check) {
+    const chkSz = s.btnW < 60 ? 14 : 16;
+    inner += `<div class="chk" style="top:4px;right:4px;width:${chkSz}px;height:${chkSz}px;font-size:${chkSz-6}px;opacity:1;transform:scale(1);">&#x2713;</div>`;
+  }
+
+  if (p.v > 0 && s.variants === 'popover') {
+    const bSz = s.btnW < 60 ? 13 : 15;
+    inner += `<div class="vb" style="top:3px;left:3px;width:${bSz}px;height:${bSz}px;font-size:${bSz-5}px;">${p.v+1}</div>`;
+  }
+
+  // Popover — rendered with data attr, positioned after DOM insert via positionPopovers()
+  if (exp && s.variants === 'popover' && p.v > 0) {
+    const varNames = getVarNames(p.id);
+    let pop = `<div class="pop" data-pop="${p.id}" style="position:absolute;left:50%;
+      background:rgba(15,15,25,0.96);border:1px solid rgba(var(--theme-accent-rgb),0.2);
+      border-radius:12px;padding:8px;display:flex;gap:6px;z-index:100;
+      box-shadow:0 12px 32px rgba(0,0,0,0.5),0 0 20px rgba(var(--theme-accent-rgb),0.06);
+      backdrop-filter:blur(12px);visibility:hidden;">`;
+    varNames.forEach((vn, i) => {
+      const vSel = i === 0 && sel;
+      pop += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;
+        border-radius:10px;width:${Math.round(s.btnW*0.8)}px;
+        background:${vSel?'rgba(var(--theme-accent-rgb),0.1)':'rgba(255,255,255,0.03)'};
+        border:1px solid ${vSel?'rgba(var(--theme-accent-rgb),0.35)':'rgba(255,255,255,0.05)'};
+        cursor:pointer;" onclick="event.stopPropagation();s.selected='${p.id}';s.expanded=null;render();">
+        <img src="${IMG}${p.img}" style="width:50%;filter:${imgFilter};opacity:${vSel?0.9:0.5};">
+        <span style="font-size:9px;color:rgba(255,255,255,${vSel?0.8:0.4});font-weight:500;">${vn}</span>
+      </div>`;
+    });
+    // Arrow element — direction set by positionPopovers()
+    pop += `<div class="pop-arrow" style="position:absolute;left:50%;transform:translateX(-50%);
+      width:0;height:0;border:6px solid transparent;"></div>`;
+    pop += '</div>';
+    inner += pop;
+  }
+
+  return `<div class="pb ${sel?'selected':''}" onclick="selectProp('${p.id}')"
+    style="width:${s.btnW}px;height:${h}px;border-radius:${s.radius}px;
+    background:${bg};border-color:${border};gap:4px;padding:6px 4px;${extra}overflow:visible;">
+    ${inner}
+  </div>`;
+}
+
+function positionPopovers() {
+  const container = document.getElementById('sim');
+  if (!container) return;
+  const cRect = container.getBoundingClientRect();
+
+  document.querySelectorAll('.pop').forEach(pop => {
+    const btn = pop.parentElement;
+    if (!btn) return;
+    const bRect = btn.getBoundingClientRect();
+    const arrow = pop.querySelector('.pop-arrow');
+
+    // Reset to measure natural size
+    pop.style.visibility = 'hidden';
+    pop.style.top = '';
+    pop.style.bottom = '';
+    pop.style.transform = 'translateX(-50%)';
+    const popH = pop.offsetHeight;
+
+    // Decide direction: above if enough room, else below
+    const spaceAbove = bRect.top - cRect.top;
+    const spaceBelow = cRect.bottom - bRect.bottom;
+    const goBelow = spaceAbove < popH + 12;
+
+    if (goBelow) {
+      pop.style.top = 'calc(100% + 8px)';
+      pop.style.bottom = '';
+      if (arrow) {
+        arrow.style.bottom = '100%';
+        arrow.style.top = '';
+        arrow.style.borderTopColor = 'transparent';
+        arrow.style.borderBottomColor = 'rgba(var(--theme-accent-rgb),0.2)';
+      }
+    } else {
+      pop.style.bottom = 'calc(100% + 8px)';
+      pop.style.top = '';
+      if (arrow) {
+        arrow.style.top = '100%';
+        arrow.style.bottom = '';
+        arrow.style.borderBottomColor = 'transparent';
+        arrow.style.borderTopColor = 'rgba(var(--theme-accent-rgb),0.2)';
+      }
+    }
+
+    // Horizontal clamping: keep popover within container bounds
+    pop.style.visibility = 'visible';
+    const pRect = pop.getBoundingClientRect();
+    const overLeft = cRect.left - pRect.left;
+    const overRight = pRect.right - cRect.right;
+
+    if (overLeft > 0) {
+      const btnCenter = bRect.left + bRect.width / 2 - bRect.left;
+      const shift = overLeft + 8;
+      pop.style.transform = `translateX(calc(-50% + ${shift}px))`;
+      if (arrow) arrow.style.left = `calc(50% - ${shift}px)`;
+    } else if (overRight > 0) {
+      const shift = overRight + 8;
+      pop.style.transform = `translateX(calc(-50% - ${shift}px))`;
+      if (arrow) arrow.style.left = `calc(50% + ${shift}px)`;
+    }
+  });
+}
+
+function getVarNames(id) {
+  const map = {
+    staff: ['Staff','Simple','Big','V2'],
+    club: ['Club','Big Club'],
+    buugeng: ['Buugeng','Big','Fractal'],
+    minihoop: ['Mini','Big Hoop'],
+    triad: ['Triad','Big Triad'],
+    triquetra: ['Triquetra','V2'],
+    chicken: ['Chicken','Big'],
+    doublestar: ['Dbl Star','Big'],
+    eightrings: ['8 Rings','Big'],
+    torch: ['Torch','Big'],
+  };
+  return map[id] || [PROPS.find(p=>p.id===id)?.name || id];
+}
+
+function updatePrompt() {
+  const parts = [];
+
+  // Tint
+  const tintDesc = { white:'white silhouettes (filter: brightness(0) invert(1))', dim:'dim white silhouettes (same filter + reduced opacity)', original:'original SVG colors' };
+  parts.push(`Prop images: ${tintDesc[s.tint]}. Neutral tint in picker since actual color depends on blue/red hand assignment.`);
+
+  // Style
+  const styleDesc = { glass:'glass — near-transparent fill (rgba 0.025), barely-visible borders, backdrop-filter capable', card:'filled — uses --theme-card-bg and --theme-stroke tokens directly', outline:'outline — transparent fill, thin border only' };
+  parts.push(`Button treatment: ${styleDesc[s.style]}`);
+
+  // Selection
+  const selParts = ['accent-tinted background (rgba(accent, 0.1))', 'accent border at 0.4 opacity'];
+  if (s.glow) selParts.push('16px accent outer glow');
+  if (s.scaleUp) selParts.push('scale(1.04) lift');
+  if (s.check) selParts.push('accent circle checkmark with shadow');
+  parts.push(`Selected state: ${selParts.join(', ')}`);
+
+  // Layout
+  parts.push(`Layout: ${s.layout === 'flat' ? 'flat continuous grid, no section divisions' : 'grouped by category with section labels'}`);
+  if (!s.showNames) parts.push('No prop name labels — icon only');
+  if (!s.showSections && s.layout === 'grouped') parts.push('Section labels hidden');
+
+  // Sizing
+  parts.push(`Button: ${s.btnW}px wide, ${s.gap}px gap, ${s.radius}px radius, ${s.pad}px grid padding, image at ${s.imgPct}% of button width`);
+
+  // Variants
+  parts.push(s.variants === 'popover'
+    ? 'Variants: floating popover above tapped family button. Variant badge shows count. Clicking away dismisses.'
+    : 'Variants: removed. Only base props shown. No size variants in picker.');
+
+  // Colors
+  parts.push(`Colors: fully theme-token-driven. Uses --theme-accent, --theme-card-bg, --theme-stroke, --theme-text-dim. Adapts automatically to all 10 TKA themes.`);
+
+  document.getElementById('prompt').textContent = parts.join('\n\n');
+}
+
+function copyPrompt() {
+  navigator.clipboard.writeText(document.getElementById('prompt').textContent).then(() => {
+    const b = document.getElementById('copyBtn');
+    b.textContent = 'Copied!'; b.classList.add('copied');
+    setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('copied'); }, 1500);
+  });
+}
+
+// Init
+render();
+</script>
+</body>
+</html>

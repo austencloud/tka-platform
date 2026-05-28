@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quartered LOOPs — Type Compatibility</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a26;
+    --border: #2a2a3a;
+    --text: #e0e0e8;
+    --text-dim: #8888a0;
+    --text-muted: #55556a;
+    --accent: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.15);
+    --valid: #22c55e;
+    --valid-bg: rgba(34, 197, 94, 0.08);
+    --valid-glow: rgba(34, 197, 94, 0.25);
+    --invalid: #111118;
+    --invalid-text: #2a2a3a;
+    --pair-self: #f59e0b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    line-height: 1.6;
+    padding: 3rem 2rem;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--text), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 3.5rem 0 0.8rem;
+    color: var(--text);
+  }
+
+  h2 .badge {
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+  }
+
+  .section-intro {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+  }
+
+  /* ---- Stats Row ---- */
+  .stats {
+    display: flex;
+    gap: 1rem;
+    margin: 2rem 0 3rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+    flex: 1;
+    min-width: 130px;
+  }
+
+  .stat-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+
+  .stat-card .label {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-card.accent .number { color: var(--accent); }
+  .stat-card.valid .number { color: var(--valid); }
+
+  /* ---- Type Strip ---- */
+  .type-strip {
+    display: flex;
+    gap: 0.6rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+  }
+
+  .type-chip {
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 1.5px solid;
+    text-align: center;
+    min-width: 140px;
+  }
+
+  .type-chip.valid-chip {
+    background: var(--valid-bg);
+    border-color: var(--valid);
+    color: var(--valid);
+    box-shadow: 0 0 12px var(--valid-glow), inset 0 0 12px var(--valid-glow);
+  }
+
+  .type-chip.invalid-chip {
+    background: var(--invalid);
+    border-color: transparent;
+    color: var(--invalid-text);
+  }
+
+  .type-chip .chip-num {
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+  }
+
+  /* ---- Transitions Table ---- */
+  .transitions-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+  }
+
+  .transitions-table th, .transitions-table td {
+    padding: 0.7rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+
+  .transitions-table th {
+    color: var(--text-dim);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .transitions-table .type-num {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 1rem;
+    width: 40px;
+  }
+
+  .transitions-table .type-name {
+    font-weight: 600;
+    width: 120px;
+  }
+
+  .transition-tag {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 2px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+
+  .tag-inner { color: var(--pair-self); border-color: rgba(245,158,11,0.25); }
+  .tag-stay { color: #06b6d4; border-color: rgba(6,182,212,0.25); }
+  .tag-bridge { color: #8b5cf6; border-color: rgba(139,92,246,0.25); }
+
+  .verdict {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+    border-radius: 4px;
+  }
+
+  .verdict-yes {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--valid);
+  }
+
+  .verdict-no {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+  }
+
+  /* ---- Families Table ---- */
+  .families-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+  }
+
+  .families-table th, .families-table td {
+    padding: 0.65rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+
+  .families-table th {
+    color: var(--text-dim);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .families-table .count {
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-align: center;
+    width: 80px;
+  }
+
+  .families-table .total-row {
+    font-weight: 700;
+    border-top: 2px solid var(--border);
+  }
+
+  /* ---- Subset callout ---- */
+  .subset-callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    margin: 1.5rem 0;
+    font-size: 0.92rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  .subset-callout strong {
+    color: var(--text);
+  }
+
+  .separator {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  .footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* ---- Position map ---- */
+  .pos-map {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .pos-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem;
+    text-align: center;
+  }
+
+  .pos-card .pos-family {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .pos-card .pos-arrow {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+
+  .pos-card .pos-letters {
+    font-size: 0.85rem;
+    color: var(--valid);
+    font-weight: 600;
+  }
+
+  .pos-card .pos-count {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <h1>4-Step Quartered Rotated LOOP</h1>
+  <p class="subtitle">
+    Diamond mode. 10 canonical hand paths. A single letter rotated 90&deg; four times.
+    Only Dual-Shift (Type 1) letters qualify.
+  </p>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card valid">
+      <div class="number">10</div>
+      <div class="label">Canonical hand paths</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="number">1 / 6</div>
+      <div class="label">Valid types</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="number">10 / 29</div>
+      <div class="label">Of halved LOOP paths</div>
+    </div>
+  </div>
+
+  <div class="subset-callout">
+    <strong>Subset of the halved rotated LOOP.</strong>
+    Every quartered LOOP is also a halved LOOP &mdash; the halved seed is just the letter repeated twice.
+    Of the 29 halved canonical paths, 10 have single-letter seeds that also form quartered LOOPs.
+    See <a href="halved-loop-type-compatibility.html" style="color: var(--accent); text-decoration: none;">4-Step Halved Rotated LOOP</a> for the full catalog.
+  </div>
+
+  <!-- Enumeration Funnel -->
+  <h2>Enumeration Funnel</h2>
+  <p class="section-intro">
+    How the 576 possible transitions narrow to 10 canonical hand paths.
+  </p>
+
+  <table class="families-table">
+    <thead>
+      <tr><th>Stage</th><th style="text-align:center">Count</th><th>What happens</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>CSV edges</td>
+        <td class="count" style="color: var(--text-dim);">576</td>
+        <td style="color: var(--text-dim);">All possible single-step transitions in diamond mode</td>
+      </tr>
+      <tr>
+        <td>Edges checked against 90&deg; endpoints</td>
+        <td class="count" style="color: var(--text-dim);">108</td>
+        <td style="color: var(--text-dim);">36 from alpha1, 36 from beta5, 36 from gamma11</td>
+      </tr>
+      <tr>
+        <td>After seed-letter dedup</td>
+        <td class="count" style="color: var(--accent);">10</td>
+        <td style="color: var(--text-dim);">Same letter from same start = one seed</td>
+      </tr>
+      <tr>
+        <td>After LOOP execution + reversal filter</td>
+        <td class="count" style="color: var(--accent);">10</td>
+        <td style="color: var(--text-dim);">All seeds survive</td>
+      </tr>
+      <tr>
+        <td>After canonical fingerprinting</td>
+        <td class="count" style="color: var(--valid);">10</td>
+        <td style="color: var(--text-dim);">No further collapse &mdash; each letter is already unique</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="section-intro" style="margin-top: 1rem;">
+    Per start position: alpha1 &rarr; 3 seeds, beta5 &rarr; 3 seeds, gamma11 &rarr; 4 seeds.
+    All 10 also appear in VTG motion decks (all Dual-Shift).
+  </p>
+
+  <hr class="separator">
+
+  <!-- Why Only Type 1 -->
+  <h2>Which Types Qualify</h2>
+  <p class="section-intro">
+    A quartered seed must start at position P and end at the 90&deg;-rotated counterpart of P
+    (e.g. alpha1 &rarr; alpha3). That means the letter must travel within the same position family
+    and reach a specific neighboring grid point. Only Dual-Shift does this.
+  </p>
+
+  <div class="type-strip">
+    <div class="type-chip valid-chip"><span class="chip-num">1</span> Dual-Shift</div>
+    <div class="type-chip invalid-chip"><span class="chip-num">2</span> Shift</div>
+    <div class="type-chip invalid-chip"><span class="chip-num">3</span> Cross-Shift</div>
+    <div class="type-chip invalid-chip"><span class="chip-num">4</span> Dash</div>
+    <div class="type-chip invalid-chip"><span class="chip-num">5</span> Dual-Dash</div>
+    <div class="type-chip invalid-chip"><span class="chip-num">6</span> Static</div>
+  </div>
+
+  <table class="transitions-table">
+    <thead>
+      <tr><th>Type</th><th>Name</th><th>Where It Goes</th><th>90&deg; Verdict</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="type-num">1</td>
+        <td class="type-name">Dual-Shift</td>
+        <td>
+          <span class="transition-tag tag-inner">alpha &rarr; alpha</span>
+          <span class="transition-tag tag-inner">alpha &harr; beta</span>
+          <span class="transition-tag tag-inner">beta &rarr; beta</span>
+          <span class="transition-tag tag-stay">gamma &rarr; gamma</span>
+        </td>
+        <td><span class="verdict verdict-yes">&#10003; can reach 90&deg; neighbor</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">2</td>
+        <td class="type-name">Shift</td>
+        <td>
+          <span class="transition-tag tag-bridge">alpha &rarr; gamma</span>
+          <span class="transition-tag tag-bridge">beta &rarr; gamma</span>
+          <span class="transition-tag tag-bridge">gamma &rarr; alpha</span>
+          <span class="transition-tag tag-bridge">gamma &rarr; beta</span>
+        </td>
+        <td><span class="verdict verdict-no">&#10007; leaves family</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">3</td>
+        <td class="type-name">Cross-Shift</td>
+        <td>
+          <span class="transition-tag tag-bridge">alpha &rarr; gamma</span>
+          <span class="transition-tag tag-bridge">beta &rarr; gamma</span>
+          <span class="transition-tag tag-bridge">gamma &rarr; alpha</span>
+          <span class="transition-tag tag-bridge">gamma &rarr; beta</span>
+        </td>
+        <td><span class="verdict verdict-no">&#10007; leaves family</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">4</td>
+        <td class="type-name">Dash</td>
+        <td>
+          <span class="transition-tag tag-inner">alpha &harr; beta</span>
+          <span class="transition-tag tag-stay">gamma &rarr; gamma</span>
+        </td>
+        <td><span class="verdict verdict-no">&#10007; wrong endpoint</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">5</td>
+        <td class="type-name">Dual-Dash</td>
+        <td>
+          <span class="transition-tag tag-stay">alpha &rarr; alpha</span>
+          <span class="transition-tag tag-stay">beta &rarr; beta</span>
+          <span class="transition-tag tag-stay">gamma &rarr; gamma</span>
+        </td>
+        <td><span class="verdict verdict-no">&#10007; stays at same point</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">6</td>
+        <td class="type-name">Static</td>
+        <td>
+          <span class="transition-tag tag-stay">alpha &rarr; alpha</span>
+          <span class="transition-tag tag-stay">beta &rarr; beta</span>
+          <span class="transition-tag tag-stay">gamma &rarr; gamma</span>
+        </td>
+        <td><span class="verdict verdict-no">&#10007; stays at same point</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="section-intro" style="margin-top: 1rem;">
+    Types 2 &amp; 3 leave the starting family entirely.
+    Type 4 crosses alpha &harr; beta, but the 90&deg; endpoint stays within the same family (alpha1 &rarr; alpha3).
+    Types 5 &amp; 6 never move at all &mdash; they land on the same point they started.
+    Only Type 1 can move within alpha (or beta, or gamma) to reach the 90&deg; neighbor.
+  </p>
+
+  <hr class="separator">
+
+  <!-- 90-degree position maps -->
+  <h2>90&deg; Position Maps</h2>
+  <p class="section-intro">
+    Each start position has two valid 90&deg; endpoints (CW and CCW).
+    The seed letter must connect start &rarr; endpoint in one step.
+  </p>
+
+  <div class="pos-map">
+    <div class="pos-card">
+      <div class="pos-family">Alpha</div>
+      <div class="pos-arrow">alpha1 &rarr; alpha3 <span style="color:var(--text-muted);font-size:0.8rem;">(CW)</span></div>
+      <div class="pos-arrow">alpha1 &rarr; alpha7 <span style="color:var(--text-muted);font-size:0.8rem;">(CCW)</span></div>
+      <div class="pos-letters">A, B, C</div>
+      <div class="pos-count">3 canonical paths</div>
+    </div>
+    <div class="pos-card">
+      <div class="pos-family">Beta</div>
+      <div class="pos-arrow">beta5 &rarr; beta7 <span style="color:var(--text-muted);font-size:0.8rem;">(CW)</span></div>
+      <div class="pos-arrow">beta5 &rarr; beta3 <span style="color:var(--text-muted);font-size:0.8rem;">(CCW)</span></div>
+      <div class="pos-letters">G, H, I</div>
+      <div class="pos-count">3 canonical paths</div>
+    </div>
+    <div class="pos-card">
+      <div class="pos-family">Gamma</div>
+      <div class="pos-arrow">gamma11 &rarr; gamma13 <span style="color:var(--text-muted);font-size:0.8rem;">(CW)</span></div>
+      <div class="pos-arrow">gamma11 &rarr; gamma9 <span style="color:var(--text-muted);font-size:0.8rem;">(CCW)</span></div>
+      <div class="pos-letters">S, T, U, V</div>
+      <div class="pos-count">4 canonical paths</div>
+    </div>
+  </div>
+
+  <hr class="separator">
+
+  <!-- All 10 Paths -->
+  <h2>All 10 Canonical Paths</h2>
+  <p class="section-intro">
+    Each row is one card in the deck. The seed letter is rotated 90&deg; four times
+    to produce the full 4-step LOOP. All are Dual-Shift (Type 1).
+  </p>
+
+  <table class="families-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Seed</th>
+        <th>Start</th>
+        <th>Position Family</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">A</td><td>alpha1</td><td style="color:var(--pair-self);">alpha</td></tr>
+      <tr><td>2</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">B</td><td>alpha1</td><td style="color:var(--pair-self);">alpha</td></tr>
+      <tr><td>3</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">C</td><td>alpha1</td><td style="color:var(--pair-self);">alpha</td></tr>
+      <tr style="border-top:1px solid var(--border);">
+        <td>4</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">G</td><td>beta5</td><td style="color:var(--pair-self);">beta</td></tr>
+      <tr><td>5</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">H</td><td>beta5</td><td style="color:var(--pair-self);">beta</td></tr>
+      <tr><td>6</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">I</td><td>beta5</td><td style="color:var(--pair-self);">beta</td></tr>
+      <tr style="border-top:1px solid var(--border);">
+        <td>7</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">S</td><td>gamma11</td><td style="color:var(--pair-self);">gamma</td></tr>
+      <tr><td>8</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">T</td><td>gamma11</td><td style="color:var(--pair-self);">gamma</td></tr>
+      <tr><td>9</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">U</td><td>gamma11</td><td style="color:var(--pair-self);">gamma</td></tr>
+      <tr><td>10</td><td style="font-family:monospace; font-weight:600; color:var(--valid);">V</td><td>gamma11</td><td style="color:var(--pair-self);">gamma</td></tr>
+    </tbody>
+  </table>
+
+  <p class="section-intro" style="margin-top: 1rem;">
+    Gamma produces 4 paths vs. 3 for alpha and beta because gamma has more valid 90&deg; connections within its neighborhood.
+    All 10 are also present in VTG motion decks and in the
+    <a href="halved-loop-type-compatibility.html" style="color: var(--accent); text-decoration: none;">halved LOOP catalog</a>
+    (where the seed is written as the letter repeated: AA, GG, etc.).
+  </p>
+
+  <hr class="separator">
+
+  <div class="footer">
+    Quartered LOOP Type Compatibility &mdash; Diamond grid, 4-step, 1-step seeds<br>
+    Part of the <a href="/reference/">LOOP Generation Reference</a> series
+  </div>
+
+</div>
+
+</body>
+</html>

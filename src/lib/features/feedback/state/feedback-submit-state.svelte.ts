@@ -196,24 +196,17 @@ export function createFeedbackSubmitState() {
       const capturedModule = getCapturedModule();
       const capturedTab = getCapturedTab();
 
-      // Collect pre-uploaded URLs from staged images
-      const preUploadedUrls = images
-        .map((f) => stagedImages.get(f)?.downloadUrl)
-        .filter((url): url is string => url != null);
-
-      // If all images are pre-uploaded, pass URLs directly (no upload needed)
-      const hasAllUrls =
-        images.length > 0 && preUploadedUrls.length === images.length;
-
+      // Always upload to permanent storage path at submit time.
+      // Staging URLs (feedback-staging/) expire when the cleanup function
+      // deletes them after 30 minutes — never save those as final URLs.
       await feedbackService.submitFeedback(
         formData,
         capturedModule,
         capturedTab,
-        hasAllUrls ? undefined : images.length > 0 ? images : undefined,
+        images.length > 0 ? images : undefined,
         (progress) => {
           uploadProgress = progress;
         },
-        hasAllUrls ? preUploadedUrls : undefined
       );
 
       uploadProgress = null;

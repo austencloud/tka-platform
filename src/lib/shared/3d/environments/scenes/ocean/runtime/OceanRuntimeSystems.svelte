@@ -63,7 +63,13 @@
 
 <!-- Lighting -->
 <T.HemisphereLight args={["#1a4060", "#0a1a2a", 0.6]} />
-<T.DirectionalLight position={[10, 30, -20]} intensity={0.8} color="#6699cc" />
+<T.DirectionalLight
+  bind:ref={sunLight}
+  position={[10, 30, -20]}
+  intensity={0.8}
+  color="#6699cc"
+  castShadow
+/>
 
 <!-- Water surface (above everything) -->
 <WaterSurface />

@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TKA Granularity & Arrow System Explorer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+  }
+
+  /* Controls Panel */
+  .controls {
+    background: #161b22;
+    border-right: 1px solid #30363d;
+    padding: 20px;
+    overflow-y: auto;
+    grid-row: 1 / -1;
+  }
+
+  .controls h2 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #8b949e;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #30363d;
+  }
+
+  .control-group {
+    margin-bottom: 24px;
+  }
+
+  .control-group label {
+    display: block;
+    font-size: 12px;
+    color: #8b949e;
+    margin-bottom: 6px;
+  }
+
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    text-align: left;
+    transition: all 0.15s;
+  }
+
+  .btn:hover { background: #30363d; }
+  .btn.active {
+    background: #1f6feb;
+    border-color: #388bfd;
+    color: #fff;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .btn-row .btn {
+    flex: 1;
+    text-align: center;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .info-box {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #8b949e;
+    margin-top: 8px;
+  }
+
+  .info-box strong { color: #c9d1d9; }
+
+  .cascade-indicator {
+    background: #1c2128;
+    border: 1px solid #f0883e;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #f0883e;
+    margin-top: 12px;
+  }
+
+  /* Preview Area */
+  .preview {
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e6edf3;
+    margin-bottom: 4px;
+  }
+
+  .section-subtitle {
+    font-size: 13px;
+    color: #8b949e;
+    margin-bottom: 16px;
+  }
+
+  .comparison-row {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .pictograph-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    min-width: 180px;
+  }
+
+  .pictograph-card .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8b949e;
+    margin-bottom: 8px;
+  }
+
+  .pictograph-card .step-label {
+    font-size: 13px;
+    color: #58a6ff;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  .pictograph-card.highlight {
+    border-color: #f0883e;
+    box-shadow: 0 0 12px rgba(240, 136, 62, 0.15);
+  }
+
+  .pictograph-card.dimmed {
+    opacity: 0.4;
+  }
+
+  /* Sequence Strip */
+  .sequence-strip {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 16px 0;
+  }
+
+  .sequence-strip .arrow-connector {
+    color: #30363d;
+    font-size: 18px;
+  }
+
+  /* Granularity Slider */
+  .granularity-track {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    justify-content: center;
+    margin: 16px 0;
+  }
+
+  .granularity-track .endpoint {
+    font-size: 12px;
+    color: #8b949e;
+    min-width: 80px;
+  }
+
+  .granularity-track .endpoint.left { text-align: right; }
+  .granularity-track .endpoint.right { text-align: left; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 200px;
+    height: 6px;
+    background: #30363d;
+    border-radius: 3px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #1f6feb;
+    cursor: pointer;
+  }
+
+  /* Stats */
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin: 12px 0;
+  }
+
+  .stat {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 16px;
+    text-align: center;
+  }
+
+  .stat .number {
+    font-size: 24px;
+    font-weight: 700;
+    color: #58a6ff;
+  }
+
+  .stat .label {
+    font-size: 11px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Prompt Output */
+  .prompt-area {
+    background: #161b22;
+    border-top: 1px solid #30363d;
+    padding: 16px 24px;
+    grid-column: 2;
+  }
+
+  .prompt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .prompt-header span {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #8b949e;
+  }
+
+  .copy-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { background: #30363d; }
+  .copy-btn.copied { background: #238636; border-color: #2ea043; color: #fff; }
+
+  .prompt-text {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  /* Idea Tabs */
+  .idea-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 16px;
+  }
+
+  .idea-tab {
+    flex: 1;
+    padding: 10px 8px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .idea-tab:first-child { border-radius: 6px 0 0 6px; }
+  .idea-tab:last-child { border-radius: 0 6px 6px 0; }
+  .idea-tab.active { background: #1f6feb; border-color: #388bfd; color: #fff; }
+  .idea-tab:hover:not(.active) { background: #30363d; }
+
+  /* SVG pictograph styles */
+  .grid-line { stroke: #30363d; stroke-width: 1; }
+  .grid-point { fill: #30363d; }
+  .hand-blue { fill: #58a6ff; }
+  .hand-red { fill: #f85149; }
+  .arrow-current { stroke: #8b949e; stroke-width: 2.5; fill: none; }
+  .arrow-mandala-blue { stroke: #58a6ff; stroke-width: 2; fill: none; opacity: 0.9; }
+  .arrow-mandala-red { stroke: #f85149; stroke-width: 2; fill: none; opacity: 0.9; }
+  .arrowhead-blue { fill: #58a6ff; }
+  .arrowhead-red { fill: #f85149; }
+  .arrowhead-current { fill: #8b949e; }
+  .midpoint-marker { fill: #f0883e; stroke: #f0883e; stroke-width: 1; }
+  .midpoint-ring { fill: none; stroke: #f0883e; stroke-width: 1.5; stroke-dasharray: 3 2; }
+
+  .half-step-highlight {
+    animation: pulse-orange 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-orange {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  /* Section dividers */
+  .section {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .section.active { display: flex; }
+
+  .vs-badge {
+    background: #30363d;
+    color: #8b949e;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .cascade-flow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+
+  .cascade-node {
+    background: #1c2128;
+    border: 2px solid #30363d;
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    min-width: 140px;
+  }
+
+  .cascade-node.key {
+    border-color: #f0883e;
+    background: #2d1b0e;
+  }
+
+  .cascade-node .node-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e6edf3;
+  }
+
+  .cascade-node .node-desc {
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 4px;
+  }
+
+  .cascade-arrow {
+    font-size: 20px;
+    color: #f0883e;
+  }
+
+  .motion-selector {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .motion-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.15s;
+  }
+
+  .motion-btn:hover { background: #30363d; }
+  .motion-btn.active { background: #238636; border-color: #2ea043; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Controls -->
+  <div class="controls">
+    <h2>Idea Explorer</h2>
+
+    <div class="control-group">
+      <div class="idea-tabs" id="ideaTabs">
+        <div class="idea-tab active" data-idea="mandala-arrows">Mandala Arrows</div>
+        <div class="idea-tab" data-idea="half-steps">Half-Steps</div>
+        <div class="idea-tab" data-idea="dyads">Dyads</div>
+        <div class="idea-tab" data-idea="cascade">Cascade</div>
+      </div>
+    </div>
+
+    <!-- Mandala Arrow Controls -->
+    <div class="control-section" id="controls-mandala-arrows">
+      <div class="control-group">
+        <label>Motion Example</label>
+        <div class="btn-group" id="motionSelector">
+          <div class="btn active" data-motion="pro-1">Pro 1 turn (CW loop)</div>
+          <div class="btn" data-motion="anti-0.5">Anti 0.5 (CCW half)</div>
+          <div class="btn" data-motion="pro-2">Pro 2 turns (double loop)</div>
+          <div class="btn" data-motion="dash">Dash (linear shift)</div>
+          <div class="btn" data-motion="static">Static (no motion)</div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Arrow Style</label>
+        <div class="btn-group" id="arrowStyleSelector">
+          <div class="btn active" data-style="side-by-side">Side by Side</div>
+          <div class="btn" data-style="overlay">Overlay Both</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>Current system:</strong> ~40 hand-designed SVG arrow glyphs encoding motion type + turn count.<br><br>
+        <strong>Mandala-path:</strong> Computed tip trajectory from MandalaGeometryCalculator. Already exists — just needs an arrowhead.
+      </div>
+    </div>
+
+    <!-- Half-Step Controls -->
+    <div class="control-section" id="controls-half-steps" style="display:none">
+      <div class="control-group">
+        <label>Sequence Length</label>
+        <div class="btn-row" id="seqLengthSelector">
+          <div class="btn active" data-len="4">4 steps</div>
+          <div class="btn" data-len="8">8 steps</div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>View Granularity</label>
+        <div class="btn-group" id="granularitySelector">
+          <div class="btn" data-gran="normal">Normal (1 per step)</div>
+          <div class="btn active" data-gran="half">Half-steps (2 per step)</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>Key insight:</strong> Every letter has a deterministic midpoint. Map it once, display forever. A 4-step sequence with big turns becomes 8 half-steps, each showing exactly where the props are mid-motion.
+      </div>
+    </div>
+
+    <!-- Dyad Controls -->
+    <div class="control-section" id="controls-dyads" style="display:none">
+      <div class="control-group">
+        <label>View Mode</label>
+        <div class="btn-group" id="dyadViewSelector">
+          <div class="btn active" data-view="compare">Normal vs Dyad</div>
+          <div class="btn" data-view="anatomy">Dyad Anatomy</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>Dyad:</strong> Two beats fused into one pictograph. Shows start → mid → end in a single frame. Arrow spans the full two-beat motion.<br><br>
+        <strong>Domain knowledge needed:</strong> Austen has specific dyad arrow designs and rules. This spec captures the architecture; arrow visuals come from Austen's reference images.
+      </div>
+    </div>
+
+    <!-- Cascade Controls -->
+    <div class="control-section" id="controls-cascade" style="display:none">
+      <div class="info-box">
+        <strong>The cascade:</strong> Mandala-path arrows are the enabler. Once tip paths ARE the arrows, half-steps and dyads get arrows automatically — no custom SVG design per case.
+      </div>
+
+      <div class="cascade-indicator">
+        Without mandala-path arrows, half-steps need ~80 new arrow SVGs. Dyads need ~40 more. With mandala-path arrows: zero new SVGs. All computed.
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview" id="preview">
+
+    <!-- Section: Mandala Arrows -->
+    <div class="section active" id="section-mandala-arrows">
+      <div>
+        <div class="section-title">Current Arrows vs Mandala-Path Arrows</div>
+        <div class="section-subtitle">Same motion, different representation. Left = symbolic glyph. Right = actual tip trajectory.</div>
+      </div>
+      <div class="comparison-row" id="arrowComparison"></div>
+      <div class="stats-row">
+        <div class="stat">
+          <div class="number" id="currentArrowCount">~40</div>
+          <div class="label">Current SVG Glyphs</div>
+        </div>
+        <div class="stat">
+          <div class="number" style="color: #3fb950;">0</div>
+          <div class="label">New SVGs Needed</div>
+        </div>
+        <div class="stat">
+          <div class="number" style="color: #f0883e;">1</div>
+          <div class="label">Compute Function</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Half-Steps -->
+    <div class="section" id="section-half-steps">
+      <div>
+        <div class="section-title">Granularity: Normal vs Half-Steps</div>
+        <div class="section-subtitle">Same sequence, doubled resolution. Each half-step shows where props actually are mid-motion.</div>
+      </div>
+      <div id="halfStepView"></div>
+    </div>
+
+    <!-- Section: Dyads -->
+    <div class="section" id="section-dyads">
+      <div>
+        <div class="section-title">Dyads: Fused Pictographs</div>
+        <div class="section-subtitle">Two beats compressed into one pictograph. Halves the display count.</div>
+      </div>
+      <div id="dyadView"></div>
+    </div>
+
+    <!-- Section: Cascade -->
+    <div class="section" id="section-cascade">
+      <div>
+        <div class="section-title">The Cascade Effect</div>
+        <div class="section-subtitle">Mandala-path arrows unlock both half-steps and dyads without manual arrow design.</div>
+      </div>
+      <div id="cascadeView"></div>
+    </div>
+  </div>
+
+  <!-- Prompt Output -->
+  <div class="prompt-area">
+    <div class="prompt-header">
+      <span>Spec Notes</span>
+      <button class="copy-btn" id="copyBtn">Copy</button>
+    </div>
+    <div class="prompt-text" id="promptOutput"></div>
+  </div>
+</div>
+
+<script>
+// ============= STATE =============
+const state = {
+  activeIdea: 'mandala-arrows',
+  motion: 'pro-1',
+  arrowStyle: 'side-by-side',
+  seqLength: 4,
+  granularity: 'half',
+  dyadView: 'compare',
+};
+
+// ============= GRID GEOMETRY =============
+const GRID = {
+  // Diamond grid positions (relative to center, radius 60)
+  positions: {
+    N:  { x: 0, y: -60 },
+    NE: { x: 42, y: -42 },
+    E:  { x: 60, y: 0 },
+    SE: { x: 42, y: 42 },
+    S:  { x: 0, y: 60 },
+    SW: { x: -42, y: 42 },
+    W:  { x: -60, y: 0 },
+    NW: { x: -42, y: -42 },
+  },
+  center: { x: 80, y: 80 },
+  size: 160
+};
+
+// Sample motions for visualization
+const MOTIONS = {
+  'pro-1': {
+    label: 'Pro 1 Turn',
+    blue: { from: 'N', to: 'S', turns: 1, dir: 'cw' },
+    red:  { from: 'S', to: 'N', turns: 1, dir: 'cw' },
+    desc: 'Both hands clockwise, 1 full turn (180 additional rotation)',
+  },
+  'anti-0.5': {
+    label: 'Anti 0.5',
+    blue: { from: 'E', to: 'W', turns: 0.5, dir: 'ccw' },
+    red:  { from: 'W', to: 'E', turns: 0.5, dir: 'ccw' },
+    desc: 'Both hands counter-clockwise, half turn',
+  },
+  'pro-2': {
+    label: 'Pro 2 Turns',
+    blue: { from: 'N', to: 'N', turns: 2, dir: 'cw' },
+    red:  { from: 'S', to: 'S', turns: 2, dir: 'cw' },
+    desc: 'Both hands clockwise, 2 full turns (360 additional). Returns to start.',
+  },
+  'dash': {
+    label: 'Dash',
+    blue: { from: 'N', to: 'S', turns: 0, dir: 'linear' },
+    red:  { from: 'S', to: 'N', turns: 0, dir: 'linear' },
+    desc: 'Linear shift, no rotation. Straight path between positions.',
+  },
+  'static': {
+    label: 'Static',
+    blue: { from: 'E', to: 'E', turns: 0, dir: 'none' },
+    red:  { from: 'W', to: 'W', turns: 0, dir: 'none' },
+    desc: 'No movement. Props stay in place.',
+  },
+};
+
+// 4-step sample sequence
+const SAMPLE_SEQUENCE = [
+  { blue: { from: 'N', to: 'E' }, red: { from: 'S', to: 'W' }, letter: 'A' },
+  { blue: { from: 'E', to: 'S' }, red: { from: 'W', to: 'N' }, letter: 'B' },
+  { blue: { from: 'S', to: 'W' }, red: { from: 'N', to: 'E' }, letter: 'C' },
+  { blue: { from: 'W', to: 'N' }, red: { from: 'E', to: 'S' }, letter: 'D' },
+];
+
+const SAMPLE_SEQUENCE_8 = [
+  ...SAMPLE_SEQUENCE,
+  { blue: { from: 'N', to: 'SE' }, red: { from: 'S', to: 'NW' }, letter: 'E' },
+  { blue: { from: 'SE', to: 'W' }, red: { from: 'NW', to: 'E' }, letter: 'F' },
+  { blue: { from: 'W', to: 'NE' }, red: { from: 'E', to: 'SW' }, letter: 'G' },
+  { blue: { from: 'NE', to: 'N' }, red: { from: 'SW', to: 'S' }, letter: 'H' },
+];
+
+// ============= SVG HELPERS =============
+function gridSVG(opts = {}) {
+  const { w = 160, h = 160, id = '' } = opts;
+  const cx = w / 2, cy = h / 2;
+  let svg = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Diamond grid lines
+  const pts = Object.values(GRID.positions);
+  // Draw diamond outline
+  const diamond = ['N', 'E', 'S', 'W'].map(p => {
+    const pos = GRID.positions[p];
+    return `${cx + pos.x},${cy + pos.y}`;
+  }).join(' ');
+  svg += `<polygon points="${diamond}" fill="none" stroke="#21262d" stroke-width="1"/>`;
+
+  // Cross lines
+  svg += `<line x1="${cx + GRID.positions.N.x}" y1="${cy + GRID.positions.N.y}" x2="${cx + GRID.positions.S.x}" y2="${cy + GRID.positions.S.y}" class="grid-line" stroke-opacity="0.3"/>`;
+  svg += `<line x1="${cx + GRID.positions.E.x}" y1="${cy + GRID.positions.E.y}" x2="${cx + GRID.positions.W.x}" y2="${cy + GRID.positions.W.y}" class="grid-line" stroke-opacity="0.3"/>`;
+
+  // Grid points
+  for (const [name, pos] of Object.entries(GRID.positions)) {
+    const isCardinal = ['N', 'E', 'S', 'W'].includes(name);
+    svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${isCardinal ? 3 : 2}" class="grid-point" opacity="${isCardinal ? 0.6 : 0.3}"/>`;
+  }
+
+  return { svg, cx, cy, close: () => svg + '</svg>' };
+}
+
+function addHand(svgObj, pos, color, radius = 8) {
+  const cx = svgObj.cx + GRID.positions[pos].x;
+  const cy = svgObj.cy + GRID.positions[pos].y;
+  const cls = color === 'blue' ? 'hand-blue' : 'hand-red';
+  svgObj.svg += `<circle cx="${cx}" cy="${cy}" r="${radius}" class="${cls}" opacity="0.9"/>`;
+}
+
+function addCurrentArrow(svgObj, from, to, motion) {
+  const fx = svgObj.cx + GRID.positions[from].x;
+  const fy = svgObj.cy + GRID.positions[from].y;
+  const tx = svgObj.cx + GRID.positions[to].x;
+  const ty = svgObj.cy + GRID.positions[to].y;
+
+  if (motion.dir === 'none' || (from === to && motion.turns === 0)) return;
+
+  if (motion.dir === 'linear' || motion.turns === 0) {
+    // Straight arrow for dash
+    const angle = Math.atan2(ty - fy, tx - fx);
+    const headLen = 8;
+    svg_arrow_line(svgObj, fx, fy, tx, ty, '#8b949e', 2.5);
+    svg_arrowhead(svgObj, tx, ty, angle, '#8b949e', headLen);
+    return;
+  }
+
+  // Curved arrow for rotation — simple arc representation
+  const mx = (fx + tx) / 2;
+  const my = (fy + ty) / 2;
+  const dx = tx - fx;
+  const dy = ty - fy;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const perpX = -dy / len;
+  const perpY = dx / len;
+  const bulge = (motion.dir === 'cw' ? 1 : -1) * Math.min(30 * motion.turns, 50);
+
+  const cpx = mx + perpX * bulge;
+  const cpy = my + perpY * bulge;
+
+  svgObj.svg += `<path d="M ${fx} ${fy} Q ${cpx} ${cpy} ${tx} ${ty}" class="arrow-current" stroke-dasharray="${motion.turns > 1 ? 'none' : 'none'}"/>`;
+
+  // Arrowhead
+  const t = 0.95;
+  const ax = (1 - t) * (1 - t) * fx + 2 * (1 - t) * t * cpx + t * t * tx;
+  const ay = (1 - t) * (1 - t) * fy + 2 * (1 - t) * t * cpy + t * t * ty;
+  const angle = Math.atan2(ty - ay, tx - ax);
+  svg_arrowhead(svgObj, tx, ty, angle, '#8b949e', 8);
+
+  // Turn count indicator
+  if (motion.turns > 1) {
+    const labelX = mx + perpX * bulge * 0.7;
+    const labelY = my + perpY * bulge * 0.7;
+    svgObj.svg += `<text x="${labelX}" y="${labelY}" fill="#8b949e" font-size="10" text-anchor="middle" dominant-baseline="middle" font-weight="600">${motion.turns}x</text>`;
+  }
+}
+
+function addMandalaPath(svgObj, from, to, motion, color) {
+  const fx = svgObj.cx + GRID.positions[from].x;
+  const fy = svgObj.cy + GRID.positions[from].y;
+  const tx = svgObj.cx + GRID.positions[to].x;
+  const ty = svgObj.cy + GRID.positions[to].y;
+
+  const cls = color === 'blue' ? 'arrow-mandala-blue' : 'arrow-mandala-red';
+  const fillCls = color === 'blue' ? 'arrowhead-blue' : 'arrowhead-red';
+  const strokeColor = color === 'blue' ? '#58a6ff' : '#f85149';
+
+  if (motion.dir === 'none' || (from === to && motion.turns === 0)) {
+    // Static: small circle indicator
+    svgObj.svg += `<circle cx="${fx}" cy="${fy}" r="12" fill="none" stroke="${strokeColor}" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.5"/>`;
+    return;
+  }
+
+  if (motion.dir === 'linear') {
+    // Dash: slightly wavy line representing actual tip path
+    const mx = (fx + tx) / 2;
+    const my = (fy + ty) / 2;
+    const dx = tx - fx;
+    const dy = ty - fy;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const perpX = -dy / len * 4;
+    const perpY = dx / len * 4;
+
+    svgObj.svg += `<path d="M ${fx} ${fy} C ${fx + (tx-fx)*0.3 + perpX} ${fy + (ty-fy)*0.3 + perpY} ${fx + (tx-fx)*0.7 - perpX} ${fy + (ty-fy)*0.7 - perpY} ${tx} ${ty}" class="${cls}" stroke-width="2.5"/>`;
+    const angle = Math.atan2(ty - fy, tx - fx);
+    svg_arrowhead(svgObj, tx, ty, angle, strokeColor, 7);
+    return;
+  }
+
+  // Rotation: spiral/loop path representing actual tip trajectory
+  const mx = (fx + tx) / 2;
+  const my = (fy + ty) / 2;
+  const dx = tx - fx;
+  const dy = ty - fy;
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const perpX = -dy / len;
+  const perpY = dx / len;
+
+  if (from === to && motion.turns >= 1) {
+    // Full return loop — draw a petal/loop
+    const loopR = 25 * motion.turns;
+    const dir = motion.dir === 'cw' ? 1 : -1;
+    const cx1 = fx + perpX * loopR * dir + (dx === 0 && dy === 0 ? loopR * 0.7 : 0);
+    const cy1 = fy + perpY * loopR * dir + (dx === 0 && dy === 0 ? -loopR * 0.3 * dir : 0);
+
+    // Generate loop points
+    const points = [];
+    const steps = 24 * motion.turns;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const angle = t * Math.PI * 2 * motion.turns * dir;
+      const r = Math.sin(t * Math.PI) * loopR;
+      const baseAngle = Math.atan2(perpY, perpX) * dir;
+      const px = fx + Math.cos(baseAngle + angle) * r;
+      const py = fy + Math.sin(baseAngle + angle) * r;
+      points.push({ x: px, y: py });
+    }
+
+    let pathD = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      pathD += ` L ${points[i].x} ${points[i].y}`;
+    }
+
+    svgObj.svg += `<path d="${pathD}" class="${cls}" stroke-width="2.5"/>`;
+
+    // Arrowhead at end
+    const last = points[points.length - 1];
+    const prev = points[points.length - 2];
+    const angle = Math.atan2(last.y - prev.y, last.x - prev.x);
+    svg_arrowhead(svgObj, last.x, last.y, angle, strokeColor, 7);
+  } else {
+    // Partial rotation — curved path with spiral character
+    const bulge = (motion.dir === 'cw' ? 1 : -1) * (20 + motion.turns * 15);
+    const points = [];
+    const steps = 20;
+
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      // Bezier-like interpolation with spiral offset
+      const bx = (1 - t) * fx + t * tx;
+      const by = (1 - t) * fy + t * ty;
+      const spiralPhase = Math.sin(t * Math.PI * (1 + motion.turns));
+      const spiralR = spiralPhase * bulge * (0.5 + 0.5 * Math.sin(t * Math.PI));
+      points.push({
+        x: bx + perpX * spiralR,
+        y: by + perpY * spiralR
+      });
+    }
+
+    let pathD = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      pathD += ` L ${curr.x} ${curr.y}`;
+    }
+
+    svgObj.svg += `<path d="${pathD}" class="${cls}" stroke-width="2.5"/>`;
+
+    const last = points[points.length - 1];
+    const prev = points[points.length - 2];
+    const angle = Math.atan2(last.y - prev.y, last.x - prev.x);
+    svg_arrowhead(svgObj, last.x, last.y, angle, strokeColor, 7);
+  }
+}
+
+function svg_arrow_line(svgObj, x1, y1, x2, y2, color, width) {
+  svgObj.svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}"/>`;
+}
+
+function svg_arrowhead(svgObj, x, y, angle, color, size) {
+  const a1 = angle + Math.PI * 0.8;
+  const a2 = angle - Math.PI * 0.8;
+  const x1 = x + Math.cos(a1) * size;
+  const y1 = y + Math.sin(a1) * size;
+  const x2 = x + Math.cos(a2) * size;
+  const y2 = y + Math.sin(a2) * size;
+  svgObj.svg += `<polygon points="${x},${y} ${x1},${y1} ${x2},${y2}" fill="${color}"/>`;
+}
+
+function addMidpointMarker(svgObj, from, to, color) {
+  const fx = svgObj.cx + GRID.positions[from].x;
+  const fy = svgObj.cy + GRID.positions[from].y;
+  const tx = svgObj.cx + GRID.positions[to].x;
+  const ty = svgObj.cy + GRID.positions[to].y;
+  const mx = (fx + tx) / 2;
+  const my = (fy + ty) / 2;
+  const fillColor = color === 'blue' ? '#58a6ff' : '#f85149';
+
+  svgObj.svg += `<circle cx="${mx}" cy="${my}" r="5" fill="${fillColor}" opacity="0.7" class="half-step-highlight"/>`;
+  svgObj.svg += `<circle cx="${mx}" cy="${my}" r="10" class="midpoint-ring"/>`;
+}
+
+// ============= RENDERERS =============
+
+function renderMandalaArrows() {
+  const container = document.getElementById('arrowComparison');
+  const motion = MOTIONS[state.motion];
+
+  if (state.arrowStyle === 'side-by-side') {
+    // Current arrows
+    const cur = gridSVG({ w: 180, h: 180 });
+    addCurrentArrow(cur, motion.blue.from, motion.blue.to, motion.blue);
+    addCurrentArrow(cur, motion.red.from, motion.red.to, motion.red);
+    addHand(cur, motion.blue.from, 'blue', 6);
+    addHand(cur, motion.red.from, 'red', 6);
+    addHand(cur, motion.blue.to, 'blue', 4);
+    addHand(cur, motion.red.to, 'red', 4);
+
+    // Mandala-path arrows
+    const man = gridSVG({ w: 180, h: 180 });
+    addMandalaPath(man, motion.blue.from, motion.blue.to, motion.blue, 'blue');
+    addMandalaPath(man, motion.red.from, motion.red.to, motion.red, 'red');
+    addHand(man, motion.blue.from, 'blue', 6);
+    addHand(man, motion.red.from, 'red', 6);
+    addHand(man, motion.blue.to, 'blue', 4);
+    addHand(man, motion.red.to, 'red', 4);
+
+    container.innerHTML = `
+      <div class="pictograph-card">
+        <div class="label">Current (Representational)</div>
+        ${cur.close()}
+        <div class="step-label" style="color: #8b949e">~40 SVG glyphs</div>
+      </div>
+      <div style="display:flex;align-items:center"><span class="vs-badge">vs</span></div>
+      <div class="pictograph-card highlight">
+        <div class="label">Mandala-Path (Computed)</div>
+        ${man.close()}
+        <div class="step-label" style="color: #f0883e">Tip trajectory + arrowhead</div>
+      </div>
+    `;
+  } else {
+    // Overlay mode
+    const ovl = gridSVG({ w: 240, h: 240 });
+    // Current arrows (dimmed)
+    ovl.svg += `<g opacity="0.3">`;
+    addCurrentArrow(ovl, motion.blue.from, motion.blue.to, motion.blue);
+    addCurrentArrow(ovl, motion.red.from, motion.red.to, motion.red);
+    ovl.svg += `</g>`;
+    // Mandala paths on top
+    addMandalaPath(ovl, motion.blue.from, motion.blue.to, motion.blue, 'blue');
+    addMandalaPath(ovl, motion.red.from, motion.red.to, motion.red, 'red');
+    addHand(ovl, motion.blue.from, 'blue', 7);
+    addHand(ovl, motion.red.from, 'red', 7);
+    addHand(ovl, motion.blue.to, 'blue', 5);
+    addHand(ovl, motion.red.to, 'red', 5);
+
+    container.innerHTML = `
+      <div class="pictograph-card highlight" style="min-width: 280px">
+        <div class="label">Overlay: Gray = current, Color = mandala-path</div>
+        ${ovl.close()}
+        <div class="step-label">${motion.desc}</div>
+      </div>
+    `;
+  }
+}
+
+function renderHalfSteps() {
+  const container = document.getElementById('halfStepView');
+  const seq = state.seqLength === 4 ? SAMPLE_SEQUENCE : SAMPLE_SEQUENCE_8;
+  const isHalf = state.granularity === 'half';
+
+  let html = '<div class="stats-row">';
+  html += `<div class="stat"><div class="number">${seq.length}</div><div class="label">Original Steps</div></div>`;
+  html += `<div class="stat"><div class="number" style="color: ${isHalf ? '#f0883e' : '#58a6ff'}">${isHalf ? seq.length * 2 : seq.length}</div><div class="label">Display Pictographs</div></div>`;
+  html += `<div class="stat"><div class="number" style="color: #3fb950">${isHalf ? '2x' : '1x'}</div><div class="label">Granularity</div></div>`;
+  html += '</div>';
+
+  html += '<div class="sequence-strip">';
+
+  for (let i = 0; i < seq.length; i++) {
+    const step = seq[i];
+
+    if (isHalf) {
+      // First half: start → midpoint
+      const h1 = gridSVG({ w: 120, h: 120 });
+      addHand(h1, step.blue.from, 'blue', 6);
+      addHand(h1, step.red.from, 'red', 6);
+      addMidpointMarker(h1, step.blue.from, step.blue.to, 'blue');
+      addMidpointMarker(h1, step.red.from, step.red.to, 'red');
+      // Short arrow to midpoint
+      const bmx = h1.cx + (GRID.positions[step.blue.from].x + GRID.positions[step.blue.to].x) / 2;
+      const bmy = h1.cy + (GRID.positions[step.blue.from].y + GRID.positions[step.blue.to].y) / 2;
+
+      html += `<div class="pictograph-card" style="min-width:100px;padding:6px">
+        <div class="label" style="font-size:9px">${step.letter}a</div>
+        ${h1.close()}
+        <div class="step-label" style="font-size:10px;color:#f0883e">1st half</div>
+      </div>`;
+
+      // Second half: midpoint → end
+      const h2 = gridSVG({ w: 120, h: 120 });
+      addMidpointMarker(h2, step.blue.from, step.blue.to, 'blue');
+      addMidpointMarker(h2, step.red.from, step.red.to, 'red');
+      addHand(h2, step.blue.to, 'blue', 6);
+      addHand(h2, step.red.to, 'red', 6);
+
+      html += `<div class="pictograph-card" style="min-width:100px;padding:6px">
+        <div class="label" style="font-size:9px">${step.letter}b</div>
+        ${h2.close()}
+        <div class="step-label" style="font-size:10px;color:#f0883e">2nd half</div>
+      </div>`;
+    } else {
+      // Normal view
+      const s = gridSVG({ w: 130, h: 130 });
+      addHand(s, step.blue.from, 'blue', 5);
+      addHand(s, step.red.from, 'red', 5);
+      addHand(s, step.blue.to, 'blue', 4);
+      addHand(s, step.red.to, 'red', 4);
+      addMandalaPath(s, step.blue.from, step.blue.to, { turns: 1, dir: 'cw' }, 'blue');
+      addMandalaPath(s, step.red.from, step.red.to, { turns: 1, dir: 'cw' }, 'red');
+
+      html += `<div class="pictograph-card" style="min-width:110px;padding:6px">
+        <div class="label" style="font-size:10px">Step ${i + 1}</div>
+        ${s.close()}
+        <div class="step-label" style="font-size:11px">${step.letter}</div>
+      </div>`;
+    }
+
+    if (i < seq.length - 1) {
+      html += `<span class="arrow-connector">${isHalf ? '' : '→'}</span>`;
+    }
+  }
+
+  html += '</div>';
+
+  if (isHalf) {
+    html += `<div class="info-box" style="max-width:600px;margin:0 auto">
+      <strong>Half-step mapping requirement:</strong> For every possible motion (letter) from every grid point, define where props are at the halfway mark. This is deterministic — same letter from same position always has same midpoint. Map once, use forever. With mandala-path arrows, each half-step gets its arrow automatically from the first/second half of the tip trajectory.
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function renderDyads() {
+  const container = document.getElementById('dyadView');
+
+  if (state.dyadView === 'compare') {
+    let html = '<div class="section-subtitle" style="text-align:center">4-step sequence displayed as 4 normal pictographs vs 2 dyads</div>';
+
+    // Normal row
+    html += '<div style="text-align:center;margin-bottom:8px"><span class="vs-badge">NORMAL: 4 pictographs</span></div>';
+    html += '<div class="sequence-strip">';
+    for (let i = 0; i < 4; i++) {
+      const step = SAMPLE_SEQUENCE[i];
+      const s = gridSVG({ w: 110, h: 110 });
+      addHand(s, step.blue.from, 'blue', 5);
+      addHand(s, step.red.from, 'red', 5);
+      addHand(s, step.blue.to, 'blue', 3);
+      addHand(s, step.red.to, 'red', 3);
+      addMandalaPath(s, step.blue.from, step.blue.to, { turns: 1, dir: 'cw' }, 'blue');
+      addMandalaPath(s, step.red.from, step.red.to, { turns: 1, dir: 'cw' }, 'red');
+      html += `<div class="pictograph-card" style="min-width:90px;padding:4px">
+        <div class="label" style="font-size:9px">Beat ${i + 1}</div>${s.close()}
+      </div>`;
+    }
+    html += '</div>';
+
+    // Dyad row
+    html += '<div style="text-align:center;margin:16px 0 8px"><span class="vs-badge" style="background:#2d1b0e;border:1px solid #f0883e;color:#f0883e">DYADS: 2 fused pictographs</span></div>';
+    html += '<div class="sequence-strip">';
+    for (let d = 0; d < 2; d++) {
+      const step1 = SAMPLE_SEQUENCE[d * 2];
+      const step2 = SAMPLE_SEQUENCE[d * 2 + 1];
+      const s = gridSVG({ w: 160, h: 160 });
+
+      // Show start, mid, and end positions
+      addHand(s, step1.blue.from, 'blue', 7); // start (large)
+      addHand(s, step1.red.from, 'red', 7);
+
+      // Mid position (where beat 1 ends / beat 2 starts) — shown as rings
+      const midBlueX = s.cx + GRID.positions[step1.blue.to].x;
+      const midBlueY = s.cy + GRID.positions[step1.blue.to].y;
+      const midRedX = s.cx + GRID.positions[step1.red.to].x;
+      const midRedY = s.cy + GRID.positions[step1.red.to].y;
+      s.svg += `<circle cx="${midBlueX}" cy="${midBlueY}" r="5" fill="none" stroke="#58a6ff" stroke-width="2" stroke-dasharray="3 2"/>`;
+      s.svg += `<circle cx="${midRedX}" cy="${midRedY}" r="5" fill="none" stroke="#f85149" stroke-width="2" stroke-dasharray="3 2"/>`;
+
+      addHand(s, step2.blue.to, 'blue', 4); // end (small)
+      addHand(s, step2.red.to, 'red', 4);
+
+      // Two-segment mandala path spanning both beats
+      addMandalaPath(s, step1.blue.from, step1.blue.to, { turns: 1, dir: 'cw' }, 'blue');
+      addMandalaPath(s, step2.blue.from, step2.blue.to, { turns: 1, dir: 'cw' }, 'blue');
+      addMandalaPath(s, step1.red.from, step1.red.to, { turns: 1, dir: 'cw' }, 'red');
+      addMandalaPath(s, step2.red.from, step2.red.to, { turns: 1, dir: 'cw' }, 'red');
+
+      html += `<div class="pictograph-card highlight" style="min-width:160px">
+        <div class="label">Dyad ${d + 1} (Beats ${d*2+1}+${d*2+2})</div>
+        ${s.close()}
+        <div class="step-label" style="color:#f0883e">2 beats → 1 pictograph</div>
+      </div>`;
+    }
+    html += '</div>';
+
+    html += `<div class="info-box" style="max-width:600px;margin:16px auto 0">
+      <strong>Dyad key:</strong> Large dots = start position. Dashed rings = midpoint (beat boundary). Small dots = end position. Two mandala-path arrows span the full two-beat motion.<br><br>
+      <strong>Austen has:</strong> Specific dyad arrow designs, rules, and reference images. Architecture captures the fusion logic; visual arrow treatment comes from his domain expertise.
+    </div>`;
+
+    container.innerHTML = html;
+  } else {
+    // Anatomy view
+    let html = `
+      <div style="max-width:500px;margin:0 auto">
+        <div class="pictograph-card highlight" style="padding:20px">
+          <div class="label">Dyad Anatomy</div>
+          <svg width="300" height="200" viewBox="0 0 300 200">
+            <!-- Timeline -->
+            <line x1="30" y1="100" x2="270" y2="100" stroke="#30363d" stroke-width="2"/>
+
+            <!-- Beat 1 -->
+            <circle cx="50" cy="100" r="8" fill="#58a6ff"/>
+            <text x="50" y="80" fill="#8b949e" font-size="10" text-anchor="middle">Start</text>
+            <text x="50" y="125" fill="#58a6ff" font-size="10" text-anchor="middle">Beat 1</text>
+
+            <!-- Midpoint -->
+            <circle cx="150" cy="100" r="6" fill="none" stroke="#f0883e" stroke-width="2" stroke-dasharray="3 2"/>
+            <text x="150" y="80" fill="#f0883e" font-size="10" text-anchor="middle">Midpoint</text>
+            <text x="150" y="125" fill="#8b949e" font-size="10" text-anchor="middle">Beat boundary</text>
+
+            <!-- End -->
+            <circle cx="250" cy="100" r="5" fill="#58a6ff"/>
+            <text x="250" y="80" fill="#8b949e" font-size="10" text-anchor="middle">End</text>
+            <text x="250" y="125" fill="#58a6ff" font-size="10" text-anchor="middle">Beat 2</text>
+
+            <!-- Mandala path spans full width -->
+            <path d="M 50 100 Q 100 60 150 100 Q 200 140 250 100" stroke="#58a6ff" stroke-width="2.5" fill="none"/>
+            <polygon points="250,100 242,94 242,106" fill="#58a6ff"/>
+
+            <!-- Bracket -->
+            <path d="M 50 150 L 50 160 L 250 160 L 250 150" stroke="#f0883e" stroke-width="1.5" fill="none"/>
+            <text x="150" y="178" fill="#f0883e" font-size="11" text-anchor="middle" font-weight="600">Single dyad pictograph</text>
+          </svg>
+        </div>
+
+        <div class="info-box" style="margin-top:16px">
+          <strong>Three positions visible:</strong> start (large dot), beat boundary (dashed ring), end (small dot).<br><br>
+          <strong>Arrow:</strong> Mandala-path spans the full two-beat motion. No special dyad arrow SVGs needed — the computed tip path naturally covers both beats.<br><br>
+          <strong>Reversibility:</strong> A dyad can always be expanded back to two normal pictographs. It's a display mode, not a data transformation.
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  }
+}
+
+function renderCascade() {
+  const container = document.getElementById('cascadeView');
+
+  container.innerHTML = `
+    <div class="cascade-flow">
+      <div class="cascade-node key">
+        <div class="node-title">Mandala-Path Arrows</div>
+        <div class="node-desc">Tip trajectory = arrow shape</div>
+      </div>
+      <div class="cascade-arrow">→</div>
+      <div class="cascade-node">
+        <div class="node-title">Half-Steps</div>
+        <div class="node-desc">Split path at midpoint</div>
+      </div>
+    </div>
+    <div class="cascade-flow">
+      <div class="cascade-node key">
+        <div class="node-title">Mandala-Path Arrows</div>
+        <div class="node-desc">Tip trajectory = arrow shape</div>
+      </div>
+      <div class="cascade-arrow">→</div>
+      <div class="cascade-node">
+        <div class="node-title">Dyads</div>
+        <div class="node-desc">Concatenate two paths</div>
+      </div>
+    </div>
+
+    <div style="margin: 24px 0">
+      <div class="section-subtitle" style="text-align:center">Effort comparison</div>
+      <div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-top:12px">
+        <div class="pictograph-card" style="flex:1;max-width:280px">
+          <div class="label">Without Mandala-Path Arrows</div>
+          <div style="padding:12px;font-size:13px;text-align:left;line-height:1.8">
+            <div><span style="color:#f85149">Normal view:</span> 40+ SVG glyphs (existing)</div>
+            <div><span style="color:#f85149">Half-steps:</span> ~80 new SVG glyphs needed</div>
+            <div><span style="color:#f85149">Dyads:</span> ~40 new SVG glyphs needed</div>
+            <div style="border-top:1px solid #30363d;margin-top:8px;padding-top:8px">
+              <strong style="color:#f85149">Total: ~160 hand-designed arrows</strong>
+            </div>
+          </div>
+        </div>
+        <div class="pictograph-card highlight" style="flex:1;max-width:280px">
+          <div class="label">With Mandala-Path Arrows</div>
+          <div style="padding:12px;font-size:13px;text-align:left;line-height:1.8">
+            <div><span style="color:#3fb950">Normal view:</span> Computed from tip path</div>
+            <div><span style="color:#3fb950">Half-steps:</span> Split path at t=0.5</div>
+            <div><span style="color:#3fb950">Dyads:</span> Concatenate two paths</div>
+            <div style="border-top:1px solid #30363d;margin-top:8px;padding-top:8px">
+              <strong style="color:#3fb950">Total: 1 compute function, 0 new SVGs</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box" style="max-width:600px;margin:0 auto">
+      <strong>The enabler relationship:</strong> Mandala-path arrows don't just help — they're the prerequisite. Without them, half-steps and dyads each need a full arrow design pass. With them, both get arrows for free from the geometry calculator that already exists.<br><br>
+      <strong>Risk:</strong> If mandala-path arrows look ugly or unreadable, the cascade breaks. That's why this needs visual prototyping first — generate a few real pictographs with tip-path arrows and see if they're legible.<br><br>
+      <strong>Existing infrastructure:</strong> MandalaGeometryCalculator already computes tip trajectories as SVG path data. The work is: (1) segment extraction per beat, (2) arrowhead placement at path end, (3) scaling to pictograph grid coordinates.
+    </div>
+  `;
+}
+
+// ============= PROMPT BUILDER =============
+function updatePrompt() {
+  const parts = [];
+
+  parts.push(`Exploring: ${state.activeIdea.replace('-', ' ')}`);
+
+  if (state.activeIdea === 'mandala-arrows') {
+    parts.push(`Motion: ${MOTIONS[state.motion].label} — ${MOTIONS[state.motion].desc}`);
+    parts.push(`\nConcept: Replace representational arrow SVGs with actual tip trajectory curves from MandalaGeometryCalculator. Each arrow = the real path the prop tip draws through space, with an arrowhead at the endpoint.`);
+    parts.push(`\nKey question: Does the computed tip path produce readable arrows at pictograph scale?`);
+  } else if (state.activeIdea === 'half-steps') {
+    parts.push(`Sequence: ${state.seqLength} steps, viewing at ${state.granularity === 'half' ? 'half-step (2x)' : 'normal (1x)'} granularity`);
+    parts.push(`\nConcept: Map every letter's halfway point. Display shows where props actually are mid-motion. A ${state.seqLength}-step sequence becomes ${state.granularity === 'half' ? state.seqLength * 2 : state.seqLength} pictographs.`);
+    parts.push(`\nData requirement: Comprehensive midpoint mapping for every letter from every grid position. Deterministic — calculate once, store forever.`);
+  } else if (state.activeIdea === 'dyads') {
+    parts.push(`View: ${state.dyadView === 'compare' ? 'Normal vs Dyad comparison' : 'Dyad anatomy'}`);
+    parts.push(`\nConcept: Fuse two consecutive pictographs into one. Three positions shown: start (large), beat boundary (dashed ring), end (small). Arrow spans full two-beat motion.`);
+    parts.push(`\nDomain dependency: Austen has specific dyad arrow designs and reference images. Architecture can be spec'd; arrow visuals need his input.`);
+  } else {
+    parts.push(`\nCascade: Mandala-path arrows enable both half-steps and dyads without manual arrow design.`);
+    parts.push(`Without mandala-paths: ~160 hand-designed SVGs across all three modes.`);
+    parts.push(`With mandala-paths: 1 compute function, 0 new SVGs.`);
+    parts.push(`\nRisk: Mandala-path arrows must be visually legible. Prototype first.`);
+  }
+
+  document.getElementById('promptOutput').textContent = parts.join('\n');
+}
+
+// ============= EVENT HANDLING =============
+function setupEvents() {
+  // Idea tabs
+  document.getElementById('ideaTabs').addEventListener('click', e => {
+    const tab = e.target.closest('.idea-tab');
+    if (!tab) return;
+    document.querySelectorAll('.idea-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.activeIdea = tab.dataset.idea;
+
+    // Show/hide sections and controls
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`section-${state.activeIdea}`).classList.add('active');
+
+    document.querySelectorAll('.control-section').forEach(s => s.style.display = 'none');
+    const ctrl = document.getElementById(`controls-${state.activeIdea}`);
+    if (ctrl) ctrl.style.display = 'block';
+
+    updateAll();
+  });
+
+  // Motion selector
+  document.getElementById('motionSelector').addEventListener('click', e => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    document.querySelectorAll('#motionSelector .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.motion = btn.dataset.motion;
+    updateAll();
+  });
+
+  // Arrow style
+  document.getElementById('arrowStyleSelector').addEventListener('click', e => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    document.querySelectorAll('#arrowStyleSelector .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.arrowStyle = btn.dataset.style;
+    updateAll();
+  });
+
+  // Sequence length
+  document.getElementById('seqLengthSelector').addEventListener('click', e => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    document.querySelectorAll('#seqLengthSelector .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.seqLength = parseInt(btn.dataset.len);
+    updateAll();
+  });
+
+  // Granularity
+  document.getElementById('granularitySelector').addEventListener('click', e => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    document.querySelectorAll('#granularitySelector .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.granularity = btn.dataset.gran;
+    updateAll();
+  });
+
+  // Dyad view
+  document.getElementById('dyadViewSelector').addEventListener('click', e => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    document.querySelectorAll('#dyadViewSelector .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.dyadView = btn.dataset.view;
+    updateAll();
+  });
+
+  // Copy button
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    const text = document.getElementById('promptOutput').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 1500);
+    });
+  });
+}
+
+// ============= MAIN UPDATE =============
+function updateAll() {
+  if (state.activeIdea === 'mandala-arrows') renderMandalaArrows();
+  else if (state.activeIdea === 'half-steps') renderHalfSteps();
+  else if (state.activeIdea === 'dyads') renderDyads();
+  else if (state.activeIdea === 'cascade') renderCascade();
+  updatePrompt();
+}
+
+// Init
+setupEvents();
+updateAll();
+</script>
+</body>
+</html>

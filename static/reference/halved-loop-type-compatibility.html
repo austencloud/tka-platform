@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Halved LOOPs — Type Compatibility</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a26;
+    --border: #2a2a3a;
+    --text: #e0e0e8;
+    --text-dim: #8888a0;
+    --text-muted: #55556a;
+    --accent: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.15);
+    --valid: #22c55e;
+    --valid-bg: rgba(34, 197, 94, 0.08);
+    --valid-glow: rgba(34, 197, 94, 0.25);
+    --invalid: #111118;
+    --invalid-text: #2a2a3a;
+
+    --pair-self: #f59e0b;
+    --pair-bridge: #8b5cf6;
+    --pair-anchor: #06b6d4;
+
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    line-height: 1.6;
+    padding: 3rem 2rem;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--text), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 3.5rem 0 0.8rem;
+    color: var(--text);
+  }
+
+  h2 .badge {
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+  }
+
+  .section-intro {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+  }
+
+  /* ---- Stats Row ---- */
+  .stats {
+    display: flex;
+    gap: 1rem;
+    margin: 2rem 0 3rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+    flex: 1;
+    min-width: 130px;
+  }
+
+  .stat-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+
+  .stat-card .label {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-card.accent .number { color: var(--accent); }
+  .stat-card.valid .number { color: var(--valid); }
+  .stat-card.vtg .number { color: var(--vtg); }
+
+  /* ---- Matrix ---- */
+  .matrix-wrap {
+    overflow-x: auto;
+    margin: 1.5rem 0;
+  }
+
+  .matrix {
+    border-collapse: separate;
+    border-spacing: 4px;
+    margin: 0 auto;
+  }
+
+  .matrix th, .matrix td {
+    width: 80px;
+    height: 56px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.85rem;
+    border-radius: 6px;
+  }
+
+  .matrix th {
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+
+  .matrix th.col-header { padding-bottom: 0.5rem; }
+  .matrix th.row-header {
+    text-align: right;
+    padding-right: 0.8rem;
+    width: 120px;
+  }
+
+  .matrix .corner { position: relative; }
+  .matrix .corner::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 70%; height: 1px;
+    background: var(--border);
+    transform: translate(-50%, -50%) rotate(-35deg);
+  }
+
+  .matrix .corner .t1-label,
+  .matrix .corner .t2-label {
+    position: absolute;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .matrix .corner .t1-label { bottom: 4px; right: 8px; }
+  .matrix .corner .t2-label { top: 4px; left: 8px; }
+
+  .cell-valid {
+    background: var(--valid-bg);
+    border: 1.5px solid var(--valid);
+    box-shadow: 0 0 12px var(--valid-glow), inset 0 0 12px var(--valid-glow);
+    color: var(--valid);
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: default;
+    transition: box-shadow 0.2s, transform 0.15s;
+  }
+
+  .cell-valid:hover {
+    box-shadow: 0 0 24px var(--valid-glow), inset 0 0 20px var(--valid-glow);
+    transform: scale(1.08);
+  }
+
+  .cell-invalid {
+    background: var(--invalid);
+    border: 1px solid transparent;
+    color: var(--invalid-text);
+    font-size: 0.75rem;
+  }
+
+  /* Partner pair colors on valid cells */
+  .pair-self-glow {
+    border-color: var(--pair-self);
+    box-shadow: 0 0 12px rgba(245,158,11,0.2), inset 0 0 12px rgba(245,158,11,0.1);
+  }
+  .pair-self-glow:hover {
+    box-shadow: 0 0 24px rgba(245,158,11,0.35), inset 0 0 16px rgba(245,158,11,0.15);
+  }
+
+  .pair-bridge-glow {
+    border-color: var(--pair-bridge);
+    box-shadow: 0 0 12px rgba(139,92,246,0.2), inset 0 0 12px rgba(139,92,246,0.1);
+  }
+  .pair-bridge-glow:hover {
+    box-shadow: 0 0 24px rgba(139,92,246,0.35), inset 0 0 16px rgba(139,92,246,0.15);
+  }
+
+  .pair-anchor-glow {
+    border-color: var(--pair-anchor);
+    box-shadow: 0 0 12px rgba(6,182,212,0.2), inset 0 0 12px rgba(6,182,212,0.1);
+  }
+  .pair-anchor-glow:hover {
+    box-shadow: 0 0 24px rgba(6,182,212,0.35), inset 0 0 16px rgba(6,182,212,0.15);
+  }
+
+
+  /* ---- Partner Cards ---- */
+  .partners {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.2rem;
+    margin: 1.5rem 0;
+  }
+
+  .partner-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border-top: 3px solid;
+    position: relative;
+  }
+
+  .partner-card .pair-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.8rem;
+    opacity: 0.8;
+  }
+
+  .partner-card .types {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+  }
+
+  .partner-card .why {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  .partner-card .why strong {
+    color: var(--text);
+  }
+
+  .partner-card .count-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    opacity: 0.2;
+  }
+
+  .p-self { border-top-color: var(--pair-self); }
+  .p-self .pair-label, .p-self .types { color: var(--pair-self); }
+  .p-self .count-badge { color: var(--pair-self); }
+
+  .p-bridge { border-top-color: var(--pair-bridge); }
+  .p-bridge .pair-label, .p-bridge .types { color: var(--pair-bridge); }
+  .p-bridge .count-badge { color: var(--pair-bridge); }
+
+  .p-anchor { border-top-color: var(--pair-anchor); }
+  .p-anchor .pair-label, .p-anchor .types { color: var(--pair-anchor); }
+  .p-anchor .count-badge { color: var(--pair-anchor); }
+
+  /* ---- Transitions Table ---- */
+  .transitions-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+  }
+
+  .transitions-table th, .transitions-table td {
+    padding: 0.7rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+
+  .transitions-table th {
+    color: var(--text-dim);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .transitions-table .type-num {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 1rem;
+    width: 40px;
+  }
+
+  .transitions-table .type-name {
+    font-weight: 600;
+    width: 120px;
+  }
+
+  .transition-tag {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 2px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+
+  .tag-inner { color: var(--pair-self); border-color: rgba(245,158,11,0.25); }
+  .tag-bridge { color: var(--pair-bridge); border-color: rgba(139,92,246,0.25); }
+  .tag-stay { color: var(--pair-anchor); border-color: rgba(6,182,212,0.25); }
+
+  .partner-indicator {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .pi-self { background: rgba(245,158,11,0.12); color: var(--pair-self); }
+  .pi-bridge { background: rgba(139,92,246,0.12); color: var(--pair-bridge); }
+  .pi-anchor { background: rgba(6,182,212,0.12); color: var(--pair-anchor); }
+
+
+  /* ---- Families Table ---- */
+  .families-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+  }
+
+  .families-table th, .families-table td {
+    padding: 0.65rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+
+  .families-table th {
+    color: var(--text-dim);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .families-table .count {
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-align: center;
+    width: 80px;
+  }
+
+
+  .families-table .total-row {
+    font-weight: 700;
+    border-top: 2px solid var(--border);
+  }
+
+
+  .separator {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  .footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Smooth matrix transition */
+  .matrix td, .matrix th {
+    transition: all 0.4s ease;
+  }
+
+  /* Block highlight overlay for partner view */
+  .block-highlight {
+    outline: 2px dashed;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <h1>4-Step Halved Rotated LOOP</h1>
+  <p class="subtitle">
+    Diamond mode. 29 canonical hand paths from 6 valid type pairings.
+    Each type has exactly one partner it can seed with.
+  </p>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card valid">
+      <div class="number">29</div>
+      <div class="label">Canonical hand paths</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="number">6 / 36</div>
+      <div class="label">Valid type pairs</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="number">3</div>
+      <div class="label">Partner groups</div>
+    </div>
+  </div>
+
+  <!-- Enumeration Funnel -->
+  <h2>Enumeration Funnel</h2>
+  <p class="section-intro">
+    How the 576 possible transitions narrow to 29 canonical hand paths.
+  </p>
+
+  <table class="families-table">
+    <thead>
+      <tr><th>Stage</th><th style="text-align:center">Count</th><th>What happens</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>CSV edges</td>
+        <td class="count" style="color: var(--text-dim);">576</td>
+        <td style="color: var(--text-dim);">All possible single-step transitions in diamond mode</td>
+      </tr>
+      <tr>
+        <td>DFS paths hitting 180&deg; endpoint</td>
+        <td class="count" style="color: var(--text-dim);">108</td>
+        <td style="color: var(--text-dim);">36 from alpha, 36 from beta, 36 from gamma</td>
+      </tr>
+      <tr>
+        <td>After seed-word dedup</td>
+        <td class="count" style="color: var(--accent);">47</td>
+        <td style="color: var(--text-dim);">Same letter pair from same start = one seed</td>
+      </tr>
+      <tr>
+        <td>After LOOP execution + reversal filter</td>
+        <td class="count" style="color: var(--accent);">47</td>
+        <td style="color: var(--text-dim);">All seeds survive (no reversals in halved rotated)</td>
+      </tr>
+      <tr>
+        <td>After canonical fingerprinting</td>
+        <td class="count" style="color: var(--valid);">29</td>
+        <td style="color: var(--text-dim);">Collapse circular rotation, direction mirror, color swap</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="section-intro" style="margin-top: 1rem;">
+    Per start position: alpha1 &rarr; 13 seeds, beta5 &rarr; 13 seeds, gamma11 &rarr; 21 seeds.
+    16 of the 29 canonical paths also appear in VTG motion decks (all Dual-Shift + Dual-Shift).
+  </p>
+
+  <!-- Matrix -->
+  <h2>Compatibility Matrix</h2>
+  <p class="section-intro">
+    Which type can pair with which. 6 valid combinations out of 36 possible.
+  </p>
+
+  <div class="matrix-wrap">
+    <table class="matrix" id="compat-matrix">
+      <!-- Rendered by JS -->
+    </table>
+  </div>
+
+  <hr class="separator">
+
+  <!-- Partner Groups -->
+  <h2>Partner Groups</h2>
+
+  <div class="partners">
+
+    <div class="partner-card p-self">
+      <div class="count-badge">18</div>
+      <div class="pair-label">Self-Partners</div>
+      <div class="types">1 + 1 &nbsp;&bull;&nbsp; 4 + 4</div>
+      <div class="why">
+        Stay in alpha/beta. Repeat the same type twice to get back.
+        18 canonical paths.
+      </div>
+    </div>
+
+    <div class="partner-card p-bridge">
+      <div class="count-badge">8</div>
+      <div class="pair-label">Bridge Partners</div>
+      <div class="types">2 + 3 &nbsp;&bull;&nbsp; 3 + 2</div>
+      <div class="why">
+        Cross between {alpha, beta} and gamma.
+        One goes out, the other comes back. 8 canonical paths.
+      </div>
+    </div>
+
+    <div class="partner-card p-anchor">
+      <div class="count-badge">6</div>
+      <div class="pair-label">Anchor Partners</div>
+      <div class="types">5 + 6 &nbsp;&bull;&nbsp; 6 + 5</div>
+      <div class="why">
+        Both preserve position families. Complement each other
+        at the grid position level. 3 canonical paths each direction.
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="separator">
+
+  <!-- Position Family Transitions -->
+  <h2>Position Neighborhoods</h2>
+  <p class="section-intro">
+    Every letter type has fixed rules about which neighborhoods it can travel between.
+    These hold for all letters within a type, all grid positions, all turn values.
+    Everything above is derived from this table.
+  </p>
+
+  <table class="transitions-table">
+    <thead>
+      <tr><th>Type</th><th>Name</th><th>Where It Goes</th><th>Partner</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="type-num">1</td>
+        <td class="type-name">Dual-Shift</td>
+        <td>
+          <span class="transition-tag tag-inner">alpha &rarr; alpha</span>
+          <span class="transition-tag tag-inner">alpha &harr; beta</span>
+          <span class="transition-tag tag-inner">beta &rarr; beta</span>
+          <span class="transition-tag tag-stay">gamma &rarr; gamma</span>
+        </td>
+        <td><span class="partner-indicator pi-self">itself</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">2</td>
+        <td class="type-name">Shift</td>
+        <td>
+          <span class="transition-tag tag-bridge">alpha &rarr; gamma</span>
+          <span class="transition-tag tag-bridge">beta &rarr; gamma</span>
+          <span class="transition-tag tag-bridge">gamma &rarr; alpha</span>
+          <span class="transition-tag tag-bridge">gamma &rarr; beta</span>
+        </td>
+        <td><span class="partner-indicator pi-bridge">Type 3</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">3</td>
+        <td class="type-name">Cross-Shift</td>
+        <td>
+          <span class="transition-tag tag-bridge">alpha &rarr; gamma</span>
+          <span class="transition-tag tag-bridge">beta &rarr; gamma</span>
+          <span class="transition-tag tag-bridge">gamma &rarr; alpha</span>
+          <span class="transition-tag tag-bridge">gamma &rarr; beta</span>
+        </td>
+        <td><span class="partner-indicator pi-bridge">Type 2</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">4</td>
+        <td class="type-name">Dash</td>
+        <td>
+          <span class="transition-tag tag-inner">alpha &harr; beta</span>
+          <span class="transition-tag tag-stay">gamma &rarr; gamma</span>
+        </td>
+        <td><span class="partner-indicator pi-self">itself</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">5</td>
+        <td class="type-name">Dual-Dash</td>
+        <td>
+          <span class="transition-tag tag-stay">alpha &rarr; alpha</span>
+          <span class="transition-tag tag-stay">beta &rarr; beta</span>
+          <span class="transition-tag tag-stay">gamma &rarr; gamma</span>
+        </td>
+        <td><span class="partner-indicator pi-anchor">Type 6</span></td>
+      </tr>
+      <tr>
+        <td class="type-num">6</td>
+        <td class="type-name">Static</td>
+        <td>
+          <span class="transition-tag tag-stay">alpha &rarr; alpha</span>
+          <span class="transition-tag tag-stay">beta &rarr; beta</span>
+          <span class="transition-tag tag-stay">gamma &rarr; gamma</span>
+        </td>
+        <td><span class="partner-indicator pi-anchor">Type 5</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="separator">
+
+  <!-- Breakdown -->
+  <h2>Breakdown by Partner Group</h2>
+
+  <table class="families-table">
+    <thead>
+      <tr><th>Types</th><th>Family</th><th style="text-align:center">Paths</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="font-family: monospace; color: var(--pair-self);">1 + 1</td>
+        <td>Dual-Shift + Dual-Shift</td>
+        <td class="count" style="color: var(--pair-self);">16</td>
+      </tr>
+      <tr>
+        <td style="font-family: monospace; color: var(--pair-bridge);">2 + 3</td>
+        <td>Shift + Cross-Shift</td>
+        <td class="count" style="color: var(--pair-bridge);">4</td>
+      </tr>
+      <tr>
+        <td style="font-family: monospace; color: var(--pair-bridge);">3 + 2</td>
+        <td>Cross-Shift + Shift</td>
+        <td class="count" style="color: var(--pair-bridge);">4</td>
+      </tr>
+      <tr>
+        <td style="font-family: monospace; color: var(--pair-self);">4 + 4</td>
+        <td>Dash + Dash</td>
+        <td class="count" style="color: var(--pair-self);">2</td>
+      </tr>
+      <tr>
+        <td style="font-family: monospace; color: var(--pair-anchor);">5 + 6</td>
+        <td>Dual-Dash + Static</td>
+        <td class="count" style="color: var(--pair-anchor);">3</td>
+      </tr>
+      <tr>
+        <td style="font-family: monospace; color: var(--pair-anchor);">6 + 5</td>
+        <td>Static + Dual-Dash</td>
+        <td class="count" style="color: var(--pair-anchor);">3</td>
+      </tr>
+      <tr class="total-row">
+        <td></td>
+        <td>Total</td>
+        <td class="count" style="color: var(--valid);">29</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="section-intro" style="margin-top: 1.5rem;">
+    16 of the Dual-Shift paths also appear in VTG motion decks. The remaining 13 are unique to this catalog.
+  </p>
+
+  <hr class="separator">
+
+  <!-- All 29 Paths -->
+  <h2>All 29 Canonical Paths</h2>
+  <p class="section-intro">
+    Each row is one card in the deck. Seed = the 2-step word that gets rotated 180&deg; to produce the full 4-step LOOP.
+    Variants = how many raw sequences collapsed into this canonical path.
+  </p>
+
+  <table class="families-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Seed</th>
+        <th>Type Family</th>
+        <th>Start</th>
+        <th style="text-align:center">Variants</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td style="font-family:monospace;">A</td><td style="color:var(--pair-self);">DS + DS</td><td>alpha1</td><td class="count">1</td></tr>
+      <tr><td>2</td><td style="font-family:monospace;">B</td><td style="color:var(--pair-self);">DS + DS</td><td>alpha1</td><td class="count">1</td></tr>
+      <tr><td>3</td><td style="font-family:monospace;">C</td><td style="color:var(--pair-self);">DS + DS</td><td>alpha1</td><td class="count">1</td></tr>
+      <tr><td>4</td><td style="font-family:monospace;">G</td><td style="color:var(--pair-self);">DS + DS</td><td>beta5</td><td class="count">1</td></tr>
+      <tr><td>5</td><td style="font-family:monospace;">H</td><td style="color:var(--pair-self);">DS + DS</td><td>beta5</td><td class="count">1</td></tr>
+      <tr><td>6</td><td style="font-family:monospace;">I</td><td style="color:var(--pair-self);">DS + DS</td><td>beta5</td><td class="count">1</td></tr>
+      <tr><td>7</td><td style="font-family:monospace;">JD</td><td style="color:var(--pair-self);">DS + DS</td><td>alpha1</td><td class="count">2</td></tr>
+      <tr><td>8</td><td style="font-family:monospace;">KE</td><td style="color:var(--pair-self);">DS + DS</td><td>alpha1</td><td class="count">2</td></tr>
+      <tr><td>9</td><td style="font-family:monospace;">LF</td><td style="color:var(--pair-self);">DS + DS</td><td>alpha1</td><td class="count">2</td></tr>
+      <tr><td>10</td><td style="font-family:monospace;">MP</td><td style="color:var(--pair-self);">DS + DS</td><td>gamma11</td><td class="count">2</td></tr>
+      <tr><td>11</td><td style="font-family:monospace;">NQ</td><td style="color:var(--pair-self);">DS + DS</td><td>gamma11</td><td class="count">2</td></tr>
+      <tr><td>12</td><td style="font-family:monospace;">OR</td><td style="color:var(--pair-self);">DS + DS</td><td>gamma11</td><td class="count">2</td></tr>
+      <tr><td>13</td><td style="font-family:monospace;">S</td><td style="color:var(--pair-self);">DS + DS</td><td>gamma11</td><td class="count">1</td></tr>
+      <tr><td>14</td><td style="font-family:monospace;">T</td><td style="color:var(--pair-self);">DS + DS</td><td>gamma11</td><td class="count">1</td></tr>
+      <tr><td>15</td><td style="font-family:monospace;">U</td><td style="color:var(--pair-self);">DS + DS</td><td>gamma11</td><td class="count">1</td></tr>
+      <tr><td>16</td><td style="font-family:monospace;">V</td><td style="color:var(--pair-self);">DS + DS</td><td>gamma11</td><td class="count">1</td></tr>
+      <tr style="border-top:1px solid var(--border);"><td>17</td><td style="font-family:monospace;">&Sigma;W-</td><td style="color:var(--pair-bridge);">Sh + CS</td><td>alpha1</td><td class="count">2</td></tr>
+      <tr><td>18</td><td style="font-family:monospace;">&Delta;X-</td><td style="color:var(--pair-bridge);">Sh + CS</td><td>alpha1</td><td class="count">2</td></tr>
+      <tr><td>19</td><td style="font-family:monospace;">&Theta;Y-</td><td style="color:var(--pair-bridge);">Sh + CS</td><td>beta5</td><td class="count">2</td></tr>
+      <tr><td>20</td><td style="font-family:monospace;">&Omega;Z-</td><td style="color:var(--pair-bridge);">Sh + CS</td><td>beta5</td><td class="count">2</td></tr>
+      <tr style="border-top:1px solid var(--border);"><td>21</td><td style="font-family:monospace;">&Theta;-W</td><td style="color:var(--pair-bridge);">CS + Sh</td><td>alpha1</td><td class="count">2</td></tr>
+      <tr><td>22</td><td style="font-family:monospace;">&Omega;-X</td><td style="color:var(--pair-bridge);">CS + Sh</td><td>alpha1</td><td class="count">2</td></tr>
+      <tr><td>23</td><td style="font-family:monospace;">&Sigma;-Y</td><td style="color:var(--pair-bridge);">CS + Sh</td><td>beta5</td><td class="count">2</td></tr>
+      <tr><td>24</td><td style="font-family:monospace;">&Delta;-Z</td><td style="color:var(--pair-bridge);">CS + Sh</td><td>beta5</td><td class="count">2</td></tr>
+      <tr style="border-top:1px solid var(--border);"><td>25</td><td style="font-family:monospace;">&Lambda;</td><td style="color:var(--pair-self);">Da + Da</td><td>gamma11</td><td class="count">1</td></tr>
+      <tr><td>26</td><td style="font-family:monospace;">&Psi;&Phi;</td><td style="color:var(--pair-self);">Da + Da</td><td>alpha1</td><td class="count">2</td></tr>
+      <tr style="border-top:1px solid var(--border);"><td>27</td><td style="font-family:monospace;">&Phi;-&alpha;</td><td style="color:var(--pair-anchor);">DD + St</td><td>alpha1</td><td class="count">2</td></tr>
+      <tr><td>28</td><td style="font-family:monospace;">&Psi;-&beta;</td><td style="color:var(--pair-anchor);">DD + St</td><td>beta5</td><td class="count">2</td></tr>
+      <tr><td>29</td><td style="font-family:monospace;">&Lambda;-&gamma;</td><td style="color:var(--pair-anchor);">DD + St</td><td>gamma11</td><td class="count">2</td></tr>
+    </tbody>
+  </table>
+
+  <hr class="separator">
+
+  <div class="footer">
+    Halved LOOP Type Compatibility &mdash; Diamond grid, 4-step, 2-step seeds<br>
+    Part of the <a href="/reference/" style="color: var(--accent); text-decoration: none;">LOOP Generation Reference</a> series
+  </div>
+
+</div>
+
+<script>
+const TYPES = [
+  { num: 1, name: 'Dual-Shift', abbr: 'DS' },
+  { num: 2, name: 'Shift',      abbr: 'Sh' },
+  { num: 3, name: 'Cross-Shift',abbr: 'CS' },
+  { num: 4, name: 'Dash',       abbr: 'Da' },
+  { num: 5, name: 'Dual-Dash',  abbr: 'DD' },
+  { num: 6, name: 'Static',     abbr: 'St' },
+];
+
+const VALID_PAIRS = new Set([
+  '1,1', '2,3', '3,2', '4,4', '5,6', '6,5'
+]);
+
+function pairGlowClass(r, c) {
+  const key = `${r},${c}`;
+  if (key === '1,1' || key === '4,4') return 'pair-self-glow';
+  if (key === '2,3' || key === '3,2') return 'pair-bridge-glow';
+  if (key === '5,6' || key === '6,5') return 'pair-anchor-glow';
+  return '';
+}
+
+(function renderMatrix() {
+  const table = document.getElementById('compat-matrix');
+  let html = '<tr>';
+  html += '<th class="corner"><span class="t1-label">Step 1 &darr;</span><span class="t2-label">Step 2 &rarr;</span></th>';
+  for (const t of TYPES) {
+    html += `<th class="col-header">${t.num}<br>${t.abbr}</th>`;
+  }
+  html += '</tr>';
+
+  for (const rt of TYPES) {
+    html += '<tr>';
+    html += `<th class="row-header">${rt.num} ${rt.name}</th>`;
+    for (const ct of TYPES) {
+      const key = `${rt.num},${ct.num}`;
+      if (VALID_PAIRS.has(key)) {
+        html += `<td class="cell-valid ${pairGlowClass(rt.num, ct.num)}">&#10003;</td>`;
+      } else {
+        html += '<td class="cell-invalid">&middot;</td>';
+      }
+    }
+    html += '</tr>';
+  }
+  table.innerHTML = html;
+})();
+</script>
+
+</body>
+</html>

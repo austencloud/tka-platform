@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TnD Reversal Pattern Playground</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #111;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    gap: 24px;
+  }
+  h1 { font-size: 20px; font-weight: 600; color: #fff; }
+  h2 { font-size: 14px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .layout {
+    display: flex;
+    gap: 32px;
+    width: 100%;
+    max-width: 1200px;
+  }
+  .left-panel { flex: 0 0 280px; display: flex; flex-direction: column; gap: 20px; }
+  .right-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+  /* Step count buttons */
+  .step-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+  .step-btn {
+    padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); color: #ccc; font-size: 13px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .step-btn:hover { background: rgba(255,255,255,0.1); }
+  .step-btn.active { background: rgba(99,102,241,0.4); color: #fff; border-color: rgba(99,102,241,0.6); }
+
+  /* Preset buttons */
+  .preset-buttons { display: flex; flex-direction: column; gap: 4px; }
+  .preset-btn {
+    padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03); color: #bbb; font-size: 12px; cursor: pointer;
+    text-align: left; transition: all 0.15s;
+  }
+  .preset-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .preset-btn.active { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.4); color: #fff; }
+
+  /* 2x2 coarse matrix */
+  .coarse-matrix {
+    display: grid; grid-template-columns: auto 1fr 1fr; grid-template-rows: auto 1fr 1fr;
+    gap: 3px; font-size: 11px;
+  }
+  .coarse-matrix .corner { }
+  .coarse-matrix .col-header {
+    text-align: center; padding: 4px 6px; color: #888; font-size: 10px;
+  }
+  .coarse-matrix .row-header {
+    writing-mode: vertical-lr; transform: rotate(180deg);
+    text-align: center; padding: 4px 2px; color: #888; font-size: 10px;
+  }
+  .coarse-cell {
+    padding: 10px 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03); cursor: pointer; text-align: center;
+    font-size: 11px; color: #aaa; transition: all 0.15s;
+  }
+  .coarse-cell:hover { background: rgba(255,255,255,0.08); }
+  .coarse-cell.active { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.5); color: #fff; }
+
+  /* Timeline grid */
+  .timeline-container { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 20px; }
+  .timeline-grid {
+    display: grid; gap: 4px; align-items: center;
+  }
+  .timeline-label {
+    font-size: 12px; font-weight: 600; padding-right: 12px; text-align: right; white-space: nowrap;
+  }
+  .timeline-label.blue { color: #4a7fb5; }
+  .timeline-label.red { color: #f2673a; }
+  .step-header {
+    font-size: 10px; color: #666; text-align: center; padding-bottom: 4px;
+  }
+  .timeline-cell {
+    width: 100%; min-width: 48px; height: 56px;
+    border-radius: 8px; border: 2px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.02); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; transition: all 0.2s; position: relative; user-select: none;
+  }
+  .timeline-cell:hover { border-color: rgba(255,255,255,0.2); }
+  .timeline-cell.blue.active {
+    background: rgba(74,127,181,0.25); border-color: rgba(74,127,181,0.6);
+  }
+  .timeline-cell.red.active {
+    background: rgba(242,103,58,0.25); border-color: rgba(242,103,58,0.6);
+  }
+  .cell-arrow {
+    font-size: 22px; transition: transform 0.3s ease;
+  }
+  .cell-arrow.cw { transform: scaleX(1); }
+  .cell-arrow.ccw { transform: scaleX(-1); }
+  .cell-rev-label {
+    font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; color: #666;
+  }
+  .timeline-cell.active .cell-rev-label { color: #fff; font-weight: 600; }
+
+  /* Pattern string */
+  .pattern-string {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 18px; letter-spacing: 6px; text-align: center;
+    padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px;
+    margin-top: 8px;
+  }
+  .pat-char { display: inline-block; min-width: 20px; text-align: center; }
+  .pat-char.pair { color: #c084fc; }
+  .pat-char.blue-only { color: #4a7fb5; }
+  .pat-char.red-only { color: #f2673a; }
+  .pat-char.none { color: #444; }
+
+  /* Stats */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .stat-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-value { font-size: 16px; font-weight: 600; margin-top: 2px; }
+  .stat-value.valid { color: #4ade80; }
+  .stat-value.invalid { color: #f87171; }
+
+  /* Prompt output */
+  .prompt-container {
+    background: rgba(0,0,0,0.3); border-radius: 8px; padding: 16px;
+    border: 1px solid rgba(255,255,255,0.06); position: relative;
+  }
+  .prompt-text {
+    font-size: 13px; line-height: 1.5; color: #ccc;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    white-space: pre-wrap;
+  }
+  .copy-btn {
+    position: absolute; top: 10px; right: 10px;
+    padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); color: #aaa; font-size: 11px; cursor: pointer;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+  .section { display: flex; flex-direction: column; gap: 6px; }
+
+  /* Validity badge */
+  .validity-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+  }
+  .validity-badge.valid { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .validity-badge.boundary { background: rgba(250,204,21,0.15); color: #facc15; }
+</style>
+</head>
+<body>
+
+<h1>TnD Reversal Pattern Playground</h1>
+
+<div class="layout">
+  <div class="left-panel">
+    <div class="section">
+      <h2>Steps</h2>
+      <div class="step-buttons" id="stepButtons"></div>
+    </div>
+
+    <div class="section">
+      <h2>Quick Select</h2>
+      <div class="coarse-matrix">
+        <div class="corner"></div>
+        <div class="col-header">Blue Cont.</div>
+        <div class="col-header">Blue Rev.</div>
+        <div class="row-header">Red Cont.</div>
+        <div class="coarse-cell" onclick="applyCoarse('continuous')" id="coarse-cc">Continuous</div>
+        <div class="coarse-cell" onclick="applyCoarse('blue-book')" id="coarse-bc">Blue Book</div>
+        <div class="row-header">Red Rev.</div>
+        <div class="coarse-cell" onclick="applyCoarse('red-book')" id="coarse-cr">Red Book</div>
+        <div class="coarse-cell" onclick="applyCoarse('book')" id="coarse-br">Book</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Presets</h2>
+      <div class="preset-buttons" id="presetButtons"></div>
+    </div>
+
+    <div class="section">
+      <button class="preset-btn" onclick="clearAll()" style="text-align:center; color:#f87171;">Clear All</button>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="timeline-container">
+      <h2>Timeline Grid <span id="validityBadge" class="validity-badge valid">LOOP Valid</span></h2>
+      <div class="timeline-grid" id="timelineGrid"></div>
+      <div class="pattern-string" id="patternString"></div>
+    </div>
+
+    <div class="section">
+      <h2>Stats</h2>
+      <div class="stats-grid" id="statsGrid"></div>
+    </div>
+
+    <div class="section">
+      <h2>Prompt</h2>
+      <div class="prompt-container">
+        <button class="copy-btn" onclick="copyPrompt()">Copy</button>
+        <div class="prompt-text" id="promptText"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRESETS = {
+  'continuous':   { label: 'Continuous',   blue: '----', red: '----' },
+  'book':         { label: 'Book',         blue: 'XXXX', red: 'XXXX' },
+  'red-book':     { label: 'Red Book',     blue: '----', red: 'XXXX' },
+  'blue-book':    { label: 'Blue Book',    blue: 'XXXX', red: '----' },
+  'long-book':    { label: 'Long Book',    blue: 'X-X-', red: 'X-X-' },
+  'alternating':  { label: 'Alternating',  blue: '-X-X', red: 'X-X-' },
+};
+
+const COARSE_MAP = {
+  'continuous': 'coarse-cc',
+  'blue-book':  'coarse-bc',
+  'red-book':   'coarse-cr',
+  'book':       'coarse-br',
+};
+
+const STEP_COUNTS = [4, 6, 8, 12, 16];
+
+const state = {
+  stepCount: 4,
+  blue: [],  // boolean[] — true = reversal at this step
+  red: [],
+};
+
+function init() {
+  renderStepButtons();
+  renderPresetButtons();
+  setStepCount(4);
+  applyPreset('continuous');
+}
+
+function renderStepButtons() {
+  const container = document.getElementById('stepButtons');
+  container.innerHTML = STEP_COUNTS.map(n =>
+    `<button class="step-btn ${n === state.stepCount ? 'active' : ''}" onclick="setStepCount(${n})">${n}</button>`
+  ).join('');
+}
+
+function renderPresetButtons() {
+  const container = document.getElementById('presetButtons');
+  container.innerHTML = Object.entries(PRESETS).map(([id, p]) =>
+    `<button class="preset-btn" id="preset-${id}" onclick="applyPreset('${id}')">${p.label}</button>`
+  ).join('');
+}
+
+function setStepCount(n) {
+  state.stepCount = n;
+  state.blue = new Array(n).fill(false);
+  state.red = new Array(n).fill(false);
+  renderStepButtons();
+  updateAll();
+}
+
+function tilePattern(pat, length) {
+  const result = [];
+  for (let i = 0; i < length; i++) {
+    result.push(pat[i % pat.length] === 'X');
+  }
+  return result;
+}
+
+function applyPreset(id) {
+  const p = PRESETS[id];
+  if (!p) return;
+  state.blue = tilePattern(p.blue, state.stepCount);
+  state.red = tilePattern(p.red, state.stepCount);
+  highlightPreset(id);
+  updateAll();
+}
+
+function applyCoarse(id) {
+  applyPreset(id);
+}
+
+function clearAll() {
+  state.blue.fill(false);
+  state.red.fill(false);
+  highlightPreset('continuous');
+  updateAll();
+}
+
+function toggleCell(hand, step) {
+  state[hand][step] = !state[hand][step];
+  highlightPreset(detectPreset());
+  updateAll();
+}
+
+function highlightPreset(activeId) {
+  document.querySelectorAll('.preset-btn[id^="preset-"]').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.coarse-cell').forEach(cell => cell.classList.remove('active'));
+  if (activeId) {
+    const presetBtn = document.getElementById(`preset-${activeId}`);
+    if (presetBtn) presetBtn.classList.add('active');
+    const coarseId = COARSE_MAP[activeId];
+    if (coarseId) document.getElementById(coarseId)?.classList.add('active');
+  }
+}
+
+function getSpinDirection(hand, step) {
+  let dir = true; // true = CW
+  for (let i = 0; i <= step; i++) {
+    if (state[hand][i]) dir = !dir;
+  }
+  return dir;
+}
+
+function renderTimeline() {
+  const grid = document.getElementById('timelineGrid');
+  const n = state.stepCount;
+  grid.style.gridTemplateColumns = `60px repeat(${n}, 1fr)`;
+  grid.style.gridTemplateRows = 'auto auto auto';
+
+  let html = '';
+
+  // Step headers
+  html += '<div></div>';
+  for (let i = 0; i < n; i++) {
+    html += `<div class="step-header">Step ${i + 1}</div>`;
+  }
+
+  // Blue row
+  html += '<div class="timeline-label blue">Blue</div>';
+  for (let i = 0; i < n; i++) {
+    const active = state.blue[i];
+    const cw = getSpinDirection('blue', i);
+    const dirAfter = active ? !cw : cw;
+    html += `<div class="timeline-cell blue ${active ? 'active' : ''}" onclick="toggleCell('blue', ${i})">
+      <span class="cell-arrow ${cw ? 'cw' : 'ccw'}" style="color: ${active ? '#4a7fb5' : '#555'}">&#x21BB;</span>
+      <span class="cell-rev-label">${active ? 'REV' : ''}</span>
+    </div>`;
+  }
+
+  // Red row
+  html += '<div class="timeline-label red">Red</div>';
+  for (let i = 0; i < n; i++) {
+    const active = state.red[i];
+    const cw = getSpinDirection('red', i);
+    html += `<div class="timeline-cell red ${active ? 'active' : ''}" onclick="toggleCell('red', ${i})">
+      <span class="cell-arrow ${cw ? 'cw' : 'ccw'}" style="color: ${active ? '#f2673a' : '#555'}">&#x21BB;</span>
+      <span class="cell-rev-label">${active ? 'REV' : ''}</span>
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function getPatternString() {
+  const chars = [];
+  for (let i = 0; i < state.stepCount; i++) {
+    const b = state.blue[i];
+    const r = state.red[i];
+    if (b && r) chars.push({ char: 'P', cls: 'pair' });
+    else if (b) chars.push({ char: 'B', cls: 'blue-only' });
+    else if (r) chars.push({ char: 'R', cls: 'red-only' });
+    else chars.push({ char: '—', cls: 'none' });
+  }
+  return chars;
+}
+
+function renderPatternString() {
+  const container = document.getElementById('patternString');
+  const chars = getPatternString();
+  container.innerHTML = chars.map(c =>
+    `<span class="pat-char ${c.cls}">${c.char}</span>`
+  ).join('');
+}
+
+function countReversals(arr) {
+  return arr.filter(Boolean).length;
+}
+
+function hasOddReversals(hand) {
+  return countReversals(state[hand]) % 2 !== 0;
+}
+
+function getBoundaryInfo() {
+  const blueMismatch = hasOddReversals('blue');
+  const redMismatch = hasOddReversals('red');
+  return { blueMismatch, redMismatch, anyMismatch: blueMismatch || redMismatch };
+}
+
+function detectPeriod() {
+  const pat = getPatternString().map(c => c.char).join('');
+  for (let p = 1; p <= state.stepCount; p++) {
+    if (state.stepCount % p !== 0) continue;
+    const unit = pat.slice(0, p);
+    let match = true;
+    for (let i = p; i < pat.length; i += p) {
+      if (pat.slice(i, i + p) !== unit) { match = false; break; }
+    }
+    if (match) return p;
+  }
+  return state.stepCount;
+}
+
+function detectPreset() {
+  const pat = getPatternString().map(c => c.char).join('');
+  for (const [id, preset] of Object.entries(PRESETS)) {
+    const tiled = [];
+    for (let i = 0; i < state.stepCount; i++) {
+      const b = preset.blue[i % preset.blue.length] === 'X';
+      const r = preset.red[i % preset.red.length] === 'X';
+      if (b && r) tiled.push('P');
+      else if (b) tiled.push('B');
+      else if (r) tiled.push('R');
+      else tiled.push('—');
+    }
+    if (tiled.join('') === pat) return id;
+  }
+  return null;
+}
+
+function renderStats() {
+  const blueCount = countReversals(state.blue);
+  const redCount = countReversals(state.red);
+  const boundary = getBoundaryInfo();
+  const period = detectPeriod();
+  const preset = detectPreset();
+  const n = state.stepCount;
+
+  const badge = document.getElementById('validityBadge');
+  if (boundary.anyMismatch) {
+    badge.className = 'validity-badge boundary';
+    const hands = [boundary.blueMismatch && 'blue', boundary.redMismatch && 'red'].filter(Boolean).join('+');
+    badge.textContent = `↻ Boundary discontinuity (${hands})`;
+  } else {
+    badge.className = 'validity-badge valid';
+    badge.textContent = '✓ Clean loop boundary';
+  }
+
+  const blueEven = blueCount % 2 === 0;
+  const redEven = redCount % 2 === 0;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Blue Reversals</div>
+      <div class="stat-value" style="color: #4a7fb5">${blueCount} (${blueEven ? 'even ✓' : 'odd ✗'})</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Red Reversals</div>
+      <div class="stat-value" style="color: #f2673a">${redCount} (${redEven ? 'even ✓' : 'odd ✗'})</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Period</div>
+      <div class="stat-value">${period} step${period !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Boundary</div>
+      <div class="stat-value ${boundary.anyMismatch ? '' : 'valid'}">${boundary.anyMismatch ? 'Odd count = mismatch' : 'Even = clean loop'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pattern</div>
+      <div class="stat-value">${preset ? PRESETS[preset].label : 'Custom'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Combinatorial Space</div>
+      <div class="stat-value">${Math.pow(2, n)} × ${Math.pow(2, n)}</div>
+    </div>
+  `;
+}
+
+function renderPrompt() {
+  const preset = detectPreset();
+  const n = state.stepCount;
+  let text;
+
+  if (preset === 'continuous') {
+    text = `Use a continuous reversal pattern (no reversals) for a ${n}-step sequence.`;
+  } else if (preset) {
+    text = `Apply the "${PRESETS[preset].label}" reversal pattern to a ${n}-step sequence.`;
+  } else {
+    const blueSteps = state.blue.map((v, i) => v ? i + 1 : null).filter(Boolean);
+    const redSteps = state.red.map((v, i) => v ? i + 1 : null).filter(Boolean);
+    const parts = [];
+    if (blueSteps.length > 0) parts.push(`blue reverses at step${blueSteps.length > 1 ? 's' : ''} ${blueSteps.join(', ')}`);
+    else parts.push('blue stays continuous');
+    if (redSteps.length > 0) parts.push(`red reverses at step${redSteps.length > 1 ? 's' : ''} ${redSteps.join(', ')}`);
+    else parts.push('red stays continuous');
+    const period = detectPeriod();
+    text = `Apply a custom reversal pattern to a ${n}-step sequence: ${parts.join('; ')}. Period: ${period}.`;
+  }
+
+  const boundary = getBoundaryInfo();
+  if (boundary.anyMismatch) {
+    const parts = [];
+    if (boundary.blueMismatch) parts.push('blue');
+    if (boundary.redMismatch) parts.push('red');
+    text += `\nNote: ${parts.join(' and ')} ${parts.length > 1 ? 'have' : 'has'} an odd reversal count — prop won't return to starting direction at the loop boundary.`;
+  }
+
+  document.getElementById('promptText').textContent = text;
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+
+function updateAll() {
+  renderTimeline();
+  renderPatternString();
+  renderStats();
+  renderPrompt();
+}
+
+init();
+</script>
+</body>
+</html>

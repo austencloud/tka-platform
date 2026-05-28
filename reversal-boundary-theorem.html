@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reversal Boundary Rule — Visual Proof</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #0a0a0a;
+    color: #ddd;
+    padding: 32px 48px;
+    line-height: 1.6;
+  }
+  h1 { font-size: 22px; color: #fff; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #888; margin-bottom: 32px; }
+  h2 { font-size: 16px; color: #fff; margin: 32px 0 12px; }
+  p { font-size: 14px; color: #bbb; max-width: 720px; margin-bottom: 12px; }
+  .highlight { color: #fff; font-weight: 600; }
+  .blue { color: #4a7fb5; }
+  .red { color: #f2673a; }
+  .green { color: #4ade80; }
+
+  .theorem-box {
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.25);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 20px 0 32px;
+    max-width: 720px;
+  }
+  .theorem-box p { color: #ccc; margin-bottom: 0; }
+  .theorem-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: #4ade80; font-weight: 700; margin-bottom: 6px;
+  }
+
+  .retraction {
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    max-width: 720px;
+    margin: 16px 0;
+  }
+  .retraction-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: #f87171; font-weight: 700; margin-bottom: 6px;
+  }
+  .retraction p { color: #bbb; }
+
+  .examples { display: flex; flex-direction: column; gap: 16px; max-width: 900px; }
+  .example {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .example.clean { border-left: 3px solid #4ade80; }
+  .example.dirty { border-left: 3px solid #f87171; }
+
+  .example-label {
+    flex: 0 0 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .example-name { font-size: 14px; font-weight: 600; color: #fff; }
+  .example-counts { font-size: 11px; color: #888; }
+  .example-verdict {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; margin-top: 4px;
+  }
+  .example-verdict.clean { color: #4ade80; }
+  .example-verdict.dirty { color: #f87171; }
+
+  .loop-strip {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .step-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .step-num { font-size: 9px; color: #555; margin-bottom: 2px; }
+
+  .cell {
+    width: 48px; height: 32px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 1.5px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+  }
+  .cell.blue-rev {
+    background: rgba(74,127,181,0.2);
+    border-color: rgba(74,127,181,0.5);
+  }
+  .cell.red-rev {
+    background: rgba(242,103,58,0.2);
+    border-color: rgba(242,103,58,0.5);
+  }
+  .cell .arrow { font-size: 18px; }
+  .cell .arrow.cw { color: #555; }
+  .cell .arrow.ccw { color: #555; transform: scaleX(-1); }
+  .cell.blue-rev .arrow { color: #4a7fb5; }
+  .cell.red-rev .arrow { color: #f2673a; }
+
+  .boundary-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    margin: 0 4px;
+  }
+  .boundary-arrow {
+    font-size: 14px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+  }
+  .boundary-arrow.match { color: #4ade80; }
+  .boundary-arrow.mismatch { color: #f87171; }
+
+  .connector {
+    width: 6px; height: 2px;
+    background: rgba(255,255,255,0.1);
+    align-self: center;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin: 28px 0;
+  }
+
+  .mono { font-family: 'Cascadia Code', 'Fira Code', monospace; }
+
+  .why-box {
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    max-width: 720px;
+    margin: 16px 0;
+  }
+  .why-box p { color: #ccc; margin: 0 0 8px; }
+  .why-box p:last-child { margin: 0; }
+</style>
+</head>
+<body>
+
+<h1>Reversal Boundary Rule</h1>
+<div class="subtitle">Proven across 69,888 combinations using cumulative (physical) reversal model.</div>
+
+<div class="retraction">
+  <div class="retraction-label">Retraction</div>
+  <p>An earlier version of this page stated a different rule based on first/last step matching. That rule applied to the seeder's per-beat data model (each step independently assigned from original), not to physical reality. Prop reversal is cumulative: each reversal toggles from the running direction. The correct rule is parity.</p>
+</div>
+
+<div class="theorem-box">
+  <div class="theorem-label">The Rule</div>
+  <p>A reversal pattern produces a <span class="highlight">clean LOOP boundary</span> if and only if each hand has an <span class="highlight">even number of reversals</span>.</p>
+  <p style="margin-top:8px">Even count → prop returns to starting direction. Odd count → prop ends opposite. Always.</p>
+</div>
+
+<h2>Why?</h2>
+<div class="why-box">
+  <p>Each reversal is a toggle: CW→CCW or CCW→CW. Two toggles return to start. Three toggles don't. Four do. It's the same reason flipping a light switch an even number of times leaves the light in its original state.</p>
+  <p>This is independent of <em>which</em> steps are reversed. Only the <em>count</em> matters.</p>
+</div>
+
+<hr>
+
+<h2>4-Step Patterns — All Clean</h2>
+<p>Every named 4-step pattern has even reversal counts per hand. All loop seamlessly.</p>
+<div class="examples" id="clean4"></div>
+
+<hr>
+
+<h2>6-Step Patterns — Where Odd Counts Appear</h2>
+<p>Alternating and Long Book tile to 3 reversals per hand at 6 steps. Odd count = boundary mismatch. The prop ends spinning the wrong way.</p>
+<div class="examples" id="dirty6"></div>
+
+<hr>
+
+<h2>Step-by-Step: Alternating at 4 vs 6</h2>
+
+<div class="why-box">
+  <p><span class="highlight">4 steps (2 reversals each — even):</span></p>
+  <p class="mono" style="font-size:12px; line-height:2;">
+    Start: <span class="blue">blue=CW</span> <span class="red">red=CW</span><br>
+    Step 1 (R): <span class="blue">blue=CW</span> <span class="red">red=CCW</span> ← red flips<br>
+    Step 2 (B): <span class="blue">blue=CCW</span> <span class="red">red=CCW</span> ← blue flips<br>
+    Step 3 (R): <span class="blue">blue=CCW</span> <span class="red">red=CW</span> ← red flips back<br>
+    Step 4 (B): <span class="blue">blue=CW</span> <span class="red">red=CW</span> ← blue flips back<br>
+    → Loop: <span class="green">both CW = matches start ✓</span>
+  </p>
+</div>
+
+<div class="why-box">
+  <p><span class="highlight">6 steps (3 reversals each — odd):</span></p>
+  <p class="mono" style="font-size:12px; line-height:2;">
+    Start: <span class="blue">blue=CW</span> <span class="red">red=CW</span><br>
+    Step 1 (R): <span class="blue">blue=CW</span> <span class="red">red=CCW</span><br>
+    Step 2 (B): <span class="blue">blue=CCW</span> <span class="red">red=CCW</span><br>
+    Step 3 (R): <span class="blue">blue=CCW</span> <span class="red">red=CW</span><br>
+    Step 4 (B): <span class="blue">blue=CW</span> <span class="red">red=CW</span> ← looks good here...<br>
+    Step 5 (R): <span class="blue">blue=CW</span> <span class="red">red=CCW</span><br>
+    Step 6 (B): <span class="blue">blue=CCW</span> <span class="red">red=CCW</span><br>
+    → Loop: <span class="red">both CCW ≠ start CW ✗</span>
+  </p>
+</div>
+
+<hr>
+
+<h2>The Numbers</h2>
+<p>At every step count, exactly <span class="highlight">25%</span> of all possible patterns are LOOP-clean. Each hand independently has a 50% chance of even count (half of all subsets of N have even size). Two independent 50% events: 0.5 × 0.5 = 0.25.</p>
+
+<table style="border-collapse:collapse; margin:12px 0; font-size:13px;">
+  <tr style="color:#888;"><td style="padding:4px 16px;">Steps</td><td style="padding:4px 16px;">Total patterns</td><td style="padding:4px 16px;">Clean (even+even)</td><td style="padding:4px 16px;">%</td></tr>
+  <tr><td style="padding:4px 16px;">4</td><td style="padding:4px 16px;">256</td><td style="padding:4px 16px; color:#4ade80;">64</td><td style="padding:4px 16px;">25%</td></tr>
+  <tr><td style="padding:4px 16px;">6</td><td style="padding:4px 16px;">4,096</td><td style="padding:4px 16px; color:#4ade80;">1,024</td><td style="padding:4px 16px;">25%</td></tr>
+  <tr><td style="padding:4px 16px;">8</td><td style="padding:4px 16px;">65,536</td><td style="padding:4px 16px; color:#4ade80;">16,384</td><td style="padding:4px 16px;">25%</td></tr>
+</table>
+
+<script>
+function renderExample(container, name, blueStr, redStr, stepCount) {
+  const n = stepCount || blueStr.length;
+  const bluePat = [];
+  const redPat = [];
+  for (let i = 0; i < n; i++) {
+    bluePat.push(blueStr[i % blueStr.length] === 'X');
+    redPat.push(redStr[i % redStr.length] === 'X');
+  }
+  const blueCount = bluePat.filter(Boolean).length;
+  const redCount = redPat.filter(Boolean).length;
+  const clean = blueCount % 2 === 0 && redCount % 2 === 0;
+
+  // Cumulative spin directions
+  function cumSpins(pat) {
+    let dir = true;
+    return pat.map(rev => { if (rev) dir = !dir; return dir; });
+  }
+  const blueSpins = cumSpins(bluePat);
+  const redSpins = cumSpins(redPat);
+
+  const ex = document.createElement('div');
+  ex.className = `example ${clean ? 'clean' : 'dirty'}`;
+
+  const label = document.createElement('div');
+  label.className = 'example-label';
+  label.innerHTML = `
+    <div class="example-name">${name}</div>
+    <div class="example-counts">
+      <span class="blue">Blue: ${blueCount} (${blueCount%2===0?'even':'odd'})</span><br>
+      <span class="red">Red: ${redCount} (${redCount%2===0?'even':'odd'})</span>
+    </div>
+    <div class="example-verdict ${clean ? 'clean' : 'dirty'}">${clean ? '✓ Clean loop' : '✗ Mismatch'}</div>
+  `;
+  ex.appendChild(label);
+
+  const strip = document.createElement('div');
+  strip.className = 'loop-strip';
+
+  for (let i = 0; i < n; i++) {
+    if (i > 0) {
+      const conn = document.createElement('div');
+      conn.className = 'connector';
+      strip.appendChild(conn);
+    }
+    const col = document.createElement('div');
+    col.className = 'step-col';
+
+    const num = document.createElement('div');
+    num.className = 'step-num';
+    num.textContent = `${i + 1}`;
+    col.appendChild(num);
+
+    const bCell = document.createElement('div');
+    bCell.className = `cell ${bluePat[i] ? 'blue-rev' : ''}`;
+    const bArrow = document.createElement('span');
+    bArrow.className = `arrow ${blueSpins[i] ? 'cw' : 'ccw'}`;
+    bArrow.textContent = '↻';
+    bCell.appendChild(bArrow);
+    col.appendChild(bCell);
+
+    const rCell = document.createElement('div');
+    rCell.className = `cell ${redPat[i] ? 'red-rev' : ''}`;
+    const rArrow = document.createElement('span');
+    rArrow.className = `arrow ${redSpins[i] ? 'cw' : 'ccw'}`;
+    rArrow.textContent = '↻';
+    rCell.appendChild(rArrow);
+    col.appendChild(rCell);
+
+    strip.appendChild(col);
+  }
+
+  // Boundary
+  const bz = document.createElement('div');
+  bz.className = 'boundary-zone';
+  const bzLabel = document.createElement('div');
+  bzLabel.style.cssText = 'font-size:8px;color:#666;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;';
+  bzLabel.textContent = 'loop →';
+  bz.appendChild(bzLabel);
+
+  const blueClean = blueCount % 2 === 0;
+  const redClean = redCount % 2 === 0;
+
+  const bzB = document.createElement('div');
+  bzB.className = `boundary-arrow ${blueClean ? 'match' : 'mismatch'}`;
+  bzB.textContent = blueClean ? '✓' : '✗';
+  bz.appendChild(bzB);
+
+  const bzR = document.createElement('div');
+  bzR.className = `boundary-arrow ${redClean ? 'match' : 'mismatch'}`;
+  bzR.textContent = redClean ? '✓' : '✗';
+  bz.appendChild(bzR);
+
+  strip.appendChild(bz);
+  ex.appendChild(strip);
+  container.appendChild(ex);
+}
+
+// Clean 4-step
+const c4 = document.getElementById('clean4');
+renderExample(c4, 'Continuous', '----', '----');
+renderExample(c4, 'Book', 'XXXX', 'XXXX');
+renderExample(c4, 'Red Book', '----', 'XXXX');
+renderExample(c4, 'Blue Book', 'XXXX', '----');
+renderExample(c4, 'Long Book', 'X-X-', 'X-X-');
+renderExample(c4, 'Alternating', '-X-X', 'X-X-');
+
+// Dirty 6-step
+const d6 = document.getElementById('dirty6');
+renderExample(d6, 'Alternating (6)', '-X-X', 'X-X-', 6);
+renderExample(d6, 'Long Book (6)', 'X-X-', 'X-X-', 6);
+renderExample(d6, 'Continuous (6)', '----', '----', 6);
+renderExample(d6, 'Book (6)', 'XXXX', 'XXXX', 6);
+</script>
+
+</body>
+</html>

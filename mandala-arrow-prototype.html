@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mandala-Path Arrow Prototype — Real Tip Trajectories</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+  }
+
+  .controls {
+    background: #161b22;
+    border-right: 1px solid #30363d;
+    padding: 16px;
+    overflow-y: auto;
+    grid-row: 1 / -1;
+  }
+
+  h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #8b949e;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #30363d;
+  }
+
+  .control-group { margin-bottom: 16px; }
+  .control-group label {
+    display: block;
+    font-size: 11px;
+    color: #8b949e;
+    margin-bottom: 4px;
+  }
+
+  select, input[type="number"] {
+    width: 100%;
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+
+  .btn-group { display: flex; gap: 3px; flex-wrap: wrap; }
+  .btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: #30363d; }
+  .btn.active { background: #1f6feb; border-color: #388bfd; color: #fff; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .toggle-row label { margin: 0; flex: 1; }
+
+  .toggle {
+    width: 36px;
+    height: 20px;
+    background: #30363d;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle.on { background: #1f6feb; }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: #c9d1d9;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: left 0.2s;
+  }
+  .toggle.on::after { left: 18px; }
+
+  .info {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #8b949e;
+    margin-top: 8px;
+  }
+  .info strong { color: #c9d1d9; }
+
+  .preview {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .preview-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e6edf3;
+    text-align: center;
+  }
+
+  .preview-subtitle {
+    font-size: 12px;
+    color: #8b949e;
+    text-align: center;
+    margin-top: 2px;
+  }
+
+  .pictograph-grid {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .pictograph-frame {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+  }
+
+  .pictograph-frame .frame-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8b949e;
+    margin-bottom: 4px;
+  }
+
+  .pictograph-frame .frame-detail {
+    font-size: 10px;
+    color: #58a6ff;
+    margin-top: 4px;
+  }
+
+  .presets-bar {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .preset-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 4px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { background: #30363d; }
+  .preset-btn.active { background: #238636; border-color: #2ea043; color: #fff; }
+
+  .separator {
+    width: 100%;
+    height: 1px;
+    background: #30363d;
+    margin: 8px 0;
+  }
+
+  .verdict-bar {
+    background: #161b22;
+    border-top: 1px solid #30363d;
+    padding: 12px 20px;
+    grid-column: 2;
+    text-align: center;
+  }
+
+  .verdict-bar .label {
+    font-size: 11px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .verdict-bar .question {
+    font-size: 14px;
+    color: #e6edf3;
+    margin-top: 4px;
+  }
+
+  .scale-container {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 0;
+  }
+
+  .scale-label {
+    font-size: 12px;
+    color: #8b949e;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 4px;
+    background: #30363d;
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #1f6feb;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="controls">
+    <h2>Motion Controls</h2>
+
+    <div class="control-group">
+      <label>Presets</label>
+      <div class="presets-bar" id="presets"></div>
+    </div>
+
+    <div class="separator"></div>
+
+    <div class="control-group">
+      <label>Blue Hand</label>
+      <div class="row">
+        <div>
+          <label>Motion</label>
+          <select id="blueMotion">
+            <option value="pro">Pro</option>
+            <option value="anti">Anti</option>
+            <option value="dash">Dash</option>
+            <option value="static">Static</option>
+            <option value="float">Float</option>
+          </select>
+        </div>
+        <div>
+          <label>Turns</label>
+          <select id="blueTurns">
+            <option value="0">0</option>
+            <option value="0.5">0.5</option>
+            <option value="1" selected>1</option>
+            <option value="1.5">1.5</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div>
+          <label>From</label>
+          <select id="blueFrom">
+            <option value="n" selected>N</option>
+            <option value="ne">NE</option>
+            <option value="e">E</option>
+            <option value="se">SE</option>
+            <option value="s">S</option>
+            <option value="sw">SW</option>
+            <option value="w">W</option>
+            <option value="nw">NW</option>
+          </select>
+        </div>
+        <div>
+          <label>To</label>
+          <select id="blueTo">
+            <option value="n">N</option>
+            <option value="ne">NE</option>
+            <option value="e">E</option>
+            <option value="se">SE</option>
+            <option value="s" selected>S</option>
+            <option value="sw">SW</option>
+            <option value="w">W</option>
+            <option value="nw">NW</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div>
+          <label>Dir</label>
+          <select id="blueDir">
+            <option value="cw" selected>CW</option>
+            <option value="ccw">CCW</option>
+            <option value="noRotation">No Rot</option>
+          </select>
+        </div>
+        <div>
+          <label>Start Ori</label>
+          <select id="blueOri">
+            <option value="in">In</option>
+            <option value="out" selected>Out</option>
+            <option value="clock">Clock</option>
+            <option value="counter">Counter</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="separator"></div>
+
+    <div class="control-group">
+      <label>Red Hand</label>
+      <div class="row">
+        <div>
+          <label>Motion</label>
+          <select id="redMotion">
+            <option value="pro">Pro</option>
+            <option value="anti">Anti</option>
+            <option value="dash">Dash</option>
+            <option value="static">Static</option>
+            <option value="float">Float</option>
+          </select>
+        </div>
+        <div>
+          <label>Turns</label>
+          <select id="redTurns">
+            <option value="0">0</option>
+            <option value="0.5">0.5</option>
+            <option value="1" selected>1</option>
+            <option value="1.5">1.5</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div>
+          <label>From</label>
+          <select id="redFrom">
+            <option value="n">N</option>
+            <option value="ne">NE</option>
+            <option value="e">E</option>
+            <option value="se">SE</option>
+            <option value="s" selected>S</option>
+            <option value="sw">SW</option>
+            <option value="w">W</option>
+            <option value="nw">NW</option>
+          </select>
+        </div>
+        <div>
+          <label>To</label>
+          <select id="redTo">
+            <option value="n" selected>N</option>
+            <option value="ne">NE</option>
+            <option value="e">E</option>
+            <option value="se">SE</option>
+            <option value="s">S</option>
+            <option value="sw">SW</option>
+            <option value="w">W</option>
+            <option value="nw">NW</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div>
+          <label>Dir</label>
+          <select id="redDir">
+            <option value="cw" selected>CW</option>
+            <option value="ccw">CCW</option>
+            <option value="noRotation">No Rot</option>
+          </select>
+        </div>
+        <div>
+          <label>Start Ori</label>
+          <select id="redOri">
+            <option value="in">In</option>
+            <option value="out" selected>Out</option>
+            <option value="clock">Clock</option>
+            <option value="counter">Counter</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="separator"></div>
+
+    <h2>Display</h2>
+
+    <div class="control-group">
+      <div class="toggle-row">
+        <label>Blue tip 0 (thumb)</label>
+        <div class="toggle on" id="toggleBlueTip0" data-key="blueTip0"></div>
+      </div>
+      <div class="toggle-row">
+        <label>Blue tip 1 (pinky)</label>
+        <div class="toggle on" id="toggleBlueTip1" data-key="blueTip1"></div>
+      </div>
+      <div class="toggle-row">
+        <label>Red tip 0 (thumb)</label>
+        <div class="toggle on" id="toggleRedTip0" data-key="redTip0"></div>
+      </div>
+      <div class="toggle-row">
+        <label>Red tip 1 (pinky)</label>
+        <div class="toggle on" id="toggleRedTip1" data-key="redTip1"></div>
+      </div>
+      <div class="toggle-row">
+        <label>Show grid</label>
+        <div class="toggle on" id="toggleGrid" data-key="showGrid"></div>
+      </div>
+      <div class="toggle-row">
+        <label>Show hand positions</label>
+        <div class="toggle on" id="toggleHands" data-key="showHands"></div>
+      </div>
+      <div class="toggle-row">
+        <label>Show staff lines</label>
+        <div class="toggle" id="toggleStaff" data-key="showStaff"></div>
+      </div>
+      <div class="toggle-row">
+        <label>Arrowheads</label>
+        <div class="toggle on" id="toggleArrowheads" data-key="showArrowheads"></div>
+      </div>
+    </div>
+
+    <div class="info">
+      <strong>What you're seeing:</strong> Actual tip trajectories computed with the same math as MandalaGeometryCalculator. Each path = where one end of the staff really traces through space during one beat.
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview">
+    <div>
+      <div class="preview-title">Mandala-Path Arrows — Real Tip Trajectories</div>
+      <div class="preview-subtitle">These are the actual paths prop tips trace. Do they work as arrows?</div>
+    </div>
+
+    <div class="scale-container">
+      <span class="scale-label">Pictograph size:</span>
+      <input type="range" id="sizeSlider" min="120" max="400" value="220">
+      <span class="scale-label" id="sizeLabel">220px</span>
+    </div>
+
+    <div class="pictograph-grid" id="output"></div>
+  </div>
+
+  <div class="verdict-bar">
+    <div class="label">Core Question</div>
+    <div class="question">Do these computed tip paths look readable and useful as arrows at pictograph scale?</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXACT REIMPLEMENTATION of MandalaGeometryCalculator math
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const PI = Math.PI;
+const TWO_PI = 2 * PI;
+const HALF_PI = PI / 2;
+
+// Grid position angles — matches LOCATION_ANGLES in math-constants.ts
+const LOCATION_ANGLES = {
+  e: 0,
+  se: HALF_PI / 2,      // π/4 = 45°
+  s: HALF_PI,            // π/2 = 90°
+  sw: PI - HALF_PI / 2,  // 3π/4 = 135°
+  w: PI,                 // π = 180°
+  nw: PI + HALF_PI / 2,  // 5π/4 = 225°
+  n: -HALF_PI,           // -π/2 = 270°
+  ne: -HALF_PI / 2,      // -π/4 = 315°
+  c: 0,
+};
+
+const GRID_RADIUS = 80;
+const ENGINE_GRID_RADIUS = 150;
+const TIP_DX = 130;
+const SAMPLES_PER_BEAT = 64;
+
+// ─── Angle utilities ──────────────────────────────────────────────────────────
+
+function normalizeAnglePositive(angle) {
+  const norm = angle % TWO_PI;
+  return norm < 0 ? norm + TWO_PI : norm;
+}
+
+function normalizeAngleSigned(angle) {
+  const norm = normalizeAnglePositive(angle);
+  return norm > PI ? norm - TWO_PI : norm;
+}
+
+function lerpAngle(a, b, t) {
+  const d = normalizeAngleSigned(b - a);
+  return normalizeAnglePositive(a + d * t);
+}
+
+// ─── Orientation → angle ──────────────────────────────────────────────────────
+
+function resolveOrientationAngle(ori, centerAngle) {
+  switch (ori) {
+    case 'in':      return normalizeAnglePositive(centerAngle + PI);
+    case 'out':     return normalizeAnglePositive(centerAngle);
+    case 'clock':   return normalizeAnglePositive(centerAngle + HALF_PI);
+    case 'counter': return normalizeAnglePositive(centerAngle - HALF_PI);
+    default:        return normalizeAnglePositive(centerAngle);
+  }
+}
+
+function parseDirection(rotDir) {
+  if (rotDir === 'ccw' || rotDir === 'counter_clockwise') return -1;
+  return 1;
+}
+
+function isNoRotation(rotDir) {
+  return rotDir === 'noRotation' || rotDir === 'no_rotation';
+}
+
+// ─── Endpoint calculation ─────────────────────────────────────────────────────
+
+function calculateMotionEndpoints(motion) {
+  const startCenterAngle = LOCATION_ANGLES[motion.startLoc] ?? 0;
+  const targetCenterAngle = LOCATION_ANGLES[motion.endLoc] ?? 0;
+  const startStaffAngle = resolveOrientationAngle(motion.startOrientation, startCenterAngle);
+  const targetStaffAngle = resolveOrientationAngle(motion.endOrientation, targetCenterAngle);
+  const turns = motion.turns;
+  const dir = parseDirection(motion.rotDir);
+
+  let staffRotationDelta;
+
+  switch (motion.motionType) {
+    case 'pro': {
+      const centerMovement = normalizeAngleSigned(targetCenterAngle - startCenterAngle);
+      staffRotationDelta = centerMovement + dir * turns * PI;
+      break;
+    }
+    case 'anti': {
+      const centerMovement = normalizeAngleSigned(targetCenterAngle - startCenterAngle);
+      staffRotationDelta = -centerMovement + dir * turns * PI;
+      break;
+    }
+    case 'static': {
+      if (turns > 0 && !isNoRotation(motion.rotDir)) {
+        staffRotationDelta = dir * turns * PI;
+      } else {
+        staffRotationDelta = normalizeAngleSigned(targetStaffAngle - startStaffAngle);
+      }
+      break;
+    }
+    case 'dash': {
+      if (turns > 0) {
+        staffRotationDelta = dir * turns * PI;
+      } else {
+        staffRotationDelta = normalizeAngleSigned(targetStaffAngle - startStaffAngle);
+      }
+      break;
+    }
+    case 'float':
+    default:
+      staffRotationDelta = 0;
+  }
+
+  return {
+    startCenterAngle,
+    targetCenterAngle,
+    startStaffAngle,
+    staffRotationDelta,
+    motionType: motion.motionType,
+  };
+}
+
+// ─── Interpolation ────────────────────────────────────────────────────────────
+
+function interpolateLinear(startAngle, endAngle, t, staffAngle) {
+  const sx = Math.cos(startAngle);
+  const sy = Math.sin(startAngle);
+  const ex = Math.cos(endAngle);
+  const ey = Math.sin(endAngle);
+  return { x: sx + (ex - sx) * t, y: sy + (ey - sy) * t, staffAngle };
+}
+
+function interpolateConcave(startAngle, endAngle, t, staffAngle) {
+  const arcAngle = lerpAngle(startAngle, endAngle, t);
+  const circleX = Math.cos(arcAngle);
+  const circleY = Math.sin(arcAngle);
+  const sx = Math.cos(startAngle);
+  const sy = Math.sin(startAngle);
+  const ex = Math.cos(endAngle);
+  const ey = Math.sin(endAngle);
+  const straightX = sx + (ex - sx) * t;
+  const straightY = sy + (ey - sy) * t;
+  return { x: 2 * straightX - circleX, y: 2 * straightY - circleY, staffAngle };
+}
+
+function interpolate(endpoints, t, pathShape) {
+  const { startCenterAngle, targetCenterAngle, startStaffAngle, staffRotationDelta, motionType } = endpoints;
+  const staffAngle = normalizeAnglePositive(startStaffAngle + staffRotationDelta * t);
+
+  if (motionType === 'dash') {
+    return interpolateLinear(startCenterAngle, targetCenterAngle, t, staffAngle);
+  }
+  if (motionType === 'static') {
+    return { x: Math.cos(startCenterAngle), y: Math.sin(startCenterAngle), staffAngle };
+  }
+
+  switch (pathShape) {
+    case 'linear':
+      return interpolateLinear(startCenterAngle, targetCenterAngle, t, staffAngle);
+    case 'concave':
+      return interpolateConcave(startCenterAngle, targetCenterAngle, t, staffAngle);
+    case 'arc':
+    default: {
+      const angle = lerpAngle(startCenterAngle, targetCenterAngle, t);
+      return { x: Math.cos(angle), y: Math.sin(angle), staffAngle };
+    }
+  }
+}
+
+// ─── Tip position ─────────────────────────────────────────────────────────────
+
+function computeTipPosition(handPos, tipSign, gridRadius) {
+  const handX = handPos.x * gridRadius;
+  const handY = handPos.y * gridRadius;
+  const tipScale = gridRadius / ENGINE_GRID_RADIUS;
+  const dx = TIP_DX * tipSign * tipScale;
+  const cosA = Math.cos(handPos.staffAngle);
+  const sinA = Math.sin(handPos.staffAngle);
+  return {
+    x: handX + dx * cosA,
+    y: handY + dx * sinA,
+    handX, handY,
+    staffAngle: handPos.staffAngle,
+  };
+}
+
+// ─── Path shape resolution ────────────────────────────────────────────────────
+
+function resolvePathShape(motionType) {
+  if (motionType === 'pro') return 'arc';
+  if (motionType === 'anti') return 'concave';
+  return 'arc';
+}
+
+// ─── Generate tip path points ─────────────────────────────────────────────────
+
+function generateTipPath(motion, tipSign) {
+  const endpoints = calculateMotionEndpoints(motion);
+  const turns = motion.turns;
+  const samples = Math.max(SAMPLES_PER_BEAT, SAMPLES_PER_BEAT * Math.ceil(Math.max(1, turns)));
+  const pathShape = resolvePathShape(motion.motionType);
+  const points = [];
+  const handPoints = [];
+
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples;
+    const handPos = interpolate(endpoints, t, pathShape);
+    const tip = computeTipPosition(handPos, tipSign, GRID_RADIUS);
+    points.push({ x: tip.x, y: tip.y });
+    handPoints.push({ x: tip.handX, y: tip.handY, staffAngle: tip.staffAngle });
+  }
+
+  return { points, handPoints };
+}
+
+// ─── Catmull-Rom to SVG (same as original) ────────────────────────────────────
+
+function pointsToSVGPath(points) {
+  if (points.length < 2) return '';
+  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[Math.min(points.length - 1, i + 1)];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  return d;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UI STATE & RENDERING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const state = {
+  blue: { motionType: 'pro', turns: 1, startLoc: 'n', endLoc: 's', rotDir: 'cw', startOrientation: 'out', endOrientation: 'out' },
+  red:  { motionType: 'pro', turns: 1, startLoc: 's', endLoc: 'n', rotDir: 'cw', startOrientation: 'out', endOrientation: 'out' },
+  blueTip0: true,
+  blueTip1: true,
+  redTip0: true,
+  redTip1: true,
+  showGrid: true,
+  showHands: true,
+  showStaff: false,
+  showArrowheads: true,
+  size: 220,
+};
+
+const PRESETS = [
+  { name: 'Pro 1 (N↔S)', blue: { motionType:'pro', turns:1, startLoc:'n', endLoc:'s', rotDir:'cw', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'pro', turns:1, startLoc:'s', endLoc:'n', rotDir:'cw', startOrientation:'out', endOrientation:'out' }},
+  { name: 'Anti 1 (N↔S)', blue: { motionType:'anti', turns:1, startLoc:'n', endLoc:'s', rotDir:'cw', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'anti', turns:1, startLoc:'s', endLoc:'n', rotDir:'cw', startOrientation:'out', endOrientation:'out' }},
+  { name: 'Pro 2 (N→N)', blue: { motionType:'pro', turns:2, startLoc:'n', endLoc:'n', rotDir:'cw', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'pro', turns:2, startLoc:'s', endLoc:'s', rotDir:'cw', startOrientation:'out', endOrientation:'out' }},
+  { name: 'Dash (N↔S)', blue: { motionType:'dash', turns:0, startLoc:'n', endLoc:'s', rotDir:'noRotation', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'dash', turns:0, startLoc:'s', endLoc:'n', rotDir:'noRotation', startOrientation:'out', endOrientation:'out' }},
+  { name: 'Static 1', blue: { motionType:'static', turns:1, startLoc:'e', endLoc:'e', rotDir:'cw', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'static', turns:1, startLoc:'w', endLoc:'w', rotDir:'cw', startOrientation:'out', endOrientation:'out' }},
+  { name: 'Float (E↔W)', blue: { motionType:'float', turns:0, startLoc:'e', endLoc:'w', rotDir:'noRotation', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'float', turns:0, startLoc:'w', endLoc:'e', rotDir:'noRotation', startOrientation:'out', endOrientation:'out' }},
+  { name: 'Pro 0.5', blue: { motionType:'pro', turns:0.5, startLoc:'n', endLoc:'e', rotDir:'cw', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'pro', turns:0.5, startLoc:'s', endLoc:'w', rotDir:'cw', startOrientation:'out', endOrientation:'out' }},
+  { name: 'Anti 0.5', blue: { motionType:'anti', turns:0.5, startLoc:'n', endLoc:'e', rotDir:'cw', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'anti', turns:0.5, startLoc:'s', endLoc:'w', rotDir:'cw', startOrientation:'out', endOrientation:'out' }},
+  { name: 'Pro 3 (N→S)', blue: { motionType:'pro', turns:3, startLoc:'n', endLoc:'s', rotDir:'cw', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'pro', turns:3, startLoc:'s', endLoc:'n', rotDir:'cw', startOrientation:'out', endOrientation:'out' }},
+  { name: 'Mixed (pro+anti)', blue: { motionType:'pro', turns:1, startLoc:'n', endLoc:'s', rotDir:'cw', startOrientation:'out', endOrientation:'out' },
+    red: { motionType:'anti', turns:1, startLoc:'s', endLoc:'n', rotDir:'cw', startOrientation:'out', endOrientation:'out' }},
+];
+
+const BLUE_STROKE = '#3575E2';
+const RED_STROKE = '#ED1C24';
+
+function readControls() {
+  state.blue = {
+    motionType: document.getElementById('blueMotion').value,
+    turns: parseFloat(document.getElementById('blueTurns').value),
+    startLoc: document.getElementById('blueFrom').value,
+    endLoc: document.getElementById('blueTo').value,
+    rotDir: document.getElementById('blueDir').value,
+    startOrientation: document.getElementById('blueOri').value,
+    endOrientation: 'out',
+  };
+  state.red = {
+    motionType: document.getElementById('redMotion').value,
+    turns: parseFloat(document.getElementById('redTurns').value),
+    startLoc: document.getElementById('redFrom').value,
+    endLoc: document.getElementById('redTo').value,
+    rotDir: document.getElementById('redDir').value,
+    startOrientation: document.getElementById('redOri').value,
+    endOrientation: 'out',
+  };
+  state.size = parseInt(document.getElementById('sizeSlider').value);
+}
+
+function setControls(preset) {
+  const b = preset.blue;
+  const r = preset.red;
+  document.getElementById('blueMotion').value = b.motionType;
+  document.getElementById('blueTurns').value = b.turns;
+  document.getElementById('blueFrom').value = b.startLoc;
+  document.getElementById('blueTo').value = b.endLoc;
+  document.getElementById('blueDir').value = b.rotDir;
+  document.getElementById('blueOri').value = b.startOrientation;
+  document.getElementById('redMotion').value = r.motionType;
+  document.getElementById('redTurns').value = r.turns;
+  document.getElementById('redFrom').value = r.startLoc;
+  document.getElementById('redTo').value = r.endLoc;
+  document.getElementById('redDir').value = r.rotDir;
+  document.getElementById('redOri').value = r.startOrientation;
+}
+
+function renderPictograph(blueMotion, redMotion, size, label) {
+  // Compute bounding box from all visible tip paths
+  const paths = [];
+  const tipConfigs = [
+    { motion: blueMotion, tipSign: -1, key: 'blueTip0', color: BLUE_STROKE, label: 'Blue T0' },
+    { motion: blueMotion, tipSign:  1, key: 'blueTip1', color: BLUE_STROKE, label: 'Blue T1' },
+    { motion: redMotion,  tipSign: -1, key: 'redTip0',  color: RED_STROKE,  label: 'Red T0' },
+    { motion: redMotion,  tipSign:  1, key: 'redTip1',  color: RED_STROKE,  label: 'Red T1' },
+  ];
+
+  for (const cfg of tipConfigs) {
+    if (!state[cfg.key]) continue;
+    const result = generateTipPath(cfg.motion, cfg.tipSign);
+    paths.push({ ...cfg, ...result });
+  }
+
+  // Find bounding box
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  // Always include grid bounds
+  minX = Math.min(minX, -GRID_RADIUS * 1.1);
+  maxX = Math.max(maxX,  GRID_RADIUS * 1.1);
+  minY = Math.min(minY, -GRID_RADIUS * 1.1);
+  maxY = Math.max(maxY,  GRID_RADIUS * 1.1);
+
+  for (const p of paths) {
+    for (const pt of p.points) {
+      minX = Math.min(minX, pt.x);
+      maxX = Math.max(maxX, pt.x);
+      minY = Math.min(minY, pt.y);
+      maxY = Math.max(maxY, pt.y);
+    }
+  }
+
+  const pad = 15;
+  const vbX = minX - pad;
+  const vbY = minY - pad;
+  const vbW = (maxX - minX) + 2 * pad;
+  const vbH = (maxY - minY) + 2 * pad;
+
+  let svg = `<svg width="${size}" height="${size}" viewBox="${vbX.toFixed(1)} ${vbY.toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Grid
+  if (state.showGrid) {
+    const gridPositions = Object.entries(LOCATION_ANGLES);
+    // Diamond outline
+    const diamond = ['n', 'e', 's', 'w'].map(k => {
+      const a = LOCATION_ANGLES[k];
+      return `${(Math.cos(a) * GRID_RADIUS).toFixed(1)},${(Math.sin(a) * GRID_RADIUS).toFixed(1)}`;
+    }).join(' ');
+    svg += `<polygon points="${diamond}" fill="none" stroke="#21262d" stroke-width="0.8"/>`;
+
+    // Cross lines
+    const na = LOCATION_ANGLES['n'], sa = LOCATION_ANGLES['s'];
+    const ea = LOCATION_ANGLES['e'], wa = LOCATION_ANGLES['w'];
+    svg += `<line x1="${Math.cos(na)*GRID_RADIUS}" y1="${Math.sin(na)*GRID_RADIUS}" x2="${Math.cos(sa)*GRID_RADIUS}" y2="${Math.sin(sa)*GRID_RADIUS}" stroke="#21262d" stroke-width="0.5" opacity="0.5"/>`;
+    svg += `<line x1="${Math.cos(ea)*GRID_RADIUS}" y1="${Math.sin(ea)*GRID_RADIUS}" x2="${Math.cos(wa)*GRID_RADIUS}" y2="${Math.sin(wa)*GRID_RADIUS}" stroke="#21262d" stroke-width="0.5" opacity="0.5"/>`;
+
+    // Grid points
+    for (const [key, angle] of gridPositions) {
+      if (key === 'c') continue;
+      const gx = Math.cos(angle) * GRID_RADIUS;
+      const gy = Math.sin(angle) * GRID_RADIUS;
+      const isCardinal = ['n', 'e', 's', 'w'].includes(key);
+      svg += `<circle cx="${gx.toFixed(1)}" cy="${gy.toFixed(1)}" r="${isCardinal ? 2.5 : 1.5}" fill="#30363d" opacity="${isCardinal ? 0.7 : 0.4}"/>`;
+    }
+  }
+
+  // Staff lines at start/end
+  if (state.showStaff) {
+    for (const p of paths) {
+      if (p.handPoints.length < 2) continue;
+      // Start staff
+      const h0 = p.handPoints[0];
+      const tipScale = GRID_RADIUS / ENGINE_GRID_RADIUS;
+      const dx = TIP_DX * tipScale;
+      const sx1 = h0.x + dx * Math.cos(h0.staffAngle);
+      const sy1 = h0.y + dx * Math.sin(h0.staffAngle);
+      const sx2 = h0.x - dx * Math.cos(h0.staffAngle);
+      const sy2 = h0.y - dx * Math.sin(h0.staffAngle);
+      svg += `<line x1="${sx1.toFixed(1)}" y1="${sy1.toFixed(1)}" x2="${sx2.toFixed(1)}" y2="${sy2.toFixed(1)}" stroke="${p.color}" stroke-width="1.5" opacity="0.3" stroke-dasharray="3 2"/>`;
+
+      // End staff
+      const hN = p.handPoints[p.handPoints.length - 1];
+      const ex1 = hN.x + dx * Math.cos(hN.staffAngle);
+      const ey1 = hN.y + dx * Math.sin(hN.staffAngle);
+      const ex2 = hN.x - dx * Math.cos(hN.staffAngle);
+      const ey2 = hN.y - dx * Math.sin(hN.staffAngle);
+      svg += `<line x1="${ex1.toFixed(1)}" y1="${ey1.toFixed(1)}" x2="${ex2.toFixed(1)}" y2="${ey2.toFixed(1)}" stroke="${p.color}" stroke-width="1.5" opacity="0.5"/>`;
+    }
+  }
+
+  // Tip paths
+  for (const p of paths) {
+    const d = pointsToSVGPath(p.points);
+    if (!d) continue;
+
+    const isTip1 = p.tipSign > 0;
+    const opacity = 0.85;
+    const width = isTip1 ? 2.0 : 2.0;
+    const dashArray = isTip1 ? 'none' : 'none';
+
+    svg += `<path d="${d}" stroke="${p.color}" stroke-width="${width}" fill="none" opacity="${opacity}" stroke-linecap="round" stroke-dasharray="${dashArray}"/>`;
+
+    // Arrowhead at end
+    if (state.showArrowheads && p.points.length >= 2) {
+      const last = p.points[p.points.length - 1];
+      const prev = p.points[p.points.length - 3] || p.points[p.points.length - 2];
+      const angle = Math.atan2(last.y - prev.y, last.x - prev.x);
+      const headSize = 6;
+      const a1 = angle + PI * 0.8;
+      const a2 = angle - PI * 0.8;
+      svg += `<polygon points="${last.x.toFixed(1)},${last.y.toFixed(1)} ${(last.x + Math.cos(a1)*headSize).toFixed(1)},${(last.y + Math.sin(a1)*headSize).toFixed(1)} ${(last.x + Math.cos(a2)*headSize).toFixed(1)},${(last.y + Math.sin(a2)*headSize).toFixed(1)}" fill="${p.color}" opacity="${opacity}"/>`;
+    }
+
+    // Start dot
+    if (p.points.length > 0) {
+      svg += `<circle cx="${p.points[0].x.toFixed(1)}" cy="${p.points[0].y.toFixed(1)}" r="3" fill="${p.color}" opacity="0.5"/>`;
+    }
+  }
+
+  // Hand positions
+  if (state.showHands) {
+    // Blue hand start/end
+    const bStartAngle = LOCATION_ANGLES[blueMotion.startLoc] ?? 0;
+    const bEndAngle = LOCATION_ANGLES[blueMotion.endLoc] ?? 0;
+    svg += `<circle cx="${(Math.cos(bStartAngle)*GRID_RADIUS).toFixed(1)}" cy="${(Math.sin(bStartAngle)*GRID_RADIUS).toFixed(1)}" r="5" fill="${BLUE_STROKE}" opacity="0.8"/>`;
+    if (blueMotion.startLoc !== blueMotion.endLoc) {
+      svg += `<circle cx="${(Math.cos(bEndAngle)*GRID_RADIUS).toFixed(1)}" cy="${(Math.sin(bEndAngle)*GRID_RADIUS).toFixed(1)}" r="3.5" fill="${BLUE_STROKE}" opacity="0.5"/>`;
+    }
+
+    // Red hand start/end
+    const rStartAngle = LOCATION_ANGLES[redMotion.startLoc] ?? 0;
+    const rEndAngle = LOCATION_ANGLES[redMotion.endLoc] ?? 0;
+    svg += `<circle cx="${(Math.cos(rStartAngle)*GRID_RADIUS).toFixed(1)}" cy="${(Math.sin(rStartAngle)*GRID_RADIUS).toFixed(1)}" r="5" fill="${RED_STROKE}" opacity="0.8"/>`;
+    if (redMotion.startLoc !== redMotion.endLoc) {
+      svg += `<circle cx="${(Math.cos(rEndAngle)*GRID_RADIUS).toFixed(1)}" cy="${(Math.sin(rEndAngle)*GRID_RADIUS).toFixed(1)}" r="3.5" fill="${RED_STROKE}" opacity="0.5"/>`;
+    }
+  }
+
+  svg += '</svg>';
+  return svg;
+}
+
+function render() {
+  readControls();
+  document.getElementById('sizeLabel').textContent = state.size + 'px';
+
+  const output = document.getElementById('output');
+  let html = '';
+
+  // Main pictograph
+  const mainSvg = renderPictograph(state.blue, state.red, state.size, 'Custom');
+  html += `<div class="pictograph-frame">
+    <div class="frame-label">Current Configuration</div>
+    ${mainSvg}
+    <div class="frame-detail">${state.blue.motionType} ${state.blue.turns}t + ${state.red.motionType} ${state.red.turns}t</div>
+  </div>`;
+
+  // Also show at smaller sizes to test legibility
+  const smallSizes = [150, 100, 70];
+  html += '<div style="margin-top:16px"><div style="text-align:center;font-size:12px;color:#8b949e;margin-bottom:8px">Same paths at decreasing sizes (legibility test)</div>';
+  html += '<div style="display:flex;gap:12px;justify-content:center;align-items:flex-end;flex-wrap:wrap">';
+  for (const sz of smallSizes) {
+    const svg = renderPictograph(state.blue, state.red, sz, `${sz}px`);
+    html += `<div class="pictograph-frame">
+      <div class="frame-label">${sz}px</div>
+      ${svg}
+    </div>`;
+  }
+  html += '</div></div>';
+
+  output.innerHTML = html;
+}
+
+// ─── Event setup ──────────────────────────────────────────────────────────────
+
+function setup() {
+  // Presets
+  const presetsEl = document.getElementById('presets');
+  PRESETS.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = p.name;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      setControls(p);
+      render();
+    });
+    presetsEl.appendChild(btn);
+  });
+
+  // Selects
+  document.querySelectorAll('select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      render();
+    });
+  });
+
+  // Size slider
+  document.getElementById('sizeSlider').addEventListener('input', render);
+
+  // Toggles
+  document.querySelectorAll('.toggle').forEach(tog => {
+    tog.addEventListener('click', () => {
+      const key = tog.dataset.key;
+      state[key] = !state[key];
+      tog.classList.toggle('on', state[key]);
+      render();
+    });
+  });
+
+  render();
+}
+
+setup();
+</script>
+</body>
+</html>

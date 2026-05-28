@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TnD Elemental Card Front Playground</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #111;
+    color: #e0e0e0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+  }
+
+  .controls {
+    grid-row: 1 / 3;
+    background: #1a1a1a;
+    border-right: 1px solid #333;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .preview-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 24px;
+    overflow: auto;
+    flex-wrap: wrap;
+  }
+
+  .prompt-area {
+    background: #1a1a1a;
+    border-top: 1px solid #333;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .prompt-text {
+    flex: 1;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: #aaa;
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+
+  .copy-btn {
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { background: #444; }
+  .copy-btn.copied { background: #2a6; border-color: #2a6; }
+
+  h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    margin: 16px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  h2:first-child { margin-top: 0; }
+
+  .control-group {
+    margin-bottom: 12px;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 4px;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    accent-color: #888;
+    height: 4px;
+  }
+
+  .slider-val {
+    font-family: monospace;
+    font-size: 11px;
+    color: #777;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .preset-btn {
+    background: #252525;
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { background: #333; border-color: #666; }
+  .preset-btn.active { background: #335; border-color: #66a; color: #fff; }
+
+  .element-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .element-btn {
+    background: #252525;
+    border: 2px solid #444;
+    color: #ccc;
+    padding: 8px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    text-align: center;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .element-btn:hover { background: #333; }
+  .element-btn.active { background: #2a2a3a; }
+
+  .element-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #333;
+    margin: 16px 0;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: #333;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: none;
+    padding: 0;
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: #888;
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+  .toggle-switch.on { background: #446; }
+  .toggle-switch.on::after { left: 18px; background: #8af; }
+
+  .toggle-label {
+    font-size: 12px;
+    color: #bbb;
+  }
+
+  .card-label {
+    text-align: center;
+    font-size: 11px;
+    color: #888;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  .card-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="controls">
+    <h2>Element</h2>
+    <div class="element-grid" id="elementGrid"></div>
+
+    <h2>Preset</h2>
+    <div class="preset-grid" id="presetGrid"></div>
+
+    <hr class="divider">
+
+    <h2>Header Zone</h2>
+    <div class="control-group">
+      <label>Background opacity</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" id="headerBgOpacity">
+        <span class="slider-val" id="headerBgOpacityVal"></span>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Border thickness (px)</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="8" id="headerBorderPx">
+        <span class="slider-val" id="headerBorderPxVal"></span>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Border opacity</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" id="headerBorderOpacity">
+        <span class="slider-val" id="headerBorderOpacityVal"></span>
+      </div>
+    </div>
+
+    <h2>Footer Style</h2>
+    <div class="preset-grid" id="footerStyleGrid"></div>
+
+    <h2>Footer Zone</h2>
+    <div class="control-group">
+      <label>Background opacity</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" id="footerBgOpacity">
+        <span class="slider-val" id="footerBgOpacityVal"></span>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Border thickness (px)</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="8" id="footerBorderPx">
+        <span class="slider-val" id="footerBorderPxVal"></span>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Border opacity</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" id="footerBorderOpacity">
+        <span class="slider-val" id="footerBorderOpacityVal"></span>
+      </div>
+    </div>
+
+    <h2>Side Margins</h2>
+    <div class="control-group">
+      <label>Margin tint opacity</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" id="marginOpacity">
+        <span class="slider-val" id="marginOpacityVal"></span>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <button class="toggle-switch" id="marginGradientToggle"></button>
+      <span class="toggle-label">Gradient fade (edge-to-center)</span>
+    </div>
+
+    <h2>Bleed Border</h2>
+    <div class="control-group">
+      <label>Stripe opacity</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" id="bleedOpacity">
+        <span class="slider-val" id="bleedOpacityVal"></span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <h2>Air vs Water Fix</h2>
+    <div class="preset-grid" id="airFixGrid"></div>
+
+    <h2>Options</h2>
+    <div class="toggle-row">
+      <button class="toggle-switch on" id="showAllToggle"></button>
+      <span class="toggle-label">Show all 6 elements</span>
+    </div>
+    <div class="toggle-row">
+      <button class="toggle-switch" id="darkModeToggle"></button>
+      <span class="toggle-label">Dark mode content</span>
+    </div>
+  </div>
+
+  <div class="preview-area" id="previewArea"></div>
+
+  <div class="prompt-area">
+    <div class="prompt-text" id="promptText">Adjust controls to generate a prompt.</div>
+    <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy</button>
+  </div>
+</div>
+
+<script>
+const ELEMENTS = [
+  { id: "split-same", name: "Split-Same", code: "SS", element: "Water", accent: "#4a7fb5", dark: "#1a3355", icon: "\u{1F30A}" },
+  { id: "tog-same", name: "Tog-Same", code: "TS", element: "Earth", accent: "#75A874", dark: "#2a4a29", icon: "\u{1F30D}" },
+  { id: "quarter-same", name: "Quarter-Same", code: "QS", element: "Sun", accent: "#ffde17", dark: "#7a6a00", icon: "\u{2600}" },
+  { id: "split-opp", name: "Split-Opp", code: "SO", element: "Fire", accent: "#f2673a", dark: "#6b1a0a", icon: "\u{1F525}" },
+  { id: "tog-opp", name: "Tog-Opp", code: "TO", element: "Air", accent: "#a8d8f0", dark: "#4a7a90", icon: "\u{1F4A8}" },
+  { id: "quarter-opp", name: "Quarter-Opp", code: "QO", element: "Moon", accent: "#6a4199", dark: "#2a1540", icon: "\u{1F319}" },
+];
+
+const FOOTER_STYLES = {
+  icon_center: { label: "Icon + Name (current)", desc: "[icon] Split-Same [icon]" },
+  icon_name_ratio: { label: "Icon+Name | TKA | Ratio", desc: "[icon] SS | The Kinetic Alphabet | 1:1" },
+  name_ratio: { label: "Name | TKA | Ratio", desc: "Split-Same | The Kinetic Alphabet | 1:1" },
+  abbr_all: { label: "TnD Code | TKA | Year", desc: "TnD SS 1:1 | The Kinetic Alphabet | 2026" },
+};
+
+const PRESETS = {
+  bold: { label: "Bold", headerBgOpacity: 70, headerBorderPx: 0, headerBorderOpacity: 0, footerBgOpacity: 75, footerBorderPx: 0, footerBorderOpacity: 0, marginOpacity: 12, marginGradient: false, bleedOpacity: 100 },
+  medium: { label: "Medium Tint", headerBgOpacity: 22, headerBorderPx: 2, headerBorderOpacity: 50, footerBgOpacity: 22, footerBorderPx: 2, footerBorderOpacity: 50, marginOpacity: 8, marginGradient: false, bleedOpacity: 100 },
+  accent: { label: "Accent Only", headerBgOpacity: 0, headerBorderPx: 3, headerBorderOpacity: 80, footerBgOpacity: 0, footerBorderPx: 3, footerBorderOpacity: 80, marginOpacity: 0, marginGradient: false, bleedOpacity: 100 },
+  gradient: { label: "Gradient Wash", headerBgOpacity: 35, headerBorderPx: 0, headerBorderOpacity: 0, footerBgOpacity: 35, footerBorderPx: 0, footerBorderOpacity: 0, marginOpacity: 30, marginGradient: true, bleedOpacity: 100 },
+};
+
+const DEFAULTS = PRESETS.gradient;
+
+const state = {
+  selectedElement: 0,
+  activePreset: "gradient",
+  headerBgOpacity: DEFAULTS.headerBgOpacity,
+  headerBorderPx: DEFAULTS.headerBorderPx,
+  headerBorderOpacity: DEFAULTS.headerBorderOpacity,
+  footerBgOpacity: DEFAULTS.footerBgOpacity,
+  footerBorderPx: DEFAULTS.footerBorderPx,
+  footerBorderOpacity: DEFAULTS.footerBorderOpacity,
+  marginOpacity: DEFAULTS.marginOpacity,
+  marginGradient: DEFAULTS.marginGradient,
+  bleedOpacity: DEFAULTS.bleedOpacity,
+  showAll: true,
+  darkMode: false,
+  footerStyle: "icon_center",
+};
+
+// --- UI Setup ---
+
+function buildElementGrid() {
+  const grid = document.getElementById('elementGrid');
+  ELEMENTS.forEach((el, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'element-btn' + (i === state.selectedElement ? ' active' : '');
+    btn.innerHTML = `<span class="element-swatch" style="background:${el.accent}"></span><span>${el.element}</span>`;
+    btn.onclick = () => { state.selectedElement = i; state.activePreset = null; updateAll(); };
+    grid.appendChild(btn);
+  });
+}
+
+function buildPresetGrid() {
+  const grid = document.getElementById('presetGrid');
+  Object.entries(PRESETS).forEach(([key, p]) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (key === state.activePreset ? ' active' : '');
+    btn.textContent = p.label;
+    btn.dataset.key = key;
+    btn.onclick = () => applyPreset(key);
+    grid.appendChild(btn);
+  });
+}
+
+function buildFooterStyleGrid() {
+  const grid = document.getElementById('footerStyleGrid');
+  Object.entries(FOOTER_STYLES).forEach(([key, fs]) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (key === state.footerStyle ? ' active' : '');
+    btn.textContent = fs.label;
+    btn.dataset.footerKey = key;
+    btn.onclick = () => {
+      state.footerStyle = key;
+      updateFooterStyleHighlight();
+      updateAll();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function updateFooterStyleHighlight() {
+  document.querySelectorAll('#footerStyleGrid .preset-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.footerKey === state.footerStyle);
+  });
+}
+
+const AIR_VARIANTS = {
+  baby:      { label: "Baby Blue (new)", accent: "#a8d8f0", dark: "#4a7a90" },
+  original:  { label: "Original", accent: "#78b7e3", dark: "#1a4a6b" },
+  silver:    { label: "Silver Breeze", accent: "#a0b8cc", dark: "#3a4f5e" },
+  sky:       { label: "Sky Pale", accent: "#9ecfef", dark: "#2a5a7a" },
+};
+
+function buildAirFixGrid() {
+  const grid = document.getElementById('airFixGrid');
+  Object.entries(AIR_VARIANTS).forEach(([key, v]) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (key === 'baby' ? ' active' : '');
+    btn.dataset.airKey = key;
+    btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${v.accent};vertical-align:middle;margin-right:4px;border:1px solid rgba(255,255,255,0.3)"></span>${v.label}`;
+    btn.onclick = () => {
+      const airEl = ELEMENTS.find(e => e.id === 'tog-opp');
+      if (airEl) {
+        airEl.accent = v.accent;
+        airEl.dark = v.dark;
+      }
+      document.querySelectorAll('#airFixGrid .preset-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.airKey === key)
+      );
+      updateAll();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function applyPreset(key) {
+  const p = PRESETS[key];
+  state.activePreset = key;
+  state.headerBgOpacity = p.headerBgOpacity;
+  state.headerBorderPx = p.headerBorderPx;
+  state.headerBorderOpacity = p.headerBorderOpacity;
+  state.footerBgOpacity = p.footerBgOpacity;
+  state.footerBorderPx = p.footerBorderPx;
+  state.footerBorderOpacity = p.footerBorderOpacity;
+  state.marginOpacity = p.marginOpacity;
+  state.marginGradient = p.marginGradient;
+  state.bleedOpacity = p.bleedOpacity;
+  syncSliders();
+  updateAll();
+}
+
+function syncSliders() {
+  setSlider('headerBgOpacity', state.headerBgOpacity);
+  setSlider('headerBorderPx', state.headerBorderPx);
+  setSlider('headerBorderOpacity', state.headerBorderOpacity);
+  setSlider('footerBgOpacity', state.footerBgOpacity);
+  setSlider('footerBorderPx', state.footerBorderPx);
+  setSlider('footerBorderOpacity', state.footerBorderOpacity);
+  setSlider('marginOpacity', state.marginOpacity);
+  setSlider('bleedOpacity', state.bleedOpacity);
+  syncToggle('marginGradientToggle', state.marginGradient);
+  syncToggle('showAllToggle', state.showAll);
+  syncToggle('darkModeToggle', state.darkMode);
+}
+
+function setSlider(id, val) {
+  const el = document.getElementById(id);
+  if (el) { el.value = val; }
+  const valEl = document.getElementById(id + 'Val');
+  if (valEl) {
+    if (id.endsWith('Px')) valEl.textContent = val + 'px';
+    else valEl.textContent = val + '%';
+  }
+}
+
+function syncToggle(id, on) {
+  const el = document.getElementById(id);
+  if (el) el.className = 'toggle-switch' + (on ? ' on' : '');
+}
+
+function wireSlider(id, key) {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    state[key] = parseInt(el.value);
+    state.activePreset = null;
+    setSlider(id, state[key]);
+    updatePresetHighlight();
+    updateAll();
+  });
+}
+
+function wireToggle(id, key) {
+  document.getElementById(id).addEventListener('click', () => {
+    state[key] = !state[key];
+    syncToggle(id, state[key]);
+    if (key !== 'showAll' && key !== 'darkMode') state.activePreset = null;
+    updatePresetHighlight();
+    updateAll();
+  });
+}
+
+function updatePresetHighlight() {
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.key === state.activePreset);
+  });
+  document.querySelectorAll('.element-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === state.selectedElement);
+  });
+}
+
+// --- Rendering ---
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return { r, g, b };
+}
+
+function rgba(hex, opacity01) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${opacity01})`;
+}
+
+// Preload element icons
+const loadedIcons = {};
+function preloadIcons() {
+  const base = "http://localhost:5173";
+  const iconPaths = {
+    "split-same": base + "/images/elements/water-v2.png",
+    "tog-same": base + "/images/elements/earth-v2.png",
+    "quarter-same": base + "/images/elements/sun-v4.png",
+    "split-opp": base + "/images/elements/fire-v2.png",
+    "tog-opp": base + "/images/elements/air-v2.png",
+    "quarter-opp": base + "/images/elements/moon-v2.png",
+  };
+  for (const [id, path] of Object.entries(iconPaths)) {
+    const img = new Image();
+    img.onload = () => { loadedIcons[id] = img; updateAll(); };
+    img.onerror = () => {};
+    img.src = path;
+  }
+}
+
+function renderCard(canvas, el) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  const BLEED = Math.round(W * (36/822));
+  const contentW = W - BLEED * 2;
+  const contentH = H - BLEED * 2;
+  const headerH = Math.round(contentH * 0.133);
+  const footerH = Math.round(contentH * 0.067);
+  const gridAreaH = contentH - headerH - footerH;
+
+  // Simulate grid sizing: 8 beats in 2 rows x 4 cols + start position
+  const cols = 4;
+  const rows = 3; // start pos row + 2 beat rows
+  const stepSize = Math.min(Math.floor(contentW / cols), Math.floor(gridAreaH / rows));
+  const gridW = cols * stepSize;
+  const gridH = rows * stepSize;
+  const gridOffsetX = Math.floor((contentW - gridW) / 2);
+  const gridOffsetY = headerH + Math.floor((gridAreaH - gridH) / 2);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // 1. Bleed border — neutral dark stripes, no elemental color
+  const stripeOpacity = state.bleedOpacity / 100;
+  const bleedDark = "#444444";
+  const bleedAccent = "#999999";
+  ctx.save();
+  ctx.fillStyle = rgba(bleedDark, stripeOpacity);
+  ctx.fillRect(0, 0, W, H);
+
+  if (stripeOpacity > 0) {
+    const stripeW = Math.max(3, Math.round(W * 0.015));
+    const diag = Math.sqrt(W*W + H*H);
+    const count = Math.ceil(diag / stripeW) + 1;
+    ctx.fillStyle = rgba(bleedAccent, stripeOpacity * 0.5);
+    ctx.save();
+    ctx.translate(W/2, H/2);
+    ctx.rotate(-Math.PI / 4);
+    for (let i = -count; i <= count; i++) {
+      ctx.fillRect(i * stripeW, -diag/2, stripeW/2, diag);
+    }
+    ctx.restore();
+  }
+
+  // Edge glow
+  const glowH = H * 0.2;
+  const topGrad = ctx.createLinearGradient(0, 0, 0, glowH);
+  topGrad.addColorStop(0, "rgba(255,255,255,0.1)");
+  topGrad.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, 0, W, glowH);
+  const botGrad = ctx.createLinearGradient(0, H - glowH, 0, H);
+  botGrad.addColorStop(0, "rgba(255,255,255,0)");
+  botGrad.addColorStop(1, "rgba(255,255,255,0.1)");
+  ctx.fillStyle = botGrad;
+  ctx.fillRect(0, H - glowH, W, glowH);
+  ctx.restore();
+
+  // 2. Content area (white)
+  const bgColor = state.darkMode ? '#0a0a0f' : '#ffffff';
+  const textColor = state.darkMode ? '#ffffff' : '#1f2937';
+  const dimColor = state.darkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)';
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(BLEED, BLEED, contentW, contentH);
+
+  // 3. Header zone
+  const headerTop = BLEED;
+  const headerBgAlpha = state.headerBgOpacity / 100;
+  if (headerBgAlpha > 0) {
+    // If bold (>50%), use solid elemental color
+    if (headerBgAlpha > 0.5) {
+      ctx.fillStyle = rgba(el.accent, headerBgAlpha);
+    } else {
+      ctx.fillStyle = rgba(el.accent, headerBgAlpha);
+    }
+    ctx.fillRect(BLEED, headerTop, contentW, headerH);
+  }
+  if (state.headerBorderPx > 0 && state.headerBorderOpacity > 0) {
+    ctx.strokeStyle = rgba(el.accent, state.headerBorderOpacity / 100);
+    ctx.lineWidth = state.headerBorderPx;
+    ctx.beginPath();
+    ctx.moveTo(BLEED, headerTop + headerH - state.headerBorderPx / 2);
+    ctx.lineTo(BLEED + contentW, headerTop + headerH - state.headerBorderPx / 2);
+    ctx.stroke();
+  }
+
+  // Header content: difficulty badge + word + LOOP icons
+  const badgeSize = Math.round(headerH * 0.5);
+  const badgePad = Math.round(headerH * 0.15);
+  // Badge
+  const badgeCx = BLEED + badgePad + badgeSize/2;
+  const badgeCy = headerTop + headerH/2;
+  ctx.beginPath();
+  ctx.arc(badgeCx, badgeCy, badgeSize/2, 0, Math.PI*2);
+  const badgeGrad = ctx.createLinearGradient(badgeCx - badgeSize/2, badgeCy - badgeSize/2, badgeCx + badgeSize/2, badgeCy + badgeSize/2);
+  badgeGrad.addColorStop(0, '#e8e8e8');
+  badgeGrad.addColorStop(1, '#c8c8c8');
+  ctx.fillStyle = badgeGrad;
+  ctx.fill();
+  ctx.strokeStyle = '#aaa';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  const headerTextColor = headerBgAlpha > 0.5 ? '#ffffff' : textColor;
+  const headerDimColor = headerBgAlpha > 0.5 ? 'rgba(255,255,255,0.7)' : dimColor;
+  ctx.fillStyle = '#666';
+  ctx.font = `bold ${Math.round(badgeSize * 0.55)}px system-ui`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('1', badgeCx, badgeCy);
+
+  // Word text
+  ctx.fillStyle = headerTextColor;
+  ctx.font = `700 ${Math.round(headerH * 0.38)}px Georgia, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('BOOK', BLEED + contentW/2, headerTop + headerH/2);
+
+  // 4. Footer zone
+  const footerTop = BLEED + contentH - footerH;
+  const footerBgAlpha = state.footerBgOpacity / 100;
+  if (footerBgAlpha > 0) {
+    ctx.fillStyle = rgba(el.accent, footerBgAlpha);
+    ctx.fillRect(BLEED, footerTop, contentW, footerH);
+  }
+  if (state.footerBorderPx > 0 && state.footerBorderOpacity > 0) {
+    ctx.strokeStyle = rgba(el.accent, state.footerBorderOpacity / 100);
+    ctx.lineWidth = state.footerBorderPx;
+    ctx.beginPath();
+    ctx.moveTo(BLEED, footerTop + state.footerBorderPx / 2);
+    ctx.lineTo(BLEED + contentW, footerTop + state.footerBorderPx / 2);
+    ctx.stroke();
+  }
+
+  // Footer content
+  const footerFontSize = Math.max(8, Math.round(footerH * 0.45));
+  const footerTextColor = footerBgAlpha > 0.5 ? '#ffffff' : textColor;
+  ctx.textBaseline = 'middle';
+  const footerCenterY = footerTop + footerH / 2;
+  const footerMargin = Math.round(footerH * 0.3);
+
+  const iconImg = loadedIcons[el.id];
+  const iconH = Math.floor(footerH * 0.7);
+  const iconW = iconImg ? Math.round(iconH * (iconImg.naturalWidth / iconImg.naturalHeight)) : iconH;
+
+  switch (state.footerStyle) {
+    case 'icon_center': {
+      // Current: [icon] Element-Name [icon] — centered, no left/right
+      const centerText = el.name;
+      ctx.font = `${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillStyle = footerTextColor;
+      const textW = ctx.measureText(centerText).width;
+      const gap = Math.floor(footerFontSize * 0.35);
+      const totalW = iconW + gap + textW + gap + iconW;
+      const startX = BLEED + (contentW - totalW) / 2;
+      const iconY = footerCenterY - iconH / 2;
+      if (iconImg) {
+        ctx.drawImage(iconImg, startX, iconY, iconW, iconH);
+        ctx.drawImage(iconImg, startX + iconW + gap + textW + gap, iconY, iconW, iconH);
+      }
+      ctx.textAlign = 'left';
+      ctx.fillText(centerText, startX + iconW + gap, footerCenterY);
+      break;
+    }
+    case 'icon_name_ratio': {
+      // [icon] SS | The Kinetic Alphabet | 1:1
+      ctx.font = `bold ${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillStyle = footerTextColor;
+      ctx.textAlign = 'left';
+      const leftX = BLEED + footerMargin;
+      if (iconImg) {
+        const iconY = footerCenterY - iconH / 2;
+        ctx.drawImage(iconImg, leftX, iconY, iconW, iconH);
+        ctx.fillText(` ${el.code}`, leftX + iconW + 2, footerCenterY);
+      } else {
+        ctx.fillText(el.code, leftX, footerCenterY);
+      }
+      ctx.textAlign = 'center';
+      ctx.font = `${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillText('The Kinetic Alphabet', BLEED + contentW/2, footerCenterY);
+      ctx.textAlign = 'right';
+      ctx.font = `bold ${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillText('1:1', BLEED + contentW - footerMargin, footerCenterY);
+      break;
+    }
+    case 'name_ratio': {
+      // Split-Same | The Kinetic Alphabet | 1:1
+      ctx.font = `bold ${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillStyle = footerTextColor;
+      ctx.textAlign = 'left';
+      ctx.fillText(el.name, BLEED + footerMargin, footerCenterY);
+      ctx.textAlign = 'center';
+      ctx.font = `${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillText('The Kinetic Alphabet', BLEED + contentW/2, footerCenterY);
+      ctx.textAlign = 'right';
+      ctx.font = `bold ${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillText('1:1', BLEED + contentW - footerMargin, footerCenterY);
+      break;
+    }
+    case 'abbr_all': {
+      // TnD SS 1:1 | The Kinetic Alphabet | 2026
+      ctx.font = `bold ${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillStyle = footerTextColor;
+      ctx.textAlign = 'left';
+      ctx.fillText(`TnD ${el.code} 1:1`, BLEED + footerMargin, footerCenterY);
+      ctx.textAlign = 'center';
+      ctx.font = `${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillText('The Kinetic Alphabet', BLEED + contentW/2, footerCenterY);
+      ctx.textAlign = 'right';
+      ctx.font = `bold ${footerFontSize}px Cambria, Georgia, serif`;
+      ctx.fillText('2026', BLEED + contentW - footerMargin, footerCenterY);
+      break;
+    }
+  }
+
+  // 5. Side margins
+  const marginAlpha = state.marginOpacity / 100;
+  if (marginAlpha > 0 && gridOffsetX > 0) {
+    const marginTop = BLEED + headerH;
+    const marginH = gridAreaH;
+    const leftMarginX = BLEED;
+    const rightMarginX = BLEED + gridOffsetX + gridW;
+    const marginW = gridOffsetX;
+
+    if (state.marginGradient) {
+      // Gradient: strongest at edge, fading toward grid
+      const leftGrad = ctx.createLinearGradient(leftMarginX, 0, leftMarginX + marginW, 0);
+      leftGrad.addColorStop(0, rgba(el.accent, marginAlpha));
+      leftGrad.addColorStop(1, rgba(el.accent, 0));
+      ctx.fillStyle = leftGrad;
+      ctx.fillRect(leftMarginX, marginTop, marginW, marginH);
+
+      const rightGrad = ctx.createLinearGradient(rightMarginX + marginW, 0, rightMarginX, 0);
+      rightGrad.addColorStop(0, rgba(el.accent, marginAlpha));
+      rightGrad.addColorStop(1, rgba(el.accent, 0));
+      ctx.fillStyle = rightGrad;
+      ctx.fillRect(rightMarginX, marginTop, marginW, marginH);
+    } else {
+      ctx.fillStyle = rgba(el.accent, marginAlpha);
+      ctx.fillRect(leftMarginX, marginTop, marginW, marginH);
+      ctx.fillRect(rightMarginX, marginTop, marginW, marginH);
+    }
+  }
+
+  // 6. Mock grid cells
+  const gridStartX = BLEED + gridOffsetX;
+  const gridStartY = BLEED + gridOffsetY;
+  ctx.strokeStyle = state.darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  ctx.lineWidth = 1;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cx = gridStartX + c * stepSize;
+      const cy = gridStartY + r * stepSize;
+      ctx.strokeRect(cx, cy, stepSize, stepSize);
+
+      // Draw a mock diamond grid in each cell
+      const mid = stepSize / 2;
+      const gridR = stepSize * 0.35;
+      ctx.save();
+      ctx.strokeStyle = state.darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = 0.5;
+      // Diamond
+      ctx.beginPath();
+      ctx.moveTo(cx + mid, cy + mid - gridR);
+      ctx.lineTo(cx + mid + gridR, cy + mid);
+      ctx.lineTo(cx + mid, cy + mid + gridR);
+      ctx.lineTo(cx + mid - gridR, cy + mid);
+      ctx.closePath();
+      ctx.stroke();
+      // Cross
+      ctx.beginPath();
+      ctx.moveTo(cx + mid, cy + mid - gridR);
+      ctx.lineTo(cx + mid, cy + mid + gridR);
+      ctx.moveTo(cx + mid - gridR, cy + mid);
+      ctx.lineTo(cx + mid + gridR, cy + mid);
+      ctx.stroke();
+
+      // Mock arrows (simple colored lines)
+      ctx.lineWidth = 2;
+      // Blue arrow
+      ctx.strokeStyle = '#3575E2';
+      ctx.beginPath();
+      const bx1 = cx + mid - gridR * 0.5;
+      const by1 = cy + mid + gridR * 0.3;
+      const bx2 = cx + mid;
+      const by2 = cy + mid - gridR * 0.4;
+      ctx.moveTo(bx1, by1);
+      ctx.lineTo(bx2, by2);
+      ctx.stroke();
+      // Arrowhead
+      ctx.fillStyle = '#3575E2';
+      ctx.beginPath();
+      ctx.moveTo(bx2, by2 - 3);
+      ctx.lineTo(bx2 - 3, by2 + 3);
+      ctx.lineTo(bx2 + 3, by2 + 3);
+      ctx.fill();
+
+      // Red arrow
+      ctx.strokeStyle = '#ED1C24';
+      ctx.beginPath();
+      const rx1 = cx + mid + gridR * 0.5;
+      const ry1 = cy + mid - gridR * 0.3;
+      const rx2 = cx + mid;
+      const ry2 = cy + mid + gridR * 0.4;
+      ctx.moveTo(rx1, ry1);
+      ctx.lineTo(rx2, ry2);
+      ctx.stroke();
+      ctx.fillStyle = '#ED1C24';
+      ctx.beginPath();
+      ctx.moveTo(rx2, ry2 + 3);
+      ctx.lineTo(rx2 - 3, ry2 - 3);
+      ctx.lineTo(rx2 + 3, ry2 - 3);
+      ctx.fill();
+
+      ctx.restore();
+
+      // Step number
+      if (r === 0 && c === 0) {
+        ctx.fillStyle = dimColor;
+        ctx.font = `bold ${Math.round(stepSize * 0.12)}px system-ui`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Start', cx + 4, cy + 4);
+      } else {
+        const stepNum = (r === 0 ? c : (r - 1) * cols + c + (r === 1 ? cols - 1 : cols - 1));
+        const num = r * cols + c;
+        if (num > 0) {
+          ctx.fillStyle = dimColor;
+          ctx.font = `bold ${Math.round(stepSize * 0.13)}px system-ui`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(num.toString(), cx + 4, cy + 4);
+        }
+      }
+    }
+  }
+}
+
+function renderAllCards() {
+  const area = document.getElementById('previewArea');
+  area.innerHTML = '';
+
+  const elements = state.showAll ? ELEMENTS : [ELEMENTS[state.selectedElement]];
+  const cardScale = state.showAll ? 0.32 : 0.65;
+  const cardW = Math.round(822 * cardScale);
+  const cardH = Math.round(1122 * cardScale);
+
+  elements.forEach((el, i) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'card-wrapper';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = cardW;
+    canvas.height = cardH;
+    canvas.style.borderRadius = '4px';
+    canvas.style.cursor = 'pointer';
+    if (!state.showAll) {
+      canvas.style.boxShadow = '0 4px 24px rgba(0,0,0,0.5)';
+    }
+    canvas.onclick = () => {
+      const idx = ELEMENTS.indexOf(el);
+      state.selectedElement = idx;
+      updatePresetHighlight();
+      if (!state.showAll) updateAll();
+    };
+
+    renderCard(canvas, el);
+    wrapper.appendChild(canvas);
+
+    const label = document.createElement('div');
+    label.className = 'card-label';
+    label.textContent = `${el.element} (${el.name})`;
+    label.style.color = el.accent;
+    wrapper.appendChild(label);
+
+    area.appendChild(wrapper);
+  });
+}
+
+function updatePrompt() {
+  const parts = [];
+  const el = ELEMENTS[state.selectedElement];
+
+  if (state.activePreset) {
+    parts.push(`Use the "${PRESETS[state.activePreset].label}" preset for elemental card theming`);
+  } else {
+    parts.push('Use custom elemental card theming');
+  }
+
+  // Header
+  if (state.headerBgOpacity > 0) {
+    if (state.headerBgOpacity > 50) {
+      parts.push(`header: bold ${state.headerBgOpacity}% element-color fill (white text)`);
+    } else {
+      parts.push(`header: ${state.headerBgOpacity}% element-color tint`);
+    }
+  }
+  if (state.headerBorderPx > 0) {
+    parts.push(`header border: ${state.headerBorderPx}px at ${state.headerBorderOpacity}% opacity`);
+  }
+
+  // Footer
+  if (state.footerBgOpacity > 0) {
+    if (state.footerBgOpacity > 50) {
+      parts.push(`footer: bold ${state.footerBgOpacity}% element-color fill (white text)`);
+    } else {
+      parts.push(`footer: ${state.footerBgOpacity}% element-color tint`);
+    }
+  }
+  if (state.footerBorderPx > 0) {
+    parts.push(`footer border: ${state.footerBorderPx}px at ${state.footerBorderOpacity}% opacity`);
+  }
+
+  // Margins
+  if (state.marginOpacity > 0) {
+    const mode = state.marginGradient ? 'gradient fade' : 'flat tint';
+    parts.push(`side margins: ${state.marginOpacity}% element-color ${mode}`);
+  }
+
+  if (state.bleedOpacity !== 100) {
+    parts.push(`bleed stripe opacity: ${state.bleedOpacity}%`);
+  }
+
+  // Footer style
+  const fsInfo = FOOTER_STYLES[state.footerStyle];
+  if (fsInfo) {
+    parts.push(`footer label style: ${fsInfo.label} (${fsInfo.desc})`);
+  }
+
+  document.getElementById('promptText').textContent =
+    parts.join('. ') + '.';
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptText').textContent;
+  navigator.clipboard.writeText(text);
+  const btn = document.getElementById('copyBtn');
+  btn.textContent = 'Copied!';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+}
+
+function updateAll() {
+  renderAllCards();
+  updatePrompt();
+  updatePresetHighlight();
+}
+
+// --- Init ---
+buildElementGrid();
+buildPresetGrid();
+buildFooterStyleGrid();
+buildAirFixGrid();
+preloadIcons();
+
+wireSlider('headerBgOpacity', 'headerBgOpacity');
+wireSlider('headerBorderPx', 'headerBorderPx');
+wireSlider('headerBorderOpacity', 'headerBorderOpacity');
+wireSlider('footerBgOpacity', 'footerBgOpacity');
+wireSlider('footerBorderPx', 'footerBorderPx');
+wireSlider('footerBorderOpacity', 'footerBorderOpacity');
+wireSlider('marginOpacity', 'marginOpacity');
+wireSlider('bleedOpacity', 'bleedOpacity');
+wireToggle('marginGradientToggle', 'marginGradient');
+wireToggle('showAllToggle', 'showAll');
+wireToggle('darkModeToggle', 'darkMode');
+
+syncSliders();
+updateAll();
+</script>
+</body>
+</html>

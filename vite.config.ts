@@ -859,7 +859,6 @@ export default defineConfig(({ mode }) => ({
       "miniplex",
       "three/examples/jsm/loaders/GLTFLoader.js",
       "three/examples/jsm/loaders/DRACOLoader.js",
-      "three/examples/jsm/libs/meshopt_decoder.module.js",
       "three/examples/jsm/misc/GPUComputationRenderer.js",
       "three/examples/jsm/objects/Reflector.js",
       "three/examples/jsm/utils/BufferGeometryUtils.js",
@@ -888,6 +887,8 @@ export default defineConfig(({ mode }) => ({
       // ⚡ Lazy-load these heavy libraries on-demand
       "fabric", // ~500KB canvas library (loads when user uses animator)
       "page-flip", // PDF flipbook (loads in learn module)
+      // esbuild corrupts inline WASM strings → decoder never initializes
+      "three/examples/jsm/libs/meshopt_decoder.module.js",
     ],
   },
   // ============================================================================

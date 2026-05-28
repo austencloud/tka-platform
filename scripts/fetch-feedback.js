@@ -636,6 +636,11 @@ async function downloadFeedbackImages(feedbackId, imageUrls) {
       const { writeFileSync } = await import("fs");
       const response = await fetch(url);
       if (!response.ok) {
+        // Detect expired staging URLs — these files were deleted by the cleanup function
+        const isStagingUrl = url.includes("feedback-staging");
+        if (response.status === 403 && isStagingUrl) {
+          throw new Error(`HTTP 403 — staging image expired (cleanup function deleted it after 30 min). Image is unrecoverable; user must re-submit.`);
+        }
         throw new Error(`HTTP ${response.status}`);
       }
       const buffer = Buffer.from(await response.arrayBuffer());
