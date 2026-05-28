@@ -155,7 +155,7 @@ export class SvgToBrailleConverter {
 			size: RENDER_SIZE, // Render large, then downsample to braille resolution
 			visibility: {
 				showTKA: false,
-				showVTG: false,
+				showTnD: false,
 				showElemental: false,
 				showPositions: false,
 				showReversals: false,

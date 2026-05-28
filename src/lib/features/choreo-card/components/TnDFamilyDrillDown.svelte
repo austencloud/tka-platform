@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-exporter";
-import { aggregateFamilySequences } from "$lib/features/choreo-card/services/vtg-family-aggregator";
+import { aggregateFamilySequences } from "$lib/features/choreo-card/services/tnd-family-aggregator";
 
   import type { Catalog } from "../domain/models/Catalog";
   import type { CardFooter } from "../domain/models/DeckRelease";
@@ -9,7 +9,7 @@ import { aggregateFamilySequences } from "$lib/features/choreo-card/services/vtg
   import type { FamilyRatioGroup } from "../services/types";
 import type { CardPair } from "../services/types";
   import { TND_ELEMENTS } from "../domain/tnd-element";
-  import { computeVtgCardFooter } from "../domain/catalog-vtg-labels";
+  import { computeTnDCardFooter } from "../domain/catalog-tnd-labels";
   import ChoreoCard from "./ChoreoCard.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
@@ -126,7 +126,7 @@ import type { CardPair } from "../services/types";
 
   const allFooters = $derived<CardFooter[]>(
     ratioGroups.flatMap(g =>
-      g.sequences.map(() => computeVtgCardFooter(familyId, g.ratio))
+      g.sequences.map(() => computeTnDCardFooter(familyId, g.ratio))
     )
   );
 
@@ -173,10 +173,10 @@ import type { CardPair } from "../services/types";
   }
 </script>
 
-<div class="vtg-family-drilldown">
+<div class="tnd-family-drilldown">
   <div class="top-bar">
     <nav class="breadcrumb" aria-label="Catalog navigation">
-      <button class="crumb" onclick={onBack} type="button" aria-label="Go back to VTG">VTG</button>
+      <button class="crumb" onclick={onBack} type="button" aria-label="Go back to TnD">TnD</button>
       <span class="crumb-sep" aria-hidden="true">›</span>
       <span class="crumb current">{familyLabel}</span>
     </nav>
@@ -241,12 +241,12 @@ import type { CardPair } from "../services/types";
     <div class="error-state" role="alert">
       <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
       <p>{error}</p>
-      <button type="button" class="back-btn" aria-label="Go back to VTG" onclick={onBack}>Back to VTG</button>
+      <button type="button" class="back-btn" aria-label="Go back to TnD" onclick={onBack}>Back to TnD</button>
     </div>
   {:else if ratioGroups.length === 0}
     <div class="empty-state" role="status">
       <p>No sequences found for {familyLabel}</p>
-      <button type="button" class="back-btn" aria-label="Go back to VTG" onclick={onBack}>Back to VTG</button>
+      <button type="button" class="back-btn" aria-label="Go back to TnD" onclick={onBack}>Back to TnD</button>
     </div>
   {:else if viewMode === 'print'}
     <PrintPreviewPages
@@ -300,7 +300,7 @@ import type { CardPair } from "../services/types";
 </div>
 
 <style>
-  .vtg-family-drilldown {
+  .tnd-family-drilldown {
     width: 100%;
   }
 

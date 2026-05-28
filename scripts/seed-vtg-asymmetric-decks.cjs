@@ -282,7 +282,7 @@ async function writeDeck(variant, sourceSequences, sourceMeta) {
     redTurns,
     asymmetric: true,
     sourceDeck: SOURCE_DECK_ID,
-    collection: "VTG",
+    collection: "TnD",
     turnPattern: tkaPipe,
   });
   count++;

@@ -21,9 +21,26 @@
   } = $props();
 
   let prepared: PreparedPictographData | null = $state(null);
+  let wrapperEl: HTMLElement | undefined = $state();
+  let isVisible = $state(false);
 
   $effect(() => {
-    if (!data) {
+    if (!wrapperEl) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          isVisible = true;
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(wrapperEl);
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    if (!data || !isVisible) {
       prepared = null;
       return;
     }
@@ -39,7 +56,7 @@
   });
 </script>
 
-<div class="guide-pictograph size-{size}" class:bordered>
+<div bind:this={wrapperEl} class="guide-pictograph size-{size}" class:bordered>
   <div class="pictograph-wrapper">
     {#if prepared}
       <PictographRenderer
@@ -47,7 +64,7 @@
         {showGrid}
         showTKA={true}
         showReversals={false}
-        showVTG={false}
+        showTnD={false}
         showElemental={false}
         showPositions={false}
         showNonRadialPoints={false}

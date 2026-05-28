@@ -49,7 +49,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   const STORAGE_KEY_SHOW_WORD = "choreoCard.showWord";
   const STORAGE_KEY_INCLUDE_START_POS = "choreoCard.includeStartPosition";
   const STORAGE_KEY_SELECTED_CATALOG = "choreoCard.selectedCatalogId";
-  const STORAGE_KEY_VTG_FAMILY = "choreoCard.vtgFamily";
+  const STORAGE_KEY_TND_FAMILY = "choreoCard.tndFamily";
 
   // Legacy keys for migration
   const LEGACY_KEYS: Record<string, string> = {
@@ -188,7 +188,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   const _initDeckId = getPersistedString(STORAGE_KEY_SELECTED_CATALOG);
   let catalogs = $state<Catalog[]>(_initCatalogs ?? []);
   let selectedCatalogId = $state<string | null>(_initDeckId);
-  let selectedVtgFamily = $state<string | null>(getPersistedString(STORAGE_KEY_VTG_FAMILY));
+  let selectedTnDFamily = $state<string | null>(getPersistedString(STORAGE_KEY_TND_FAMILY));
   let catalogSequences = $state<SequenceData[]>([]);
   // Start in loading state if we have a saved catalog — sequences must come from Firestore
   let isCatalogLoading = $state(!!_initDeckId);
@@ -205,20 +205,20 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
 
   interface CatalogNavState {
     catalogId: string | null;
-    vtgFamily: string | null;
+    tndFamily: string | null;
   }
 
   function buildCurrentNavState(): CatalogNavState {
     return {
       catalogId: selectedCatalogId,
-      vtgFamily: selectedVtgFamily,
+      tndFamily: selectedTnDFamily,
     };
   }
 
   function encodeNavHash(state: CatalogNavState): string {
     const params = new URLSearchParams();
     if (state.catalogId) params.set("catalog", state.catalogId);
-    if (state.vtgFamily) params.set("vtgFamily", state.vtgFamily);
+    if (state.tndFamily) params.set("tndFamily", state.tndFamily);
     const str = params.toString();
     return str ? `catalog-nav:${str}` : "";
   }
@@ -229,7 +229,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
       const params = new URLSearchParams(hash.slice("#catalog-nav:".length));
       return {
         catalogId: params.get("catalog"),
-        vtgFamily: params.get("vtgFamily"),
+        tndFamily: params.get("tndFamily"),
       };
     } catch {
       return null;
@@ -242,14 +242,14 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
     const url = new URL(window.location.href);
     const encoded = encodeNavHash(state);
     url.hash = encoded;
-    pushState(url.toString(), { catalogNavId: state.catalogId, catalogNavVtgFamily: state.vtgFamily });
+    pushState(url.toString(), { catalogNavId: state.catalogId, catalogNavTnDFamily: state.tndFamily });
   }
 
   async function restoreNavState(state: CatalogNavState) {
     isRestoringFromHistory = true;
     try {
       selectedCatalogId = state.catalogId;
-      selectedVtgFamily = state.vtgFamily;
+      selectedTnDFamily = state.tndFamily;
       persist(STORAGE_KEY_SELECTED_CATALOG, state.catalogId);
       if (state.catalogId) {
         const cached = catalogSequenceCache.get(state.catalogId);
@@ -275,10 +275,10 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
       if (raw && "catalogNavId" in raw) {
         void restoreNavState({
           catalogId: (raw.catalogNavId as string) ?? null,
-          vtgFamily: (raw.catalogNavVtgFamily as string) ?? null,
+          tndFamily: (raw.catalogNavTnDFamily as string) ?? null,
         });
       } else {
-        void restoreNavState({ catalogId: null, vtgFamily: null });
+        void restoreNavState({ catalogId: null, tndFamily: null });
       }
     }
 
@@ -394,7 +394,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
     if (hashState) {
       isRestoringFromHistory = true;
       selectedCatalogId = hashState.catalogId;
-      selectedVtgFamily = hashState.vtgFamily;
+      selectedTnDFamily = hashState.tndFamily;
       persist(STORAGE_KEY_SELECTED_CATALOG, hashState.catalogId);
       isRestoringFromHistory = false;
     }
@@ -402,7 +402,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
     const initialState = buildCurrentNavState();
     const url = new URL(window.location.href);
     url.hash = encodeNavHash(initialState);
-    replaceState(url.toString(), { catalogNavId: initialState.catalogId, catalogNavVtgFamily: initialState.vtgFamily });
+    replaceState(url.toString(), { catalogNavId: initialState.catalogId, catalogNavTnDFamily: initialState.tndFamily });
 
     // Load catalog metadata first, then sequences for the selected catalog.
     // Cached (trimmed) catalogs are already in state for instant shell render.
@@ -498,10 +498,10 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   function handleBackToCollections() {
     (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
     selectedCatalogId = null;
-    selectedVtgFamily = null;
+    selectedTnDFamily = null;
     catalogSequences = [];
     persist(STORAGE_KEY_SELECTED_CATALOG, null);
-    persist(STORAGE_KEY_VTG_FAMILY, null);
+    persist(STORAGE_KEY_TND_FAMILY, null);
     pushNavState();
   }
 
@@ -531,12 +531,12 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
     }
   }
 
-  async function handleSelectCatalog(catalogId: string, vtgFamily?: string | null) {
+  async function handleSelectCatalog(catalogId: string, tndFamily?: string | null) {
     (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
     selectedCatalogId = catalogId;
-    selectedVtgFamily = vtgFamily ?? null;
+    selectedTnDFamily = tndFamily ?? null;
     persist(STORAGE_KEY_SELECTED_CATALOG, catalogId);
-    persist(STORAGE_KEY_VTG_FAMILY, vtgFamily ?? null);
+    persist(STORAGE_KEY_TND_FAMILY, tndFamily ?? null);
     pushNavState();
 
     const cached = catalogSequenceCache.get(catalogId);
@@ -612,7 +612,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
           {showTKA}
           {showWord}
           {includeStartPosition}
-          tndFamilyId={selectedVtgFamily}
+          tndFamilyId={selectedTnDFamily}
           onBackToCollections={handleBackToCollections}
           onSelectCatalog={handleSelectCatalog}
           onSelectSequence={handleSelectSequence}

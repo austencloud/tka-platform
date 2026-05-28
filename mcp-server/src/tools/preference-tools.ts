@@ -24,7 +24,7 @@ export function registerPreferenceTools(server: McpServer): void {
       darkMode: z.boolean().optional().describe("Use dark background (default: true)"),
       size: z.number().optional().describe("Image size in pixels (default: 400)"),
       showTKA: z.boolean().optional().describe("Show TKA letter glyph with turn numbers"),
-      showVTG: z.boolean().optional().describe("Show VTG (vertical timing) glyph"),
+      showTND: z.boolean().optional().describe("Show TnD (timing & direction) glyph"),
       showPositions: z.boolean().optional().describe("Show start→end positions glyph"),
       showReversals: z.boolean().optional().describe("Show reversal indicator dots"),
       showGrid: z.boolean().optional().describe("Show grid (master toggle)"),
@@ -43,7 +43,7 @@ export function registerPreferenceTools(server: McpServer): void {
       if (newPrefs.darkMode !== undefined) updates.darkMode = newPrefs.darkMode;
       if (newPrefs.size !== undefined) updates.size = newPrefs.size;
       if (newPrefs.showTKA !== undefined) updates.showTKA = newPrefs.showTKA;
-      if (newPrefs.showVTG !== undefined) updates.showVTG = newPrefs.showVTG;
+      if (newPrefs.showTND !== undefined) updates.showTND = newPrefs.showTND;
       if (newPrefs.showPositions !== undefined) updates.showPositions = newPrefs.showPositions;
       if (newPrefs.showReversals !== undefined) updates.showReversals = newPrefs.showReversals;
       if (newPrefs.showGrid !== undefined) updates.showGrid = newPrefs.showGrid;
@@ -93,7 +93,7 @@ export function registerPreferenceTools(server: McpServer): void {
           `dark:${prefs.darkMode}`,
           `size:${prefs.size}`,
           `tka:${prefs.showTKA}`,
-          `vtg:${prefs.showVTG}`,
+          `tnd:${prefs.showTND}`,
           `pos:${prefs.showPositions}`,
           `rev:${prefs.showReversals}`,
           `grid:${prefs.showGrid}`,
@@ -113,7 +113,7 @@ Display:
 
 Glyphs:
   • showTKA: ${prefs.showTKA} (letter + turn numbers)
-  • showVTG: ${prefs.showVTG} (timing glyph)
+  • showTND: ${prefs.showTND} (timing glyph)
   • showPositions: ${prefs.showPositions} (start→end)
   • showReversals: ${prefs.showReversals}
 

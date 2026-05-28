@@ -129,7 +129,7 @@ export async function runCacheBenchmark(
       addDifficultyLevel: true,
       visibilityOverrides: {
         showTKA: true,
-        showVTG: false,
+        showTnD: false,
         showElemental: false,
         showPositions: false,
         showReversals: true,
@@ -497,7 +497,7 @@ export async function runVisibilityChangeBenchmark(
     // Default visibility (TKA and Reversals ON)
     const defaultVisibility = {
       showTKA: true,
-      showVTG: false,
+      showTnD: false,
       showElemental: false,
       showPositions: false,
       showReversals: true,

@@ -315,7 +315,7 @@ interface PlacementGridProps {
           gridMode={gridMode}
           showTKA={false}
           showReversals={false}
-          showVTG={false}
+          showTnD={false}
           showElemental={false}
           showPositions={false}
           disableTransitions={true}

@@ -8,7 +8,7 @@
  * - Type mapping: Letter.ts getLetterType()
  * - Type 1 positions/rotations: type1-letter-data.ts
  * - Type 2-6: domain specification (user-verified)
- * - VTG modes: vtg-calculator.ts (Type 1 only)
+ * - TnD modes: tnd-calculator.ts (Type 1 only)
  */
 
 export interface LetterBreakdownEntry {
@@ -17,8 +17,8 @@ export interface LetterBreakdownEntry {
   startPosition: string;
   endPosition: string;
   motionDescription: string;
-  vtgMode?: string;
-  vtgElement?: string;
+  tndMode?: string;
+  tndElement?: string;
   motionGroup?: string;
   upgradeFrom?: string;
 }
@@ -48,8 +48,8 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "alpha",
         endPosition: "alpha",
         motionDescription: "both pro",
-        vtgMode: "split-same",
-        vtgElement: "Water",
+        tndMode: "split-same",
+        tndElement: "Water",
         motionGroup: "prospin",
       },
     ],
@@ -72,8 +72,8 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "beta",
         endPosition: "beta",
         motionDescription: "both pro",
-        vtgMode: "tog-same",
-        vtgElement: "Earth",
+        tndMode: "tog-same",
+        tndElement: "Earth",
         motionGroup: "prospin",
       },
     ],
@@ -98,8 +98,8 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "alpha",
         endPosition: "alpha",
         motionDescription: "both anti",
-        vtgMode: "split-same",
-        vtgElement: "Sun",
+        tndMode: "split-same",
+        tndElement: "Sun",
         motionGroup: "antispin",
       },
     ],
@@ -122,8 +122,8 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "beta",
         endPosition: "beta",
         motionDescription: "both anti",
-        vtgMode: "tog-same",
-        vtgElement: "Moon",
+        tndMode: "tog-same",
+        tndElement: "Moon",
         motionGroup: "antispin",
       },
     ],
@@ -148,8 +148,8 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "alpha",
         endPosition: "alpha",
         motionDescription: "hybrid (one pro, one anti)",
-        vtgMode: "split-same",
-        vtgElement: "Fire",
+        tndMode: "split-same",
+        tndElement: "Fire",
         motionGroup: "hybrid",
       },
     ],
@@ -172,8 +172,8 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "beta",
         endPosition: "beta",
         motionDescription: "hybrid (one pro, one anti)",
-        vtgMode: "tog-same",
-        vtgElement: "Air",
+        tndMode: "tog-same",
+        tndElement: "Air",
         motionGroup: "hybrid",
       },
     ],
@@ -198,7 +198,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "both pro",
-        vtgMode: "quarter-opp",
+        tndMode: "quarter-opp",
         motionGroup: "prospin",
       },
     ],
@@ -210,7 +210,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "both pro",
-        vtgMode: "quarter-opp",
+        tndMode: "quarter-opp",
         motionGroup: "prospin",
       },
     ],
@@ -222,7 +222,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "both pro",
-        vtgMode: "quarter-same",
+        tndMode: "quarter-same",
         motionGroup: "prospin",
       },
     ],
@@ -236,7 +236,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "both anti",
-        vtgMode: "quarter-opp",
+        tndMode: "quarter-opp",
         motionGroup: "antispin",
       },
     ],
@@ -248,7 +248,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "both anti",
-        vtgMode: "quarter-opp",
+        tndMode: "quarter-opp",
         motionGroup: "antispin",
       },
     ],
@@ -260,7 +260,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "both anti",
-        vtgMode: "quarter-same",
+        tndMode: "quarter-same",
         motionGroup: "antispin",
       },
     ],
@@ -274,7 +274,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "hybrid (one pro, one anti)",
-        vtgMode: "quarter-opp",
+        tndMode: "quarter-opp",
         motionGroup: "hybrid",
       },
     ],
@@ -286,7 +286,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "hybrid (one pro, one anti)",
-        vtgMode: "quarter-opp",
+        tndMode: "quarter-opp",
         motionGroup: "hybrid",
       },
     ],
@@ -298,7 +298,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "hybrid (one pro, one anti)",
-        vtgMode: "quarter-same",
+        tndMode: "quarter-same",
         motionGroup: "hybrid",
       },
     ],
@@ -310,7 +310,7 @@ export const LETTER_BREAKDOWN_TABLE: ReadonlyMap<string, LetterBreakdownEntry> =
         startPosition: "gamma",
         endPosition: "gamma",
         motionDescription: "hybrid (one pro, one anti, reverse leading hand)",
-        vtgMode: "quarter-same",
+        tndMode: "quarter-same",
         motionGroup: "hybrid",
       },
     ],

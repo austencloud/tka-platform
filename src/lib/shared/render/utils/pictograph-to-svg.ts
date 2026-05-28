@@ -22,7 +22,7 @@ import { mount, tick, unmount } from "svelte";
  */
 export interface PictographVisibilityOptions {
   showTKA?: boolean; // TKA Glyph includes turn numbers
-  showVTG?: boolean;
+  showTnD?: boolean;
   showElemental?: boolean;
   showPositions?: boolean;
   showReversals?: boolean;
@@ -114,7 +114,7 @@ export async function renderPictographToSVG(
     // Add visibility settings explicitly if provided
     if (visibilityOptions) {
       componentProps.showTKA = visibilityOptions.showTKA; // TKA Glyph includes turn numbers
-      componentProps.showVTG = visibilityOptions.showVTG;
+      componentProps.showTnD = visibilityOptions.showTnD;
       componentProps.showElemental = visibilityOptions.showElemental;
       componentProps.showPositions = visibilityOptions.showPositions;
       componentProps.showReversals = visibilityOptions.showReversals;

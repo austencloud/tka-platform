@@ -35,7 +35,7 @@ const SETTING_ROUTES: Record<string, SettingRoute> = {
   // Pictograph visibility settings
   showGrid: { owner: "pictVis", property: "showGrid", displayName: "grid" },
   nonRadialPoints: { owner: "pictVis", property: "nonRadialPoints", displayName: "non-radial points" },
-  vtgGlyph: { owner: "pictVis", property: "vtgGlyph", displayName: "VTG glyph" },
+  tndGlyph: { owner: "pictVis", property: "tndGlyph", displayName: "TnD glyph" },
   elementalGlyph: { owner: "pictVis", property: "elementalGlyph", displayName: "elemental glyph" },
   positionsGlyph: { owner: "pictVis", property: "positionsGlyph", displayName: "positions glyph" },
 

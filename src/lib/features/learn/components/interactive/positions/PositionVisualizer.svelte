@@ -117,7 +117,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
     gridMode={gridMode}
     showTKA={showLetter}
     showReversals={false}
-    showVTG={false}
+    showTnD={false}
     showElemental={false}
     showPositions={false}
     disableTransitions={true}

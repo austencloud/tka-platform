@@ -96,7 +96,7 @@ export class CellCacheKeyDeriver {
   ): PictographVisibilityOptions {
     return {
       showTKA: options.showTKA ?? true,
-      showVTG: options.showVTG ?? false,
+      showTnD: options.showTnD ?? false,
       showElemental: options.showElemental ?? false,
       showPositions: options.showPositions ?? false,
       showReversals: options.showReversals ?? true,

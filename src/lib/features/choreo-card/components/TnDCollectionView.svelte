@@ -1,26 +1,26 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
-  import VtgFamilyGrid from "./VtgFamilyGrid.svelte";
-  import VtgRatioGrid from "./VtgRatioGrid.svelte";
-  import VtgReversalGrid from "./VtgReversalGrid.svelte";
+  import TnDFamilyGrid from "./TnDFamilyGrid.svelte";
+  import TnDRatioGrid from "./TnDRatioGrid.svelte";
+  import TnDReversalGrid from "./TnDReversalGrid.svelte";
 
-  type VtgView = "family" | "ratio" | "reversal";
+  type TnDView = "family" | "ratio" | "reversal";
 
   interface Props {
     catalogs: Catalog[];
     onSelectCatalog: (catalogId: string) => void;
     onSelectFamily: (familyId: string) => void;
-    initialView?: VtgView;
-    onViewChange?: (view: VtgView) => void;
+    initialView?: TnDView;
+    onViewChange?: (view: TnDView) => void;
   }
 
   const props: Props = $props();
 
   // Initialize via $effect.pre - access through props to track initialView reactively
-  let activeView = $state<VtgView>("family");
+  let activeView = $state<TnDView>("family");
   $effect.pre(() => { activeView = props.initialView ?? "family"; });
 
-  function setView(view: VtgView): void {
+  function setView(view: TnDView): void {
     activeView = view;
     props.onViewChange?.(view);
   }
@@ -37,7 +37,7 @@
   }
 </script>
 
-<div class="vtg-collection-view">
+<div class="tnd-collection-view">
   <div class="toggle-bar">
     <button
       type="button"
@@ -70,17 +70,17 @@
 
   <div class="grid-content">
     {#if activeView === "family"}
-      <VtgFamilyGrid catalogs={continuousCatalogs} onSelectFamily={props.onSelectFamily} />
+      <TnDFamilyGrid catalogs={continuousCatalogs} onSelectFamily={props.onSelectFamily} />
     {:else if activeView === "ratio"}
-      <VtgRatioGrid catalogs={continuousCatalogs} onSelectCatalog={props.onSelectCatalog} />
+      <TnDRatioGrid catalogs={continuousCatalogs} onSelectCatalog={props.onSelectCatalog} />
     {:else}
-      <VtgReversalGrid catalogs={props.catalogs} onSelectPattern={handleSelectPattern} />
+      <TnDReversalGrid catalogs={props.catalogs} onSelectPattern={handleSelectPattern} />
     {/if}
   </div>
 </div>
 
 <style>
-  .vtg-collection-view {
+  .tnd-collection-view {
     width: 100%;
     flex: 1;
     display: flex;

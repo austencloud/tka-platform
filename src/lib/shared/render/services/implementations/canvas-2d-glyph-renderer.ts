@@ -9,12 +9,12 @@ import { LetterType } from "../../../foundation/domain/models/LetterType";
 import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../../pictograph/tka-glyph/utils/turn-tuple-parser";
 import { interpretTurnColors, BLUE_HEX, RED_HEX } from "../../../pictograph/tka-glyph/services/turn-color-interpreter";
 import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn-position-calculator";
-import { calculateVTGFromPictograph } from "../../../pictograph/shared/domain/utils/vtg-calculator";
+import { calculateTnDFromPictograph } from "../../../pictograph/shared/domain/utils/tnd-calculator";
 import { calculateReversalPositions } from "../../core";
 import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { GridPosition } from "../../../pictograph/grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../pictograph/shared/domain/models/MotionData";
-import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-enums";
+import { MotionColor, getElementImagePath } from "../../../pictograph/shared/domain/enums/pictograph-enums";
 import { getMotionColor } from "../../../utils/svg-color-utils";
 
 const VIEWBOX_SIZE = 950;
@@ -28,9 +28,9 @@ const DOT_SIZE = 25;
 
 const TURN_NUMBER_HEIGHT = 45;
 
-const VTG_GLYPH_WIDTH = 201.24;
-const VTG_GLYPH_HEIGHT = 133.6;
-const VTG_OFFSET_PERCENTAGE = 0.04;
+const TND_GLYPH_WIDTH = 201.24;
+const TND_GLYPH_HEIGHT = 133.6;
+const TND_OFFSET_PERCENTAGE = 0.04;
 
 const _ELEMENTAL_GLYPH_WIDTH = 95;
 const _ELEMENTAL_GLYPH_HEIGHT = 125;
@@ -296,7 +296,7 @@ export async function drawTurnsColumn(
   }
 }
 
-export async function drawVTGGlyph(
+export async function drawTnDGlyph(
   ctx: CanvasRenderingContext2D,
   pictograph: PictographData,
   gridMode: GridMode,
@@ -312,27 +312,27 @@ export async function drawVTGGlyph(
     return;
   }
 
-  const vtgResult = calculateVTGFromPictograph(pictograph, gridMode);
-  if (!vtgResult.vtgMode) return;
+  const tndResult = calculateTnDFromPictograph(pictograph, gridMode);
+  if (!tndResult.tndMode) return;
 
   const scale = size / VIEWBOX_SIZE;
   const svgCache = getSvgImageCache();
 
-  const offset = VIEWBOX_SIZE * VTG_OFFSET_PERCENTAGE;
-  const x = (VIEWBOX_SIZE - VTG_GLYPH_WIDTH - offset) * scale;
-  const y = (VIEWBOX_SIZE - VTG_GLYPH_HEIGHT - offset) * scale;
+  const offset = VIEWBOX_SIZE * TND_OFFSET_PERCENTAGE;
+  const x = (VIEWBOX_SIZE - TND_GLYPH_WIDTH - offset) * scale;
+  const y = (VIEWBOX_SIZE - TND_GLYPH_HEIGHT - offset) * scale;
 
   try {
-    const vtgPath = `/images/vtg_glyphs/${vtgResult.vtgMode}.svg`;
-    const response = await fetch(vtgPath);
+    const tndPath = `/images/vtg_glyphs/${tndResult.tndMode}.svg`;
+    const response = await fetch(tndPath);
     if (!response.ok) return;
 
     const svgText = await response.text();
-    const cacheKey = `vtg_${vtgResult.vtgMode}_${isDarkMode}`;
+    const cacheKey = `tnd_${tndResult.tndMode}_${isDarkMode}`;
     const img = await svgCache.getImage(svgText, cacheKey);
 
-    const drawWidth = VTG_GLYPH_WIDTH * scale;
-    const drawHeight = VTG_GLYPH_HEIGHT * scale;
+    const drawWidth = TND_GLYPH_WIDTH * scale;
+    const drawHeight = TND_GLYPH_HEIGHT * scale;
 
     ctx.save();
     if (isDarkMode) {
@@ -341,7 +341,7 @@ export async function drawVTGGlyph(
     ctx.drawImage(img, x, y, drawWidth, drawHeight);
     ctx.restore();
   } catch (error) {
-    console.warn(`[Canvas2D] Failed to draw VTG glyph:`, error);
+    console.warn(`[Canvas2D] Failed to draw TnD glyph:`, error);
   }
 }
 
@@ -361,8 +361,8 @@ export async function drawElementalGlyph(
     return;
   }
 
-  const vtgResult = calculateVTGFromPictograph(pictograph, gridMode);
-  if (!vtgResult.elementalType) return;
+  const tndResult = calculateTnDFromPictograph(pictograph, gridMode);
+  if (!tndResult.elementalType) return;
 
   const scale = size / VIEWBOX_SIZE;
   const PADDING = 40;
@@ -373,7 +373,7 @@ export async function drawElementalGlyph(
   const y = (VIEWBOX_SIZE - GLYPH_HEIGHT - PADDING) * scale;
 
   try {
-    const elementalPath = `/images/elements/${vtgResult.elementalType}.png`;
+    const elementalPath = getElementImagePath(tndResult.elementalType);
     const response = await fetch(elementalPath);
     if (!response.ok) return;
 

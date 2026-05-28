@@ -62,7 +62,7 @@ export function getPreviewCacheKey(
   const resolvedBlue = opts.bluePropType ?? settings.bluePropType ?? "staff";
   const resolvedRed = opts.redPropType ?? settings.redPropType ?? "staff";
   const mv = `${opts.showBlueMotion === false ? "B0" : "B1"}${opts.showRedMotion === false ? "R0" : "R1"}`;
-  const gv = `${opts.showVTG ? "V1" : "V0"}${opts.showElemental ? "E1" : "E0"}${opts.showPositions ? "P1" : "P0"}`;
+  const gv = `${opts.showTnD ? "V1" : "V0"}${opts.showElemental ? "E1" : "E0"}${opts.showPositions ? "P1" : "P0"}`;
   return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
 }
 
@@ -178,7 +178,7 @@ export function buildRenderOptions(params: {
   handPointVis: "all" | "active";
   showTKA: boolean;
   showReversals: boolean;
-  showVTG: boolean;
+  showTnD: boolean;
   showElemental: boolean;
   showPositions: boolean;
   isSoloMode: boolean;
@@ -200,7 +200,7 @@ export function buildRenderOptions(params: {
     handPointVisibility: params.handPointVis,
     showTKA: params.isSoloMode ? false : params.showTKA,
     showReversals: params.isSoloMode ? false : params.showReversals,
-    showVTG: params.isSoloMode ? false : params.showVTG,
+    showTnD: params.isSoloMode ? false : params.showTnD,
     showElemental: params.isSoloMode ? false : params.showElemental,
     showPositions: params.isSoloMode ? false : params.showPositions,
     handPathMode: params.handPathMode,

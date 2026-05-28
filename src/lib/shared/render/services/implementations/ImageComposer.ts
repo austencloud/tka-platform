@@ -115,7 +115,7 @@ export class ImageComposer {
   ): Promise<PictographVisibilityOptions> {
     if (
       overrides?.showTKA !== undefined &&
-      overrides.showVTG !== undefined &&
+      overrides.showTnD !== undefined &&
       overrides.showElemental !== undefined &&
       overrides.showPositions !== undefined &&
       overrides.showReversals !== undefined &&
@@ -138,7 +138,7 @@ export class ImageComposer {
       }
       return {
         showTKA: overrides.showTKA,
-        showVTG: overrides.showVTG,
+        showTnD: overrides.showTnD,
         showElemental: overrides.showElemental,
         showPositions: overrides.showPositions,
         showReversals: overrides.showReversals,
@@ -169,7 +169,7 @@ export class ImageComposer {
 
     const globalSettings: PictographVisibilityOptions = {
       showTKA: visibilityManager.getGlyphVisibility("tkaGlyph"),
-      showVTG: visibilityManager.getGlyphVisibility("vtgGlyph"),
+      showTnD: visibilityManager.getGlyphVisibility("tndGlyph"),
       showElemental: visibilityManager.getGlyphVisibility("elementalGlyph"),
       showPositions: visibilityManager.getGlyphVisibility("positionsGlyph"),
       showReversals: visibilityManager.getGlyphVisibility("reversalIndicators"),
@@ -183,7 +183,7 @@ export class ImageComposer {
     if (overrides) {
       return {
         showTKA: overrides.showTKA ?? globalSettings.showTKA,
-        showVTG: overrides.showVTG ?? globalSettings.showVTG,
+        showTnD: overrides.showTnD ?? globalSettings.showTnD,
         showElemental: overrides.showElemental ?? globalSettings.showElemental,
         showPositions: overrides.showPositions ?? globalSettings.showPositions,
         showReversals: overrides.showReversals ?? globalSettings.showReversals,

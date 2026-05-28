@@ -37,9 +37,9 @@
   interface Props {
     sequence: SequenceData;
     themeOverride?: { visuals: CardBackThemeVisuals; name: string };
-    showVtgDesignation?: boolean;
+    showTnDDesignation?: boolean;
   }
-  let { sequence, themeOverride, showVtgDesignation = false }: Props = $props();
+  let { sequence, themeOverride, showTnDDesignation = false }: Props = $props();
 
   const d = $derived(deriveCardBackData(sequence));
   const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
@@ -555,7 +555,7 @@
     text-transform: none;
   }
 
-  .deck-designation.vtg {
+  .deck-designation.tnd {
     color: var(--card-text-muted, rgba(255, 255, 255, 0.7));
     font-size: 3cqi;
   }

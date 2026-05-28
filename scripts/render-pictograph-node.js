@@ -93,7 +93,7 @@ const OUTPUT_DIR = path.join(__dirname, '..', 'static', 'images', 'grant-feature
       size: 950,
       showGrid: true,
       showTKA: true,
-      showVTG: false,
+      showTND: false,
       showElemental: false,
       showPositions: false,
       showReversals: false,

@@ -67,7 +67,7 @@
 
   const showGrid = $derived.by(() => { void vmVersion; return vm.getGridVisibility(); });
   const tkaGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("tkaGlyph"); });
-  const vtgGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("vtgGlyph"); });
+  const tndGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("tndGlyph"); });
   const positionsGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("positionsGlyph"); });
   const nonRadial = $derived.by(() => { void vmVersion; return vm.getNonRadialVisibility(); });
 
@@ -77,7 +77,7 @@
   const headerAnyOn = $derived(showWord || showDifficulty || showLoopGlyph);
   const footerAnyOn = $derived(showCreatorName || showNotes || showBirthday);
   const pictographAnyOn = $derived(
-    showGrid || tkaGlyph || vtgGlyph || positionsGlyph || nonRadial
+    showGrid || tkaGlyph || tndGlyph || positionsGlyph || nonRadial
   );
 
   function toggleHeader(): void {
@@ -98,16 +98,16 @@
     const target = !pictographAnyOn;
     vm.setGridVisibility(target);
     vm.setGlyphVisibility("tkaGlyph", target);
-    vm.setGlyphVisibility("vtgGlyph", target);
+    vm.setGlyphVisibility("tndGlyph", target);
     vm.setGlyphVisibility("elementalGlyph", target);
     vm.setGlyphVisibility("positionsGlyph", target);
     vm.setNonRadialVisibility(target);
   }
 
-  // VTG and elemental glyphs move together (matching VisibilityTab behavior).
-  function toggleVtg(): void {
-    const next = !vtgGlyph;
-    vm.setGlyphVisibility("vtgGlyph", next);
+  // TnD and elemental glyphs move together (matching VisibilityTab behavior).
+  function toggleTnD(): void {
+    const next = !tndGlyph;
+    vm.setGlyphVisibility("tndGlyph", next);
     vm.setGlyphVisibility("elementalGlyph", next);
   }
 
@@ -159,7 +159,7 @@
     if (showBirthday) n++;
     if (showGrid) n++;
     if (tkaGlyph) n++;
-    if (vtgGlyph) n++;
+    if (tndGlyph) n++;
     if (positionsGlyph) n++;
     if (nonRadial) n++;
     if (showQRCode) n++;
@@ -235,9 +235,9 @@
               onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}
             >TKA</button>
             <button type="button" class="rt-chip"
-              aria-pressed={vtgGlyph}
-              onclick={toggleVtg}
-            >VTG</button>
+              aria-pressed={tndGlyph}
+              onclick={toggleTnD}
+            >TnD</button>
             <button type="button" class="rt-chip"
               aria-pressed={positionsGlyph}
               onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}
@@ -432,10 +432,10 @@
             onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}
             aria-pressed={tkaGlyph}
           >TKA</button>
-          <button type="button" class="chip" class:active={vtgGlyph}
-            onclick={toggleVtg}
-            aria-pressed={vtgGlyph}
-          >VTG</button>
+          <button type="button" class="chip" class:active={tndGlyph}
+            onclick={toggleTnD}
+            aria-pressed={tndGlyph}
+          >TnD</button>
           <button type="button" class="chip" class:active={positionsGlyph}
             onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}
             aria-pressed={positionsGlyph}

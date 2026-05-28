@@ -2,8 +2,11 @@
 </script>
 
 <svelte:head>
-  <title>Level 1 - The Kinetic Alphabet</title>
-  <meta name="description" content="The Kinetic Alphabet Level 1 guide - positions, motions, letters, words, and CAPs for double staves." />
+  <title>Level 1 Guide — The Kinetic Alphabet</title>
+  <meta name="description" content="The Kinetic Alphabet Level 1 guide — positions, motions, letters, words, and LOOPs for double staves." />
+  <meta property="og:title" content="Level 1 Guide — The Kinetic Alphabet" />
+  <meta property="og:description" content="A grid-based notation system for object manipulation choreography. Positions, motions, letters, words, and LOOPs." />
+  <meta property="og:image" content="/guide/level-1/images/_shared/level-1-front-cover.png" />
 </svelte:head>
 
 <div class="landing">
@@ -69,8 +72,8 @@
       </li>
       <li>
         <a href="/guide/level-1/words">
-          <strong>1.2 - Words & CAPs</strong>
-          <span>Words, CAPs, reversals, 16-count sequences, 8-letter words</span>
+          <strong>1.2 - Words & LOOPs</strong>
+          <span>Words, LOOPs, reversals, 16-count sequences, 8-letter words</span>
         </a>
       </li>
     </ol>
@@ -89,25 +92,27 @@
     max-width: 600px;
     margin: 0 auto;
     text-align: center;
+    padding-top: 2rem;
   }
 
   .cover-art {
     width: 100%;
     max-width: 400px;
-    border-radius: 8px;
+    border-radius: 16px;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 40px oklch(0.05 0.02 270 / 0.5);
+    border: 1px solid oklch(0.30 0.04 270 / 0.15);
   }
 
   .subtitle {
     font-size: 1.2rem;
-    color: #666;
+    color: oklch(0.55 0.02 270);
     margin-bottom: 0.5rem;
   }
 
   .byline {
     font-size: 0.95rem;
-    color: #888;
+    color: oklch(0.45 0.02 270);
     margin-bottom: 2rem;
   }
 
@@ -138,26 +143,27 @@
   .toc a {
     display: block;
     padding: 1rem;
-    border: 1px solid #e5e5e5;
-    border-radius: 8px;
+    border: 1px solid oklch(0.30 0.04 270 / 0.15);
+    border-radius: 12px;
     text-decoration: none;
     color: inherit;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    background: oklch(0.16 0.018 270 / 0.4);
+    transition: border-color 200ms ease, box-shadow 200ms ease;
   }
 
   .toc a:hover {
-    border-color: #4ea7e8;
-    box-shadow: 0 2px 8px rgba(78, 167, 232, 0.15);
+    border-color: oklch(0.50 0.15 270 / 0.4);
+    box-shadow: 0 4px 16px oklch(0.45 0.15 270 / 0.12);
   }
 
   .toc span {
     display: block;
     font-size: 0.9rem;
-    color: #666;
+    color: oklch(0.50 0.02 270);
     margin-top: 0.25rem;
   }
 
   .download a {
-    color: #4ea7e8;
+    color: oklch(0.70 0.18 270);
   }
 </style>

@@ -30,7 +30,7 @@
     handPathMode?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from printMode) */
     cardMode?: boolean;
-    /** Override the notes text in the card footer (e.g. VTG description) */
+    /** Override the notes text in the card footer (e.g. TnD description) */
     customNotesText?: string;
     /** Pre-rendered image URL - displays this instead of rendering via PropAwareThumbnail */
     preRenderedImageUrl?: string | null;

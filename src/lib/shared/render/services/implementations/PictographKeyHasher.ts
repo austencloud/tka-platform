@@ -23,7 +23,7 @@ interface PictographKeyInput {
   red: MotionKeyData | null;
   visibility: {
     showTKA: boolean;
-    showVTG: boolean;
+    showTnD: boolean;
     showElemental: boolean;
     showPositions: boolean;
     showReversals: boolean;
@@ -67,7 +67,7 @@ export class PictographKeyHasher {
       red: this.extractMotionKey(motions.red),
       visibility: {
         showTKA: visibility.showTKA ?? true,
-        showVTG: visibility.showVTG ?? false,
+        showTnD: visibility.showTnD ?? false,
         showElemental: visibility.showElemental ?? false,
         showPositions: visibility.showPositions ?? false,
         showReversals: visibility.showReversals ?? true,

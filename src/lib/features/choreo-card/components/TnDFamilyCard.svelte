@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { TndElement } from "../domain/tnd-element";
+  import type { TnDElement } from "../domain/tnd-element";
 
   interface Props {
-    theme: TndElement;
+    theme: TnDElement;
     ratioCount: number;
     sequenceCount: number;
     onSelect: () => void;
@@ -20,7 +20,7 @@
 
 <button
   type="button"
-  class="vtg-family-card"
+  class="tnd-family-card"
   style="--accent: {theme.accentColor};"
   aria-label="Open {familyName} family"
   onclick={onSelect}
@@ -44,7 +44,7 @@
 </button>
 
 <style>
-  .vtg-family-card {
+  .tnd-family-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -66,23 +66,23 @@
       border-color 150ms ease;
   }
 
-  .vtg-family-card:hover {
+  .tnd-family-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 30%, transparent);
     border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   }
 
-  .vtg-family-card:focus-visible {
+  .tnd-family-card:focus-visible {
     outline: 2px solid var(--theme-accent, #6c8ee8);
     outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .vtg-family-card {
+    .tnd-family-card {
       transition: none;
     }
 
-    .vtg-family-card:hover {
+    .tnd-family-card:hover {
       transform: none;
     }
   }

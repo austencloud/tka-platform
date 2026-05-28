@@ -1,7 +1,7 @@
 import type { Catalog } from "../domain/models/Catalog";
 import { loadSequencesByIds } from "./catalog-loader";
 import type { FamilyRatioGroup } from "./types";
-import { VTG_RATIO_TURNS_MAP } from "../domain/tnd-element";
+import { TND_RATIO_TURNS_MAP } from "../domain/tnd-element";
 
 export async function aggregateFamilySequences(
   familyId: string,
@@ -23,7 +23,7 @@ export async function aggregateFamilySequences(
         family.sequenceIds as string[],
       );
       const ratio = catalog.name.match(/\((\d+:\d+)/)?.[1] ?? "?";
-      const turns = VTG_RATIO_TURNS_MAP[ratio] ?? 0;
+      const turns = TND_RATIO_TURNS_MAP[ratio] ?? 0;
       return { ratio, turns, sequences };
     }),
   );

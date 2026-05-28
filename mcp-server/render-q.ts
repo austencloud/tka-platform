@@ -35,7 +35,7 @@ async function main() {
   const base64 = await renderer.renderToBase64(input, {
     darkMode: true,
     showTKA: true,
-    showVTG: true,
+    showTND: true,
     showPositions: true,
     showGrid: true,
     showBlueMotion: true,

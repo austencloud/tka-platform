@@ -1,87 +1,167 @@
+/* ══════════════════════════════════════════
+   Level 1 Guide — Bleeding Edge Design
+   Dark glassmorphic, Inter Variable, OKLCH,
+   full-bleed content grid, fluid typography
+   ══════════════════════════════════════════ */
+
 /* === Layout === */
 .guide-layout {
   display: flex;
   min-height: 100vh;
-  background: #fafafa;
-  color: #1a1a1a;
+  background: oklch(0.13 0.015 270);
+  color: oklch(0.90 0.01 270);
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* === Sidebar === */
 .guide-sidebar {
   position: fixed;
   top: 0;
   left: 0;
-  width: 260px;
+  width: 220px;
   height: 100vh;
   overflow-y: auto;
-  background: #fff;
-  border-right: 1px solid #e5e5e5;
+  overflow-x: clip;
+  background: oklch(0.15 0.02 270 / 0.6);
+  border-right: 1px solid oklch(0.30 0.04 270 / 0.3);
+  backdrop-filter: blur(24px);
   padding: 1.5rem 0;
   z-index: 10;
 }
 
+/* === Content: Full-bleed grid === */
 .guide-content {
   flex: 1;
-  margin-left: 260px;
-  max-width: 860px;
-  padding: 3rem 2rem 6rem;
+  margin-left: 220px;
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(1.5rem, 1fr)
+    [breakout-start] minmax(0, 6rem)
+    [prose-start] min(65ch, 100%)
+    [prose-end] minmax(0, 6rem)
+    [breakout-end] minmax(1.5rem, 1fr)
+    [full-end];
+  padding-bottom: 6rem;
+  position: relative;
+}
+
+.guide-content > * {
+  grid-column: prose;
 }
 
 /* === Typography === */
 .guide-content h1 {
-  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
-  font-style: italic;
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin: 0 0 1rem;
-  color: #1a1a1a;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: clamp(2.4rem, 1.8rem + 2vw, 4.2rem);
+  font-weight: 750;
+  font-variation-settings: 'opsz' 32;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: oklch(0.95 0.01 270);
+  margin: 0;
+  padding: 3rem 0 2rem;
+  text-align: center;
+  grid-column: full;
 }
 
 .guide-content h2 {
-  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
-  font-style: italic;
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin: 3rem 0 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e5e5e5;
-  color: #1a1a1a;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: clamp(1.3rem, 1rem + 0.8vw, 1.75rem);
+  font-weight: 650;
+  font-variation-settings: 'opsz' 24;
+  letter-spacing: -0.015em;
+  margin: 0 0 1rem;
+  padding-bottom: 0;
+  border-bottom: none;
+  color: oklch(0.88 0.02 270);
 }
 
 .guide-content h3 {
-  font-size: 1.25rem;
+  font-size: clamp(1.05rem, 0.95rem + 0.3vw, 1.25rem);
   font-weight: 600;
+  font-variation-settings: 'opsz' 20;
   margin: 2rem 0 0.75rem;
-  color: #333;
+  color: oklch(0.80 0.04 270);
 }
 
 .guide-content p {
-  font-size: 1.05rem;
-  line-height: 1.7;
-  margin: 0 0 1rem;
-  color: #333;
+  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
+  font-variation-settings: 'opsz' 16;
+  line-height: 1.72;
+  margin: 0 0 1.25rem;
+  color: oklch(0.72 0.01 270);
+  font-weight: 370;
 }
 
-/* === Type Color Coding (matches PDF) === */
-.type-dual-shift { color: #4ea7e8; }
-.type-shift { color: #6c5ba8; }
-.type-cross-shift { color: #2d8f5e; }
-.type-dash { color: #d4832f; }
-.type-dual-dash { color: #2a9d9d; }
-.type-static { color: #808080; }
+.guide-content p strong {
+  color: oklch(0.82 0.08 270);
+  font-weight: 600;
+}
 
-.hand-blue { color: #1d3a86; }
-.hand-red { color: #c1272d; }
+.guide-content ul, .guide-content ol {
+  color: oklch(0.72 0.01 270);
+  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
+  line-height: 1.72;
+  font-weight: 370;
+  margin: 0 0 1.25rem;
+  padding-left: 1.5rem;
+}
 
-/* === Section spacing === */
+.guide-content li {
+  margin-bottom: 0.5rem;
+}
+
+.guide-content li strong {
+  color: oklch(0.82 0.08 270);
+  font-weight: 600;
+}
+
+/* === Type Color Coding === */
+.type-dual-shift { color: oklch(0.72 0.15 220); }
+.type-shift { color: oklch(0.65 0.15 280); }
+.type-cross-shift { color: oklch(0.70 0.15 160); }
+.type-dash { color: oklch(0.72 0.15 60); }
+.type-dual-dash { color: oklch(0.70 0.15 190); }
+.type-static { color: oklch(0.60 0.02 270); }
+
+.hand-blue { color: oklch(0.55 0.20 260); }
+.hand-red { color: oklch(0.60 0.20 25); }
+
+/* === Sections === */
 .guide-section {
-  margin-bottom: 4rem;
+  grid-column: full;
+  display: grid;
+  grid-template-columns: subgrid;
+  margin-bottom: 2rem;
+  padding: 2rem 0;
+  background: oklch(0.16 0.018 270 / 0.4);
+  border: 1px solid oklch(0.30 0.04 270 / 0.1);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 8px 32px oklch(0.05 0.02 270 / 0.25),
+    inset 0 1px 0 oklch(0.40 0.04 270 / 0.06);
 }
 
-.guide-section + .guide-section {
-  padding-top: 1rem;
+.guide-section > * {
+  grid-column: prose;
+  padding: 0 2rem;
 }
 
-/* === Diagram === */
+/* === Scroll-driven section reveals === */
+@supports (animation-timeline: view()) {
+  .guide-section {
+    animation: guide-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 30%;
+  }
+  @keyframes guide-reveal {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* === Diagrams === */
 .guide-diagram {
   display: flex;
   flex-direction: column;
@@ -90,17 +170,20 @@
 }
 
 .guide-diagram img {
-  max-width: 100%;
+  max-width: 320px;
+  width: 100%;
   height: auto;
-  border-radius: 4px;
+  border-radius: 8px;
+  background: oklch(0.14 0.015 270 / 0.6);
+  border: 1px solid oklch(0.30 0.04 270 / 0.12);
+  padding: 1rem;
 }
 
 .guide-diagram figcaption {
-  font-size: 0.9rem;
-  color: #666;
-  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: oklch(0.50 0.02 270);
+  margin-top: 0.75rem;
   text-align: center;
-  font-style: italic;
 }
 
 /* === Pictograph grid === */
@@ -118,7 +201,7 @@
   font-weight: 600;
   font-size: 0.9rem;
   text-align: center;
-  color: #555;
+  color: oklch(0.55 0.04 270);
   padding-bottom: 0.25rem;
 }
 
@@ -128,14 +211,14 @@
   justify-content: center;
   font-weight: 600;
   font-size: 0.9rem;
-  color: #333;
+  color: oklch(0.80 0.04 270);
   padding-right: 0.75rem;
 }
 
 .guide-pictograph-grid .row-sublabel {
   font-weight: 400;
   font-size: 0.8rem;
-  color: #888;
+  color: oklch(0.50 0.02 270);
   display: block;
 }
 
@@ -148,19 +231,25 @@
 }
 
 .guide-pictograph .pictograph-wrapper {
-  border-radius: 6px;
+  border-radius: 10px;
   overflow: hidden;
-  background: #fff;
+  background: oklch(0.14 0.015 270 / 0.5);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 
 .guide-pictograph.bordered .pictograph-wrapper {
-  border: 1px solid #e0e0e0;
+  border: 1px solid oklch(0.30 0.04 270 / 0.15);
+}
+
+.guide-pictograph.bordered .pictograph-wrapper:hover {
+  border-color: oklch(0.50 0.15 270 / 0.35);
+  box-shadow: 0 0 24px oklch(0.45 0.15 270 / 0.1);
 }
 
 .guide-pictograph .pictograph-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #444;
+  color: oklch(0.55 0.04 270);
   text-align: center;
 }
 
@@ -173,16 +262,16 @@
 .guide-sequence-player {
   margin: 1.5rem 0;
   padding: 1rem;
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  background: oklch(0.16 0.018 270 / 0.5);
+  border: 1px solid oklch(0.30 0.04 270 / 0.15);
+  border-radius: 12px;
 }
 
 .guide-sequence-player .player-label {
   font-weight: 600;
   font-size: 0.95rem;
   margin-bottom: 0.75rem;
-  color: #333;
+  color: oklch(0.80 0.04 270);
 }
 
 .guide-sequence-player .beat-strip {
@@ -195,12 +284,12 @@
 .guide-sequence-player .beat-cell {
   flex-shrink: 0;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: box-shadow 0.15s ease;
 }
 
 .guide-sequence-player .beat-cell.active {
-  box-shadow: 0 0 0 3px #4ea7e8;
+  box-shadow: 0 0 0 3px oklch(0.65 0.18 270);
 }
 
 .guide-sequence-player .beat-cell.start-position {
@@ -218,17 +307,18 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 2px solid #333;
+  border: 2px solid oklch(0.60 0.04 270);
   background: none;
+  color: oklch(0.80 0.04 270);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
+  transition: background 200ms ease;
 }
 
 .guide-sequence-player .play-btn:hover {
-  background: #f0f0f0;
+  background: oklch(0.20 0.02 270 / 0.4);
 }
 
 .guide-sequence-player .beat-dots {
@@ -240,98 +330,125 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ddd;
+  background: oklch(0.30 0.02 270);
   cursor: pointer;
   border: none;
   padding: 0;
 }
 
 .guide-sequence-player .beat-dot.active {
-  background: #4ea7e8;
+  background: oklch(0.65 0.18 270);
 }
 
 .guide-sequence-player .speed-toggle {
   font-size: 0.8rem;
-  color: #888;
+  color: oklch(0.50 0.02 270);
   cursor: pointer;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid oklch(0.30 0.04 270 / 0.3);
+  border-radius: 6px;
   padding: 2px 8px;
   background: none;
 }
 
 /* === Navigation sidebar === */
 .guide-nav {
-  padding: 0 1rem;
+  padding: 0 0.75rem;
 }
 
 .guide-nav .nav-title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   padding: 0.5rem 0.75rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+  color: oklch(0.70 0.10 270);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .guide-nav .nav-title a {
-  color: #1a1a1a;
+  color: oklch(0.70 0.10 270);
   text-decoration: none;
 }
 
 .guide-nav .chapter-group {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .guide-nav .chapter-title {
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  font-weight: 500;
   font-size: 0.85rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: 4px;
+  padding: 0.55rem 0.75rem;
+  color: oklch(0.55 0.02 270);
+  background: none;
+  border: none;
+  border-radius: 10px;
   cursor: pointer;
-  color: #333;
+  text-align: left;
   text-decoration: none;
-  display: block;
+  transition: all 150ms ease;
 }
 
 .guide-nav .chapter-title:hover {
-  background: #f5f5f5;
+  background: oklch(0.20 0.02 270 / 0.4);
+  color: oklch(0.75 0.04 270);
 }
 
 .guide-nav .chapter-title.active {
-  color: #4ea7e8;
-  background: #eef6fd;
+  color: oklch(0.85 0.06 270);
+  background: oklch(0.22 0.03 270 / 0.4);
 }
 
 .guide-nav .section-list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0.25rem 0 0.5rem;
 }
 
 .guide-nav .section-link {
   display: block;
-  font-size: 0.8rem;
-  padding: 0.3rem 0.75rem 0.3rem 1.25rem;
-  color: #666;
+  font-size: 0.78rem;
+  padding: 0.35rem 0.75rem 0.35rem 2.25rem;
+  color: oklch(0.45 0.02 270);
   text-decoration: none;
-  border-radius: 4px;
-  transition: color 0.1s, background 0.1s;
+  border-radius: 8px;
+  transition: all 100ms ease;
+  font-weight: 400;
+  position: relative;
 }
 
 .guide-nav .section-link:hover {
-  color: #333;
-  background: #f9f9f9;
+  color: oklch(0.65 0.04 270);
+  background: oklch(0.20 0.02 270 / 0.3);
 }
 
 .guide-nav .section-link.active {
-  color: #4ea7e8;
-  font-weight: 600;
+  color: oklch(0.78 0.10 270);
+  font-weight: 550;
+  background: oklch(0.25 0.04 270 / 0.3);
+}
+
+.guide-nav .section-link.active::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  background: oklch(0.65 0.18 270);
+  border-radius: 2px;
 }
 
 /* === Fallback indicator (dev only) === */
 .guide-pictograph .fallback-badge {
   font-size: 0.65rem;
-  color: #e07c00;
-  background: #fff3e0;
+  color: oklch(0.70 0.15 60);
+  background: oklch(0.25 0.05 60 / 0.3);
   padding: 1px 6px;
   border-radius: 3px;
 }
@@ -343,22 +460,6 @@
   object-fit: contain;
 }
 
-/* === Dark mode === */
-@media (prefers-color-scheme: dark) {
-  .guide-layout { background: #111; color: #e0e0e0; }
-  .guide-sidebar { background: #1a1a1a; border-color: #333; }
-  .guide-content h1, .guide-content h2 { color: #e0e0e0; }
-  .guide-content h2 { border-color: #333; }
-  .guide-content h3 { color: #ccc; }
-  .guide-content p { color: #bbb; }
-  .guide-pictograph .pictograph-wrapper { background: #1a1a1a; }
-  .guide-pictograph.bordered .pictograph-wrapper { border-color: #333; }
-  .guide-sequence-player { background: #1a1a1a; border-color: #333; }
-  .guide-nav .chapter-title:hover { background: #222; }
-  .guide-nav .chapter-title.active { background: #1a2a3a; }
-  .guide-nav .section-link:hover { background: #222; }
-}
-
 /* === Mobile: collapse sidebar === */
 @media (max-width: 768px) {
   .guide-sidebar {
@@ -367,16 +468,40 @@
 
   .guide-sidebar.open {
     display: block;
+    position: fixed;
     width: 100%;
+    height: 100vh;
     z-index: 50;
+    background: oklch(0.13 0.015 270);
+    backdrop-filter: blur(24px);
   }
 
   .guide-content {
     margin-left: 0;
-    padding: 1.5rem 1rem 4rem;
+    grid-template-columns:
+      [full-start] minmax(1rem, 1fr)
+      [breakout-start] 0
+      [prose-start] min(65ch, 100%)
+      [prose-end] 0
+      [breakout-end] minmax(1rem, 1fr)
+      [full-end];
   }
 
   .guide-pictograph.size-sm .pictograph-wrapper { width: 100px; height: 100px; }
   .guide-pictograph.size-md .pictograph-wrapper { width: 140px; height: 140px; }
   .guide-pictograph.size-lg .pictograph-wrapper { width: 220px; height: 220px; }
+
+  .guide-pictograph-grid {
+    overflow-x: auto;
+  }
+
+  .guide-nav .section-link {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .guide-nav .chapter-title {
+    min-height: 44px;
+  }
 }

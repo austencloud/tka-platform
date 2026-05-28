@@ -189,7 +189,7 @@ export const POST: RequestHandler = async (event) => {
 			darkMode: options.darkMode ?? true,
 			size: options.size ?? 400,
 			showTKA: options.showTKA ?? true,
-			showVTG: options.showVTG ?? false,
+			showTnD: options.showTnD ?? false,
 			showElemental: options.showElemental ?? false,
 			showPositions: options.showPositions ?? false,
 			showReversals: options.showReversals ?? false,

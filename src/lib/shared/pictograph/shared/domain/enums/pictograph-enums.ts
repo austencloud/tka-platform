@@ -135,7 +135,7 @@ export enum VectorDirection {
   DOWNLEFT = "downleft",
 }
 
-export enum TNDMode {
+export enum TnDMode {
   SPLIT_SAME = "SS",
   SPLIT_OPP = "SO",
   TOG_SAME = "TS",
@@ -153,10 +153,24 @@ export enum ElementalType {
   MOON = "moon",
 }
 
+const ELEMENT_IMAGE_FILE: Record<ElementalType, string> = {
+  [ElementalType.WATER]: "water-v2",
+  [ElementalType.FIRE]: "fire-v2",
+  [ElementalType.EARTH]: "earth-v2",
+  [ElementalType.AIR]: "air-v2",
+  [ElementalType.SUN]: "sun-v4",
+  [ElementalType.MOON]: "moon-v2",
+};
+
+export function getElementImagePath(element: ElementalType | string): string {
+  const filename = ELEMENT_IMAGE_FILE[element as ElementalType] ?? element;
+  return `/images/elements/${filename}.png`;
+}
+
 export enum GlyphType {
   TKA = "tka",
   REVERSALS = "reversals",
-  TND = "vtg",
+  TnD = "tnd",
   ELEMENTAL = "elemental",
   POSITIONS = "positions",
 }

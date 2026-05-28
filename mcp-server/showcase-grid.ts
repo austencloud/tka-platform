@@ -173,7 +173,7 @@ async function main() {
     const svg = await renderer.renderToSvg(data, {
       darkMode: true,
       showTKA: true,
-      showVTG: true,
+      showTND: true,
       showElemental: true,
       showPositions: true,
       showGrid: true,

@@ -1,5 +1,6 @@
 <script lang="ts">
   import GuideSection from "../../_components/GuideSection.svelte";
+  import MotionVisualizer from "$lib/features/learn/components/interactive/motions/MotionVisualizer.svelte";
 </script>
 
 <GuideSection id="hand-motions" title="Hand Motions">
@@ -8,14 +9,38 @@
     The arrow shows the direction of motion. The hand shows the end position.
   </p>
 
-  <h3>Shift</h3>
-  <p>Move to an adjacent point.</p>
-
-  <h3>Dash</h3>
-  <p>Move to the opposite point.</p>
-
-  <h3>Static</h3>
-  <p>Stay at the current point.</p>
+  <div class="base-motions">
+    <div class="motion-demo">
+      <h3>Shift</h3>
+      <p>Move to an adjacent point.</p>
+      <MotionVisualizer
+        leftStart="W" leftEnd="N"
+        rightStart="W" rightEnd="N"
+        leftMotion="shift" rightMotion="shift"
+        showMotionType={false} showLabels
+      />
+    </div>
+    <div class="motion-demo">
+      <h3>Dash</h3>
+      <p>Move to the opposite point.</p>
+      <MotionVisualizer
+        leftStart="N" leftEnd="S"
+        rightStart="N" rightEnd="S"
+        leftMotion="dash" rightMotion="dash"
+        showMotionType={false} showLabels
+      />
+    </div>
+    <div class="motion-demo">
+      <h3>Static</h3>
+      <p>Stay at the current point.</p>
+      <MotionVisualizer
+        leftStart="N" leftEnd="N"
+        rightStart="S" rightEnd="S"
+        leftMotion="static" rightMotion="static"
+        showMotionType={false} showLabels
+      />
+    </div>
+  </div>
 
   <h3>Six Combinations</h3>
   <p>Using these, we can derive six combinations, named below:</p>
@@ -28,3 +53,26 @@
     <li><span class="type-static"><strong>Static:</strong></span> Both hands remain static.</li>
   </ol>
 </GuideSection>
+
+<style>
+  .base-motions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .motion-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .motion-demo h3 {
+    margin: 0;
+  }
+
+  .motion-demo p {
+    margin: 0 0 0.5rem;
+  }
+</style>

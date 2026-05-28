@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
-  import { VTG_FAMILY_KEYS, VTG_FAMILY_LABELS } from "../state/catalog-browse-types";
+  import { TND_FAMILY_KEYS, TND_FAMILY_LABELS } from "../state/catalog-browse-types";
   import { TND_BY_FAMILY } from "../domain/tnd-element";
   import { parseTurnPattern } from "../domain/turn-pattern-parser";
   import CatalogCard from "./CatalogCard.svelte";
@@ -25,7 +25,7 @@
     const counts = new Map<string, number>();
     for (const catalog of catalogs) {
       for (const fam of catalog.families) {
-        for (const key of VTG_FAMILY_KEYS) {
+        for (const key of TND_FAMILY_KEYS) {
           if (fam.id.toLowerCase().includes(key)) {
             counts.set(key, (counts.get(key) ?? 0) + fam.sequenceIds.length);
             break;
@@ -34,7 +34,7 @@
       }
     }
 
-    return VTG_FAMILY_KEYS
+    return TND_FAMILY_KEYS
       .filter(k => counts.has(k))
       .map(k => ({
         id: k,
@@ -94,7 +94,7 @@
           Back
         </button>
         <span class="family-title">
-          {VTG_FAMILY_LABELS[selectedFamily] ?? selectedFamily}
+          {TND_FAMILY_LABELS[selectedFamily] ?? selectedFamily}
         </span>
         <span class="family-seq-count">{familyCatalogs.length} catalogs</span>
       </div>

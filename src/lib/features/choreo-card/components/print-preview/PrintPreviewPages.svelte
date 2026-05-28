@@ -6,7 +6,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/types";
   import type { PrintRenderOptions } from "../../services/types";
-  import type { TndElement } from "../../domain/tnd-element";
+  import type { TnDElement } from "../../domain/tnd-element";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -24,7 +24,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     showWord?: boolean;
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
-    tndElement?: TndElement;
+    tndElement?: TnDElement;
     /** Per-card footer data, index-aligned with sequences */
     footers?: CardFooter[];
     /** Use deck layout policy instead of user composition settings */

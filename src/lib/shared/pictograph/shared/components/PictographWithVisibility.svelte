@@ -15,7 +15,7 @@ Handles the forceShowAll logic for showing all glyphs in settings panel.
     forceShowAll = false,
     previewMode = false,
     onToggleTKA = undefined,
-    onToggleVTG = undefined,
+    onToggleTnD = undefined,
     onToggleElemental = undefined,
     onTogglePositions = undefined,
     onToggleReversals = undefined,
@@ -26,7 +26,7 @@ Handles the forceShowAll logic for showing all glyphs in settings panel.
     forceShowAll?: boolean;
     previewMode?: boolean;
     onToggleTKA?: () => void;
-    onToggleVTG?: () => void;
+    onToggleTnD?: () => void;
     onToggleElemental?: () => void;
     onTogglePositions?: () => void;
     onToggleReversals?: () => void;
@@ -51,13 +51,13 @@ Handles the forceShowAll logic for showing all glyphs in settings panel.
     disableTransitions={true}
     {previewMode}
     showTKA={visibilityOverride}
-    showVTG={visibilityOverride}
+    showTnD={visibilityOverride}
     showElemental={visibilityOverride}
     showPositions={visibilityOverride}
     showReversals={visibilityOverride}
     showNonRadialPoints={visibilityOverride}
     {onToggleTKA}
-    {onToggleVTG}
+    {onToggleTnD}
     {onToggleElemental}
     {onTogglePositions}
     {onToggleReversals}

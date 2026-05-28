@@ -138,7 +138,7 @@ export class PrintCardRenderer {
       ...(options.deckName && { deckName: options.deckName }),
       visibilityOverrides: {
         showTKA: options.showTKA,
-        showVTG: false,
+        showTnD: false,
         showElemental: false,
         showPositions: false,
         showReversals: true,

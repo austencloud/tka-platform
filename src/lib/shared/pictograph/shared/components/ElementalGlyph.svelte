@@ -6,7 +6,7 @@ in the bottom-right corner of pictographs. Each icon contains the VTG mode text
 embedded within the elemental shape. Only displays for Type1 letters.
 -->
 <script lang="ts">
-  import type { ElementalType } from "../domain/enums/pictograph-enums";
+  import { type ElementalType, getElementImagePath } from "../domain/enums/pictograph-enums";
   import { LetterType } from "../../../foundation/domain/models/LetterType";
   import {
     type Letter,
@@ -57,10 +57,9 @@ embedded within the elemental shape. Only displays for Type1 letters.
     return true;
   });
 
-  // Image path - fused elemental+VTG PNGs in static/images/elements/
   const imagePath = $derived.by(() => {
     if (!elementalType) return "";
-    return `/images/elements/${elementalType}.png`;
+    return getElementImagePath(elementalType);
   });
 
   // Positioning: bottom-right corner (replacing both old elemental top-right and VTG bottom-right)

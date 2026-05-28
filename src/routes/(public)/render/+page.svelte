@@ -85,7 +85,7 @@
         visibility: {
           showGrid: true,
           showTKA: true,
-          showVTG: false,
+          showTnD: false,
           showElemental: false,
           showPositions: false,
           showReversals: false,

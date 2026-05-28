@@ -327,7 +327,7 @@
     </div>
 
     {@const loopDecks = decks.filter(d => d.collection === 'LOOPs')}
-    {@const vtgDecks = decks.filter(d => d.collection !== 'LOOPs')}
+    {@const tndDecks = decks.filter(d => d.collection !== 'LOOPs')}
 
     <div class="deck-list">
       {#if loopDecks.length > 0}
@@ -343,11 +343,11 @@
           </div>
         </section>
       {/if}
-      {#if vtgDecks.length > 0}
+      {#if tndDecks.length > 0}
         <section>
-          <h3 class="section-label">VTG Decks <span class="dim">({vtgDecks.length})</span></h3>
+          <h3 class="section-label">TnD Decks <span class="dim">({tndDecks.length})</span></h3>
           <div class="deck-grid">
-            {#each vtgDecks as deck (deck.id)}
+            {#each tndDecks as deck (deck.id)}
               <button class="deck-card" onclick={() => openDeck(deck)}>
                 <span class="deck-name">{deckLabel(deck)}</span>
                 <span class="deck-meta">{deck.totalSequences.toLocaleString()} seq</span>

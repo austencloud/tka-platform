@@ -209,7 +209,7 @@
         size: CANONICAL_SIZE,
         visibility: {
           showTKA: false,
-          showVTG: false,
+          showTnD: false,
           showElemental: false,
           showPositions: false,
           showReversals: false,

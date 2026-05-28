@@ -89,9 +89,9 @@ export interface LayerRenderOptions {
 
   // Glyphs baked into the base layer (toggle invalidates base cache, which
   // is acceptable given the rarity of toggles and low cost of a fresh render).
-  /** VTG glyph (bottom-right category badge). */
-  showVTG?: boolean;
-  /** Elemental glyph (paired with VTG, same corner). */
+  /** TnD glyph (bottom-right category badge). */
+  showTnD?: boolean;
+  /** Elemental glyph (paired with TnD, same corner). */
   showElemental?: boolean;
   /** Start/end position letters (alpha/beta/gamma). */
   showPositions?: boolean;

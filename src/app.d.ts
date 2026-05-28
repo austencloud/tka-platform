@@ -31,7 +31,7 @@ declare global {
       wordInputOverlay?: boolean;
       // Catalog navigation (ChoreoCardTab)
       catalogNavId?: string | null;
-      catalogNavVtgFamily?: string | null;
+      catalogNavTnDFamily?: string | null;
     }
     interface Platform {
       env: {

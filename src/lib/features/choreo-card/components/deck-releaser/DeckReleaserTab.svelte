@@ -8,9 +8,9 @@
     buildSequencePool,
     getAvailableWeights,
     getCatalogSourceSummaries,
-    getVtgFamilyOptions,
-    getVtgTurnPatternOptions,
-    buildVtgCards,
+    getTnDFamilyOptions,
+    getTnDTurnPatternOptions,
+    buildTnDCards,
     composeDeck,
     swapCard,
     prunePool,
@@ -82,8 +82,8 @@
     try {
       catalogs = await loadCatalogs();
       rs.sourceSummaries = getCatalogSourceSummaries(catalogs);
-      rs.vtgFamilies = getVtgFamilyOptions(catalogs);
-      rs.vtgTurnPatterns = getVtgTurnPatternOptions(catalogs);
+      rs.tndFamilies = getTnDFamilyOptions(catalogs);
+      rs.tndTurnPatterns = getTnDTurnPatternOptions(catalogs);
       await releasesPromise;
       rebuildPool();
     } catch (err) {
@@ -119,38 +119,38 @@
     rebuildPool();
   }
 
-  function handleModeChange(mode: 'loop' | 'vtg') {
+  function handleModeChange(mode: 'loop' | 'tnd') {
     rs.deckMode = mode;
-    if (mode === 'vtg' && rs.selectedVtgFamilies.size === 0) {
-      rs.selectedVtgFamilies = new Set(rs.vtgFamilies.map(f => f.familyId));
+    if (mode === 'tnd' && rs.selectedTnDFamilies.size === 0) {
+      rs.selectedTnDFamilies = new Set(rs.tndFamilies.map(f => f.familyId));
     }
-    if (mode === 'vtg' && rs.selectedVtgTurnPatterns.size === 0) {
-      rs.selectedVtgTurnPatterns = new Set(rs.vtgTurnPatterns.map(tp => tp.turnPattern));
+    if (mode === 'tnd' && rs.selectedTnDTurnPatterns.size === 0) {
+      rs.selectedTnDTurnPatterns = new Set(rs.tndTurnPatterns.map(tp => tp.turnPattern));
     }
   }
 
-  function handleVtgFamilyToggle(familyId: string) {
-    const next = new Set(rs.selectedVtgFamilies);
+  function handleTnDFamilyToggle(familyId: string) {
+    const next = new Set(rs.selectedTnDFamilies);
     if (next.has(familyId)) {
       next.delete(familyId);
     } else {
       next.add(familyId);
     }
-    rs.selectedVtgFamilies = next;
+    rs.selectedTnDFamilies = next;
   }
 
-  function handleVtgTurnPatternToggle(tp: string) {
-    const next = new Set(rs.selectedVtgTurnPatterns);
+  function handleTnDTurnPatternToggle(tp: string) {
+    const next = new Set(rs.selectedTnDTurnPatterns);
     if (next.has(tp)) {
       next.delete(tp);
     } else {
       next.add(tp);
     }
-    rs.selectedVtgTurnPatterns = next;
+    rs.selectedTnDTurnPatterns = next;
   }
 
-  const vtgCardCount = $derived(
-    buildVtgCards(rs.vtgFamilies, rs.selectedVtgFamilies, rs.selectedVtgTurnPatterns).length
+  const tndCardCount = $derived(
+    buildTnDCards(rs.tndFamilies, rs.selectedTnDFamilies, rs.selectedTnDTurnPatterns).length
   );
 
   function handleWeightChange(stepCount: number, weight: number) {
@@ -160,9 +160,9 @@
   }
 
   function composeFullDeck() {
-    if (rs.deckMode === 'vtg') {
-      const vtgCards = buildVtgCards(rs.vtgFamilies, rs.selectedVtgFamilies, rs.selectedVtgTurnPatterns);
-      return vtgCards.map((c, i) => ({ ...c, position: i + 1 }));
+    if (rs.deckMode === 'tnd') {
+      const tndCards = buildTnDCards(rs.tndFamilies, rs.selectedTnDFamilies, rs.selectedTnDTurnPatterns);
+      return tndCards.map((c, i) => ({ ...c, position: i + 1 }));
     }
     return composeDeck(pool, rs.weights, rs.totalCards, { center: rs.notes });
   }
@@ -279,19 +279,19 @@
         notes={rs.notes}
         sourceSummaries={rs.sourceSummaries}
         selectedSliceTypes={rs.selectedSliceTypes}
-        vtgFamilies={rs.vtgFamilies}
-        selectedVtgFamilies={rs.selectedVtgFamilies}
-        vtgTurnPatterns={rs.vtgTurnPatterns}
-        selectedVtgTurnPatterns={rs.selectedVtgTurnPatterns}
-        {vtgCardCount}
+        tndFamilies={rs.tndFamilies}
+        selectedTnDFamilies={rs.selectedTnDFamilies}
+        tndTurnPatterns={rs.tndTurnPatterns}
+        selectedTnDTurnPatterns={rs.selectedTnDTurnPatterns}
+        {tndCardCount}
         isLoading={rs.isLoadingPools}
         onModeChange={handleModeChange}
         onWeightChange={handleWeightChange}
         onTotalCardsChange={(t) => { rs.totalCards = t; }}
         onNotesChange={(n) => { rs.notes = n; }}
         onSliceTypeToggle={handleSliceTypeToggle}
-        onVtgFamilyToggle={handleVtgFamilyToggle}
-        onVtgTurnPatternToggle={handleVtgTurnPatternToggle}
+        onTnDFamilyToggle={handleTnDFamilyToggle}
+        onTnDTurnPatternToggle={handleTnDTurnPatternToggle}
         onDraw={handleDraw}
       />
     {:else if rs.step === "review"}

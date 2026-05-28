@@ -121,7 +121,7 @@ async function renderPictograph(letter: string): Promise<string> {
     size: 950,
     showGrid: true,
     showTKA: true,
-    showVTG: false,
+    showTND: false,
     showElemental: false,
     showPositions: false,
     showReversals: false,

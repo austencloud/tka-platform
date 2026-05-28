@@ -131,7 +131,7 @@ export class GalleryRenderer {
       propTypeOverride: propType,
       visibilityOverrides: {
         showTKA: true,
-        showVTG: false,
+        showTnD: false,
         showElemental: false,
         showPositions: false,
         showReversals: true,

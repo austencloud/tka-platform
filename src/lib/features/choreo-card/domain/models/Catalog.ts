@@ -16,7 +16,7 @@ export interface Catalog {
   readonly totalSequences: number;
   readonly gridMode: GridMode;
   readonly level: number;
-  readonly collection: 'LOOPs' | 'VTG';
+  readonly collection: 'LOOPs' | 'TnD';
   readonly loopType: string;
   readonly sliceType: 'halved' | 'quartered';
   readonly stepCount: number;

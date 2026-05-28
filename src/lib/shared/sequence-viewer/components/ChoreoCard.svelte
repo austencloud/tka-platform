@@ -244,9 +244,9 @@
   const showBlueMotion = $derived(viewerVisibility?.blueMotion ?? true);
   const showRedMotion = $derived(viewerVisibility?.redMotion ?? true);
   const allMotionsVisible = $derived(showBlueMotion && showRedMotion);
-  const showVTG = $derived.by(() => {
+  const showTnD = $derived.by(() => {
     void glyphVisibilityVersion;
-    return vm.getRawGlyphVisibility("vtgGlyph");
+    return vm.getRawGlyphVisibility("tndGlyph");
   });
   const showElemental = $derived.by(() => {
     void glyphVisibilityVersion;
@@ -493,7 +493,7 @@
       handPointVis,
       showTKA,
       showReversals,
-      showVTG,
+      showTnD,
       showElemental,
       showPositions,
       isSoloMode,
@@ -1204,7 +1204,7 @@
     const dm = darkMode;
     const sbm = showBlueMotion;
     const srm = showRedMotion;
-    const svtg = showVTG;
+    const stnd = showTnD;
     const selm = showElemental;
     const spos = showPositions;
     // Read effectiveColumns so the effect fires when the composition manager's
@@ -1216,7 +1216,7 @@
     // Image key: props that affect the actual pictograph images (NOT grid positions).
     // Cell images are rendered at a fixed CELL_SIZE (240px) regardless of column
     // count, so column changes only need relayoutCells() (instant grid repositioning).
-    const gv = `${svtg ? "1" : "0"}${selm ? "1" : "0"}${spos ? "1" : "0"}`;
+    const gv = `${stnd ? "1" : "0"}${selm ? "1" : "0"}${spos ? "1" : "0"}`;
     const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}-mv:${sbm ? "1" : "0"}${srm ? "1" : "0"}-gv:${gv}`;
     // Layout key: props that only affect grid positions (column count, start position toggle).
     const layoutKey = `${isp}-cols:${effCols}`;
@@ -1361,7 +1361,7 @@
     const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const stepCount = sequence?.steps?.length ?? 0;
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    const initImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-mv:${showBlueMotion ? "1" : "0"}${showRedMotion ? "1" : "0"}-gv:${showVTG ? "1" : "0"}${showElemental ? "1" : "0"}${showPositions ? "1" : "0"}`;
+    const initImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-mv:${showBlueMotion ? "1" : "0"}${showRedMotion ? "1" : "0"}-gv:${showTnD ? "1" : "0"}${showElemental ? "1" : "0"}${showPositions ? "1" : "0"}`;
     const initContentKey = `${initImageKey}-${includeStartPosition}-cols:${effectiveColumns}`;
     const initGridStableKey = `${stepCount}-${durationKey}-cols:${effectiveColumns}-isp:${includeStartPosition}`;
     crossfader.updateKeys({ contentKey: initContentKey, imageKey: initImageKey, gridStableKey: initGridStableKey });

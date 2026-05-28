@@ -3,21 +3,21 @@
   import GuideDiagram from "../../_components/GuideDiagram.svelte";
 </script>
 
-<GuideSection id="prop-reversal-caps" title="Prop-Reversal CAPs">
+<GuideSection id="prop-reversal-loops" title="Prop-Reversal LOOPs">
   <p>
-    Each of these words uses a prop-reversal. These examples are Rotated CAPs.
+    Each of these words uses a prop-reversal. These examples are Rotated LOOPs.
   </p>
 
   <GuideDiagram
     src="/guide/level-1/images/prop-rev-caps/EΣQY.png"
-    alt="EΣQY — Rotated CAP with prop-reversal"
-    caption="E&#x3A3;QY — Rotated CAP"
+    alt="EΣQY — Rotated LOOP with prop-reversal"
+    caption="E&#x3A3;QY — Rotated LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/prop-rev-caps/TWKθ.png"
-    alt="TWKθ — Rotated CAP with prop-reversal"
-    caption="TWK&#x3B8; — Rotated CAP"
+    alt="TWKθ — Rotated LOOP with prop-reversal"
+    caption="TWK&#x3B8; — Rotated LOOP"
   />
 
   <p>
@@ -27,7 +27,7 @@
   </p>
   <GuideDiagram
     src="/guide/level-1/images/prop-rev-caps/BΔMX.png"
-    alt="BΔMX — Rotated CAP with prop-reversal"
-    caption="B&#x394;MX — Rotated CAP"
+    alt="BΔMX — Rotated LOOP with prop-reversal"
+    caption="B&#x394;MX — Rotated LOOP"
   />
 </GuideSection>

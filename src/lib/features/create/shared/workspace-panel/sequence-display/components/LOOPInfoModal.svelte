@@ -80,7 +80,7 @@
                 showTKA={true}
                 showGrid={true}
                 showReversals={false}
-                showVTG={false}
+                showTnD={false}
                 showElemental={false}
                 showPositions={false}
                 showHandPoints={false}

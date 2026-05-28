@@ -28,7 +28,7 @@ export interface UserPreferences {
   darkMode: boolean;
   size: number;
   showTKA: boolean;
-  showVTG: boolean;
+  showTND: boolean;
   showElemental: boolean;
   showPositions: boolean;
   showReversals: boolean;
@@ -45,7 +45,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   darkMode: true,
   size: 400,
   showTKA: true,
-  showVTG: false,
+  showTND: false,
   showElemental: false,
   showPositions: false,
   showReversals: false,

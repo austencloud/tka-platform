@@ -23,12 +23,12 @@
   <p>
     Let's place the reversals in a different place. This time we'll put them after beat 1. This will
     put our left hand on top after beat 4, so we'll repeat the sequence again mirrored (with a
-    reversal after beat 5) to return to our original home position. This is a Mirrored CAP.
+    reversal after beat 5) to return to our original home position. This is a Mirrored LOOP.
   </p>
   <GuideDiagram
     src="/guide/level-1/images/abc-examples/AABB_mir_perm.png"
-    alt="AABB mirrored CAP with reversals after beat 1"
-    caption="AABB Mirrored CAP"
+    alt="AABB Mirrored LOOP with reversals after beat 1"
+    caption="AABB Mirrored LOOP"
   />
 
   <p>Now let's look at another variation of AABB×2 with reversals after beats 3 & 7.</p>

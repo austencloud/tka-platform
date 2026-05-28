@@ -451,7 +451,7 @@ export class LayerCompositor {
         redPropType: options.redPropType,
         showBlueMotion: options.showBlueMotion,
         showRedMotion: options.showRedMotion,
-        showVTG: options.showVTG,
+        showTnD: options.showTnD,
         showElemental: options.showElemental,
         showPositions: options.showPositions,
         handPathMode: options.handPathMode,

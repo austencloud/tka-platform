@@ -1,4 +1,4 @@
-export interface TndElement {
+export interface TnDElement {
   readonly familyId: string;
   readonly name: string;
   readonly element: string;
@@ -7,13 +7,13 @@ export interface TndElement {
   readonly iconPath: string;
 }
 
-export const TND_ELEMENTS: readonly TndElement[] = [
+export const TND_ELEMENTS: readonly TnDElement[] = [
   {
     familyId: "split-same",
     name: "Split-Same",
     element: "water",
-    accentColor: "#63b7cd",
-    darkComplement: "#1a5276",
+    accentColor: "#4a7fb5",
+    darkComplement: "#1a3a5e",
     iconPath: "/images/elements/water-v2.png",
   },
   {
@@ -44,8 +44,8 @@ export const TND_ELEMENTS: readonly TndElement[] = [
     familyId: "tog-opp",
     name: "Tog-Opp",
     element: "air",
-    accentColor: "#78b7e3",
-    darkComplement: "#1a4a6b",
+    accentColor: "#a8d8f0",
+    darkComplement: "#3a6a8b",
     iconPath: "/images/elements/air-v2.png",
   },
   {
@@ -58,10 +58,10 @@ export const TND_ELEMENTS: readonly TndElement[] = [
   },
 ] as const;
 
-export const TND_BY_FAMILY: Readonly<Record<string, TndElement>> =
+export const TND_BY_FAMILY: Readonly<Record<string, TnDElement>> =
   Object.fromEntries(TND_ELEMENTS.map(t => [t.familyId, t]));
 
-export const VTG_RATIO_LEVEL_MAP: Readonly<Record<string, number>> = {
+export const TND_RATIO_LEVEL_MAP: Readonly<Record<string, number>> = {
   "1:1": 1,
   "3:1": 2,
   "5:1": 2,
@@ -71,7 +71,7 @@ export const VTG_RATIO_LEVEL_MAP: Readonly<Record<string, number>> = {
   "6:1": 3,
 };
 
-export const VTG_RATIO_TURNS_MAP: Readonly<Record<string, number>> = {
+export const TND_RATIO_TURNS_MAP: Readonly<Record<string, number>> = {
   "1:1": 0,
   "2:1": 0.5,
   "3:1": 1,
@@ -81,8 +81,8 @@ export const VTG_RATIO_TURNS_MAP: Readonly<Record<string, number>> = {
   "7:1": 3,
 };
 
-/** Inverse of VTG_RATIO_TURNS_MAP - maps turn values to ratio strings */
-export const VTG_TURNS_RATIO_MAP: Readonly<Record<number, string>> = {
+/** Inverse of TND_RATIO_TURNS_MAP - maps turn values to ratio strings */
+export const TND_TURNS_RATIO_MAP: Readonly<Record<number, string>> = {
   0: "1:1",
   0.5: "2:1",
   1: "3:1",
@@ -92,6 +92,6 @@ export const VTG_TURNS_RATIO_MAP: Readonly<Record<number, string>> = {
   3: "7:1",
 };
 
-export function getTndElement(familyId: string): TndElement | null {
+export function getTnDElement(familyId: string): TnDElement | null {
   return TND_ELEMENTS.find((t) => t.familyId === familyId) ?? null;
 }

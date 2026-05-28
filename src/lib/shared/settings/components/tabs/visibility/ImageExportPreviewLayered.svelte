@@ -28,7 +28,7 @@ This gives users a live preview of exactly how their settings affect the exporte
     customNotesText?: string;
     darkMode?: boolean;
     onToggleTKA?: () => void;
-    onToggleVTG?: () => void;
+    onToggleTnD?: () => void;
     onToggleElemental?: () => void;
     onTogglePositions?: () => void;
     onToggleReversals?: () => void;
@@ -47,7 +47,7 @@ This gives users a live preview of exactly how their settings affect the exporte
     customNotesText = "",
     darkMode = false,
     onToggleTKA = undefined,
-    onToggleVTG = undefined,
+    onToggleTnD = undefined,
     onToggleElemental = undefined,
     onTogglePositions = undefined,
     onToggleReversals = undefined,
@@ -110,7 +110,7 @@ This gives users a live preview of exactly how their settings affect the exporte
             forceShowAll={false}
             previewMode={true}
             {onToggleTKA}
-            {onToggleVTG}
+            {onToggleTnD}
             {onToggleElemental}
             {onTogglePositions}
             {onToggleReversals}
@@ -358,7 +358,7 @@ This gives users a live preview of exactly how their settings affect the exporte
    */
   .sequence-cell :global(.tka-glyph.preview-mode:not(.visible)),
   .sequence-cell :global(.turns-column.preview-mode:not(.visible)),
-  .sequence-cell :global(.vtg-glyph.preview-mode:not(.visible)),
+  .sequence-cell :global(.tnd-glyph.preview-mode:not(.visible)),
   .sequence-cell :global(.elemental-glyph.preview-mode:not(.visible)),
   .sequence-cell :global(.position-glyph.preview-mode:not(.visible)),
   .sequence-cell :global(.reversal-indicators.preview-mode:not(.visible)) {

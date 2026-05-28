@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
-  import { VTG_RATIO_LEVEL_MAP } from "../domain/tnd-element";
-  import VtgRatioCard from "./VtgRatioCard.svelte";
+  import { TND_RATIO_LEVEL_MAP } from "../domain/tnd-element";
+  import TnDRatioCard from "./TnDRatioCard.svelte";
 
   interface Props {
     catalogs: Catalog[];
@@ -18,7 +18,7 @@
     const groups = new Map<number, Catalog[]>();
     for (const catalog of all) {
       const ratio = getRatio(catalog);
-      const level = VTG_RATIO_LEVEL_MAP[ratio] ?? catalog.level;
+      const level = TND_RATIO_LEVEL_MAP[ratio] ?? catalog.level;
       if (!groups.has(level)) groups.set(level, []);
       groups.get(level)!.push(catalog);
     }
@@ -44,7 +44,7 @@
   {#each levelGroups as group (group.level)}
     <div class="ratio-row">
       {#each group.catalogs as catalog (catalog.id)}
-        <VtgRatioCard {catalog} onSelect={() => onSelectCatalog(catalog.id)} />
+        <TnDRatioCard {catalog} onSelect={() => onSelectCatalog(catalog.id)} />
       {/each}
     </div>
   {/each}

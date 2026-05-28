@@ -96,7 +96,7 @@ export const GET: RequestHandler = async (event) => {
       size: 950,
       visibility: {
         showTKA: true,
-        showVTG: false,
+        showTnD: false,
         showElemental: false,
         showPositions: false,
         showReversals: false,

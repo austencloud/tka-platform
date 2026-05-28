@@ -87,7 +87,7 @@ export const GET: RequestHandler = async () => {
       },
       visibility: {
         showTKA: "always",
-        showVTG: "hidden",
+        showTnD: "hidden",
         showElemental: "hidden",
         showPositions: "hidden",
         showReversals: "always",
@@ -196,7 +196,7 @@ export const POST: RequestHandler = async (event) => {
       // Choreo card visibility overrides
       visibilityOverrides: {
         showTKA: true, // Always show TKA glyph
-        showVTG: false, // Hide VTG glyph
+        showTnD: false, // Hide TnD glyph
         showElemental: false, // Hide elemental glyph
         showPositions: false, // Hide positions
         showReversals: true, // Show reversal indicators

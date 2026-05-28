@@ -71,7 +71,7 @@ async function main() {
   const decksSnap = await db.collection("decks").get();
   const vtgCatalogs = decksSnap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    .filter((c) => c.collection === "VTG" && PATTERNS.has(c.turnPattern));
+    .filter((c) => c.collection === "TnD" && PATTERNS.has(c.turnPattern));
 
   console.log(`Found ${vtgCatalogs.length} VTG catalogs matching patterns`);
 
@@ -79,7 +79,7 @@ async function main() {
     console.log("No matching catalogs. Available VTG turn patterns:");
     const allVtg = decksSnap.docs
       .map((d) => d.data())
-      .filter((c) => c.collection === "VTG");
+      .filter((c) => c.collection === "TnD");
     const patterns = [...new Set(allVtg.map((c) => c.turnPattern))].sort();
     for (const p of patterns) {
       console.log(`  - ${p}`);

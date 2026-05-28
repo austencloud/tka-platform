@@ -259,8 +259,8 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       drawDirectionDot(ctx, preparedPictograph, letterDimensions, scale, isDarkMode, Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter);
     }
 
-    // 9. Draw fused Elemental+VTG glyph (bottom-right corner)
-    if (visibility.showVTG || visibility.showElemental) {
+    // 9. Draw fused Elemental+TnD glyph (bottom-right corner)
+    if (visibility.showTnD || visibility.showElemental) {
       await drawElementalGlyph(ctx, preparedPictograph, gridMode, size, isDarkMode);
     }
 

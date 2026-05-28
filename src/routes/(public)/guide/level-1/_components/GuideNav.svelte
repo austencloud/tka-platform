@@ -6,10 +6,12 @@
     activeSectionId = $bindable(""),
     activeChapter = $bindable<string | null>(null),
     onChapterSelect,
+    onSectionClick,
   }: {
     activeSectionId?: string;
     activeChapter?: string | null;
     onChapterSelect?: (slug: string) => void;
+    onSectionClick?: () => void;
   } = $props();
 
   const currentPath = $derived(page.url.pathname);
@@ -68,6 +70,7 @@
                 class="section-link"
                 class:active={activeSectionId === section.id}
                 href="#{section.id}"
+                onclick={() => onSectionClick?.()}
               >
                 {section.title}
               </a>
@@ -84,8 +87,8 @@
     all: unset;
     cursor: pointer;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.95rem;
     padding: 0.5rem 0.75rem;
-    color: #1a1a1a;
+    color: oklch(0.70 0.10 270);
   }
 </style>

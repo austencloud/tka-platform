@@ -88,7 +88,7 @@ All of these go INTO the pictograph hash (via `mapToVisibility()`):
 | PreviewCellRenderOptions | PictographVisibilityOptions | Notes |
 |---|---|---|
 | `options.showTKA` | `showTKA` | Default true |
-| (not present) | `showVTG: false` | Preview cells never show VTG |
+| (not present) | `showTND: false` | Preview cells never show VTG |
 | (not present) | `showElemental: false` | Preview cells never show elemental |
 | (not present) | `showPositions: false` | Preview cells never show positions |
 | `options.showReversals` | `showReversals` | Default true |

@@ -40,7 +40,7 @@ export const DASH_SUFFIX = {
   FILL_LIGHT: "#231f20",
 } as const;
 
-export const VTG_GLYPH = {
+export const TND_GLYPH = {
   WIDTH: 201.24,
   HEIGHT: 133.6,
   OFFSET_PERCENTAGE: 0.04,

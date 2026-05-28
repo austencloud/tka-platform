@@ -179,7 +179,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     description: "Toggle a visual setting on/off",
     validTargets: [
       "showGrid", "stepNumbers", "nonRadialPoints",
-      "tkaGlyph", "vtgGlyph", "elementalGlyph", "positionsGlyph", "reversalIndicators",
+      "tkaGlyph", "tndGlyph", "elementalGlyph", "positionsGlyph", "reversalIndicators",
       "darkMode", "wordHeader", "progressBar", "props",
       "musicianMode", "hapticFeedback", "reducedMotion", "showShortcutHints",
     ],
@@ -190,7 +190,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     description: "Enable/show a visual setting",
     validTargets: [
       "showGrid", "stepNumbers", "nonRadialPoints",
-      "tkaGlyph", "vtgGlyph", "elementalGlyph", "positionsGlyph", "reversalIndicators",
+      "tkaGlyph", "tndGlyph", "elementalGlyph", "positionsGlyph", "reversalIndicators",
       "darkMode", "wordHeader", "progressBar", "props",
     ],
   },
@@ -200,7 +200,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     description: "Disable/hide a visual setting",
     validTargets: [
       "showGrid", "stepNumbers", "nonRadialPoints",
-      "tkaGlyph", "vtgGlyph", "elementalGlyph", "positionsGlyph", "reversalIndicators",
+      "tkaGlyph", "tndGlyph", "elementalGlyph", "positionsGlyph", "reversalIndicators",
       "wordHeader", "progressBar", "props",
     ],
   },

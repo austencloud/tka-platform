@@ -1111,7 +1111,7 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
   },
   {
-    id: "vtg",
+    id: "tnd",
     labelKey: "tab_lab_vtg",
     descKey: "tab_desc_lab_vtg",
     label: "VTG",

@@ -44,7 +44,7 @@ export interface SequenceExportOptions {
 
   visibilityOverrides?: {
     showTKA?: boolean;
-    showVTG?: boolean;
+    showTnD?: boolean;
     showElemental?: boolean;
     showPositions?: boolean;
     showReversals?: boolean;

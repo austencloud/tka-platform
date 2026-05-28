@@ -868,7 +868,7 @@ This is the critical component. Wraps `PictographRenderer` + `PictographPreparer
         {showGrid}
         showTKA={true}
         showReversals={false}
-        showVTG={false}
+        showTND={false}
         showElemental={false}
         showPositions={false}
         showNonRadialPoints={false}

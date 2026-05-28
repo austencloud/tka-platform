@@ -7,7 +7,7 @@
  *   Level 2 = has turns > 0, radial orientations only
  *   Level 3 = has non-radial orientations (clock/counter)
  *
- * Scans ALL decks with collection === "VTG", reads their sequences,
+ * Scans ALL decks with collection === "TnD", reads their sequences,
  * recomputes level, and updates any that are wrong.
  *
  * Usage:
@@ -82,7 +82,7 @@ async function main() {
 
   // Find all VTG decks
   const decksSnapshot = await db.collection("decks")
-    .where("collection", "==", "VTG")
+    .where("collection", "==", "TnD")
     .get();
 
   console.log(`Found ${decksSnapshot.size} VTG decks\n`);

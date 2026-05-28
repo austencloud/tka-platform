@@ -185,7 +185,7 @@ async function renderLetter(
   return renderer.renderToSvg(input, {
     darkMode: true,
     showTKA: true,
-    showVTG: true,
+    showTND: true,
     showElemental: true,
     showPositions: true,
     showGrid: true,

@@ -24,7 +24,7 @@ type VisibilityCategory = "glyph" | "non_radial" | "all" | "buttons";
 interface VisibilitySettings {
   reversalIndicators: boolean;
   tkaGlyph: boolean; 
-  vtgGlyph: boolean;
+  tndGlyph: boolean;
   elementalGlyph: boolean;
   positionsGlyph: boolean;
   showGrid: boolean; 
@@ -40,7 +40,7 @@ export class VisibilityStateManager {
 
   private readonly DEPENDENT_GLYPHS = [
     "tkaGlyph",
-    "vtgGlyph",
+    "tndGlyph",
     "elementalGlyph",
     "positionsGlyph",
   ];
@@ -55,7 +55,7 @@ export class VisibilityStateManager {
     this.settings = {
       reversalIndicators: true,
       tkaGlyph: true,
-      vtgGlyph: false,
+      tndGlyph: false,
       elementalGlyph: false,
       positionsGlyph: false,
       showGrid: true,
@@ -92,7 +92,7 @@ export class VisibilityStateManager {
         const v = service.settings.visibility;
 
         if (v.tkaGlyph !== undefined) this.settings.tkaGlyph = v.tkaGlyph;
-        if (v.vtgGlyph !== undefined) this.settings.vtgGlyph = v.vtgGlyph;
+        if (v.tndGlyph !== undefined) this.settings.tndGlyph = v.tndGlyph;
         if (v.elementalGlyph !== undefined)
           this.settings.elementalGlyph = v.elementalGlyph;
         if (v.positionsGlyph !== undefined)
@@ -138,7 +138,7 @@ export class VisibilityStateManager {
 
     const visibilitySettings = {
       tkaGlyph: this.settings.tkaGlyph,
-      vtgGlyph: this.settings.vtgGlyph,
+      tndGlyph: this.settings.tndGlyph,
       elementalGlyph: this.settings.elementalGlyph,
       positionsGlyph: this.settings.positionsGlyph,
       reversalIndicators: this.settings.reversalIndicators,
@@ -161,7 +161,7 @@ export class VisibilityStateManager {
     return {
       tkaGlyph: this.settings.tkaGlyph,
       reversalIndicators: this.settings.reversalIndicators,
-      vtgGlyph: this.settings.vtgGlyph,
+      tndGlyph: this.settings.tndGlyph,
       elementalGlyph: this.settings.elementalGlyph,
       positionsGlyph: this.settings.positionsGlyph,
       nonRadialPoints: this.settings.nonRadialPoints,
@@ -304,7 +304,7 @@ export class VisibilityStateManager {
     return [
       "tkaGlyph",
       "reversalIndicators",
-      "vtgGlyph",
+      "tndGlyph",
       "elementalGlyph",
       "positionsGlyph",
     ].filter((glyph) => this.getGlyphVisibility(glyph));

@@ -12,13 +12,17 @@
   setActiveSectionContext((id: string) => {
     activeSectionId = id;
   });
+
+  function closeSidebar() {
+    sidebarOpen = false;
+  }
 </script>
 
 <svelte:head>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&display=swap"
     rel="stylesheet"
   />
 </svelte:head>
@@ -33,7 +37,7 @@
   </button>
 
   <aside class="guide-sidebar" class:open={sidebarOpen}>
-    <GuideNav bind:activeSectionId />
+    <GuideNav bind:activeSectionId onSectionClick={closeSidebar} />
   </aside>
 
   <main class="guide-content">
@@ -49,16 +53,22 @@
     left: 1rem;
     z-index: 60;
     font-size: 1.5rem;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    background: oklch(0.18 0.02 270 / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid oklch(0.30 0.04 270 / 0.3);
+    border-radius: 10px;
     padding: 0.25rem 0.5rem;
     cursor: pointer;
+    min-width: 44px;
+    min-height: 44px;
+    color: oklch(0.80 0.04 270);
   }
 
   @media (max-width: 768px) {
     .mobile-menu-btn {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 </style>

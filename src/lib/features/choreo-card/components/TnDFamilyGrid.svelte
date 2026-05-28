@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
   import { TND_ELEMENTS } from "../domain/tnd-element";
-  import VtgFamilyCard from "./VtgFamilyCard.svelte";
+  import TnDFamilyCard from "./TnDFamilyCard.svelte";
 
   interface Props {
     catalogs: Catalog[];
@@ -28,7 +28,7 @@
 
 <div class="family-grid">
   {#each familyStats as { theme, ratioCount, sequenceCount } (theme.familyId)}
-    <VtgFamilyCard
+    <TnDFamilyCard
       {theme}
       {ratioCount}
       {sequenceCount}

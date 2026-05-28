@@ -3,7 +3,7 @@
  * Prune Decks — Delete unwanted decks and their sequences subcollections.
  *
  * Keeps:
- *   - All VTG decks (collection === "VTG")
+ *   - All TnD decks (collection === "TnD")
  *   - l1-halved-strict-rotated-4beat (period 2, 47 seq)
  *   - l1-halved-strict-rotated-8beat (period 4, 22595 seq)
  *   - l1-quartered-strict-rotated-8beat (period 2, 128 seq)
@@ -71,7 +71,7 @@ async function main() {
   const toDelete = [];
 
   for (const deck of allDecks) {
-    if (deck.collection === "VTG" || KEEP_IDS.has(deck.id)) {
+    if (deck.collection === "TnD" || KEEP_IDS.has(deck.id)) {
       toKeep.push(deck);
     } else {
       toDelete.push(deck);

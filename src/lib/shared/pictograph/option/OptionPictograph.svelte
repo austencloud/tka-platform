@@ -26,7 +26,7 @@
   let showTKA = $state(vm.getGlyphVisibility("tkaGlyph"));
   let showReversals = $state(vm.getGlyphVisibility("reversalIndicators"));
   let showNonRadialPoints = $state(vm.getNonRadialVisibility());
-  let showVTG = $state(vm.getGlyphVisibility("vtgGlyph"));
+  let showTnD = $state(vm.getGlyphVisibility("tndGlyph"));
   let showElemental = $state(vm.getGlyphVisibility("elementalGlyph"));
   let showPositions = $state(vm.getGlyphVisibility("positionsGlyph"));
   let handPointVisibility = $state<"all" | "active">(vm.getHandPointVisibility());
@@ -36,7 +36,7 @@
     showTKA = vm.getGlyphVisibility("tkaGlyph");
     showReversals = vm.getGlyphVisibility("reversalIndicators");
     showNonRadialPoints = vm.getNonRadialVisibility();
-    showVTG = vm.getGlyphVisibility("vtgGlyph");
+    showTnD = vm.getGlyphVisibility("tndGlyph");
     showElemental = vm.getGlyphVisibility("elementalGlyph");
     showPositions = vm.getGlyphVisibility("positionsGlyph");
     handPointVisibility = vm.getHandPointVisibility();
@@ -68,7 +68,7 @@
   {showTKA}
   {showReversals}
   {showNonRadialPoints}
-  {showVTG}
+  {showTnD}
   {showElemental}
   {showPositions}
   {handPointVisibility}

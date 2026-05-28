@@ -210,21 +210,21 @@ function shuffle<T>(arr: T[]): void {
 }
 
 // ---------------------------------------------------------------------------
-// VTG deck helpers
+// TnD deck helpers
 // ---------------------------------------------------------------------------
 
-export interface VtgSequenceEntry {
+export interface TnDSequenceEntry {
   sequenceId: string;
   sourceCatalogId: string;
   turnRatio: string;
   turnPattern: string;
 }
 
-export interface VtgFamilyOption {
+export interface TnDFamilyOption {
   familyId: string;
   label: string;
   sequenceCount: number;
-  entries: readonly VtgSequenceEntry[];
+  entries: readonly TnDSequenceEntry[];
 }
 
 function parseTurnRatio(deckName: string): string {
@@ -232,10 +232,10 @@ function parseTurnRatio(deckName: string): string {
   return match?.[1] ?? "0:1";
 }
 
-export function getVtgFamilyOptions(catalogs: Catalog[]): VtgFamilyOption[] {
-  const merged = new Map<string, { label: string; entries: VtgSequenceEntry[] }>();
+export function getTnDFamilyOptions(catalogs: Catalog[]): TnDFamilyOption[] {
+  const merged = new Map<string, { label: string; entries: TnDSequenceEntry[] }>();
   for (const catalog of catalogs) {
-    if (catalog.collection !== "VTG") continue;
+    if (catalog.collection !== "TnD") continue;
     const turnRatio = parseTurnRatio(catalog.name);
     for (const family of catalog.families) {
       if (!family.id || family.id === "unknown") continue;
@@ -265,23 +265,23 @@ export function getVtgFamilyOptions(catalogs: Catalog[]): VtgFamilyOption[] {
   }));
 }
 
-export function vtgFooter(familyId: string, _turnRatio: string): CardFooter {
+export function tndFooter(familyId: string, _turnRatio: string): CardFooter {
   const theme = TND_BY_FAMILY[familyId];
   return theme
     ? { center: theme.name, iconPath: theme.iconPath }
     : { center: familyId };
 }
 
-export interface VtgTurnPatternOption {
+export interface TnDTurnPatternOption {
   turnPattern: string;
   label: string;
   sequenceCount: number;
 }
 
-export function getVtgTurnPatternOptions(catalogs: Catalog[]): VtgTurnPatternOption[] {
+export function getTnDTurnPatternOptions(catalogs: Catalog[]): TnDTurnPatternOption[] {
   const counts = new Map<string, number>();
   for (const catalog of catalogs) {
-    if (catalog.collection !== "VTG") continue;
+    if (catalog.collection !== "TnD") continue;
     const tp = catalog.turnPattern;
     counts.set(tp, (counts.get(tp) ?? 0) + catalog.totalSequences);
   }
@@ -306,13 +306,13 @@ function parseTurnPatternSort(tp: string): number {
   return 999;
 }
 
-export function buildVtgCards(
-  vtgFamilies: VtgFamilyOption[],
+export function buildTnDCards(
+  tndFamilies: TnDFamilyOption[],
   selectedFamilies: Set<string>,
   selectedTurnPatterns?: Set<string>,
 ): DeckReleaseCard[] {
   const cards: DeckReleaseCard[] = [];
-  for (const fam of vtgFamilies) {
+  for (const fam of tndFamilies) {
     if (!selectedFamilies.has(fam.familyId)) continue;
     for (const entry of fam.entries) {
       if (selectedTurnPatterns && !selectedTurnPatterns.has(entry.turnPattern)) continue;
@@ -322,7 +322,7 @@ export function buildVtgCards(
         stepCount: 4,
         word: entry.sequenceId,
         position: 0,
-        footer: vtgFooter(fam.familyId, entry.turnRatio),
+        footer: tndFooter(fam.familyId, entry.turnRatio),
       });
     }
   }

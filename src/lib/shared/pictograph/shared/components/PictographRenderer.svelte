@@ -41,7 +41,7 @@ Usage:
   import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
   import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
-  import { calculateVTGFromPictograph } from "../domain/utils/vtg-calculator";
+  import { calculateTnDFromPictograph } from "../domain/utils/tnd-calculator";
 
   // Props - all explicit, no global state dependencies
   let {
@@ -57,7 +57,7 @@ Usage:
     showReversals = true,
     showNonRadialPoints = false,
     // Extended glyph visibility controls
-    showVTG = false,
+    showTnD = false,
     showElemental = false,
     showPositions = false,
     // Hand point visibility (all = show all 8, active = only where props are)
@@ -86,7 +86,7 @@ Usage:
     transparentBackground = false,
     // Toggle callbacks (for interactive visibility controls)
     onToggleTKA = undefined,
-    onToggleVTG = undefined,
+    onToggleTnD = undefined,
     onToggleElemental = undefined,
     onTogglePositions = undefined,
     onToggleReversals = undefined,
@@ -111,7 +111,7 @@ Usage:
     showTKA?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
-    showVTG?: boolean;
+    showTnD?: boolean;
     showElemental?: boolean;
     showPositions?: boolean;
     /** Hand point visibility mode: "all" shows all 8 points, "active" shows only where props are */
@@ -134,7 +134,7 @@ Usage:
     /** Transparent background - grid and props float on parent's background */
     transparentBackground?: boolean;
     onToggleTKA?: () => void;
-    onToggleVTG?: () => void;
+    onToggleTnD?: () => void;
     onToggleElemental?: () => void;
     onTogglePositions?: () => void;
     onToggleReversals?: () => void;
@@ -260,11 +260,11 @@ Usage:
   const glyphOpacity = $derived(bothMotionsFullyVisible ? 1 : DIMMED_OPACITY);
 
   // VTG and Elemental calculation
-  const vtgInfo = $derived.by(() => {
+  const tndInfo = $derived.by(() => {
     if (!pictograph) {
-      return { vtgMode: null, elementalType: null };
+      return { tndMode: null, elementalType: null };
     }
-    return calculateVTGFromPictograph(pictograph, gridMode);
+    return calculateTnDFromPictograph(pictograph, gridMode);
   });
 
   // Turns tuple generation
@@ -503,15 +503,15 @@ Usage:
         {redMotionVisible}
       />
 
-      <!-- Fused Elemental + VTG glyph (bottom-right) -->
-      <g opacity={(showElemental || showVTG) ? glyphOpacity : 0}>
+      <!-- Fused Elemental + TnD glyph (bottom-right) -->
+      <g opacity={(showElemental || showTnD) ? glyphOpacity : 0}>
         <ElementalGlyph
-          elementalType={vtgInfo.elementalType}
+          elementalType={tndInfo.elementalType}
           letter={pictograph.letter}
           {hasValidData}
-          visible={showElemental || showVTG}
+          visible={showElemental || showTnD}
           {previewMode}
-          onToggle={onToggleElemental ?? onToggleVTG}
+          onToggle={onToggleElemental ?? onToggleTnD}
           xOffset={rightGlyphOffset}
         />
       </g>

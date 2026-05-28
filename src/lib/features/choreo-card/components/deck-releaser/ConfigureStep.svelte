@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
-  import type { CatalogSourceSummary, VtgFamilyOption, VtgTurnPatternOption } from "../../services/deck-composer";
+  import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
 
-  type DeckMode = "loop" | "vtg";
+  type DeckMode = "loop" | "tnd";
 
   interface Props {
     deckMode: DeckMode;
@@ -11,18 +11,18 @@
     notes: string;
     sourceSummaries: CatalogSourceSummary[];
     selectedSliceTypes: Set<'halved' | 'quartered'>;
-    vtgFamilies: VtgFamilyOption[];
-    selectedVtgFamilies: Set<string>;
-    vtgTurnPatterns: VtgTurnPatternOption[];
-    selectedVtgTurnPatterns: Set<string>;
-    vtgCardCount: number;
+    tndFamilies: TnDFamilyOption[];
+    selectedTnDFamilies: Set<string>;
+    tndTurnPatterns: TnDTurnPatternOption[];
+    selectedTnDTurnPatterns: Set<string>;
+    tndCardCount: number;
     onModeChange: (mode: DeckMode) => void;
     onWeightChange: (stepCount: number, weight: number) => void;
     onTotalCardsChange: (total: number) => void;
     onNotesChange: (notes: string) => void;
     onSliceTypeToggle: (sliceType: 'halved' | 'quartered') => void;
-    onVtgFamilyToggle: (familyId: string) => void;
-    onVtgTurnPatternToggle: (tp: string) => void;
+    onTnDFamilyToggle: (familyId: string) => void;
+    onTnDTurnPatternToggle: (tp: string) => void;
     onDraw: () => void;
     isLoading: boolean;
   }
@@ -34,18 +34,18 @@
     notes,
     sourceSummaries,
     selectedSliceTypes,
-    vtgFamilies,
-    selectedVtgFamilies,
-    vtgTurnPatterns,
-    selectedVtgTurnPatterns,
-    vtgCardCount,
+    tndFamilies,
+    selectedTnDFamilies,
+    tndTurnPatterns,
+    selectedTnDTurnPatterns,
+    tndCardCount,
     onModeChange,
     onWeightChange,
     onTotalCardsChange,
     onNotesChange,
     onSliceTypeToggle,
-    onVtgFamilyToggle,
-    onVtgTurnPatternToggle,
+    onTnDFamilyToggle,
+    onTnDTurnPatternToggle,
     onDraw,
     isLoading,
   }: Props = $props();
@@ -71,12 +71,12 @@
   }
 
   const canDraw = $derived(
-    deckMode === "vtg" ? vtgCardCount > 0 : totalWeight > 0
+    deckMode === "tnd" ? tndCardCount > 0 : totalWeight > 0
   );
 
   const drawLabel = $derived(
-    deckMode === "vtg"
-      ? `Draw ${vtgCardCount} VTG Cards`
+    deckMode === "tnd"
+      ? `Draw ${tndCardCount} TnD Cards`
       : `Draw ${totalCards} Cards`
   );
 </script>
@@ -103,11 +103,11 @@
         <button
           type="button"
           class="mode-btn"
-          class:selected={deckMode === "vtg"}
-          onclick={() => onModeChange("vtg")}
+          class:selected={deckMode === "tnd"}
+          onclick={() => onModeChange("tnd")}
         >
           <i class="fas fa-shapes" aria-hidden="true"></i>
-          VTG Motions
+          TnD Motions
         </button>
       </div>
     </div>
@@ -198,38 +198,38 @@
     {:else}
       <div class="control-group">
         <span class="control-label">Turn Patterns</span>
-        <div class="vtg-turns">
-          {#each vtgTurnPatterns as tp (tp.turnPattern)}
+        <div class="tnd-turns">
+          {#each tndTurnPatterns as tp (tp.turnPattern)}
             <button
               type="button"
-              class="vtg-turn-btn"
-              class:selected={selectedVtgTurnPatterns.has(tp.turnPattern)}
-              onclick={() => onVtgTurnPatternToggle(tp.turnPattern)}
+              class="tnd-turn-btn"
+              class:selected={selectedTnDTurnPatterns.has(tp.turnPattern)}
+              onclick={() => onTnDTurnPatternToggle(tp.turnPattern)}
             >
-              <span class="vtg-turn-label">{tp.label}</span>
-              <span class="vtg-turn-count">{tp.sequenceCount}</span>
+              <span class="tnd-turn-label">{tp.label}</span>
+              <span class="tnd-turn-count">{tp.sequenceCount}</span>
             </button>
           {/each}
         </div>
       </div>
 
       <div class="control-group">
-        <span class="control-label">VTG Families</span>
-        <div class="vtg-families">
-          {#each vtgFamilies as fam (fam.familyId)}
+        <span class="control-label">TnD Families</span>
+        <div class="tnd-families">
+          {#each tndFamilies as fam (fam.familyId)}
             <button
               type="button"
-              class="vtg-family-btn"
-              class:selected={selectedVtgFamilies.has(fam.familyId)}
-              onclick={() => onVtgFamilyToggle(fam.familyId)}
+              class="tnd-family-btn"
+              class:selected={selectedTnDFamilies.has(fam.familyId)}
+              onclick={() => onTnDFamilyToggle(fam.familyId)}
             >
-              <span class="vtg-family-name">{fam.label}</span>
-              <span class="vtg-family-count">{fam.sequenceCount} cards</span>
+              <span class="tnd-family-name">{fam.label}</span>
+              <span class="tnd-family-count">{fam.sequenceCount} cards</span>
             </button>
           {/each}
         </div>
-        <div class="vtg-summary">
-          {vtgCardCount} cards selected
+        <div class="tnd-summary">
+          {tndCardCount} cards selected
         </div>
       </div>
     {/if}
@@ -418,13 +418,13 @@
     opacity: 0.7;
   }
 
-  .vtg-turns {
+  .tnd-turns {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
   }
 
-  .vtg-turn-btn {
+  .tnd-turn-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -441,34 +441,34 @@
     font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
   }
 
-  .vtg-turn-btn:hover {
+  .tnd-turn-btn:hover {
     background: rgba(255, 255, 255, 0.06);
   }
 
-  .vtg-turn-btn.selected {
+  .tnd-turn-btn.selected {
     background: rgba(16, 185, 129, 0.1);
     border-color: rgba(16, 185, 129, 0.4);
     color: #10b981;
   }
 
-  .vtg-turn-label {
+  .tnd-turn-label {
     font-size: 14px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
 
-  .vtg-turn-count {
+  .tnd-turn-count {
     font-size: 10px;
     opacity: 0.6;
   }
 
-  .vtg-families {
+  .tnd-families {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
   }
 
-  .vtg-family-btn {
+  .tnd-family-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -483,27 +483,27 @@
     transition: all 0.15s ease;
   }
 
-  .vtg-family-btn:hover {
+  .tnd-family-btn:hover {
     background: rgba(255, 255, 255, 0.06);
   }
 
-  .vtg-family-btn.selected {
+  .tnd-family-btn.selected {
     background: rgba(16, 185, 129, 0.1);
     border-color: rgba(16, 185, 129, 0.4);
     color: #10b981;
   }
 
-  .vtg-family-name {
+  .tnd-family-name {
     font-size: 12px;
     font-weight: 600;
   }
 
-  .vtg-family-count {
+  .tnd-family-count {
     font-size: 11px;
     opacity: 0.6;
   }
 
-  .vtg-summary {
+  .tnd-summary {
     font-size: 13px;
     font-weight: 600;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
@@ -618,7 +618,7 @@
       display: none;
     }
 
-    .vtg-families {
+    .tnd-families {
       grid-template-columns: repeat(2, 1fr);
     }
   }

@@ -12,7 +12,7 @@
   interface Props {
     showGrid: boolean;
     tkaGlyphVisible: boolean;
-    vtgGlyphVisible: boolean;
+    tndGlyphVisible: boolean;
     positionsGlyphVisible: boolean;
     reversalIndicatorsVisible: boolean;
     nonRadialVisible: boolean;
@@ -23,7 +23,7 @@
   let {
     showGrid,
     tkaGlyphVisible,
-    vtgGlyphVisible,
+    tndGlyphVisible,
     positionsGlyphVisible,
     reversalIndicatorsVisible,
     nonRadialVisible,
@@ -51,7 +51,7 @@
       forceShowAll={true}
       previewMode={true}
       onToggleTKA={() => onToggle("tka")}
-      onToggleVTG={() => onToggle("vtg")}
+      onToggleTnD={() => onToggle("tnd")}
       onToggleElemental={() => onToggle("elemental")}
       onTogglePositions={() => onToggle("positions")}
       onToggleReversals={() => onToggle("reversals")}
@@ -101,12 +101,12 @@
         </button>
         <button
           class="toggle-btn"
-          class:active={vtgGlyphVisible}
-          onclick={() => onToggle("vtg")}
-          aria-pressed={vtgGlyphVisible}
+          class:active={tndGlyphVisible}
+          onclick={() => onToggle("tnd")}
+          aria-pressed={tndGlyphVisible}
         >
           <i class="fas fa-layer-group" aria-hidden="true"></i>
-          VTG
+          TnD
         </button>
         <button
           class="toggle-btn"

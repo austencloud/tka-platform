@@ -184,7 +184,7 @@ export async function renderSequenceToImage(
     showGrid: true,
     showBlueMotion: true,
     showRedMotion: true,
-    showVTG: false,
+    showTND: false,
     showPositions: false,
     showReversals: opts.showReversals ?? false,
     showNonRadialPoints: false,

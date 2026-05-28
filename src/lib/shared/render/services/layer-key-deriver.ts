@@ -19,7 +19,7 @@ export interface BaseLayerKeyComponents {
   size: number;
   showBlueMotion: boolean;
   showRedMotion: boolean;
-  showVTG: boolean;
+  showTnD: boolean;
   showElemental: boolean;
   showPositions: boolean;
   handPathMode: boolean;
@@ -105,7 +105,7 @@ export function getBaseLayerComponents(
     size: options.size,
     showBlueMotion: options.showBlueMotion ?? true,
     showRedMotion: options.showRedMotion ?? true,
-    showVTG: options.showVTG ?? false,
+    showTnD: options.showTnD ?? false,
     showElemental: options.showElemental ?? false,
     showPositions: options.showPositions ?? false,
     handPathMode: options.handPathMode ?? false,

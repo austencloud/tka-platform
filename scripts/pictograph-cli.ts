@@ -222,7 +222,7 @@ async function renderPictograph(
     visibility: {
       showGrid: true,
       showTKA: true,
-      showVTG: false,
+      showTND: false,
       showElemental: false,
       showPositions: false,
       showReversals: false,

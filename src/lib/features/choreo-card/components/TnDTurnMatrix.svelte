@@ -33,7 +33,7 @@
 
 <div class="matrix-container">
   <div class="matrix-grid-wrapper">
-    <div class="matrix-grid" role="grid" aria-label="VTG turn combination matrix">
+    <div class="matrix-grid" role="grid" aria-label="TnD turn combination matrix">
       <!-- Corner cell -->
       <div class="header-cell corner" role="presentation">
         <span class="corner-blue">B</span>

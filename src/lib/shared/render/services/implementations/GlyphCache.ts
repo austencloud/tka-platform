@@ -1,7 +1,8 @@
 import { getLetterImagePath } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 import { Letter } from "../../../foundation/domain/models/Letter";
+import { getElementImagePath } from "../../../pictograph/shared/domain/enums/pictograph-enums";
 
-const GLYPH_CACHE_VERSION = 3;
+const GLYPH_CACHE_VERSION = 4;
 
 const hmrGlyphCache: Map<string, string> =
   (import.meta.hot?.data?.glyphCacheVersion === GLYPH_CACHE_VERSION
@@ -19,7 +20,7 @@ type TurnNumberValue = 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | "float";
 
 type ElementType = "air" | "earth" | "fire" | "water" | "moon" | "sun";
 
-type VTGType = "QO" | "QS" | "SO" | "SS" | "TO" | "TS";
+type TnDType = "QO" | "QS" | "SO" | "SS" | "TO" | "TS";
 
 type AdditionalImageType = "arrow" | "blank" | "dash" | "same_opp_dot";
 
@@ -44,7 +45,7 @@ export class GlyphCache {
 
   private readonly TURN_NUMBERS_TO_CACHE: TurnNumberValue[] = [0.5, 1, 1.5, 2, 2.5, 3, "float"];
   private readonly ELEMENTS_TO_CACHE: ElementType[] = ["air", "earth", "fire", "water", "moon", "sun"];
-  private readonly VTG_GLYPHS_TO_CACHE: VTGType[] = ["QO", "QS", "SO", "SS", "TO", "TS"];
+  private readonly TND_GLYPHS_TO_CACHE: TnDType[] = ["QO", "QS", "SO", "SS", "TO", "TS"];
   private readonly ADDITIONAL_IMAGES_TO_CACHE: AdditionalImageType[] = ["arrow", "blank", "dash", "same_opp_dot"];
 
   async initialize(): Promise<void> {
@@ -67,9 +68,9 @@ export class GlyphCache {
       await Promise.all(batch.map((e) => this.loadElement(e)));
     }
 
-    for (let i = 0; i < this.VTG_GLYPHS_TO_CACHE.length; i += BATCH_SIZE) {
-      const batch = this.VTG_GLYPHS_TO_CACHE.slice(i, i + BATCH_SIZE);
-      await Promise.all(batch.map((v) => this.loadVTGGlyph(v)));
+    for (let i = 0; i < this.TND_GLYPHS_TO_CACHE.length; i += BATCH_SIZE) {
+      const batch = this.TND_GLYPHS_TO_CACHE.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map((v) => this.loadTnDGlyph(v)));
     }
 
     for (let i = 0; i < this.ADDITIONAL_IMAGES_TO_CACHE.length; i += BATCH_SIZE) {
@@ -132,7 +133,7 @@ export class GlyphCache {
 
   private async loadElement(element: ElementType): Promise<void> {
     try {
-      const path = `/images/elements/${element}.png`;
+      const path = getElementImagePath(element);
       const response = await fetch(path);
       if (!response.ok) { this.failedCount++; return; }
 
@@ -151,9 +152,9 @@ export class GlyphCache {
     }
   }
 
-  private async loadVTGGlyph(vtg: VTGType): Promise<void> {
+  private async loadTnDGlyph(tndCode: TnDType): Promise<void> {
     try {
-      const path = `/images/vtg_glyphs/${vtg}.svg`;
+      const path = `/images/vtg_glyphs/${tndCode}.svg`;
       const response = await fetch(path);
       if (!response.ok) { this.failedCount++; return; }
 
@@ -264,7 +265,7 @@ export class GlyphCache {
         this.LETTERS_TO_CACHE.length +
         this.TURN_NUMBERS_TO_CACHE.length +
         this.ELEMENTS_TO_CACHE.length +
-        this.VTG_GLYPHS_TO_CACHE.length +
+        this.TND_GLYPHS_TO_CACHE.length +
         this.ADDITIONAL_IMAGES_TO_CACHE.length,
       loaded: this.loadedCount,
       failed: this.failedCount,

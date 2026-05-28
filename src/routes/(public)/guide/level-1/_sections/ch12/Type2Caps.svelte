@@ -3,27 +3,27 @@
   import GuideDiagram from "../../_components/GuideDiagram.svelte";
 </script>
 
-<GuideSection id="type-2-caps" title="Type 2 CAPs">
+<GuideSection id="type-2-loops" title="Type 2 LOOPs">
   <p>
     These words use the Type 2 letters to travel between &#x3B1;/&#x3B2; and &#x393;. Since each
-    repetition is rotated by 180°, these are all Rotated CAPs.
+    repetition is rotated by 180°, these are all Rotated LOOPs.
   </p>
 
   <GuideDiagram
     src="/guide/level-1/images/type-2-caps/BΣTX.png"
-    alt="BΣTX — Rotated CAP"
-    caption="B&#x3A3;TX — Rotated CAP"
+    alt="BΣTX — Rotated LOOP"
+    caption="B&#x3A3;TX — Rotated LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/type-2-caps/EΔUZ.png"
-    alt="EΔUZ — Rotated CAP"
-    caption="E&#x394;UZ — Rotated CAP"
+    alt="EΔUZ — Rotated LOOP"
+    caption="E&#x394;UZ — Rotated LOOP"
   />
 
   <GuideDiagram
     src="/guide/level-1/images/type-2-caps/OYHθ.png"
-    alt="OYHθ — Rotated CAP"
-    caption="OYH&#x3B8; — Rotated CAP"
+    alt="OYHθ — Rotated LOOP"
+    caption="OYH&#x3B8; — Rotated LOOP"
   />
 </GuideSection>

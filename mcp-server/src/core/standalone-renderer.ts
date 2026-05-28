@@ -177,7 +177,7 @@ export interface RenderVisibilityOptions {
   darkMode?: boolean;
   size?: number;
   showTKA?: boolean;
-  showVTG?: boolean;
+  showTND?: boolean;
   showElemental?: boolean;
   showPositions?: boolean;
   showReversals?: boolean;
@@ -270,7 +270,7 @@ export class StandaloneRenderer {
     const {
       darkMode = true,
       showTKA = true,
-      showVTG = false,
+      showTND: showTND = false,
       showElemental = false,
       showPositions = false,
       showReversals = false,
@@ -341,8 +341,8 @@ export class StandaloneRenderer {
       if (letterSvg) svgParts.push(`<g class="svg-glyph svg-glyph-letter">${letterSvg}</g>`);
     }
 
-    // 8. VTG glyph (bottom right)
-    if (showVTG && input.letter && input.startPosition) {
+    // 8. TnD glyph (bottom right)
+    if (showTND && input.letter && input.startPosition) {
       const vtgSvg = this.renderVTGGlyph(input.letter, input.startPosition, darkMode, themeable);
       if (vtgSvg) svgParts.push(`<g class="svg-glyph svg-glyph-vtg">${vtgSvg}</g>`);
     }
@@ -960,7 +960,7 @@ ${turnNumbersSvg}
 
     const vtgPath = join(this.projectRoot, "static/images/vtg_glyphs", `${vtgMode}.svg`);
     if (!existsSync(vtgPath)) {
-      console.error("[Renderer] VTG glyph not found:", vtgPath);
+      console.error("[Renderer] TnD glyph not found:", vtgPath);
       return "";
     }
 
@@ -993,7 +993,7 @@ ${turnNumbersSvg}
   </svg>
 </g>`;
     } catch (error) {
-      console.error("[Renderer] Failed to load VTG glyph:", error);
+      console.error("[Renderer] Failed to load TnD glyph:", error);
       return "";
     }
   }

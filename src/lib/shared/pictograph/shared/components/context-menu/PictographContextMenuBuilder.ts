@@ -55,11 +55,11 @@ function buildGlyphChildren(vm: VisibilityStateManager): ContextMenuItem[] {
       action: () => vm.setGlyphVisibility("tkaGlyph", !vm.getRawGlyphVisibility("tkaGlyph")),
     },
     {
-      id: "toggle-vtg-glyph",
-      label: "VTG",
-      checked: vm.getRawGlyphVisibility("vtgGlyph"),
+      id: "toggle-tnd-glyph",
+      label: "TnD",
+      checked: vm.getRawGlyphVisibility("tndGlyph"),
       keepOpen: true,
-      action: () => vm.setGlyphVisibility("vtgGlyph", !vm.getRawGlyphVisibility("vtgGlyph")),
+      action: () => vm.setGlyphVisibility("tndGlyph", !vm.getRawGlyphVisibility("tndGlyph")),
     },
     {
       id: "toggle-elemental-glyph",

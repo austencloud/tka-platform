@@ -22,8 +22,8 @@ export function getBreakdown(letter: string): LetterBreakdown | null {
     typeName: entry.typeName,
     positionDescription: buildPositionDescription(entry),
     motionDescription: entry.motionDescription,
-    vtgMode: entry.vtgMode,
-    vtgElement: entry.vtgElement,
+    tndMode: entry.tndMode,
+    tndElement: entry.tndElement,
     motionGroup: entry.motionGroup,
     upgradeFrom: entry.upgradeFrom,
     summary: buildSummary(letter, entry),
@@ -80,10 +80,10 @@ function buildType1Summary(
   pos: string
 ): string {
   const base = `${letter} is ${pos} with ${entry.motionDescription} spins`;
-  const vtgPart = entry.vtgMode
-    ? ` (${entry.vtgMode}${entry.vtgElement ? ` / ${entry.vtgElement}` : ""})`
+  const tndPart = entry.tndMode
+    ? ` (${entry.tndMode}${entry.tndElement ? ` / ${entry.tndElement}` : ""})`
     : "";
-  return base + vtgPart;
+  return base + tndPart;
 }
 
 function buildType2Summary(
@@ -230,11 +230,11 @@ function explainSameTypeDifferentGroup(
   a: LetterBreakdown,
   b: LetterBreakdown
 ): string {
-  const vtgA = a.vtgMode ? ` (${a.vtgMode})` : "";
-  const vtgB = b.vtgMode ? ` (${b.vtgMode})` : "";
+  const tndA = a.tndMode ? ` (${a.tndMode})` : "";
+  const tndB = b.tndMode ? ` (${b.tndMode})` : "";
   return (
     `Both ${a.letter} and ${b.letter} are Type ${a.typeNumber} ${a.positionDescription}. ` +
-    `They differ in their VTG timing: ${a.letter}${vtgA} vs ${b.letter}${vtgB}.`
+    `They differ in their VTG timing: ${a.letter}${tndA} vs ${b.letter}${tndB}.`
   );
 }
 

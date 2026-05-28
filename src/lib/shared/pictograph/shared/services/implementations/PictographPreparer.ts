@@ -171,7 +171,11 @@ export class PictographPreparer {
 
   private deriveGridMode(pictograph: PictographData): GridMode {
     if (pictograph.gridMode) {
-      return pictograph.gridMode;
+      const raw = pictograph.gridMode;
+      const lower = raw.toLowerCase() as GridMode;
+      const validModes: Set<string> = new Set(Object.values(GridMode));
+      if (validModes.has(lower)) return lower;
+      return raw;
     }
 
     if (!pictograph.motions?.blue || !pictograph.motions?.red) {

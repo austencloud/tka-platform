@@ -361,6 +361,40 @@ For deck enumeration, each deck specifies a beat count. Only patterns whose peri
 
 ---
 
+## LOOP Boundary Parity
+
+A reversal pattern produces a **clean LOOP boundary** (prop returns to its starting rotation direction) if and only if each hand has an **even number of reversals** over the full sequence length. Each reversal toggles the prop's spin direction from its running state — even toggles return to start, odd toggles don't. This is the cumulative (physical) model, not a per-beat data model.
+
+### At native period
+
+All named patterns are LOOP-clean at their native period **except Sparse Weave 1** (5 reversals per hand = odd).
+
+| Pattern | Blue count | Red count | Boundary |
+|---------|-----------|-----------|----------|
+| Continuous | 0 (even) | 0 (even) | Clean |
+| Book | 4 (even) | 4 (even) | Clean |
+| Red/Blue Book | 0/4 (even) | 4/0 (even) | Clean |
+| Long Book | 2 (even) | 2 (even) | Clean |
+| Alternating | 2 (even) | 2 (even) | Clean |
+| Solo 1/2/3 | 4/8/16 (even) | 4/8/16 (even) | Clean |
+| Dense Weave 1/2/3 | 6/12/24 (even) | 6/12/24 (even) | Clean |
+| **Sparse Weave 1** | **5 (odd)** | **5 (odd)** | **Mismatch** |
+| Sparse Weave 2/3 | 10/20 (even) | 10/20 (even) | Clean |
+
+### When tiled to longer sequences
+
+Period-2 patterns (Long Book, Alternating) are clean at even multiples of their period (4, 8, 12...) but dirty at odd multiples (6, 10, 14...). More generally: if a pattern has c reversals per hand over one period, and is tiled k times, the total is k×c. This is even when k is even OR c is even.
+
+### Double application
+
+Applying any reversal pattern twice (2 repetitions of the full cycle) always produces an even count: 2×c is even for any c. This means every reversal pattern, including boundary-dirty ones, becomes LOOP-clean when played in pairs. Triple application preserves original parity. Any even number of repetitions is always clean.
+
+### The 25% invariant
+
+At every step count, exactly 25% of all possible reversal combinations are LOOP-clean. Each hand independently has a 50% chance of even reversal count (half of all subsets of N positions have even cardinality). Two independent 50% events: 0.5 × 0.5 = 0.25.
+
+---
+
 ## Summary Table
 
 | # | Name | Pattern | Period | Family |

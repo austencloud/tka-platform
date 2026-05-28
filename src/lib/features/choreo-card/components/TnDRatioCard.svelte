@@ -3,8 +3,8 @@
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import {
-    VTG_RATIO_TURNS_MAP,
-    VTG_RATIO_LEVEL_MAP,
+    TND_RATIO_TURNS_MAP,
+    TND_RATIO_LEVEL_MAP,
   } from "../domain/tnd-element";
 
   interface Props {
@@ -17,12 +17,12 @@
   const ratio = $derived(
     catalog.name.match(/\((\d+:\d+)/)?.[1] ?? "1:1",
   );
-  const correctLevel = $derived(VTG_RATIO_LEVEL_MAP[ratio] ?? catalog.level);
+  const correctLevel = $derived(TND_RATIO_LEVEL_MAP[ratio] ?? catalog.level);
   const levelStyle = $derived(
     DIFFICULTY_LEVELS[correctLevel] ?? DEFAULT_DIFFICULTY_STYLE,
   );
   const turns = $derived(
-    VTG_RATIO_TURNS_MAP[ratio] ?? 0,
+    TND_RATIO_TURNS_MAP[ratio] ?? 0,
   );
   const turnsLabel = $derived(
     turns === 0 ? "0 turns" : turns === 1 ? "1 turn" : `${turns} turns`,
@@ -34,7 +34,7 @@
 
 <button
   type="button"
-  class="vtg-ratio-card"
+  class="tnd-ratio-card"
   style="
     --tint: {tintColor};
   "
@@ -56,7 +56,7 @@
 </button>
 
 <style>
-  .vtg-ratio-card {
+  .tnd-ratio-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -77,23 +77,23 @@
       border-color 150ms ease;
   }
 
-  .vtg-ratio-card:hover {
+  .tnd-ratio-card:hover {
     transform: translateY(-4px);
     border-color: color-mix(in srgb, var(--tint) 50%, transparent);
     box-shadow: 0 6px 20px color-mix(in srgb, var(--tint) 20%, transparent);
   }
 
-  .vtg-ratio-card:focus-visible {
+  .tnd-ratio-card:focus-visible {
     outline: 2px solid var(--theme-accent, #6c8ee8);
     outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .vtg-ratio-card {
+    .tnd-ratio-card {
       transition: none;
     }
 
-    .vtg-ratio-card:hover {
+    .tnd-ratio-card:hover {
       transform: none;
     }
   }

@@ -18,8 +18,8 @@ const SETTING_ALIASES: Record<string, string> = {
   // Glyphs
   "tka glyph": "tkaGlyph",
   "tka": "tkaGlyph",
-  "vtg glyph": "vtgGlyph",
-  "vtg": "vtgGlyph",
+  "tnd glyph": "tndGlyph",
+  "tnd": "tndGlyph",
   "elemental glyph": "elementalGlyph",
   "elemental": "elementalGlyph",
   "positions glyph": "positionsGlyph",

@@ -4,7 +4,7 @@ import { loadCatalogSequences, loadSequencesByIds } from "../services/catalog-lo
 import type { PrintRenderOptions } from "../services/types";
 import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
 
-export type CardPreviewSource = 'loops' | 'vtg';
+export type CardPreviewSource = 'loops' | 'tnd';
 
 export interface VisibilitySettings {
   showGrid: boolean;
@@ -97,7 +97,7 @@ export function createCardPreviewState(
     const crumbs: BreadcrumbSegment[] = [{ label: 'Card Preview', level: 0 }];
     if (selectedSource) {
       crumbs.push({
-        label: selectedSource === 'loops' ? 'LOOP Catalogs' : 'VTG Catalogs',
+        label: selectedSource === 'loops' ? 'LOOP Catalogs' : 'TnD Catalogs',
         level: 1,
       });
     }

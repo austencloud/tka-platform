@@ -1,25 +1,25 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
-  import type { VtgViewMode } from "../state/catalog-browse-types";
+  import type { TnDViewMode } from "../state/catalog-browse-types";
   import CatalogCard from "./CatalogCard.svelte";
-  import VtgTurnMatrix from "./VtgTurnMatrix.svelte";
-  import VtgFamilyBrowser from "./VtgFamilyBrowser.svelte";
+  import TnDTurnMatrix from "./TnDTurnMatrix.svelte";
+  import TnDFamilyBrowser from "./TnDFamilyBrowser.svelte";
   import { LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import { VTG_FAMILY_LABELS } from "../state/catalog-browse-types";
+  import { TND_FAMILY_LABELS } from "../state/catalog-browse-types";
 
   interface Props {
     groupedCatalogs: Map<string, Catalog[]>;
-    collection: 'LOOPs' | 'VTG';
-    vtgViewMode?: VtgViewMode;
-    allVtgCatalogs?: Catalog[];
+    collection: 'LOOPs' | 'TnD';
+    tndViewMode?: TnDViewMode;
+    allTnDCatalogs?: Catalog[];
     onSelectCatalog: (catalog: Catalog) => void;
   }
 
   const {
     groupedCatalogs,
     collection,
-    vtgViewMode = 'turns',
-    allVtgCatalogs = [],
+    tndViewMode = 'turns',
+    allTnDCatalogs = [],
     onSelectCatalog,
   }: Props = $props();
 
@@ -27,7 +27,7 @@
     if (collection === 'LOOPs') {
       return (LOOP_TYPE_LABELS as Record<string, string>)[key] ?? capitalize(key);
     }
-    return VTG_FAMILY_LABELS[key] ?? capitalize(key);
+    return TND_FAMILY_LABELS[key] ?? capitalize(key);
   }
 
   function capitalize(s: string): string {
@@ -63,10 +63,10 @@
   }
 </script>
 
-{#if collection === 'VTG' && vtgViewMode === 'turns'}
-  <VtgTurnMatrix catalogs={allVtgCatalogs} {onSelectCatalog} />
-{:else if collection === 'VTG' && vtgViewMode === 'family'}
-  <VtgFamilyBrowser catalogs={allVtgCatalogs} {onSelectCatalog} />
+{#if collection === 'TnD' && tndViewMode === 'turns'}
+  <TnDTurnMatrix catalogs={allTnDCatalogs} {onSelectCatalog} />
+{:else if collection === 'TnD' && tndViewMode === 'family'}
+  <TnDFamilyBrowser catalogs={allTnDCatalogs} {onSelectCatalog} />
 {:else}
 <div class="browse-grid-container">
   {#each [...groupedCatalogs.entries()] as [key, items] (key)}

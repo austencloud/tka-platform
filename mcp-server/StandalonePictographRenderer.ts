@@ -31,7 +31,7 @@ const RED_COLOR_DARK = "#ED1C24";
 const BLUE_COLOR_LIGHT = "#3D44B8";
 const RED_COLOR_LIGHT = "#DC2626";
 
-// VTG glyph constants
+// TnD glyph constants
 const VTG_GLYPH_WIDTH = 201.24;
 const VTG_GLYPH_HEIGHT = 133.6;
 const VTG_OFFSET_PERCENTAGE = 0.04;
@@ -90,7 +90,7 @@ interface MotionInput {
 
 interface PictographInput {
   letter: string;
-  startPosition?: string;  // For VTG and position glyph calculations
+  startPosition?: string;  // For TnD and position glyph calculations
   endPosition?: string;    // For position glyph
   blueMotion: MotionInput;
   redMotion: MotionInput;
@@ -107,7 +107,7 @@ export interface RenderVisibilityOptions {
 
   // Glyphs
   showTKA?: boolean;           // Letter glyph (default: true)
-  showVTG?: boolean;           // VTG timing glyph (default: false)
+  showTND?: boolean;           // TnD timing & direction glyph (default: false)
   showPositions?: boolean;     // Start→End positions glyph (default: false)
   showReversals?: boolean;     // Reversal indicators (default: false)
 
@@ -157,7 +157,7 @@ export class StandalonePictographRenderer {
     const {
       darkMode = true,
       showTKA = true,
-      showVTG = false,
+      showTND = false,
       showPositions = false,
       showReversals = false,
       showGrid = true,
@@ -216,8 +216,8 @@ export class StandalonePictographRenderer {
       if (letterSvg) svgParts.push(letterSvg);
     }
 
-    // 7. VTG glyph (bottom right) - only for Type1 letters (A-V)
-    if (showVTG && input.letter && input.startPosition) {
+    // 7. TnD glyph (bottom right) - only for Type1 letters (A-V)
+    if (showTND && input.letter && input.startPosition) {
       const vtgSvg = this.renderVTGGlyph(input.letter, input.startPosition, darkMode);
       if (vtgSvg) svgParts.push(vtgSvg);
     }
@@ -506,7 +506,7 @@ ${svgParts.join("\n")}
   }
 
   /**
-   * Render the VTG glyph (bottom-right corner)
+   * Render the TnD glyph (bottom-right corner)
    * Only renders for Type1 letters (A-V)
    */
   private renderVTGGlyph(letter: string, startPosition: string, darkMode: boolean): string {
@@ -518,7 +518,7 @@ ${svgParts.join("\n")}
     const vtgPath = join(this.projectRoot, "static/images/vtg_glyphs", `${vtgMode}.svg`);
 
     if (!existsSync(vtgPath)) {
-      console.error("[Renderer] VTG glyph not found:", vtgPath);
+      console.error("[Renderer] TnD glyph not found:", vtgPath);
       return "";
     }
 
@@ -531,7 +531,7 @@ ${svgParts.join("\n")}
 
       // Apply dark mode color if needed
       if (darkMode) {
-        // VTG glyphs are black by default, make them light for dark backgrounds
+        // TnD glyphs are black by default, make them light for dark backgrounds
         innerContent = innerContent.replace(/#000000/gi, "#e6e6e6");
         innerContent = innerContent.replace(/black/gi, "#e6e6e6");
       }
@@ -548,7 +548,7 @@ ${svgParts.join("\n")}
   </svg>
 </g>`;
     } catch (error) {
-      console.error("[Renderer] Failed to load VTG glyph:", error);
+      console.error("[Renderer] Failed to load TnD glyph:", error);
       return "";
     }
   }

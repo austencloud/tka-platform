@@ -239,7 +239,7 @@
               <PictographContainer
                 pictographData={step}
                 showTKA={false}
-                showVTG={false}
+                showTnD={false}
                 showPositions={false}
                 showReversals={false}
                 showElemental={false}

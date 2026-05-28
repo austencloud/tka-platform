@@ -1136,7 +1136,7 @@
       "definition": "Vertical timing refers to the relative vertical position of two props at the point where they pass through the same horizontal line.",
       "sections": [
         {"heading": "In VTG", "keyContent": "Together: both at top/bottom simultaneously. Split: one at top, other at bottom."},
-        {"heading": "In TKA", "keyContent": "Represented by VTG glyph on pictographs. Position system encodes spatial relationship."}
+        {"heading": "In TKA", "keyContent": "Represented by TnD glyph on pictographs. Position system encodes spatial relationship."}
       ],
       "infobox": {},
       "internalLinks": ["Timing and direction", "Same time", "Split time", "Vulcan Tech Gospel"],

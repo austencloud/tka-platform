@@ -48,10 +48,10 @@ export interface PreviewCellRenderOptions {
   /** Show reversal indicators */
   showReversals?: boolean;
 
-  /** Show VTG glyph (bottom-right category badge) */
-  showVTG?: boolean;
+  /** Show TnD glyph (bottom-right category badge) */
+  showTnD?: boolean;
 
-  /** Show elemental glyph (paired with VTG, same corner) */
+  /** Show elemental glyph (paired with TnD, same corner) */
   showElemental?: boolean;
 
   /** Show start/end position letters (alpha/beta/gamma labels) */
@@ -151,7 +151,7 @@ export async function renderCell(
     redPropType: effectiveRedProp,
     showBlueMotion: options.showBlueMotion,
     showRedMotion: options.showRedMotion,
-    showVTG: suppressOverlays ? false : (options.showVTG ?? false),
+    showTnD: suppressOverlays ? false : (options.showTnD ?? false),
     showElemental: suppressOverlays ? false : (options.showElemental ?? false),
     showPositions: suppressOverlays ? false : (options.showPositions ?? false),
   };

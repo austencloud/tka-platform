@@ -1,6 +1,6 @@
 import type { DeckRelease, DeckReleaseCard, StepCountWeight } from "../../domain/models/DeckRelease";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { CatalogSourceSummary, VtgFamilyOption, VtgTurnPatternOption } from "../../services/deck-composer";
+import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
 
 type Step = "configure" | "review" | "released";
 
@@ -9,7 +9,7 @@ const STORAGE_KEY = "deckReleaser.session";
 interface PersistedSession {
   step: Step;
   viewingDeckNumber: number | null;
-  deckMode: "loop" | "vtg";
+  deckMode: "loop" | "tnd";
   totalCards: number;
   notes: string;
 }
@@ -43,11 +43,11 @@ class DeckReleaserState {
   releasedNumber = $state<number | null>(null);
   sourceSummaries = $state<CatalogSourceSummary[]>([]);
   selectedSliceTypes = $state<Set<"halved" | "quartered">>(new Set(["quartered"]));
-  vtgFamilies = $state<VtgFamilyOption[]>([]);
-  vtgTurnPatterns = $state<VtgTurnPatternOption[]>([]);
-  deckMode = $state<"loop" | "vtg">("loop");
-  selectedVtgFamilies = $state<Set<string>>(new Set());
-  selectedVtgTurnPatterns = $state<Set<string>>(new Set());
+  tndFamilies = $state<TnDFamilyOption[]>([]);
+  tndTurnPatterns = $state<TnDTurnPatternOption[]>([]);
+  deckMode = $state<"loop" | "tnd">("loop");
+  selectedTnDFamilies = $state<Set<string>>(new Set());
+  selectedTnDTurnPatterns = $state<Set<string>>(new Set());
   viewingRelease = $state<DeckRelease | null>(null);
   isReleasing = $state(false);
   isLoadingSequences = $state(false);

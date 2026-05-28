@@ -1,6 +1,6 @@
 <script lang="ts">
   import GuideSection from "../../_components/GuideSection.svelte";
-  import GuideDiagram from "../../_components/GuideDiagram.svelte";
+  import LessonGridDisplay from "$lib/features/learn/components/interactive/LessonGridDisplay.svelte";
 </script>
 
 <GuideSection id="the-grid" title="The Grid">
@@ -12,17 +12,16 @@
     This guide is written in diamond, but everything translates to box.
   </p>
 
-  <GuideDiagram
-    src="/guide/level-1/images/the-grid/grid-diamond.png"
-    alt="Diamond grid showing cardinal points: north, south, east, west"
-    caption="Diamond mode"
-  />
-
-  <GuideDiagram
-    src="/guide/level-1/images/the-grid/grid-box.png"
-    alt="Box grid showing intercardinal points: northeast, southeast, southwest, northwest"
-    caption="Box mode"
-  />
+  <div class="grid-pair">
+    <figure class="grid-figure">
+      <LessonGridDisplay type="diamond" showLabels size="medium" />
+      <figcaption>Diamond mode</figcaption>
+    </figure>
+    <figure class="grid-figure">
+      <LessonGridDisplay type="box" showLabels size="medium" />
+      <figcaption>Box mode</figcaption>
+    </figure>
+  </div>
 
   <p>On this grid, there are three types of points:</p>
   <ul>
@@ -35,4 +34,45 @@
     Together, diamond and box form an 8-point grid.
     We'll use diamond mode to learn each concept.
   </p>
+
+  <div class="grid-merged">
+    <LessonGridDisplay type="merged" showLabels size="large" />
+  </div>
 </GuideSection>
+
+<style>
+  .grid-pair {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 1.5rem 0;
+  }
+
+  .grid-figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
+    margin: 0;
+  }
+
+  .grid-figure figcaption {
+    font-size: 0.9rem;
+    color: var(--theme-text-dim, #666);
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .grid-merged {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+    max-width: 380px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+</style>

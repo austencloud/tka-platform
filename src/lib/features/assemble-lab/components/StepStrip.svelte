@@ -216,7 +216,7 @@
               showTKA={false}
               showReversals={false}
               showPositions={false}
-              showVTG={false}
+              showTnD={false}
               showElemental={false}
             />
           </div>
@@ -234,7 +234,7 @@
               showTKA={true}
               showReversals={false}
               showPositions={false}
-              showVTG={false}
+              showTnD={false}
               showElemental={false}
             />
           </div>

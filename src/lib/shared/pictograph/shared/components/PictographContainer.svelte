@@ -58,7 +58,7 @@ with pre-prepared data for better performance.
     showRedMotion = undefined,
     showHandPoints = undefined,
     // Extended glyph visibility overrides
-    showVTG = undefined,
+    showTnD = undefined,
     showElemental = undefined,
     showPositions = undefined,
     // Preview mode for visibility settings
@@ -75,7 +75,7 @@ with pre-prepared data for better performance.
     onPropClick = undefined,
     // Toggle callbacks (for interactive visibility controls)
     onToggleTKA = undefined,
-    onToggleVTG = undefined,
+    onToggleTnD = undefined,
     onToggleElemental = undefined,
     onTogglePositions = undefined,
     onToggleReversals = undefined,
@@ -106,7 +106,7 @@ with pre-prepared data for better performance.
     showBlueMotion?: boolean;
     showRedMotion?: boolean;
     showHandPoints?: boolean;
-    showVTG?: boolean;
+    showTnD?: boolean;
     showElemental?: boolean;
     showPositions?: boolean;
     previewMode?: boolean;
@@ -116,7 +116,7 @@ with pre-prepared data for better performance.
     selectedPropHand?: "blue" | "red" | null;
     onPropClick?: (hand: "blue" | "red") => void;
     onToggleTKA?: () => void;
-    onToggleVTG?: () => void;
+    onToggleTnD?: () => void;
     onToggleElemental?: () => void;
     onTogglePositions?: () => void;
     onToggleReversals?: () => void;
@@ -158,7 +158,7 @@ with pre-prepared data for better performance.
     tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
     reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
     nonRadialPoints: visibilityManager.getNonRadialVisibility(),
-    vtgGlyph: visibilityManager.getGlyphVisibility("vtgGlyph"),
+    tndGlyph: visibilityManager.getGlyphVisibility("tndGlyph"),
     elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
     positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
     handPointVisibility: visibilityManager.getHandPointVisibility(),
@@ -173,7 +173,7 @@ with pre-prepared data for better performance.
       tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
       reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
       nonRadialPoints: visibilityManager.getNonRadialVisibility(),
-      vtgGlyph: visibilityManager.getGlyphVisibility("vtgGlyph"),
+      tndGlyph: visibilityManager.getGlyphVisibility("tndGlyph"),
       elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
       positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
       handPointVisibility: visibilityManager.getHandPointVisibility(),
@@ -228,7 +228,7 @@ with pre-prepared data for better performance.
 
   // Extended glyph visibility
   const effectiveShowVTG = $derived(
-    showVTG !== undefined ? showVTG : syncedVisibility.vtgGlyph
+    showTnD !== undefined ? showTnD : syncedVisibility.tndGlyph
   );
 
   const effectiveShowElemental = $derived(
@@ -419,7 +419,7 @@ with pre-prepared data for better performance.
         showTKA={effectiveShowTKA}
         showReversals={effectiveShowReversals}
         showNonRadialPoints={effectiveShowNonRadialPoints}
-        showVTG={effectiveShowVTG}
+        showTnD={effectiveShowVTG}
         showElemental={effectiveShowElemental}
         showPositions={effectiveShowPositions}
         handPointVisibility={effectiveHandPointVisibility}
@@ -433,7 +433,7 @@ with pre-prepared data for better performance.
         darkMode={effectiveDarkMode}
         {printMode}
         {onToggleTKA}
-        {onToggleVTG}
+        {onToggleTnD}
         {onToggleElemental}
         {onTogglePositions}
         {onToggleReversals}
@@ -457,7 +457,7 @@ with pre-prepared data for better performance.
             showTKA={effectiveShowTKA}
             showReversals={effectiveShowReversals}
             showNonRadialPoints={effectiveShowNonRadialPoints}
-            showVTG={effectiveShowVTG}
+            showTnD={effectiveShowVTG}
             showElemental={effectiveShowElemental}
             showPositions={effectiveShowPositions}
             handPointVisibility={effectiveHandPointVisibility}
@@ -471,7 +471,7 @@ with pre-prepared data for better performance.
             darkMode={effectiveDarkMode}
             {printMode}
             {onToggleTKA}
-            {onToggleVTG}
+            {onToggleTnD}
             {onToggleElemental}
             {onTogglePositions}
             {onToggleReversals}

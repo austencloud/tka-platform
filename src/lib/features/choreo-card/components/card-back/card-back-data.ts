@@ -17,7 +17,7 @@ import {
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-import { VTG_TURNS_RATIO_MAP } from "../../domain/tnd-element";
+import { TND_TURNS_RATIO_MAP } from "../../domain/tnd-element";
 import { getReversalPattern } from "../../domain/reversal-patterns";
 import { matchReversalPatternId } from "../../domain/reversal-matcher";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
@@ -73,8 +73,8 @@ export interface CardBackData {
   isRotated: boolean;
   /** Starting position info: group, hand locations, and grid mode */
   startPosition: StartPositionInfo | null;
-  /** VTG turn ratio derived from sequence motions, e.g. "3:1" */
-  vtgRatio: string | null;
+  /** TnD turn ratio derived from sequence motions, e.g. "3:1" */
+  tndRatio: string | null;
   /** Period-compressed turn pattern entries for the barter glyph */
   turnGlyphEntries: TurnGlyphEntry[];
   /** Compact turn label, e.g. "0T", "1T", "½T", "FL", or "0-1T" for mixed */
@@ -91,8 +91,8 @@ export interface CardBackData {
   handPathFamily: string | null;
   /** TKA deck designation, e.g. "Halved Rotated 0T Continuous Diamond" */
   tkaDesignation: string | null;
-  /** VTG deck designation, e.g. "VTG Split-Same 1:1" */
-  vtgDesignation: string | null;
+  /** TnD deck designation, e.g. "TnD Split-Same 1:1" */
+  tndDesignation: string | null;
 }
 
 // Level badge definitions sourced from the canonical difficulty-styles.ts
@@ -355,12 +355,12 @@ function deriveStartPosition(sequence: SequenceData): StartPositionInfo | null {
 }
 
 /**
- * Derive the VTG ratio string from a sequence's motion turn values.
+ * Derive the TnD ratio string from a sequence's motion turn values.
  * Only returns a ratio if ALL numeric turn values are uniform (same value).
  * Returns null for mixed turns (common in LOOP sequences where each beat
  * has different turn values, making a single ratio label misleading).
  */
-export function deriveVtgRatio(sequence: SequenceData): string | null {
+export function deriveTnDRatio(sequence: SequenceData): string | null {
   let uniformValue: number | null = null;
   let hasTurns = false;
 
@@ -381,7 +381,7 @@ export function deriveVtgRatio(sequence: SequenceData): string | null {
 
   if (!hasTurns) return "1:1";
 
-  const ratio = VTG_TURNS_RATIO_MAP[uniformValue!];
+  const ratio = TND_TURNS_RATIO_MAP[uniformValue!];
   return ratio ?? null;
 }
 
@@ -458,14 +458,14 @@ export function deriveCardBackData(
     ? LOOP_TYPE_LABELS[sequence.loopType] ?? null
     : null;
   const sliceName = cycle === 4 ? "Quartered" : cycle === 2 ? "Halved" : null;
-  const vtgRatio = deriveVtgRatio(sequence);
+  const tndRatio = deriveTnDRatio(sequence);
 
   // Build deck designation strings for the card back content area
   const handPathFamily = (sequence.metadata?.handPathFamily as string) ?? null;
   const tkaDesignation = deriveTkaDesignation(
     sliceName, loopLabel, handPathFamily,
   );
-  const vtgDesignation = !handPathFamily && vtgRatio ? `VTG ${vtgRatio}` : null;
+  const tndDesignation = !handPathFamily && tndRatio ? `TnD ${tndRatio}` : null;
 
   const startPosInfo = deriveStartPosition(sequence);
   const turnLabel = deriveTurnLabel(turnGlyphEntries);
@@ -492,7 +492,7 @@ export function deriveCardBackData(
       ? ROTATED_LOOP_TYPES.has(sequence.loopType)
       : false,
     startPosition: startPosInfo,
-    vtgRatio,
+    tndRatio,
     turnGlyphEntries,
     turnLabel,
     startPositionLabel,
@@ -501,7 +501,7 @@ export function deriveCardBackData(
     reversalLabel,
     handPathFamily,
     tkaDesignation,
-    vtgDesignation,
+    tndDesignation,
   };
 }
 

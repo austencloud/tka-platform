@@ -73,7 +73,7 @@
   const showGrid = $derived.by(() => { void version; return vm.getGridVisibility(); });
   const nonRadial = $derived.by(() => { void version; return vm.getNonRadialVisibility(); });
   const tkaGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("tkaGlyph"); });
-  const vtgGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("vtgGlyph"); });
+  const tndGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("tndGlyph"); });
   const positionsGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("positionsGlyph"); });
   const reversals = $derived.by(() => { void version; return vm.getRawGlyphVisibility("reversalIndicators"); });
 
@@ -118,9 +118,9 @@
     switch (key) {
       case "grid": tap(() => vm.setGridVisibility(!showGrid)); break;
       case "tka": tap(() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)); break;
-      case "vtg": tap(() => {
-        const next = !vtgGlyph;
-        vm.setGlyphVisibility("vtgGlyph", next);
+      case "tnd": tap(() => {
+        const next = !tndGlyph;
+        vm.setGlyphVisibility("tndGlyph", next);
         vm.setGlyphVisibility("elementalGlyph", next);
       }); break;
       case "positions": tap(() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)); break;
@@ -196,7 +196,7 @@
     <PictographPanel
       {showGrid}
       tkaGlyphVisible={tkaGlyph}
-      vtgGlyphVisible={vtgGlyph}
+      tndGlyphVisible={tndGlyph}
       positionsGlyphVisible={positionsGlyph}
       reversalIndicatorsVisible={reversals}
       nonRadialVisible={nonRadial}

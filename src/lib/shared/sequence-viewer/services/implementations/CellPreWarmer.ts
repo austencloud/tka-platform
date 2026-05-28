@@ -124,7 +124,7 @@ export class CellPreWarmer {
       handPointVisibility: visibility?.handPointVisibility ?? "all",
       showTKA: visibility?.tkaGlyph ?? true,
       showReversals: visibility?.reversalIndicators ?? true,
-      showVTG: getVisibilityStateManager().getRawGlyphVisibility("vtgGlyph"),
+      showTnD: getVisibilityStateManager().getRawGlyphVisibility("tndGlyph"),
       showElemental: getVisibilityStateManager().getRawGlyphVisibility("elementalGlyph"),
       showPositions: getVisibilityStateManager().getRawGlyphVisibility("positionsGlyph"),
     };
@@ -247,7 +247,7 @@ export class CellPreWarmer {
         : options.bluePropType,
       showBlueMotion: options.showBlueMotion,
       showRedMotion: options.showRedMotion,
-      showVTG: options.showVTG,
+      showTnD: options.showTnD,
       showElemental: options.showElemental,
       showPositions: options.showPositions,
     };

@@ -67,7 +67,7 @@ deckReleases/counter/manifests/{deckNumber}
   └── stepCountDistribution: Record<number, number>
 
 decks/{catalogId}
-  ├── collection: "LOOPs" | "VTG"
+  ├── collection: "LOOPs" | "TnD"
   ├── turnPattern: string
   ├── families: CatalogFamily[]
   └── totalSequences: number

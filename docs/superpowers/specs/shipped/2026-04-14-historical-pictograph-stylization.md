@@ -102,7 +102,7 @@ async function buildCanonical(p: PictographData): Promise<ImageBitmap> {
     size: CANONICAL_SIZE,
     visibility: {
       showTKA:            false, // era draws its own letter glyph
-      showVTG:            false,
+      showTND:            false,
       showElemental:      false,
       showPositions:      false,
       showReversals:      false,

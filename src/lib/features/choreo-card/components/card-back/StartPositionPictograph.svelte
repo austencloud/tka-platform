@@ -51,7 +51,7 @@
         showGrid={true}
         showTKA={false}
         showReversals={false}
-        showVTG={false}
+        showTnD={false}
         showElemental={false}
         showPositions={false}
         showNonRadialPoints={false}

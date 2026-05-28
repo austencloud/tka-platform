@@ -251,7 +251,7 @@ export class ThumbnailRenderer {
       // Visibility settings - respect user preferences from input
       visibilityOverrides: {
         showTKA: input.visibility?.showTKA ?? true, // Default ON, user can toggle
-        showVTG: false, // Never shown in thumbnails
+        showTnD: false, // Never shown in thumbnails
         showElemental: false, // Never shown in thumbnails
         showPositions: false, // Never shown in thumbnails
         showReversals: input.visibility?.showReversals ?? true, // Default ON, user can toggle

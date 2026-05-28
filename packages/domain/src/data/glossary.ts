@@ -87,7 +87,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "glyph": {
     definition: "A visual notation element displayed on a pictograph. Glyphs annotate the pictograph with additional information beyond the prop and arrow positions. The TKA glyph's turns column (high/low slots) is laid out per PADS.",
-    examples: ["TKA glyph: shows the letter name and turn numbers", "VTG glyph: shows timing relationship between hands", "Position glyph: shows start and end positions"],
+    examples: ["TKA glyph: shows the letter name and turn numbers", "TnD glyph: shows timing & direction relationship between hands", "Position glyph: shows start and end positions"],
     relatedTerms: ["pictograph", "pads", "vtg", "tka"],
     category: "notation"
   },

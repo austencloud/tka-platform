@@ -49,8 +49,8 @@ export interface LetterBreakdown {
   typeName: string;
   positionDescription: string;
   motionDescription: string;
-  vtgMode?: string;
-  vtgElement?: string;
+  tndMode?: string;
+  tndElement?: string;
   motionGroup?: string;
   upgradeFrom?: string;
   summary: string;

@@ -33,7 +33,7 @@
   // Visibility (using same pattern as PictographPanel)
   let showGrid = $state(true);
   let showTKA = $state(true);
-  let showVTG = $state(false);
+  let showTnD = $state(false);
   let showElemental = $state(false);
   let showPositions = $state(false);
   let showReversals = $state(false);
@@ -98,7 +98,7 @@
           visibility: {
             showGrid,
             showTKA,
-            showVTG,
+            showTnD,
             showElemental,
             showPositions,
             showReversals,
@@ -142,7 +142,7 @@
     switch (which) {
       case "grid": showGrid = !showGrid; break;
       case "tka": showTKA = !showTKA; break;
-      case "vtg": showVTG = !showVTG; break;
+      case "tnd": showTnD = !showTnD; break;
       case "elemental": showElemental = !showElemental; break;
       case "positions": showPositions = !showPositions; break;
       case "reversals": showReversals = !showReversals; break;
@@ -224,7 +224,7 @@
       <div class="toggle-grid">
         <button class="toggle-btn" class:active={showGrid} onclick={() => toggleVisibility("grid")}>Grid</button>
         <button class="toggle-btn" class:active={showTKA} onclick={() => toggleVisibility("tka")}>TKA</button>
-        <button class="toggle-btn" class:active={showVTG} onclick={() => toggleVisibility("vtg")}>VTG</button>
+        <button class="toggle-btn" class:active={showTnD} onclick={() => toggleVisibility("tnd")}>TnD</button>
         <button class="toggle-btn" class:active={showElemental} onclick={() => toggleVisibility("elemental")}>Elemental</button>
         <button class="toggle-btn" class:active={showPositions} onclick={() => toggleVisibility("positions")}>Positions</button>
         <button class="toggle-btn" class:active={showReversals} onclick={() => toggleVisibility("reversals")}>Reversals</button>

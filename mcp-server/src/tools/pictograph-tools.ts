@@ -82,7 +82,7 @@ export function registerPictographTools(server: McpServer): void {
       darkMode: z.boolean().optional().describe("Override: dark background"),
       size: z.number().optional().describe("Override: image size in pixels"),
       showTKA: z.boolean().optional().describe("Override: show TKA letter glyph"),
-      showVTG: z.boolean().optional().describe("Override: show VTG (timing) glyph"),
+      showTND: z.boolean().optional().describe("Override: show TnD (timing & direction) glyph"),
       showPositions: z.boolean().optional().describe("Override: show start→end positions glyph"),
       showReversals: z.boolean().optional().describe("Override: show reversal indicators"),
       showGrid: z.boolean().optional().describe("Override: show grid"),
@@ -124,7 +124,7 @@ export function registerPictographTools(server: McpServer): void {
         if (overrides.darkMode !== undefined) prefs.darkMode = overrides.darkMode;
         if (overrides.size !== undefined) prefs.size = overrides.size;
         if (overrides.showTKA !== undefined) prefs.showTKA = overrides.showTKA;
-        if (overrides.showVTG !== undefined) prefs.showVTG = overrides.showVTG;
+        if (overrides.showTND !== undefined) prefs.showTND = overrides.showTND;
         if (overrides.showPositions !== undefined) prefs.showPositions = overrides.showPositions;
         if (overrides.showReversals !== undefined) prefs.showReversals = overrides.showReversals;
         if (overrides.showGrid !== undefined) prefs.showGrid = overrides.showGrid;
@@ -160,7 +160,7 @@ export function registerPictographTools(server: McpServer): void {
           darkMode: prefs.darkMode,
           size: prefs.size,
           showTKA: prefs.showTKA,
-          showVTG: prefs.showVTG,
+          showTND: prefs.showTND,
           showPositions: prefs.showPositions,
           showReversals: prefs.showReversals,
           showGrid: prefs.showGrid,
@@ -227,7 +227,7 @@ export function registerPictographTools(server: McpServer): void {
       darkMode: z.boolean().optional().describe("Override: dark background"),
       size: z.number().optional().describe("Override: image size in pixels"),
       showTKA: z.boolean().optional().describe("Override: show TKA letter glyph"),
-      showVTG: z.boolean().optional().describe("Override: show VTG (timing) glyph"),
+      showTND: z.boolean().optional().describe("Override: show TnD (timing & direction) glyph"),
       showPositions: z.boolean().optional().describe("Override: show start→end positions glyph"),
       showReversals: z.boolean().optional().describe("Override: show reversal indicators"),
       showGrid: z.boolean().optional().describe("Override: show grid"),
@@ -267,7 +267,7 @@ export function registerPictographTools(server: McpServer): void {
         if (overrides.darkMode !== undefined) prefs.darkMode = overrides.darkMode;
         if (overrides.size !== undefined) prefs.size = overrides.size;
         if (overrides.showTKA !== undefined) prefs.showTKA = overrides.showTKA;
-        if (overrides.showVTG !== undefined) prefs.showVTG = overrides.showVTG;
+        if (overrides.showTND !== undefined) prefs.showTND = overrides.showTND;
         if (overrides.showPositions !== undefined) prefs.showPositions = overrides.showPositions;
         if (overrides.showReversals !== undefined) prefs.showReversals = overrides.showReversals;
         if (overrides.showGrid !== undefined) prefs.showGrid = overrides.showGrid;
@@ -303,7 +303,7 @@ export function registerPictographTools(server: McpServer): void {
           darkMode: prefs.darkMode,
           size: prefs.size,
           showTKA: prefs.showTKA,
-          showVTG: prefs.showVTG,
+          showTND: prefs.showTND,
           showPositions: prefs.showPositions,
           showReversals: prefs.showReversals,
           showGrid: prefs.showGrid,

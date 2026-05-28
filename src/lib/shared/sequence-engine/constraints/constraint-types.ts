@@ -21,7 +21,7 @@ export enum ConstraintType {
   POSITION_GROUP = "positionGroup",
 
   // Timing constraints
-  VTG_TIMING = "vtgTiming",
+  TND_TIMING = "tndTiming",
 
   // Pattern constraints
   ALTERNATING = "alternating",
@@ -53,6 +53,6 @@ export const CONSTRAINT_CATEGORIES: Record<ConstraintType, ConstraintCategory> =
   [ConstraintType.REVERSAL]: ConstraintCategory.SEQUENCE,
   [ConstraintType.HAND_PATH]: ConstraintCategory.SEQUENCE,
   [ConstraintType.POSITION_GROUP]: ConstraintCategory.POSITION,
-  [ConstraintType.VTG_TIMING]: ConstraintCategory.TIMING,
+  [ConstraintType.TND_TIMING]: ConstraintCategory.TIMING,
   [ConstraintType.ALTERNATING]: ConstraintCategory.PATTERN,
 };
