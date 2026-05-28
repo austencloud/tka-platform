@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createAnimationStore } from "./animation-store.svelte";
+import { createAnimationStore } from "$lib/shared/animation-engine/state/animation-store.svelte";
 
 describe("AnimationStore", () => {
   it("exposes defaults and is independent per instance", () => {
