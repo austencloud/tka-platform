@@ -36,6 +36,9 @@ export interface GuideMotionConfig {
   label: string;
   red: GuideMotionLeg;
   blue?: GuideMotionLeg;
+  /** Renderer visibility flag — threaded into `renderScene`'s `visibility.blueMotionVisible`
+   *  by the bake helper. NOT reflected in the `SequenceData` output of `buildGuideMotionSequence`
+   *  (the blue motion is always present in the data; this flag controls whether it is drawn). */
   showBlue: boolean;
 }
 
@@ -66,7 +69,7 @@ export const GUIDE_MOTION_CONFIGS: GuideMotionConfig[] = [
     red: { start: GridLocation.WEST, end: GridLocation.EAST, motionType: MotionType.DASH },
   },
   {
-    id: "hm-static-w",
+    id: "hm-static-w", // Same motion as hm-start; separate baked asset for the static-branch cell in HandMotions.svelte (two distinct positions in the guide → two stable filenames).
     label: "Hand stays static at west",
     showBlue: false,
     red: { start: GridLocation.WEST, end: GridLocation.WEST, motionType: MotionType.STATIC },
