@@ -20,7 +20,7 @@ import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animat
 import { TUNNEL_LAYER_COLORS } from "$lib/shared/animation-engine/domain/compose-types";
 
 import type { AnimationEngineProps } from "./AnimationEngine.svelte";
-import type { AnimationEngineState } from "./AnimationEngine.svelte";
+import type { AnimatorState } from "../../state/animator-state.svelte";
 
 /** Callback to obtain current frame params. */
 export type FrameParamsProvider = () => RenderFrameParams;
@@ -92,7 +92,7 @@ export class PropTypeManager {
    */
   handleOverrides(
     props: AnimationEngineProps,
-    state: AnimationEngineState,
+    state: AnimatorState,
     getFrameParams: FrameParamsProvider,
     prevDarkMode: boolean
   ): boolean {
@@ -107,9 +107,9 @@ export class PropTypeManager {
     ) {
       this.propTypeOverrideBlue = newBlue;
       this.propTypeOverrideRed = newRed;
-      state.currentBluePropType = newBlue;
-      state.currentRedPropType = newRed;
-      state.currentPropType = newBlue;
+      state.setBluePropType(newBlue);
+      state.setRedPropType(newRed);
+      state.setLegacyPropType(newBlue);
 
       // Update global settings so UI (e.g. trail tracking labels) reflects current prop
       animationSettingsState.setCurrentPropType(newBlue);
@@ -155,7 +155,7 @@ export class PropTypeManager {
    * Returns true if a texture reload was triggered.
    */
   handleSettingsChange(
-    state: AnimationEngineState,
+    state: AnimatorState,
     getFrameParams: FrameParamsProvider,
     prevDarkMode: boolean
   ): boolean {
@@ -171,12 +171,9 @@ export class PropTypeManager {
       // CRITICAL: Sync prop type state AFTER checkForChanges() detected the new values
       // Otherwise loadPropTextures() would use stale values from the earlier syncServiceState() call
       if (this.propTypeChangeService) {
-        state.currentBluePropType =
-          this.propTypeChangeService.state.bluePropType;
-        state.currentRedPropType =
-          this.propTypeChangeService.state.redPropType;
-        state.currentPropType =
-          this.propTypeChangeService.state.legacyPropType;
+        state.setBluePropType(this.propTypeChangeService.state.bluePropType);
+        state.setRedPropType(this.propTypeChangeService.state.redPropType);
+        state.setLegacyPropType(this.propTypeChangeService.state.legacyPropType);
         animationSettingsState.setCurrentPropType(
           this.propTypeChangeService.state.bluePropType
         );
@@ -223,7 +220,7 @@ export class PropTypeManager {
    */
   handleAdditionalLayers(
     props: AnimationEngineProps,
-    state: AnimationEngineState,
+    state: AnimatorState,
     getFrameParams: FrameParamsProvider
   ): void {
     const additionalLayers = props.additionalLayers ?? [];
@@ -272,7 +269,7 @@ export class PropTypeManager {
    * Load prop textures (used by both override and settings paths).
    */
   async loadPropTextures(
-    state: AnimationEngineState,
+    state: AnimatorState,
     prevDarkMode: boolean
   ): Promise<void> {
     if (!this.propTextureService) return;
@@ -292,9 +289,9 @@ export class PropTypeManager {
       redPropType = settings.redPropType || settings.propType || "staff";
 
       // Also update engine state to keep it in sync
-      state.currentBluePropType = bluePropType;
-      state.currentRedPropType = redPropType;
-      state.currentPropType = bluePropType;
+      state.setBluePropType(bluePropType);
+      state.setRedPropType(redPropType);
+      state.setLegacyPropType(bluePropType);
     }
 
     // Pass dark mode state for prop color selection
@@ -307,9 +304,8 @@ export class PropTypeManager {
 
     // CRITICAL: Sync dimensions to engine state immediately after loading
     // This ensures getFrameParams() has correct dimensions for the first render
-    state.bluePropDimensions =
-      this.propTextureService.state.blueDimensions;
-    state.redPropDimensions = this.propTextureService.state.redDimensions;
+    state.setBluePropDimensions(this.propTextureService.state.blueDimensions);
+    state.setRedPropDimensions(this.propTextureService.state.redDimensions);
 
     // CRITICAL: Clear animation path caches when prop types/dimensions change
     // The path cache uses prop dimensions for endpoint calculations - stale cache = wrong trails

@@ -1,5 +1,6 @@
 import type { PropTypeManager } from "./PropTypeManager";
-import type { AnimationEngineProps, AnimationEngineState } from "./AnimationEngine.svelte";
+import type { AnimationEngineProps } from "./AnimationEngine.svelte";
+import type { AnimatorState } from "../../state/animator-state.svelte";
 import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
 import type { ISVGGenerator } from "$lib/shared/animation-engine/services/contracts/ISVGGenerator";
 import type { TrailCapturer } from "./TrailCapturer";
@@ -25,7 +26,7 @@ export class PropPipeline {
 
   handlePropTypeChanges(
     props: AnimationEngineProps,
-    state: AnimationEngineState,
+    state: AnimatorState,
     getFrameParamsFn: () => RenderFrameParams,
     darkMode: boolean
   ): void {
@@ -40,7 +41,7 @@ export class PropPipeline {
     this.propTypeManager.handleAdditionalLayers(props, state, getFrameParamsFn);
   }
 
-  async loadTextures(state: AnimationEngineState, darkMode: boolean): Promise<void> {
+  async loadTextures(state: AnimatorState, darkMode: boolean): Promise<void> {
     await this.propTypeManager.loadPropTextures(state, darkMode);
   }
 

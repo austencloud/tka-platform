@@ -66,7 +66,7 @@ import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-l
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
 import type { AnimationEngineProps } from "./AnimationEngine.svelte";
-import type { AnimationEngineState } from "./AnimationEngine.svelte";
+import type { AnimatorState } from "../../state/animator-state.svelte";
 import type { EffectRendererManager } from "./EffectRendererManager";
 
 export class FrameParameterBuilder {
@@ -161,7 +161,7 @@ export class FrameParameterBuilder {
    */
   getFrameParams(
     props: AnimationEngineProps,
-    state: AnimationEngineState,
+    state: AnimatorState,
     deps: {
       prevDarkMode: boolean;
       prevHasFireTips: boolean;
@@ -514,7 +514,7 @@ export class FrameParameterBuilder {
    * stale endpoint data from rendering as a visible jump line.
    */
   private getEffectiveTrailSettings(
-    state: AnimationEngineState,
+    state: AnimatorState,
     trailsSuppressedUntilTextureLoad: boolean
   ): TrailSettings {
     const settings = this.enforceUnilateralConstraint(

@@ -33,7 +33,6 @@ import type { AnimationVisibilityState } from "./AnimationVisibilitySynchronizer
 import type { PreRenderProgress } from "$lib/shared/animation-engine/services/implementations/SequenceFramePreRenderer";
 
 import { loadAnimatorServices as loadServices } from "../animator-loader";
-import { loadTrailSettings } from "$lib/shared/animation-engine/utils/animation-panel-persistence";
 import { TrailCapturer } from "$lib/shared/animation-engine/services/implementations/TrailCapturer";
 import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
 import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
@@ -47,9 +46,7 @@ import {
   DEFAULT_CANVAS_SIZE,
 } from "./CanvasResizer.svelte";
 import {
-  DEFAULT_PROP_DIMENSIONS,
   type IPropTextureLoader,
-  type PropDimensions,
 } from "../contracts/IPropTextureLoader";
 import { GlyphTextureLoader } from "./GlyphTextureLoader.svelte";
 import type { IGlyphTextureLoader } from "../contracts/IGlyphTextureLoader";
@@ -94,6 +91,7 @@ import { CanvasLifecycleManager } from "./CanvasLifecycleManager";
 import type { EffectType, TipEffectMap } from '../../domain/types/TipEffectTypes';
 import type { FireColorCurve } from '../../domain/types/FireTypes';
 import { semanticToCharcoalParams, type CharcoalSparkParams } from '../../domain/types/CharcoalSparkTypes';
+import { createAnimatorState, type AnimatorState } from '../../state/animator-state.svelte';
 
 // ── Effects helper utilities ────────────────────────────────────────────────
 
@@ -160,95 +158,15 @@ export interface AnimationEngineCallbacks {
   onEffectError?: (effectName: string, error: Error) => void;
 }
 
-/**
- * State exposed to component via $derived
- */
-export interface AnimationEngineState {
-  // Loading/error state
-  rendererLoading: boolean;
-  rendererError: string | null;
-  isInitialized: boolean;
-  servicesReady: boolean;
-
-  // Visibility state
-  visibilityState: AnimationVisibilityState;
-
-  // Pre-computation state
-  isPreRendering: boolean;
-  preRenderProgress: PreRenderProgress | null;
-  preRenderedFramesReady: boolean;
-
-  // Glyph transition state
-  displayedLetter: Letter | null;
-  displayedTurnsTuple: string;
-  displayedStepNumber: number | null;
-  displayedMusicalPosition: string | null;
-  fadingOutLetter: Letter | null;
-  fadingOutTurnsTuple: string | null;
-  fadingOutStepNumber: number | null;
-  isNewLetter: boolean;
-
-  // Trail settings (can be synced back to component)
-  trailSettings: TrailSettings;
-
-  // Prop dimensions for rendering
-  bluePropDimensions: PropDimensions;
-  redPropDimensions: PropDimensions;
-
-  // Prop types from settings
-  currentBluePropType: string;
-  currentRedPropType: string;
-  currentPropType: string;
-
-  // 3D mode flag - when true, 2D effect overlays (fire/charcoal/LED/trails) are suppressed
-  suppress2DOverlays: boolean;
-
-  // Viewer-scoped motion visibility (not stored in AnimationVisibilityState)
-  blueMotionVisible: boolean;
-  redMotionVisible: boolean;
-}
 
 export class AnimationEngine {
   // ============================================================================
   // REACTIVE STATE - Component derives from this
   // ============================================================================
-  state = $state<AnimationEngineState>({
-    rendererLoading: false,
-    rendererError: null,
-    isInitialized: false,
-    servicesReady: false,
-    visibilityState: {
-      grid: true,
-      stepNumbers: true,
-      props: true,
-      trails: true,
-      tkaGlyph: true, // TKA Glyph includes turn numbers
-      darkMode: false,
-      wordHeader: true,
-      activeEffect: "trails" as EffectType,
-      tipEffectMap: {} as TipEffectMap,
-    },
-    isPreRendering: false,
-    preRenderProgress: null,
-    preRenderedFramesReady: false,
-    displayedLetter: null,
-    displayedTurnsTuple: "(s, 0, 0)",
-    displayedStepNumber: null,
-    displayedMusicalPosition: null,
-    fadingOutLetter: null,
-    fadingOutTurnsTuple: null,
-    fadingOutStepNumber: null,
-    isNewLetter: false,
-    trailSettings: loadTrailSettings(),
-    bluePropDimensions: DEFAULT_PROP_DIMENSIONS,
-    redPropDimensions: DEFAULT_PROP_DIMENSIONS,
-    currentBluePropType: "staff",
-    currentRedPropType: "staff",
-    currentPropType: "staff",
-    suppress2DOverlays: false,
-    blueMotionVisible: true,
-    redMotionVisible: true,
-  });
+  private readonly _animatorState = createAnimatorState();
+
+  get state(): AnimatorState { return this._animatorState; }
+  get animatorState(): AnimatorState { return this._animatorState; }
 
   // ============================================================================
   // EXTRACTED MODULES
@@ -380,8 +298,7 @@ export class AnimationEngine {
     ) {
       return;
     }
-    this.state.blueMotionVisible = blue;
-    this.state.redMotionVisible = red;
+    this.state.setMotionVisibility(blue, red);
     if (this.state.isInitialized) {
       this.renderLoopService?.triggerRender(() =>
         this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
@@ -486,7 +403,7 @@ export class AnimationEngine {
     // Initialize LED state from EffectsConfigState
     erm.initLedConfigFromEffectsState(ecs);
 
-    this.state.visibilityState = {
+    this.state.setVisibilityState({
       grid: vm.getGridMode() !== "none",
       stepNumbers: vm.getVisibility("stepNumbers"),
       props: vm.getVisibility("props"),
@@ -496,7 +413,7 @@ export class AnimationEngine {
       wordHeader: vm.getVisibility("wordHeader"),
       activeEffect: (ecs?.activeEffect ?? "none") as EffectType,
       tipEffectMap: ecs?.tipEffectMap ?? {},
-    };
+    });
 
     // Initialize services that don't need renderer
     this.visibilitySyncService = new AnimationVisibilitySynchronizer(this.visibilityManagerOverride ?? undefined);
@@ -592,7 +509,7 @@ export class AnimationEngine {
       // CRITICAL: Only write to $state if settings actually changed to prevent infinite loops
       // In Svelte 5, assigning to a $state property triggers reactivity even for same value
       if (settingsChanged) {
-        this.state.trailSettings = syncedSettings;
+        this.state.setTrailSettings(syncedSettings);
 
         // Only call handleSettingsChange if we're NOT using external settings
         // (external settings flow: parent -> engine; internal settings flow: engine -> parent)
@@ -746,21 +663,17 @@ export class AnimationEngine {
 
     // Sync glyph state immediately after update so component sees new values
     if (this.glyphTransitionService) {
-      this.state.displayedLetter =
-        this.glyphTransitionService.state.displayedLetter;
-      this.state.displayedTurnsTuple =
-        this.glyphTransitionService.state.displayedTurnsTuple;
-      this.state.displayedStepNumber =
-        this.glyphTransitionService.state.displayedStepNumber;
-      this.state.displayedMusicalPosition =
-        this.glyphTransitionService.state.displayedMusicalPosition;
-      this.state.fadingOutLetter =
-        this.glyphTransitionService.state.fadingOutLetter;
-      this.state.fadingOutTurnsTuple =
-        this.glyphTransitionService.state.fadingOutTurnsTuple;
-      this.state.fadingOutStepNumber =
-        this.glyphTransitionService.state.fadingOutStepNumber;
-      this.state.isNewLetter = this.glyphTransitionService.state.isNewLetter;
+      const gs = this.glyphTransitionService.state;
+      this.state.setGlyphState({
+        displayedLetter: gs.displayedLetter,
+        displayedTurnsTuple: gs.displayedTurnsTuple,
+        displayedStepNumber: gs.displayedStepNumber,
+        displayedMusicalPosition: gs.displayedMusicalPosition,
+        fadingOutLetter: gs.fadingOutLetter,
+        fadingOutTurnsTuple: gs.fadingOutTurnsTuple,
+        fadingOutStepNumber: gs.fadingOutStepNumber,
+        isNewLetter: gs.isNewLetter,
+      });
     }
 
     // Trigger render if initialized
@@ -913,7 +826,7 @@ export class AnimationEngine {
   dispose(): void {
     this.lifecycleManager.dispose({
       onCanvasReady: (canvas) => this.callbacks.onCanvasReady?.(canvas),
-      onInitialized: (initialized) => { this.state.isInitialized = initialized; },
+      onInitialized: (initialized) => { this.state.setInitialized(initialized); },
     });
 
     this.containerElement = null;
@@ -988,17 +901,17 @@ export class AnimationEngine {
       },
       {
         onPixiLoading: (loading) => {
-          this.state.rendererLoading = loading;
+          this.state.setRendererLoading(loading);
         },
         onPixiError: (error) => {
-          this.state.rendererError = error;
+          this.state.setRendererError(error);
         },
         onPixiRendererReady: (renderer) => {
           this.animationRenderer = renderer;
           renderer.setDarkMode(this.prevDarkMode, false);
         },
         onInitialized: (initialized) => {
-          this.state.isInitialized = initialized;
+          this.state.setInitialized(initialized);
         },
         onCanvasReady: (canvas) => {
           this.callbacks.onCanvasReady?.(canvas);
@@ -1011,18 +924,19 @@ export class AnimationEngine {
     const result = await loadServices();
 
     if (!result.success) {
-      this.state.rendererError =
-        result.error || "Failed to load animator services";
+      this.state.setRendererError(
+        result.error || "Failed to load animator services"
+      );
       return false;
     }
 
     const { services } = result;
     if (!services.svgGenerator) {
-      this.state.rendererError = "Failed to load SVG generator service";
+      this.state.setRendererError("Failed to load SVG generator service");
       return false;
     }
     if (!services.TrailCapturer) {
-      this.state.rendererError = "Failed to load trail capture service";
+      this.state.setRendererError("Failed to load trail capture service");
       return false;
     }
 
@@ -1038,7 +952,7 @@ export class AnimationEngine {
     this.trailCapturer = new TrailCapturer();
     this.lifecycleManager.setTrailCapturer(this.trailCapturer);
     this.turnsTupleGenerator = services.turnsTupleGenerator;
-    this.state.servicesReady = true;
+    this.state.setServicesReady(true);
     return true;
   }
 
@@ -1059,8 +973,9 @@ export class AnimationEngine {
 
   private initializePropTextureLoader(): void {
     if (!this.animationRenderer || !this.svgGenerator) {
-      this.state.rendererError =
-        "Cannot initialize PropTextureLoader: missing dependencies";
+      this.state.setRendererError(
+        "Cannot initialize PropTextureLoader: missing dependencies"
+      );
       return;
     }
 
@@ -1151,7 +1066,7 @@ export class AnimationEngine {
 
     // Also update internal state if external settings provided
     if (props.externalTrailSettings) {
-      this.state.trailSettings = props.externalTrailSettings;
+      this.state.setTrailSettings(props.externalTrailSettings);
     }
 
     this.trailCapturer.initialize({
@@ -1184,7 +1099,7 @@ export class AnimationEngine {
    * This was previously an inline closure inside initialize().
    */
   private handleVisibilityChange(state: AnimationVisibilityState): void {
-    this.state.visibilityState = state;
+    this.state.setVisibilityState(state);
 
     const erm = this.effectRendererManager;
     const vm = this.getVM();
@@ -1371,36 +1286,26 @@ export class AnimationEngine {
   }
 
   private syncServiceState(): void {
-    // PERF: Only write $state properties when the source value actually changed.
     if (this.precomputationService) {
       const ps = this.precomputationService.state;
-      if (this.state.isPreRendering !== ps.isPreRendering)
-        this.state.isPreRendering = ps.isPreRendering;
-      if (this.state.preRenderProgress !== ps.preRenderProgress)
-        this.state.preRenderProgress = ps.preRenderProgress;
-      if (this.state.preRenderedFramesReady !== ps.preRenderedFramesReady)
-        this.state.preRenderedFramesReady = ps.preRenderedFramesReady;
+      this.state.setPreRendering(ps.isPreRendering);
+      this.state.setPreRenderProgress(ps.preRenderProgress);
+      this.state.setPreRenderedFramesReady(ps.preRenderedFramesReady);
     }
 
     // Sync from glyph transition service
     if (this.glyphTransitionService) {
       const gs = this.glyphTransitionService.state;
-      if (this.state.displayedLetter !== gs.displayedLetter)
-        this.state.displayedLetter = gs.displayedLetter;
-      if (this.state.displayedTurnsTuple !== gs.displayedTurnsTuple)
-        this.state.displayedTurnsTuple = gs.displayedTurnsTuple;
-      if (this.state.displayedStepNumber !== gs.displayedStepNumber)
-        this.state.displayedStepNumber = gs.displayedStepNumber;
-      if (this.state.displayedMusicalPosition !== gs.displayedMusicalPosition)
-        this.state.displayedMusicalPosition = gs.displayedMusicalPosition;
-      if (this.state.fadingOutLetter !== gs.fadingOutLetter)
-        this.state.fadingOutLetter = gs.fadingOutLetter;
-      if (this.state.fadingOutTurnsTuple !== gs.fadingOutTurnsTuple)
-        this.state.fadingOutTurnsTuple = gs.fadingOutTurnsTuple;
-      if (this.state.fadingOutStepNumber !== gs.fadingOutStepNumber)
-        this.state.fadingOutStepNumber = gs.fadingOutStepNumber;
-      if (this.state.isNewLetter !== gs.isNewLetter)
-        this.state.isNewLetter = gs.isNewLetter;
+      this.state.setGlyphState({
+        displayedLetter: gs.displayedLetter,
+        displayedTurnsTuple: gs.displayedTurnsTuple,
+        displayedStepNumber: gs.displayedStepNumber,
+        displayedMusicalPosition: gs.displayedMusicalPosition,
+        fadingOutLetter: gs.fadingOutLetter,
+        fadingOutTurnsTuple: gs.fadingOutTurnsTuple,
+        fadingOutStepNumber: gs.fadingOutStepNumber,
+        isNewLetter: gs.isNewLetter,
+      });
     }
 
     // Sync from prop type service - but ONLY when overrides are not active.
@@ -1410,12 +1315,10 @@ export class AnimationEngine {
       this.propTypeManager.propTypeOverrideRed == null
     ) {
       const pts = this.propTypeChangeService.state;
-      if (this.state.currentBluePropType !== pts.bluePropType)
-        this.state.currentBluePropType = pts.bluePropType;
-      if (this.state.currentRedPropType !== pts.redPropType)
-        this.state.currentRedPropType = pts.redPropType;
+      this.state.setBluePropType(pts.bluePropType);
+      this.state.setRedPropType(pts.redPropType);
       if (this.state.currentPropType !== pts.legacyPropType) {
-        this.state.currentPropType = pts.legacyPropType;
+        this.state.setLegacyPropType(pts.legacyPropType);
         animationSettingsState.setCurrentPropType(pts.bluePropType);
       }
     }
@@ -1423,18 +1326,8 @@ export class AnimationEngine {
     // Sync from prop texture service
     if (this.propTextureService) {
       const pts = this.propTextureService.state;
-      if (
-        this.state.bluePropDimensions.width !== pts.blueDimensions.width ||
-        this.state.bluePropDimensions.height !== pts.blueDimensions.height
-      ) {
-        this.state.bluePropDimensions = pts.blueDimensions;
-      }
-      if (
-        this.state.redPropDimensions.width !== pts.redDimensions.width ||
-        this.state.redPropDimensions.height !== pts.redDimensions.height
-      ) {
-        this.state.redPropDimensions = pts.redDimensions;
-      }
+      this.state.setBluePropDimensions(pts.blueDimensions);
+      this.state.setRedPropDimensions(pts.redDimensions);
     }
 
     // Sync from resize service (delegated to StateSynchronizer)
