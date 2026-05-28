@@ -464,6 +464,14 @@ EOF
 
 **Manager constructor contract (all five):** `constructor(state: AnimatorState, deps: <named service refs>)`. Managers import the `AnimatorState` **type** only; they never import the façade. Keep the dependency graph acyclic (spec §3.3).
 
+> **P1 GROUND TRUTH (verified 2026-05-28, post-P0):** 4.6 already extracted partial managers — this phase FINISHES them, it is not greenfield. Existing pieces + their target:
+> - `CanvasLifecycleManager.ts` — currently a teardown-only coordinator holding **14 nullable service refs injected via 14 `setX()` setters** (engine `:347-434`), implementing only `pauseResize`/`resumeResize`/`dispose`. Init still lives in the engine (`initialize()` `:340-446`, `initializeCanvas`/`loadAnimatorServices`/`initialize*Service` `:870-1050`). **P1.1 = give it a real constructor (`(state, deps)`), move the engine's init orchestration into it, delete the 14 setters + the engine's init methods.** Absorb `AnimatorCanvasInitializer` (190 lines).
+> - `PropPipeline.ts` + `PropTypeManager.ts` + `PropTypeChanger.svelte.ts` → **PropSystem** (P1.2). Already take `AnimatorState` (done in P0.3).
+> - `AnimationStateManager.ts` (166 lines — prop-angle/coordinate interpolation, misleading name) + `FrameParameterBuilder.ts` + glyph calc → **FrameSystem** (P1.3).
+> - `EffectRendererManager.ts` + `EffectController` + `handleVisibilityChange()` effect logic → **EffectSystem** (P1.4).
+> - render-trigger plumbing → **PlaybackSync** (P1.5).
+> Each task: convert the existing manager to constructor injection, migrate the matching engine code block into it, repoint the engine to delegate, drop the dead setters. The "create" framing in the per-task notes below means "create if absent; otherwise refactor the existing file named above."
+
 Each manager is one task group: write a focused unit test, extract the verified code block from the engine into the manager method, repoint the engine to delegate, verify green, commit. Extract in this order (later managers depend on earlier extractions being stable):
 
 ### Task P1.1: `LifecycleManager`
