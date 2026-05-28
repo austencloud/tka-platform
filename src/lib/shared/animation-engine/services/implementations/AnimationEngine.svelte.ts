@@ -80,6 +80,8 @@ import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
+import { LiveRenderContext } from "./RenderContext";
+import type { RenderContext } from "./RenderContextRegistry";
 
 // Extracted modules
 import { EffectRendererManager } from "./EffectRendererManager";
@@ -895,6 +897,25 @@ export class AnimationEngine {
       },
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
     };
+  }
+
+  getRenderContext(id: string, container: HTMLDivElement): RenderContext | null {
+    const canvas = this.animationRenderer?.getCanvas();
+    if (!canvas || !this.renderLoopService || !this.trailCapturer || !this.canvasResizerService) {
+      return null;
+    }
+
+    return new LiveRenderContext({
+      id,
+      canvas,
+      container,
+      renderer: this.animationRenderer!,
+      effectManager: this.effectRendererManager,
+      trailCapturer: this.trailCapturer,
+      renderLoop: this.renderLoopService,
+      resizer: this.canvasResizerService,
+      precomputer: this.precomputationService!,
+    });
   }
 
   /**

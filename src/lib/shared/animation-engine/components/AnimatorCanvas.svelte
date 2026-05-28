@@ -54,6 +54,7 @@ Last audit: 2025-12-27
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
+  import { getRenderContextRegistry } from "../getRenderContextRegistry";
 
   // Props
   let {
@@ -101,6 +102,7 @@ Last audit: 2025-12-27
     suppress2DOverlays = false,
     virtualTime = undefined,
     onToggle3DView = undefined,
+    contextId = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -164,7 +166,10 @@ Last audit: 2025-12-27
     /** Virtual time for this frame (in ms). Used during video export. */
     virtualTime?: number;
     onToggle3DView?: () => void;
+    contextId?: string;
   } = $props();
+
+  const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
 
   const playbackAdapter = createAnimatorPlaybackAdapter({
     getCurrentStep: () => currentStep,
@@ -635,10 +640,18 @@ Last audit: 2025-12-27
         },
         onEffectError,
       });
+
+      queueMicrotask(() => {
+        const ctx = engine.getRenderContext(resolvedContextId, el);
+        if (ctx) {
+          getRenderContextRegistry().register(ctx);
+        }
+      });
     });
 
     return () => {
       untrack(() => {
+        getRenderContextRegistry().unregister(resolvedContextId);
         engine.dispose();
       });
     };
