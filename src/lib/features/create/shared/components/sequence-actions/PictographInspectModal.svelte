@@ -63,21 +63,19 @@
   let redOpen = $state(false);
 
   // When an arrow is clicked in the live pictograph, expand + edit that section.
-  let lastSelectedColor: string | null = $state(null);
+  // Plain (non-reactive) dedup guard: the effect must only depend on the
+  // selection, never on this — reading + writing a $state here would loop.
+  let lastSelectedColor: string | null = null;
   $effect(() => {
-    const sel = selectedArrowState.selectedArrow;
-    const color = sel?.color ?? null;
-    if (color && color !== lastSelectedColor) {
-      lastSelectedColor = color;
-      if (color === "blue") {
-        blueOpen = true;
-        queueMicrotask(() => blueMotionColumnRef?.enterEditMode());
-      } else {
-        redOpen = true;
-        queueMicrotask(() => redMotionColumnRef?.enterEditMode());
-      }
-    } else if (!color) {
-      lastSelectedColor = null;
+    const color = selectedArrowState.selectedArrow?.color ?? null;
+    if (color === lastSelectedColor) return;
+    lastSelectedColor = color;
+    if (color === "blue") {
+      blueOpen = true;
+      queueMicrotask(() => blueMotionColumnRef?.enterEditMode());
+    } else if (color === "red") {
+      redOpen = true;
+      queueMicrotask(() => redMotionColumnRef?.enterEditMode());
     }
   });
 
