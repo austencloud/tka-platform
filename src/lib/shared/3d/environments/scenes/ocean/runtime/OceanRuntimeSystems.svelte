@@ -8,7 +8,7 @@
   import AtmosphereSystem from "./atmosphere/AtmosphereSystem.svelte";
   import FaunaSystem from "./fauna/FaunaSystem.svelte";
   import OceanInteraction from "./interaction/OceanInteraction.svelte";
-  import { godraysLightStore } from "../../../effects/post-processing/godrays-light-store.svelte";
+  import { godraysLightStore } from "../../../../effects/post-processing/godrays-light-store.svelte";
 
   interface Props {
     quality: OceanQualityConfig;
@@ -53,7 +53,7 @@
   normalMap="/textures/terrain/sand/normal.jpg"
   roughnessMap="/textures/terrain/sand/roughness.jpg"
   aoMap="/textures/terrain/sand/ao.jpg"
-  color="#1a3a4a"
+  color="#5a8a8a"
   size={30}
   textureRepeat={12}
   normalScale={2.0}
@@ -62,12 +62,12 @@
 />
 
 <!-- Lighting -->
-<T.HemisphereLight args={["#1a4060", "#0a1a2a", 0.6]} />
+<T.HemisphereLight args={["#3a7090", "#0a1a2a", 1.0]} />
 <T.DirectionalLight
   bind:ref={sunLight}
   position={[10, 30, -20]}
-  intensity={0.8}
-  color="#6699cc"
+  intensity={1.5}
+  color="#88bbdd"
   castShadow
 />
 
