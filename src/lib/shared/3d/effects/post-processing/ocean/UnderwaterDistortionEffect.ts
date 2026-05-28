@@ -8,9 +8,9 @@ uniform float speed;
 uniform float maxDepth;
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
-  float depth = readDepth(uv);
-
-  float depthFactor = smoothstep(0.05, 0.6, depth);
+  // UV-based depth approximation — avoids reading the depth buffer which
+  // causes a framebuffer feedback loop on even-numbered EffectPasses.
+  float depthFactor = smoothstep(0.0, 0.7, 1.0 - uv.y);
 
   // Animated 2D noise for organic underwater ripple
   float t = time * speed;
@@ -48,7 +48,7 @@ export class UnderwaterDistortionEffect extends Effect {
   }: UnderwaterDistortionOptions = {}) {
     super("UnderwaterDistortionEffect", fragmentShader, {
       blendFunction,
-      attributes: EffectAttribute.DEPTH | EffectAttribute.CONVOLUTION,
+      attributes: EffectAttribute.CONVOLUTION,
       uniforms: new Map<string, Uniform>([
         ["strength", new Uniform(strength)],
         ["frequency", new Uniform(frequency)],
