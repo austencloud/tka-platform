@@ -139,21 +139,32 @@
   .copy-btn:hover { border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2)); }
   .copy-btn:focus-visible { outline: 2px solid var(--theme-accent, #58a6ff); outline-offset: 1px; }
   .copied-label { color: var(--semantic-success, #7ee787); font-weight: 600; }
-  .data-block { display: flex; flex-direction: column; gap: 0; }
+  /* Read-only info: pack key/value pairs into a dense 2-col grid so the
+     section stays short instead of one row per value. */
+  .data-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 16px;
+    row-gap: 2px;
+  }
   .data-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 10px 12px;
-    gap: 12px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    align-items: baseline;
+    padding: 4px 8px;
+    gap: 10px;
+    border-radius: 6px;
+    min-width: 0;
   }
-  .data-row.warn-row { background: color-mix(in srgb, var(--semantic-warning, #d29922) 12%, transparent); }
-  .data-row.override-active { background: color-mix(in srgb, var(--semantic-success, #3fb950) 12%, transparent); }
+  /* Anomaly rows span the full width so they stay prominent. */
+  .data-row.warn-row,
+  .data-row.override-active { grid-column: 1 / -1; }
+  .data-row.warn-row { background: color-mix(in srgb, var(--semantic-warning, #d29922) 14%, transparent); }
+  .data-row.override-active { background: color-mix(in srgb, var(--semantic-success, #3fb950) 14%, transparent); }
   .data-row.override-active .val { color: var(--semantic-success, #7ee787); font-weight: 600; }
   .key {
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
     white-space: nowrap;
   }
   .val {
@@ -162,6 +173,9 @@
     text-align: right;
     user-select: all;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .val.type-val { color: var(--semantic-warning, #ffa657); font-weight: 600; }
   .val.num { color: var(--semantic-info, #79c0ff); }
