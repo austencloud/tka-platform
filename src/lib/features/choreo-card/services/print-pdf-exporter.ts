@@ -48,82 +48,84 @@ export async function exportDeckPDF(
 	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
 }
 
+export type PrintPDFMode = 'combined' | 'fronts' | 'backs';
+
 /** Grid layout on Letter pages for double-sided home printing.
  *
- *  Page 1-2: alignment test sheet (print, flip, hold to light)
- *  Then for each sheet of cards:
- *    Fronts page: cards left-to-right, top-to-bottom
- *    Backs page:  columns mirrored for long-edge duplex flip
+ *  Combined mode: all fronts → flip instruction → all backs → finishing tips
+ *  Fronts mode: all fronts → finishing tips
+ *  Backs mode: all backs (columns mirrored for long-edge duplex) → finishing tips
  *
- *  Every page gets: margin instructions, crop marks, sheet labels.
+ *  Every page gets: crop marks, sheet labels, flip hints.
  */
 export async function exportHomePrintPDF(
 	pairs: CardPair[],
 	deckName: string,
 	cardSize: CardSizeId = 'poker',
-	onProgress?: (current: number, total: number) => void
+	onProgress?: (current: number, total: number) => void,
+	mode: PrintPDFMode = 'combined',
 ): Promise<Blob> {
 	const layout = getPageLayout(cardSize);
-	const { cols, rows, cardsPerPage, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt } = layout;
+	const { cols, cardsPerPage, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt } = layout;
 
 	const pdfDoc = await PDFDocument.create();
 	const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 	const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 	const totalSheets = Math.ceil(pairs.length / cardsPerPage);
+	const includeFronts = mode === 'combined' || mode === 'fronts';
+	const includeBacks = mode === 'combined' || mode === 'backs';
+	const progressTotal = (includeFronts ? totalSheets : 0) + (includeBacks ? totalSheets : 0);
+	let progressCount = 0;
 
-	// ── Phase 1: All fronts ──
-	for (let sheet = 0; sheet < totalSheets; sheet++) {
-		const start = sheet * cardsPerPage;
-		const sheetPairs = pairs.slice(start, start + cardsPerPage);
+	if (includeFronts) {
+		for (let sheet = 0; sheet < totalSheets; sheet++) {
+			const start = sheet * cardsPerPage;
+			const sheetPairs = pairs.slice(start, start + cardsPerPage);
+			const frontsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
 
-		const frontsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
+			for (let i = 0; i < sheetPairs.length; i++) {
+				const col = i % cols;
+				const row = Math.floor(i / cols);
+				const x = marginXPt + col * (cardWidthPt + gutterPt);
+				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
+				const img = await pdfDoc.embedPng(canvasToPngBytes(sheetPairs[i]!.front));
+				frontsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
+			}
 
-		for (let i = 0; i < sheetPairs.length; i++) {
-			const col = i % cols;
-			const row = Math.floor(i / cols);
-			const x = marginXPt + col * (cardWidthPt + gutterPt);
-			const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-
-			const img = await pdfDoc.embedPng(canvasToPngBytes(sheetPairs[i]!.front));
-			frontsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
+			drawCropMarks(frontsPage, layout);
+			drawSheetLabel(frontsPage, font, fontBold, `FRONTS`, sheet + 1, totalSheets, deckName);
+			drawFlipHint(frontsPage, font, "FRONT SIDE");
+			onProgress?.(++progressCount, progressTotal);
 		}
-
-		drawCropMarks(frontsPage, layout);
-		drawSheetLabel(frontsPage, font, fontBold, `FRONTS`, sheet + 1, totalSheets, deckName);
-		drawFlipHint(frontsPage, font, "FRONT SIDE");
-
-		onProgress?.(sheet + 1, totalSheets * 2);
 	}
 
-	// ── Separator: flip instruction page ──
-	addFlipInstructionPage(pdfDoc, font, fontBold);
-
-	// ── Phase 2: All backs ──
-	for (let sheet = 0; sheet < totalSheets; sheet++) {
-		const start = sheet * cardsPerPage;
-		const sheetPairs = pairs.slice(start, start + cardsPerPage);
-
-		const backsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
-
-		for (let i = 0; i < sheetPairs.length; i++) {
-			const col = i % cols;
-			const row = Math.floor(i / cols);
-			const mirroredCol = cols - 1 - col;
-			const x = marginXPt + mirroredCol * (cardWidthPt + gutterPt);
-			const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-
-			const img = await pdfDoc.embedPng(canvasToPngBytes(sheetPairs[i]!.back));
-			backsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
-		}
-
-		drawCropMarks(backsPage, layout);
-		drawSheetLabel(backsPage, font, fontBold, `BACKS`, sheet + 1, totalSheets, deckName);
-		drawFlipHint(backsPage, font, "BACK SIDE — columns mirrored for long-edge flip");
-
-		onProgress?.(totalSheets + sheet + 1, totalSheets * 2);
+	if (mode === 'combined') {
+		addFlipInstructionPage(pdfDoc, font, fontBold);
 	}
 
-	// ── Finishing tips page ──
+	if (includeBacks) {
+		for (let sheet = 0; sheet < totalSheets; sheet++) {
+			const start = sheet * cardsPerPage;
+			const sheetPairs = pairs.slice(start, start + cardsPerPage);
+			const backsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
+
+			for (let i = 0; i < sheetPairs.length; i++) {
+				const col = i % cols;
+				const row = Math.floor(i / cols);
+				const mirroredCol = cols - 1 - col;
+				const x = marginXPt + mirroredCol * (cardWidthPt + gutterPt);
+				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
+				const img = await pdfDoc.embedPng(canvasToPngBytes(sheetPairs[i]!.back));
+				backsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
+			}
+
+			drawCropMarks(backsPage, layout);
+			drawSheetLabel(backsPage, font, fontBold, `BACKS`, sheet + 1, totalSheets, deckName);
+			drawFlipHint(backsPage, font, "BACK SIDE — columns mirrored for long-edge flip");
+			onProgress?.(++progressCount, progressTotal);
+		}
+	}
+
 	addFinishingTipsPage(pdfDoc, font, fontBold);
 
 	const pdfBytes = await pdfDoc.save();

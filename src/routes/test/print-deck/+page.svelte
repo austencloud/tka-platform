@@ -27,6 +27,8 @@
   let renderProgress = $state(0);
   let renderTotal = $state(0);
   let isExporting = $state(false);
+  let exportStatus = $state("");
+  let exportError = $state("");
   let rerenderKey = $state(0);
 
   $effect(() => {
@@ -102,39 +104,54 @@
     renderTotal = state.total;
   }
 
+  function triggerDownload(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function handleExportPDF() {
     if (renderedPairs.length === 0) return;
     isExporting = true;
+    exportError = "";
+    exportStatus = "Preparing PDF...";
     try {
       const { exportHomePrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-exporter");
       const deckName = `Deck_${String(selectedDeck!.deckNumber).padStart(3, "0")}`;
-      const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${deckName}_print.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize, (current, total) => {
+        exportStatus = `Building PDF — sheet ${current} of ${total}`;
+      });
+      exportStatus = "Downloading...";
+      triggerDownload(blob, `${deckName}_print.pdf`);
+    } catch (e) {
+      exportError = `PDF export failed: ${e instanceof Error ? e.message : e}`;
     } finally {
       isExporting = false;
+      exportStatus = "";
     }
   }
 
   async function handleExportZIP() {
     if (renderedPairs.length === 0) return;
     isExporting = true;
+    exportError = "";
+    exportStatus = "Preparing ZIP...";
     try {
       const { exportDeckZIP } = await import("$lib/features/choreo-card/services/print-zip-exporter");
       const deckName = `Deck_${String(selectedDeck!.deckNumber).padStart(3, "0")}`;
-      const blob = await exportDeckZIP(renderedPairs, deckName);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${deckName}_cards.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
+        exportStatus = `Packing card ${current} of ${total}`;
+      });
+      exportStatus = "Downloading...";
+      triggerDownload(blob, `${deckName}_cards.zip`);
+    } catch (e) {
+      exportError = `ZIP export failed: ${e instanceof Error ? e.message : e}`;
     } finally {
       isExporting = false;
+      exportStatus = "";
     }
   }
 </script>
@@ -185,7 +202,7 @@
               type="button"
               class="theme-chip"
               class:active={selectedTheme === t}
-              onclick={() => { selectedTheme = t; rerenderKey++; }}
+              onclick={() => { selectedTheme = t; }}
             >{t}</button>
           {/each}
         </div>
@@ -199,6 +216,8 @@
           totalCards={sequences.length}
           {isRendering}
           {isExporting}
+          {exportStatus}
+          {exportError}
           {renderProgress}
           {renderTotal}
           onCardSizeChange={(s) => { cardSize = s; }}

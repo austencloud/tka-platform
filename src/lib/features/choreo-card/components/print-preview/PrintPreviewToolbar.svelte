@@ -7,6 +7,8 @@
     totalCards: number;
     isRendering: boolean;
     isExporting: boolean;
+    exportStatus?: string;
+    exportError?: string;
     renderProgress: number;
     renderTotal: number;
     onCardSizeChange: (size: CardSizeId) => void;
@@ -20,6 +22,8 @@
     totalCards,
     isRendering,
     isExporting,
+    exportStatus = "",
+    exportError = "",
     renderProgress,
     renderTotal,
     onCardSizeChange,
@@ -28,7 +32,6 @@
     onRerender,
   }: Props = $props();
 
-  // Progress text shown while rendering cards
   const progressText = $derived(
     renderTotal > 0
       ? `Rendering ${renderProgress} / ${renderTotal}…`
@@ -37,13 +40,18 @@
 </script>
 
 <div class="toolbar" role="toolbar" aria-label="Print preview controls">
-  <!-- Left: card size toggle -->
   <div class="toolbar-section size-section">
     <CardSizeToggle selected={cardSize} onchange={onCardSizeChange} />
   </div>
 
-  <!-- Right: export actions or render progress -->
   <div class="toolbar-section export-section">
+    {#if exportError}
+      <span class="error-text" aria-live="assertive">
+        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+        {exportError}
+      </span>
+    {/if}
+
     {#if isRendering}
       <span class="progress-text" aria-live="polite" aria-atomic="true">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -52,7 +60,7 @@
     {:else if isExporting}
       <span class="progress-text" aria-live="polite" aria-atomic="true">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        Generating PDF…
+        {exportStatus || "Exporting…"}
       </span>
     {:else}
       {#if onRerender}
@@ -69,7 +77,8 @@
         class="export-btn"
         disabled={totalCards === 0}
         onclick={onExportPDF}
-        aria-label="Export as PDF"
+        aria-label="Export as print-ready PDF"
+        title={totalCards === 0 ? "Load a deck first" : `Export ${totalCards} cards as PDF`}
       >
         <i class="fas fa-file-pdf" aria-hidden="true"></i>
         <span>PDF</span>
@@ -79,6 +88,7 @@
         disabled={totalCards === 0}
         onclick={onExportZIP}
         aria-label="Export as ZIP of images"
+        title={totalCards === 0 ? "Load a deck first" : `Export ${totalCards} card images as ZIP`}
       >
         <i class="fas fa-file-archive" aria-hidden="true"></i>
         <span>ZIP</span>
@@ -103,12 +113,10 @@
     gap: 8px;
   }
 
-  /* Push export section to the far right */
   .export-section {
     margin-left: auto;
   }
 
-  /* ── Export buttons ── */
   .export-btn {
     display: inline-flex;
     align-items: center;
@@ -141,7 +149,6 @@
     cursor: not-allowed;
   }
 
-  /* ── Render progress ── */
   .progress-text {
     display: inline-flex;
     align-items: center;
@@ -151,7 +158,15 @@
     white-space: nowrap;
   }
 
-  /* ── Mobile: wrap into two rows ── */
+  .error-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-min, 14px);
+    color: #f87171;
+    white-space: nowrap;
+  }
+
   @media (max-width: 767px) {
     .toolbar {
       flex-wrap: wrap;
@@ -163,6 +178,5 @@
       width: 100%;
       justify-content: flex-end;
     }
-
   }
 </style>

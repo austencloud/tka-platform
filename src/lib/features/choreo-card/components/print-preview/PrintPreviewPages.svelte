@@ -71,7 +71,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     deckName,
   }: Props = $props();
 
-  let lastSeenRerenderKey = rerenderKey;
   let renderedCards: RenderedCard[] = $state([]);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
@@ -194,7 +193,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       footer?.center ?? "",
       footer?.right ?? "",
       layout,
-      "v5",
+      rerenderKey,
+      "v6",
     ].join("|");
     return `${seqId}::${optsPart}`;
   }
@@ -254,11 +254,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   });
 
   async function renderAll(seqs: SequenceData[], generation: number) {
-    if (rerenderKey !== lastSeenRerenderKey) {
-      cardCache.clear();
-      deckCardBlobCache.clear().catch(() => {});
-      lastSeenRerenderKey = rerenderKey;
-    }
 
     renderTotal = seqs.length;
 
@@ -327,35 +322,42 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       const cacheKey = buildCacheKey(seq, stepCount, i);
       const cached = cardCache.get(cacheKey);
 
-      if (cached) {
-        cards.push(cached.rendered);
-        if (cached.pair) {
-          pairs.push(cached.pair);
+      try {
+        if (cached) {
+          cards.push(cached.rendered);
+          if (cached.pair) {
+            pairs.push(cached.pair);
+          } else {
+            const pair = await reconstructPair(cached.rendered);
+            cached.pair = pair;
+            pairs.push(pair);
+          }
         } else {
-          const pair = await reconstructPair(cached.rendered);
-          cached.pair = pair;
+          const options = buildRenderOptions(stepCount, footer, i);
+          const frontCanvas = await renderer.renderFront(seq, options);
+          const backCanvas = await renderer.renderBack(seq, options);
+
+          const label = seq.word || seq.name || `Card ${i + 1}`;
+          const card: RenderedCard = {
+            frontUrl: canvasToDataUrl(frontCanvas),
+            backUrl: canvasToDataUrl(backCanvas),
+            label,
+          };
+          const pair: CardPair = { front: frontCanvas, back: backCanvas, label };
+
           pairs.push(pair);
+          cards.push(card);
+          cardCache.set(cacheKey, { rendered: card, pair });
+
+          Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
+            .then(([fb, bb]) => deckCardBlobCache.set(cacheKey, fb, bb, label))
+            .catch(() => {});
         }
-      } else {
-        const options = buildRenderOptions(stepCount, footer, i);
-        const frontCanvas = await renderer.renderFront(seq, options);
-        const backCanvas = await renderer.renderBack(seq, options);
-
-        const label = seq.word || seq.name || `Card ${i + 1}`;
-        const card: RenderedCard = {
-          frontUrl: canvasToDataUrl(frontCanvas),
-          backUrl: canvasToDataUrl(backCanvas),
-          label,
-        };
-        const pair: CardPair = { front: frontCanvas, back: backCanvas, label };
-
-        pairs.push(pair);
-        cards.push(card);
-        cardCache.set(cacheKey, { rendered: card, pair });
-
-        Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
-          .then(([fb, bb]) => deckCardBlobCache.set(cacheKey, fb, bb, label))
-          .catch(() => {});
+      } catch (err) {
+        console.error(`[PrintPreview] Card ${i + 1} (${seq.word}) render failed:`, err);
+        const label = `⚠ ${seq.word || seq.name || `Card ${i + 1}`}`;
+        const errorCard: RenderedCard = { frontUrl: "", backUrl: "", label };
+        cards.push(errorCard);
       }
 
       if (generation !== renderGeneration) return;
@@ -691,6 +693,11 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     overflow: hidden;
     border-radius: 0;
     background: #ffffff;
+  }
+
+  .card-cell.blank {
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.08);
   }
 
   .card-cell.clickable {
