@@ -5,21 +5,35 @@ export async function downloadBlob(
   filename: string,
   _options: DownloadOptions = {}
 ): Promise<DownloadResult> {
+  // Try Web Share API first (mobile native share sheet)
+  if (navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], filename, { type: blob.type });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return { success: true, filename };
+      }
+    } catch (error) {
+      // AbortError = user dismissed share sheet — not an error
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return { success: true, filename };
+      }
+      // Other errors: fall through to anchor download
+    }
+  }
+
+  // Fallback: anchor download
   return new Promise((resolve) => {
     try {
       const url = URL.createObjectURL(blob);
-
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = filename;
       anchor.style.display = "none";
-
       document.body.appendChild(anchor);
       anchor.click();
-
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
-
       resolve({ success: true, filename });
     } catch (error) {
       resolve({ success: false, filename, error: error as Error });

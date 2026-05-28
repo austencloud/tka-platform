@@ -23,19 +23,29 @@
     start,
     end,
     motionType,
+    blueStart,
+    blueEnd,
+    blueMotionType,
+    showBlue = false,
   }: {
     start: GridLocation;
     end: GridLocation;
     motionType: MotionType;
+    blueStart?: GridLocation;
+    blueEnd?: GridLocation;
+    blueMotionType?: MotionType;
+    showBlue?: boolean;
   } = $props();
 
-  // Show only the red hand (right-handed lead)
   const visibilityState = new SequenceViewerVisibilityState();
-  visibilityState.setBlueMotion(false);
+  if (!showBlue) {
+    visibilityState.setBlueMotion(false);
+  }
   setViewerVisibilityContext(visibilityState);
 
-  const animState = createAnimationPanelState();
-  let controller = $state<AnimationPlaybackController | null>(null);
+  const bStart = blueStart ?? start;
+  const bEnd = blueEnd ?? bStart;
+  const bMotion = blueMotionType ?? MotionType.STATIC;
 
   function makeMotion(color: MotionColor, startLoc: GridLocation, endLoc: GridLocation, type: MotionType): MotionData {
     return {
@@ -66,7 +76,7 @@
     id: `guide-${motionType}-start`,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: makeMotion(MotionColor.BLUE, start, start, MotionType.STATIC),
+      blue: makeMotion(MotionColor.BLUE, bStart, bStart, MotionType.STATIC),
       red: makeMotion(MotionColor.RED, start, start, MotionType.STATIC),
     },
   };
@@ -81,13 +91,13 @@
     isBlank: false,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: makeMotion(MotionColor.BLUE, start, start, MotionType.STATIC),
+      blue: makeMotion(MotionColor.BLUE, bStart, bEnd, bMotion),
       red: makeMotion(MotionColor.RED, start, end, motionType),
     },
   };
 
   const sequence = createSequenceData({
-    id: `guide-motion-${motionType}-${start}-${end}`,
+    id: `guide-motion-${motionType}-${start}-${end}-${bStart}-${bEnd}`,
     name: `${motionType}`,
     word: `${motionType}`,
     steps: [step],
@@ -95,20 +105,21 @@
     gridMode: GridMode.DIAMOND,
   });
 
+  let visible = $state(false);
+  let sentinel: HTMLDivElement | undefined = $state();
+  let observer: IntersectionObserver | undefined;
+
+  const animState = createAnimationPanelState();
+  let controller = $state<AnimationPlaybackController | null>(null);
+
   const isPlaying = $derived(animState.isPlaying);
   const currentStep = $derived(animState.currentStep);
   const bluePropState = $derived(animState.bluePropState);
   const redPropState = $derived(animState.redPropState);
+  const stepData = $derived(currentStep < 1 ? startPosition : step);
 
-  const stepData = $derived.by(() => {
-    const seq = animState.sequenceData;
-    if (!seq) return null;
-    if (currentStep < 1) return seq.startPosition ?? null;
-    const idx = Math.min(Math.max(0, Math.floor(currentStep) - 1), (seq.steps?.length ?? 1) - 1);
-    return seq.steps?.[idx] ?? null;
-  });
-
-  onMount(() => {
+  function initController() {
+    if (controller) return;
     const angleCalc = createAngleCalculator();
     const endpointCalc = new EndpointCalculator(angleCalc);
     const propInterp = new PropInterpolator(createAngleCalculator(), endpointCalc);
@@ -121,18 +132,49 @@
     if (ok) {
       setTimeout(() => ctrl.togglePlayback(), 300);
     }
-
     controller = ctrl;
+  }
+
+  function disposeController() {
+    controller?.dispose();
+    controller = null;
+  }
+
+  onMount(() => {
+    if (!sentinel) return;
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return;
+        const nowVisible = entry.isIntersecting;
+        if (nowVisible && !visible) {
+          visible = true;
+          // Controller init happens after AnimatorCanvas mounts via $effect below
+        } else if (!nowVisible && visible) {
+          visible = false;
+          disposeController();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
   });
 
   onDestroy(() => {
-    controller?.dispose();
+    observer?.disconnect();
+    disposeController();
     animState.dispose();
+  });
+
+  $effect(() => {
+    if (visible && !controller) {
+      // Small delay so AnimatorCanvas has time to mount
+      setTimeout(() => initController(), 100);
+    }
   });
 </script>
 
-{#if typeof window !== 'undefined'}
-  <div class="guide-motion-demo">
+<div class="guide-motion-demo" bind:this={sentinel}>
+  {#if visible && typeof window !== 'undefined'}
     <AnimatorCanvas
       blueProp={bluePropState}
       redProp={redPropState}
@@ -145,14 +187,15 @@
       word={null}
       bluePropType={PropType.HAND}
       redPropType={PropType.HAND}
+      previewDarkMode={true}
       hideProgressBar={true}
       hideStepNumbers={true}
       disableContextMenu={true}
       fillContainer={true}
       showNonRadialPoints={false}
     />
-  </div>
-{/if}
+  {/if}
+</div>
 
 <style>
   .guide-motion-demo {
