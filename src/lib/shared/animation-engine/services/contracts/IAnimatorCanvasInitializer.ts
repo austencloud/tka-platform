@@ -38,6 +38,7 @@ export interface InitializerDependencies {
    *  Export/offscreen paths leave this true to burn the background into pixels. */
   paintBackground?: boolean;
   gridMode: GridMode | null;
+  showNonRadialPoints?: boolean;
   loadAnimatorServices: () => Promise<boolean>;
   initializePrecomputationService: () => void;
   initializePropTextureLoader: () => void;

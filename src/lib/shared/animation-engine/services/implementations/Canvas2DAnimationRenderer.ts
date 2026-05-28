@@ -210,10 +210,10 @@ export class Canvas2DAnimationRenderer {
     );
   }
 
-  async loadGridTexture(gridMode: string): Promise<void> {
+  async loadGridTexture(gridMode: string, showNonRadialPoints: boolean = true): Promise<void> {
     this.currentGridMode = gridMode;
     const canvasSize = this.appManager.getCurrentSize();
-    await this.imageLoader.loadGridImage(gridMode, canvasSize);
+    await this.imageLoader.loadGridImage(gridMode, canvasSize, showNonRadialPoints);
   }
 
   /**

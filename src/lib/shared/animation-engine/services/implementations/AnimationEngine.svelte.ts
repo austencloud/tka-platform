@@ -132,6 +132,8 @@ export interface AnimationEngineProps {
   isSeamlesslyLoopable?: boolean;
   /** Virtual time for this frame (in ms). Used during video export. */
   virtualTime?: number;
+  /** When false, hides nonradial (layer2/intercardinal) grid points. Default true. */
+  showNonRadialPoints?: boolean;
 }
 
 /**
@@ -288,6 +290,7 @@ export class AnimationEngine {
   private settingsLoaded = false;
   private trailCapturerInitialized = false;
   private previousGridMode: string | null = null;
+  private previousShowNonRadialPoints: boolean = true;
   private cacheSequenceId: string | null = null;
   private unsubscribeVisibility: (() => void) | null = null;
   private lastClearSignal: number = 0;
@@ -500,6 +503,7 @@ export class AnimationEngine {
     // so the change-detection in update() doesn't redundantly reload the same texture.
     const initGridMode = this.lastPropsRef?.gridMode?.toString() ?? "diamond";
     this.previousGridMode = initGridMode;
+    this.previousShowNonRadialPoints = this.lastPropsRef?.showNonRadialPoints ?? true;
 
     // Wire overlay renderers that may have been created during the async
     // initializeCanvas gap.
@@ -676,16 +680,19 @@ export class AnimationEngine {
     // Handle playback changes
     this.sequenceCacheService?.handlePlaybackChange(props.isPlaying ?? false);
 
-    // Handle grid mode changes
+    // Handle grid mode changes (also reload when nonradial visibility changes)
     const currentGridMode = props.gridMode?.toString() ?? null;
+    const currentShowNonRadial = props.showNonRadialPoints ?? true;
     if (
       this.state.isInitialized &&
       this.animationRenderer &&
-      currentGridMode !== this.previousGridMode
+      (currentGridMode !== this.previousGridMode ||
+        currentShowNonRadial !== this.previousShowNonRadialPoints)
     ) {
       this.previousGridMode = currentGridMode;
+      this.previousShowNonRadialPoints = currentShowNonRadial;
       this.animationRenderer
-        .loadGridTexture(currentGridMode ?? "diamond")
+        .loadGridTexture(currentGridMode ?? "diamond", currentShowNonRadial)
         .then(() => {
           this.renderLoopService?.triggerRender(() =>
             this.buildFrameParams(props)
@@ -1005,12 +1012,14 @@ export class AnimationEngine {
     if (!this.containerElement) return;
 
     const initialGridMode = this.lastPropsRef?.gridMode ?? GridMode.DIAMOND;
+    const initialShowNonRadial = this.lastPropsRef?.showNonRadialPoints ?? true;
 
     await this.canvasInitializer.initialize(
       {
         containerElement: this.containerElement,
         backgroundAlpha: 1,
         gridMode: initialGridMode,
+        showNonRadialPoints: initialShowNonRadial,
         loadAnimatorServices: () => this.loadAnimatorServices(),
         initializePrecomputationService: () => {
           this.initializePrecomputationService();

@@ -90,6 +90,7 @@ Last audit: 2025-12-27
     tipEffortMap: cellTipEffortMap = undefined,
     disableContextMenu = false,
     fillContainer = false,
+    showNonRadialPoints = true,
     resizePaused = false,
     onInitialized: onInitializedCallback = undefined,
     onEffectError = undefined,
@@ -136,6 +137,7 @@ Last audit: 2025-12-27
     tipEffortMap?: TipEffortMap;
     disableContextMenu?: boolean;
     fillContainer?: boolean;
+    showNonRadialPoints?: boolean;
     /** When true, the engine's ResizeObserver is paused to prevent canvas buffer clears during CSS transitions */
     resizePaused?: boolean;
     /** Fires when the canvas engine has initialized and rendered its first frame */
@@ -666,6 +668,7 @@ Last audit: 2025-12-27
       previewDarkMode,
       isSeamlesslyLoopable,
       virtualTime,
+      showNonRadialPoints,
     };
     untrack(() => {
       if (currentFireConfig) {

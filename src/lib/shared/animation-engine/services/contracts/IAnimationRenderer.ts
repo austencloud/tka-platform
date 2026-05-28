@@ -84,7 +84,7 @@ export interface IAnimationRenderer {
    * Load grid image for a specific grid mode
    * @param gridMode - Grid mode (e.g., "diamond", "box")
    */
-  loadGridTexture(gridMode: string): Promise<void>;
+  loadGridTexture(gridMode: string, showNonRadialPoints?: boolean): Promise<void>;
 
   /**
    * Load glyph image for rendering letter + turns

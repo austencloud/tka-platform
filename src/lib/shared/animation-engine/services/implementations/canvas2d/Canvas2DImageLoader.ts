@@ -202,7 +202,8 @@ export class Canvas2DImageLoader {
 
   async loadGridImage(
     gridMode: string,
-    canvasSize: number
+    canvasSize: number,
+    showNonRadialPoints: boolean = true
   ): Promise<HTMLImageElement> {
     try {
       const { GridMode } =
@@ -219,7 +220,7 @@ export class Canvas2DImageLoader {
           GridMode.DIAMOND;
       }
 
-      const gridSvg = await generateGridSvg(gridModeEnum);
+      const gridSvg = await generateGridSvg(gridModeEnum, true, showNonRadialPoints);
 
       // Create new image
       const newImage = await this.createImageFromSVG(

@@ -26,26 +26,20 @@
   }: {
     start: GridLocation;
     end: GridLocation;
-    motionType: "shift" | "dash" | "static";
+    motionType: MotionType;
   } = $props();
 
-  // Hide red prop via viewer visibility context
+  // Show only the red hand (right-handed lead)
   const visibilityState = new SequenceViewerVisibilityState();
-  visibilityState.setRedMotion(false);
+  visibilityState.setBlueMotion(false);
   setViewerVisibilityContext(visibilityState);
 
-  // Per-instance animation services (not singletons — multiple demos on one page)
-  const angleCalc = createAngleCalculator();
-  const endpointCalc = new EndpointCalculator(angleCalc);
-  const propInterp = new PropInterpolator(createAngleCalculator(), endpointCalc);
-  const orchestrator = new SequenceAnimationOrchestrator(new AnimationStateManager(), propInterp);
-  const loop = new AnimationLoop();
-  const controller = new AnimationPlaybackController(orchestrator, loop);
   const animState = createAnimationPanelState();
+  let controller = $state<AnimationPlaybackController | null>(null);
 
-  function makeMotion(color: MotionColor, startLoc: GridLocation, endLoc: GridLocation): MotionData {
+  function makeMotion(color: MotionColor, startLoc: GridLocation, endLoc: GridLocation, type: MotionType): MotionData {
     return {
-      motionType: MotionType.STATIC,
+      motionType: type,
       rotationDirection: RotationDirection.NO_ROTATION,
       startLocation: startLoc,
       endLocation: endLoc,
@@ -56,6 +50,7 @@
       isVisible: true,
       propType: PropType.HAND,
       gridMode: GridMode.DIAMOND,
+      pathShape: "linear",
       arrowLocation: startLoc,
       arrowPlacementData: {
         positionX: 0, positionY: 0, rotationAngle: 0,
@@ -71,8 +66,8 @@
     id: `guide-${motionType}-start`,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: makeMotion(MotionColor.BLUE, start, start),
-      red: makeMotion(MotionColor.RED, start, start),
+      blue: makeMotion(MotionColor.BLUE, start, start, MotionType.STATIC),
+      red: makeMotion(MotionColor.RED, start, start, MotionType.STATIC),
     },
   };
 
@@ -86,21 +81,20 @@
     isBlank: false,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: makeMotion(MotionColor.BLUE, start, end),
-      red: makeMotion(MotionColor.RED, start, start),
+      blue: makeMotion(MotionColor.BLUE, start, start, MotionType.STATIC),
+      red: makeMotion(MotionColor.RED, start, end, motionType),
     },
   };
 
   const sequence = createSequenceData({
-    id: `guide-motion-${motionType}`,
-    name: motionType,
-    word: motionType,
+    id: `guide-motion-${motionType}-${start}-${end}`,
+    name: `${motionType}`,
+    word: `${motionType}`,
     steps: [step],
     startPosition,
     gridMode: GridMode.DIAMOND,
   });
 
-  // Derived canvas props from panel state
   const isPlaying = $derived(animState.isPlaying);
   const currentStep = $derived(animState.currentStep);
   const bluePropState = $derived(animState.bluePropState);
@@ -115,36 +109,50 @@
   });
 
   onMount(() => {
+    const angleCalc = createAngleCalculator();
+    const endpointCalc = new EndpointCalculator(angleCalc);
+    const propInterp = new PropInterpolator(createAngleCalculator(), endpointCalc);
+    const orchestrator = new SequenceAnimationOrchestrator(new AnimationStateManager(), propInterp);
+    const loop = new AnimationLoop();
+    const ctrl = new AnimationPlaybackController(orchestrator, loop);
+
     animState.setShouldLoop(true);
-    const ok = controller.initialize(sequence, animState);
+    const ok = ctrl.initialize(sequence, animState);
     if (ok) {
-      setTimeout(() => controller.togglePlayback(), 300);
+      setTimeout(() => ctrl.togglePlayback(), 300);
     }
+
+    controller = ctrl;
   });
 
   onDestroy(() => {
-    controller.dispose();
+    controller?.dispose();
     animState.dispose();
   });
 </script>
 
-<div class="guide-motion-demo">
-  <AnimatorCanvas
-    blueProp={bluePropState}
-    redProp={redPropState}
-    gridVisible={true}
-    gridMode={GridMode.DIAMOND}
-    stepData={stepData}
-    sequenceData={sequence}
-    {currentStep}
-    {isPlaying}
-    word={null}
-    bluePropType={PropType.HAND}
-    redPropType={PropType.HAND}
-    hideProgressBar={true}
-    disableContextMenu={true}
-  />
-</div>
+{#if typeof window !== 'undefined'}
+  <div class="guide-motion-demo">
+    <AnimatorCanvas
+      blueProp={bluePropState}
+      redProp={redPropState}
+      gridVisible={true}
+      gridMode={GridMode.DIAMOND}
+      stepData={stepData}
+      sequenceData={sequence}
+      {currentStep}
+      {isPlaying}
+      word={null}
+      bluePropType={PropType.HAND}
+      redPropType={PropType.HAND}
+      hideProgressBar={true}
+      hideStepNumbers={true}
+      disableContextMenu={true}
+      fillContainer={true}
+      showNonRadialPoints={false}
+    />
+  </div>
+{/if}
 
 <style>
   .guide-motion-demo {

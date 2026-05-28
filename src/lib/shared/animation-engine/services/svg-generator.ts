@@ -42,7 +42,8 @@ function getCurrentThemeMode(): ThemeMode {
  */
 export async function generateGridSvg(
   gridMode: GridMode = GridMode.DIAMOND,
-  useStrictPoints: boolean = true
+  useStrictPoints: boolean = true,
+  showNonRadialPoints: boolean = true
 ): Promise<string> {
   // For animation viewer, always use strict mode
   // Load from actual grid SVG files to get the complete grid with all point layers
@@ -76,6 +77,14 @@ export async function generateGridSvg(
       svgContent = svgContent.replace(
         /<svg([^>]*)>/,
         '<svg$1 class="strict-mode">'
+      );
+    }
+
+    // Hide nonradial (layer2) points when requested
+    if (!showNonRadialPoints) {
+      svgContent = svgContent.replace(
+        '</style>',
+        '.strict-layer2-point{fill:none !important}.normal-layer2-point{fill:none !important}\n</style>'
       );
     }
 
