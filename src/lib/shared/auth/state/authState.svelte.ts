@@ -202,8 +202,11 @@ async function initializeSubscriptionListener(user: User) {
         try {
           // Force token refresh to get updated custom claims from server
           const idTokenResult = await user.getIdTokenResult(true);
-          const newRole = (idTokenResult.claims.role as UserRole) || "user";
+          let newRole = (idTokenResult.claims.role as UserRole) || "user";
           const newIsAdmin = idTokenResult.claims.admin === true;
+          if (newIsAdmin && newRole !== "admin") {
+            newRole = "admin";
+          }
 
           // Only update if role actually changed
           if (newRole !== _state.role || newIsAdmin !== _state.isAdmin) {
@@ -316,6 +319,9 @@ export async function initializeAuthListener() {
           const idTokenResult = await user.getIdTokenResult(false);
           isAdmin = idTokenResult.claims.admin === true;
           role = (idTokenResult.claims.role as UserRole) || "user";
+          if (isAdmin && role !== "admin") {
+            role = "admin";
+          }
 
           // Persist role for offline fallback — when the token expires and
           // can't refresh (no network), we restore the last verified role
@@ -342,6 +348,9 @@ export async function initializeAuthListener() {
               if (parsed.uid === user.uid) {
                 isAdmin = parsed.isAdmin === true;
                 role = parsed.role || "user";
+                if (isAdmin && role !== "admin") {
+                  role = "admin";
+                }
                 console.info("📴 [authState] Using offline-cached role:", role);
               }
             }

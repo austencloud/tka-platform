@@ -55,6 +55,8 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		redPropType = null,
 		onTogglePlaybackRef,
 		onControllerReady,
+		hideProgressBar = false,
+		hideWordHeader = false,
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -72,6 +74,8 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 		onTogglePlaybackRef?: (toggleFn: () => void) => void;
 		/** Called when the internal playback controller is initialized, exposing it for external sync */
 		onControllerReady?: (ctrl: AnimationPlaybackController, state: AnimationPanelState) => void;
+		hideProgressBar?: boolean;
+		hideWordHeader?: boolean;
 	} = $props();
 
 	// Context for external control mode
@@ -281,14 +285,15 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 						{sequenceData}
 						{currentStep}
 						{isPlaying}
-						word={sequenceData?.word ?? sequence?.word ?? null}
+						word={hideWordHeader ? null : (sequenceData?.word ?? sequence?.word ?? null)}
 						onPlaybackToggle={togglePlayback}
 						{trailSettings}
 						onCanvasReady={handleCanvasReady}
 						{previewDarkMode}
 						{bluePropType}
 						{redPropType}
-				progressBarVariant="minimal"
+						progressBarVariant="minimal"
+						{hideProgressBar}
 					/>
 
 					{#if isExporting && exportProgress}
@@ -333,7 +338,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 					{sequenceData}
 					{currentStep}
 					{isPlaying}
-					word={sequenceData?.word ?? sequence?.word ?? null}
+					word={hideWordHeader ? null : (sequenceData?.word ?? sequence?.word ?? null)}
 					onPlaybackToggle={togglePlayback}
 					{trailSettings}
 					onCanvasReady={handleCanvasReady}
@@ -341,6 +346,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 					{bluePropType}
 					{redPropType}
 					progressBarVariant="minimal"
+					{hideProgressBar}
 				/>
 
 				{#if isExporting && exportProgress}

@@ -147,7 +147,8 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
       return;
     }
 
-    preparer.prepareBatch(filtered).then((prepared) => {
+    const s = getSettings();
+    preparer.prepareBatch(filtered, { bluePropType: s.bluePropType, redPropType: s.redPropType }).then((prepared) => {
       preparedOptions = prepared;
       isSelecting = false;
     });
@@ -189,7 +190,8 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
           filtered = filtered.filter(filterPredicate);
         }
         if (preparer && filtered.length > 0) {
-          const prepared = await preparer.prepareBatch(filtered);
+          const s2 = getSettings();
+          const prepared = await preparer.prepareBatch(filtered, { bluePropType: s2.bluePropType, redPropType: s2.redPropType });
           preparedOptions = prepared;
         }
       } finally {

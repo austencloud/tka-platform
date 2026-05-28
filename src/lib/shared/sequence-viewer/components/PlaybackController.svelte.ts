@@ -39,6 +39,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   let _playbackController: AnimationPlaybackController | null = null;
   let _hapticService: HapticFeedback | null = null;
   let _onUrlParamChange: ((key: string, value: string) => void) | undefined;
+  let _isAnimationVisible: (() => boolean) | null = null;
 
   // ── Animation state subscription ──
   let lastStepNumber = 0;
@@ -53,7 +54,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
         case "currentStep": {
           const rawStep = value as number;
           const newBeat = Math.floor(rawStep);
-          if (isPlayingLocal && newBeat !== lastStepNumber && newBeat >= 1) {
+          if (isPlayingLocal && newBeat !== lastStepNumber && newBeat >= 1 && (_isAnimationVisible?.() !== false)) {
             _hapticService?.trigger("selection");
           }
           lastStepNumber = newBeat;
@@ -261,6 +262,7 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     setPlaybackController(pc: AnimationPlaybackController) { _playbackController = pc; },
     getPlaybackController() { return _playbackController; },
     setHapticService(hs: HapticFeedback) { _hapticService = hs; },
+    setAnimationVisible(fn: () => boolean) { _isAnimationVisible = fn; },
     setOnUrlParamChange(cb: ((key: string, value: string) => void) | undefined) { _onUrlParamChange = cb; },
 
     // Handlers

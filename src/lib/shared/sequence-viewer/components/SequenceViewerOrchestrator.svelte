@@ -562,6 +562,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 
       playback.setPlaybackController(playbackControllerRef);
       playback.setHapticService(hapticService);
+      playback.setAnimationVisible(() => viewerState.viewerMode !== 'card');
 
       const lanSyncCoordinator = getLanSyncCoordinator();
       lanSyncState.initialize(lanSyncCoordinator);

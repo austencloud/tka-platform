@@ -118,7 +118,7 @@ export const handleError: HandleServerError = async ({ error, event, status, mes
     status,
     message: err.message,
     stack: err.stack,
-    url: event.url.pathname + event.url.search,
+    url: (() => { try { return event.url.pathname + event.url.search; } catch { return event.url.pathname; } })(),
     method: event.request.method,
     userAgent: event.request.headers.get("user-agent") ?? "unknown",
     timestamp: new Date().toISOString(),

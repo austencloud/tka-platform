@@ -363,7 +363,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     aria-label={layout.focusedPane === "animation" ? "Exit focus mode" : "Focus on animation"}
     aria-expanded={layout.focusedPane === "animation"}
   >
-    {#if !layout.focusedPane && onSplitConfigChange}
+    {#if (!layout.focusedPane || layout.isMobile) && onSplitConfigChange}
       <PaneContentSelector
         current={splitConfig.leftPane}
         onSelect={(content) => onSplitConfigChange?.('left', content)}
@@ -548,7 +548,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     aria-label={layout.focusedPane === "image" ? "Exit focus mode" : "Focus on image"}
     aria-expanded={layout.focusedPane === "image"}
   >
-    {#if !layout.focusedPane && onSplitConfigChange}
+    {#if (!layout.focusedPane || layout.isMobile) && onSplitConfigChange}
       <PaneContentSelector
         current={splitConfig.rightPane}
         onSelect={(content) => onSplitConfigChange?.('right', content)}

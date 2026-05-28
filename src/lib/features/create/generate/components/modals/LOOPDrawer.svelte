@@ -80,7 +80,7 @@
   .loop-drawer-content {
     display: flex;
     flex-direction: column;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: calc(var(--nav-min-height, 64px) + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,

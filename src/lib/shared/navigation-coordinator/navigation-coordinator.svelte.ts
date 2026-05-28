@@ -383,11 +383,14 @@ export function handleSectionChange(
     skipHistory: shouldSkipHistory,
   });
 
-  // Validate section accessibility via feature flags
-  if (!featureFlagService.canAccessTab(module, sectionId)) {
+  // Validate section accessibility via feature flags.
+  // Skip the gate when feature flags haven't initialized yet — the role
+  // defaults to "user" before auth loads, which incorrectly blocks admin-only
+  // tabs on page restore. The reactive moduleSections() will hide/redirect
+  // once flags are loaded if the user truly lacks access.
+  if (featureFlagService.isInitialized && !featureFlagService.canAccessTab(module, sectionId)) {
     console.warn(`⚠️ User does not have access to ${module}:${sectionId} tab`);
     navDebug("BLOCKED: Feature flag denied access");
-    // Redirect to a default accessible section
     if (module === "create") {
       navigationState.setActiveTab("construct");
     }

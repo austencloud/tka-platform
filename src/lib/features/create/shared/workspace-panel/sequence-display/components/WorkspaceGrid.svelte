@@ -167,9 +167,8 @@
   const standardEmptyCells = $derived.by(() => {
     if (isTimelineMode || steps.length === 0) return [];
     const cells: Array<{ row: number; column: number; show: MandalaShow }> = [];
-    for (let r = 2; r <= gridLayout.rows; r++) {
-      cells.push({ row: r, column: 1, show: "both" });
-    }
+    // Only fill trailing empty cells in the last row — column 1 rows 2+
+    // stay empty to avoid duplicate mandalas stacking vertically.
     const stepsInLastRow = steps.length % gridLayout.columns;
     if (stepsInLastRow > 0) {
       for (let c = stepsInLastRow + 2; c <= gridLayout.totalColumns; c++) {

@@ -463,7 +463,9 @@ Uses organizer and sizer services for section grouping and sizing.
     gap: 6px;
     min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
     padding: 6px 14px;
-    background: var(--theme-card-bg);
+    background: var(--theme-card-bg, rgba(0, 0, 0, 0.75));
+    backdrop-filter: blur(8px) brightness(0.5);
+    -webkit-backdrop-filter: blur(8px) brightness(0.5);
     border: 1px solid var(--theme-stroke-strong);
     border-radius: 16px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.85));
