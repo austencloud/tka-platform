@@ -16,7 +16,10 @@
     onSelectFamily?: (familyId: string) => void;
     activePatternId?: string | null;
     onPatternChange?: (resolved: import("../domain/reversal-transform").ResolvedReversalPattern) => void;
-    seedPanel?: import("svelte").Snippet;
+    needsSeed?: boolean;
+    isSeeding?: boolean;
+    seedingFamilyId?: string | null;
+    seedProgress?: { written: number; total: number };
   }
 
   const {
@@ -28,7 +31,10 @@
     onSelectFamily,
     activePatternId = null,
     onPatternChange,
-    seedPanel,
+    needsSeed = false,
+    isSeeding = false,
+    seedingFamilyId = null,
+    seedProgress,
   }: Props = $props();
 
   function groupLabel(key: string): string {
@@ -79,7 +85,10 @@
     onSelectFamily={(id) => onSelectFamily?.(id)}
     {activePatternId}
     onPatternChange={(r) => onPatternChange?.(r)}
-    {seedPanel}
+    {needsSeed}
+    {isSeeding}
+    {seedingFamilyId}
+    {seedProgress}
   />
 {:else}
 <div class="browse-grid-container">

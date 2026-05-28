@@ -6,9 +6,22 @@
     ratioCount: number;
     sequenceCount: number;
     onSelect: () => void;
+    seeding?: boolean;
+    seedProgress?: { written: number; total: number };
+    disabled?: boolean;
+    needsSeed?: boolean;
   }
 
-  const { theme, ratioCount, sequenceCount, onSelect }: Props = $props();
+  const {
+    theme,
+    ratioCount,
+    sequenceCount,
+    onSelect,
+    seeding = false,
+    seedProgress,
+    disabled = false,
+    needsSeed = false,
+  }: Props = $props();
 
   const familyName = $derived(
     theme.familyId
@@ -23,6 +36,8 @@
   class="tnd-family-card"
   style="--accent: {theme.accentColor};"
   aria-label="Open {familyName} family"
+  aria-busy={seeding}
+  {disabled}
   onclick={onSelect}
 >
   <div class="icon-area">
@@ -30,8 +45,8 @@
       src={theme.iconPath}
       alt="{theme.element} element"
       class="element-icon"
-      width="64"
-      height="64"
+      width="96"
+      height="96"
     />
   </div>
 
@@ -39,7 +54,16 @@
   <span class="element-label">{theme.element}</span>
 
   <div class="footer">
-    <span class="stat">{sequenceCount} sequences</span>
+    {#if seeding}
+      <span class="stat seeding">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        Seeding {seedProgress?.written ?? 0}/{seedProgress?.total ?? 0}
+      </span>
+    {:else if needsSeed}
+      <span class="stat hint">Tap to seed</span>
+    {:else}
+      <span class="stat">{sequenceCount} sequences</span>
+    {/if}
   </div>
 </button>
 
@@ -48,8 +72,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 28px 20px 20px;
+    gap: 10px;
+    padding: 44px 28px 32px;
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--accent) 8%, var(--theme-card-bg, rgba(255, 255, 255, 0.04))),
@@ -95,13 +119,14 @@
   }
 
   .element-icon {
-    width: 64px;
-    height: 64px;
-    filter: var(--shadow-drop, drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3)));
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+    filter: var(--shadow-drop, drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35)));
   }
 
   .family-name {
-    font-size: 18px;
+    font-size: 24px;
     font-weight: 700;
     color: var(--accent);
     line-height: 1.2;
@@ -126,5 +151,22 @@
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-variant-numeric: tabular-nums;
+  }
+
+  .tnd-family-card:disabled {
+    cursor: progress;
+    opacity: 0.6;
+  }
+
+  .stat.hint {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .stat.seeding {
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 </style>

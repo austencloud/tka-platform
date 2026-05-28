@@ -9,7 +9,10 @@
     onSelectFamily: (familyId: string) => void;
     activePatternId?: string | null;
     onPatternChange?: (resolved: import("../domain/reversal-transform").ResolvedReversalPattern) => void;
-    seedPanel?: import("svelte").Snippet;
+    needsSeed?: boolean;
+    isSeeding?: boolean;
+    seedingFamilyId?: string | null;
+    seedProgress?: { written: number; total: number };
   }
 
   const {
@@ -17,7 +20,10 @@
     onSelectFamily,
     activePatternId = null,
     onPatternChange,
-    seedPanel,
+    needsSeed = false,
+    isSeeding = false,
+    seedingFamilyId = null,
+    seedProgress,
   }: Props = $props();
 
   // Asymmetric enumerations reference a base deck's sequences and store none of their own —
@@ -48,13 +54,16 @@
         {ratioCount}
         {sequenceCount}
         onSelect={() => onSelectFamily(theme.familyId)}
+        seeding={isSeeding && seedingFamilyId === theme.familyId}
+        {seedProgress}
+        disabled={isSeeding}
+        needsSeed={needsSeed && !isSeeding}
       />
     {/each}
   </div>
   {#if onPatternChange}
     <TnDReversalStrip {activePatternId} {onPatternChange} />
   {/if}
-  {#if seedPanel}{@render seedPanel()}{/if}
 </div>
 
 <style>
@@ -63,8 +72,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 28px;
-    min-height: auto;
+    min-height: calc(100vh - 160px);
     padding: 40px 24px;
     box-sizing: border-box;
   }

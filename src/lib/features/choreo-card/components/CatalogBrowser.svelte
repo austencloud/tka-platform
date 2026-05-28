@@ -95,10 +95,26 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   const tndMaterializedCatalogs = $derived(
     tndCatalogs.filter((c) => c.asymmetric !== true),
   );
+  let seedingFamilyId = $state<string | null>(null);
+
+  const activeFamilySequenceTotal = $derived(
+    browseState.filteredCatalogs
+      .filter((c) => c.asymmetric !== true)
+      .reduce(
+        (sum, c) =>
+          sum +
+          TND_FAMILY_KEYS.reduce(
+            (s, key) => s + ((c.families ?? []).find((f) => f.id === key)?.sequenceIds.length ?? 0),
+            0,
+          ),
+        0,
+      ),
+  );
+
   const needsSeed = $derived(
     activeReversal?.isCleanLoop === true &&
       activeReversal.id !== "continuous" &&
-      browseState.filteredCatalogs.length === 0,
+      activeFamilySequenceTotal === 0,
   );
 
   function handlePatternChange(resolved: ResolvedReversalPattern) {
@@ -108,22 +124,29 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     browseState.setReversalPattern(resolved.id === "continuous" ? null : resolved.id);
   }
 
-  async function runSeed() {
-    if (!activeReversal || isSeeding) return;
-    isSeeding = true;
-    seedError = "";
-    try {
-      await seedReversalPattern(tndMaterializedCatalogs, activeReversal, (p) => { seedProgress = p; });
-      const { loadCatalogs } = await import("../services/catalog-loader");
-      await loadCatalogs();
-      toast.success("Pattern seeded.");
-    } catch (err) {
-      seedError = `Seed failed: ${err instanceof Error ? err.message : err}`;
-      toast.error("Seeding failed. See the panel for details.");
-    } finally {
+  async function handleSelectFamily(familyId: string) {
+    if (needsSeed && activeReversal && !isSeeding) {
+      isSeeding = true;
+      seedingFamilyId = familyId;
+      seedError = "";
+      try {
+        await seedReversalPattern(tndMaterializedCatalogs, activeReversal, (p) => { seedProgress = p; });
+        const { loadCatalogs } = await import("../services/catalog-loader");
+        await loadCatalogs();
+        toast.success("Pattern seeded.");
+      } catch (err) {
+        seedError = `Seed failed: ${err instanceof Error ? err.message : err}`;
+        toast.error("Seeding failed.");
+        isSeeding = false;
+        seedingFamilyId = null;
+        seedProgress = { written: 0, total: 0 };
+        return;
+      }
       isSeeding = false;
+      seedingFamilyId = null;
       seedProgress = { written: 0, total: 0 };
     }
+    activeTnDFamilyId = familyId;
   }
 
   function handleBrowseCatalogSelect(catalog: Catalog) {
@@ -602,10 +625,13 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       tndViewMode={browseState.tndViewMode}
       allTnDCatalogs={browseState.collection === 'TnD' ? browseState.filteredCatalogs : []}
       onSelectCatalog={handleBrowseCatalogSelect}
-      onSelectFamily={(familyId) => { activeTnDFamilyId = familyId; }}
+      onSelectFamily={handleSelectFamily}
       activePatternId={activeReversal?.id ?? null}
       onPatternChange={handlePatternChange}
-      {seedPanel}
+      {needsSeed}
+      {isSeeding}
+      {seedingFamilyId}
+      {seedProgress}
     />
   {/if}
 </div>
@@ -790,20 +816,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
           />
         {/if}
       {/if}
-    </div>
-  {/if}
-{/snippet}
-
-{#snippet seedPanel()}
-  {#if needsSeed && activeReversal}
-    <div class="seed-panel">
-      <p class="seed-text">Pattern <strong>{activeReversal.sequence}</strong> isn't seeded yet.</p>
-      {#if isSeeding}
-        <p class="seed-progress">Seeding… {seedProgress.written}/{seedProgress.total} catalogs</p>
-      {:else}
-        <button class="seed-btn" type="button" onclick={runSeed}>Seed it</button>
-      {/if}
-      {#if seedError}<p class="seed-error">{seedError}</p>{/if}
     </div>
   {/if}
 {/snippet}
@@ -1144,9 +1156,4 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
   }
 
   /* ── Reversal seed empty-state ── */
-  .seed-panel { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 20px; border: 1px dashed var(--tnd-accent-border, rgba(183, 99, 205, 0.35)); border-radius: 12px; background: var(--tnd-accent-bg, rgba(183, 99, 205, 0.08)); }
-  .seed-text { margin: 0; font-size: 13px; color: var(--theme-text, #fff); }
-  .seed-progress { margin: 0; font-size: 12px; color: var(--theme-text-muted, rgba(255, 255, 255, 0.6)); }
-  .seed-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--tnd-accent-border, rgba(183, 99, 205, 0.5)); background: var(--tnd-accent-bg, rgba(183, 99, 205, 0.15)); color: var(--theme-text, #fff); font: inherit; font-size: 13px; cursor: pointer; }
-  .seed-error { margin: 0; font-size: 12px; color: #f87171; }
 </style>
