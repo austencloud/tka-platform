@@ -46,7 +46,6 @@ import { CanvasResizer } from "./CanvasResizer.svelte";
 import {
   DEFAULT_CANVAS_SIZE,
 } from "./CanvasResizer.svelte";
-import { PropTextureLoader } from "./PropTextureLoader.svelte";
 import {
   DEFAULT_PROP_DIMENSIONS,
   type IPropTextureLoader,
@@ -89,6 +88,8 @@ import { EffectRendererManager } from "./EffectRendererManager";
 import { EffectController } from "./EffectController";
 import { FrameParameterBuilder } from "./FrameParameterBuilder";
 import { PropTypeManager } from "./PropTypeManager";
+import { StateSynchronizer } from "./StateSynchronizer";
+import { PropPipeline } from "./PropPipeline";
 import { CanvasLifecycleManager } from "./CanvasLifecycleManager";
 import type { EffectType, TipEffectMap } from '../../domain/types/TipEffectTypes';
 import type { FireColorCurve } from '../../domain/types/FireTypes';
@@ -256,6 +257,8 @@ export class AnimationEngine {
   private readonly effectController = new EffectController(this.effectRendererManager);
   private readonly frameParameterBuilder = new FrameParameterBuilder();
   private readonly propTypeManager = new PropTypeManager();
+  private readonly stateSynchronizer = new StateSynchronizer();
+  private readonly propPipeline = new PropPipeline(this.propTypeManager);
   private readonly lifecycleManager = new CanvasLifecycleManager();
 
   // ============================================================================
@@ -562,29 +565,9 @@ export class AnimationEngine {
       this.trailCapturerInitialized = true;
     }
 
-    // Handle prop type changes
-    const hasOverrides =
-      props.bluePropType != null || props.redPropType != null;
-
+    // Handle prop type changes (delegated to PropPipeline)
     const getFrameParamsFn = () => this.buildFrameParams(props);
-
-    if (hasOverrides) {
-      this.propTypeManager.handleOverrides(
-        props,
-        this.state,
-        getFrameParamsFn,
-        this.prevDarkMode
-      );
-    } else {
-      this.propTypeManager.handleSettingsChange(
-        this.state,
-        getFrameParamsFn,
-        this.prevDarkMode
-      );
-    }
-
-    // Handle additional layer prop textures for tunnel mode
-    this.propTypeManager.handleAdditionalLayers(props, this.state, getFrameParamsFn);
+    this.propPipeline.handlePropTypeChanges(props, this.state, getFrameParamsFn, this.prevDarkMode);
 
     // Handle trail settings changes - enforce unilateral constraint before syncing
     if (props.externalTrailSettings !== undefined) {
@@ -730,7 +713,7 @@ export class AnimationEngine {
             this.buildFrameParams(props)
           );
 
-          this.propTypeManager.loadPropTextures(this.state, this.prevDarkMode).then(() => {
+          this.propPipeline.loadTextures(this.state, this.prevDarkMode).then(() => {
             this.renderLoopService?.triggerRender(() =>
               this.buildFrameParams(props)
             );
@@ -990,7 +973,6 @@ export class AnimationEngine {
         },
         initializePropTextureLoader: () => {
           this.initializePropTextureLoader();
-          this.propTypeManager.updateRefs({ propTextureService: this.propTextureService });
         },
         initializeResizeService: () => {
           this.initializeResizeService();
@@ -998,7 +980,7 @@ export class AnimationEngine {
         },
         initializeGlyphTextureLoader: () => this.initializeGlyphTextureLoader(),
         initializeRenderLoopService: () => this.initializeRenderLoopService(),
-        loadPropTextures: () => this.propTypeManager.loadPropTextures(this.state, this.prevDarkMode),
+        loadPropTextures: () => this.propPipeline.loadTextures(this.state, this.prevDarkMode),
         startRenderLoop: () =>
           this.renderLoopService?.triggerRender(() =>
             this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
@@ -1082,13 +1064,12 @@ export class AnimationEngine {
       return;
     }
 
-    this.propTextureService = new PropTextureLoader();
-    this.lifecycleManager.setPropTextureService(this.propTextureService);
-    this.propTextureService.initialize(
+    this.propTextureService = this.propPipeline.initializeTextureLoader(
       this.animationRenderer,
       this.svgGenerator,
       this.trailCapturer
     );
+    this.lifecycleManager.setPropTextureService(this.propTextureService);
   }
 
   private initializeResizeService(): void {
@@ -1218,7 +1199,7 @@ export class AnimationEngine {
           this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
         );
 
-        this.propTypeManager.loadPropTextures(this.state, this.prevDarkMode).then(() => {
+        this.propPipeline.loadTextures(this.state, this.prevDarkMode).then(() => {
           this.renderLoopService?.triggerRender(() =>
             this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
           );
@@ -1456,16 +1437,13 @@ export class AnimationEngine {
       }
     }
 
-    // Sync from resize service
-    if (this.canvasResizerService) {
-      const newSize = this.canvasResizerService.state.currentSize;
-      if (newSize && newSize !== this.canvasSize) {
-        this.canvasSize = newSize;
-        this.trailCapturer?.updateConfig({ canvasSize: newSize });
-        this.renderLoopService?.updateConfig({ canvasSize: newSize });
-        this.effectRendererManager.resizeAll(newSize);
-      }
-    }
+    // Sync from resize service (delegated to StateSynchronizer)
+    this.canvasSize = this.stateSynchronizer.syncResizeState({
+      canvasResizerService: this.canvasResizerService,
+      trailCapturer: this.trailCapturer,
+      renderLoopService: this.renderLoopService,
+      effectRendererManager: this.effectRendererManager,
+    });
   }
 
   private calculateBeatNumber(props: AnimationEngineProps): number {
