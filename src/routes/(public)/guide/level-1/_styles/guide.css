@@ -37,7 +37,7 @@
   grid-template-columns:
     [full-start] minmax(1.5rem, 1fr)
     [breakout-start] minmax(0, 6rem)
-    [prose-start] min(65ch, 100%)
+    [prose-start] min(90ch, 100%)
     [prose-end] minmax(0, 6rem)
     [breakout-end] minmax(1.5rem, 1fr)
     [full-end];

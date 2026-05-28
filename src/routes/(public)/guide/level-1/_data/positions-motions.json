@@ -1,5 +1,425 @@
 {
   "pictographs": {
+    "pos-alpha1": {
+      "id": "pos-alpha1",
+      "letter": "α",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "s",
+          "endLocation": "s",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "n",
+          "endLocation": "n",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-alpha2": {
+      "id": "pos-alpha2",
+      "letter": "α",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "w",
+          "endLocation": "w",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "e",
+          "endLocation": "e",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-alpha3": {
+      "id": "pos-alpha3",
+      "letter": "α",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "n",
+          "endLocation": "n",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "s",
+          "endLocation": "s",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-alpha4": {
+      "id": "pos-alpha4",
+      "letter": "α",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "e",
+          "endLocation": "e",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "w",
+          "endLocation": "w",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-beta1": {
+      "id": "pos-beta1",
+      "letter": "β",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "n",
+          "endLocation": "n",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "n",
+          "endLocation": "n",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-beta2": {
+      "id": "pos-beta2",
+      "letter": "β",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "e",
+          "endLocation": "e",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "e",
+          "endLocation": "e",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-beta3": {
+      "id": "pos-beta3",
+      "letter": "β",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "s",
+          "endLocation": "s",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "s",
+          "endLocation": "s",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-beta4": {
+      "id": "pos-beta4",
+      "letter": "β",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "w",
+          "endLocation": "w",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "w",
+          "endLocation": "w",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-gamma1": {
+      "id": "pos-gamma1",
+      "letter": "γ",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "n",
+          "endLocation": "n",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "e",
+          "endLocation": "e",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-gamma2": {
+      "id": "pos-gamma2",
+      "letter": "γ",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "e",
+          "endLocation": "e",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "s",
+          "endLocation": "s",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-gamma3": {
+      "id": "pos-gamma3",
+      "letter": "γ",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "s",
+          "endLocation": "s",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "w",
+          "endLocation": "w",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
+    "pos-gamma4": {
+      "id": "pos-gamma4",
+      "letter": "γ",
+      "gridMode": "DIAMOND",
+      "motions": {
+        "blue": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "w",
+          "endLocation": "w",
+          "color": "blue",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        },
+        "red": {
+          "motionType": "static",
+          "rotationDirection": "noRotation",
+          "startLocation": "n",
+          "endLocation": "n",
+          "color": "red",
+          "turns": 0,
+          "startOrientation": "in",
+          "endOrientation": "in",
+          "isVisible": true,
+          "propType": "hand",
+          "gridMode": "DIAMOND",
+          "propPlacementData": { "positionX": 0, "positionY": 0, "rotationAngle": 0 }
+        }
+      }
+    },
     "A-0": {
       "id": "A-0",
       "letter": "A",

@@ -1,6 +1,6 @@
 <script lang="ts">
   import GuideSection from "../../_components/GuideSection.svelte";
-  import MotionVisualizer from "$lib/features/learn/components/interactive/motions/MotionVisualizer.svelte";
+  import GuideMotionDemo from "../../_components/GuideMotionDemo.svelte";
 </script>
 
 <GuideSection id="hand-motions" title="Hand Motions">
@@ -13,32 +13,17 @@
     <div class="motion-demo">
       <h3>Shift</h3>
       <p>Move to an adjacent point.</p>
-      <MotionVisualizer
-        leftStart="W" leftEnd="N"
-        rightStart="W" rightEnd="N"
-        leftMotion="shift" rightMotion="shift"
-        showMotionType={false} showLabels
-      />
+      <GuideMotionDemo start="w" end="n" motionType="shift" />
     </div>
     <div class="motion-demo">
       <h3>Dash</h3>
       <p>Move to the opposite point.</p>
-      <MotionVisualizer
-        leftStart="N" leftEnd="S"
-        rightStart="N" rightEnd="S"
-        leftMotion="dash" rightMotion="dash"
-        showMotionType={false} showLabels
-      />
+      <GuideMotionDemo start="n" end="s" motionType="dash" />
     </div>
     <div class="motion-demo">
       <h3>Static</h3>
       <p>Stay at the current point.</p>
-      <MotionVisualizer
-        leftStart="N" leftEnd="N"
-        rightStart="S" rightEnd="S"
-        leftMotion="static" rightMotion="static"
-        showMotionType={false} showLabels
-      />
+      <GuideMotionDemo start="n" end="n" motionType="static" />
     </div>
   </div>
 
@@ -57,9 +42,10 @@
 <style>
   .base-motions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
-    margin: 1.5rem 0;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin: 2rem 0;
+    max-width: 900px;
   }
 
   .motion-demo {
