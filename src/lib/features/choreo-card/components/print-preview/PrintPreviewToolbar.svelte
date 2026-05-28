@@ -49,11 +49,15 @@
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         {progressText}
       </span>
+    {:else if isExporting}
+      <span class="progress-text" aria-live="polite" aria-atomic="true">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        Generating PDF…
+      </span>
     {:else}
       {#if onRerender}
         <button
           class="export-btn"
-          disabled={isExporting}
           onclick={onRerender}
           aria-label="Re-render all cards"
           title="Re-render all cards"
@@ -63,7 +67,7 @@
       {/if}
       <button
         class="export-btn"
-        disabled={isExporting || totalCards === 0}
+        disabled={totalCards === 0}
         onclick={onExportPDF}
         aria-label="Export as PDF"
       >
@@ -72,7 +76,7 @@
       </button>
       <button
         class="export-btn"
-        disabled={isExporting || totalCards === 0}
+        disabled={totalCards === 0}
         onclick={onExportZIP}
         aria-label="Export as ZIP of images"
       >

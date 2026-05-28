@@ -125,10 +125,14 @@ export interface SequenceData {
   readonly canonicalSignature?: string;
   /** Beats offset from canonical form (for circular sequences) */
   readonly canonicalOffset?: number;
-  /** Min-circular-rotation of the letter array, pipe-delimited (e.g. "A|A|A|A").
-   * Universal cross-deck key: same hand path in different decks shares this value
-   * regardless of turn assignment, start position, or deck-specific ID scheme. */
+  /** Canonical location-based hand path signature (e.g. "e→n→w→s→e|s→e→n→w→s").
+   * Blue path | red path, normalized via min of circular rotation × color swap.
+   * Universal cross-deck key: same physical hand movement shares this value
+   * regardless of turn assignment, letter names, or deck-specific ID scheme. */
   readonly canonicalHandPath?: string;
+  /** Min-circular-rotation of the letter array, pipe-delimited (e.g. "M|P|M|P").
+   * Groups sequences that use the same letters but may differ in start position. */
+  readonly canonicalWord?: string;
 
   // Owner info (populated for public sequences)
   readonly ownerId?: string;
@@ -241,6 +245,9 @@ export function createSequenceData(
     }),
     ...(data.canonicalHandPath !== undefined && {
       canonicalHandPath: data.canonicalHandPath,
+    }),
+    ...(data.canonicalWord !== undefined && {
+      canonicalWord: data.canonicalWord,
     }),
     // Owner info
     ...(data.ownerId !== undefined && { ownerId: data.ownerId }),

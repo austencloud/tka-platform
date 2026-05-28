@@ -25,6 +25,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
     tndElement?: TnDElement;
+    /** Per-card TnD elements, index-aligned with sequences (overrides single tndElement) */
+    tndElements?: (TnDElement | undefined)[];
     /** Per-card footer data, index-aligned with sequences */
     footers?: CardFooter[];
     /** Use deck layout policy instead of user composition settings */
@@ -56,6 +58,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     includeStartPosition = true,
     handPointsVisible = true,
     tndElement,
+    tndElements,
     footers,
     deckMode = false,
     rerenderKey = 0,
@@ -103,17 +106,44 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     return marks;
   });
 
-  // Group rendered cards into sheet batches, each producing a fronts + backs page
+  const BLANK_CARD: RenderedCard = { frontUrl: "", backUrl: "", label: "" };
+
+  // Group rendered cards into sheet batches with row isolation by element
   let sheets = $derived.by(() => {
+    let cards = renderedCards;
+    const els = tndElements;
+    const cols = layout.cols;
+
+    const canIsolate = els && els.length > 0
+      && cards.length > 0
+      && cards.length === els.length;
+
+    if (canIsolate) {
+      const padded: RenderedCard[] = [];
+      for (let i = 0; i < cards.length; i++) {
+        padded.push(cards[i]!);
+        const cur = els[i]?.element ?? "__none__";
+        const nxt = i + 1 < cards.length ? (els[i + 1]?.element ?? "__none__") : null;
+        if (nxt !== null && cur !== nxt) {
+          const remainder = padded.length % cols;
+          if (remainder !== 0) {
+            for (let p = 0; p < cols - remainder; p++) padded.push(BLANK_CARD);
+          }
+        }
+      }
+      cards = padded;
+    }
+
     const result: RenderedCard[][] = [];
-    for (let i = 0; i < renderedCards.length; i += layout.cardsPerPage) {
-      result.push(renderedCards.slice(i, i + layout.cardsPerPage));
+    for (let i = 0; i < cards.length; i += layout.cardsPerPage) {
+      result.push(cards.slice(i, i + layout.cardsPerPage));
     }
     return result;
   });
 
-  function buildRenderOptions(stepCount?: number, footer?: CardFooter): PrintRenderOptions {
+  function buildRenderOptions(stepCount?: number, footer?: CardFooter, cardIndex?: number): PrintRenderOptions {
     const imageComposition = getImageCompositionManager();
+    const element = (cardIndex != null ? tndElements?.[cardIndex] : undefined) ?? tndElement;
     return {
       showGrid,
       showTKA,
@@ -129,7 +159,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       handPointsVisible,
       showMandala: true,
       theme,
-      tndElement,
+      tndElement: element,
       bluePropType: settingsService.settings.bluePropType,
       redPropType: settingsService.settings.redPropType,
       leftLabel: footer?.left,
@@ -155,7 +185,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const optsPart = [
       cardSize, theme, showGrid, showTKA, showWord,
       includeStartPosition, handPointsVisible,
-      tndElement?.familyId ?? "none",
+      (tndElements?.[index]?.familyId ?? tndElement?.familyId ?? "none"),
       settingsService.settings.bluePropType,
       settingsService.settings.redPropType,
       settingsService.settings.backgroundType ?? "",
@@ -307,7 +337,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           pairs.push(pair);
         }
       } else {
-        const options = buildRenderOptions(stepCount, footer);
+        const options = buildRenderOptions(stepCount, footer, i);
         const frontCanvas = await renderer.renderFront(seq, options);
         const backCanvas = await renderer.renderBack(seq, options);
 
@@ -388,7 +418,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const renderer = getPrintCardRenderer();
     const stepCount = seq.steps?.length;
     const footer = seqFooter(index);
-    const options = buildRenderOptions(stepCount, footer);
+    const options = buildRenderOptions(stepCount, footer, index);
 
     const cacheKey = buildCacheKey(seq, stepCount, index);
     cardCache.delete(cacheKey);
@@ -489,6 +519,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
               style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
             >
               {#each sheet as card, cardIndex (cardIndex)}
+                {#if !card.frontUrl}
+                  <div class="card-cell blank" style:aspect-ratio="{cardAspect}"></div>
+                {:else}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                   class="card-cell"
@@ -514,6 +547,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
                 >
                   <img src={card.frontUrl} alt="{card.label} front" />
                 </div>
+                {/if}
               {/each}
             </div>
             <div class="page-guide page-guide-bottom">
@@ -555,6 +589,14 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
               style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
             >
               {#each sheet as card, cardIndex (cardIndex)}
+                {#if !card.backUrl}
+                  <div
+                    class="card-cell blank"
+                    style:aspect-ratio="{cardAspect}"
+                    style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
+                    style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
+                  ></div>
+                {:else}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                   class="card-cell"
@@ -582,6 +624,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
                 >
                   <img src={card.backUrl} alt="{card.label} back" />
                 </div>
+                {/if}
               {/each}
             </div>
             <div class="page-guide page-guide-bottom">
