@@ -17,7 +17,6 @@
  */
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { animationSettings as animationSettingsState } from "../../state/animation-settings-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
@@ -57,10 +56,9 @@ import type { RenderContext } from "./RenderContextRegistry";
 import { EffectRendererManager } from "./EffectRendererManager";
 import { EffectController } from "./EffectController";
 import { FrameParameterBuilder } from "./FrameParameterBuilder";
-import { PropTypeManager } from "./PropTypeManager";
 import { StateSynchronizer } from "./StateSynchronizer";
-import { PropPipeline } from "./PropPipeline";
 import { CanvasLifecycleManager, type LifecycleInitCtx } from "./CanvasLifecycleManager";
+import { PropSystem } from "./managers/PropSystem";
 import type { EffectType, TipEffectMap } from '../../domain/types/TipEffectTypes';
 import type { FireColorCurve } from '../../domain/types/FireTypes';
 import { semanticToCharcoalParams, type CharcoalSparkParams } from '../../domain/types/CharcoalSparkTypes';
@@ -147,10 +145,9 @@ export class AnimationEngine {
   private readonly effectRendererManager = new EffectRendererManager();
   private readonly effectController = new EffectController(this.effectRendererManager);
   private readonly frameParameterBuilder = new FrameParameterBuilder();
-  private readonly propTypeManager = new PropTypeManager();
   private readonly stateSynchronizer = new StateSynchronizer();
-  private readonly propPipeline = new PropPipeline(this.propTypeManager);
   private readonly lifecycleManager = new CanvasLifecycleManager();
+  private readonly propSystem = new PropSystem(this._animatorState, { lifecycleManager: this.lifecycleManager });
 
   // ============================================================================
   // PRIVATE SERVICES
@@ -187,7 +184,6 @@ export class AnimationEngine {
   private prevIsPlaying: boolean = false;
   private prevGridMode: GridMode | null = null;
 
-  private prevDarkMode: boolean = false;
   private previewDarkModeActive: boolean = false; // true when previewDarkMode prop overrides global
   private prevTrailsActive: boolean = true;
   private prevPropsVisible: boolean = true;
@@ -314,7 +310,7 @@ export class AnimationEngine {
     // change-detection in handleVisibilityChange / update()).
     const vm = this.getVM();
     const ecs = this.effectsConfigState;
-    this.prevDarkMode = vm.isDarkMode();
+    this.propSystem.initPrevDarkMode(vm.isDarkMode());
     this.prevTrailsActive = hasEffectInMap(ecs?.tipEffectMap, "trails");
     this.prevPropsVisible = vm.getVisibility("props");
     this.prevColorBlend = ecs?.fire.colorBlend ?? 0.5;
@@ -385,14 +381,13 @@ export class AnimationEngine {
       visibilityManagerOverride: this.visibilityManagerOverride,
       effectsConfigState: this.effectsConfigState,
       effectRendererManager: this.effectRendererManager,
-      propPipeline: this.propPipeline,
-      propTypeManager: this.propTypeManager,
+      propSystem: this.propSystem,
       frameBudgetMonitor: this.frameBudgetMonitor,
       canvasSize: this.canvasSize,
       getLastPropsRef: () => this.lastPropsRef,
       state: this._animatorState,
       callbacks,
-      prevDarkMode: this.prevDarkMode,
+      prevDarkMode: this.propSystem.prevDarkMode,
       initialGridMode: this.lastPropsRef?.gridMode,
       initialShowNonRadialPoints: this.lastPropsRef?.showNonRadialPoints ?? true,
       buildFrameParams: (props) => this.buildFrameParams(props),
@@ -449,9 +444,9 @@ export class AnimationEngine {
       this.trailCapturerInitialized = true;
     }
 
-    // Handle prop type changes (delegated to PropPipeline)
+    // Handle prop type changes (delegated to PropSystem)
     const getFrameParamsFn = () => this.buildFrameParams(props);
-    this.propPipeline.handlePropTypeChanges(props, this.state, getFrameParamsFn, this.prevDarkMode);
+    this.propSystem.handlePropTypeChanges(props, getFrameParamsFn);
 
     // Handle trail settings changes - enforce unilateral constraint before syncing
     if (props.externalTrailSettings !== undefined) {
@@ -588,8 +583,8 @@ export class AnimationEngine {
     if (props.previewDarkMode !== undefined && props.previewDarkMode !== null) {
       this.previewDarkModeActive = true;
       const previewDarkMode = props.previewDarkMode;
-      if (previewDarkMode !== this.prevDarkMode) {
-        this.prevDarkMode = previewDarkMode;
+      if (previewDarkMode !== this.propSystem.prevDarkMode) {
+        this.propSystem.setPrevDarkMode(previewDarkMode);
         this.lifecycleManager.animationRenderer?.setDarkMode(previewDarkMode);
 
         if (this.state.isInitialized) {
@@ -597,7 +592,7 @@ export class AnimationEngine {
             this.buildFrameParams(props)
           );
 
-          this.propPipeline.loadTextures(this.state, this.prevDarkMode).then(() => {
+          this.propSystem.reloadTexturesForDarkMode(() => {
             this.lifecycleManager.renderLoop?.triggerRender(() =>
               this.buildFrameParams(props)
             );
@@ -890,8 +885,8 @@ export class AnimationEngine {
     const vm = this.getVM();
 
     // Sync Dark Mode to renderer when it changes
-    if (state.darkMode !== this.prevDarkMode && !this.previewDarkModeActive) {
-      this.prevDarkMode = state.darkMode;
+    if (state.darkMode !== this.propSystem.prevDarkMode && !this.previewDarkModeActive) {
+      this.propSystem.setPrevDarkMode(state.darkMode);
       this.lifecycleManager.animationRenderer?.setDarkMode(state.darkMode);
 
       if (this.state.isInitialized) {
@@ -899,7 +894,7 @@ export class AnimationEngine {
           this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
         );
 
-        this.propPipeline.loadTextures(this.state, this.prevDarkMode).then(() => {
+        this.propSystem.reloadTexturesForDarkMode(() => {
           this.lifecycleManager.renderLoop?.triggerRender(() =>
             this.buildFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
           );
@@ -1095,21 +1090,8 @@ export class AnimationEngine {
       });
     }
 
-    // Sync from prop type service - but ONLY when overrides are not active.
-    const propTypeChanger = this.lifecycleManager.propTypeChanger;
-    if (
-      propTypeChanger &&
-      this.propTypeManager.propTypeOverrideBlue == null &&
-      this.propTypeManager.propTypeOverrideRed == null
-    ) {
-      const pts = propTypeChanger.state;
-      this.state.setBluePropType(pts.bluePropType);
-      this.state.setRedPropType(pts.redPropType);
-      if (this.state.currentPropType !== pts.legacyPropType) {
-        this.state.setLegacyPropType(pts.legacyPropType);
-        animationSettingsState.setCurrentPropType(pts.bluePropType);
-      }
-    }
+    // Sync from prop type service - delegated to PropSystem.
+    this.propSystem.syncPropTypeFromChanger();
 
     // Sync from prop texture service
     const propTextureLoader = this.lifecycleManager.propTextureLoader;
@@ -1178,10 +1160,10 @@ export class AnimationEngine {
    */
   private buildFrameParams(props: AnimationEngineProps) {
     return this.frameParameterBuilder.getFrameParams(props, this.state, {
-      prevDarkMode: this.prevDarkMode,
+      prevDarkMode: this.propSystem.prevDarkMode,
       prevHasFireTips: this.effectRendererManager.prevHasFireTips,
       prevHasCharcoalTips: this.effectRendererManager.prevHasCharcoalTips,
-      trailsSuppressedUntilTextureLoad: this.propTypeManager.trailsSuppressedUntilTextureLoad,
+      trailsSuppressedUntilTextureLoad: this.propSystem.propTypeManager.trailsSuppressedUntilTextureLoad,
       effectsConfigState: this.effectsConfigState,
       settingsService: this.lifecycleManager.settingsService,
       effectRendererManager: this.effectRendererManager,

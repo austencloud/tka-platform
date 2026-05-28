@@ -18,6 +18,7 @@ import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioni
 import type { SequenceAnimationOrchestrator } from "./SequenceAnimationOrchestrator";
 import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { PropSystem } from "./managers/PropSystem";
 import type { PropPipeline } from "./PropPipeline";
 import type { PropTypeManager } from "./PropTypeManager";
 import type { FrameBudgetMonitor } from "./FrameBudgetMonitor";
@@ -48,7 +49,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
  *
  * Carries everything the init sequence needs that lives on the engine side:
  * the container, the engine's state object, VM overrides, effect config, and
- * collaborator modules (PropPipeline, PropTypeManager, FrameBudgetMonitor).
+ * collaborator modules (PropSystem, FrameBudgetMonitor).
  *
  * Callbacks / closures that depend on engine private methods are passed as
  * plain function references so the manager never imports from the engine.
@@ -58,8 +59,7 @@ export interface LifecycleInitCtx {
   visibilityManagerOverride: AnimationVisibilityStateManager | null;
   effectsConfigState: EffectsConfigState | null;
   effectRendererManager: EffectRendererManager;
-  propPipeline: PropPipeline;
-  propTypeManager: PropTypeManager;
+  propSystem: PropSystem;
   frameBudgetMonitor: FrameBudgetMonitor;
   /** Engine's canvasSize at init time. */
   canvasSize: number;
@@ -158,8 +158,7 @@ export class CanvasLifecycleManager {
       visibilityManagerOverride,
       effectsConfigState,
       effectRendererManager,
-      propPipeline,
-      propTypeManager,
+      propSystem,
       frameBudgetMonitor,
       canvasSize,
       getLastPropsRef,
@@ -173,6 +172,8 @@ export class CanvasLifecycleManager {
       onVisibilityChange,
       instanceId,
     } = ctx;
+    const propPipeline = propSystem.propPipeline;
+    const propTypeManager = propSystem.propTypeManager;
 
     // ── Pre-canvas: create sync services that do not need the renderer ────────
     this._visibilitySyncService = new VisibilitySync(visibilityManagerOverride ?? undefined);
