@@ -100,9 +100,16 @@ export async function bakeGuideMotion(
     });
 
     // ── Frame loop ────────────────────────────────────────────────────────
+    // Trails are disabled; hoist the settings clone so we don't allocate per frame.
+    const trailSettings = { ...DEFAULT_TRAIL_SETTINGS };
     const totalSteps = sequence.steps.length || 1;
     const totalFrames = Math.ceil(totalSteps * fps);
 
+    // Inclusive bound: frameIndex runs 0..totalFrames, so the final frame sits at
+    // playbackPosition === 1.0 (the end pose). For a single STATIC/looping step the
+    // end pose equals the start pose, so this intentionally encodes one duplicate
+    // frame at the seam — <video loop> snaps end→start onto an identical frame for a
+    // jitter-free loop. The extra frame is ~3% of a sub-100KB clip. Mirrors VideoPreRenderer.
     for (let frameIndex = 0; frameIndex <= totalFrames; frameIndex++) {
       const playbackPosition = frameIndex / fps;
 
@@ -119,7 +126,7 @@ export async function bakeGuideMotion(
         redPropDimensions,
         blueTrailPoints: [],
         redTrailPoints: [],
-        trailSettings: { ...DEFAULT_TRAIL_SETTINGS },
+        trailSettings,
         currentTime: performance.now(),
         visibility: {
           gridVisible: true,
@@ -141,6 +148,7 @@ export async function bakeGuideMotion(
 
     return await manual.finish();
   } catch (error) {
+    // cancel() is idempotent — safe even if addFrame/finish already cancelled internally.
     manual?.cancel();
     throw error;
   } finally {
