@@ -51,19 +51,19 @@
   iconColor={color === "blue" ? "var(--prop-blue, #58a6ff)" : "var(--prop-red, #f85149)"}
   icon="fa-circle"
 >
-  <section class="column {colorClass}">
-    <div class="column-header">
-      <button
-        class="copy-btn"
-        onclick={async () =>
-          onCopy(await formatMotionText(motion, color, rotationOverride), color)}
-        title="Copy {label}"
-      >
-        <i class="fas fa-copy" aria-hidden="true"></i>
-        {#if copiedSection === color}<span class="copied-label">Copied</span>{/if}
-      </button>
-    </div>
+  {#snippet headerAction()}
+    <button
+      class="copy-btn"
+      onclick={async () =>
+        onCopy(await formatMotionText(motion, color, rotationOverride), color)}
+      title="Copy {label}"
+    >
+      <i class="fas fa-copy" aria-hidden="true"></i>
+      {#if copiedSection === color}<span class="copied-label">Copied</span>{/if}
+    </button>
+  {/snippet}
 
+  <section class="column {colorClass}">
     {#if motion}
       <div class="data-block">
         <div class="data-row"><span class="key">type</span><span class="val type-val">{motion.motionType}</span></div>
@@ -115,20 +115,13 @@
     gap: 0;
     font-family: inherit;
   }
-  .column-header {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-bottom: 8px;
-    margin-bottom: 6px;
-  }
   .copy-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px;
-    min-height: 36px;
-    border-radius: 10px;
+    padding: 6px 10px;
+    min-height: 32px;
+    border-radius: 8px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     color: var(--theme-text, #fff);

@@ -46,8 +46,7 @@
 </script>
 
 <CollapsibleSection title="Basic Info" {open} onToggle={onToggle} icon="fa-circle-info">
-<section class="column basic-column">
-  <div class="column-header">
+  {#snippet headerAction()}
     <button
       class="copy-btn"
       onclick={() =>
@@ -58,8 +57,9 @@
       {#if copiedSection === "basic"}<span class="copied-label">Copied!</span
         >{/if}
     </button>
-  </div>
+  {/snippet}
 
+<section class="column basic-column">
   <div class="data-block">
     <div class="data-row">
       <span class="key">Beat #</span>
@@ -166,20 +166,12 @@
     gap: 0;
   }
 
-  .column-header {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-bottom: 8px;
-    margin-bottom: 4px;
-  }
-
   .copy-btn {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 6px 10px;
+    border-radius: 8px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
@@ -213,20 +205,20 @@
   .data-block {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 2px;
   }
 
   .data-block.compact {
-    gap: 0;
+    gap: 2px;
   }
 
   .data-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 5px 8px;
+    align-items: baseline;
+    padding: 4px 8px;
     gap: 12px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 6px;
   }
 
   .data-row:hover {
@@ -303,7 +295,6 @@
 
   .data-row.key-row {
     background: transparent;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .key-val {

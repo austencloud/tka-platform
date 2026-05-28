@@ -18,6 +18,8 @@
     open?: boolean;
     /** Called with the requested next open value when the header is clicked (controlled mode). */
     onToggle?: (next: boolean) => void;
+    /** Optional action rendered in the header row (e.g. a copy button). */
+    headerAction?: import("svelte").Snippet;
     children: import("svelte").Snippet;
   }
 
@@ -29,6 +31,7 @@
     defaultOpen = true,
     open = undefined,
     onToggle,
+    headerAction,
     children,
   }: Props = $props();
 
@@ -52,27 +55,42 @@
 </script>
 
 <div class="collapsible-section" class:open={isOpen}>
-  <button
-    type="button"
-    class="section-header"
-    onclick={handleClick}
-    aria-expanded={isOpen}
-    aria-controls={sectionId}
-    aria-label="{isOpen ? 'Collapse' : 'Expand'} {title} section"
-  >
-    <div class="header-left">
-      {#if icon}
-        <span class="header-icon" style={iconColor ? `color: ${iconColor}` : ""}>
-          <i class="fas {icon}" aria-hidden="true"></i>
-        </span>
-      {/if}
-      <span class="header-title">{title}</span>
-      {#if count !== undefined}
-        <span class="header-count">{count}</span>
-      {/if}
-    </div>
-    <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
-  </button>
+  <div class="section-header-row">
+    <button
+      type="button"
+      class="section-header"
+      onclick={handleClick}
+      aria-expanded={isOpen}
+      aria-controls={sectionId}
+      aria-label="{isOpen ? 'Collapse' : 'Expand'} {title} section"
+    >
+      <div class="header-left">
+        {#if icon}
+          <span class="header-icon" style={iconColor ? `color: ${iconColor}` : ""}>
+            <i class="fas {icon}" aria-hidden="true"></i>
+          </span>
+        {/if}
+        <span class="header-title">{title}</span>
+        {#if count !== undefined}
+          <span class="header-count">{count}</span>
+        {/if}
+      </div>
+    </button>
+
+    {#if headerAction}
+      <div class="header-action">{@render headerAction()}</div>
+    {/if}
+
+    <button
+      type="button"
+      class="chevron-btn"
+      onclick={handleClick}
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <i class="fas fa-chevron-down chevron"></i>
+    </button>
+  </div>
 
   {#if isOpen}
     <div id={sectionId} class="section-content" role="region" aria-label="{title} content">
@@ -89,11 +107,17 @@
     overflow: hidden;
   }
 
+  .section-header-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   .section-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     padding: 14px 16px;
     min-height: var(--min-touch-target); /* Accessibility: touch target */
     border: none;
@@ -105,6 +129,25 @@
 
   .section-header:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .header-action {
+    display: flex;
+    align-items: center;
+    flex: none;
+  }
+
+  .chevron-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    padding: 0 14px;
+    min-height: var(--min-touch-target);
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
   }
 
   .header-left {
