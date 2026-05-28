@@ -85,6 +85,7 @@ import type { RenderContext } from "./RenderContextRegistry";
 
 // Extracted modules
 import { EffectRendererManager } from "./EffectRendererManager";
+import { EffectController } from "./EffectController";
 import { FrameParameterBuilder } from "./FrameParameterBuilder";
 import { PropTypeManager } from "./PropTypeManager";
 import { CanvasLifecycleManager } from "./CanvasLifecycleManager";
@@ -251,6 +252,7 @@ export class AnimationEngine {
   // EXTRACTED MODULES
   // ============================================================================
   private readonly effectRendererManager = new EffectRendererManager();
+  private readonly effectController = new EffectController(this.effectRendererManager);
   private readonly frameParameterBuilder = new FrameParameterBuilder();
   private readonly propTypeManager = new PropTypeManager();
   private readonly lifecycleManager = new CanvasLifecycleManager();
@@ -828,9 +830,7 @@ export class AnimationEngine {
    * stale cached fire frames from replaying when normal playback resumes.
    */
   invalidateFireCache(): void {
-    this.effectRendererManager.fireRenderer?.clearSimulation();
-    this.effectRendererManager.charcoalRenderer?.clearSimulation();
-    this.effectRendererManager.ledRenderer?.resetExportState();
+    this.effectController.invalidateFireCache();
   }
 
   /**
@@ -839,14 +839,11 @@ export class AnimationEngine {
    * Navier-Stokes simulation retains its warm (steady-state) fluid fields.
    */
   invalidateFireFrameCacheOnly(): void {
-    this.effectRendererManager.fireRenderer?.invalidateFrameCache();
+    this.effectController.invalidateFireFrameCacheOnly();
   }
 
   clearFireThermalFields(): void {
-    this.effectRendererManager.fireRenderer?.clearThermalFields();
-    // Charcoal is particle-based, not fluid-sim — full clear is fine
-    this.effectRendererManager.charcoalRenderer?.clearSimulation();
-    this.effectRendererManager.ledRenderer?.resetExportState();
+    this.effectController.clearFireThermalFields();
   }
 
   // --- EXPORT DIAGNOSTIC (remove after debugging) ---
@@ -878,23 +875,22 @@ export class AnimationEngine {
     const settings = vm.getSettings();
     const lastProps = this.lastPropsRef;
 
-    return {
-      timestamp: new Date().toISOString(),
-      performanceNow: performance.now(),
+    const core = this.effectController.captureDiagnostics({
+      isInitialized: this.state.isInitialized,
+      isPlaying: lastProps?.isPlaying ?? false,
+      currentStep: lastProps?.currentStep ?? 0,
+      canvasSize: this.canvasSize,
       instanceId: this.instanceId,
-      engineState: {
-        isInitialized: this.state.isInitialized,
-        isPlaying: lastProps?.isPlaying ?? false,
-        currentStep: lastProps?.currentStep ?? 0,
-        canvasSize: this.canvasSize,
-      },
+    });
+
+    return {
+      ...core,
       visibility: {
         activeEffect: this.effectsConfigState?.activeEffect ?? "none",
         tipEffectMap: this.effectsConfigState?.tipEffectMap ?? {},
         effortPreset: settings.effortPreset,
         pathShape: settings.pathShape,
       },
-      fireConfig: this.effectRendererManager.fireConfig,
       renderLoop: this.renderLoopService?.getDiagnostics() ?? null,
       qualityHints: this.frameBudgetMonitor?.getQualityHints() ?? null,
       sequenceInfo: this.prevSequenceData ? {
@@ -945,46 +941,28 @@ export class AnimationEngine {
   pauseResize(): void { this.lifecycleManager.pauseResize(); }
   resumeResize(): void { this.lifecycleManager.resumeResize(); }
 
-  /**
-   * Set fire overlay configuration. Called by visibility state changes.
-   */
   setFireConfig(config: Partial<FireOverlayConfig>): void {
-    this.effectRendererManager.setFireConfig(config);
+    this.effectController.setFireConfig(config);
   }
 
-  /**
-   * Get current fire overlay configuration.
-   */
   getFireConfig(): FireOverlayConfig {
-    return this.effectRendererManager.getFireConfig();
+    return this.effectController.getFireConfig();
   }
 
-  /**
-   * Set LED overlay configuration. Called by visibility state changes.
-   */
   setLedConfig(config: Partial<LedOverlayConfig>): void {
-    this.effectRendererManager.setLedConfig(config);
+    this.effectController.setLedConfig(config);
   }
 
-  /**
-   * Get current LED overlay configuration.
-   */
   getLedConfig(): LedOverlayConfig {
-    return this.effectRendererManager.getLedConfig();
+    return this.effectController.getLedConfig();
   }
 
-  /**
-   * Set per-cell tip effect map.
-   */
   setCellTipEffectMap(map: TipEffectMap | undefined): void {
-    this.effectRendererManager.setCellTipEffectMap(map);
+    this.effectController.setCellTipEffectMap(map);
   }
 
-  /**
-   * Set per-cell tip effort map.
-   */
   setCellTipEffortMap(map: TipEffortMap | undefined): void {
-    this.effectRendererManager.setCellTipEffortMap(map);
+    this.effectController.setCellTipEffortMap(map);
   }
 
   // ============================================================================
