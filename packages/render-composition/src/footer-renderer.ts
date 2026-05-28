@@ -62,6 +62,8 @@ export interface FooterOptions {
   borderColor?: string;
   /** Elemental accent hex color — auto-tinted for bg/border when no explicit overrides */
   accentColor?: string;
+  /** CIELAB-tuned tint opacity (0–1) for accent background; overrides default "18" hex */
+  accentTintOpacity?: number;
   /** Left-side label override (e.g. "SS 🌊" for VTG cards) */
   leftLabel?: string;
   /** Right-side label override (e.g. "1:1" turn ratio) */
@@ -97,7 +99,7 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
     userName, notes, birthday,
     darkMode = true,
     showCreatorName = true, showNotes = true, showBirthday = true,
-    backgroundColor, borderColor, accentColor,
+    backgroundColor, borderColor, accentColor, accentTintOpacity,
     leftLabel, rightLabel,
     iconImage, iconPath,
   } = options;
@@ -109,20 +111,25 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
   if (backgroundColor) {
     footerBg = backgroundColor;
   } else if (accent) {
-    footerBg = accent + "18";
+    const alphaHex = accentTintOpacity
+      ? Math.round(accentTintOpacity * 255).toString(16).padStart(2, '0')
+      : "18";
+    footerBg = accent + alphaHex;
   } else {
     footerBg = darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)";
   }
   ctx.fillStyle = footerBg;
   ctx.fillRect(0, footerTop, canvasWidth, footerHeight);
 
-  // Top border
-  ctx.strokeStyle = borderColor ?? (accent ? accent + "40" : darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, footerTop + 0.5);
-  ctx.lineTo(canvasWidth, footerTop + 0.5);
-  ctx.stroke();
+  // Top border — skip when accent tint is active so footer bleeds into content
+  if (!accent) {
+    ctx.strokeStyle = borderColor ?? (darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, footerTop + 0.5);
+    ctx.lineTo(canvasWidth, footerTop + 0.5);
+    ctx.stroke();
+  }
 
   const fontSize = Math.max(10, Math.floor(footerHeight * FOOTER_FONT_SCALE));
   const margin = Math.max(8, Math.floor(footerHeight * FOOTER_MARGIN_SCALE));

@@ -28,6 +28,8 @@ export interface HeaderOptions {
   borderColor?: string;
   /** Elemental accent hex color — auto-tinted for bg/border when no explicit overrides */
   accentColor?: string;
+  /** CIELAB-tuned tint opacity (0–1) for accent background; overrides default "18" hex */
+  accentTintOpacity?: number;
   /** When present, word slot renders glyph images instead of Georgia text */
   glyphImages?: Map<string, GlyphImageData>;
   /** When present, renders compressed segments with bracket notation */
@@ -232,7 +234,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
     canvasWidth, headerHeight, word,
     difficultyLevel = 1, showDifficultyBadge = true,
     loopComponents, rotationPeriod, inversionPeriod, period, darkMode = true, letterStyles,
-    backgroundColor, borderColor, accentColor, glyphImages, compressedSegments,
+    backgroundColor, borderColor, accentColor, accentTintOpacity, glyphImages, compressedSegments,
   } = options;
 
   const accent = !backgroundColor && !darkMode ? accentColor : undefined;
@@ -240,20 +242,25 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   if (backgroundColor) {
     headerBg = backgroundColor;
   } else if (accent) {
-    headerBg = accent + "18";
+    const alphaHex = accentTintOpacity
+      ? Math.round(accentTintOpacity * 255).toString(16).padStart(2, '0')
+      : "18";
+    headerBg = accent + alphaHex;
   } else {
     headerBg = darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)";
   }
   ctx.fillStyle = headerBg;
   ctx.fillRect(0, 0, canvasWidth, headerHeight);
 
-  // Bottom border
-  ctx.strokeStyle = borderColor ?? (accent ? accent + "40" : darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, headerHeight - 0.5);
-  ctx.lineTo(canvasWidth, headerHeight - 0.5);
-  ctx.stroke();
+  // Bottom border — skip when accent tint is active so header bleeds into content
+  if (!accent) {
+    ctx.strokeStyle = borderColor ?? (darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, headerHeight - 0.5);
+    ctx.lineTo(canvasWidth, headerHeight - 0.5);
+    ctx.stroke();
+  }
 
   const badgeSize = headerHeight * BADGE_SIZE_SCALE;
   const badgePadding = headerHeight * BADGE_PADDING_SCALE;

@@ -130,6 +130,7 @@ export class PrintCardRenderer {
       rightLabel: options.rightLabel,
       iconPath: options.iconPath,
       accentColor: options.tndElement?.accentColor,
+      accentTintOpacity: options.tndElement?.cardTintOpacity,
       loopType: sequence.loopType ?? undefined,
       showLoopGlyph: false,
       ...(options.bluePropType && { bluePropTypeOverride: options.bluePropType }),

@@ -5,7 +5,7 @@ import type { CardBackDomRenderOptions } from "./types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 export async function renderCardBack(sequence: SequenceData, options: CardBackDomRenderOptions): Promise<HTMLCanvasElement> {
-  const { width, height } = options;
+  const { width, height, theme } = options;
 
   const container = document.createElement("div");
   container.style.position = "fixed";
@@ -18,9 +18,12 @@ export async function renderCardBack(sequence: SequenceData, options: CardBackDo
   document.body.appendChild(container);
 
   try {
+    const themeOverride = theme
+      ? { visuals: getCardBackThemeVisuals(theme), name: theme }
+      : undefined;
     const component = mount(CardBack, {
       target: container,
-      props: { sequence },
+      props: { sequence, themeOverride },
     });
 
     await new Promise((resolve) => requestAnimationFrame(() =>

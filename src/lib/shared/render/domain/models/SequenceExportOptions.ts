@@ -29,6 +29,8 @@ export interface SequenceExportOptions {
   iconPath?: string;
   /** Elemental accent hex color for header/footer/margin tinting */
   accentColor?: string;
+  /** CIELAB-tuned tint opacity (0–1) for side margin wash; overrides default "18" hex */
+  accentTintOpacity?: number;
 
   propTypeOverride?: PropType;
 

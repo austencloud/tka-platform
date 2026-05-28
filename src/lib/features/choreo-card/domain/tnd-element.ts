@@ -5,6 +5,8 @@ export interface TnDElement {
   readonly accentColor: string;
   readonly darkComplement: string;
   readonly iconPath: string;
+  /** CIELAB-tuned opacity (0–1) for card interior tint; compensates for each color's perceptual distance from white */
+  readonly cardTintOpacity: number;
 }
 
 export const TND_ELEMENTS: readonly TnDElement[] = [
@@ -12,9 +14,10 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     familyId: "split-same",
     name: "Split-Same",
     element: "water",
-    accentColor: "#4a7fb5",
+    accentColor: "#3568a0",
     darkComplement: "#1a3a5e",
     iconPath: "/images/elements/water-v2.png",
+    cardTintOpacity: 0.25,
   },
   {
     familyId: "tog-same",
@@ -23,6 +26,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     accentColor: "#75A874",
     darkComplement: "#2a4a29",
     iconPath: "/images/elements/earth-v2.png",
+    cardTintOpacity: 0.15,
   },
   {
     familyId: "quarter-same",
@@ -31,6 +35,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     accentColor: "#ffde17",
     darkComplement: "#7a6a00",
     iconPath: "/images/elements/sun-v4.png",
+    cardTintOpacity: 0.09,
   },
   {
     familyId: "split-opp",
@@ -39,14 +44,16 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     accentColor: "#f2673a",
     darkComplement: "#6b1a0a",
     iconPath: "/images/elements/fire-v2.png",
+    cardTintOpacity: 0.09,
   },
   {
     familyId: "tog-opp",
     name: "Tog-Opp",
     element: "air",
-    accentColor: "#a8d8f0",
+    accentColor: "#bce4f7",
     darkComplement: "#3a6a8b",
     iconPath: "/images/elements/air-v2.png",
+    cardTintOpacity: 0.16,
   },
   {
     familyId: "quarter-opp",
@@ -55,6 +62,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     accentColor: "#6a4199",
     darkComplement: "#2a1540",
     iconPath: "/images/elements/moon-v2.png",
+    cardTintOpacity: 0.09,
   },
 ] as const;
 
@@ -94,4 +102,13 @@ export const TND_TURNS_RATIO_MAP: Readonly<Record<number, string>> = {
 
 export function getTnDElement(familyId: string): TnDElement | null {
   return TND_ELEMENTS.find((t) => t.familyId === familyId) ?? null;
+}
+
+const ICON_LEGACY: Readonly<Record<string, string>> = {
+  "/images/elements/sun-v2.png": "/images/elements/sun-v4.png",
+};
+
+export function getTnDElementByIconPath(iconPath: string): TnDElement | null {
+  const normalized = ICON_LEGACY[iconPath] ?? iconPath;
+  return TND_ELEMENTS.find((t) => t.iconPath === normalized) ?? null;
 }

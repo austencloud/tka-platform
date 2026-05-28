@@ -36,6 +36,7 @@ export interface WordHeaderOptions {
   inversionPeriod?: LoopInversionPeriod;
   period?: number;
   accentColor?: string;
+  accentTintOpacity?: number;
 }
 
 export interface UserInfoFooterOptions {
@@ -53,6 +54,7 @@ export interface UserInfoFooterOptions {
   rightLabel?: string;
   iconPath?: string;
   accentColor?: string;
+  accentTintOpacity?: number;
 }
 
 export class TextRenderer {
@@ -248,6 +250,7 @@ export class TextRenderer {
       backgroundColor: opts.backgroundColor,
       borderColor: opts.borderColor,
       accentColor: opts.accentColor,
+      accentTintOpacity: opts.accentTintOpacity,
       glyphImages: glyphImages.size > 0 ? glyphImages : undefined,
       compressedSegments: hasCompression ? segments : undefined,
     });
@@ -294,6 +297,7 @@ export class TextRenderer {
       backgroundColor: opts.backgroundColor,
       borderColor: opts.borderColor,
       accentColor: opts.accentColor,
+      accentTintOpacity: opts.accentTintOpacity,
       leftLabel: opts.leftLabel,
       rightLabel: opts.rightLabel,
       iconPath: opts.iconPath,

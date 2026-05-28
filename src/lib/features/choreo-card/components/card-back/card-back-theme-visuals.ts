@@ -144,7 +144,7 @@ const PROOF_BORDERS: Record<string, string> = {
   blossom: "linear-gradient(135deg, #831843 0%, #db2777 20%, #f9a8d4 40%, #fce7f3 55%, #f9a8d4 70%, #db2777 85%, #831843 100%)",
   forest:  "linear-gradient(135deg, #0d3320 0%, #166534 20%, #4ade80 40%, #bbf7d0 55%, #4ade80 70%, #166534 85%, #0d3320 100%)",
   autumn:  "linear-gradient(135deg, #78350f 0%, #d97706 20%, #fbbf24 40%, #fef3c7 55%, #fbbf24 70%, #d97706 85%, #78350f 100%)",
-  rainbow: "linear-gradient(135deg, #cc0000 0%, #cc6600 14%, #cccc00 28%, #00cc00 42%, #0066cc 56%, #6600cc 70%, #cc0066 85%, #cc0000 100%)",
+  rainbow: "linear-gradient(to top, #cc0000 0%, #cc6600 14%, #cccc00 28%, #00cc00 42%, #00cc66 56%, #0066cc 70%, #0033cc 82%, #6600cc 100%)",
 };
 
 export function getProofModeVisuals(backgroundType: string | undefined): CardBackThemeVisuals {

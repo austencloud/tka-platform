@@ -330,7 +330,10 @@ export class ImageComposer {
       if (!isDarkMode && options.accentColor && gridOffsetX > 0) {
         const contentTop = headerHeight;
         const contentH = canvasHeight - headerHeight - footerHeight;
-        ctx.fillStyle = options.accentColor + "18";
+        const alphaHex = options.accentTintOpacity
+          ? Math.round(options.accentTintOpacity * 255).toString(16).padStart(2, '0')
+          : "18";
+        ctx.fillStyle = options.accentColor + alphaHex;
         ctx.fillRect(0, contentTop, gridOffsetX, contentH);
         ctx.fillRect(gridOffsetX + gridWidth, contentTop, canvasWidth - gridOffsetX - gridWidth, contentH);
         ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
@@ -572,6 +575,7 @@ export class ImageComposer {
         inversionPeriod: showLoopGlyph ? inversionForRender : undefined,
         period: showLoopGlyph ? loopPeriod : undefined,
         accentColor: options.accentColor,
+        accentTintOpacity: options.accentTintOpacity,
       });
     }
 
@@ -596,6 +600,7 @@ export class ImageComposer {
         rightLabel: options.rightLabel,
         iconPath: options.iconPath,
         accentColor: options.accentColor,
+        accentTintOpacity: options.accentTintOpacity,
       });
     }
 
