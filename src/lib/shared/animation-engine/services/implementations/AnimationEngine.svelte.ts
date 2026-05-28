@@ -344,8 +344,10 @@ export class AnimationEngine {
     this.containerElement = containerElement;
     this.callbacks = callbacks;
 
-    this.lifecycleManager.setCanvasInitializer(this.canvasInitializer);
-    this.lifecycleManager.setEffectManager(this.effectRendererManager);
+    this.lifecycleManager.configure({
+      canvasInitializer: this.canvasInitializer,
+      effectManager: this.effectRendererManager,
+    });
 
     // Initialize visibility manager
     const vm = this.getVM();
@@ -421,17 +423,21 @@ export class AnimationEngine {
     this.unsubscribeVisibility = this.visibilitySyncService.subscribe(
       (state) => this.handleVisibilityChange(state)
     );
-    this.lifecycleManager.setVisibilitySyncService(this.visibilitySyncService);
-    this.lifecycleManager.setUnsubscribeVisibility(this.unsubscribeVisibility);
+    this.lifecycleManager.configure({
+      visibilitySyncService: this.visibilitySyncService,
+      unsubscribeVisibility: this.unsubscribeVisibility,
+    });
 
     this.glyphTransitionService = new GlyphTransitionController();
-    this.lifecycleManager.setGlyphTransitionService(this.glyphTransitionService);
     this.sequenceCacheService = new SequenceCache();
-    this.lifecycleManager.setSequenceCacheService(this.sequenceCacheService);
     this.trailSettingsSyncService = new TrailSettingsSynchronizer();
-    this.lifecycleManager.setTrailSettingsSyncService(this.trailSettingsSyncService);
     this.propTypeChangeService = new PropTypeChanger();
-    this.lifecycleManager.setPropTypeChangeService(this.propTypeChangeService);
+    this.lifecycleManager.configure({
+      glyphTransitionService: this.glyphTransitionService,
+      sequenceCacheService: this.sequenceCacheService,
+      trailSettingsSyncService: this.trailSettingsSyncService,
+      propTypeChangeService: this.propTypeChangeService,
+    });
 
     // Initialize canvas (async process)
     await this.initializeCanvas();
@@ -950,7 +956,7 @@ export class AnimationEngine {
       this.orchestrator.setVisibilityManager(this.visibilityManagerOverride);
     }
     this.trailCapturer = new TrailCapturer();
-    this.lifecycleManager.setTrailCapturer(this.trailCapturer);
+    this.lifecycleManager.configure({ trailCapturer: this.trailCapturer });
     this.turnsTupleGenerator = services.turnsTupleGenerator;
     this.state.setServicesReady(true);
     return true;
@@ -960,7 +966,7 @@ export class AnimationEngine {
     if (!this.orchestrator) return;
 
     this.precomputationService = new AnimationPrecomputer();
-    this.lifecycleManager.setPrecomputer(this.precomputationService);
+    this.lifecycleManager.configure({ precomputer: this.precomputationService });
     this.precomputationService.initialize({
       orchestrator: this.orchestrator,
       TrailCapturer: this.trailCapturer,
@@ -984,14 +990,14 @@ export class AnimationEngine {
       this.svgGenerator,
       this.trailCapturer
     );
-    this.lifecycleManager.setPropTextureService(this.propTextureService);
+    this.lifecycleManager.configure({ propTextureService: this.propTextureService });
   }
 
   private initializeResizeService(): void {
     if (!this.containerElement || !this.animationRenderer) return;
 
     this.canvasResizerService = new CanvasResizer();
-    this.lifecycleManager.setResizer(this.canvasResizerService);
+    this.lifecycleManager.configure({ resizer: this.canvasResizerService });
     this.canvasResizerService.initialize(
       this.containerElement,
       this.animationRenderer
@@ -1002,7 +1008,7 @@ export class AnimationEngine {
     if (!this.animationRenderer) return;
 
     this.glyphTextureService = new GlyphTextureLoader();
-    this.lifecycleManager.setGlyphTextureService(this.glyphTextureService);
+    this.lifecycleManager.configure({ glyphTextureService: this.glyphTextureService });
     this.glyphTextureService.initialize(this.animationRenderer);
   }
 
@@ -1016,7 +1022,7 @@ export class AnimationEngine {
     erm.ledTipTracker = new LedTipTracker();
 
     this.renderLoopService = new AnimationRenderLoop();
-    this.lifecycleManager.setRenderLoop(this.renderLoopService);
+    this.lifecycleManager.configure({ renderLoop: this.renderLoopService });
     this.renderLoopService.initialize({
       renderer: this.animationRenderer,
       TrailCapturer: this.trailCapturer,

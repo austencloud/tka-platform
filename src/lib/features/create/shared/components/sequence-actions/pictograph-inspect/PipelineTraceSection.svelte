@@ -141,6 +141,13 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     return derivePropGeometryKey(pictographData, motion, color);
   });
 
+  // Reactive to in-memory edits (mirrors the global-tier *HasValue pattern).
+  const propGeometryHasValue = $derived.by(() => {
+    const _ = globalAdjustmentVersion.version;
+    if (!propGeometryKey) return false;
+    return getPropGeometryRepository()?.hasAdjustment(propGeometryKey) ?? false;
+  });
+
   // Layer value checks for the tab bar dots
   const layer1HasValue = $derived.by(() => {
     const _ = globalAdjustmentVersion.version;
@@ -702,7 +709,7 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
           <button class="btn btn-delete" onclick={handleDelete} title="Revert to original">
             <i class="fas fa-undo" aria-hidden="true"></i> Revert
           </button>
-        {:else if editTarget === "prop-geometry" && propGeometryKey && getPropGeometryRepository()?.hasAdjustment(propGeometryKey)}
+        {:else if editTarget === "prop-geometry" && propGeometryHasValue}
           <button class="btn btn-delete" onclick={handleDelete} title="Delete prop geometry adjustment">
             <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete
           </button>

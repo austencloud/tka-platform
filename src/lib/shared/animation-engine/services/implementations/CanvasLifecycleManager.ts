@@ -28,20 +28,37 @@ export class CanvasLifecycleManager {
   private propTextureService: IPropTextureLoader | null = null;
   private unsubscribeVisibility: (() => void) | null = null;
 
-  setResizer(resizer: CanvasResizer): void { this.resizer = resizer; }
-  setRenderLoop(loop: IAnimationRenderLoop): void { this.renderLoop = loop; }
-  setEffectManager(mgr: EffectRendererManager): void { this.effectManager = mgr; }
-  setTrailCapturer(tc: TrailCapturer): void { this.trailCapturer = tc; }
-  setCanvasInitializer(ci: AnimatorCanvasInitializer): void { this.canvasInitializer = ci; }
-  setPrecomputer(pc: IAnimationPrecomputer): void { this.precomputer = pc; }
-  setVisibilitySyncService(svc: AnimationVisibilitySynchronizer): void { this.visibilitySyncService = svc; }
-  setGlyphTransitionService(svc: GlyphTransitionController): void { this.glyphTransitionService = svc; }
-  setSequenceCacheService(svc: SequenceCache): void { this.sequenceCacheService = svc; }
-  setTrailSettingsSyncService(svc: TrailSettingsSynchronizer): void { this.trailSettingsSyncService = svc; }
-  setPropTypeChangeService(svc: PropTypeChanger): void { this.propTypeChangeService = svc; }
-  setGlyphTextureService(svc: IGlyphTextureLoader): void { this.glyphTextureService = svc; }
-  setPropTextureService(svc: IPropTextureLoader): void { this.propTextureService = svc; }
-  setUnsubscribeVisibility(fn: () => void): void { this.unsubscribeVisibility = fn; }
+  configure(deps: {
+    resizer?: CanvasResizer;
+    renderLoop?: IAnimationRenderLoop;
+    effectManager?: EffectRendererManager;
+    trailCapturer?: TrailCapturer;
+    canvasInitializer?: AnimatorCanvasInitializer;
+    precomputer?: IAnimationPrecomputer;
+    visibilitySyncService?: AnimationVisibilitySynchronizer;
+    glyphTransitionService?: GlyphTransitionController;
+    sequenceCacheService?: SequenceCache;
+    trailSettingsSyncService?: TrailSettingsSynchronizer;
+    propTypeChangeService?: PropTypeChanger;
+    glyphTextureService?: IGlyphTextureLoader;
+    propTextureService?: IPropTextureLoader;
+    unsubscribeVisibility?: () => void;
+  }): void {
+    if (deps.resizer !== undefined) this.resizer = deps.resizer;
+    if (deps.renderLoop !== undefined) this.renderLoop = deps.renderLoop;
+    if (deps.effectManager !== undefined) this.effectManager = deps.effectManager;
+    if (deps.trailCapturer !== undefined) this.trailCapturer = deps.trailCapturer;
+    if (deps.canvasInitializer !== undefined) this.canvasInitializer = deps.canvasInitializer;
+    if (deps.precomputer !== undefined) this.precomputer = deps.precomputer;
+    if (deps.visibilitySyncService !== undefined) this.visibilitySyncService = deps.visibilitySyncService;
+    if (deps.glyphTransitionService !== undefined) this.glyphTransitionService = deps.glyphTransitionService;
+    if (deps.sequenceCacheService !== undefined) this.sequenceCacheService = deps.sequenceCacheService;
+    if (deps.trailSettingsSyncService !== undefined) this.trailSettingsSyncService = deps.trailSettingsSyncService;
+    if (deps.propTypeChangeService !== undefined) this.propTypeChangeService = deps.propTypeChangeService;
+    if (deps.glyphTextureService !== undefined) this.glyphTextureService = deps.glyphTextureService;
+    if (deps.propTextureService !== undefined) this.propTextureService = deps.propTextureService;
+    if (deps.unsubscribeVisibility !== undefined) this.unsubscribeVisibility = deps.unsubscribeVisibility;
+  }
 
   pauseResize(): void {
     this.resizer?.pauseObservation();
