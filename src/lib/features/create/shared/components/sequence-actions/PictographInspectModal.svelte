@@ -439,9 +439,10 @@
     background: var(--theme-panel-bg, rgba(13, 17, 23, 0.98));
     border: 1px solid var(--theme-stroke, #30363d);
     border-radius: 8px;
-    width: 100%;
-    max-width: 1320px;
-    max-height: 90vh;
+    /* Use horizontal space on wide/4K screens instead of a narrow tall strip,
+       but cap height so the modal never grows into a viewport-tall tower. */
+    width: min(96vw, 1800px);
+    max-height: min(90vh, 1040px);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -451,6 +452,7 @@
 
   .modal-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 16px;
     scrollbar-width: thin;
@@ -459,7 +461,7 @@
 
   .inspect-layout {
     display: grid;
-    grid-template-columns: minmax(320px, 40%) 1fr;
+    grid-template-columns: minmax(280px, 420px) 1fr;
     gap: 20px;
     align-items: start;
   }
@@ -478,18 +480,20 @@
     align-items: center;
     justify-content: center;
   }
+  /* Sections pack side-by-side on wide screens, stack on narrow — keeps the
+     modal short on a 4K landscape display instead of one tall column. */
   .detail-column {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    align-content: start;
+    align-items: start;
     gap: 12px;
     min-width: 0;
-    max-height: calc(90vh - 120px);
-    overflow-y: auto;
   }
   @media (max-width: 720px) {
     .inspect-layout { grid-template-columns: 1fr; }
     .pictograph-rail { position: static; }
-    .detail-column { max-height: none; }
+    .detail-column { grid-template-columns: 1fr; }
   }
 
   @keyframes fadeIn {
