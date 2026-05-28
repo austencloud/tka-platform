@@ -7,6 +7,7 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { formatBasicInfo } from "./formatters";
+  import CollapsibleSection from "$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte";
 
   interface LookupKeys {
     gridMode: string;
@@ -23,6 +24,8 @@
     lookupKeys: LookupKeys | null;
     copiedSection: string | null;
     onCopy: (text: string, section: string) => void;
+    open: boolean;
+    onToggle: (next: boolean) => void;
   }
 
   let {
@@ -32,6 +35,8 @@
     lookupKeys,
     copiedSection,
     onCopy,
+    open,
+    onToggle,
   }: Props = $props();
 
   function formatLookupKeysText(): string {
@@ -40,9 +45,9 @@
   }
 </script>
 
+<CollapsibleSection title="Basic Info" {open} onToggle={onToggle} icon="fa-circle-info">
 <section class="column basic-column">
   <div class="column-header">
-    <h3>Basic Info</h3>
     <button
       class="copy-btn"
       onclick={() =>
@@ -148,36 +153,25 @@
     </div>
   {/if}
 </section>
+</CollapsibleSection>
 
 <style>
   .column {
-    background: #0d1117;
-    border: 1px solid #21262d;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 6px;
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 0;
-    font-family: "SF Mono", "Cascadia Code", "Fira Code", Monaco, Consolas,
-      monospace;
   }
 
   .column-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     padding-bottom: 8px;
     margin-bottom: 4px;
-    border-bottom: 1px solid #21262d;
-  }
-
-  .column-header h3 {
-    margin: 0;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #8b949e;
-    text-transform: uppercase;
-    letter-spacing: 1px;
   }
 
   .copy-btn {
@@ -186,33 +180,33 @@
     gap: 4px;
     padding: 4px 8px;
     border-radius: 4px;
-    border: 1px solid #30363d;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     background: transparent;
-    color: #8b949e;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-family: inherit;
     transition: all var(--duration-fast, 0.15s) ease;
   }
 
   .copy-btn:hover {
-    background: #21262d;
-    color: #e6edf3;
-    border-color: #484f58;
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #fff);
+    border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .copy-btn:focus-visible {
-    outline: 2px solid #58a6ff;
+    outline: 2px solid var(--semantic-info, #79c0ff);
     outline-offset: 1px;
   }
 
   .copy-btn.small {
     padding: 2px 6px;
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .copied-label {
-    color: #7ee787;
+    color: var(--semantic-success, #7ee787);
     font-weight: 600;
   }
 
@@ -232,31 +226,31 @@
     align-items: center;
     padding: 5px 8px;
     gap: 12px;
-    border-bottom: 1px solid #161b22;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .data-row:hover {
-    background: rgba(136, 198, 255, 0.04);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.04));
   }
 
   .key {
-    font-size: 0.7rem;
-    color: #7d8590;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     white-space: nowrap;
   }
 
   .val {
-    font-size: 0.8rem;
-    color: #e6edf3;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #fff);
     font-weight: 400;
     text-align: right;
     user-select: all;
   }
 
   .val.highlight {
-    color: #79c0ff;
+    color: var(--semantic-info, #79c0ff);
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm, 14px);
   }
 
   .val.mono {
@@ -264,21 +258,21 @@
   }
 
   .val.small {
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     word-break: break-all;
-    color: #7d8590;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   /* Lookup Keys Section */
   .subsection {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid #21262d;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .lookup-keys-section {
     background: rgba(56, 139, 253, 0.06);
-    border: 1px solid #1f3a5f;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 4px;
     padding: 8px;
     margin-top: 8px;
@@ -293,27 +287,27 @@
 
   .subsection-header h4 {
     margin: 0;
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
     display: flex;
     align-items: center;
     gap: 5px;
-    color: #58a6ff;
+    color: var(--semantic-info, #79c0ff);
   }
 
   .subsection-header h4 i {
-    font-size: 0.6rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .data-row.key-row {
     background: transparent;
-    border-bottom: 1px solid #161b22;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .key-val {
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     color: #d2a8ff;
     background: rgba(110, 64, 170, 0.15);
     padding: 1px 6px;
@@ -325,18 +319,18 @@
   }
 
   .data-row.highlight-key .key-val {
-    color: #79c0ff;
+    color: var(--semantic-info, #79c0ff);
     font-weight: 600;
     background: rgba(56, 139, 253, 0.15);
   }
 
   .data-row.blue-key .key-val {
-    color: #58a6ff;
+    color: var(--semantic-info, #79c0ff);
     background: rgba(56, 139, 253, 0.12);
   }
 
   .data-row.red-key .key-val {
-    color: #f85149;
+    color: var(--semantic-error, #f85149);
     background: rgba(248, 81, 73, 0.12);
   }
 </style>
