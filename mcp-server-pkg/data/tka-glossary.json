@@ -1470,9 +1470,11 @@
     "category": "motion"
   },
   "leader-follower": {
-    "definition": "A distinction that arises in asymmetric positions (gamma, zeta, eta) when both hands shift the same direction. One hand is directionally 'ahead' of the other, creating a leader and a follower. This matters for letter assignment because the leader and follower can have different turn values. In the TKA glyph, the leader's turn number appears on top, the follower's on bottom. Leader/follower does NOT apply to opposite-direction movement (hands diverge/converge symmetrically) or to symmetric positions (alpha, beta). Leader/follower is combinatorially equivalent to mixed motion types: it doubles the variation space the same way that having one pro and one anti does.",
+    "definition": "A distinction that arises in asymmetric positions (gamma, zeta, eta) when both hands shift the same direction. One hand is directionally 'ahead' of the other, creating a leader and a follower. This matters for letter assignment because the leader and follower can have different turn values. In the TKA glyph, the leader's turn number appears on top, the follower's on bottom. For the hybrid quarter-same letters: U's leader has pro rotation, V's leader has anti rotation — this is the defining distinction between U and V. Leader/follower does NOT apply to opposite-direction movement (hands diverge/converge symmetrically) or to symmetric positions (alpha, beta). Leader/follower is combinatorially equivalent to mixed motion types: it doubles the variation space the same way that having one pro and one anti does.",
     "examples": [
       "In gamma, same-direction shifts create leader/follower — requires S, T, U, V letters",
+      "U: leader has pro rotation, follower has anti rotation",
+      "V: leader has anti rotation, follower has pro rotation",
       "In alpha (symmetric), no leader/follower — uses A through L",
       "Opposite-direction shifts in any position have no leader/follower",
       "S,T,U,V each have the same variation count as hybrids (C, F, I, L, O) because leader/follower doubles the space"

@@ -817,7 +817,12 @@ Quarter-same patterns live in **gamma** (hands 90 degrees apart). Gamma is an **
 
 For the pure cases (both pro or both anti), swapping colors just swaps which hand leads. The motion pattern is geometrically identical. S and T handle these.
 
-But for the **hybrid** case (one pro, one anti), swapping colors doesn't just swap who leads. It changes which motion type is in front. Pro-leading and anti-leading are genuinely different movements. Color swap produces a different letter. So you need two: U for one arrangement, V for the other.
+But for the **hybrid** case (one pro, one anti), swapping colors doesn't just swap who leads. It changes which motion type is in front. Pro-leading and anti-leading are genuinely different movements. Color swap produces a different letter. So you need two:
+
+- **U:** the leading hand has **pro** rotation, the following hand has **anti** rotation.
+- **V:** the leading hand has **anti** rotation, the following hand has **pro** rotation.
+
+This is the defining distinction between U and V.
 
 This is the ONLY place in the alphabet where the symmetry principle forces an extra letter.
 
@@ -987,7 +992,7 @@ These two slots contain numbers (or the string \`fl\` for float) that indicate h
 
 **S and T are exceptions** to the matching-type rule. Even though both of their hands share a motion type (pro|pro or anti|anti), they have a leader/follower asymmetry. For S and T, **leading goes high, following goes low** — this is how their base forms are disambiguated in the glyph.
 
-**U and V** have a leader/follower too, but because their motion types differ (pro|anti hybrid), the glyph slots follow the standard PADS rule (pro high, anti low) rather than leading/following.
+**U and V** have a leader/follower too — U's leader has pro rotation, V's leader has anti rotation. But because their motion types differ (pro|anti hybrid), the glyph slots follow the standard PADS rule (pro high, anti low) rather than leading/following.
 
 In the codebase, PADS is not stored as an explicit priority list — the priority is implicit in per-letter-type case branches in \`src/lib/shared/pictograph/tka-glyph/services/implementations/TurnColorInterpreter.ts\` and \`src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator.ts\`.
 
