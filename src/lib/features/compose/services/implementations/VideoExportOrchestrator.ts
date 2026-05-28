@@ -43,8 +43,6 @@ import type { Period } from "$lib/shared/foundation/domain/models/generation/cir
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import type { TipEffectMap } from '$lib/shared/animation-engine/domain/types/TipEffectTypes';
-import { getRenderContextRegistry } from "$lib/shared/animation-engine/getRenderContextRegistry";
-import type { RenderContext } from "$lib/shared/animation-engine/services/implementations/RenderContextRegistry";
 
 export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private _isExporting = false;
@@ -231,10 +229,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       options.effectOverrides
     );
 
-    let liveContext: RenderContext | null = null;
-    let originalCanvasSize = 0;
-    let nativeExportSize = 0;
-
     try {
       onProgress({ progress: 0, stage: "capturing" });
 
@@ -253,18 +247,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       fireCacheInvalidation.trigger();
       await this.waitForAnimationFrame();
       await this.waitForAnimationFrame();
-
-      // Resize live render context to output resolution for native-quality effects.
-      // Trails and fire now render at outputWidth (e.g., 1080px) instead of the
-      // viewport size, eliminating upscale blur in the exported video.
-      const registry = getRenderContextRegistry();
-      liveContext = registry.getAll().find(ctx => ctx.canvas === canvas) ?? null;
-      originalCanvasSize = canvas.width;
-      nativeExportSize = options.resolution ? outputWidth : originalCanvasSize;
-      if (liveContext && nativeExportSize > originalCanvasSize) {
-        liveContext.resizer.pauseObservation();
-        liveContext.resize(nativeExportSize);
-      }
 
       // Navier-Stokes fluid simulation needs ~60 frames to converge from
       // zeroed state. Without warmup, the pressure field is unresolved and
@@ -655,11 +637,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
       // Let callers reset additional transient state if needed.
       options.onCleanup?.();
-
-      if (liveContext && nativeExportSize > originalCanvasSize) {
-        liveContext.restoreSize();
-        liveContext.resizer.resumeObservation();
-      }
     }
   }
 
