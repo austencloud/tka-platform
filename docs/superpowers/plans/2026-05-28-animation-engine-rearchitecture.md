@@ -4,7 +4,9 @@
 
 **Goal:** Migrate the TKA animation engine from a 1510-line `AnimationEngine` god class + 1147-line `AnimatorCanvas` to a per-instance reactive store + single-responsibility managers + thin façade, with an effect-plugin registry, offscreen export, and the line-53 self-import (HMR regression) eliminated.
 
-**Architecture:** tldraw/PixiJS grain — one `AnimationStore` (`$state`) per canvas instance is the single source of truth; SRP managers (`LifecycleManager`, `PropSystem`, `EffectSystem`, `FrameSystem`, `PlaybackSync`) read/write the store directly with **no per-tick mirroring**; `AnimationEngine` becomes a ~150-line façade. Effects self-register on one `EFFECT_PLUGINS` array over an `OverlayRenderer` base. Export renders into a main-thread offscreen `RenderContext` at native resolution. Incremental strangler — every phase ships green.
+**Architecture:** tldraw/PixiJS grain — one `AnimatorState` (`createAnimatorState()`, `$state` factory) per canvas instance is the single source of truth; SRP managers (`LifecycleManager`, `PropSystem`, `EffectSystem`, `FrameSystem`, `PlaybackSync`) read/write that state directly with **no per-tick mirroring**; `AnimationEngine` becomes a ~150-line façade.
+
+> **Naming (P0 settled):** the per-instance state unit is `AnimatorState` (factory `createAnimatorState()`), NOT "Store". It matches the six sibling `*-state.svelte.ts` / `*State` modules. The factory + getter/setter shape is the house convention (`shared-animation-state.svelte.ts`) and is idiomatic Svelte 5 runes — not a legacy `svelte/store`. Wherever a later task says "store" / `this.store` / `engine.store`, read it as the `AnimatorState` instance (field `engine.animatorState`). Effects self-register on one `EFFECT_PLUGINS` array over an `OverlayRenderer` base. Export renders into a main-thread offscreen `RenderContext` at native resolution. Incremental strangler — every phase ships green.
 
 **Tech Stack:** SvelteKit 2.61, Svelte 5 runes (`$state`/`$derived`/`$effect`), TypeScript, Vitest, Canvas2D + WebGL (fire/charcoal/LED shaders), WebCodecs/WASM export, Vite dev server.
 
@@ -32,8 +34,8 @@
 | File | Responsibility |
 |------|----------------|
 | `src/config/vite-plugin-animator-hmr-bridge.ts` | **B0, throwaway.** Dev-only full-reload guard for `AnimatorCanvas.svelte`. Deleted in P4. |
-| `src/lib/shared/animation-engine/state/animation-store.svelte.ts` | **P0.** Per-instance `AnimationStore` — single source of truth (`$state` + getters). |
-| `src/lib/shared/animation-engine/state/animation-store.svelte.test.ts` | **P0.** Store unit tests. |
+| `src/lib/shared/animation-engine/state/animator-state.svelte.ts` | **P0 (DONE).** Per-instance `AnimatorState` (`createAnimatorState()`) — single source of truth (`$state` + getters). |
+| `tests/unit/animation-engine/animator-state.test.ts` | **P0 (DONE).** `AnimatorState` unit tests. |
 | `src/lib/shared/animation-engine/services/implementations/managers/LifecycleManager.ts` | **P1.** Canvas create/mount/resize-observe/teardown. Absorbs `AnimatorCanvasInitializer`. |
 | `src/lib/shared/animation-engine/services/implementations/managers/PropSystem.ts` | **P1.** Prop resolve + texture + SVG. Absorbs `PropPipeline`/`PropTypeManager`/`PropTypeChanger`. |
 | `src/lib/shared/animation-engine/services/implementations/managers/EffectSystem.ts` | **P1.** Effect registry + tipMap sync + config→renderer. Absorbs `EffectRendererManager`/`EffectController`. |
@@ -460,7 +462,7 @@ EOF
 
 **Why:** `update()` (`:540-770`), `handleVisibilityChange()` (`:1186-1371`), and the init code (`:957-1143`) are the god class's bulk. Move each responsibility into a manager that takes `(store, services)` and reads/writes the store directly. No `StateSynchronizer` — it is not created.
 
-**Manager constructor contract (all five):** `constructor(store: AnimationStore, deps: <named service refs>)`. Managers import the store **type** only; they never import the façade. Keep the dependency graph acyclic (spec §3.3).
+**Manager constructor contract (all five):** `constructor(state: AnimatorState, deps: <named service refs>)`. Managers import the `AnimatorState` **type** only; they never import the façade. Keep the dependency graph acyclic (spec §3.3).
 
 Each manager is one task group: write a focused unit test, extract the verified code block from the engine into the manager method, repoint the engine to delegate, verify green, commit. Extract in this order (later managers depend on earlier extractions being stable):
 
