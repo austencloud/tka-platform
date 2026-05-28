@@ -10,6 +10,20 @@ Austen's feedback (2026-05-28): *"it takes forever every goddamn time."*
 
 **Never run full `npm run check` or `npm run build` in the inner edit loop.** They are pre-commit / pre-ship gates, not per-change feedback.
 
+### CAPTURE ONCE, GREP MANY — never re-run check to re-filter
+
+A cold `npm run check` costs 2-3+ minutes. NEVER run it again just to apply a different grep/sed/filter, and NEVER run it multiple times in parallel — parallel cold runs do NOT share a cache, so 3x check = 3x the wait (this wasted ~10 min on 2026-05-28).
+
+Correct pattern — run once into a log, then filter the log for free:
+
+```bash
+npm run check > /tmp/check.log 2>&1   # ONE cold run
+grep -niE "error" /tmp/check.log       # filter as many times as you want
+grep -iE "\.svelte:" /tmp/check.log    # free — reads the file, not the compiler
+```
+
+If you need iterative error triage, prefer `npm run check:watch` (warm, in-memory) over repeated one-shots. One `check` invocation per turn, maximum.
+
 ### Inner loop (while iterating) — use these instead
 
 | Need | Command | Why fast |
