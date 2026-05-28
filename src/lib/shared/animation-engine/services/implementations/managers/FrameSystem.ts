@@ -1,0 +1,161 @@
+/**
+ * FrameSystem
+ *
+ * Owns per-frame parameter building, beat/turns/musical-position label
+ * calculation, and glyph-state synchronisation for a single animator instance.
+ *
+ * Extracted from AnimationEngine to reduce its surface area.  All logic is
+ * moved verbatim — no behavior changes on the per-frame hot path.
+ *
+ * Depends on:
+ *  - AnimatorState (type only — written to via setGlyphState)
+ *  - CanvasLifecycleManager (type only — reads glyphTransition, orchestrator,
+ *    turnsTupleGenerator)
+ *  - PropSystem (type only — reads prevDarkMode)
+ *  - EffectRendererManager (passed into FrameParameterBuilder.getFrameParams)
+ *
+ * Does NOT import AnimationEngine — keeps the dependency graph acyclic.
+ */
+
+import { FrameParameterBuilder } from "../FrameParameterBuilder";
+import { FrameBuilderService } from "../FrameBuilderService";
+import type { AnimatorState } from "../../../state/animator-state.svelte";
+import type { CanvasLifecycleManager } from "../CanvasLifecycleManager";
+import type { PropSystem } from "./PropSystem";
+import type { AnimationEngineProps } from "../AnimationEngine.svelte";
+import type { RenderFrameParams } from "../../contracts/IAnimationRenderLoop";
+import type { TrailSettings } from "../../../domain/types/TrailTypes";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { EffectRendererManager } from "../EffectRendererManager";
+
+export class FrameSystem {
+  // ── Owned services ──────────────────────────────────────────────────────────
+  readonly frameParameterBuilder = new FrameParameterBuilder();
+  private readonly frameBuilderService = new FrameBuilderService();
+
+  constructor(
+    private readonly state: AnimatorState,
+    private readonly deps: {
+      lifecycleManager: CanvasLifecycleManager;
+      propSystem: PropSystem;
+    }
+  ) {}
+
+  // ── Per-frame parameter building ─────────────────────────────────────────────
+
+  /**
+   * Build the RenderFrameParams for the current frame.
+   * Delegates to FrameParameterBuilder.getFrameParams() with engine-side deps
+   * resolved through the constructor arguments.
+   *
+   * Callers pass effectsConfigState + effectRendererManager + settingsService
+   * because these live on the engine (not on a lifecycle-manager getter).
+   */
+  buildFrameParams(
+    props: AnimationEngineProps,
+    buildDeps: {
+      effectsConfigState: EffectsConfigState | null;
+      effectRendererManager: EffectRendererManager;
+      getVM: () => import("$lib/shared/animation-engine/state/animation-visibility-state.svelte").AnimationVisibilityStateManager;
+    }
+  ): RenderFrameParams {
+    return this.frameParameterBuilder.getFrameParams(props, this.state, {
+      prevDarkMode: this.deps.propSystem.prevDarkMode,
+      prevHasFireTips: buildDeps.effectRendererManager.prevHasFireTips,
+      prevHasCharcoalTips: buildDeps.effectRendererManager.prevHasCharcoalTips,
+      trailsSuppressedUntilTextureLoad:
+        this.deps.propSystem.propTypeManager.trailsSuppressedUntilTextureLoad,
+      effectsConfigState: buildDeps.effectsConfigState,
+      settingsService: this.deps.lifecycleManager.settingsService,
+      effectRendererManager: buildDeps.effectRendererManager,
+      getVM: buildDeps.getVM,
+      orchestrator: this.deps.lifecycleManager.orchestrator,
+    });
+  }
+
+  // ── Label calculations ───────────────────────────────────────────────────────
+
+  calculateBeatNumber(props: AnimationEngineProps): number {
+    return this.frameBuilderService.calculateBeatNumber(
+      props.sequenceData ?? null,
+      props.stepData ?? null
+    );
+  }
+
+  calculateTurnsTuple(props: AnimationEngineProps): string {
+    return this.frameBuilderService.calculateTurnsTuple(
+      props.stepData ?? null,
+      this.deps.lifecycleManager.turnsTupleGenerator ?? null
+    );
+  }
+
+  calculateMusicalPosition(props: AnimationEngineProps): string | null {
+    return this.frameBuilderService.calculateMusicalPosition(
+      props.sequenceData ?? null,
+      props.stepData ?? null,
+      this.deps.lifecycleManager.orchestrator ?? null
+    );
+  }
+
+  // ── Glyph-state sync ─────────────────────────────────────────────────────────
+
+  /**
+   * Sync the glyph transition service state into AnimatorState.
+   *
+   * Two call sites in the engine:
+   *   1. update() — after glyphTransition.updateTarget() (immediately after the
+   *      labels are recalculated so the component sees new values without waiting
+   *      for the next animation tick).
+   *   2. syncServiceState() — pull glyph state at the top of every update().
+   *
+   * Both sites call this method with no arguments; the method reads from the
+   * lifecycle manager's glyphTransition getter each time it is invoked so it
+   * always reflects the latest service state.
+   */
+  syncGlyphState(): void {
+    const glyphTransition = this.deps.lifecycleManager.glyphTransition;
+    if (!glyphTransition) return;
+    const gs = glyphTransition.state;
+    this.state.setGlyphState({
+      displayedLetter: gs.displayedLetter,
+      displayedTurnsTuple: gs.displayedTurnsTuple,
+      displayedStepNumber: gs.displayedStepNumber,
+      displayedMusicalPosition: gs.displayedMusicalPosition,
+      fadingOutLetter: gs.fadingOutLetter,
+      fadingOutTurnsTuple: gs.fadingOutTurnsTuple,
+      fadingOutStepNumber: gs.fadingOutStepNumber,
+      isNewLetter: gs.isNewLetter,
+    });
+  }
+
+  // ── FrameParameterBuilder passthroughs ──────────────────────────────────────
+
+  enforceUnilateralConstraint(
+    settings: TrailSettings,
+    currentBluePropType: string,
+    currentRedPropType: string
+  ): TrailSettings {
+    return this.frameParameterBuilder.enforceUnilateralConstraint(
+      settings,
+      currentBluePropType,
+      currentRedPropType
+    );
+  }
+
+  getSequenceContentHash(seq: SequenceData): string {
+    return this.frameParameterBuilder.getSequenceContentHash(seq);
+  }
+
+  get lastSequenceContentHash(): string | null {
+    return this.frameParameterBuilder.lastSequenceContentHash;
+  }
+
+  set lastSequenceContentHash(v: string | null) {
+    this.frameParameterBuilder.lastSequenceContentHash = v;
+  }
+
+  resetHandPresenceCache(): void {
+    this.frameParameterBuilder.resetHandPresenceCache();
+  }
+}
