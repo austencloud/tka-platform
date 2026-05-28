@@ -25,8 +25,9 @@ export interface StepMotionQuery {
 /** Parse the pictograph dataframe CSV text into edge rows. */
 export function parseCsvEdges(csvText: string): CsvEdge[] {
   const lines = csvText.split("\n").filter((l) => l.trim());
-  if (lines.length === 0) return [];
-  const headers = lines[0].split(",").map((h) => h.trim());
+  const headerLine = lines[0];
+  if (!headerLine) return [];
+  const headers = headerLine.split(",").map((h) => h.trim());
   return lines.slice(1).map((line) => {
     const cols = line.split(",").map((c) => c.trim());
     const edge: Record<string, string> = {};
