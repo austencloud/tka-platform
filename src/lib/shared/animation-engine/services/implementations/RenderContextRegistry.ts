@@ -1,13 +1,3 @@
-/**
- * RenderContextRegistry
- *
- * Tracks all active RenderContext instances by string ID.
- * Provides register/unregister/get/getAll operations for coordinating
- * multiple canvas instances (e.g. live viewer + offscreen export).
- *
- * Use getRenderContextRegistry() for the singleton instance.
- */
-
 import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
 import type { EffectRendererManager } from "./EffectRendererManager";
 import type { TrailCapturer } from "./TrailCapturer";
