@@ -23,6 +23,8 @@
   import BasicInfoColumn from "./pictograph-inspect/BasicInfoColumn.svelte";
   import MotionColumn from "./pictograph-inspect/MotionColumn.svelte";
   import { formatAllForAI } from "./pictograph-inspect/formatters";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
 
   interface Props {
     show: boolean;
@@ -55,6 +57,30 @@
     redRotationOverrideKey: string | null;
   } | null>(null);
 
+  // Accordion open state — all collapsed on open (spec: AAA, no overload)
+  let basicOpen = $state(false);
+  let blueOpen = $state(false);
+  let redOpen = $state(false);
+
+  // When an arrow is clicked in the live pictograph, expand + edit that section.
+  let lastSelectedColor: string | null = $state(null);
+  $effect(() => {
+    const sel = selectedArrowState.selectedArrow;
+    const color = sel?.color ?? null;
+    if (color && color !== lastSelectedColor) {
+      lastSelectedColor = color;
+      if (color === "blue") {
+        blueOpen = true;
+        queueMicrotask(() => blueMotionColumnRef?.enterEditMode());
+      } else {
+        redOpen = true;
+        queueMicrotask(() => redMotionColumnRef?.enterEditMode());
+      }
+    } else if (!color) {
+      lastSelectedColor = null;
+    }
+  });
+
 
   // Calculate arrow positions when modal opens
   $effect(() => {
@@ -68,6 +94,10 @@
       lookupKeys = null;
       blueDiagnostics = null;
       redDiagnostics = null;
+      basicOpen = false;
+      blueOpen = false;
+      redOpen = false;
+      selectedArrowState.clearSelection();
     }
   });
 
@@ -288,16 +318,24 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
-      onClose();
+      if (selectedArrowState.selectedArrow) {
+        selectedArrowState.clearSelection();
+      } else {
+        onClose();
+      }
       return;
     }
 
-    // Delegate WASD to the active pipeline editor
     if (["w", "a", "s", "d"].includes(e.key.toLowerCase())) {
-      const blueHandled = blueMotionColumnRef?.handleWASDKeydown(e);
-      if (blueHandled) return;
-      const redHandled = redMotionColumnRef?.handleWASDKeydown(e);
-      if (redHandled) return;
+      const color = selectedArrowState.selectedArrow?.color ?? null;
+      if (color === "red") {
+        if (redMotionColumnRef?.handleWASDKeydown(e)) return;
+      } else if (color === "blue") {
+        if (blueMotionColumnRef?.handleWASDKeydown(e)) return;
+      } else {
+        if (blueMotionColumnRef?.handleWASDKeydown(e)) return;
+        if (redMotionColumnRef?.handleWASDKeydown(e)) return;
+      }
     }
   }
 </script>
@@ -325,39 +363,59 @@
       />
 
       <div class="modal-body">
-        <div class="columns">
-          <BasicInfoColumn
-            {displayData}
-            {blueMotion}
-            {redMotion}
-            {lookupKeys}
-            {copiedSection}
-            onCopy={copyToClipboard}
-          />
+        <div class="inspect-layout">
+          <div class="pictograph-rail">
+            {#if displayData}
+              <div class="pictograph-frame">
+                <PictographContainer
+                  pictographData={displayData}
+                  arrowsClickable={true}
+                  disableTransitions={true}
+                />
+              </div>
+            {/if}
+          </div>
 
-          <MotionColumn
-            color="blue"
-            motion={blueMotion}
-            rotationOverride={blueRotationOverride}
-            diagnostics={blueDiagnostics}
-            stepData={stepData}
-            onDiagnosticsChanged={refreshDiagnostics}
-            {copiedSection}
-            onCopy={copyToClipboard}
-            bind:this={blueMotionColumnRef}
-          />
+          <div class="detail-column themed-scrollbar">
+            <BasicInfoColumn
+              {displayData}
+              {blueMotion}
+              {redMotion}
+              {lookupKeys}
+              {copiedSection}
+              onCopy={copyToClipboard}
+              open={basicOpen}
+              onToggle={(next) => (basicOpen = next)}
+            />
 
-          <MotionColumn
-            color="red"
-            motion={redMotion}
-            rotationOverride={redRotationOverride}
-            diagnostics={redDiagnostics}
-            stepData={stepData}
-            onDiagnosticsChanged={refreshDiagnostics}
-            {copiedSection}
-            onCopy={copyToClipboard}
-            bind:this={redMotionColumnRef}
-          />
+            <MotionColumn
+              color="blue"
+              motion={blueMotion}
+              rotationOverride={blueRotationOverride}
+              diagnostics={blueDiagnostics}
+              stepData={stepData}
+              onDiagnosticsChanged={refreshDiagnostics}
+              {copiedSection}
+              onCopy={copyToClipboard}
+              open={blueOpen}
+              onToggle={(next) => (blueOpen = next)}
+              bind:this={blueMotionColumnRef}
+            />
+
+            <MotionColumn
+              color="red"
+              motion={redMotion}
+              rotationOverride={redRotationOverride}
+              diagnostics={redDiagnostics}
+              stepData={stepData}
+              onDiagnosticsChanged={refreshDiagnostics}
+              {copiedSection}
+              onCopy={copyToClipboard}
+              open={redOpen}
+              onToggle={(next) => (redOpen = next)}
+              bind:this={redMotionColumnRef}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -378,19 +436,17 @@
   }
 
   .modal-content {
-    background: #0d1117;
-    border: 1px solid #30363d;
+    background: var(--theme-panel-bg, rgba(13, 17, 23, 0.98));
+    border: 1px solid var(--theme-stroke, #30363d);
     border-radius: 8px;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1320px;
     max-height: 90vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     box-shadow: 0 16px 64px rgba(0, 0, 0, 0.7);
     animation: slideUp var(--duration-normal, 0.3s) ease-out;
-    font-family: "SF Mono", "Cascadia Code", "Fira Code", Monaco, Consolas,
-      monospace;
   }
 
   .modal-body {
@@ -398,14 +454,42 @@
     overflow-y: auto;
     padding: 16px;
     scrollbar-width: thin;
-    scrollbar-color: #30363d transparent;
+    scrollbar-color: var(--theme-stroke, #30363d) transparent;
   }
 
-  .columns {
+  .inspect-layout {
     display: grid;
-    grid-template-columns: 1fr 1.5fr 1.5fr;
+    grid-template-columns: minmax(320px, 40%) 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .pictograph-rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+  }
+  .pictograph-frame {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    padding: 16px;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .detail-column {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    min-height: 0;
+    min-width: 0;
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+  }
+  @media (max-width: 720px) {
+    .inspect-layout { grid-template-columns: 1fr; }
+    .pictograph-rail { position: static; }
+    .detail-column { max-height: none; }
   }
 
   @keyframes fadeIn {
@@ -428,17 +512,7 @@
     }
   }
 
-  @media (max-width: 900px) {
-    .columns {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-
   @media (max-width: 600px) {
-    .columns {
-      grid-template-columns: 1fr;
-    }
-
     .modal-content {
       max-width: 100%;
       border-radius: 6px;
