@@ -186,16 +186,23 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
 
   function tierColor(tier: PipelineTier): string {
     switch (tier) {
-      case "global": return "#22c55e";
-      case "special-json": return "#a78bfa";
-      case "prop-geometry": return "#22d3d8";
-      case "default": return "#8b949e";
+      case "global": return "var(--semantic-success, #22c55e)";
+      case "special-json": return "var(--theme-accent, #a78bfa)";
+      case "prop-geometry": return "var(--semantic-info, #22d3d8)";
+      case "default": return "var(--theme-text-dim, #8b949e)";
     }
   }
 
   function formatValue(v: { x: number; y: number } | null): string {
     if (!v) return "none";
     return `[${v.x}, ${v.y}]`;
+  }
+
+  function defaultEditTargetForActiveTier(): "global" | "special-json" | "prop-geometry" {
+    const active = diagnostics?.activeTier;
+    if (active === "special-json") return "special-json";
+    if (active === "prop-geometry") return "prop-geometry";
+    return "global";
   }
 
   function toggleEditing() {
@@ -205,10 +212,24 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
       }
       const defaultLayer = orchestrator.getDefaultSaveLayer(thisPropType, otherPropType);
       activeLayer = defaultLayer;
-      editTarget = "global";
+      editTarget = defaultEditTargetForActiveTier();
       syncNumericInputs();
     }
     isEditing = !isEditing;
+    hasLocalChanges = false;
+    saveState = "idle";
+  }
+
+  /** Parent entry point: open the editor (called when its arrow is clicked). */
+  export function enterEditMode() {
+    if (isEditing) return;
+    if (!orchestrator) {
+      orchestrator = getArrowAdjustmentOrchestrator() as ArrowAdjustmentOrchestrator;
+    }
+    activeLayer = orchestrator.getDefaultSaveLayer(thisPropType, otherPropType);
+    editTarget = defaultEditTargetForActiveTier();
+    syncNumericInputs();
+    isEditing = true;
     hasLocalChanges = false;
     saveState = "idle";
   }
@@ -640,7 +661,7 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
         />
       {:else}
         <div class="editor-target-label">
-          Special JSON Override
+          Editing {tierLabel(editTarget)}
         </div>
       {/if}
 
@@ -666,7 +687,8 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
       </div>
 
       <div class="editor-hint">
-        WASD to move · Shift = 20px · Ctrl+Shift = 200px
+        <kbd>W A S D</kbd>
+        <span>to move · Shift ×4 · Ctrl+Shift ×40 · live preview in pictograph</span>
       </div>
 
       {#if hasLocalChanges}
@@ -679,6 +701,10 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
         {#if editTarget === "special-json" && diagnostics?.specialJson?.firestoreOverride}
           <button class="btn btn-delete" onclick={handleDelete} title="Revert to original">
             <i class="fas fa-undo" aria-hidden="true"></i> Revert
+          </button>
+        {:else if editTarget === "prop-geometry" && propGeometryKey && getPropGeometryRepository()?.hasAdjustment(propGeometryKey)}
+          <button class="btn btn-delete" onclick={handleDelete} title="Delete prop geometry adjustment">
+            <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete
           </button>
         {:else if editTarget === "global" && (currentLayerValue || layer1HasValue || layer2HasValue || layer3HasValue)}
           <button class="btn btn-delete" onclick={handleDelete} title="Delete at this layer">
@@ -706,329 +732,254 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
 
 <style>
   .pipeline-trace {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #21262d;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
-
   .trace-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 6px;
+    margin-bottom: 10px;
   }
-
   .trace-header h4 {
     margin: 0;
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: #58a6ff;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    color: var(--theme-text, #fff);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.6px;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
   }
-
-  .trace-header h4 i {
-    font-size: 0.6rem;
-  }
-
   .edit-toggle {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid #30363d;
-    background: transparent;
-    color: #8b949e;
+    gap: 6px;
+    padding: 8px 14px;
+    min-height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    color: var(--theme-text, #fff);
     cursor: pointer;
-    font-size: 0.65rem;
+    font-size: var(--font-size-sm, 14px);
     font-family: inherit;
-    transition: all 0.15s ease;
+    transition: border-color var(--duration-fast, 0.15s) ease;
   }
-
   .edit-toggle:hover {
-    background: #21262d;
-    color: #e6edf3;
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
-
   .edit-toggle.active {
-    background: rgba(56, 139, 253, 0.15);
-    border-color: #58a6ff;
-    color: #58a6ff;
+    background: color-mix(in srgb, var(--theme-accent, #58a6ff) 14%, transparent);
+    border-color: var(--theme-accent, #58a6ff);
+    color: var(--theme-accent, #58a6ff);
   }
-
   .tier-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 3px 6px;
-    border-radius: 3px;
-    font-size: 0.7rem;
-    color: #484f58;
-    transition: background 0.15s ease;
+    gap: 14px;
+    padding: 14px 16px;
+    min-height: 44px;
+    border-radius: 14px;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #fff);
     width: 100%;
-    border: 1px solid transparent;
-    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     cursor: default;
     text-align: left;
     font-family: inherit;
+    margin-bottom: 10px;
+    transition: border-color var(--duration-fast, 0.15s) ease;
   }
-
-  .tier-row.editable {
-    cursor: pointer;
-  }
-
-  .tier-row.editable:hover {
-    background: rgba(56, 139, 253, 0.06);
-    border-color: #30363d;
-  }
-
+  .tier-row.editable { cursor: pointer; }
+  .tier-row.editable:hover { border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2)); }
   .tier-row.edit-target {
-    background: rgba(56, 139, 253, 0.1);
-    border-color: #58a6ff;
+    border: 2px solid var(--theme-accent, #58a6ff);
+    background: color-mix(in srgb, var(--theme-accent, #58a6ff) 12%, transparent);
   }
-
-  .tier-row.active {
-    background: rgba(34, 197, 94, 0.08);
-    color: #e6edf3;
+  .tier-row:disabled {
+    border-style: dashed;
+    opacity: 0.6;
+    cursor: default;
   }
-
-  .tier-row.has-value:not(.active) {
-    color: #7d8590;
-  }
-
   .tier-icon {
-    width: 12px;
+    width: 14px;
     text-align: center;
-    font-size: 0.5rem;
+    font-size: 11px;
     color: var(--tier-color);
+    flex: none;
   }
-
-  .tier-row.active .tier-icon {
-    font-size: 0.55rem;
-    color: var(--tier-color);
-  }
-
   .tier-name {
-    font-weight: 500;
-    min-width: 90px;
+    font-weight: 600;
+    min-width: 110px;
+    font-size: var(--font-size-min, 14px);
   }
-
   .tier-detail {
-    font-size: 0.6rem;
-    color: #484f58;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 200px;
+    max-width: 220px;
   }
-
   .tier-value {
     margin-left: auto;
-    font-family: "SF Mono", Monaco, monospace;
-    font-size: 0.7rem;
-    color: #79c0ff;
+    font-variant-numeric: tabular-nums;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #fff);
   }
-
   .tier-value.none {
-    color: #484f58;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-style: italic;
   }
-
   .tier-badge {
-    font-size: 0.55rem;
-    color: #a78bfa;
-    font-weight: 600;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-accent, #a78bfa);
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-
   .original-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 1px 6px 1px 24px;
-    font-size: 0.6rem;
-    color: #484f58;
+    gap: 8px;
+    padding: 2px 16px 8px 30px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
-
-  .original-icon {
-    color: #30363d;
-    font-family: "SF Mono", Monaco, monospace;
-  }
-
-  .original-label {
-    font-style: italic;
-  }
-
   .original-value {
     margin-left: auto;
-    font-family: "SF Mono", Monaco, monospace;
+    font-variant-numeric: tabular-nums;
     text-decoration: line-through;
-    color: #484f58;
   }
-
   .summary-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 6px;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 0;
     margin-top: 4px;
-    border-top: 1px solid #161b22;
-    font-size: 0.65rem;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
-
-  .summary-label {
-    color: #7d8590;
-    font-weight: 500;
-  }
-
   .summary-value {
-    font-family: "SF Mono", Monaco, monospace;
-    color: #e6edf3;
-    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text, #fff);
+    font-weight: 600;
   }
-
-  .summary-arrow {
-    color: #484f58;
-  }
-
+  .summary-arrow { color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); }
   .loading {
-    padding: 8px;
+    padding: 12px;
     text-align: center;
-    color: #484f58;
-    font-size: 0.7rem;
-    font-style: italic;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-sm, 14px);
   }
-
-  /* Editor section */
   .editor-section {
-    margin-top: 8px;
-    padding: 8px;
-    background: rgba(56, 139, 253, 0.06);
-    border: 1px solid #1f3a5f;
-    border-radius: 6px;
+    margin-top: 12px;
+    padding: 18px;
+    background: color-mix(in srgb, var(--theme-accent, #58a6ff) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #58a6ff) 35%, transparent);
+    border-radius: 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 14px;
   }
-
-  .editor-values {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 8px;
-    font-family: "SF Mono", Monaco, monospace;
-    font-size: 0.85rem;
-  }
-
   .editor-target-label {
     text-align: center;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #a78bfa;
-    padding: 4px 0;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 700;
+    color: var(--theme-accent, #a78bfa);
   }
-
+  .editor-values {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 18px;
+  }
   .editor-input-label {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    color: #8b949e;
-    font-family: "SF Mono", Monaco, monospace;
-    font-size: 0.85rem;
+    gap: 6px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
   }
-
   .editor-input {
-    width: 70px;
-    padding: 2px 6px;
-    border: 1px solid #30363d;
-    border-radius: 4px;
-    background: #0d1117;
-    color: #e6edf3;
-    font-family: "SF Mono", Monaco, monospace;
-    font-size: 0.85rem;
-    text-align: right;
+    width: 96px;
+    padding: 8px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--theme-text, #fff);
+    font-variant-numeric: tabular-nums;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
   }
-
   .editor-input:focus {
     outline: none;
-    border-color: #58a6ff;
+    border-color: var(--theme-accent, #58a6ff);
   }
-
   .editor-hint {
-    text-align: center;
-    font-size: 0.6rem;
-    color: #484f58;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
-
+  .editor-hint kbd {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+  }
   .editor-unsaved {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    font-size: 0.65rem;
-    color: #f59e0b;
+    gap: 6px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-warning, #f59e0b);
   }
-
-  .editor-unsaved i {
-    font-size: 5px;
-  }
-
   .editor-actions {
     display: flex;
-    gap: 6px;
-    justify-content: flex-end;
+    gap: 12px;
+    justify-content: center;
   }
-
   .btn {
-    padding: 4px 12px;
-    border: 1px solid #30363d;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 500;
+    padding: 12px 24px;
+    min-height: 44px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 12px;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     font-family: inherit;
   }
-
   .btn-delete {
     background: transparent;
-    color: #f85149;
-    border-color: rgba(248, 81, 73, 0.3);
+    color: var(--semantic-error, #f85149);
+    border-color: color-mix(in srgb, var(--semantic-error, #f85149) 40%, transparent);
   }
-
-  .btn-delete:hover {
-    background: rgba(248, 81, 73, 0.1);
-  }
-
   .btn-save {
-    background: #238636;
-    color: #ffffff;
-    border-color: #238636;
+    background: var(--semantic-success, #238636);
+    color: #fff;
+    border-color: var(--semantic-success, #238636);
   }
-
-  .btn-save:hover:not(:disabled) {
-    background: #2ea043;
-  }
-
-  .btn-save:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
+  .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
   @media (prefers-reduced-motion: reduce) {
-    .tier-row,
-    .edit-toggle,
-    .btn {
-      transition: none;
-    }
+    .tier-row, .edit-toggle, .btn { transition: none; }
   }
 </style>
