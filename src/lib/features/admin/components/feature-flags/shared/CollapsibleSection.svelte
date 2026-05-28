@@ -1,7 +1,11 @@
 <script lang="ts">
   /**
    * CollapsibleSection
-   * Expandable/collapsible section for grouping content
+   * Expandable/collapsible section for grouping content.
+   *
+   * Two modes:
+   * - Uncontrolled (default): manages its own open state, seeded by `defaultOpen`.
+   * - Controlled: pass `open` (boolean) + `onToggle`; the parent owns the state.
    */
 
   interface Props {
@@ -10,6 +14,10 @@
     iconColor?: string;
     count?: number;
     defaultOpen?: boolean;
+    /** Controlled open state. When provided, overrides internal state. */
+    open?: boolean;
+    /** Called with the requested next open value when the header is clicked (controlled mode). */
+    onToggle?: (next: boolean) => void;
     children: import("svelte").Snippet;
   }
 
@@ -19,11 +27,25 @@
     iconColor,
     count,
     defaultOpen = true,
+    open = undefined,
+    onToggle,
     children,
   }: Props = $props();
 
-  let isOpen = $state(true);
-  $effect.pre(() => { isOpen = defaultOpen; });
+  let internalOpen = $state(true);
+  $effect.pre(() => { internalOpen = defaultOpen; });
+
+  const isControlled = $derived(open !== undefined);
+  const isOpen = $derived(isControlled ? (open as boolean) : internalOpen);
+
+  function handleClick() {
+    const next = !isOpen;
+    if (isControlled) {
+      onToggle?.(next);
+    } else {
+      internalOpen = next;
+    }
+  }
 
   // Generate a stable ID from the title for aria-controls
   const sectionId = $derived(`section-${title.toLowerCase().replace(/\s+/g, "-")}`);
@@ -33,7 +55,7 @@
   <button
     type="button"
     class="section-header"
-    onclick={() => (isOpen = !isOpen)}
+    onclick={handleClick}
     aria-expanded={isOpen}
     aria-controls={sectionId}
     aria-label="{isOpen ? 'Collapse' : 'Expand'} {title} section"
