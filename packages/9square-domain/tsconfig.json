@@ -11,10 +11,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "composite": true,
     "baseUrl": ".",
     "paths": {
       "@flow-arts/core": ["../flow-arts-core/dist/index.d.ts"]
     }
   },
+  "references": [{ "path": "../flow-arts-core" }],
   "include": ["src/**/*.ts"]
 }

@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tka-types" },
+    { "path": "./flow-arts-core" },
+    { "path": "./domain" },
+    { "path": "./vtg-domain" },
+    { "path": "./caps-domain" },
+    { "path": "./spin-science-domain" },
+    { "path": "./9square-domain" },
+    { "path": "./render-core" },
+    { "path": "./sequence-engine" }
+  ]
+}

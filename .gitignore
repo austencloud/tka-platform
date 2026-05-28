@@ -146,6 +146,7 @@ nul
 
 # TypeScript
 .tsbuildinfo
+*.tsbuildinfo
 
 # Package manager lock files (pnpm-lock.yaml IS committed for reproducible CI builds)
 
