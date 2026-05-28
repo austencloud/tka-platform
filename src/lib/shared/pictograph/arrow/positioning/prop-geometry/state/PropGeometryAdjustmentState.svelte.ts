@@ -59,6 +59,19 @@ export function createPropGeometryAdjustmentState() {
       return null;
     },
 
+    /** Exact (non-cascading) lookup by full key. */
+    getAdjustment(key: PropGeometryKey): { x: number; y: number } | null {
+      const keyString = generatePropGeometryKeyString(key);
+      const adjustment = adjustmentsMap.get(keyString);
+      return adjustment
+        ? { x: adjustment.adjustmentX, y: adjustment.adjustmentY }
+        : null;
+    },
+
+    hasAdjustment(key: PropGeometryKey): boolean {
+      return adjustmentsMap.has(generatePropGeometryKeyString(key));
+    },
+
     setAdjustment(adjustment: PropGeometryAdjustment): void {
       const keyString = generatePropGeometryKeyString({
         gridMode: adjustment.gridMode,
