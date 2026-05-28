@@ -14,7 +14,7 @@ The component's role:
 1. Mount container element
 2. Initialize engine
 3. Pass props to engine.update() in single $effect
-4. Derive state from engine.state
+4. Derive state from engine.animatorState
 5. Render template (canvas-wrapper, GlyphOverlay, ProgressOverlay)
 6. Disassemble/reassemble: same DOM tree, CSS transitions only
 
@@ -274,7 +274,7 @@ Last audit: 2025-12-27
 
   // Sync 2D overlay suppression (for 3D mode)
   $effect.pre(() => {
-    engine.state.suppress2DOverlays = suppress2DOverlays;
+    engine.animatorState.setSuppress2DOverlays(suppress2DOverlays);
   });
 
   // Use $derived to read visibilityManagerOverride reactively (avoids state_referenced_locally)
@@ -615,16 +615,16 @@ Last audit: 2025-12-27
   });
 
   // Derived state from engine
-  const rendererLoading = $derived(engine.state.rendererLoading);
-  const rendererError = $derived(engine.state.rendererError);
-  const isInitialized = $derived(engine.state.isInitialized);
-  const isPreRendering = $derived(engine.state.isPreRendering);
-  const preRenderProgress = $derived(engine.state.preRenderProgress);
-  const preRenderedFramesReady = $derived(engine.state.preRenderedFramesReady);
-  const displayedLetter = $derived(engine.state.displayedLetter);
-  const displayedTurnsTuple = $derived(engine.state.displayedTurnsTuple);
-  const displayedStepNumber = $derived(engine.state.displayedStepNumber);
-  const displayedMusicalPosition = $derived(engine.state.displayedMusicalPosition);
+  const rendererLoading = $derived(engine.animatorState.rendererLoading);
+  const rendererError = $derived(engine.animatorState.rendererError);
+  const isInitialized = $derived(engine.animatorState.isInitialized);
+  const isPreRendering = $derived(engine.animatorState.isPreRendering);
+  const preRenderProgress = $derived(engine.animatorState.preRenderProgress);
+  const preRenderedFramesReady = $derived(engine.animatorState.preRenderedFramesReady);
+  const displayedLetter = $derived(engine.animatorState.displayedLetter);
+  const displayedTurnsTuple = $derived(engine.animatorState.displayedTurnsTuple);
+  const displayedStepNumber = $derived(engine.animatorState.displayedStepNumber);
+  const displayedMusicalPosition = $derived(engine.animatorState.displayedMusicalPosition);
 
   // Initialize engine when container element appears.
   // The hero canvas stays mounted always - no teardown during disassemble.
