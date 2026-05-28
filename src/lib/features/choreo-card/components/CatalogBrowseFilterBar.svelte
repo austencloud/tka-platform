@@ -3,7 +3,7 @@
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import FilterChipRow from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipRow.svelte";
   import { LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import { VTG_FAMILY_LABELS } from "../state/catalog-browse-types";
+  import { TND_FAMILY_LABELS } from "../state/catalog-browse-types";
 
   interface Props {
     state: CatalogBrowseState;
@@ -26,16 +26,39 @@
     return m ? `${m[1]}T` : capitalize(turn.replace(/-/g, ' '));
   }
 
-  const chipColor = $derived(catalogState.collection === 'VTG' ? '#b763cd' : '#63b7cd');
+  const chipColor = $derived(catalogState.collection === 'TnD' ? '#b763cd' : '#63b7cd');
 
   const hasActiveFilters = $derived(
     catalogState.filters.loopTypes.length > 0 ||
-    catalogState.filters.vtgFamilies.length > 0 ||
+    catalogState.filters.tndFamilies.length > 0 ||
     catalogState.filters.sliceTypes.length > 0 ||
     catalogState.filters.gridModes.length > 0 ||
     catalogState.filters.stepCounts.length > 0 ||
-    catalogState.filters.turnPatterns.length > 0
+    catalogState.filters.turnPatterns.length > 0 ||
+    catalogState.filters.reversalPatterns.length > 0
   );
+
+  const REVERSAL_LABELS: Record<string, string> = {
+    continuous: 'Continuous',
+    book: 'Book',
+    'red-book': 'Red Book',
+    'blue-book': 'Blue Book',
+    'long-book': 'Long Book',
+    alternating: 'Alternating',
+    'solo-1': 'Solo 1',
+    'solo-2': 'Solo 2',
+    'solo-3': 'Solo 3',
+    'dense-weave-1': 'Dense Weave 1',
+    'dense-weave-2': 'Dense Weave 2',
+    'dense-weave-3': 'Dense Weave 3',
+    'sparse-weave-1': 'Sparse Weave 1',
+    'sparse-weave-2': 'Sparse Weave 2',
+    'sparse-weave-3': 'Sparse Weave 3',
+  };
+
+  function reversalLabel(id: string): string {
+    return REVERSAL_LABELS[id] ?? capitalize(id.replace(/-/g, ' '));
+  }
 </script>
 
 <div class="filter-bar">
@@ -49,31 +72,31 @@
         aria-label="Browse LOOPs collection"
       >LOOPs</button>
       <button
-        class="collection-pill vtg"
-        class:active={catalogState.collection === 'VTG'}
-        onclick={() => catalogState.setCollection('VTG')}
+        class="collection-pill tnd"
+        class:active={catalogState.collection === 'TnD'}
+        onclick={() => catalogState.setCollection('TnD')}
         type="button"
-        aria-label="Browse VTG collection"
-      >VTG</button>
+        aria-label="Browse TnD collection"
+      >TnD</button>
     </div>
 
-    {#if catalogState.collection === 'VTG'}
-      <div class="vtg-view-toggle" role="radiogroup" aria-label="VTG view mode">
+    {#if catalogState.collection === 'TnD'}
+      <div class="tnd-view-toggle" role="radiogroup" aria-label="TnD view mode">
         <button
           class="view-pill"
-          class:active={catalogState.vtgViewMode === 'turns'}
+          class:active={catalogState.tndViewMode === 'turns'}
           type="button"
           role="radio"
-          aria-checked={catalogState.vtgViewMode === 'turns'}
-          onclick={() => catalogState.setVtgViewMode('turns')}
+          aria-checked={catalogState.tndViewMode === 'turns'}
+          onclick={() => catalogState.setTnDViewMode('turns')}
         >By Turns</button>
         <button
           class="view-pill"
-          class:active={catalogState.vtgViewMode === 'family'}
+          class:active={catalogState.tndViewMode === 'family'}
           type="button"
           role="radio"
-          aria-checked={catalogState.vtgViewMode === 'family'}
-          onclick={() => catalogState.setVtgViewMode('family')}
+          aria-checked={catalogState.tndViewMode === 'family'}
+          onclick={() => catalogState.setTnDViewMode('family')}
         >By Family</button>
       </div>
     {/if}
@@ -89,6 +112,28 @@
       <i class="fas fa-chevron-{expanded ? 'up' : 'down'}" aria-hidden="true"></i>
     </button>
   </div>
+
+  {#if expanded && catalogState.collection === 'TnD' && catalogState.availableFilters.reversalPatterns.length > 1}
+    <div class="filter-rows">
+      <FilterChipRow>
+        {#each catalogState.availableFilters.reversalPatterns as pattern (pattern)}
+          <FilterChipBase
+            label={reversalLabel(pattern)}
+            active={catalogState.filters.reversalPatterns.includes(pattern)}
+            mode="toggle"
+            chipColor={chipColor}
+            onclick={() => catalogState.toggleFilter('reversalPatterns', pattern)}
+          />
+        {/each}
+      </FilterChipRow>
+
+      {#if hasActiveFilters}
+        <button class="clear-btn" onclick={() => catalogState.clearFilters()} type="button" aria-label="Clear all filters">
+          <i class="fas fa-times" aria-hidden="true"></i> Clear filters
+        </button>
+      {/if}
+    </div>
+  {/if}
 
   {#if expanded && catalogState.collection === 'LOOPs'}
     <div class="filter-rows">
@@ -204,9 +249,9 @@
     color: var(--theme-text, #fff);
   }
 
-  .collection-pill.vtg.active {
-    background: var(--vtg-accent-bg, rgba(183, 99, 205, 0.15));
-    border-color: var(--vtg-accent-border, rgba(183, 99, 205, 0.4));
+  .collection-pill.tnd.active {
+    background: var(--tnd-accent-bg, rgba(183, 99, 205, 0.15));
+    border-color: var(--tnd-accent-border, rgba(183, 99, 205, 0.4));
   }
 
   .catalog-count {
@@ -249,7 +294,7 @@
     color: var(--theme-text, #fff);
   }
 
-  .vtg-view-toggle {
+  .tnd-view-toggle {
     display: flex;
   }
 
@@ -269,8 +314,8 @@
   .view-pill:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
 
   .view-pill.active {
-    background: var(--vtg-accent-bg, rgba(183, 99, 205, 0.15));
-    border-color: var(--vtg-accent-border, rgba(183, 99, 205, 0.4));
+    background: var(--tnd-accent-bg, rgba(183, 99, 205, 0.15));
+    border-color: var(--tnd-accent-border, rgba(183, 99, 205, 0.4));
     color: var(--theme-text, #fff);
   }
 

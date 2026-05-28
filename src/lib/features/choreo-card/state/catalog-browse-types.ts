@@ -2,41 +2,44 @@
 
 export interface FilterState {
   loopTypes: string[];
-  vtgFamilies: string[];
+  tndFamilies: string[];
   sliceTypes: string[];
   gridModes: string[];
   stepCounts: number[];
   turnPatterns: string[];
+  reversalPatterns: string[];
 }
 
 export interface AvailableFilters {
   loopTypes: string[];
-  vtgFamilies: string[];
+  tndFamilies: string[];
   sliceTypes: string[];
   gridModes: string[];
   stepCounts: number[];
   turnPatterns: string[];
+  reversalPatterns: string[];
 }
 
-export type VtgViewMode = 'turns' | 'family';
+export type TnDViewMode = 'turns' | 'family';
 
 export interface SavedCatalogBrowseState {
-  collection: 'LOOPs' | 'VTG';
+  collection: 'LOOPs' | 'TnD';
   filters: FilterState;
   scrollY: number;
-  vtgViewMode?: VtgViewMode;
+  tndViewMode?: TnDViewMode;
 }
 
 export const EMPTY_FILTERS: FilterState = {
   loopTypes: [],
-  vtgFamilies: [],
+  tndFamilies: [],
   sliceTypes: [],
   gridModes: [],
   stepCounts: [],
   turnPatterns: [],
+  reversalPatterns: [],
 };
 
-export const VTG_FAMILY_LABELS: Record<string, string> = {
+export const TND_FAMILY_LABELS: Record<string, string> = {
   'split-same': 'Split-Same',
   'tog-same': 'Tog-Same',
   'split-opp': 'Split-Opp',
@@ -45,4 +48,4 @@ export const VTG_FAMILY_LABELS: Record<string, string> = {
   'quarter-opp': 'Quarter-Opp',
 };
 
-export const VTG_FAMILY_KEYS = Object.keys(VTG_FAMILY_LABELS);
+export const TND_FAMILY_KEYS = Object.keys(TND_FAMILY_LABELS);
