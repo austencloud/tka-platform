@@ -292,24 +292,24 @@
 
   <div class="section">
     <h2>Presets</h2>
-    <button class="preset-btn active" onclick="applyPreset('turnMatrix')">
+    <button class="preset-btn active" onclick="applyPreset('familyReversal')">
+      Family x Reversal
+      <div class="preset-desc">Which families have which reversal patterns</div>
+    </button>
+    <button class="preset-btn" onclick="applyPreset('familyTurns')">
+      Family x Turn Pattern
+      <div class="preset-desc">Family distribution across turn combos</div>
+    </button>
+    <button class="preset-btn" onclick="applyPreset('turnMatrix')">
       Turn Matrix
       <div class="preset-desc">7x7 blue vs red turns</div>
     </button>
-    <button class="preset-btn" onclick="applyPreset('familyReversal')">
-      Family x Reversal
-      <div class="preset-desc">Which families have which patterns</div>
-    </button>
-    <button class="preset-btn" onclick="applyPreset('familyTurns')">
-      Family x Turn Level
-      <div class="preset-desc">Family distribution across turns</div>
-    </button>
     <button class="preset-btn" onclick="applyPreset('reversalTurns')">
-      Reversal x Turns
-      <div class="preset-desc">Reversal patterns across turn levels</div>
+      Reversal x Turn Pattern
+      <div class="preset-desc">Reversal patterns across turn combos</div>
     </button>
     <button class="preset-btn" onclick="applyPreset('propHand')">
-      Prop Orientation x Hand Family
+      Prop x Hand Family
       <div class="preset-desc">Independence proof visualized</div>
     </button>
   </div>
@@ -317,30 +317,32 @@
   <div class="section">
     <h2>Row Axis</h2>
     <select id="rowAxis" onchange="updateGrid()">
+      <option value="family">TnD Family</option>
+      <option value="turnPattern">Turn Pattern</option>
       <option value="blueTurns">Blue Turns</option>
       <option value="redTurns">Red Turns</option>
-      <option value="family">TnD Family</option>
+      <option value="reversalPattern">Reversal Pattern</option>
       <option value="handTiming">Hand Timing</option>
       <option value="handDirection">Hand Direction</option>
-      <option value="reversalPattern">Reversal Pattern</option>
-      <option value="reversalFamily">Reversal Family</option>
       <option value="propOrientation">Prop Orientation</option>
       <option value="rotationStyle">Rotation Style</option>
+      <option value="letter">Letter</option>
     </select>
   </div>
 
   <div class="section">
     <h2>Column Axis</h2>
     <select id="colAxis" onchange="updateGrid()">
-      <option value="redTurns">Red Turns</option>
-      <option value="blueTurns">Blue Turns</option>
+      <option value="reversalPattern">Reversal Pattern</option>
       <option value="family">TnD Family</option>
+      <option value="turnPattern">Turn Pattern</option>
+      <option value="blueTurns">Blue Turns</option>
+      <option value="redTurns">Red Turns</option>
       <option value="handTiming">Hand Timing</option>
       <option value="handDirection">Hand Direction</option>
-      <option value="reversalPattern">Reversal Pattern</option>
-      <option value="reversalFamily">Reversal Family</option>
       <option value="propOrientation">Prop Orientation</option>
       <option value="rotationStyle">Rotation Style</option>
+      <option value="letter">Letter</option>
     </select>
   </div>
 
@@ -407,6 +409,21 @@ const BASE_LETTERS = [
   { letter: 'V', family: 'quarter-same', handTiming: 'quarter', handDirection: 'same', rotationStyle: 'anti/anti', propOrientation: 'perpendicular' },
 ];
 
+// Generate turn pattern labels for combined axis
+function turnPatternLabel(bt, rt) {
+  if (bt === rt) return `${bt}T (symmetric)`;
+  return `${bt}|${rt}`;
+}
+
+// All unique turn patterns, symmetric first then asymmetric sorted
+const ALL_TURN_PATTERNS = [];
+for (const t of TURN_LEVELS) ALL_TURN_PATTERNS.push(turnPatternLabel(t, t));
+for (const bt of TURN_LEVELS) {
+  for (const rt of TURN_LEVELS) {
+    if (bt !== rt) ALL_TURN_PATTERNS.push(turnPatternLabel(bt, rt));
+  }
+}
+
 // Generate sequence entries: each base letter × each turn combo × each reversal pattern
 const DATA = [];
 let idCounter = 0;
@@ -424,6 +441,7 @@ for (const letter of BASE_LETTERS) {
           rotationStyle: letter.rotationStyle,
           blueTurns: bt,
           redTurns: rt,
+          turnPattern: turnPatternLabel(bt, rt),
           reversalPattern: rp,
           reversalFamily: REVERSAL_FAMILIES_MAP[rp] || 'simple',
         });
@@ -433,15 +451,16 @@ for (const letter of BASE_LETTERS) {
 }
 
 const AXIS_META = {
+  family:          { label: 'TnD Family', values: () => FAMILIES, display: v => v },
+  turnPattern:     { label: 'Turn Pattern', values: () => ALL_TURN_PATTERNS, display: v => v },
   blueTurns:       { label: 'Blue Turns', values: () => TURN_LEVELS.map(String), display: v => v },
   redTurns:        { label: 'Red Turns', values: () => TURN_LEVELS.map(String), display: v => v },
-  family:          { label: 'TnD Family', values: () => FAMILIES, display: v => v },
+  reversalPattern: { label: 'Reversal Pattern', values: () => REVERSAL_PATTERNS, display: v => v },
   handTiming:      { label: 'Hand Timing', values: () => ['split','together','quarter'], display: v => v },
   handDirection:   { label: 'Hand Direction', values: () => ['same','opposite'], display: v => v },
-  reversalPattern: { label: 'Reversal Pattern', values: () => REVERSAL_PATTERNS, display: v => v },
-  reversalFamily:  { label: 'Reversal Family', values: () => ['simple'], display: v => v },
   propOrientation: { label: 'Prop Orientation', values: () => PROP_ORIENTATIONS, display: v => v },
   rotationStyle:   { label: 'Rotation Style', values: () => ROTATION_STYLES, display: v => v },
+  letter:          { label: 'Letter', values: () => BASE_LETTERS.map(l => l.letter), display: v => v },
 };
 
 function getVal(entry, axis) {
@@ -450,10 +469,10 @@ function getVal(entry, axis) {
 
 // State
 const state = {
-  rowAxis: 'blueTurns',
-  colAxis: 'redTurns',
+  rowAxis: 'family',
+  colAxis: 'reversalPattern',
   filters: {},
-  activePreset: 'turnMatrix',
+  activePreset: 'familyReversal',
 };
 
 // Initialize filters: all values active for all axes
@@ -687,29 +706,27 @@ function applyPreset(name) {
   initFilters();
 
   switch (name) {
-    case 'turnMatrix':
-      document.getElementById('rowAxis').value = 'blueTurns';
-      document.getElementById('colAxis').value = 'redTurns';
-      break;
     case 'familyReversal':
       document.getElementById('rowAxis').value = 'family';
       document.getElementById('colAxis').value = 'reversalPattern';
       break;
     case 'familyTurns':
       document.getElementById('rowAxis').value = 'family';
-      document.getElementById('colAxis').value = 'blueTurns';
+      document.getElementById('colAxis').value = 'turnPattern';
+      break;
+    case 'turnMatrix':
+      document.getElementById('rowAxis').value = 'blueTurns';
+      document.getElementById('colAxis').value = 'redTurns';
       break;
     case 'reversalTurns':
       document.getElementById('rowAxis').value = 'reversalPattern';
-      document.getElementById('colAxis').value = 'blueTurns';
+      document.getElementById('colAxis').value = 'turnPattern';
       break;
     case 'propHand':
       document.getElementById('rowAxis').value = 'propOrientation';
       document.getElementById('colAxis').value = 'family';
-      // Filter to continuous only + symmetric turns for clean view
       state.filters.reversalPattern = new Set(['continuous']);
-      state.filters.blueTurns = new Set(['0']);
-      state.filters.redTurns = new Set(['0']);
+      state.filters.turnPattern = new Set([turnPatternLabel(0, 0)]);
       break;
   }
   updatePresetButtons();
