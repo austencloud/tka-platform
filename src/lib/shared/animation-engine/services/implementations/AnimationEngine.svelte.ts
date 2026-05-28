@@ -66,6 +66,7 @@ import { GlyphTransitionController } from "./GlyphTransitionController.svelte";
 import { SequenceCache } from "./SequenceCache.svelte";
 import { TrailSettingsSynchronizer } from "./TrailSettingsSynchronizer.svelte";
 import { PropTypeChanger } from "./PropTypeChanger.svelte";
+import { FrameBuilderService } from "./FrameBuilderService";
 import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
 import { FireTipTracker } from "./FireTipTracker";
 import type { FireOverlayConfig } from "../../domain/types/FireTypes";
@@ -260,6 +261,7 @@ export class AnimationEngine {
   // ============================================================================
   // PRIVATE SERVICES
   // ============================================================================
+  private readonly frameBuilderService = new FrameBuilderService();
   private svgGenerator: SVGGenerator | null = null;
   private settingsService: SettingsState | null = null;
   private orchestrator: SequenceAnimationOrchestrator | null = null;
@@ -1467,55 +1469,25 @@ export class AnimationEngine {
   }
 
   private calculateBeatNumber(props: AnimationEngineProps): number {
-    if (!props.sequenceData || !props.stepData) return 0;
-
-    const stepIndex = props.sequenceData.steps?.findIndex(
-      (b) => b === props.stepData
+    return this.frameBuilderService.calculateBeatNumber(
+      props.sequenceData ?? null,
+      props.stepData ?? null
     );
-    if (stepIndex !== undefined && stepIndex >= 0) {
-      return stepIndex + 1;
-    }
-    return 0;
   }
 
   private calculateTurnsTuple(props: AnimationEngineProps): string {
-    if (
-      !props.stepData?.motions?.blue ||
-      !props.stepData.motions?.red
-    ) {
-      return "(s, 0, 0)";
-    }
-    return (
-      this.turnsTupleGenerator?.generateTurnsTuple(props.stepData) ??
-      "(s, 0, 0)"
+    return this.frameBuilderService.calculateTurnsTuple(
+      props.stepData ?? null,
+      this.turnsTupleGenerator ?? null
     );
   }
 
-  /**
-   * Calculate the musical position display string as a continuous decimal.
-   */
   private calculateMusicalPosition(props: AnimationEngineProps): string | null {
-    if (this.orchestrator?.isInitialized()) {
-      const continuousPosition = this.orchestrator.getContinuousMusicalPosition();
-
-      if (continuousPosition <= 0) {
-        return null;
-      }
-
-      return continuousPosition.toFixed(1);
-    }
-
-    if (props.stepData && props.sequenceData) {
-      const stepIndex = props.sequenceData.steps?.findIndex(
-        (b) => b === props.stepData
-      );
-      if (stepIndex !== undefined && stepIndex >= 0) {
-        const stepNumber = stepIndex + 1;
-        return `${stepNumber}.0`;
-      }
-    }
-
-    return null;
+    return this.frameBuilderService.calculateMusicalPosition(
+      props.sequenceData ?? null,
+      props.stepData ?? null,
+      this.orchestrator ?? null
+    );
   }
 
   /**
