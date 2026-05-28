@@ -30,7 +30,7 @@ import { getKeyFromArrow } from "../../../key-generation/services/attribute-key-
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
 import { getPropGeometryRepository } from "../../../prop-geometry/services/prop-geometry-singleton";
-import type { PropGeometryKey } from "../../../prop-geometry/domain/PropGeometryAdjustment";
+import { derivePropGeometryKey } from "../../../prop-geometry/domain/prop-geometry-key-deriver";
 import type {
   PipelineDiagnostics,
   GlobalTierInfo,
@@ -620,45 +620,15 @@ export class ArrowAdjustmentCalculator {
     const repo = getPropGeometryRepository();
     if (!repo?.isInitialized) return null;
 
-    // Need both motions to determine the full scenario
-    const blueMotion = pictographData.motions.blue;
-    const redMotion = pictographData.motions.red;
-    if (!blueMotion || !redMotion) return null;
-
-    // Derive grid mode
-    const gridMode =
-      motionData.gridMode ||
-      _deriveGridMode(blueMotion, redMotion);
-
-    // Derive position type from endPosition (e.g., "beta7" → "beta")
-    const endPosition = pictographData.endPosition;
-    if (!endPosition) return null;
-    const positionType = endPosition.replace(/\d+$/, "");
-
-    // Determine which motion is "ours" and which is "other"
-    const color = arrowColor || motionData.color || "blue";
-    const isBlue = color === "blue";
-    const thisMotion = isBlue ? blueMotion : redMotion;
-    const otherMotion = isBlue ? redMotion : blueMotion;
-
-    const propGeometryKey: PropGeometryKey = {
-      gridMode,
-      propType: thisMotion.propType?.toLowerCase() || "staff",
-      otherPropType: otherMotion.propType?.toLowerCase() || "staff",
-      positionType,
-      endOrientation: thisMotion.endOrientation?.toLowerCase() || "in",
-      otherEndOrientation: otherMotion.endOrientation?.toLowerCase() || "in",
-      motionType: motionData.motionType?.toLowerCase() || "static",
-      turns: String(motionData.turns ?? 0),
-      arrowColor: color,
-    };
+    const propGeometryKey = derivePropGeometryKey(
+      pictographData,
+      motionData,
+      arrowColor
+    );
+    if (!propGeometryKey) return null;
 
     const result = repo.getAdjustmentCascading(propGeometryKey);
-    if (result) {
-      return result.adjustment;
-    }
-
-    return null;
+    return result ? result.adjustment : null;
   }
 
   private async calculateDefaultAdjustment(
