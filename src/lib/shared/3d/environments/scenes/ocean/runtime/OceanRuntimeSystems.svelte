@@ -53,23 +53,38 @@
   normalMap="/textures/terrain/sand/normal.jpg"
   roughnessMap="/textures/terrain/sand/roughness.jpg"
   aoMap="/textures/terrain/sand/ao.jpg"
-  color="#5a8a8a"
-  size={30}
+  color="#7aaa9a"
+  size={40}
   textureRepeat={12}
   normalScale={2.0}
   aoIntensity={0.8}
   receiveShadow
 />
 
-<!-- Lighting -->
-<T.HemisphereLight args={["#3a7090", "#0a1a2a", 1.0]} />
+<!-- Lighting — bright even fill to match Blender reference -->
+<T.AmbientLight intensity={0.8} color="#88bbdd" />
+<T.HemisphereLight args={["#a0d8f0", "#3a6a5a", 3.0]} />
 <T.DirectionalLight
   bind:ref={sunLight}
   position={[10, 30, -20]}
-  intensity={1.5}
-  color="#88bbdd"
+  intensity={5.0}
+  color="#ddeeff"
   castShadow
 />
+<T.DirectionalLight
+  position={[0, -10, 0]}
+  intensity={2.0}
+  color="#ccaa88"
+/>
+<!-- Reef accent lights — vibrant color pools -->
+<T.PointLight position={[-8, 2, -12]} intensity={40} color="#44aacc" distance={25} decay={2} />
+<T.PointLight position={[8, 2, -12]} intensity={40} color="#55cc88" distance={25} decay={2} />
+<T.PointLight position={[0, 4, -6]} intensity={50} color="#7799ee" distance={30} decay={2} />
+<T.PointLight position={[-12, 1, -5]} intensity={30} color="#88bb55" distance={20} decay={2} />
+<T.PointLight position={[12, 1, -5]} intensity={30} color="#dd8855" distance={20} decay={2} />
+<T.PointLight position={[0, 1, -15]} intensity={35} color="#bb66cc" distance={25} decay={2} />
+<T.PointLight position={[-5, 0, -3]} intensity={25} color="#ff9966" distance={18} decay={2} />
+<T.PointLight position={[5, 0, -3]} intensity={25} color="#66ddaa" distance={18} decay={2} />
 
 <!-- Water surface (above everything) -->
 <WaterSurface />

@@ -1,0 +1,3715 @@
+{
+  "total": 169,
+  "skipped": 35,
+  "unmapped": [
+    "Encrusted_Rock",
+    "Mesh_0.001",
+    "Mesh_0.002",
+    "Mesh_0.003",
+    "Mesh_0.004",
+    "Mesh_0.005",
+    "Mesh_0.006",
+    "Mesh_0.007",
+    "Mesh_0.009",
+    "Mesh_0.010",
+    "Mesh_0.011",
+    "Mesh_0.012",
+    "Mesh_0.013",
+    "Mesh_0.014",
+    "Mesh_0.015",
+    "Mesh_0.016",
+    "Mesh_0.017",
+    "Mesh_0.018",
+    "Mesh_0.019",
+    "Mesh_0.020",
+    "Mesh_0.021",
+    "Mesh_0.022",
+    "Mesh_0.023",
+    "Mesh_0.024",
+    "Mesh_0.026",
+    "Mesh_0.027",
+    "Mesh_0.028",
+    "Mesh_0.029",
+    "Mesh_0.030",
+    "Mesh_0.031",
+    "Mesh_0.032",
+    "Mesh_0.033",
+    "Mesh_0.034",
+    "Mesh_0.035",
+    "Mesh_0.036",
+    "Mesh_0.037",
+    "Mesh_0.040",
+    "Mesh_0.041",
+    "Mesh_0.042",
+    "Mesh_0.043",
+    "Mesh_0.045",
+    "Mesh_0.048",
+    "Mesh_0.049",
+    "Mesh_0.052",
+    "Mesh_0.053",
+    "Mesh_0.055",
+    "Mesh_0.056",
+    "Mesh_0.059",
+    "Mesh_0.060",
+    "Mesh_0.061",
+    "Photo_Coral_0_001",
+    "Photo_Coral_1_001",
+    "Photo_Coral_2_001",
+    "Photo_Coral_3_001",
+    "Reef_hero_000_mesh",
+    "Reef_hero_001_mesh",
+    "Reef_hero_002_mesh",
+    "Reef_hero_003_mesh",
+    "Reef_hero_004_mesh",
+    "Reef_hero_005_mesh",
+    "Reef_hero_008_mesh",
+    "Reef_hero_009_mesh",
+    "Reef_hero_010_mesh",
+    "Reef_hero_011_mesh",
+    "Reef_Ledge",
+    "Reef_medium_000_mesh",
+    "Reef_medium_001_mesh",
+    "Reef_medium_002_mesh",
+    "Reef_medium_003_mesh",
+    "Reef_medium_004_mesh",
+    "Reef_medium_005_mesh",
+    "Reef_medium_006_mesh",
+    "Reef_medium_007_mesh",
+    "Reef_medium_008_mesh",
+    "Reef_medium_009_mesh",
+    "Reef_medium_010_mesh",
+    "Reef_medium_011_mesh",
+    "Reef_medium_012_mesh",
+    "Reef_medium_013_mesh",
+    "Reef_medium_014_mesh",
+    "Reef_medium_015_mesh",
+    "Reef_medium_016_mesh",
+    "Reef_medium_017_mesh",
+    "Reef_medium_018_mesh",
+    "Reef_medium_020_mesh",
+    "Reef_medium_021_mesh",
+    "Reef_medium_022_mesh",
+    "Reef_medium_023_mesh",
+    "Reef_medium_024_mesh",
+    "Reef_medium_025_mesh",
+    "Reef_medium_026_mesh",
+    "Reef_medium_027_mesh",
+    "Reef_medium_028_mesh",
+    "Reef_medium_029_mesh",
+    "Reef_Rock_001",
+    "Reef_Rock_002",
+    "Reef_Rock_003",
+    "Reef_Rock_004",
+    "Reef_Rock_005",
+    "Reef_small_000_mesh",
+    "Reef_small_001_mesh",
+    "Reef_small_002_mesh",
+    "Reef_small_003_mesh",
+    "Reef_small_004_mesh",
+    "Reef_small_005_mesh",
+    "Reef_small_006_mesh",
+    "Reef_small_007_mesh",
+    "Reef_small_008_mesh",
+    "Reef_small_009_mesh",
+    "Reef_small_010_mesh",
+    "Reef_small_011_mesh",
+    "Reef_small_012_mesh",
+    "Reef_small_013_mesh",
+    "Reef_small_014_mesh",
+    "Reef_small_015_mesh",
+    "Reef_small_016_mesh",
+    "Reef_small_017_mesh",
+    "Reef_small_018_mesh",
+    "Reef_small_019_mesh",
+    "Reef_small_020_mesh",
+    "Reef_small_021_mesh",
+    "Reef_small_022_mesh",
+    "Reef_small_023_mesh",
+    "Reef_small_024_mesh",
+    "Reef_small_025_mesh",
+    "Reef_small_026_mesh",
+    "Reef_small_027_mesh",
+    "Reef_small_028_mesh",
+    "Reef_small_029_mesh",
+    "Reef_small_030_mesh",
+    "Reef_small_031_mesh",
+    "Reef_small_032_mesh",
+    "Reef_small_033_mesh",
+    "Reef_small_034_mesh",
+    "Reef_small_035_mesh",
+    "Reef_small_036_mesh",
+    "Reef_small_037_mesh",
+    "Reef_small_038_mesh",
+    "Reef_small_039_mesh",
+    "Reef_small_040_mesh",
+    "Reef_small_041_mesh",
+    "Reef_small_042_mesh",
+    "Reef_small_043_mesh",
+    "Reef_small_044_mesh",
+    "Shale_Rock_001",
+    "Shale_Rock_002",
+    "Shale_Rock_003",
+    "Shale_Rock_004",
+    "Shale_Rock_005",
+    "Shale_Rock_006",
+    "Shale_Rock_007",
+    "Shale_Rock_008",
+    "Shale_Rock_009",
+    "Shale_Rock_010",
+    "Shale_Rock_011",
+    "Shale_Rock_012",
+    "Shale_Rock_013",
+    "Shale_Rock_014"
+  ],
+  "placements": [
+    {
+      "blender_name": "Anemone_001",
+      "objectKey": "anemone",
+      "position": [
+        9.6376,
+        -0.1791,
+        -16.0018
+      ],
+      "rotation": [
+        -0.408329,
+        -0.577293,
+        -0.577293,
+        0.408329
+      ],
+      "scale": [
+        1.2687,
+        1.2687,
+        1.2687
+      ],
+      "world_extent": 1.2686529159545898
+    },
+    {
+      "blender_name": "Anemone_002",
+      "objectKey": "anemone",
+      "position": [
+        1.7533,
+        -0.1113,
+        -14.5923
+      ],
+      "rotation": [
+        -0.496441,
+        0.503533,
+        0.503533,
+        0.496441
+      ],
+      "scale": [
+        0.8313,
+        0.8313,
+        0.8313
+      ],
+      "world_extent": 0.8312931060791016
+    },
+    {
+      "blender_name": "Anemone_003",
+      "objectKey": "anemone",
+      "position": [
+        -6.6762,
+        -0.3271,
+        -18.1588
+      ],
+      "rotation": [
+        -0.154883,
+        0.689936,
+        0.689936,
+        0.154883
+      ],
+      "scale": [
+        0.9255,
+        0.9255,
+        0.9255
+      ],
+      "world_extent": 0.9254636764526367
+    },
+    {
+      "blender_name": "Anemone_004",
+      "objectKey": "anemone",
+      "position": [
+        -11.7427,
+        -0.244,
+        -12.8144
+      ],
+      "rotation": [
+        -0.586166,
+        0.395486,
+        0.395486,
+        0.586166
+      ],
+      "scale": [
+        0.7502,
+        0.7502,
+        0.7502
+      ],
+      "world_extent": 0.75018310546875
+    },
+    {
+      "blender_name": "Anemone_005",
+      "objectKey": "anemone",
+      "position": [
+        -16.4236,
+        -0.4532,
+        -6.6531
+      ],
+      "rotation": [
+        -0.07036,
+        -0.703598,
+        -0.703598,
+        0.07036
+      ],
+      "scale": [
+        1.1034,
+        1.1034,
+        1.1034
+      ],
+      "world_extent": 1.1034345626831055
+    },
+    {
+      "blender_name": "Anemone_006",
+      "objectKey": "anemone",
+      "position": [
+        3.918,
+        -0.2968,
+        -17.5479
+      ],
+      "rotation": [
+        -0.290466,
+        0.644693,
+        0.644693,
+        0.290466
+      ],
+      "scale": [
+        0.8661,
+        0.8661,
+        0.8661
+      ],
+      "world_extent": 0.8661422729492188
+    },
+    {
+      "blender_name": "Anemone_007",
+      "objectKey": "anemone",
+      "position": [
+        -8.1147,
+        -0.1136,
+        16.514
+      ],
+      "rotation": [
+        -0.275979,
+        -0.651027,
+        -0.651027,
+        0.275979
+      ],
+      "scale": [
+        1.091,
+        1.091,
+        1.091
+      ],
+      "world_extent": 1.0910186767578125
+    },
+    {
+      "blender_name": "Anemone_008",
+      "objectKey": "anemone",
+      "position": [
+        12.6229,
+        -0.1373,
+        -14.0667
+      ],
+      "rotation": [
+        -0.261394,
+        0.657018,
+        0.657018,
+        0.261394
+      ],
+      "scale": [
+        1.2587,
+        1.2587,
+        1.2587
+      ],
+      "world_extent": 1.2587051391601562
+    },
+    {
+      "blender_name": "Anemone_009",
+      "objectKey": "anemone",
+      "position": [
+        16.4926,
+        -0.0993,
+        9.0241
+      ],
+      "rotation": [
+        -0.035311,
+        -0.706225,
+        -0.706225,
+        0.035311
+      ],
+      "scale": [
+        1.0926,
+        1.0926,
+        1.0926
+      ],
+      "world_extent": 1.0925712585449219
+    },
+    {
+      "blender_name": "src_Anemone",
+      "objectKey": "anemone",
+      "position": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "world_extent": 2.0
+    },
+    {
+      "blender_name": "Basalt_Columns",
+      "objectKey": "meshy-basalt-pinnacle",
+      "position": [
+        6.7619,
+        3.8701,
+        -14.5009
+      ],
+      "rotation": [
+        -0.689936,
+        0.154884,
+        0.154884,
+        0.689936
+      ],
+      "scale": [
+        11.152,
+        11.152,
+        11.152
+      ],
+      "world_extent": 11.152022361755371
+    },
+    {
+      "blender_name": "Basalt_Pinnacle",
+      "objectKey": "meshy-basalt-pinnacle",
+      "position": [
+        -9.464,
+        3.3731,
+        -13.516
+      ],
+      "rotation": [
+        -0.644693,
+        0.290466,
+        0.290466,
+        0.644693
+      ],
+      "scale": [
+        10.6824,
+        10.6824,
+        10.6824
+      ],
+      "world_extent": 10.682401657104492
+    },
+    {
+      "blender_name": "Living_Rock",
+      "objectKey": "meshy-coral-encrusted-rock",
+      "position": [
+        -14.7347,
+        0.6376,
+        -1.1127
+      ],
+      "rotation": [
+        -0.632456,
+        -0.316228,
+        -0.316228,
+        0.632456
+      ],
+      "scale": [
+        6.4428,
+        6.4428,
+        6.4428
+      ],
+      "world_extent": 6.442841529846191
+    },
+    {
+      "blender_name": "Coral_Mountain",
+      "objectKey": "meshy-coral-mountain",
+      "position": [
+        -12.9904,
+        1.9597,
+        -7.5
+      ],
+      "rotation": [
+        -0.281942,
+        0.648466,
+        0.648466,
+        0.281942
+      ],
+      "scale": [
+        7.8929,
+        7.8929,
+        7.8929
+      ],
+      "world_extent": 7.892871856689453
+    },
+    {
+      "blender_name": "Neon_Summit_001",
+      "objectKey": "meshy-neon-coral-summit",
+      "position": [
+        11.4907,
+        0.7238,
+        9.6418
+      ],
+      "rotation": [
+        -0.676896,
+        0.204479,
+        0.204479,
+        0.676896
+      ],
+      "scale": [
+        6.9306,
+        6.9306,
+        6.9306
+      ],
+      "world_extent": 6.930635452270508
+    },
+    {
+      "blender_name": "Sea_Grass_000",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        9.3953,
+        0.273,
+        -9.6942
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.0329,
+        1.0329,
+        1.0329
+      ],
+      "world_extent": 1.0329103469848633
+    },
+    {
+      "blender_name": "Sea_Grass_001",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        8.8909,
+        0.0911,
+        -16.383
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.7951,
+        1.7951,
+        1.7951
+      ],
+      "world_extent": 1.7951478958129883
+    },
+    {
+      "blender_name": "Sea_Grass_002",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        15.7349,
+        0.1585,
+        8.9455
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.7915,
+        1.7915,
+        1.7915
+      ],
+      "world_extent": 1.7914609909057617
+    },
+    {
+      "blender_name": "Sea_Grass_003",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        12.4239,
+        0.0,
+        -13.9761
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.1404,
+        1.1404,
+        1.1404
+      ],
+      "world_extent": 1.140390396118164
+    },
+    {
+      "blender_name": "Sea_Grass_004",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -15.9862,
+        -0.2806,
+        -10.8847
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.5021,
+        1.5021,
+        1.5021
+      ],
+      "world_extent": 1.5020675659179688
+    },
+    {
+      "blender_name": "Sea_Grass_005",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -4.344,
+        0.1899,
+        -17.6946
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.0776,
+        2.0776,
+        2.0776
+      ],
+      "world_extent": 2.077606678009033
+    },
+    {
+      "blender_name": "Sea_Grass_006",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        12.3678,
+        0.0107,
+        -13.7582
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.1277,
+        1.1277,
+        1.1277
+      ],
+      "world_extent": 1.127669334411621
+    },
+    {
+      "blender_name": "Sea_Grass_007",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -16.6919,
+        -0.1095,
+        -6.2395
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.9229,
+        1.9229,
+        1.9229
+      ],
+      "world_extent": 1.9229145050048828
+    },
+    {
+      "blender_name": "Sea_Grass_008",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -11.9757,
+        -0.0437,
+        -12.9519
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.1927,
+        1.1927,
+        1.1927
+      ],
+      "world_extent": 1.192683219909668
+    },
+    {
+      "blender_name": "Sea_Grass_009",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        8.4239,
+        0.1885,
+        16.7807
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.3066,
+        1.3066,
+        1.3066
+      ],
+      "world_extent": 1.3065605163574219
+    },
+    {
+      "blender_name": "Sea_Grass_010",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -18.3085,
+        -0.2046,
+        -4.7712
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.6942,
+        1.6942,
+        1.6942
+      ],
+      "world_extent": 1.6941967010498047
+    },
+    {
+      "blender_name": "Sea_Grass_011",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -16.9351,
+        -0.0581,
+        -3.5721
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.6955,
+        1.6955,
+        1.6955
+      ],
+      "world_extent": 1.6955184936523438
+    },
+    {
+      "blender_name": "Sea_Grass_012",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -17.0894,
+        -0.1807,
+        -4.6852
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.4729,
+        1.4729,
+        1.4729
+      ],
+      "world_extent": 1.4729080200195312
+    },
+    {
+      "blender_name": "Sea_Grass_013",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        5.3847,
+        -0.2059,
+        -18.4503
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.1071,
+        1.1071,
+        1.1071
+      ],
+      "world_extent": 1.10713529586792
+    },
+    {
+      "blender_name": "Sea_Grass_014",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        14.2593,
+        0.1959,
+        -13.1541
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.0953,
+        2.0953,
+        2.0953
+      ],
+      "world_extent": 2.0953168869018555
+    },
+    {
+      "blender_name": "Sea_Grass_015",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -3.5665,
+        0.017,
+        -18.8048
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.4023,
+        1.4023,
+        1.4023
+      ],
+      "world_extent": 1.4022595882415771
+    },
+    {
+      "blender_name": "Sea_Grass_016",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        17.9527,
+        0.101,
+        -0.9913
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.4122,
+        1.4122,
+        1.4122
+      ],
+      "world_extent": 1.4122142791748047
+    },
+    {
+      "blender_name": "Sea_Grass_017",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        16.6576,
+        0.3526,
+        8.0023
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.1639,
+        2.1639,
+        2.1639
+      ],
+      "world_extent": 2.1639442443847656
+    },
+    {
+      "blender_name": "Sea_Grass_018",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -11.0342,
+        0.2815,
+        8.923
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.74,
+        1.74,
+        1.74
+      ],
+      "world_extent": 1.7399940490722656
+    },
+    {
+      "blender_name": "Sea_Grass_019",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -15.1285,
+        0.0407,
+        11.8224
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.0141,
+        1.0141,
+        1.0141
+      ],
+      "world_extent": 1.0140581130981445
+    },
+    {
+      "blender_name": "Sea_Grass_020",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        4.985,
+        0.0598,
+        -17.4
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.6995,
+        1.6995,
+        1.6995
+      ],
+      "world_extent": 1.6995177268981934
+    },
+    {
+      "blender_name": "Sea_Grass_021",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -10.2373,
+        0.2639,
+        11.1649
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.5222,
+        1.5222,
+        1.5222
+      ],
+      "world_extent": 1.5221738815307617
+    },
+    {
+      "blender_name": "Sea_Grass_022",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        -12.3162,
+        0.1716,
+        -12.9078
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.9873,
+        1.9873,
+        1.9873
+      ],
+      "world_extent": 1.9873018264770508
+    },
+    {
+      "blender_name": "Sea_Grass_023",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        6.3327,
+        0.105,
+        -17.2972
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.9068,
+        1.9068,
+        1.9068
+      ],
+      "world_extent": 1.9067749977111816
+    },
+    {
+      "blender_name": "Sea_Grass_024",
+      "objectKey": "meshy-sea-grass",
+      "position": [
+        10.0667,
+        0.138,
+        -15.0663
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.5852,
+        1.5852,
+        1.5852
+      ],
+      "world_extent": 1.5852394104003906
+    },
+    {
+      "blender_name": "Coral_Citadel_001",
+      "objectKey": "meshy-submerged-coral-citadel",
+      "position": [
+        -1.133,
+        1.5242,
+        -12.9505
+      ],
+      "rotation": [
+        -0.347003,
+        -0.616108,
+        -0.616108,
+        0.347003
+      ],
+      "scale": [
+        10.6736,
+        10.6736,
+        10.6736
+      ],
+      "world_extent": 10.673640251159668
+    },
+    {
+      "blender_name": "Sunlit_Arch_001",
+      "objectKey": "meshy-sunlit-coral-arch",
+      "position": [
+        -10.3416,
+        2.7486,
+        -8.6776
+      ],
+      "rotation": [
+        -0.020744,
+        0.706802,
+        0.706802,
+        0.020744
+      ],
+      "scale": [
+        6.0,
+        6.0,
+        6.0
+      ],
+      "world_extent": 6.0
+    },
+    {
+      "blender_name": "Tall_Kelp_000",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        17.0338,
+        0.2148,
+        -9.0045
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.7992,
+        1.7992,
+        1.7992
+      ],
+      "world_extent": 1.7992489337921143
+    },
+    {
+      "blender_name": "Tall_Kelp_001",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -5.4551,
+        0.6503,
+        -18.2835
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.1874,
+        2.1874,
+        2.1874
+      ],
+      "world_extent": 2.1873847246170044
+    },
+    {
+      "blender_name": "Tall_Kelp_002",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        12.5196,
+        0.4575,
+        -12.8288
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.4656,
+        1.4656,
+        1.4656
+      ],
+      "world_extent": 1.4655914306640625
+    },
+    {
+      "blender_name": "Tall_Kelp_003",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -19.6848,
+        0.5827,
+        1.2741
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.4088,
+        1.4088,
+        1.4088
+      ],
+      "world_extent": 1.4088449478149414
+    },
+    {
+      "blender_name": "Tall_Kelp_004",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        5.5533,
+        0.4091,
+        -16.6588
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.5476,
+        1.5476,
+        1.5476
+      ],
+      "world_extent": 1.5475759506225586
+    },
+    {
+      "blender_name": "Tall_Kelp_005",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        0.3431,
+        0.0985,
+        -19.2369
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.1545,
+        1.1545,
+        1.1545
+      ],
+      "world_extent": 1.1545297503471375
+    },
+    {
+      "blender_name": "Tall_Kelp_006",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -8.1761,
+        0.9455,
+        -16.5506
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.6361,
+        2.6361,
+        2.6361
+      ],
+      "world_extent": 2.6360888481140137
+    },
+    {
+      "blender_name": "Tall_Kelp_007",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        15.0287,
+        0.9731,
+        9.0049
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.7021,
+        2.7021,
+        2.7021
+      ],
+      "world_extent": 2.702099084854126
+    },
+    {
+      "blender_name": "Tall_Kelp_008",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -18.6927,
+        0.2652,
+        -0.5232
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.1801,
+        1.1801,
+        1.1801
+      ],
+      "world_extent": 1.180098831653595
+    },
+    {
+      "blender_name": "Tall_Kelp_009",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        14.8052,
+        0.1522,
+        10.8579
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.1737,
+        1.1737,
+        1.1737
+      ],
+      "world_extent": 1.173682153224945
+    },
+    {
+      "blender_name": "Tall_Kelp_010",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -11.5852,
+        1.0689,
+        14.9582
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.6077,
+        2.6077,
+        2.6077
+      ],
+      "world_extent": 2.607743740081787
+    },
+    {
+      "blender_name": "Tall_Kelp_011",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -17.2137,
+        0.4497,
+        -3.291
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.9806,
+        1.9806,
+        1.9806
+      ],
+      "world_extent": 1.980588674545288
+    },
+    {
+      "blender_name": "Tall_Kelp_012",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        7.7891,
+        0.916,
+        -16.0053
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.4867,
+        2.4867,
+        2.4867
+      ],
+      "world_extent": 2.4867167472839355
+    },
+    {
+      "blender_name": "Tall_Kelp_013",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        14.4056,
+        0.5184,
+        10.3531
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.8761,
+        1.8761,
+        1.8761
+      ],
+      "world_extent": 1.8761260509490967
+    },
+    {
+      "blender_name": "Tall_Kelp_014",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -8.1385,
+        0.838,
+        -12.9015
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.1824,
+        2.1824,
+        2.1824
+      ],
+      "world_extent": 2.182449221611023
+    },
+    {
+      "blender_name": "Tall_Kelp_015",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -11.9389,
+        0.4014,
+        -14.0796
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.6134,
+        1.6134,
+        1.6134
+      ],
+      "world_extent": 1.613433837890625
+    },
+    {
+      "blender_name": "Tall_Kelp_016",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -5.4135,
+        0.1972,
+        -17.1093
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.2286,
+        1.2286,
+        1.2286
+      ],
+      "world_extent": 1.228561818599701
+    },
+    {
+      "blender_name": "Tall_Kelp_017",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -14.3518,
+        0.5397,
+        -12.2671
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.0698,
+        2.0698,
+        2.0698
+      ],
+      "world_extent": 2.0697505474090576
+    },
+    {
+      "blender_name": "Tall_Kelp_018",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -3.0061,
+        0.2871,
+        -19.024
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.3479,
+        1.3479,
+        1.3479
+      ],
+      "world_extent": 1.3478698134422302
+    },
+    {
+      "blender_name": "Tall_Kelp_019",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -17.2277,
+        0.3885,
+        -8.8764
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.4012,
+        2.4012,
+        2.4012
+      ],
+      "world_extent": 2.4011930227279663
+    },
+    {
+      "blender_name": "Tall_Kelp_020",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -6.3919,
+        0.8894,
+        -15.2879
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.46,
+        2.46,
+        2.46
+      ],
+      "world_extent": 2.4599838256835938
+    },
+    {
+      "blender_name": "Tall_Kelp_021",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -9.3149,
+        0.9232,
+        -14.8622
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.4725,
+        2.4725,
+        2.4725
+      ],
+      "world_extent": 2.4725379943847656
+    },
+    {
+      "blender_name": "Tall_Kelp_022",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        4.524,
+        0.5955,
+        -18.3918
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.1544,
+        2.1544,
+        2.1544
+      ],
+      "world_extent": 2.1544387340545654
+    },
+    {
+      "blender_name": "Tall_Kelp_023",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        14.0654,
+        0.8857,
+        -12.2316
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.5333,
+        2.5333,
+        2.5333
+      ],
+      "world_extent": 2.5332961082458496
+    },
+    {
+      "blender_name": "Tall_Kelp_024",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -17.8691,
+        0.2585,
+        -5.8426
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.9382,
+        1.9382,
+        1.9382
+      ],
+      "world_extent": 1.9381507635116577
+    },
+    {
+      "blender_name": "Tall_Kelp_025",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        18.2522,
+        0.4108,
+        -4.4805
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.0299,
+        2.0299,
+        2.0299
+      ],
+      "world_extent": 2.029861092567444
+    },
+    {
+      "blender_name": "Tall_Kelp_026",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        8.3676,
+        1.0177,
+        15.5063
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.4954,
+        2.4954,
+        2.4954
+      ],
+      "world_extent": 2.4954376220703125
+    },
+    {
+      "blender_name": "Tall_Kelp_027",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        -17.2399,
+        0.0616,
+        -4.8899
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.36,
+        1.36,
+        1.36
+      ],
+      "world_extent": 1.359979510307312
+    },
+    {
+      "blender_name": "Tall_Kelp_028",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        19.6244,
+        0.2047,
+        -1.583
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.1857,
+        1.1857,
+        1.1857
+      ],
+      "world_extent": 1.1856676936149597
+    },
+    {
+      "blender_name": "Tall_Kelp_029",
+      "objectKey": "meshy-tall-kelp",
+      "position": [
+        17.642,
+        0.3467,
+        -6.2009
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.0392,
+        2.0392,
+        2.0392
+      ],
+      "world_extent": 2.0391944646835327
+    },
+    {
+      "blender_name": "Underwater_Arch_001",
+      "objectKey": "meshy-underwater-coral-arch",
+      "position": [
+        0.0,
+        1.4973,
+        -18.0
+      ],
+      "rotation": [
+        -0.134586,
+        -0.694181,
+        -0.694181,
+        0.134586
+      ],
+      "scale": [
+        8.8789,
+        8.8789,
+        8.8789
+      ],
+      "world_extent": 8.878857135772705
+    },
+    {
+      "blender_name": "Rock_Table_001",
+      "objectKey": "meshy-underwater-rock-table",
+      "position": [
+        15.6391,
+        0.4789,
+        7.5459
+      ],
+      "rotation": [
+        -0.225722,
+        0.670112,
+        0.670112,
+        0.225722
+      ],
+      "scale": [
+        4.6093,
+        4.6093,
+        4.6093
+      ],
+      "world_extent": 4.60933780670166
+    },
+    {
+      "blender_name": "PH_boulder_01_000",
+      "objectKey": "ph-boulder-01",
+      "position": [
+        -13.1759,
+        -0.3503,
+        -9.0785
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        3.4276,
+        3.4276,
+        3.4276
+      ],
+      "world_extent": 3.427570343017578
+    },
+    {
+      "blender_name": "PH_boulder_01_001",
+      "objectKey": "ph-boulder-01",
+      "position": [
+        1.0241,
+        -0.411,
+        16.4797
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        4.6243,
+        4.6243,
+        4.6243
+      ],
+      "world_extent": 4.624271392822266
+    },
+    {
+      "blender_name": "PH_boulder_01_002",
+      "objectKey": "ph-boulder-01",
+      "position": [
+        -22.6984,
+        -0.0171,
+        5.62
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        3.9031,
+        3.9031,
+        3.9031
+      ],
+      "world_extent": 3.9031126499176025
+    },
+    {
+      "blender_name": "PH_boulder_01_003",
+      "objectKey": "ph-boulder-01",
+      "position": [
+        10.2175,
+        -0.216,
+        14.0693
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        4.1971,
+        4.1971,
+        4.1971
+      ],
+      "world_extent": 4.1970930099487305
+    },
+    {
+      "blender_name": "PH_boulder_01_template",
+      "objectKey": "ph-boulder-01",
+      "position": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        1.8303,
+        1.8303,
+        1.8303
+      ],
+      "world_extent": 1.8303342461585999
+    },
+    {
+      "blender_name": "PH_coast_rocks_05_000",
+      "objectKey": "ph-coast-rocks-05",
+      "position": [
+        -14.6518,
+        -0.207,
+        15.9394
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        9.6951,
+        9.6951,
+        9.6951
+      ],
+      "world_extent": 9.695146560668945
+    },
+    {
+      "blender_name": "PH_coast_rocks_05_001",
+      "objectKey": "ph-coast-rocks-05",
+      "position": [
+        21.9072,
+        0.0579,
+        1.1268
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        9.4687,
+        9.4687,
+        9.4687
+      ],
+      "world_extent": 9.46872329711914
+    },
+    {
+      "blender_name": "PH_coast_rocks_05_template",
+      "objectKey": "ph-coast-rocks-05",
+      "position": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        4.0387,
+        4.0387,
+        4.0387
+      ],
+      "world_extent": 4.038686275482178
+    },
+    {
+      "blender_name": "PH_rock_07_000",
+      "objectKey": "ph-rock-07",
+      "position": [
+        16.0193,
+        -0.3447,
+        -0.7675
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.577,
+        0.577,
+        0.577
+      ],
+      "world_extent": 0.576967716217041
+    },
+    {
+      "blender_name": "PH_rock_07_001",
+      "objectKey": "ph-rock-07",
+      "position": [
+        -22.3528,
+        -0.8589,
+        -5.4279
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.7895,
+        0.7895,
+        0.7895
+      ],
+      "world_extent": 0.7895040512084961
+    },
+    {
+      "blender_name": "PH_rock_07_002",
+      "objectKey": "ph-rock-07",
+      "position": [
+        5.1854,
+        -0.2481,
+        19.2686
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.7737,
+        0.7737,
+        0.7737
+      ],
+      "world_extent": 0.7737464904785156
+    },
+    {
+      "blender_name": "PH_rock_07_003",
+      "objectKey": "ph-rock-07",
+      "position": [
+        18.5368,
+        -0.4582,
+        -2.7338
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.3593,
+        0.3593,
+        0.3593
+      ],
+      "world_extent": 0.3592674732208252
+    },
+    {
+      "blender_name": "PH_rock_07_004",
+      "objectKey": "ph-rock-07",
+      "position": [
+        -5.1588,
+        -0.2702,
+        -13.0758
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.5717,
+        0.5717,
+        0.5717
+      ],
+      "world_extent": 0.5717267990112305
+    },
+    {
+      "blender_name": "PH_rock_07_005",
+      "objectKey": "ph-rock-07",
+      "position": [
+        6.655,
+        -0.8656,
+        -20.8351
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.4219,
+        0.4219,
+        0.4219
+      ],
+      "world_extent": 0.42185401916503906
+    },
+    {
+      "blender_name": "PH_rock_07_template",
+      "objectKey": "ph-rock-07",
+      "position": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.3203,
+        0.3203,
+        0.3203
+      ],
+      "world_extent": 0.3202769607305527
+    },
+    {
+      "blender_name": "PH_sand_rocks_small_01_000",
+      "objectKey": "ph-sand-rocks",
+      "position": [
+        -18.9296,
+        -0.5873,
+        14.546
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        5.1264,
+        5.1264,
+        5.1264
+      ],
+      "world_extent": 5.126438140869141
+    },
+    {
+      "blender_name": "PH_sand_rocks_small_01_001",
+      "objectKey": "ph-sand-rocks",
+      "position": [
+        -13.735,
+        -0.2241,
+        2.7768
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        5.8786,
+        5.8786,
+        5.8786
+      ],
+      "world_extent": 5.878597259521484
+    },
+    {
+      "blender_name": "PH_sand_rocks_small_01_002",
+      "objectKey": "ph-sand-rocks",
+      "position": [
+        -1.2988,
+        -0.3309,
+        18.635
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        5.7086,
+        5.7086,
+        5.7086
+      ],
+      "world_extent": 5.708580017089844
+    },
+    {
+      "blender_name": "PH_sand_rocks_small_01_template",
+      "objectKey": "ph-sand-rocks",
+      "position": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        4.6266,
+        4.6266,
+        4.6266
+      ],
+      "world_extent": 4.6265928745269775
+    },
+    {
+      "blender_name": "PH_stone_01_000",
+      "objectKey": "ph-stone-01",
+      "position": [
+        -7.8663,
+        -0.6646,
+        21.8491
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.2003,
+        0.2003,
+        0.2003
+      ],
+      "world_extent": 0.20031309127807617
+    },
+    {
+      "blender_name": "PH_stone_01_001",
+      "objectKey": "ph-stone-01",
+      "position": [
+        12.6859,
+        -0.1379,
+        -8.7953
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.0995,
+        0.0995,
+        0.0995
+      ],
+      "world_extent": 0.09952259063720703
+    },
+    {
+      "blender_name": "PH_stone_01_002",
+      "objectKey": "ph-stone-01",
+      "position": [
+        16.4641,
+        -0.5142,
+        -14.927
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.0841,
+        0.0841,
+        0.0841
+      ],
+      "world_extent": 0.08406257629394531
+    },
+    {
+      "blender_name": "PH_stone_01_003",
+      "objectKey": "ph-stone-01",
+      "position": [
+        -17.9052,
+        -0.8122,
+        -13.1641
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.1342,
+        0.1342,
+        0.1342
+      ],
+      "world_extent": 0.1342449188232422
+    },
+    {
+      "blender_name": "PH_stone_01_004",
+      "objectKey": "ph-stone-01",
+      "position": [
+        -10.2846,
+        -0.2698,
+        -10.8181
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.209,
+        0.209,
+        0.209
+      ],
+      "world_extent": 0.20899391174316406
+    },
+    {
+      "blender_name": "PH_stone_01_005",
+      "objectKey": "ph-stone-01",
+      "position": [
+        -8.4591,
+        -0.6078,
+        -21.1105
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.1055,
+        0.1055,
+        0.1055
+      ],
+      "world_extent": 0.10553741455078125
+    },
+    {
+      "blender_name": "PH_stone_01_006",
+      "objectKey": "ph-stone-01",
+      "position": [
+        -21.8566,
+        -1.062,
+        -9.0025
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.1473,
+        0.1473,
+        0.1473
+      ],
+      "world_extent": 0.14732742309570312
+    },
+    {
+      "blender_name": "PH_stone_01_007",
+      "objectKey": "ph-stone-01",
+      "position": [
+        18.9881,
+        -0.5513,
+        12.5232
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.1517,
+        0.1517,
+        0.1517
+      ],
+      "world_extent": 0.1517467498779297
+    },
+    {
+      "blender_name": "PH_stone_01_template",
+      "objectKey": "ph-stone-01",
+      "position": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        0.1469,
+        0.1469,
+        0.1469
+      ],
+      "world_extent": 0.14686474204063416
+    },
+    {
+      "blender_name": "Volcanic_Rock_001",
+      "objectKey": "rock-0",
+      "position": [
+        2.7147,
+        0.2328,
+        -15.1777
+      ],
+      "rotation": [
+        -0.403596,
+        -0.580612,
+        -0.580612,
+        0.403596
+      ],
+      "scale": [
+        1.5404,
+        1.5404,
+        1.5404
+      ],
+      "world_extent": 1.5403577089309692
+    },
+    {
+      "blender_name": "Volcanic_Rock_002",
+      "objectKey": "rock-0",
+      "position": [
+        18.0355,
+        0.4524,
+        6.643
+      ],
+      "rotation": [
+        -0.240513,
+        0.664946,
+        0.664946,
+        0.240513
+      ],
+      "scale": [
+        1.9288,
+        1.9288,
+        1.9288
+      ],
+      "world_extent": 1.9288291931152344
+    },
+    {
+      "blender_name": "Volcanic_Rock_003",
+      "objectKey": "rock-0",
+      "position": [
+        -14.6189,
+        -0.0507,
+        -11.725
+      ],
+      "rotation": [
+        -0.642024,
+        0.296319,
+        0.296319,
+        0.642024
+      ],
+      "scale": [
+        1.4377,
+        1.4377,
+        1.4377
+      ],
+      "world_extent": 1.4377307891845703
+    },
+    {
+      "blender_name": "Volcanic_Rock_004",
+      "objectKey": "rock-0",
+      "position": [
+        1.6675,
+        0.471,
+        -18.1034
+      ],
+      "rotation": [
+        -0.684731,
+        -0.176477,
+        -0.176477,
+        0.684731
+      ],
+      "scale": [
+        2.6861,
+        2.6861,
+        2.6861
+      ],
+      "world_extent": 2.6861114501953125
+    },
+    {
+      "blender_name": "Volcanic_Rock_005",
+      "objectKey": "rock-0",
+      "position": [
+        -18.1484,
+        0.1767,
+        -0.648
+      ],
+      "rotation": [
+        -0.616108,
+        0.347003,
+        0.347003,
+        0.616108
+      ],
+      "scale": [
+        1.564,
+        1.564,
+        1.564
+      ],
+      "world_extent": 1.5640144348144531
+    },
+    {
+      "blender_name": "Volcanic_Rock_006",
+      "objectKey": "rock-0",
+      "position": [
+        -15.6839,
+        0.5361,
+        10.8305
+      ],
+      "rotation": [
+        -0.706542,
+        0.028262,
+        0.028262,
+        0.706542
+      ],
+      "scale": [
+        1.731,
+        1.731,
+        1.731
+      ],
+      "world_extent": 1.730966567993164
+    },
+    {
+      "blender_name": "Volcanic_Rock_007",
+      "objectKey": "rock-0",
+      "position": [
+        -7.3123,
+        0.4124,
+        -16.4092
+      ],
+      "rotation": [
+        -0.432157,
+        -0.559679,
+        -0.559679,
+        0.432157
+      ],
+      "scale": [
+        2.0499,
+        2.0499,
+        2.0499
+      ],
+      "world_extent": 2.049947738647461
+    },
+    {
+      "blender_name": "Volcanic_Rock_008",
+      "objectKey": "rock-0",
+      "position": [
+        7.0011,
+        0.3816,
+        -17.7276
+      ],
+      "rotation": [
+        -0.648466,
+        -0.281942,
+        -0.281942,
+        0.648466
+      ],
+      "scale": [
+        2.6762,
+        2.6762,
+        2.6762
+      ],
+      "world_extent": 2.6761598587036133
+    },
+    {
+      "blender_name": "Volcanic_Rock_009",
+      "objectKey": "rock-0",
+      "position": [
+        16.2042,
+        0.1449,
+        10.6669
+      ],
+      "rotation": [
+        -0.316228,
+        0.632456,
+        0.632456,
+        0.316228
+      ],
+      "scale": [
+        1.6343,
+        1.6343,
+        1.6343
+      ],
+      "world_extent": 1.634322166442871
+    },
+    {
+      "blender_name": "Volcanic_Rock_010",
+      "objectKey": "rock-0",
+      "position": [
+        5.7151,
+        0.1646,
+        -17.0897
+      ],
+      "rotation": [
+        -0.635254,
+        -0.310569,
+        -0.310569,
+        0.635254
+      ],
+      "scale": [
+        1.6737,
+        1.6737,
+        1.6737
+      ],
+      "world_extent": 1.673727035522461
+    },
+    {
+      "blender_name": "Volcanic_Rock_011",
+      "objectKey": "rock-0",
+      "position": [
+        8.7085,
+        0.4767,
+        -17.3356
+      ],
+      "rotation": [
+        -0.09901,
+        0.700141,
+        0.700141,
+        0.09901
+      ],
+      "scale": [
+        2.6562,
+        2.6562,
+        2.6562
+      ],
+      "world_extent": 2.6562271118164062
+    },
+    {
+      "blender_name": "Sea_Urchin_001",
+      "objectKey": "sea-urchin",
+      "position": [
+        1.5893,
+        -0.0243,
+        19.8061
+      ],
+      "rotation": [
+        -0.176477,
+        -0.684731,
+        -0.684731,
+        0.176477
+      ],
+      "scale": [
+        0.5885,
+        0.5885,
+        0.5885
+      ],
+      "world_extent": 0.5885426998138428
+    },
+    {
+      "blender_name": "Sea_Urchin_002",
+      "objectKey": "sea-urchin",
+      "position": [
+        -10.7081,
+        -0.0535,
+        -14.1437
+      ],
+      "rotation": [
+        -0.662662,
+        0.246736,
+        0.246736,
+        0.662662
+      ],
+      "scale": [
+        0.8844,
+        0.8844,
+        0.8844
+      ],
+      "world_extent": 0.8843746185302734
+    },
+    {
+      "blender_name": "Sea_Urchin_003",
+      "objectKey": "sea-urchin",
+      "position": [
+        3.3604,
+        -0.3328,
+        15.029
+      ],
+      "rotation": [
+        -0.524177,
+        -0.474593,
+        -0.474593,
+        0.524177
+      ],
+      "scale": [
+        0.3705,
+        0.3705,
+        0.3705
+      ],
+      "world_extent": 0.3705272674560547
+    },
+    {
+      "blender_name": "Sea_Urchin_004",
+      "objectKey": "sea-urchin",
+      "position": [
+        15.4681,
+        -0.2338,
+        -10.0535
+      ],
+      "rotation": [
+        -0.204479,
+        0.676896,
+        0.676896,
+        0.204479
+      ],
+      "scale": [
+        0.79,
+        0.79,
+        0.79
+      ],
+      "world_extent": 0.7900371551513672
+    },
+    {
+      "blender_name": "Sea_Urchin_005",
+      "objectKey": "sea-urchin",
+      "position": [
+        18.6901,
+        -0.3605,
+        -6.4803
+      ],
+      "rotation": [
+        -0.007071,
+        0.707071,
+        0.707071,
+        0.007071
+      ],
+      "scale": [
+        0.8763,
+        0.8763,
+        0.8763
+      ],
+      "world_extent": 0.8762741088867188
+    },
+    {
+      "blender_name": "Sea_Urchin_006",
+      "objectKey": "sea-urchin",
+      "position": [
+        -17.9359,
+        -0.4343,
+        -5.6342
+      ],
+      "rotation": [
+        0.0,
+        0.707107,
+        0.707107,
+        0.0
+      ],
+      "scale": [
+        0.56,
+        0.56,
+        0.56
+      ],
+      "world_extent": 0.5600013732910156
+    },
+    {
+      "blender_name": "Sea_Urchin_007",
+      "objectKey": "sea-urchin",
+      "position": [
+        -17.9632,
+        -0.4662,
+        -4.254
+      ],
+      "rotation": [
+        -0.191446,
+        -0.680697,
+        -0.680697,
+        0.191446
+      ],
+      "scale": [
+        0.4596,
+        0.4596,
+        0.4596
+      ],
+      "world_extent": 0.45961761474609375
+    },
+    {
+      "blender_name": "Sea_Urchin_008",
+      "objectKey": "sea-urchin",
+      "position": [
+        -3.0772,
+        -0.2249,
+        14.041
+      ],
+      "rotation": [
+        -0.028262,
+        0.706542,
+        0.706542,
+        0.028262
+      ],
+      "scale": [
+        0.5795,
+        0.5795,
+        0.5795
+      ],
+      "world_extent": 0.5795154571533203
+    },
+    {
+      "blender_name": "Sea_Urchin_009",
+      "objectKey": "sea-urchin",
+      "position": [
+        3.9265,
+        -0.235,
+        -18.2422
+      ],
+      "rotation": [
+        -0.654573,
+        -0.26746,
+        -0.26746,
+        0.654573
+      ],
+      "scale": [
+        0.6641,
+        0.6641,
+        0.6641
+      ],
+      "world_extent": 0.664060115814209
+    },
+    {
+      "blender_name": "Sea_Urchin_010",
+      "objectKey": "sea-urchin",
+      "position": [
+        6.1991,
+        0.1106,
+        -15.2368
+      ],
+      "rotation": [
+        -0.163141,
+        0.68803,
+        0.68803,
+        0.163141
+      ],
+      "scale": [
+        1.0054,
+        1.0054,
+        1.0054
+      ],
+      "world_extent": 1.0053634643554688
+    },
+    {
+      "blender_name": "Sea_Urchin_011",
+      "objectKey": "sea-urchin",
+      "position": [
+        -15.6067,
+        0.1481,
+        9.3633
+      ],
+      "rotation": [
+        -0.382373,
+        -0.594803,
+        -0.594803,
+        0.382373
+      ],
+      "scale": [
+        0.784,
+        0.784,
+        0.784
+      ],
+      "world_extent": 0.7840290069580078
+    },
+    {
+      "blender_name": "Sea_Urchin_012",
+      "objectKey": "sea-urchin",
+      "position": [
+        8.6862,
+        -0.028,
+        -16.4246
+      ],
+      "rotation": [
+        -0.662662,
+        -0.246736,
+        -0.246736,
+        0.662662
+      ],
+      "scale": [
+        1.1055,
+        1.1055,
+        1.1055
+      ],
+      "world_extent": 1.1054668426513672
+    },
+    {
+      "blender_name": "Sea_Urchin_013",
+      "objectKey": "sea-urchin",
+      "position": [
+        -10.9407,
+        0.0956,
+        13.9137
+      ],
+      "rotation": [
+        -0.540874,
+        0.455473,
+        0.455473,
+        0.540874
+      ],
+      "scale": [
+        0.5741,
+        0.5741,
+        0.5741
+      ],
+      "world_extent": 0.574066162109375
+    },
+    {
+      "blender_name": "Sea_Urchin_014",
+      "objectKey": "sea-urchin",
+      "position": [
+        -12.5214,
+        -0.0521,
+        -14.818
+      ],
+      "rotation": [
+        0.0,
+        0.707107,
+        0.707107,
+        0.0
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "world_extent": 0.7999992370605469
+    },
+    {
+      "blender_name": "Sea_Urchin_015",
+      "objectKey": "sea-urchin",
+      "position": [
+        7.5165,
+        -0.114,
+        -16.8604
+      ],
+      "rotation": [
+        -0.489251,
+        -0.510523,
+        -0.510523,
+        0.489251
+      ],
+      "scale": [
+        0.6655,
+        0.6655,
+        0.6655
+      ],
+      "world_extent": 0.6654510498046875
+    },
+    {
+      "blender_name": "Sea_Urchin_016",
+      "objectKey": "sea-urchin",
+      "position": [
+        -7.4212,
+        -0.1333,
+        15.8706
+      ],
+      "rotation": [
+        -0.684731,
+        0.176477,
+        0.176477,
+        0.684731
+      ],
+      "scale": [
+        0.4815,
+        0.4815,
+        0.4815
+      ],
+      "world_extent": 0.4815349578857422
+    },
+    {
+      "blender_name": "src_Sea_Urchin",
+      "objectKey": "sea-urchin",
+      "position": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rotation": [
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "scale": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "world_extent": 2.0
+    },
+    {
+      "blender_name": "Shell_001",
+      "objectKey": "shell",
+      "position": [
+        12.5748,
+        0.0166,
+        -14.4555
+      ],
+      "rotation": [
+        -0.682997,
+        0.183071,
+        0.183071,
+        0.682997
+      ],
+      "scale": [
+        1.1836,
+        1.1836,
+        1.1836
+      ],
+      "world_extent": 1.1836109161376953
+    },
+    {
+      "blender_name": "Shell_002",
+      "objectKey": "shell",
+      "position": [
+        -19.3045,
+        0.3723,
+        3.8528
+      ],
+      "rotation": [
+        -0.682997,
+        0.183071,
+        0.183071,
+        0.682997
+      ],
+      "scale": [
+        1.2865,
+        1.2865,
+        1.2865
+      ],
+      "world_extent": 1.2865333557128906
+    },
+    {
+      "blender_name": "Shell_003",
+      "objectKey": "shell",
+      "position": [
+        -18.9536,
+        0.2239,
+        4.5836
+      ],
+      "rotation": [
+        -0.432157,
+        0.559679,
+        0.559679,
+        0.432157
+      ],
+      "scale": [
+        0.7317,
+        0.7317,
+        0.7317
+      ],
+      "world_extent": 0.731724739074707
+    },
+    {
+      "blender_name": "Shell_004",
+      "objectKey": "shell",
+      "position": [
+        -7.0858,
+        -0.1706,
+        18.5194
+      ],
+      "rotation": [
+        -0.705837,
+        -0.04235,
+        -0.04235,
+        0.705837
+      ],
+      "scale": [
+        0.5686,
+        0.5686,
+        0.5686
+      ],
+      "world_extent": 0.5685558319091797
+    },
+    {
+      "blender_name": "Shell_005",
+      "objectKey": "shell",
+      "position": [
+        3.9543,
+        0.0988,
+        -14.2678
+      ],
+      "rotation": [
+        -0.056388,
+        0.704855,
+        0.704855,
+        0.056388
+      ],
+      "scale": [
+        1.0313,
+        1.0313,
+        1.0313
+      ],
+      "world_extent": 1.0312976837158203
+    },
+    {
+      "blender_name": "Shell_006",
+      "objectKey": "shell",
+      "position": [
+        18.6286,
+        0.1753,
+        1.3726
+      ],
+      "rotation": [
+        -0.234225,
+        0.667187,
+        0.667187,
+        0.234225
+      ],
+      "scale": [
+        1.1233,
+        1.1233,
+        1.1233
+      ],
+      "world_extent": 1.1233444213867188
+    },
+    {
+      "blender_name": "Shell_007",
+      "objectKey": "shell",
+      "position": [
+        -18.0204,
+        -0.2666,
+        -1.4205
+      ],
+      "rotation": [
+        -0.225722,
+        -0.670112,
+        -0.670112,
+        0.225722
+      ],
+      "scale": [
+        0.5481,
+        0.5481,
+        0.5481
+      ],
+      "world_extent": 0.5480995178222656
+    },
+    {
+      "blender_name": "Shell_008",
+      "objectKey": "shell",
+      "position": [
+        7.5442,
+        -0.1152,
+        14.9681
+      ],
+      "rotation": [
+        -0.676896,
+        -0.204479,
+        -0.204479,
+        0.676896
+      ],
+      "scale": [
+        0.4674,
+        0.4674,
+        0.4674
+      ],
+      "world_extent": 0.46739959716796875
+    },
+    {
+      "blender_name": "Shell_009",
+      "objectKey": "shell",
+      "position": [
+        -9.0086,
+        -0.1393,
+        -14.1806
+      ],
+      "rotation": [
+        -0.451984,
+        0.543793,
+        0.543793,
+        0.451984
+      ],
+      "scale": [
+        0.432,
+        0.432,
+        0.432
+      ],
+      "world_extent": 0.4320220947265625
+    },
+    {
+      "blender_name": "Shell_010",
+      "objectKey": "shell",
+      "position": [
+        0.7344,
+        -0.1046,
+        19.306
+      ],
+      "rotation": [
+        -0.3386,
+        -0.620766,
+        -0.620766,
+        0.3386
+      ],
+      "scale": [
+        0.648,
+        0.648,
+        0.648
+      ],
+      "world_extent": 0.6480255126953125
+    },
+    {
+      "blender_name": "Shell_011",
+      "objectKey": "shell",
+      "position": [
+        -16.318,
+        0.1919,
+        7.5501
+      ],
+      "rotation": [
+        -0.644693,
+        -0.290466,
+        -0.290466,
+        0.644693
+      ],
+      "scale": [
+        0.9143,
+        0.9143,
+        0.9143
+      ],
+      "world_extent": 0.9143276214599609
+    },
+    {
+      "blender_name": "Shell_012",
+      "objectKey": "shell",
+      "position": [
+        13.088,
+        -0.198,
+        -14.1843
+      ],
+      "rotation": [
+        -0.204479,
+        0.676896,
+        0.676896,
+        0.204479
+      ],
+      "scale": [
+        0.5193,
+        0.5193,
+        0.5193
+      ],
+      "world_extent": 0.5193328857421875
+    },
+    {
+      "blender_name": "Shell_013",
+      "objectKey": "shell",
+      "position": [
+        17.1071,
+        0.154,
+        4.5903
+      ],
+      "rotation": [
+        -0.176477,
+        -0.684731,
+        -0.684731,
+        0.176477
+      ],
+      "scale": [
+        1.205,
+        1.205,
+        1.205
+      ],
+      "world_extent": 1.2049827575683594
+    },
+    {
+      "blender_name": "Shell_014",
+      "objectKey": "shell",
+      "position": [
+        -1.3586,
+        -0.2658,
+        -19.0284
+      ],
+      "rotation": [
+        -0.41632,
+        -0.571557,
+        -0.571557,
+        0.41632
+      ],
+      "scale": [
+        0.4597,
+        0.4597,
+        0.4597
+      ],
+      "world_extent": 0.4596977233886719
+    },
+    {
+      "blender_name": "Starfish_001",
+      "objectKey": "starfish",
+      "position": [
+        9.6367,
+        -0.4035,
+        -16.5833
+      ],
+      "rotation": [
+        -0.625274,
+        0.330201,
+        0.330201,
+        0.625274
+      ],
+      "scale": [
+        0.9413,
+        0.9413,
+        0.9413
+      ],
+      "world_extent": 0.9412727355957031
+    },
+    {
+      "blender_name": "Starfish_002",
+      "objectKey": "starfish",
+      "position": [
+        -12.4642,
+        -0.371,
+        -3.6936
+      ],
+      "rotation": [
+        -0.304834,
+        0.638025,
+        0.638025,
+        0.304834
+      ],
+      "scale": [
+        0.6721,
+        0.6721,
+        0.6721
+      ],
+      "world_extent": 0.672065019607544
+    },
+    {
+      "blender_name": "Starfish_003",
+      "objectKey": "starfish",
+      "position": [
+        17.9996,
+        -0.6856,
+        -7.1291
+      ],
+      "rotation": [
+        -0.706789,
+        0.021204,
+        0.021204,
+        0.706789
+      ],
+      "scale": [
+        0.7191,
+        0.7191,
+        0.7191
+      ],
+      "world_extent": 0.7191429138183594
+    },
+    {
+      "blender_name": "Starfish_004",
+      "objectKey": "starfish",
+      "position": [
+        -10.1834,
+        -0.2532,
+        -14.2565
+      ],
+      "rotation": [
+        -0.530835,
+        0.467134,
+        0.467134,
+        0.530835
+      ],
+      "scale": [
+        1.0954,
+        1.0954,
+        1.0954
+      ],
+      "world_extent": 1.095428466796875
+    },
+    {
+      "blender_name": "Starfish_005",
+      "objectKey": "starfish",
+      "position": [
+        16.0835,
+        -0.3671,
+        10.5593
+      ],
+      "rotation": [
+        -0.310568,
+        0.635254,
+        0.635254,
+        0.310568
+      ],
+      "scale": [
+        0.531,
+        0.531,
+        0.531
+      ],
+      "world_extent": 0.5309925079345703
+    },
+    {
+      "blender_name": "Starfish_006",
+      "objectKey": "starfish",
+      "position": [
+        1.8706,
+        -0.3969,
+        -17.8824
+      ],
+      "rotation": [
+        -0.148159,
+        0.691411,
+        0.691411,
+        0.148159
+      ],
+      "scale": [
+        0.8435,
+        0.8435,
+        0.8435
+      ],
+      "world_extent": 0.8434877395629883
+    },
+    {
+      "blender_name": "Starfish_007",
+      "objectKey": "starfish",
+      "position": [
+        17.2124,
+        -0.6019,
+        -7.903
+      ],
+      "rotation": [
+        -0.620766,
+        -0.3386,
+        -0.3386,
+        0.620766
+      ],
+      "scale": [
+        1.3769,
+        1.3769,
+        1.3769
+      ],
+      "world_extent": 1.3768787384033203
+    },
+    {
+      "blender_name": "Starfish_008",
+      "objectKey": "starfish",
+      "position": [
+        -5.7532,
+        -0.3113,
+        -15.5237
+      ],
+      "rotation": [
+        -0.506992,
+        0.492909,
+        0.492909,
+        0.506992
+      ],
+      "scale": [
+        0.6165,
+        0.6165,
+        0.6165
+      ],
+      "world_extent": 0.6164951324462891
+    },
+    {
+      "blender_name": "Starfish_009",
+      "objectKey": "starfish",
+      "position": [
+        -7.7285,
+        -0.2268,
+        -13.9121
+      ],
+      "rotation": [
+        -0.692826,
+        -0.141393,
+        -0.141393,
+        0.692826
+      ],
+      "scale": [
+        0.5755,
+        0.5755,
+        0.5755
+      ],
+      "world_extent": 0.5755410194396973
+    },
+    {
+      "blender_name": "Starfish_010",
+      "objectKey": "starfish",
+      "position": [
+        8.2064,
+        -0.1606,
+        15.5057
+      ],
+      "rotation": [
+        -0.559679,
+        -0.432157,
+        -0.432157,
+        0.559679
+      ],
+      "scale": [
+        0.9257,
+        0.9257,
+        0.9257
+      ],
+      "world_extent": 0.9256553649902344
+    },
+    {
+      "blender_name": "Starfish_011",
+      "objectKey": "starfish",
+      "position": [
+        12.2474,
+        -0.42,
+        4.3591
+      ],
+      "rotation": [
+        -0.347003,
+        -0.616108,
+        -0.616108,
+        0.347003
+      ],
+      "scale": [
+        0.5474,
+        0.5474,
+        0.5474
+      ],
+      "world_extent": 0.5473833084106445
+    },
+    {
+      "blender_name": "Starfish_012",
+      "objectKey": "starfish",
+      "position": [
+        5.9066,
+        -0.1851,
+        -15.1289
+      ],
+      "rotation": [
+        -0.603186,
+        -0.369008,
+        -0.369008,
+        0.603186
+      ],
+      "scale": [
+        1.073,
+        1.073,
+        1.073
+      ],
+      "world_extent": 1.0729656219482422
+    },
+    {
+      "blender_name": "Starfish_013",
+      "objectKey": "starfish",
+      "position": [
+        -12.4193,
+        -0.0217,
+        10.5783
+      ],
+      "rotation": [
+        -0.439993,
+        -0.55354,
+        -0.55354,
+        0.439993
+      ],
+      "scale": [
+        1.0539,
+        1.0539,
+        1.0539
+      ],
+      "world_extent": 1.0539188385009766
+    },
+    {
+      "blender_name": "Starfish_014",
+      "objectKey": "starfish",
+      "position": [
+        16.3559,
+        -0.4762,
+        -6.2796
+      ],
+      "rotation": [
+        -0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "world_extent": 0.6000003814697266
+    },
+    {
+      "blender_name": "Starfish_015",
+      "objectKey": "starfish",
+      "position": [
+        -5.0928,
+        -0.2226,
+        -12.8168
+      ],
+      "rotation": [
+        -0.478446,
+        0.520662,
+        0.520662,
+        0.478446
+      ],
+      "scale": [
+        0.4752,
+        0.4752,
+        0.4752
+      ],
+      "world_extent": 0.4751853942871094
+    },
+    {
+      "blender_name": "Starfish_016",
+      "objectKey": "starfish",
+      "position": [
+        13.4454,
+        -0.3413,
+        -1.5472
+      ],
+      "rotation": [
+        -0.390592,
+        0.589439,
+        0.589439,
+        0.390592
+      ],
+      "scale": [
+        0.4966,
+        0.4966,
+        0.4966
+      ],
+      "world_extent": 0.4966087341308594
+    },
+    {
+      "blender_name": "Starfish_017",
+      "objectKey": "starfish",
+      "position": [
+        -16.7989,
+        -0.6414,
+        -7.3089
+      ],
+      "rotation": [
+        -0.608203,
+        0.360679,
+        0.360679,
+        0.608203
+      ],
+      "scale": [
+        1.109,
+        1.109,
+        1.109
+      ],
+      "world_extent": 1.1089868545532227
+    },
+    {
+      "blender_name": "Starfish_018",
+      "objectKey": "starfish",
+      "position": [
+        9.5747,
+        -0.3692,
+        -16.3185
+      ],
+      "rotation": [
+        -0.611299,
+        -0.355406,
+        -0.355406,
+        0.611299
+      ],
+      "scale": [
+        0.9513,
+        0.9513,
+        0.9513
+      ],
+      "world_extent": 0.9512662887573242
+    },
+    {
+      "blender_name": "Starfish_019",
+      "objectKey": "starfish",
+      "position": [
+        -8.6745,
+        -0.3271,
+        -16.9717
+      ],
+      "rotation": [
+        -0.691411,
+        0.148159,
+        0.148159,
+        0.691411
+      ],
+      "scale": [
+        0.9753,
+        0.9753,
+        0.9753
+      ],
+      "world_extent": 0.9752826690673828
+    },
+    {
+      "blender_name": "Starfish_020",
+      "objectKey": "starfish",
+      "position": [
+        -11.3743,
+        -0.3497,
+        -14.4606
+      ],
+      "rotation": [
+        -0.70426,
+        -0.063383,
+        -0.063383,
+        0.70426
+      ],
+      "scale": [
+        0.5572,
+        0.5572,
+        0.5572
+      ],
+      "world_extent": 0.5571556091308594
+    },
+    {
+      "blender_name": "Starfish_021",
+      "objectKey": "starfish",
+      "position": [
+        -13.2321,
+        -0.0663,
+        11.4289
+      ],
+      "rotation": [
+        -0.682997,
+        -0.183071,
+        -0.183071,
+        0.682997
+      ],
+      "scale": [
+        0.7351,
+        0.7351,
+        0.7351
+      ],
+      "world_extent": 0.7350502014160156
+    },
+    {
+      "blender_name": "Coral_Arch",
+      "objectKey": "struct-coral-arch",
+      "position": [
+        10.3416,
+        2.9568,
+        -8.6776
+      ],
+      "rotation": [
+        -0.347003,
+        -0.616108,
+        -0.616108,
+        0.347003
+      ],
+      "scale": [
+        6.1098,
+        6.1098,
+        6.1098
+      ],
+      "world_extent": 6.109804153442383
+    },
+    {
+      "blender_name": "Coral_Bommie",
+      "objectKey": "struct-coral-bommie",
+      "position": [
+        -4.9176,
+        1.9615,
+        -18.3526
+      ],
+      "rotation": [
+        -0.586166,
+        -0.395486,
+        -0.395486,
+        0.586166
+      ],
+      "scale": [
+        7.2772,
+        7.2772,
+        7.2772
+      ],
+      "world_extent": 7.277188539505005
+    },
+    {
+      "blender_name": "Coral_Tower",
+      "objectKey": "struct-coral-tower",
+      "position": [
+        15.5885,
+        1.0875,
+        -9.0
+      ],
+      "rotation": [
+        -0.699127,
+        0.105928,
+        0.105928,
+        0.699127
+      ],
+      "scale": [
+        9.0087,
+        9.0087,
+        9.0087
+      ],
+      "world_extent": 9.00865364074707
+    },
+    {
+      "blender_name": "Reef_Wall",
+      "objectKey": "struct-reef-wall",
+      "position": [
+        20.5022,
+        0.2633,
+        -4.5453
+      ],
+      "rotation": [
+        -0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "scale": [
+        6.0724,
+        6.0724,
+        6.0724
+      ],
+      "world_extent": 6.0724036693573
+    }
+  ]
+}

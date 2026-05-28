@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { HalfFloatType, Vector2 } from "three";
+  import { HalfFloatType, Vector2, ACESFilmicToneMapping, NoToneMapping } from "three";
   import {
     EffectComposer,
     RenderPass,
@@ -80,12 +80,19 @@
     // to maintain even ping-pong parity.
     if (isOcean) {
       renderer.shadowMap.enabled = true;
+      renderer.toneMapping = ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 2.8;
     }
 
     const effects: import("postprocessing").Effect[] = [];
 
     if (isOcean) {
-      effects.push(new WaterAbsorptionEffect());
+      effects.push(new WaterAbsorptionEffect({
+        absorptionR: 0.02,
+        absorptionG: 0.005,
+        absorptionB: 0.001,
+        maxDepth: 50.0,
+      }));
       effects.push(new RefractionCausticsEffect());
     }
 
@@ -105,8 +112,8 @@
 
     effects.push(
       new VignetteEffect({
-        darkness: 0.5,
-        offset: 0.25,
+        darkness: 0.3,
+        offset: 0.35,
       }),
     );
 
@@ -147,6 +154,8 @@
       composer = null;
       renderer.autoClear = true;
       renderer.shadowMap.enabled = false;
+      renderer.toneMapping = NoToneMapping;
+      renderer.toneMappingExposure = 1.0;
     }
   }
 

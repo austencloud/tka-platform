@@ -9,6 +9,7 @@
   } from "./quality/ocean-quality";
   import FloraInstances from "./authored/FloraInstances.svelte";
   import OceanRuntimeSystems from "./runtime/OceanRuntimeSystems.svelte";
+  import { getSceneFeatureContext } from "../../../scene-features/context/scene-feature-context";
 
   // ── Props ─────────────────────────────────────────────────────────────
 
@@ -33,6 +34,10 @@
   const qualityTier = $derived(detectOceanQuality(renderer.current ?? null));
   const quality = $derived(getOceanQualityConfig(qualityTier));
 
+  // ── Scene feature readiness ────────────────────────────────────────────
+
+  const sceneFeatures = getSceneFeatureContext();
+
   // ── Environment GLB ───────────────────────────────────────────────────
 
   const environmentGlb = useGltf(
@@ -40,14 +45,33 @@
     { meshoptDecoder: MeshoptDecoder }
   );
 
+  function handleFloraProgress(fraction: number) {
+    sceneFeatures?.reportProgress("environment", fraction * 0.9);
+  }
+
+  function handleFloraReady() {
+    sceneFeatures?.reportReady("environment");
+  }
+
+  $effect(() => {
+    if ($environmentGlb) {
+      sceneFeatures?.reportProgress("environment", 0.05);
+    }
+  });
+
   // ── Fog ───────────────────────────────────────────────────────────────
 
   $effect(() => {
     const s = scene.current;
     if (!s) return;
-    s.fog = new FogExp2(new Color("#0c2a3a").getHex(), 0.035);
+    const fogColor = new Color("#4a8aaa");
+    s.fog = new FogExp2(fogColor.getHex(), 0.004);
+    s.background = fogColor;
     return () => {
-      if (s) s.fog = null;
+      if (s) {
+        s.fog = null;
+        s.background = null;
+      }
     };
   });
 </script>
@@ -56,6 +80,6 @@
   <T is={$environmentGlb.scene} />
 {/if}
 
-<FloraInstances {quality} />
+<FloraInstances {quality} onProgress={handleFloraProgress} onReady={handleFloraReady} />
 
 <OceanRuntimeSystems {quality} {performerCount} {stageWidth} {stageDepth} {stageZOffset} />

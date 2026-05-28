@@ -103,6 +103,12 @@ function pickRandom(arr, rng) {
 // ── Object keys ────────────────────────────────────────────────────────────
 // FloraInstances normalizes all model geometry to 1-unit max extent.
 // Scale values here = direct world-space meters.
+//
+// WORLD_SCALE: uniform multiplier derived from Blender reference comparison.
+// Blender reference: structures tower 10-20x performer height (~15-30m).
+// Original placement scales produced structures at 1.5-6m (2-4x performer).
+// Multiplier 4.0 brings structures to 6-24m range, matching Blender proportions.
+const WORLD_SCALE = 4.0;
 const CORALS = [
 	"meshy-staghorn-coral", "meshy-brain-coral", "meshy-fan-coral", "meshy-table-coral",
 	"meshy-photorealistic-coral-0", "meshy-photorealistic-coral-1",
@@ -144,7 +150,7 @@ function tryPlace(objectKey, x, z, scale, collisionRadius) {
 	grid.register(x, z, collisionRadius);
 
 	const rotY = rng() * Math.PI * 2;
-	const s = scale;
+	const s = scale * WORLD_SCALE;
 	placements.push({
 		id: nextId(),
 		objectKey,
@@ -372,7 +378,7 @@ for (const s of STRUCTURES) {
 		objectKey: s.key,
 		position: [rd(s.x), 0, rd(s.z)],
 		rotation: [rd(0), rd(Math.sin(rotY / 2)), rd(0), rd(Math.cos(rotY / 2))],
-		scale: [rd(s.scale), rd(s.scale), rd(s.scale)],
+		scale: [rd(s.scale * WORLD_SCALE), rd(s.scale * WORLD_SCALE), rd(s.scale * WORLD_SCALE)],
 	});
 	grid.register(s.x, s.z, s.scale * 1.2);
 }

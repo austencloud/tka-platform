@@ -10,6 +10,8 @@
     Quaternion,
     Object3D,
     Mesh,
+    MeshStandardMaterial,
+    Color,
     Sphere,
     Box3,
     BufferAttribute,
@@ -22,9 +24,11 @@
 
   interface Props {
     quality: OceanQualityConfig;
+    onProgress?: (fraction: number) => void;
+    onReady?: () => void;
   }
 
-  let { quality }: Props = $props();
+  let { quality, onProgress, onReady }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
 
@@ -126,8 +130,6 @@
   }
 
   // ── Build InstancedMesh array for ALL meshes within a model ──────────
-  // Creates one InstancedMesh per mesh in the GLB. All share the same
-  // instance matrices so multi-part models stay assembled at each placement.
   function buildInstancedMeshesForModel(
     modelScene: Object3D,
     entries: PlacementGroup["entries"]
@@ -136,7 +138,6 @@
 
     modelScene.updateMatrixWorld(true);
 
-    // 1. Collect all mesh geometries in world space
     const parts: { geo: BufferGeometry; material: Material }[] = [];
 
     modelScene.traverse((child) => {
@@ -150,22 +151,30 @@
       const mat = Array.isArray(m.material)
         ? (m.material[0] as Material).clone()
         : (m.material as Material).clone();
+
+      if (mat instanceof MeshStandardMaterial) {
+        const hsl = { h: 0, s: 0, l: 0 };
+        mat.color.getHSL(hsl);
+        hsl.s = Math.min(hsl.s * 2.5 + 0.25, 1.0);
+        hsl.l = Math.min(hsl.l * 1.8 + 0.15, 0.85);
+        mat.color.setHSL(hsl.h, hsl.s, hsl.l);
+
+        mat.emissive = mat.color.clone().multiplyScalar(0.5);
+        mat.emissiveIntensity = 1.0;
+        mat.roughness = Math.min(mat.roughness, 0.6);
+      }
+
       parts.push({ geo, material: mat });
     });
 
     if (parts.length === 0) return [];
 
-    // Debug: log model info to diagnose sizing
-    console.log(`[Flora] Model loaded: ${parts.length} mesh(es)`);
-
-    // 2. Compute COMBINED bounding box across all parts
     const combinedBox = new Box3();
     for (const { geo } of parts) {
       geo.computeBoundingBox();
       combinedBox.union(geo.boundingBox!);
     }
 
-    // 3. Build shared normalization matrix: bottom at Y=0, centered XZ, max extent = 1
     const size = new Vector3();
     combinedBox.getSize(size);
     const maxExtent = Math.max(size.x, size.y, size.z);
@@ -174,18 +183,17 @@
       const center = new Vector3();
       combinedBox.getCenter(center);
 
-      console.log(`[Flora]   bbox: [${size.x.toFixed(3)}, ${size.y.toFixed(3)}, ${size.z.toFixed(3)}] maxExtent=${maxExtent.toFixed(3)}`);
+      const ns = 1 / maxExtent;
+
 
       const translation = new Matrix4().makeTranslation(
         -center.x,
         -combinedBox.min.y,
         -center.z
       );
-      const ns = 1 / maxExtent;
       const scale = new Matrix4().makeScale(ns, ns, ns);
       const normMatrix = new Matrix4().multiplyMatrices(scale, translation);
 
-      // 4. Apply SAME normalization to ALL parts
       for (const { geo } of parts) {
         geo.applyMatrix4(normMatrix);
       }
@@ -243,21 +251,30 @@
 
     let cancelled = false;
     const activeMeshes: InstancedMesh[] = [];
+    let loaded = 0;
+    const total = currentGroups.length;
 
     for (const group of currentGroups) {
       gltfLoader.load(
         group.modelPath,
         (gltf) => {
           if (cancelled) return;
+          loaded++;
+          onProgress?.(loaded / total);
           const meshes = buildInstancedMeshesForModel(gltf.scene, group.entries);
           if (meshes.length > 0) {
             activeMeshes.push(...meshes);
             instancedMeshes = [...activeMeshes];
           }
+          if (loaded >= total) onReady?.();
         },
         undefined,
         (err) => {
+          if (cancelled) return;
+          loaded++;
+          onProgress?.(loaded / total);
           console.error(`[FloraInstances] Failed: ${group.modelPath}`, err);
+          if (loaded >= total) onReady?.();
         }
       );
     }
