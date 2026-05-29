@@ -9,6 +9,7 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { formatBasicInfo } from "./formatters";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   interface LookupKeys {
     gridMode: string;
@@ -35,6 +36,19 @@
     copiedSection,
     onCopy,
   }: Props = $props();
+
+  // Active prop type reflects the current settings override (what's rendered),
+  // not the stale propType stored on the motion data.
+  const activePropType = $derived.by(() => {
+    const s = getSettings();
+    return (
+      s.bluePropType ??
+      blueMotion?.propType ??
+      s.redPropType ??
+      redMotion?.propType ??
+      "staff"
+    );
+  });
 </script>
 
 <div class="info-bar">
@@ -42,7 +56,7 @@
     {#if displayData?.letter}<span class="bl letter">{displayData.letter}</span><span class="sep">·</span>{/if}
     <span class="bl">{blueMotion?.gridMode ?? redMotion?.gridMode ?? "—"}</span>
     <span class="sep">·</span>
-    <span class="bl">{blueMotion?.propType ?? redMotion?.propType ?? "staff"}</span>
+    <span class="bl">{activePropType}</span>
     <span class="sep">·</span>
     <span class="bl path">{displayData?.startPosition ?? "—"} → {displayData?.endPosition ?? "—"}</span>
   </div>
