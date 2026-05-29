@@ -19,7 +19,7 @@
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import type { GridHitTarget } from "$lib/shared/assemble-lab/domain/types";
   import { getHitTargets, getHitTargetRadius } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";
-  import { SvgPropAnimator } from "../services/SvgPropAnimator";
+  import { SvgPropAnimator } from "../services/svg-prop-animator";
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
 
   // Prop SVG rendering
