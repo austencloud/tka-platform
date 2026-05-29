@@ -19,15 +19,15 @@
   7. Grid ID labels (optional)
 -->
 <script lang="ts">
-  import type { GridTopology, PointRef, Vec2 } from "../domain/models/GridTopology";
-  import type { ViewBoxData } from "../services/contracts/types";
-  import type { TopologyPropRenderData } from "../services/contracts/types";
-  import type { BetaOffset } from "../services/contracts/types";
+  import type { GridTopology, PointRef, Vec2 } from "../domain/models/grid-topology";
+  import type { ViewBoxData } from "../services/types";
+  import type { TopologyPropRenderData } from "../services/types";
+  import type { BetaOffset } from "../services/types";
   import type { GridLocation } from "$lib/shared/render/core/types";
   import { computeTopologyViewBox, worldToSvg, gridCenterToSvg } from "../services/topology-renderer";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { HAND_POINT_LOCATIONS, PIXELS_PER_UNIT, SVG_CENTER } from "../domain/constants/GridModeOffsets";
+  import { HAND_POINT_LOCATIONS, PIXELS_PER_UNIT, SVG_CENTER } from "../domain/constants/grid-mode-offsets";
   import { STRICT_HAND_POINT_COORDS } from "$lib/shared/conjoined-grid/domain/types";
 
   interface Props {

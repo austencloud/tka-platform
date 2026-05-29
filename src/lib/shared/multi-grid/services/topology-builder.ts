@@ -22,9 +22,9 @@ import type {
   GridTopology,
   ConjoinConstraint,
   PointRef,
-} from "../../domain/models/GridTopology";
-import type { GridOptions } from "../contracts/types";
-import { LOCATION_OFFSETS, OUTER_POINT_MULTIPLIER, PERIMETER_LOCATIONS } from "../../domain/constants/GridModeOffsets";
+} from "../domain/models/grid-topology";
+import type { GridOptions } from "./types";
+import { LOCATION_OFFSETS, OUTER_POINT_MULTIPLIER, PERIMETER_LOCATIONS } from "../domain/constants/grid-mode-offsets";
 
 /** Tolerance for clustering world points into junctions (in abstract units) */
 const JUNCTION_TOLERANCE = 0.001;

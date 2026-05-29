@@ -2,7 +2,7 @@ import type {
   GridTopology,
   PointRef,
   Junction,
-} from "$lib/shared/multi-grid/domain/models/GridTopology";
+} from "$lib/shared/multi-grid/domain/models/grid-topology";
 import type { JunctionOverlap, PropPlacement } from "$lib/shared/conjoined-grid/domain/types";
 
 /**

@@ -5,12 +5,12 @@
  */
 
 import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
-import type { Vec2, GridPlacement } from "../domain/models/GridTopology";
+import type { Vec2, GridPlacement } from "../domain/models/grid-topology";
 import {
   LOCATION_OFFSETS,
   HAND_POINT_LOCATIONS,
   PERIMETER_LOCATIONS,
-} from "../domain/constants/GridModeOffsets";
+} from "../domain/constants/grid-mode-offsets";
 
 export function getLocationOffset(location: GridLocation): Vec2 {
   return LOCATION_OFFSETS[location];

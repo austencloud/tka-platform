@@ -10,8 +10,8 @@
   6. Dark mode toggle
 -->
 <script lang="ts">
-  import type { GridTopology } from "../domain/models/GridTopology";
-  import { TOPOLOGY_PRESETS } from "../domain/constants/TopologyPresets";
+  import type { GridTopology } from "../domain/models/grid-topology";
+  import { TOPOLOGY_PRESETS } from "../domain/constants/topology-presets";
 
   interface Props {
     selectedPresetId: string;

@@ -2,9 +2,9 @@
  * Topology Renderer - Maps topology world coordinates to SVG pixel coordinates
  */
 
-import type { Vec2, GridTopology, GridPlacement } from "../domain/models/GridTopology";
-import type { ViewBoxData } from "./contracts/types";
-import { PIXELS_PER_UNIT, SVG_CENTER } from "../domain/constants/GridModeOffsets";
+import type { Vec2, GridTopology, GridPlacement } from "../domain/models/grid-topology";
+import type { ViewBoxData } from "./types";
+import { PIXELS_PER_UNIT, SVG_CENTER } from "../domain/constants/grid-mode-offsets";
 
 const DEFAULT_MARGIN = 100;
 

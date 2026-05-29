@@ -1,4 +1,4 @@
-import type { GridTopology } from "$lib/shared/multi-grid/domain/models/GridTopology";
+import type { GridTopology } from "$lib/shared/multi-grid/domain/models/grid-topology";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PropPlacement } from "$lib/shared/conjoined-grid/domain/types";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

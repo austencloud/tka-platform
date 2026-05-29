@@ -9,14 +9,14 @@
  * pure domain services (detectOverlaps, mapToTopology, enumerator) are called directly.
  */
 
-import type { GridTopology, PointRef } from "$lib/shared/multi-grid/domain/models/GridTopology";
+import type { GridTopology, PointRef } from "$lib/shared/multi-grid/domain/models/grid-topology";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import type { GridMode } from "$lib/shared/render/core/types";
 import type { PrepareOptions } from "$lib/shared/pictograph/shared/services/contracts/types";
-import type { PositionPair } from "$lib/shared/multi-grid/services/contracts/types";
+import type { PositionPair } from "$lib/shared/multi-grid/services/types";
 import type { ConjoinedGridMode, PropPlacement, JunctionOverlap } from "$lib/shared/conjoined-grid/domain/types";
-import { TOPOLOGY_PRESETS, type TopologyPreset } from "$lib/shared/multi-grid/domain/constants/TopologyPresets";
+import { TOPOLOGY_PRESETS, type TopologyPreset } from "$lib/shared/multi-grid/domain/constants/topology-presets";
 import { detectOverlaps } from "../services/junction-overlap-detector";
 import { mapToTopology } from "../services/pictograph-topology-mapper";
 import { enumeratePositionPairs } from "$lib/shared/multi-grid/services/topology-position-enumerator";

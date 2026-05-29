@@ -2,9 +2,9 @@
  * Topology Position Enumerator - Enumerates valid hand positions across a topology
  */
 
-import type { GridTopology, PointRef } from "../domain/models/GridTopology";
-import type { PositionPair } from "./contracts/types";
-import { HAND_POINT_LOCATIONS } from "../domain/constants/GridModeOffsets";
+import type { GridTopology, PointRef } from "../domain/models/grid-topology";
+import type { PositionPair } from "./types";
+import { HAND_POINT_LOCATIONS } from "../domain/constants/grid-mode-offsets";
 
 export function enumerateHandPoints(topology: GridTopology): PointRef[] {
   const points: PointRef[] = [];

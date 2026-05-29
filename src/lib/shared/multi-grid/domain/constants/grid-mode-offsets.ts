@@ -15,7 +15,7 @@
  */
 
 import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
-import type { Vec2 } from "../models/GridTopology";
+import type { Vec2 } from "../models/grid-topology";
 
 // ============================================================================
 // LOCATION OFFSETS (normalized: radius = 1.0)

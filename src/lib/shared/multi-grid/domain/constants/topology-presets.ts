@@ -5,8 +5,8 @@
  * These are the arrangements users can select from the Multi-Grid Lab controls.
  */
 
-import type { GridTopology } from "../models/GridTopology";
-import { TopologyBuilder } from "../../services/implementations/TopologyBuilder";
+import type { GridTopology } from "../models/grid-topology";
+import { TopologyBuilder } from "../../services/topology-builder";
 
 export interface TopologyPreset {
   readonly id: string;
