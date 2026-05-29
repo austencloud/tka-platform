@@ -1,7 +1,7 @@
 import type { Festival, FestivalAttendance } from "../domain/models/festival";
 import type { UserFestivalTracker } from "../domain/models/festival-tracker";
 import type { TeachingPortfolio } from "../domain/models/teaching-portfolio";
-import type { FestivalFilters } from "../services/contracts/types";
+import type { FestivalFilters } from "../services/types";
 
 interface FestivalLoaderModule {
   loadFestivals(filters: FestivalFilters, pageSize?: number, cursor?: unknown): Promise<{ festivals: Festival[]; nextCursor: unknown | null }>;

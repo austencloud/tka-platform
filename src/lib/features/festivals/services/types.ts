@@ -2,8 +2,8 @@
  * Co-exported types from retired interface contracts.
  */
 
-import type { FestivalRegion } from "../../domain/models/festival";
-import type { TrackerStatus } from "../../domain/models/festival-tracker";
+import type { FestivalRegion } from "../domain/models/festival";
+import type { TrackerStatus } from "../domain/models/festival-tracker";
 
 // === From IFestivalLoader ===
 

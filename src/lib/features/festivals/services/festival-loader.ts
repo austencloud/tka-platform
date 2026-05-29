@@ -21,7 +21,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { Festival } from "../domain/models/festival";
-import type { FestivalFilters } from "./contracts/types";
+import type { FestivalFilters } from "./types";
 
 const DEFAULT_PAGE_SIZE = 200;
 
