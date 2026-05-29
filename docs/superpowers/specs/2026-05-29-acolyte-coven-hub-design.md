@@ -175,7 +175,8 @@ Foundation reads these. A new effect's 3D presence lights up by flipping
 | Coven formation + IK | Extract `TelekineticFormation3D` | `src/lib/features/museum/components/game/TelekineticFormation3D.svelte` |
 | Forest environment | Expand `ForestScene` (GLB set dressing) | `src/lib/shared/3d/environments/scenes/ForestScene.svelte` |
 | Effect catalog / colors / labels | `EFFECTS`, `EFFECT_COLORS`, `EFFECT_LABELS` | `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts:48` |
-| Canvas + camera + controls | `<Canvas>` + `OrbitControls` (or museum UCC) | `src/routes/test/custom-avatar/+page.svelte`, `OrbitControls.svelte` |
+| Canvas + camera + controls | `<Canvas>` + `Viewer3DCamera` | `src/lib/shared/3d/components/Viewer3DCamera.svelte` |
+| Orbit/fly/walk nav | `ViewerNavMode` toggle | `src/lib/shared/3d/state/viewer-3d-state.svelte.ts:54` |
 | Tip effect wiring | `tipEffectMap` on `PerformerRig` | `TelekineticFormation3D.svelte:99` |
 | Sequence picker | Existing saved-sequence browser | **TODO: grep canonical primitive before building** |
 | Stage GLB pipeline | Blender export → optimize → `static/models/` | `.claude/rules/blender-first-3d-scenes.md` |
@@ -185,8 +186,9 @@ Foundation reads these. A new effect's 3D presence lights up by flipping
 1. **Sequence picker primitive** — grep `src/lib/**` for the canonical
    saved-sequence browse/gallery component before `CovenSequencePicker` is
    planned. Do not hand-roll.
-2. **Camera/nav** — forest hub: reuse museum FPS/UCC walk nav, or `OrbitControls`
-   fly-around? Walkable implies FPS-style; confirm which existing nav to reuse.
+2. **Camera/nav** — RESOLVED. Reuse the existing `ViewerNavMode` system
+   (`orbit | fly | walk`, `viewer-3d-state.svelte.ts:54`) + `Viewer3DCamera`.
+   Hub exposes the same orbit/fly/walk toggle; no new nav code.
 3. **Forest expansion mechanics** — `ForestScene` currently assumes a single
    performer `Stage3D`. Decouple from the single-performer assumption to host N
    stations among the trees.
