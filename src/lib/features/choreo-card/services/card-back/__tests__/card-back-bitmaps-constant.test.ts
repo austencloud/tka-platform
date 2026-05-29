@@ -17,6 +17,7 @@ import {
   rasterizeUrl,
   rasterizeDifficultyBadge,
   rasterizeLoopIcon,
+  rasterizeLoopIconByKind,
   clearCardBackConstantCache,
   __setRasterizeFnForTest,
 } from "../card-back-bitmaps-constant";
@@ -114,6 +115,30 @@ describe("card-back-bitmaps-constant cache", () => {
     it("different color is a different cache entry", async () => {
       await rasterizeLoopIcon("flipped", "#e91e63", {});
       await rasterizeLoopIcon("flipped", "#ffffff", {});
+      expect(calls).toBe(2);
+    });
+  });
+
+  describe("rasterizeLoopIconByKind", () => {
+    it("caches per (kind,fa,color) key — no per-card mount", async () => {
+      await rasterizeLoopIconByKind("fa", "fas fa-rotate", "#36c3ff");
+      await rasterizeLoopIconByKind("fa", "fas fa-rotate", "#36c3ff");
+      expect(calls).toBe(1);
+    });
+
+    it("different kind / fa / color are distinct cache entries", async () => {
+      await rasterizeLoopIconByKind("swap", "", "#26e600");
+      await rasterizeLoopIconByKind("checkerboard", "", "#eb7d00");
+      await rasterizeLoopIconByKind("fa", "fas fa-rotate", "#36c3ff");
+      await rasterizeLoopIconByKind("fa", "fas fa-rotate", "#ffffff");
+      expect(calls).toBe(4);
+    });
+
+    it("shares the loop-icon cache with rasterizeLoopIcon (cleared together)", async () => {
+      await rasterizeLoopIconByKind("fa", "fas fa-rotate", "#36c3ff");
+      expect(calls).toBe(1);
+      clearCardBackConstantCache();
+      await rasterizeLoopIconByKind("fa", "fas fa-rotate", "#36c3ff");
       expect(calls).toBe(2);
     });
   });

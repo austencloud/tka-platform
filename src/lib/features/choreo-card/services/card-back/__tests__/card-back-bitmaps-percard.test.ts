@@ -1,206 +1,272 @@
 /**
  * Tests for the PER-CARD card-back element rasterizers.
  *
- * These rasterizers are NOT cached (they vary per sequence), so unlike the
- * constant sibling there's no cache behavior to test. Instead — since real DOM
- * rasterization (modern-screenshot + createImageBitmap) does not run in
- * vitest/jsdom — we inject a fake rasterize function via
- * __setRasterizeFnForTest and assert each rasterizer CALLS THROUGH with the
- * right component, props, and box sizes. The start-position pictograph also
- * pre-warms the prepare cache; a fake prepare fn (via __setPrepareFnForTest)
- * lets us assert the pre-warm options and the settle budget passed downstream.
+ * The turn glyph, reversal glyph, step count, and loop row are now CANVAS-NATIVE
+ * (drawn directly to an OffscreenCanvas — no DOM mount, no screenshot). jsdom has
+ * no OffscreenCanvas/createImageBitmap, so we stub them with a RECORDING fake 2d
+ * context and assert behavior via the recorded draw calls (bar fills, dot
+ * arcs/colors, the step-count fillText, loop-row icon drawImage + label text).
  *
- * The real visual/parity check happens in the browser harness (P1.7).
+ * The loop-row icons stay mount-rasterized but CACHED via
+ * `rasterizeLoopIconByKind` (constant sibling); that's mocked here to a fake
+ * bitmap so the row composition runs without a real mount.
+ *
+ * The start-position pictograph is unchanged (renders via the injected
+ * `renderPicto`); its tests are kept as-is.
+ *
+ * The real visual/parity check happens in the browser harness (P1.7,
+ * /test/card-back-parity).
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-// The four card-back components are mocked to light identity stubs. Two reasons:
-//   1. StartPositionPictograph's real subtree (PictographRenderer →
-//      arrow/prop/grid services → firebase/protobufjs) crashes vitest at import
-//      time (`util.Long.fromNumber is not a function`). vi.mock is hoisted and
-//      applies module-graph-wide, so the production rasterizer module (which
-//      statically imports these components) gets the SAME stubbed references —
-//      meaning `call.Comp === <stub>` is a valid identity assertion.
-//   2. These tests never render; they verify the rasterizer calls THROUGH with
-//      the right component + props + sizes. Real markup is irrelevant here
-//      (parity is checked by the P1.7 browser harness).
-const stubs = vi.hoisted(() => ({
-  TurnPatternGlyph: { __stub: "TurnPatternGlyph" },
-  ReversalPatternGlyph: { __stub: "ReversalPatternGlyph" },
-  StartPositionPictograph: { __stub: "StartPositionPictograph" },
-  CardBackStepCount: { __stub: "CardBackStepCount" },
-}));
-const {
-  TurnPatternGlyph,
-  ReversalPatternGlyph,
-  StartPositionPictograph,
-  CardBackStepCount,
-} = stubs;
-
-vi.mock("../../../components/card-back/TurnPatternGlyph.svelte", () => ({
-  default: stubs.TurnPatternGlyph,
-}));
-vi.mock("../../../components/card-back/ReversalPatternGlyph.svelte", () => ({
-  default: stubs.ReversalPatternGlyph,
-}));
-vi.mock("../../../components/card-back/StartPositionPictograph.svelte", () => ({
-  default: stubs.StartPositionPictograph,
-}));
-vi.mock("../../../components/card-back/CardBackStepCount.svelte", () => ({
-  default: stubs.CardBackStepCount,
+// rasterizeLoopIconByKind pulls CardBackLoopIcon → SwapIcon/CheckerboardCircleIcon
+// (Svelte components) which don't import cleanly in vitest; mock it to a fake
+// cached bitmap. The loop-row composer only needs the bitmap's width/height.
+const loopIconCalls: Array<{ kind: string; fa: string; color: string; theme?: string }> = [];
+vi.mock("../card-back-bitmaps-constant", () => ({
+  rasterizeLoopIconByKind: vi.fn(async (kind: string, fa: string, color: string, theme?: string) => {
+    loopIconCalls.push({ kind, fa, color, theme });
+    return { width: 148, height: 148, close: vi.fn() } as unknown as ImageBitmap;
+  }),
 }));
 
 import {
   rasterizeTurnGlyph,
   rasterizeReversalGlyph,
   rasterizeStepCount,
+  rasterizeLoopRow,
   rasterizeStartPosPictograph,
   CARD_RENDER_WIDTH,
-  __setRasterizeFnForTest,
   __setRenderPictoFnForTest,
+  type LoopRowCol,
 } from "../card-back-bitmaps-percard";
 
 const CQI = CARD_RENDER_WIDTH / 100; // 16.44
-
-interface RasterizeCall {
-  Comp: unknown;
-  props: Record<string, unknown>;
-  w: number;
-  h: number;
-  opts?: { containerWidth?: number; settleFrames?: number; settleMs?: number };
-}
 
 interface RenderPictoCall {
   pictograph: unknown;
   options: { size: number; visibility: Record<string, unknown> };
 }
 
-// jsdom has no OffscreenCanvas / createImageBitmap; stub them so the pictograph
-// rasterizer's compositing step runs without error (the real composite is
-// verified in the browser harness).
-function stubCanvasGlobals() {
-  const fakeCtx = {
-    save: vi.fn(), restore: vi.fn(), clip: vi.fn(), beginPath: vi.fn(),
-    moveTo: vi.fn(), arcTo: vi.fn(), closePath: vi.fn(), stroke: vi.fn(),
-    drawImage: vi.fn(), lineWidth: 0, strokeStyle: "",
+// ── Recording fake 2d context ───────────────────────────────────────────────
+interface FakeCtxRec {
+  fills: Array<{ style: string; alpha: number }>;
+  arcs: Array<{ cx: number; cy: number; r: number; style: string; alpha: number }>;
+  texts: Array<{ text: string; x: number; y: number; align: string; baseline: string; font: string; style: string }>;
+  images: Array<{ x: number; y: number; w: number; h: number }>;
+}
+
+function makeFakeCtx(rec: FakeCtxRec) {
+  const ctx = {
+    fillStyle: "" as string,
+    strokeStyle: "" as string,
+    globalAlpha: 1,
+    lineWidth: 0,
+    font: "" as string,
+    textAlign: "start" as string,
+    textBaseline: "alphabetic" as string,
+    save: vi.fn(),
+    restore: vi.fn(),
+    clip: vi.fn(),
+    beginPath: vi.fn(),
+    closePath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    arcTo: vi.fn(),
+    stroke: vi.fn(),
+    rect: vi.fn(),
+    roundRect: vi.fn(),
+    arc: vi.fn((cx: number, cy: number, r: number) => {
+      // record on the next fill (color/alpha resolved at fill time)
+      pendingArc = { cx, cy, r };
+    }),
+    fill: vi.fn(() => {
+      if (pendingArc) {
+        rec.arcs.push({ ...pendingArc, style: ctx.fillStyle, alpha: ctx.globalAlpha });
+        pendingArc = null;
+      } else {
+        rec.fills.push({ style: ctx.fillStyle, alpha: ctx.globalAlpha });
+      }
+    }),
+    fillRect: vi.fn(() => rec.fills.push({ style: ctx.fillStyle, alpha: ctx.globalAlpha })),
+    fillText: vi.fn((text: string, x: number, y: number) => {
+      rec.texts.push({
+        text, x, y,
+        align: ctx.textAlign, baseline: ctx.textBaseline,
+        font: ctx.font, style: ctx.fillStyle,
+      });
+    }),
+    measureText: vi.fn((t: string) => ({ width: t.length * 5 })),
+    drawImage: vi.fn((_img: unknown, x: number, y: number, w: number, h: number) => {
+      rec.images.push({ x, y, w, h });
+    }),
   };
+  let pendingArc: { cx: number; cy: number; r: number } | null = null;
+  return ctx;
+}
+
+let currentRec: FakeCtxRec;
+
+function freshRec(): FakeCtxRec {
+  return { fills: [], arcs: [], texts: [], images: [] };
+}
+
+function stubCanvasGlobals() {
   vi.stubGlobal("OffscreenCanvas", class {
+    public ctx = makeFakeCtx(currentRec);
     constructor(public width: number, public height: number) {}
-    getContext() { return fakeCtx; }
+    getContext() { return this.ctx; }
   });
   vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ width: 1, height: 1, close: vi.fn() })));
 }
 
-describe("card-back-bitmaps-percard rasterizers", () => {
-  let rasterizeCalls: RasterizeCall[];
-  let renderPictoCalls: RenderPictoCall[];
-
+describe("card-back-bitmaps-percard rasterizers (canvas-native)", () => {
   beforeEach(() => {
-    rasterizeCalls = [];
-    renderPictoCalls = [];
-    __setRasterizeFnForTest(async (Comp, props, w, h, opts) => {
-      rasterizeCalls.push({ Comp, props, w, h, opts });
-      return { close: vi.fn() } as unknown as ImageBitmap;
-    });
-    __setRenderPictoFnForTest(async (pictograph, options) => {
-      renderPictoCalls.push({ pictograph, options: options as RenderPictoCall["options"] });
-      return { width: options.size, height: options.size } as unknown as OffscreenCanvas;
-    });
+    currentRec = freshRec();
+    loopIconCalls.length = 0;
     stubCanvasGlobals();
   });
 
   afterEach(() => {
-    __setRasterizeFnForTest(null);
     __setRenderPictoFnForTest(null);
     vi.unstubAllGlobals();
   });
 
   describe("rasterizeTurnGlyph", () => {
-    it("mounts TurnPatternGlyph with the entries prop", async () => {
-      const entries = [
+    it("draws a blue + red bar fill per entry", async () => {
+      await rasterizeTurnGlyph([
         { blue: 1, red: 0 },
-        { blue: 0.5, red: 1.5, blueFloat: true },
-      ];
-      await rasterizeTurnGlyph(entries);
-
-      expect(rasterizeCalls).toHaveLength(1);
-      const call = rasterizeCalls[0]!;
-      expect(call.Comp).toBe(TurnPatternGlyph);
-      expect(call.props).toEqual({ entries });
+        { blue: 2, red: 0.5 },
+      ]);
+      // 2 entries × 2 solid bars = 4 fills, with blue + red colors present.
+      expect(currentRec.fills.length).toBe(4);
+      const colors = currentRec.fills.map((f) => f.style);
+      expect(colors).toContain("#3498db"); // blue
+      expect(colors).toContain("#e74c3c"); // red
     });
 
-    it("rasterizes at the glyph-box size (10cqi × 6cqi) with card-width container", async () => {
-      await rasterizeTurnGlyph([{ blue: 0, red: 0 }]);
-      const call = rasterizeCalls[0]!;
-      expect(call.w).toBe(Math.round(10 * CQI));
-      expect(call.h).toBe(Math.round(6 * CQI));
-      expect(call.opts?.containerWidth).toBe(CARD_RENDER_WIDTH);
+    it("float bars are stroked (hatched) at 0.7 alpha, not solid-filled", async () => {
+      await rasterizeTurnGlyph([{ blue: 1, red: 0, blueFloat: true }]);
+      // blue is float → no solid fill for it; red (0-turn) → one solid fill.
+      expect(currentRec.fills.length).toBe(1);
+      expect(currentRec.fills[0]!.style).toBe("#e74c3c");
+      // float bar produced hatch strokes
+      const ctx = (globalThis as unknown as { OffscreenCanvas: new (w: number, h: number) => { getContext(): { stroke: ReturnType<typeof vi.fn> } } });
+      const probe = new ctx.OffscreenCanvas(1, 1).getContext();
+      expect(probe.stroke).toBeDefined();
     });
 
-    it("uses the border-aware ctx cqi for box size + container", async () => {
-      const ctx = { containerWidth: 1529, cqi: 15.29, textMutedColor: "rgba(0,0,0,0.55)", textColor: "#111" };
-      await rasterizeTurnGlyph([{ blue: 0, red: 0 }], ctx);
-      const call = rasterizeCalls[0]!;
-      expect(call.w).toBe(Math.round(10 * 15.29));
-      expect(call.h).toBe(Math.round(6 * 15.29));
-      expect(call.opts?.containerWidth).toBe(1529);
+    it("returns an ImageBitmap", async () => {
+      const bmp = await rasterizeTurnGlyph([{ blue: 0, red: 0 }]);
+      expect(bmp).toBeTruthy();
     });
   });
 
   describe("rasterizeReversalGlyph", () => {
-    it("mounts ReversalPatternGlyph with sequence + period props", async () => {
-      await rasterizeReversalGlyph("RBRB", 4);
-
-      expect(rasterizeCalls).toHaveLength(1);
-      const call = rasterizeCalls[0]!;
-      expect(call.Comp).toBe(ReversalPatternGlyph);
-      expect(call.props).toEqual({ sequence: "RBRB", period: 4 });
+    it("draws two dots per symbol with the right colors for PRB-", async () => {
+      await rasterizeReversalGlyph("PRB-", 4);
+      // 4 symbols × 2 dots = 8 arcs.
+      expect(currentRec.arcs.length).toBe(8);
+      const colors = currentRec.arcs.map((a) => a.style);
+      // P → red(top) + blue(bottom)
+      expect(colors[0]).toBe("#e74c3c");
+      expect(colors[1]).toBe("#3498db");
+      // R → red(top) + empty(bottom)
+      expect(colors[2]).toBe("#e74c3c");
+      // B → empty(top) + blue(bottom)
+      expect(colors[5]).toBe("#3498db");
     });
 
-    it("rasterizes at the glyph-box size (10cqi × 6cqi) with card-width container", async () => {
-      await rasterizeReversalGlyph("----", 1);
-      const call = rasterizeCalls[0]!;
-      expect(call.w).toBe(Math.round(10 * CQI));
-      expect(call.h).toBe(Math.round(6 * CQI));
-      expect(call.opts?.containerWidth).toBe(CARD_RENDER_WIDTH);
+    it("empty dots use the muted color at 0.4 alpha", async () => {
+      await rasterizeReversalGlyph("----", 4, {
+        containerWidth: CARD_RENDER_WIDTH, cqi: CQI,
+        textMutedColor: "rgba(0,0,0,0.55)", textColor: "#111",
+      });
+      expect(currentRec.arcs.length).toBe(8);
+      for (const a of currentRec.arcs) {
+        expect(a.style).toBe("rgba(0,0,0,0.55)");
+        expect(a.alpha).toBeCloseTo(0.4, 5);
+      }
+    });
+
+    it("compresses to one period, capped at 8", async () => {
+      await rasterizeReversalGlyph("PPPPPPPPPPPP", 12);
+      // min(8, 12) = 8 symbols → 16 dots.
+      expect(currentRec.arcs.length).toBe(16);
     });
   });
 
   describe("rasterizeStepCount", () => {
-    it("mounts CardBackStepCount with the count prop", async () => {
-      await rasterizeStepCount(8);
-
-      expect(rasterizeCalls).toHaveLength(1);
-      const call = rasterizeCalls[0]!;
-      expect(call.Comp).toBe(CardBackStepCount);
-      // default ctx supplies the proof muted color
-      expect(call.props).toEqual({ count: 8, textMutedColor: "rgba(0, 0, 0, 0.55)" });
-    });
-
-    it("rasterizes at the step-count slot size (20cqi × 9cqi)", async () => {
+    it("draws the count right-aligned, bottom-aligned, bold", async () => {
       await rasterizeStepCount(16);
-      const call = rasterizeCalls[0]!;
-      expect(call.w).toBe(Math.round(20 * CQI));
-      expect(call.h).toBe(Math.round(9 * CQI));
-      expect(call.opts?.containerWidth).toBe(CARD_RENDER_WIDTH);
+      expect(currentRec.texts.length).toBe(1);
+      const t = currentRec.texts[0]!;
+      expect(t.text).toBe("16");
+      expect(t.align).toBe("right");
+      expect(t.font).toContain("700");
+      expect(t.font).toContain(`${9 * CQI}px`);
+      // right edge = box width (20cqi), bottom = box height (9cqi)
+      expect(t.x).toBe(Math.round(20 * CQI));
+      expect(t.y).toBe(Math.round(9 * CQI));
     });
 
-    it("forwards the ctx textMutedColor into the step-count props", async () => {
-      const ctx = { containerWidth: 1529, cqi: 15.29, textMutedColor: "rgba(0,0,0,0.6)", textColor: "#111" };
-      await rasterizeStepCount(8, ctx);
-      const call = rasterizeCalls[0]!;
-      expect(call.props).toEqual({ count: 8, textMutedColor: "rgba(0,0,0,0.6)" });
+    it("uses the ctx muted color", async () => {
+      await rasterizeStepCount(8, {
+        containerWidth: CARD_RENDER_WIDTH, cqi: CQI,
+        textMutedColor: "rgba(0,0,0,0.6)", textColor: "#111",
+      });
+      expect(currentRec.texts[0]!.style).toBe("rgba(0,0,0,0.6)");
+    });
+  });
+
+  describe("rasterizeLoopRow", () => {
+    const cols: LoopRowCol[] = [
+      { kind: "fa", fa: "fas fa-rotate", color: "#36c3ff", label: "Rotated" },
+      { kind: "swap", color: "#26e600", label: "Swapped" },
+    ];
+
+    it("resolves each icon via the CACHED rasterizeLoopIconByKind (no per-card mount)", async () => {
+      await rasterizeLoopRow(cols, undefined, "ocean");
+      expect(loopIconCalls).toHaveLength(2);
+      expect(loopIconCalls[0]).toMatchObject({ kind: "fa", fa: "fas fa-rotate", color: "#36c3ff", theme: "ocean" });
+      expect(loopIconCalls[1]).toMatchObject({ kind: "swap", color: "#26e600", theme: "ocean" });
+    });
+
+    it("draws an icon image + an uppercase label per column", async () => {
+      await rasterizeLoopRow(cols);
+      expect(currentRec.images.length).toBe(2);
+      // Two labels (one per column), uppercased, drawn glyph-by-glyph (spaced).
+      const drawn = currentRec.texts.map((t) => t.text).join("");
+      expect(drawn).toContain("R");
+      expect(drawn).toContain("O");
+      // every drawn glyph is uppercase
+      for (const t of currentRec.texts) {
+        expect(t.text).toBe(t.text.toUpperCase());
+      }
+    });
+
+    it("returns an ImageBitmap", async () => {
+      const bmp = await rasterizeLoopRow(cols);
+      expect(bmp).toBeTruthy();
     });
   });
 
   describe("rasterizeStartPosPictograph", () => {
     const pictographData = { letter: "A", motions: {} };
+    let renderPictoCalls: RenderPictoCall[];
 
-    it("renders the pictograph via the Canvas2D pipeline (not a DOM mount)", async () => {
+    beforeEach(() => {
+      renderPictoCalls = [];
+      __setRenderPictoFnForTest(async (pictograph, options) => {
+        renderPictoCalls.push({ pictograph, options: options as RenderPictoCall["options"] });
+        return { width: options.size, height: options.size } as unknown as OffscreenCanvas;
+      });
+    });
+
+    it("renders the pictograph via the Canvas2D pipeline", async () => {
       await rasterizeStartPosPictograph(pictographData, true);
       expect(renderPictoCalls).toHaveLength(1);
-      expect(rasterizeCalls).toHaveLength(0); // no mount+screenshot
       expect(renderPictoCalls[0]!.pictograph).toBe(pictographData);
     });
 

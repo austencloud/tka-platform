@@ -242,6 +242,42 @@ export function rasterizeLoopIcon(
   });
 }
 
+/**
+ * Rasterize a single loop icon cell directly from a RESOLVED column spec
+ * (`{kind, fa, color}`), mounting CardBackLoopIcon once per
+ * `kind:fa:color:cqiEff` and caching the ImageBitmap. Used by the canvas-native
+ * loop-row composer in card-back-bitmaps-percard.ts: the icons stay
+ * mount-rasterized (FontAwesome glyphs / SwapIcon / CheckerboardCircleIcon can't
+ * be drawn directly to canvas without their SVG/font assets) but are CACHED, so
+ * there is no per-card mount — only the row composition (text + drawImage) runs
+ * per card.
+ *
+ * @param kind  Icon node kind ("swap" | "checkerboard" | "fa").
+ * @param fa    FontAwesome class string (used when kind === "fa").
+ * @param color Icon color.
+ * @param theme Theme name (for border-aware cqi; the 9cqi cell resolves against
+ *              the border-frame content box).
+ */
+export function rasterizeLoopIconByKind(
+  kind: "swap" | "checkerboard" | "fa",
+  fa: string,
+  color: string,
+  theme?: string,
+): Promise<ImageBitmap> {
+  const { innerWidth, cqiEff } = borderAwareBasis(theme ?? "");
+  const loopCellSize = 9 * cqiEff;
+  const key = `${kind}:${fa}:${color}:${cqiEff.toFixed(4)}`;
+  return cached(loopIconCache, key, () =>
+    rasterize(
+      CardBackLoopIcon,
+      { kind, fa, color },
+      Math.round(loopCellSize),
+      Math.round(loopCellSize),
+      { containerWidth: Math.round(innerWidth) },
+    ),
+  );
+}
+
 // ── Cache reset ────────────────────────────────────────────────────────────
 
 /**

@@ -390,7 +390,7 @@ export async function buildBackJob(
       ? d.rasterizeStartPosPictograph(sequence.startPosition, darkMode, perCardCtx)
       : Promise.resolve(null),
     loopCols.length > 0
-      ? d.rasterizeLoopRow(loopCols, perCardCtx)
+      ? d.rasterizeLoopRow(loopCols, perCardCtx, opts.theme)
       : Promise.resolve(null),
   ]);
 
