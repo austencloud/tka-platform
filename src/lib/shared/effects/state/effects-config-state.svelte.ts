@@ -207,7 +207,10 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     }, 300);
   }
 
-  function updateEffect(effectId: string, patch: Record<string, unknown>) {
+  function updateEffect<K extends keyof EffectConfigMap>(
+    effectId: K,
+    patch: Partial<EffectConfigMap[K]>,
+  ) {
     if (!EFFECT_IDS.includes(effectId as any)) {
       throw new Error(`Unknown effect id: "${effectId}"`);
     }
