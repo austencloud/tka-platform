@@ -14,13 +14,14 @@
     PropRenderingProps,
     ViewerLayoutState,
   } from "../domain/viewer-prop-groups";
-  import type { ContentType, SplitConfig } from '../services/viewer-state-persistence';
+  import type { SplitConfig } from '../services/viewer-state-persistence';
+  import { COMPARISON_MODE_LAYOUTS, splitConfigToMode, type ComparisonMode } from '../services/viewer-state-persistence';
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
   import PerformerHub from "$lib/shared/3d/components/controls/PerformerHub.svelte";
-  import PaneContentSelector from './PaneContentSelector.svelte';
+  import ComparisonModeBar from './ComparisonModeBar.svelte';
   import VideoGallery from './VideoGallery.svelte';
   import MandalaPane from './MandalaPane.svelte';
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -110,7 +111,7 @@
      */
     isExporting?: boolean;
     splitConfig?: SplitConfig;
-    onSplitConfigChange?: (pane: 'left' | 'right', content: ContentType) => void;
+    onSplitConfigReplace?: (config: SplitConfig) => void;
     isLoggedIn?: boolean;
     onVideoUpload?: () => void;
   }
@@ -121,11 +122,9 @@
     imageComposition,
     propRendering,
     layout,
-    renderMode = '2d',
     bpm = 60,
     onBpmChange = () => {},
     onRenderProgress,
-    onFocusPane,
     onUnfocusPane,
     onStepClick,
     onCanvasReady,
@@ -139,7 +138,7 @@
     rerenderTrigger = 0,
     isExporting = false,
     splitConfig = { leftPane: 'animation', rightPane: 'card' },
-    onSplitConfigChange,
+    onSplitConfigReplace,
     isLoggedIn = false,
     onVideoUpload,
   }: Props = $props();
@@ -148,52 +147,10 @@
     startSceneAssetPreload();
   });
 
-  let pointerDownPos: { x: number; y: number } | null = null;
+  const comparisonMode = $derived(splitConfigToMode(splitConfig));
 
-  function handlePointerDown(e: PointerEvent) {
-    pointerDownPos = { x: e.clientX, y: e.clientY };
-  }
-
-  function handleAnimationClick(e: MouseEvent) {
-    if (isExporting) {
-      pointerDownPos = null;
-      return;
-    }
-
-    const target = e.target as HTMLElement | null;
-    if (target?.closest('[role="slider"], button')) {
-      pointerDownPos = null;
-      return;
-    }
-
-    if (renderMode === '3d' && pointerDownPos) {
-      const dx = Math.abs(e.clientX - pointerDownPos.x);
-      const dy = Math.abs(e.clientY - pointerDownPos.y);
-      if (dx > 5 || dy > 5) {
-        pointerDownPos = null;
-        return;
-      }
-    }
-    pointerDownPos = null;
-
-    if (layout.focusedPane === "animation") return;
-    onFocusPane("animation");
-  }
-
-  function handlePreviewClick(e: MouseEvent) {
-    if (isExporting) return;
-    const target = e.target as HTMLElement | null;
-    if (target?.closest('.pane-selector')) return;
-    if (layout.focusedPane === "image") return;
-    onFocusPane("image");
-  }
-
-  function handleKeydown(e: KeyboardEvent, pane: "animation" | "image") {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      if (layout.focusedPane === pane) return;
-      onFocusPane(pane);
-    }
+  function selectComparisonMode(mode: ComparisonMode) {
+    onSplitConfigReplace?.(COMPARISON_MODE_LAYOUTS[mode]);
   }
 
   function handleCloseClick(e: MouseEvent | KeyboardEvent) {
@@ -350,25 +307,16 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
   data-landscape={layout.isLandscapeMobile || undefined}
   data-focused={layout.focusedPane}
 >
+  {#if !layout.focusedPane && !isExporting && onSplitConfigReplace}
+    <ComparisonModeBar current={comparisonMode} onSelect={selectComparisonMode} />
+  {/if}
+
   <!-- Animation pane -->
   <div
     class="split-column animation-column"
     class:focused={layout.focusedPane === "animation"}
     data-hidden={layout.focusedPane === "image"}
-    role="button"
-    tabindex="0"
-    onpointerdown={handlePointerDown}
-    onclick={handleAnimationClick}
-    onkeydown={(e) => handleKeydown(e, "animation")}
-    aria-label={layout.focusedPane === "animation" ? "Exit focus mode" : "Focus on animation"}
-    aria-expanded={layout.focusedPane === "animation"}
   >
-    {#if (!layout.focusedPane || layout.isMobile) && onSplitConfigChange}
-      <PaneContentSelector
-        current={splitConfig.leftPane}
-        onSelect={(content) => onSplitConfigChange?.('left', content)}
-      />
-    {/if}
 
     <!-- Persistent 3D canvas — stays mounted after first activation to preserve
          WebGL context, loaded GLBs, and generated SDF textures across pane switches. -->
@@ -541,19 +489,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     class="split-column preview-column"
     class:focused={layout.focusedPane === "image"}
     data-hidden={layout.focusedPane === "animation"}
-    role="button"
-    tabindex="0"
-    onclick={handlePreviewClick}
-    onkeydown={(e) => handleKeydown(e, "image")}
-    aria-label={layout.focusedPane === "image" ? "Exit focus mode" : "Focus on image"}
-    aria-expanded={layout.focusedPane === "image"}
   >
-    {#if (!layout.focusedPane || layout.isMobile) && onSplitConfigChange}
-      <PaneContentSelector
-        current={splitConfig.rightPane}
-        onSelect={(content) => onSplitConfigChange?.('right', content)}
-      />
-    {/if}
 
     <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
       {#if _2dRightMounted}
@@ -777,28 +713,10 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     padding: 0;
     margin: 0;
     font: inherit;
-    cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    /* visible so the 1.012 hover-scale on .media-pane isn't clipped at the
-       column edge. .media-pane keeps its own overflow:hidden to clip canvas
-       content inside the scaled rectangle. */
+    /* visible so overlay scaling isn't clipped at the column edge.
+       .media-pane keeps its own overflow:hidden to clip canvas content. */
     overflow: visible;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .split-column:not(.focused) {
-      outline: 2px solid transparent;
-      outline-offset: -2px;
-      transition: outline-color 120ms cubic-bezier(0.2, 0, 0, 1);
-    }
-    .split-column:hover:not(.focused) {
-      outline-color: var(--theme-accent, #6366f1);
-    }
-  }
-
-  .split-column:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: -2px;
   }
 
   .animation-column {

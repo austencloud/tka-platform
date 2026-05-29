@@ -7,6 +7,30 @@ export interface SplitConfig {
 	rightPane: ContentType;
 }
 
+export type ComparisonMode = '2d-card' | '3d-card' | '2d-3d' | '2d-mandala';
+
+export const COMPARISON_MODE_LAYOUTS: Record<ComparisonMode, SplitConfig> = {
+	'2d-card': { leftPane: 'animation', rightPane: 'card' },
+	'3d-card': { leftPane: 'animation-3d', rightPane: 'card' },
+	'2d-3d': { leftPane: 'animation', rightPane: 'animation-3d' },
+	'2d-mandala': { leftPane: 'animation', rightPane: 'mandala' }
+};
+
+/**
+ * Resolve a stored SplitConfig to the comparison mode that highlights it.
+ * Dropped/legacy pairings (e.g. 3d-mandala, card-card) fall back to '2d-card'
+ * without mutating storage — the user's next pick rewrites it.
+ */
+export function splitConfigToMode(config: SplitConfig): ComparisonMode {
+	for (const mode of Object.keys(COMPARISON_MODE_LAYOUTS) as ComparisonMode[]) {
+		const layout = COMPARISON_MODE_LAYOUTS[mode];
+		if (layout.leftPane === config.leftPane && layout.rightPane === config.rightPane) {
+			return mode;
+		}
+	}
+	return '2d-card';
+}
+
 const VIEWER_MODE_KEY = 'tka-viewer-mode';
 const SPLIT_CONFIG_KEY = 'tka-viewer-split-config';
 const LEGACY_EDITING_PANE_KEY = 'tka-viewer-editing-pane';

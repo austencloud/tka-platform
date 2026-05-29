@@ -497,7 +497,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       splitConfig={ctx.viewerState.viewerMode !== 'split' && (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d' || ctx.viewerState.viewerMode === 'mandala')
                         ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
                         : ctx.viewerState.splitConfig}
-                      onSplitConfigChange={(pane, content) => ctx.viewerState.setSplitPaneContent(pane, content)}
+                      onSplitConfigReplace={(config) => ctx.viewerState.setSplitConfig(config)}
                       isLoggedIn={ctx.isLoggedIn}
                       onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                     />

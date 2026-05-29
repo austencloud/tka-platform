@@ -41,6 +41,11 @@ export function createViewerState() {
 		persistSplitConfig(splitConfig);
 	}
 
+	function setSplitConfig(config: SplitConfig) {
+		splitConfig = { ...config };
+		persistSplitConfig(splitConfig);
+	}
+
 	function enterExport(type: 'animation-export' | 'image-export', contentType?: 'animation' | 'animation-3d') {
 		if (type === 'animation-export') {
 			viewerMode = contentType ?? 'animation';
@@ -58,7 +63,8 @@ export function createViewerState() {
 
 	const wants3D = $derived(
 		viewerMode === 'animation-3d' ||
-		(viewerMode === 'split' && splitConfig.leftPane === 'animation-3d')
+		(viewerMode === 'split' &&
+			(splitConfig.leftPane === 'animation-3d' || splitConfig.rightPane === 'animation-3d'))
 	);
 
 	return {
@@ -77,6 +83,7 @@ export function createViewerState() {
 		setViewerMode,
 		setExportContext,
 		setSplitPaneContent,
+		setSplitConfig,
 		enterExport,
 		exitExport
 	};
