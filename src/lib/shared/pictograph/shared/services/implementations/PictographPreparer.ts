@@ -5,7 +5,7 @@ import type {
   PreparedRenderData,
 } from "../../domain/models/PreparedPictographData";
 import type { PrepareOptions } from "../contracts/types";
-import type { ArrowLifecycleManager } from "../../../arrow/orchestration/services/implementations/ArrowLifecycleManager";
+import type { ArrowLifecycleManager } from "../../../arrow/orchestration/services/arrow-lifecycle-manager";
 import type { PropSvgLoader } from "../../../prop/services/implementations/PropSvgLoader";
 import type { PropPlacer } from "../../../prop/services/implementations/PropPlacer";
 import { deriveGridMode as _deriveGridMode } from "../../../grid/services/grid-mode-deriver";
@@ -403,7 +403,7 @@ export class PictographPreparer {
   }
 }
 
-import { arrowLifecycleManager } from "../../../arrow/orchestration/services/implementations/ArrowLifecycleManager";
+import { arrowLifecycleManager } from "../../../arrow/orchestration/services/arrow-lifecycle-manager";
 import { propSvgLoader } from "../../../prop/services/implementations/PropSvgLoader";
 import { propPlacer } from "../../../prop/services/implementations/PropPlacer";
 

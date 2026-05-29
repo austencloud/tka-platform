@@ -9,26 +9,26 @@
  * in screen directions (W = up, D = right, etc.).
  */
 
-import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { ArrowSvgLoader } from "../../../rendering/services/implementations/ArrowSvgLoader";
+import type { PictographData } from "../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../shared/domain/models/MotionData";
+import type { ArrowSvgLoader } from "../../rendering/services/arrow-svg-loader";
 import {
   calculateArrowPoint,
   shouldMirrorArrow,
-} from "../arrow-positioning-orchestrator";
+} from "./arrow-positioning-orchestrator";
 import type {
   ArrowAssets,
   ArrowLifecycleResult,
   ArrowPosition,
   ArrowState,
-} from "../../domain/arrow-models";
+} from "../domain/arrow-models";
 import {
   createArrowAssets,
   createArrowLifecycleResult,
   createArrowPosition,
   createArrowState,
-} from "../../domain/arrow-factories";
-import type { ArrowLifecycleOptions } from "../contracts/types";
+} from "../domain/arrow-factories";
+import type { ArrowLifecycleOptions } from "./types";
 
 export class ArrowLifecycleManager {
   constructor(private svgLoader: ArrowSvgLoader) {}
@@ -233,7 +233,7 @@ export class ArrowLifecycleManager {
 // Use this instead of arrowLifecycleManager to avoid DI container rebuilds.
 // ============================================================================
 
-import { arrowSvgLoader } from "../../../rendering/services/implementations/ArrowSvgLoader";
+import { arrowSvgLoader } from "../../rendering/services/arrow-svg-loader";
 
 
 export const arrowLifecycleManager = new ArrowLifecycleManager(

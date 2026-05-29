@@ -23,7 +23,7 @@ import { PropPlacer } from "../../src/lib/shared/pictograph/prop/services/implem
 import { NodePictographPreparer } from "./NodePictographPreparer";
 
 // Import all arrow positioning services
-import { ArrowLifecycleManager } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowLifecycleManager";
+import { ArrowLifecycleManager } from "../../src/lib/shared/pictograph/arrow/orchestration/services/arrow-lifecycle-manager";
 import { ArrowAdjustmentProcessor } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowAdjustmentProcessor";
 import { ArrowCoordinateTransformer } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowCoordinateTransformer";
 import { ArrowDataProcessor } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowDataProcessor";

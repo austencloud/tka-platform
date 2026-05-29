@@ -3,7 +3,7 @@
  * SVG Loader Interface
  */
 
-import type { ThemeMode } from "../../../../../utils/svg-color-utils";
+import type { ThemeMode } from "../../../../utils/svg-color-utils";
 
 /**
  * Options for arrow SVG loading

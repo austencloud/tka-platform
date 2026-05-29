@@ -16,15 +16,15 @@
  */
 
 // Type imports removed — value imports at bottom of file provide both type and value
-import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
-import type { ArrowSvgData } from "../../../../shared/domain/models/svg-models";
-import type { ArrowSvgLoadOptions } from "../contracts/types";
-import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { ThemeMode } from "../../../../../utils/svg-color-utils";
-import { getAnimationVisibilityManager } from "../../../../../animation-engine/state/animation-visibility-state.svelte";
-import { getArrowPath } from "../arrow-path-resolver";
-import { parseArrowSvg, extractSvgContent } from "../arrow-svg-parser";
-import { applyColorToSvg } from "../arrow-svg-color-transformer";
+import type { ArrowPlacementData } from "../../positioning/placement/domain/ArrowPlacementData";
+import type { ArrowSvgData } from "../../../shared/domain/models/svg-models";
+import type { ArrowSvgLoadOptions } from "./types";
+import type { MotionData } from "../../../shared/domain/models/MotionData";
+import type { ThemeMode } from "../../../../utils/svg-color-utils";
+import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
+import { getArrowPath } from "./arrow-path-resolver";
+import { parseArrowSvg, extractSvgContent } from "./arrow-svg-parser";
+import { applyColorToSvg } from "./arrow-svg-color-transformer";
 
 // ============================================================================
 // HMR-AWARE MODULE-LEVEL CACHE STORAGE

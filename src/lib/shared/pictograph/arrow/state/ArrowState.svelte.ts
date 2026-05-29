@@ -7,7 +7,7 @@
 
 import type { PictographData } from "../../shared/domain/models/PictographData";
 import type { ArrowAssets } from "../orchestration/domain/arrow-models";
-import type { ArrowLifecycleManager } from "../orchestration/services/implementations/ArrowLifecycleManager";
+import type { ArrowLifecycleManager } from "../orchestration/services/arrow-lifecycle-manager";
 
 export interface ArrowState {
   readonly arrowPositions: Record<

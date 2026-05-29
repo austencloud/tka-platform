@@ -7,9 +7,9 @@
  */
 
 import type {
-} from "../../domain/arrow-models";
-import type { ThemeMode } from "../../../../../utils/svg-color-utils";
-import type { GridMode } from "../../../../grid/domain/enums/grid-enums";
+} from "../domain/arrow-models";
+import type { ThemeMode } from "../../../../utils/svg-color-utils";
+import type { GridMode } from "../../../grid/domain/enums/grid-enums";
 
 /**
  * Options for arrow lifecycle operations
