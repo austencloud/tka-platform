@@ -14,6 +14,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   } from "../state/sequence-viewer-overlay-state.svelte";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
   import ViewerContentRail from "./ViewerContentRail.svelte";
+  import ViewerModeBottomBar from "./ViewerModeBottomBar.svelte";
   import type { OrchestratorContext } from "./SequenceViewerOrchestrator.svelte";
   import type { ContentType } from "../state/viewer-state.svelte";
   import VideoGallery from "./VideoGallery.svelte";
@@ -610,6 +611,16 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       {/if}
                     </div>
                   {/if}
+                  {#if isMobileWidth && !isAnyExportActive}
+                    <ViewerModeBottomBar
+                      activeMode={ctx.viewerState.viewerMode}
+                      webgl2Available={ctx.viewer3DState.webgl2Available}
+                      practiceActive={ctx.practiceActive}
+                      onPracticeToggle={() => togglePractice(ctx)}
+                      onSelectSplit={() => selectSplitMode(ctx)}
+                      onSelectMode={(mode) => selectViewerMode(ctx, mode)}
+                    />
+                  {/if}
                 </div>
               {/if}
             </div>
@@ -880,6 +891,16 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     flex: 1;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .viewer-and-export:not(.desktop) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .viewer-and-export:not(.desktop) :global(.view-container) {
+    flex: 1;
+    min-height: 0;
   }
 
   .viewer-and-export.desktop {
