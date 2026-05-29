@@ -338,3 +338,6 @@ src/lib/features/museum/audio/soundscape-candidates.generated.json
 # Tauri
 src-tauri/target/
 ~/.tauri/
+
+# Blender export intermediates (pre-optimization). Optimized GLBs are committed; *_raw are not.
+static/models/**/*_raw.glb
