@@ -24,11 +24,14 @@ export function getExportDimensions(
 /**
  * Auto-scale bitrate based on pixel count and frame rate.
  *
- * Base rates:
- *   - 720p  (921 600 px): 4 Mbps
- *   - 1080p (2 073 600 px): 6 Mbps
- *   - 2160p (8 294 400 px): 20 Mbps
- *   - 4320p+: 50 Mbps
+ * Base rates (tuned high: saturated trail/glow gradients on pure black are
+ * where H.264 quantization shows first as mosquito noise / banding; the black
+ * field is nearly free under VBR, so a high ceiling costs little but lets the
+ * encoder spend bits where the eye sees them):
+ *   - 720p  (921 600 px): 8 Mbps
+ *   - 1080p (2 073 600 px): 12 Mbps
+ *   - 2160p (8 294 400 px): 40 Mbps
+ *   - 4320p+: 80 Mbps
  *
  * FPS multipliers:
  *   - <= 30 fps: 1x
@@ -38,10 +41,10 @@ export function getExportDimensions(
 export function calculateBitrate(width: number, height: number, fps: number): number {
   const pixels = width * height;
   const base =
-    pixels <= 1280 * 720 ? 4_000_000 :
-    pixels <= 1920 * 1080 ? 6_000_000 :
-    pixels <= 3840 * 2160 ? 20_000_000 :
-    50_000_000;
+    pixels <= 1280 * 720 ? 8_000_000 :
+    pixels <= 1920 * 1080 ? 12_000_000 :
+    pixels <= 3840 * 2160 ? 40_000_000 :
+    80_000_000;
   const fpsMultiplier = fps <= 30 ? 1 : fps <= 60 ? 1.33 : 2.5;
   return Math.round(base * fpsMultiplier);
 }

@@ -166,11 +166,16 @@ let sourceHeight = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
  *   - Level 6.0 (0x3c): up to 35,651,584 px (e.g. 8192x4320)
  */
 function selectCodec(width: number, height: number): string {
+  // High profile (0x64), not Baseline (0x42). Baseline only has the 4x4
+  // integer transform and no CABAC, which blocks/stipples smooth gradients —
+  // exactly the trail-on-black artifact. High adds the 8x8 transform + CABAC,
+  // producing clean gradients. Middle byte 00 = no constraint flags; trailing
+  // byte is the level (3.1 / 4.0 / 5.1 / 6.0).
   const pixelArea = width * height;
-  if (pixelArea <= 921_600) return "avc1.42001f";
-  if (pixelArea <= 2_073_600) return "avc1.420028";
-  if (pixelArea <= 8_912_896) return "avc1.420033";
-  return "avc1.42003c";
+  if (pixelArea <= 921_600) return "avc1.64001f";
+  if (pixelArea <= 2_073_600) return "avc1.640028";
+  if (pixelArea <= 8_912_896) return "avc1.640033";
+  return "avc1.64003c";
 }
 
 /**
@@ -342,6 +347,10 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
     height: encoderHeight,
     bitrate: config.bitrate,
     framerate: config.fps,
+    // Prioritize quality over realtime latency: lets the encoder use
+    // lookahead + frame reordering (B-frames under High profile) instead of
+    // the low-latency single-pass mode tuned for live streaming.
+    latencyMode: "quality",
   });
 }
 
@@ -538,7 +547,10 @@ async function handleConfigWasm(config: ExportConfig): Promise<void> {
   wasmEncoder.frameRate = config.fps;
   wasmEncoder.kbps = Math.round(config.bitrate / 1000);
   wasmEncoder.groupOfPictures = 30;
-  wasmEncoder.quantizationParameter = 20;
+  // Lower QP = higher quality. 20 left visible banding on the trail gradients;
+  // 16 tightens quantization for smoother glow (fallback path only — Chrome
+  // takes the WebCodecs High-profile branch above).
+  wasmEncoder.quantizationParameter = 16;
 
   wasmEncoder.initialize();
 }
