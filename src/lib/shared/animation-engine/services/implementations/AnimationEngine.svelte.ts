@@ -181,6 +181,20 @@ export class AnimationEngine {
   }
 
   /**
+   * Seed the initial canvas size. Must be called before initialize() so the
+   * canvas + every overlay (trail, fire, led) is created at this size from the
+   * first frame. Without it the engine boots at DEFAULT_CANVAS_SIZE and only
+   * reaches the container's real size via the async ResizeObserver — which, for
+   * a fresh offscreen export engine, fires mid-export and wipes the trail ring
+   * buffers + upscales the early frames. Live canvases don't hit this because
+   * they settle long before any export. No-op once initialized.
+   */
+  setInitialCanvasSize(size: number): void {
+    if (this.state.isInitialized) return;
+    if (size > 0) this._canvasSize = size;
+  }
+
+  /**
    * Wire the shared EffectsConfigState so the engine reads live per-effect
    * intents (zap, etc.) from the same source the Customize panels write to.
    *

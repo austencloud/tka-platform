@@ -479,9 +479,13 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // re-stamped multiple times at the same virtualTime — the "doubly opaque" bug.
       const trailDiag = typeof window !== "undefined"
         ? ((window as unknown as Record<string, unknown>).__tka_trail_diag as
-            | { read(): { stamps: number; lastDt: number; lastFade: number } }
+            | { read(): { stamps: number; lastDt: number; lastFade: number }; enable(): void }
             | undefined)
         : undefined;
+      // Auto-enable in DEV so the per-frame stamp/dt/fade log prints without a
+      // manual console step. The hook exists once the offscreen engine's trail
+      // overlay has initialized (above).
+      if (import.meta.env.DEV) trailDiag?.enable();
 
       for (let i = 0; i < totalFrames; i++) {
         if (this.shouldCancel) {

@@ -31,6 +31,11 @@ export class RenderContextFactory {
     document.body.appendChild(container);
 
     const engine = new AnimationEngine();
+    // Seed the size BEFORE initialize so the canvas + overlays are created at
+    // `size` from frame 0. Otherwise the engine boots at DEFAULT_CANVAS_SIZE and
+    // the async ResizeObserver resizes it mid-export, wiping trail buffers and
+    // upscaling early frames (the export-fidelity regression).
+    engine.setInitialCanvasSize(size);
     await engine.initialize(container, {});
 
     const context = engine.getRenderContext(id, container);
