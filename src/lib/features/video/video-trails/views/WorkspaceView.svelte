@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { getEffectConfigMapper } from "$lib/features/video/video-trails/getEffectConfigMapper";
-  import { getVideoTipAdapter } from "$lib/features/video/video-trails/getVideoTipAdapter";
-  import { getVideoTrailsExporter } from "$lib/features/video/video-trails/getVideoTrailsExporter";
-  import { getLedThresholdDetector } from "$lib/features/video/video-trails/getLedThresholdDetector";
-  import { getColorEndpointDetector } from "$lib/features/video/video-trails/getColorEndpointDetector";
+  import { getEffectConfigMapper } from "$lib/features/video/video-trails/get-effect-config-mapper";
+  import { getVideoTipAdapter } from "$lib/features/video/video-trails/get-video-tip-adapter";
+  import { getVideoTrailsExporter } from "$lib/features/video/video-trails/get-video-trails-exporter";
+  import { getLedThresholdDetector } from "$lib/features/video/video-trails/get-led-threshold-detector";
+  import { getColorEndpointDetector } from "$lib/features/video/video-trails/get-color-endpoint-detector";
   import { onMount, onDestroy } from "svelte";
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
   import type { ExportConfig, ExportState } from "../domain/types";
   import type { IEndpointDetector } from "../services/contracts/IEndpointDetector";
   import type * as EffectConfigMapperModule from "../services/effect-config-mapper";
-  import type { VideoTipAdapter } from "../services/implementations/VideoTipAdapter";
+  import type { VideoTipAdapter } from "../services/video-tip-adapter";
   import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import type { FireFrameInput } from "$lib/shared/animation-engine/domain/types/FireTypes";
   import type { LedFrameInput } from "$lib/shared/animation-engine/domain/types/LedTypes";

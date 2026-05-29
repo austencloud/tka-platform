@@ -1,4 +1,4 @@
-import type { VideoTrailsProject } from "../../domain/types";
+import type { VideoTrailsProject } from "../domain/types";
 
 const DB_NAME = "tka-video-trails";
 const DB_VERSION = 1;

@@ -2,8 +2,8 @@
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
   import type { IEndpointDetector } from "../services/contracts/IEndpointDetector";
-  import { getLedThresholdDetector } from "../getLedThresholdDetector";
-  import { getColorEndpointDetector } from "../getColorEndpointDetector";
+  import { getLedThresholdDetector } from "../get-led-threshold-detector";
+  import { getColorEndpointDetector } from "../get-color-endpoint-detector";
   import type { DetectedEndpoint, EndpointCorrection } from "../domain/types";
 
   interface Props {

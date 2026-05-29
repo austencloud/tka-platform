@@ -1,6 +1,6 @@
-import type { VideoTrailsRepository } from "../services/implementations/VideoTrailsRepository";
+import type { VideoTrailsRepository } from "../services/video-trails-repository";
 import type * as DetectionCorrectorModule from "../services/detection-corrector";
-import type { VideoTipAdapter } from "../services/implementations/VideoTipAdapter";
+import type { VideoTipAdapter } from "../services/video-tip-adapter";
 import type {
   VideoTrailsView,
   VideoSource,

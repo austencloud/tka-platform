@@ -1,7 +1,7 @@
-// src/lib/features/video/video-trails/services/implementations/LedThresholdDetector.ts
+// src/lib/features/video/video-trails/services/led-threshold-detector.ts
 
-import type { IEndpointDetector } from "../contracts/IEndpointDetector";
-import type { DetectedEndpoint, DetectionConfig, DetectorCapabilities } from "../../domain/types";
+import type { IEndpointDetector } from "./contracts/IEndpointDetector";
+import type { DetectedEndpoint, DetectionConfig, DetectorCapabilities } from "../domain/types";
 
 interface BrightPixel {
   x: number;

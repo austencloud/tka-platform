@@ -1,4 +1,4 @@
-import type { ExportConfig, ExportState } from "../../domain/types";
+import type { ExportConfig, ExportState } from "../domain/types";
 
 export class VideoTrailsExporter {
   private cancelled = false;

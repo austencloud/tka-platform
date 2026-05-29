@@ -1,5 +1,5 @@
 import type { IEndpointDetector } from './services/contracts/IEndpointDetector';
-import { ColorEndpointDetector } from './services/implementations/ColorEndpointDetector';
+import { ColorEndpointDetector } from './services/color-endpoint-detector';
 
 let instance: IEndpointDetector | null = null;
 export function getColorEndpointDetector(): IEndpointDetector {

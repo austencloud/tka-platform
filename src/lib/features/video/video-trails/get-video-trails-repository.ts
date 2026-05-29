@@ -1,4 +1,4 @@
-import { VideoTrailsRepository } from './services/implementations/VideoTrailsRepository';
+import { VideoTrailsRepository } from './services/video-trails-repository';
 
 let instance: VideoTrailsRepository | null = null;
 export function getVideoTrailsRepository(): VideoTrailsRepository {

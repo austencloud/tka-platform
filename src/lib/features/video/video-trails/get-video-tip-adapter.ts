@@ -1,4 +1,4 @@
-import { VideoTipAdapter } from './services/implementations/VideoTipAdapter';
+import { VideoTipAdapter } from './services/video-tip-adapter';
 
 let instance: VideoTipAdapter | null = null;
 export function getVideoTipAdapter(): VideoTipAdapter {
