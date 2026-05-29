@@ -32,6 +32,12 @@ export interface EffectMeta {
   readonly label: string;
   readonly icon: `fa-${string}`;
   readonly color: `#${string}`;
+  /** Show this effect's coven in the hub. Defaults to true when omitted. */
+  readonly ready3d?: boolean;
+  /** GLB path for the coven stage; omitted → stone-disc platform. */
+  readonly stageModel?: string;
+  /** Acolyte skin id; omitted → default avatar. (Deferred capability.) */
+  readonly skin?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,6 +77,11 @@ export const EFFECT_COLORS: Record<string, string> = Object.fromEntries(
 export const EFFECT_LABELS: Record<string, string> = Object.fromEntries(
   EFFECTS.map((e) => [e.id, e.label]),
 );
+
+/** Effect ids whose covens should appear in the hub (ready3d !== false). */
+export function readyEffectIds(): string[] {
+  return EFFECTS.filter((e) => e.ready3d !== false).map((e) => e.id);
+}
 
 // ── Registration map ─────────────────────────────────────────────────────
 
