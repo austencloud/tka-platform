@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import { getUserVideoLibrary } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
-  import type { UserVideoLibrary } from "../services/contracts/types";
+  import type { UserVideoLibrary } from "../services/types";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import { onMount } from "svelte";
   import CollaborativeVideoCard from "./CollaborativeVideoCard.svelte";

@@ -24,7 +24,7 @@ import type {
   VideoVisibility,
   StepMap,
 } from "../domain/CollaborativeVideo";
-import type { UserVideoLibrary } from "./contracts/types";
+import type { UserVideoLibrary } from "./types";
 
 const VIDEOS_COLLECTION = "videos";
 
