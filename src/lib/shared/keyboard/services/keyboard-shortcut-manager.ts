@@ -7,14 +7,14 @@
  * Domain: Keyboard Shortcuts
  */
 
-import type { ShortcutRegistry } from "./ShortcutRegistry";
+import type { ShortcutRegistry } from "./shortcut-registry";
 import type {
   ShortcutContext,
   ShortcutDefinition,
   ShortcutRegistrationOptions,
-} from "../../domain/types/keyboard-types";
-import { Shortcut } from "../../domain/models/Shortcut";
-import { NormalizedKeyboardEvent } from "../../domain/models/KeyboardEvent";
+} from "../domain/types/keyboard-types";
+import { Shortcut } from "../domain/models/shortcut";
+import { NormalizedKeyboardEvent } from "../domain/models/keyboard-event";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
 import { hasOpenDrawers, dismissTopDrawer } from "$lib/shared/foundation/ui/drawer/DrawerStack";

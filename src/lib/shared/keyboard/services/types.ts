@@ -2,7 +2,7 @@ import type {
   CustomBinding,
   ParsedKeyCombo,
   ShortcutRegistrationOptions,
-} from "../../domain/types/keyboard-types";
+} from "../domain/types/keyboard-types";
 
 // --- From IShortcutCustomizer ---
 /**

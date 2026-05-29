@@ -7,7 +7,7 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
   import ShortcutRow from "./ShortcutRow.svelte";
-  import type { ShortcutWithBinding } from "../../services/contracts/types";
+  import type { ShortcutWithBinding } from "../../services/types";
   import type { ShortcutContext } from "../../domain/types/keyboard-types";
 
   let {

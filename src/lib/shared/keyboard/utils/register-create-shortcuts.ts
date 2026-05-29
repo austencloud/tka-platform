@@ -7,7 +7,7 @@
  */
 
 import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
+import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state-ref.svelte";
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";

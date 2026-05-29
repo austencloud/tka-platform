@@ -6,7 +6,7 @@
  * Domain: Keyboard Shortcuts - Registration
  */
 
-import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
+import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import {
   handleModuleChange,

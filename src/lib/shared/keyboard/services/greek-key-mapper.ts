@@ -9,7 +9,7 @@
  * Numpad minus: dash suffix for Type 3/4/5 letters
  */
 
-import type { GreekKeyMapping } from "./contracts/types";
+import type { GreekKeyMapping } from "./types";
 
 const NUMBER_ROW_MAPPINGS: readonly GreekKeyMapping[] = [
   { code: "Digit1", symbol: "Σ", label: "Sigma", group: "number-row" },

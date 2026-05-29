@@ -26,10 +26,10 @@
   import("$lib/features/create/shared/components/CreatePanelDrawer.svelte").then(m => { CreatePanelDrawer = m.default; });
 
   // Services
-  import { getKeyboardShortcutManager } from "$lib/shared/keyboard/getKeyboardShortcutManager";
+  import { getKeyboardShortcutManager } from "$lib/shared/keyboard/get-keyboard-shortcut-manager";
   import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
   import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
-  import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
+  import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
   import { animationShortcutRegistrar } from "../services/implementations/AnimationShortcutRegistrar";
 
   // Types

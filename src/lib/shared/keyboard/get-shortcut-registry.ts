@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ShortcutRegistry } from './services/implementations/ShortcutRegistry';
+import { ShortcutRegistry } from './services/shortcut-registry';
 
 let instance: ShortcutRegistry | null = null;
 

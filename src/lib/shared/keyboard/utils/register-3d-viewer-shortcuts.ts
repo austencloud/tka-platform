@@ -5,7 +5,7 @@
  * Actual handlers are bound dynamically when the viewer mounts.
  */
 
-import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
+import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
 import type { ShortcutRegistrationOptions } from "../domain/types/keyboard-types";
 
 /**

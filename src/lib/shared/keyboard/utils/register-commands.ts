@@ -6,7 +6,7 @@
  * Domain: Keyboard Shortcuts - Command Registration
  */
 
-import type { CommandPalette } from '$lib/shared/keyboard/services/implementations/CommandPalette'
+import type { CommandPalette } from '$lib/shared/keyboard/services/command-palette'
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import {
   handleModuleChange,

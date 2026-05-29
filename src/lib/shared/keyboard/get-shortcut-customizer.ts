@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { ShortcutCustomizer } from './services/implementations/ShortcutCustomizer';
-import { getShortcutRegistry } from './getShortcutRegistry';
+import { ShortcutCustomizer } from './services/shortcut-customizer';
+import { getShortcutRegistry } from './get-shortcut-registry';
 
 let instance: ShortcutCustomizer | null = null;
 

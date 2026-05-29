@@ -7,7 +7,7 @@
  * Domain: Keyboard Shortcuts - Command Palette
  */
 
-import type { CommandPaletteItem } from "../../domain/types/keyboard-types";
+import type { CommandPaletteItem } from "../domain/types/keyboard-types";
 
 export class CommandPalette {
   private commands: Map<string, CommandPaletteItem> = new Map();

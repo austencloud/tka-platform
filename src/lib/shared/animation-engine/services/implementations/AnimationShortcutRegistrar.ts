@@ -5,7 +5,7 @@
  * Shortcuts are only active when the animation panel is open.
  */
 
-import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
+import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
 export interface AnimationShortcutHandlers {
   onPlaybackToggle: () => void;
   onStepHalfBeatForward: () => void;

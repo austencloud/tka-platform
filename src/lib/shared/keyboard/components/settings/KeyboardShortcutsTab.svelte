@@ -7,9 +7,9 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getShortcutCustomizer } from "../../getShortcutCustomizer";
-  import type { ShortcutCustomizer } from "../../services/implementations/ShortcutCustomizer";
-import type { ShortcutWithBinding } from "../../services/contracts/types";
+  import { getShortcutCustomizer } from "../../get-shortcut-customizer";
+  import type { ShortcutCustomizer } from "../../services/shortcut-customizer";
+import type { ShortcutWithBinding } from "../../services/types";
   import type {
     ShortcutContext,
     ShortcutConflict,

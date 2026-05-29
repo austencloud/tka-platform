@@ -8,7 +8,7 @@
    */
 
   import { onMount } from "svelte";
-  import { getKeyboardShortcutManager } from "$lib/shared/keyboard/getKeyboardShortcutManager";
+  import { getKeyboardShortcutManager } from "$lib/shared/keyboard/get-keyboard-shortcut-manager";
   import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
   import {
     createViewer3DShortcuts,

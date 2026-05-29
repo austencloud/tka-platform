@@ -8,13 +8,13 @@
    */
 
   import { onMount } from "svelte";
-  import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/implementations/KeyboardShortcutManager'
+  import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
   import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
   import type {
     ShortcutRegistrationOptions,
     ShortcutScope,
   } from "../domain/types/keyboard-types";
-  import { getKeyboardShortcutManager } from "../getKeyboardShortcutManager";
+  import { getKeyboardShortcutManager } from "../get-keyboard-shortcut-manager";
 
   // Service
   let shortcutService: KeyboardShortcutManager | null = null;

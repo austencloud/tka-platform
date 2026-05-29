@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
-import { KeyboardShortcutManager } from './services/implementations/KeyboardShortcutManager';
-import { getShortcutRegistry } from './getShortcutRegistry';
+import { KeyboardShortcutManager } from './services/keyboard-shortcut-manager';
+import { getShortcutRegistry } from './get-shortcut-registry';
 
 let instance: KeyboardShortcutManager | null = null;
 

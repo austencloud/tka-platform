@@ -7,22 +7,22 @@
  * Domain: Keyboard Shortcuts - Customization
  */
 
-import type { ShortcutRegistry } from "./ShortcutRegistry";
-import type { ShortcutWithBinding } from "../contracts/types";
+import type { ShortcutRegistry } from "./shortcut-registry";
+import type { ShortcutWithBinding } from "./types";
 import type {
   CustomBinding,
   ParsedKeyCombo,
   ShortcutConflict,
   ShortcutContext,
   ShortcutRegistrationOptions,
-} from "../../domain/types/keyboard-types";
+} from "../domain/types/keyboard-types";
 import {
   buildKeyCombo,
   contextsCanConflict,
   keyComboEquals,
   parseKeyCombo,
-} from "../../utils/key-combo-utils";
-import { keyboardShortcutState } from "../../state/keyboard-shortcut-state.svelte";
+} from "../utils/key-combo-utils";
+import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 
 export class ShortcutCustomizer {
   constructor(private readonly registry: ShortcutRegistry) {}

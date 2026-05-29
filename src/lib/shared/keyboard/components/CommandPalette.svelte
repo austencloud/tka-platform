@@ -8,8 +8,8 @@
    */
 
   import { onMount } from "svelte";
-  import { getCommandPalette } from "../getCommandPalette";
-  import type { CommandPalette } from '$lib/shared/keyboard/services/implementations/CommandPalette'
+  import { getCommandPalette } from "../get-command-palette";
+  import type { CommandPalette } from '$lib/shared/keyboard/services/command-palette'
   import { commandPaletteState } from "../state/command-palette-state.svelte";
   import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
   import type { CommandPaletteItem } from "../domain/types/keyboard-types";

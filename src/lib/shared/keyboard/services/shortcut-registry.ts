@@ -7,13 +7,13 @@
  * Domain: Keyboard Shortcuts
  */
 
-import type { Shortcut } from "../../domain/models/Shortcut";
+import type { Shortcut } from "../domain/models/shortcut";
 import type {
   KeyModifier,
   ShortcutContext,
-} from "../../domain/types/keyboard-types";
-import { keyboardShortcutState } from "../../state/keyboard-shortcut-state.svelte";
-import { keyComboEquals, buildKeyCombo } from "../../utils/key-combo-utils";
+} from "../domain/types/keyboard-types";
+import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
+import { keyComboEquals, buildKeyCombo } from "../utils/key-combo-utils";
 
 export class ShortcutRegistry {
   private shortcuts: Map<string, Shortcut> = new Map();

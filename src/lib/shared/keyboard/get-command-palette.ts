@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { CommandPalette } from './services/implementations/CommandPalette';
+import { CommandPalette } from './services/command-palette';
 
 let instance: CommandPalette | null = null;
 
