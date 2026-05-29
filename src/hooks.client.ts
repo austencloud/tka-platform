@@ -69,6 +69,42 @@ if (browser && dev && "serviceWorker" in navigator) {
   })();
 }
 
+// Dev: auto-recover from a failed HMR update.
+// When a child module fails to hot-reload (commonly: a .svelte/.svelte.ts file
+// saved mid-write by an external editor or cloud agent), Vite leaves an
+// undefined module in the graph and the HMR apply throws an unhandled rejection
+// inside the HMR client (HMRClient.queueUpdate → "reading 'default'"). The
+// affected pane goes dead until a manual refresh — and that refresh often hangs
+// because in-flight /data/*.json fetches stall while the server re-settles.
+// Detect the HMR-client crash signature and do ONE guarded full reload so the
+// page self-heals. The sessionStorage guard prevents an infinite reload loop if
+// the error is a genuine, persistent syntax error (then Vite's overlay shows it).
+if (browser && dev) {
+  const HMR_RELOAD_KEY = "tka-hmr-reload";
+
+  const isHmrClientFailure = (reason: unknown): boolean => {
+    const stack = (reason as Error)?.stack ?? "";
+    return /HMRClient|queueUpdate|fetchUpdate|warnFailedUpdate/.test(stack);
+  };
+
+  const recoverFromHmrFailure = (reason: unknown): void => {
+    if (!isHmrClientFailure(reason)) return;
+    if (sessionStorage.getItem(HMR_RELOAD_KEY)) return; // already tried — don't loop
+    sessionStorage.setItem(HMR_RELOAD_KEY, "1");
+    location.reload();
+  };
+
+  window.addEventListener("unhandledrejection", (event) =>
+    recoverFromHmrFailure(event.reason),
+  );
+  window.addEventListener("error", (event) => recoverFromHmrFailure(event.error));
+
+  // Re-arm after the page has stayed alive: a later edit may legitimately need
+  // another recovery reload. If a reload immediately re-errors during boot, the
+  // guard is still set within this window, so the loop is broken.
+  setTimeout(() => sessionStorage.removeItem(HMR_RELOAD_KEY), 4000);
+}
+
 // Production: auto-recover from stale chunks after a deploy.
 // When the SW serves an old HTML shell that references chunk hashes the server
 // no longer has, dynamic imports fail. A single reload fetches the new manifest.

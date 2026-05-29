@@ -632,13 +632,11 @@ export default defineConfig(({ mode }) => ({
         }
       },
     },
-    sveltekit({
-      // Explicitly enable HMR and hot module replacement
-      hot: {
-        preserveLocalState: true,
-        injectCss: true,
-      },
-    }),
+    // Svelte 5 has HMR integrated in the compiler (auto-enabled in dev).
+    // The old vitePlugin.hot option (svelte-hmr) was removed in
+    // vite-plugin-svelte 6 — preserveLocalState/injectCss no longer exist.
+    // For state preservation across HMR, use `// @hmr:keep-all` comments.
+    sveltekit(),
     dictionaryPlugin(),
     screenshotsPlugin(), // Screenshot gallery for Lab module
     fontCorsPlugin(), // 📱 CORS headers for fonts (mobile debugging)
@@ -913,6 +911,15 @@ export default defineConfig(({ mode }) => ({
       timeout: 30000, // 30s timeout instead of default 5s
     },
     watch: {
+      // 🛠️ EXTERNAL-WRITE STORM FIX: cloud agents / editors writing files into
+      // src/ fire chokidar mid-write, causing HMR on transiently-invalid files
+      // → failed HMR → forced full reload → in-flight /data/*.json fetches hang.
+      // awaitWriteFinish waits for the file to stop changing before emitting,
+      // batching partial writes into one stable change event.
+      awaitWriteFinish: {
+        stabilityThreshold: 120,
+        pollInterval: 15,
+      },
       // 🚨 HANDLE LEAK FIX: Chokidar creates one fs.watch() per directory.
       // On Windows, each = one kernel handle via ReadDirectoryChangesW.
       // Without filtering, ~12,000 directories get watched = 50,000-83,000 handles.
