@@ -1,24 +1,24 @@
-import type { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
+import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import {
   MotionType,
   Orientation,
-} from "../../../../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { SpecialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
-import type { IRotationAngleOverrideKeyGenerator } from "../../../key-generation/services/rotation-angle-override-key-generator";
-import { dashNoRotationMap } from "../../config/DashRotationMaps";
+} from "../../../../shared/domain/enums/pictograph-enums";
+import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { SpecialPlacer } from "../../placement/services/special-placer";
+import type { IRotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
+import { dashNoRotationMap } from "../config/DashRotationMaps";
 import {
   selectStaticMap,
   selectProMap,
   selectAntiMap,
   selectDashMap,
   selectFloatMap,
-} from "../../utils/rotation-map-selector";
-import { calculateSkewedFloatRotation } from "../../config/FloatRotationMaps";
-import { checkAndApplyOverride } from "../../utils/rotation-override-checker";
-import { isNoRotation } from "../../utils/RotationDirectionUtils";
-import { calculateHandpathDirection } from "../handpath-direction-calculator";
+} from "../utils/rotation-map-selector";
+import { calculateSkewedFloatRotation } from "../config/FloatRotationMaps";
+import { checkAndApplyOverride } from "../utils/rotation-override-checker";
+import { isNoRotation } from "../utils/RotationDirectionUtils";
+import { calculateHandpathDirection } from "./handpath-direction-calculator";
 
 export class ArrowRotationCalculator {
   /**
@@ -308,8 +308,8 @@ export class ArrowRotationCalculator {
 // Use this instead of arrowRotationCalculator to avoid DI container rebuilds.
 // ============================================================================
 
-import { specialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
-import { rotationAngleOverrideKeyGenerator } from "../../../key-generation/services/rotation-angle-override-key-generator";
+import { specialPlacer } from "../../placement/services/special-placer";
+import { rotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
 
 export const arrowRotationCalculator = new ArrowRotationCalculator(
   specialPlacer,

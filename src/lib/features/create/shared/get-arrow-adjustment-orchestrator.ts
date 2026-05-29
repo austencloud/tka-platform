@@ -1,9 +1,9 @@
 import { browser } from '$app/environment';
 
 import { ArrowAdjustmentOrchestrator } from './services/arrow-adjustment-orchestrator';
-import { screenSpaceAdjustmentTransformer } from '$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer';
-import { arrowAdjustmentCalculator } from '$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator';
-import { arrowLocationCalculator } from '$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator';
+import { screenSpaceAdjustmentTransformer } from '$lib/shared/pictograph/arrow/positioning/calculation/services/screen-space-adjustment-transformer';
+import { arrowAdjustmentCalculator } from '$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-adjustment-calculator';
+import { arrowLocationCalculator } from '$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator';
 import { pictographPreparer } from '$lib/shared/pictograph/shared/services/implementations/PictographPreparer';
 import { turnsTupleGenerator } from '$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator';
 

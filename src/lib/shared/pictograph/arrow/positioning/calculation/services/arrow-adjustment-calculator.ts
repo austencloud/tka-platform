@@ -11,37 +11,37 @@
  * - Better TypeScript organization
  */
 
-import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
-import type { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
-import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { DefaultPlacer } from "../../../placement/services/implementations/DefaultPlacer";
-import type { DirectionalTupleProcessor } from "./DirectionalTupleProcessor";
-import { deriveGridMode as _deriveGridMode } from "../../../../../grid/services/grid-mode-deriver";
-import type { SpecialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
+import type { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
+import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
+import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { DefaultPlacer } from "../../placement/services/default-placer";
+import type { DirectionalTupleProcessor } from "./directional-tuple-processor";
+import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
+import type { SpecialPlacer } from "../../placement/services/special-placer";
 import {
   generateOrientationKey,
   resolveEffectiveOriKey,
   mapToLegacyBucket,
-} from "../../../key-generation/services/special-placement-ori-key-generator";
-import { generatePlacementKey } from "../../../key-generation/services/arrow-placement-key-generator";
-import { generateTurnsTuple } from "../../../key-generation/services/turns-tuple-key-generator";
-import { getKeyFromArrow } from "../../../key-generation/services/attribute-key-generator";
-import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
+} from "../../key-generation/services/special-placement-ori-key-generator";
+import { generatePlacementKey } from "../../key-generation/services/arrow-placement-key-generator";
+import { generateTurnsTuple } from "../../key-generation/services/turns-tuple-key-generator";
+import { getKeyFromArrow } from "../../key-generation/services/attribute-key-generator";
+import { GridMode } from "../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
-import { getPropGeometryRepository } from "../../../prop-geometry/services/prop-geometry-singleton";
-import { derivePropGeometryKey } from "../../../prop-geometry/domain/prop-geometry-key-deriver";
+import { getPropGeometryRepository } from "../../prop-geometry/services/prop-geometry-singleton";
+import { derivePropGeometryKey } from "../../prop-geometry/domain/prop-geometry-key-deriver";
 import type {
   PipelineDiagnostics,
   GlobalTierInfo,
   SpecialJsonTierInfo,
-} from "../../domain/PipelineDiagnostics";
-import { getGlobalAdjustmentRepository } from "../../../global/services/global-adjustment-singleton";
-import { getSpecialOverrideRepository } from "../../../special-override/services/special-override-singleton";
+} from "../domain/PipelineDiagnostics";
+import { getGlobalAdjustmentRepository } from "../../global/services/global-adjustment-singleton";
+import { getSpecialOverrideRepository } from "../../special-override/services/special-override-singleton";
 import {
   generateSpecialOverrideKey,
   extractOriFolderFromPath,
-} from "../../../special-override/domain/SpecialArrowPlacement";
+} from "../../special-override/domain/SpecialArrowPlacement";
 
 export class ArrowAdjustmentCalculator {
   /**
@@ -686,9 +686,9 @@ export class ArrowAdjustmentCalculator {
 // Use this instead of arrowAdjustmentCalculator to avoid DI container rebuilds.
 // ============================================================================
 
-import { specialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
-import { defaultPlacer } from "../../../placement/services/implementations/DefaultPlacer";
-import { directionalTupleProcessor } from "./DirectionalTupleProcessor";
+import { specialPlacer } from "../../placement/services/special-placer";
+import { defaultPlacer } from "../../placement/services/default-placer";
+import { directionalTupleProcessor } from "./directional-tuple-processor";
 
 export const arrowAdjustmentCalculator = new ArrowAdjustmentCalculator(
   specialPlacer,

@@ -11,8 +11,8 @@
  * Note: Uses ArrowQuadrantCalculator for quadrant index calculations to avoid duplication.
  */
 
-import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
+import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
 export class DirectionalTupleCalculator {
   /**
@@ -385,7 +385,7 @@ export class DirectionalTupleProcessor {
 // Direct singleton exports - no DI container needed.
 // ============================================================================
 
-import { calculateQuadrantIndex } from "../../../../orchestration/services/arrow-quadrant-calculator";
+import { calculateQuadrantIndex } from "../../../orchestration/services/arrow-quadrant-calculator";
 
 export const directionalTupleCalculator = new DirectionalTupleCalculator();
 export const quadrantIndexCalculator = new QuadrantIndexCalculator({ calculateQuadrantIndex });

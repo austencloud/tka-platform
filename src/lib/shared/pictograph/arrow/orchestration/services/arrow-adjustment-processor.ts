@@ -9,7 +9,7 @@ import { Point } from "fabric";
 import type { GridLocation } from "../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
 import { MotionType } from "../../../shared/domain/enums/pictograph-enums";
-import type { ArrowLocationCalculator } from "../../positioning/calculation/services/implementations/ArrowLocationCalculator";
+import type { ArrowLocationCalculator } from "../../positioning/calculation/services/arrow-location-calculator";
 import { calculateQuadrantIndex } from "./arrow-quadrant-calculator";
 
 export function getBasicAdjustment(

@@ -20,10 +20,10 @@
  */
 
 import { Point } from "fabric";
-import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
-import type { DirectionalTupleCalculator } from "./DirectionalTupleProcessor";
-import { calculateQuadrantIndex } from "../../../../orchestration/services/arrow-quadrant-calculator";
+import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
+import type { DirectionalTupleCalculator } from "./directional-tuple-processor";
+import { calculateQuadrantIndex } from "../../../orchestration/services/arrow-quadrant-calculator";
 
 export class ScreenSpaceAdjustmentTransformer {
   constructor(private tupleCalculator: DirectionalTupleCalculator) {}
@@ -86,7 +86,7 @@ export class ScreenSpaceAdjustmentTransformer {
 // Use this instead of screenSpaceAdjustmentTransformer to avoid DI container rebuilds.
 // ============================================================================
 
-import { directionalTupleCalculator } from "./DirectionalTupleProcessor";
+import { directionalTupleCalculator } from "./directional-tuple-processor";
 
 export const screenSpaceAdjustmentTransformer = new ScreenSpaceAdjustmentTransformer(
   directionalTupleCalculator

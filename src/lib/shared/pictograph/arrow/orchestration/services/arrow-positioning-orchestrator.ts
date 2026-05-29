@@ -15,9 +15,9 @@ import {
   extractAdjustmentValues,
   updateArrowInPictograph,
 } from "./arrow-data-processor";
-import { arrowLocationCalculator } from "../../positioning/calculation/services/implementations/ArrowLocationCalculator";
-import { arrowRotationCalculator } from "../../positioning/calculation/services/implementations/ArrowRotationCalculator";
-import { arrowAdjustmentCalculator } from "../../positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
+import { arrowLocationCalculator } from "../../positioning/calculation/services/arrow-location-calculator";
+import { arrowRotationCalculator } from "../../positioning/calculation/services/arrow-rotation-calculator";
+import { arrowAdjustmentCalculator } from "../../positioning/calculation/services/arrow-adjustment-calculator";
 
 export async function calculateArrowPoint(
   pictographData: PictographData,
