@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { NativeInitializer } from './services/implementations/NativeInitializer';
+import { NativeInitializer } from './services/native-initializer';
 
 let instance: NativeInitializer | null = null;
 
