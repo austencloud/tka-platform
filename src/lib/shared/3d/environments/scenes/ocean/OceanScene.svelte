@@ -6,6 +6,7 @@
     detectOceanQuality,
     getOceanQualityConfig,
   } from "./quality/ocean-quality";
+  import { oceanQualityOverride } from "./quality/ocean-quality-override.svelte";
   import FloraInstances from "./authored/FloraInstances.svelte";
   import OceanRuntimeSystems from "./runtime/OceanRuntimeSystems.svelte";
   import { getSceneFeatureContext } from "../../../scene-features/context/scene-feature-context";
@@ -30,7 +31,11 @@
 
   const { scene, renderer } = useThrelte();
 
-  const qualityTier = $derived(detectOceanQuality(renderer.current ?? null));
+  const qualityTier = $derived(
+    oceanQualityOverride.tier !== "auto"
+      ? oceanQualityOverride.tier
+      : detectOceanQuality(renderer.current ?? null),
+  );
   const quality = $derived(getOceanQualityConfig(qualityTier));
 
   // ── Scene feature readiness ────────────────────────────────────────────
