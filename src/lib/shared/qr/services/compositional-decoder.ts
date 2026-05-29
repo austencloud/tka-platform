@@ -15,8 +15,8 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
-import { RECIPE_PREFIX, TAG_TO_LOOP_TYPE } from "../contracts/types";
-import type { ICompositionalDecoder } from "../contracts/types";
+import { RECIPE_PREFIX, TAG_TO_LOOP_TYPE } from "./types";
+import type { ICompositionalDecoder } from "./types";
 import {
   getLoopExecutor,
   getPeriodForTag,

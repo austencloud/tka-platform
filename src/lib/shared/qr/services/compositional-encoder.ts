@@ -20,7 +20,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
 import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import { LOOP_TYPE_TAGS, RECIPE_PREFIX } from "../contracts/types";
+import { LOOP_TYPE_TAGS, RECIPE_PREFIX } from "./types";
 import {
   getLoopExecutor,
   getPeriodForTag,

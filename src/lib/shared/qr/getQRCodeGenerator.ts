@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { QRCodeGenerator } from './services/implementations/QRCodeGenerator';
+import { QRCodeGenerator } from './services/qr-code-generator';
 import { getShortCodeManager } from './getShortCodeManager';
 
 let instance: QRCodeGenerator | null = null;

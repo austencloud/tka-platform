@@ -28,7 +28,7 @@ import type { Canvas2DDirectRenderer } from "./canvas-2d-direct-renderer";
 import type { LayerCompositor } from "./layer-compositor";
 import { calculateLayout } from "./layout-calculator";
 import { drawStepNumber } from "./step-number-renderer";
-import type { QRCodeGenerator } from "../../qr/services/implementations/QRCodeGenerator";
+import type { QRCodeGenerator } from "../../qr/services/qr-code-generator";
 import { getQRCellScale } from "../../qr/qr-cell-scale";
 import {
   calculateHeaderHeight as sharedHeaderHeight,

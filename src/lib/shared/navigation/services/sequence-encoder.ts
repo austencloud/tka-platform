@@ -16,7 +16,7 @@ import {
 import type { ArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/ArrowPlacementData";
 import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/PropPlacementData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { CompressionResult, ShareURLResult, ShareURLMetadata, DeepLinkParseResult, QRSizeEstimate, SequenceRouteIdParseResult, URLPropOptions } from "./contracts/types";
+import type { CompressionResult, ShareURLResult, ShareURLMetadata, DeepLinkParseResult, QRSizeEstimate, SequenceRouteIdParseResult, URLPropOptions } from "./types";
 
 const LOCATION_ENCODE: Record<GridLocation, string> = {
   [GridLocation.NORTH]: "no",
@@ -643,7 +643,7 @@ export async function encodeSequenceForQR(sequence: SequenceData): Promise<strin
 
   try {
     const { CompositionalEncoder } = await import(
-      "$lib/shared/qr/services/implementations/CompositionalEncoder"
+      "$lib/shared/qr/services/compositional-encoder"
     );
     const encoder = new CompositionalEncoder(
       { encode: (s) => encodeSequence(s) },
@@ -673,7 +673,7 @@ export async function decodeSequenceFromQR(encoded: string): Promise<SequenceDat
 
   if (data.startsWith("r1:")) {
     const { CompositionalDecoder } = await import(
-      "$lib/shared/qr/services/implementations/CompositionalDecoder"
+      "$lib/shared/qr/services/compositional-decoder"
     );
     const decoder = new CompositionalDecoder(
       { encode: (s) => encodeSequence(s) },

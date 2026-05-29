@@ -10,8 +10,8 @@
 
 import QRCodeStyling from "qr-code-styling";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ShortCodeManager } from "../implementations/ShortCodeManager";
-import type { QRCodeOptions, QRCodeResult, QRCodeStyle, QRStylePreset } from "../contracts/types";
+import type { ShortCodeManager } from "./short-code-manager";
+import type { QRCodeOptions, QRCodeResult, QRCodeStyle, QRStylePreset } from "./types";
 
 /**
  * Style presets for quick styling

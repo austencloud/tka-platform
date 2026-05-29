@@ -35,7 +35,7 @@ import {
   decodeSequenceFromQR,
 } from "$lib/shared/navigation/services/sequence-encoder";
 import type { PublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/implementations/PublicSequenceHashMatcher";
-import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions } from "../contracts/types";
+import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions } from "./types";
 
 const SHORTCODES_COLLECTION = "shortcodes";
 const MIN_CODE_LENGTH = 4;
