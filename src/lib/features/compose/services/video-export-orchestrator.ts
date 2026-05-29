@@ -30,8 +30,8 @@ import type { VideoExporter } from "$lib/shared/animation-engine/services/implem
 import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/implementations/CompositeVideoRenderer";
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
 import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
-import { getRenderContextRegistry } from "$lib/shared/animation-engine/getRenderContextRegistry";
-import type { RenderContext } from "$lib/shared/animation-engine/services/implementations/RenderContextRegistry";
+import { RenderContextFactory } from "$lib/shared/animation-engine/services/implementations/RenderContextFactory";
+import { assembleExportEngineProps } from "./export-engine-props";
 
 import type { VideoExportFormat, VideoExportProgress, VideoEffectOverrides, IVideoExportOrchestrator, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 export type { VideoExportFormat, VideoExportProgress, VideoResolution, VideoEffectOverrides, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
@@ -231,7 +231,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       options.effectOverrides
     );
 
-    let liveContext: RenderContext | null = null;
+    // Non-composite export renders on a fresh offscreen engine (constructed
+    // below once isCompositeMode is known). Composite mode keeps reading the
+    // live canvas. Declared at method scope so the finally block can dispose.
+    let offscreen: import("$lib/shared/animation-engine/services/implementations/RenderContextFactory").OffscreenContextHandle | null = null;
+    let renderCanvas = canvas;
 
     try {
       onProgress({ progress: 0, stage: "capturing" });
@@ -395,17 +399,22 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // The square animation area in the output
       const outputCanvasSize = isCompositeMode ? sourceWidth : outputWidth;
 
-      // Resize the live rendering context to output resolution so trail/effect
-      // overlays render natively at export size instead of being upscaled from
-      // viewport resolution via drawImage (which softens glow/shadowBlur).
+      // Render the non-composite export on a fresh OFFSCREEN engine sized to the
+      // output resolution. This renders trail/effect overlays natively at export
+      // size (no upscaling softening) WITHOUT disturbing the user's on-screen
+      // canvas. Composite mode is unchanged: renderCanvas stays the live canvas.
       if (!isCompositeMode) {
-        const contexts = getRenderContextRegistry().getAll();
-        liveContext = contexts.find(c => c.canvas === canvas) ?? null;
-        if (liveContext) {
-          liveContext.resizer.pauseObservation();
-          liveContext.resize(outputCanvasSize);
-          await this.waitForAnimationFrame();
-        }
+        const factory = new RenderContextFactory();
+        offscreen = await factory.createOffscreenContext(outputCanvasSize);
+        renderCanvas = offscreen.context.canvas;
+        // One-time config the live CanvasSurface feeds once (NOT per frame).
+        // In the viewer/export path all effect config (fire/led/tip maps) flows
+        // through EffectsConfigState; cell tip maps are only set for arrange-grid
+        // cell overrides, so they stay undefined here to match the live viewer.
+        offscreen.engine.setEffectsConfigState(visibilityManager.effectsConfigState ?? null);
+        offscreen.engine.setCellTipEffectMap(undefined);
+        offscreen.engine.setCellTipEffortMap(undefined);
+        await this.waitForAnimationFrame(); // let the engine paint a first frame
       }
 
       // Set canvas dimensions based on mode
@@ -523,6 +532,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           playbackController.calculateStateForStep(playbackPosition);
         }
 
+        // Drive the offscreen engine for this frame. panelState was already
+        // updated by calculateStateForStep + setVirtualTime above; assemble the
+        // render-relevant props and update the engine so its canvas holds the
+        // frame after the rAF below. (Composite mode has no offscreen engine.)
+        if (offscreen) {
+          const props = assembleExportEngineProps(panelState, {
+            virtualTime: virtualTimeMs,
+            isSeamlesslyLoopable: playbackController.isSeamlesslyLoopable,
+            backgroundAlpha: 1, // engine bg opaque at export, matches live hero
+            showNonRadialPoints: true, // no viewer non-radial key; live default is true
+          });
+          offscreen.engine.update(props);
+        }
+
         // Wait for the render loop to paint the new beat.
         // Single rAF: calculateStateForStep is synchronous, so the render
         // loop picks up the new prop state on the very next frame.
@@ -535,11 +558,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         // rendering this frame - the offscreen canvas still holds the previous
         // frame's content, so the encoder will duplicate it (brief freeze in
         // the video, much better than aborting the entire export).
-        let canvasAvailable = canvas.width > 0 && canvas.height > 0;
+        let canvasAvailable = renderCanvas.width > 0 && renderCanvas.height > 0;
         if (!canvasAvailable) {
           for (let retry = 0; retry < 30; retry++) {
             await this.waitForAnimationFrame();
-            if (canvas.width > 0 && canvas.height > 0) {
+            if (renderCanvas.width > 0 && renderCanvas.height > 0) {
               canvasAvailable = true;
               break;
             }
@@ -553,7 +576,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           const compositeStepIndex = isInStartPosition ? 0 : Math.max(0, stepIndex);
           frameCompositor.renderCanvasLayers(
             offscreenCtx,
-            canvas,
+            renderCanvas,
             !!isCompositeMode,
             compositeStepIndex,
             offscreenCanvas,
@@ -562,7 +585,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
           frameCompositor.renderOverlays(
             offscreenCtx,
-            canvas,
+            renderCanvas,
             stepIndex,
             isInStartPosition,
             isInEndHold,
@@ -655,11 +678,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         fireDiagCleanup.disable();
       }
 
-      // Restore rendering context to viewport resolution
-      if (liveContext) {
-        liveContext.restoreSize();
-        liveContext.resizer.resumeObservation();
-      }
+      // Tear down the offscreen engine + its DOM node (non-composite only).
+      offscreen?.dispose();
+      offscreen = null;
 
       this.restoreEffectState(visibilityManager, savedEffectState);
       this.restorePlaybackState(playbackController, captureState);
