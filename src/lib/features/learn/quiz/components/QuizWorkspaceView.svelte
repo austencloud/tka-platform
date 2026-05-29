@@ -5,7 +5,7 @@
   import { onDestroy, onMount } from "svelte";
 
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import { getQuizSessionManager } from "$lib/features/learn/quiz/getQuizSessionManager";
+  import { getQuizSessionManager } from "$lib/features/learn/quiz/get-quiz-session-manager";
 
   import LetterToPictographQuiz from "./LetterToPictographQuiz.svelte";
   import PictographToLetterQuiz from "./PictographToLetterQuiz.svelte";
@@ -15,7 +15,7 @@
   import type { QuizLayoutMode } from "../domain/enums/quiz-enums";
   import type { QuizResults, QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
   import { getFormattedQuizTitle, getQuizModeName, getQuizTime } from "../services/quiz-configurator";
-  import type { QuizSessionManager } from "../services/implementations/QuizSessionManager";
+  import type { QuizSessionManager } from "../services/quiz-session-manager";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Props

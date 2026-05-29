@@ -9,7 +9,7 @@
   Pictographs render inline in message bubbles (no side panel).
 -->
 <script lang="ts">
-  import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
+  import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
   import * as quizHistoryRecorderModule from "$lib/features/learn/services/quiz-history-recorder";
   import * as conceptRecommenderModule from "$lib/features/learn/services/concept-recommender";
   import { getRecurringMisconceptions } from "$lib/features/learn/services/gap-detector";
@@ -23,7 +23,7 @@
   import TikaHistoryDrawer from "./components/TikaHistoryDrawer.svelte";
   import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
   import { auth } from "$lib/shared/auth/firebase";
-  import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
+  import type { ConceptProgressTracker } from "$lib/features/learn/services/concept-progress-tracker";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
   import * as tikaSessionRepository from "./services/tika-session-repository";
   import { ConversationMemoryRetriever } from "./services/ConversationMemoryRetriever";

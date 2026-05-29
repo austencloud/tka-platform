@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
-import { QuizRepoManager } from './services/implementations/QuizRepoManager';
+import { QuizRepoManager } from './services/quiz-repo-manager';
 import type { CodexLetterMappingRepo } from '$lib/shared/learn/services/CodexLetterMappingRepo';
-import { getCodexLetterMappingRepo } from '$lib/features/learn/codex/getCodexLetterMappingRepo';
+import { getCodexLetterMappingRepo } from '$lib/features/learn/codex/get-codex-letter-mapping-repo';
 
 let instance: QuizRepoManager | null = null;
 

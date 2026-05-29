@@ -18,7 +18,7 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   import QuizPictographButton from "./shared/QuizPictographButton.svelte";
   import QuizFeedbackBanner from "./shared/QuizFeedbackBanner.svelte";
   import MisconceptionHint from "./shared/MisconceptionHint.svelte";
-import type { DetectedGap } from "../../services/contracts/types";
+import type { DetectedGap } from "../../services/types";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
     onAnswerSubmit?: (event: QuizAnswerEvent) => void;

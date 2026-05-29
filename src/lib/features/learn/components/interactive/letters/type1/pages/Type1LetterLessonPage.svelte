@@ -10,7 +10,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
     HYBRID_LETTERS,
   } from "../domain/type1-letter-data";
   import type { Type1PageConfig } from "../domain/type1-page-config";
-  import type { Type1LetterData } from "../Type1LetterData";
+  import type { Type1LetterData } from "../type1-letter-data";
 
   interface Props {
     config: Type1PageConfig;

@@ -14,7 +14,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
 import { getDelightOrchestrator } from "$lib/shared/delight/getDelightOrchestrator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { onMount, untrack } from "svelte";
-  import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
+  import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import ConceptPathView from "./components/ConceptPathView.svelte";

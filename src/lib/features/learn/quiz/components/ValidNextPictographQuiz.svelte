@@ -20,7 +20,7 @@ The next pictograph's start position must match the initial pictograph's end pos
   import QuizPictographButton from "./shared/QuizPictographButton.svelte";
   import QuizFeedbackBanner from "./shared/QuizFeedbackBanner.svelte";
   import MisconceptionHint from "./shared/MisconceptionHint.svelte";
-import type { DetectedGap } from "../../services/contracts/types";
+import type { DetectedGap } from "../../services/types";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
     onAnswerSubmit?: (event: QuizAnswerEvent) => void;

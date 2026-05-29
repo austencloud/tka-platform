@@ -12,7 +12,7 @@
 
 import type { QuizAnswerEvent } from "../quiz/domain/models/quiz-models";
 import type { QuizType } from "../quiz/domain/enums/quiz-enums";
-import type { DetectedGap, MisconceptionPattern } from "./contracts/types";
+import type { DetectedGap, MisconceptionPattern } from "./types";
 import { getTypeNodeId } from "./letter-to-concept-mapper";
 import {
   tkaKnowledgeGraph,

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { QuizSessionManager } from './services/implementations/QuizSessionManager';
+import { QuizSessionManager } from './services/quiz-session-manager';
 
 let instance: QuizSessionManager | null = null;
 

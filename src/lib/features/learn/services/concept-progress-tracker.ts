@@ -21,7 +21,7 @@ import type {
   ConceptStatus,
   LearningProgress,
 } from "../../domain/types";
-import type { UserKnowledgeProfilePersister } from "./UserKnowledgeProfilePersister";
+import type { UserKnowledgeProfilePersister } from "./user-knowledge-profile-persister";
 
 const STORAGE_KEY = "tka_learning_progress";
 

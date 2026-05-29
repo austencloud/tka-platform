@@ -9,7 +9,7 @@
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { Type1LetterData } from "../Type1LetterData";
+import type { Type1LetterData } from "../type1-letter-data";
 
 /**
  * Prospin (Pro-Pro) Letters: A, D, G, J, M, P, S

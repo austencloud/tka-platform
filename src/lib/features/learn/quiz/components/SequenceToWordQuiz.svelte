@@ -7,7 +7,7 @@
   import { QuizType } from "../domain/enums/quiz-enums";
   import type { QuizQuestionData, QuizAnswerEvent } from "../domain/models/quiz-models";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { DetectedGap } from "../../services/contracts/types";
+  import type { DetectedGap } from "../../services/types";
   import QuizContainer from "./shared/QuizContainer.svelte";
   import QuizLoadingState from "./shared/QuizLoadingState.svelte";
   import QuizErrorState from "./shared/QuizErrorState.svelte";

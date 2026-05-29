@@ -14,7 +14,7 @@
   import QuizMisconceptionSummary from "./QuizMisconceptionSummary.svelte";
   import AchievementUnlockOverlay from "./AchievementUnlockOverlay.svelte";
   import PerfectQuizCelebration from "./PerfectQuizCelebration.svelte";
-  import type { DetectedGap } from "../../services/contracts/types";
+  import type { DetectedGap } from "../../services/types";
 
   // Props
   let {

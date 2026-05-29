@@ -13,8 +13,8 @@ import {
   MOTION_QUIZ_QUESTIONS,
   type MotionQuizQuestion,
 } from "$lib/features/learn/domain/constants/motion-quiz-data";
-import { getCodex } from "$lib/features/learn/codex/getCodex";
-import type { Codex } from "../../../learn/codex/services/implementations/Codex";
+import { getCodex } from "$lib/features/learn/codex/get-codex";
+import type { Codex } from "../../../learn/codex/services/codex";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { LetterType } from "$lib/shared/foundation/domain/models/LetterType";

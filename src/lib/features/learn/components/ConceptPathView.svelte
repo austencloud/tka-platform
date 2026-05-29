@@ -10,7 +10,7 @@ Shows:
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
+  import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
   import {
     TKA_CONCEPTS,
     CONCEPT_CATEGORIES,
@@ -19,7 +19,7 @@ Shows:
     getPreviousConcept,
   } from "../domain/concepts";
   import type { LearnConcept, ConceptCategory, LearningProgress } from "../domain/types";
-  import type { ConceptProgressTracker } from "../services/implementations/ConceptProgressTracker";
+  import type { ConceptProgressTracker } from "../services/concept-progress-tracker";
   import { CAPABILITY_NUDGES } from "$lib/shared/subscription/domain/capability-nudges";
   import PremiumNudge from "$lib/shared/subscription/components/PremiumNudge.svelte";
   import ProgressMiniMap from "./ProgressMiniMap.svelte";

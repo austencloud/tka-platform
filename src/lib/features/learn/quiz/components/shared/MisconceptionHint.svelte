@@ -7,7 +7,7 @@ Tappable: navigates to TIKA with the misconception pre-loaded.
 -->
 <script lang="ts">
   import { compare } from "$lib/features/learn/services/letter-breakdown-generator";
-  import type { DetectedGap } from "../../../services/contracts/types";
+  import type { DetectedGap } from "../../../services/types";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { browser } from "$app/environment";
 

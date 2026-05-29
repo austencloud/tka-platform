@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { UserKnowledgeProfilePersister } from './services/implementations/UserKnowledgeProfilePersister';
+import { UserKnowledgeProfilePersister } from './services/user-knowledge-profile-persister';
 
 let instance: UserKnowledgeProfilePersister | null = null;
 

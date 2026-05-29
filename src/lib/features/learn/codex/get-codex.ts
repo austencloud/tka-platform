@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
 
-import { Codex } from './services/implementations/Codex';
+import { Codex } from './services/codex';
 import type { CodexLetterMappingRepo } from '$lib/shared/learn/services/CodexLetterMappingRepo';
-import { getCodexLetterMappingRepo } from './getCodexLetterMappingRepo';
+import { getCodexLetterMappingRepo } from './get-codex-letter-mapping-repo';
 import * as codexPictographUpdater from './services/codex-pictograph-updater';
-import { getQuizRepoManager } from '$lib/features/learn/quiz/getQuizRepoManager';
+import { getQuizRepoManager } from '$lib/features/learn/quiz/get-quiz-repo-manager';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
 
 let instance: Codex | null = null;

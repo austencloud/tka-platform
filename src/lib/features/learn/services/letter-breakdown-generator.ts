@@ -6,7 +6,7 @@
  * risk by pre-computing all domain content before TIKA receives it.
  */
 
-import type { LetterBreakdown, LetterComparison, ComparisonRelationship } from "./contracts/types";
+import type { LetterBreakdown, LetterComparison, ComparisonRelationship } from "./types";
 import {
   LETTER_BREAKDOWN_TABLE,
   type LetterBreakdownEntry,

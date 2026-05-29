@@ -20,7 +20,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import MisconceptionHint from "./shared/MisconceptionHint.svelte";
   import ScorePopAnimation from "./shared/ScorePopAnimation.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
-import type { DetectedGap } from "../../services/contracts/types";
+import type { DetectedGap } from "../../services/types";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
     onAnswerSubmit?: (event: QuizAnswerEvent) => void;

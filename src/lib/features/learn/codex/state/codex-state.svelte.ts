@@ -7,8 +7,8 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { getCodex as getCodexService } from "$lib/features/learn/codex/getCodex";
-import type { Codex } from "../services/implementations/Codex";
+import { getCodex as getCodexService } from "$lib/features/learn/codex/get-codex";
+import type { Codex } from "../services/codex";
 
 export function createCodexState() {
   function getCodex(): Codex {

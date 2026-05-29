@@ -4,7 +4,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { Type1LetterData } from "./Type1LetterData";
+  import type { Type1LetterData } from "./type1-letter-data";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import {
     GridMode,

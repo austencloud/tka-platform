@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { ConceptProgressTracker } from './services/implementations/ConceptProgressTracker';
-import { getUserKnowledgeProfilePersister } from './getUserKnowledgeProfilePersister';
+import { ConceptProgressTracker } from './services/concept-progress-tracker';
+import { getUserKnowledgeProfilePersister } from './get-user-knowledge-profile-persister';
 
 let instance: ConceptProgressTracker | null = null;
 

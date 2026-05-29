@@ -6,7 +6,7 @@ Now uses shared Type1LetterLessonPage component
 <script lang="ts">
   import Type1LetterLessonPage from "./Type1LetterLessonPage.svelte";
   import { ANTISPIN_PAGE_CONFIG } from "../domain/type1-page-config";
-  import type { Type1LetterData } from "../Type1LetterData";
+  import type { Type1LetterData } from "../type1-letter-data";
 
   interface Props {
     currentLetter: Type1LetterData | undefined;

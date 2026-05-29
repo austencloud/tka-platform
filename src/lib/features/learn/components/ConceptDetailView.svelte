@@ -7,11 +7,11 @@ Supports two navigation modes:
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import { getConceptProgressTracker } from "$lib/features/learn/getConceptProgressTracker";
+  import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
   import { onMount } from "svelte";
   import type { LearnConcept, ConceptProgress, ExperienceViewMode } from "../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { ConceptProgressTracker } from "../services/implementations/ConceptProgressTracker";
+  import type { ConceptProgressTracker } from "../services/concept-progress-tracker";
   import GridConceptExperience from "./interactive/GridConceptExperience.svelte";
   import Type1ConceptExperience from "./interactive/letters/type1/Type1ConceptExperience.svelte";
   import MotionsConceptExperience from "./interactive/motions/MotionsConceptExperience.svelte";

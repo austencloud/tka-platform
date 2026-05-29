@@ -3,7 +3,7 @@
  * Data-driven configuration for the Type1 letter lesson pages
  */
 
-import type { Type1LetterData } from "../Type1LetterData";
+import type { Type1LetterData } from "../type1-letter-data";
 import {
   PROSPIN_LETTERS,
   ANTISPIN_LETTERS,
