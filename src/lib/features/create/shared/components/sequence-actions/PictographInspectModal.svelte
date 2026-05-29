@@ -57,7 +57,6 @@
   } | null>(null);
 
   // Accordion open state — all collapsed on open (spec: AAA, no overload)
-  let basicOpen = $state(false);
   let blueOpen = $state(false);
   let redOpen = $state(false);
 
@@ -102,7 +101,6 @@
       const wide =
         typeof window !== "undefined" &&
         window.matchMedia("(min-width: 1600px)").matches;
-      basicOpen = wide;
       blueOpen = wide;
       redOpen = wide;
       lastSelectedColor = null;
@@ -116,7 +114,6 @@
   // update cycle.
   function requestClose() {
     selectedArrowState.clearSelection();
-    basicOpen = false;
     blueOpen = false;
     redOpen = false;
     lastSelectedColor = null;
@@ -371,6 +368,15 @@
         onClose={requestClose}
       />
 
+      <BasicInfoColumn
+        {displayData}
+        {blueMotion}
+        {redMotion}
+        {lookupKeys}
+        {copiedSection}
+        onCopy={copyToClipboard}
+      />
+
       <div class="modal-body">
         <div class="inspect-layout">
           <div class="pictograph-rail">
@@ -386,17 +392,6 @@
           </div>
 
           <div class="detail-column themed-scrollbar">
-            <BasicInfoColumn
-              {displayData}
-              {blueMotion}
-              {redMotion}
-              {lookupKeys}
-              {copiedSection}
-              onCopy={copyToClipboard}
-              open={basicOpen}
-              onToggle={(next) => (basicOpen = next)}
-            />
-
             <MotionColumn
               color="blue"
               motion={blueMotion}
