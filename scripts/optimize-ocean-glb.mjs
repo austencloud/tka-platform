@@ -15,7 +15,7 @@
  * geometry, then KTX2-encode, then apply meshopt last.
  *
  * Passes:
- *   1. optimize  geometry simplify/instance/flatten + resize textures→1024 (webp,
+ *   1. optimize  geometry simplify/instance/flatten + resize textures→512 (webp,
  *                to bound memory) — geometry left UNCOMPRESSED so pass 2 can read it
  *   2. (API)     normalize all textures → PNG (KTX-readable, via sharp)
  *   3. uastc     KTX2 UASTC for normal / metallicRoughness / occlusion
@@ -86,19 +86,26 @@ if (!existsSync(resolve(KTX_BIN, "toktx.exe")) && !existsSync(resolve(KTX_BIN, "
 
 console.log(`Input: ${INPUT} (${fileSize(INPUT)} MB)`);
 
-// 1. Geometry simplify/instance/flatten + resize textures→1024. Geometry left
+// 1. Geometry simplify/instance/flatten + resize textures→512. Geometry left
 //    uncompressed (--compress false) so pass 2's NodeIO read needs no codec dep.
 run(
-  "Geometry simplify/instance/flatten + resize→1024 (uncompressed geometry)",
+  "Geometry simplify/instance/flatten + resize→512 (uncompressed geometry)",
   [
     "npx gltf-transform optimize",
     `"${INPUT}" "${TMP_SLIM}"`,
     "--compress false",
     "--texture-compress webp",
-    "--texture-size 1024",
+    "--texture-size 512",
     "--simplify true",
-    "--simplify-ratio 0.65",
-    "--simplify-error 0.001",
+    // Source flora/rocks/seabed are photoscans (~7M unique verts). The OLD
+    // 0.65/0.001 was a no-op: simplify-error 0.001 is a hard wall meshoptimizer
+    // refuses to cross, so it bailed at ~100% and the 322M-render-vert scene
+    // never loaded on mobile. Loosen error to 0.05 so the collapse actually
+    // runs; 0.1 keep-ratio drops unique verts ~7M→2M (render 322M→~54M).
+    // Topology/UV seams plateau it there — further render cuts need instance
+    // thinning / distance LOD, not simplify.
+    "--simplify-ratio 0.1",
+    "--simplify-error 0.05",
     "--instance true",
     "--flatten true",
   ].join(" ")
