@@ -537,7 +537,9 @@ In the center-rig `{#each}` (lines 287-308), iterate `visibleCenter` instead of 
 
 In the acolyte `{#each}` (lines 311-331), wrap with `{#if showAcolytes}`.
 
-Replace the platform mesh (lines 260-263) with the GLB stage when provided, else `Stage3D` template fallback:
+Replace the platform mesh (lines 260-263) with the GLB stage when `stageModel`
+is set, else keep the ORIGINAL stone-disc cylinder (do not substitute Stage3D —
+that regresses the museum exhibit's look):
 
 ```svelte
   {#if stageGltf}
@@ -545,9 +547,10 @@ Replace the platform mesh (lines 260-263) with the GLB stage when provided, else
       <T is={gltf.scene} position.y={PLATFORM_HEIGHT} />
     {/await}
   {:else}
-    <T.Group position.y={PLATFORM_HEIGHT}>
-      <Stage3D width={PLATFORM_RADIUS * 2} depth={PLATFORM_RADIUS * 2} />
-    </T.Group>
+    <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
+      <T.CylinderGeometry args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]} />
+      <T.MeshStandardMaterial color={platformColor} roughness={0.9} />
+    </T.Mesh>
   {/if}
 ```
 
@@ -625,8 +628,8 @@ Drop optimized GLBs here (Blender → gltf-transform optimize, per
 `.claude/rules/blender-first-3d-scenes.md`). Wire a stage to an effect by
 setting `EffectMeta.stageModel` in
 `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`
-to `/models/coven-stages/<file>.glb`. Unset → CovenStation uses the Stage3D
-fallback. First target: `template.glb` (shared template stage).
+to `/models/coven-stages/<file>.glb`. Unset → CovenStation keeps its original
+stone-disc platform. First target: `template.glb` (shared template stage).
 ```
 
 - [ ] **Step 2: Commit**
