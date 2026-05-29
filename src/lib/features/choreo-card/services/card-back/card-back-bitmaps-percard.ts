@@ -50,7 +50,6 @@ import CardBackStepCount from "../../components/card-back/CardBackStepCount.svel
 import CardBackLoopRow from "../../components/card-back/CardBackLoopRow.svelte";
 import type { TurnGlyphEntry } from "../../components/card-back/card-back-data";
 import { rasterizeComponent } from "./rasterize-node";
-import { getCanvas2DRenderer } from "$lib/shared/render/get-canvas-2d-renderer";
 import type { DirectRenderOptions } from "$lib/shared/render/services/contracts/IDirectRenderer";
 import type { RenderCanvas } from "$lib/shared/render/services/contracts/types";
 
@@ -140,13 +139,26 @@ type RenderPictoFn = (
   options: DirectRenderOptions,
 ) => Promise<RenderCanvas>;
 
+// Lazily build a Canvas2DDirectRenderer WITH the preparer injected. The renderer
+// only draws props/arrows when it has a preparer (`ensurePrepared`); the shared
+// singleton has none unless a global getter was wired, so construct our own with
+// pictographPreparer to guarantee the staffs render. Lazy-imported because the
+// preparer's dep chain crashes vitest on static import (tests inject a fake).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let directRenderer: any = null;
 let directRendererReady: Promise<void> | null = null;
 const defaultRenderPicto: RenderPictoFn = async (pictograph, options) => {
-  const renderer = getCanvas2DRenderer();
-  directRendererReady ??= renderer.initialize();
+  if (!directRenderer) {
+    const [{ Canvas2DDirectRenderer }, { pictographPreparer }] = await Promise.all([
+      import("$lib/shared/render/services/canvas-2d-direct-renderer"),
+      import("$lib/shared/pictograph/shared/services/implementations/PictographPreparer"),
+    ]);
+    directRenderer = new Canvas2DDirectRenderer(pictographPreparer);
+    directRendererReady = directRenderer.initialize();
+  }
   await directRendererReady;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return renderer.renderPictograph(pictograph as any, options);
+  return directRenderer.renderPictograph(pictograph as any, options);
 };
 
 let renderPicto: RenderPictoFn = defaultRenderPicto;
