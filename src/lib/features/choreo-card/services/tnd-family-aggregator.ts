@@ -8,6 +8,7 @@ export async function aggregateFamilySequences(
   catalogs: Catalog[],
 ): Promise<FamilyRatioGroup[]> {
   const catalogFamilyPairs = catalogs
+    .filter((catalog) => !catalog.asymmetric)
     .map((catalog) => {
       const family = catalog.families.find((f) => f.id === familyId);
       return family ? { catalog, family } : null;

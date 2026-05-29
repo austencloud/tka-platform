@@ -1,6 +1,7 @@
 import type { DeckRelease, DeckReleaseCard, StepCountWeight } from "../../domain/models/DeckRelease";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
+import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
 type Step = "configure" | "review" | "released";
 
@@ -34,11 +35,9 @@ class DeckReleaserState {
   weights = $state<StepCountWeight[]>([]);
   totalCards = $state(52);
   notes = $state("Fire Drums 2026");
-  theme = $state(
-    typeof window !== "undefined"
-      ? localStorage.getItem("cardPreview.theme") ?? "cosmic"
-      : "cosmic"
-  );
+  get theme() {
+    return settingsService.settings.backgroundType ?? "cosmic";
+  }
   nextDeckNumber = $state(1);
   releasedNumber = $state<number | null>(null);
   sourceSummaries = $state<CatalogSourceSummary[]>([]);

@@ -2,8 +2,11 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CardFooter, DeckReleaseCard } from "../../domain/models/DeckRelease";
   import type { CardPair } from "../../services/types";
+  import type { PrintPDFMode } from "../../services/print-pdf-exporter";
+  import { getTnDElementByIconPath, TND_ELEMENTS } from "../../domain/tnd-element";
   import PrintPreviewPages from "../print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "../print-preview/PrintPreviewToolbar.svelte";
+  import PrintDialog from "../print-preview/PrintDialog.svelte";
   import CardInspectModal from "../CardInspectModal.svelte";
   import type { CardSizeId } from "../../domain/card-sizes";
 
@@ -42,7 +45,35 @@
   let isRendering = $state(false);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
+  const elementSorted = $derived.by(() => {
+    const rawElements = (footers ?? []).map((f) => getTnDElementByIconPath(f.iconPath ?? "") ?? undefined);
+    const elementOrder = TND_ELEMENTS.map((e) => e.element);
+    const indexed = sequences.map((seq, i) => ({
+      seq,
+      footer: footers?.[i],
+      el: rawElements[i],
+      origIndex: i,
+    }));
+    indexed.sort((a, b) => {
+      const ai = a.el ? elementOrder.indexOf(a.el.element) : 999;
+      const bi = b.el ? elementOrder.indexOf(b.el.element) : 999;
+      return ai !== bi ? ai - bi : a.origIndex - b.origIndex;
+    });
+    return {
+      sequences: indexed.map((r) => r.seq),
+      footers: indexed.map((r) => r.footer!).filter(Boolean),
+      tndElements: indexed.map((r) => r.el),
+    };
+  });
+  const sortedSequences = $derived(elementSorted.sequences);
+  const sortedFooters = $derived(elementSorted.footers);
+  const tndElements = $derived(elementSorted.tndElements);
+
+  let showPrintDialog = $state(false);
   let isExporting = $state(false);
+  let exportProgress = $state(0);
+  let exportTotal = $state(0);
+  let exportError = $state("");
   let rerenderKey = $state(0);
 
   let inspectedSequence = $state<SequenceData | null>(null);
@@ -85,39 +116,59 @@
     renderTotal = state.total;
   }
 
-  async function handleExportPDF() {
+  function triggerDownload(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleExportPDF(mode: PrintPDFMode = 'combined') {
     if (renderedPairs.length === 0) return;
     isExporting = true;
+    exportError = "";
+    exportProgress = 0;
+    exportTotal = 0;
     try {
       const { exportHomePrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-exporter");
       const deckName = `Deck_${String(nextDeckNumber).padStart(3, "0")}`;
-      const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${deckName}_print.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const suffix = mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print";
+      const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize, (current, total) => {
+        exportProgress = current;
+        exportTotal = total;
+      }, mode);
+      triggerDownload(blob, `${deckName}${suffix}.pdf`);
+    } catch (e) {
+      exportError = `PDF export failed: ${e instanceof Error ? e.message : e}`;
     } finally {
       isExporting = false;
+      exportProgress = 0;
+      exportTotal = 0;
     }
   }
 
   async function handleExportZIP() {
     if (renderedPairs.length === 0) return;
     isExporting = true;
+    exportError = "";
+    exportProgress = 0;
+    exportTotal = 0;
     try {
       const { exportDeckZIP } = await import("$lib/features/choreo-card/services/print-zip-exporter");
       const deckName = `Deck_${String(nextDeckNumber).padStart(3, "0")}`;
-      const blob = await exportDeckZIP(renderedPairs, deckName);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${deckName}_cards.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
+        exportProgress = current;
+        exportTotal = total;
+      });
+      triggerDownload(blob, `${deckName}_cards.zip`);
+    } catch (e) {
+      exportError = `ZIP export failed: ${e instanceof Error ? e.message : e}`;
     } finally {
       isExporting = false;
+      exportProgress = 0;
+      exportTotal = 0;
     }
   }
 </script>
@@ -162,22 +213,21 @@
     {cardSize}
     totalCards={cards.length}
     {isRendering}
-    {isExporting}
     {renderProgress}
     {renderTotal}
     onCardSizeChange={(s) => { cardSize = s; }}
-    onExportPDF={handleExportPDF}
-    onExportZIP={handleExportZIP}
     onRerender={() => { rerenderKey++; }}
+    onPrint={() => { showPrintDialog = true; }}
   />
 
   <div class="preview-area">
     <PrintPreviewPages
-      {sequences}
+      sequences={sortedSequences}
       {cardSize}
       {theme}
       {rerenderKey}
-      {footers}
+      footers={sortedFooters}
+      {tndElements}
       isLoading={false}
       showGrid={true}
       showTKA={true}
@@ -223,6 +273,25 @@
       {/if}
     {/snippet}
   </CardInspectModal>
+{/if}
+
+{#if showPrintDialog}
+  <PrintDialog
+    title="Print Deck #{String(nextDeckNumber).padStart(3, '0')}"
+    subtitle="Pre-release preview"
+    cardCount={cards.length}
+    {tndElements}
+    {cardSize}
+    {theme}
+    {isExporting}
+    exportProgress={exportProgress}
+    exportTotal={exportTotal}
+    exportError={exportError}
+    onExportPDF={handleExportPDF}
+    onExportZIP={handleExportZIP}
+    onCardSizeChange={(s) => { cardSize = s; }}
+    onClose={() => { if (!isExporting) showPrintDialog = false; }}
+  />
 {/if}
 
 <style>

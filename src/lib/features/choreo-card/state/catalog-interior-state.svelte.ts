@@ -2,6 +2,7 @@ import type { Catalog } from "../domain/models/Catalog";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { CardSizeId } from "../domain/card-sizes";
 import type { CardPair } from "../services/types";
+import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
 type ViewMode = "grid" | "print";
 
@@ -35,9 +36,7 @@ export function createCatalogInteriorState() {
   let cardSize = $state<CardSizeId>(
     (typeof window !== "undefined" ? localStorage.getItem("cardPreview.cardSize") : null) as CardSizeId ?? "poker"
   );
-  const selectedTheme = $state(
-    typeof window !== "undefined" ? localStorage.getItem("cardPreview.theme") ?? "cosmic" : "cosmic"
-  );
+  const selectedTheme = $derived(settingsService.settings.backgroundType ?? "cosmic");
   let isExporting = $state(false);
   let renderedPairs = $state<CardPair[]>([]);
   let isRendering = $state(false);

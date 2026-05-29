@@ -10,11 +10,13 @@ import { aggregateFamilySequences } from "$lib/features/choreo-card/services/tnd
 import type { CardPair } from "../services/types";
   import { TND_ELEMENTS } from "../domain/tnd-element";
   import { computeTnDCardFooter } from "../domain/catalog-tnd-labels";
-  import ChoreoCard from "./ChoreoCard.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
+  import PrintDialog from "./print-preview/PrintDialog.svelte";
+  import type { PrintPDFMode } from "../services/print-pdf-exporter";
   import CardSizeToggle from "./card-preview/CardSizeToggle.svelte";
   import type { CardSizeId } from "../domain/card-sizes";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   type ViewMode = 'grid' | 'print';
 
@@ -71,30 +73,6 @@ import type { CardPair } from "../services/types";
       });
   });
 
-  function detectOrientation(node: HTMLElement) {
-    const check = () => {
-      const img = node.querySelector("img") as HTMLImageElement | null;
-      if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
-        const aspect = img.naturalWidth / img.naturalHeight;
-        if (aspect > 1.3) {
-          node.classList.add("landscape");
-        } else {
-          node.classList.remove("landscape");
-        }
-      }
-    };
-    check();
-    const observer = new MutationObserver(check);
-    observer.observe(node, { childList: true, subtree: true });
-    node.addEventListener("load", check, true);
-    return {
-      destroy() {
-        observer.disconnect();
-        node.removeEventListener("load", check, true);
-      },
-    };
-  }
-
   // ── Card view mode ──────────────────────────────────────────────────────
   // Map legacy 'cards' value to 'print' on read
   const storedViewMode = typeof window !== 'undefined' ? localStorage.getItem('choreoCard.deckViewMode') : null;
@@ -104,13 +82,15 @@ import type { CardPair } from "../services/types";
   let cardSize = $state<CardSizeId>(
     (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.cardSize') : null) as CardSizeId ?? 'poker'
   );
-  let selectedTheme = $state<string>(
-    typeof window !== 'undefined' ? localStorage.getItem('cardPreview.theme') ?? 'cosmic' : 'cosmic'
-  );
+  let selectedTheme = $derived(settingsService.settings.backgroundType ?? 'cosmic');
 
   // ── Print preview state ─────────────────────────────────────────────────
   let renderedPairs = $state<CardPair[]>([]);
+  let showPrintDialog = $state(false);
   let isExporting = $state(false);
+  let exportProgress = $state(0);
+  let exportTotal = $state(0);
+  let exportError = $state("");
   let isRendering = $state(false);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
@@ -145,30 +125,49 @@ import type { CardPair } from "../services/types";
     URL.revokeObjectURL(url);
   }
 
-  async function handleExportPDF() {
+  async function handleExportPDF(mode: PrintPDFMode = 'combined') {
     if (renderedPairs.length === 0 || isExporting) return;
     isExporting = true;
+    exportError = "";
+    exportProgress = 0;
+    exportTotal = 0;
     try {
-      // Lazy-load print-pdf-exporter - it pulls pdf-lib (~400KB + CSP-violating
-      // runtime codegen). Only loaded when the user actually exports.
       const { exportHomePrintPDF } = await import(
         "$lib/features/choreo-card/services/print-pdf-exporter"
       );
-      const blob = await exportHomePrintPDF(renderedPairs, familyLabel, cardSize);
-      downloadBlob(blob, `${familyLabel}-${cardSize}.pdf`);
+      const suffix = mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print";
+      const blob = await exportHomePrintPDF(renderedPairs, familyLabel, cardSize, (current, total) => {
+        exportProgress = current;
+        exportTotal = total;
+      }, mode);
+      downloadBlob(blob, `${familyLabel}${suffix}.pdf`);
+    } catch (e) {
+      exportError = `PDF export failed: ${e instanceof Error ? e.message : e}`;
     } finally {
       isExporting = false;
+      exportProgress = 0;
+      exportTotal = 0;
     }
   }
 
   async function handleExportZIP() {
     if (renderedPairs.length === 0 || isExporting) return;
     isExporting = true;
+    exportError = "";
+    exportProgress = 0;
+    exportTotal = 0;
     try {
-      const blob = await exportDeckZIP(renderedPairs, familyLabel);
+      const blob = await exportDeckZIP(renderedPairs, familyLabel, (current, total) => {
+        exportProgress = current;
+        exportTotal = total;
+      });
       downloadBlob(blob, `${familyLabel}-${cardSize}.zip`);
+    } catch (e) {
+      exportError = `ZIP export failed: ${e instanceof Error ? e.message : e}`;
     } finally {
       isExporting = false;
+      exportProgress = 0;
+      exportTotal = 0;
     }
   }
 </script>
@@ -219,16 +218,14 @@ import type { CardPair } from "../services/types";
       {cardSize}
       totalCards={renderedPairs.length}
       {isRendering}
-      {isExporting}
       {renderProgress}
       {renderTotal}
       onCardSizeChange={(s) => {
         cardSize = s;
         if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', s);
       }}
-      onExportPDF={handleExportPDF}
-      onExportZIP={handleExportZIP}
       onRerender={() => { rerenderKey++; }}
+      onPrint={() => { showPrintDialog = true; }}
     />
   {/if}
 
@@ -277,27 +274,49 @@ import type { CardPair } from "../services/types";
           {group.ratio}
           <span class="turns-note">{turnsLabel(group.turns)}</span>
         </h3>
-        <div class="sequence-grid">
-          {#each group.sequences as sequence (sequence.id ?? sequence.word)}
-            <div class="playing-card" use:detectOrientation>
-              <ChoreoCard
-                {sequence}
-                printMode={true}
-                {handPointsVisible}
-                {showGrid}
-                {showTKA}
-                {showWord}
-                {includeStartPosition}
-                onSelect={() => onSelectSequence(sequence)}
-                {onContextMenu}
-              />
-            </div>
-          {/each}
-        </div>
+        <PrintPreviewPages
+          sequences={group.sequences}
+          {cardSize}
+          theme={selectedTheme}
+          tndElement={theme}
+          {rerenderKey}
+          isLoading={false}
+          {handPointsVisible}
+          {showGrid}
+          {showTKA}
+          {showWord}
+          {includeStartPosition}
+          displayMode="grid"
+          showBacks={true}
+          footers={group.sequences.map(() => computeTnDCardFooter(familyId, group.ratio))}
+          onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
+          onCardClick={(seq) => onSelectSequence(seq)}
+        />
       </section>
     {/each}
   {/if}
 </div>
+
+{#if showPrintDialog}
+  <PrintDialog
+    title="Print {familyLabel}"
+    subtitle="{allSequences.length} sequences"
+    cardCount={allSequences.length}
+    {cardSize}
+    theme={selectedTheme}
+    {isExporting}
+    exportProgress={exportProgress}
+    exportTotal={exportTotal}
+    exportError={exportError}
+    onExportPDF={handleExportPDF}
+    onExportZIP={handleExportZIP}
+    onCardSizeChange={(s) => {
+      cardSize = s;
+      if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', s);
+    }}
+    onClose={() => { if (!isExporting) showPrintDialog = false; }}
+  />
+{/if}
 
 <style>
   .tnd-family-drilldown {
@@ -446,33 +465,5 @@ import type { CardPair } from "../services/types";
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     margin-left: 8px;
     font-size: var(--font-size-compact, 12px);
-  }
-
-  .sequence-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
-  }
-
-  .playing-card {
-    aspect-ratio: 5 / 7;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: var(--shadow-card, 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--print-bg, #ffffff);
-  }
-
-  .playing-card :global(> button) {
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-  }
-
-  @media (max-width: 480px) {
-    .sequence-grid {
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-      gap: 8px;
-    }
   }
 </style>
