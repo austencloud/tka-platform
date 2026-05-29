@@ -91,7 +91,7 @@
     align-items: center;
     gap: 6px;
     padding: 6px 10px;
-    min-height: 32px;
+    min-height: var(--min-touch-target, 44px);
     border-radius: 8px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
