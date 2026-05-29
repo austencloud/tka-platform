@@ -1,5 +1,5 @@
-import { deviceDetector } from './services/implementations/DeviceDetector';
-import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+import { deviceDetector } from './services/device-detector';
+import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
 
 /** Returns the module-level DeviceDetector singleton. */
 export function getDeviceDetector(): DeviceDetector {

@@ -3,7 +3,7 @@
 import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cache-orchestrator";
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getBrowseEventHandler } from "../get-browse-event-handler";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";

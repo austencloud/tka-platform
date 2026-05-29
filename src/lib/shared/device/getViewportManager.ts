@@ -1,5 +1,5 @@
-import { viewportManager } from './services/implementations/ViewportManager.svelte';
-import type { ViewportManager } from '$lib/shared/device/services/implementations/ViewportManager.svelte'
+import { viewportManager } from './services/viewport-manager.svelte';
+import type { ViewportManager } from '$lib/shared/device/services/viewport-manager.svelte'
 
 /** Returns the module-level ViewportManager singleton. */
 export function getViewportManager(): ViewportManager {

@@ -2,7 +2,7 @@
 <!-- Automatically adapts between bottom (portrait) and side (landscape) layouts -->
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import { onMount } from "svelte";
   import type { Section } from "../domain/types";

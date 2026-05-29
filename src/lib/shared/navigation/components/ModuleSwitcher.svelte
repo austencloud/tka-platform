@@ -12,7 +12,7 @@
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import ModuleList from "./ModuleList.svelte";
   import type { HapticFeedback } from "../../application/services/haptic-feedback";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import Drawer from "../../foundation/ui/Drawer.svelte";
   import AccountRow from "./account/AccountRow.svelte";

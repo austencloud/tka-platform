@@ -53,7 +53,7 @@ import type { SheetType } from "../../navigation/services/contracts/types";
     setInitializationState,
     initializeAppState,
   } from "../state/initialization-state.svelte";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import BackgroundHost from "../../background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import {

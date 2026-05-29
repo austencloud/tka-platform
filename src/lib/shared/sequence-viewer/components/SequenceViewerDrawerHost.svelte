@@ -35,7 +35,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
   import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import VideoPanel from "./video-panel/VideoPanel.svelte";

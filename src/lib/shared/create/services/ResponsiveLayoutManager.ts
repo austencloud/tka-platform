@@ -1,4 +1,4 @@
-import type { ViewportManager } from '$lib/shared/device/services/implementations/ViewportManager.svelte'
+import type { ViewportManager } from '$lib/shared/device/services/viewport-manager.svelte'
 /**
  * Responsive Layout Service Implementation
  *
@@ -8,7 +8,7 @@ import type { ViewportManager } from '$lib/shared/device/services/implementation
  * Domain: Create module - Sequence Construction Interface
  */
 
-import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
 import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 import type { LayoutConfiguration } from "$lib/shared/create/services/layout-types";
 
@@ -140,8 +140,8 @@ export class ResponsiveLayoutManager {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { deviceDetector } from "$lib/shared/device/services/implementations/DeviceDetector";
-import { viewportManager } from "$lib/shared/device/services/implementations/ViewportManager.svelte";
+import { deviceDetector } from "$lib/shared/device/services/device-detector";
+import { viewportManager } from "$lib/shared/device/services/viewport-manager.svelte";
 
 export const responsiveLayoutManager = new ResponsiveLayoutManager(
   deviceDetector,

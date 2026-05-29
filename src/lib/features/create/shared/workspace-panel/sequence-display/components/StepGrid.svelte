@@ -3,7 +3,7 @@
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";

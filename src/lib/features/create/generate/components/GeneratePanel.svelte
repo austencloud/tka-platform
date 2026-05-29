@@ -15,7 +15,7 @@ Card-based architecture with integrated Generate button:
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
   import { createDeviceState } from "../state/generate-device.svelte";

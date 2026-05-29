@@ -22,7 +22,7 @@
   import Toast from "$lib/shared/settings/components/Toast.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";

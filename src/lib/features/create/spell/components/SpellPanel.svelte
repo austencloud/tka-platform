@@ -19,7 +19,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { RandomSequenceGenerator } from "../services/random-sequence-generator";
   import * as spellServiceLoaderModule from "../services/spell-service-loader";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import { UndoOperationType } from "../../shared/services/undo-manager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

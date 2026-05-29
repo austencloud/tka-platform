@@ -13,7 +13,7 @@
   import type { AppSettings, PropPreset } from "../../domain/AppSettings";
   import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import { onMount, onDestroy } from "svelte";
   // PropTypeRegistry imports removed - variations now visible in Bento grid
   import CatDogToggle from "./prop-type/CatDogToggle.svelte";

@@ -25,7 +25,7 @@
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { onMount } from "svelte";
   import type { Snippet } from "svelte";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import { desktopSidebarState } from "../../layout/desktop-sidebar-state.svelte";
   import { ADMIN_SPACING } from "../styles/admin-theme";

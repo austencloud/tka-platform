@@ -12,7 +12,7 @@
 import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
 import { attachRipple } from "$lib/shared/application/services/ripple-effect";
 import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
 // Touch tolerance constants

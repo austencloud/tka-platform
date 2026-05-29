@@ -20,7 +20,7 @@
   import type { FeedbackType } from "$lib/shared/feedback/domain/models/feedback-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";

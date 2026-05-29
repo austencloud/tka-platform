@@ -1,11 +1,11 @@
-import { createComponentLogger } from "../../../utils/debug-logger";
-import { DeviceType } from "../../domain/enums/device-enums";
+import { createComponentLogger } from "../../utils/debug-logger";
+import { DeviceType } from "../domain/enums/device-enums";
 import type {
   DeviceCapabilities,
   ResponsiveSettings,
-} from "../../domain/models/device-models";
-import { BREAKPOINTS, LANDSCAPE_THRESHOLDS } from "../../domain/constants/device-constants";
-import type { ViewportManager } from '$lib/shared/device/services/implementations/ViewportManager.svelte'
+} from "../domain/models/device-models";
+import { BREAKPOINTS, LANDSCAPE_THRESHOLDS } from "../domain/constants/device-constants";
+import type { ViewportManager } from '$lib/shared/device/services/viewport-manager.svelte'
 /**
  * Device Detector Implementation
  *
@@ -529,6 +529,6 @@ export class DeviceDetector {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { viewportManager } from "./ViewportManager.svelte";
+import { viewportManager } from "./viewport-manager.svelte";
 
 export const deviceDetector = new DeviceDetector(viewportManager);

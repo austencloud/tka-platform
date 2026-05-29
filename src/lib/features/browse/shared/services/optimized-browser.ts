@@ -9,7 +9,7 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
-import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
 import type {
   PaginatedSequences, SequenceMetadata } from "./types";
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'

@@ -8,7 +8,7 @@
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getPlaybackState } from "./state/playback-state.svelte";
   import { getComposeModuleState } from "../../shared/state/compose-module-state.svelte";
-  import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import { onMount } from "svelte";
   import PlaybackHeader from "./components/PlaybackHeader.svelte";
   import PlaybackControls from "./components/PlaybackControls.svelte";

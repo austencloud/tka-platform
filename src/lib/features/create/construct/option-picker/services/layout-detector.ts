@@ -1,4 +1,4 @@
-import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
+import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
 import type { LayoutConfig } from "./types";
 
 // Re-export LayoutConfig type to avoid duplicate type issues
@@ -75,6 +75,6 @@ export class LayoutDetector {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { deviceDetector } from "$lib/shared/device/services/implementations/DeviceDetector";
+import { deviceDetector } from "$lib/shared/device/services/device-detector";
 
 export const layoutDetector = new LayoutDetector(deviceDetector);

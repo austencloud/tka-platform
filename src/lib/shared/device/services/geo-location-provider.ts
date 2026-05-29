@@ -8,7 +8,7 @@
  */
 
 
-import type { UserLocation } from "../contracts/types";
+import type { UserLocation } from "./types";
 
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 const STORAGE_KEY = "tka_user_geolocation";
