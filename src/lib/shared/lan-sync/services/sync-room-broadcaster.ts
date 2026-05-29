@@ -14,8 +14,8 @@ import {
 	type DatabaseReference
 } from 'firebase/database';
 import { getDatabaseInstance, getAuthSync } from '$lib/shared/auth/firebase';
-import type { SyncRoom } from '../../domain/models/lan-sync-models';
-import { localSyncSessionId } from '../../domain/models/lan-sync-models';
+import type { SyncRoom } from '../domain/models/lan-sync-models';
+import { localSyncSessionId } from '../domain/models/lan-sync-models';
 
 export class SyncRoomBroadcaster {
 	private _isBroadcasting = false;

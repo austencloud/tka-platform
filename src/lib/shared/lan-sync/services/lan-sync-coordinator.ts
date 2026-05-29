@@ -6,18 +6,18 @@
  * Now also manages Firebase RTDB broadcasting for discovery.
  */
 
-import type { PeerConnectionManager } from '$lib/shared/lan-sync/services/implementations/PeerConnectionManager'
-import type { SyncRoomBroadcaster } from './SyncRoomBroadcaster';
+import type { PeerConnectionManager } from '$lib/shared/lan-sync/services/peer-connection-manager'
+import type { SyncRoomBroadcaster } from './sync-room-broadcaster';
 import type {
 	SyncedPlaybackState,
 	PeerConnectionState,
 	SyncMessage,
 	LanSyncConfig
-} from '../../domain/models/lan-sync-models';
+} from '../domain/models/lan-sync-models';
 import {
 	createInitialPlaybackState,
 	DEFAULT_LAN_SYNC_CONFIG
-} from '../../domain/models/lan-sync-models';
+} from '../domain/models/lan-sync-models';
 
 export class LanSyncCoordinator {
 	private _playbackState: SyncedPlaybackState = createInitialPlaybackState();

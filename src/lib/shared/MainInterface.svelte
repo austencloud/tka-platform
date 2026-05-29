@@ -1,7 +1,7 @@
 <script lang="ts">
 
-import { getLanSyncCoordinator } from "$lib/shared/lan-sync/getLanSyncCoordinator";
-import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/getSyncRoomDiscovery";
+import { getLanSyncCoordinator } from "$lib/shared/lan-sync/get-lan-sync-coordinator";
+import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discovery";
   /**
    * MainInterface
    * Domain: Application Layout Shell

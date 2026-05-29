@@ -15,8 +15,8 @@ import {
 	getDatabaseInstance,
 	createHMRSafeDatabaseListener
 } from '$lib/shared/auth/firebase';
-import type { SyncRoom, SyncRoomWithId } from '../../domain/models/lan-sync-models';
-import { localSyncSessionId } from '../../domain/models/lan-sync-models';
+import type { SyncRoom, SyncRoomWithId } from '../domain/models/lan-sync-models';
+import { localSyncSessionId } from '../domain/models/lan-sync-models';
 
 export class SyncRoomDiscovery {
 	private _isBrowsing = false;

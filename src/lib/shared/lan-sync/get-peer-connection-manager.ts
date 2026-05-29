@@ -1,5 +1,5 @@
 
-import { PeerConnectionManager } from './services/implementations/PeerConnectionManager';
+import { PeerConnectionManager } from './services/peer-connection-manager';
 
 let instance: PeerConnectionManager | null = null;
 export function getPeerConnectionManager(): PeerConnectionManager {

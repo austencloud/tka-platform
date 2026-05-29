@@ -5,8 +5,8 @@
  * Handles room creation, joining, and message passing.
  */
 
-import type { SyncMessage, PeerConnectionState } from '../../domain/models/lan-sync-models';
-import { generateRoomCode, createInitialConnectionState } from '../../domain/models/lan-sync-models';
+import type { SyncMessage, PeerConnectionState } from '../domain/models/lan-sync-models';
+import { generateRoomCode, createInitialConnectionState } from '../domain/models/lan-sync-models';
 import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
 

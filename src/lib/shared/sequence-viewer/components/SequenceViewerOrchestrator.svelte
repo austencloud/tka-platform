@@ -3,7 +3,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 // propInterpolator and sequenceConverter are now module-level functions injected directly
-import { getLanSyncCoordinator } from "$lib/shared/lan-sync/getLanSyncCoordinator";
+import { getLanSyncCoordinator } from "$lib/shared/lan-sync/get-lan-sync-coordinator";
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
