@@ -1,84 +1,84 @@
 # Ceremony Flattening — Dry Run Report
 
-Generated: 2026-05-06T20:00:24.472Z
+Generated: 2026-05-29T02:58:34.801Z
 
 ## Summary
 
 | Metric | Count |
 |---|---|
-| PascalCase .ts files | 1312 |
-| Feature modules | 37 |
-| Shared modules | 58 |
-| implementations/ dirs | 121 |
-| contracts/ dirs (empty) | 5 |
-| contracts/ dirs (types-only) | 69 |
-| contracts/ dirs (interfaces) | 11 |
-| Stateless classes | 52 |
-| Stateless-deps classes | 51 |
+| PascalCase .ts files | 1305 |
+| Feature modules | 38 |
+| Shared modules | 57 |
+| implementations/ dirs | 98 |
+| contracts/ dirs (empty) | 2 |
+| contracts/ dirs (types-only) | 56 |
+| contracts/ dirs (interfaces) | 10 |
+| Stateless classes | 51 |
+| Stateless-deps classes | 52 |
 | Stateless-cache classes | 15 |
-| Stateful classes | 440 |
-| Not-a-class (already functions) | 66 |
+| Stateful classes | 439 |
+| Not-a-class (already functions) | 63 |
 | Parse errors | 0 |
 
 ## Edge Cases
 
 | Category | Count | Risk |
 |---|---|---|
-| Dynamic imports (PascalCase) | 252 | Agent handles manually |
-| Stored service refs | 1196 | Must unwrap each method call |
-| Service passed as argument | 149 | Receiver param type needs update |
+| Dynamic imports (PascalCase) | 261 | Agent handles manually |
+| Stored service refs | 1250 | Must unwrap each method call |
+| Service passed as argument | 154 | Receiver param type needs update |
 | Reactive state with interface type | 5 | Needs restructuring |
 
 ### Dynamic Imports
 
-- `src/lib/features/compose/services/implementations/VideoExportOrchestrator.ts`: `import('$lib/shared/animation-engine/domain/types/TipEffectTypes')`
-- `src/lib/features/compose/services/implementations/VideoExportOrchestrator.ts`: `import('$lib/shared/animation-engine/domain/types/TipEffectTypes')`
-- `src/lib/features/create/shared/services/implementations/SequenceExtender.ts`: `import('$lib/shared/pictograph/shared/domain/models/PictographData')`
-- `src/lib/features/create/shared/services/implementations/SequenceExtender.ts`: `import('$lib/shared/pictograph/shared/domain/models/PictographData')`
-- `src/lib/features/create/shared/services/implementations/SequenceExtender.ts`: `import('$lib/shared/pictograph/shared/domain/models/PictographData')`
-- `src/lib/features/create/spell/services/orientation-continuity-validator.ts`: `import('$lib/shared/foundation/domain/models/SequenceData')`
-- `src/lib/features/create/spell/services/orientation-continuity-validator.ts`: `import('$lib/shared/foundation/domain/models/StepData')`
-- `src/lib/features/create/spell/services/orientation-continuity-validator.ts`: `import('$lib/shared/pictograph/shared/domain/models/PictographData')`
-- `src/lib/features/create/spell/services/orientation-continuity-validator.ts`: `import('$lib/shared/pictograph/prop/services/implementations/OrientationCalculator')`
-- `src/lib/features/retro/shared/services/retro-init.ts`: `import('$lib/shared/auth/state/authState.svelte')`
 - `src/lib/features/retro/shared/services/retro-init.ts`: `import('$lib/shared/auth/state/authState.svelte')`
 - `src/lib/features/retro/win95/adapters/settings-adapter.ts`: `import('$lib/shared/settings/state/SettingsState.svelte')`
-- `src/lib/features/retro/win95/services/implementations/PixelRenderer.ts`: `import('$lib/shared/render/services/implementations/SvgImageCache')`
-- `src/lib/features/retro/winxp/services/implementations/XPRenderer.ts`: `import('$lib/shared/render/services/implementations/SvgImageCache')`
-- `src/lib/shared/3d/debug/mocap-debug.ts`: `import('three/examples/jsm/loaders/FBXLoader.js')`
 - `src/lib/shared/3d/destinations/definitions.ts`: `import('../../../features/campground/CampgroundDestination.svelte')`
 - `src/lib/shared/3d/destinations/definitions.ts`: `import('../../../features/archive/ArchiveDestination.svelte')`
 - `src/lib/shared/3d/destinations/definitions.ts`: `import('../../../features/museum/scenes/procedural/MuseumDestination.svelte')`
 - `src/lib/shared/3d/destinations/definitions.ts`: `import('../../../features/lab/tools/3d-controls/ThreeDControlsLab.svelte')`
 - `src/lib/shared/3d/destinations/definitions.ts`: `import('../../../features/hannons-camp/HannonsCampDestination.svelte')`
-- `src/lib/shared/3d/services/implementations/AvatarAnimator.ts`: `import('../../domain/models/GripPose')`
-- `src/lib/shared/3d/services/implementations/ClipBasedTurnAnimator.ts`: `import('three/examples/jsm/loaders/GLTFLoader.js')`
-- `src/lib/shared/3d/services/implementations/LocomotionAnimator.ts`: `import('three/examples/jsm/loaders/GLTFLoader.js')`
-- `src/lib/shared/animation-engine/domain/types/FireTypes.ts`: `import('./CharcoalSparkTypes')`
-- `src/lib/shared/animation-engine/services/implementations/AnimationEngine.svelte.ts`: `import('../../domain/types/TipEffectTypes')`
-- `src/lib/shared/animation-engine/services/implementations/AnimationEngine.svelte.ts`: `import('../../domain/types/TipEffectTypes')`
-- `src/lib/shared/animation-engine/services/implementations/AnimationEngine.svelte.ts`: `import('../../domain/types/FireTypes')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/TrailCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/FireCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/LedCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/CharcoalCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/ZapCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/SparklesCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/EchoCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/BloomCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/WaterCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/BubblesCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/PetalsCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/SmokeCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/InkCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/FrostCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/SilkCustomize.svelte')`
+- `src/lib/shared/animation-engine/components/effects-panel/effect-registry.ts`: `import('./customize/PulseCustomize.svelte')`
 - `src/lib/shared/animation-engine/services/implementations/AnimationEngine.svelte.ts`: `import('$lib/shared/animation-engine/getFireDefaultsLoader')`
-- `src/lib/shared/animation-engine/services/implementations/AnimationRenderLoop.ts`: `import('./FireTipTracker')`
-- `src/lib/shared/animation-engine/services/implementations/AnimationRenderLoop.ts`: `import('../../domain/types/FireTypes')`
+- `src/lib/shared/animation-engine/services/implementations/CanvasLifecycleManager.ts`: `import('../effects/EffectRenderer')`
+- `src/lib/shared/animation-engine/services/implementations/managers/EffectSystem.ts`: `import('../EffectController')`
+- `src/lib/shared/animation-engine/services/implementations/managers/PlaybackSync.ts`: `import('../EffectRendererManager')`
+- `src/lib/shared/animation-engine/services/implementations/managers/PlaybackSync.ts`: `import('../../../domain/types/TipEffectTypes')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/EffectRendererManager')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/TrailCapturer')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/AnimationRenderLoop')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/AnimationPrecomputer.svelte')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/CanvasResizer.svelte')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/FireTipTracker')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/LedTipTracker')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/DeviceTierDetector')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor')`
+- `src/lib/shared/animation-engine/services/implementations/RenderContextFactory.ts`: `import('../effects/EffectRenderer')`
 - `src/lib/shared/animation-engine/services/implementations/SequenceFramePreRenderer.ts`: `import('$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer')`
-- `src/lib/shared/animation-engine/state/animation-visibility-state.svelte.ts`: `import('../domain/types/FireTypes')`
-- `src/lib/shared/animation-engine/state/animation-visibility-state.svelte.ts`: `import('../domain/types/FireTypes')`
-- `src/lib/shared/animation-engine/state/animation-visibility-state.svelte.ts`: `import('../domain/types/CharcoalSparkTypes')`
-- `src/lib/shared/animation-engine/state/animation-visibility-state.svelte.ts`: `import('../domain/types/FireTypes')`
-- `src/lib/shared/animation-engine/state/animation-visibility-state.svelte.ts`: `import('../domain/types/FireTypes')`
-- `src/lib/shared/animation-engine/state/animation-visibility-state.svelte.ts`: `import('../domain/types/FireTypes')`
-- `src/lib/shared/animation-engine/state/animation-visibility-state.svelte.ts`: `import('../domain/types/FireTypes')`
 - `src/lib/shared/application/services/implementations/ErrorHandler.ts`: `import('$lib/shared/feedback/services/implementations/FeedbackRepository')`
-- `src/lib/shared/attribution/services/implementations/AttributionPersister.ts`: `import('$lib/shared/auth/state/authState.svelte')`
+- `src/lib/shared/application/state/services.svelte.ts`: `import('../../settings/state/SettingsState.svelte')`
+- `src/lib/shared/application/state/services.svelte.ts`: `import('../../settings/state/SettingsState.svelte')`
 - `src/lib/shared/auth/services/auth-boot-orchestrator.ts`: `import('$lib/shared/settings/state/SettingsState.svelte')`
 - `src/lib/shared/auth/services/authenticator.ts`: `import('$lib/shared/desktop/isDesktop')`
 - `src/lib/shared/auth/services/authenticator.ts`: `import('$lib/shared/desktop/TauriAuthBridge')`
 - `src/lib/shared/auth/state/authState.svelte.ts`: `import('$lib/shared/desktop/isDesktop')`
 - `src/lib/shared/auth/state/authState.svelte.ts`: `import('../../settings/state/SettingsState.svelte')`
-- `src/lib/shared/choreo-card/services/choreo-card-cell-pipeline.ts`: `import('$lib/shared/pictograph/prop/domain/enums/PropType')`
-- `src/lib/shared/choreo-card/services/choreo-card-cell-pipeline.ts`: `import('$lib/shared/pictograph/prop/domain/enums/PropType')`
-- `src/lib/shared/choreo-card/services/choreo-card-cell-pipeline.ts`: `import('$lib/shared/browse/domain/BrowseViewMode')`
 - `src/lib/shared/choreo-card/services/choreo-card-context-menu.ts`: `import('$lib/shared/share/domain/models/ShareOptions')`
 - `src/lib/shared/choreo-card/services/choreo-card-context-menu.ts`: `import('$lib/shared/share/services/implementations/Sharer')`
 - `src/lib/shared/choreo-card/services/choreo-card-context-menu.ts`: `import('$lib/shared/share/domain/models/ShareOptions')`
@@ -101,18 +101,13 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/lib/shared/qr/services/implementations/compositional-utils.ts`: `import('$lib/features/create/generate/circular/services/implementations/StrictSwappedLOOPExecutor')`
 - `src/lib/shared/qr/services/implementations/compositional-utils.ts`: `import('$lib/features/create/generate/circular/services/implementations/StrictInvertedLOOPExecutor')`
 - `src/lib/shared/qr/services/implementations/compositional-utils.ts`: `import('$lib/features/create/generate/circular/services/implementations/RewoundLOOPExecutor')`
-- `src/lib/shared/render/services/implementations/ImageComposer.ts`: `import('./TextRenderer')`
 - `src/lib/shared/render/services/implementations/ImageComposer.ts`: `import('../../../sequence-viewer/services/implementations/CellCacheKeyDeriver')`
 - `src/lib/shared/render/services/implementations/ImageComposer.ts`: `import('../../../mandala/getMandalaGeometryCalculator')`
 - `src/lib/shared/render/services/implementations/ImageComposer.ts`: `import('../../../pictograph/shared/services/implementations/PictographPreparer')`
-- `src/lib/shared/render/services/implementations/ImageComposer.ts`: `import('../../../pictograph/shared/domain/models/PreparedPictographData')`
-- `src/lib/shared/render/services/implementations/LayerCompositor.ts`: `import('./Canvas2DDirectRenderer')`
-- `src/lib/shared/render/services/implementations/LayerCompositor.ts`: `import('./Canvas2DDirectRenderer')`
 - `src/lib/shared/render/services/implementations/LayerCompositor.ts`: `import('./Canvas2DDirectRenderer')`
 - `src/lib/shared/render/services/implementations/LayerCompositor.ts`: `import('./SvgAssetLoader')`
 - `src/lib/shared/render/services/implementations/LayerCompositor.ts`: `import('./SvgAssetLoader')`
 - `src/lib/shared/render/services/implementations/TextRenderer.ts`: `import('$lib/shared/render/getGlyphCache')`
-- `src/lib/shared/render/services/implementations/WorkerRenderPool.ts`: `import('./LayerCompositor')`
 - `src/lib/shared/render/services/implementations/WorkerRenderPool.ts`: `import('./LayerCompositor')`
 - `src/lib/shared/render/utils/cache-benchmark.ts`: `import('../getImageComposer')`
 - `src/lib/shared/render/utils/cache-benchmark.ts`: `import('$lib/shared/browse/getBrowseLoader')`
@@ -120,22 +115,16 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/lib/shared/render/utils/pictograph-to-svg.ts`: `import('../getGlyphCache')`
 - `src/lib/shared/render/workers/composition.worker.ts`: `import('../services/implementations/ImageComposer')`
 - `src/lib/shared/render/workers/composition.worker.ts`: `import('../services/implementations/TextRenderer')`
-- `src/lib/shared/render/workers/composition.worker.ts`: `import('../services/implementations/ImageComposer')`
-- `src/lib/shared/render/workers/composition.worker.ts`: `import('../services/implementations/TextRenderer')`
 - `src/lib/shared/render/workers/composition.worker.ts`: `import('../services/implementations/Canvas2DDirectRenderer')`
 - `src/lib/shared/render/workers/composition.worker.ts`: `import('../services/implementations/LayerCompositor')`
 - `src/lib/shared/render/workers/composition.worker.ts`: `import('../services/implementations/PictographKeyHasher')`
-- `src/lib/shared/sequence-viewer/services/implementations/SequenceModalExporter.svelte.ts`: `import('$lib/shared/video-export/domain/CameraKeyframe')`
-- `src/lib/shared/voice-control/services/implementations/handlers/SettingsCommandHandler.ts`: `import('../../../../animation-engine/domain/types/TipEffectTypes')`
 - `src/routes/admin/+layout.ts`: `import('$lib/shared/auth/state/authState.svelte')`
 - `src/routes/api/render-pictograph/+server.ts`: `import('$lib/shared/render/services/implementations/Canvas2DDirectRenderer')`
 - `src/routes/q/[code]/+page.server.ts`: `import('$lib/server/firebaseAdmin')`
 - `src/lib/features/admin/components/AdminDashboard.svelte`: `import('$lib/features/loop-labeler/components/LOOPLabelerModule.svelte')`
 - `src/lib/features/admin/components/AdminDashboard.svelte`: `import('./analytics/PostHogDashboard.svelte')`
-- `src/lib/features/admin/components/AdminDashboard.svelte`: `import('./analytics/AttributionDashboard.svelte')`
 - `src/lib/features/admin/components/AdminDashboard.svelte`: `import('$lib/features/loop-labeler/components/LOOPLabelerModule.svelte')`
 - `src/lib/features/admin/components/AdminDashboard.svelte`: `import('./analytics/PostHogDashboard.svelte')`
-- `src/lib/features/admin/components/AdminDashboard.svelte`: `import('./analytics/AttributionDashboard.svelte')`
 - `src/lib/features/arena/ArenaModule.svelte`: `import('./components/battle/ArenaBattleView.svelte')`
 - `src/lib/features/arena/ArenaModule.svelte`: `import('./components/leaderboard/ArenaLeaderboardView.svelte')`
 - `src/lib/features/arena/ArenaModule.svelte`: `import('./components/detail/ArenaSequenceDetail.svelte')`
@@ -144,9 +133,7 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/lib/features/hand-paths/HandPathModule.svelte`: `import('$lib/features/hand-paths/hand-path-builder/HandPathBuilderLab.svelte')`
 - `src/lib/features/lab/duration-lab/DurationLabModule.svelte`: `import('$lib/shared/foundation/domain/models/Letter')`
 - `src/lib/features/lab/effects-lab/EffectsLabModule.svelte`: `import('./components/EffectPointEditorTab.svelte')`
-- `src/lib/features/lab/LabModule.svelte`: `import('./tabs/AttributionLab.svelte')`
-- `src/lib/features/lab/LabModule.svelte`: `import('$lib/features/mandala-generator/components/MandalaGeneratorModule.svelte')`
-- `src/lib/features/lab/LabModule.svelte`: `import('$lib/features/background-builder/BackgroundBuilder.svelte')`
+- `src/lib/features/lab/LabModule.svelte`: `import('$lib/features/themes-lab/ThemesLab.svelte')`
 - `src/lib/features/lab/LabModule.svelte`: `import('$lib/features/landing-preview/LandingPreviewModule.svelte')`
 - `src/lib/features/lab/LabModule.svelte`: `import('$lib/features/lab/constraint-layout-lab/CompositionLab.svelte')`
 - `src/lib/features/lab/LabModule.svelte`: `import('./tabs/VoiceControlLab.svelte')`
@@ -161,9 +148,10 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/lib/features/lab/LabModule.svelte`: `import('$lib/features/village/VillageLabTab.svelte')`
 - `src/lib/features/lab/LabModule.svelte`: `import('./tabs/PovPatternLab.svelte')`
 - `src/lib/features/lab/LabModule.svelte`: `import('./tabs/collision-lab/CollisionLab.svelte')`
-- `src/lib/features/lab/LabModule.svelte`: `import('./tabs/scene-lab/SceneLab.svelte')`
+- `src/lib/features/lab/LabModule.svelte`: `import('./tabs/spatial-lab/SpatialLab.svelte')`
 - `src/lib/features/lab/LabModule.svelte`: `import('$lib/features/sticker-lab/StickerLab.svelte')`
 - `src/lib/features/lab/LabModule.svelte`: `import('./tabs/PathMandalaLab.svelte')`
+- `src/lib/features/lab/LabModule.svelte`: `import('./tools/coral-lab/CoralLab.svelte')`
 - `src/lib/features/lab/phrase-effort-lab/PhraseEffortLabModule.svelte`: `import('$lib/shared/foundation/domain/models/Letter')`
 - `src/lib/features/levels/LevelsModule.svelte`: `import('$lib/features/levels/level5-lab/Level5LabModule.svelte')`
 - `src/lib/features/levels/LevelsModule.svelte`: `import('$lib/features/skewlab/SkewLabModule.svelte')`
@@ -186,10 +174,9 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/lib/features/video/VideoModule.svelte`: `import('./video-trails/VideoTrailsLab.svelte')`
 - `src/lib/features/video/VideoModule.svelte`: `import('./video-lab/VideoLab.svelte')`
 - `src/lib/features/video/VideoModule.svelte`: `import('$lib/features/skel2tka/Skel2TKALab.svelte')`
-- `src/lib/features/watch/components/feed/FeedContainer.svelte`: `import('../../services/implementations/FeedSnapDetector')`
-- `src/lib/features/watch/components/feed/FeedContainer.svelte`: `import('../../services/implementations/FeedPreloader')`
-- `src/lib/features/watch/components/feed/FeedContainer.svelte`: `import('../../services/implementations/FeedScrollBehavior')`
-- `src/lib/shared/3d/components/Avatar3D.svelte`: `import('../services/implementations/AvatarSkeletonBuilder')`
+- `src/lib/features/watch/components/feed/FeedContainer.svelte`: `import('../../services/FeedSnapDetector')`
+- `src/lib/features/watch/components/feed/FeedContainer.svelte`: `import('../../services/FeedPreloader')`
+- `src/lib/features/watch/components/feed/FeedContainer.svelte`: `import('../../services/FeedScrollBehavior')`
 - `src/lib/shared/3d/procedural-engine/components/WorldSceneContent.svelte`: `import('$lib/shared/input/InputCapabilities.svelte')`
 - `src/lib/shared/3d/procedural-engine/components/WorldSceneContent.svelte`: `import('$lib/features/museum/scenes/procedural/components/MuseumGrounds.svelte')`
 - `src/lib/shared/animation-engine/components/AnimationShareDrawer.svelte`: `import('$lib/features/create/shared/components/CreatePanelDrawer.svelte')`
@@ -197,9 +184,21 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/lib/shared/animation-engine/components/canvas/AnimationCanvas.svelte`: `import('$lib/features/compose/components/canvas/AnimationVideoPlayer.svelte')`
 - `src/lib/shared/animation-engine/components/canvas/AnimationControlsPanel.svelte`: `import('$lib/features/compose/components/controls/CompactMobileRow.svelte')`
 - `src/lib/shared/animation-engine/components/canvas/AnimationControlsPanel.svelte`: `import('$lib/features/compose/components/controls/AnimationSettingsSheet.svelte')`
+- `src/lib/shared/animation-panel/components/AnimationPanel.svelte`: `import('$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../pwa/components/PwaMigrationBanner.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../onboarding/components/first-run/FirstRunWizard.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../onboarding/components/create-tutorial/CreateTutorialWizard.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../onboarding/components/create-tutorial/TutorialPrompt.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../auth/components/AuthDrawer.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../inbox/components/InboxDrawer.svelte')`
 - `src/lib/shared/application/components/MainApplication.svelte`: `import('$lib/features/feedback/components/quick/QuickFeedbackPanel.svelte')`
 - `src/lib/shared/application/components/MainApplication.svelte`: `import('$lib/features/feedback/components/my-feedback/MyFeedbackDetail.svelte')`
 - `src/lib/shared/application/components/MainApplication.svelte`: `import('$lib/features/admin/components/AnnouncementChecker.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../settings/components/tabs/prop-type/PropSelectionSheet.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../voice-control/components/HeyTikaListener.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../voice-control/components/VoiceControlIndicator.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../voice-control/components/VoiceCommandHelpOverlay.svelte')`
+- `src/lib/shared/application/components/MainApplication.svelte`: `import('../../sequence-viewer/components/SequenceViewerDrawerHost.svelte')`
 - `src/lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte`: `import('$lib/shared/share/services/implementations/Sharer')`
 - `src/lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte`: `import('$lib/shared/share/services/implementations/Sharer')`
 - `src/lib/shared/MainInterface.svelte`: `import('$lib/features/connect/components/InviteOverlay.svelte')`
@@ -235,9 +234,10 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/lib/shared/modules/ModuleRenderer.svelte`: `import('../../features/retro/RetroModule.svelte')`
 - `src/lib/shared/modules/ModuleRenderer.svelte`: `import('../../features/museum/MuseumModule.svelte')`
 - `src/lib/shared/modules/ModuleRenderer.svelte`: `import('../../features/archive/ArchiveDestination.svelte')`
+- `src/lib/shared/modules/ModuleRenderer.svelte`: `import('../../features/mandala/MandalaModule.svelte')`
 - `src/lib/shared/modules/ModuleRenderer.svelte`: `import('../../features/lab/LabModule.svelte')`
 - `src/lib/shared/modules/ModuleRenderer.svelte`: `import('../../features/lab/LabModule.svelte')`
-- `src/lib/shared/modules/ModuleRenderer.svelte`: `import('../../features/lab/LabModule.svelte')`
+- `src/lib/shared/modules/ModuleRenderer.svelte`: `import('../../features/stage/StageModule.svelte')`
 - `src/lib/shared/onboarding/components/create-tutorial/steps/AddStepTutorialStep.svelte`: `import('$lib/features/create/construct/option-picker/components/OptionPicker.svelte')`
 - `src/lib/shared/onboarding/components/create-tutorial/steps/PickStartPositionStep.svelte`: `import('$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte')`
 - `src/lib/shared/onboarding/components/create-tutorial/steps/ReadyStep.svelte`: `import('$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte')`
@@ -264,13 +264,13 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/routes/+layout.svelte`: `import('$lib/features/tika/TikaModule.svelte')`
 - `src/routes/+layout.svelte`: `import('$lib/features/festivals/FestivalModule.svelte')`
 - `src/routes/+layout.svelte`: `import('$lib/features/admin/components/AdminDashboard.svelte')`
+- `src/routes/+layout.svelte`: `import('$lib/features/stage/StageModule.svelte')`
 - `src/routes/+layout.svelte`: `import('$lib/shared/auth/state/authState.svelte')`
 - `src/routes/+layout.svelte`: `import('$lib/shared/application/components/MainApplication.svelte')`
 - `src/routes/+layout.svelte`: `import('$lib/shared/render/services/implementations/TextRenderer')`
 - `src/routes/+layout.svelte`: `import('$lib/shared/platform/getNativeInitializer')`
 - `src/routes/+layout.svelte`: `import('$lib/shared/desktop/getDesktopInitializer')`
 - `src/routes/+layout.svelte`: `import('$lib/features/browse/shared/getGalleryPrefetcher')`
-- `src/routes/+layout.svelte`: `import('$lib/shared/attribution/getAttributionPersister')`
 - `src/routes/+layout.svelte`: `import('$lib/features/moderation/components/WarningBanner.svelte')`
 - `src/routes/+layout.svelte`: `import('$lib/shared/auth/components/EmailVerificationBanner.svelte')`
 - `src/routes/+layout.svelte`: `import('$lib/shared/components/FullscreenPrompt.svelte')`
@@ -282,41 +282,50 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/routes/landing/components/LazyHowTkaWorksSection.svelte`: `import('./HowTkaWorksSection.svelte')`
 - `src/routes/landing/components/LazyLandingDemo.svelte`: `import('./LandingAnimationDemo.svelte')`
 - `src/routes/landing/components/PlayWithItSection.svelte`: `import('./PlayWithItInner.svelte')`
+- `src/routes/q/[code]/+page.svelte`: `import('$lib/shared/sequence-viewer/components/AnimationPlayer.svelte')`
+- `src/routes/q/[code]/+page.svelte`: `import('$lib/shared/animation-engine/getVideoExportOrchestrator')`
+- `src/routes/q/[code]/+page.svelte`: `import('$lib/features/compose/services/implementations/VideoExportOrchestrator')`
+- `src/routes/q/[code]/+page.svelte`: `import('$lib/shared/animation-engine/getVideoExporter')`
+- `src/routes/q/[code]/+page.svelte`: `import('$lib/shared/animation-engine/getCompositeVideoRenderer')`
+- `src/routes/q/[code]/+page.svelte`: `import('$lib/shared/animation-engine/getExportGlyphPrerenderer')`
+- `src/routes/q/[code]/+page.svelte`: `import('$lib/shared/animation-engine/getBackgroundVideoEncoder')`
+- `src/routes/q/[code]/+page.svelte`: `import('$lib/shared/sequence-viewer/components/AnimationPlayer.svelte')`
+- `src/routes/q/[code]/+page.svelte`: `import('$lib/shared/animation-panel/components/AnimationPanel.svelte')`
 - `src/routes/sequence/[id]/+page.svelte`: `import('$lib/shared/3d/components/Viewer3DFullscreen.svelte')`
 
 ### Stored Service References (top 30)
 
 - `src/lib/features/admin/services/audit-logger.ts`: `currentUser = getAuthSync()`
-- `src/lib/features/admin/services/implementations/PostHogAnalyticsProvider.ts`: `posthog = getPostHogInstance()`
-- `src/lib/features/admin/services/implementations/PostHogAnalyticsProvider.ts`: `posthog = getPostHogInstance()`
+- `src/lib/features/admin/services/PostHogAnalyticsProvider.ts`: `posthog = getPostHogInstance()`
+- `src/lib/features/admin/services/PostHogAnalyticsProvider.ts`: `posthog = getPostHogInstance()`
 - `src/lib/features/arena/services/arena-repository.ts`: `hydrator = getSequenceHydrator()`
-- `src/lib/features/assemble-lab/services/implementations/SvgPropAnimator.ts`: `preset = getAnimationVisibilityManager()`
+- `src/lib/features/assemble-lab/services/SvgPropAnimator.ts`: `preset = getAnimationVisibilityManager()`
 - `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
-- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getNightSkySettings()`
-- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
-- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
-- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getFireflyForestSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getCosmicSettings()`
 - `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
 - `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
-- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getCherryBlossomSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getForestSettings()`
 - `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
 - `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
-- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getPrideSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getBlossomSettings()`
 - `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
 - `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
-- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getEmberGlowSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getRainbowSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getEmberSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getCelestialLabSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
+- `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `current = getVoidLabSettings()`
 - `src/lib/features/background-builder/state/background-builder-state.svelte.ts`: `labSettings = getLabSettings()`
 - `src/lib/features/browse/shared/services/implementations/BrowseEventHandler.ts`: `libraryRepo = getLibraryRepository()`
 - `src/lib/features/browse/shared/services/implementations/BrowseEventHandler.ts`: `libraryRepo = getLibraryRepository()`
 - `src/lib/features/browse/shared/services/implementations/OptimizedBrowser.ts`: `errorHandler = getErrorHandler()`
 - `src/lib/features/browse/shared/services/implementations/OptimizedBrowser.ts`: `errorHandler = getErrorHandler()`
-- `src/lib/features/browse/shared/services/implementations/OptimizedBrowser.ts`: `errorHandler = getErrorHandler()`
-- `src/lib/features/compose/compose/phases/audio/library/services/audio-storage-manager.ts`: `auth = getAuth()`
-- `src/lib/features/compose/compose/phases/audio/library/services/audio-storage-manager.ts`: `storage = getStorage()`
-- `src/lib/features/compose/compose/phases/audio/library/services/audio-storage-manager.ts`: `storage = getStorage()`
-- `src/lib/features/compose/compose/phases/audio/library/services/audio-storage-manager.ts`: `storage = getStorage()`
-- `src/lib/features/compose/services/firebase-composition-repository.ts`: `userId = getUserId()`
-- _...and 1166 more_
+- _...and 1220 more_
 
 ### Services Passed as Arguments (top 20)
 
@@ -340,7 +349,7 @@ Generated: 2026-05-06T20:00:24.472Z
 - `src/lib/features/create/generate/circular/getLOOPExecutors.ts`: `...(getStrictRotatedLOOPExecutor())`
 - `src/lib/features/create/generate/circular/getLOOPExecutors.ts`: `...(getStrictRotatedLOOPExecutor())`
 - `src/lib/features/create/generate/circular/getOrientationCycleExtender.ts`: `...(getOrientationCycleDetector())`
-- _...and 129 more_
+- _...and 134 more_
 
 ### Reactive State with Interface Types
 
@@ -352,11 +361,11 @@ Generated: 2026-05-06T20:00:24.472Z
 
 ## Per-Module Breakdown
 
-### create (157 files)
+### create (158 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 70 | 25 | 35 | 55 | 389 |
+| 71 | 25 | 35 | 55 | 387 |
 
 **Renames:**
 - `getFilterPersister.ts` → `get-filter-persister.ts`
@@ -369,13 +378,13 @@ Generated: 2026-05-06T20:00:24.472Z
 - `FilterPersister.ts` → `filter-persister.ts`
 - (+flatten) `LayoutDetector.ts` → `layout-detector.ts` *(convert to functions)*
 - (+flatten) `OptionFilter.ts` → `option-filter.ts`
-- _...and 147 more_
+- _...and 148 more_
 
-### shared/animation-engine (109 files)
+### shared/animation-engine (124 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 66 | 1 | 64 | 17 | 530 |
+| 78 | 4 | 74 | 18 | 627 |
 
 **Renames:**
 - `CanvasContextMenuBuilder.ts` → `canvas-context-menu-builder.ts`
@@ -388,32 +397,13 @@ Generated: 2026-05-06T20:00:24.472Z
 - `PropTipPoints.ts` → `prop-tip-points.ts`
 - `QualityTypes.ts` → `quality-types.ts`
 - `SvgTypes.ts` → `svg-types.ts`
-- _...and 99 more_
+- _...and 114 more_
 
-### shared/3d (82 files)
-
-| In impl/ | Stateless | Stateful | Getters | Consumers |
-|---|---|---|---|---|
-| 30 | 4 | 19 | 16 | 223 |
-
-**Renames:**
-- (+flatten) `CameraMovementController.ts` → `camera-movement-controller.ts`
-- `Prop3DProps.ts` → `prop3-d-props.ts`
-- `Plane.ts` → `plane.ts`
-- `PlaneMode.ts` → `plane-mode.ts`
-- `GripPose.ts` → `grip-pose.ts`
-- `MotionData3D.ts` → `motion-data3-d.ts`
-- `PropState3D.ts` → `prop-state3-d.ts`
-- `CameraStateSnapshot.ts` → `camera-state-snapshot.ts`
-- `Viewer3DExportHooks.ts` → `viewer3-d-export-hooks.ts`
-- `CharcoalMaterial3D.ts` → `charcoal-material3-d.ts`
-- _...and 72 more_
-
-### shared/pictograph (76 files)
+### shared/pictograph (80 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 45 | 9 | 35 | 0 | 1025 |
+| 47 | 9 | 37 | 0 | 1033 |
 
 **Renames:**
 - (+flatten) `ArrowLifecycleManager.ts` → `arrow-lifecycle-manager.ts`
@@ -426,13 +416,32 @@ Generated: 2026-05-06T20:00:24.472Z
 - (+flatten) `ArrowAdjustmentCalculator.ts` → `arrow-adjustment-calculator.ts`
 - (+flatten) `ArrowLocationCalculator.ts` → `arrow-location-calculator.ts`
 - (+flatten) `ArrowRotationCalculator.ts` → `arrow-rotation-calculator.ts`
-- _...and 66 more_
+- _...and 70 more_
+
+### shared/3d (58 files)
+
+| In impl/ | Stateless | Stateful | Getters | Consumers |
+|---|---|---|---|---|
+| 9 | 2 | 6 | 15 | 78 |
+
+**Renames:**
+- (+flatten) `CameraMovementController.ts` → `camera-movement-controller.ts`
+- `MotionData3D.ts` → `motion-data3-d.ts`
+- `Viewer3DExportHooks.ts` → `viewer3-d-export-hooks.ts`
+- `CharcoalMaterial3D.ts` → `charcoal-material3-d.ts`
+- `CharcoalRenderer3D.ts` → `charcoal-renderer3-d.ts`
+- `FireColorCurve3D.ts` → `fire-color-curve3-d.ts`
+- `FireRenderer3D.ts` → `fire-renderer3-d.ts`
+- `VolumetricFireMesh.ts` → `volumetric-fire-mesh.ts`
+- `getTipPositionBridge3D.ts` → `get-tip-position-bridge3-d.ts`
+- `InkPalettes.ts` → `ink-palettes.ts`
+- _...and 48 more_
 
 ### shared/foundation (39 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 9 | 6 | 2 | 6 | 1029 |
+| 9 | 6 | 2 | 6 | 1035 |
 
 **Renames:**
 - `ArtifactProvenance.ts` → `artifact-provenance.ts`
@@ -451,7 +460,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 19 | 2 | 16 | 13 | 119 |
+| 19 | 2 | 16 | 13 | 125 |
 
 **Renames:**
 - `ImageFormat.ts` → `image-format.ts`
@@ -470,7 +479,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 2 | 6 | 9 | 14 | 155 |
+| 2 | 6 | 9 | 14 | 158 |
 
 **Renames:**
 - `BrowseViewMode.ts` → `browse-view-mode.ts`
@@ -508,7 +517,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 0 | 0 | 0 | 0 | 146 |
+| 0 | 0 | 0 | 0 | 171 |
 
 **Renames:**
 - `BubblePalettes.ts` → `bubble-palettes.ts`
@@ -527,7 +536,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 15 | 5 | 8 | 7 | 57 |
+| 15 | 5 | 8 | 7 | 56 |
 
 **Renames:**
 - `AuthActionQueue.svelte.ts` → `auth-action-queue.svelte.ts`
@@ -622,7 +631,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 1 | 1 | 0 | 0 | 50 |
+| 0 | 1 | 0 | 0 | 50 |
 
 **Renames:**
 - `DeterministicProvider.ts` → `deterministic-provider.ts`
@@ -698,7 +707,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 0 | 5 | 5 | 7 | 111 |
+| 0 | 5 | 5 | 7 | 108 |
 
 **Renames:**
 - `TurnPatternData.ts` → `turn-pattern-data.ts`
@@ -755,7 +764,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 7 | 2 | 5 | 8 | 30 |
+| 0 | 2 | 5 | 8 | 28 |
 
 **Renames:**
 - `AdminModels.ts` → `admin-models.ts`
@@ -767,14 +776,14 @@ Generated: 2026-05-06T20:00:24.472Z
 - `getSystemStateManager.ts` → `get-system-state-manager.ts`
 - `getUserActivityTracker.ts` → `get-user-activity-tracker.ts`
 - `getUserMetricsAnalyzer.ts` → `get-user-metrics-analyzer.ts`
-- (+flatten) `AnalyticsDataProvider.ts` → `analytics-data-provider.ts`
+- `AnalyticsDataProvider.ts` → `analytics-data-provider.ts`
 - _...and 7 more_
 
 ### feedback (16 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 7 | 2 | 5 | 8 | 25 |
+| 0 | 2 | 5 | 8 | 25 |
 
 **Renames:**
 - `PreferenceItem.ts` → `preference-item.ts`
@@ -786,7 +795,7 @@ Generated: 2026-05-06T20:00:24.472Z
 - `getFeedbackTypeResolver.ts` → `get-feedback-type-resolver.ts`
 - `getFormDraftPersister.ts` → `get-form-draft-persister.ts`
 - `getVoiceRecorder.ts` → `get-voice-recorder.ts`
-- (+flatten) `ArchiveLoader.ts` → `archive-loader.ts` *(convert to functions)*
+- `ArchiveLoader.ts` → `archive-loader.ts` *(convert to functions)*
 - _...and 6 more_
 
 ### shared/sync (15 files)
@@ -812,7 +821,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 6 | 4 | 2 | 5 | 19 |
+| 0 | 4 | 2 | 5 | 19 |
 
 **Renames:**
 - `Act.ts` → `act.ts`
@@ -823,8 +832,8 @@ Generated: 2026-05-06T20:00:24.472Z
 - `getLibrarySaveService.ts` → `get-library-save-service.ts`
 - `getPublicIndexSyncer.ts` → `get-public-index-syncer.ts`
 - `getSoloPropSaveOrchestrator.ts` → `get-solo-prop-save-orchestrator.ts`
-- (+flatten) `ArtifactExtractor.ts` → `artifact-extractor.ts` *(convert to functions)*
-- (+flatten) `FavoritesManager.ts` → `favorites-manager.ts` *(convert to functions)*
+- `ArtifactExtractor.ts` → `artifact-extractor.ts` *(convert to functions)*
+- `FavoritesManager.ts` → `favorites-manager.ts` *(convert to functions)*
 - _...and 4 more_
 
 ### retro (14 files)
@@ -850,19 +859,19 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 9 | 2 | 6 | 4 | 20 |
+| 0 | 2 | 6 | 4 | 20 |
 
 **Renames:**
 - `getTikaMarkdownParser.ts` → `get-tika-markdown-parser.ts`
 - `getTikaMessageExtractor.ts` → `get-tika-message-extractor.ts`
 - `getTikaSessionFormatter.ts` → `get-tika-session-formatter.ts`
 - `getTikaSessionRepository.ts` → `get-tika-session-repository.ts`
-- (+flatten) `ConversationMemoryRetriever.ts` → `conversation-memory-retriever.ts` *(convert to functions)*
-- (+flatten) `StaticPictographWriter.ts` → `static-pictograph-writer.ts`
-- (+flatten) `TikaInteractionTracker.ts` → `tika-interaction-tracker.ts` *(convert to functions)*
-- (+flatten) `TikaModelProvider.ts` → `tika-model-provider.ts`
-- (+flatten) `TikaPictographLoader.ts` → `tika-pictograph-loader.ts`
-- (+flatten) `TikaQuizGenerator.ts` → `tika-quiz-generator.ts`
+- `ConversationMemoryRetriever.ts` → `conversation-memory-retriever.ts` *(convert to functions)*
+- `StaticPictographWriter.ts` → `static-pictograph-writer.ts`
+- `TikaInteractionTracker.ts` → `tika-interaction-tracker.ts` *(convert to functions)*
+- `TikaModelProvider.ts` → `tika-model-provider.ts`
+- `TikaPictographLoader.ts` → `tika-pictograph-loader.ts`
+- `TikaQuizGenerator.ts` → `tika-quiz-generator.ts`
 - _...and 4 more_
 
 ### shared/comparison (14 files)
@@ -907,7 +916,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 5 | 2 | 3 | 5 | 38 |
+| 0 | 2 | 3 | 5 | 38 |
 
 **Renames:**
 - `getLOOPDetector.ts` → `get-loop-detector.ts`
@@ -915,11 +924,11 @@ Generated: 2026-05-06T20:00:24.472Z
 - `getSequenceFeatureExtractor.ts` → `get-sequence-feature-extractor.ts`
 - `getStepComparisonOrchestrator.ts` → `get-step-comparison-orchestrator.ts`
 - `getTransformationAnalyzer.ts` → `get-transformation-analyzer.ts`
+- `StepComparisonOrchestrator.ts` → `step-comparison-orchestrator.ts` *(convert to functions)*
 - `ILOOPDetector.ts` → `iloop-detector.ts`
-- (+flatten) `StepComparisonOrchestrator.ts` → `step-comparison-orchestrator.ts` *(convert to functions)*
-- (+flatten) `LOOPDetector.ts` → `loop-detector.ts`
-- (+flatten) `LOOPLabelsFirebaseRepository.ts` → `loop-labels-firebase-repository.ts`
-- (+flatten) `SequenceFeatureExtractor.ts` → `sequence-feature-extractor.ts`
+- `LOOPDetector.ts` → `loop-detector.ts`
+- `LOOPLabelsFirebaseRepository.ts` → `loop-labels-firebase-repository.ts`
+- `SequenceFeatureExtractor.ts` → `sequence-feature-extractor.ts`
 - _...and 3 more_
 
 ### video (13 files)
@@ -945,19 +954,19 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 12 | 1 | 8 | 0 | 22 |
+| 0 | 1 | 8 | 0 | 22 |
 
 **Renames:**
-- (+flatten) `MuseumAtmosphere.ts` → `museum-atmosphere.ts`
-- (+flatten) `MuseumEditorPlacement.ts` → `museum-editor-placement.ts`
-- (+flatten) `MuseumGeometryBuilder.ts` → `museum-geometry-builder.ts`
-- (+flatten) `MuseumGridBuilder.ts` → `museum-grid-builder.ts` *(convert to functions)*
-- (+flatten) `MuseumModelLoader.ts` → `museum-model-loader.ts`
-- (+flatten) `MuseumPhysicsProvider.ts` → `museum-physics-provider.ts`
-- (+flatten) `MuseumPortals.ts` → `museum-portals.ts`
-- (+flatten) `MuseumRoomLightPool.ts` → `museum-room-light-pool.ts`
-- (+flatten) `MuseumVillageManager.ts` → `museum-village-manager.ts`
-- (+flatten) `ProximityGrid.ts` → `proximity-grid.ts`
+- `MuseumAtmosphere.ts` → `museum-atmosphere.ts`
+- `MuseumEditorPlacement.ts` → `museum-editor-placement.ts`
+- `MuseumGeometryBuilder.ts` → `museum-geometry-builder.ts`
+- `MuseumGridBuilder.ts` → `museum-grid-builder.ts` *(convert to functions)*
+- `MuseumModelLoader.ts` → `museum-model-loader.ts`
+- `MuseumPhysicsProvider.ts` → `museum-physics-provider.ts`
+- `MuseumPortals.ts` → `museum-portals.ts`
+- `MuseumRoomLightPool.ts` → `museum-room-light-pool.ts`
+- `MuseumVillageManager.ts` → `museum-village-manager.ts`
+- `ProximityGrid.ts` → `proximity-grid.ts`
 - _...and 2 more_
 
 ### shared/persistence (12 files)
@@ -983,7 +992,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 5 | 2 | 3 | 4 | 38 |
+| 5 | 2 | 3 | 4 | 37 |
 
 **Renames:**
 - `InstagramLink.ts` → `instagram-link.ts`
@@ -1002,19 +1011,19 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 5 | 0 | 5 | 6 | 14 |
+| 0 | 0 | 5 | 6 | 14 |
 
 **Renames:**
 - `getCoralAssetLoader.ts` → `get-coral-asset-loader.ts`
 - `getCoralSceneRenderer.ts` → `get-coral-scene-renderer.ts`
-- `getDeepOceanBackgroundSystem.ts` → `get-deep-ocean-background-system.ts`
-- `getNightSkyLabController.ts` → `get-night-sky-lab-controller.ts`
+- `getCosmicLabController.ts` → `get-cosmic-lab-controller.ts`
+- `getOceanBackgroundSystem.ts` → `get-ocean-background-system.ts`
 - `getPreviewAnimationController.ts` → `get-preview-animation-controller.ts`
 - `getUFOStatusPoller.ts` → `get-ufo-status-poller.ts`
-- (+flatten) `CoralAssetLoader.ts` → `coral-asset-loader.ts`
-- (+flatten) `CoralSceneRenderer.ts` → `coral-scene-renderer.ts`
-- (+flatten) `NightSkyLabController.ts` → `night-sky-lab-controller.ts`
-- (+flatten) `PreviewAnimationController.ts` → `preview-animation-controller.ts`
+- `CoralAssetLoader.ts` → `coral-asset-loader.ts`
+- `CoralSceneRenderer.ts` → `coral-scene-renderer.ts`
+- `CosmicLabController.ts` → `cosmic-lab-controller.ts`
+- `PreviewAnimationController.ts` → `preview-animation-controller.ts`
 - _...and 1 more_
 
 ### promo-generator (11 files)
@@ -1040,7 +1049,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 5 | 1 | 4 | 6 | 15 |
+| 0 | 1 | 4 | 6 | 14 |
 
 **Renames:**
 - `getFeedLoader.ts` → `get-feed-loader.ts`
@@ -1049,17 +1058,17 @@ Generated: 2026-05-06T20:00:24.472Z
 - `getFeedSnapDetector.ts` → `get-feed-snap-detector.ts`
 - `getPublicVideoLoader.ts` → `get-public-video-loader.ts`
 - `getVideoPlaybackController.ts` → `get-video-playback-controller.ts`
-- (+flatten) `FeedLoader.ts` → `feed-loader.ts` *(convert to functions)*
-- (+flatten) `FeedPreloader.ts` → `feed-preloader.ts`
-- (+flatten) `FeedScrollBehavior.ts` → `feed-scroll-behavior.ts`
-- (+flatten) `FeedSnapDetector.ts` → `feed-snap-detector.ts`
+- `FeedLoader.ts` → `feed-loader.ts` *(convert to functions)*
+- `FeedPreloader.ts` → `feed-preloader.ts`
+- `FeedScrollBehavior.ts` → `feed-scroll-behavior.ts`
+- `FeedSnapDetector.ts` → `feed-snap-detector.ts`
 - _...and 1 more_
 
 ### connect (10 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 5 | 0 | 5 | 5 | 17 |
+| 0 | 0 | 5 | 5 | 17 |
 
 **Renames:**
 - `getConnectFriendshipManager.ts` → `get-connect-friendship-manager.ts`
@@ -1067,11 +1076,11 @@ Generated: 2026-05-06T20:00:24.472Z
 - `getConnectOrchestrator.ts` → `get-connect-orchestrator.ts`
 - `getConnectPresenceTracker.ts` → `get-connect-presence-tracker.ts`
 - `getConnectSessionManager.ts` → `get-connect-session-manager.ts`
-- (+flatten) `ConnectOrchestrator.ts` → `connect-orchestrator.ts`
-- (+flatten) `FriendshipManager.ts` → `friendship-manager.ts`
-- (+flatten) `InviteHandler.ts` → `invite-handler.ts`
-- (+flatten) `PresenceTracker.ts` → `presence-tracker.ts`
-- (+flatten) `SessionManager.ts` → `session-manager.ts`
+- `ConnectOrchestrator.ts` → `connect-orchestrator.ts`
+- `FriendshipManager.ts` → `friendship-manager.ts`
+- `InviteHandler.ts` → `invite-handler.ts`
+- `PresenceTracker.ts` → `presence-tracker.ts`
+- `SessionManager.ts` → `session-manager.ts`
 
 ### shared/keyboard (10 files)
 
@@ -1125,21 +1134,37 @@ Generated: 2026-05-06T20:00:24.472Z
 - `ITransitionGraph.ts` → `i-transition-graph.ts`
 - (+flatten) `TransitionGraph.ts` → `transition-graph.ts`
 
+### choreo-card (8 files)
+
+| In impl/ | Stateless | Stateful | Getters | Consumers |
+|---|---|---|---|---|
+| 0 | 0 | 2 | 2 | 59 |
+
+**Renames:**
+- `Catalog.ts` → `catalog.ts`
+- `DeckRelease.ts` → `deck-release.ts`
+- `PageLayout.ts` → `page-layout.ts`
+- `PageLayoutTypes.ts` → `page-layout-types.ts`
+- `getPrintCardRenderer.ts` → `get-print-card-renderer.ts`
+- `getTndFamilyAggregator.ts` → `get-tnd-family-aggregator.ts`
+- `DeckCardBlobCache.ts` → `deck-card-blob-cache.ts`
+- `PrintCardRenderer.ts` → `print-card-renderer.ts`
+
 ### hall-of-shame (8 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 4 | 0 | 4 | 4 | 19 |
+| 0 | 0 | 4 | 4 | 19 |
 
 **Renames:**
 - `getAgeVerifier.ts` → `get-age-verifier.ts`
 - `getHallOfShameLoader.ts` → `get-hall-of-shame-loader.ts`
 - `getHallOfShameSubmitter.ts` → `get-hall-of-shame-submitter.ts`
 - `getHallOfShameVoter.ts` → `get-hall-of-shame-voter.ts`
-- (+flatten) `AgeVerifier.ts` → `age-verifier.ts`
-- (+flatten) `HallOfShameLoader.ts` → `hall-of-shame-loader.ts`
-- (+flatten) `HallOfShameSubmitter.ts` → `hall-of-shame-submitter.ts`
-- (+flatten) `HallOfShameVoter.ts` → `hall-of-shame-voter.ts`
+- `AgeVerifier.ts` → `age-verifier.ts`
+- `HallOfShameLoader.ts` → `hall-of-shame-loader.ts`
+- `HallOfShameSubmitter.ts` → `hall-of-shame-submitter.ts`
+- `HallOfShameVoter.ts` → `hall-of-shame-voter.ts`
 
 ### skel2tka (8 files)
 
@@ -1177,7 +1202,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 4 | 1 | 3 | 4 | 10 |
+| 4 | 1 | 3 | 4 | 9 |
 
 **Renames:**
 - `getGestureHandler.ts` → `get-gesture-handler.ts`
@@ -1193,7 +1218,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 1 | 1 | 0 | 5 | 8 |
+| 0 | 1 | 0 | 5 | 8 |
 
 **Renames:**
 - `ContentModerationError.ts` → `content-moderation-error.ts`
@@ -1202,13 +1227,13 @@ Generated: 2026-05-06T20:00:24.472Z
 - `getReportQuerier.ts` → `get-report-querier.ts`
 - `getReportResolver.ts` → `get-report-resolver.ts`
 - `getReportSubmitter.ts` → `get-report-submitter.ts`
-- (+flatten) `ReportResolver.ts` → `report-resolver.ts` *(convert to functions)*
+- `ReportResolver.ts` → `report-resolver.ts` *(convert to functions)*
 
 ### shared/export-panel (7 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 2 | 0 | 2 | 1 | 17 |
+| 2 | 0 | 2 | 1 | 16 |
 
 **Renames:**
 - `CompositeLayout.ts` → `composite-layout.ts`
@@ -1234,25 +1259,11 @@ Generated: 2026-05-06T20:00:24.472Z
 - `IPublicIndexSyncer.ts` → `i-public-index-syncer.ts`
 - `LibraryRepository.ts` → `library-repository.ts`
 
-### choreo-card (6 files)
-
-| In impl/ | Stateless | Stateful | Getters | Consumers |
-|---|---|---|---|---|
-| 1 | 0 | 1 | 2 | 35 |
-
-**Renames:**
-- `Deck.ts` → `deck.ts`
-- `PageLayout.ts` → `page-layout.ts`
-- `PageLayoutTypes.ts` → `page-layout-types.ts`
-- `getPrintCardRenderer.ts` → `get-print-card-renderer.ts`
-- `getVtgFamilyAggregator.ts` → `get-vtg-family-aggregator.ts`
-- (+flatten) `PrintCardRenderer.ts` → `print-card-renderer.ts`
-
 ### voice-sessions (6 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 1 | 1 | 0 | 5 | 8 |
+| 0 | 1 | 0 | 5 | 8 |
 
 **Renames:**
 - `getTierPromotionEngine.ts` → `get-tier-promotion-engine.ts`
@@ -1260,21 +1271,7 @@ Generated: 2026-05-06T20:00:24.472Z
 - `getVoiceSessionFormatter.ts` → `get-voice-session-formatter.ts`
 - `getVoiceSessionReplayer.ts` → `get-voice-session-replayer.ts`
 - `getVoiceSessionServices.ts` → `get-voice-session-services.ts`
-- (+flatten) `VoiceSessionReplayer.ts` → `voice-session-replayer.ts` *(convert to functions)*
-
-### shared/attribution (6 files)
-
-| In impl/ | Stateless | Stateful | Getters | Consumers |
-|---|---|---|---|---|
-| 3 | 2 | 1 | 3 | 10 |
-
-**Renames:**
-- `getAttributionCapture.ts` → `get-attribution-capture.ts`
-- `getAttributionPersister.ts` → `get-attribution-persister.ts`
-- `getAttributionPromptTrigger.ts` → `get-attribution-prompt-trigger.ts`
-- (+flatten) `AttributionCapture.ts` → `attribution-capture.ts` *(convert to functions)*
-- (+flatten) `AttributionPersister.ts` → `attribution-persister.ts` *(convert to functions)*
-- (+flatten) `AttributionPromptTrigger.ts` → `attribution-prompt-trigger.ts`
+- `VoiceSessionReplayer.ts` → `voice-session-replayer.ts` *(convert to functions)*
 
 ### shared/multi-grid (6 files)
 
@@ -1322,7 +1319,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 1 | 0 | 1 | 1 | 22 |
+| 1 | 0 | 1 | 1 | 24 |
 
 **Renames:**
 - `PropTypeRegistry.ts` → `prop-type-registry.ts`
@@ -1336,14 +1333,14 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 2 | 0 | 2 | 3 | 6 |
+| 0 | 0 | 2 | 3 | 6 |
 
 **Renames:**
 - `getFollowingFeedProvider.ts` → `get-following-feed-provider.ts`
 - `getGeocodingService.ts` → `get-geocoding-service.ts`
 - `getLocationSharingOrchestrator.ts` → `get-location-sharing-orchestrator.ts`
-- (+flatten) `GeocodingService.ts` → `geocoding-service.ts`
-- (+flatten) `LocationSharingOrchestrator.ts` → `location-sharing-orchestrator.ts`
+- `GeocodingService.ts` → `geocoding-service.ts`
+- `LocationSharingOrchestrator.ts` → `location-sharing-orchestrator.ts`
 
 ### levels (5 files)
 
@@ -1427,37 +1424,25 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 4 | 0 | 4 | 0 | 11 |
+| 0 | 0 | 4 | 0 | 10 |
 
 **Renames:**
-- (+flatten) `BroadcastRepository.ts` → `broadcast-repository.ts`
-- (+flatten) `EndlessSpinnerOrchestrator.ts` → `endless-spinner-orchestrator.ts`
-- (+flatten) `InfiniteSequenceGenerator.ts` → `infinite-sequence-generator.ts`
-- (+flatten) `SpinnerMetricsRepository.ts` → `spinner-metrics-repository.ts`
-
-### sticker-lab (4 files)
-
-| In impl/ | Stateless | Stateful | Getters | Consumers |
-|---|---|---|---|---|
-| 4 | 2 | 0 | 0 | 5 |
-
-**Renames:**
-- (+flatten) `LocalStickerSheetRepository.ts` → `local-sticker-sheet-repository.ts` *(convert to functions)*
-- (+flatten) `PrimitiveCatalogReader.ts` → `primitive-catalog-reader.ts`
-- (+flatten) `ShapeCatalogStore.ts` → `shape-catalog-store.ts`
-- (+flatten) `StickerSheetPdfExporter.ts` → `sticker-sheet-pdf-exporter.ts` *(convert to functions)*
+- `BroadcastRepository.ts` → `broadcast-repository.ts`
+- `EndlessSpinnerOrchestrator.ts` → `endless-spinner-orchestrator.ts`
+- `InfiniteSequenceGenerator.ts` → `infinite-sequence-generator.ts`
+- `SpinnerMetricsRepository.ts` → `spinner-metrics-repository.ts`
 
 ### write (4 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 2 | 0 | 2 | 2 | 2 |
+| 0 | 0 | 2 | 2 | 2 |
 
 **Renames:**
 - `getActManager.ts` → `get-act-manager.ts`
 - `getMusicPlayer.ts` → `get-music-player.ts`
-- (+flatten) `ActManager.ts` → `act-manager.ts`
-- (+flatten) `MusicPlayer.ts` → `music-player.ts`
+- `ActManager.ts` → `act-manager.ts`
+- `MusicPlayer.ts` → `music-player.ts`
 
 ### shared/community (4 files)
 
@@ -1487,7 +1472,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 3 | 1 | 2 | 1 | 9 |
+| 3 | 1 | 2 | 1 | 14 |
 
 **Renames:**
 - `getMandalaGeometryCalculator.ts` → `get-mandala-geometry-calculator.ts`
@@ -1499,12 +1484,23 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 1 | 0 | 1 | 1 | 3 |
+| 0 | 0 | 1 | 1 | 3 |
 
 **Renames:**
 - `getSequenceMatcher.ts` → `get-sequence-matcher.ts`
-- (+flatten) `SequenceMatcher.ts` → `sequence-matcher.ts`
+- `SequenceMatcher.ts` → `sequence-matcher.ts`
 - `VideoEditorController.svelte.ts` → `video-editor-controller.svelte.ts`
+
+### sticker-lab (3 files)
+
+| In impl/ | Stateless | Stateful | Getters | Consumers |
+|---|---|---|---|---|
+| 0 | 2 | 0 | 0 | 2 |
+
+**Renames:**
+- `LocalStickerSheetRepository.ts` → `local-sticker-sheet-repository.ts` *(convert to functions)*
+- `ShapeCacheStore.ts` → `shape-cache-store.ts`
+- `StickerSheetPdfExporter.ts` → `sticker-sheet-pdf-exporter.ts` *(convert to functions)*
 
 ### store (3 files)
 
@@ -1532,31 +1528,41 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 1 | 0 | 1 | 1 | 4 |
+| 0 | 0 | 1 | 1 | 4 |
 
 **Renames:**
 - `getArenaOrchestrator.ts` → `get-arena-orchestrator.ts`
-- (+flatten) `ArenaOrchestrator.ts` → `arena-orchestrator.ts`
+- `ArenaOrchestrator.ts` → `arena-orchestrator.ts`
 
 ### assemble-lab (2 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 1 | 0 | 1 | 1 | 2 |
+| 0 | 0 | 1 | 1 | 2 |
 
 **Renames:**
 - `getSvgPropAnimator.ts` → `get-svg-prop-animator.ts`
-- (+flatten) `SvgPropAnimator.ts` → `svg-prop-animator.ts`
+- `SvgPropAnimator.ts` → `svg-prop-animator.ts`
 
 ### gallery-generator (2 files)
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 2 | 1 | 1 | 0 | 2 |
+| 0 | 1 | 1 | 0 | 2 |
 
 **Renames:**
-- (+flatten) `GalleryPersistence.ts` → `gallery-persistence.ts`
-- (+flatten) `GalleryRenderer.ts` → `gallery-renderer.ts` *(convert to functions)*
+- `GalleryPersistence.ts` → `gallery-persistence.ts`
+- `GalleryRenderer.ts` → `gallery-renderer.ts` *(convert to functions)*
+
+### mandala (2 files)
+
+| In impl/ | Stateless | Stateful | Getters | Consumers |
+|---|---|---|---|---|
+| 0 | 1 | 0 | 0 | 2 |
+
+**Renames:**
+- `FirebaseMandalaCollectionRepository.ts` → `firebase-mandala-collection-repository.ts`
+- `LocalMandalaCollectionRepository.ts` → `local-mandala-collection-repository.ts` *(convert to functions)*
 
 ### shared/analytics (2 files)
 
@@ -1642,7 +1648,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 0 | 0 | 1 | 0 | 2 |
+| 0 | 0 | 1 | 0 | 0 |
 
 **Renames:**
 - `HeadlessAnimationOrchestrator.ts` → `headless-animation-orchestrator.ts`
@@ -1680,7 +1686,7 @@ Generated: 2026-05-06T20:00:24.472Z
 
 | In impl/ | Stateless | Stateful | Getters | Consumers |
 |---|---|---|---|---|
-| 0 | 0 | 1 | 0 | 2 |
+| 0 | 0 | 1 | 0 | 3 |
 
 **Renames:**
 - `HandPathAnimator.ts` → `hand-path-animator.ts`
