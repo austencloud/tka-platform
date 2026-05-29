@@ -33,13 +33,16 @@ import { transformSequence } from "./reversal-seed-service";
 import type { CsvEdge } from "./pictograph-letter-lookup";
 import { applyPattern } from "$lib/shared/create/services/turn-pattern-manager";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   TurnPattern,
   TurnPatternEntry,
   TurnValue,
 } from "$lib/shared/create/domain/TurnPatternData";
 import type { CardVariation } from "../domain/models/DeckRelease";
-import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { Orientation, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
 
 export type Rng = () => number;
 
@@ -221,6 +224,30 @@ export function resolveStartOrientation(mode: StartOriMode): { blue: Orientation
 }
 
 /**
+ * Clone-safely re-seed a sequence's start-position orientations to `mode`'s pair,
+ * then propagate forward. Returns the input UNCHANGED when mode is radial/undefined
+ * or the sequence has no start position. NEVER mutates `seq` (shared across cards).
+ */
+function applyStartOriMode(seq: SequenceData, mode: StartOriMode | undefined): SequenceData {
+  if (!mode || mode === "radial") return seq;
+  const sp = seq.startPosition;
+  if (!sp) return seq;
+  const pair = resolveStartOrientation(mode);
+  const reseed = (m: typeof sp.motions.blue, o: Orientation) =>
+    m ? createMotionData({ ...m, startOrientation: o, endOrientation: o }) : m;
+  const newStart = {
+    ...sp,
+    motions: {
+      ...sp.motions,
+      [MotionColor.BLUE]: reseed(sp.motions[MotionColor.BLUE], pair.blue),
+      [MotionColor.RED]: reseed(sp.motions[MotionColor.RED], pair.red),
+    },
+  };
+  const seeded = updateSequenceData(seq, { startPosition: newStart });
+  return recalculateAllOrientations(seeded);
+}
+
+/**
  * Deterministically apply a frozen descriptor to a base sequence. Pure. Reversal
  * (if present) via `transformSequence`; turns (if present) via `applyPattern`.
  * Turn-only (no reversal) is valid and is the TnD render path.
@@ -230,7 +257,7 @@ export function applyVariationDescriptor(
   variation: CardVariation,
   edges: CsvEdge[],
 ): AppliedDescriptorResult {
-  let working = seq;
+  let working = applyStartOriMode(seq, variation.startOriMode);
 
   if (variation.reversalSequence) {
     const resolved: ResolvedReversalPattern = {

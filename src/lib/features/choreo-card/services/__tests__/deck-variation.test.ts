@@ -171,3 +171,61 @@ describe("resolveStartOrientation", () => {
     expect(resolveStartOrientation("split")).toEqual({ blue: Orientation.IN, red: Orientation.COUNTER });
   });
 });
+
+/** twoStepSeq() plus a start position (required for orientation propagation). */
+function seqWithStart() {
+  const base = twoStepSeq();
+  const startMotion = () =>
+    createMotionData({
+      motionType: "static" as const,
+      rotationDirection: "cw" as const,
+      startLocation: "n" as const,
+      endLocation: "n" as const,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+    });
+  return {
+    ...base,
+    startPosition: {
+      isStartPosition: true as const,
+      id: "SP",
+      startPos: "alpha",
+      endPos: "alpha",
+      letter: null,
+      gridMode: "diamond",
+      motions: { blue: startMotion(), red: startMotion() },
+    } as unknown as NonNullable<SequenceData["startPosition"]>,
+  } as SequenceData;
+}
+
+describe("applyVariationDescriptor — startOriMode", () => {
+  it("register-only (no turn/reversal) re-seeds AND propagates to every step", () => {
+    const seq = seqWithStart();
+    const { sequence } = applyVariationDescriptor(seq, { startOriMode: "nonradial" }, []);
+    expect(sequence.startPosition!.motions.blue!.endOrientation).toBe(Orientation.COUNTER);
+    expect(sequence.startPosition!.motions.red!.endOrientation).toBe(Orientation.COUNTER);
+    expect(sequence.steps[0]!.motions!.blue!.startOrientation).toBe(Orientation.COUNTER);
+  });
+
+  it("does NOT mutate the input base sequence (shared across cards)", () => {
+    const seq = seqWithStart();
+    applyVariationDescriptor(seq, { startOriMode: "nonradial" }, []);
+    expect(seq.startPosition!.motions.blue!.endOrientation).toBe(Orientation.IN);
+    expect(seq.steps[0]!.motions!.blue!.startOrientation).toBe(Orientation.IN);
+  });
+
+  it("radial / absent register is a no-op passthrough", () => {
+    const seq = seqWithStart();
+    const a = applyVariationDescriptor(seq, { startOriMode: "radial" }, []);
+    expect(a.sequence.steps[0]!.motions!.blue!.startOrientation).toBe(Orientation.IN);
+    const b = applyVariationDescriptor(seq, {}, []);
+    expect(b.sequence).toBe(seq);
+  });
+
+  it("split re-seeds blue radial, red nonradial", () => {
+    const { sequence } = applyVariationDescriptor(seqWithStart(), { startOriMode: "split" }, []);
+    expect(sequence.startPosition!.motions.blue!.endOrientation).toBe(Orientation.IN);
+    expect(sequence.startPosition!.motions.red!.endOrientation).toBe(Orientation.COUNTER);
+  });
+});
