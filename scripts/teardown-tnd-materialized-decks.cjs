@@ -9,12 +9,27 @@
  *   node scripts/teardown-tnd-materialized-decks.cjs           # dry run: list only
  *   node scripts/teardown-tnd-materialized-decks.cjs --apply   # delete (after sign-off)
  *
- * Targets (collection "TnD", excluding the base):
- *   - asymmetric === true             (blue|red enumerations)
- *   - symmetric turn variants         (turnPattern uniform with turns > 0)
- *   - named-pattern reversal variants (reversalPattern set)
- * PRESERVES: l1-vtg-motions (the zero-turn base — canonical source of truth).
+ * Targets (collection "TnD", excluding the base) — ONLY decks reproducible at
+ * render time OR reseedable by an existing script:
+ *   - asymmetric === true                 (reseed: seed-vtg-asymmetric-decks.cjs)
+ *   - symmetric turn variants             (reseed: seed-vtg-turn-decks.cjs)
+ *   - RESEEDABLE named-reversal variants  (reseed: reseed-all-reversal-decks.cjs)
+ *
+ * PRESERVES:
+ *   - l1-vtg-motions (the zero-turn base — canonical source of truth)
+ *   - any deck whose reversalPattern is NOT a reseedable named pattern (e.g. the
+ *     raw "BB--" pattern), because no seed script regenerates it.
  */
+
+// Reversal patterns reseed-all-reversal-decks.cjs (via apply-reversal-pattern.cjs)
+// can regenerate. Raw patterns like "BB--" are NOT here and are preserved.
+const RESEEDABLE_REVERSALS = new Set([
+  "book",
+  "red-book",
+  "blue-book",
+  "long-book",
+  "alternating",
+]);
 
 const admin = require("firebase-admin");
 const path = require("path");
@@ -42,13 +57,21 @@ async function main() {
     const d = doc.data();
     if (doc.id === BASE_ID) return;
     if (d.collection !== "TnD") return;
+    // Preserve any deck carrying a reversal pattern no seed script can regenerate
+    // (e.g. the raw "BB--" pattern), even if it also has a turn applied. Not
+    // reseedable → must not delete. "continuous"/"" mean no reversal (reseedable).
+    const rev = d.reversalPattern;
+    const blockedReversal =
+      !!rev && rev !== "" && rev !== "continuous" && !RESEEDABLE_REVERSALS.has(rev);
+    if (blockedReversal) return;
     const isAsymmetric = d.asymmetric === true;
     const isSymmetricTurn =
       typeof d.turnPattern === "string" &&
       /^uniform[- ](\d+(?:\.\d+)?)t$/i.test(d.turnPattern) &&
       !/uniform[- ]0t/i.test(d.turnPattern);
-    const isNamedReversal = !!d.reversalPattern && d.reversalPattern !== "";
-    if (isAsymmetric || isSymmetricTurn || isNamedReversal) {
+    const isReseedableReversal =
+      !!d.reversalPattern && RESEEDABLE_REVERSALS.has(d.reversalPattern);
+    if (isAsymmetric || isSymmetricTurn || isReseedableReversal) {
       targets.push(doc.id);
     }
   });
