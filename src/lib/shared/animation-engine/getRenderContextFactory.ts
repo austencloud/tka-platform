@@ -1,4 +1,4 @@
-import { RenderContextFactory } from "./services/implementations/RenderContextFactory";
+import { RenderContextFactory } from "./services/render-context-factory";
 
 let instance: RenderContextFactory | null = null;
 export function getRenderContextFactory(): RenderContextFactory {

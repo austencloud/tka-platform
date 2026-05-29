@@ -14,7 +14,7 @@
  * SEPARATE engine method and is intentionally untouched by this module.
  */
 
-import type { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
+import type { AnimationEngine } from "../services/animation-engine.svelte";
 
 /** Live getter for the canvas wrapper element (a Svelte `$state` ref). */
 type ContainerGetter = () => HTMLDivElement | undefined;

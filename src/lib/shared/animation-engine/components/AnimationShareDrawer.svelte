@@ -30,7 +30,7 @@
   import { responsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
   import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
   import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
-  import { animationShortcutRegistrar } from "../services/implementations/AnimationShortcutRegistrar";
+  import { animationShortcutRegistrar } from "../services/animation-shortcut-registrar";
 
   // Types
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";

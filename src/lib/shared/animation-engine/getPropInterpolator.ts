@@ -1,4 +1,4 @@
-import { PropInterpolator } from './services/implementations/PropInterpolator';
+import { PropInterpolator } from './services/prop-interpolator';
 import { createAngleCalculator } from './services/angle-calculator';
 import { getEndpointCalculator } from '$lib/shared/animation-engine/getEndpointCalculator';
 

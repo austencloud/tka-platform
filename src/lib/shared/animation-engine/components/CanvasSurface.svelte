@@ -45,7 +45,7 @@ captureEffectDiagnostics to the context menu.
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
-  import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
+  import { AnimationEngine } from "../services/animation-engine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { isSeamlesslyLoopable as sequenceLoopabilityCheck } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";

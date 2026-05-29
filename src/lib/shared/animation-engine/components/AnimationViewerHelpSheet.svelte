@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import { animationShortcutRegistrar } from "../services/implementations/AnimationShortcutRegistrar";
+  import { animationShortcutRegistrar } from "../services/animation-shortcut-registrar";
   const ANIMATION_SHORTCUTS = animationShortcutRegistrar.shortcuts;
 
   let {

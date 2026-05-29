@@ -1,4 +1,4 @@
-import { AnimationStateManager } from './services/implementations/AnimationStateManager';
+import { AnimationStateManager } from './services/animation-state-manager';
 
 let instance: AnimationStateManager | null = null;
 export function getAnimationStateManager(): AnimationStateManager {

@@ -13,15 +13,15 @@
  * new-but-equal reference doesn't retrigger downstream effects every tick.
  */
 
-import type { AnimationVisibilityState } from "../services/implementations/AnimationVisibilitySynchronizer";
-import type { PreRenderProgress } from "../services/implementations/SequenceFramePreRenderer";
+import type { AnimationVisibilityState } from "../services/animation-visibility-synchronizer";
+import type { PreRenderProgress } from "../services/sequence-frame-pre-renderer";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { TrailSettings } from "../domain/types/TrailTypes";
 import { loadTrailSettings } from "../utils/animation-panel-persistence";
 import {
   DEFAULT_PROP_DIMENSIONS,
   type PropDimensions,
-} from "../services/contracts/IPropTextureLoader";
+} from "../services/IPropTextureLoader";
 import type { EffectType, TipEffectMap } from "../domain/types/TipEffectTypes";
 
 export interface AnimatorState {

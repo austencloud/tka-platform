@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { FireDefaultsLoader } from './services/implementations/FireDefaultsLoader';
+import { FireDefaultsLoader } from './services/fire-defaults-loader';
 
 let instance: FireDefaultsLoader | null = null;
 

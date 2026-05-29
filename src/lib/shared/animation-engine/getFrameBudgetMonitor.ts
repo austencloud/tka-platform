@@ -1,5 +1,5 @@
 
-import { FrameBudgetMonitor } from './services/implementations/FrameBudgetMonitor';
+import { FrameBudgetMonitor } from './services/frame-budget-monitor';
 import { detectDeviceTier } from './services/device-tier-detector';
 
 let instance: FrameBudgetMonitor | null = null;

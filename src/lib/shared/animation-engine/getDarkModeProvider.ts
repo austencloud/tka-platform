@@ -1,4 +1,4 @@
-import { DarkModeProvider } from './services/implementations/DarkModeProvider';
+import { DarkModeProvider } from './services/dark-mode-provider';
 
 let instance: DarkModeProvider | null = null;
 export function getDarkModeProvider(): DarkModeProvider {

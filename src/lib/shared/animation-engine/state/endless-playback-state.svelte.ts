@@ -8,8 +8,8 @@ import type {
 } from "$lib/shared/animation-engine/domain/chaining-types";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { CopyResult } from "$lib/shared/browse/services/ClaudeCodeCopier";
-import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/sequence-chaining-orchestrator";
 import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";

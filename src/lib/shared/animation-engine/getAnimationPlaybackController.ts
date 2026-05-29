@@ -1,4 +1,4 @@
-import { AnimationPlaybackController } from '$lib/shared/animation-engine/services/implementations/AnimationPlaybackController';
+import { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
 import { getSequenceAnimationOrchestrator } from './getSequenceAnimationOrchestrator';
 import { getAnimationLoop } from '$lib/shared/animation-engine/getAnimationLoop';
 

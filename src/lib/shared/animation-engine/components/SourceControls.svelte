@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SourceMode } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
+  import type { SourceMode } from "$lib/shared/animation-engine/services/sequence-chaining-orchestrator";
   import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 

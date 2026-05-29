@@ -1,4 +1,4 @@
-import { TrailCapturer } from '$lib/shared/animation-engine/services/implementations/TrailCapturer';
+import { TrailCapturer } from '$lib/shared/animation-engine/services/trail-capturer';
 
 let instance: TrailCapturer | null = null;
 export function getTrailCapturer(): TrailCapturer {

@@ -1,4 +1,4 @@
-import { RenderContextRegistry } from "./services/implementations/RenderContextRegistry";
+import { RenderContextRegistry } from "./services/render-context-registry";
 
 let instance: RenderContextRegistry | null = null;
 
