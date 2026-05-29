@@ -1,7 +1,7 @@
 <!-- StorageSection.svelte - Cache clearing controls + offline download -->
 <script lang="ts">
 
-import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCacheOrchestrator";
+import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cache-orchestrator";
   import { onMount } from "svelte";
   import GlassCard from "./GlassCard.svelte";
 

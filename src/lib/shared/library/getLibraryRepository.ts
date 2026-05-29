@@ -1,7 +1,7 @@
 import { LibraryRepository } from './services/LibraryRepository';
 import { getAchievementManager } from '$lib/shared/gamification/getAchievementManager';
 import { getOrientationCycleDetector } from '$lib/shared/create/getOrientationCycleDetector';
-import { getConflictResolver } from '$lib/shared/offline/getConflictResolver';
+import { getConflictResolver } from '$lib/shared/offline/get-conflict-resolver';
 import type { IPublicIndexSyncer } from './services/IPublicIndexSyncer';
 
 let publicIndexSyncerFactory: (() => IPublicIndexSyncer) | null = null;

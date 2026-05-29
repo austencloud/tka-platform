@@ -7,10 +7,10 @@
  */
 
 import { db } from "$lib/shared/persistence/database/TKADatabase";
-import type { GallerySequenceConverter } from "../contracts/types";
+import type { GallerySequenceConverter } from "./types";
 import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { GalleryCacheEntry } from "../../domain/offline-cache-types";
+import type { GalleryCacheEntry } from "../domain/offline-cache-types";
 
 export class GalleryOfflineCache {
   private converter: GallerySequenceConverter | null = null;

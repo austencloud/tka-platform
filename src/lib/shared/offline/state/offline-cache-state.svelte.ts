@@ -5,7 +5,7 @@
  * DI service holds logic, this factory adds Svelte 5 reactivity.
  */
 
-import type { OfflineCacheOrchestrator } from "../services/implementations/OfflineCacheOrchestrator";
+import type { OfflineCacheOrchestrator } from "../services/offline-cache-orchestrator";
 import type {
   OfflineCachePhase,
   OfflineCacheProgress,

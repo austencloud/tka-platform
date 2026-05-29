@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { GalleryOfflineCache } from './services/implementations/GalleryOfflineCache';
+import { GalleryOfflineCache } from './services/gallery-offline-cache';
 
 let instance: GalleryOfflineCache | null = null;
 

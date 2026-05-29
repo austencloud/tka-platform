@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCacheOrchestrator";
+import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cache-orchestrator";
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'

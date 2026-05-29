@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { ConflictResolver } from './services/implementations/ConflictResolver';
+import { ConflictResolver } from './services/conflict-resolver';
 
 let instance: ConflictResolver | null = null;
 

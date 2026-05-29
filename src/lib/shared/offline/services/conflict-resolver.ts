@@ -8,7 +8,7 @@
  */
 
 import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
-import type { VersionConflict, ConflictResolution, ConflictPromptCallback } from "../contracts/types";
+import type { VersionConflict, ConflictResolution, ConflictPromptCallback } from "./types";
 
 export class ConflictResolver {
   private promptCallback: ConflictPromptCallback | null = null;

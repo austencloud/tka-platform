@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 import { PublicSequencesLoader } from '$lib/shared/browse/services/PublicSequencesLoader';
-import { getGalleryOfflineCache } from '$lib/shared/offline/getGalleryOfflineCache';
+import { getGalleryOfflineCache } from '$lib/shared/offline/get-gallery-offline-cache';
 
 let instance: PublicSequencesLoader | null = null;
 

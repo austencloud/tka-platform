@@ -10,7 +10,7 @@
  */
 
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-import type { GalleryOfflineCache } from "../../../../shared/offline/services/implementations/GalleryOfflineCache";
+import type { GalleryOfflineCache } from "../../../../shared/offline/services/gallery-offline-cache";
 import {
   onLibraryMutated,
   onLibrarySequenceAdded,

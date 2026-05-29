@@ -42,7 +42,7 @@ import type { ErrorHandler } from '$lib/shared/application/services/implementati
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
-import type { ConflictResolver } from "$lib/shared/offline/services/implementations/ConflictResolver";
+import type { ConflictResolver } from "$lib/shared/offline/services/conflict-resolver";
 import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
 import { getTagMigrator } from "$lib/shared/library/getTagMigrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
