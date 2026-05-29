@@ -611,7 +611,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       {/if}
                     </div>
                   {/if}
-                  {#if isMobileWidth && !isAnyExportActive}
+                  {#if isMobileWidth}
                     <ViewerModeBottomBar
                       activeMode={ctx.viewerState.viewerMode}
                       webgl2Available={ctx.viewer3DState.webgl2Available}
