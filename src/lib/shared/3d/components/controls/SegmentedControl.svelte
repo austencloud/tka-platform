@@ -125,7 +125,7 @@
 
   .sm .segment {
     /* Touch target uses var(--min-touch-target) for WCAG AA */
-    padding: 0.4rem 0.35rem;
+    padding: 0.45rem 0.7rem;
     font-size: var(--font-size-compact, 0.75rem);
   }
 

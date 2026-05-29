@@ -624,7 +624,7 @@
   .dock-head { display: flex; align-items: center; gap: 8px; }
   .dock-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
   .dock-title { font-size: var(--font-size-min, 14px); font-weight: 700; white-space: nowrap; color: var(--theme-text, #fff); }
-  .dock-tier { min-width: 280px; }
+  .dock-tier { min-width: 340px; }
   .dock-vals { display: flex; gap: 12px; }
   .dock-input-label { display: flex; align-items: center; gap: 6px; color: var(--theme-text-dim, rgba(255,255,255,0.6)); font-size: var(--font-size-min, 14px); font-weight: 600; }
   .dock-input {

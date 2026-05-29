@@ -7,7 +7,7 @@
    */
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
-  import { formatMotionText } from "./formatters";
+  import { formatMotionText, formatMotionTypeLabel, formatRotationLabel } from "./formatters";
   import PipelineTraceSection from "./PipelineTraceSection.svelte";
   import CollapsibleSection from "$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
@@ -56,8 +56,8 @@
   <section class="column {colorClass}">
     {#if motion}
       <div class="motion-line">
-        <span class="mt">{motion.motionType}</span>
-        <span class="rot">{motion.rotationDirection}</span>
+        <span class="mt">{formatMotionTypeLabel(motion.motionType)}</span>
+        <span class="rot">{formatRotationLabel(motion.rotationDirection)}</span>
         <span class="path">{motion.startLocation}→{motion.endLocation}</span>
         <span class="ori">{motion.startOrientation}→{motion.endOrientation}</span>
         <span class="turns">{motion.turns === "fl" ? "float" : `${motion.turns}t`}</span>

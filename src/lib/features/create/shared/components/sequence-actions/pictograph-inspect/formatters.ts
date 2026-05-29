@@ -13,6 +13,23 @@ import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
+/** "dash" -> "Dash", "static" -> "Static". For the dense motion-line display. */
+export function formatMotionTypeLabel(motionType: string | undefined): string {
+  if (!motionType) return "—";
+  return motionType.charAt(0).toUpperCase() + motionType.slice(1);
+}
+
+/** "noRotation" -> "No Rotation", "cw" -> "CW", "ccw" -> "CCW". */
+export function formatRotationLabel(
+  rotationDirection: string | undefined
+): string {
+  if (!rotationDirection) return "—";
+  if (rotationDirection === "cw") return "CW";
+  if (rotationDirection === "ccw") return "CCW";
+  const spaced = rotationDirection.replace(/([a-z])([A-Z])/g, "$1 $2");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
 export async function formatMotionText(
   motion: MotionData | undefined,
   color: string,
