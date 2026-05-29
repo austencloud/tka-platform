@@ -26,6 +26,21 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 
+// Dev-only breadcrumb. Google's popup auth handler ships a report-only COOP
+// header, so Chrome logs a browser-level "Cross-Origin-Opener-Policy policy
+// would block the window.close call" warning when Firebase closes the popup.
+// That warning is browser-emitted and cannot be intercepted from page JS, so
+// we print an adjacent note explaining it's benign. Sign-in still completes.
+// firebase-js-sdk#8541 / #8295. Fully removed in prod via tree-shaking.
+export function notePopupCoop(): void {
+  if (!import.meta.env.DEV) return;
+  console.info(
+    "%c[auth]%c Opening Google/Facebook popup — a “Cross-Origin-Opener-Policy … window.close” warning may follow. It's benign (Google's popup header) and sign-in still works.",
+    "color:#7dd3fc;font-weight:bold",
+    "color:inherit",
+  );
+}
+
 export async function signInWithGoogle(): Promise<void> {
   const { isDesktop } = await import("$lib/shared/desktop/isDesktop");
   if (isDesktop()) {
@@ -36,6 +51,7 @@ export async function signInWithGoogle(): Promise<void> {
   const provider = new GoogleAuthProvider();
   provider.addScope("email");
   provider.addScope("profile");
+  notePopupCoop();
   await signInWithPopup(auth, provider);
 }
 
@@ -48,6 +64,7 @@ export async function signInWithFacebook(): Promise<void> {
   const provider = new FacebookAuthProvider();
   provider.addScope("email");
   provider.addScope("public_profile");
+  notePopupCoop();
   await signInWithPopup(auth, provider);
 }
 
@@ -93,6 +110,7 @@ export async function linkGoogleAccount(): Promise<void> {
   const provider = new GoogleAuthProvider();
   provider.addScope("email");
   provider.addScope("profile");
+  notePopupCoop();
   await linkWithPopup(currentUser, provider);
 }
 
@@ -106,6 +124,7 @@ export async function linkFacebookAccount(): Promise<void> {
   const provider = new FacebookAuthProvider();
   provider.addScope("email");
   provider.addScope("public_profile");
+  notePopupCoop();
   await linkWithPopup(currentUser, provider);
 }
 

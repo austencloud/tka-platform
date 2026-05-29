@@ -150,8 +150,11 @@ export async function revalidateCurrentModule(): Promise<void> {
       const currentSection = navigationState.activeTab;
 
       // Check if user has access to the current section via feature flags
+      // Guard: skip if feature flags haven't loaded yet — role defaults to "user"
+      // before init, which would incorrectly redirect admin-gated tabs
       if (
         currentSection &&
+        featureFlagService.isInitialized &&
         !featureFlagService.canAccessTab("create", currentSection)
       ) {
         console.warn(

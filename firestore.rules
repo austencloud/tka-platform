@@ -77,9 +77,12 @@ service cloud.firestore {
     // CONFIG COLLECTIONS
     // ============================================================================
 
-    // Feature flags configuration - readable by all authenticated users, writable by admins only
+    // Feature flags configuration - readable by all (including guests), writable by admins only
+    // Must allow unauthenticated reads: PostHogFeatureFlagService loads + subscribes to
+    // global flag overrides for guests so they see the correct enabled feature set.
+    // Flags are non-sensitive (enabled toggles + min-role gates), same class as fireDefaults.
     match /config/featureFlags {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isAdmin();
     }
 

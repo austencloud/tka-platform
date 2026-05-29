@@ -18,6 +18,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { auth } from "$lib/shared/auth/firebase";
+import { notePopupCoop } from "$lib/shared/auth/services/authenticator";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { getPendingActionQueue } from "../getPendingActionQueue";
@@ -117,6 +118,7 @@ export function createAuthActionQueue() {
       const provider = new GoogleAuthProvider();
       provider.addScope("email");
       provider.addScope("profile");
+      notePopupCoop();
       await signInWithPopup(auth, provider);
       signInSheetOpen = false;
     } catch (err) {
