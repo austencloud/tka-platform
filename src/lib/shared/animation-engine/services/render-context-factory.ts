@@ -1,5 +1,5 @@
-import type { RenderContext } from "./RenderContextRegistry";
-import { AnimationEngine } from "./AnimationEngine.svelte";
+import type { RenderContext } from "./render-context-registry";
+import { AnimationEngine } from "./animation-engine.svelte";
 
 export interface OffscreenContextOptions {
   id?: string;

@@ -1,10 +1,10 @@
-import type { RenderContext } from "./RenderContextRegistry";
-import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
-import type { EffectRendererManager } from "./EffectRendererManager";
-import type { TrailCapturer } from "./TrailCapturer";
-import type { IAnimationRenderLoop } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderLoop";
-import type { CanvasResizer } from "./CanvasResizer.svelte";
-import type { IAnimationPrecomputer } from "$lib/shared/animation-engine/services/contracts/IAnimationPrecomputer";
+import type { RenderContext } from "./render-context-registry";
+import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import type { EffectRendererManager } from "./effect-renderer-manager";
+import type { TrailCapturer } from "./trail-capturer";
+import type { IAnimationRenderLoop } from "$lib/shared/animation-engine/services/IAnimationRenderLoop";
+import type { CanvasResizer } from "./canvas-resizer.svelte";
+import type { IAnimationPrecomputer } from "$lib/shared/animation-engine/services/IAnimationPrecomputer";
 
 export interface RenderContextDeps {
   id: string;

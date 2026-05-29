@@ -9,9 +9,9 @@ import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
-import type { InterpolationResult } from "./AnimationStateManager";
-import type { AngleCalculatorLike } from "../angle-calculator";
-import type { EndpointCalculator } from "./EndpointCalculator";
+import type { InterpolationResult } from "./animation-state-manager";
+import type { AngleCalculatorLike } from "./angle-calculator";
+import type { EndpointCalculator } from "./endpoint-calculator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 function resolvePathType(motionType: MotionType, motionPathShape?: "arc" | "linear" | "concave"): "arc" | "linear" | "concave" {

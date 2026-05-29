@@ -1,12 +1,12 @@
-import type { PropTypeManager } from "./PropTypeManager";
-import type { AnimationEngineProps } from "./AnimationEngine.svelte";
-import type { AnimatorState } from "../../state/animator-state.svelte";
-import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
-import type { ISVGGenerator } from "$lib/shared/animation-engine/services/contracts/ISVGGenerator";
-import type { TrailCapturer } from "./TrailCapturer";
-import type { IPropTextureLoader } from "$lib/shared/animation-engine/services/contracts/IPropTextureLoader";
-import type { RenderFrameParams } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderLoop";
-import { PropTextureLoader } from "./PropTextureLoader.svelte";
+import type { PropTypeManager } from "./prop-type-manager";
+import type { AnimationEngineProps } from "./animation-engine.svelte";
+import type { AnimatorState } from "../state/animator-state.svelte";
+import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
+import type { TrailCapturer } from "./trail-capturer";
+import type { IPropTextureLoader } from "$lib/shared/animation-engine/services/IPropTextureLoader";
+import type { RenderFrameParams } from "$lib/shared/animation-engine/services/IAnimationRenderLoop";
+import { PropTextureLoader } from "./prop-texture-loader.svelte";
 
 export class PropPipeline {
   private propTextureService: IPropTextureLoader | null = null;

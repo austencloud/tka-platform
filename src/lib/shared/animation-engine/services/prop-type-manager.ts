@@ -8,19 +8,19 @@
  * This is a plain TypeScript class - no Svelte reactivity needed.
  */
 
-import { animationSettings as animationSettingsState } from "../../state/animation-settings-state.svelte";
+import { animationSettings as animationSettingsState } from "../state/animation-settings-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { IPropTextureLoader } from "../contracts/IPropTextureLoader";
-import type { TrailCapturer } from "$lib/shared/animation-engine/services/implementations/TrailCapturer";
-import type { IAnimationRenderLoop, RenderFrameParams } from "../contracts/IAnimationRenderLoop";
-import type { IAnimationPrecomputer } from "../contracts/IAnimationPrecomputer";
-import type { PropTypeChanger } from "./PropTypeChanger.svelte";
-import type { FireTipTracker } from "./FireTipTracker";
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
+import type { IPropTextureLoader } from "./IPropTextureLoader";
+import type { TrailCapturer } from "$lib/shared/animation-engine/services/trail-capturer";
+import type { IAnimationRenderLoop, RenderFrameParams } from "./IAnimationRenderLoop";
+import type { IAnimationPrecomputer } from "./IAnimationPrecomputer";
+import type { PropTypeChanger } from "./prop-type-changer.svelte";
+import type { FireTipTracker } from "./fire-tip-tracker";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import { TUNNEL_LAYER_COLORS } from "$lib/shared/animation-engine/domain/compose-types";
 
-import type { AnimationEngineProps } from "./AnimationEngine.svelte";
-import type { AnimatorState } from "../../state/animator-state.svelte";
+import type { AnimationEngineProps } from "./animation-engine.svelte";
+import type { AnimatorState } from "../state/animator-state.svelte";
 
 /** Callback to obtain current frame params. */
 export type FrameParamsProvider = () => RenderFrameParams;
