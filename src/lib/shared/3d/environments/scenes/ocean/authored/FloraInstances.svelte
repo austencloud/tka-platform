@@ -44,7 +44,7 @@
     let cancelled = false;
 
     gltfLoader.load(
-      "/models/ocean/ocean_flora_scene_meshoptwebp.glb",
+      "/models/ocean/ocean_flora_scene.glb",
       (gltf) => {
         if (cancelled) return;
         enhanceMaterials(gltf.scene);
