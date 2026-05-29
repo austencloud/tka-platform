@@ -24,7 +24,7 @@
   import ReleaseHistoryPanel from "./ReleaseHistoryPanel.svelte";
   import DeckReleaseNameModal from "./DeckReleaseNameModal.svelte";
   import { releaserState as rs } from "./deck-releaser-state.svelte";
-  import { resolveDeckSequences, applyVariationDescriptor } from "../../services/deck-variation";
+  import { resolveDeckSequences, applyVariationDescriptor, rollVariation } from "../../services/deck-variation";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
 
   interface Props {
@@ -173,7 +173,11 @@
       const tndCards = buildTnDCards(rs.tndFamilies, rs.selectedTnDFamilies, rs.selectedTnDTurnPatterns);
       return tndCards.map((c, i) => ({ ...c, position: i + 1 }));
     }
-    return composeDeck(pool, rs.weights, rs.totalCards, { center: rs.notes });
+    const cards = composeDeck(pool, rs.weights, rs.totalCards, { center: rs.notes });
+    return cards.map((c) => {
+      const variation = rollVariation(c.stepCount, rs.variationConfig, Math.random);
+      return variation ? { ...c, variation } : c;
+    });
   }
 
   async function handleDraw() {
