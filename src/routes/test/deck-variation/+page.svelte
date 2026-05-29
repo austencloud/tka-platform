@@ -18,6 +18,7 @@
   import {
     applyVariation,
     BOOK_PATTERNS,
+    TURN_PATTERNS,
     type VariationConfig,
     type VariantResult,
   } from "$lib/features/choreo-card/services/deck-variation";
@@ -38,19 +39,37 @@
     ["book", "long-book", "alternating"].includes(p.id),
   );
 
-  // Variation config (slider is 0-100, converted to 0-1)
+  // Variation config (sliders are 0-100, converted to 0-1)
   let reversalFrequency = $state(40);
   let enabled = $state<Set<string>>(new Set(OFFERED.map((p) => p.id)));
-  let totalCards = $state(12);
+  let turnFrequency = $state(50);
+  let enabledTurns = $state<Set<string>>(new Set(TURN_PATTERNS.map((t) => t.id)));
+  let totalCards = $state(52);
   let showOriginals = $state(false);
+  let cardZoom = $state(1);
 
   function config(): VariationConfig {
     return {
       reversalFrequency: reversalFrequency / 100,
       enabledReversals: [...enabled],
-      turnFrequency: 0,
-      maxTurns: 1,
+      turnFrequency: turnFrequency / 100,
+      enabledTurnPatterns: [...enabledTurns],
     };
+  }
+
+  function toggleTurn(id: string) {
+    const next = new Set(enabledTurns);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    enabledTurns = next;
+    recompute();
+  }
+
+  function handleWheel(e: WheelEvent) {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    cardZoom = Math.min(3, Math.max(0.4, cardZoom * factor));
   }
 
   function recompute() {
@@ -69,9 +88,16 @@
   }
 
   function applyPreset(name: "clean" | "sprinkle" | "spicy") {
-    if (name === "clean") reversalFrequency = 0;
-    else if (name === "sprinkle") reversalFrequency = 30;
-    else reversalFrequency = 70;
+    if (name === "clean") {
+      reversalFrequency = 0;
+      turnFrequency = 0;
+    } else if (name === "sprinkle") {
+      reversalFrequency = 30;
+      turnFrequency = 30;
+    } else {
+      reversalFrequency = 70;
+      turnFrequency = 60;
+    }
     recompute();
   }
 
@@ -116,10 +142,16 @@
 
   const stats = $derived.by(() => {
     let reversed = 0;
+    let turned = 0;
+    let broken = 0;
     for (const r of results) {
       if (r.variation.reversalPatternId) reversed++;
+      if (r.variation.turnPattern) {
+        turned++;
+        if (!r.variation.turnLoopClosed) broken++;
+      }
     }
-    return { reversed, total: results.length };
+    return { reversed, turned, broken, total: results.length };
   });
 </script>
 
@@ -163,6 +195,30 @@
     </div>
 
     <div class="group">
+      <span class="label">Turn frequency · {turnFrequency}%</span>
+      <input type="range" min="0" max="100" bind:value={turnFrequency} oninput={recompute} />
+    </div>
+
+    <div class="group">
+      <span class="label">Turn patterns</span>
+      <div class="row wrap">
+        {#each TURN_PATTERNS as tp (tp.id)}
+          <button
+            type="button"
+            class="chip"
+            class:active={enabledTurns.has(tp.id)}
+            aria-pressed={enabledTurns.has(tp.id)}
+            title={tp.pattern}
+            onclick={() => toggleTurn(tp.id)}
+          >
+            {tp.label}
+          </button>
+        {/each}
+      </div>
+      <span class="hint">Each turned card draws one at random that tiles its step count. Yellow tag = breaks loop.</span>
+    </div>
+
+    <div class="group">
       <span class="label">View</span>
       <div class="row">
         <button
@@ -188,7 +244,10 @@
     </div>
 
     {#if results.length > 0}
-      <div class="stats">{stats.reversed}/{stats.total} reversed</div>
+      <div class="stats">
+        {stats.reversed}/{stats.total} reversed · {stats.turned}/{stats.total} turned
+        {#if stats.broken > 0}· <span class="warn">{stats.broken} break loop</span>{/if}
+      </div>
     {/if}
 
     <div class="meta">
@@ -199,14 +258,17 @@
           <span class="word">
             <TKAWordGlyph word={r.sequence.word || baseCards[i]?.word || ""} height={22} darkMode />
           </span>
-          {#if v.reversalLabel}<span class="tag rev">{v.reversalLabel}</span>
-          {:else}<span class="tag plain">plain</span>{/if}
+          {#if v.reversalLabel}<span class="tag rev">{v.reversalLabel}</span>{/if}
+          {#if v.turnPattern}
+            <span class="tag turn" class:broken={!v.turnLoopClosed} title={v.turnPattern}>{v.turnLabel}</span>
+          {/if}
+          {#if !v.reversalLabel && !v.turnPattern}<span class="tag plain">plain</span>{/if}
         </div>
       {/each}
     </div>
   </aside>
 
-  <main class="preview">
+  <main class="preview" onwheel={handleWheel}>
     {#if loading}
       <div class="status">Loading catalogs + sequences…</div>
     {:else if error}
@@ -214,21 +276,24 @@
     {:else if displaySequences.length === 0}
       <div class="status">No LOOP sequences in pool.</div>
     {:else}
-      <PrintPreviewPages
-        sequences={displaySequences}
-        cardSize="poker"
-        theme="cosmic"
-        isLoading={false}
-        deckMode={true}
-        displayMode="grid"
-        {footers}
-        {rerenderKey}
-        showGrid={true}
-        showTKA={true}
-        showWord={true}
-        includeStartPosition={true}
-        handPointsVisible={true}
-      />
+      <div class="zoom-hint">{Math.round(cardZoom * 100)}% · Ctrl+scroll to zoom</div>
+      <div class="zoom" style="zoom: {cardZoom};">
+        <PrintPreviewPages
+          sequences={displaySequences}
+          cardSize="poker"
+          theme="cosmic"
+          isLoading={false}
+          deckMode={true}
+          displayMode="grid"
+          {footers}
+          {rerenderKey}
+          showGrid={true}
+          showTKA={true}
+          showWord={true}
+          includeStartPosition={true}
+          handPointsVisible={true}
+        />
+      </div>
     {/if}
   </main>
 </div>
@@ -314,6 +379,9 @@
   }
 
   .stats { font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+  .warn { color: #facc15; }
+
+  .hint { font-size: 11px; color: rgba(255, 255, 255, 0.4); }
 
   .meta { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
   .meta-row {
@@ -336,9 +404,24 @@
   .word { flex: 1; display: flex; align-items: center; min-width: 0; overflow: hidden; }
   .tag { flex-shrink: 0; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
   .tag.rev { background: rgba(96, 165, 250, 0.18); color: #60a5fa; }
+  .tag.turn { background: rgba(16, 185, 129, 0.18); color: #34d399; font-family: ui-monospace, monospace; }
+  .tag.turn.broken { background: rgba(250, 204, 21, 0.18); color: #facc15; }
   .tag.plain { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.4); }
 
-  .preview { flex: 1; min-width: 0; overflow: auto; padding: 20px; }
+  .preview { flex: 1; min-width: 0; overflow: auto; padding: 20px; position: relative; }
+  .zoom { transform-origin: top left; }
+  .zoom-hint {
+    position: sticky;
+    top: 0;
+    float: right;
+    z-index: 5;
+    padding: 3px 8px;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 8px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+  }
   .status {
     height: 100%;
     display: flex;

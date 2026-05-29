@@ -118,6 +118,14 @@
       .map(([step, count]) => ({ step: Number(step), count }));
   });
 
+  // One clean line: a single step length collapses to "4-step"; a mix lists
+  // each length with its count.
+  const stepSummary = $derived(
+    distribution.length === 1
+      ? `${distribution[0]!.step}-step`
+      : distribution.map((d) => `${d.step}-step ×${d.count}`).join("  ·  "),
+  );
+
   function handleCardClick(sequence: SequenceData, frontImageUrl?: string, rerender?: () => Promise<string | null>) {
     inspectedFrontImageUrl = frontImageUrl ?? null;
     inspectedRerender = rerender ?? null;
@@ -223,12 +231,12 @@
       {:else}
         <h2 class="deck-number">{deckName || deckNumberLabel}</h2>
       {/if}
-      <div class="distribution">
-        <span class="deck-number-tag">{deckNumberLabel}</span>
-        {#each distribution as d (d.step)}
-          <span class="dist-chip">{d.step}-step: {d.count}</span>
-        {/each}
-        <span class="dist-total">{cards.length} cards</span>
+      <div class="deck-meta">
+        <span class="meta-cards">{cards.length} cards</span>
+        {#if stepSummary}
+          <span class="meta-sep" aria-hidden="true">·</span>
+          <span class="meta-steps">{stepSummary}</span>
+        {/if}
       </div>
     </div>
 
@@ -378,27 +386,35 @@
   .deck-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
 
   .deck-number {
     margin: 0;
-    font-size: 18px;
+    font-size: 24px;
     font-weight: 700;
+    letter-spacing: -0.01em;
     color: var(--theme-text, #fff);
+    text-align: center;
   }
 
   .deck-name-input {
     display: block;
     width: 100%;
-    max-width: 420px;
+    max-width: 460px;
     margin: 0;
-    padding: 4px 8px;
-    font-size: 18px;
+    padding: 4px 12px;
+    font-size: 24px;
     font-weight: 700;
+    letter-spacing: -0.01em;
+    text-align: center;
     color: var(--theme-text, #fff);
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: text;
     transition: background 0.15s, border-color 0.15s;
   }
@@ -414,39 +430,27 @@
     border-color: var(--theme-accent, #8b5cf6);
   }
 
-  .deck-number-tag {
-    padding: 2px 8px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
-  }
-
-  .distribution {
+  .deck-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 4px;
-  }
-
-  .dist-chip {
-    padding: 2px 8px;
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--theme-accent, #a78bfa);
-  }
-
-  .dist-total {
-    padding: 2px 8px;
-    font-size: 11px;
-    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  }
+
+  .meta-cards {
+    font-weight: 700;
+    color: var(--theme-text, rgba(255, 255, 255, 0.92));
+  }
+
+  .meta-sep {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+  }
+
+  .meta-steps {
+    font-weight: 600;
   }
 
   .action-buttons {

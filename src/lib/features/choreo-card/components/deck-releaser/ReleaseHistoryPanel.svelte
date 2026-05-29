@@ -21,6 +21,10 @@
       .map(([step, count]) => `${step}s:${count}`)
       .join("  ");
   }
+
+  function displayName(r: DeckRelease): string {
+    return r.name?.trim() || r.notes?.trim() || `Deck #${String(r.deckNumber).padStart(3, "0")}`;
+  }
 </script>
 
 <div class="release-history">
@@ -50,16 +54,14 @@
           class="release-item"
           class:active={activeDeckNumber === release.deckNumber}
           onclick={() => onSelectRelease(release)}
-          aria-label="View Deck {release.deckNumber}{release.notes ? `: ${release.notes}` : ''}"
+          aria-label="View Deck {release.deckNumber}: {displayName(release)}"
           aria-pressed={activeDeckNumber === release.deckNumber}
         >
           <div class="release-header">
             <span class="deck-badge">#{String(release.deckNumber).padStart(3, "0")}</span>
             <span class="release-date">{formatDate(release.createdAt)}</span>
           </div>
-          {#if release.notes}
-            <div class="release-notes">{release.notes}</div>
-          {/if}
+          <div class="release-notes">{displayName(release)}</div>
           <div class="release-meta">
             <span class="card-count">{release.cardCount} cards</span>
             <span class="distribution">{distributionSummary(release.stepCountDistribution)}</span>

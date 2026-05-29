@@ -2,18 +2,26 @@
  * Deck Variation Engine
  *
  * Applies draw-time variations to LOOP deck cards: book-family reversals
- * (prop-spin flips) and low-intensity turns. Both reuse the proven transform
- * code — reversals via `transformSequence` (flip + letter re-derive + reorient),
- * turns via `applyPattern` (turn application + forward orientation propagation).
+ * (prop-spin flips) and structured per-beat turn patterns. Both reuse proven
+ * transform code — reversals via `transformSequence` (flip + letter re-derive +
+ * reorient), turns via `applyPattern` (turn application + forward orientation
+ * propagation).
+ *
+ * Turns are NOT random. A turn pattern is an explicit, symmetric per-beat
+ * string in `blue|red` form, beats separated by `-`, tiled to the card:
+ *   "1|1"                 → every beat: blue 1, red 1
+ *   "1|1-0|0"             → 1|1, 0|0, 1|1, 0|0, ...
+ *   "1|0-0|1"             → hands trade
+ *   "0.5|0-0|1"           → half/whole trade
+ *   "2|1-0|0-1|2-0|0"     → a 4-beat wave
  *
  * Loop-safety:
  *   - Reversals: only book patterns whose toggle count is even per hand keep the
  *     prop returning to its starting spin (resolvePattern.isCleanLoop). Gated.
  *   - Turns: whether a turn preserves or reverses orientation depends on motion
- *     type AND turn parity (orientation algebra), so closure can't be predicted
- *     by counting alone. We GENERATE-AND-CHECK: apply a candidate, then verify
- *     the loop still closes (last endOrientation === first startOrientation per
- *     hand) using the real orientation chain produced by `applyPattern`.
+ *     type AND turn parity (orientation algebra), so closure varies per card. We
+ *     apply the chosen pattern and FLAG closure (last endOrientation === first
+ *     startOrientation per hand) rather than silently dropping it.
  */
 
 import {
@@ -25,36 +33,34 @@ import { transformSequence } from "./reversal-seed-service";
 import type { CsvEdge } from "./pictograph-letter-lookup";
 import { applyPattern } from "$lib/shared/create/services/turn-pattern-manager";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type {
   TurnPattern,
   TurnPatternEntry,
   TurnValue,
 } from "$lib/shared/create/domain/TurnPatternData";
-import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export type Rng = () => number;
 
 export interface VariationConfig {
   /** 0..1 — probability a drawn card receives a book reversal. */
   reversalFrequency: number;
-  /** Eligible book pattern ids (e.g. "book", "red-book", "alternating"). */
+  /** Eligible book pattern ids (e.g. "book", "long-book", "alternating"). */
   enabledReversals: string[];
-  /** 0..1 — probability a drawn card receives turns. */
+  /** 0..1 — probability a drawn card receives a turn pattern. */
   turnFrequency: number;
-  /** Turn cap. 1 allows {0.5, 1}; 2 allows up to {2}, still skewed low. */
-  maxTurns: number;
-  /** 0..1 — per-eligible-hand-beat chance of a nonzero turn. Default 0.4. */
-  turnDensity?: number;
+  /** Eligible turn pattern ids (from TURN_PATTERNS); a card draws one at random. */
+  enabledTurnPatterns: string[];
 }
 
 export interface AppliedVariation {
   reversalPatternId: string | null;
   reversalLabel: string | null;
   reversalSequence: string | null;
-  turnEntries: TurnPatternEntry[] | null;
-  /** false when turns were requested but no loop-safe pattern was found. */
+  /** The turn pattern string actually applied, or null. */
+  turnPattern: string | null;
+  /** Label of the applied turn pattern, or null. */
+  turnLabel: string | null;
+  /** false when an applied turn pattern breaks loop closure. */
   turnLoopClosed: boolean;
   warnings: string[];
 }
@@ -67,16 +73,58 @@ export interface VariantResult {
 
 export const DEFAULT_VARIATION_CONFIG: VariationConfig = {
   reversalFrequency: 0.4,
-  enabledReversals: ["book", "red-book", "blue-book", "alternating", "long-book"],
-  turnFrequency: 0.4,
-  maxTurns: 1,
-  turnDensity: 0.4,
+  enabledReversals: ["book", "long-book", "alternating"],
+  turnFrequency: 0.5,
+  enabledTurnPatterns: ["hold-1", "pulse-1", "trade-1", "half-trade", "wave-21"],
 };
 
 /** Book patterns offered to the UI (the `simple`, non-continuous family). */
 export const BOOK_PATTERNS = SIMPLE_PATTERNS.filter((p) => p.id !== "continuous");
 
-/** Convert a raw pattern string ("RRRR") into per-beat reversal flags, tiled to N. */
+export interface TurnPatternPreset {
+  id: string;
+  label: string;
+  /** Beat count of one period — pattern only tiles cards divisible by this. */
+  period: number;
+  pattern: string;
+}
+
+/** Curated symmetric turn patterns. Period = beats per unit. */
+export const TURN_PATTERNS: TurnPatternPreset[] = [
+  { id: "hold-1", label: "Hold 1", period: 1, pattern: "1|1" },
+  { id: "pulse-1", label: "Pulse 1", period: 2, pattern: "1|1-0|0" },
+  { id: "trade-1", label: "Trade 1", period: 2, pattern: "1|0-0|1" },
+  { id: "half-trade", label: "½ / 1 Trade", period: 2, pattern: "0.5|0-0|1" },
+  { id: "wave-21", label: "Wave 2·1", period: 4, pattern: "2|1-0|0-1|2-0|0" },
+];
+
+interface TurnBeat {
+  blue: TurnValue | null;
+  red: TurnValue | null;
+}
+
+function parseTurnSide(s: string | undefined): TurnValue | null {
+  if (s == null) return null;
+  const t = s.trim();
+  if (t === "") return null;
+  if (t === "fl") return "fl";
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Parse "b|r-b|r-..." into one period of per-beat turn values. */
+export function parseTurnUnit(pattern: string): TurnBeat[] {
+  const beats: TurnBeat[] = [];
+  for (const tok of pattern.split("-")) {
+    const t = tok.trim();
+    if (t === "") continue;
+    const [b, r] = t.split("|");
+    beats.push({ blue: parseTurnSide(b), red: parseTurnSide(r) });
+  }
+  return beats;
+}
+
+/** Convert a raw reversal pattern string ("RRRR") into per-beat flags, tiled to N. */
 function tileFlags(sequence: string, stepCount: number): { blue: boolean[]; red: boolean[] } {
   const blue: boolean[] = [];
   const red: boolean[] = [];
@@ -105,14 +153,17 @@ function pickReversal(
   return candidates[Math.floor(rng() * candidates.length)] ?? null;
 }
 
-/** Turn values to draw from, skewed toward the smallest increments. */
-function turnPool(maxTurns: number): number[] {
-  if (maxTurns <= 1) return [0.5, 0.5, 0.5, 1];
-  return [0.5, 0.5, 0.5, 0.5, 1, 1, 1.5, 2];
-}
-
-function isRotational(motion: MotionData | undefined): boolean {
-  return !!motion && (motion.motionType === MotionType.PRO || motion.motionType === MotionType.ANTI);
+/** Pick a random enabled turn pattern whose period tiles the step count. */
+function pickTurnPattern(
+  stepCount: number,
+  enabled: string[],
+  rng: Rng,
+): TurnPatternPreset | null {
+  const candidates = TURN_PATTERNS.filter(
+    (tp) => enabled.includes(tp.id) && stepCount % tp.period === 0,
+  );
+  if (candidates.length === 0) return null;
+  return candidates[Math.floor(rng() * candidates.length)] ?? null;
 }
 
 /** Does the loop close on each hand? (last endOrientation === first startOrientation) */
@@ -127,62 +178,6 @@ function loopCloses(seq: SequenceData): { blue: boolean; red: boolean } {
     return lm.endOrientation === fm.startOrientation;
   }
   return { blue: handCloses("blue"), red: handCloses("red") };
-}
-
-const MAX_TURN_ATTEMPTS = 32;
-
-/**
- * Generate a loop-safe turn pattern for `seq` and return the turned sequence.
- * Returns null if no closing candidate was found within the attempt budget.
- */
-function generateLoopSafeTurns(
-  seq: SequenceData,
-  maxTurns: number,
-  density: number,
-  rng: Rng,
-): { sequence: SequenceData; entries: TurnPatternEntry[]; warnings: string[] } | null {
-  const steps = seq.steps as readonly StepData[];
-  const n = steps.length;
-  const base = loopCloses(seq);
-  const pool = turnPool(maxTurns);
-
-  for (let attempt = 0; attempt < MAX_TURN_ATTEMPTS; attempt++) {
-    const entries: TurnPatternEntry[] = [];
-    let any = false;
-    for (let i = 0; i < n; i++) {
-      const motions = steps[i]?.motions;
-      let blue: TurnValue | null = null;
-      let red: TurnValue | null = null;
-      if (isRotational(motions?.blue) && rng() < density) {
-        blue = pool[Math.floor(rng() * pool.length)] ?? null;
-        if (blue) any = true;
-      }
-      if (isRotational(motions?.red) && rng() < density) {
-        red = pool[Math.floor(rng() * pool.length)] ?? null;
-        if (red) any = true;
-      }
-      entries.push({ stepIndex: i, blue, red });
-    }
-    if (!any) continue;
-
-    const pattern: TurnPattern = {
-      id: "variation",
-      name: "variation",
-      userId: "",
-      createdAt: null as unknown as TurnPattern["createdAt"],
-      stepCount: n,
-      entries,
-    };
-    const res = applyPattern(pattern, seq, "both");
-    if (!res.success || !res.sequence) continue;
-
-    const closed = loopCloses(res.sequence);
-    const ok = (closed.blue || !base.blue) && (closed.red || !base.red);
-    if (ok) {
-      return { sequence: res.sequence, entries, warnings: [...(res.warnings ?? [])] };
-    }
-  }
-  return null;
 }
 
 /**
@@ -212,18 +207,37 @@ export function applyVariation(
     }
   }
 
-  let turnEntries: TurnPatternEntry[] | null = null;
+  let turnPattern: string | null = null;
+  let turnLabel: string | null = null;
   let turnLoopClosed = true;
 
-  if (rng() < config.turnFrequency) {
-    const gen = generateLoopSafeTurns(working, config.maxTurns, config.turnDensity ?? 0.4, rng);
-    if (gen) {
-      working = gen.sequence;
-      turnEntries = gen.entries;
-      warnings.push(...gen.warnings);
-    } else {
-      turnLoopClosed = false;
-      warnings.push("No loop-safe turn pattern found in budget; turns left off.");
+  if (config.enabledTurnPatterns.length > 0 && rng() < config.turnFrequency) {
+    const preset = pickTurnPattern(stepCount, config.enabledTurnPatterns, rng);
+    if (preset) {
+      const unit = parseTurnUnit(preset.pattern);
+      const base = loopCloses(working);
+      const entries: TurnPatternEntry[] = [];
+      for (let i = 0; i < stepCount; i++) {
+        const u = unit[i % unit.length]!;
+        entries.push({ stepIndex: i, blue: u.blue, red: u.red });
+      }
+      const pattern: TurnPattern = {
+        id: "variation",
+        name: "variation",
+        userId: "",
+        createdAt: null as unknown as TurnPattern["createdAt"],
+        stepCount,
+        entries,
+      };
+      const res = applyPattern(pattern, working, "both");
+      if (res.success && res.sequence) {
+        working = res.sequence;
+        turnPattern = preset.pattern;
+        turnLabel = preset.label;
+        const closed = loopCloses(working);
+        turnLoopClosed = (closed.blue || !base.blue) && (closed.red || !base.red);
+        if (res.warnings) warnings.push(...res.warnings);
+      }
     }
   }
 
@@ -233,7 +247,8 @@ export function applyVariation(
       reversalPatternId,
       reversalLabel,
       reversalSequence,
-      turnEntries,
+      turnPattern,
+      turnLabel,
       turnLoopClosed,
       warnings,
     },

@@ -291,8 +291,11 @@ export function getTnDTurnPatternOptions(catalogs: Catalog[]): TnDTurnPatternOpt
 }
 
 function formatTurnPatternLabel(tp: string): string {
+  // Symmetric (equal-turn) patterns are stored as `uniform-Nt`; render them in
+  // the same `N|N` form as the asymmetric pipes so the diagonal reads as part of
+  // the same grid (e.g. uniform-2.5t -> "2.5|2.5") instead of a separate "2.5T".
   const uniform = tp.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
-  if (uniform) return `${uniform[1]}T`;
+  if (uniform) return `${uniform[1]}|${uniform[1]}`;
   const pipe = tp.match(/^(\d+(?:\.\d+)?)\|(\d+(?:\.\d+)?)$/);
   if (pipe) return `${pipe[1]}|${pipe[2]}`;
   return tp;
@@ -300,7 +303,10 @@ function formatTurnPatternLabel(tp: string): string {
 
 function parseTurnPatternSort(tp: string): number {
   const uniform = tp.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
-  if (uniform) return parseFloat(uniform[1]!);
+  if (uniform) {
+    const n = parseFloat(uniform[1]!);
+    return n * 10 + n;
+  }
   const pipe = tp.match(/^(\d+(?:\.\d+)?)\|(\d+(?:\.\d+)?)$/);
   if (pipe) return parseFloat(pipe[1]!) * 10 + parseFloat(pipe[2]!);
   return 999;
