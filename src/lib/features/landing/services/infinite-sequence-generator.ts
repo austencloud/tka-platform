@@ -28,7 +28,7 @@ import type { GenerationOrchestrator } from "$lib/shared/create/services/Generat
 import type { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import type { GeneratedSequenceInfo, GenerationSettings } from "../domain/models/spinner-models";
 import type { EndState } from "$lib/shared/landing/domain/types";
-import type { SpinnerMetricsRepository } from "./SpinnerMetricsRepository";
+import type { SpinnerMetricsRepository } from "./spinner-metrics-repository";
 
 /**
  * LOOP types that compose rotation + mirroring.
