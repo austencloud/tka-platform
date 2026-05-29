@@ -48,7 +48,7 @@ import type { IVideoExportOrchestrator, VideoExportProgress, VideoExportFormat }
     ANIMATION_AUTO_START_DELAY_MS,
     VIDEO_EXPORT_SUCCESS_DELAY_MS,
   } from "$lib/shared/animation-engine/domain/constants/timing";
-import type { AnimationPanelState } from "../navigation/services/contracts/types";
+import type { AnimationPanelState } from "../navigation/services/types";
   import { createComponentLogger } from "../utils/debug-logger";
   import { setAnimationPlaybackRef } from "./animation-playback-ref.svelte";
 

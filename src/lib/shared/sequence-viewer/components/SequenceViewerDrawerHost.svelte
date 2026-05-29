@@ -32,7 +32,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
+  import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'

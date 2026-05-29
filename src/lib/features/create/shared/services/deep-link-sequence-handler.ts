@@ -24,9 +24,9 @@ export interface DeepLinkLoadResult {
   /** Source of the loaded sequence */
   source?: "deepLink" | "pendingEdit";
 }
-import type { DeepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
-import type { LetterDeriver } from '$lib/shared/navigation/services/implementations/LetterDeriver'
-import type { PositionDeriver } from '$lib/shared/navigation/services/implementations/PositionDeriver'
+import type { DeepLinker } from "$lib/shared/navigation/services/deep-linker";
+import type { LetterDeriver } from '$lib/shared/navigation/services/letter-deriver'
+import type { PositionDeriver } from '$lib/shared/navigation/services/position-deriver'
 
 const PENDING_EDIT_KEY = "tka-pending-edit-sequence";
 

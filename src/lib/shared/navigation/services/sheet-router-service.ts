@@ -3,7 +3,7 @@ import {
   pushState as svelteKitPushState,
   replaceState as svelteKitReplaceState,
 } from "$app/navigation";
-import type { SheetType, RouteState, AnimationPanelState } from "../contracts/types";
+import type { SheetType, RouteState, AnimationPanelState } from "./types";
 
 export class SheetRouter {
   private parseRouteState(): RouteState {

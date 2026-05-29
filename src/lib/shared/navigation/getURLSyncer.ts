@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { URLSyncer } from './services/implementations/URLSyncer';
+import { URLSyncer } from './services/url-syncer';
 
 let instance: URLSyncer | null = null;
 

@@ -10,7 +10,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getAllTabsForModule, hideTab, showTab } from "../../getSidebarTabToggler";
-import type { TabVisibilityInfo } from "../../services/contracts/types";
+import type { TabVisibilityInfo } from "../../services/types";
   import type { ModuleId } from "../../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";

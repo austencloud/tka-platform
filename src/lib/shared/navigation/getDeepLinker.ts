@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { DeepLinker } from './services/implementations/DeepLinker';
+import { DeepLinker } from './services/deep-linker';
 
 let instance: DeepLinker | null = null;
 

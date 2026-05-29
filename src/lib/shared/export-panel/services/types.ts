@@ -39,7 +39,7 @@ export interface ExportUserInfo {
  * Domain: Export Panel - URL State Management
  */
 
-import type { AnimationPanelState as URLAnimationState } from '$lib/shared/navigation/services/contracts/types';
+import type { AnimationPanelState as URLAnimationState } from '$lib/shared/navigation/services/types';
 
 /**
  * Animation state that can be persisted to/restored from URL

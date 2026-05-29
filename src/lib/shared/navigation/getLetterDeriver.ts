@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { LetterDeriver } from './services/implementations/LetterDeriver';
+import { LetterDeriver } from './services/letter-deriver';
 import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
 import { gridModeDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridModeDeriver';
 

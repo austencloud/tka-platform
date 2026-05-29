@@ -21,10 +21,10 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { LetterDeriver } from '$lib/shared/navigation/services/implementations/LetterDeriver'
-import type { PositionDeriver } from '$lib/shared/navigation/services/implementations/PositionDeriver'
+import type { LetterDeriver } from '$lib/shared/navigation/services/letter-deriver'
+import type { PositionDeriver } from '$lib/shared/navigation/services/position-deriver'
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
-import type { GridModeDeriver } from "../../../pictograph/grid/services/implementations/GridModeDeriver";
+import type { GridModeDeriver } from "../../pictograph/grid/services/implementations/GridModeDeriver";
 
 export interface SequenceHydratorDeps {
   letterDeriver: LetterDeriver | null;

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { SheetRouter } from './services/implementations/SheetRouter';
+import { SheetRouter } from './services/sheet-router-service';
 
 let instance: SheetRouter | null = null;
 

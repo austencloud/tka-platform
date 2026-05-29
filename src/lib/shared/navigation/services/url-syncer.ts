@@ -13,8 +13,8 @@
 import { browser } from "$app/environment";
 import { replaceState } from "$app/navigation";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { URLSyncOptions } from "../contracts/types";
-import { generateShareURL } from "../sequence-encoder";
+import type { URLSyncOptions } from "./types";
+import { generateShareURL } from "./sequence-encoder";
 
 export class URLSyncer {
   private pendingUpdate: ReturnType<typeof setTimeout> | null = null;

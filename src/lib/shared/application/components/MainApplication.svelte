@@ -32,7 +32,7 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
     closeSheet,
     onRouteChange,
   } from "../../navigation/services/sheet-router";
-import type { SheetType } from "../../navigation/services/contracts/types";
+import type { SheetType } from "../../navigation/services/types";
   import { authState } from "../../auth/state/authState.svelte";
   import LandingPage from "../../auth/components/LandingPage.svelte";
   import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";

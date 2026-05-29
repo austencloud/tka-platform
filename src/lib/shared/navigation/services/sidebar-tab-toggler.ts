@@ -7,7 +7,7 @@
  */
 
 import type { ModuleId } from "../domain/types";
-import type { TabVisibilityInfo } from "./contracts/types";
+import type { TabVisibilityInfo } from "./types";
 import { MODULE_DEFINITIONS } from "../config/module-definitions";
 import {
   featureFlagService,

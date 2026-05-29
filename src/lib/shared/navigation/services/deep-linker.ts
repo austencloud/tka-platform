@@ -10,10 +10,10 @@
 
 import { browser } from "$app/environment";
 import { goto, replaceState } from "$app/navigation";
-import { navigationState } from "../../state/navigation-state.svelte";
+import { navigationState } from "../state/navigation-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { DeepLinkResult, DeepLinkData, ModuleMapping } from "../contracts/types";
-import { parseDeepLink } from "../sequence-encoder";
+import type { DeepLinkResult, DeepLinkData, ModuleMapping } from "./types";
+import { parseDeepLink } from "./sequence-encoder";
 
 /**
  * Internal storage structure for deep link data

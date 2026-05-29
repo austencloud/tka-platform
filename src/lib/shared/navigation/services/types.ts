@@ -3,7 +3,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { Section } from '../../domain/types';
+import type { Section } from '../domain/types';
 
 // === From ISheetRouter ===
 

@@ -17,9 +17,9 @@
   import { replaceState } from "$app/navigation";
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";
-  import type { URLSyncer } from "$lib/shared/navigation/services/implementations/URLSyncer";
+  import type { URLSyncer } from "$lib/shared/navigation/services/url-syncer";
   import { getURLSyncer } from "$lib/shared/navigation/getURLSyncer";
-  import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
+  import { deepLinker } from "$lib/shared/navigation/services/deep-linker";
   import { consumeSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import { arrangeGridState } from "./tabs/arrange/state/arrange-grid-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";

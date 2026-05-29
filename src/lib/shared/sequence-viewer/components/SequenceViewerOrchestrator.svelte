@@ -183,7 +183,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/types";
+  import type { ShareURLMetadata } from "$lib/shared/navigation/services/types";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";

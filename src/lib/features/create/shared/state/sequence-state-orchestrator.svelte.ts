@@ -23,7 +23,7 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/Sta
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
+import { deepLinker } from "$lib/shared/navigation/services/deep-linker";
 import type { TargetHand } from "./panel-coordination-state.svelte";
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";

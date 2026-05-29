@@ -51,7 +51,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
   } from "./layout/desktop-sidebar-state.svelte";
   // Keyboard shortcuts
 
-  import { deepLinker } from "./navigation/services/implementations/DeepLinker";
+  import { deepLinker } from "./navigation/services/deep-linker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
   import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
   import { fuseTourState } from "./onboarding/state/fuse-tour-state.svelte";
