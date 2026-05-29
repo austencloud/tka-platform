@@ -74,31 +74,21 @@
 		min-height: var(--min-touch-target, 44px);
 	}
 
-	/* Full labels (520px+) */
+	/* Full labels only at 520px+. The NavButton "compact" label is identical
+	   text to the full label, so a mid-width tier just renders the same long
+	   strings ("2D Animation"/"3D Animation") in too little space and they
+	   overlap. Below 520px we show icons only (NavButton default hides both
+	   label spans) — six labels this long need ~520px to sit side by side. */
 	@container viewer-bottom-bar (min-width: 520px) {
 		.viewer-bottom-bar :global(.nav-label-full) {
 			display: block;
 		}
 	}
 
-	/* Compact labels (400-519px) */
-	@container viewer-bottom-bar (min-width: 400px) and (max-width: 519px) {
-		.viewer-bottom-bar :global(.nav-label-compact) {
-			display: block;
-		}
-	}
-
-	/* <400px: icons only (NavButton default — labels stay hidden) */
-
 	/* Fallback where container queries are unsupported */
 	@supports not (container-type: inline-size) {
 		@media (min-width: 520px) {
 			.viewer-bottom-bar :global(.nav-label-full) {
-				display: block;
-			}
-		}
-		@media (min-width: 400px) and (max-width: 519px) {
-			.viewer-bottom-bar :global(.nav-label-compact) {
 				display: block;
 			}
 		}
