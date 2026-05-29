@@ -30,16 +30,43 @@ if (browser) {
     });
 }
 
-// Dev mode: unregister ALL service workers to prevent stale production SWs
-// from intercepting navigation requests and causing infinite page-load hangs.
-// (sw.js wraps navigate fetches with no timeout — if Vite is busy with HMR,
-// the fetch never resolves and the page spinner spins forever.)
+// Dev mode: tear down ALL service workers + their caches to prevent stale
+// production SWs from intercepting Vite HMR fetches.
+//
+// The footgun: the browser runs the SW bytes that were INSTALLED (from a prior
+// prod/preview visit), not the current static/sw.js. An old sw.js that predates
+// the localhost-bypass intercepts HMR chunk/asset fetches with no-timeout
+// cache-first logic → "Failed to fetch" + dead HMR until a manual hard refresh.
+//
+// unregister() alone is insufficient: it does NOT release the SW from the page
+// it is ALREADY controlling. So if a stale SW controls this load, we also force
+// a single guarded reload so the page reloads uncontrolled and HMR works again.
 if (browser && dev && "serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const reg of registrations) {
-      reg.unregister();
+  const SW_ESCAPE_KEY = "tka-dev-sw-escape";
+  void (async () => {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((reg) => reg.unregister()));
+
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+
+      if (navigator.serviceWorker.controller) {
+        // A stale SW is still controlling this page. Reload once to escape it.
+        if (!sessionStorage.getItem(SW_ESCAPE_KEY)) {
+          sessionStorage.setItem(SW_ESCAPE_KEY, "1");
+          location.reload();
+        }
+      } else {
+        // Clean (no controller) — re-arm the escape for any future stale SW.
+        sessionStorage.removeItem(SW_ESCAPE_KEY);
+      }
+    } catch {
+      // Best-effort cleanup; never block app boot on SW teardown.
     }
-  });
+  })();
 }
 
 // Production: auto-recover from stale chunks after a deploy.
