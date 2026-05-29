@@ -1,4 +1,4 @@
-import { PoiSequenceValidator } from './services/implementations/PoiSequenceValidator';
+import { PoiSequenceValidator } from './services/poi-sequence-validator';
 
 let instance: PoiSequenceValidator | null = null;
 export function getPoiSequenceValidator(): PoiSequenceValidator {

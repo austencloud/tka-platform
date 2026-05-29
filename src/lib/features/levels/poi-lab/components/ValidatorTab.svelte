@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/getPoiSequenceValidator";
+import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-sequence-validator";
   /**
    * Validator Tab - Validate sequences for poi legality
    *
