@@ -1,8 +1,8 @@
 <!-- src/lib/features/store/StorePage.svelte -->
 <script lang="ts">
 
-import { getMerchCheckoutCreator } from "$lib/features/store/getMerchCheckoutCreator";
-import { getProductLoader } from "$lib/features/store/getProductLoader";
+import { getMerchCheckoutCreator } from "$lib/features/store/get-merch-checkout-creator";
+import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { onMount } from "svelte";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";

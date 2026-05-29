@@ -1,4 +1,4 @@
-import type { Product } from "../domain/models/Product";
+import type { Product } from "../domain/models/product";
 
 interface ProductLoader {
   loadActiveProducts(): Promise<Product[]>;

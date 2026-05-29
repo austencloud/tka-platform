@@ -1,6 +1,6 @@
 <!-- src/lib/features/store/components/ProductCard.svelte -->
 <script lang="ts">
-  import type { Product } from "../domain/models/Product";
+  import type { Product } from "../domain/models/product";
   import CardMockupPreview from "./CardMockupPreview.svelte";
 
   interface Props {

@@ -8,7 +8,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { Product } from "../domain/models/Product";
+import type { Product } from "../domain/models/product";
 
 export async function loadActiveProducts(): Promise<Product[]> {
   const firestore = await getFirestoreInstance();
