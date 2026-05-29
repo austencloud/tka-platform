@@ -30,7 +30,28 @@ Goal: backs should parallelize like fronts via the worker pool, with **complete 
 - `CardBackDecorations.svelte` is **self-contained theme-parameterized SVG** (shapes, gradients, `feGaussianBlur` filters; no external refs).
 - The start-position pictograph is the only back element bound to external SVG assets (it runs the full pictograph pipeline).
 
-So the repo's blanket "worker SVG rendering disabled" is **stale/overgeneralized** for the back's self-contained content.
+## Phase 0 result (2026-05-28) — DECISIVE
+
+Spike run in Chrome 148 (real worker, via DevTools `evaluate_script`):
+
+| Case | Result |
+|---|---|
+| `<svg><rect/></svg>` via `createImageBitmap` **in worker** | **FAIL** — "source image could not be decoded" |
+| `<svg>` + `feGaussianBlur` filter **in worker** | **FAIL** |
+| full decorations SVG **in worker** | **FAIL** |
+| full decorations SVG **on main thread** (Image element) | **OK** (1644×2244) |
+
+**Conclusion:** `createImageBitmap(svgBlob)` does **not** work in workers in the target browser — for ANY SVG, not just filtered ones. The earlier web-search optimism ("works in all current engines") was wrong for this Chromium context. The repo's `supportsWorkerRendering()=false` is **accurate and current**. The worker must decode **zero** SVG.
+
+**Revised decoration strategy (supersedes the SVG-in-worker idea):** rasterize the decorations SVG **once per theme on the main thread** (SVG string → Image element → `ImageBitmap`, the path the control proved works), cache by theme (~8 total, theme-constant), and **transfer the bitmap** to the worker. No Path2D port, no in-worker SVG decode, zero parity risk (identical to today's browser render). `buildDecorationsSVG(theme)` is still needed to produce the SVG string, but its consumer is main-thread rasterization.
+
+**Net worker responsibilities:** gradient fills + `drawImage(decorationsBitmap)` + `renderMandalaToCanvas` (Path2D) + `drawImage` of the transferred text/icon/pictograph bitmaps. The worker decodes nothing.
+
+**Honest scope caveat:** the heaviest per-card cost — the start-position pictograph (needs external SVG assets, which also can't decode in-worker) — must stay main-thread (pre-rasterized). Phase 1 (remove the 200 ms wait + modern-screenshot DOM introspection) is the guaranteed win. Phase 2's worker offload (mandala Path2D + composite) is real but smaller; Task 2.4 measures whether it beats transfer overhead before committing to it.
+
+---
+
+So the repo's blanket "worker SVG rendering disabled" is **accurate**; the back path wins not by decoding SVG in the worker, but by keeping all SVG decode on the main thread (pre-rasterized to bitmaps) and doing only Path2D + composite in the worker.
 
 ---
 

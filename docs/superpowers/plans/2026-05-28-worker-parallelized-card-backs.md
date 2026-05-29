@@ -161,8 +161,11 @@ export interface BackJob {
   // Self-contained layers painted in-worker:
   borderGradient: { type: "linear"; angleDeg: number; stops: { offset: number; color: string }[] };
   bgGradient: { type: "linear"; angleDeg: number; stops: { offset: number; color: string }[] };
-  decorationsSVG: string | null;   // null when decorationOpacity === 0 (proof mode)
-  decorationOpacity: number;
+  // Decorations pre-rasterized on MAIN thread (SVG->Image->ImageBitmap), cached
+  // per theme, transferred. null in proof mode (decorationOpacity === 0).
+  // Worker NEVER decodes SVG — Phase 0 proved createImageBitmap(svgBlob) fails
+  // in workers for ALL svg in the target browser.
+  decorations: { bitmap: ImageBitmap; opacity: number } | null;
   mandalaPaths: MandalaPaths;
   mandalaOptions: MandalaRenderOptions & { offsetX: number; offsetY: number };
   // Pre-rasterized layers:
@@ -187,7 +190,9 @@ describe("BackJob", () => {
 - [ ] **Step 3: Run** `npx vitest run src/lib/features/choreo-card/services/card-back/__tests__/back-job.test.ts` → PASS.
 - [ ] **Step 4: Commit** `git add … && git commit -m "feat(choreo-card): BackJob plain-data contract for off-thread card backs"`
 
-### Task 1.2: Decorations SVG pure port
+### Task 1.2: Decorations → SVG string + main-thread rasterize/cache
+
+> **Phase 0 outcome:** the worker cannot decode SVG. Decorations are rasterized on the MAIN thread (Image element, proven to work) once per theme, cached, and the resulting `ImageBitmap` is transferred. This task produces the SVG string AND the cached main-thread rasterizer. No Path2D port, no in-worker decode.
 
 **Files:**
 - Create: `src/lib/features/choreo-card/services/card-back/card-back-decorations-svg.ts`
@@ -199,9 +204,20 @@ describe("BackJob", () => {
 export function buildDecorationsSVG(theme: string, w: number, h: number): string { /* per-theme branches */ }
 ```
 
-- [ ] **Step 2: Snapshot test** asserting output contains the theme's signature markers (cosmic: `aurora-ray`, `coma-glow`; ocean: `f1-body`, `jelly-glow`; winter snowflake `stroke="white"`; etc.) and a valid single root `<svg`.
-- [ ] **Step 3: Parity micro-check** — render the live `CardBackDecorations.svelte` `.decorations` `outerHTML` for one theme (via the existing card-back test route) and diff element counts/attrs against `buildDecorationsSVG` output; must match.
-- [ ] **Step 4: Run tests → PASS. Commit.**
+- [ ] **Step 2: Add the cached main-thread rasterizer.** Reuse the existing `getSvgImageCache()` (`src/lib/shared/render/services/implementations/SvgImageCache.ts`) which decodes SVG via Image element on the main thread. Cache the resulting `ImageBitmap` by `theme` (decorations are theme-constant). Signature:
+
+```ts
+export async function rasterizeDecorations(theme: string, w: number, h: number): Promise<ImageBitmap | null> {
+  // returns null in proof mode (caller checks decorationOpacity === 0)
+  const svg = buildDecorationsSVG(theme, w, h);
+  const img = await getSvgImageCache().getImage(svg, `card-back-deco:${theme}:${w}x${h}`);
+  return img instanceof ImageBitmap ? img : await createImageBitmap(img);
+}
+```
+
+- [ ] **Step 3: Snapshot test** asserting `buildDecorationsSVG` output contains the theme's signature markers (cosmic: `aurora-ray`, `coma-glow`; ocean: `f1-body`, `jelly-glow`; winter snowflake `stroke="white"`; etc.) and a valid single root `<svg`.
+- [ ] **Step 4: Parity micro-check** — render the live `CardBackDecorations.svelte` `.decorations` `outerHTML` for one theme (via the existing card-back test route) and diff element counts/attrs against `buildDecorationsSVG` output; must match.
+- [ ] **Step 5: Run tests → PASS. Commit.**
 
 ### Task 1.3: Layout (cqi → px)
 
@@ -246,7 +262,7 @@ export function computeCardBackLayout(data: CardBackData, dims: { width: number;
 - Create: `src/lib/features/choreo-card/services/card-back/card-back-job-builder.ts`
 - Test: `.../__tests__/card-back-job-builder.test.ts`
 
-- [ ] **Step 1: Implement `buildBackJob(sequence, opts)`** — calls `deriveCardBackData(sequence)`, runs mandala geometry (`getMandalaGeometryCalculator().calculate(steps, bluePropType, redPropType, pathOptions, { dx, dy:0 })` mirroring `SequenceMandala.svelte:220-248`), parses theme gradients (`getCardBackThemeVisuals(theme)`) into `{angleDeg, stops}` (port the CSS `linear-gradient` parse), calls `computeCardBackLayout`, calls `buildDecorationsSVG` (null if `decorationOpacity===0`), and the pre-rasterizers, assembling `BackJob`.
+- [ ] **Step 1: Implement `buildBackJob(sequence, opts)`** — calls `deriveCardBackData(sequence)`, runs mandala geometry (`getMandalaGeometryCalculator().calculate(steps, bluePropType, redPropType, pathOptions, { dx, dy:0 })` mirroring `SequenceMandala.svelte:220-248`), parses theme gradients (`getCardBackThemeVisuals(theme)`) into `{angleDeg, stops}` (port the CSS `linear-gradient` parse), calls `computeCardBackLayout`, calls `rasterizeDecorations(theme,w,h)` (the field is null when `decorationOpacity===0`), and the pre-rasterizers, assembling `BackJob`. All SVG/font rasterization happens here on the main thread.
 - [ ] **Step 2: Test** with a fixture sequence (reuse an existing test fixture; grep `__tests__` for a `SequenceData` fixture) → assert `job.width===1644`, `mandalaPaths.blue.length>0`, `bitmaps` includes a `start-pos-pictograph` when `sequence.startPosition` set, `decorationsSVG===null` for proof mode.
 - [ ] **Step 3: Run → PASS. Commit.**
 
@@ -256,7 +272,7 @@ export function computeCardBackLayout(data: CardBackData, dims: { width: number;
 - Create: `src/lib/features/choreo-card/services/card-back/card-back-raster.ts`
 - Test: `.../__tests__/card-back-raster.test.ts`
 
-- [ ] **Step 1: Implement `paintBackJob(job, createCanvas)`** where `createCanvas(w,h)` returns an `OffscreenCanvas` (injected so it runs in both contexts). Paint order EXACTLY: (1) border gradient fills full canvas; (2) bg gradient fills inner area inside `bleedPx`; (3) if `decorationsSVG`, `createImageBitmap` it and `drawImage` at full inner rect with `globalAlpha=decorationOpacity`; (4) `renderMandalaToCanvas(ctx, job.mandalaPaths, job.mandalaOptions)`; (5) for each `PlacedBitmap`, `drawImage(bitmap, placement.x, y, w, h)`. **Import only** `renderMandalaToCanvas` + `RenderFactory` helpers — NO `$app`/`$env`/Firebase/Svelte imports.
+- [ ] **Step 1: Implement `paintBackJob(job, createCanvas)`** where `createCanvas(w,h)` returns an `OffscreenCanvas` (injected so it runs in both contexts). Paint order EXACTLY: (1) border gradient fills full canvas; (2) bg gradient fills inner area inside `bleedPx`; (3) if `job.decorations`, `drawImage(job.decorations.bitmap)` at full inner rect with `globalAlpha=job.decorations.opacity` (the bitmap is already decoded on the main thread — the worker does NOT decode SVG); (4) `renderMandalaToCanvas(ctx, job.mandalaPaths, job.mandalaOptions)`; (5) for each `PlacedBitmap`, `drawImage(bitmap, placement.x, y, w, h)`. **Import only** `renderMandalaToCanvas` — NO SVG-decode helpers, NO `$app`/`$env`/Firebase/Svelte imports. The worker decodes nothing.
 - [ ] **Step 2: Test** in vitest with an `OffscreenCanvas` polyfill (or guard: skip if unavailable, run in browser harness instead): paint a minimal job, assert canvas is non-blank (sample alpha channel > 0).
 - [ ] **Step 3: Run → PASS (or browser-harness verify). Commit.**
 
@@ -330,6 +346,6 @@ npm run check > /tmp/check.log 2>&1; grep -niE "error" /tmp/check.log
 
 - **Parity is the hard requirement.** The pixel-diff harness (Task 1.7 Step 2-3) is the real test; unit tests cover the pure functions. Never report parity without harness output.
 - **Caching matters:** brand/url/decorations/badge/loop-icon bitmaps are theme/level-constant — build once per batch, reuse. Only mandala + pictograph + glyphs + step-count are per-card.
-- **The mandala uses `renderMandalaToCanvas` (Path2D), NOT SVG raster** — it's the most complex per-card layer and this sidesteps the SVG-in-worker risk for it. Decorations are the only `createImageBitmap`-SVG dependency (Phase 0 gates it).
+- **The worker decodes NO SVG** (Phase 0 proved `createImageBitmap(svgBlob)` fails in workers for all svg in the target browser). Mandala → `renderMandalaToCanvas` (Path2D) in-worker. Decorations → rasterized on the MAIN thread (Image element) once per theme, cached, transferred as `ImageBitmap`. Text/icons/pictograph → pre-rasterized on main, transferred. Worker only does gradient fills + Path2D mandala + `drawImage` composites.
 - **Do not re-enable `RenderFactory.supportsWorkerRendering()` or `CompositionDispatcher.detectWorkerSupport()`** — those gate the FRONT pipeline (different, still-blocked). The back path makes its own worker-safety guarantee.
 - Read `DifficultyBadge.svelte`, `ReversalPatternGlyph.svelte`, `SwapIcon.svelte`, `CheckerboardCircleIcon.svelte` before Task 1.4 — their exact markup is the parity source.
