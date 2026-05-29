@@ -14,6 +14,8 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   } from "../state/sequence-viewer-overlay-state.svelte";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
   import ViewerContentRail from "./ViewerContentRail.svelte";
+  import type { OrchestratorContext } from "./SequenceViewerOrchestrator.svelte";
+  import type { ContentType } from "../state/viewer-state.svelte";
   import VideoGallery from "./VideoGallery.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
@@ -123,6 +125,32 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     } catch (error) {
       console.error("[SequenceViewerDrawerHost] Copy for Claude failed:", error);
     }
+  }
+
+  // Named rail/select handlers extracted from inline arrows so a later mobile
+  // bottom bar can reuse the same routing. `ctx` is the orchestrator snippet
+  // context (not script-scoped), so it is passed in at the call site.
+  function selectSplitMode(ctx: OrchestratorContext) {
+    ctx.viewerState.exitExport();
+    ctx.viewerState.setViewerMode('split');
+    setTimeout(() => rerenderTrigger++, 280);
+  }
+
+  function selectViewerMode(ctx: OrchestratorContext, mode: ContentType) {
+    if (mode === 'animation') {
+      ctx.viewerState.enterExport('animation-export', 'animation');
+    } else if (mode === 'animation-3d') {
+      ctx.viewerState.enterExport('animation-export', 'animation-3d');
+    } else if (mode === 'card') {
+      ctx.viewerState.enterExport('image-export');
+    } else if (mode === 'mandala') {
+      ctx.viewerState.exitExport();
+      ctx.viewerState.setViewerMode('mandala');
+    }
+  }
+
+  function togglePractice(ctx: OrchestratorContext) {
+    ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart();
   }
 
   let deleteConfirmOpen = $state(false);
@@ -429,24 +457,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       activeMode={ctx.viewerState.viewerMode}
                       webgl2Available={ctx.viewer3DState.webgl2Available}
                       practiceActive={ctx.practiceActive}
-                      onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
-                      onSelectSplit={() => {
-                        ctx.viewerState.exitExport();
-                        ctx.viewerState.setViewerMode('split');
-                        setTimeout(() => rerenderTrigger++, 280);
-                      }}
-                      onSelectMode={(mode) => {
-                        if (mode === 'animation') {
-                          ctx.viewerState.enterExport('animation-export', 'animation');
-                        } else if (mode === 'animation-3d') {
-                          ctx.viewerState.enterExport('animation-export', 'animation-3d');
-                        } else if (mode === 'card') {
-                          ctx.viewerState.enterExport('image-export');
-                        } else if (mode === 'mandala') {
-                          ctx.viewerState.exitExport();
-                          ctx.viewerState.setViewerMode('mandala');
-                        }
-                      }}
+                      onPracticeToggle={() => togglePractice(ctx)}
+                      onSelectSplit={() => selectSplitMode(ctx)}
+                      onSelectMode={(mode) => selectViewerMode(ctx, mode)}
                     />
                   {/if}
                   {#if ctx.viewerState.viewerMode === 'videos' && !isSidebarExportActive}
