@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { TrainingDataPersister } from './services/implementations/TrainingDataPersister';
+import { TrainingDataPersister } from './services/training-data-persister';
 
 let instance: TrainingDataPersister | null = null;
 

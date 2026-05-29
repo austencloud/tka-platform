@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { Phase1OverlayRenderer } from './services/implementations/Phase1OverlayRenderer';
+import { Phase1OverlayRenderer } from './services/phase1-overlay-renderer';
 
 let instance: Phase1OverlayRenderer | null = null;
 

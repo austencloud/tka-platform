@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { VideoHandAnalyzer } from './services/implementations/VideoHandAnalyzer';
-import { getImageModeHandLandmarker } from './getImageModeHandLandmarker';
+import { VideoHandAnalyzer } from './services/video-hand-analyzer';
+import { getImageModeHandLandmarker } from './get-image-mode-hand-landmarker';
 
 let instance: VideoHandAnalyzer | null = null;
 

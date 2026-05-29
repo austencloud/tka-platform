@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ImageModeHandLandmarker } from './services/implementations/ImageModeHandLandmarker';
+import { ImageModeHandLandmarker } from './services/image-mode-hand-landmarker';
 
 let instance: ImageModeHandLandmarker | null = null;
 

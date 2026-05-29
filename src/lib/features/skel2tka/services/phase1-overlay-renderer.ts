@@ -11,8 +11,8 @@
  * - Beat boundary indicator bar
  */
 
-import type { OverlayRenderContext } from "../contracts/types";
-import type { DetectedBeat } from "../../domain/models";
+import type { OverlayRenderContext } from "./types";
+import type { DetectedBeat } from "../domain/models";
 
 /** Grid location to normalized position mapping (0-1 range) */
 const GRID_POSITIONS: Record<string, { x: number; y: number }> = {

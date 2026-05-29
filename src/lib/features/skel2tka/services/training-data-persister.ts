@@ -11,7 +11,7 @@
 import type {
   TrainingPair,
   TrainingDataStats,
-} from "../../domain/training-models";
+} from "../domain/training-models";
 const DB_NAME = "skel2tka-training";
 const DB_VERSION = 1;
 

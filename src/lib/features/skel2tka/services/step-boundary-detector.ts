@@ -12,7 +12,7 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
 import type { HandTimeline, DetectedBeat, StepPosition } from "../domain/models";
-import type { StepDetectionOptions } from "./contracts/types";
+import type { StepDetectionOptions } from "./types";
 
 const DEFAULT_MIN_FRAMES_PER_BEAT = 3;
 const DEFAULT_MIN_CONFIDENCE = 0.5;

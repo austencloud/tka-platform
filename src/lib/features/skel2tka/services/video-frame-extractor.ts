@@ -9,7 +9,7 @@
  */
 
 import type { ExtractedFrame, ProgressCallback } from "../domain/models";
-import type { FrameExtractionOptions } from "./contracts/types";
+import type { FrameExtractionOptions } from "./types";
 
 const DEFAULT_FPS = 15;
 

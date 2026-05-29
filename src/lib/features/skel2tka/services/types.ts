@@ -1,5 +1,5 @@
 import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
-import type { DetectedBeat } from "../../domain/models";
+import type { DetectedBeat } from "../domain/models";
 
 /**
  * StepBoundaryDetector - Find beat transitions in a hand timeline
