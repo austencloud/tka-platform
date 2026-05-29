@@ -11,7 +11,7 @@
   import { generateOrientationKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { calculateAllArrowPoints } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
-  import { specialPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacer";
+  import { specialPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/special-placer";
   import { generateRotationAngleOverrideKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/rotation-angle-override-key-generator";
   import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 

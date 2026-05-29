@@ -5,14 +5,14 @@
  * Ports the exact functionality from desktop DefaultPlacer.
  */
 
-import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
-import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
-import { jsonCache } from "$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache";
-import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache'
+import type { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
+import { GridMode } from "../../../../grid/domain/enums/grid-enums";
+import { jsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
+import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/simple-json-cache'
 import type {
   AllPlacementData,
   JsonPlacementData,
-} from "../../domain/models/PlacementDataTypes";
+} from "../domain/models/PlacementDataTypes";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("ArrowPlacer");

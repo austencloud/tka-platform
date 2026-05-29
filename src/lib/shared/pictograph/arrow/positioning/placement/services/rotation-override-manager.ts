@@ -9,16 +9,16 @@
  * This is the web equivalent of the desktop app's special placement JSON modification.
  */
 
-import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { TurnsTupleGenerator } from "./TurnsTupleGenerator";
+import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { TurnsTupleGenerator } from "./implementations/TurnsTupleGenerator";
 import {
   generateOrientationKey,
   resolveEffectiveOriKey,
   mapToLegacyBucket,
-} from "../../../key-generation/services/special-placement-ori-key-generator";
-import type { IRotationAngleOverrideKeyGenerator } from "../../../key-generation/services/rotation-angle-override-key-generator";
-import { deriveGridMode as _deriveGridMode } from "../../../../../grid/services/grid-mode-deriver";
+} from "../../key-generation/services/special-placement-ori-key-generator";
+import type { IRotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
+import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
 const STORAGE_KEY = "tka_rotation_overrides";
 
 interface RotationOverrideData {
@@ -252,8 +252,8 @@ export class RotationOverrideManager implements IRotationOverrideManager {
 // Dependencies are imported from their direct exports.
 // ============================================================================
 
-import { turnsTupleGenerator } from "./TurnsTupleGenerator";
-import { rotationAngleOverrideKeyGenerator } from "../../../key-generation/services/rotation-angle-override-key-generator";
+import { turnsTupleGenerator } from "./implementations/TurnsTupleGenerator";
+import { rotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
 
 
 // HMR-aware singleton instance (persists localStorage state across HMR)

@@ -6,9 +6,9 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
  * Mirrors the exact functionality from desktop DefaultPlacer.
  */
 
-import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
-import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache'
-import { ArrowPlacer } from "./ArrowPlacer";
+import type { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
+import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/simple-json-cache'
+import { ArrowPlacer } from "./arrow-placer";
 
 /**
  * Interface for Default Placement Service that mirrors Python implementation

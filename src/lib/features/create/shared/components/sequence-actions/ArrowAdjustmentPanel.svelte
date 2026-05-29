@@ -29,7 +29,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
-  import { rotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/RotationOverrideManager";
+  import { rotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/rotation-override-manager";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 

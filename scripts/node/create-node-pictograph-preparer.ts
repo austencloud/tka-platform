@@ -43,14 +43,14 @@ import { AttributeKeyGenerator } from "../../src/lib/shared/pictograph/arrow/pos
 import { SpecialPlacementOriKeyGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
 import { RotationAngleOverrideKeyGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
 import { TurnsTupleKeyGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/TurnsTupleKeyGenerator";
-import { ArrowPlacer } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/ArrowPlacer";
-import { DefaultPlacer } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/DefaultPlacer";
-import { SpecialPlacer } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacer";
-import { SpecialPlacementDataProvider } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacementDataProvider";
+import { ArrowPlacer } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/arrow-placer";
+import { DefaultPlacer } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/default-placer";
+import { SpecialPlacer } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/special-placer";
+import { SpecialPlacementDataProvider } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/special-placement-data-provider";
 import { LetterClassifier } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/LetterClassifier";
 import { TurnsTupleGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import { SpecialPlacementLookup } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacementLookup";
-import { RotationOverrideManager } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/RotationOverrideManager";
+import { SpecialPlacementLookup } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/special-placement-lookup";
+import { RotationOverrideManager } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/rotation-override-manager";
 import { PropType } from "../../src/lib/shared/pictograph/prop/domain/enums/PropType";
 
 import type { ISvgConfig } from "../../src/lib/shared/pictograph/shared/domain/models/svg-models";

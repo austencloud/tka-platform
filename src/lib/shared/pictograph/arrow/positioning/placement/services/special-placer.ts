@@ -15,19 +15,19 @@
  */
 
 import type { Point as FabricPoint } from "fabric";
-import { deriveGridMode as _deriveGridMode } from "../../../../../grid/services/grid-mode-deriver";
-import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
-import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { MotionData } from "../../../../../shared/domain/models/MotionData";
+import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
+import { GridMode } from "../../../../grid/domain/enums/grid-enums";
+import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import {
   generateOrientationKey,
   resolveEffectiveOriKey,
   mapToLegacyBucket,
-} from "../../../key-generation/services/special-placement-ori-key-generator";
-import type { SpecialPlacementDataProvider } from "./SpecialPlacementDataProvider";
-import type { TurnsTupleGenerator } from "./TurnsTupleGenerator";
-import type { SpecialPlacementLookup } from "./SpecialPlacementLookup";
-import { getGlobalAdjustmentRepository } from "../../../global/services/global-adjustment-singleton";
+} from "../../key-generation/services/special-placement-ori-key-generator";
+import type { SpecialPlacementDataProvider } from "./special-placement-data-provider";
+import type { TurnsTupleGenerator } from "./implementations/TurnsTupleGenerator";
+import type { SpecialPlacementLookup } from "./special-placement-lookup";
+import { getGlobalAdjustmentRepository } from "../../global/services/global-adjustment-singleton";
 
 export class SpecialPlacer {
   constructor(
@@ -402,9 +402,9 @@ export class SpecialPlacer {
 // Use this instead of specialPlacer to avoid DI container rebuilds.
 // ============================================================================
 
-import { specialPlacementDataProvider } from "./SpecialPlacementDataProvider";
-import { turnsTupleGenerator } from "./TurnsTupleGenerator";
-import { specialPlacementLookup } from "./SpecialPlacementLookup";
+import { specialPlacementDataProvider } from "./special-placement-data-provider";
+import { turnsTupleGenerator } from "./implementations/TurnsTupleGenerator";
+import { specialPlacementLookup } from "./special-placement-lookup";
 
 export const specialPlacer = new SpecialPlacer(
   specialPlacementDataProvider,

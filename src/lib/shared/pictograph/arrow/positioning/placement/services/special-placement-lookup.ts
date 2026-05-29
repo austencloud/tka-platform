@@ -6,12 +6,12 @@
  */
 
 import { Point } from "fabric";
-import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../../shared/domain/models/PictographData";
+import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import {
   isHybridLetter,
   startsFromStandardOrientation,
-} from "../letter-classifier";
+} from "./letter-classifier";
 
 export class SpecialPlacementLookup {
   constructor() {}
