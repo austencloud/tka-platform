@@ -7,14 +7,14 @@
 
 import { browser } from "$app/environment";
 import { captureEvent } from "./posthog";
-import type { ActivityQueryOptions } from "./contracts/types";
+import type { ActivityQueryOptions } from "./types";
 import type {
   ActivityEvent,
   ActivityEventType,
   ActivityCategory,
   ActivityMetadata,
   ActivitySummary,
-} from "../domain/models/ActivityEvent";
+} from "../domain/models/activity-event";
 
 /** Log a single activity event to PostHog */
 export async function logActivity(

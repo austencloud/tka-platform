@@ -7,7 +7,7 @@
 import type {
   ActivityEventType,
   ActivityCategory,
-} from "../../domain/models/ActivityEvent";
+} from "../domain/models/activity-event";
 
 /**
  * Options for querying activity events

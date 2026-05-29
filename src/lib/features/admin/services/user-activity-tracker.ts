@@ -22,7 +22,7 @@ import type {
   ActivityEvent,
   ActivityCategory,
   ActivityEventType,
-} from "$lib/shared/analytics/domain/models/ActivityEvent";
+} from "$lib/shared/analytics/domain/models/activity-event";
 import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
 export class UserActivityTracker {
   constructor(private presenceService: PresenceTracker) {}
