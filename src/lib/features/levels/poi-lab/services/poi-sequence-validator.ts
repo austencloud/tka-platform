@@ -6,11 +6,11 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { validateMotion, validateTransition } from "../poi-constraint-validator";
+import { validateMotion, validateTransition } from "./poi-constraint-validator";
 import type {
   PoiValidationResult,
   PoiConstraintViolation,
-} from "../../domain/poi-models";
+} from "../domain/poi-models";
 
 export class PoiSequenceValidator {
   constructor() {}

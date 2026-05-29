@@ -15,12 +15,12 @@
  * - Subscribes to Firestore changes for cross-device sync
  */
 
-import { TKA_CONCEPTS, isConceptUnlocked } from "../../domain/concepts";
+import { TKA_CONCEPTS, isConceptUnlocked } from "../domain/concepts";
 import type {
   ConceptProgress,
   ConceptStatus,
   LearningProgress,
-} from "../../domain/types";
+} from "../domain/types";
 import type { UserKnowledgeProfilePersister } from "./user-knowledge-profile-persister";
 
 const STORAGE_KEY = "tka_learning_progress";

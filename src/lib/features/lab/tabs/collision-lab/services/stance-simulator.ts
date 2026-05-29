@@ -40,7 +40,7 @@
 
 import { Vector3 } from "three";
 import type { RestPoseGeometry, SimPropTarget, SimResult, SimCollision } from "./types";
-import type { StancePose } from "../../domain/types";
+import type { StancePose } from "../domain/types";
 
 // --- Collision radii - mirror the live CollisionDetector exactly so the
 // simulator and the live readout agree on whether a stance is clear.

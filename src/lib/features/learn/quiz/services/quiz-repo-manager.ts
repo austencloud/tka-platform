@@ -5,13 +5,13 @@
  * Handles lesson types, configurations, and category management.
  */
 
-import type { LetterCategory } from "../../../codex/domain/types/codex-types";
-import type { QuizConfig } from "../../domain/models/quiz-models";
+import type { LetterCategory } from "../../codex/domain/types/codex-types";
+import type { QuizConfig } from "../domain/models/quiz-models";
 import {
   QuizAnswerFormat,
   QuizQuestionFormat,
   QuizType,
-} from "../../domain/enums/quiz-enums";
+} from "../domain/enums/quiz-enums";
 import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/CodexLetterMappingRepo";
 
 export class QuizRepoManager {

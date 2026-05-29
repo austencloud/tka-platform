@@ -15,7 +15,7 @@
 import type {
   PoseLabel,
   PoseLabelsFile,
-} from "../../domain/types";
+} from "../domain/types";
 
 const STORAGE_KEY = "tka:collision-lab:diamond-in-out-labels";
 

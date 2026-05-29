@@ -14,7 +14,7 @@ import type {
   rotateAllPictographs,
   mirrorAllPictographs,
   colorSwapAllPictographs,
-} from "../codex-pictograph-updater";
+} from "./codex-pictograph-updater";
 
 interface ICodexPictographUpdater {
   rotateAllPictographs: typeof rotateAllPictographs;

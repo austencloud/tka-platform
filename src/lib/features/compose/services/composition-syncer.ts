@@ -20,14 +20,14 @@ import {
   deleteComposition as dexieDeleteComposition,
   toggleFavorite as dexieToggleFavorite,
   getCompositions as dexieGetCompositions,
-} from "../dexie-composition-repository";
+} from "./dexie-composition-repository";
 import {
   isAuthenticated as firebaseIsAuthenticated,
   saveComposition as firebaseSaveComposition,
   deleteComposition as firebaseDeleteComposition,
   getCompositions as firebaseGetCompositions,
   updateFavorite as firebaseUpdateFavorite,
-} from "../firebase-composition-repository";
+} from "./firebase-composition-repository";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 
 export class CompositionSyncer {

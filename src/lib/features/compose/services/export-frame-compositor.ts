@@ -4,7 +4,7 @@ import {
   renderStepNumberToCanvas,
   renderWordHeaderToCanvas,
   renderProgressBarToCanvas,
-} from "../canvas-renderer";
+} from "./canvas-renderer";
 import type { GlyphAsset } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
 import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/implementations/CompositeVideoRenderer";

@@ -5,14 +5,14 @@
  * Handles both fixed question and countdown quiz modes.
  */
 
-import { QuizMode, QuizType } from "../../domain/enums/quiz-enums";
+import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
 import {
   type QuizProgress,
   type QuizResults,
   type QuizSession,
   type QuizTimerState,
-} from "../../domain/models/quiz-models";
-import { getTotalQuestions, getQuizTime } from "../quiz-configurator";
+} from "../domain/models/quiz-models";
+import { getTotalQuestions, getQuizTime } from "./quiz-configurator";
 
 export class QuizSessionManager {
   private activeSessions: Map<string, QuizSession> = new Map();

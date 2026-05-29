@@ -21,8 +21,8 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import { getUserLearningProgressPath } from "../../data/firestore-paths";
-import type { LearningProgress, ConceptProgress } from "../../domain/types";
+import { getUserLearningProgressPath } from "../data/firestore-paths";
+import type { LearningProgress, ConceptProgress } from "../domain/types";
 import type { SerializedLearningProgress } from "./types";
 
 export class UserKnowledgeProfilePersister

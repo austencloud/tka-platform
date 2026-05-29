@@ -49,7 +49,7 @@
 
 import type { OptimizerBounds, OptimizerInput, OptimizerResult } from "./types";
 import type { SimResult } from "./types";
-import type { StancePose } from "../../domain/types";
+import type { StancePose } from "../domain/types";
 import type { StanceSimulator } from "./stance-simulator";
 // Loss function weights. Tuned so that "unreachable by 1 cm" produces a
 // larger loss than "clear but slightly imbalanced", which is the right

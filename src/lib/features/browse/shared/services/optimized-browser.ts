@@ -11,7 +11,7 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import type {
-  PaginatedSequences, SequenceMetadata } from "../contracts/types";
+  PaginatedSequences, SequenceMetadata } from "./types";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 // API Response types
 interface PaginatedSequencesResponse {

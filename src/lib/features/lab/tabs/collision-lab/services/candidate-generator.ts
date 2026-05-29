@@ -42,7 +42,7 @@ import type {
   PoseDefinition,
   StanceCandidate,
   StancePose,
-} from "../../domain/types";
+} from "../domain/types";
 
 /**
  * Per-seed descent budget when generating a diverse set. Six seeds at

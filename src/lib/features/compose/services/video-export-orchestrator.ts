@@ -25,7 +25,7 @@ import type { AnimationPlaybackController } from "$lib/shared/animation-engine/s
 import {
   getHeaderHeight,
   getProgressBarHeight,
-} from "../canvas-renderer";
+} from "./canvas-renderer";
 import type { VideoExporter } from "$lib/shared/animation-engine/services/implementations/VideoExporter";
 import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/implementations/CompositeVideoRenderer";
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";

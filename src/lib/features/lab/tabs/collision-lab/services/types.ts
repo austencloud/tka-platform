@@ -15,7 +15,7 @@
  */
 
 import type { Vector3 } from "three";
-import type { StancePose } from "../../domain/types";
+import type { StancePose } from "../domain/types";
 
 
 /**
