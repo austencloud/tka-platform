@@ -3,6 +3,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { DEFAULT_VARIATION_CONFIG, type VariationConfig } from "../../services/deck-variation";
 
 type Step = "configure" | "review" | "released";
 
@@ -16,6 +17,7 @@ interface PersistedSession {
   notes: string;
   name: string;
   description: string;
+  variationConfig?: VariationConfig;
 }
 
 function loadSession(): PersistedSession | null {
@@ -47,6 +49,7 @@ class DeckReleaserState {
   bluePropOverride = $state<PropType | null>(null);
   redPropOverride = $state<PropType | null>(null);
   brokenLoopCount = $state(0);
+  variationConfig = $state<VariationConfig>({ ...DEFAULT_VARIATION_CONFIG });
   get theme() {
     return this.themeOverride ?? settingsService.settings.backgroundType ?? "cosmic";
   }
@@ -81,6 +84,7 @@ class DeckReleaserState {
       this.notes = saved.notes;
       this.name = saved.name ?? "";
       this.description = saved.description ?? "";
+      if (saved.variationConfig) this.variationConfig = saved.variationConfig;
     }
   }
 
@@ -93,6 +97,7 @@ class DeckReleaserState {
       notes: this.notes,
       name: this.name,
       description: this.description,
+      variationConfig: this.variationConfig,
     });
   }
 
@@ -110,6 +115,7 @@ class DeckReleaserState {
     this.themeOverride = null;
     this.bluePropOverride = null;
     this.redPropOverride = null;
+    this.brokenLoopCount = 0;
     this.step = "configure";
     this.persist();
   }
