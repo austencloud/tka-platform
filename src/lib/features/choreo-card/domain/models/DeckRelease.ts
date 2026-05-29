@@ -6,6 +6,24 @@ export interface CardFooter {
   iconPath?: string;
 }
 
+/**
+ * A frozen, deterministic variation recipe applied to a card's base sequence at
+ * render time. Absent → the card renders its base sequence unchanged (every deck
+ * released before this feature). LOOP cards roll one randomly; TnD cards set
+ * `turnPattern` deterministically. There is NO parallel `card.turnPattern` field —
+ * both producers write here.
+ */
+export interface CardVariation {
+  /** Book reversal id, e.g. "long-book". LOOP only. */
+  reversalPatternId?: string;
+  /** Raw tiled reversal symbol string (P/R/B/-), re-resolved at apply. LOOP only. */
+  reversalSequence?: string;
+  /** Turn pattern: tiled per-beat "1|1-0|0" (LOOP) OR a single uniform unit "1|2" (TnD). */
+  turnPattern?: string;
+  /** Display label for the applied turn pattern, e.g. "Pulse 1" or "1|2". */
+  turnLabel?: string;
+}
+
 export interface DeckReleaseCard {
   sequenceId: string;
   sourceCatalogId: string;
@@ -13,6 +31,8 @@ export interface DeckReleaseCard {
   word: string;
   position: number;
   footer: CardFooter;
+  /** Optional frozen variation recipe; absent → renders base. */
+  variation?: CardVariation;
 }
 
 export interface DeckRelease {

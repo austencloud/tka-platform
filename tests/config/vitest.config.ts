@@ -21,6 +21,7 @@ export default defineConfig({
       "tests/unit/**/*.{test,spec}.{js,ts}",
       "tests/integration/**/*.{test,spec}.{js,ts}",
       "tests/debug/**/*.{test,spec}.{js,ts}",
+      "src/**/__tests__/**/*.{test,spec}.{js,ts}",
     ],
     exclude: [
       "legacy_app/**/*",
