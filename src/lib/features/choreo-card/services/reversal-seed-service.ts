@@ -32,6 +32,7 @@ import {
 import {
   getReversalFlagsForBeat,
   applyReversalToMotion,
+  cumulativeParities,
   type ResolvedReversalPattern,
 } from "../domain/reversal-transform";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
@@ -83,13 +84,20 @@ function transformSequence(
   const clone = JSON.parse(JSON.stringify(seq)) as SequenceData;
   const steps = (clone.steps ?? []) as readonly StepData[];
 
-  // Per-beat reversal: each beat flips from its OWN current value (matching the
-  // reference). Reversal flags are read from the pattern tiled over the beats.
+  // Reversal is CUMULATIVE (matching reversal-detector.ts: a beat reverses when
+  // its spin differs from the previous beat). The pattern symbol TOGGLES a running
+  // per-hand parity; a beat's motion is flipped from base whenever parity is true.
+  // The stored reversal flag marks the toggle beat (the spin-change), which is what
+  // the detector re-derives. Absolute per-beat flipping made PPPP uniform-anti,
+  // which the detector reads back as "continuous" — the bug this replaces.
+  const parities = cumulativeParities(pattern.sequence, steps.length);
   const transformedSteps = steps.map((step, beatIndex) => {
-    const { blueReversal, redReversal } = getReversalFlagsForBeat(
+    const { blueReversal: blueToggle, redReversal: redToggle } = getReversalFlagsForBeat(
       pattern.sequence,
       beatIndex,
     );
+    const blueParity = parities.blue[beatIndex] ?? false;
+    const redParity = parities.red[beatIndex] ?? false;
 
     const mutable = step as unknown as {
       motions?: { blue?: MutableMotion; red?: MutableMotion };
@@ -103,10 +111,10 @@ function transformSequence(
     const blue = mutable.motions?.blue;
     const red = mutable.motions?.red;
 
-    flipMotion(blue, blueReversal);
-    flipMotion(red, redReversal);
-    mutable.blueReversal = blueReversal;
-    mutable.redReversal = redReversal;
+    flipMotion(blue, blueParity);
+    flipMotion(red, redParity);
+    mutable.blueReversal = blueToggle;
+    mutable.redReversal = redToggle;
 
     // Re-derive the letter from the CSV. Match is on positions + motionType +
     // locations only (NOT rotationDirection) — consistent with the reference.

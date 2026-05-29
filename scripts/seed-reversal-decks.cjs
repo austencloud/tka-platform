@@ -148,6 +148,13 @@ function applyReversalToSequence(steps, patternId) {
   const pattern = REVERSAL_PATTERNS[patternId];
   const seq = pattern.sequence;
 
+  // Reversal is CUMULATIVE, matching reversal-detector.ts: a beat is a reversal
+  // when its prop spin differs from the previous beat. So a pattern symbol toggles
+  // a running per-hand parity; the beat's motion is flipped from base whenever that
+  // parity is currently true. (Absolute per-beat flipping makes PPPP uniform-anti,
+  // which the detector reads back as "continuous" — the bug this replaces.)
+  let blueParity = false;
+  let redParity = false;
   let beatIndex = 0;
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
@@ -157,13 +164,18 @@ function applyReversalToSequence(steps, patternId) {
     const red = step.motions?.red;
 
     const symbol = seq[beatIndex % seq.length];
-    const blueReversed = symbol === "P" || symbol === "B";
-    const redReversed = symbol === "P" || symbol === "R";
+    const blueToggle = symbol === "P" || symbol === "B";
+    const redToggle = symbol === "P" || symbol === "R";
 
-    step.blueReversal = blueReversed;
-    step.redReversal = redReversed;
+    if (blueToggle) blueParity = !blueParity;
+    if (redToggle) redParity = !redParity;
 
-    if (blue && blueReversed) {
+    // The stored reversal flag marks the spin-change beat (the toggle point),
+    // which is exactly what reversal-detector.ts re-derives from rotation deltas.
+    step.blueReversal = blueToggle;
+    step.redReversal = redToggle;
+
+    if (blue && blueParity) {
       if (blue.motionType === "pro" || blue.motionType === "anti") {
         blue.motionType = blue.motionType === "pro" ? "anti" : "pro";
       }
@@ -172,7 +184,7 @@ function applyReversalToSequence(steps, patternId) {
       }
     }
 
-    if (red && redReversed) {
+    if (red && redParity) {
       if (red.motionType === "pro" || red.motionType === "anti") {
         red.motionType = red.motionType === "pro" ? "anti" : "pro";
       }
@@ -282,19 +294,13 @@ async function main() {
       transformedSequences.push(cloned);
     }
 
-    // Regroup into families by hand path
-    const familyMap = new Map();
-    for (const seq of transformedSequences) {
-      const family = seq.handPathFamily || "unknown";
-      if (!familyMap.has(family)) familyMap.set(family, []);
-      familyMap.get(family).push(seq);
-    }
-
-    const families = [...familyMap.entries()].map(([label, seqs]) => ({
-      id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      label,
-      typeCombo: seqs[0]?.typeCombo || "",
-      sequenceIds: seqs.map(s => s.id),
+    // Reversal preserves hand-path family membership and sequence ids, so the
+    // correct family grouping is exactly the source deck's. Reusing it avoids
+    // the handPathFamily collapse (source seqs lack that field → all "unknown").
+    const transformedIds = new Set(transformedSequences.map((s) => s.id));
+    const families = (sourceDeck.families ?? []).map((f) => ({
+      ...f,
+      sequenceIds: (f.sequenceIds ?? []).filter((id) => transformedIds.has(id)),
     }));
 
     console.log(`  ${transformedSequences.length} sequences in ${families.length} families`);

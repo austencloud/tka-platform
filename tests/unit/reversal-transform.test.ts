@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   applyReversalToMotion,
   getReversalFlagsForBeat,
+  cumulativeParities,
   resolvePattern,
   type ResolvedReversalPattern,
 } from "$lib/features/choreo-card/domain/reversal-transform";
@@ -33,6 +34,42 @@ describe("getReversalFlagsForBeat", () => {
   });
   it("throws on unknown symbol", () => {
     expect(() => getReversalFlagsForBeat("X", 0)).toThrow();
+  });
+});
+
+describe("cumulativeParities", () => {
+  it("PPPP alternates parity per hand (not uniform)", () => {
+    const { blue, red } = cumulativeParities("PPPP", 4);
+    expect(blue).toEqual([true, false, true, false]);
+    expect(red).toEqual([true, false, true, false]);
+  });
+
+  it("long-book P-P- → both hands flip then hold: [T,T,F,F]", () => {
+    const { blue, red } = cumulativeParities("P-P-", 4);
+    expect(blue).toEqual([true, true, false, false]);
+    expect(red).toEqual([true, true, false, false]);
+  });
+
+  it("alternating RBRB toggles each hand on its own beats", () => {
+    const { blue, red } = cumulativeParities("RBRB", 4);
+    expect(red).toEqual([true, true, false, false]); // R on beats 0,2
+    expect(blue).toEqual([false, true, true, false]); // B on beats 1,3
+  });
+
+  it("round-trips through relative detection: construct PPPP rotations → detector reads PPPP", () => {
+    // Build a rotation sequence from cumulative parity (base cw, flipped→ccw),
+    // then apply reversal-detector.ts's rule (a beat reverses when its spin
+    // differs from the previous beat, wrapping at the loop boundary).
+    const { blue } = cumulativeParities("PPPP", 4);
+    const rot = blue.map((p) => (p ? "ccw" : "cw"));
+    const detected = rot.map((r, i) => r !== rot[(i + rot.length - 1) % rot.length]);
+    expect(detected).toEqual([true, true, true, true]); // every beat reverses → book
+  });
+
+  it("uniform-anti (the OLD bug) detects as continuous, proving it was wrong", () => {
+    const rot = ["ccw", "ccw", "ccw", "ccw"]; // what absolute-flip PPPP produced
+    const detected = rot.map((r, i) => r !== rot[(i + rot.length - 1) % rot.length]);
+    expect(detected).toEqual([false, false, false, false]); // no reversals = continuous
   });
 });
 

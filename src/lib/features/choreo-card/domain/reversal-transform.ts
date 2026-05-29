@@ -30,6 +30,36 @@ export function getReversalFlagsForBeat(patternSequence: string, beatIndex: numb
   }
 }
 
+/**
+ * Resolve per-beat CUMULATIVE reversal parity for each hand.
+ *
+ * A reversal is relative (reversal-detector.ts: a beat reverses when its spin
+ * differs from the previous beat), so a pattern symbol TOGGLES a running parity
+ * rather than flipping the beat absolutely. parity[i] === true means beat i's
+ * motion is flipped from its base (pro↔anti, cw↔ccw); false means base.
+ *
+ * Example — PPPP over 4 beats → blue/red parity both [true,false,true,false]
+ * (alternating), NOT [true,true,true,true] (which would be uniform-anti and read
+ * back as continuous).
+ */
+export function cumulativeParities(
+  patternSequence: string,
+  beatCount: number,
+): { blue: boolean[]; red: boolean[] } {
+  const blue: boolean[] = [];
+  const red: boolean[] = [];
+  let blueParity = false;
+  let redParity = false;
+  for (let i = 0; i < beatCount; i++) {
+    const { blueReversal, redReversal } = getReversalFlagsForBeat(patternSequence, i);
+    if (blueReversal) blueParity = !blueParity;
+    if (redReversal) redParity = !redParity;
+    blue.push(blueParity);
+    red.push(redParity);
+  }
+  return { blue, red };
+}
+
 export interface ResolvedReversalPattern {
   id: string;
   label: string;
