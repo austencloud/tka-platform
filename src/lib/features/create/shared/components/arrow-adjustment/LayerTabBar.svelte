@@ -72,9 +72,14 @@
   }
 
   .layer-tab {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: max-content;
     position: relative;
-    padding: 8px 12px;
+    min-height: var(--min-touch-target, 44px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
     border: 1px solid transparent;
     border-radius: 6px;
     background: transparent;
@@ -84,8 +89,6 @@
     cursor: pointer;
     transition: all 0.15s ease;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .layer-tab:hover {

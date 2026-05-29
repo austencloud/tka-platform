@@ -18,6 +18,8 @@
     open?: boolean;
     /** Called with the requested next open value when the header is clicked (controlled mode). */
     onToggle?: (next: boolean) => void;
+    /** When true, draws a selection ring around the whole card (color from `iconColor`). */
+    selected?: boolean;
     /** Optional action rendered in the header row (e.g. a copy button). */
     headerAction?: import("svelte").Snippet;
     children: import("svelte").Snippet;
@@ -31,6 +33,7 @@
     defaultOpen = true,
     open = undefined,
     onToggle,
+    selected = false,
     headerAction,
     children,
   }: Props = $props();
@@ -54,7 +57,12 @@
   const sectionId = $derived(`section-${title.toLowerCase().replace(/\s+/g, "-")}`);
 </script>
 
-<div class="collapsible-section" class:open={isOpen}>
+<div
+  class="collapsible-section"
+  class:open={isOpen}
+  class:selected
+  style={selected && iconColor ? `--ring-color: ${iconColor}` : undefined}
+>
   <div class="section-header-row">
     <button
       type="button"
@@ -105,6 +113,12 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     overflow: hidden;
+  }
+
+  /* Selection ring wraps the whole card; the header/content padding already
+     keeps text clear of the ring, so no extra inset is needed. */
+  .collapsible-section.selected {
+    box-shadow: 0 0 0 2px var(--ring-color, var(--theme-accent, #3b82f6));
   }
 
   .section-header-row {

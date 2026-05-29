@@ -39,6 +39,7 @@
   onToggle={onToggle}
   iconColor={color === "blue" ? "var(--prop-blue, #58a6ff)" : "var(--prop-red, #f85149)"}
   icon="fa-circle"
+  selected={isSelected}
 >
   {#snippet headerAction()}
     <button
@@ -52,7 +53,7 @@
     </button>
   {/snippet}
 
-  <section class="column {colorClass}" class:selected={isSelected}>
+  <section class="column {colorClass}">
     {#if motion}
       <div class="motion-line">
         <span class="mt">{motion.motionType}</span>
@@ -115,8 +116,6 @@
   .placement-line .mir { font-style: italic; color: var(--theme-text-dim, #8b949e); }
   .placement-line .ov { color: var(--semantic-success, #3fb950); }
   .placement-line .warn-val { color: var(--semantic-warning, #d29922); }
-  .red-column.selected { box-shadow: 0 0 0 1px var(--prop-red, #f85149); }
-  .blue-column.selected { box-shadow: 0 0 0 1px var(--prop-blue, #58a6ff); }
   .empty-state {
     padding: 20px;
     text-align: center;
