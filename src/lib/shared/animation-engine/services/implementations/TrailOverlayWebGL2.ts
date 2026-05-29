@@ -586,3 +586,37 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     return true;
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+// Trails is the kind:"trails" exception — ITrailOverlayCanvas.initialize returns
+// void (not boolean) and has no isInitialized(). The descriptor casts to
+// EffectRendererLike so the registry can hold it uniformly; consumers of the
+// trails branch cast back to ITrailOverlayCanvas via the kind:"trails" path.
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectRendererLike } from "../effects/EffectRenderer";
+import type { TrailsIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
+
+export const trailsEffectPlugin: EffectPlugin<TrailsIntent> = {
+  id: "trails",
+  kind: "trails",
+  createRenderer: (): EffectRendererLike => {
+    // Runtime A/B toggle: set window.__TKA_TRAIL_GPU = false before a sequence
+    // starts to use the legacy Canvas2D overlay. Default is WebGL2.
+    // trails is the kind:"trails" exception — consumed via the trails branch as
+    // ITrailOverlayCanvas, not the strict EffectRendererLike contract.
+    const flag =
+      typeof window !== "undefined"
+        ? (window as { __TKA_TRAIL_GPU?: boolean }).__TKA_TRAIL_GPU
+        : undefined;
+    if (flag === false) {
+      console.info("[TrailOverlay] using legacy Canvas2D (window.__TKA_TRAIL_GPU = false)");
+      return new TrailOverlayCanvas() as unknown as EffectRendererLike;
+    }
+    return new TrailOverlayWebGL2() as unknown as EffectRendererLike;
+  },
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.trails,
+  // RenderLoopConfig slot name for the trail overlay instance
+  configKey: "trailOverlay",
+};

@@ -906,3 +906,17 @@ export class WebGLLedRenderer {
 		this.initialized = false;
 	}
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../../effects/EffectPlugin";
+import type { LedIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const ledEffectPlugin: EffectPlugin<LedIntent> = {
+  id: "led",
+  kind: "led",
+  createRenderer: () => new WebGLLedRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.led,
+  // RenderLoopConfig slot name for the LED renderer instance
+  configKey: "ledRenderer",
+};
