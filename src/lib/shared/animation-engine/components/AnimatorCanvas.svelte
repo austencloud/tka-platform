@@ -30,16 +30,12 @@ Last audit: 2025-12-27
   import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { TrailSettings } from "../domain/types/TrailTypes";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/TrailCaptureTypes";
-  import GlyphRenderer from "./GlyphRenderer.svelte";
-  import GlyphOverlay from "./layers/GlyphOverlay.svelte";
-  import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
+  import CanvasSurface from "./CanvasSurface.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
-  import ProgressOverlay from "./layers/ProgressOverlay.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
-  import { isSeamlesslyLoopable as sequenceLoopabilityCheck } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -47,14 +43,9 @@ Last audit: 2025-12-27
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
-  import { onDestroy, untrack } from "svelte";
-  import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
-  import { effectErrorSignal } from "../state/effect-error-signal.svelte";
+  import { untrack } from "svelte";
   import AnimatorCanvasSelf from "./AnimatorCanvas.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
-  import { getRenderContextRegistry } from "../getRenderContextRegistry";
 
   // Props
   let {
@@ -206,12 +197,12 @@ Last audit: 2025-12-27
     if (viewState === "assembled") {
       splitReadyCount = 0;
       // Pause ResizeObserver so the CSS width transition doesn't clear the canvas buffer
-      engine.pauseResize();
+      engine?.pauseResize();
       viewState = "disassembling";
       // Split canvases mount collapsed. They'll fire onInitialized when ready.
     } else if (viewState === "disassembled") {
       // Pause ResizeObserver before CSS width transition back to full size
-      engine.pauseResize();
+      engine?.pauseResize();
       // Collapse split canvases, then remove them when transition ends
       splitExpanded = false;
       viewState = "reassembling";
@@ -240,12 +231,12 @@ Last audit: 2025-12-27
     if (viewState === "disassembling") {
       viewState = "disassembled";
       // Resume ResizeObserver - catch up to the new (narrower) container size
-      engine.resumeResize();
+      engine?.resumeResize();
     } else if (viewState === "reassembling") {
       viewState = "assembled";
       splitExpanded = false;
       // Resume ResizeObserver - catch up to the restored full-width container
-      engine.resumeResize();
+      engine?.resumeResize();
     }
   }
 
@@ -266,60 +257,15 @@ Last audit: 2025-12-27
     }
   }
 
-  let containerElement: HTMLDivElement | undefined = $state();
   let contextMenuHost: CanvasContextMenuHost | undefined = $state();
 
-  // Engine instance - wire per-instance visibility manager before initialization
-  const engine = new AnimationEngine();
-
-  // Sync 2D overlay suppression (for 3D mode)
-  $effect.pre(() => {
-    engine.animatorState.setSuppress2DOverlays(suppress2DOverlays);
-  });
+  // Engine instance - created and owned by the CanvasSurface leaf, bound back
+  // here so the disassemble transition can drive pauseResize/resumeResize and
+  // the context menu can read effect diagnostics. Undefined until the leaf mounts.
+  let engine = $state<AnimationEngine>();
 
   // Use $derived to read visibilityManagerOverride reactively (avoids state_referenced_locally)
   const visibilityManager = $derived(visibilityManagerOverride ?? getAnimationVisibilityManager());
-  $effect.pre(() => {
-    // Read through visibilityManager derived (which already tracks visibilityManagerOverride)
-    // to avoid capturing the destructured prop directly
-    const override = visibilityManager !== getAnimationVisibilityManager() ? visibilityManager : null;
-    if (override) {
-      engine.setVisibilityManager(override);
-    }
-  });
-
-  // Fall back to ancestor-provided context when no prop is passed so the
-  // customize panel (Zap/Sparkle/Echo/Bloom) actually drives this canvas.
-  const inheritedEffectsConfig = getEffectsConfigContext();
-  $effect.pre(() => {
-    const ecs = effectsConfigState ?? inheritedEffectsConfig ?? null;
-    engine.setEffectsConfigState(ecs);
-    // Wire to the global VM singleton so the fallback getActiveEffect/setActiveEffect
-    // delegates work in UI contexts that don't use the effects-config-context provider.
-    getAnimationVisibilityManager().effectsConfigState = ecs;
-  });
-
-  // Re-sync the engine whenever effects config changes (fire sliders, presets, etc.).
-  // EffectsConfigState mutations don't notify the VM observer, so we bridge here.
-  // untrack the notification so observer-triggered mutations don't re-enter this effect.
-  $effect(() => {
-    const ecs = effectsConfigState ?? inheritedEffectsConfig ?? null;
-    if (!ecs) return;
-    void ecs.version;
-    untrack(() => getAnimationVisibilityManager().notifyObservers());
-  });
-
-  // Push viewer-scoped motion visibility into the engine whenever the toggle
-  // changes. Reads tryGet so AnimatorCanvas still works outside the viewer
-  // (landing page, browse previews) - context absent → method never called.
-  const viewerVisibilityCtx = tryGetViewerVisibilityContext();
-  $effect(() => {
-    if (!viewerVisibilityCtx) return;
-    engine.setMotionVisibility(
-      viewerVisibilityCtx.blueMotion,
-      viewerVisibilityCtx.redMotion,
-    );
-  });
 
   // Initialize visibility state via $effect.pre to avoid state_referenced_locally on visibilityManager
   let tkaGlyphVisible = $state(false);
@@ -328,7 +274,6 @@ Last audit: 2025-12-27
   let globalDarkMode = $state(false);
   let wordHeaderVisible = $state(false);
   let progressBarVisible = $state(false);
-  let fireEffectEnabled = $state(false);
   let pathLinesVisible = $state(false);
   $effect.pre(() => {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
@@ -337,8 +282,6 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    const tipMap = visibilityManager.effectsConfigState?.tipEffectMap ?? {};
-    fireEffectEnabled = Object.values(tipMap).some(a => a.effect === "fire");
     pathLinesVisible = visibilityManager.getVisibility("pathLines");
   });
 
@@ -350,12 +293,6 @@ Last audit: 2025-12-27
   const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
   const effectiveStepPositionVisible = $derived(beatPositionVisible);
 
-  const effectiveIsSeamlesslyLoopable = $derived.by(() => {
-    if (isSeamlesslyLoopable !== undefined) return isSeamlesslyLoopable;
-    if (!sequenceData) return false;
-    return sequenceLoopabilityCheck(sequenceData);
-  });
-
   function handleVisibilityChange() {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
     stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
@@ -363,8 +300,6 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    const tipMap = visibilityManager.effectsConfigState?.tipEffectMap ?? {};
-    fireEffectEnabled = Object.values(tipMap).some(a => a.effect === "fire");
     pathLinesVisible = visibilityManager.getVisibility("pathLines");
   }
 
@@ -407,343 +342,11 @@ Last audit: 2025-12-27
   const computedInversionPeriod = $derived(loopDisplay.inversionPeriod);
   const computedLoopPeriod = $derived(loopDisplay.period);
 
-  // When an external caller (e.g. video export orchestrator) signals that the
-  // fire frame cache is stale, invalidate it so the simulation re-records.
-  let lastFireInvalidationSignal = fireCacheInvalidation.signal;
-  $effect(() => {
-    const sig = fireCacheInvalidation.signal;
-    if (sig !== lastFireInvalidationSignal) {
-      lastFireInvalidationSignal = sig;
-      const mode = fireCacheInvalidation.mode;
-      if (mode === "cacheOnly") {
-        untrack(() => engine.invalidateFireFrameCacheOnly());
-      } else if (mode === "thermalClear") {
-        untrack(() => engine.clearFireThermalFields());
-      } else {
-        untrack(() => engine.invalidateFireCache());
-      }
-    }
-  });
-
-  // --- EXPORT DIAGNOSTIC (remove after debugging) ---
-  if (typeof window !== 'undefined') {
-    (window as any).__tka_fire_diag = {
-      enable: () => engine.enableFireDiagnostics(),
-      disable: () => engine.disableFireDiagnostics(),
-      reset: () => engine.resetFireDiagnosticCounter(),
-      sample: () => engine.sampleFireCanvas(),
-    };
-    (window as any).__tka_fire_snapshot = () => engine.snapshotFireCanvas();
-    (window as any).__tka_led_diag = {
-      stats: () => {
-        const renderer = engine.getLedRenderer();
-        if (!renderer) { console.log('[led-diag] no ledRenderer'); return; }
-        const display = renderer.readPixelStats();
-        const trail = renderer.readTrailFBOStats();
-        const bloom = renderer.readBloomFBOStats();
-        console.log(`[led-diag] display(8bit): maxR=${display?.maxR} maxG=${display?.maxG} maxB=${display?.maxB} maxA=${display?.maxA} nonZero=${display?.nonZero}/${display?.total}`);
-        console.log(`[led-diag] trail(float): maxR=${trail?.maxR?.toFixed(4)} maxG=${trail?.maxG?.toFixed(4)} maxB=${trail?.maxB?.toFixed(4)} maxA=${trail?.maxA?.toFixed(4)}`);
-        console.log(`[led-diag] bloom(float): maxR=${bloom?.maxR?.toFixed(4)} maxG=${bloom?.maxG?.toFixed(4)} maxB=${bloom?.maxB?.toFixed(4)} maxA=${bloom?.maxA?.toFixed(4)}`);
-        return { display, trail, bloom };
-      },
-      snapshot: () => {
-        const renderer = engine.getLedRenderer();
-        if (!renderer?.getCanvas()) { console.log('[led-diag] no canvas'); return; }
-        const c = renderer.getCanvas()!;
-        c.toBlob((blob) => {
-          if (!blob) return;
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `led-overlay-${Date.now()}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-          console.log('[led-diag] snapshot saved');
-        });
-      },
-      exportCompositeTest: () => {
-        if (!containerElement) { console.log('[led-diag] no container'); return; }
-        const mainCanvas = containerElement.querySelector('canvas');
-        if (!mainCanvas) { console.log('[led-diag] no main canvas'); return; }
-        const container = mainCanvas.parentElement!;
-
-        const outputSize = 974;
-        const offscreen = document.createElement('canvas');
-        offscreen.width = outputSize;
-        offscreen.height = outputSize;
-        const ctx = offscreen.getContext('2d')!;
-
-        ctx.drawImage(mainCanvas, 0, 0, mainCanvas.width, mainCanvas.height, 0, 0, outputSize, outputSize);
-
-        const overlays = container.querySelectorAll('canvas');
-        for (const ov of overlays) {
-          if (ov === mainCanvas || ov.width === 0 || ov.height === 0) continue;
-          const isWebGL = !!((ov as HTMLCanvasElement).getContext("webgl2") || (ov as HTMLCanvasElement).getContext("webgl"));
-          if (isWebGL && ov.width !== outputSize) {
-            const tmp = document.createElement('canvas');
-            tmp.width = ov.width;
-            tmp.height = ov.height;
-            const tmpCtx = tmp.getContext('2d')!;
-            tmpCtx.clearRect(0, 0, ov.width, ov.height);
-            tmpCtx.drawImage(ov, 0, 0);
-            ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, 0, 0, outputSize, outputSize);
-          } else {
-            ctx.drawImage(ov, 0, 0, ov.width, ov.height, 0, 0, outputSize, outputSize);
-          }
-        }
-
-        const pixels = ctx.getImageData(0, 0, outputSize, outputSize).data;
-        let maxR = 0, maxG = 0, maxB = 0, maxA = 0;
-        let aboveA5 = 0, aboveA25 = 0, aboveA100 = 0;
-        const total = outputSize * outputSize;
-        for (let px = 0; px < pixels.length; px += 4) {
-          const pr = pixels[px]!, pg = pixels[px+1]!, pb = pixels[px+2]!, pa = pixels[px+3]!;
-          if (pr > maxR) maxR = pr;
-          if (pg > maxG) maxG = pg;
-          if (pb > maxB) maxB = pb;
-          if (pa > maxA) maxA = pa;
-          if (pa > 5) aboveA5++;
-          if (pa > 25) aboveA25++;
-          if (pa > 100) aboveA100++;
-        }
-        console.log(`[led-blast] COMPOSITE: maxRGBA=${maxR},${maxG},${maxB},${maxA} coverageA>5=${((aboveA5/total)*100).toFixed(1)}% A>25=${((aboveA25/total)*100).toFixed(1)}% A>100=${((aboveA100/total)*100).toFixed(1)}%`);
-
-        offscreen.toBlob((blob) => {
-          if (!blob) return;
-          const url = URL.createObjectURL(blob);
-          const dl = document.createElement('a');
-          dl.href = url;
-          dl.download = `led-export-composite-${Date.now()}.png`;
-          dl.click();
-          URL.revokeObjectURL(url);
-        });
-      },
-      nuclearBlast: async () => {
-        if (!containerElement) { console.log('[led-blast] no container'); return; }
-        const mainCanvas = containerElement.querySelector('canvas');
-        if (!mainCanvas) { console.log('[led-blast] no main canvas'); return; }
-        const container = mainCanvas.parentElement!;
-
-        const configs = [
-          { name: 'BASELINE', flags: {} },
-          { name: 'NO_BLOOM', flags: { noBloom: true } },
-          { name: 'NO_TRAIL', flags: { noTrail: true } },
-          { name: 'SPRITES_ONLY', flags: { spritesOnly: true } },
-          { name: 'NO_BLOOM+NO_TRAIL', flags: { noBloom: true, noTrail: true } },
-        ];
-
-        const outputSize = 974;
-        const results: {name: string; maxRGBA: string; coverageA5: string; coverageA25: string; coverageA100: string}[] = [];
-
-        for (const cfg of configs) {
-          (window as any).__tka_led_blast = cfg.flags;
-          await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-
-          const offscreen = document.createElement('canvas');
-          offscreen.width = outputSize;
-          offscreen.height = outputSize;
-          const ctx = offscreen.getContext('2d')!;
-          ctx.drawImage(mainCanvas, 0, 0, mainCanvas.width, mainCanvas.height, 0, 0, outputSize, outputSize);
-
-          const overlays = container.querySelectorAll('canvas');
-          for (const ov of overlays) {
-            if (ov === mainCanvas || ov.width === 0 || ov.height === 0) continue;
-            const isWebGL = !!((ov as HTMLCanvasElement).getContext("webgl2") || (ov as HTMLCanvasElement).getContext("webgl"));
-            if (isWebGL && ov.width !== outputSize) {
-              const tmp = document.createElement('canvas');
-              tmp.width = ov.width; tmp.height = ov.height;
-              const tmpCtx = tmp.getContext('2d')!;
-              tmpCtx.clearRect(0, 0, ov.width, ov.height);
-              tmpCtx.drawImage(ov, 0, 0);
-              ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, 0, 0, outputSize, outputSize);
-            } else {
-              ctx.drawImage(ov, 0, 0, ov.width, ov.height, 0, 0, outputSize, outputSize);
-            }
-          }
-
-          const pixels = ctx.getImageData(0, 0, outputSize, outputSize).data;
-          let maxR = 0, maxG = 0, maxB = 0, maxA = 0;
-          let aboveA5 = 0, aboveA25 = 0, aboveA100 = 0;
-          const total = outputSize * outputSize;
-          for (let px = 0; px < pixels.length; px += 4) {
-            const pr = pixels[px]!, pg = pixels[px+1]!, pb = pixels[px+2]!, pa = pixels[px+3]!;
-            if (pr > maxR) maxR = pr;
-            if (pg > maxG) maxG = pg;
-            if (pb > maxB) maxB = pb;
-            if (pa > maxA) maxA = pa;
-            if (pa > 5) aboveA5++;
-            if (pa > 25) aboveA25++;
-            if (pa > 100) aboveA100++;
-          }
-
-          const result = {
-            name: cfg.name,
-            maxRGBA: `${maxR},${maxG},${maxB},${maxA}`,
-            coverageA5: ((aboveA5/total)*100).toFixed(1),
-            coverageA25: ((aboveA25/total)*100).toFixed(1),
-            coverageA100: ((aboveA100/total)*100).toFixed(1),
-          };
-          results.push(result);
-          console.log(`[led-blast] ${cfg.name}: maxRGBA=${result.maxRGBA} A>5=${result.coverageA5}% A>25=${result.coverageA25}% A>100=${result.coverageA100}%`);
-        }
-
-        (window as any).__tka_led_blast = {};
-        console.log('[led-blast] === NUCLEAR BLAST COMPLETE ===');
-        console.table(results);
-        return results;
-      },
-    };
-  }
-
-  // When an overlay effect (fire/charcoal/LED) fails repeatedly, the render loop
-  // auto-disables it and fires this signal. Show a warning so the user knows.
-  let lastEffectErrorSignal = effectErrorSignal.signal;
-  $effect(() => {
-    const sig = effectErrorSignal.signal;
-    if (sig !== lastEffectErrorSignal) {
-      lastEffectErrorSignal = sig;
-      const name = effectErrorSignal.effectName;
-      const err = effectErrorSignal.error;
-      if (name && err) {
-        console.warn(
-          `[AnimatorCanvas] ${name} effect was auto-disabled after repeated failures. ` +
-          `Toggle the effect off and on to retry. Error: ${err.message}`
-        );
-        effectErrorSignal.clear();
-      }
-    }
-  });
-
-  // Derived state from engine
-  const rendererLoading = $derived(engine.animatorState.rendererLoading);
-  const rendererError = $derived(engine.animatorState.rendererError);
-  const isInitialized = $derived(engine.animatorState.isInitialized);
-  const isPreRendering = $derived(engine.animatorState.isPreRendering);
-  const preRenderProgress = $derived(engine.animatorState.preRenderProgress);
-  const preRenderedFramesReady = $derived(engine.animatorState.preRenderedFramesReady);
-  const displayedLetter = $derived(engine.animatorState.displayedLetter);
-  const displayedTurnsTuple = $derived(engine.animatorState.displayedTurnsTuple);
-  const displayedStepNumber = $derived(engine.animatorState.displayedStepNumber);
-  const displayedMusicalPosition = $derived(engine.animatorState.displayedMusicalPosition);
-
-  // Initialize engine when container element appears.
-  // The hero canvas stays mounted always - no teardown during disassemble.
-  $effect(() => {
-    const el = containerElement;
-    if (!el) return;
-
-    untrack(() => {
-      engine.initialize(el, {
-        onCanvasReady,
-        onTrailSettingsChange: (settings) => {
-          externalTrailSettings = settings;
-        },
-        onEffectError,
-      });
-
-      queueMicrotask(() => {
-        const ctx = engine.getRenderContext(resolvedContextId, el);
-        if (ctx) {
-          getRenderContextRegistry().register(ctx);
-        }
-      });
-    });
-
-    return () => {
-      untrack(() => {
-        getRenderContextRegistry().unregister(resolvedContextId);
-        engine.dispose();
-      });
-    };
-  });
-
-  // Single effect to pass all props to engine
-  $effect(() => {
-    const currentFireConfig = fireConfig;
-    const currentLedConfig = ledConfig;
-    const currentCellTipEffectMap = cellTipEffectMap;
-    const currentCellTipEffortMap = cellTipEffortMap;
-    const props = {
-      blueProp,
-      redProp,
-      additionalLayers,
-      gridVisible,
-      gridMode,
-      backgroundAlpha,
-      letter,
-      stepData,
-      sequenceData,
-      currentStep,
-      isPlaying,
-      externalTrailSettings,
-      bluePropType,
-      redPropType,
-      previewDarkMode,
-      isSeamlesslyLoopable,
-      virtualTime,
-      showNonRadialPoints,
-    };
-    untrack(() => {
-      if (currentFireConfig) {
-        engine.setFireConfig(currentFireConfig);
-      }
-      if (currentLedConfig) {
-        engine.setLedConfig(currentLedConfig);
-      }
-      engine.setCellTipEffectMap(currentCellTipEffectMap);
-      engine.setCellTipEffortMap(currentCellTipEffortMap);
-      engine.update(props);
-    });
-  });
-
-  $effect(() => {
-    if (isInitialized) {
-      engine.processPendingGlyph();
-      // Wait for the render loop to paint at least one frame before
-      // signaling readiness. The initializer sets isInitialized BEFORE
-      // starting the render loop (step 8 vs step 10), so without this
-      // delay the callback fires while the canvas is still blank.
-      untrack(() => {
-        if (onInitializedCallback) {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              onInitializedCallback?.();
-            });
-          });
-        }
-      });
-    }
-  });
-
-  // Pause/resume resize observation when parent controls it via prop
-  $effect(() => {
-    if (resizePaused) {
-      engine.pauseResize();
-    } else {
-      engine.resumeResize();
-    }
-  });
-
-  function handleGlyphSvgReady(
-    svgString: string,
-    width: number,
-    height: number,
-    x: number,
-    y: number
-  ) {
-    engine.handleGlyphSvgReady(svgString, width, height, x, y);
-  }
-
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
     contextMenuHost?.openContextMenu(e.clientX, e.clientY);
   }
 </script>
-
-<!-- Hidden GlyphRenderer that converts TKAGlyph to SVG for Canvas2D rendering -->
-{#if letter}
-  <GlyphRenderer {letter} {stepData} onSvgReady={handleGlyphSvgReady} />
-{/if}
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
@@ -773,45 +376,46 @@ Last audit: 2025-12-27
       />
     </div>
 
-    <div
-      class="canvas-wrapper"
-      bind:this={containerElement}
-      data-transparent={backgroundAlpha === 0 ? "true" : "false"}
-      data-dark-mode={darkModeEnabled ? "true" : "false"}
-    >
-      {#if !suppress2DOverlays}
-        <GlyphOverlay
-          {letter}
-          {displayedLetter}
-          {displayedTurnsTuple}
-          {displayedStepNumber}
-          {displayedMusicalPosition}
-          {stepData}
-          tkaGlyphVisible={effectiveTkaGlyphVisible}
-          stepNumbersVisible={effectiveBeatNumbersVisible}
-          beatPositionVisible={effectiveStepPositionVisible}
-          darkMode={darkModeEnabled}
-          isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
-          isAtEndPosition={
-            !hideStepNumbers &&
-            sequenceData !== null &&
-            !effectiveIsSeamlesslyLoopable &&
-            currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
-          }
-        />
-
-        {#if pathLinesVisible}
-          <PathLinesOverlay {sequenceData} {currentStep} />
-        {/if}
-
-        <ProgressOverlay
-          {isPreRendering}
-          {preRenderProgress}
-          {preRenderedFramesReady}
-        />
-      {/if}
-
-    </div>
+    <CanvasSurface
+      bind:engine
+      {blueProp}
+      {redProp}
+      {additionalLayers}
+      {gridVisible}
+      {gridMode}
+      {backgroundAlpha}
+      {letter}
+      {stepData}
+      {sequenceData}
+      {currentStep}
+      {isPlaying}
+      bind:trailSettings={externalTrailSettings}
+      {bluePropType}
+      {redPropType}
+      {previewDarkMode}
+      {isSeamlesslyLoopable}
+      {showNonRadialPoints}
+      {fireConfig}
+      {ledConfig}
+      tipEffectMap={cellTipEffectMap}
+      tipEffortMap={cellTipEffortMap}
+      {virtualTime}
+      {hideTkaGlyph}
+      {hideStepNumbers}
+      {darkModeEnabled}
+      {effectiveTkaGlyphVisible}
+      {effectiveBeatNumbersVisible}
+      {effectiveStepPositionVisible}
+      {pathLinesVisible}
+      {suppress2DOverlays}
+      {resizePaused}
+      visibilityManagerOverride={visibilityManagerOverride}
+      {effectsConfigState}
+      contextId={resolvedContextId}
+      {onCanvasReady}
+      onInitialized={onInitializedCallback}
+      {onEffectError}
+    />
 
     <!-- Split canvases: blue-only and red-only, expand below hero during disassemble -->
     {#if showSplitCanvases}
@@ -886,7 +490,7 @@ Last audit: 2025-12-27
       bind:this={contextMenuHost}
       disassembled={externalToggleDisassemble ? externalDisassembled : isDisassembledView}
       onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
-      captureEffectDiagnostics={() => engine.captureEffectDiagnostics()}
+      captureEffectDiagnostics={() => engine?.captureEffectDiagnostics() ?? {}}
       {onToggle3DView}
     />
   {/if}
@@ -936,29 +540,10 @@ Last audit: 2025-12-27
     opacity: 1;
   }
 
-  /* Canvas wrapper: square in portrait mode. Owns the background color so the
-     main canvas can stay transparent - effect overlays at z<3 sit between this
-     background and the main canvas's opaque prop pixels. */
-  .canvas-wrapper {
-    position: relative;
-    width: 100%;
-    /* Square: height = width using container query */
-    height: 100cqw;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f5f5f5;
-    transition: background-color 350ms ease;
-  }
-
-  .canvas-wrapper[data-dark-mode="true"] {
-    background: #0a0a0f;
-  }
-
-  .canvas-wrapper[data-transparent="true"] {
-    background: transparent;
-  }
+  /* Base .canvas-wrapper styling lives in CanvasSurface.svelte (the leaf that
+     owns the element). The responsive overrides below reach into it via
+     :global() because component-scoped selectors don't cross the component
+     boundary. */
 
   /* ===========================================
      SPLIT CANVASES: Blue-only and Red-only
@@ -1014,14 +599,6 @@ Last audit: 2025-12-27
                 opacity 0.2s ease-out;
   }
 
-  .canvas-wrapper :global(canvas) {
-    background: transparent;
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
   /* ===========================================
      CONSTRAINED MODE: Canvas-only when squeezed
      When container is wider than tall (aspect ratio > 1.15),
@@ -1040,7 +617,7 @@ Last audit: 2025-12-27
       opacity: 0;
     }
 
-    .canvas-wrapper {
+    :global(.canvas-wrapper) {
       width: 100%;
       height: 100cqw;
     }
@@ -1062,7 +639,7 @@ Last audit: 2025-12-27
     opacity: 1 !important;
   }
 
-  .animation-container[data-focused] .canvas-wrapper {
+  .animation-container[data-focused] :global(.canvas-wrapper) {
     width: 100%;
     height: 100cqw;
     flex-shrink: 1;
@@ -1125,7 +702,7 @@ Last audit: 2025-12-27
     container-type: size;
   }
 
-  .animation-container[data-fill] .canvas-wrapper {
+  .animation-container[data-fill] :global(.canvas-wrapper) {
     flex: 1;
     height: auto !important;
     min-height: 0;
@@ -1139,8 +716,7 @@ Last audit: 2025-12-27
     .content-wrapper,
     .header-slot,
     .progress-slot,
-    .split-canvases,
-    .canvas-wrapper :global(canvas) {
+    .split-canvases {
       transition: none;
     }
   }
