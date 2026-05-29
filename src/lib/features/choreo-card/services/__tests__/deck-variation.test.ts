@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   rollVariation,
+  applyVariationDescriptor,
   type Rng,
 } from "../deck-variation";
 import type { VariationConfig } from "../deck-variation";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 
 /** Deterministic rng that yields the given values in order, then 0. */
 function seededRng(values: number[]): Rng {
@@ -17,6 +21,37 @@ const TURNS_ONLY: VariationConfig = {
   turnFrequency: 1,
   enabledTurnPatterns: ["hold-1"],
 };
+
+function twoStepSeq(): SequenceData {
+  const motion = () =>
+    createMotionData({
+      motionType: "pro" as const,
+      rotationDirection: "cw" as const,
+      startLocation: "n" as const,
+      endLocation: "e" as const,
+      turns: 0,
+      startOrientation: "in" as const,
+      endOrientation: "in" as const,
+    });
+  return createSequenceData({
+    id: "TEST",
+    word: "AB",
+    steps: [
+      {
+        id: "s1",
+        stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+        startPosition: null, endPosition: null,
+        motions: { blue: motion(), red: motion() },
+      },
+      {
+        id: "s2",
+        stepNumber: 2, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+        startPosition: null, endPosition: null,
+        motions: { blue: motion(), red: motion() },
+      },
+    ],
+  });
+}
 
 describe("rollVariation", () => {
   it("returns null when nothing rolls", () => {
@@ -43,5 +78,29 @@ describe("rollVariation", () => {
     };
     // stepCount 2 not divisible by 4 → no candidate → null
     expect(rollVariation(2, cfg, seededRng([0.0, 0.0]))).toBeNull();
+  });
+});
+
+describe("applyVariationDescriptor", () => {
+  it("turn-only: applies turns and returns a new sequence (TnD path)", () => {
+    const seq = twoStepSeq();
+    const { sequence } = applyVariationDescriptor(seq, { turnPattern: "1|1" }, []);
+    expect(sequence).not.toBe(seq); // new object
+    expect(sequence.steps[0]!.motions!.blue!.turns).toBe(1);
+    expect(sequence.steps[0]!.motions!.red!.turns).toBe(1);
+  });
+
+  it("turn-only: tiles a single uniform unit across all beats", () => {
+    const { sequence } = applyVariationDescriptor(twoStepSeq(), { turnPattern: "1|2" }, []);
+    expect(sequence.steps[0]!.motions!.blue!.turns).toBe(1);
+    expect(sequence.steps[0]!.motions!.red!.turns).toBe(2);
+    expect(sequence.steps[1]!.motions!.blue!.turns).toBe(1);
+    expect(sequence.steps[1]!.motions!.red!.turns).toBe(2);
+  });
+
+  it("no-op descriptor returns the base sequence content unchanged", () => {
+    const seq = twoStepSeq();
+    const { sequence } = applyVariationDescriptor(seq, {}, []);
+    expect(sequence.steps[0]!.motions!.blue!.turns).toBe(0);
   });
 });

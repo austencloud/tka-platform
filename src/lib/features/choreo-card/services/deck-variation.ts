@@ -198,6 +198,66 @@ export function rollVariation(
   return v.reversalSequence != null || v.turnPattern != null ? v : null;
 }
 
+export interface AppliedDescriptorResult {
+  sequence: SequenceData;
+  /** false when an applied turn pattern breaks per-hand loop closure. */
+  turnLoopClosed: boolean;
+}
+
+/**
+ * Deterministically apply a frozen descriptor to a base sequence. Pure. Reversal
+ * (if present) via `transformSequence`; turns (if present) via `applyPattern`.
+ * Turn-only (no reversal) is valid and is the TnD render path.
+ */
+export function applyVariationDescriptor(
+  seq: SequenceData,
+  variation: CardVariation,
+  edges: CsvEdge[],
+): AppliedDescriptorResult {
+  let working = seq;
+
+  if (variation.reversalSequence) {
+    const resolved: ResolvedReversalPattern = {
+      id: variation.reversalPatternId ?? variation.reversalSequence,
+      label: variation.reversalPatternId ?? "Custom",
+      sequence: variation.reversalSequence,
+      isNamed: false,
+      isCleanLoop: true,
+    };
+    working = transformSequence(working, resolved, edges);
+  }
+
+  let turnLoopClosed = true;
+  if (variation.turnPattern) {
+    const unit = parseTurnUnit(variation.turnPattern);
+    if (unit.length > 0) {
+      const stepCount = working.steps.length;
+      const base = loopCloses(working);
+      const entries: TurnPatternEntry[] = [];
+      for (let i = 0; i < stepCount; i++) {
+        const u = unit[i % unit.length]!;
+        entries.push({ stepIndex: i, blue: u.blue, red: u.red });
+      }
+      const pattern: TurnPattern = {
+        id: "variation",
+        name: "variation",
+        userId: "",
+        createdAt: null as unknown as TurnPattern["createdAt"],
+        stepCount,
+        entries,
+      };
+      const res = applyPattern(pattern, working, "both");
+      if (res.success && res.sequence) {
+        working = res.sequence;
+        const closed = loopCloses(working);
+        turnLoopClosed = (closed.blue || !base.blue) && (closed.red || !base.red);
+      }
+    }
+  }
+
+  return { sequence: working, turnLoopClosed };
+}
+
 /** Does the loop close on each hand? (last endOrientation === first startOrientation) */
 function loopCloses(seq: SequenceData): { blue: boolean; red: boolean } {
   const steps = seq.steps;
