@@ -13,7 +13,7 @@
     Conversation,
     ParticipantInfo,
   } from "$lib/shared/messaging/domain/models/conversation-models";
-  import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
+  import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";

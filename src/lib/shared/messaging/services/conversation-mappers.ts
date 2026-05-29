@@ -5,7 +5,7 @@ import type {
   ConversationPreview,
   ConversationType,
   ParticipantInfo,
-} from "../../domain/models/conversation-models";
+} from "../domain/models/conversation-models";
 
 function getConversationType(data: Record<string, unknown>): ConversationType {
   return (data["type"] as ConversationType) || "direct";

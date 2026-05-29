@@ -20,7 +20,7 @@ import type {
   CreateGroupInput,
   CreateGroupResult,
   GroupMetadata,
-} from "../../domain/models/conversation-models";
+} from "../domain/models/conversation-models";
 
 const CONVERSATIONS_COLLECTION = "conversations";
 const MAX_GROUP_PARTICIPANTS = 50;

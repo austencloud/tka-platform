@@ -8,7 +8,7 @@
 
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { messagingService } from "../../../messaging/services/implementations/Messenger";
+  import { messagingService } from "../../../messaging/services/messenger";
   import { toast } from "../../../toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { inboxState } from "../../state/inbox-state.svelte";

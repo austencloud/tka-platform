@@ -10,7 +10,7 @@
 
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
+  import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";

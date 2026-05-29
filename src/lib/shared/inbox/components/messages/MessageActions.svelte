@@ -14,7 +14,7 @@
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
+  import { messagingService } from "$lib/shared/messaging/services/messenger";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";

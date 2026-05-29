@@ -9,7 +9,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
   import type { ConversationPreview } from "$lib/shared/messaging/domain/models/conversation-models";
-  import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
+  import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import { toast } from "../../../toast/state/toast-state.svelte";
   import ConversationItem from "./ConversationItem.svelte";
   import ConversationSkeleton from "../skeletons/ConversationSkeleton.svelte";

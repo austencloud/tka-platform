@@ -33,7 +33,7 @@ import type {
   MessagePreview,
   MessageReaction,
   MessageEdit,
-} from "../../domain/models/message-models";
+} from "../domain/models/message-models";
 
 const CONVERSATIONS_COLLECTION = "conversations";
 const MESSAGES_SUBCOLLECTION = "messages";

@@ -21,7 +21,7 @@
   import MessageReactions from "./MessageReactions.svelte";
   import EditHistorySheet from "./EditHistorySheet.svelte";
   import MessageActions from "./MessageActions.svelte";
-  import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
+  import { messagingService } from "$lib/shared/messaging/services/messenger";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
 
   interface Props {

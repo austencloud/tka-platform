@@ -15,7 +15,7 @@
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
-  import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
+  import { messagingService } from "$lib/shared/messaging/services/messenger";
   import { inboxState } from "../../state/inbox-state.svelte";
   import MessageBubble from "./MessageBubble.svelte";
   import MessageComposer from "./MessageComposer.svelte";

@@ -20,8 +20,8 @@
   import NewMessageSheet from "./messages/NewMessageSheet.svelte";
   import GroupSettingsSheet from "./messages/GroupSettingsSheet.svelte";
   import NotificationList from "./notifications/NotificationList.svelte";
-  import { conversationService } from "../../messaging/services/implementations/ConversationManager";
-  import { messagingService } from "../../messaging/services/implementations/Messenger";
+  import { conversationService } from "../../messaging/services/conversation-manager";
+  import { messagingService } from "../../messaging/services/messenger";
   import BottomNavigation from "$lib/shared/navigation/components/layouts/BottomNavigation.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import {
