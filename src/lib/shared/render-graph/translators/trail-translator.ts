@@ -13,7 +13,7 @@ import type {
   TrailPassPayload,
   TrailTipState,
   TrailBlendMode,
-} from "../domain/TrailPass";
+} from "../domain/trail-pass";
 
 /** One tip's current leading-edge path in NDC, oldest-first. */
 export interface TipPathDelta {

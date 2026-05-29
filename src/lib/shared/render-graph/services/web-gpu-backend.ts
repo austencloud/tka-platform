@@ -1,13 +1,13 @@
-import type { RenderBackend, BackendStats } from "../../domain/Backend";
-import type { FrameGraph } from "../../domain/FrameGraph";
+import type { RenderBackend, BackendStats } from "../domain/backend";
+import type { FrameGraph } from "../domain/frame-graph";
 import type {
   RenderPassDescriptor,
   RenderPassKind,
-} from "../../domain/RenderPass";
-import type { TrailPassPayload } from "../../domain/TrailPass";
-import type { FirePassPayload } from "../../domain/FirePass";
-import type { LedPassPayload } from "../../domain/LedPass";
-import type { ParticlePassPayload } from "../../domain/ParticlePass";
+} from "../domain/render-pass";
+import type { TrailPassPayload } from "../domain/trail-pass";
+import type { FirePassPayload } from "../domain/fire-pass";
+import type { LedPassPayload } from "../domain/led-pass";
+import type { ParticlePassPayload } from "../domain/particle-pass";
 import type {
   EchoPassPayload,
   BloomPassPayload,
@@ -16,12 +16,12 @@ import type {
   InkPassPayload,
   FrostPassPayload,
   SilkPassPayload,
-} from "../../domain/EffectPasses";
-import { TRAIL_VERTEX_STRIDE } from "../../math/trail-mesh";
-import { WebGPUFireExecutor } from "./WebGPUFireExecutor";
-import { WebGPULedExecutor } from "./WebGPULedExecutor";
-import { WebGPUOverlayEffectsExecutor } from "./WebGPUOverlayEffectsExecutor";
-import { WebGPUParticleExecutor } from "./WebGPUParticleExecutor";
+} from "../domain/effect-passes";
+import { TRAIL_VERTEX_STRIDE } from "../math/trail-mesh";
+import { WebGPUFireExecutor } from "./web-gpu-fire-executor";
+import { WebGPULedExecutor } from "./web-gpu-led-executor";
+import { WebGPUOverlayEffectsExecutor } from "./web-gpu-overlay-effects-executor";
+import { WebGPUParticleExecutor } from "./web-gpu-particle-executor";
 import {
   WebGPUTrailExecutor,
   type GPUTextureEntry,

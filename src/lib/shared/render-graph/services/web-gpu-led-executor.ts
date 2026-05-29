@@ -8,7 +8,7 @@
  * accumulation (max blend) → bloom downsample/upsample → display.
  */
 
-import type { LedPassPayload } from "../../domain/LedPass";
+import type { LedPassPayload } from "../domain/led-pass";
 
 const MAX_LEDS = 64;
 const INSTANCE_STRIDE_FLOATS = 9;

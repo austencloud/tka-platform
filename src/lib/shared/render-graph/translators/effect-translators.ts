@@ -22,7 +22,7 @@ import type {
   FrostSeed,
   SilkPassPayload,
   SilkRibbon,
-} from "../domain/EffectPasses";
+} from "../domain/effect-passes";
 
 const PALETTE_COLORS: Record<string, [number, number, number]> = {
   classic: [0.3, 0.5, 0.9], mercury: [0.7, 0.7, 0.75], acid: [0.2, 1.0, 0.3],

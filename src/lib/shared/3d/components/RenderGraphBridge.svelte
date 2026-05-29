@@ -11,7 +11,7 @@
    */
 
   import { onMount, onDestroy } from "svelte";
-  import { WebGL2Backend } from "$lib/shared/render-graph/services/implementations/WebGL2Backend";
+  import { WebGL2Backend } from "$lib/shared/render-graph/services/web-gl2-backend";
 
   interface Props {
     enabled?: boolean;

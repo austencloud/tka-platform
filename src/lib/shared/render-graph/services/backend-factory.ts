@@ -6,9 +6,9 @@
  * legacy is reserved for the Phase 5 escape hatch and not wired yet.
  */
 
-import type { RenderBackend, BackendKind } from "../../domain/Backend";
-import { WebGL2Backend } from "./WebGL2Backend";
-import { WebGPUBackend } from "./WebGPUBackend";
+import type { RenderBackend, BackendKind } from "../domain/backend";
+import { WebGL2Backend } from "./web-gl2-backend";
+import { WebGPUBackend } from "./web-gpu-backend";
 
 export interface BackendFactoryOptions {
   /** Force a particular backend for tests or side-by-side comparisons. */

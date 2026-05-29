@@ -13,9 +13,9 @@
  *   6. Display composite: trail + bloom → screen (premultiplied alpha)
  */
 
-import type { LedPassPayload } from "../../domain/LedPass";
-import type { FBO, FBOPool } from "./FBOPool";
-import type { ShaderLibrary } from "./ShaderLibrary";
+import type { LedPassPayload } from "../domain/led-pass";
+import type { FBO, FBOPool } from "./fbo-pool";
+import type { ShaderLibrary } from "./shader-library";
 
 const MAX_LEDS = 64;
 const INSTANCE_STRIDE_FLOATS = 9;

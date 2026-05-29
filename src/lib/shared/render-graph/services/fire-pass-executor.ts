@@ -22,9 +22,9 @@ import type {
   FirePassPayload,
   FireSourcePoint,
   FireColorStop,
-} from "../../domain/FirePass";
-import type { FBO, FBOPool, PingPongPair } from "./FBOPool";
-import type { CompiledProgram, ShaderLibrary } from "./ShaderLibrary";
+} from "../domain/fire-pass";
+import type { FBO, FBOPool, PingPongPair } from "./fbo-pool";
+import type { CompiledProgram, ShaderLibrary } from "./shader-library";
 
 // ── Simulation constants ─────────────────────────────────────────────────
 

@@ -31,14 +31,14 @@ import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropCl
 import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DVisibilityFadeManager";
 import { resolveEffect } from "../../domain/types/TipEffectTypes";
 
-import type { RenderBackend } from "$lib/shared/render-graph/domain/Backend";
-import type { FrameGraph } from "$lib/shared/render-graph/domain/FrameGraph";
+import type { RenderBackend } from "$lib/shared/render-graph/domain/backend";
+import type { FrameGraph } from "$lib/shared/render-graph/domain/frame-graph";
 import type {
   TrailPassPayload,
   TrailTipState,
-} from "$lib/shared/render-graph/domain/TrailPass";
-import { Z_ORDER } from "$lib/shared/render-graph/domain/RenderPass";
-import { createBackend } from "$lib/shared/render-graph/services/implementations/BackendFactory";
+} from "$lib/shared/render-graph/domain/trail-pass";
+import { Z_ORDER } from "$lib/shared/render-graph/domain/render-pass";
+import { createBackend } from "$lib/shared/render-graph/services/backend-factory";
 import {
   MIN_TAIL_WIDTH_RATIO,
   FADE_EXPONENT,

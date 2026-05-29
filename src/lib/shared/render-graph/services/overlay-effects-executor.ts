@@ -20,16 +20,16 @@ import type {
   InkPassPayload,
   FrostPassPayload,
   SilkPassPayload,
-} from "../../domain/EffectPasses";
-import type { FBOPool } from "./FBOPool";
-import type { ShaderLibrary } from "./ShaderLibrary";
+} from "../domain/effect-passes";
+import type { FBOPool } from "./fbo-pool";
+import type { ShaderLibrary } from "./shader-library";
 import {
   buildTaperedMesh,
   createSmoothCurve,
   adaptiveSubdivisions,
   TRAIL_VERTEX_STRIDE,
   type Point2D,
-} from "../../math/trail-mesh";
+} from "../math/trail-mesh";
 
 const MAX_SOURCES = 16;
 const AA_WIDTH = 0.05;

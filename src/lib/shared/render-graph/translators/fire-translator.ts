@@ -12,7 +12,7 @@ import type {
   FirePassPayload,
   FireSourcePoint,
   FireColorStop,
-} from "../domain/FirePass";
+} from "../domain/fire-pass";
 
 export interface FireTranslationContext {
   /** Per-tip positions in NDC. */

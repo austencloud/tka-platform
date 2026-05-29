@@ -17,14 +17,14 @@ import type {
   InkPassPayload,
   FrostPassPayload,
   SilkPassPayload,
-} from "../../domain/EffectPasses";
+} from "../domain/effect-passes";
 import {
   buildTaperedMesh,
   createSmoothCurve,
   adaptiveSubdivisions,
   TRAIL_VERTEX_STRIDE,
   type Point2D,
-} from "../../math/trail-mesh";
+} from "../math/trail-mesh";
 
 const MAX_SOURCES = 16;
 const AA_WIDTH = 0.05;

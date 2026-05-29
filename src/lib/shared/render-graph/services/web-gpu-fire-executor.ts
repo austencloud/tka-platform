@@ -23,7 +23,7 @@ import type {
   FirePassPayload,
   FireSourcePoint,
   FireColorStop,
-} from "../../domain/FirePass";
+} from "../domain/fire-pass";
 
 const SIM_SIZE = 256;
 const JACOBI_ITERATIONS = 12;

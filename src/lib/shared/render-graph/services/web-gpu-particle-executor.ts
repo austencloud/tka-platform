@@ -12,7 +12,7 @@
 import type {
   ParticlePassPayload,
   ParticleTipState,
-} from "../../domain/ParticlePass";
+} from "../domain/particle-pass";
 
 const MAX_PARTICLES = 2048;
 const VERTEX_STRIDE_FLOATS = 10;

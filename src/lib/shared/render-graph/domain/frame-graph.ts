@@ -1,4 +1,4 @@
-import type { RenderPassDescriptor } from "./RenderPass";
+import type { RenderPassDescriptor } from "./render-pass";
 
 export type TargetFormat = "rgba8" | "rgba16f";
 

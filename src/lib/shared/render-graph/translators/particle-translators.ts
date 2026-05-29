@@ -12,7 +12,7 @@ import type {
   ParticleEmitter,
   ParticleForces,
   ParticleShape,
-} from "../domain/ParticlePass";
+} from "../domain/particle-pass";
 
 export interface ParticleTranslationContext {
   tips: Array<{ tipId: string; position: [number, number]; velocity: number }>;

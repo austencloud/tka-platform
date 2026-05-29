@@ -13,11 +13,11 @@
    * behind a flag. Otherwise the shader needs more work.
    */
   import { onMount, onDestroy } from "svelte";
-  import { createBackend } from "$lib/shared/render-graph/services/implementations/BackendFactory";
-  import type { RenderBackend } from "$lib/shared/render-graph/domain/Backend";
-  import type { FrameGraph } from "$lib/shared/render-graph/domain/FrameGraph";
-  import { Z_ORDER } from "$lib/shared/render-graph/domain/RenderPass";
-  import { toTrailPassPayload } from "$lib/shared/render-graph/translators/TrailTranslator";
+  import { createBackend } from "$lib/shared/render-graph/services/backend-factory";
+  import type { RenderBackend } from "$lib/shared/render-graph/domain/backend";
+  import type { FrameGraph } from "$lib/shared/render-graph/domain/frame-graph";
+  import { Z_ORDER } from "$lib/shared/render-graph/domain/render-pass";
+  import { toTrailPassPayload } from "$lib/shared/render-graph/translators/trail-translator";
   import type { TrailsIntent } from "$lib/shared/effects/domain/EffectsConfig";
   import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DTrailRenderer";
   import {

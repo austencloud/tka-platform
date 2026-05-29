@@ -10,7 +10,7 @@
  * pool lifetime.
  */
 
-import type { TargetFormat } from "../../domain/FrameGraph";
+import type { TargetFormat } from "../domain/frame-graph";
 
 export interface FBO {
   framebuffer: WebGLFramebuffer;

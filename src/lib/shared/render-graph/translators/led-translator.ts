@@ -8,7 +8,7 @@
  */
 
 import type { LedIntent } from "$lib/shared/effects/domain/EffectsConfig";
-import type { LedPassPayload, LedTipState, LedSegment } from "../domain/LedPass";
+import type { LedPassPayload, LedTipState, LedSegment } from "../domain/led-pass";
 
 export interface LedTranslationContext {
   tips: Array<{

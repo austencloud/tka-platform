@@ -1,11 +1,11 @@
-import type { TrailPassPayload, TrailTipState } from "../../domain/TrailPass";
+import type { TrailPassPayload, TrailTipState } from "../domain/trail-pass";
 import {
   adaptiveSubdivisions,
   buildTaperedMesh,
   createSmoothCurve,
   type Point2D,
   type MeshBuildOptions,
-} from "../../math/trail-mesh";
+} from "../math/trail-mesh";
 
 const TRAIL_KEY_PREFIX = "trail-tip-";
 const AA_WIDTH = 0.05;

@@ -1,4 +1,4 @@
-import type { FrameGraph } from "./FrameGraph";
+import type { FrameGraph } from "./frame-graph";
 
 export type BackendKind = "webgpu" | "webgl2" | "canvas2d-legacy";
 

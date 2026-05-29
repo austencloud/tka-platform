@@ -23,20 +23,20 @@
  * - Compiled shader programs + one dynamic mesh VBO
  */
 
-import type { RenderBackend, BackendStats } from "../../domain/Backend";
-import type { FrameGraph } from "../../domain/FrameGraph";
+import type { RenderBackend, BackendStats } from "../domain/backend";
+import type { FrameGraph } from "../domain/frame-graph";
 import type {
   RenderPassDescriptor,
   RenderPassKind,
-} from "../../domain/RenderPass";
+} from "../domain/render-pass";
 import type {
   TrailPassPayload,
   TrailTipState,
   TrailBlendMode,
-} from "../../domain/TrailPass";
-import type { FirePassPayload } from "../../domain/FirePass";
-import type { LedPassPayload } from "../../domain/LedPass";
-import type { ParticlePassPayload } from "../../domain/ParticlePass";
+} from "../domain/trail-pass";
+import type { FirePassPayload } from "../domain/fire-pass";
+import type { LedPassPayload } from "../domain/led-pass";
+import type { ParticlePassPayload } from "../domain/particle-pass";
 import type {
   EchoPassPayload,
   BloomPassPayload,
@@ -45,20 +45,20 @@ import type {
   InkPassPayload,
   FrostPassPayload,
   SilkPassPayload,
-} from "../../domain/EffectPasses";
+} from "../domain/effect-passes";
 import {
   adaptiveSubdivisions,
   buildTaperedMesh,
   createSmoothCurve,
   TRAIL_VERTEX_STRIDE,
   type Point2D,
-} from "../../math/trail-mesh";
-import { FBOPool, type FBO } from "./FBOPool";
-import { ShaderLibrary } from "./ShaderLibrary";
-import { FirePassExecutor } from "./FirePassExecutor";
-import { LedPassExecutor } from "./LedPassExecutor";
-import { ParticlePassExecutor } from "./ParticlePassExecutor";
-import { OverlayEffectsExecutor } from "./OverlayEffectsExecutor";
+} from "../math/trail-mesh";
+import { FBOPool, type FBO } from "./fbo-pool";
+import { ShaderLibrary } from "./shader-library";
+import { FirePassExecutor } from "./fire-pass-executor";
+import { LedPassExecutor } from "./led-pass-executor";
+import { ParticlePassExecutor } from "./particle-pass-executor";
+import { OverlayEffectsExecutor } from "./overlay-effects-executor";
 
 const TRAIL_KEY_PREFIX = "trail-tip-";
 const STAMP_KEY = "stamp";

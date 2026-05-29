@@ -17,8 +17,8 @@ import type {
   ParticlePassPayload,
   ParticleTipState,
   ParticleBlendMode,
-} from "../../domain/ParticlePass";
-import type { ShaderLibrary } from "./ShaderLibrary";
+} from "../domain/particle-pass";
+import type { ShaderLibrary } from "./shader-library";
 
 // ── Constants ───────────────────────────────────────────────────────────
 
