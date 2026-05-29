@@ -544,6 +544,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             backgroundAlpha: 1, // engine bg opaque at export, matches live hero
             showNonRadialPoints: true, // no viewer non-radial key; live default is true
             trailSettings: animationSettings.trail,
+            bluePropType: animationSettings.currentPropType,
+            redPropType: animationSettings.currentPropType,
+            previewDarkMode: isDarkMode,
           });
           offscreen.engine.update(props);
         }

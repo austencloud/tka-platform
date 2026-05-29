@@ -15,6 +15,9 @@ function frame(overrides: Partial<ExportFrameContext> = {}): ExportFrameContext 
     backgroundAlpha: 1,
     showNonRadialPoints: true,
     trailSettings: trail,
+    bluePropType: "staff",
+    redPropType: "staff",
+    previewDarkMode: true,
     ...overrides,
   };
 }
@@ -53,6 +56,13 @@ describe("assembleExportEngineProps", () => {
   it("passes through trail settings (regression: dropped settings broke export trails)", () => {
     const props = assembleExportEngineProps(fakePanel(), frame());
     expect(props.externalTrailSettings).toBe(trail);
+  });
+
+  it("passes through prop types (regression: dropped types blanked props in export)", () => {
+    const props = assembleExportEngineProps(fakePanel(), frame({ bluePropType: "fan", redPropType: "club" }));
+    expect(props.bluePropType).toBe("fan");
+    expect(props.redPropType).toBe("club");
+    expect(props.previewDarkMode).toBe(true);
   });
 
   it("falls back to DIAMOND grid when sequenceData has none", () => {

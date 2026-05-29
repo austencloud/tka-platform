@@ -15,6 +15,16 @@ export interface ExportFrameContext {
    * props blank along the path. The engine self-applies the unilateral constraint.
    */
   trailSettings: TrailSettings;
+  /**
+   * Prop types (e.g. "staff"). Load-bearing: the renderer draws the prop BODIES
+   * from these. Omitting them leaves the offscreen engine with no prop geometry →
+   * props missing from the export (fire/tips still track positions, so fire shows
+   * but the staves don't). Live path feeds these from propRendering.
+   */
+  bluePropType: string | null;
+  redPropType: string | null;
+  /** Dark-mode override for prop rendering, matching the export's theme. */
+  previewDarkMode: boolean | null;
 }
 
 /**
@@ -42,5 +52,8 @@ export function assembleExportEngineProps(
     virtualTime: frame.virtualTime,
     showNonRadialPoints: frame.showNonRadialPoints,
     externalTrailSettings: frame.trailSettings,
+    bluePropType: frame.bluePropType,
+    redPropType: frame.redPropType,
+    previewDarkMode: frame.previewDarkMode,
   };
 }
