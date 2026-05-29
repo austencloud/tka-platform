@@ -7,6 +7,7 @@
     BOOK_PATTERNS,
     TURN_PATTERNS,
     type VariationConfig,
+    type StartOriMode,
   } from "../../services/deck-variation";
 
   type DeckMode = "loop" | "tnd";
@@ -36,6 +37,8 @@
     isLoading: boolean;
     variationConfig: VariationConfig;
     onVariationConfigChange: (config: VariationConfig) => void;
+    startOriMode: StartOriMode;
+    onStartOriModeChange: (mode: StartOriMode) => void;
   }
 
   let {
@@ -63,6 +66,8 @@
     isLoading,
     variationConfig,
     onVariationConfigChange,
+    startOriMode,
+    onStartOriModeChange,
   }: Props = $props();
 
   const PRESETS = [
@@ -81,6 +86,12 @@
     { id: "sprinkle", label: "Sprinkle", icon: "fa-wand-magic-sparkles", rf: 0.3, tf: 0.4 },
     { id: "spicy", label: "Spicy", icon: "fa-pepper-hot", rf: 0.6, tf: 0.7 },
   ] as const;
+
+  const ORI_REGISTERS: { id: StartOriMode; label: string; icon: string }[] = [
+    { id: "radial", label: "Radial", icon: "fa-arrows-up-down" },
+    { id: "nonradial", label: "Nonradial", icon: "fa-arrows-left-right" },
+    { id: "split", label: "Split", icon: "fa-arrows-turn-right" },
+  ];
 
   function toggleReversal(id: string) {
     const next = new Set(variationConfig.enabledReversals);
@@ -170,6 +181,24 @@
         placeholder="e.g. Fire Drums 2026"
         oninput={(e) => onNotesChange((e.target as HTMLInputElement).value)}
       />
+    </div>
+
+    <div class="control-group">
+      <span class="control-label">Start Orientation</span>
+      <div class="mode-row">
+        {#each ORI_REGISTERS as r (r.id)}
+          <button
+            type="button"
+            class="mode-btn"
+            class:selected={startOriMode === r.id}
+            aria-pressed={startOriMode === r.id}
+            onclick={() => onStartOriModeChange(r.id)}
+          >
+            <i class="fas {r.icon}" aria-hidden="true"></i>
+            {r.label}
+          </button>
+        {/each}
+      </div>
     </div>
 
     {#if deckMode === "loop"}

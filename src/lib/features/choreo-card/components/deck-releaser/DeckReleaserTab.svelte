@@ -372,6 +372,8 @@
         onDraw={handleDraw}
         variationConfig={rs.variationConfig}
         onVariationConfigChange={(c) => { rs.variationConfig = c; }}
+        startOriMode={rs.startOriMode}
+        onStartOriModeChange={(m) => { rs.startOriMode = m; }}
       />
     {:else if rs.step === "review"}
       <ReviewStep
