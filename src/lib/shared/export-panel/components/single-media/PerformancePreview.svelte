@@ -19,11 +19,11 @@
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
   import { getCameraManager } from "$lib/shared/train/getCameraManager";
   import type { CameraManager } from "$lib/shared/train/services/CameraManager";
-  import { getVideoRecorder } from "$lib/shared/video-record/services/implementations/VideoRecorder";
+  import { getVideoRecorder } from "$lib/shared/video-record/services/video-recorder";
   import type {
     RecordingProgress,
     RecordingResult,
-  } from "$lib/shared/video-record/services/contracts/types";
+  } from "$lib/shared/video-record/services/types";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   const hubState = getExportPanelState();

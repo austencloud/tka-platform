@@ -9,11 +9,11 @@
   import { browser } from "$app/environment";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getCameraManager } from "$lib/shared/train/getCameraManager";
-  import { getVideoRecorder } from "../services/implementations/VideoRecorder";
+  import { getVideoRecorder } from "../services/video-recorder";
   import type {
     RecordingProgress,
     RecordingResult,
-  } from "../services/contracts/types";
+  } from "../services/types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createVideoRecordSettings } from "../state/video-record-settings.svelte";
   import GridPreview from "./GridPreview.svelte";

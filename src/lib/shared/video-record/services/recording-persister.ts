@@ -20,7 +20,7 @@ import {
   limit as firestoreLimit,
   serverTimestamp,
 } from "firebase/firestore";
-import type { RecordingMetadata } from "../domain/RecordingMetadata";
+import type { RecordingMetadata } from "../domain/recording-metadata";
 
 function getUserId(): string {
   const user = getAuthSync().currentUser;

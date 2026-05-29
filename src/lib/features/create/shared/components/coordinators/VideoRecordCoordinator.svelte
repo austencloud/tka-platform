@@ -17,13 +17,13 @@ import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
     type SaveMetadata,
   } from "../SaveToLibraryDialog.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
-  import type { RecordingResult } from "$lib/shared/video-record/services/contracts/types";
+  import type { RecordingResult } from "$lib/shared/video-record/services/types";
   import type { R2VideoUploader } from "$lib/shared/share/services/implementations/R2VideoUploader";
   import { saveRecording } from "$lib/shared/video-record/services/recording-persister";
   import {
     createRecordingMetadata,
     detectDeviceType,
-  } from "$lib/shared/video-record/domain/RecordingMetadata";
+  } from "$lib/shared/video-record/domain/recording-metadata";
 
 
   const logger = createComponentLogger("VideoRecordCoordinator");

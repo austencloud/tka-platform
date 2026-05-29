@@ -9,7 +9,7 @@ import type {
   RecordingProgress,
   RecordingResult,
   RecordingOptions,
-} from "../contracts/types";
+} from "./types";
 
 // IndexedDB configuration
 const DB_NAME = "tka-video-recordings";

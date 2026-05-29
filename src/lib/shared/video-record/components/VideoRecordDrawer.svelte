@@ -8,7 +8,7 @@
   import { getContext } from "svelte";
   import PanelHeader from "$lib/shared/create/components/PanelHeader.svelte";
   import VideoRecordPanel from "./VideoRecordPanel.svelte";
-  import type { RecordingResult } from "../services/contracts/types";
+  import type { RecordingResult } from "../services/types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   let {
