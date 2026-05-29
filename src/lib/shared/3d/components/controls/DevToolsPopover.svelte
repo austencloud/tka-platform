@@ -1,9 +1,22 @@
 <script lang="ts">
   import { Vector3 } from "three";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
+  import { oceanQualityOverride } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-quality-override.svelte";
+  import type { OceanQualityTier } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-quality";
 
   const viewer = getViewer3DContext();
   let copiedCamera = $state(false);
+
+  const TIER_OPTIONS: Array<{ value: OceanQualityTier | "auto"; label: string }> = [
+    { value: "auto", label: "Auto" },
+    { value: "ultra", label: "Ultra" },
+    { value: "medium", label: "Medium" },
+    { value: "low", label: "Low" },
+  ];
+  const activeTier = $derived(oceanQualityOverride.tier);
+  function setTier(v: OceanQualityTier | "auto") {
+    oceanQualityOverride.tier = v;
+  }
 
   function copyCameraState(): void {
     const controls = viewer.cameraChoreography.controls;
@@ -37,6 +50,23 @@
     <i class="fas" class:fa-clipboard={!copiedCamera} class:fa-check={copiedCamera}></i>
     <span>{copiedCamera ? "Copied!" : "Copy Camera State"}</span>
   </button>
+
+  <div class="tier-group" role="group" aria-label="Ocean quality tier">
+    <span class="tier-label">Ocean tier</span>
+    <div class="tier-pills">
+      {#each TIER_OPTIONS as opt (opt.value)}
+        <button
+          type="button"
+          class="tier-pill"
+          class:active={activeTier === opt.value}
+          aria-pressed={activeTier === opt.value}
+          onclick={() => setTier(opt.value)}
+        >
+          {opt.label}
+        </button>
+      {/each}
+    </div>
+  </div>
 </div>
 
 <style>
@@ -69,5 +99,42 @@
     text-align: center;
     font-size: 14px;
     opacity: 0.7;
+  }
+  .tier-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 4px;
+  }
+  .tier-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.45);
+  }
+  .tier-pills {
+    display: flex;
+    gap: 4px;
+  }
+  .tier-pill {
+    flex: 1;
+    padding: 6px 4px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 140ms;
+  }
+  .tier-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  .tier-pill.active {
+    background: rgba(99, 179, 237, 0.22);
+    border-color: rgba(99, 179, 237, 0.55);
+    color: white;
   }
 </style>
