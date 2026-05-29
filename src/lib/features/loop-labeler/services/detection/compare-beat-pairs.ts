@@ -1,5 +1,5 @@
 import type { ExtractedStep } from "../../domain/models/internal-step-models";
-import type { StepComparisonOrchestrator } from "../comparison/StepComparisonOrchestrator";
+import type { StepComparisonOrchestrator } from "../comparison/step-comparison-orchestrator";
 import type { ComparisonMatrix } from "./types";
 
 export function compareBeatPairs(

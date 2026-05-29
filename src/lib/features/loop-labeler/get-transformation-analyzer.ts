@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { TransformationAnalyzer } from './services/TransformationAnalyzer';
+import { TransformationAnalyzer } from './services/transformation-analyzer';
 
 let instance: TransformationAnalyzer | null = null;
 

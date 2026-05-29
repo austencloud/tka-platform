@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { StepComparisonOrchestrator } from './services/comparison/StepComparisonOrchestrator';
+import { StepComparisonOrchestrator } from './services/comparison/step-comparison-orchestrator';
 
 let instance: StepComparisonOrchestrator | null = null;
 

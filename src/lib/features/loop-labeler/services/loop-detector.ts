@@ -5,7 +5,7 @@ import type {
   ModularPattern,
 } from "./ILOOPDetector";
 import type { TransformationIntervals } from "../domain/models/label-models";
-import type { StepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
+import type { StepComparisonOrchestrator } from "./comparison/step-comparison-orchestrator";
 import type { PolyrhythmicLOOPResult } from "./polyrhythmic-detector";
 import type {
   InternalStepPair,
@@ -615,13 +615,13 @@ export class LOOPDetector implements ILOOPDetector {
   }
 }
 
-import { stepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
-import { transformationAnalyzer } from "./TransformationAnalyzer";
+import { stepComparisonOrchestrator } from "./comparison/step-comparison-orchestrator";
+import { transformationAnalyzer } from "./transformation-analyzer";
 import { toPublicStepPairs, deriveComponentsFromPattern } from "./candidate-formatter";
 import * as polyrhythmicDetectorModule from "./polyrhythmic-detector";
 import * as layeredPathDetectorModule from "./layered-path-detector";
 import type { LayeredPathResult } from "./types";
-import type { TransformationAnalyzer } from "./TransformationAnalyzer";
+import type { TransformationAnalyzer } from "./transformation-analyzer";
 
 export const loopDetector = new LOOPDetector(
   stepComparisonOrchestrator,

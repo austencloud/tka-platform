@@ -1,6 +1,6 @@
 import { LOOPLabelerState } from "./loop-labeler-state.svelte";
-import { LOOPLabelerServiceLocator } from "./LOOPLabelerServiceLocator";
-import { LOOPLabelerController } from "./LOOPLabelerController";
+import { LOOPLabelerServiceLocator } from "./loop-labeler-service-locator";
+import { LOOPLabelerController } from "./loop-labeler-controller";
 
 export const loopLabelerState = new LOOPLabelerState();
 export const loopLabelerServices = new LOOPLabelerServiceLocator();

@@ -4,7 +4,7 @@ import type {
   FilterMode,
 } from "../domain/models/label-models";
 import type { LOOPDetectionResult } from "../services/ILOOPDetector";
-import { LOOPLabelerServiceLocator } from "./LOOPLabelerServiceLocator";
+import { LOOPLabelerServiceLocator } from "./loop-labeler-service-locator";
 import type { LabelingMode, SyncStatus } from "../domain/types/labeler-types";
 
 export type { LabelingMode, SyncStatus } from "../domain/types/labeler-types";

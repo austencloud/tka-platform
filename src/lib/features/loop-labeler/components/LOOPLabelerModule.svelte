@@ -8,10 +8,10 @@
   import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
   import { onMount } from "svelte";
   import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
-  import { loopDetector } from "../services/LOOPDetector";
+  import { loopDetector } from "../services/loop-detector";
   import { convertRawToBeats, getAuthoritativeGridMode } from "../services/step-data-converter";
   import type { LOOPDetectionResult } from "../services/ILOOPDetector";
-  import type { LOOPDetector } from "../services/LOOPDetector";
+  import type { LOOPDetector } from "../services/loop-detector";
   import type { ComponentId } from "../domain/constants/loop-components";
   import type { LOOPLabelerState } from "../state/loop-labeler-state.svelte";
   import {

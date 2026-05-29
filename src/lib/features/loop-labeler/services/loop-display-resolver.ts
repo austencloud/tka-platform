@@ -11,7 +11,7 @@ import {
   Period,
   type LOOPType,
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import { loopDetector } from "./LOOPDetector";
+import { loopDetector } from "./loop-detector";
 import { convert as convertSequenceToEntry } from "$lib/features/choreo-card/services/sequence-to-entry-converter";
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 

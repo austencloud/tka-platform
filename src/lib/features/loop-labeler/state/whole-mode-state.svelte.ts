@@ -5,7 +5,7 @@
  * Handles component selection, multiple designations, and freeform labeling.
  */
 
-import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
+import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/get-loop-labels-firebase-repository";
 import { isDuplicateDesignation } from "../services/loop-designator";
 import type {
   LOOPDesignation,
@@ -15,7 +15,7 @@ import type {
 } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import type { LOOPLabelsFirebaseRepository } from "../services/LOOPLabelsFirebaseRepository";
+import type { LOOPLabelsFirebaseRepository } from "../services/loop-labels-firebase-repository";
 
 /**
  * Map component IDs to their corresponding interval keys

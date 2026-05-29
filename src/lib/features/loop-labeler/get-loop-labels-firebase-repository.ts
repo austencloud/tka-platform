@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { LOOPLabelsFirebaseRepository } from './services/LOOPLabelsFirebaseRepository';
+import { LOOPLabelsFirebaseRepository } from './services/loop-labels-firebase-repository';
 
 let instance: LOOPLabelsFirebaseRepository | null = null;
 

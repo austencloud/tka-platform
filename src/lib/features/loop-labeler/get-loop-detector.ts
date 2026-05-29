@@ -1,8 +1,8 @@
 import { browser } from '$app/environment';
 import type { ILOOPDetector } from './services/ILOOPDetector';
-import { LOOPDetector } from './services/LOOPDetector';
-import { getStepComparisonOrchestrator } from './getStepComparisonOrchestrator';
-import { getTransformationAnalyzer } from './getTransformationAnalyzer';
+import { LOOPDetector } from './services/loop-detector';
+import { getStepComparisonOrchestrator } from './get-step-comparison-orchestrator';
+import { getTransformationAnalyzer } from './get-transformation-analyzer';
 import * as polyrhythmicDetectorModule from './services/polyrhythmic-detector';
 import * as layeredPathDetectorModule from './services/layered-path-detector';
 

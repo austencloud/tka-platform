@@ -6,11 +6,11 @@
  */
 
 import * as sequenceLoaderModule from "../services/sequence-loader";
-import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
+import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/get-loop-labels-firebase-repository";
 import * as navigatorModule from "../services/navigator";
-import { loopDetector as loopDetectorInstance } from "../services/LOOPDetector";
+import { loopDetector as loopDetectorInstance } from "../services/loop-detector";
 import type { ILOOPDetector } from "../services/ILOOPDetector";
-import type { LOOPLabelsFirebaseRepository } from "../services/LOOPLabelsFirebaseRepository";
+import type { LOOPLabelsFirebaseRepository } from "../services/loop-labels-firebase-repository";
 
 export class LOOPLabelerServiceLocator {
   private cachedLabelsRepository: LOOPLabelsFirebaseRepository | null = null;

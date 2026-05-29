@@ -5,12 +5,12 @@
  * Handles beat selection, section designation, and saved sections.
  */
 
-import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/getLOOPLabelsFirebaseRepository";
+import { getLOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/get-loop-labels-firebase-repository";
 import type { SectionDesignation } from "../domain/models/section-models";
 import type { LabeledSequence } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import type { LOOPLabelsFirebaseRepository } from "../services/LOOPLabelsFirebaseRepository";
+import type { LOOPLabelsFirebaseRepository } from "../services/loop-labels-firebase-repository";
 
 export interface SectionModeState {
   // Beat selection

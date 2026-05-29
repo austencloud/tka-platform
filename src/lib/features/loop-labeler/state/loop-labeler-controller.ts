@@ -1,6 +1,6 @@
-import type { LOOPLabelerState } from "./loop-labeler-state.svelte";
+import type { LOOPLabelerState } from "./loop-labeler-state.svelte.ts";
 import type { LabelingMode } from "../domain/types/labeler-types";
-import type { LOOPLabelerServiceLocator } from "./LOOPLabelerServiceLocator";
+import type { LOOPLabelerServiceLocator } from "./loop-labeler-service-locator";
 import type {
   LabeledSequence,
   FilterMode,
