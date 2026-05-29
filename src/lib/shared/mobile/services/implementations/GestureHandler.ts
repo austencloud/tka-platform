@@ -1,4 +1,4 @@
-import type { SwipeGestureConfig, SwipeGestureHandler, GestureDirection } from "../contracts/types";
+import type { SwipeGestureConfig, SwipeGestureHandler, GestureDirection } from "../types";
 
 interface SwipeGestureState {
   touchStartX: number;

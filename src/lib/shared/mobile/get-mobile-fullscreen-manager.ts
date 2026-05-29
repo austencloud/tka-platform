@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { MobileFullscreenManager } from './services/implementations/MobileFullscreenManager';
+import { MobileFullscreenManager } from './services/mobile-fullscreen-manager';
 
 let instance: MobileFullscreenManager | null = null;
 

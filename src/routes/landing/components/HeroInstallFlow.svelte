@@ -13,8 +13,8 @@
 <script lang="ts">
   import { detectPlatformAndBrowser } from "$lib/shared/mobile/services/platform-detector";
   import { onMount } from "svelte";
-  import type { Platform, InAppBrowser } from '$lib/shared/mobile/services/contracts/types';
-import {  } from '$lib/shared/mobile/services/contracts/types';
+  import type { Platform, InAppBrowser } from '$lib/shared/mobile/services/types';
+import {  } from '$lib/shared/mobile/services/types';
   import { APP_DOMAIN } from "../../../config/domains";
   import InAppBrowserModal from "./InAppBrowserModal.svelte";
   import IOSInstallInstructions from "./IOSInstallInstructions.svelte";

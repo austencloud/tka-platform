@@ -1,4 +1,4 @@
-import type { PWAEngagementMetrics } from "../contracts/types";
+import type { PWAEngagementMetrics } from "./types";
 
 const STORAGE_KEY = "tka_pwa_engagement";
 

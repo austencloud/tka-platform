@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { PWAInstallDismissalManager } from './services/implementations/PWAInstallDismissalManager';
+import { PWAInstallDismissalManager } from './services/pwa-install-dismissal-manager';
 
 let instance: PWAInstallDismissalManager | null = null;
 

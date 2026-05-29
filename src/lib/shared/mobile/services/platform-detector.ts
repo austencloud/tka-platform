@@ -1,4 +1,4 @@
-import type { Platform, Browser, InAppBrowser, PlatformInfo } from "./contracts/types";
+import type { Platform, Browser, InAppBrowser, PlatformInfo } from "./types";
 import { BREAKPOINTS } from "../../device/domain/constants/device-constants";
 
 interface VendorNavigator extends Navigator {

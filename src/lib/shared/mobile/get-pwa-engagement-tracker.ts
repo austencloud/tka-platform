@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { PWAEngagementTracker } from './services/implementations/PWAEngagementTracker';
+import { PWAEngagementTracker } from './services/pwa-engagement-tracker';
 
 let instance: PWAEngagementTracker | null = null;
 

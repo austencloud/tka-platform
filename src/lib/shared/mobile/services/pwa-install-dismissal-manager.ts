@@ -1,4 +1,4 @@
-import type { PWADismissalState } from "../contracts/types";
+import type { PWADismissalState } from "./types";
 
 const STORAGE_KEY = "tka_pwa_dismissal";
 

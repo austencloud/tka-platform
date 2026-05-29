@@ -11,9 +11,9 @@ the actual fullscreen state rather than inferring from viewport size.
 -->
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-  import { getMobileFullscreenManager } from "$lib/shared/mobile/getMobileFullscreenManager";
+  import { getMobileFullscreenManager } from "$lib/shared/mobile/get-mobile-fullscreen-manager";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import type { MobileFullscreenManager } from '$lib/shared/mobile/services/implementations/MobileFullscreenManager'
+  import type { MobileFullscreenManager } from '$lib/shared/mobile/services/mobile-fullscreen-manager'
   import { onMount } from "svelte";
 
   let showPrompt = $state(false);
