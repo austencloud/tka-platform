@@ -380,11 +380,20 @@ export async function drawElementalGlyph(
     const blob = await response.blob();
     const img = await createImageBitmap(blob);
 
-    const drawWidth = GLYPH_WIDTH * scale;
-    const drawHeight = GLYPH_HEIGHT * scale;
+    // Element art is not square (water is tall ~0.68, air is wide ~1.41).
+    // Contain-fit within the box so each element keeps its natural aspect
+    // instead of being stretched into the 120x140 slot, then anchor it to the
+    // bottom-right corner where the box sits.
+    const boxWidth = GLYPH_WIDTH * scale;
+    const boxHeight = GLYPH_HEIGHT * scale;
+    const fit = Math.min(boxWidth / img.width, boxHeight / img.height);
+    const drawWidth = img.width * fit;
+    const drawHeight = img.height * fit;
+    const drawX = x + (boxWidth - drawWidth);
+    const drawY = y + (boxHeight - drawHeight);
 
     ctx.save();
-    ctx.drawImage(img, x, y, drawWidth, drawHeight);
+    ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
     ctx.restore();
   } catch (error) {
     console.warn(`[Canvas2D] Failed to draw Elemental glyph:`, error);
