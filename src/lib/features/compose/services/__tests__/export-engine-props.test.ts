@@ -1,0 +1,55 @@
+import { describe, it, expect } from "vitest";
+import { assembleExportEngineProps } from "../export-engine-props";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+
+const blue: PropState = { x: 1, y: 2, angle: 10 } as unknown as PropState;
+const red: PropState = { x: 3, y: 4, angle: 20 } as unknown as PropState;
+
+function fakePanel(overrides: Record<string, unknown> = {}) {
+  return {
+    bluePropState: blue,
+    redPropState: red,
+    currentStep: 5,
+    sequenceData: { gridMode: GridMode.DIAMOND, steps: [] } as any,
+    sequenceWord: "TEST",
+    virtualTime: 1234,
+    ...overrides,
+  } as any;
+}
+
+describe("assembleExportEngineProps", () => {
+  it("maps panel prop states + frame context into AnimationEngineProps", () => {
+    const props = assembleExportEngineProps(fakePanel(), {
+      virtualTime: 999,
+      isSeamlesslyLoopable: true,
+      backgroundAlpha: 1,
+      showNonRadialPoints: false,
+    });
+    expect(props.blueProp).toBe(blue);
+    expect(props.redProp).toBe(red);
+    expect(props.currentStep).toBe(5);
+    expect(props.virtualTime).toBe(999);
+    expect(props.isSeamlesslyLoopable).toBe(true);
+    expect(props.backgroundAlpha).toBe(1);
+    expect(props.showNonRadialPoints).toBe(false);
+    expect(props.gridMode).toBe(GridMode.DIAMOND);
+    expect(props.isPlaying).toBe(true);
+  });
+
+  it("falls back to DIAMOND grid when sequenceData has none", () => {
+    const props = assembleExportEngineProps(
+      fakePanel({ sequenceData: { steps: [] } as any }),
+      { virtualTime: 0, isSeamlesslyLoopable: false, backgroundAlpha: 1, showNonRadialPoints: true },
+    );
+    expect(props.gridMode).toBe(GridMode.DIAMOND);
+  });
+
+  it("omits letter/stepData (glyph is composited separately)", () => {
+    const props = assembleExportEngineProps(fakePanel(), {
+      virtualTime: 0, isSeamlesslyLoopable: false, backgroundAlpha: 1, showNonRadialPoints: true,
+    });
+    expect(props.letter).toBeUndefined();
+    expect(props.stepData).toBeUndefined();
+  });
+});
