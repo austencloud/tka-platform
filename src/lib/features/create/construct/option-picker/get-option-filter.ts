@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { OptionFilter } from './services/implementations/OptionFilter';
-import { getPositionAnalyzer } from './getPositionAnalyzer';
+import { OptionFilter } from './services/option-filter';
+import { getPositionAnalyzer } from './get-position-analyzer';
 
 let instance: OptionFilter | null = null;
 

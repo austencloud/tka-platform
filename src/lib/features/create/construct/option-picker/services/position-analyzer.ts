@@ -8,7 +8,7 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { RotationRelation } from "../contracts/types";
+import type { RotationRelation } from "./types";
 import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
 export class PositionAnalyzer {

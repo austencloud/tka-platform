@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { OptionSorter } from './services/implementations/OptionSorter';
-import { getPositionAnalyzer } from './getPositionAnalyzer';
+import { OptionSorter } from './services/option-sorter';
+import { getPositionAnalyzer } from './get-position-analyzer';
 
 let instance: OptionSorter | null = null;
 

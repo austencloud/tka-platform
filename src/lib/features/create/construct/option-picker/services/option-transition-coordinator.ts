@@ -4,7 +4,7 @@
  * Extracted from OptionViewer.svelte to centralize transition choreography.
  */
 
-import type { TransitionCallbacks, TransitionLifecycle } from "../contracts/types";
+import type { TransitionCallbacks, TransitionLifecycle } from "./types";
 
 // Transition timing constants (same as original component)
 const FADE_OUT_DURATION = 250;

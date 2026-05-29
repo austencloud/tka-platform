@@ -12,9 +12,9 @@ import type {
   SortMethod,
 } from "../domain/option-picker-types";
 import type { OptionPickerLayout } from "../domain/option-viewer-models";
-import type { OptionFilter } from "$lib/features/create/construct/option-picker/services/implementations/OptionFilter";
-import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/implementations/OptionLoader";
-import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/implementations/OptionSorter";
+import type { OptionFilter } from "$lib/features/create/construct/option-picker/services/option-filter";
+import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/option-loader";
+import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/option-sorter";
 
 export interface OptionPickerStateConfig {
   optionLoader: OptionLoader;

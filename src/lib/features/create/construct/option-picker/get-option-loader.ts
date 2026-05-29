@@ -1,8 +1,8 @@
 import { browser } from '$app/environment';
-import { OptionLoader } from './services/implementations/OptionLoader';
+import { OptionLoader } from './services/option-loader';
 import { gridPositionDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver';
 import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
-import { getPositionAnalyzer } from './getPositionAnalyzer';
+import { getPositionAnalyzer } from './get-position-analyzer';
 
 let instance: OptionLoader | null = null;
 

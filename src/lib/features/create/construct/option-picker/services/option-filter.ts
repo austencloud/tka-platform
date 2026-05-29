@@ -13,10 +13,10 @@ import type {
   EndPositionFilter,
   ReversalFilter,
   TypeFilter,
-} from "../../domain/option-picker-types";
-import type { PositionAnalyzer } from "./PositionAnalyzer";
-import { getReversalCount } from "../reversal-checker";
-import { LetterType } from "../../../../../../shared/foundation/domain/models/LetterType";
+} from "../domain/option-picker-types";
+import type { PositionAnalyzer } from "./position-analyzer";
+import { getReversalCount } from "./reversal-checker";
+import { LetterType } from "../../../../../shared/foundation/domain/models/LetterType";
 
 export class OptionFilter {
   constructor(
@@ -150,6 +150,6 @@ export class OptionFilter {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { positionAnalyzer } from "./PositionAnalyzer";
+import { positionAnalyzer } from "./position-analyzer";
 
 export const optionFilter = new OptionFilter(positionAnalyzer);

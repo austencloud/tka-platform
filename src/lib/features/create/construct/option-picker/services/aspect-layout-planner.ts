@@ -5,7 +5,7 @@
  * Extracted from OptionViewer456Group.svelte's calculateOptimalLayout function.
  */
 
-import type { LayoutRow, TypeCount } from "./contracts/types";
+import type { LayoutRow, TypeCount } from "./types";
 
 // Aspect ratio thresholds
 const PORTRAIT_MAX = 0.6;

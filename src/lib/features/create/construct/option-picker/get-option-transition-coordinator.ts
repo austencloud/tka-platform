@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { OptionTransitionCoordinator } from './services/implementations/OptionTransitionCoordinator';
+import { OptionTransitionCoordinator } from './services/option-transition-coordinator';
 
 let instance: OptionTransitionCoordinator | null = null;
 

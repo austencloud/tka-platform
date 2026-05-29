@@ -8,7 +8,7 @@
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { PositionAnalyzer } from "./PositionAnalyzer";
+import type { PositionAnalyzer } from "./position-analyzer";
 import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
 export class OptionLoader {
@@ -80,7 +80,7 @@ export class OptionLoader {
 // ============================================================================
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
-import { positionAnalyzer } from "./PositionAnalyzer";
+import { positionAnalyzer } from "./position-analyzer";
 
 export const optionLoader = new OptionLoader(
   gridPositionDeriver,

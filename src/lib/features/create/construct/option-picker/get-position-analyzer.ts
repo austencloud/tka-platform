@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { PositionAnalyzer } from './services/implementations/PositionAnalyzer';
+import { PositionAnalyzer } from './services/position-analyzer';
 import { gridPositionDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver';
 
 let instance: PositionAnalyzer | null = null;

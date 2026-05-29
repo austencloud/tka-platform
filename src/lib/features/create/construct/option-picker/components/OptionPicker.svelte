@@ -6,10 +6,10 @@ Delegates all rendering to child components.
 -->
 <script lang="ts">
 
-import { getOptionFilter } from "$lib/features/create/construct/option-picker/getOptionFilter";
-import { getOptionLoader } from "$lib/features/create/construct/option-picker/getOptionLoader";
+import { getOptionFilter } from "$lib/features/create/construct/option-picker/get-option-filter";
+import { getOptionLoader } from "$lib/features/create/construct/option-picker/get-option-loader";
 import { organizePictographs } from "$lib/features/create/construct/option-picker/services/option-organizer";
-import { getOptionSorter } from "$lib/features/create/construct/option-picker/getOptionSorter";
+import { getOptionSorter } from "$lib/features/create/construct/option-picker/get-option-sorter";
 import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModeProvider";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -20,13 +20,13 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   import { calculateDeviceAwareSize } from "../services/option-grid-fit-calculator";
 
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
-  import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/implementations/OptionLoader";
-  import type { OptionFilter } from "$lib/features/create/construct/option-picker/services/implementations/OptionFilter";
-  import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/implementations/OptionSorter";
+  import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/option-loader";
+  import type { OptionFilter } from "$lib/features/create/construct/option-picker/services/option-filter";
+  import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/option-sorter";
   import type { OrganizedSection, SortMethod } from "$lib/features/create/construct/option-picker/domain/option-picker-types";
-  import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/contracts/types";
+  import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/types";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
-  import type { PictographPreparer } from "../services/PictographPreparer";
+  import type { PictographPreparer } from "../services/pictograph-preparer";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { DarkModeProvider } from "$lib/shared/animation-engine/services/implementations/DarkModeProvider";
   import OptionPickerContent from "./OptionPickerContent.svelte";

@@ -6,9 +6,9 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { SortMethod } from "../../domain/option-picker-types";
-import type { PositionAnalyzer } from "./PositionAnalyzer";
-import { hasReversals } from "../reversal-checker";
+import type { SortMethod } from "../domain/option-picker-types";
+import type { PositionAnalyzer } from "./position-analyzer";
+import { hasReversals } from "./reversal-checker";
 
 export class OptionSorter {
   constructor(
@@ -62,6 +62,6 @@ export class OptionSorter {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { positionAnalyzer } from "./PositionAnalyzer";
+import { positionAnalyzer } from "./position-analyzer";
 
 export const optionSorter = new OptionSorter(positionAnalyzer);

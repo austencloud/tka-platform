@@ -1,5 +1,5 @@
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-import type { LayoutConfig } from "../contracts/types";
+import type { LayoutConfig } from "./types";
 
 // Re-export LayoutConfig type to avoid duplicate type issues
 type LocalLayoutConfig = LayoutConfig;
