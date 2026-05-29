@@ -1,4 +1,4 @@
-import type { RetroWindowState } from "../../domain/types/retro-types";
+import type { RetroWindowState } from "../domain/types/retro-types";
 
 // --- From IFakeLoadingManager ---
 /**

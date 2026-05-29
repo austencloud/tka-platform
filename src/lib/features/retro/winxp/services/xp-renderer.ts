@@ -15,11 +15,11 @@
  * color tinting, coordinate scaling, and element transforms.
  */
 
-import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
+import type { RetroPictographData } from "../../shared/domain/pictograph-types";
 import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { EraRendererBase } from "../../../shared/services/implementations/EraRendererBase";
+import { EraRendererBase } from "../../shared/services/era-renderer-base";
 import type { DrawableImage } from '$lib/shared/render/services/implementations/SvgImageCache';
 
 // ============================================================================

@@ -15,11 +15,11 @@
  * Domain: Retro DOS Era
  */
 
-import type { IAsciiRenderer, AsciiRenderOptions } from "../contracts/IAsciiRenderer";
+import type { IAsciiRenderer, AsciiRenderOptions } from "./contracts/IAsciiRenderer";
 import type {
 	RetroPictographData,
 	RetroHandData,
-} from "../../../shared/domain/pictograph-types";
+} from "../../shared/domain/pictograph-types";
 import {
 	GridLocation,
 	GridMode,
@@ -27,7 +27,7 @@ import {
 	MotionColor,
 	Orientation,
 	RotationDirection,
-} from "../../../shared/domain/pictograph-types";
+} from "../../shared/domain/pictograph-types";
 
 // ============================================================================
 // CONSTANTS

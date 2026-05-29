@@ -15,7 +15,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
-  import { DosSoundManager } from "../../services/implementations/DosSoundManager";
+  import { DosSoundManager } from "../../services/dos-sound-manager";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */

@@ -5,6 +5,6 @@
  * volume/mute. The instance is shared across all components.
  */
 
-import { RetroSoundManager } from "../services/implementations/RetroSoundManager";
+import { RetroSoundManager } from "../services/retro-sound-manager";
 
 export const retroSound = new RetroSoundManager();

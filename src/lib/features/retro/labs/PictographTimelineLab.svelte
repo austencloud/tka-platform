@@ -13,9 +13,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { PixelRenderer } from "$lib/features/retro/win95/services/implementations/PixelRenderer";
-  import { XPRenderer } from "$lib/features/retro/winxp/services/implementations/XPRenderer";
-  import { SvgToBrailleConverter } from "$lib/features/retro/dos/services/implementations/SvgToBrailleConverter";
+  import { PixelRenderer } from "$lib/features/retro/win95/services/pixel-renderer";
+  import { XPRenderer } from "$lib/features/retro/winxp/services/xp-renderer";
+  import { SvgToBrailleConverter } from "$lib/features/retro/dos/services/svg-to-braille-converter";
   import AsciiRawPreview from "./AsciiRawPreview.svelte";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

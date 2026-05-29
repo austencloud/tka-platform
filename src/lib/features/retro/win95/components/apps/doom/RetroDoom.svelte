@@ -8,7 +8,7 @@
   Domain: Retro Easter Eggs
 -->
 <script lang="ts">
-  import { DoomLoader } from "../../../services/implementations/DoomLoader";
+  import { DoomLoader } from "../../../services/doom-loader";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */

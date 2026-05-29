@@ -13,7 +13,7 @@
   
   import { desktopState } from "../../state/desktop-state.svelte";
   import { RETRO_ICONS } from "../rendering/retro-icons";
-import type { WindowManager } from "../../services/implementations/WindowManager";
+import type { WindowManager } from "../../services/window-manager";
 
   let {
     windowManager,

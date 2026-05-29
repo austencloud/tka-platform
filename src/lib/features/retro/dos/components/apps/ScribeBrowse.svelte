@@ -14,9 +14,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
-  import { DosFileSystem } from "../../services/implementations/DosFileSystem";
-  import { BrailleHybridRenderer } from "../../services/implementations/BrailleHybridRenderer";
-  import { DosSoundManager } from "../../services/implementations/DosSoundManager";
+  import { DosFileSystem } from "../../services/dos-file-system";
+  import { BrailleHybridRenderer } from "../../services/braille-hybrid-renderer";
+  import { DosSoundManager } from "../../services/dos-sound-manager";
   import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import type { DosFile } from "../../domain/dos-types";
 

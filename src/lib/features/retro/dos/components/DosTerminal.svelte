@@ -16,8 +16,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { terminalState } from "../state/terminal-state.svelte";
-  import { CommandParser } from "../services/implementations/CommandParser";
-  import { DosFileSystem } from "../services/implementations/DosFileSystem";
+  import { CommandParser } from "../services/command-parser";
+  import { DosFileSystem } from "../services/dos-file-system";
   import DosBootSequence from "./DosBootSequence.svelte";
   import ScribeMenu from "./apps/ScribeMenu.svelte";
   import ScribeGenerate from "./apps/ScribeGenerate.svelte";

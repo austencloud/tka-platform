@@ -8,9 +8,9 @@
  * Domain: Retro Desktop Shell
  */
 
-import type { WindowOpenConfig } from "../contracts/types";
-import type { RetroWindowState } from "../../domain/types/retro-types";
-import { desktopState } from "../../state/desktop-state.svelte";
+import type { WindowOpenConfig } from "./types";
+import type { RetroWindowState } from "../domain/types/retro-types";
+import { desktopState } from "../state/desktop-state.svelte";
 
 /** Height of the Win95-style taskbar in pixels. */
 const TASKBAR_HEIGHT = 28;

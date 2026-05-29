@@ -18,10 +18,10 @@
  * Domain: 1995 TKA Notation System
  */
 
-import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
+import type { RetroPictographData } from "../../shared/domain/pictograph-types";
 import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
-import { EraRendererBase } from "../../../shared/services/implementations/EraRendererBase";
+import { EraRendererBase } from "../../shared/services/era-renderer-base";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { DrawableImage } from '$lib/shared/render/services/implementations/SvgImageCache';
 

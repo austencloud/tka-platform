@@ -11,7 +11,7 @@
 -->
 <script lang="ts">
   import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
-  import { PixelRenderer } from "../../services/implementations/PixelRenderer";
+  import { PixelRenderer } from "../../services/pixel-renderer";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 
   let {

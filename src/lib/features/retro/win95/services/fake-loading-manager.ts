@@ -11,7 +11,7 @@
  * Domain: Retro Desktop Effects
  */
 
-import type { LoadingContext, LoadingSession } from "../contracts/types";
+import type { LoadingContext, LoadingSession } from "./types";
 
 // ============================================================================
 // MESSAGE POOLS

@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { SvgToBrailleConverter } from "$lib/features/retro/dos/services/implementations/SvgToBrailleConverter";
+  import { SvgToBrailleConverter } from "$lib/features/retro/dos/services/svg-to-braille-converter";
   import AsciiRawPreview from "./AsciiRawPreview.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";

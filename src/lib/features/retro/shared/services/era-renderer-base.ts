@@ -16,7 +16,7 @@ import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/mo
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { RetroPictographData, RetroHandData } from "../../domain/pictograph-types";
+import type { RetroPictographData, RetroHandData } from "../domain/pictograph-types";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { getSvgImageCache, type DrawableImage } from "$lib/shared/render/services/implementations/SvgImageCache";

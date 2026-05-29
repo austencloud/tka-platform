@@ -11,9 +11,9 @@
  * Domain: Retro DOS Era
  */
 
-import type { DosFileSystem } from "./DosFileSystem";
-import type { DosFile } from "../../domain/dos-types";
-import { terminalState } from "../../state/terminal-state.svelte";
+import type { DosFileSystem } from "./dos-file-system";
+import type { DosFile } from "../domain/dos-types";
+import { terminalState } from "../state/terminal-state.svelte";
 import { signInWithEmail } from "$lib/shared/auth/services/authenticator";
 import { signOut } from "$lib/shared/auth/state/authState.svelte";
 import { auth } from "$lib/shared/auth/firebase";

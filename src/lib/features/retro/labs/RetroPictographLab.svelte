@@ -7,7 +7,7 @@
   Domain: Retro Win95 Shell
 -->
 <script lang="ts">
-  import { PixelRenderer } from "$lib/features/retro/win95/services/implementations/PixelRenderer";
+  import { PixelRenderer } from "$lib/features/retro/win95/services/pixel-renderer";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import { createAsciiLabState } from "./ascii-pictograph-lab-state.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";

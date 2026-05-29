@@ -25,7 +25,7 @@
   import type { RetroIconName } from "../rendering/retro-icons";
   import { desktopState } from "../../state/desktop-state.svelte";
   import { retroSound } from "../../state/retro-sound";
-  import { WindowManager } from "../../services/implementations/WindowManager";
+  import { WindowManager } from "../../services/window-manager";
 
   import RetroDesktopIconComponent from "./RetroDesktopIcon.svelte";
   import RetroTaskbar from "./RetroTaskbar.svelte";

@@ -17,7 +17,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
-  import { BrailleHybridRenderer } from "../../services/implementations/BrailleHybridRenderer";
+  import { BrailleHybridRenderer } from "../../services/braille-hybrid-renderer";
   import {
     generateRetroSequence,
     type RetroGenerationResult,

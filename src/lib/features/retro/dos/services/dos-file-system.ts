@@ -10,8 +10,8 @@
  * ORDER7.DOC is access-denied.
  */
 
-import type { DosFile, DosDirectory } from "../../domain/dos-types";
-import { getAllLore } from "../../../shared/lore/order-references";
+import type { DosFile, DosDirectory } from "../domain/dos-types";
+import { getAllLore } from "../../shared/lore/order-references";
 
 /** Deterministic size from filename - simple hash to keep values stable across sessions */
 function seedSize(name: string, base: number): number {

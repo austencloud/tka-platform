@@ -16,7 +16,7 @@
   import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
   import type { ScribeMode } from "../../domain/dos-types";
-  import { DosSoundManager } from "../../services/implementations/DosSoundManager";
+  import { DosSoundManager } from "../../services/dos-sound-manager";
 
   const soundManager = new DosSoundManager();
 
