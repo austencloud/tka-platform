@@ -34,3 +34,16 @@ export class EchoOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EchoIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const echoEffectPlugin: EffectPlugin<EchoIntent> = {
+  id: "echo",
+  kind: "canvas2d",
+  createRenderer: () => new EchoOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.echo,
+  configKey: "echoRenderer",
+};

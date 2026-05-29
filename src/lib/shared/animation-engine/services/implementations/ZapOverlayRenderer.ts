@@ -40,3 +40,16 @@ export class ZapOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { ZapIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const zapEffectPlugin: EffectPlugin<ZapIntent> = {
+  id: "zap",
+  kind: "canvas2d",
+  createRenderer: () => new ZapOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.zap,
+  configKey: "zapRenderer",
+};

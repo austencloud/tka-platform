@@ -34,3 +34,16 @@ export class SparklesOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { SparklesIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const sparklesEffectPlugin: EffectPlugin<SparklesIntent> = {
+  id: "sparkles",
+  kind: "canvas2d",
+  createRenderer: () => new SparklesOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.sparkles,
+  configKey: "sparklesRenderer",
+};

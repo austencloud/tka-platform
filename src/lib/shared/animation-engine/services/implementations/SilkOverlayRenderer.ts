@@ -23,3 +23,16 @@ export class SilkOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { SilkIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const silkEffectPlugin: EffectPlugin<SilkIntent> = {
+  id: "silk",
+  kind: "canvas2d",
+  createRenderer: () => new SilkOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.silk,
+  configKey: "silkRenderer",
+};

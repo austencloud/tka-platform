@@ -19,3 +19,16 @@ export class PulseOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { PulseIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const pulseEffectPlugin: EffectPlugin<PulseIntent> = {
+  id: "pulse",
+  kind: "canvas2d",
+  createRenderer: () => new PulseOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.pulse,
+  configKey: "pulseRenderer",
+};

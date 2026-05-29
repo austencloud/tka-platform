@@ -32,3 +32,16 @@ export class BloomOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { BloomIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const bloomEffectPlugin: EffectPlugin<BloomIntent> = {
+  id: "bloom",
+  kind: "canvas2d",
+  createRenderer: () => new BloomOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.bloom,
+  configKey: "bloomRenderer",
+};

@@ -37,3 +37,16 @@ export class SmokeOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { SmokeIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const smokeEffectPlugin: EffectPlugin<SmokeIntent> = {
+  id: "smoke",
+  kind: "canvas2d",
+  createRenderer: () => new SmokeOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.smoke,
+  configKey: "smokeRenderer",
+};

@@ -37,3 +37,16 @@ export class PetalsOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { PetalsIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const petalsEffectPlugin: EffectPlugin<PetalsIntent> = {
+  id: "petals",
+  kind: "canvas2d",
+  createRenderer: () => new PetalsOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.petals,
+  configKey: "petalsRenderer",
+};

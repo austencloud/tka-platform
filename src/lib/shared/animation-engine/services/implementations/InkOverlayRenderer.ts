@@ -37,3 +37,16 @@ export class InkOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { InkIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const inkEffectPlugin: EffectPlugin<InkIntent> = {
+  id: "ink",
+  kind: "canvas2d",
+  createRenderer: () => new InkOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.ink,
+  configKey: "inkRenderer",
+};

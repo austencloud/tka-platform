@@ -23,3 +23,16 @@ export class FrostOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { FrostIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const frostEffectPlugin: EffectPlugin<FrostIntent> = {
+  id: "frost",
+  kind: "canvas2d",
+  createRenderer: () => new FrostOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.frost,
+  configKey: "frostRenderer",
+};

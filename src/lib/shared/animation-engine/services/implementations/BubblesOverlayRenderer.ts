@@ -37,3 +37,16 @@ export class BubblesOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { BubblesIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const bubblesEffectPlugin: EffectPlugin<BubblesIntent> = {
+  id: "bubbles",
+  kind: "canvas2d",
+  createRenderer: () => new BubblesOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.bubbles,
+  configKey: "bubblesRenderer",
+};

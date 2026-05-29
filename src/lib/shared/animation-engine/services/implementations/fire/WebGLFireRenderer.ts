@@ -1623,3 +1623,22 @@ export class WebGLFireRenderer {
     this.initialized = false;
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../../effects/EffectPlugin";
+import type { EffectRendererManager } from "../EffectRendererManager";
+import type { FireIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const fireEffectPlugin: EffectPlugin<FireIntent> = {
+  id: "fire",
+  kind: "webgl",
+  createRenderer: () => new WebGLFireRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.fire,
+  configKey: "fireRenderer",
+  onDisable: (mgr: EffectRendererManager) => {
+    if (!mgr.isEffectEnabled("charcoal")) {
+      mgr.fireTipTracker?.reset();
+    }
+  },
+};

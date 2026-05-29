@@ -996,3 +996,27 @@ export class CharcoalSparkRenderer {
 		this.initialized = false;
 	}
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../../effects/EffectPlugin";
+import type { EffectRendererManager } from "../EffectRendererManager";
+import type { EffectRendererLike } from "../../effects/EffectRenderer";
+import type { CharcoalIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const charcoalEffectPlugin: EffectPlugin<CharcoalIntent> = {
+  id: "charcoal",
+  kind: "webgl",
+  createRenderer: () => new CharcoalSparkRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.charcoal,
+  configKey: "charcoalRenderer",
+  onInit: (mgr: EffectRendererManager, renderer: EffectRendererLike) => {
+    const charcoalParams = mgr.getCharcoalParamsFromConfig();
+    if (charcoalParams) (renderer as CharcoalSparkRenderer).setParams(charcoalParams);
+  },
+  onDisable: (mgr: EffectRendererManager) => {
+    if (!mgr.isEffectEnabled("fire")) {
+      mgr.fireTipTracker?.reset();
+    }
+  },
+};

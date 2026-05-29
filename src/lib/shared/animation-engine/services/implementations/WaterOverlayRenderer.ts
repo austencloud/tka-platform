@@ -36,3 +36,16 @@ export class WaterOverlayRenderer extends EffectRenderer {
     this.renderer.dispose();
   }
 }
+
+// ── EffectPlugin descriptor ──────────────────────────────────────────────────
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { WaterIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+
+export const waterEffectPlugin: EffectPlugin<WaterIntent> = {
+  id: "water",
+  kind: "canvas2d",
+  createRenderer: () => new WaterOverlayRenderer(),
+  defaultConfig: DEFAULT_EFFECTS_CONFIG.water,
+  configKey: "waterRenderer",
+};
