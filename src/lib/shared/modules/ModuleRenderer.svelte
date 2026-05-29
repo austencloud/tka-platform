@@ -177,12 +177,36 @@
 
     // Return cached module if available
     if (moduleCache.has(moduleName)) {
+      console.debug(`[ModuleLoad] ${moduleName}: cache hit (0ms)`);
       return moduleCache.get(moduleName)!;
     }
 
     // Load and cache the component
     // Services are already registered synchronously via ITI container
+    // Instrument the chunk fetch+eval — this is exactly how long the
+    // "Loading <module>..." label stays on screen.
+    const loadStart = performance.now();
+    try {
+      performance.mark(`module-chunk:${moduleName}:start`);
+    } catch {
+      /* mark API unavailable */
+    }
     const { default: ModuleComponent } = await moduleLoaders[moduleName]();
+    const chunkMs = Math.round(performance.now() - loadStart);
+    try {
+      performance.mark(`module-chunk:${moduleName}:end`);
+      performance.measure(
+        `module-chunk:${moduleName}`,
+        `module-chunk:${moduleName}:start`,
+        `module-chunk:${moduleName}:end`,
+      );
+    } catch {
+      /* measure API unavailable */
+    }
+    console.debug(
+      `%c[ModuleLoad] ${moduleName}: chunk fetch+eval ${chunkMs}ms`,
+      chunkMs > 400 ? "color:#ff7043;font-weight:bold" : "color:inherit",
+    );
     moduleCache.set(moduleName, ModuleComponent);
 
     // Signal the boot profiler that the initial module chunk has arrived -
