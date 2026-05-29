@@ -5,7 +5,7 @@
  * and suggests bridge letters to fix invalid sequences.
  */
 
-import type { TikaPictographLoader } from "./TikaPictographLoader";
+import type { TikaPictographLoader } from "./tika-pictograph-loader";
 import { LETTER_TO_TYPE } from "@tka/domain";
 
 export interface SequenceTransition {

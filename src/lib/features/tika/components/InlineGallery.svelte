@@ -19,7 +19,7 @@
     getStaticPictographPath,
     saveStaticPictograph,
     type PictographFileKey,
-  } from "../services/StaticPictographWriter";
+  } from "../services/static-pictograph-writer";
   import { sanitizeSvg } from "../services/svg-sanitizer";
 
   // Module-level SVG cache (shared across instances)

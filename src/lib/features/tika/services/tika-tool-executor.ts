@@ -5,9 +5,9 @@
  * comparisons, term definitions, and visual examples.
  */
 
-import type { PictographData } from "./TikaPictographLoader";
-import type { TikaPictographLoader } from "./TikaPictographLoader";
-import type { TikaSequenceValidator } from "./TikaSequenceValidator";
+import type { PictographData } from "./tika-pictograph-loader";
+import type { TikaPictographLoader } from "./tika-pictograph-loader";
+import type { TikaSequenceValidator } from "./tika-sequence-validator";
 import {
   TYPE_DEFINITIONS,
   POSITION_DEFINITIONS,
@@ -15,7 +15,7 @@ import {
   LETTER_TO_TYPE,
   LETTER_TYPES,
 } from "@tka/domain";
-import type { TikaSequenceGenerator } from "./TikaSequenceGenerator";
+import type { TikaSequenceGenerator } from "./tika-sequence-generator";
 import type {
   InlineGallery,
   InlinePictograph,

@@ -26,8 +26,8 @@
   import type { ConceptProgressTracker } from "$lib/features/learn/services/concept-progress-tracker";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
   import * as tikaSessionRepository from "./services/tika-session-repository";
-  import { ConversationMemoryRetriever } from "./services/ConversationMemoryRetriever";
-  import { TikaInteractionTracker } from "./services/TikaInteractionTracker";
+  import { ConversationMemoryRetriever } from "./services/conversation-memory-retriever";
+  import { TikaInteractionTracker } from "./services/tika-interaction-tracker";
   import { buildWelcome } from "./services/tika-welcome-builder";
   import type { WelcomeContext } from "./services/tika-welcome-builder";
   import { TIKA_LIMITS } from "./data/firestore-paths";

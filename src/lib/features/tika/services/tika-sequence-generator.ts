@@ -5,8 +5,8 @@
  * that chain together based on position groups.
  */
 
-import type { PictographData } from "./TikaPictographLoader";
-import type { TikaPictographLoader } from "./TikaPictographLoader";
+import type { PictographData } from "./tika-pictograph-loader";
+import type { TikaPictographLoader } from "./tika-pictograph-loader";
 
 export interface SequenceStepMotion {
   motionType: string;

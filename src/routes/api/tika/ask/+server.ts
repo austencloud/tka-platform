@@ -55,7 +55,7 @@ import { findCapabilities } from "$lib/features/tika/services/tika-capability-lo
 import {
   validateResponse,
   formatValidationReport,
-} from "$lib/features/tika/validation/TikaResponseValidator";
+} from "$lib/features/tika/validation/tika-response-validator";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Container & Services
