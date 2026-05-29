@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { GestureHandler } from './services/implementations/GestureHandler';
+import { GestureHandler } from './services/gesture-handler';
 
 let instance: GestureHandler | null = null;
 
