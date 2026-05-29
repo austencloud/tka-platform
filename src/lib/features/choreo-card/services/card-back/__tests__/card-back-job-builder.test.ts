@@ -54,9 +54,9 @@ const EMPTY_PATHS: MandalaPaths = { blue: [], red: [], purple: [] };
  */
 function makeFakeDeps(overrides: Partial<BuildBackJobDeps> = {}): {
   deps: BuildBackJobDeps;
-  calls: Record<string, unknown[]>;
+  calls: Record<string, unknown[][]>;
 } {
-  const calls: Record<string, unknown[]> = {};
+  const calls: Record<string, unknown[][]> = {};
   const record = (name: string, args: unknown[]) => {
     (calls[name] ??= []).push(args);
   };
@@ -101,6 +101,10 @@ function makeFakeDeps(overrides: Partial<BuildBackJobDeps> = {}): {
     calculatePaths: vi.fn((...a) => {
       record("calc", a);
       return EMPTY_PATHS;
+    }),
+    rasterizeMandala: vi.fn(async (...a) => {
+      record("mandala", a);
+      return fakeBitmap("mandala");
     }),
     ...overrides,
   };
@@ -170,8 +174,8 @@ describe("buildBackJob", () => {
     expect(calls.deco).toBeUndefined();
   });
 
-  it("sizes the mandala to fill its layout box (square, centered via offset)", async () => {
-    const { deps } = makeFakeDeps();
+  it("rasterizes the mandala SVG and places it at its (square) layout box", async () => {
+    const { deps, calls } = makeFakeDeps();
     const seq = makeSequence();
     const data = deriveCardBackData(seq);
     const layout = computeCardBackLayout(data, {
@@ -184,12 +188,22 @@ describe("buildBackJob", () => {
       { width: WIDTH, height: HEIGHT, bleedPx: BLEED, theme: "cosmic" },
       deps,
     );
-    expect(job.mandalaOptions.size).toBe(layout.mandala.w);
-    expect(job.mandalaOptions.offsetX).toBe(layout.mandala.x);
-    expect(job.mandalaOptions.offsetY).toBe(layout.mandala.y);
-    expect(job.mandalaOptions.style).toBe("stroke");
-    expect(job.mandalaOptions.show).toBe("both");
-    expect(job.mandalaPaths).toBe(EMPTY_PATHS);
+
+    // The mandala arrives as a pre-rasterized bitmap placed at the layout box.
+    expect(job.mandala).not.toBeNull();
+    expect((job.mandala!.bitmap as unknown as { __tag: string }).__tag).toBe("mandala");
+    expect(job.mandala!.placement).toEqual(layout.mandala);
+
+    // rasterizeMandala was called with (svg, w, h, cacheKey). The SVG is the
+    // exact renderMandalaSVG output (carries glow/bloom filters), sized to the
+    // square layout box in pixels.
+    const args = calls.mandala![0]!;
+    const svg = args[0] as string;
+    expect(svg).toContain("<svg");
+    expect(svg).toContain('filter="url(#glow)"'); // filters present → not the Path2D approximation
+    expect(args[1]).toBe(Math.round(layout.mandala.w));
+    expect(args[2]).toBe(Math.round(layout.mandala.h));
+    expect(typeof args[3]).toBe("string"); // cache key
   });
 
   it("mirrors SequenceMandala: arc → undefined pathOptions, standard tip dx", async () => {

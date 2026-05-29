@@ -8,17 +8,20 @@
  *  - NO $app / $env / SvelteKit imports
  *  - NO Firebase / Svelte imports
  *  - NO SVG decoding (workers cannot createImageBitmap from an SVG blob)
- *  - Only canvas primitives + renderMandalaToCanvas (Path2D-based, worker-safe)
+ *  - Only canvas primitives + drawImage of pre-decoded ImageBitmaps
+ *
+ * This file imports NOTHING but types — it is a pure composite of the
+ * pre-rasterized BackJob. The mandala is decoded on the main thread from the
+ * exact renderMandalaSVG output (in the job builder) and arrives as a bitmap.
  *
  * Paint order (mirrors CardBack.svelte stacking):
  *   1. border gradient — full canvas
  *   2. bg gradient     — inner rect (inside bleed)
  *   3. decorations     — drawImage of pre-decoded bitmap (optional)
- *   4. mandala         — Path2D via renderMandalaToCanvas
+ *   4. mandala         — drawImage of pre-decoded bitmap (optional)
  *   5. placed bitmaps  — one drawImage per PlacedBitmap
  */
 
-import { renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
 import type { BackJob, GradientSpec } from "./back-job";
 
 // ---------------------------------------------------------------------------
@@ -136,15 +139,18 @@ export function paintBackJob(
     ctx.restore();
   }
 
-  // 4. Mandala — Path2D, fully worker-safe; no SVG decoding happens here.
-  //    renderMandalaToCanvas is typed as CanvasRenderingContext2D but only
-  //    uses the shared 2D-context subset; the cast is safe for both main-thread
-  //    and OffscreenCanvas contexts.
-  renderMandalaToCanvas(
-    ctx as unknown as CanvasRenderingContext2D,
-    job.mandalaPaths,
-    job.mandalaOptions,
-  );
+  // 4. Mandala — pre-decoded ImageBitmap (rasterized from the exact
+  //    renderMandalaSVG output the DOM card back uses, so glow/bloom/feather +
+  //    purple-overlap mask are baked in). drawn into its layout box.
+  if (job.mandala) {
+    ctx.drawImage(
+      job.mandala.bitmap,
+      job.mandala.placement.x,
+      job.mandala.placement.y,
+      job.mandala.placement.w,
+      job.mandala.placement.h,
+    );
+  }
 
   // 5. Placed bitmaps — layout bitmaps (brand, pictographs, glyphs, …)
   for (const pb of job.bitmaps) {

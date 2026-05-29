@@ -10,7 +10,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { paintBackJob, applyLinearGradient } from "../card-back-raster";
 import type { BackJob, GradientSpec, PlacedBitmap } from "../back-job";
-import type { MandalaPaths, MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
 
 // ---------------------------------------------------------------------------
 // Fake canvas infrastructure
@@ -116,20 +115,6 @@ function makeGrad(angleDeg = 180): GradientSpec {
   };
 }
 
-function makePaths(): MandalaPaths {
-  return { blue: [], red: [], purple: [] };
-}
-
-function makeMandalaOptions(): MandalaRenderOptions & { offsetX: number; offsetY: number } {
-  return {
-    size: 400,
-    style: "stroke",
-    show: "both",
-    offsetX: 0,
-    offsetY: 0,
-  };
-}
-
 function makeMinimalJob(overrides: Partial<BackJob> = {}): BackJob {
   return {
     width: 1644,
@@ -138,8 +123,7 @@ function makeMinimalJob(overrides: Partial<BackJob> = {}): BackJob {
     borderGradient: makeGrad(0),
     bgGradient: makeGrad(180),
     decorations: null,
-    mandalaPaths: makePaths(),
-    mandalaOptions: makeMandalaOptions(),
+    mandala: null,
     bitmaps: [],
     ...overrides,
   };
@@ -381,12 +365,54 @@ describe("paintBackJob", () => {
     expect(bitmapDrawIdx).toBeGreaterThan(lastFillRectIdx);
   });
 
-  it("mandala paths do not throw when both blue and red are empty", () => {
-    const { fakeCanvas } = makeFakeCtx();
+  it("does NOT drawImage for the mandala when job.mandala is null", () => {
+    const { fakeCanvas, calls } = makeFakeCtx();
+    paintBackJob(makeMinimalJob({ mandala: null }), () => fakeCanvas);
+    const drawImages = calls.filter((c) => c.op === "drawImage");
+    expect(drawImages).toHaveLength(0);
+  });
+
+  it("drawImages the mandala bitmap at its placement box", () => {
+    const { fakeCanvas, calls } = makeFakeCtx();
+    const mandalaBmp = makeFakeBitmap();
     const job = makeMinimalJob({
-      mandalaPaths: { blue: [], red: [], purple: [] },
+      mandala: { bitmap: mandalaBmp, placement: { x: 120, y: 340, w: 1184, h: 1184 } },
     });
-    expect(() => paintBackJob(job, () => fakeCanvas)).not.toThrow();
+    paintBackJob(job, () => fakeCanvas);
+
+    const drawImages = calls.filter(
+      (c): c is Extract<CtxCall, { op: "drawImage" }> => c.op === "drawImage",
+    );
+    const mandalaDraw = drawImages.find((d) => d.img === mandalaBmp);
+    expect(mandalaDraw).toBeDefined();
+    expect(mandalaDraw!.x).toBe(120);
+    expect(mandalaDraw!.y).toBe(340);
+    expect(mandalaDraw!.w).toBe(1184);
+    expect(mandalaDraw!.h).toBe(1184);
+  });
+
+  it("draws the mandala AFTER decorations and BEFORE the placed bitmaps", () => {
+    const { fakeCanvas, calls } = makeFakeCtx();
+    const decBmp = makeFakeBitmap();
+    const mandalaBmp = makeFakeBitmap();
+    const placedBmp = makeFakeBitmap();
+    const job = makeMinimalJob({
+      decorations: { bitmap: decBmp, opacity: 0.4 },
+      mandala: { bitmap: mandalaBmp, placement: { x: 0, y: 0, w: 100, h: 100 } },
+      bitmaps: [{ kind: "brand", bitmap: placedBmp, placement: { x: 0, y: 0, w: 10, h: 10 } }],
+    });
+    paintBackJob(job, () => fakeCanvas);
+
+    const idxOf = (bmp: unknown) =>
+      calls.findIndex((c) => c.op === "drawImage" && (c as { img: unknown }).img === bmp);
+
+    const decIdx = idxOf(decBmp);
+    const mandalaIdx = idxOf(mandalaBmp);
+    const placedIdx = idxOf(placedBmp);
+
+    expect(decIdx).toBeGreaterThanOrEqual(0);
+    expect(mandalaIdx).toBeGreaterThan(decIdx);
+    expect(placedIdx).toBeGreaterThan(mandalaIdx);
   });
 
   it("returns the canvas provided by createCanvas", () => {

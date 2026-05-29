@@ -39,6 +39,8 @@ import {
   LIGHT_MOTION_PURPLE_FILL,
 } from "$lib/shared/mandala/domain/mandala-constants";
 import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
+import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
+import { getSvgImageCache } from "$lib/shared/render/services/implementations/SvgImageCache";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
@@ -65,6 +67,47 @@ import { rasterizeDecorations } from "./card-back-decorations-svg";
 
 // Bleed: the BackJob bleedPx is 36 logical * scale 2 = 72 (see back-job.ts).
 const DEFAULT_BLEED_PX = 72;
+
+/**
+ * The viewBox size CardBack.svelte mounts SequenceMandala at (`size={380}`).
+ * renderMandalaSVG bakes this into its `viewBox="0 0 380 380"` + internal
+ * geometry scale. The DOM card back then scales that SVG to fill the 72cqi
+ * `.mandala-anchor` square via CSS (width/height 100%). The new path reproduces
+ * this by rendering the SVG with this size, then rasterizing it at the layout
+ * box pixel dimensions — see `sizeMandalaSvg`.
+ */
+const MANDALA_DOM_SIZE = 380;
+
+/**
+ * renderMandalaSVG emits `width="100%" height="100%"` on the root <svg>. An
+ * HTMLImageElement decoding that SVG has no intrinsic pixel size, so it would
+ * rasterize at the viewBox size rather than the layout box. Inject explicit
+ * pixel width/height (the square layout box) so the image decodes at box
+ * resolution and `drawImage` into the same box is 1:1. Mirrors the old
+ * `.mandala-anchor` 72cqi square scaling the 380-viewBox SVG to fill.
+ */
+export function sizeMandalaSvg(svg: string, w: number, h: number): string {
+  return svg.replace(
+    /(<svg\b[^>]*?)\swidth="100%"\sheight="100%"/,
+    `$1 width="${w}" height="${h}"`,
+  );
+}
+
+/**
+ * Rasterize the card-back mandala SVG into an ImageBitmap on the MAIN thread.
+ * Mirrors how decorations are handled (SvgImageCache → HTMLImageElement →
+ * ImageBitmap). Sized to the layout box so the bitmap fills it exactly.
+ */
+async function rasterizeMandalaSvg(
+  svg: string,
+  w: number,
+  h: number,
+  cacheKey: string,
+): Promise<ImageBitmap> {
+  const sized = sizeMandalaSvg(svg, w, h);
+  const img = await getSvgImageCache().getImage(sized, cacheKey);
+  return img instanceof ImageBitmap ? img : createImageBitmap(img);
+}
 
 /**
  * Canonical LOOP component display order — must match CardBack.svelte
@@ -128,6 +171,17 @@ export interface BuildBackJobDeps {
     pathOptions: MandalaPathOptions | undefined,
     tipOverride: { dx: number; dy: number },
   ) => MandalaPaths;
+  /**
+   * Rasterize the mandala SVG into an ImageBitmap at the given box size.
+   * Defaults to the real SvgImageCache-backed impl; injectable for tests
+   * (jsdom has no SVG decode / createImageBitmap).
+   */
+  rasterizeMandala: (
+    svg: string,
+    w: number,
+    h: number,
+    cacheKey: string,
+  ) => Promise<ImageBitmap>;
 }
 
 const realDeps: BuildBackJobDeps = {
@@ -148,6 +202,7 @@ const realDeps: BuildBackJobDeps = {
       pathOptions,
       tipOverride,
     ),
+  rasterizeMandala: rasterizeMandalaSvg,
 };
 
 /**
@@ -184,9 +239,17 @@ export async function buildBackJob(
   //    (proof mode sets textColor "#111111" → light).
   const darkMode = !visuals.textColor || visuals.textColor === "#ffffff";
 
-  // 5) Mandala geometry. Mirror SequenceMandala EXACTLY: pathShape "arc" yields
-  //    undefined pathOptions; bluePropType/redPropType undefined; tip dx is the
-  //    standard tip (no animation, no tipDx override on the card back).
+  // 5) Mandala — rasterize the EXACT renderMandalaSVG output the DOM card back
+  //    uses (glow/bloom/feather feGaussianBlur filters + purple-overlap mask),
+  //    so the new path achieves pixel parity with the old DOM render rather
+  //    than the filter-free Path2D approximation (renderMandalaToCanvas).
+  //
+  //    Mirror SequenceMandala EXACTLY (CardBack.svelte mounts it with
+  //    size=380, style="stroke", show="both", pathShape="arc", no strokeWidth
+  //    [→ 2.5], no tipDx [→ MANDALA_STANDARD_TIP_DX], darkMode={isDarkTheme}):
+  //      - pathShape "arc"  → undefined pathOptions
+  //      - bluePropType/redPropType undefined
+  //      - tip dx is the standard tip (no animation, no override)
   const pathOptions: MandalaPathOptions | undefined = undefined; // pathShape "arc"
   const mandalaPaths = d.calculatePaths(
     sequence.steps,
@@ -196,19 +259,28 @@ export async function buildBackJob(
     { dx: MANDALA_STANDARD_TIP_DX, dy: 0 },
   );
 
-  // Size the mandala to FILL its layout box. renderMandalaToCanvas (P1.6)
-  // translates to (offsetX + size/2, offsetY + size/2) and scales the geometry
-  // by size/(maxExtent*1.05), so passing the square box width as `size` plus
-  // the box top-left as offset centers + fits the mandala in the box. The box
-  // is square (computeCardBackLayout: w === h), so width is the faithful size.
-  const mandalaOptions: BackJob["mandalaOptions"] = {
-    size: layout.mandala.w,
+  // Build the SVG at the DOM mount size (380), then rasterize it at the layout
+  // box pixel size so it fills the box exactly — matching the old .mandala-anchor
+  // (72cqi square) scaling the 380-viewBox SVG to fill.
+  const mandalaSvg = renderMandalaSVG(mandalaPaths, {
+    size: MANDALA_DOM_SIZE,
     style: "stroke",
     show: "both",
     palette: darkMode ? DARK_MANDALA_PALETTE : LIGHT_MANDALA_PALETTE,
     tipDx: MANDALA_STANDARD_TIP_DX,
-    offsetX: layout.mandala.x,
-    offsetY: layout.mandala.y,
+    strokeWidth: 2.5,
+  });
+  const mandalaW = Math.round(layout.mandala.w);
+  const mandalaH = Math.round(layout.mandala.h);
+  const mandalaBitmap = await d.rasterizeMandala(
+    mandalaSvg,
+    mandalaW,
+    mandalaH,
+    `card-back-mandala:${data.word ?? ""}:${darkMode ? "d" : "l"}:${mandalaW}x${mandalaH}`,
+  );
+  const mandala: BackJob["mandala"] = {
+    bitmap: mandalaBitmap,
+    placement: layout.mandala,
   };
 
   // 6) Decorations: hidden in proof mode (decorationOpacity 0) → null.
@@ -292,8 +364,7 @@ export async function buildBackJob(
     borderGradient,
     bgGradient,
     decorations,
-    mandalaPaths,
-    mandalaOptions,
+    mandala,
     bitmaps,
   };
 }
