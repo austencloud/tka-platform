@@ -285,6 +285,9 @@
   }
 
   function handleKeydown(event: KeyboardEvent): boolean {
+    const target = event.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      return false;
     if (!activeColor) return false;
     const key = event.key.toLowerCase();
 
