@@ -19,12 +19,12 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreList, firestoreSet } from "$lib/shared/firestore";
-import { GlobalArrowAdjustmentSchema } from "../../domain/arrow-adjustment-schemas";
+import { GlobalArrowAdjustmentSchema } from "../domain/arrow-adjustment-schemas";
 import {
   generateAdjustmentKeyString,
   type GlobalArrowAdjustment,
   type GlobalArrowAdjustmentInput,
-} from "../../domain/GlobalArrowAdjustment";
+} from "../domain/GlobalArrowAdjustment";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("GlobalArrowAdjustmentPersister");

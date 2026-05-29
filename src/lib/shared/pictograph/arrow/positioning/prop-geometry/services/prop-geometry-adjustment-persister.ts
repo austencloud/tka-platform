@@ -9,12 +9,12 @@
 import { collection, onSnapshot, type Unsubscribe } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreList, firestoreSet, firestoreDelete } from "$lib/shared/firestore";
-import { PropGeometryAdjustmentSchema } from "../../domain/prop-geometry-schemas";
+import { PropGeometryAdjustmentSchema } from "../domain/prop-geometry-schemas";
 import {
   generatePropGeometryKeyString,
   type PropGeometryAdjustment,
   type PropGeometryAdjustmentInput,
-} from "../../domain/PropGeometryAdjustment";
+} from "../domain/PropGeometryAdjustment";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("PropGeometryAdjustmentPersister");

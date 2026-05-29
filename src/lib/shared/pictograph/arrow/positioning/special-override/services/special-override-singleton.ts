@@ -7,8 +7,8 @@
  * Mirrors the pattern used by global-adjustment-singleton.ts.
  */
 
-import { SpecialArrowPlacementRepository } from "./implementations/SpecialArrowPlacementRepository";
-import { SpecialArrowPlacementPersister } from "./implementations/SpecialArrowPlacementPersister";
+import { SpecialArrowPlacementRepository } from "./special-arrow-placement-repository";
+import { SpecialArrowPlacementPersister } from "./special-arrow-placement-persister";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("SpecialOverrideSingleton");

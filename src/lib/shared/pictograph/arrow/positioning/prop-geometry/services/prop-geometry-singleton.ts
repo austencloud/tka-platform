@@ -6,8 +6,8 @@
  * arrow adjustment pipeline without requiring DI reconstruction.
  */
 
-import { PropGeometryAdjustmentRepository } from "./implementations/PropGeometryAdjustmentRepository";
-import { PropGeometryAdjustmentPersister } from "./implementations/PropGeometryAdjustmentPersister";
+import { PropGeometryAdjustmentRepository } from "./prop-geometry-adjustment-repository";
+import { PropGeometryAdjustmentPersister } from "./prop-geometry-adjustment-persister";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("PropGeometrySingleton");

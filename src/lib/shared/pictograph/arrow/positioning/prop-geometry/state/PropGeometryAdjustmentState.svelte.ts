@@ -13,7 +13,7 @@ import {
   type PropGeometryAdjustment,
   type PropGeometryKey,
 } from "../domain/PropGeometryAdjustment";
-import type { CascadingPropGeometryResult } from "../services/contracts/types";
+import type { CascadingPropGeometryResult } from "../services/types";
 
 export function createPropGeometryAdjustmentState() {
   let adjustmentsMap = $state<Map<string, PropGeometryAdjustment>>(new Map());

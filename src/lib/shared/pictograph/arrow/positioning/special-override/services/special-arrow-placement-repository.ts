@@ -11,14 +11,14 @@ import {
   generateSpecialOverrideKey,
   type SpecialArrowPlacement,
   type SpecialArrowPlacementInput,
-} from "../../domain/SpecialArrowPlacement";
-import type { SpecialArrowPlacementPersister } from "./SpecialArrowPlacementPersister";
+} from "../domain/SpecialArrowPlacement";
+import type { SpecialArrowPlacementPersister } from "./special-arrow-placement-persister";
 import {
   createSpecialArrowPlacementState,
   type SpecialArrowPlacementState,
-} from "../../state/SpecialArrowPlacementState.svelte";
+} from "../state/SpecialArrowPlacementState.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import { globalAdjustmentVersion } from "../../../global/state/global-adjustment-version.svelte";
+import { globalAdjustmentVersion } from "../../global/state/global-adjustment-version.svelte";
 
 const logger = createComponentLogger("SpecialArrowPlacementRepository");
 const ADMIN_EMAIL = "austencloud@gmail.com";

@@ -27,7 +27,7 @@ export interface KeyGeneratorPropOptions {
 
 import type { Point } from "fabric";
 import type {
-} from "../../domain/GlobalArrowAdjustment";
+} from "../domain/GlobalArrowAdjustment";
 
 /**
  * Result of a cascading adjustment lookup.

@@ -11,13 +11,13 @@ import {
   type PropGeometryAdjustment,
   type PropGeometryAdjustmentInput,
   type PropGeometryKey,
-} from "../../domain/PropGeometryAdjustment";
-import type { CascadingPropGeometryResult } from "../contracts/types";
-import type { PropGeometryAdjustmentPersister } from "./PropGeometryAdjustmentPersister";
+} from "../domain/PropGeometryAdjustment";
+import type { CascadingPropGeometryResult } from "./types";
+import type { PropGeometryAdjustmentPersister } from "./prop-geometry-adjustment-persister";
 import {
   createPropGeometryAdjustmentState,
   type PropGeometryAdjustmentState,
-} from "../../state/PropGeometryAdjustmentState.svelte";
+} from "../state/PropGeometryAdjustmentState.svelte";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { Timestamp } from "firebase/firestore";

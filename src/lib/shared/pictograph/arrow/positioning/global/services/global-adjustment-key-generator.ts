@@ -5,17 +5,17 @@
  * Reuses existing key generation services from the special placement pipeline.
  */
 
-import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
-import { deriveGridMode as _deriveGridMode } from "../../../../../grid/services/grid-mode-deriver";
-import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import type { GlobalAdjustmentKey } from "../../domain/GlobalArrowAdjustment";
-import type { KeyGeneratorPropOptions } from "../contracts/types";
-import type { TurnsTupleGenerator } from "../../../placement/services/implementations/TurnsTupleGenerator";
+import { GridMode } from "../../../../grid/domain/enums/grid-enums";
+import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
+import type { MotionData } from "../../../../shared/domain/models/MotionData";
+import type { PictographData } from "../../../../shared/domain/models/PictographData";
+import type { GlobalAdjustmentKey } from "../domain/GlobalArrowAdjustment";
+import type { KeyGeneratorPropOptions } from "./types";
+import type { TurnsTupleGenerator } from "../../placement/services/implementations/TurnsTupleGenerator";
 import {
   generateOrientationKey,
   resolveEffectiveOriKey,
-} from "../../../key-generation/services/special-placement-ori-key-generator";
+} from "../../key-generation/services/special-placement-ori-key-generator";
 
 export class GlobalAdjustmentKeyGenerator {
   constructor(

@@ -8,8 +8,8 @@
  * like SpecialPlacer without requiring DI container reconstruction.
  */
 
-import { GlobalArrowAdjustmentRepository } from "./implementations/GlobalArrowAdjustmentRepository";
-import { GlobalArrowAdjustmentPersister } from "./implementations/GlobalArrowAdjustmentPersister";
+import { GlobalArrowAdjustmentRepository } from "./global-arrow-adjustment-repository";
+import { GlobalArrowAdjustmentPersister } from "./global-arrow-adjustment-persister";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("GlobalAdjustmentSingleton");

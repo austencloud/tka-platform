@@ -12,7 +12,7 @@ import {
   generateSpecialOverrideKey,
   type SpecialArrowPlacement,
   type SpecialArrowPlacementInput,
-} from "../../domain/SpecialArrowPlacement";
+} from "../domain/SpecialArrowPlacement";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("SpecialArrowPlacementPersister");
