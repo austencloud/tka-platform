@@ -349,3 +349,58 @@ npm run check > /tmp/check.log 2>&1; grep -niE "error" /tmp/check.log
 - **The worker decodes NO SVG** (Phase 0 proved `createImageBitmap(svgBlob)` fails in workers for all svg in the target browser). Mandala → `renderMandalaToCanvas` (Path2D) in-worker. Decorations → rasterized on the MAIN thread (Image element) once per theme, cached, transferred as `ImageBitmap`. Text/icons/pictograph → pre-rasterized on main, transferred. Worker only does gradient fills + Path2D mandala + `drawImage` composites.
 - **Do not re-enable `RenderFactory.supportsWorkerRendering()` or `CompositionDispatcher.detectWorkerSupport()`** — those gate the FRONT pipeline (different, still-blocked). The back path makes its own worker-safety guarantee.
 - Read `DifficultyBadge.svelte`, `ReversalPatternGlyph.svelte`, `SwapIcon.svelte`, `CheckerboardCircleIcon.svelte` before Task 1.4 — their exact markup is the parity source.
+
+---
+
+## SESSION STATUS (2026-05-29) — Phase 1 DONE; Phase 2 SKIPPED; pursuing glyph canvas-native
+
+**Phase 1 complete + parity-verified in browser.** New `BackJob` main-thread path
+replaces the DOM-screenshot card-back render. All elements match OLD (brand +
+"Choreo Cards", url + "© year", mandala scale/pos ±1px, loop icons **+ labels**,
+level badge, step count, turn/reversal glyphs, start-pos pictograph **with staffs**
+via Canvas2DDirectRenderer). Residual ~17% pixel-diff only on dense L2 mandala
+glow-filter (NEW native-crisp vs OLD 2×-upscale — accepted, higher fidelity).
+
+Key root causes fixed this session:
+- Border-frame cqi: `container-type:inline-size` on `.border-frame` (padding
+  `borderWidth`cqi, proof=3.5) → cqi resolves vs border-frame content-box; layout
+  + all rasterizers must use that basis + offset by border inset. (`26a6ff57e`)
+- `--card-text-muted`/`--card-text` must be set on bare-mounted rasterize
+  containers (reversal empty-dots + pictograph border were white-on-white).
+- Glyph-box flex (`align-items:flex-end`) for turn/reversal bottom-center.
+- Brand/url rendered at NATURAL height (no crop) + anchored by bitmap height.
+- Start-pos pictograph: render via `Canvas2DDirectRenderer.renderPictograph`
+  (DOM-free, reliable) with `new Canvas2DDirectRenderer(pictographPreparer)` so
+  props/staffs draw. (`405bad76b`)
+
+**Phase 2 (worker) — MEASURED, then SKIPPED.** 16-back batch, main-thread:
+OLD 767ms/back, NEW 568ms/back (warm 558) → ~26% faster, fixed 200ms gone. But
+the worker can only offload the cheap composite; the bottleneck is the per-card
+**mount+screenshots** (turn/reversal/step/loop-row glyphs) which can't go to a
+worker. So do NOT build the worker (P2.1–P2.4 dropped).
+
+**ACTIVE NEXT LEVER — canvas-native the 4 remaining glyph rasterizers** in
+`card-back-bitmaps-percard.ts`, replacing `rasterizeComponent` (DOM mount +
+modern-screenshot) with direct OffscreenCanvas drawing (kills the mounts →
+big further speedup). Keep the BackJob/PlacedBitmap architecture; each rasterizer
+returns an ImageBitmap drawn to an OffscreenCanvas:
+- `rasterizeTurnGlyph` — bars (TurnPatternGlyph.svelte): width 1.1cqi, intra-group
+  gap 0.25cqi, group gap 0.6cqi, bottom-aligned center, blue `#3498db`/red
+  `#e74c3c`, height = value×1.8cqi (0-turn → 0.5cqi min), float → 1.2cqi hatched,
+  radius 0.2cqi top.
+- `rasterizeReversalGlyph` — dot columns (ReversalPatternGlyph.svelte): circles
+  1.8cqi, col vertical gap 0.3cqi, row horizontal gap 0.6cqi, P=red+blue,
+  R=red+empty, B=empty+blue, `-`=empty+empty; red `#e74c3c`/blue `#3498db`/empty
+  = `--card-text-muted` @ 0.4 opacity. Period-compressed (slice 0..min(8,period)).
+- `rasterizeStepCount` — number: font `9cqi 700 "Segoe UI"`, `--card-text-muted`,
+  right-aligned + bottom-aligned in the 20×9cqi slot.
+- `rasterizeLoopRow` — keep per-icon CACHED bitmaps (rasterizeLoopIcon, constant,
+  built once) but compose the ROW (icons + labels) to a canvas directly per card:
+  icon cell 9cqi, gap 0.6cqi, label font `2.2cqi 500 uppercase letter-spacing .06em`
+  `--card-text-muted`, col gap 6cqi, centered. (Icons stay mount-rasterized but
+  cached → no per-card mount.)
+
+Verify each via the parity harness (`/test/card-back-parity`, has perf timing in
+summary.perf). Browser harness is HMR-flaky (concurrent kebab-rename session);
+run end-to-end in one evaluate. Commits use explicit pathspec (concurrent session
+races the index); bundling acceptable, NEVER reset/rebase/amend.
