@@ -144,7 +144,7 @@ function lookupLetterForStep(step) {
  * a running state. This preserves the invariant that rotated copies of
  * the same seed beat always share the same motion type after reversal.
  */
-function applyReversalToSequence(steps, patternId) {
+function applyReversalToSequence(steps, patternId, startPosition) {
   const pattern = REVERSAL_PATTERNS[patternId];
   const seq = pattern.sequence;
 
@@ -200,48 +200,58 @@ function applyReversalToSequence(steps, patternId) {
     beatIndex++;
   }
 
-  // Recalculate orientations through the chain
-  recalcOrientations(steps);
+  // Recalculate orientations through the chain (baselined from the start position)
+  recalcOrientations(steps, startPosition);
 
   return steps;
 }
 
 /**
  * Recalculate orientations through a sequence after reversal.
+ *
+ * Mirrors the canonical client propagator (orientation-propagation.ts): the
+ * baseline is the start position's end orientation per hand, and EVERY real
+ * beat is recomputed from beat 1 onward — including the first beat, whose
+ * orientation depends on its (now reversed) motion type + turns coming out of
+ * the start position. The previous version started at i=1 over the beats array
+ * and never recomputed the first beat, leaving it with stale pre-reversal data
+ * that then cascaded down the whole chain.
  */
-function recalcOrientations(steps) {
-  for (let i = 1; i < steps.length; i++) {
-    const prev = steps[i - 1];
-    const step = steps[i];
-    const prevBlue = prev.motions?.blue;
-    const prevRed = prev.motions?.red;
+function recalcOrientations(steps, startPosition) {
+  const beats = steps.filter((s) => !s.isStartPosition);
+
+  let prevBlueEnd = startPosition?.motions?.blue?.endOrientation ?? "in";
+  let prevRedEnd = startPosition?.motions?.red?.endOrientation ?? "in";
+
+  for (const step of beats) {
     const blue = step.motions?.blue;
     const red = step.motions?.red;
 
-    if (!prevBlue || !prevRed || !blue || !red) continue;
+    if (blue) {
+      blue.startOrientation = prevBlueEnd;
+      blue.endOrientation = calculateEndOrientation({
+        motionType: blue.motionType,
+        turns: blue.turns ?? 0,
+        rotationDirection: blue.rotationDirection,
+        startLocation: blue.startLocation,
+        endLocation: blue.endLocation,
+        startOrientation: prevBlueEnd,
+      });
+      prevBlueEnd = blue.endOrientation;
+    }
 
-    // Chain: previous end → current start
-    blue.startOrientation = prevBlue.endOrientation;
-    red.startOrientation = prevRed.endOrientation;
-
-    // Calculate end orientations
-    blue.endOrientation = calculateEndOrientation({
-      motionType: blue.motionType,
-      turns: blue.turns ?? 0,
-      rotationDirection: blue.rotationDirection,
-      startLocation: blue.startLocation,
-      endLocation: blue.endLocation,
-      startOrientation: blue.startOrientation,
-    });
-
-    red.endOrientation = calculateEndOrientation({
-      motionType: red.motionType,
-      turns: red.turns ?? 0,
-      rotationDirection: red.rotationDirection,
-      startLocation: red.startLocation,
-      endLocation: red.endLocation,
-      startOrientation: red.startOrientation,
-    });
+    if (red) {
+      red.startOrientation = prevRedEnd;
+      red.endOrientation = calculateEndOrientation({
+        motionType: red.motionType,
+        turns: red.turns ?? 0,
+        rotationDirection: red.rotationDirection,
+        startLocation: red.startLocation,
+        endLocation: red.endLocation,
+        startOrientation: prevRedEnd,
+      });
+      prevRedEnd = red.endOrientation;
+    }
   }
 }
 
@@ -280,7 +290,7 @@ async function main() {
       const steps = cloned.steps || [];
 
       // Apply reversal
-      applyReversalToSequence(steps, patternId);
+      applyReversalToSequence(steps, patternId, cloned.startPosition);
 
       // Recompute word from new letters
       const beatSteps = steps.filter(s => !s.isStartPosition);
