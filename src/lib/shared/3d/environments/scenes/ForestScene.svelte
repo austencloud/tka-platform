@@ -38,13 +38,21 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
+    /** Hide the single built-in Stage3D (hub mounts its own coven stages). */
+    showStage?: boolean;
+    /** Override the clearing radius so the hub can widen it for N stations. */
+    clearingRadius?: number;
   }
 
-  let { variant = "firefly", config, stageWidth = 6, stageDepth = 4.5, stageZOffset = 0 }: Props = $props();
+  let {
+    variant = "firefly", config, stageWidth = 6, stageDepth = 4.5, stageZOffset = 0,
+    showStage = true, clearingRadius,
+  }: Props = $props();
 
-  const activeConfig = $derived(
-    config ?? createDefaultForestFireflyConfig()
-  );
+  const activeConfig = $derived.by(() => {
+    const base = config ?? createDefaultForestFireflyConfig();
+    return clearingRadius != null ? { ...base, clearingRadius } : base;
+  });
 
   import { R2_CDN } from "../../constants/r2-cdn";
 
@@ -372,6 +380,8 @@
   />
 {/if}
 
-<T.Group position.z={stageZOffset}>
-  <Stage3D width={stageWidth} depth={stageDepth} />
-</T.Group>
+{#if showStage}
+  <T.Group position.z={stageZOffset}>
+    <Stage3D width={stageWidth} depth={stageDepth} />
+  </T.Group>
+{/if}
