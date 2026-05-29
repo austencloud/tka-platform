@@ -9,6 +9,15 @@
     type Material,
   } from "three";
   import type { OceanQualityConfig } from "../quality/ocean-quality";
+  import { R2_CDN } from "$lib/shared/3d/constants/r2-cdn";
+
+  // The flora scene GLB (~36 MB, geometry-heavy) exceeds Cloudflare Pages' 25 MiB
+  // per-file limit and is stripped from the deploy by trim-deploy-assets.js, so in
+  // production it must come from R2 (same large-asset pattern as the forest scene).
+  // Dev serves it from static/ directly — no R2 round-trip while iterating.
+  const FLORA_GLB_URL = import.meta.env.DEV
+    ? "/models/ocean/ocean_flora_scene.glb"
+    : `${R2_CDN}/models/ocean/ocean_flora_scene.glb`;
 
   interface Props {
     quality: OceanQualityConfig;
@@ -44,7 +53,7 @@
     let cancelled = false;
 
     gltfLoader.load(
-      "/models/ocean/ocean_flora_scene.glb",
+      FLORA_GLB_URL,
       (gltf) => {
         if (cancelled) return;
         enhanceMaterials(gltf.scene);
