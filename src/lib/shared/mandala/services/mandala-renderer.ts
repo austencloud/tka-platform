@@ -225,16 +225,36 @@ export function renderMandalaToCanvas(
 		purpleFill: PURPLE_FILL,
 	};
 
+	// Opt-in soft glow: a matching-color canvas shadow under each stroke emulates
+	// the SVG `feGaussianBlur` glow filter (blurred copy merged beneath the crisp
+	// source). shadowBlur is DEVICE-space, so the value passed is already in px.
+	const glow = options.glow;
+
 	if (show === "blue" || show === "both") {
+		if (glow) {
+			ctx.shadowColor = palette.blueStroke;
+			ctx.shadowBlur = glow.blur;
+		}
 		for (const pathData of paths.blue) {
 			drawPath(ctx, pathData.d, palette.blueStroke, palette.blueFill, style, strokeWidth);
 		}
 	}
 
 	if (show === "red" || show === "both") {
+		if (glow) {
+			ctx.shadowColor = palette.redStroke;
+			ctx.shadowBlur = glow.blur;
+		}
 		for (const pathData of paths.red) {
 			drawPath(ctx, pathData.d, palette.redStroke, palette.redFill, style, strokeWidth);
 		}
+	}
+
+	// Reset shadow so the mask-building passes below are crisp; the purple
+	// overlap gets its own (wider) bloom shadow when it is composited.
+	if (glow) {
+		ctx.shadowColor = "transparent";
+		ctx.shadowBlur = 0;
 	}
 
 	if (show === "both" && paths.blue.length > 0 && paths.red.length > 0) {
@@ -268,6 +288,12 @@ export function renderMandalaToCanvas(
 		ctx.save();
 		ctx.setTransform(1, 0, 0, 1, 0, 0);
 		ctx.globalAlpha = 0.9;
+		if (glow) {
+			// Wider purple halo emulates the SVG `bloom` filter merged under the
+			// purple overlap core.
+			ctx.shadowColor = options.palette?.purpleStroke ?? PURPLE_STROKE;
+			ctx.shadowBlur = glow.bloomBlur ?? glow.blur;
+		}
 		ctx.drawImage(maskB, 0, 0);
 		ctx.restore();
 	}

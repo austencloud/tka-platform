@@ -59,6 +59,15 @@ export interface MandalaRenderOptions {
 	tipDx?: number;
 	/** Per-path gradient colors: each path's stroke shifts from one color to the next */
 	gradient?: { blue: [string, string]; red: [string, string]; purple: [string, string] };
+	/**
+	 * Canvas-only soft glow (px, DEVICE space — unaffected by ctx transform).
+	 * When set, `renderMandalaToCanvas` strokes each path with a matching-color
+	 * shadow to emulate the SVG `feGaussianBlur` glow + bloom filters, so the
+	 * Path2D render reaches parity with the filtered `renderMandalaSVG` output
+	 * without a 200ms SVG decode. Ignored by `renderMandalaSVG` (it has real
+	 * filters). `bloomBlur` is the wider halo applied to the purple overlap.
+	 */
+	glow?: { blur: number; bloomBlur?: number };
 }
 
 export type MandalaPathShape = "arc" | "linear" | "concave" | "hybrid";

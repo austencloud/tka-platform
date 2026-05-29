@@ -39,8 +39,7 @@ import {
   LIGHT_MOTION_PURPLE_FILL,
 } from "$lib/shared/mandala/domain/mandala-constants";
 import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
-import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
-import { getSvgImageCache } from "$lib/shared/render/services/implementations/SvgImageCache";
+import { renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
@@ -71,44 +70,47 @@ import { rasterizeDecorations } from "./card-back-decorations-svg";
 const DEFAULT_BLEED_PX = 72;
 
 /**
- * The viewBox size CardBack.svelte mounts SequenceMandala at (`size={380}`).
- * renderMandalaSVG bakes this into its `viewBox="0 0 380 380"` + internal
- * geometry scale. The DOM card back then scales that SVG to fill the 72cqi
- * `.mandala-anchor` square via CSS (width/height 100%). The new path reproduces
- * this by rendering the SVG with this size, then rasterizing it at the layout
- * box pixel dimensions — see `sizeMandalaSvg`.
+ * Glow tuning (px, device space) for the Path2D mandala — emulates the SVG
+ * `feGaussianBlur` glow + bloom filters that the DOM card back baked in. These
+ * are scaled by the mandala box size relative to the 380-px reference the SVG
+ * `stdDeviation`s were authored against, so the halo tracks render resolution.
+ * The SVG used `stdDeviation=3` (glow) and `bloomBlur=4`.
  */
-const MANDALA_DOM_SIZE = 380;
+const MANDALA_REF_SIZE = 380;
+const GLOW_STDDEV = 3;
+const BLOOM_STDDEV = 7;
 
 /**
- * renderMandalaSVG emits `width="100%" height="100%"` on the root <svg>. An
- * HTMLImageElement decoding that SVG has no intrinsic pixel size, so it would
- * rasterize at the viewBox size rather than the layout box. Inject explicit
- * pixel width/height (the square layout box) so the image decodes at box
- * resolution and `drawImage` into the same box is 1:1. Mirrors the old
- * `.mandala-anchor` 72cqi square scaling the 380-viewBox SVG to fill.
+ * Render the card-back mandala via Path2D (renderMandalaToCanvas) + a canvas
+ * `shadowBlur` glow, returning an ImageBitmap sized to the (square) layout box.
+ *
+ * This replaces the prior SVG → HTMLImageElement decode, which cost ~200ms per
+ * card (65% of the whole back) because Chrome rasterizes the `feGaussianBlur`
+ * glow/bloom filters on the main thread. The Path2D render draws the same
+ * geometry in a few ms; the glow is reproduced with matching-color canvas
+ * shadows tuned to parity against the old filtered output.
  */
-export function sizeMandalaSvg(svg: string, w: number, h: number): string {
-  return svg.replace(
-    /(<svg\b[^>]*?)\swidth="100%"\sheight="100%"/,
-    `$1 width="${w}" height="${h}"`,
-  );
-}
-
-/**
- * Rasterize the card-back mandala SVG into an ImageBitmap on the MAIN thread.
- * Mirrors how decorations are handled (SvgImageCache → HTMLImageElement →
- * ImageBitmap). Sized to the layout box so the bitmap fills it exactly.
- */
-async function rasterizeMandalaSvg(
-  svg: string,
+function renderMandalaPath2D(
+  paths: MandalaPaths,
   w: number,
   h: number,
-  cacheKey: string,
-): Promise<ImageBitmap> {
-  const sized = sizeMandalaSvg(svg, w, h);
-  const img = await getSvgImageCache().getImage(sized, cacheKey);
-  return img instanceof ImageBitmap ? img : createImageBitmap(img);
+  darkMode: boolean,
+): ImageBitmap {
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+  const sizeScale = Math.min(w, h) / MANDALA_REF_SIZE;
+  renderMandalaToCanvas(ctx, paths, {
+    size: Math.min(w, h),
+    style: "stroke",
+    show: "both",
+    palette: darkMode ? DARK_MANDALA_PALETTE : LIGHT_MANDALA_PALETTE,
+    strokeWidth: 2.5,
+    tipDx: MANDALA_STANDARD_TIP_DX,
+    offsetX: 0,
+    offsetY: 0,
+    glow: { blur: GLOW_STDDEV * sizeScale, bloomBlur: BLOOM_STDDEV * sizeScale },
+  });
+  return canvas.transferToImageBitmap();
 }
 
 /**
@@ -175,16 +177,16 @@ export interface BuildBackJobDeps {
     tipOverride: { dx: number; dy: number },
   ) => MandalaPaths;
   /**
-   * Rasterize the mandala SVG into an ImageBitmap at the given box size.
-   * Defaults to the real SvgImageCache-backed impl; injectable for tests
-   * (jsdom has no SVG decode / createImageBitmap).
+   * Render the mandala to an ImageBitmap at the given (square) box size via
+   * Path2D + canvas glow. Defaults to the real OffscreenCanvas-backed impl;
+   * injectable for tests (jsdom has no OffscreenCanvas / transferToImageBitmap).
    */
-  rasterizeMandala: (
-    svg: string,
+  renderMandala: (
+    paths: MandalaPaths,
     w: number,
     h: number,
-    cacheKey: string,
-  ) => Promise<ImageBitmap>;
+    darkMode: boolean,
+  ) => ImageBitmap;
 }
 
 const realDeps: BuildBackJobDeps = {
@@ -206,7 +208,7 @@ const realDeps: BuildBackJobDeps = {
       pathOptions,
       tipOverride,
     ),
-  rasterizeMandala: rasterizeMandalaSvg,
+  renderMandala: renderMandalaPath2D,
 };
 
 /**
@@ -304,25 +306,13 @@ export async function buildBackJob(
     { dx: MANDALA_STANDARD_TIP_DX, dy: 0 },
   );
 
-  // Build the SVG at the DOM mount size (380), then rasterize it at the layout
-  // box pixel size so it fills the box exactly — matching the old .mandala-anchor
-  // (72cqi square) scaling the 380-viewBox SVG to fill.
-  const mandalaSvg = renderMandalaSVG(mandalaPaths, {
-    size: MANDALA_DOM_SIZE,
-    style: "stroke",
-    show: "both",
-    palette: darkMode ? DARK_MANDALA_PALETTE : LIGHT_MANDALA_PALETTE,
-    tipDx: MANDALA_STANDARD_TIP_DX,
-    strokeWidth: 2.5,
-  });
+  // Render the mandala geometry directly via Path2D at the (square) layout box
+  // size, with a canvas glow emulating the SVG feGaussianBlur halo. This fills
+  // the box exactly — matching the old .mandala-anchor (72cqi square) — without
+  // the ~200ms SVG-filter decode the prior path paid.
   const mandalaW = Math.round(layout.mandala.w);
   const mandalaH = Math.round(layout.mandala.h);
-  const mandalaBitmap = await d.rasterizeMandala(
-    mandalaSvg,
-    mandalaW,
-    mandalaH,
-    `card-back-mandala:${data.word ?? ""}:${darkMode ? "d" : "l"}:${mandalaW}x${mandalaH}`,
-  );
+  const mandalaBitmap = d.renderMandala(mandalaPaths, mandalaW, mandalaH, darkMode);
   const mandala: BackJob["mandala"] = {
     bitmap: mandalaBitmap,
     placement: layout.mandala,

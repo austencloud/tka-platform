@@ -206,9 +206,13 @@ describe("card-back-bitmaps-percard rasterizers (canvas-native)", () => {
       expect(t.align).toBe("right");
       expect(t.font).toContain("700");
       expect(t.font).toContain(`${9 * CQI}px`);
-      // right edge = box width (20cqi), bottom = box height (9cqi)
+      // right edge = box width (20cqi). The alphabetic baseline is lifted off
+      // the slot bottom (9cqi) by the font descent so the digit's bottom lands
+      // at the slot bottom under line-height:1 (jsdom's fake measureText has no
+      // descent metrics → the fontPx*0.21 fallback applies).
       expect(t.x).toBe(Math.round(20 * CQI));
-      expect(t.y).toBe(Math.round(9 * CQI));
+      const descent = 9 * CQI * 0.21;
+      expect(t.y).toBeCloseTo(Math.round(9 * CQI) - descent, 2);
     });
 
     it("uses the ctx muted color", async () => {

@@ -111,7 +111,7 @@ function makeFakeDeps(overrides: Partial<BuildBackJobDeps> = {}): {
       record("calc", a);
       return EMPTY_PATHS;
     }),
-    rasterizeMandala: vi.fn(async (...a) => {
+    renderMandala: vi.fn((...a) => {
       record("mandala", a);
       return fakeBitmap("mandala");
     }),
@@ -183,7 +183,7 @@ describe("buildBackJob", () => {
     expect(calls.deco).toBeUndefined();
   });
 
-  it("rasterizes the mandala SVG and places it at its (square) layout box", async () => {
+  it("renders the mandala via Path2D and places it at its (square) layout box", async () => {
     const { deps, calls } = makeFakeDeps();
     const seq = makeSequence();
     const data = deriveCardBackData(seq);
@@ -198,21 +198,18 @@ describe("buildBackJob", () => {
       deps,
     );
 
-    // The mandala arrives as a pre-rasterized bitmap placed at the layout box.
+    // The mandala arrives as a pre-rendered bitmap placed at the layout box.
     expect(job.mandala).not.toBeNull();
     expect((job.mandala!.bitmap as unknown as { __tag: string }).__tag).toBe("mandala");
     expect(job.mandala!.placement).toEqual(layout.mandala);
 
-    // rasterizeMandala was called with (svg, w, h, cacheKey). The SVG is the
-    // exact renderMandalaSVG output (carries glow/bloom filters), sized to the
-    // square layout box in pixels.
+    // renderMandala was called with (paths, w, h, darkMode) — the Path2D path,
+    // not an SVG string. Sized to the square layout box in pixels.
     const args = calls.mandala![0]!;
-    const svg = args[0] as string;
-    expect(svg).toContain("<svg");
-    expect(svg).toContain('filter="url(#glow)"'); // filters present → not the Path2D approximation
+    expect(typeof args[0]).toBe("object"); // MandalaPaths, not an SVG string
     expect(args[1]).toBe(Math.round(layout.mandala.w));
     expect(args[2]).toBe(Math.round(layout.mandala.h));
-    expect(typeof args[3]).toBe("string"); // cache key
+    expect(typeof args[3]).toBe("boolean"); // darkMode flag
   });
 
   it("mirrors SequenceMandala: arc → undefined pathOptions, standard tip dx", async () => {

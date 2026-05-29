@@ -28,11 +28,12 @@ export interface BackJob {
   // The worker NEVER decodes SVG — createImageBitmap(svgBlob) fails in workers
   // for ALL svg in the target browser (proven in Phase 0).
   decorations: { bitmap: ImageBitmap; opacity: number } | null;
-  // Mandala pre-rasterized on the MAIN thread from the EXACT renderMandalaSVG
-  // output the DOM card back uses (glow/bloom/feather filters + purple-overlap
-  // mask), decoded via SvgImageCache (HTMLImageElement → ImageBitmap). The
-  // worker NEVER decodes SVG. null only if geometry yields no drawable mandala.
-  // Drawn at its `placement` box, between decorations and the placed bitmaps.
+  // Mandala rendered on the MAIN thread via Path2D (renderMandalaToCanvas) +
+  // a canvas shadowBlur glow that emulates the SVG feGaussianBlur glow/bloom,
+  // returned as an ImageBitmap. This avoids the ~200ms-per-card SVG-filter
+  // decode the prior path paid (65% of the whole back). null only if geometry
+  // yields no drawable mandala. Drawn at its `placement` box, between
+  // decorations and the placed bitmaps.
   mandala: { bitmap: ImageBitmap; placement: Placement } | null;
   bitmaps: PlacedBitmap[];
 }
