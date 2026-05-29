@@ -45,8 +45,8 @@ import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/g
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 
-import type { BackJob, PlacedBitmap } from "./back-job";
-import { computeCardBackLayout } from "./card-back-layout";
+import type { BackJob, PlacedBitmap, Placement } from "./back-job";
+import { computeCardBackLayout, type CardBackLayout } from "./card-back-layout";
 import { deriveCardBackData } from "../../components/card-back/card-back-data";
 import { getCardBackThemeVisuals } from "../../components/card-back/card-back-theme-visuals";
 import { parseLinearGradient } from "./gradient-parse";
@@ -206,6 +206,46 @@ const realDeps: BuildBackJobDeps = {
 };
 
 /**
+ * Anchor the TOP-anchored brand bitmap by its NATURAL size. The .brand-slot is
+ * `top:3.2cqi; left:0; right:0` flex-column centered, so the bitmap's top edge
+ * sits 3.2cqi below the content-box top and it is horizontally centered in the
+ * content box. The draw rect = the bitmap's own width × height (1:1, no scale).
+ */
+function anchorBrand(
+  bmp: ImageBitmap,
+  a: CardBackLayout["anchors"],
+): Placement {
+  const w = bmp.width;
+  const h = bmp.height;
+  return {
+    x: a.ox + (a.innerWidth - w) / 2,
+    y: a.oy + a.brandTopCqi * a.cqiEff,
+    w,
+    h,
+  };
+}
+
+/**
+ * Anchor the BOTTOM-anchored url bitmap by its NATURAL size. The .url-slot is
+ * `bottom:2.8cqi; left:0; right:0` flex-column centered, so the bitmap's BOTTOM
+ * edge sits 2.8cqi above the content-box bottom and it is horizontally centered.
+ * The draw rect = the bitmap's own width × height (1:1, no scale).
+ */
+function anchorUrl(
+  bmp: ImageBitmap,
+  a: CardBackLayout["anchors"],
+): Placement {
+  const w = bmp.width;
+  const h = bmp.height;
+  return {
+    x: a.ox + (a.innerWidth - w) / 2,
+    y: a.oy + a.innerHeight - a.urlBottomCqi * a.cqiEff - h,
+    w,
+    h,
+  };
+}
+
+/**
  * Build a `BackJob` for `sequence` at `opts` dimensions/theme.
  *
  * @param sequence The sequence to render the card back for.
@@ -311,7 +351,7 @@ export async function buildBackJob(
   ] = await Promise.all([
     d.rasterizeBrand(opts.theme),
     d.rasterizeUrl(opts.theme),
-    d.rasterizeDifficultyBadge(data.level.number),
+    d.rasterizeDifficultyBadge(data.level.number, opts.theme),
     d.rasterizeTurnGlyph(data.turnGlyphEntries),
     d.rasterizeReversalGlyph(data.reversalSequence, data.reversalPeriod),
     d.rasterizeStepCount(data.stepCount, undefined, undefined, visuals.textMutedColor),
@@ -329,14 +369,22 @@ export async function buildBackJob(
           comp === LOOPComponent.INVERTED &&
           loopDisplay.inversionPeriod === Period.QUARTERED;
         const color = LOOP_ICONS[comp]?.color ?? "#ffffff";
-        return d.rasterizeLoopIcon(comp, color, { quarteredRot, quarteredInv });
+        return d.rasterizeLoopIcon(comp, color, {
+          quarteredRot,
+          quarteredInv,
+          theme: opts.theme,
+        });
       }),
     ),
   ]);
 
+  // Brand + url are rendered at NATURAL height (no crop), so anchor them by the
+  // bitmap's own size: brand top-anchored at 3.2cqi, url bottom-anchored at
+  // 2.8cqi, both horizontally centered in the content box. The PlacedBitmap
+  // placement IS the 1:1 draw rect (w/h = bitmap's natural size).
   const bitmaps: PlacedBitmap[] = [
-    { kind: "brand", bitmap: brandBmp, placement: layout.brand },
-    { kind: "url-ornament", bitmap: urlBmp, placement: layout.url },
+    { kind: "brand", bitmap: brandBmp, placement: anchorBrand(brandBmp, layout.anchors) },
+    { kind: "url-ornament", bitmap: urlBmp, placement: anchorUrl(urlBmp, layout.anchors) },
     { kind: "difficulty-badge", bitmap: badgeBmp, placement: layout.levelBadge },
     { kind: "turn-glyph", bitmap: turnBmp, placement: layout.topLeftGlyph },
     { kind: "reversal-glyph", bitmap: reversalBmp, placement: layout.topRightGlyph },

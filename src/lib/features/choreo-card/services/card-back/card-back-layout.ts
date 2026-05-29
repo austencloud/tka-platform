@@ -72,9 +72,35 @@ export interface CardBackLayout {
    * .url-slot: bottom:2.8cqi; left:0; right:0; flex-column centered.
    * LAYOUT CONCERN: height is content-driven (ornament row + url text + year text + gaps).
    * Approximated as ~8cqi total: ornament(~1.6cqi) + gap(0.6cqi) + url-text(3cqi) +
-   * gap(0.6cqi) + year(2.2cqi) = 8cqi.
+   * gap(0.6cqi) + year(2.2cqi) = 8cqi. This box is a fallback; the job builder
+   * anchors the url bitmap by its NATURAL height instead (see `anchors`).
    */
   url: Placement;
+
+  /**
+   * Border-frame content-box basis + per-slot anchor metadata. The brand/url
+   * bitmaps are rendered at NATURAL (variable) height, so their fixed `brand`/
+   * `url` boxes above can't be used as draw rects — the builder anchors them by
+   * the bitmap's own height using these values:
+   *   - brand: top-anchored at `brandTopCqi`*cqiEff, centered in [ox, ox+innerWidth]
+   *   - url:   bottom-anchored at `urlBottomCqi`*cqiEff above (oy+innerHeight)
+   */
+  anchors: {
+    /** Border-frame content-box origin x (px from card edge). */
+    ox: number;
+    /** Border-frame content-box origin y (px from card edge). */
+    oy: number;
+    /** Border-frame content-box inline size (px). */
+    innerWidth: number;
+    /** Border-frame content-box block size (px). */
+    innerHeight: number;
+    /** 1cqi in px against the border-frame content box. */
+    cqiEff: number;
+    /** .brand-slot top offset in cqi (3.2). */
+    brandTopCqi: number;
+    /** .url-slot bottom offset in cqi (2.8). */
+    urlBottomCqi: number;
+  };
 }
 
 /** Canonical LOOPComponent display order — must match CardBack.svelte LOOP_DISPLAY_ORDER */
@@ -260,5 +286,14 @@ export function computeCardBackLayout(
     startPos: off(startPos),
     stepCount: off(stepCount),
     url: off(url),
+    anchors: {
+      ox,
+      oy,
+      innerWidth: width,
+      innerHeight: height,
+      cqiEff: cqi,
+      brandTopCqi: 3.2,
+      urlBottomCqi: 2.8,
+    },
   };
 }

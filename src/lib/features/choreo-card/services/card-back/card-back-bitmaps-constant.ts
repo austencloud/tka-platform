@@ -165,21 +165,29 @@ export function rasterizeUrl(theme: string): Promise<ImageBitmap> {
 // ── Difficulty badge (level-constant) ──────────────────────────────────────
 
 /**
- * Rasterize the difficulty badge for `level` (1/2/3). Cache key: level.
+ * Rasterize the difficulty badge for `level` (1/2/3) at `theme`'s border-aware
+ * cqi. Cache key: `level:cqiEff` (theme only matters via its borderWidth).
  *
- * CardBack.svelte mounts <DifficultyBadge size="7cqi" fontSize="4.2cqi" />.
- * At CARD_RENDER_WIDTH: 7cqi = 115.08px, 4.2cqi = 69.05px. Passed as explicit
- * px so the badge renders correctly inside its own (non-cqi) crop box.
+ * CardBack.svelte mounts <DifficultyBadge size="7cqi" fontSize="4.2cqi" />, and
+ * those cqi resolve against the border-frame content box — so size/fontSize use
+ * `cqiEff`, not the full-card cqi (which oversized the badge ~7-8%). Passed as
+ * explicit px so the badge renders correctly inside its own (non-cqi) crop box.
  */
-export function rasterizeDifficultyBadge(level: number): Promise<ImageBitmap> {
-  const size = `${7 * CQI}px`;
-  const fontSize = `${4.2 * CQI}px`;
-  return cached(badgeCache, level, () =>
+export function rasterizeDifficultyBadge(
+  level: number,
+  theme?: string,
+): Promise<ImageBitmap> {
+  const { cqiEff } = borderAwareBasis(theme ?? "");
+  const badgeSize = 7 * cqiEff;
+  const size = `${badgeSize}px`;
+  const fontSize = `${4.2 * cqiEff}px`;
+  const key = `${level}:${cqiEff.toFixed(4)}`;
+  return cached(badgeCache, key, () =>
     rasterize(
       DifficultyBadge,
       { level, size, fontSize },
-      Math.round(BADGE_SIZE),
-      Math.round(BADGE_SIZE),
+      Math.round(badgeSize),
+      Math.round(badgeSize),
     ),
   );
 }
@@ -194,20 +202,23 @@ export function rasterizeDifficultyBadge(level: number): Promise<ImageBitmap> {
  *   - quartered ROTATED  -> <i class="fas fa-arrows-spin"> (opts.quarteredRot)
  *   - else               -> <i class={LOOP_ICONS[component].fa}>
  *
- * Cache key: `${component}:${color}:${quarteredRot}:${quarteredInv}`.
+ * Cache key: `${component}:${color}:${quarteredRot}:${quarteredInv}:${cqiEff}`.
+ * Rendered at the theme's border-aware cqi (9cqi cell against the content box).
  *
  * @param component LOOPComponent value (e.g. "rotated").
  * @param color     Icon color (caller passes LOOP_ICONS[component].color).
- * @param opts      quarteredRot / quarteredInv flags.
+ * @param opts      quarteredRot / quarteredInv flags + theme (for border-aware cqi).
  */
 export function rasterizeLoopIcon(
   component: string,
   color: string,
-  opts: { quarteredRot?: boolean; quarteredInv?: boolean } = {},
+  opts: { quarteredRot?: boolean; quarteredInv?: boolean; theme?: string } = {},
 ): Promise<ImageBitmap> {
   const quarteredRot = opts.quarteredRot ?? false;
   const quarteredInv = opts.quarteredInv ?? false;
-  const key = `${component}:${color}:${quarteredRot}:${quarteredInv}`;
+  const { innerWidth, cqiEff } = borderAwareBasis(opts.theme ?? "");
+  const loopCellSize = 9 * cqiEff;
+  const key = `${component}:${color}:${quarteredRot}:${quarteredInv}:${cqiEff.toFixed(4)}`;
 
   return cached(loopIconCache, key, () => {
     let props: Record<string, unknown>;
@@ -224,9 +235,9 @@ export function rasterizeLoopIcon(
     return rasterize(
       CardBackLoopIcon,
       props,
-      Math.round(LOOP_CELL_SIZE),
-      Math.round(LOOP_CELL_SIZE),
-      { containerWidth: CARD_RENDER_WIDTH },
+      Math.round(loopCellSize),
+      Math.round(loopCellSize),
+      { containerWidth: Math.round(innerWidth) },
     );
   });
 }

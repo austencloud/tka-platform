@@ -41,9 +41,13 @@ const WIDTH = 1644;
 const HEIGHT = 2244;
 const BLEED = 72;
 
-/** A sentinel ImageBitmap-ish; enough for placement assertions. */
-function fakeBitmap(tag: string): ImageBitmap {
-  return { __tag: tag, close: vi.fn() } as unknown as ImageBitmap;
+/**
+ * A sentinel ImageBitmap-ish; enough for placement assertions. Brand/url are now
+ * anchored by the bitmap's own width/height (natural-height render), so the fake
+ * carries explicit dimensions.
+ */
+function fakeBitmap(tag: string, w = 100, h = 50): ImageBitmap {
+  return { __tag: tag, width: w, height: h, close: vi.fn() } as unknown as ImageBitmap;
 }
 
 const EMPTY_PATHS: MandalaPaths = { blue: [], red: [], purple: [] };
@@ -64,11 +68,12 @@ function makeFakeDeps(overrides: Partial<BuildBackJobDeps> = {}): {
   const deps: BuildBackJobDeps = {
     rasterizeBrand: vi.fn(async (...a) => {
       record("brand", a);
-      return fakeBitmap("brand");
+      // Natural-height render: a wide, short content box.
+      return fakeBitmap("brand", 1200, 180);
     }),
     rasterizeUrl: vi.fn(async (...a) => {
       record("url", a);
-      return fakeBitmap("url");
+      return fakeBitmap("url", 400, 120);
     }),
     rasterizeDifficultyBadge: vi.fn(async (...a) => {
       record("badge", a);
@@ -238,10 +243,24 @@ describe("buildBackJob", () => {
 
     const byKind = (k: string) => job.bitmaps.filter((b) => b.kind === k);
 
-    expect(byKind("brand")).toHaveLength(1);
-    expect(byKind("brand")[0]!.placement).toEqual(layout.brand);
+    const a = layout.anchors;
 
-    expect(byKind("url-ornament")[0]!.placement).toEqual(layout.url);
+    // Brand: NATURAL-height bitmap (1200×180), top-anchored at 3.2cqi, centered.
+    expect(byKind("brand")).toHaveLength(1);
+    const brandP = byKind("brand")[0]!.placement;
+    expect(brandP.w).toBe(1200);
+    expect(brandP.h).toBe(180);
+    expect(brandP.x).toBeCloseTo(a.ox + (a.innerWidth - 1200) / 2, 6);
+    expect(brandP.y).toBeCloseTo(a.oy + a.brandTopCqi * a.cqiEff, 6);
+
+    // URL: NATURAL-height bitmap (400×120), bottom-anchored at 2.8cqi, centered.
+    const urlP = byKind("url-ornament")[0]!.placement;
+    expect(urlP.w).toBe(400);
+    expect(urlP.h).toBe(120);
+    expect(urlP.x).toBeCloseTo(a.ox + (a.innerWidth - 400) / 2, 6);
+    // bottom edge sits 2.8cqi above the content-box bottom
+    expect(urlP.y + urlP.h).toBeCloseTo(a.oy + a.innerHeight - a.urlBottomCqi * a.cqiEff, 6);
+
     expect(byKind("difficulty-badge")[0]!.placement).toEqual(layout.levelBadge);
     expect(byKind("turn-glyph")[0]!.placement).toEqual(layout.topLeftGlyph);
     expect(byKind("reversal-glyph")[0]!.placement).toEqual(layout.topRightGlyph);
