@@ -1,7 +1,7 @@
 <!-- ActiveUsersPanel.svelte - Admin view of all users with activity-based presence -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { getUserActivityTracker } from "$lib/features/admin/getUserActivityTracker";
+  import { getUserActivityTracker } from "$lib/features/admin/get-user-activity-tracker";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   
   import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
@@ -9,7 +9,7 @@
   import UserDetailModal from "./UserDetailModal.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-import type { UserActivityTracker } from "../services/UserActivityTracker";
+import type { UserActivityTracker } from "../services/user-activity-tracker";
 
   // Services
   let userActivityService: UserActivityTracker | null = null;

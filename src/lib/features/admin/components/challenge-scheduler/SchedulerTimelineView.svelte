@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ChallengeScheduleEntry } from "../../domain/models/AdminModels";
+  import type { ChallengeScheduleEntry } from "../../domain/models/admin-models";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {

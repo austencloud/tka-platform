@@ -15,7 +15,7 @@ import {
 import {
   extractUserDisplayDetails,
   type UserDisplayDetails,
-} from "./utils/ProfilePictureResolver";
+} from "./utils/profile-picture-resolver";
 import type { UserActivityPoint, AnalyticsTimeRange, EventTypeBreakdown, ModuleUsageData, RecentActivityEvent } from "./types";
 
 // Timeout for Firebase queries (10 seconds)

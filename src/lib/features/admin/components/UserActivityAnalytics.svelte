@@ -6,9 +6,9 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getPostHogUserAnalytics } from "$lib/features/admin/getPostHogUserAnalytics";
+  import { getPostHogUserAnalytics } from "$lib/features/admin/get-post-hog-user-analytics";
   import type { UserEngagementSummary, ModuleActivityBreakdown, ContentMetrics, PostHogSessionSummary, TimePeriod } from "../services/types";
-import type { PostHogUserAnalytics } from "../services/PostHogUserAnalytics";
+import type { PostHogUserAnalytics } from "../services/post-hog-user-analytics";
 
   interface Props {
     userId: string;

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { SystemStateManager } from './services/SystemStateManager';
+import { SystemStateManager } from './services/system-state-manager';
 
 let instance: SystemStateManager | null = null;
 

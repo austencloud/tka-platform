@@ -11,8 +11,8 @@
  */
 
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import type { UserMetricsAnalyzer } from "./UserMetricsAnalyzer";
-import type { EventActivityAnalyzer } from "./EventActivityAnalyzer";
+import type { UserMetricsAnalyzer } from "./user-metrics-analyzer";
+import type { EventActivityAnalyzer } from "./event-activity-analyzer";
 import { getTopSequences } from "$lib/features/admin/services/content-query-analyzer";
 import type { SummaryMetrics, UserActivityPoint, ContentStatistics, TopSequenceData, EngagementMetrics, AnalyticsTimeRange, EventTypeBreakdown, ModuleUsageData, RecentActivityEvent } from "./types";
 

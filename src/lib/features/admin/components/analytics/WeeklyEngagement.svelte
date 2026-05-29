@@ -8,9 +8,9 @@
    * Accessibility: WCAG AAA compliant
    */
   import { onMount } from "svelte";
-  import { getSystemStateManager } from "$lib/features/admin/getSystemStateManager";
+  import { getSystemStateManager } from "$lib/features/admin/get-system-state-manager";
   import type { CachedUserMetadata } from "../../services/types";
-  import type { SystemStateManager } from "../../services/SystemStateManager";
+  import type { SystemStateManager } from "../../services/system-state-manager";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let isLoading = $state(true);

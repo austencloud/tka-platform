@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
-import { AnalyticsDataProvider } from './services/AnalyticsDataProvider';
-import { getUserMetricsAnalyzer } from './getUserMetricsAnalyzer';
-import { getEventActivityAnalyzer } from './getEventActivityAnalyzer';
+import { AnalyticsDataProvider } from './services/analytics-data-provider';
+import { getUserMetricsAnalyzer } from './get-user-metrics-analyzer';
+import { getEventActivityAnalyzer } from './get-event-activity-analyzer';
 
 let instance: AnalyticsDataProvider | null = null;
 

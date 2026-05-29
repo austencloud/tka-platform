@@ -13,7 +13,7 @@
   import type {
     ChallengeScheduleEntry,
     ChallengeFormData,
-  } from "../domain/models/AdminModels";
+  } from "../domain/models/admin-models";
   import SchedulerStatsGrid from "./challenge-scheduler/SchedulerStatsGrid.svelte";
   import SchedulerCalendarView from "./challenge-scheduler/SchedulerCalendarView.svelte";
   import SchedulerTimelineView from "./challenge-scheduler/SchedulerTimelineView.svelte";

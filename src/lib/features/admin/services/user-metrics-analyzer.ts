@@ -1,5 +1,5 @@
 import type { SummaryMetrics, ContentStatistics, EngagementMetrics, AnalyticsTimeRange } from "./types";
-import type { SystemStateManager } from "./SystemStateManager";
+import type { SystemStateManager } from "./system-state-manager";
 /**
  * User Metrics Analyzer
  *

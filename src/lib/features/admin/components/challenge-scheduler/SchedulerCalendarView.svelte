@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ChallengeScheduleEntry } from "../../domain/models/AdminModels";
+  import type { ChallengeScheduleEntry } from "../../domain/models/admin-models";
 
   interface CalendarDay {
     date: string;

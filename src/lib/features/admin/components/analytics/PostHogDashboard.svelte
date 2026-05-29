@@ -12,11 +12,11 @@
    */
 
   import { onMount } from "svelte";
-  import { getPostHogAnalyticsProvider } from "$lib/features/admin/getPostHogAnalyticsProvider";
-  import { getSystemStateManager } from "$lib/features/admin/getSystemStateManager";
+  import { getPostHogAnalyticsProvider } from "$lib/features/admin/get-post-hog-analytics-provider";
+  import { getSystemStateManager } from "$lib/features/admin/get-system-state-manager";
   import type { CachedUserMetadata } from "../../services/types";
-  import type { SystemStateManager } from "../../services/SystemStateManager";
-  import type { PostHogAnalyticsProvider } from "../../services/PostHogAnalyticsProvider";
+  import type { SystemStateManager } from "../../services/system-state-manager";
+  import type { PostHogAnalyticsProvider } from "../../services/post-hog-analytics-provider";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // PostHog project ID for dashboard links

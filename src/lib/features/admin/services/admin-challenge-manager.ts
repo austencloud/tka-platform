@@ -24,7 +24,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type {
   ChallengeScheduleEntry,
   ChallengeFormData,
-} from "../domain/models/AdminModels";
+} from "../domain/models/admin-models";
 import { logAction } from "./audit-logger";
 
 /**
