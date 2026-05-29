@@ -133,6 +133,17 @@ export class SvgAssetLoader {
       : this.assets.grids.diamondNonRadial;
   }
 
+  /** Seed the four grid drawables directly (worker path — skips fetch+decode). */
+  seedGrids(grids: LoadedAssets["grids"]): void {
+    this.assets.grids = grids;
+    this.initialized = true;
+  }
+
+  /** Snapshot the four grid drawables (main thread — feeds an AssetBundle). */
+  snapshotGrids(): LoadedAssets["grids"] {
+    return { ...this.assets.grids };
+  }
+
   // Pending letter loads to prevent duplicate fetches
   private pendingLetters = new Map<string, Promise<LetterAsset | null>>();
 
