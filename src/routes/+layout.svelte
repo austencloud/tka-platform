@@ -219,7 +219,7 @@
 
     // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
     // No-op on web - the isNative check inside returns immediately.
-    const { getNativeInitializer } = await import("$lib/shared/platform/getNativeInitializer");
+    const { getNativeInitializer } = await import("$lib/shared/platform/get-native-initializer");
     getNativeInitializer().initialize().catch((err: unknown) =>
       console.warn("[Layout] Native init skipped:", err)
     );
