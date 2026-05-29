@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { QuickAccessPersister } from './services/implementations/QuickAccessPersister';
+import { QuickAccessPersister } from './services/quick-access-persister';
 
 let instance: QuickAccessPersister | null = null;
 

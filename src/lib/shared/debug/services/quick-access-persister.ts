@@ -5,7 +5,7 @@
  * Uses localStorage for persistence across sessions.
  */
 
-import type { QuickAccessUser } from "../contracts/types";
+import type { QuickAccessUser } from "./types";
 
 const STORAGE_KEY = "tka-quick-access-users";
 

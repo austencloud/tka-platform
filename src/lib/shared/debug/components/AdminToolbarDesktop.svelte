@@ -13,7 +13,7 @@
   import { slide, fly } from "svelte/transition";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
-  import type { QuickAccessUser } from "../services/contracts/types";
+  import type { QuickAccessUser } from "../services/types";
   import type { PreviewUserProfile } from "../state/user-preview-state.svelte";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
 

@@ -29,10 +29,10 @@
   import * as cloudThumbnailCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
   import { getThumbnailLocalCache } from "$lib/shared/browse/getThumbnailLocalCache";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
-  import { getQuickAccessPersister } from "$lib/shared/debug/getQuickAccessPersister";
+  import { getQuickAccessPersister } from "$lib/shared/debug/get-quick-access-persister";
   import { getImageComposer } from "$lib/shared/render/getImageComposer";
-  import type { QuickAccessPersister } from "../services/implementations/QuickAccessPersister";
-import type { QuickAccessUser } from "../services/contracts/types";
+  import type { QuickAccessPersister } from "../services/quick-access-persister";
+import type { QuickAccessUser } from "../services/types";
   import { tikaPictographCache } from "$lib/shared/tika/services/TikaPictographCache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
