@@ -15,7 +15,7 @@
     AnnouncementAudience,
   } from "../../domain/models/announcement-models";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
-  import type { UserSearchResult } from "$lib/shared/user-search/services/contracts/types";
+  import type { UserSearchResult } from "$lib/shared/user-search/services/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

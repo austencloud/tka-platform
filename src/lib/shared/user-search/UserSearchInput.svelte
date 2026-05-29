@@ -8,7 +8,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { searchUsers as searchUsersService } from "./services/user-searcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
-  import type { UserSearchResult } from "./services/contracts/types";
+  import type { UserSearchResult } from "./services/types";
 
   type UserResult = UserSearchResult;
 

@@ -8,7 +8,7 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { searchUsers } from "$lib/shared/user-search/services/user-searcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
-  import type { UserSearchResult } from "$lib/shared/user-search/services/contracts/types";
+  import type { UserSearchResult } from "$lib/shared/user-search/services/types";
   import type { VideoPerformer } from "../types";
 
   interface Props {

@@ -15,7 +15,7 @@ import {
   limit as firestoreLimit,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { UserSearchResult, UserSearchOptions } from "./contracts/types";
+import type { UserSearchResult, UserSearchOptions } from "./types";
 
 function fuzzyMatch(text: string, queryTerms: string[]): boolean {
   const normalizedText = text.toLowerCase();
