@@ -28,6 +28,7 @@ interface PictographKeyInput {
     showPositions: boolean;
     showReversals: boolean;
     showNonRadialPoints: boolean;
+    showGrid: boolean;
     darkMode: boolean;
     bluePropType: string | undefined;
     redPropType: string | undefined;
@@ -72,6 +73,7 @@ export class PictographKeyHasher {
         showPositions: visibility.showPositions ?? false,
         showReversals: visibility.showReversals ?? true,
         showNonRadialPoints: visibility.showNonRadialPoints ?? true,
+        showGrid: visibility.showGrid ?? true,
         darkMode: visibility.darkMode ?? false,
         bluePropType: resolvedBlueProp,
         redPropType: resolvedRedProp,

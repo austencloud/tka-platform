@@ -203,10 +203,13 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     ctx.fillStyle = isDarkMode ? "#0a0a0f" : "#ffffff";
     ctx.fillRect(0, 0, size, size);
 
-    // 2. Draw grid
+    // 2. Draw grid (skipped entirely when the Grid toggle is off — hides the
+    //    base grid, hand points, and non-radial points together)
     const gridStart = performance.now();
     const gridMode = prepared?.gridMode ?? GridMode.DIAMOND;
-    if (visibility.baseGridOnly) {
+    if (visibility.showGrid === false) {
+      // Grid hidden — draw nothing
+    } else if (visibility.baseGridOnly) {
       // Base layer mode: draw only center + outer points (no hand points or layer 2)
       this.drawBaseGridOnly(ctx, size, isDarkMode, gridMode);
     } else {
