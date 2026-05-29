@@ -5,6 +5,10 @@ import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokeni
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
+import { TURN_VALUES } from "../domain/turn-pattern-parser";
+
+/** Canonical zero-turn TnD base catalog; all turn-grid cells derive from it. */
+export const TND_BASE_CATALOG_ID = "l1-vtg-motions";
 
 interface PoolEntry {
   sequenceId: string;
@@ -227,42 +231,22 @@ export interface TnDFamilyOption {
   entries: readonly TnDSequenceEntry[];
 }
 
-function parseTurnRatio(deckName: string): string {
-  const match = deckName.match(/\((\d+:\d+)/);
-  return match?.[1] ?? "0:1";
-}
-
 export function getTnDFamilyOptions(catalogs: Catalog[]): TnDFamilyOption[] {
-  const merged = new Map<string, { label: string; entries: TnDSequenceEntry[] }>();
-  for (const catalog of catalogs) {
-    if (catalog.collection !== "TnD") continue;
-    const turnRatio = parseTurnRatio(catalog.name);
-    for (const family of catalog.families) {
-      if (!family.id || family.id === "unknown") continue;
-      const existing = merged.get(family.id);
-      const newEntries = family.sequenceIds.map(id => ({ sequenceId: id, sourceCatalogId: catalog.id, turnRatio, turnPattern: catalog.turnPattern }));
-      if (existing) {
-        existing.entries.push(...newEntries);
-      } else {
-        merged.set(family.id, { label: family.label, entries: newEntries });
-      }
-    }
-  }
-  for (const [, data] of merged) {
-    const seen = new Set<string>();
-    data.entries = data.entries.filter(e => {
-      if (seen.has(e.sequenceId)) return false;
-      seen.add(e.sequenceId);
-      return true;
-    });
-  }
-
-  return [...merged.entries()].map(([id, { label, entries }]) => ({
-    familyId: id,
-    label,
-    sequenceCount: entries.length,
-    entries,
-  }));
+  const base = catalogs.find((c) => c.id === TND_BASE_CATALOG_ID);
+  if (!base) return [];
+  return base.families
+    .filter((f) => f.id && f.id !== "unknown")
+    .map((family) => ({
+      familyId: family.id,
+      label: family.label,
+      sequenceCount: family.sequenceIds.length,
+      entries: family.sequenceIds.map((id) => ({
+        sequenceId: id,
+        sourceCatalogId: base.id,
+        turnRatio: "1:1",
+        turnPattern: "0|0",
+      })),
+    }));
 }
 
 export function tndFooter(familyId: string, _turnRatio: string): CardFooter {
@@ -278,38 +262,24 @@ export interface TnDTurnPatternOption {
   sequenceCount: number;
 }
 
-export function getTnDTurnPatternOptions(catalogs: Catalog[]): TnDTurnPatternOption[] {
-  const counts = new Map<string, number>();
-  for (const catalog of catalogs) {
-    if (catalog.collection !== "TnD") continue;
-    const tp = catalog.turnPattern;
-    counts.set(tp, (counts.get(tp) ?? 0) + catalog.totalSequences);
-  }
-  return [...counts.entries()]
-    .map(([tp, count]) => ({ turnPattern: tp, label: formatTurnPatternLabel(tp), sequenceCount: count }))
-    .sort((a, b) => parseTurnPatternSort(a.turnPattern) - parseTurnPatternSort(b.turnPattern));
+function formatTurn(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
 
-function formatTurnPatternLabel(tp: string): string {
-  // Symmetric (equal-turn) patterns are stored as `uniform-Nt`; render them in
-  // the same `N|N` form as the asymmetric pipes so the diagonal reads as part of
-  // the same grid (e.g. uniform-2.5t -> "2.5|2.5") instead of a separate "2.5T".
-  const uniform = tp.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
-  if (uniform) return `${uniform[1]}|${uniform[1]}`;
-  const pipe = tp.match(/^(\d+(?:\.\d+)?)\|(\d+(?:\.\d+)?)$/);
-  if (pipe) return `${pipe[1]}|${pipe[2]}`;
-  return tp;
-}
-
-function parseTurnPatternSort(tp: string): number {
-  const uniform = tp.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
-  if (uniform) {
-    const n = parseFloat(uniform[1]!);
-    return n * 10 + n;
+/**
+ * The full 7×7 turn grid. `selectedFamilyBaseSeqs` is the count of base sequences
+ * across currently-selected families; each cell contributes that many cards
+ * (cartesian), so the per-cell count reflects the live family selection.
+ */
+export function getTnDTurnPatternOptions(selectedFamilyBaseSeqs: number): TnDTurnPatternOption[] {
+  const opts: TnDTurnPatternOption[] = [];
+  for (const blue of TURN_VALUES) {
+    for (const red of TURN_VALUES) {
+      const tp = `${formatTurn(blue)}|${formatTurn(red)}`;
+      opts.push({ turnPattern: tp, label: tp, sequenceCount: selectedFamilyBaseSeqs });
+    }
   }
-  const pipe = tp.match(/^(\d+(?:\.\d+)?)\|(\d+(?:\.\d+)?)$/);
-  if (pipe) return parseFloat(pipe[1]!) * 10 + parseFloat(pipe[2]!);
-  return 999;
+  return opts;
 }
 
 export function buildTnDCards(
@@ -317,19 +287,23 @@ export function buildTnDCards(
   selectedFamilies: Set<string>,
   selectedTurnPatterns?: Set<string>,
 ): DeckReleaseCard[] {
+  const patterns = selectedTurnPatterns ? [...selectedTurnPatterns] : [];
+  if (patterns.length === 0) return [];
   const cards: DeckReleaseCard[] = [];
   for (const fam of tndFamilies) {
     if (!selectedFamilies.has(fam.familyId)) continue;
-    for (const entry of fam.entries) {
-      if (selectedTurnPatterns && !selectedTurnPatterns.has(entry.turnPattern)) continue;
-      cards.push({
-        sequenceId: entry.sequenceId,
-        sourceCatalogId: entry.sourceCatalogId,
-        stepCount: 4,
-        word: entry.sequenceId,
-        position: 0,
-        footer: tndFooter(fam.familyId, entry.turnRatio),
-      });
+    for (const pattern of patterns) {
+      for (const entry of fam.entries) {
+        cards.push({
+          sequenceId: entry.sequenceId,
+          sourceCatalogId: entry.sourceCatalogId,
+          stepCount: 4,
+          word: entry.sequenceId,
+          position: 0,
+          variation: { turnPattern: pattern, turnLabel: pattern },
+          footer: tndFooter(fam.familyId, entry.turnRatio),
+        });
+      }
     }
   }
   return cards;
