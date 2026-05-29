@@ -7,6 +7,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import type { CardPair } from "../../services/types";
   import type { PrintRenderOptions } from "../../services/types";
   import type { TnDElement } from "../../domain/tnd-element";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -14,6 +15,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { cardCache, type RenderedCard, type CachedCard } from "./print-preview-cache";
   import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
   import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
+  import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
 
   interface Props {
     sequences: SequenceData[];
@@ -48,6 +50,13 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     deckId?: string;
     /** Deck name for QR attribution tracking */
     deckName?: string;
+    /**
+     * Pin prop types for the render instead of reading live settings. Set when
+     * viewing a released deck so cached card renders stay valid across setting
+     * changes. Omit to follow the user's current settings.
+     */
+    bluePropType?: PropType;
+    redPropType?: PropType;
   }
 
   let {
@@ -73,7 +82,16 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     showBacks = false,
     deckId,
     deckName,
+    bluePropType,
+    redPropType,
   }: Props = $props();
+
+  // Resolve render-visual inputs: explicit overrides pin a released deck's
+  // render; otherwise follow live settings. The cache key and render options
+  // both read these so a pinned deck's content hash matches what was cached.
+  const resolvedBlueProp = $derived(bluePropType ?? settingsService.settings.bluePropType);
+  const resolvedRedProp = $derived(redPropType ?? settingsService.settings.redPropType);
+  const resolvedBackground = $derived(theme ?? settingsService.settings.backgroundType ?? "");
 
   let renderedCards: RenderedCard[] = $state([]);
   let renderProgress = $state(0);
@@ -170,8 +188,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       showMandala: true,
       theme,
       tndElement: element,
-      bluePropType: settingsService.settings.bluePropType,
-      redPropType: settingsService.settings.redPropType,
+      bluePropType: resolvedBlueProp,
+      redPropType: resolvedRedProp,
       leftLabel: footer?.left,
       rightLabel: footer?.right,
       notes: footer?.center,
@@ -196,9 +214,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       cardSize, theme, showGrid, showTKA, showWord,
       includeStartPosition, handPointsVisible,
       (tndElements?.[index]?.familyId ?? tndElement?.familyId ?? "none"),
-      settingsService.settings.bluePropType,
-      settingsService.settings.redPropType,
-      settingsService.settings.backgroundType ?? "",
+      resolvedBlueProp,
+      resolvedRedProp,
+      resolvedBackground,
       stepCount,
       footer?.left ?? "",
       footer?.center ?? "",
@@ -242,7 +260,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const _includeStartPosition = includeStartPosition;
     const _handPointsVisible = handPointsVisible;
     const _rerenderKey = rerenderKey;
-    const _bgType = settingsService.settings.backgroundType;
+    const _bgType = resolvedBackground;
+    const _blueProp = resolvedBlueProp;
+    const _redProp = resolvedRedProp;
 
     // Void unused captures to satisfy linter
     void _cardSize;
@@ -254,6 +274,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     void _handPointsVisible;
     void _rerenderKey;
     void _bgType;
+    void _blueProp;
+    void _redProp;
 
     const generation = ++renderGeneration;
 
@@ -351,8 +373,13 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           pairs[i] = cached.pair;
         } else {
           const options = buildRenderOptions(stepCount, footer, i);
-          const frontCanvas = await renderer.renderFront(seq, options);
-          const backCanvas = await renderer.renderBack(seq, options);
+          // Front (Canvas2D) and back (DOM screenshot, ~200ms fixed wait) are
+          // independent and each allocate their own canvas/container, so render
+          // them together rather than front-then-back.
+          const [frontCanvas, backCanvas] = await Promise.all([
+            renderer.renderFront(seq, options),
+            renderer.renderBack(seq, options),
+          ]);
 
           const label = seq.word || seq.name || `Card ${i + 1}`;
           const card: RenderedCard = {
@@ -378,7 +405,10 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       completed++;
       if (generation === renderGeneration) {
         renderProgress = completed;
-        renderedCards = cards.map((c) => c ?? BLANK_CARD);
+        // `cards` is a sparse array (assigned by index); Array.from visits every
+        // slot — including not-yet-rendered holes — so the result is dense and
+        // `{#each}` never sees an undefined entry.
+        renderedCards = Array.from(cards, (c) => c ?? BLANK_CARD);
         onRenderStateChange?.({ isRendering: true, progress: completed, total: seqs.length });
       }
     };
@@ -532,11 +562,21 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             <div class="card-cell" style:aspect-ratio="{cardAspect}">
               {#if card.frontUrl}
                 <img src={card.frontUrl} alt="{card.label} front" />
+              {:else if card.label.startsWith("⚠")}
+                <div class="card-error" title={card.label}><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></div>
+              {:else}
+                <ShimmerBlock width="100%" height="100%" borderRadius="0" delay={(idx % 6) * 120} />
               {/if}
             </div>
-            {#if showBacks && card.backUrl}
+            {#if showBacks}
               <div class="card-cell" style:aspect-ratio="{cardAspect}">
-                <img src={card.backUrl} alt="{card.label} back" />
+                {#if card.backUrl}
+                  <img src={card.backUrl} alt="{card.label} back" />
+                {:else if card.label.startsWith("⚠")}
+                  <div class="card-error" title={card.label}><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></div>
+                {:else}
+                  <ShimmerBlock width="100%" height="100%" borderRadius="0" delay={(idx % 6) * 120 + 60} />
+                {/if}
               </div>
             {/if}
           </div>
@@ -732,6 +772,17 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     overflow: hidden;
     border-radius: 0;
     background: #ffffff;
+  }
+
+  .card-error {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   .card-cell.blank {
