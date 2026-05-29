@@ -16,8 +16,8 @@ import { firestoreDelete } from "$lib/shared/firestore";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
 import type { FeedbackItem, FeedbackStatus, StatusHistoryEntry, } from "$lib/shared/feedback/domain/models/feedback-models";
-import { generateTitleFromDescription } from "../feedback-submission-service";
-import { getFeedback } from "../feedback-querier";
+import { generateTitleFromDescription } from "./feedback-submission-service";
+import { getFeedback } from "./feedback-querier";
 
 const COLLECTION_NAME = "feedback";
 

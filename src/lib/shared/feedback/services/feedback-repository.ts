@@ -28,7 +28,7 @@ import * as feedbackQuerierModule from "$lib/shared/feedback/services/feedback-q
 import {
   feedbackStatusService,
   type FeedbackStatusService,
-} from "$lib/shared/feedback/services/implementations/FeedbackStatusManager";
+} from "$lib/shared/feedback/services/feedback-status-manager";
 import {
   getFeedbackTesterWorkflow,
   type IFeedbackTesterWorkflow,
