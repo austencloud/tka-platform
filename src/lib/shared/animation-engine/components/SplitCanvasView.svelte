@@ -60,6 +60,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     isPlaying = false,
     fireConfig = undefined,
     ledConfig = undefined,
+    darkModeEnabled = true,
     // When true, the parent wants the split row expanded. When false, it wants
     // it collapsed (reassemble). The actual expand is gated on both child
     // engines reporting ready first.
@@ -85,6 +86,7 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     isPlaying?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
+    darkModeEnabled?: boolean;
     expandRequested?: boolean;
     resizePaused?: boolean;
     onBothReady?: () => void;
@@ -153,7 +155,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       redProp={null}
       {gridVisible}
       {gridMode}
-      backgroundAlpha={0}
+      backgroundAlpha={1}
+      {darkModeEnabled}
       {letter}
       {stepData}
       {sequenceData}
@@ -173,7 +176,8 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {redProp}
       {gridVisible}
       {gridMode}
-      backgroundAlpha={0}
+      backgroundAlpha={1}
+      {darkModeEnabled}
       {letter}
       {stepData}
       {sequenceData}
@@ -221,10 +225,14 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     aspect-ratio: 1 / 1;
     position: relative;
     overflow: hidden;
+    /* Establish a container-query context on the CELL so the leaf's
+       `.canvas-wrapper { height: 100cqw }` squares against this half-width cell
+       — NOT against the grandparent .content-wrapper, which would make each
+       sub-canvas full-width-tall (2x too tall) and overflow the row. */
+    container-type: inline-size;
   }
 
-  /* Split sub-canvases fill their square cell edge-to-edge (the leaf's
-     .canvas-wrapper height is driven by container-query width). */
+  /* Split sub-canvases fill their square cell edge-to-edge. */
   .split-canvas :global(.canvas-wrapper) {
     width: 100%;
     height: 100%;

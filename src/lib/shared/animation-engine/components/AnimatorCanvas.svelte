@@ -416,6 +416,7 @@ Last audit: 2025-12-27
         {isPlaying}
         {fireConfig}
         {ledConfig}
+        {darkModeEnabled}
         expandRequested={splitExpandRequested}
         resizePaused={splitResizePaused}
         onExpandComplete={handleSplitExpandComplete}
