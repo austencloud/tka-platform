@@ -1,4 +1,4 @@
-import { VideoSourceProvider } from './services/implementations/VideoSourceProvider';
+import { VideoSourceProvider } from './services/video-source-provider';
 
 let instance: VideoSourceProvider | null = null;
 export function getVideoSourceProvider(): VideoSourceProvider {

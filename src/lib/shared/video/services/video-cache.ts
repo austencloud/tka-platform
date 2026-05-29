@@ -14,7 +14,7 @@ import type {
   GetVideoOptions,
   CacheStats,
   CachedVideo,
-} from "../contracts/types";
+} from "./types";
 
 const DB_NAME = "tka-video-cache";
 const DB_VERSION = 1;

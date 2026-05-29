@@ -1,4 +1,4 @@
-import type { VideoSourceInfo } from "../contracts/types";
+import type { VideoSourceInfo } from "./types";
 export class VideoSourceProvider {
 	private videoEl: HTMLVideoElement | null = null;
 	private offscreenCanvas: HTMLCanvasElement | null = null;

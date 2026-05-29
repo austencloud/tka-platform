@@ -1,4 +1,4 @@
-import type { TrainingDataEntry, TrainingDataSource } from "../contracts/types";
+import type { TrainingDataEntry, TrainingDataSource } from "./types";
 const DB_NAME = "tka-training-data";
 const DB_VERSION = 1;
 const STORE_NAME = "entries";

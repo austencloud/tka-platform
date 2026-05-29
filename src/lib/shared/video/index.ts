@@ -3,7 +3,7 @@
  *
  * Provides video caching and playback utilities for the app.
  */
-import { VideoCache } from "./services/implementations/VideoCache";
+import { VideoCache } from "./services/video-cache";
 
 // Singleton instance for app-wide video caching
 let videoCacheInstance: VideoCache | null = null;
@@ -16,5 +16,5 @@ export function getVideoCache(): VideoCache {
 }
 
 // Re-export types
-export { VideoCache } from "./services/implementations/VideoCache";
-export type { CacheStats, CachedVideo } from "./services/contracts/types";
+export { VideoCache } from "./services/video-cache";
+export type { CacheStats, CachedVideo } from "./services/types";

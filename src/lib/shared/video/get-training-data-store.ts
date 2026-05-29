@@ -1,4 +1,4 @@
-import { TrainingDataStore } from './services/implementations/TrainingDataStore';
+import { TrainingDataStore } from './services/training-data-store';
 
 let instance: TrainingDataStore | null = null;
 export function getTrainingDataStore(): TrainingDataStore {

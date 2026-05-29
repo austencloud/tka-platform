@@ -1,4 +1,4 @@
-import type { ExtractedFrame, FrameExtractionConfig } from "./contracts/types";
+import type { ExtractedFrame, FrameExtractionConfig } from "./types";
 
 function seekTo(
   videoElement: HTMLVideoElement,
