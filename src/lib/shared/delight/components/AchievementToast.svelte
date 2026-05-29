@@ -10,7 +10,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import type { DelightOrchestrator } from '$lib/shared/delight/services/implementations/DelightOrchestrator'
+	import type { DelightOrchestrator } from '$lib/shared/delight/services/delight-orchestrator'
 
 	interface Props {
 		orchestrator?: DelightOrchestrator | null;

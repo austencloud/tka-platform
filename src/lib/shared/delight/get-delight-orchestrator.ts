@@ -1,5 +1,5 @@
 
-import { DelightOrchestrator } from './services/implementations/DelightOrchestrator';
+import { DelightOrchestrator } from './services/delight-orchestrator';
 import { getHapticFeedback } from '$lib/shared/application/getHapticFeedback';
 
 let instance: DelightOrchestrator | null = null;

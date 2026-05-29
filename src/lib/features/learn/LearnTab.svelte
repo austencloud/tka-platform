@@ -11,7 +11,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
 -->
 <script lang="ts">
 
-import { getDelightOrchestrator } from "$lib/shared/delight/getDelightOrchestrator";
+import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestrator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { onMount, untrack } from "svelte";
   import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
