@@ -21,7 +21,7 @@
  * Gated behind window.__TKA_UNIFIED_VIEWER.
  */
 
-import type { LedFrameInput, LedOverlayConfig } from "../../../domain/types/LedTypes";
+import type { LedFrameInput, LedOverlayConfig } from "../../domain/types/LedTypes";
 import {
 	FULLSCREEN_VERT,
 	LED_SPRITE_VERT,
@@ -30,7 +30,7 @@ import {
 	BLOOM_DOWNSAMPLE_FRAG,
 	BLOOM_UPSAMPLE_FRAG,
 	LED_DISPLAY_FRAG,
-} from "./LedShaderSources";
+} from "./led-shader-sources";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 const MAX_DPR = 2;
@@ -908,7 +908,7 @@ export class WebGLLedRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../../effects/EffectPlugin";
+import type { EffectPlugin } from "../effects/EffectPlugin";
 import type { LedIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
