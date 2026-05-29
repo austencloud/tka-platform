@@ -23,6 +23,7 @@
     tndTurnPatterns: TnDTurnPatternOption[];
     selectedTnDTurnPatterns: Set<string>;
     tndCardCount: number;
+    selectedTurnPatternCount: number;
     onModeChange: (mode: DeckMode) => void;
     onWeightChange: (stepCount: number, weight: number) => void;
     onTotalCardsChange: (total: number) => void;
@@ -49,6 +50,7 @@
     tndTurnPatterns,
     selectedTnDTurnPatterns,
     tndCardCount,
+    selectedTurnPatternCount,
     onModeChange,
     onWeightChange,
     onTotalCardsChange,
@@ -332,7 +334,7 @@
                 />
               {/if}
               <span class="tnd-family-name">{fam.label}</span>
-              <span class="tnd-family-count">{fam.sequenceCount} cards</span>
+              <span class="tnd-family-count">{fam.sequenceCount * selectedTurnPatternCount} cards</span>
             </button>
           {/each}
         </div>

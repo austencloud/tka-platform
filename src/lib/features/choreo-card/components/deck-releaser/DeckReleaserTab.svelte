@@ -88,7 +88,6 @@
       catalogs = await loadCatalogs();
       rs.sourceSummaries = getCatalogSourceSummaries(catalogs);
       rs.tndFamilies = getTnDFamilyOptions(catalogs);
-      rs.tndTurnPatterns = getTnDTurnPatternOptions(catalogs);
       await releasesPromise;
       rebuildPool();
     } catch (err) {
@@ -161,6 +160,15 @@
   const tndCardCount = $derived(
     buildTnDCards(rs.tndFamilies, rs.selectedTnDFamilies, rs.selectedTnDTurnPatterns).length
   );
+
+  const selectedFamilyBaseSeqs = $derived(
+    rs.tndFamilies
+      .filter((f) => rs.selectedTnDFamilies.has(f.familyId))
+      .reduce((sum, f) => sum + f.sequenceCount, 0),
+  );
+  $effect(() => {
+    rs.tndTurnPatterns = getTnDTurnPatternOptions(selectedFamilyBaseSeqs);
+  });
 
   function handleWeightChange(stepCount: number, weight: number) {
     rs.weights = rs.weights.map((w) =>
@@ -347,6 +355,7 @@
         tndTurnPatterns={rs.tndTurnPatterns}
         selectedTnDTurnPatterns={rs.selectedTnDTurnPatterns}
         {tndCardCount}
+        selectedTurnPatternCount={rs.selectedTnDTurnPatterns.size}
         isLoading={rs.isLoadingPools}
         onModeChange={handleModeChange}
         onWeightChange={handleWeightChange}
