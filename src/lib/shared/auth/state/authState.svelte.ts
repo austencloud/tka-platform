@@ -37,7 +37,7 @@ import { identifyUser, resetUser, captureEvent } from "../../analytics/services/
 import { getScanSourceCode } from "../../analytics/scan-attribution";
 
 import { linkDeviceToUser } from "$lib/shared/auth/services/device-id-service";
-import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
+import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
 
 import {
   changeEmail as doChangeEmail,

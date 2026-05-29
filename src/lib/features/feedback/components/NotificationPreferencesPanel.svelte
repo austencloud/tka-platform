@@ -6,7 +6,7 @@
 <script lang="ts">
 
 import * as notificationPreferencesManager from "$lib/features/feedback/services/notification-preferences-manager";
-import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
+import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import type {
@@ -24,7 +24,7 @@ import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
     userPreviewState,
     getPreviewNotificationPreferences,
   } from "$lib/shared/debug/state/user-preview-state.svelte";
-  import type { FCMTokenManager } from "$lib/shared/push/services/implementations/FCMTokenManager";
+  import type { FCMTokenManager } from "$lib/shared/push/services/fcm-token-manager";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

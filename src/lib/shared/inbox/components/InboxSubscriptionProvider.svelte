@@ -13,7 +13,7 @@
 -->
 <script lang="ts">
 
-import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
+import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import { onMount } from "svelte";
   import { inboxState } from "../state/inbox-state.svelte";
   import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
@@ -21,11 +21,11 @@ import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import PushPermissionPrompt from "$lib/shared/push/components/PushPermissionPrompt.svelte";
-  import type { FCMTokenManager } from "$lib/shared/push/services/implementations/FCMTokenManager";
+  import type { FCMTokenManager } from "$lib/shared/push/services/fcm-token-manager";
   import {
     startForegroundMessageListener,
     stopForegroundMessageListener,
-  } from "$lib/shared/push/services/implementations/ForegroundMessageHandler";
+  } from "$lib/shared/push/services/foreground-message-handler";
   // Note: Module loading is handled by container
 
   let unsubscribeMessages: (() => void) | null = null;

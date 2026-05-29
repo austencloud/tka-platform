@@ -12,7 +12,7 @@ import {
 	serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, app } from "$lib/shared/auth/firebase";
-import { VAPID_KEY } from "../../config/vapid";
+import { VAPID_KEY } from "../config/vapid";
 
 const FCM_TOKENS_COLLECTION = "fcmTokens";
 
