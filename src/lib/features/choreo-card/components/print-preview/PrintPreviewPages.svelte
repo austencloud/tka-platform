@@ -111,6 +111,13 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   const BLANK_CARD: RenderedCard = { frontUrl: "", backUrl: "", label: "" };
 
+  // Parallel render lanes. Each in-flight card holds ~2 full-size canvases, so
+  // bound by core count to overlap async gaps without blowing up peak memory.
+  const RENDER_CONCURRENCY = Math.min(
+    8,
+    Math.max(2, (typeof navigator !== "undefined" ? navigator.hardwareConcurrency : 0) || 4),
+  );
+
   // Group rendered cards into sheet batches with row isolation by element
   let sheets = $derived.by(() => {
     let cards = renderedCards;
@@ -311,19 +318,26 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       return;
     }
 
-    // Phase 3: Render uncached cards progressively
+    // Phase 3: Render uncached cards with bounded concurrency.
+    //
+    // Safe to parallelize: composeSequenceImage and Canvas2DDirectRenderer each
+    // allocate a fresh canvas per call (no shared scratch context), so in-flight
+    // renders can't corrupt one another. Running RENDER_CONCURRENCY lanes overlaps
+    // the async gaps (asset/blob decode, raster) instead of waiting card-by-card.
+    // Results are written by index so ordering is preserved despite out-of-order
+    // completion; holes show as blank cells until filled.
     isRendering = true;
     renderProgress = 0;
     renderedCards = [];
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
 
     const renderer = getPrintCardRenderer();
-    const pairs: CardPair[] = [];
-    const cards: RenderedCard[] = [];
+    const cards: RenderedCard[] = new Array(seqs.length);
+    const pairs: (CardPair | null)[] = new Array(seqs.length).fill(null);
+    let completed = 0;
+    let nextIndex = 0;
 
-    for (let i = 0; i < seqs.length; i++) {
-      if (generation !== renderGeneration) return;
-
+    const renderOne = async (i: number): Promise<void> => {
       const seq = seqs[i]!;
       const stepCount = seq.steps?.length;
       const footer = seqFooter(i);
@@ -332,14 +346,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
       try {
         if (cached) {
-          cards.push(cached.rendered);
-          if (cached.pair) {
-            pairs.push(cached.pair);
-          } else {
-            const pair = await reconstructPair(cached.rendered);
-            cached.pair = pair;
-            pairs.push(pair);
-          }
+          cards[i] = cached.rendered;
+          if (!cached.pair) cached.pair = await reconstructPair(cached.rendered);
+          pairs[i] = cached.pair;
         } else {
           const options = buildRenderOptions(stepCount, footer, i);
           const frontCanvas = await renderer.renderFront(seq, options);
@@ -353,8 +362,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           };
           const pair: CardPair = { front: frontCanvas, back: backCanvas, label };
 
-          pairs.push(pair);
-          cards.push(card);
+          cards[i] = card;
+          pairs[i] = pair;
           cardCache.set(cacheKey, { rendered: card, pair });
 
           Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
@@ -363,20 +372,31 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
         }
       } catch (err) {
         console.error(`[PrintPreview] Card ${i + 1} (${seq.word}) render failed:`, err);
-        const label = `⚠ ${seq.word || seq.name || `Card ${i + 1}`}`;
-        const errorCard: RenderedCard = { frontUrl: "", backUrl: "", label };
-        cards.push(errorCard);
+        cards[i] = { frontUrl: "", backUrl: "", label: `⚠ ${seq.word || seq.name || `Card ${i + 1}`}` };
       }
 
-      if (generation !== renderGeneration) return;
-      renderProgress = i + 1;
-      renderedCards = [...cards];
-      onRenderStateChange?.({ isRendering: true, progress: i + 1, total: seqs.length });
-    }
+      completed++;
+      if (generation === renderGeneration) {
+        renderProgress = completed;
+        renderedCards = cards.map((c) => c ?? BLANK_CARD);
+        onRenderStateChange?.({ isRendering: true, progress: completed, total: seqs.length });
+      }
+    };
+
+    const lane = async (): Promise<void> => {
+      while (generation === renderGeneration) {
+        const i = nextIndex++;
+        if (i >= seqs.length) return;
+        await renderOne(i);
+      }
+    };
+
+    const laneCount = Math.min(RENDER_CONCURRENCY, seqs.length);
+    await Promise.all(Array.from({ length: laneCount }, () => lane()));
 
     if (generation !== renderGeneration) return;
     isRendering = false;
-    onPairsReady?.(pairs);
+    onPairsReady?.(pairs.filter((p): p is CardPair => p !== null));
     onRenderStateChange?.({ isRendering: false, progress: seqs.length, total: seqs.length });
   }
 
@@ -510,7 +530,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             oncontextmenu={(e) => handleCardContextMenu(e, idx)}
           >
             <div class="card-cell" style:aspect-ratio="{cardAspect}">
-              <img src={card.frontUrl} alt="{card.label} front" />
+              {#if card.frontUrl}
+                <img src={card.frontUrl} alt="{card.label} front" />
+              {/if}
             </div>
             {#if showBacks && card.backUrl}
               <div class="card-cell" style:aspect-ratio="{cardAspect}">
