@@ -50,6 +50,11 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
 
   let { diagnostics, color, stepData, onDiagnosticsChanged }: Props = $props();
 
+  const colorName = $derived(color === "blue" ? "Blue" : "Red");
+  const colorToken = $derived(
+    color === "blue" ? "var(--prop-blue, #58a6ff)" : "var(--prop-red, #f85149)"
+  );
+
   // Editing state
   let isEditing = $state(false);
   let activeLayer = $state<1 | 2 | 3>(2);
@@ -653,9 +658,17 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     <div class="loading">calculating...</div>
   {/if}
 
-  <!-- Inline WASD Editor -->
+  <!-- Inline WASD Editor — compact control bar, not a tall tower -->
   {#if isEditing}
     <div class="editor-section">
+      <div class="editor-head">
+        <span class="editor-dot" style="background: {colorToken}"></span>
+        <span class="editor-title">{colorName} · {tierLabel(editTarget)}</span>
+        <button class="editor-x" onclick={toggleEditing} aria-label="Close editor" title="Close editor">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+
       {#if editTarget === "global"}
         <LayerTabBar
           {activeLayer}
@@ -666,72 +679,68 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
           {thisPropType}
           {otherPropType}
         />
-      {:else}
-        <div class="editor-target-label">
-          Editing {tierLabel(editTarget)}
-        </div>
       {/if}
 
-      <div class="editor-values">
-        <label class="editor-input-label">
-          X:
-          <input
-            type="number"
-            class="editor-input"
-            bind:value={editX}
-            onchange={handleNumericChange}
-          />
-        </label>
-        <label class="editor-input-label">
-          Y:
-          <input
-            type="number"
-            class="editor-input"
-            bind:value={editY}
-            onchange={handleNumericChange}
-          />
-        </label>
-      </div>
-
-      <div class="editor-hint">
-        <kbd>W A S D</kbd>
-        <span>to move · Shift ×4 · Ctrl+Shift ×40 · live preview in pictograph</span>
-      </div>
-
-      {#if hasLocalChanges}
-        <div class="editor-unsaved">
-          <i class="fas fa-circle" aria-hidden="true"></i> Unsaved
+      <div class="editor-row">
+        <div class="editor-values">
+          <label class="editor-input-label">
+            X
+            <input
+              type="number"
+              class="editor-input"
+              bind:value={editX}
+              onchange={handleNumericChange}
+            />
+          </label>
+          <label class="editor-input-label">
+            Y
+            <input
+              type="number"
+              class="editor-input"
+              bind:value={editY}
+              onchange={handleNumericChange}
+            />
+          </label>
         </div>
-      {/if}
 
-      <div class="editor-actions">
-        {#if editTarget === "special-json" && diagnostics?.specialJson?.firestoreOverride}
-          <button class="btn btn-delete" onclick={handleDelete} title="Revert to original">
-            <i class="fas fa-undo" aria-hidden="true"></i> Revert
-          </button>
-        {:else if editTarget === "prop-geometry" && propGeometryHasValue}
-          <button class="btn btn-delete" onclick={handleDelete} title="Delete prop geometry adjustment">
-            <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete
-          </button>
-        {:else if editTarget === "global" && (currentLayerValue || layer1HasValue || layer2HasValue || layer3HasValue)}
-          <button class="btn btn-delete" onclick={handleDelete} title="Delete at this layer">
-            <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete
-          </button>
-        {/if}
-        <button
-          class="btn btn-save"
-          onclick={handleSave}
-          disabled={!hasLocalChanges && !(editTarget === "global" && currentLayerValue)}
-        >
-          {#if saveState === "saving"}
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          {:else if saveState === "saved"}
-            <i class="fas fa-check" aria-hidden="true"></i>
-          {:else}
-            <i class="fas fa-save" aria-hidden="true"></i>
+        <div class="editor-actions">
+          {#if editTarget === "special-json" && diagnostics?.specialJson?.firestoreOverride}
+            <button class="btn btn-delete" onclick={handleDelete} title="Revert to original">
+              <i class="fas fa-undo" aria-hidden="true"></i> Revert
+            </button>
+          {:else if editTarget === "prop-geometry" && propGeometryHasValue}
+            <button class="btn btn-delete icon-only" onclick={handleDelete} aria-label="Delete prop geometry adjustment" title="Delete prop geometry adjustment">
+              <i class="fas fa-trash-alt" aria-hidden="true"></i>
+            </button>
+          {:else if editTarget === "global" && (currentLayerValue || layer1HasValue || layer2HasValue || layer3HasValue)}
+            <button class="btn btn-delete icon-only" onclick={handleDelete} aria-label="Delete at this layer" title="Delete at this layer">
+              <i class="fas fa-trash-alt" aria-hidden="true"></i>
+            </button>
           {/if}
-          Save
-        </button>
+          <button
+            class="btn btn-save"
+            onclick={handleSave}
+            disabled={!hasLocalChanges && !(editTarget === "global" && currentLayerValue)}
+          >
+            {#if saveState === "saving"}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            {:else if saveState === "saved"}
+              <i class="fas fa-check" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-save" aria-hidden="true"></i>
+            {/if}
+            Save
+          </button>
+        </div>
+      </div>
+
+      <div class="editor-foot">
+        <span class="editor-hint">
+          <kbd>W A S D</kbd> move · Shift ×4 · Ctrl+Shift ×40 · live preview
+        </span>
+        {#if hasLocalChanges}
+          <span class="editor-unsaved"><i class="fas fa-circle" aria-hidden="true"></i> Unsaved</span>
+        {/if}
       </div>
     </div>
   {/if}
@@ -887,29 +896,68 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   }
   .editor-section {
     margin-top: 12px;
-    padding: 18px;
+    padding: 12px 14px;
     background: color-mix(in srgb, var(--theme-accent, #58a6ff) 8%, transparent);
     border: 1px solid color-mix(in srgb, var(--theme-accent, #58a6ff) 35%, transparent);
-    border-radius: 16px;
+    border-radius: 14px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
   }
-  .editor-target-label {
-    text-align: center;
+  .editor-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .editor-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .editor-title {
+    flex: 1;
+    min-width: 0;
     font-size: var(--font-size-sm, 14px);
     font-weight: 700;
-    color: var(--theme-accent, #a78bfa);
+    color: var(--theme-text, #fff);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .editor-x {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    font-size: var(--font-size-compact, 12px);
+  }
+  .editor-x:hover {
+    color: var(--theme-text, #fff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+  /* Values + actions share one row so the editor stays a short control bar. */
+  .editor-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
   }
   .editor-values {
     display: flex;
     align-items: flex-end;
-    justify-content: center;
-    gap: 18px;
+    gap: 12px;
   }
   .editor-input-label {
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 6px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
@@ -917,14 +965,14 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     font-weight: 600;
   }
   .editor-input {
-    width: 96px;
-    padding: 8px 12px;
+    width: 72px;
+    padding: 6px 10px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 12px;
+    border-radius: 10px;
     background: rgba(0, 0, 0, 0.25);
     color: var(--theme-text, #fff);
     font-variant-numeric: tabular-nums;
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 700;
     text-align: center;
   }
@@ -932,11 +980,16 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     outline: none;
     border-color: var(--theme-accent, #58a6ff);
   }
+  .editor-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
   .editor-hint {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
     gap: 8px;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
@@ -952,21 +1005,20 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
   .editor-unsaved {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 6px;
     font-size: var(--font-size-compact, 12px);
     color: var(--semantic-warning, #f59e0b);
   }
   .editor-actions {
     display: flex;
-    gap: 12px;
-    justify-content: center;
+    gap: 8px;
+    align-items: center;
   }
   .btn {
-    padding: 12px 24px;
-    min-height: 44px;
+    padding: 10px 18px;
+    min-height: 40px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 12px;
+    border-radius: 10px;
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     cursor: pointer;
@@ -974,6 +1026,9 @@ import type { SelectedArrowContext } from "../../../services/implementations/Arr
     align-items: center;
     gap: 6px;
     font-family: inherit;
+  }
+  .btn.icon-only {
+    padding: 10px 12px;
   }
   .btn-delete {
     background: transparent;
