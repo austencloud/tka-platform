@@ -13,7 +13,7 @@ import {
   getMetadata,
 } from "firebase/storage";
 import { getAuth } from "firebase/auth";
-import type { UploadProgress } from "./contracts/types";
+import type { UploadProgress } from "./types";
 
 /**
  * Get storage path for audio file

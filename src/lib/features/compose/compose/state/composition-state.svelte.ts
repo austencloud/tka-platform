@@ -23,7 +23,7 @@ import {
 } from "$lib/shared/animation-engine/domain/compose-types";
 import { createCellsFromTemplate, getTemplateById } from "../domain/templates";
 import { getComposition as dexieGetComposition, exists as dexieExists } from "../../services/dexie-composition-repository";
-import { compositionSyncer } from "../../services/implementations/CompositionSyncer";
+import { compositionSyncer } from "../../services/composition-syncer";
 import { loadCustomPresets } from "$lib/features/lab/constraint-layout-lab/services/LayoutPersistence";
 import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-types";
 
@@ -37,10 +37,10 @@ import {
 } from "./composition-helpers";
 
 // Import managers
-import { createAudioStateManager } from "./managers/AudioStateManager.svelte";
-import { createTempoRegionManager } from "./managers/TempoRegionManager.svelte";
-import { createCellOperationsManager } from "./managers/CellOperationsManager.svelte";
-import { createCompositionUIManager } from "./managers/CompositionUIManager.svelte";
+import { createAudioStateManager } from "./managers/audio-state-manager.svelte";
+import { createTempoRegionManager } from "./managers/tempo-region-manager.svelte";
+import { createCellOperationsManager } from "./managers/cell-operations-manager.svelte";
+import { createCompositionUIManager } from "./managers/composition-ui-manager.svelte";
 
 // Re-export types for external consumers
 export type {

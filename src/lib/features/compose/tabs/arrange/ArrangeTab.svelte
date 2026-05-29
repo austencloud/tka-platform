@@ -30,7 +30,7 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-types";
   import type { TransformType } from "$lib/shared/animation-engine/domain/compose-types";
-  import type { KeyboardContext, KeyboardCallbacks } from "./services/contracts/types";
+  import type { KeyboardContext, KeyboardCallbacks } from "./services/types";
 
   // Use singleton grid state
   const gridState = arrangeGridState;

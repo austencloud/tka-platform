@@ -8,7 +8,7 @@
 
 import type { TunnelLayerConfig, TransformType, AppliedTransform, } from "$lib/shared/animation-engine/domain/compose-types";
 import type { GridCell } from "../state/arrange-grid-state.svelte";
-import type { SerializationContext } from "./contracts/types";
+import type { SerializationContext } from "./types";
 
 /**
  * Migrates legacy `appliedTransforms` (string[]) to the new `transformStack`

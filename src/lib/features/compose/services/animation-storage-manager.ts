@@ -20,8 +20,8 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { Animation } from "../shared/domain/Animation";
-import { createAnimation } from "../shared/domain/Animation";
+import type { Animation } from "../shared/domain/animation";
+import { createAnimation } from "../shared/domain/animation";
 
 /**
  * Firestore collection path constants

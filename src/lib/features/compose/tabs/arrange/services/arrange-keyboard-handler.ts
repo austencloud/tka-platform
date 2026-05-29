@@ -6,7 +6,7 @@
  */
 
 import type { GridCell } from "../state/arrange-grid-state.svelte";
-import type { KeyboardContext, KeyboardCallbacks } from "./contracts/types";
+import type { KeyboardContext, KeyboardCallbacks } from "./types";
 
 export function handleKeyDown(
   e: KeyboardEvent,

@@ -6,7 +6,7 @@
  * placeholder based on the composition's mode and accent color.
  */
 
-import type { AnimationMode } from "../../../shared/domain/AnimationMode";
+import type { AnimationMode } from "../../../shared/domain/animation-mode";
 import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
 
 export function resolveThumbnail(composition: CompositionBrowseItem): string | null {

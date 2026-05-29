@@ -5,7 +5,7 @@
  * Single source of truth for icons, names, gradients, and accent colors.
  */
 
-import type { AnimationMode } from "./AnimationMode";
+import type { AnimationMode } from "./animation-mode";
 
 export interface ComposeModeConfig {
   icon: string;

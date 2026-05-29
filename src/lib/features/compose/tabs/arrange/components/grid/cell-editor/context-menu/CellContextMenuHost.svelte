@@ -12,7 +12,7 @@
   import {
     buildCellContextMenuItems,
     type CellContextMenuCallbacks,
-  } from "./CellContextMenuBuilder";
+  } from "./cell-context-menu-builder";
   import type { GridCell } from "../../../../state/arrange-grid-state.svelte";
 
   let {

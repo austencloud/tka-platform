@@ -184,7 +184,7 @@
           { getExportGlyphPrerenderer },
           { getBackgroundVideoEncoder },
         ] = await Promise.all([
-          import("$lib/features/compose/services/implementations/VideoExportOrchestrator"),
+          import("$lib/features/compose/services/video-export-orchestrator"),
           import("$lib/shared/animation-engine/getVideoExporter"),
           import("$lib/shared/animation-engine/getCompositeVideoRenderer"),
           import("$lib/shared/animation-engine/getExportGlyphPrerenderer"),

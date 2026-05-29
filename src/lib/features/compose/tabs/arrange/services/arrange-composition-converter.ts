@@ -15,7 +15,7 @@ import type { CellMediaType } from "$lib/shared/animation-engine/domain/compose-
 import type { TunnelLayerConfig } from "$lib/shared/animation-engine/domain/compose-types";
 import {
   type GridCell, createInitialGrid, generateCellId, } from "../state/arrange-grid-state.svelte";
-import type { GridStateSnapshot } from "./contracts/types";
+import type { GridStateSnapshot } from "./types";
 
 /**
  * Map CellMediaType (Arrange) → MediaDisplayType (Composition).

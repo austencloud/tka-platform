@@ -9,7 +9,7 @@
 import type { TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
 import { pixelsToTime } from "$lib/shared/animation-engine/domain/timeline-types";
 import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
-import { getTimelineSnapper } from "../../services/implementations/TimelineSnapService";
+import { getTimelineSnapper } from "../../services/timeline-snap-service";
 
 export interface ClipMoveHandlers {
   handleMoveStart: (e: MouseEvent) => void;

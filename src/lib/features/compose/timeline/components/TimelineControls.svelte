@@ -10,7 +10,7 @@
    */
 
   import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
-  import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
+  import { getTimelinePlayer } from "../services/timeline-playback-service";
   import SnapControls from "./SnapControls.svelte";
   import TimeSignatureChip from "./TimeSignatureChip.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";

@@ -7,7 +7,7 @@
  */
 
 import type { CompositionBrowseItem } from "../state/composition-browse-state.svelte";
-import type { CardSize } from "./contracts/types";
+import type { CardSize } from "./types";
 
 export function calculateCardSizes(
   compositions: CompositionBrowseItem[],

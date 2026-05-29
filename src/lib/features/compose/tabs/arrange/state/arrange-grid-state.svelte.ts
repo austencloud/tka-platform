@@ -24,18 +24,18 @@ import type { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailT
 import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 // compose-arrange-container dissolved - services accessed via module singleton getters
 import type {
-  ArrangeUndoOperationType, ArrangeGridSnapshot } from "../services/contracts/types";
+  ArrangeUndoOperationType, ArrangeGridSnapshot } from "../services/types";
 
 import { serializeGrid } from "../services/arrange-grid-serializer";
 import { gridCellsToComposition, compositionToGridState } from "../services/arrange-composition-converter";
 import { loadGrid, saveGrid, migrateLocalStorageCompositions } from "../services/arrange-grid-persister";
 import { calculateTotalBeats } from "../services/arrange-step-calculator";
 import { applyTransform } from "../services/arrange-layer-transformer";
-import { compositionSyncer } from "../../../services/implementations/CompositionSyncer";
+import { compositionSyncer } from "../../../services/composition-syncer";
 import { getComposition as dexieGetComposition } from "../../../services/dexie-composition-repository";
 
-import { getArrangeUndoManager } from "$lib/features/compose/tabs/arrange/getArrangeUndoManager";
-import { getArrangePlaybackEngine } from "$lib/features/compose/tabs/arrange/getArrangePlaybackEngine";
+import { getArrangeUndoManager } from "$lib/features/compose/tabs/arrange/get-arrange-undo-manager";
+import { getArrangePlaybackEngine } from "$lib/features/compose/tabs/arrange/get-arrange-playback-engine";
 
 // Maximum backing array dimensions (8x8 = 64 cells)
 export const MAX_GRID_SIZE = 8;

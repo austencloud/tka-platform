@@ -1,5 +1,5 @@
 
-import { ArrangeUndoManager } from './services/implementations/ArrangeUndoManager';
+import { ArrangeUndoManager } from './services/arrange-undo-manager';
 
 let instance: ArrangeUndoManager | null = null;
 export function getArrangeUndoManager(): ArrangeUndoManager {

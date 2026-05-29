@@ -25,7 +25,7 @@ import { getVideoExporter } from "../animation-engine/getVideoExporter";
 import { getCompositeVideoRenderer } from "../animation-engine/getCompositeVideoRenderer";
 import { getExportGlyphPrerenderer } from "../animation-engine/getExportGlyphPrerenderer";
 import { getBackgroundVideoEncoder } from "../animation-engine/getBackgroundVideoEncoder";
-import { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
+import { VideoExportOrchestrator } from "$lib/features/compose/services/video-export-orchestrator";
 
 import { getQRCodeGenerator } from "../qr/getQRCodeGenerator";
 import { getImageComposer } from "../render/getImageComposer";

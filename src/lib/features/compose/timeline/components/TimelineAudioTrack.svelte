@@ -10,7 +10,7 @@
   import { onDestroy } from "svelte";
   import WaveSurfer from "wavesurfer.js";
   import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
-  import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
+  import { getTimelinePlayer } from "../services/timeline-playback-service";
   import { generateStepTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
   import { timeToPixels } from "$lib/shared/animation-engine/domain/timeline-types";
 

@@ -9,7 +9,7 @@
 	import MorphChip from "$lib/shared/foundation/ui/morph-chip/MorphChip.svelte";
 	import { ALL_MODES } from "../../../shared/domain/compose-mode-config";
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
-	import type { AnimationMode } from "../../../shared/domain/AnimationMode";
+	import type { AnimationMode } from "../../../shared/domain/animation-mode";
 	import type { CompositionFilter, CompositionSortMethod, SortDirection } from "../state/composition-browse-state.svelte";
 
 	const {

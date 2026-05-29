@@ -5,7 +5,7 @@
  * swapColors, invert, and rewind transforms to arrange grid layers.
  */
 
-import type { TransformResult } from "./contracts/types";
+import type { TransformResult } from "./types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { TransformType } from "$lib/shared/animation-engine/domain/compose-types";
 import { sequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";

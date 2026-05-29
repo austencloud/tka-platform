@@ -12,7 +12,7 @@ import {
   calculateSnapPoints,
   DEFAULT_SNAP_THRESHOLD,
   type SnapContext,
-} from "../SnapService";
+} from "./snap-service";
 import { getTimelineState } from "$lib/shared/animation-engine/state/timeline-state.svelte";
 
 export class TimelineSnapper {

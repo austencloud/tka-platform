@@ -6,7 +6,7 @@
  * canvas configurations, and playback settings.
  */
 
-import type { AnimationMode } from "./AnimationMode";
+import type { AnimationMode } from "./animation-mode";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 

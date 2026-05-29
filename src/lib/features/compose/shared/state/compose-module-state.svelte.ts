@@ -14,7 +14,7 @@
  * Playback is an overlay, not a tab - triggered from Arrange or Browse
  */
 
-import type { AnimationMode } from "../domain/AnimationMode";
+import type { AnimationMode } from "../domain/animation-mode";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 

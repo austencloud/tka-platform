@@ -6,10 +6,10 @@
  * and new capabilities: expand-in-place detail, pinning, adaptive grid.
  */
 
-import type { AnimationMode } from "../../../shared/domain/AnimationMode";
+import type { AnimationMode } from "../../../shared/domain/animation-mode";
 import type { CellConfig, Composition, GridLayout } from "$lib/shared/animation-engine/domain/compose-types";
 import { getComposition as dexieGetComposition } from "../../../services/dexie-composition-repository";
-import { compositionSyncer } from "../../../services/implementations/CompositionSyncer";
+import { compositionSyncer } from "../../../services/composition-syncer";
 
 // ============================================================================
 // Types

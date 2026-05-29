@@ -5,7 +5,7 @@
  * Grid state itself still persists via arrange-grid-state's save().
  */
 
-import type { ArrangeUndoOperationType, ArrangeUndoEntry, ArrangeGridSnapshot, UndoResult } from "../contracts/types";
+import type { ArrangeUndoOperationType, ArrangeUndoEntry, ArrangeGridSnapshot, UndoResult } from "./types";
 
 const MAX_HISTORY_SIZE = 50;
 const DEFAULT_COALESCING_WINDOW_MS = 500;
