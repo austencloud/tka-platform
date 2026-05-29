@@ -10,13 +10,13 @@
  * since they hold no per-animation state.
  */
 
-import { AnimationLoop } from "$lib/shared/animation-engine/services/implementations/AnimationLoop";
-import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
+import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
+import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
 import { createAngleCalculator } from "$lib/shared/animation-engine/services/angle-calculator";
-import { EndpointCalculator } from "$lib/shared/animation-engine/services/implementations/EndpointCalculator";
-import { PropInterpolator } from "$lib/shared/animation-engine/services/implementations/PropInterpolator";
-import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
-import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+import { EndpointCalculator } from "$lib/shared/animation-engine/services/endpoint-calculator";
+import { PropInterpolator } from "$lib/shared/animation-engine/services/prop-interpolator";
+import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 
 export function createAnimationPlaybackController(): AnimationPlaybackController {
   const angleCalculator = createAngleCalculator();

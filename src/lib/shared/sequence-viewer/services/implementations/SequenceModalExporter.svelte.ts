@@ -7,7 +7,7 @@ import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { recordExportThroughput } from "$lib/shared/animation-panel/state/export-timing-tracker";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/implementations/AnimationPlaybackController';
+import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
 import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";

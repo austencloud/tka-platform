@@ -14,7 +14,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 

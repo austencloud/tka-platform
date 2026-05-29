@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { VideoRenderProgress } from "$lib/shared/animation-engine/services/implementations/VideoPreRenderer";
+  import type { VideoRenderProgress } from "$lib/shared/animation-engine/services/video-pre-renderer";
   let {
     progress,
     onCancel,

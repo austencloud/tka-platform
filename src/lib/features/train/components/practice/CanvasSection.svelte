@@ -11,7 +11,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

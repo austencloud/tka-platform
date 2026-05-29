@@ -23,7 +23,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
 		createSequenceData,
 		type SequenceData
 	} from '$lib/shared/foundation/domain/models/SequenceData';
-	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 	import type { AnimationPanelState } from '$lib/shared/animation-engine/state/animation-panel-state.svelte';
 	import SessionControls from './SessionControls.svelte';
 	import SyncToggle from './SyncToggle.svelte';

@@ -1,8 +1,8 @@
-import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
-import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
-import { PropInterpolator } from "$lib/shared/animation-engine/services/implementations/PropInterpolator";
+import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
+import { PropInterpolator } from "$lib/shared/animation-engine/services/prop-interpolator";
 import { createAngleCalculator } from "$lib/shared/animation-engine/services/angle-calculator";
-import { EndpointCalculator } from "$lib/shared/animation-engine/services/implementations/EndpointCalculator";
+import { EndpointCalculator } from "$lib/shared/animation-engine/services/endpoint-calculator";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 

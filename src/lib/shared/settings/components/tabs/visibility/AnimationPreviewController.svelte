@@ -9,7 +9,7 @@
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import * as turnPatternManager from "$lib/shared/create/services/turn-pattern-manager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/createPlaybackControllerFactory";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";

@@ -28,7 +28,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
   import type { PictographPreparer } from "../services/pictograph-preparer";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { DarkModeProvider } from "$lib/shared/animation-engine/services/implementations/DarkModeProvider";
+  import type { DarkModeProvider } from "$lib/shared/animation-engine/services/dark-mode-provider";
   import OptionPickerContent from "./OptionPickerContent.svelte";
 
   // Props

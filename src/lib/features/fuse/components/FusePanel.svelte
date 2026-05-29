@@ -8,7 +8,7 @@
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 	import FuseSequenceBrowser from "./FuseSequenceBrowser.svelte";
 	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
 	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";

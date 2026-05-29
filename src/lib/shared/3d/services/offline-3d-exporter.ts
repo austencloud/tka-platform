@@ -35,7 +35,7 @@
 
 import { tick } from "svelte";
 import { Vector2 } from "three";
-import type { BackgroundVideoEncoder } from "$lib/shared/animation-engine/services/implementations/BackgroundVideoEncoder";
+import type { BackgroundVideoEncoder } from "$lib/shared/animation-engine/services/background-video-encoder";
 import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
 import type { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 

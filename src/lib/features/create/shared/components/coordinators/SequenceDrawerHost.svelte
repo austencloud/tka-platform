@@ -43,7 +43,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
   // Animation imports
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
   import { ExportUrlManager } from "$lib/shared/export-panel/services/export-url-manager";

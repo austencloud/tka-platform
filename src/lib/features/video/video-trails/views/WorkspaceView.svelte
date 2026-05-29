@@ -14,10 +14,10 @@
   import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import type { FireFrameInput } from "$lib/shared/animation-engine/domain/types/FireTypes";
   import type { LedFrameInput } from "$lib/shared/animation-engine/domain/types/LedTypes";
-  import { WebGLFireRenderer } from "$lib/shared/animation-engine/services/implementations/fire/WebGLFireRenderer";
-  import { WebGLLedRenderer } from "$lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer";
-  import { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/implementations/charcoal/CharcoalSparkRenderer";
-  import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DTrailRenderer";
+  import { WebGLFireRenderer } from "$lib/shared/animation-engine/services/fire/web-gl-fire-renderer";
+  import { WebGLLedRenderer } from "$lib/shared/animation-engine/services/led/web-gl-led-renderer";
+  import { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/charcoal/charcoal-spark-renderer";
+  import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
   import VideoSourcePanel from "../components/VideoSourcePanel.svelte";
   import EffectCanvasStack from "../components/EffectCanvasStack.svelte";
   import PlaybackControls from "../components/PlaybackControls.svelte";

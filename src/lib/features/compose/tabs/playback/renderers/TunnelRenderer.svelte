@@ -16,10 +16,10 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/implementations/TrailCapturer";
+  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/trail-capturer";
   import {
     ANIMATION_LOAD_DELAY_MS,
     ANIMATION_AUTO_START_DELAY_MS,

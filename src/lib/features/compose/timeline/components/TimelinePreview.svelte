@@ -19,7 +19,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   import { getTimelinePlayer } from "../services/timeline-playback-service";
   import type { TimelineClip } from "$lib/shared/animation-engine/domain/timeline-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+  import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import { startPositionDeriver as startPositionDeriverSingleton } from "$lib/shared/pictograph/shared/services/start-position-deriver";

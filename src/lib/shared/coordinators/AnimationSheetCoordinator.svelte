@@ -26,9 +26,9 @@ import { getVideoExporter } from "$lib/shared/animation-engine/getVideoExporter"
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { IVideoExportOrchestrator, VideoExportProgress, VideoExportFormat } from "$lib/shared/compose/domain/video-export-types";
-  import type { VideoExporter } from "$lib/shared/animation-engine/services/implementations/VideoExporter";
+  import type { VideoExporter } from "$lib/shared/animation-engine/services/video-exporter";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";

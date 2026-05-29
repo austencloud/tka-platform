@@ -14,11 +14,11 @@
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { CellConfig } from "$lib/shared/animation-engine/domain/compose-types";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/createPlaybackControllerFactory";
-  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/implementations/TrailCapturer";
+  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/trail-capturer";
   interface Props {
     cell: CellConfig;
     isPlaying: boolean;

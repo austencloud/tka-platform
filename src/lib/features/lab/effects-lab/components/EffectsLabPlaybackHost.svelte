@@ -26,10 +26,10 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
 
-  import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
-  import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
-  import { AnimationLoop } from "$lib/shared/animation-engine/services/implementations/AnimationLoop";
+  import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
+  import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
 
   // Auto-chaining
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";

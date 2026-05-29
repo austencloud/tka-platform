@@ -14,11 +14,11 @@ import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpo
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
-  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
-  import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
+  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/implementations/TrailCapturer";
+  import type { AdditionalLayerProps } from "$lib/shared/animation-engine/services/trail-capturer";
   import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/FireTypes";
   import type { LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
 

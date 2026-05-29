@@ -25,8 +25,8 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   import { createAngleCalculator } from "$lib/shared/animation-engine/services/angle-calculator";
-  import { EndpointCalculator } from "$lib/shared/animation-engine/services/implementations/EndpointCalculator";
-  import { PropInterpolator } from "$lib/shared/animation-engine/services/implementations/PropInterpolator";
+  import { EndpointCalculator } from "$lib/shared/animation-engine/services/endpoint-calculator";
+  import { PropInterpolator } from "$lib/shared/animation-engine/services/prop-interpolator";
 
   const poi = getPoiContext();
 

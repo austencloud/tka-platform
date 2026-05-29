@@ -8,7 +8,7 @@
  * Domain: Export Panel - Export Orchestration
  */
 
-import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/implementations/AnimationPlaybackController';
+import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
 /** Result of an export operation */

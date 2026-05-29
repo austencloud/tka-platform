@@ -161,8 +161,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { browser } from "$app/environment";
   import { generateViewerURL, encodePropForURL } from "$lib/shared/navigation/services/sequence-encoder";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+  import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { SequenceDataProvider } from "$lib/shared/sequence-viewer/services/implementations/SequenceDataProvider";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";

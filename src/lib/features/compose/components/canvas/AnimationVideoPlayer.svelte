@@ -16,7 +16,7 @@
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { VideoRenderProgress, VideoRenderResult } from "$lib/shared/animation-engine/services/implementations/VideoPreRenderer";
+  import type { VideoRenderProgress, VideoRenderResult } from "$lib/shared/animation-engine/services/video-pre-renderer";
   import { getVideoPlayer } from "../../services/video-player";
   import { getVideoGenerationCoordinator } from "../../services/video-generation-coordinator";
   import VideoGenerationStatus from "../video-player/VideoGenerationStatus.svelte";

@@ -10,7 +10,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import {

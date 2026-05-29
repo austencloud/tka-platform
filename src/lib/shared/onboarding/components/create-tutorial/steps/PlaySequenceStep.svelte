@@ -20,7 +20,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import {
     createAnimationPanelState,
     type AnimationStateKey,

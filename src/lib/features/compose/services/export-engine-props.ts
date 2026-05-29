@@ -1,5 +1,5 @@
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { AnimationEngineProps } from "$lib/shared/animation-engine/services/implementations/AnimationEngine.svelte";
+import type { AnimationEngineProps } from "$lib/shared/animation-engine/services/animation-engine.svelte";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 

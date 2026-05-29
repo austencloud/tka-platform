@@ -11,7 +11,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	import { onMount, onDestroy, untrack } from "svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 	import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
 	import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/createPlaybackControllerFactory";

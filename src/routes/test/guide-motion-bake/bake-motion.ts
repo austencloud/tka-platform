@@ -7,7 +7,7 @@
  * live demo. Dev-bake use only — NOT unit-testable in jsdom.
  */
 
-import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer";
+import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/canvas-2d-animation-renderer";
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
 import { getVideoExporter } from "$lib/shared/animation-engine/getVideoExporter";
 import {

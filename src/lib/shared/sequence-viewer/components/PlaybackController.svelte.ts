@@ -10,7 +10,7 @@
  * Extracted from SequenceViewerOrchestrator.
  */
 
-import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState, AnimationStateKey, PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

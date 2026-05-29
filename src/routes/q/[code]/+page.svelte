@@ -42,7 +42,7 @@
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 
   const BASE_BPM = 60;

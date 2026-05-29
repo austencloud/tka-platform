@@ -21,10 +21,10 @@ import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpo
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   // Per-instance playback stack imports (avoid shared singleton)
-  import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
-  import { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
-  import { AnimationLoop } from "$lib/shared/animation-engine/services/implementations/AnimationLoop";
+  import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
+  import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
 
   // BPM/Speed conversion constant
   const DEFAULT_BPM = 60;

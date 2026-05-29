@@ -2,7 +2,7 @@
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";

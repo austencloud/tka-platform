@@ -21,21 +21,21 @@ import {
   downloadBlob,
   generateTimestampedFilename,
 } from "$lib/shared/foundation/services/file-downloader";
-import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import {
   getHeaderHeight,
   getProgressBarHeight,
 } from "./canvas-renderer";
-import type { VideoExporter } from "$lib/shared/animation-engine/services/implementations/VideoExporter";
-import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/implementations/CompositeVideoRenderer";
-import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
+import type { VideoExporter } from "$lib/shared/animation-engine/services/video-exporter";
+import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/composite-video-renderer";
+import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/export-glyph-prerenderer";
 import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
 import { getRenderContextRegistry } from "$lib/shared/animation-engine/getRenderContextRegistry";
-import type { RenderContext } from "$lib/shared/animation-engine/services/implementations/RenderContextRegistry";
+import type { RenderContext } from "$lib/shared/animation-engine/services/render-context-registry";
 
 import type { VideoExportFormat, VideoExportProgress, VideoEffectOverrides, IVideoExportOrchestrator, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 export type { VideoExportFormat, VideoExportProgress, VideoResolution, VideoEffectOverrides, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
-import type { BackgroundVideoEncoder } from "$lib/shared/animation-engine/services/implementations/BackgroundVideoEncoder";
+import type { BackgroundVideoEncoder } from "$lib/shared/animation-engine/services/background-video-encoder";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
 import { getExportDimensions, calculateBitrate } from "$lib/shared/animation-engine/domain/video-export-calculations";

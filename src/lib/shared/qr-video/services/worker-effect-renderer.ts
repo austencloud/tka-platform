@@ -31,13 +31,13 @@ import { Sparkles2DRenderer, type SparklesTipInput } from "$lib/shared/effects/r
 import { Water2DRenderer, type WaterTipInput } from "$lib/shared/effects/renderers/Water2DRenderer";
 import { Zap2DRenderer, type ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 
-import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DTrailRenderer";
+import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
 import { DEFAULT_TRAIL_SETTINGS, TrailMode, TrailEffect } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { TrailPoint, TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 
-import { WebGLFireRenderer } from "$lib/shared/animation-engine/services/implementations/fire/WebGLFireRenderer";
-import { WebGLLedRenderer } from "$lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer";
-import { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/implementations/charcoal/CharcoalSparkRenderer";
+import { WebGLFireRenderer } from "$lib/shared/animation-engine/services/fire/web-gl-fire-renderer";
+import { WebGLLedRenderer } from "$lib/shared/animation-engine/services/led/web-gl-led-renderer";
+import { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/charcoal/charcoal-spark-renderer";
 import type { FireFrameInput, PropTipData } from "$lib/shared/animation-engine/domain/types/FireTypes";
 import { DEFAULT_FIRE_CONFIG } from "$lib/shared/animation-engine/domain/types/FireTypes";
 import type { LedFrameInput, LedTipData } from "$lib/shared/animation-engine/domain/types/LedTypes";

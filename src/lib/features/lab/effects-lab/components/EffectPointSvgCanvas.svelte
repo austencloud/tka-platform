@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { PROP_DIMENSIONS, DEFAULT_PROP_DIMENSIONS, type PropDimensions } from "$lib/shared/animation-engine/services/contracts/IPropTextureLoader";
+  import { PROP_DIMENSIONS, DEFAULT_PROP_DIMENSIONS, type PropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
 
   interface Props {

@@ -31,8 +31,8 @@
   import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 
   import { createAngleCalculator } from "$lib/shared/animation-engine/services/angle-calculator";
-  import { EndpointCalculator } from "$lib/shared/animation-engine/services/implementations/EndpointCalculator";
-  import { PropInterpolator } from "$lib/shared/animation-engine/services/implementations/PropInterpolator";
+  import { EndpointCalculator } from "$lib/shared/animation-engine/services/endpoint-calculator";
+  import { PropInterpolator } from "$lib/shared/animation-engine/services/prop-interpolator";
   import { mapTimePositionToBeat } from "$lib/shared/animation-engine/services/step-calculator";
 
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";

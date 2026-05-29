@@ -20,7 +20,7 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+  import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
   import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import { startPositionDeriver as startPositionDeriverSingleton } from "$lib/shared/pictograph/shared/services/start-position-deriver";
