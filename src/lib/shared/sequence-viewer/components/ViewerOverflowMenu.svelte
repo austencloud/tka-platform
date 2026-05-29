@@ -6,6 +6,7 @@
   WAI-ARIA menu pattern with keyboard navigation.
 -->
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
 
   interface Props {
@@ -30,6 +31,8 @@
     onRemix?: () => void;
     onCopyData?: () => void;
     copyDataFeedback?: boolean;
+    /** When set, a "View in coven hub" item deep-links to /coven?seq=<id>. */
+    sequenceId?: string;
     /** When set, a Left/Right motion-visibility chip row renders atop the menu. */
     motionVisibility?: {
       showBlue: boolean;
@@ -60,6 +63,7 @@
     onRemix,
     onCopyData,
     copyDataFeedback = false,
+    sequenceId,
     motionVisibility,
   }: Props = $props();
 
@@ -157,6 +161,14 @@
         action: onCopyLink,
         className: linkCopied ? "copied" : undefined,
         dividerBefore: !onPropsOpen && items.length > 0,
+      });
+    }
+    if (sequenceId) {
+      items.push({
+        label: "View in coven hub",
+        icon: "fa-hat-wizard",
+        action: () => goto(`/coven?seq=${sequenceId}`),
+        dividerBefore: items.length > 0,
       });
     }
     if (onPublish || onUnpublish) {

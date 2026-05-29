@@ -174,6 +174,7 @@
 
     <ViewerOverflowMenu
       variant="header"
+      sequenceId={sequence?.id}
       {practiceActive}
       {onPracticeToggle}
       onVideoUpload={isLoggedIn ? onVideoUpload : undefined}
