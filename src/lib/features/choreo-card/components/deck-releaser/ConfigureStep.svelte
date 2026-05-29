@@ -2,6 +2,7 @@
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
   import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
   import TnDTurnMatrix from "../TnDTurnMatrix.svelte";
+  import { TND_BY_FAMILY } from "../../domain/tnd-element";
 
   type DeckMode = "loop" | "tnd";
 
@@ -199,7 +200,8 @@
         </div>
       </div>
     {:else}
-      <div class="control-group">
+      <div class="tnd-layout">
+      <div class="control-group tnd-turns-col">
         <span class="control-label">Turn Patterns</span>
         <TnDTurnMatrix
           patternOptions={tndTurnPatterns}
@@ -209,16 +211,27 @@
         />
       </div>
 
-      <div class="control-group">
+      <div class="control-group tnd-families-col">
         <span class="control-label">TnD Families</span>
         <div class="tnd-families">
           {#each tndFamilies as fam (fam.familyId)}
+            {@const el = TND_BY_FAMILY[fam.familyId]}
             <button
               type="button"
               class="tnd-family-btn"
               class:selected={selectedTnDFamilies.has(fam.familyId)}
+              style="--accent: {el?.accentColor ?? 'var(--theme-accent, #b763cd)'};"
               onclick={() => onTnDFamilyToggle(fam.familyId)}
             >
+              {#if el}
+                <img
+                  src={el.iconPath}
+                  alt="{el.element} element"
+                  class="tnd-family-icon"
+                  width="36"
+                  height="36"
+                />
+              {/if}
               <span class="tnd-family-name">{fam.label}</span>
               <span class="tnd-family-count">{fam.sequenceCount} cards</span>
             </button>
@@ -227,6 +240,7 @@
         <div class="tnd-summary">
           {tndCardCount} cards selected
         </div>
+      </div>
       </div>
     {/if}
   </div>
@@ -251,10 +265,47 @@
   .configure-step {
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    max-width: 640px;
+    justify-content: center;
+    gap: 28px;
+    max-width: 1400px;
+    min-height: 100%;
     margin: 0 auto;
-    padding: 24px;
+    padding: 32px 24px;
+    box-sizing: border-box;
+  }
+
+  /* Top controls + draw button stay a readable narrow band; the TnD layout
+     breaks out wide to use the full monitor. */
+  .step-title,
+  .controls > .control-group,
+  .draw-btn {
+    max-width: 640px;
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  .tnd-layout {
+    display: flex;
+    gap: 56px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: none;
+  }
+
+  .tnd-layout .control-group {
+    max-width: none;
+    margin: 0;
+    width: auto;
+  }
+
+  .tnd-turns-col {
+    flex: 0 0 auto;
+  }
+
+  .tnd-families-col {
+    flex: 0 1 560px;
+    min-width: 360px;
   }
 
   .step-title {
@@ -417,42 +468,67 @@
   .tnd-families {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    gap: 14px;
   }
 
   .tnd-family-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    min-height: 52px;
-    padding: 10px 6px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    gap: 8px;
+    min-height: 124px;
+    padding: 20px 14px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 8%, var(--theme-card-bg, rgba(255, 255, 255, 0.04))),
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius: 12px;
+    color: var(--theme-text, #fff);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
   }
 
   .tnd-family-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 25%, transparent);
   }
 
   .tnd-family-btn.selected {
-    background: rgba(16, 185, 129, 0.1);
-    border-color: rgba(16, 185, 129, 0.4);
-    color: #10b981;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 24%, var(--theme-card-bg, rgba(255, 255, 255, 0.04))),
+      color-mix(in srgb, var(--accent) 8%, var(--theme-card-bg, rgba(255, 255, 255, 0.04)))
+    );
+    border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  .tnd-family-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+    opacity: 0.55;
+    transition: opacity 0.15s ease;
+  }
+
+  .tnd-family-btn:hover .tnd-family-icon,
+  .tnd-family-btn.selected .tnd-family-icon {
+    opacity: 1;
   }
 
   .tnd-family-name {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
   }
 
   .tnd-family-count {
     font-size: 11px;
-    opacity: 0.6;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
   .tnd-summary {
@@ -561,6 +637,19 @@
     cursor: not-allowed;
   }
 
+  @media (max-width: 980px) {
+    .tnd-layout {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tnd-families-col {
+      flex: 1 1 auto;
+      width: 100%;
+      max-width: 640px;
+    }
+  }
+
   @media (max-width: 640px) {
     .weight-row {
       grid-template-columns: 64px 1fr 40px 60px;
@@ -572,6 +661,16 @@
 
     .tnd-families {
       grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tnd-family-btn {
+      transition: none;
+    }
+
+    .tnd-family-btn:hover {
+      transform: none;
     }
   }
 </style>

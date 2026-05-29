@@ -139,13 +139,9 @@
                 onclick={() => onToggle?.(cell.turnPattern)}
               >
                 <span class="turn-pair">
-                  {#if isSymmetric}
-                    <span class="turn-sym">{formatTurn(blue)}T</span>
-                  {:else}
-                    <span class="turn-blue">{formatTurn(blue)}</span>
-                    <span class="turn-sep">|</span>
-                    <span class="turn-red">{formatTurn(red)}</span>
-                  {/if}
+                  <span class="turn-blue">{formatTurn(blue)}</span>
+                  <span class="turn-sep">|</span>
+                  <span class="turn-red">{formatTurn(red)}</span>
                 </span>
                 <span class="cell-count">{cell.count}</span>
               </button>
@@ -168,13 +164,9 @@
                 onclick={() => onSelectCatalog?.(catalog)}
               >
                 <span class="turn-pair">
-                  {#if isSymmetric}
-                    <span class="turn-sym">{formatTurn(blue)}T</span>
-                  {:else}
-                    <span class="turn-blue">{formatTurn(blue)}</span>
-                    <span class="turn-sep">|</span>
-                    <span class="turn-red">{formatTurn(red)}</span>
-                  {/if}
+                  <span class="turn-blue">{formatTurn(blue)}</span>
+                  <span class="turn-sep">|</span>
+                  <span class="turn-red">{formatTurn(red)}</span>
                 </span>
                 <span class="cell-count">{catalog.totalSequences} seq</span>
               </button>
@@ -198,9 +190,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 18px;
     width: 100%;
-    padding: 24px;
+    padding: 4px 0;
     box-sizing: border-box;
   }
 
@@ -232,9 +224,9 @@
   }
 
   .preset-btn:hover {
-    background: rgba(16, 185, 129, 0.12);
-    border-color: rgba(16, 185, 129, 0.35);
-    color: #10b981;
+    background: color-mix(in srgb, var(--theme-accent, #b763cd) 14%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #b763cd) 40%, transparent);
+    color: var(--theme-accent, #c79ad8);
   }
 
   .preset-btn.danger:hover {
@@ -244,14 +236,14 @@
   }
 
   .matrix-grid-wrapper {
-    width: clamp(340px, 65vmin, 680px);
+    width: clamp(420px, 52vmin, 600px);
   }
 
   .matrix-grid {
     display: grid;
     grid-template-columns: auto repeat(7, 1fr);
     grid-template-rows: auto repeat(7, 1fr);
-    gap: clamp(2px, 0.3vmin, 4px);
+    gap: clamp(4px, 0.6vmin, 8px);
     width: 100%;
   }
 
@@ -340,21 +332,21 @@
     box-shadow: 0 4px 20px rgba(183, 99, 205, 0.35);
   }
 
-  /* Selected state (select mode) */
+  /* Selected state (select mode) — theme accent */
   .cell.selected {
-    background: rgba(16, 185, 129, 0.18);
-    border-color: rgba(16, 185, 129, 0.55);
-    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.35);
+    background: color-mix(in srgb, var(--theme-accent, #b763cd) 22%, var(--theme-card-bg, rgba(255, 255, 255, 0.04)));
+    border-color: color-mix(in srgb, var(--theme-accent, #b763cd) 60%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme-accent, #b763cd) 40%, transparent);
   }
 
   .cell.selected:hover {
-    background: rgba(16, 185, 129, 0.28);
-    border-color: rgba(16, 185, 129, 0.7);
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+    background: color-mix(in srgb, var(--theme-accent, #b763cd) 32%, var(--theme-card-bg, rgba(255, 255, 255, 0.04)));
+    border-color: color-mix(in srgb, var(--theme-accent, #b763cd) 75%, transparent);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #b763cd) 30%, transparent);
   }
 
   .cell.selected .cell-count {
-    color: rgba(16, 185, 129, 0.8);
+    color: color-mix(in srgb, var(--theme-accent, #b763cd) 80%, #fff);
   }
 
   .cell.empty {
@@ -367,9 +359,9 @@
   .turn-pair {
     display: flex;
     align-items: baseline;
-    gap: 0.08em;
+    gap: 0.12em;
     font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
-    font-size: clamp(11px, 1.6vmin, 15px);
+    font-size: clamp(12px, 1.7vmin, 17px);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     line-height: 1;
@@ -379,15 +371,8 @@
   .turn-red { color: #f87171; }
   .turn-sep { color: rgba(255, 255, 255, 0.2); font-weight: 400; }
 
-  .turn-sym {
-    background: linear-gradient(135deg, #60a5fa, #f87171);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
   .cell-count {
-    font-size: clamp(8px, 1vmin, 11px);
+    font-size: clamp(9px, 1.1vmin, 12px);
     font-weight: 400;
     color: rgba(255, 255, 255, 0.35);
     line-height: 1;
