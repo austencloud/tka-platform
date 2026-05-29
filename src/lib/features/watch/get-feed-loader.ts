@@ -1,4 +1,4 @@
-import { FeedLoader } from './services/FeedLoader';
+import { FeedLoader } from './services/feed-loader';
 import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
 
 let instance: FeedLoader | null = null;

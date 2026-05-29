@@ -1,4 +1,4 @@
-import { FeedScrollBehavior } from './services/FeedScrollBehavior';
+import { FeedScrollBehavior } from './services/feed-scroll-behavior';
 import { feedScrollState } from './state/feed-scroll-state.svelte';
 
 let instance: FeedScrollBehavior | null = null;

@@ -11,13 +11,13 @@
 -->
 <script lang="ts">
 
-import { getVideoPlaybackController } from "$lib/features/watch/getVideoPlaybackController";
+import { getVideoPlaybackController } from "$lib/features/watch/get-video-playback-controller";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedContentType, FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
-  import type { VideoPlaybackController } from "../../services/VideoPlaybackController";
+  import type { VideoPlaybackController } from "../../services/video-playback-controller";
 
   interface Props {
     item: FeedItem;

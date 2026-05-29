@@ -7,7 +7,7 @@
  */
 
 import type { FeedItem } from "../domain/models/feed-models";
-import type { FeedLoader } from "../services/FeedLoader";
+import type { FeedLoader } from "../services/feed-loader";
 
 
 export type FeedStatus = "idle" | "loading" | "loaded" | "error";

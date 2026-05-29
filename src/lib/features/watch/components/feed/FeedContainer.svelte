@@ -10,18 +10,18 @@
 -->
 <script lang="ts">
 
-import { getFeedPreloader } from "$lib/features/watch/getFeedPreloader";
-import { getFeedScrollBehavior } from "$lib/features/watch/getFeedScrollBehavior";
-import { getFeedSnapDetector } from "$lib/features/watch/getFeedSnapDetector";
+import { getFeedPreloader } from "$lib/features/watch/get-feed-preloader";
+import { getFeedScrollBehavior } from "$lib/features/watch/get-feed-scroll-behavior";
+import { getFeedSnapDetector } from "$lib/features/watch/get-feed-snap-detector";
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { FeedSnapDetector } from "../../services/FeedSnapDetector";
-  import type { FeedPreloader } from "../../services/FeedPreloader";
-  import type { FeedScrollBehavior } from "../../services/FeedScrollBehavior";
+  import type { FeedSnapDetector } from "../../services/feed-snap-detector";
+  import type { FeedPreloader } from "../../services/feed-preloader";
+  import type { FeedScrollBehavior } from "../../services/feed-scroll-behavior";
   import { feedScrollState } from "../../state/feed-scroll-state.svelte";
   import FeedCard from "./FeedCard.svelte";
   import FeedLoadingState from "./FeedLoadingState.svelte";
@@ -87,9 +87,9 @@ import { getFeedSnapDetector } from "$lib/features/watch/getFeedSnapDetector";
       scrollBehavior = getFeedScrollBehavior();
     } catch {
       // Services not registered yet - create inline
-      const { FeedSnapDetector } = await import("../../services/FeedSnapDetector");
-      const { FeedPreloader } = await import("../../services/FeedPreloader");
-      const { FeedScrollBehavior } = await import("../../services/FeedScrollBehavior");
+      const { FeedSnapDetector } = await import("../../services/feed-snap-detector");
+      const { FeedPreloader } = await import("../../services/feed-preloader");
+      const { FeedScrollBehavior } = await import("../../services/feed-scroll-behavior");
 
       snapDetector = new FeedSnapDetector();
       preloader = new FeedPreloader();
