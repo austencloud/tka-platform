@@ -26,6 +26,10 @@
   import { authDrawerState } from "../auth/state/auth-drawer-state.svelte";
   import { switchModule } from "../application/state/ui/module-state";
   import { MODULE_DEFINITIONS } from "../navigation/config/module-definitions";
+  import {
+    createKeepAliveController,
+    type KeepAliveController,
+  } from "./keep-alive-controller";
 
   // Only assign view-transition-name during module switches.
   // If set permanently, ANY view transition on the page captures this element.
@@ -49,6 +53,40 @@
 
   // Cache for loaded modules to avoid re-importing
   const moduleCache = new Map<string, Component<any>>();
+
+  // ── Keep-alive host wiring ────────────────────────────────────────────────
+  // Certain heavy modules (museum = Three.js/Threlte) must survive module
+  // switches instead of being destroyed/recreated by {#key activeModule}.
+  // The controller tracks mount/visibility/eviction; we render those modules in
+  // a persistent host below the keyed block and bypass the keyed path for them.
+  // (import added at top alongside other imports)
+  const KEEP_ALIVE_MODULES = ["museum"];
+
+  // Reactive tick: bumped by the controller's onChange so derived reads re-run.
+  let keepAliveVersion = $state(0);
+  const keepAlive: KeepAliveController = createKeepAliveController(
+    KEEP_ALIVE_MODULES,
+    { onChange: () => (keepAliveVersion += 1) },
+  );
+
+  // Drive the controller from activeModule, and make sure mounted keep-alive
+  // modules have their component class loaded into moduleCache.
+  $effect(() => {
+    keepAlive.setActiveModule(activeModule);
+    for (const id of keepAlive.mountedModules()) {
+      if (!moduleCache.has(id)) {
+        loadModule(id)
+          .then(() => (keepAliveVersion += 1))
+          .catch(() => {});
+      }
+    }
+  });
+
+  // Mounted keep-alive module ids (re-derived whenever the controller changes).
+  const mountedKeepAlive = $derived.by(() => {
+    keepAliveVersion; // dependency
+    return keepAlive.mountedModules();
+  });
 
   // Register cache clearing callback for HMR
   // When Vite does an HMR update, clear our cache to prevent stale chunk issues
@@ -79,6 +117,7 @@
   onDestroy(() => {
     deregisterCacheClear?.();
     clearTimeout(preloadTimer);
+    keepAlive.dispose();
   });
 
   // Dynamic import functions for each module (enables code-splitting)
@@ -270,6 +309,10 @@
         onDismiss={() => switchModule("create")}
       />
     </div>
+  {:else if activeModule && keepAlive.isKeepAlive(activeModule)}
+    <!-- Keep-alive modules render in the persistent host below; the keyed path
+         is bypassed so they are never destroyed on switch. -->
+    <div class="transition-container"></div>
   {:else}
     <!-- Transition container for overlaying content -->
     <div class="transition-container">
@@ -339,6 +382,22 @@
   {/if}
 {/if}
 
+<!-- Persistent keep-alive modules: mounted once, hidden via display, never
+     destroyed by {#key activeModule}. Each receives a `visible` prop so it can
+     pause heavy work (render loop, sim) while hidden. -->
+{#each mountedKeepAlive as moduleId (moduleId)}
+  {@const Loaded = moduleCache.get(moduleId)}
+  {#if Loaded}
+    <div
+      class="keep-alive-host"
+      style:display={keepAlive.isVisible(moduleId) ? "flex" : "none"}
+      aria-hidden={!keepAlive.isVisible(moduleId)}
+    >
+      <Loaded visible={keepAlive.isVisible(moduleId)} />
+    </div>
+  {/if}
+{/each}
+
 <style>
   /* Container for overlaying transitions */
   .transition-container {
@@ -347,6 +406,15 @@
     height: 100%;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
+  }
+
+  .keep-alive-host {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
     overflow: hidden;
   }
 
