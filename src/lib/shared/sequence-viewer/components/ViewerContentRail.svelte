@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ContentType, ViewerMode } from '../state/viewer-state.svelte';
+	import { viewerModeOptions, PRACTICE_OPTION } from '../services/viewer-modes';
 
 	const RAIL_WIDTH_KEY = 'tka-viewer-rail-width';
 	const DEFAULT_WIDTH = 180;
@@ -19,18 +20,10 @@
 
 	let { activeMode, webgl2Available = true, practiceActive = false, onSelectMode, onSelectSplit, onPracticeToggle }: Props = $props();
 
-	const allModes: { id: RailMode | 'practice'; icon: string; label: string }[] = [
-		{ id: 'split', icon: 'fa-columns', label: 'Side by Side' },
-		{ id: 'animation', icon: 'fa-play', label: '2D Animation' },
-		{ id: 'animation-3d', icon: 'fa-cube', label: '3D Animation' },
-		{ id: 'card', icon: 'fa-grip', label: 'Card' },
-		{ id: 'mandala', icon: 'fa-dharmachakra', label: 'Mandala' },
-		{ id: 'practice', icon: 'fa-signal', label: 'Practice' }
-	];
-
-	const modes = $derived(
-		webgl2Available ? allModes : allModes.filter((m) => m.id !== 'animation-3d')
-	);
+	const railItems = $derived([
+		...viewerModeOptions(webgl2Available).map((m) => ({ id: m.id, icon: m.icon, label: m.label })),
+		{ id: 'practice' as const, icon: PRACTICE_OPTION.icon, label: PRACTICE_OPTION.label }
+	]);
 
 	let navEl: HTMLElement | undefined = $state();
 
@@ -87,7 +80,7 @@
 		switch (e.key) {
 			case 'ArrowDown':
 				e.preventDefault();
-				focusAt(Math.min(index + 1, modes.length - 1));
+				focusAt(Math.min(index + 1, railItems.length - 1));
 				break;
 			case 'ArrowUp':
 				e.preventDefault();
@@ -99,7 +92,7 @@
 				break;
 			case 'End':
 				e.preventDefault();
-				focusAt(modes.length - 1);
+				focusAt(railItems.length - 1);
 				break;
 		}
 	}
@@ -115,7 +108,7 @@
 	style:width="{railWidth}px"
 >
 	<div class="rail-modes">
-		{#each modes as mode, i (mode.id)}
+		{#each railItems as mode, i (mode.id)}
 			<button
 				type="button"
 				class="rail-mode-btn"
