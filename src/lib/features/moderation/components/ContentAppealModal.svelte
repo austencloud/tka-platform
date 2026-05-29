@@ -9,7 +9,7 @@
   import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
 	import ModalHeader from '$lib/shared/foundation/ui/modal/ModalHeader.svelte';
 	import ModalFooter from '$lib/shared/foundation/ui/modal/ModalFooter.svelte';
-	import { getContentAppealManager } from '$lib/features/moderation/getContentAppealManager';
+	import { getContentAppealManager } from '$lib/features/moderation/get-content-appeal-manager';
 	import type { FlaggedTerm, CreateAppealData } from '../domain/models/content-moderation-models';
 	import { t } from '$lib/shared/i18n/i18n.svelte';
 	import TKAWordGlyph from '$lib/shared/choreo-card/components/TKAWordGlyph.svelte';

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ReportResolver } from './services/ReportResolver';
+import { ReportResolver } from './services/report-resolver';
 import * as reportQuerier from './services/report-querier';
 
 let instance: ReportResolver | null = null;

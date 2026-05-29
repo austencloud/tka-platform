@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { reportModalState } from '../state/report-modal-state.svelte';
-	import { getReportSubmitter } from '$lib/features/moderation/getReportSubmitter';
+	import { getReportSubmitter } from '$lib/features/moderation/get-report-submitter';
 	import { toast } from '$lib/shared/toast/state/toast-state.svelte';
 	import ReportCategorySelector from './ReportCategorySelector.svelte';
 	import type { ReportCategory } from '../domain/models/report-models';

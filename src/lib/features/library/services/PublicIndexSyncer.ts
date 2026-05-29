@@ -36,7 +36,7 @@ interface ContentAppealManager {
 }
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
+import { ContentModerationError } from "$lib/features/moderation/errors/content-moderation-error";
 import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPublicSequenceHashMatcher";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";

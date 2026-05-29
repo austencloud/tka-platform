@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getReportResolver } from '$lib/features/moderation/getReportResolver';
+	import { getReportResolver } from '$lib/features/moderation/get-report-resolver';
 	import { toast } from '$lib/shared/toast/state/toast-state.svelte';
 	import { adminReportsState } from '../state/admin-reports-state.svelte';
 	import {
