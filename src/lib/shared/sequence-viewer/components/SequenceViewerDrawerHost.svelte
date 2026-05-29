@@ -611,36 +611,34 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       {/if}
                     </div>
                   {/if}
-                  {#if isMobileWidth}
-                    <ViewerModeBottomBar
-                      activeMode={ctx.viewerState.viewerMode}
-                      webgl2Available={ctx.viewer3DState.webgl2Available}
-                      practiceActive={ctx.practiceActive}
-                      onPracticeToggle={() => togglePractice(ctx)}
-                      onSelectSplit={() => selectSplitMode(ctx)}
-                      onSelectMode={(mode) => selectViewerMode(ctx, mode)}
-                    />
-                  {/if}
                 </div>
+                {#if isMobileWidth && isImageExportActive && ctx.effectiveSequence}
+                  <div
+                    class="export-footer-overlay"
+                    in:fly={{ y: 80, duration: 250, easing: cubicOut }}
+                    out:fly={{ y: 80, duration: 200, easing: cubicOut }}
+                  >
+                    <ExportImagePanel
+                      exportOptions={ctx.exportOptions}
+                      isExporting={ctx.isExporting}
+                      stepCount={ctx.effectiveSequence.steps?.length ?? 0}
+                      layout="bottom"
+                      onExport={ctx.handleExport}
+                      onClose={ctx.exitEditMode}
+                    />
+                  </div>
+                {/if}
               {/if}
             </div>
-
-
-            {#if isMobileWidth && isImageExportActive && ctx.effectiveSequence}
-              <div
-                class="export-footer-overlay"
-                in:fly={{ y: 80, duration: 250, easing: cubicOut }}
-                out:fly={{ y: 80, duration: 200, easing: cubicOut }}
-              >
-                <ExportImagePanel
-                  exportOptions={ctx.exportOptions}
-                  isExporting={ctx.isExporting}
-                  stepCount={ctx.effectiveSequence.steps?.length ?? 0}
-                  layout="bottom"
-                  onExport={ctx.handleExport}
-                  onClose={ctx.exitEditMode}
-                />
-              </div>
+            {#if isMobileWidth && ctx.hasSequence && ctx.effectiveSequence}
+              <ViewerModeBottomBar
+                activeMode={ctx.viewerState.viewerMode}
+                webgl2Available={ctx.viewer3DState.webgl2Available}
+                practiceActive={ctx.practiceActive}
+                onPracticeToggle={() => togglePractice(ctx)}
+                onSelectSplit={() => selectSplitMode(ctx)}
+                onSelectMode={(mode) => selectViewerMode(ctx, mode)}
+              />
             {/if}
           </div>
           {#if ctx.practiceActive}
@@ -866,6 +864,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
   }
 
   .landscape .drawer-header {

@@ -43,8 +43,7 @@ Last audit: 2025-12-27
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
-  import { untrack } from "svelte";
-  import AnimatorCanvasSelf from "./AnimatorCanvas.svelte";
+  import SplitCanvasView from "./SplitCanvasView.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
   // Props
@@ -176,66 +175,51 @@ Last audit: 2025-12-27
   type ViewState = "assembled" | "disassembling" | "disassembled" | "reassembling";
   let viewState = $state<ViewState>("assembled");
   let contentWrapperEl: HTMLDivElement | undefined = $state();
-  let splitCanvasesEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Mount split canvases collapsed, expand only after both engines are initialized
-  let splitExpanded = $state(false);
-  let splitReadyCount = $state(0);
-
   const isDisassembledView = $derived(viewState !== "assembled");
-  // Show split canvases in DOM for all non-assembled states
+  // Mount the split view in the DOM for all non-assembled states.
   const showSplitCanvases = $derived(viewState !== "assembled");
-  // Pause split canvas resize during transitions - only allow resize in settled "disassembled" state
+  // Ask the split view to be expanded while disassembling/disassembled; collapse
+  // while reassembling. The split view gates the actual expand on its own
+  // engines being ready first.
+  const splitExpandRequested = $derived(viewState === "disassembling" || viewState === "disassembled");
+  // Pause split canvas resize during transitions - only allow resize in the
+  // settled "disassembled" state.
   const splitResizePaused = $derived(viewState !== "disassembled");
-
-  function handleSplitCanvasReady() {
-    splitReadyCount++;
-  }
 
   function toggleDisassemble() {
     if (viewState === "assembled") {
-      splitReadyCount = 0;
       // Pause ResizeObserver so the CSS width transition doesn't clear the canvas buffer
       engine?.pauseResize();
       viewState = "disassembling";
-      // Split canvases mount collapsed. They'll fire onInitialized when ready.
+      // The split view mounts collapsed and fires onBothReady when its engines render.
     } else if (viewState === "disassembled") {
       // Pause ResizeObserver before CSS width transition back to full size
       engine?.pauseResize();
-      // Collapse split canvases, then remove them when transition ends
-      splitExpanded = false;
+      // Collapse the split view (splitExpandRequested flips false); remove it when
+      // its collapse transition ends (onCollapseComplete).
       viewState = "reassembling";
     }
     // Ignore during active transitions
   }
 
-  // Expand split canvases once both engines have initialized and rendered
-  $effect(() => {
-    if (viewState === "disassembling" && splitReadyCount >= 2) {
-      // Both split canvases are initialized. Expand on next frame so the
-      // browser has laid out the collapsed state first (CSS transition trigger).
-      untrack(() => {
-        requestAnimationFrame(() => {
-          splitExpanded = true;
-        });
-      });
-    }
-  });
-
-  // Listen for CSS transition end to finalize state changes
-  function handleSplitTransitionEnd(e: TransitionEvent) {
-    // Only react to max-height transitions on the split-canvases element itself
-    if (e.target !== splitCanvasesEl || e.propertyName !== "max-height") return;
-
+  // The split view finished its expand (open) transition: settle into the
+  // disassembled state and resume the hero engine's ResizeObserver so it catches
+  // up to the new (narrower) container size.
+  function handleSplitExpandComplete() {
     if (viewState === "disassembling") {
       viewState = "disassembled";
-      // Resume ResizeObserver - catch up to the new (narrower) container size
       engine?.resumeResize();
-    } else if (viewState === "reassembling") {
+    }
+  }
+
+  // The split view finished its collapse (close) transition: settle back to
+  // assembled (which unmounts the split view) and resume the hero engine's
+  // ResizeObserver so it catches up to the restored full-width container.
+  function handleSplitCollapseComplete() {
+    if (viewState === "reassembling") {
       viewState = "assembled";
-      splitExpanded = false;
-      // Resume ResizeObserver - catch up to the restored full-width container
       engine?.resumeResize();
     }
   }
@@ -417,63 +401,26 @@ Last audit: 2025-12-27
       {onEffectError}
     />
 
-    <!-- Split canvases: blue-only and red-only, expand below hero during disassemble -->
+    <!-- Split canvases: blue-only and red-only, expand below hero during disassemble.
+         Rendered via SplitCanvasView (CanvasSurface leaves) - never a self-import. -->
     {#if showSplitCanvases}
-      <div
-        class="split-canvases"
-        class:expanded={splitExpanded}
-        bind:this={splitCanvasesEl}
-        ontransitionend={handleSplitTransitionEnd}
-      >
-        <div class="split-canvas">
-          <AnimatorCanvasSelf
-            {blueProp}
-            redProp={null}
-            {gridVisible}
-            {gridMode}
-            backgroundAlpha={0}
-            {letter}
-            {stepData}
-            {sequenceData}
-            {currentStep}
-            {isPlaying}
-            {fireConfig}
-            {ledConfig}
-            fillContainer={true}
-            hideTkaGlyph={true}
-            hideStepNumbers={true}
-            hideProgressBar={true}
-            disableContextMenu={true}
-            focused={false}
-            resizePaused={splitResizePaused}
-            onInitialized={handleSplitCanvasReady}
-          />
-        </div>
-        <div class="split-canvas">
-          <AnimatorCanvasSelf
-            blueProp={null}
-            {redProp}
-            {gridVisible}
-            {gridMode}
-            backgroundAlpha={0}
-            {letter}
-            {stepData}
-            {sequenceData}
-            {currentStep}
-            {isPlaying}
-            {fireConfig}
-            {ledConfig}
-            fillContainer={true}
-            hideTkaGlyph={true}
-            hideStepNumbers={true}
-            hideProgressBar={true}
-            disableContextMenu={true}
-            focused={false}
-            resizePaused={splitResizePaused}
-            onInitialized={handleSplitCanvasReady}
-          />
-        </div>
-      </div>
+      <SplitCanvasView
+        {blueProp}
+        {redProp}
+        {gridVisible}
+        {gridMode}
+        {letter}
+        {stepData}
+        {sequenceData}
+        {currentStep}
+        {isPlaying}
+        {fireConfig}
+        {ledConfig}
+        expandRequested={splitExpandRequested}
+        resizePaused={splitResizePaused}
+        onExpandComplete={handleSplitExpandComplete}
+        onCollapseComplete={handleSplitCollapseComplete}
+      />
     {/if}
 
     <!-- Always mounted, same reason as header-slot above. -->
@@ -546,37 +493,11 @@ Last audit: 2025-12-27
      boundary. */
 
   /* ===========================================
-     SPLIT CANVASES: Blue-only and Red-only
-     Expand below hero during disassemble.
-     Same DOM tree - no swap, CSS transitions only.
+     SPLIT CANVASES container sizing.
+     The split-row visuals (.split-canvases / .split-canvas + their
+     max-height/opacity transition) now live in SplitCanvasView.svelte.
+     AnimatorCanvas only adjusts the hero content-wrapper to make room.
      =========================================== */
-
-  .split-canvases {
-    display: flex;
-    width: 100%;
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    /* Collapse: fade out quickly, no delay */
-    transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.2s ease-in;
-  }
-
-  .split-canvases.expanded {
-    /* Each half-width canvas is square, so row height = 50% of wrapper width */
-    max-height: 50cqw;
-    opacity: 1;
-    /* Expand: delay opacity so engines have time to render before becoming visible */
-    transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.3s ease-out 0.2s;
-  }
-
-  .split-canvas {
-    width: 50%;
-    aspect-ratio: 1 / 1;
-    position: relative;
-    overflow: hidden;
-  }
 
   /* When split canvases are showing, narrow the content-wrapper so the taller
      layout (hero + split row) fits vertically. The 2:3 aspect ratio means
@@ -715,8 +636,7 @@ Last audit: 2025-12-27
   @media (prefers-reduced-motion: reduce) {
     .content-wrapper,
     .header-slot,
-    .progress-slot,
-    .split-canvases {
+    .progress-slot {
       transition: none;
     }
   }

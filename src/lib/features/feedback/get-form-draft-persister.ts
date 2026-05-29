@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { FormDraftPersister } from './services/FormDraftPersister.svelte';
+import { FormDraftPersister } from './services/form-draft-persister.svelte';
 
 let instance: FormDraftPersister | null = null;
 

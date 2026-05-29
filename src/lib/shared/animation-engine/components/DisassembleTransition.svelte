@@ -1,9 +1,15 @@
 <!--
   DisassembleTransition.svelte
 
-  Renders three synchronized AnimatorCanvases in the disassembled layout.
+  Renders three synchronized CanvasSurface leaves in the disassembled layout.
   Stays mounted for all non-assembled states (disassembling, disassembled, reassembling)
   to avoid canvas re-initialization flashes.
+
+  Renders the non-recursive CanvasSurface leaf (NOT AnimatorCanvas) to avoid the
+  AnimatorCanvas -> DisassembleTransition -> AnimatorCanvas import cycle. The FLIP
+  entrance/exit animation wraps the same three-canvas render as DisassembleCanvasView;
+  the slot divs carry bind:this refs for FLIP measurement so the views are kept as
+  two independent repoints rather than composed.
 
   Animates entrance/exit using FLIP technique with Web Animations API.
   When direction is "idle", just renders the static disassembled layout.
@@ -17,7 +23,7 @@
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
-  import AnimatorCanvas from "./AnimatorCanvas.svelte";
+  import CanvasSurface from "./CanvasSurface.svelte";
   import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
   import { untrack } from "svelte";
 
@@ -59,7 +65,9 @@
     oncomplete,
   }: Props = $props();
 
-  // Shared props for all three sub-canvases
+  // Shared props for all three CanvasSurface leaves.
+  // Shell-only props (word/focused/hideProgressBar/fillContainer) live on
+  // AnimatorCanvas, not CanvasSurface, so they are intentionally omitted here.
   const shared = $derived({
     gridVisible,
     gridMode,
@@ -69,11 +77,8 @@
     sequenceData,
     currentStep,
     isPlaying,
-    word: null as string | null,
     fireConfig,
     ledConfig,
-    hideProgressBar: true,
-    fillContainer: true,
   });
 
   // Element references for FLIP measurement
@@ -316,33 +321,29 @@
 <div class="disassemble-view" bind:this={viewElement}>
   <div class="disassemble-unit">
     <div class="hero-slot" bind:this={heroSlotEl}>
-      <AnimatorCanvas
+      <CanvasSurface
         {blueProp}
         {redProp}
         {...shared}
-        {word}
-        focused={true}
       />
     </div>
 
     <div class="small-slots">
       <div class="small-slot" bind:this={smallLeftSlotEl}>
-        <AnimatorCanvas
+        <CanvasSurface
           {blueProp}
           redProp={null}
           {...shared}
-          focused={false}
           hideTkaGlyph={true}
           hideStepNumbers={true}
         />
       </div>
 
       <div class="small-slot" bind:this={smallRightSlotEl}>
-        <AnimatorCanvas
+        <CanvasSurface
           blueProp={null}
           {redProp}
           {...shared}
-          focused={false}
           hideTkaGlyph={true}
           hideStepNumbers={true}
         />

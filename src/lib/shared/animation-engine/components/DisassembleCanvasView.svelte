@@ -1,9 +1,12 @@
 <!--
   DisassembleCanvasView.svelte
 
-  Renders three synchronized AnimatorCanvases in a seamless vertical layout:
+  Renders three synchronized CanvasSurface leaves in a seamless vertical layout:
   hero (full width, both hands) + two small (half width each, blue/red) + single progress bar.
   Used by AnimatorCanvas when disassemble mode is active.
+
+  Renders the non-recursive CanvasSurface leaf (NOT AnimatorCanvas) to avoid the
+  AnimatorCanvas -> DisassembleCanvasView -> AnimatorCanvas import cycle.
 -->
 <script lang="ts">
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
@@ -14,7 +17,7 @@
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
-  import AnimatorCanvas from "./AnimatorCanvas.svelte";
+  import CanvasSurface from "./CanvasSurface.svelte";
   import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
 
   interface Props {
@@ -51,7 +54,9 @@
     onCollapse,
   }: Props = $props();
 
-  // Shared props for all three sub-canvases
+  // Shared props for all three CanvasSurface leaves.
+  // Shell-only props (word/focused/hideProgressBar/fillContainer) live on
+  // AnimatorCanvas, not CanvasSurface, so they are intentionally omitted here.
   const shared = $derived({
     gridVisible,
     gridMode,
@@ -61,44 +66,37 @@
     sequenceData,
     currentStep,
     isPlaying,
-    word: null as string | null,
     fireConfig,
     ledConfig,
-    hideProgressBar: true,
-    fillContainer: true,
   });
 </script>
 
 <div class="disassemble-view">
   <div class="disassemble-unit">
     <div class="hero-slot">
-      <AnimatorCanvas
+      <CanvasSurface
         {blueProp}
         {redProp}
         {...shared}
-        {word}
-        focused={true}
       />
     </div>
 
     <div class="small-slots">
       <div class="small-slot">
-        <AnimatorCanvas
+        <CanvasSurface
           {blueProp}
           redProp={null}
           {...shared}
-          focused={false}
           hideTkaGlyph={true}
           hideStepNumbers={true}
         />
       </div>
 
       <div class="small-slot">
-        <AnimatorCanvas
+        <CanvasSurface
           blueProp={null}
           {redProp}
           {...shared}
-          focused={false}
           hideTkaGlyph={true}
           hideStepNumbers={true}
         />
