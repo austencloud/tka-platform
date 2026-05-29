@@ -10,7 +10,7 @@
   import ArenaWinLossChart from "./ArenaWinLossChart.svelte";
   import type { ArenaUserStats } from "../../domain/models/arena-models";
   import type { StabilityReport } from "../../services/types";
-  import { getArenaOrchestrator } from "../../getArenaOrchestrator";
+  import { getArenaOrchestrator } from "../../get-arena-orchestrator";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   const orchestrator = getArenaOrchestrator();

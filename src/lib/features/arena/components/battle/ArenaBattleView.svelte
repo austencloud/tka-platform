@@ -18,7 +18,7 @@
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import ArenaPropDrawer from "./ArenaPropDrawer.svelte";
   import { arenaState } from "../../state/arena-state.svelte";
-  import { getArenaOrchestrator } from "../../getArenaOrchestrator";
+  import { getArenaOrchestrator } from "../../get-arena-orchestrator";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import {
