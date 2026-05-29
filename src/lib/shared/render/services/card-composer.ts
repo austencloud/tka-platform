@@ -1,7 +1,7 @@
 import type { SequenceData } from "../../foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
-import type { CompositionProgressCallback, RenderCanvas } from "./contracts/types";
+import type { CompositionProgressCallback, RenderCanvas } from "./types";
 import { createRenderCanvas } from "./create-render-canvas";
 import { calculateLayout } from "./layout-calculator";
 import {

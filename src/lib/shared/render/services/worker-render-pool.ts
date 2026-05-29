@@ -1,5 +1,5 @@
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
-import type { LayerRenderOptions, LayerVisibility } from "./contracts/types";
+import type { LayerRenderOptions, LayerVisibility } from "./types";
 import type {
   WorkerInMessage,
   WorkerOutMessage,

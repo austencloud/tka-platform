@@ -1,6 +1,6 @@
-import type { DrawableImage } from "./implementations/SvgImageCache";
+import type { DrawableImage } from "./svg-image-cache";
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
-import type { DirectRenderOptions } from "./contracts/IDirectRenderer";
+import type { DirectRenderOptions } from "./IDirectRenderer";
 
 const SVG_OVERFLOW_RATIO = 0.15;
 

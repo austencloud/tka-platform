@@ -38,8 +38,8 @@
 
 import { rasterizeLoopIconByKind } from "./card-back-bitmaps-constant";
 import type { TurnGlyphEntry } from "../../components/card-back/card-back-data";
-import type { DirectRenderOptions } from "$lib/shared/render/services/contracts/IDirectRenderer";
-import type { RenderCanvas } from "$lib/shared/render/services/contracts/types";
+import type { DirectRenderOptions } from "$lib/shared/render/services/IDirectRenderer";
+import type { RenderCanvas } from "$lib/shared/render/services/types";
 
 // ── Render scale (matches card-back-bitmaps-constant.ts / card-back-layout.ts) ─
 /** Card back render width in px (822 logical * scale 2). */

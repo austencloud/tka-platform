@@ -8,7 +8,7 @@
  */
 
 import { browser } from "$app/environment";
-import type { PictographCacheStats } from "./contracts/types";
+import type { PictographCacheStats } from "./types";
 
 const DB_NAME = "pictograph-svg-cache";
 const STORE_NAME = "svgs";

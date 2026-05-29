@@ -1,4 +1,4 @@
-import type { LayerType, LayerRenderOptions, LayerVisibility, LayerRenderResult, CompositionResult, LayerCacheStats, RenderCanvas, RenderContext2D } from "./contracts/types";
+import type { LayerType, LayerRenderOptions, LayerVisibility, LayerRenderResult, CompositionResult, LayerCacheStats, RenderCanvas, RenderContext2D } from "./types";
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { deriveBaseLayerKey, deriveGridPointsLayerKey, deriveTKALayerKey, deriveReversalLayerKey } from "./layer-key-deriver";
@@ -15,7 +15,7 @@ import {
 import { calculateTurnPositions } from "../../pictograph/tka-glyph/utils/turn-position-calculator";
 import { isDashLetter } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 import { calculateReversalPositions } from "../core";
-import type { DrawableImage } from "./implementations/SvgImageCache";
+import type { DrawableImage } from "./svg-image-cache";
 import type { Canvas2DDirectRenderer } from './canvas-2d-direct-renderer';
 
 const VIEWBOX_SIZE = 950;

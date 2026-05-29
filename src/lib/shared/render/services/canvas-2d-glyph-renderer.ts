@@ -1,7 +1,7 @@
 import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
-import { getSvgImageCache, type DrawableImage } from "./implementations/SvgImageCache";
+import { getSvgImageCache, type DrawableImage } from "./svg-image-cache";
 import { getSvgAssetLoader } from "./svg-asset-loader";
 import { getLetterImagePath, isDashLetter } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 import { Letter, getLetterType } from "../../foundation/domain/models/Letter";

@@ -9,7 +9,7 @@
 
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { LayerRenderOptions } from "../services/contracts/types";
+import type { LayerRenderOptions } from "../services/types";
 
 export interface BaseLayerKeyComponents {
   motionHash: string;

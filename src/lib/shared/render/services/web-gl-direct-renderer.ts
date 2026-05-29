@@ -14,7 +14,7 @@ import type {
   DirectRenderOptions,
   RenderTiming,
   ArrowPathsData,
-} from "./contracts/IDirectRenderer";
+} from "./IDirectRenderer";
 import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { MotionData } from "../../pictograph/shared/domain/models/MotionData";

@@ -8,7 +8,7 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { LayerRenderOptions, LayerVisibility } from "../../render/services/contracts/types";
+import type { LayerRenderOptions, LayerVisibility } from "../../render/services/types";
 import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 
 /**

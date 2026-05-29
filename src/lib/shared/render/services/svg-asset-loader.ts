@@ -10,7 +10,7 @@
  * Works in both main thread and Web Workers.
  */
 
-import { getSvgImageCache, type DrawableImage } from "./implementations/SvgImageCache";
+import { getSvgImageCache, type DrawableImage } from "./svg-image-cache";
 import { Letter } from "../../foundation/domain/models/Letter";
 import { getLetterImagePath } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 

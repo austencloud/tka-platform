@@ -1,7 +1,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PreviewCellRenderOptions } from "../preview-cell-renderer";
-import type { LayerRenderOptions, LayerVisibility } from "../../../render/services/contracts/types";
+import type { LayerRenderOptions, LayerVisibility } from "../../../render/services/types";
 
 export type PreWarmPriority = "background" | "user-visible" | "user-blocking";
 import { cellCacheKeyDeriver } from "./CellCacheKeyDeriver";

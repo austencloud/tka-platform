@@ -1,5 +1,5 @@
 import { browser } from "$app/environment";
-import type { PictographBlobCacheStats } from "./contracts/types";
+import type { PictographBlobCacheStats } from "./types";
 
 const DB_NAME = "pictograph-blob-cache";
 const STORE_NAME = "blobs";

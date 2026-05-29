@@ -23,7 +23,7 @@ import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import { EraRendererBase } from "../../shared/services/era-renderer-base";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { DrawableImage } from '$lib/shared/render/services/implementations/SvgImageCache';
+import type { DrawableImage } from '$lib/shared/render/services/svg-image-cache';
 
 // ============================================================================
 // WINDOWS 16-COLOR PALETTE

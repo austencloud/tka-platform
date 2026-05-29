@@ -2,12 +2,12 @@ import type {
   IDirectRenderer,
   DirectRenderOptions,
   RenderTiming,
-} from "./contracts/IDirectRenderer";
+} from "./IDirectRenderer";
 import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
-import { getSvgImageCache } from "./implementations/SvgImageCache";
+import { getSvgImageCache } from "./svg-image-cache";
 import { getSvgAssetLoader } from "./svg-asset-loader";
 import { isDashLetter } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 import type { Letter } from "../../foundation/domain/models/Letter";
@@ -29,7 +29,7 @@ import {
   drawDash,
 } from "./canvas-2d-transform-helper";
 import { createRenderCanvas } from "./create-render-canvas";
-import type { RenderCanvas } from "./contracts/types";
+import type { RenderCanvas } from "./types";
 
 const VIEWBOX_SIZE = 950;
 

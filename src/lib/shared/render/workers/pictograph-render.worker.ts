@@ -1,5 +1,5 @@
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
-import type { LayerRenderOptions, LayerVisibility } from "../services/contracts/types";
+import type { LayerRenderOptions, LayerVisibility } from "../services/types";
 import { LayerCompositor } from "../services/layer-compositor";
 import { SvgAssetLoader } from "../services/svg-asset-loader";
 

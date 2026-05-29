@@ -1,6 +1,6 @@
 import { downloadBlob } from "$lib/shared/foundation/services/file-downloader";
 import { createRenderCanvas } from "./create-render-canvas";
-import type { RenderCanvas } from "./contracts/types";
+import type { RenderCanvas } from "./types";
 
 interface ImageFormatOptions {
   format: "png" | "jpeg" | "webp";

@@ -19,7 +19,7 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/Mo
 import type { RetroPictographData, RetroHandData } from "../domain/pictograph-types";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { getSvgImageCache, type DrawableImage } from "$lib/shared/render/services/implementations/SvgImageCache";
+import { getSvgImageCache, type DrawableImage } from "$lib/shared/render/services/svg-image-cache";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 

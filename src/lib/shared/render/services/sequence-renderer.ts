@@ -2,7 +2,7 @@ import type { SequenceData } from "../../foundation/domain/models/SequenceData";
 import { getBaseBeatSize } from "./layout-calculator";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import { ImageComposer } from "./image-composer";
-import type { CompositionProgressCallback, RenderCanvas } from "./contracts/types";
+import type { CompositionProgressCallback, RenderCanvas } from "./types";
 import type { ImageFormatConverter } from "./image-format-converter";
 
 export class SequenceRenderer {

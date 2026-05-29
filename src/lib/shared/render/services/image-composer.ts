@@ -19,7 +19,7 @@ import { createStartPositionFromBeatStart } from "$lib/shared/create/services/se
 import type { PreviewCellRenderOptions } from "../../sequence-viewer/services/preview-cell-renderer";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
-import type { CompositionProgressCallback } from "./contracts/types";
+import type { CompositionProgressCallback } from "./types";
 import type { TextRenderer } from "./text-renderer";
 import type { PictographBlobCache } from "./pictograph-blob-cache";
 import type { PictographKeyHasher } from "$lib/shared/render/services/pictograph-key-hasher";
@@ -36,7 +36,7 @@ import {
 } from "@tka/render-composition";
 import { blobToImage, canvasToImage, imageToBlob } from "./image-format-converter";
 import { createRenderCanvas } from "./create-render-canvas";
-import type { RenderCanvas } from "./contracts/types";
+import type { RenderCanvas } from "./types";
 import { drawSmartCellBorders, findEmptyCellForQR } from "./cell-border-renderer";
 import { composeCardImage as composeCardImageFn } from "./card-composer";
 // getMandalaGeometryCalculator loaded dynamically to avoid pulling $app/environment into worker bundle

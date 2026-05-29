@@ -14,7 +14,7 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { IDirectRenderer } from "$lib/shared/render/services/contracts/IDirectRenderer";
+import type { IDirectRenderer } from "$lib/shared/render/services/IDirectRenderer";
 import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 
 // ============================================================================

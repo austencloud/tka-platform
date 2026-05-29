@@ -1,4 +1,4 @@
-import type { RenderCanvas } from "./contracts/types";
+import type { RenderCanvas } from "./types";
 
 export function createRenderCanvas(width: number, height: number): RenderCanvas {
   if (typeof OffscreenCanvas !== "undefined") {

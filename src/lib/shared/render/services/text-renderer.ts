@@ -20,7 +20,7 @@ import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { compressWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createRenderCanvas } from "./create-render-canvas";
-import type { RenderCanvas } from "./contracts/types";
+import type { RenderCanvas } from "./types";
 
 export interface WordHeaderOptions {
   canvas: RenderCanvas;

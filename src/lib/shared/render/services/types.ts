@@ -1,6 +1,6 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
+import type { SequenceData } from "../../foundation/domain/models/SequenceData";
+import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 
 export interface ReversalDetector {
   /**

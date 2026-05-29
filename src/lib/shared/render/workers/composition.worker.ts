@@ -13,7 +13,7 @@ import type {
   CompositionWorkerOutMessage,
   GlyphTransferEntry,
 } from "../services/composition-dispatcher";
-import type { CompositionProgressCallback, RenderCanvas } from "../services/contracts/types";
+import type { CompositionProgressCallback, RenderCanvas } from "../services/types";
 import type { ImageComposer } from '../services/image-composer';
 import type { PictographBlobCache } from '../services/pictograph-blob-cache';
 import type { PictographMemoryCache } from '../services/pictograph-memory-cache';
