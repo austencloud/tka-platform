@@ -155,6 +155,61 @@
   }
 </script>
 
+{#snippet startCellBlock(startCell: CellData)}
+  {#if clickableStart && onStepClick}
+    <button
+      class="pictograph-cell clickable"
+      class:dark-mode={activeDarkMode}
+      class:current={showHighlight && highlightedStepIndex === -1}
+      onclick={() => onStepClick(-1)}
+      type="button"
+      aria-label="Go to start position"
+    >
+      <CellRenderer
+        cell={startCell}
+        showDurBadge={false}
+        {showStepNumbers}
+        {activeDarkMode}
+        {crossfadeActive}
+        {transitionMode}
+        {isBrowseSoloMode}
+        {isMotionSoloMode}
+        {soloColor}
+        {stepNumFontSize}
+        {hasMixedDurations}
+        {formatDuration}
+        {getMotionSoloMotion}
+        {formatSoloTurns}
+        {shortOrientation}
+      />
+    </button>
+  {:else}
+    <div
+      class="pictograph-cell"
+      class:dark-mode={activeDarkMode}
+      class:current={showHighlight && highlightedStepIndex === -1}
+    >
+      <CellRenderer
+        cell={startCell}
+        showDurBadge={false}
+        {showStepNumbers}
+        {activeDarkMode}
+        {crossfadeActive}
+        {transitionMode}
+        {isBrowseSoloMode}
+        {isMotionSoloMode}
+        {soloColor}
+        {stepNumFontSize}
+        {hasMixedDurations}
+        {formatDuration}
+        {getMotionSoloMotion}
+        {formatSoloTurns}
+        {shortOrientation}
+      />
+    </div>
+  {/if}
+{/snippet}
+
 {#if hasMixedDurations && durationRows.length > 0}
   <!-- Duration-aware layout: start position as fixed column barrier, step rows to the right -->
   {@const startCell = cells.find(c => c.index === -1)}
@@ -164,29 +219,7 @@
       <div class="duration-layout" class:dark-mode={activeDarkMode} style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
         {#if includeStartPosition && startCell}
           <div class="duration-start-col" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
-            <div
-              class="pictograph-cell"
-              class:dark-mode={activeDarkMode}
-              class:current={showHighlight && highlightedStepIndex === -1}
-            >
-              <CellRenderer
-                cell={startCell}
-                showDurBadge={false}
-                {showStepNumbers}
-                {activeDarkMode}
-                {crossfadeActive}
-                {transitionMode}
-                {isBrowseSoloMode}
-                {isMotionSoloMode}
-                {soloColor}
-                {stepNumFontSize}
-                {hasMixedDurations}
-                {formatDuration}
-                {getMotionSoloMotion}
-                {formatSoloTurns}
-                {shortOrientation}
-              />
-            </div>
+            {@render startCellBlock(startCell)}
             {#if showQRCode}
               <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
                 {#if qrDataUrl}
@@ -269,29 +302,7 @@
     <div class="duration-layout" class:dark-mode={activeDarkMode} style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
       {#if includeStartPosition && startCell}
         <div class="duration-start-col" class:dark-mode={activeDarkMode}>
-          <div
-            class="pictograph-cell"
-            class:dark-mode={activeDarkMode}
-            class:current={showHighlight && highlightedStepIndex === -1}
-          >
-            <CellRenderer
-              cell={startCell}
-              showDurBadge={false}
-              {showStepNumbers}
-              {activeDarkMode}
-              {crossfadeActive}
-                {transitionMode}
-              {isBrowseSoloMode}
-              {isMotionSoloMode}
-              {soloColor}
-              {stepNumFontSize}
-              {hasMixedDurations}
-              {formatDuration}
-              {getMotionSoloMotion}
-              {formatSoloTurns}
-              {shortOrientation}
-            />
-          </div>
+          {@render startCellBlock(startCell)}
           {#if showQRCode && qrDataUrl}
             <div class="pictograph-cell qr-cell" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: scaleDuration }}>
               <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" style="width:{qrScalePct};height:{qrScalePct}" />
@@ -383,25 +394,7 @@
           style="grid-column: 1; grid-row: 1;"
           transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
         >
-          <div class="pictograph-cell" class:dark-mode={activeDarkMode}>
-            <CellRenderer
-              cell={startCellScroll}
-              showDurBadge={false}
-              {showStepNumbers}
-              {activeDarkMode}
-              {crossfadeActive}
-                {transitionMode}
-              {isBrowseSoloMode}
-              {isMotionSoloMode}
-              {soloColor}
-              {stepNumFontSize}
-              {hasMixedDurations}
-              {formatDuration}
-              {getMotionSoloMotion}
-              {formatSoloTurns}
-              {shortOrientation}
-            />
-          </div>
+          {@render startCellBlock(startCellScroll)}
         </div>
       {/if}
       {#each visibleCells as cell (cell.index)}
@@ -513,25 +506,7 @@
         style="grid-column: 1; grid-row: 1;"
         transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
       >
-        <div class="pictograph-cell" class:dark-mode={activeDarkMode}>
-          <CellRenderer
-            cell={startCell}
-            showDurBadge={false}
-            {showStepNumbers}
-            {activeDarkMode}
-            {crossfadeActive}
-                {transitionMode}
-            {isBrowseSoloMode}
-            {isMotionSoloMode}
-            {soloColor}
-            {stepNumFontSize}
-            {hasMixedDurations}
-            {formatDuration}
-            {getMotionSoloMotion}
-            {formatSoloTurns}
-            {shortOrientation}
-          />
-        </div>
+        {@render startCellBlock(startCell)}
       </div>
     {/if}
     {#each visibleCells as cell (cell.index)}

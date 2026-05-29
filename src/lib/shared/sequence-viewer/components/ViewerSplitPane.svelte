@@ -460,6 +460,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
           highlightedStepIndex={playback.highlightedStepIndex}
           showHighlight={playback.isPlaying || playback.highlightedStepIndex !== null}
           {onStepClick}
+          clickableStart
           {onRenderProgress}
           showWord={imageComposition.showWord}
           showStepNumbers={imageComposition.showStepNumbers}
@@ -561,6 +562,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
             highlightedStepIndex={layout.focusedPane === "image" ? null : playback.highlightedStepIndex}
             showHighlight={layout.focusedPane === "image" ? false : (playback.isPlaying || playback.highlightedStepIndex !== null)}
             {onStepClick}
+            clickableStart
             {onRenderProgress}
             showWord={imageComposition.showWord}
             showStepNumbers={imageComposition.showStepNumbers}

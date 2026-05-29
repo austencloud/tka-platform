@@ -80,10 +80,6 @@
   // yields to the browser's task queue, ensuring the overlay is visible first.
   let deferredReady = $state(false);
   onMount(() => {
-    // Museum is a full-screen immersive experience - suppress sidebar
-    // even across viewport recalculations and HMR
-    setDesktopSidebarForcedHidden(true);
-
     // rAF ensures we're past the first frame, setTimeout ensures the browser
     // has actually painted the overlay before we start the heavy 3D mount.
     requestAnimationFrame(() => {
@@ -266,11 +262,15 @@
   setSoundscapeContext(soundscapePlayer);
   onMount(() => soundscapePlayer.initialize());
 
-  // Keep-alive: pause the village sim while hidden, resume when shown. Full
-  // teardown (destroyMuseumVillage) is NOT called here — it only runs on real
-  // unmount (idle eviction) via the onMount cleanup below.
+  // Keep-alive: drive sim pause AND the full-screen sidebar suppression off
+  // `visible`, not mount lifetime. Under keep-alive the module stays mounted
+  // when you leave museum, so the onMount cleanup no longer fires on a back
+  // navigation — gating these on `visible` restores the sidebar (and resumes
+  // the sim) the moment museum is hidden. Full teardown (destroyMuseumVillage)
+  // still only runs on real unmount (idle eviction) via the onMount cleanup.
   $effect(() => {
     setMuseumVillageVisible(visible);
+    setDesktopSidebarForcedHidden(visible);
   });
 
   // Module mode: museum | edit | showroom | 3p-test
