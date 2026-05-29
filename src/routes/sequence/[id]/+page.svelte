@@ -21,7 +21,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import { registerDrawer, unregisterDrawer, generateDrawerId } from "$lib/shared/foundation/ui/drawer/DrawerStack";
-  import { createModalSwipeDismiss } from "$lib/shared/sequence-viewer/services/implementations/ModalSwipeDismiss";
+  import { createModalSwipeDismiss } from "$lib/shared/sequence-viewer/services/modal-swipe-dismiss";
   import {
     consumeSequenceRouteHandoff,
     type SequenceRouteHandoff

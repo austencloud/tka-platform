@@ -1,19 +1,19 @@
-import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
+import type { SequenceData } from "../../foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import {
   loadSequence as persistLoadSequence,
   saveSequence as persistSaveSequence,
-} from "../../../persistence/services/dexie-persistence-service";
+} from "../../persistence/services/dexie-persistence-service";
 import {
   decodeSequenceWithCompression,
   encodeSequenceWithCompression,
   generateViewerURL,
-} from "../../../navigation/services/sequence-encoder";
+} from "../../navigation/services/sequence-encoder";
 import {
   updateSequenceData,
   removeStepFromSequence,
-} from "../../../foundation/domain/models/SequenceData";
+} from "../../foundation/domain/models/SequenceData";
 
 export class SequenceViewer {
 

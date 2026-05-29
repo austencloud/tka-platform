@@ -49,7 +49,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { saveSequence as persistSaveSequence } from "$lib/shared/persistence/services/dexie-persistence-service";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 
   const DEFAULT_BPM = 60;
   const STORAGE_KEY = "effects-lab-state";

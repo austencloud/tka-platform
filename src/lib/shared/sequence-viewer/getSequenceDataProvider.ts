@@ -1,4 +1,4 @@
-import { SequenceDataProvider } from './services/implementations/SequenceDataProvider';
+import { SequenceDataProvider } from './services/sequence-data-provider';
 import { getSequenceRepository } from '$lib/shared/create/getSequenceRepository';
 import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
 

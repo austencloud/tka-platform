@@ -12,7 +12,7 @@ import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-st
 import { browseScrollState } from "$lib/shared/browse/state/BrowseScrollState.svelte";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import { handleModuleChange } from "../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
-import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/sequence-viewer-navigator";
 import { openVariationPicker } from "../state/variation-picker-state.svelte";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";

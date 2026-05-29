@@ -16,7 +16,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getVariationGrouper } from "$lib/shared/browse/getVariationGrouper";
   import { calculateGalleryAspectRatio } from "$lib/shared/render/services/layout-calculator";
-  import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
+  import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
 

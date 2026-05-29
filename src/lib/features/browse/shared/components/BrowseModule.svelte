@@ -38,7 +38,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
   import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";
-  import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/sequence-viewer-navigator";
 
   // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
   type BrowseModuleType = "gallery" | "collections" | "creators" | "hall-of-shame";

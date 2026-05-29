@@ -23,7 +23,7 @@ import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { getPendingActionQueue } from "../getPendingActionQueue";
 import { isInAppWebview } from "../services/webview-detector";
-import type { PendingActionType } from "$lib/shared/sequence-viewer/services/implementations/PendingActionQueue";
+import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 export interface AuthActionQueueCallbacks {

@@ -9,7 +9,7 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
-  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { pushState, replaceState } from "$app/navigation";
   import { onMount, onDestroy } from "svelte";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";

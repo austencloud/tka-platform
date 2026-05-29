@@ -164,7 +164,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { SequenceDataProvider } from "$lib/shared/sequence-viewer/services/implementations/SequenceDataProvider";
+  import type { SequenceDataProvider } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -180,8 +180,8 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { calculateThumbnailAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { loadViewMode } from "$lib/shared/sequence-viewer/services/sequence-modal-persistence";
-  import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
-  import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
+  import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
+  import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/types";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
@@ -190,7 +190,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { SequenceViewerVisibilityState } from "../state/viewer-visibility-state.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
-  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/implementations/PendingActionQueue";
+  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
   import SignInSheet from "./SignInSheet.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
 

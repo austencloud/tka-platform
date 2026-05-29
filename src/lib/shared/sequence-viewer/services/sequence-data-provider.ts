@@ -12,7 +12,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-import { cellPreWarmer } from "./CellPreWarmer";
+import { cellPreWarmer } from "./cell-pre-warmer";
 
 export class SequenceDataProvider {
   /** In-flight prefetch promises keyed by sequence identifier */

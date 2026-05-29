@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { PublicSequenceHashMatcher } from './services/implementations/PublicSequenceHashMatcher';
+import { PublicSequenceHashMatcher } from './services/public-sequence-hash-matcher';
 
 let instance: PublicSequenceHashMatcher | null = null;
 

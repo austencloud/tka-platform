@@ -1,4 +1,4 @@
-import { SequenceMotionLoader } from './services/implementations/SequenceMotionLoader';
+import { SequenceMotionLoader } from './services/sequence-motion-loader';
 import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
 
 let instance: SequenceMotionLoader | null = null;

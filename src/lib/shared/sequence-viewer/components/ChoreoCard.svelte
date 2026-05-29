@@ -31,7 +31,7 @@
   import { encodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { renderCell, deleteCellCache } from "../services/preview-cell-renderer";
-  import { cellCacheKeyDeriver } from "../services/implementations/CellCacheKeyDeriver";
+  import { cellCacheKeyDeriver } from "../services/cell-cache-key-deriver";
   import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";

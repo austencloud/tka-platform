@@ -34,7 +34,7 @@ import {
   isInlineEncoded,
   decodeSequenceFromQR,
 } from "$lib/shared/navigation/services/sequence-encoder";
-import type { PublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/implementations/PublicSequenceHashMatcher";
+import type { PublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/public-sequence-hash-matcher";
 import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions } from "./types";
 
 const SHORTCODES_COLLECTION = "shortcodes";

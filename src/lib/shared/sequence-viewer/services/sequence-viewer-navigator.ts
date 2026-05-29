@@ -10,9 +10,9 @@
  */
 
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
-import type { ViewingContext } from "../presentation-resolver";
-import { openSequenceOverlay } from '../../state/sequence-viewer-overlay-state.svelte';
-import { cellPreWarmer } from './CellPreWarmer';
+import type { ViewingContext } from "./presentation-resolver";
+import { openSequenceOverlay } from '../state/sequence-viewer-overlay-state.svelte';
+import { cellPreWarmer } from './cell-pre-warmer';
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
 
 export interface OpenSequenceViewerOptions {

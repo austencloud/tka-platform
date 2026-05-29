@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { PendingActionQueue } from './services/implementations/PendingActionQueue';
+import { PendingActionQueue } from './services/pending-action-queue';
 
 let instance: PendingActionQueue | null = null;
 

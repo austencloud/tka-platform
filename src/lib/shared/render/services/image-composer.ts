@@ -634,7 +634,7 @@ export class ImageComposer {
       handPathMode: visibilitySettings.handPathMode ?? false,
     };
 
-    import("../../sequence-viewer/services/implementations/CellCacheKeyDeriver")
+    import("../../sequence-viewer/services/cell-cache-key-deriver")
       .then(({ cellCacheKeyDeriver: keyDeriver }) => {
         const previewKey = keyDeriver.deriveCacheKey(
           pictographData as PictographData,

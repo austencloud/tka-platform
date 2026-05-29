@@ -21,7 +21,7 @@
   import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
   import FollowersModal from "./profile/FollowersModal.svelte";
-  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 import type { LibraryRepository } from "$lib/shared/library/services/LibraryRepository";
 
   interface Props {

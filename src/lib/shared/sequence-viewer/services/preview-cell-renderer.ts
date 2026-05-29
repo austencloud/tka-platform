@@ -74,7 +74,7 @@ export interface PreviewCellRenderOptions {
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
 import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
-import { cellCacheKeyDeriver } from "./implementations/CellCacheKeyDeriver";
+import { cellCacheKeyDeriver } from "./cell-cache-key-deriver";
 
 function filterSoloMotions(
   data: PictographData,

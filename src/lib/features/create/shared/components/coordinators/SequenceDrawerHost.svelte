@@ -39,7 +39,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
   // Animation imports

@@ -17,7 +17,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-import { TempoPracticeOrchestrator } from "$lib/shared/sequence-viewer/services/implementations/TempoPracticeOrchestrator";
+import { TempoPracticeOrchestrator } from "$lib/shared/sequence-viewer/services/tempo-practice-orchestrator";
 import { createTempoPracticeState } from "$lib/shared/sequence-viewer/state/tempo-practice-state.svelte";
 
 export interface PlaybackControllerDeps {

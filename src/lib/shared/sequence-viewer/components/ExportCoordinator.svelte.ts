@@ -15,12 +15,12 @@ import type { AnimationPanelState } from "$lib/shared/animation-engine/state/ani
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-import { sequenceModalExporter, type Video3DExportDependencies } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter.svelte";
+import { sequenceModalExporter, type Video3DExportDependencies } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
-import type { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
+import type { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
 type ExportType = "animation" | "image" | "both";
 
 type Viewer3DState = ReturnType<typeof createViewer3DState>;
