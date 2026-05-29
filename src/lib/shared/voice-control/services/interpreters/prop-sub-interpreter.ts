@@ -1,5 +1,5 @@
-import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
+import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
 
 // Prop type aliases: spoken name → canonical prop type
 const PROP_ALIASES: Record<string, string> = {

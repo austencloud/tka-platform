@@ -4,8 +4,8 @@
  * Module-scoped to "browse". Handles search, filter, and sort commands.
  */
 
-import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
+import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
 
 /** "search for fire" or "search fire" */
 const SEARCH_PATTERN = /^search(?:\s+for)?\s+(.+)$/;

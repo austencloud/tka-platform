@@ -2,12 +2,12 @@ import type {
   VoiceCommand,
   VoiceCommandCategory,
   CommandResult,
-} from "../../../domain/voice-command-types";
-import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
-import { getVisibilityStateManager } from "../../../../pictograph/shared/state/visibility-state.svelte";
-import { settingsService } from "../../../../settings/state/SettingsState.svelte";
-import type { IVoiceCommandHandler } from "../../contracts/types";
-import type { EffectType } from '../../../../animation-engine/domain/types/TipEffectTypes';
+} from "../../domain/voice-command-types";
+import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
+import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
+import { settingsService } from "../../../settings/state/SettingsState.svelte";
+import type { IVoiceCommandHandler } from "../contracts/types";
+import type { EffectType } from '../../../animation-engine/domain/types/TipEffectTypes';
 
 type SettingOwner = "animVis" | "pictVis" | "appSettings";
 

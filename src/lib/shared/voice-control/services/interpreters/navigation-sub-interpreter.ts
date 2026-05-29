@@ -1,7 +1,7 @@
-import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
-import { MODULE_DEFINITIONS } from "../../../../navigation/config/module-definitions";
-import type { ModuleDefinition } from "../../../../navigation/domain/types";
+import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
+import { MODULE_DEFINITIONS } from "../../../navigation/config/module-definitions";
+import type { ModuleDefinition } from "../../../navigation/domain/types";
 
 // Module navigation patterns
 const MODULE_PATTERNS: RegExp[] = [

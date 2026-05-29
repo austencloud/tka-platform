@@ -1,9 +1,9 @@
-import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
+import type { ISubInterpreter } from "../contracts/ISubInterpreter";
 import type {
   VoiceCommand,
   VoiceCommandCategory,
   CommandContext,
-} from "../../../domain/voice-command-types";
+} from "../../domain/voice-command-types";
 import { getGeneratorVoiceRef } from "$lib/shared/create/state/generator-voice-ref.svelte";
 import type { GeneratorHelpId } from "$lib/shared/create/domain/generator-help-content";
 

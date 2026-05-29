@@ -5,8 +5,8 @@
  * Handlers self-register by declaring which categories they support.
  */
 
-import type { VoiceCommand, CommandResult } from "../../domain/voice-command-types";
-import type { IVoiceCommandHandler } from "../contracts/types";
+import type { VoiceCommand, CommandResult } from "../domain/voice-command-types";
+import type { IVoiceCommandHandler } from "./contracts/types";
 
 export class CommandDispatcher {
   private handlers = new Map<string, IVoiceCommandHandler>();

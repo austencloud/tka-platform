@@ -19,18 +19,18 @@
 <script lang="ts">
 
 import { getVoiceSessionRepository } from "$lib/shared/voice-sessions/getVoiceSessionRepository";
-import { getCommandDispatcher } from "$lib/shared/voice-control/getCommandDispatcher";
-import { getCommandInterpreter } from "$lib/shared/voice-control/getCommandInterpreter";
+import { getCommandDispatcher } from "$lib/shared/voice-control/get-command-dispatcher";
+import { getCommandInterpreter } from "$lib/shared/voice-control/get-command-interpreter";
 import { resolveIntent } from "$lib/shared/voice-control/services/llm-intent-resolver";
-import { getTTSProvider } from "$lib/shared/voice-control/getTTSProvider";
-import { getVoiceSessionRecorder } from "$lib/shared/voice-control/getVoiceSessionRecorder";
-import { getWakeWordDetector } from "$lib/shared/voice-control/getWakeWordDetector";
+import { getTTSProvider } from "$lib/shared/voice-control/get-tts-provider";
+import { getVoiceSessionRecorder } from "$lib/shared/voice-control/get-voice-session-recorder";
+import { getWakeWordDetector } from "$lib/shared/voice-control/get-wake-word-detector";
   import { onMount } from "svelte";
-  import type { WakeWordDetector } from "$lib/shared/voice-control/services/implementations/WakeWordDetector";
-  import type { CommandInterpreter } from "$lib/shared/voice-control/services/implementations/CommandInterpreter";
-  import type { CommandDispatcher } from "../services/implementations/CommandDispatcher";
-  import type { WebSpeechTTSProvider } from "$lib/shared/voice-control/services/implementations/WebSpeechTTSProvider";
-  import type { VoiceSessionRecorder } from "../services/implementations/VoiceSessionRecorder";
+  import type { WakeWordDetector } from "$lib/shared/voice-control/services/wake-word-detector";
+  import type { CommandInterpreter } from "$lib/shared/voice-control/services/command-interpreter";
+  import type { CommandDispatcher } from "../services/command-dispatcher";
+  import type { WebSpeechTTSProvider } from "$lib/shared/voice-control/services/web-speech-tts-provider";
+  import type { VoiceSessionRecorder } from "../services/voice-session-recorder";
   import type * as VoiceSessionRepositoryModule from "$lib/shared/voice-sessions/services/voice-session-repository";
   import { navigationState } from "../../navigation/state/navigation-state.svelte";
   import { voiceControlState } from "../state/voice-control-state.svelte";

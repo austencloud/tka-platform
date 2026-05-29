@@ -1,10 +1,10 @@
-import { VoiceSessionRecorder } from '$lib/shared/voice-control/services/implementations/VoiceSessionRecorder';
+import { VoiceSessionRecorder } from '$lib/shared/voice-control/services/voice-session-recorder';
 import * as voiceSessionFormatter from './services/voice-session-formatter';
 import * as voiceSessionRepository from '$lib/shared/voice-sessions/services/voice-session-repository';
 import * as voiceSessionAnalyzer from './services/voice-session-analyzer';
 import { VoiceSessionReplayer } from './services/voice-session-replayer';
 import * as tierPromotionEngine from './services/tier-promotion-engine';
-import { getCommandInterpreter } from '$lib/shared/voice-control/getVoiceControlServices';
+import { getCommandInterpreter } from '$lib/shared/voice-control/get-voice-control-services';
 
 let voiceSessionRecorder: VoiceSessionRecorder | null = null;
 let voiceSessionReplayer: VoiceSessionReplayer | null = null;

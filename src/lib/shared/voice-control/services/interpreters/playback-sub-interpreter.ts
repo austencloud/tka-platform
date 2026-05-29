@@ -1,6 +1,6 @@
-import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
-import { getAnimationPlaybackRef } from "../../../../coordinators/animation-playback-ref.svelte";
+import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
+import { getAnimationPlaybackRef } from "../../../coordinators/animation-playback-ref.svelte";
 
 const PLAY_PHRASES = new Set(["play", "resume", "start", "start playing"]);
 const PAUSE_PHRASES = new Set(["pause", "pause playback"]);

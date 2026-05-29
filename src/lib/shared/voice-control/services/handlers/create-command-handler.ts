@@ -9,9 +9,9 @@ import type {
   VoiceCommand,
   VoiceCommandCategory,
   CommandResult,
-} from "../../../domain/voice-command-types";
+} from "../../domain/voice-command-types";
 import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state-ref.svelte";
-import type { IVoiceCommandHandler } from "../../contracts/types";
+import type { IVoiceCommandHandler } from "../contracts/types";
 
 export class CreateCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["create"];

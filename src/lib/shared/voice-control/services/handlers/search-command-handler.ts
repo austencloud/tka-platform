@@ -11,8 +11,8 @@ import type {
   VoiceCommand,
   VoiceCommandCategory,
   CommandResult,
-} from "../../../domain/voice-command-types";
-import type { IVoiceCommandHandler } from "../../contracts/types";
+} from "../../domain/voice-command-types";
+import type { IVoiceCommandHandler } from "../contracts/types";
 
 export class SearchCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["search"];

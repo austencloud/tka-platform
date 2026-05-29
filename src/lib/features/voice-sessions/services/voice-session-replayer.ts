@@ -10,7 +10,7 @@
  */
 
 import type { VoiceSession, VoiceSessionEvent } from "$lib/shared/voice-control/domain/voice-session-types";
-import type { CommandInterpreter } from "$lib/shared/voice-control/services/implementations/CommandInterpreter";
+import type { CommandInterpreter } from "$lib/shared/voice-control/services/command-interpreter";
 import type { VoiceCommand, CommandContext } from "$lib/shared/voice-control/domain/voice-command-types";
 import type {
   ReplayResult,

@@ -1,4 +1,4 @@
-import { WebSpeechTTSProvider } from './services/implementations/WebSpeechTTSProvider';
+import { WebSpeechTTSProvider } from './services/web-speech-tts-provider';
 
 let instance: WebSpeechTTSProvider | null = null;
 export function getTTSProvider(): WebSpeechTTSProvider {

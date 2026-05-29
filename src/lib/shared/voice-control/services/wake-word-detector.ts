@@ -17,7 +17,7 @@
  * the mic is hot without looking at the screen.
  */
 
-import type { WakeWordEvent, WakeWordState } from "../../domain/voice-command-types";
+import type { WakeWordEvent, WakeWordState } from "../domain/voice-command-types";
 
 /** Normalized forms of the wake phrase that speech recognition might produce */
 const WAKE_PHRASES = [

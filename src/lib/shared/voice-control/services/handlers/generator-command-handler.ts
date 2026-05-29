@@ -2,14 +2,14 @@ import type {
   VoiceCommand,
   VoiceCommandCategory,
   CommandResult,
-} from "../../../domain/voice-command-types";
+} from "../../domain/voice-command-types";
 import {
   getGeneratorVoiceRef,
   type GeneratorVoiceRef,
 } from "$lib/shared/create/state/generator-voice-ref.svelte";
 import type { GeneratorHelpId } from "$lib/shared/create/domain/generator-help-content";
 import type { UIGenerationConfig } from "$lib/shared/create/utils/config-mapper";
-import type { IVoiceCommandHandler } from "../../contracts/types";
+import type { IVoiceCommandHandler } from "../contracts/types";
 
 // Parameter metadata for validation
 interface NumericParamMeta {

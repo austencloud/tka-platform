@@ -13,9 +13,9 @@ import type {
   VoiceSessionEvent,
   VoiceSessionStats,
   ResolutionTier,
-} from "../../domain/voice-session-types";
-import type { VoiceCommandCategory } from "../../domain/voice-command-types";
-import type { RecordEventParams, SessionEndedCallback } from "../contracts/types";
+} from "../domain/voice-session-types";
+import type { VoiceCommandCategory } from "../domain/voice-command-types";
+import type { RecordEventParams, SessionEndedCallback } from "./contracts/types";
 
 export class VoiceSessionRecorder {
   private recording = false;

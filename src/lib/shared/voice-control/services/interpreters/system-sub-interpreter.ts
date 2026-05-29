@@ -5,8 +5,8 @@
  * Runs first in the chain so "stop" always exits command mode regardless of context.
  */
 
-import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
+import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
 
 const EXIT_PHRASES = new Set([
   "stop",

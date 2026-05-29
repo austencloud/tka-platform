@@ -6,8 +6,8 @@
  * Active globally since sequences can be viewed in browse, compose, etc.
  */
 
-import type { ISubInterpreter } from "../../contracts/ISubInterpreter";
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../../domain/voice-command-types";
+import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
 
 const SAVE_PHRASES = new Set(["save to library", "add to library"]);
 const FAVORITE_PHRASES = new Set(["favorite", "like"]);

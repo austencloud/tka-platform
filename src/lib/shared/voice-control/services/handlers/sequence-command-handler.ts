@@ -10,9 +10,9 @@ import type {
   VoiceCommand,
   VoiceCommandCategory,
   CommandResult,
-} from "../../../domain/voice-command-types";
-import { getSequenceViewerRef } from "../../../../coordinators/sequence-viewer-ref.svelte";
-import type { IVoiceCommandHandler } from "../../contracts/types";
+} from "../../domain/voice-command-types";
+import { getSequenceViewerRef } from "../../../coordinators/sequence-viewer-ref.svelte";
+import type { IVoiceCommandHandler } from "../contracts/types";
 
 export class SequenceCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["sequence"];
