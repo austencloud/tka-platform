@@ -11,13 +11,20 @@
   import type { OceanQualityConfig } from "../quality/ocean-quality";
   import { R2_CDN } from "$lib/shared/3d/constants/r2-cdn";
 
-  // The flora scene GLB (~36 MB, geometry-heavy) exceeds Cloudflare Pages' 25 MiB
-  // per-file limit and is stripped from the deploy by trim-deploy-assets.js, so in
-  // production it must come from R2 (same large-asset pattern as the forest scene).
-  // Dev serves it from static/ directly — no R2 round-trip while iterating.
-  const FLORA_GLB_URL = import.meta.env.DEV
-    ? "/models/ocean/ocean_flora_scene.glb"
-    : `${R2_CDN}/models/ocean/ocean_flora_scene.glb`;
+  // The flora scene GLBs (~36-39 MB, geometry-heavy) exceed Cloudflare Pages' 25 MiB
+  // per-file limit and are stripped from the deploy by trim-deploy-assets.js, so in
+  // production they must come from R2 (same large-asset pattern as the forest scene).
+  // Dev serves them from static/ directly — no R2 round-trip while iterating.
+  // "hi" = 1024-baseColor build (ultra/desktop tier); "base" = 512 build.
+  function floraUrl(variant: "hi" | "base"): string {
+    const file =
+      variant === "hi"
+        ? "ocean_flora_scene_hi.glb"
+        : "ocean_flora_scene.glb";
+    return import.meta.env.DEV
+      ? `/models/ocean/${file}`
+      : `${R2_CDN}/models/ocean/${file}`;
+  }
 
   interface Props {
     quality: OceanQualityConfig;
@@ -51,26 +58,43 @@
 
   $effect(() => {
     let cancelled = false;
+    // Read the reactive variant so a runtime tier change re-runs this effect.
+    const baseUrl = floraUrl("base");
+    const url = floraUrl(quality.floraVariant);
 
-    gltfLoader.load(
-      FLORA_GLB_URL,
-      (gltf) => {
-        if (cancelled) return;
-        enhanceMaterials(gltf.scene);
-        floraScene = gltf.scene;
-        onProgress?.(1.0);
-        onReady?.();
-      },
-      (progress) => {
-        if (cancelled || !progress.total) return;
-        onProgress?.(progress.loaded / progress.total);
-      },
-      (err) => {
-        if (cancelled) return;
-        console.error("[FloraInstances] Failed to load ocean flora scene:", err);
-        onReady?.();
-      }
-    );
+    function load(target: string, allowFallback: boolean) {
+      gltfLoader.load(
+        target,
+        (gltf) => {
+          if (cancelled) return;
+          enhanceMaterials(gltf.scene);
+          floraScene = gltf.scene;
+          onProgress?.(1.0);
+          onReady?.();
+        },
+        (progress) => {
+          if (cancelled || !progress.total) return;
+          onProgress?.(progress.loaded / progress.total);
+        },
+        (err) => {
+          if (cancelled) return;
+          // hi build missing (404 / not yet on R2 / deploy lag) → fall back to
+          // the base build once so an ultra user never gets an empty scene.
+          if (allowFallback && target !== baseUrl) {
+            console.warn(
+              `[FloraInstances] ${target} failed; falling back to base build.`,
+              err,
+            );
+            load(baseUrl, false);
+            return;
+          }
+          console.error("[FloraInstances] Failed to load ocean flora scene:", err);
+          onReady?.();
+        }
+      );
+    }
+
+    load(url, true);
 
     return () => {
       cancelled = true;
