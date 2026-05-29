@@ -358,6 +358,7 @@
     role="region"
     aria-label="Card export settings"
   >
+    <div class="panel-center-inner">
     {#if onClose}
       <div class="panel-header">
         <span class="panel-title">Export Settings</span>
@@ -536,6 +537,7 @@
         {/if}
       </button>
     </div>
+    </div>
   </div>
 {/if}
 
@@ -564,8 +566,18 @@
     flex-direction: column;
     z-index: 10;
     flex-shrink: 0;
+    height: 100%;
+    min-height: 0;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     overflow-y: auto;
+  }
+
+  /* Vertically center the settings group within the tall panel.
+     auto block margins collapse to 0 when content overflows, so it
+     still scrolls from the top — no clipping on long content. */
+  .panel-center-inner {
+    margin: auto 0;
+    width: 100%;
   }
 
   .panel-header {
