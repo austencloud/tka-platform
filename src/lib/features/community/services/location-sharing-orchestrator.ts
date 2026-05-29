@@ -8,7 +8,7 @@ import type {
   LocationSharingPreferences,
 } from "../domain/models/user-location";
 import { Timestamp } from "firebase/firestore";
-import type { GeocodingService } from "./GeocodingService";
+import type { GeocodingService } from "./geocoding-service";
 import {
   getCurrentLocation,
 } from "./location-provider";

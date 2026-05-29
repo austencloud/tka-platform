@@ -7,7 +7,7 @@
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { auth } from "$lib/shared/auth/firebase";
-  import { getLocationSharingOrchestrator } from "./getLocationSharingOrchestrator";
+  import { getLocationSharingOrchestrator } from "./get-location-sharing-orchestrator";
   import { getCurrentLocation } from "./services/location-provider";
   import GlobalUserMap from "./components/GlobalUserMap.svelte";
   import LocationSharingConsentSheet from "./components/LocationSharingConsentSheet.svelte";

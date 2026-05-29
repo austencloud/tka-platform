@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { LocationSharingOrchestrator } from './services/LocationSharingOrchestrator';
-import { getGeocodingService } from './getGeocodingService';
+import { LocationSharingOrchestrator } from './services/location-sharing-orchestrator';
+import { getGeocodingService } from './get-geocoding-service';
 
 let instance: LocationSharingOrchestrator | null = null;
 
