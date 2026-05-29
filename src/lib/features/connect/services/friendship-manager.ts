@@ -30,7 +30,7 @@ import type {
 	FriendFirebaseData
 } from '../domain/models/connect-models';
 import { FRIEND_CONFIG, FIREBASE_PATHS } from '../domain/models/connect-constants';
-import type { PresenceTracker } from './PresenceTracker';
+import type { PresenceTracker } from './presence-tracker';
 
 export class FriendshipManager {
 	private _friends: Friend[] = [];

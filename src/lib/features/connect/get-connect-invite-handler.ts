@@ -1,4 +1,4 @@
-import { InviteHandler } from './services/InviteHandler';
+import { InviteHandler } from './services/invite-handler';
 
 let instance: InviteHandler | null = null;
 export function getConnectInviteHandler(): InviteHandler {

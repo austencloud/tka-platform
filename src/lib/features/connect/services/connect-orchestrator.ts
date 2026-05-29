@@ -6,10 +6,10 @@
  * FriendshipManager, and LanSyncCoordinator.
  */
 
-import type { PresenceTracker } from './PresenceTracker';
-import type { SessionManager } from './SessionManager';
-import type { InviteHandler } from './InviteHandler';
-import type { FriendshipManager } from './FriendshipManager';
+import type { PresenceTracker } from './presence-tracker';
+import type { SessionManager } from './session-manager';
+import type { InviteHandler } from './invite-handler';
+import type { FriendshipManager } from './friendship-manager';
 import type { LanSyncCoordinator } from '$lib/shared/lan-sync/services/implementations/LanSyncCoordinator'
 import type {
 	SyncSession,

@@ -1,8 +1,8 @@
-import { ConnectOrchestrator } from './services/ConnectOrchestrator';
-import { getConnectPresenceTracker } from './getConnectPresenceTracker';
-import { getConnectSessionManager } from './getConnectSessionManager';
-import { getConnectInviteHandler } from './getConnectInviteHandler';
-import { getConnectFriendshipManager } from './getConnectFriendshipManager';
+import { ConnectOrchestrator } from './services/connect-orchestrator';
+import { getConnectPresenceTracker } from './get-connect-presence-tracker';
+import { getConnectSessionManager } from './get-connect-session-manager';
+import { getConnectInviteHandler } from './get-connect-invite-handler';
+import { getConnectFriendshipManager } from './get-connect-friendship-manager';
 import { getLanSyncCoordinator } from '$lib/shared/lan-sync/getLanSyncCoordinator';
 
 let instance: ConnectOrchestrator | null = null;

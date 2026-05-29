@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getConnectOrchestrator } from "$lib/features/connect/getConnectOrchestrator";
+import { getConnectOrchestrator } from "$lib/features/connect/get-connect-orchestrator";
 	/**
 	 * ConnectModule
 	 *

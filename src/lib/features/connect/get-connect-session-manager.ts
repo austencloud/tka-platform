@@ -1,4 +1,4 @@
-import { SessionManager } from './services/SessionManager';
+import { SessionManager } from './services/session-manager';
 
 let instance: SessionManager | null = null;
 export function getConnectSessionManager(): SessionManager {
