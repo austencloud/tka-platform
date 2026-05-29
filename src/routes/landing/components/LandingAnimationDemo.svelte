@@ -6,7 +6,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
-  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
+  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
   import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";

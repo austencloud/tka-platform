@@ -16,7 +16,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
-  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
+  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { orientationCalculator as orientationCalculatorInstance } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";

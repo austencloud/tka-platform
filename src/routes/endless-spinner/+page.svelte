@@ -5,7 +5,7 @@
   import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
   import type { SourceMode, PlaybackHistoryEntry } from "$lib/shared/animation-engine/domain/chaining-types";
   import type { SpinnerStats } from '$lib/shared/landing/domain/types';
-  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/EndlessSpinnerOrchestrator";
+  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
   import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
   import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
@@ -24,8 +24,8 @@
 
   // Mode toggle and infinite generation
   import type { SpinnerMode, SpinnerMetrics, GeneratedSequenceInfo } from "$lib/features/landing/domain/models/spinner-models";
-  import { InfiniteSequenceGenerator } from "$lib/features/landing/services/InfiniteSequenceGenerator";
-  import { SpinnerMetricsRepository } from "$lib/features/landing/services/SpinnerMetricsRepository";
+  import { InfiniteSequenceGenerator } from "$lib/features/landing/services/infinite-sequence-generator";
+  import { SpinnerMetricsRepository } from "$lib/features/landing/services/spinner-metrics-repository";
   import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
   import SpinnerModeToggle from "$lib/features/landing/components/SpinnerModeToggle.svelte";
   import LibraryModeInfo from "$lib/features/landing/components/LibraryModeInfo.svelte";
@@ -35,7 +35,7 @@
 
   // Broadcast imports — kept locally for LiveModeInfo display and step sync
   import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-models";
-  import { BroadcastRepository } from "$lib/features/landing/services/BroadcastRepository";
+  import { BroadcastRepository } from "$lib/features/landing/services/broadcast-repository";
   import * as broadcastSequenceConverter from "$lib/features/landing/services/broadcast-sequence-converter";
 
   // Local extracted components

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Timestamp } from "firebase/firestore";
   import { submit as submitFestival } from "../../services/festival-submission-reviewer";
-  import { getGeocodingService } from "$lib/features/community/getGeocodingService";
+  import { getGeocodingService } from "$lib/features/community/get-geocoding-service";
   import { auth } from "$lib/shared/auth/firebase";
   import { getFestivalContext } from "../../context/festival-context";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";

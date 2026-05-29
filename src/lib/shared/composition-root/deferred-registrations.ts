@@ -18,7 +18,7 @@ import { registerTagMigrator } from "$lib/shared/library/getTagMigrator";
 import { migrateSequenceTags } from "$lib/features/library/services/migrations/tag-migration";
 
 import { registerFeedbackTesterWorkflow } from "$lib/shared/feedback/services/IFeedbackTesterWorkflow";
-import { feedbackTesterWorkflowService } from "$lib/features/feedback/services/FeedbackTesterWorkflow";
+import { feedbackTesterWorkflowService } from "$lib/features/feedback/services/feedback-tester-workflow";
 
 import { registerVideoExportOrchestratorFactory } from "../animation-engine/getVideoExportOrchestrator";
 import { getVideoExporter } from "../animation-engine/getVideoExporter";
