@@ -4,6 +4,9 @@ export type OceanQualityTier = "ultra" | "medium" | "low";
 
 export interface OceanQualityConfig {
   tier: OceanQualityTier;
+  // Which flora GLB to load: "hi" = 1024-baseColor build (discrete desktop GPUs),
+  // "base" = 512 build (phones / integrated GPUs).
+  floraVariant: "hi" | "base";
   // Dynamic entity counts only — static content renders the same at all tiers
   maxFishCount: number;
   maxJellyfish: number;
@@ -21,6 +24,7 @@ export interface OceanQualityConfig {
 const TIER_PRESETS: Record<OceanQualityTier, OceanQualityConfig> = {
   ultra: {
     tier: "ultra",
+    floraVariant: "hi",
     maxFishCount: 200,
     maxJellyfish: 20,
     particleCount: 4000,
@@ -33,6 +37,7 @@ const TIER_PRESETS: Record<OceanQualityTier, OceanQualityConfig> = {
   },
   medium: {
     tier: "medium",
+    floraVariant: "base",
     maxFishCount: 100,
     maxJellyfish: 8,
     particleCount: 1500,
@@ -45,6 +50,7 @@ const TIER_PRESETS: Record<OceanQualityTier, OceanQualityConfig> = {
   },
   low: {
     tier: "low",
+    floraVariant: "base",
     maxFishCount: 30,
     maxJellyfish: 0,
     particleCount: 500,
