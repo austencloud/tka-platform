@@ -1,1 +1,0 @@
-{"root":["./src/border-renderer.ts","./src/difficulty-config.ts","./src/dimensions.ts","./src/footer-renderer.ts","./src/header-renderer.ts","./src/index.ts","./src/layout-tables.ts","./src/loop-icons.ts","./src/step-number-renderer.ts","./src/svg-path-painter.ts","./src/types.ts"],"version":"5.9.3"}
