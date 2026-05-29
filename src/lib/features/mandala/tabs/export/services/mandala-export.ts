@@ -9,7 +9,7 @@
 import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
 import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
 import type { MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
-import type { StepLike } from "$lib/shared/mandala/services/contracts/types";
+import type { StepLike } from "$lib/shared/mandala/services/types";
 
 export interface ExportOptions {
 	size: number;

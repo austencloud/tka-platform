@@ -1,4 +1,4 @@
-import type { StepLike } from "$lib/shared/mandala/services/contracts/types";
+import type { StepLike } from "$lib/shared/mandala/services/types";
 
 export interface DefaultMandala {
 	id: string;

@@ -1,4 +1,4 @@
-import type { PreparedMandalaPaths } from "../services/contracts/types";
+import type { PreparedMandalaPaths } from "../services/types";
 
 export interface MandalaOverlayConfig {
 	enabled: boolean;

@@ -14,7 +14,7 @@
   import { mandalaCollectionState } from "./tabs/collection/state/mandala-collection-state.svelte";
   import { DEFAULT_MANDALAS } from "./tabs/meditate/domain/default-mandalas";
   import type { CollectedMandala } from "./tabs/collection/domain/mandala-collection-types";
-  import type { StepLike } from "$lib/shared/mandala/services/contracts/types";
+  import type { StepLike } from "$lib/shared/mandala/services/types";
   import { onMount } from "svelte";
 
   // ── Phase management ──

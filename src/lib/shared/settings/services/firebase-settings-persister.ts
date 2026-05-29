@@ -16,11 +16,11 @@ import {
   serverTimestamp,
   type Unsubscribe,
 } from "firebase/firestore";
-import { auth, getFirestoreInstance } from "../../../auth/firebase";
+import { auth, getFirestoreInstance } from "../../auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import type { AppSettings } from "../../domain/AppSettings";
+import type { AppSettings } from "../domain/AppSettings";
 
 export class FirebaseSettingsPersister {
   private unsubscribe: Unsubscribe | null = null;

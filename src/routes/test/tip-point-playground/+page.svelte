@@ -9,7 +9,7 @@
 	import type { UndulationEasing, MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
 	import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 	import type { MandalaPaths, MandalaPalette, MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
-	import type { MandalaPathOptions } from "$lib/shared/mandala/services/contracts/types";
+	import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 	import {
 		DARK_MOTION_BLUE_STROKE,
 		DARK_MOTION_RED_STROKE,
@@ -18,7 +18,7 @@
 		DARK_MOTION_PURPLE_STROKE,
 		DARK_MOTION_PURPLE_FILL,
 	} from "$lib/shared/mandala/domain/mandala-constants";
-	import type { MandalaGeometryCalculator } from "$lib/shared/mandala/services/implementations/MandalaGeometryCalculator";
+	import type { MandalaGeometryCalculator } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 
 	const PALETTE: MandalaPalette = {
 		blueStroke: DARK_MOTION_BLUE_STROKE,

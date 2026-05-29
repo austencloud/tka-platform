@@ -6,7 +6,7 @@ import type {
 } from "../components/MandalaViewerControls.svelte";
 import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
 import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
-import type { MandalaPathOptions } from "$lib/shared/mandala/services/contracts/types";
+import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 
 export interface MandalaControllerSources {
   getSequence: () => SequenceData;

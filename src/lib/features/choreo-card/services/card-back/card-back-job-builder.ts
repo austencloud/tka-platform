@@ -22,7 +22,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { MandalaPaths, MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
-import type { MandalaPathOptions } from "$lib/shared/mandala/services/contracts/types";
+import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 import {
   MANDALA_STANDARD_TIP_DX,
   DARK_MOTION_BLUE_STROKE,
@@ -263,6 +263,12 @@ export async function buildBackJob(
 ): Promise<BackJob> {
   const d = { ...realDeps, ...deps };
 
+  // [TEMP-PROFILE] per-stage timing accumulator (removed after measurement)
+  const __t: Record<string, number> = (globalThis as any).__bjStages ??= {};
+  const __mark = (k: string, ms: number) => { __t[k] = (__t[k] ?? 0) + ms; (__t.__n_ ?? (__t.__n_ = 0)); };
+  let __s = performance.now();
+  const __lap = (k: string) => { const n = performance.now(); __mark(k, n - __s); __s = n; };
+
   // 1) Derive shared data + theme visuals (proof mode in the print path).
   const data = deriveCardBackData(sequence);
   const visuals = getCardBackThemeVisuals(opts.theme);
@@ -296,6 +302,7 @@ export async function buildBackJob(
   //      - bluePropType/redPropType undefined
   //      - tip dx is the standard tip (no animation, no override)
   const pathOptions: MandalaPathOptions | undefined = undefined; // pathShape "arc"
+  __lap("setup");
   const mandalaPaths = d.calculatePaths(
     sequence.steps,
     undefined,
@@ -303,6 +310,7 @@ export async function buildBackJob(
     pathOptions,
     { dx: MANDALA_STANDARD_TIP_DX, dy: 0 },
   );
+  __lap("geometry");
 
   // Build the SVG at the DOM mount size (380), then rasterize it at the layout
   // box pixel size so it fills the box exactly — matching the old .mandala-anchor
@@ -315,6 +323,7 @@ export async function buildBackJob(
     tipDx: MANDALA_STANDARD_TIP_DX,
     strokeWidth: 2.5,
   });
+  __lap("mandalaSvgString");
   const mandalaW = Math.round(layout.mandala.w);
   const mandalaH = Math.round(layout.mandala.h);
   const mandalaBitmap = await d.rasterizeMandala(
@@ -323,6 +332,7 @@ export async function buildBackJob(
     mandalaH,
     `card-back-mandala:${data.word ?? ""}:${darkMode ? "d" : "l"}:${mandalaW}x${mandalaH}`,
   );
+  __lap("mandalaRaster");
   const mandala: BackJob["mandala"] = {
     bitmap: mandalaBitmap,
     placement: layout.mandala,
@@ -370,6 +380,12 @@ export async function buildBackJob(
     return { kind: "fa", fa: meta?.fa ?? "", color, label };
   });
 
+  __s = performance.now();
+  const __pictoStart = performance.now();
+  const startPosP = hasStartPos
+    ? d.rasterizeStartPosPictograph(sequence.startPosition, darkMode, perCardCtx)
+    : Promise.resolve(null);
+  startPosP.then(() => __mark("pictograph", performance.now() - __pictoStart));
   const [
     brandBmp,
     urlBmp,
@@ -386,13 +402,13 @@ export async function buildBackJob(
     d.rasterizeTurnGlyph(data.turnGlyphEntries, perCardCtx),
     d.rasterizeReversalGlyph(data.reversalSequence, data.reversalPeriod, perCardCtx),
     d.rasterizeStepCount(data.stepCount, perCardCtx),
-    hasStartPos
-      ? d.rasterizeStartPosPictograph(sequence.startPosition, darkMode, perCardCtx)
-      : Promise.resolve(null),
+    startPosP,
     loopCols.length > 0
       ? d.rasterizeLoopRow(loopCols, perCardCtx, opts.theme)
       : Promise.resolve(null),
   ]);
+  __lap("elementsAll");
+  __t.__n_ = (__t.__n_ ?? 0) + 1;
 
   // Brand + url are rendered at NATURAL height (no crop), so anchor them by the
   // bitmap's own size: brand top-anchored at 3.2cqi, url bottom-anchored at

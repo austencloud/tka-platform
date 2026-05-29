@@ -15,11 +15,11 @@ import {
 	MANDALA_STANDARD_TIP_DX,
 	MANDALA_GRID_RADIUS,
 	ENGINE_GRID_RADIUS,
-} from "../../domain/mandala-constants";
-import type { SVGPathData } from "../../domain/mandala-types";
-import type { PreparedMandalaPath, PreparedMandalaPaths } from "../contracts/types";
-import type { StepLike } from "../contracts/types";
-import { MandalaGeometryCalculator } from "./MandalaGeometryCalculator";
+} from "../domain/mandala-constants";
+import type { SVGPathData } from "../domain/mandala-types";
+import type { PreparedMandalaPath, PreparedMandalaPaths } from "./types";
+import type { StepLike } from "./types";
+import { MandalaGeometryCalculator } from "./mandala-geometry-calculator";
 
 // ─── Path length measurement ───────────────────────────────────────────────
 

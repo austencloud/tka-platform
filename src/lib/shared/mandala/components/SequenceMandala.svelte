@@ -28,8 +28,8 @@
 		LIGHT_MOTION_PURPLE_STROKE,
 		LIGHT_MOTION_PURPLE_FILL,
 	} from "../domain/mandala-constants";
-	import type { MandalaGeometryCalculator } from "../services/implementations/MandalaGeometryCalculator";
-	import type { MandalaPathOptions } from "../services/contracts/types";
+	import type { MandalaGeometryCalculator } from "../services/mandala-geometry-calculator";
+	import type { MandalaPathOptions } from "../services/types";
 
 	export type { MandalaPathShape, UndulationEasing } from "../domain/mandala-types";
 

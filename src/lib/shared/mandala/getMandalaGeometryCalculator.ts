@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { MandalaGeometryCalculator } from './services/implementations/MandalaGeometryCalculator';
+import { MandalaGeometryCalculator } from './services/mandala-geometry-calculator';
 
 let instance: MandalaGeometryCalculator | null = null;
 

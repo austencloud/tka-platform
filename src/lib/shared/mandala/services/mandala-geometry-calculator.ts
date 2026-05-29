@@ -24,13 +24,13 @@ import {
 	MANDALA_GRID_RADIUS,
 	MANDALA_STANDARD_TIP_DX,
 	ENGINE_GRID_RADIUS,
-} from "../../domain/mandala-constants";
+} from "../domain/mandala-constants";
 import type {
 	MandalaPaths,
 	SVGPathData,
 	MandalaPoint,
-} from "../../domain/mandala-types";
-import type { StepLike, MotionLike, MandalaPathOptions } from "../contracts/types";
+} from "../domain/mandala-types";
+import type { StepLike, MotionLike, MandalaPathOptions } from "./types";
 
 // ─── Internal types ─────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
-import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/implementations/MandalaGeometryCalculator";
+import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
 
 const cache = $state<Record<string, MandalaPaths>>({});

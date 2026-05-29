@@ -18,8 +18,8 @@
 		DARK_MOTION_PURPLE_STROKE,
 		DARK_MOTION_PURPLE_FILL,
 	} from "$lib/shared/mandala/domain/mandala-constants";
-	import type { MandalaGeometryCalculator } from "$lib/shared/mandala/services/implementations/MandalaGeometryCalculator";
-	import type { MandalaPathOptions } from "$lib/shared/mandala/services/contracts/types";
+	import type { MandalaGeometryCalculator } from "$lib/shared/mandala/services/mandala-geometry-calculator";
+	import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 
 	const PALETTE: MandalaPalette = {
 		blueStroke: DARK_MOTION_BLUE_STROKE,

@@ -18,7 +18,7 @@ async function logSettingChange(key: string, oldValue: string | number | boolean
   const mod = await import("$lib/shared/analytics/services/posthog-activity-logger");
   return mod.logSettingChange(key, oldValue, newValue);
 }
-import type { FirebaseSettingsPersister } from "../services/implementations/FirebaseSettingsPersister";
+import type { FirebaseSettingsPersister } from "../services/firebase-settings-persister";
 import { auth } from "../../auth/firebase";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";

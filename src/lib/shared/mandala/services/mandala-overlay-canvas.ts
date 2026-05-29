@@ -12,11 +12,11 @@
  * BEHIND trails (z-index 1).
  */
 
-import type { MandalaOverlayRenderParams } from "../../domain/mandala-overlay-types";
+import type { MandalaOverlayRenderParams } from "../domain/mandala-overlay-types";
 import {
 	OVERLAY_WARMUP_FRAMES,
 	OVERLAY_ALPHA_DECAY,
-} from "../../domain/mandala-constants";
+} from "../domain/mandala-constants";
 
 export class MandalaOverlayCanvas {
 	private canvas: HTMLCanvasElement | null = null;
