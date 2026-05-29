@@ -103,7 +103,7 @@ export class WorkerRenderPool {
       for (let i = 0; i < poolSize; i++) {
         try {
           const worker = new Worker(
-            new URL("../../workers/pictograph-render.worker.ts", import.meta.url),
+            new URL("../workers/pictograph-render.worker.ts", import.meta.url),
             { type: "module" }
           );
 

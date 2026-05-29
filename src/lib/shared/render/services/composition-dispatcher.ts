@@ -233,7 +233,7 @@ export class CompositionDispatcher {
     for (let i = 0; i < POOL_SIZE; i++) {
       try {
         const worker = new Worker(
-          new URL("../../workers/composition.worker.ts", import.meta.url),
+          new URL("../workers/composition.worker.ts", import.meta.url),
           { type: "module" },
         );
 
