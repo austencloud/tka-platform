@@ -1139,6 +1139,7 @@
     materials={createTorchInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
     castShadow={false}
     playerPosition={playerPosition}
+    visible={props.visible}
   />
 {/each}
 
@@ -1181,7 +1182,7 @@
      Always visible - sits inside room walls, only seen when looking in. -->
 {#if villageEmbedMounted}
   {@const nearCollab = currentPlayerRoomId === "collaboration"}
-  <MuseumVillageEmbed centerX={collabCenterX} centerZ={collabCenterZ} showLabels={nearCollab} />
+  <MuseumVillageEmbed centerX={collabCenterX} centerZ={collabCenterZ} showLabels={nearCollab} visible={props.visible} />
 {/if}
 
 <!-- Pedestal + sign meshes managed imperatively via scene.add() -->
@@ -1233,6 +1234,7 @@
     color="#0088ff"
     label="Gallery"
     playerPosition={playerPosition}
+    visible={props.visible}
   />
   <MuseumPortal
     position={portalConfig.orangePos}
@@ -1242,6 +1244,7 @@
     color="#ff8800"
     label="Cave"
     playerPosition={playerPosition}
+    visible={props.visible}
   />
 {/if}
 

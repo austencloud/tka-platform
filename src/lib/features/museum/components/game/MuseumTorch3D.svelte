@@ -149,6 +149,8 @@
     castShadow?: boolean;
     /** Player world position - ember particles skip animation when far away */
     playerPosition?: { x: number; y: number; z: number };
+    /** False when the museum is mounted-but-hidden (keep-alive) - pause flicker/ember animation */
+    visible?: boolean;
   }
 
   const props: Props = $props();
@@ -264,6 +266,9 @@
 
   // ── Animation loop ──
   useTask((delta) => {
+    // Keep-alive: pause flicker + ember animation while hidden.
+    if (props.visible === false) return;
+
     elapsed += delta;
 
     if (config.hasFlame) {

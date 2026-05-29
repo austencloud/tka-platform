@@ -45,6 +45,8 @@
     textureSize?: number;
     /** Player world position - portal only renders when player is nearby */
     playerPosition?: { x: number; y: number; z: number };
+    /** False when the museum is mounted-but-hidden (keep-alive) - skip the render-to-texture pass */
+    visible?: boolean;
   }
 
   const props: Props = $props();
@@ -134,6 +136,9 @@
   // call, so skipping 2 portals x 2/3 frames saves ~4 scene renders
   // out of every 3 frames.
   useTask(() => {
+    // Keep-alive: skip the expensive render-to-texture pass while hidden.
+    if (props.visible === false) return;
+
     frameCounter++;
 
     // Skip frames - at 60fps, rendering every 3rd frame = 20fps portal texture.

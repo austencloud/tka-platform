@@ -24,6 +24,8 @@
   import ReleaseHistoryPanel from "./ReleaseHistoryPanel.svelte";
   import DeckReleaseNameModal from "./DeckReleaseNameModal.svelte";
   import { releaserState as rs } from "./deck-releaser-state.svelte";
+  import { resolveDeckSequences, applyVariationDescriptor } from "../../services/deck-variation";
+  import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
 
   interface Props {
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
@@ -192,24 +194,32 @@
   async function loadSelectedSequences(generation: number) {
     rs.isLoadingSequences = true;
     try {
+      // Load each base sequence once (TnD packs many cards over few base ids).
       const byCatalog = new Map<string, string[]>();
+      const seen = new Set<string>();
       for (const card of rs.cards) {
+        const key = `${card.sourceCatalogId}::${card.sequenceId}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
         const ids = byCatalog.get(card.sourceCatalogId) ?? [];
         ids.push(card.sequenceId);
         byCatalog.set(card.sourceCatalogId, ids);
       }
 
-      const allSeqs: SequenceData[] = [];
+      const baseByKey = new Map<string, SequenceData>();
       for (const [catalogId, seqIds] of byCatalog) {
         const loaded = await loadSequencesByIds(catalogId, seqIds);
-        allSeqs.push(...loaded);
+        for (const s of loaded) baseByKey.set(`${catalogId}::${s.id}`, s);
       }
-
       if (generation !== rs.drawGeneration) return;
-      const seqMap = new Map(allSeqs.map((s) => [s.id, s]));
-      rs.sequences = rs.cards
-        .map((c) => seqMap.get(c.sequenceId))
-        .filter((s): s is SequenceData => s != null);
+
+      const needsVariation = rs.cards.some((c) => c.variation);
+      const edges = needsVariation ? await loadDiamondEdges() : [];
+      if (generation !== rs.drawGeneration) return;
+
+      const resolved = resolveDeckSequences(rs.cards, baseByKey, edges);
+      rs.sequences = resolved.map((r) => r.sequence);
+      rs.brokenLoopCount = resolved.filter((r) => !r.turnLoopClosed).length;
     } catch (err) {
       console.warn("Failed to load sequences:", err);
     } finally {
@@ -233,7 +243,13 @@
     try {
       const loaded = await loadSequencesByIds(newCard.sourceCatalogId, [newCard.sequenceId]);
       if (loaded.length > 0) {
-        rs.sequences = rs.sequences.map((s, i) => i === index ? loaded[0]! : s);
+        const base = loaded[0]!;
+        let resolvedSeq = base;
+        if (newCard.variation) {
+          const edges = await loadDiamondEdges();
+          resolvedSeq = applyVariationDescriptor(base, newCard.variation, edges).sequence;
+        }
+        rs.sequences = rs.sequences.map((s, i) => (i === index ? resolvedSeq : s));
       }
     } catch (err) {
       console.warn("Failed to load swapped sequence:", err);

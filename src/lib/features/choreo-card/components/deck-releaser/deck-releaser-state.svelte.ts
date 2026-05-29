@@ -46,6 +46,7 @@ class DeckReleaserState {
   themeOverride = $state<string | null>(null);
   bluePropOverride = $state<PropType | null>(null);
   redPropOverride = $state<PropType | null>(null);
+  brokenLoopCount = $state(0);
   get theme() {
     return this.themeOverride ?? settingsService.settings.backgroundType ?? "cosmic";
   }

@@ -32,9 +32,11 @@
 		 *  When false, HTML name labels are hidden to prevent them from
 		 *  rendering through museum walls (CSS2D ignores occlusion). */
 		showLabels?: boolean;
+		/** False when the museum is mounted-but-hidden (keep-alive) - pause per-frame sync */
+		visible?: boolean;
 	}
 
-	const { centerX, centerZ, cameraPosition, showLabels = true }: Props = $props();
+	const { centerX, centerZ, cameraPosition, showLabels = true, visible = true }: Props = $props();
 
 	const forestLift = $derived(-userProportionsState.groundY);
 
@@ -80,8 +82,10 @@
 		requestIdleCallback(mountNextAvatar);
 	}
 
-	// Per-frame sync (only when visible)
+	// Per-frame sync. Skipped while the museum is hidden (keep-alive) so the
+	// avatar lerp / death-mark tick don't burn CPU on an unseen scene.
 	useTask(() => {
+		if (!visible) return;
 		if (!villageState || !visualState) return;
 		villageState.syncFromEngine();
 		villageState.lerpAvatars();
