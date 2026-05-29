@@ -7,11 +7,11 @@ Renders a section with:
 - Index-keyed slots so props/arrows transition in place on data change
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { reversalDetector as _reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
   import type { PictographWithReversals } from "$lib/shared/create/services/reversal-detector";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { calculateFitSize as calculateGridFitSize, calculateOptimalColumnLayout } from "../../services/option-grid-fit-calculator";
   import { onMount } from "svelte";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";

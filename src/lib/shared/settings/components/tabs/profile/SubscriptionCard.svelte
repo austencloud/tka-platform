@@ -7,7 +7,7 @@
   import { onMount, onDestroy } from "svelte";
   import { goto } from "$app/navigation";
   import type { SubscriptionInfo } from "../../../../subscription/services/types";
-  import type { HapticFeedback } from "../../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../../application/services/haptic-feedback";
 
   interface Props {
     hapticService?: HapticFeedback | null;

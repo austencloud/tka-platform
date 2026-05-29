@@ -6,13 +6,23 @@
  */
 
 import type { UIPerformanceMetrics } from "../../foundation/ui/UITypes";
-import type { IPerformanceMetricsState } from "./IPerformanceMetricsState";
+
+interface PerformanceMetricsState {
+  // State getters
+  readonly performanceMetrics: UIPerformanceMetrics;
+
+  // Actions
+  updateInitializationTime(time: number): void;
+  updateLastRenderTime(time: number): void;
+  updateMemoryUsage(): void;
+  resetMetrics(): void;
+}
 
 /**
  * Factory function to create performance metrics state
  * Uses Svelte 5 runes for reactivity
  */
-export function createPerformanceMetricsState(): IPerformanceMetricsState {
+export function createPerformanceMetricsState(): PerformanceMetricsState {
   // Performance metrics state using $state rune
   const performanceMetrics = $state<UIPerformanceMetrics>({
     initializationTime: 0,

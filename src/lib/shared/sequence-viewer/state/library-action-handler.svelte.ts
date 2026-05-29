@@ -8,7 +8,7 @@ import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/stat
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
 export interface LibraryActionHandlerDeps {
   getSequence: () => SequenceData | null;

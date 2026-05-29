@@ -6,7 +6,7 @@
   Sends verification email to new address.
 -->
 <script lang="ts">
-  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
 
   const ctx = getProfileSettingsContext();

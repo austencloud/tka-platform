@@ -1,4 +1,4 @@
-import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
 export interface FullscreenControllerDeps {
   getHapticService: () => HapticFeedback | null;

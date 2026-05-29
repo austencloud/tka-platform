@@ -12,9 +12,9 @@
   - Better screen reader support
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { Dialog as DialogPrimitive } from "bits-ui";
-  import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../application/services/haptic-feedback";
 import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

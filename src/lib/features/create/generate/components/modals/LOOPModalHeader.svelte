@@ -3,8 +3,8 @@ LOOPModalHeader.svelte - Modal header for LOOP Selection
 Simple header with title and close button
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   let { title, onClose } = $props<{
     title: string;

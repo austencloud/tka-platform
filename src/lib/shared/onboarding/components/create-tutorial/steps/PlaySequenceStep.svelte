@@ -8,7 +8,7 @@
 <script lang="ts">
 
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -25,7 +25,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     createAnimationPanelState,
     type AnimationStateKey,
   } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   interface Props {
     onAdvance: () => void;

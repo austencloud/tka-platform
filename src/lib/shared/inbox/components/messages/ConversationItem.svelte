@@ -6,13 +6,13 @@
    * Supports both direct (1:1) and group conversations.
    */
 
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import type { ConversationPreview } from "$lib/shared/messaging/domain/models/conversation-models";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import GroupAvatarStack from "./GroupAvatarStack.svelte";
   import { formatRelativeTime, truncateText } from "../../utils/format";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   interface Props {
     conversation: ConversationPreview;

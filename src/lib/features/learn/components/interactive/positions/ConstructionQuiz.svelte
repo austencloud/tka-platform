@@ -4,7 +4,7 @@ by placing hands on the grid. Adaptive difficulty ramps from diamond-only to mix
 Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was requested.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onDestroy } from "svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {

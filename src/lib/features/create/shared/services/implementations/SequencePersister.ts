@@ -8,7 +8,7 @@
  * with independent localStorage persistence.
  */
 
-import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import {
   initialize as persistenceInitialize,
   saveCurrentSequenceState,
@@ -19,7 +19,7 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/Sta
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 
 export class SequencePersister {
   /**

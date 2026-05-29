@@ -7,7 +7,7 @@
   Extracted from AccountSettingsSection for single responsibility.
 -->
 <script lang="ts">
-  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
   import { slide, fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";

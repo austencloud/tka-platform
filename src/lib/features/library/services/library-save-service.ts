@@ -13,7 +13,7 @@
  * sequence is already safe in local storage.
  */
 
-import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceVisibility } from "$lib/shared/library/domain/models/LibrarySequence";
 import { findTagByName, createUserTag } from "./tag-manager";
@@ -23,7 +23,7 @@ import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/share-opt
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte.ts";
 import type {
   SaveToLibraryOptions, SaveProgress, SaveResult } from "./types";
-import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import { LibraryError } from "$lib/shared/library/services/LibraryRepository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte.ts";
 import { db } from "$lib/shared/persistence/database/TKADatabase";

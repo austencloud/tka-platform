@@ -4,9 +4,9 @@ Uses StartPositionManager to load variations and displays actual pictographs
 50px minimum touch targets for accessibility
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";

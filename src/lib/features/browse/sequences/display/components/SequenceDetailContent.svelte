@@ -12,10 +12,10 @@ Used by both desktop side panel and mobile slide-up overlay.
 
 import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { SequenceDetailLoader } from "$lib/shared/browse/services/SequenceDetailLoader";
   import type { VideoCountManager } from "$lib/shared/browse/services/VideoCountManager";
   import type { SequenceImageSharer } from "$lib/shared/share/services/sequence-image-sharer";

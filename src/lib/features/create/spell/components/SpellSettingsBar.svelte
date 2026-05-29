@@ -11,7 +11,7 @@ Container-aware responsive design (2-tier):
 - Desktop (>=700px tall): Vertical flex column with all options visible
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SpellPreferences } from "../domain/models/spell-models";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOOPType, LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";

@@ -9,8 +9,8 @@ Manages navigation through 5 pages:
 5. Quiz
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedbackType } from "$lib/shared/application/services/contracts/types";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedbackType } from "$lib/shared/application/services/types";
   import StaffIntroPage from "./pages/StaffIntroPage.svelte";
   import ThumbOrientationsPage from "./pages/ThumbOrientationsPage.svelte";
   import ProspinPage from "./pages/ProspinPage.svelte";

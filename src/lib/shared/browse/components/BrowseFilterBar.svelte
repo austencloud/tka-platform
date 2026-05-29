@@ -4,8 +4,8 @@ Replaces InlineFilterPanel + ActiveFilterBar + picker's FilterChipRow.
 Reads from / writes to a headless BrowseEngine instance.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import LevelFilterChip from "$lib/shared/browse/components/filter-chips/LevelFilterChip.svelte";

@@ -1,10 +1,10 @@
 <!-- LessonWorkspaceView.svelte - Enhanced lesson workspace with full functionality -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import QuizTimer from "./QuizTimer.svelte";
   import { onDestroy, onMount } from "svelte";
 
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { getQuizSessionManager } from "$lib/features/learn/quiz/get-quiz-session-manager";
 
   import LetterToPictographQuiz from "./LetterToPictographQuiz.svelte";

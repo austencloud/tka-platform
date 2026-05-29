@@ -7,8 +7,8 @@ Provides sort dropdown, direction toggle, and filter button in the top section.
 Follows Svelte 5 runes + microservices architecture.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
     import { onMount } from "svelte";
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte";

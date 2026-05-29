@@ -1,8 +1,8 @@
 <!-- AccountRow: Clickable account identity row for sidebar footer and mobile drawer -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { authState } from "../../../auth/state/authState.svelte";
-import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import { authDrawerState } from "../../../auth/state/auth-drawer-state.svelte";
 

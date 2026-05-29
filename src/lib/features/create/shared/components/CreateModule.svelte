@@ -39,7 +39,7 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
    */
 
   import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";

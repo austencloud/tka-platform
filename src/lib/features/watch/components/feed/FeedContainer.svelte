@@ -13,12 +13,12 @@
 import { getFeedPreloader } from "$lib/features/watch/get-feed-preloader";
 import { getFeedScrollBehavior } from "$lib/features/watch/get-feed-scroll-behavior";
 import { getFeedSnapDetector } from "$lib/features/watch/get-feed-snap-detector";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { FeedSnapDetector } from "../../services/feed-snap-detector";
   import type { FeedPreloader } from "../../services/feed-preloader";
   import type { FeedScrollBehavior } from "../../services/feed-scroll-behavior";

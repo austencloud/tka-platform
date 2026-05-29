@@ -16,8 +16,8 @@ even when Svelte recreates the component instance.
 </script>
 
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "../../../../application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "../../../../application/services/haptic-feedback";
   import type { MotionData } from "../../../shared/domain/models/MotionData";
   import type { PictographData } from "../../../shared/domain/models/PictographData";
   import {

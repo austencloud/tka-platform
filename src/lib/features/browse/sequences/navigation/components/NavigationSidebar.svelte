@@ -12,14 +12,14 @@ Provides sophisticated navigation sections matching desktop functionality:
 Follows Svelte 5 runes + microservices architecture.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
     import type {
     BrowseNavigationConfig,
     BrowseNavigationItem,
   } from "../domain/models/navigation-models";
-  import type { HapticFeedback } from "../../../../../shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../../../shared/application/services/haptic-feedback";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes

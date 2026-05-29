@@ -6,7 +6,7 @@
   no services, no responsive complexity. Works at any size.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { fly, fade } from "svelte/transition";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
@@ -21,7 +21,7 @@
   import { CARD_REGISTRY, type GeneratorCardId } from "$lib/shared/create/domain/card-registry";
   import { getCardColor } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   // Mini card definition - derived from the card registry
   interface MiniCard {

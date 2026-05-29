@@ -1,6 +1,6 @@
 
 import { DelightOrchestrator } from './services/delight-orchestrator';
-import { getHapticFeedback } from '$lib/shared/application/getHapticFeedback';
+import { getHapticFeedback } from '$lib/shared/application/get-haptic-feedback';
 
 let instance: DelightOrchestrator | null = null;
 export function getDelightOrchestrator(): DelightOrchestrator {

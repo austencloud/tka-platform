@@ -13,10 +13,10 @@
   <TabIntro moduleId="create" tabId="generate" />
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { fly, fade } from "svelte/transition";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import {
     getTabIntroContent,

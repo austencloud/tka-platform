@@ -5,9 +5,9 @@
   Renders sequences as print-ready PNGs in a zip file.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";

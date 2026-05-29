@@ -7,7 +7,7 @@ Supports two view modes:
 - "scroll": All pages displayed vertically for review
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 import { onMount } from 'svelte';
 	import GridMergeAnimation from './grid-merge/GridMergeAnimation.svelte';
 	import ExperienceProgressIndicator from './ExperienceProgressIndicator.svelte';

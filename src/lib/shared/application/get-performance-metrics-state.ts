@@ -1,4 +1,4 @@
-import { createPerformanceMetricsState } from './state/PerformanceMetricsState.svelte';
+import { createPerformanceMetricsState } from './state/performance-metrics-state.svelte';
 
 type PerformanceMetricsState = ReturnType<typeof createPerformanceMetricsState>;
 

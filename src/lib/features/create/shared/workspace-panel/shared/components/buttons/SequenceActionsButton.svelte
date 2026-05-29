@@ -4,7 +4,7 @@
   Opens a sheet with various sequence actions (Animate, Mirror, Rotate, etc.)
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   let { onclick } = $props<{
     onclick?: () => void;

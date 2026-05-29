@@ -14,9 +14,9 @@
  * 3. All subsequent users get the pre-rendered image instantly
  */
 
-import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import { getStorageInstance } from "$lib/shared/auth/firebase";
-import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ThumbnailVariant } from "$lib/shared/browse/services/thumbnail-key-deriver";
 

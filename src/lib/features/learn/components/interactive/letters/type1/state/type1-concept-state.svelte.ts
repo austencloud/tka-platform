@@ -4,7 +4,7 @@
  * Includes persistence for HMR/refresh survival
  */
 
-import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 import {
   PROSPIN_LETTERS,
   ANTISPIN_LETTERS,

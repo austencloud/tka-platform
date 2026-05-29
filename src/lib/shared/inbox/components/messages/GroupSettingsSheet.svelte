@@ -7,7 +7,7 @@
    * All members can view participants and leave the group.
    */
 
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import type {
     Conversation,
@@ -17,7 +17,7 @@
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   interface Props {
     conversation: Conversation;

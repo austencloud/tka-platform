@@ -1,4 +1,4 @@
-import { HapticFeedback } from './services/implementations/HapticFeedback';
+import { HapticFeedback } from './services/haptic-feedback';
 
 let instance: HapticFeedback | null = null;
 

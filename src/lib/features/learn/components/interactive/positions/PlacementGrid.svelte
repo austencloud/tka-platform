@@ -5,7 +5,7 @@ with an interactive SVG overlay for touch targets and pulse indicators.
 Hands render at the exact same size/position as everywhere else in the app.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { untrack } from 'svelte';
   import { GridMode, GridLocation } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
   import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';

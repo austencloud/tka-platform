@@ -11,7 +11,7 @@
  */
 
 import { browser } from '$app/environment';
-import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 import {
 	type AchievementType,
 	type DelightIntensity,

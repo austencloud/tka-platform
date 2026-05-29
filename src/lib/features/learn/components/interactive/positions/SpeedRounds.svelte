@@ -4,7 +4,7 @@ A pictograph appears center screen, user classifies as Alpha/Beta/Gamma via tap 
 Builds automaticity through speed pressure and streak mechanics.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import PositionVisualizer from './PositionVisualizer.svelte';
   import StreakDisplay from './construction-quiz/StreakDisplay.svelte';
   import type { PositionsExperienceStateManager } from './positions-experience-state.svelte';

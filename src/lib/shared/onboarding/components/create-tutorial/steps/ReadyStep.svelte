@@ -5,12 +5,12 @@
   Mobile: accordion list of tools (no mockup - user just built the sequence).
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { createTutorialState } from "../../../state/create-tutorial-state.svelte";
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   interface Props {
     onAdvance: () => void;

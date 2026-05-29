@@ -12,13 +12,13 @@
 -->
 <script lang="ts">
 
-import { getDeepLinkResolver } from "$lib/shared/application/getDeepLinkResolver";
+import { getDeepLinkResolver } from "$lib/shared/application/get-deep-link-resolver";
   import { onMount } from "svelte";
   import {
     getModalUrlState,
     clearModalUrlState,
   } from "../state/ui/modal-url-state.svelte";
-  import type { DeepLinkError } from "../services/contracts/types";
+  import type { DeepLinkError } from "../services/types";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 

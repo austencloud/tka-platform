@@ -10,7 +10,7 @@
  * - Fetches full sequence data on demand via sourceRef
  */
 
-import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import {
   collection,
   getDocs,
@@ -24,7 +24,7 @@ import { getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
 import { getSequenceHydrator } from "$lib/shared/foundation/getSequenceHydrator";
-import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import type { GalleryOfflineCache } from "$lib/shared/offline/services/gallery-offline-cache";
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 

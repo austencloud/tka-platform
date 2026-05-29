@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { ErrorHandler } from './services/implementations/ErrorHandler';
+import { ErrorHandler } from './services/error-handler';
 
 let instance: ErrorHandler | null = null;
 

@@ -5,7 +5,7 @@
   Each editor is a separate component with its own state and styles.
 -->
 <script lang="ts">
-  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import type { User } from "firebase/auth";
   import DisplayNameEditor from "./DisplayNameEditor.svelte";
   import UsernameEditor from "./UsernameEditor.svelte";

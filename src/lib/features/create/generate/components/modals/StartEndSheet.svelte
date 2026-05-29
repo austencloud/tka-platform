@@ -5,8 +5,8 @@ Start Position: Multi-select with presets (All, Classic 3, Custom)
 End Position: Single select (for freeform mode only)
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import {

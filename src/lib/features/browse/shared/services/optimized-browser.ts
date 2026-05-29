@@ -8,11 +8,11 @@
  * - Virtual scrolling support
  */
 
-import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import type {
   PaginatedSequences, SequenceMetadata } from "./types";
-import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 // API Response types
 interface PaginatedSequencesResponse {
   sequences: SequenceMetadata[];

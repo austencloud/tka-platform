@@ -5,7 +5,7 @@
   Only shown on mobile (desktop has help button in the panel).
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   // Props
   const {

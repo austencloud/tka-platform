@@ -12,7 +12,7 @@
 
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { sequenceModalExporter, type Video3DExportDependencies } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter.svelte";

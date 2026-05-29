@@ -4,7 +4,7 @@ The grid IS the experience. Place two hands, see the position type.
 Discover all three to unlock the quiz.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import PlacementGrid from './PlacementGrid.svelte';
   import type { PositionsExperienceStateManager } from './positions-experience-state.svelte';
   import type { HandPosition, PositionType } from '../../../domain/constants/position-quiz-data';

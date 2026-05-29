@@ -10,10 +10,10 @@
   3. Success - Confirmation that email is linked and verified
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import { authState } from "../state/authState.svelte";
-  import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../application/services/haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import {
     createEmailLinkingState,

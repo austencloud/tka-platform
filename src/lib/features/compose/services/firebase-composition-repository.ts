@@ -9,9 +9,9 @@
  * but don't block the user.
  */
 
-import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import { auth } from "$lib/shared/auth/firebase";
-import type { ErrorHandler } from "$lib/shared/application/services/implementations/ErrorHandler";
+import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import {
   firestoreGet,
   firestoreList,

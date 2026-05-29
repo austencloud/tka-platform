@@ -36,10 +36,10 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 </script>
 
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount, untrack } from "svelte";
   import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
   import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";

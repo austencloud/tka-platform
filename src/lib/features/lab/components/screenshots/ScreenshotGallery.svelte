@@ -8,10 +8,10 @@
   - gallery-capture-state (capture + upload pipeline)
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { DeviceCategory } from "../../services/types";
   import type { ScreenshotMetadata } from "../../services/types";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ScreenshotTagController } from "../../services/screenshot-tag-controller";
   import type { GalleryItem } from "../../services/types";
   import { getScreenshotOrchestrator } from "../../get-screenshot-orchestrator";

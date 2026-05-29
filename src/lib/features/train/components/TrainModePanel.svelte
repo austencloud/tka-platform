@@ -5,7 +5,7 @@
   Responsive layout that works on all device sizes.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import { createTrainState } from "../state/train-state.svelte";
   import { TrainMode, PracticeMode } from "../domain/enums/train-enums";
@@ -19,7 +19,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getSessionCompletionProcessor } from "$lib/features/train/get-session-completion-processor";
   import { getPositionDetector } from "$lib/features/train/get-position-detector";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type {
     XPBreakdown,
     ChallengeProgressResult,

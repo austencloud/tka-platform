@@ -8,7 +8,7 @@ Features:
 - Dismisses on tap
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount, onDestroy } from 'svelte';
 	import { scale, fade } from 'svelte/transition';
 	import { elasticOut, cubicOut } from 'svelte/easing';

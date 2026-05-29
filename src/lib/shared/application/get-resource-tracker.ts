@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ResourceTracker } from './services/implementations/ResourceTracker';
+import { ResourceTracker } from './services/resource-tracker';
 
 let instance: ResourceTracker | null = null;
 

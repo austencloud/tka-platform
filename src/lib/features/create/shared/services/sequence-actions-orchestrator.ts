@@ -1,4 +1,4 @@
-import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 import type { ExtensionFlowCoordinator } from "../services/implementations/ExtensionFlowCoordinator";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";

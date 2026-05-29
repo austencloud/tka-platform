@@ -5,9 +5,9 @@
   Manages state, coordinates mode-specific behavior, and composes all panels.
 -->
 <script lang="ts">
-  import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { onMount } from "svelte";
-  import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+  import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
   import { loopDetector } from "../services/loop-detector";
   import { convertRawToBeats, getAuthoritativeGridMode } from "../services/step-data-converter";
   import type { LOOPDetectionResult } from "../services/ILOOPDetector";

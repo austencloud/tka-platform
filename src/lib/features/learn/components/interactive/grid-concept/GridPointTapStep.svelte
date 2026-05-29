@@ -3,7 +3,7 @@
   User taps center → diamond hand → diamond outer → box hand → box outer
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { GRID, CARDINAL_HAND, CARDINAL_OUTER, INTERCARDINAL_HAND, INTERCARDINAL_OUTER } from '../grid-merge/grid-merge-constants';
 import type { TapPhase } from './grid-experience-state.svelte';
 

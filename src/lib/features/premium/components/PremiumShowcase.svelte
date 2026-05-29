@@ -7,7 +7,7 @@
   import { createCheckoutSession } from "$lib/shared/subscription/services/subscription-manager";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
-  import type { HapticFeedback } from "../../../shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../shared/application/services/haptic-feedback";
   import PremiumHero from "./PremiumHero.svelte";
   import PremiumCTA from "./PremiumCTA.svelte";
   import StickyPremiumCTA from "./StickyPremiumCTA.svelte";

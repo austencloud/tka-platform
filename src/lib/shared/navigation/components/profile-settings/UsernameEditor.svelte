@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { checkUsernameAvailability } from "$lib/shared/auth/services/username-validator";
-  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import type { User } from "firebase/auth";
   import { authState } from "../../../auth/state/authState.svelte";
   import { toast } from "../../../toast/state/toast-state.svelte";

@@ -5,13 +5,31 @@
  * Clean and focused on UI state only.
  */
 
-import type { IAppState } from "./IAppState";
+interface AppState {
+  isFullScreen: boolean;
+  isTransitioning: boolean;
+  showSettings: boolean;
+  isReady: boolean;
+  canUseApp: boolean;
+
+  // Actions
+  setFullScreen(fullScreen: boolean): void;
+  toggleFullScreen(): void;
+  setTransitioning(isTransitioningValue: boolean): void;
+  showSettingsDialog(): void;
+  hideSettingsDialog(): void;
+  toggleSettingsDialog(): void;
+
+  // State management
+  getStateSnapshot(): object;
+  resetState(): void;
+}
 
 /**
  * Factory function to create application state
  * Uses Svelte 5 runes for reactivity
  */
-export function createAppState(): IAppState {
+export function createAppState(): AppState {
   // Core UI state using Svelte 5 runes
   let isFullScreen = $state<boolean>(false);
   let isTransitioning = $state<boolean>(false);

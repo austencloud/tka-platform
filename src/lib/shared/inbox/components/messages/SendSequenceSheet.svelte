@@ -7,7 +7,7 @@
    * and a message field. Handles the full send flow with loading and success states.
    */
 
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import { messagingService } from "$lib/shared/messaging/services/messenger";
@@ -15,7 +15,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
   import type { SequenceSharePayload } from "../../domain/models/sequence-share-payload";
 

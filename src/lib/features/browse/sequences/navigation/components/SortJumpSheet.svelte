@@ -4,9 +4,9 @@ Sort & Jump Sheet - Mobile Bottom Sheet Version
 Touch-friendly interface for changing sort method and jumping to sections
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { NavigationSection } from "$lib/features/browse/shared/domain/types/browse-types";
   import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 

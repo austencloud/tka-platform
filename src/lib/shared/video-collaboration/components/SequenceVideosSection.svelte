@@ -5,9 +5,9 @@
   Designed to be embedded in sequence detail panels.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import { onMount } from "svelte";
   import CollaboratorAvatars from "./CollaboratorAvatars.svelte";

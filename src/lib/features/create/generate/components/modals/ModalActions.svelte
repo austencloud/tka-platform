@@ -3,8 +3,8 @@ ModalActions.svelte - Premium modal action buttons
 Provides consistent, beautiful button layouts for modal actions
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   let {
     onCancel,

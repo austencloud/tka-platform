@@ -6,7 +6,7 @@
  */
 
 import { reloadUser, linkEmailPassword, resendVerificationEmail } from '../services/authenticator';
-import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "../../application/services/haptic-feedback";
 
 export type EmailLinkingStep = "form" | "verifying" | "success";
 

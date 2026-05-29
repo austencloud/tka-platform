@@ -8,7 +8,7 @@ import {
 import { doc, deleteDoc } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../firebase";
 import { nuclearCacheClear } from "../../utils/nuclearCacheClear";
-import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "../../../application/services/haptic-feedback";
 
 /**
  * Manages user account operations using Firebase client SDK directly.

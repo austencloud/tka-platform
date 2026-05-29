@@ -6,9 +6,9 @@
  * that was previously scattered throughout the massive ConstructTab component.
  */
 
-import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
-import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
 
 import type { ConstructCoordinator } from "./ConstructCoordinator";

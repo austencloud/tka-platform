@@ -10,7 +10,7 @@ import type {
   FoldTransitionParams,
   SlideTransitionParams,
   TransitionResult,
-} from "./contracts/types";
+} from "./types";
 
 export function shouldAnimate(_settings?: AnimationSettings): boolean {
   if (typeof window !== "undefined") {

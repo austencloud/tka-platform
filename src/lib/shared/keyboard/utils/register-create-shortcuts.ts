@@ -6,7 +6,7 @@
  * Domain: Keyboard Shortcuts - CREATE Module
  */
 
-import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state-ref.svelte";

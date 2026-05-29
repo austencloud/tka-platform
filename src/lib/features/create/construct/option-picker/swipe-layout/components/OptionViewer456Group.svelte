@@ -11,7 +11,7 @@ Matches the desktop version exactly:
 <script lang="ts">
 
 import { calculateOptimalLayout as calculateAspectLayout } from "$lib/features/create/construct/option-picker/services/aspect-layout-planner";
-import { getAnimator } from "$lib/shared/application/getAnimator";
+import { getAnimator } from "$lib/shared/application/get-animator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import {
     Letter,

@@ -5,7 +5,7 @@
 import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
 import type { MotionColor } from "../../pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../pictograph/shared/domain/models/MotionData";
-import type { MotionRenderData, PictographDisplayData } from "./contracts/types";
+import type { MotionRenderData, PictographDisplayData } from "./types";
 
 export function getEffectivePictographData(
   pictographData?: PictographData | null,

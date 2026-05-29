@@ -9,9 +9,9 @@
   Unified sequence viewer panel that works in both Browse (Browse) and Edit (Create) modes.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { SequenceImageSharer } from "$lib/shared/share/services/sequence-image-sharer";
   import { getSequenceImageSharer } from "$lib/shared/share/get-sequence-image-sharer";
   import type { SequenceDetailLoader } from "$lib/shared/browse/services/SequenceDetailLoader";

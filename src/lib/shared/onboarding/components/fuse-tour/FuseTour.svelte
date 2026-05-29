@@ -8,9 +8,9 @@
   variant="banner":     compact horizontal-ish layout for when the tour sits above content.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { fuseTourState } from "../../state/fuse-tour-state.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   let {
     variant = "fullscreen" as "fullscreen" | "banner",

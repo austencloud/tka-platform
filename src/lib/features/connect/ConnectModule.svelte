@@ -7,10 +7,10 @@ import { getConnectOrchestrator } from "$lib/features/connect/get-connect-orches
 	 * Collaborative sync for viewing sequences together.
 	 * Auto-browse nearby sessions, invite friends, or search by username.
 	 */
-  import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { onMount, onDestroy } from 'svelte';
 	import { connectState } from './state/connect-state.svelte';
-	import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+	import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 
 	// Tab components
 	import NearbyTab from './components/tabs/NearbyTab.svelte';

@@ -9,7 +9,7 @@
   Mobile: Tap panel to vote
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import ArenaMatchupPanel from "./ArenaMatchupPanel.svelte";
   import ArenaDivider from "./ArenaDivider.svelte";

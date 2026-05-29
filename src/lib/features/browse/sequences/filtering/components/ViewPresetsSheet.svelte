@@ -4,9 +4,9 @@ View Presets Sheet - Mobile Bottom Sheet Version
 Modern, touch-friendly interface for selecting view presets
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { FilterPreset } from "$lib/features/browse/shared/domain/types/browse-types";
 
   let { currentFilter, onFilterChange } = $props<{

@@ -3,7 +3,7 @@
   Centered dimension readout + visual preset cards.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   type PresetType =
     | "single" | "vertical" | "horizontal" | "line" | "square"

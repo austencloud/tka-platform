@@ -24,12 +24,12 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
    */
 
   import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
   import type { ExportSettings } from "$lib/shared/export-panel/domain/models/export-settings";
   import type { ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ExportOrchestrator } from "$lib/shared/export-panel/services/export-orchestrator";
 
   import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";

@@ -7,10 +7,10 @@
   - Unlink providers (if more than one is linked)
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { linkGoogleAccount, linkFacebookAccount, unlinkProvider } from "$lib/shared/auth/services/authenticator";
   import { authState } from "../../../auth/state/authState.svelte";
-  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import { onMount } from "svelte";
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";
   import { PROVIDERS, type ProviderId } from "./connectedAccounts.providers";

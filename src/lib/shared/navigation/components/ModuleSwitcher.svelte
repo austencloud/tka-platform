@@ -6,12 +6,12 @@
 -->
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { desktopSidebarState } from "../../layout/desktop-sidebar-state.svelte";
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import ModuleList from "./ModuleList.svelte";
-  import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../application/services/haptic-feedback";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import Drawer from "../../foundation/ui/Drawer.svelte";

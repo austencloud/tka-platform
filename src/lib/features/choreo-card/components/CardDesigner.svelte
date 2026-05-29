@@ -8,7 +8,7 @@
   - DesignerSettingsSidebar (slide-out settings)
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
@@ -156,7 +156,7 @@
 
   // ── Event handlers ──────────────────────────────────────────────────
 
-  let hapticService: import("$lib/shared/application/services/implementations/HapticFeedback").HapticFeedback | undefined;
+  let hapticService: import("$lib/shared/application/services/haptic-feedback").HapticFeedback | undefined;
 
   onMount(async () => {
     hapticService = getHapticFeedback();

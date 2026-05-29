@@ -8,7 +8,7 @@
   Same settings accessible from context menus for quick access.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -18,7 +18,7 @@
     getSettings,
     updateSettings,
   } from "$lib/shared/application/state/app-state.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { VisibilityMode } from "./visibility/visibility-types";
   import MobileSegmentControl from "./visibility/MobileSegmentControl.svelte";
   import PictographPanel from "./visibility/PictographPanel.svelte";

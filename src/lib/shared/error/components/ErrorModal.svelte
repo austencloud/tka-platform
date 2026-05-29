@@ -8,9 +8,9 @@
 -->
 <script lang="ts">
 
-import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { getCurrentError, dismissError } from "../state/error-state.svelte";
-  import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+  import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   let userComment = $state("");

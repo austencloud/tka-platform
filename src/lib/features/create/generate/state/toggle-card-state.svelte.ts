@@ -11,9 +11,9 @@
 
 import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
 import { attachRipple } from "$lib/shared/application/services/ripple-effect";
-import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
 // Touch tolerance constants
 // 75px is very generous for lazy/casual taps on mobile

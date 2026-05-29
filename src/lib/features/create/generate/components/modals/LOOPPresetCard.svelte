@@ -2,9 +2,9 @@
 LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
 
   let { preset, onSelect, isFavorite = false, onToggleFavorite } = $props<{

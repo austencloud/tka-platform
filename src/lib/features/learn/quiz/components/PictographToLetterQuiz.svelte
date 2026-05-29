@@ -2,10 +2,10 @@
 Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { detectSingleError } from "$lib/features/learn/services/gap-detector";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onDestroy, onMount } from "svelte";
   import * as QuestionGenerator from "../services/question-generator";
   import { QuizType } from "../domain/enums/quiz-enums";

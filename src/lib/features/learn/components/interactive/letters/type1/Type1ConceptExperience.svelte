@@ -12,7 +12,7 @@ Supports two view modes:
 - "scroll": All pages displayed vertically for scrolling (review mode)
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { createType1ConceptState } from "./state/type1-concept-state.svelte";
   import Type1IntroPage from "./pages/Type1IntroPage.svelte";
   import Type1ProspinPage from "./pages/Type1ProspinPage.svelte";

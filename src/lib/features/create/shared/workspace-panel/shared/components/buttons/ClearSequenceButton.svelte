@@ -5,7 +5,7 @@
   Clears the entire sequence when clicked.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   // Props
   const {

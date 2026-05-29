@@ -8,9 +8,9 @@ Phase 4: Complete - summary and continue.
 Supports keyboard navigation (arrow keys between phases) and accessibility features.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { createPositionsExperienceState } from "./positions-experience-state.svelte";
   import PositionsDiscoveryPhase from "./DiscoveryVariantA.svelte";
   import ConstructionQuiz from "./ConstructionQuiz.svelte";

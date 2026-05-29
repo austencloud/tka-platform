@@ -5,7 +5,7 @@
   Note: This only opens the viewer - actual playback controls are inside the viewer.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   let { onclick } = $props<{
     onclick?: () => void;

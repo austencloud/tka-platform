@@ -1,4 +1,4 @@
-import type { RippleOptions } from "./contracts/types";
+import type { RippleOptions } from "./types";
 
 const DEFAULT_OPTIONS: Required<RippleOptions> = {
   duration: 350,

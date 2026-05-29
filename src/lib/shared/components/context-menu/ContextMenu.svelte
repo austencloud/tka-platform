@@ -17,7 +17,7 @@
     isSeparator,
     isHeader,
   } from "./context-menu-types";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   let {
     menuState,

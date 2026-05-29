@@ -14,9 +14,9 @@
   Uses sessionStorage for persistence (survives HMR and page refresh).
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+	import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 	import type { ControlsLevel, MediaType } from "../domain/types";
 	import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
 	import { onMount, onDestroy } from "svelte";

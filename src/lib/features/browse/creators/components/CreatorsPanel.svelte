@@ -11,12 +11,12 @@
    * - Visibility-driven color extraction
    */
 
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import { doc, getDoc } from "firebase/firestore";
   import { followUser, unfollowUser } from "$lib/shared/community/services/user-repository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
   import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import { creatorsDataState } from "../state/creators-data-state.svelte";

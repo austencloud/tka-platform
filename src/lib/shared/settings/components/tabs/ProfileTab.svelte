@@ -3,7 +3,7 @@
   import { getUserDocumentManager } from "$lib/shared/auth/getUserDocumentManager";
   import { generateAndUploadAvatar } from "$lib/shared/auth/services/profile-picture-manager";
   import { getAccountManager } from "$lib/shared/auth/getAccountManager";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
   import { authState } from "../../../auth/state/authState.svelte";
   import {
@@ -22,7 +22,7 @@
   import AccountSettingsSection from "../../../navigation/components/profile-settings/AccountSettingsSection.svelte";
   import DangerZone from "../../../navigation/components/profile-settings/DangerZone.svelte";
   import SubscriptionCard from "./profile/SubscriptionCard.svelte";
-  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import GlassCard from "./profile/GlassCard.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import StorageSection from "./profile/StorageSection.svelte";

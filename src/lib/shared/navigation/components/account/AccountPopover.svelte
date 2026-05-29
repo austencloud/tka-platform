@@ -1,11 +1,11 @@
 <!-- AccountPopover: Desktop-only popover menu above AccountRow in sidebar -->
 <script lang="ts">
 
-import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithGoogle } from "$lib/shared/auth/services/authenticator";
   import { authState } from "../../../auth/state/authState.svelte";
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
-  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import { createPropPreferenceState } from "../../../community/state/prop-preference-state.svelte";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import {

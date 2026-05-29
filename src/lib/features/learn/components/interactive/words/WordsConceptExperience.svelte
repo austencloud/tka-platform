@@ -3,8 +3,8 @@ WordsConceptExperience - Multi-page lesson on TKA word formation
 Orchestrator component that manages page navigation and state
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
   import WordsIntroPage from "./pages/WordsIntroPage.svelte";

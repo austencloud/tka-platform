@@ -5,11 +5,11 @@
   Shows an engaging placeholder when no data exists yet.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { getPerformanceHistoryTracker } from "$lib/features/train/get-performance-history-tracker";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type {
     StatsOverview,
     PersonalBest,

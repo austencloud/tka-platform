@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { ApplicationInitializer } from './services/implementations/ApplicationInitializer';
+import { ApplicationInitializer } from './services/application-initializer';
 
 let instance: ApplicationInitializer | null = null;
 

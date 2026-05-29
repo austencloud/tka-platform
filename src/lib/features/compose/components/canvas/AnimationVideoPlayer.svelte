@@ -13,7 +13,7 @@
   5. Video plays back perfectly smooth, regardless of device
 -->
 <script lang="ts">
-  import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { VideoRenderProgress, VideoRenderResult } from "$lib/shared/animation-engine/services/implementations/VideoPreRenderer";

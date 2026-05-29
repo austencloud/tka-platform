@@ -3,9 +3,9 @@ StaffIdentificationQuiz - Coordinator for staff position and rotation quiz
 Tests understanding of: Alpha/Beta/Gamma positions, Thumb orientations, Prospin/Antispin
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onDestroy } from "svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import {
     type StaffQuizQuestion,
     generateStaffQuizQuestions,

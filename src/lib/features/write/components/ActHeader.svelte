@@ -2,8 +2,8 @@
   ActHeader.svelte - Editable act name and description with music controls
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ActData, MusicPlayerState } from "../domain/types/write";
   import { onMount } from "svelte";
 

@@ -9,9 +9,9 @@ Uses singleton state for caching - data persists across tab switches.
 <script lang="ts">
 
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import {

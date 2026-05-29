@@ -7,7 +7,7 @@
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import type { ClaimHealth } from "$lib/shared/feedback/domain/feedback-contract-types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   const {
     item,

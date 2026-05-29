@@ -8,7 +8,7 @@
    * - Existing group with same participants is reused
    */
 
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
@@ -17,7 +17,7 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import { getFollowing } from "$lib/shared/community/services/user-repository";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   interface Props {
     recipientId?: string | null;

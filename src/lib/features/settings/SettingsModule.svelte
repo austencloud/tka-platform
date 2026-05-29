@@ -11,7 +11,7 @@
 -->
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import {
     getSettings,
@@ -24,7 +24,7 @@
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import type { AppSettings } from "$lib/shared/settings/domain/AppSettings";
 

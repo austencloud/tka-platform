@@ -1,7 +1,7 @@
 <!-- Main Application Layout -->
 <script module lang="ts">
 
-import { getApplicationInitializer } from "$lib/shared/application/getApplicationInitializer";
+import { getApplicationInitializer } from "$lib/shared/application/get-application-initializer";
   // Module-level: survives component remounts so we never show the auth
   // spinner again after the app has loaded once in this session.
   let _mainInterfaceShown = false;
@@ -39,7 +39,7 @@ import type { SheetType } from "../../navigation/services/contracts/types";
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import { initializeTheme, updateTheme as updateThemeService } from "../../theme/services/theme-service";
-  import type { ApplicationInitializer } from '$lib/shared/application/services/implementations/ApplicationInitializer'
+  import type { ApplicationInitializer } from '$lib/shared/application/services/application-initializer'
   import {
     getSettings,
     restoreApplicationState,

@@ -11,7 +11,7 @@
 <script lang="ts">
 
 import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
-  import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { onMount, onDestroy } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { connectState } from '../../state/connect-state.svelte';

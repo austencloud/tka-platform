@@ -5,8 +5,8 @@ Can operate as stepper (inline) or panel opener (click to select)
 -->
 <script lang="ts">
   import { attachRipple } from "$lib/shared/application/services/ripple-effect";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
   import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
 

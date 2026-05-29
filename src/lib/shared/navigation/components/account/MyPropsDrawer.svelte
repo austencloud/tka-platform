@@ -7,13 +7,13 @@
   Content morphs in place. No navigation, no step indicators.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import PropFamilyGrid from "./PropFamilyGrid.svelte";
   import { PROP_FAMILIES } from "./PropFamilyGrid.svelte";
   import SelectionFooterBar from "./SelectionFooterBar.svelte";
   import FavoritePicker from "./FavoritePicker.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
   import { getBasePropType } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";

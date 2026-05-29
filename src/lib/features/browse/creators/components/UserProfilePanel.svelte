@@ -1,11 +1,11 @@
 <script lang="ts">
   import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { doc, setDoc } from "firebase/firestore";
   import { getUserProfile, followUser, unfollowUser, getFollowers, getFollowing } from "$lib/shared/community/services/user-repository";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";

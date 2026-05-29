@@ -13,7 +13,7 @@
   import CellContextMenuHost from "./cell-editor/context-menu/CellContextMenuHost.svelte";
   import type { CellContextMenuCallbacks } from "./cell-editor/context-menu/cell-context-menu-builder";
   import { arrangeGridState, type GridCell } from "../../state/arrange-grid-state.svelte";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   interface GridBoundsInfo {
     minRow: number;

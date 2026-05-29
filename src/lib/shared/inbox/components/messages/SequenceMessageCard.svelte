@@ -7,12 +7,12 @@
    * Shows deleted state if the sequence no longer exists.
    */
 
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
   import { goto } from "$app/navigation";
   import { inboxState } from "../../state/inbox-state.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { buildThumbnailUrl } from "../../state/send-sequence-state.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 

@@ -5,10 +5,10 @@
   Uses Paraglide i18n for translations.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { t, locales, baseLocale } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import {
     getReactiveLocale,
     switchLocale,

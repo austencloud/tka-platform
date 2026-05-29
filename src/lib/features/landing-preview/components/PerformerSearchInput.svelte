@@ -5,7 +5,7 @@
   or adding external performers by Instagram handle or name.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { searchUsers } from "$lib/shared/user-search/services/user-searcher";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { UserSearchResult } from "$lib/shared/user-search/services/types";

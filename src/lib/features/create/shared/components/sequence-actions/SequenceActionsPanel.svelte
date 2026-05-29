@@ -11,9 +11,9 @@ import * as firstStepAnalyzerModule from "$lib/features/create/shared/services/f
 import * as sequenceJsonExporterModule from "$lib/features/create/shared/services/sequence-json-exporter";
 import * as sequenceTransferHandlerModule from "$lib/features/create/shared/services/sequence-transfer-handler";
 import * as subDrawerStatePersisterModule from "$lib/features/create/shared/services/sub-drawer-state-persister";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ExtensionAnalysis, CircularizationOption } from "../../services/implementations/SequenceExtender";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { ExtensionFlowCoordinator } from "../../services/implementations/ExtensionFlowCoordinator";

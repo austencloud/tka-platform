@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { quickFeedbackState } from "$lib/shared/feedback/state/quick-feedback-state.svelte";
   import {

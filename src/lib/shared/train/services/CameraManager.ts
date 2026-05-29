@@ -1,5 +1,5 @@
-import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
+import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 
 export interface CameraConfig {
   facingMode: "user" | "environment";

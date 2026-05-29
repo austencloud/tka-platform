@@ -5,11 +5,11 @@
   Modern mobile-first design with slide-up filter panel and 52px touch targets.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import { getTrainChallengeManager } from "$lib/features/train/get-train-challenge-manager";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type {
     TrainChallengeFilter,
     TrainChallengeSortBy,

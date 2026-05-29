@@ -8,7 +8,7 @@ Features:
 - Haptic feedback on button interactions
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { getGreekSymbol } from "$lib/shared/keyboard/services/greek-key-mapper";
   import {
     uppercasePreservingGreek,

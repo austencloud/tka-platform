@@ -4,8 +4,8 @@
   Clean sidebar-style browser with act cards.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ActThumbnailInfo } from "../domain/types/write";
   import ActCard from "./ActCard.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";

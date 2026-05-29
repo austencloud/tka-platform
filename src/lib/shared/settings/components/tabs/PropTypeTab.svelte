@@ -9,10 +9,10 @@
 -->
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { AppSettings, PropPreset } from "../../domain/AppSettings";
   import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
-  import type { HapticFeedback } from "../../../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import { onMount, onDestroy } from "svelte";
   // PropTypeRegistry imports removed - variations now visible in Bento grid

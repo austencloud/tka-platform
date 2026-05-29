@@ -4,7 +4,7 @@ StyleExpandPanel.svelte - 3-axis style config (Prop Reversals, Hand Reversals, D
 Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip is active.
 -->
 <script lang="ts">
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 
   let {
     constraintPreset,

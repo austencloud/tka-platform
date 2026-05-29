@@ -11,7 +11,7 @@ import { getOptionLoader } from "$lib/features/create/construct/option-picker/ge
 import { organizePictographs } from "$lib/features/create/construct/option-picker/services/option-organizer";
 import { getOptionSorter } from "$lib/features/create/construct/option-picker/getOptionSorter";
 import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModeProvider";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { onMount } from "svelte";
@@ -27,7 +27,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/contracts/types";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
   import type { PictographPreparer } from "../services/PictographPreparer";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { DarkModeProvider } from "$lib/shared/animation-engine/services/implementations/DarkModeProvider";
   import OptionPickerContent from "./OptionPickerContent.svelte";
 

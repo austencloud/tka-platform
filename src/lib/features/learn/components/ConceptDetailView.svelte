@@ -5,8 +5,8 @@ Supports two navigation modes:
 - "scroll": All pages displayed vertically for scrolling (review mode, unlocked after completion)
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
   import { onMount } from "svelte";
   import type { LearnConcept, ConceptProgress, ExperienceViewMode } from "../domain/types";

@@ -5,10 +5,10 @@
   Supports: Facebook, Google, Email/Password
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
   import Drawer from "../../foundation/ui/Drawer.svelte";
-import type { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
+import type { HapticFeedback } from "../../application/services/haptic-feedback";
   import { onMount } from "svelte";
   import AuthFooter from "../../auth/components/AuthFooter.svelte";
   import AuthHeader from "../../auth/components/AuthHeader.svelte";

@@ -23,7 +23,7 @@
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
 import { getVideoExporter } from "$lib/shared/animation-engine/getVideoExporter";
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
@@ -41,7 +41,7 @@ import type { IVideoExportOrchestrator, VideoExportProgress, VideoExportFormat }
     onRouteChange,
   } from "$lib/shared/navigation/services/sheet-router";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
-  import type { HapticFeedback } from "../application/services/implementations/HapticFeedback";
+  import type { HapticFeedback } from "../application/services/haptic-feedback";
   import { onMount, onDestroy } from "svelte";
   import {
     ANIMATION_LOAD_DELAY_MS,

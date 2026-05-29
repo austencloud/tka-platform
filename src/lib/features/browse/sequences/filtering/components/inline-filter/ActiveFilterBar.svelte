@@ -3,8 +3,8 @@ ActiveFilterBar.svelte - Dismissible active filter chips + "Clear all" button.
 Only renders when at least one filter is active.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
   import type { ActiveFilter } from "$lib/shared/browse/domain/multi-filter-models";
   import { t } from "$lib/shared/i18n/i18n.svelte";

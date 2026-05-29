@@ -8,7 +8,7 @@
   Parent controls which prop is selected and handles the selection callback.
 -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BentoPropGrid from "./BentoPropGrid.svelte";
