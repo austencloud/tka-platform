@@ -6,50 +6,45 @@
     cardSize: CardSizeId;
     totalCards: number;
     isRendering: boolean;
-    isExporting: boolean;
-    exportStatus?: string;
-    exportError?: string;
     renderProgress: number;
     renderTotal: number;
     onCardSizeChange: (size: CardSizeId) => void;
-    onExportPDF: () => void;
-    onExportZIP: () => void;
     onRerender?: () => void;
+    onPrint: () => void;
   }
 
   let {
     cardSize,
     totalCards,
     isRendering,
-    isExporting,
-    exportStatus = "",
-    exportError = "",
     renderProgress,
     renderTotal,
     onCardSizeChange,
-    onExportPDF,
-    onExportZIP,
     onRerender,
+    onPrint,
   }: Props = $props();
 
   const progressText = $derived(
     renderTotal > 0
-      ? `Rendering ${renderProgress} / ${renderTotal}…`
-      : "Rendering…"
+      ? `Rendering ${renderProgress} / ${renderTotal}...`
+      : "Rendering..."
   );
 </script>
 
 <div class="toolbar" role="toolbar" aria-label="Print preview controls">
-  <div class="toolbar-section size-section">
+  <div class="toolbar-left">
     <CardSizeToggle selected={cardSize} onchange={onCardSizeChange} />
-  </div>
 
-  <div class="toolbar-section export-section">
-    {#if exportError}
-      <span class="error-text" aria-live="assertive">
-        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        {exportError}
-      </span>
+    {#if onRerender}
+      <button
+        class="icon-btn"
+        class:spinning={isRendering}
+        onclick={onRerender}
+        aria-label={isRendering ? "Restart render" : "Re-render all cards"}
+        title={isRendering ? "Restart render (cancels current)" : "Re-render all cards"}
+      >
+        <i class="fas fa-sync-alt" aria-hidden="true"></i>
+      </button>
     {/if}
 
     {#if isRendering}
@@ -57,44 +52,18 @@
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         {progressText}
       </span>
-    {:else if isExporting}
-      <span class="progress-text" aria-live="polite" aria-atomic="true">
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        {exportStatus || "Exporting…"}
-      </span>
-    {:else}
-      {#if onRerender}
-        <button
-          class="export-btn"
-          onclick={onRerender}
-          aria-label="Re-render all cards"
-          title="Re-render all cards"
-        >
-          <i class="fas fa-sync-alt" aria-hidden="true"></i>
-        </button>
-      {/if}
-      <button
-        class="export-btn"
-        disabled={totalCards === 0}
-        onclick={onExportPDF}
-        aria-label="Export as print-ready PDF"
-        title={totalCards === 0 ? "Load a deck first" : `Export ${totalCards} cards as PDF`}
-      >
-        <i class="fas fa-file-pdf" aria-hidden="true"></i>
-        <span>PDF</span>
-      </button>
-      <button
-        class="export-btn"
-        disabled={totalCards === 0}
-        onclick={onExportZIP}
-        aria-label="Export as ZIP of images"
-        title={totalCards === 0 ? "Load a deck first" : `Export ${totalCards} card images as ZIP`}
-      >
-        <i class="fas fa-file-archive" aria-hidden="true"></i>
-        <span>ZIP</span>
-      </button>
     {/if}
   </div>
+
+  <button
+    class="print-btn"
+    disabled={isRendering || totalCards === 0}
+    onclick={onPrint}
+    title={totalCards === 0 ? "Load a deck first" : `Print ${totalCards} cards`}
+  >
+    <i class="fas fa-print" aria-hidden="true"></i>
+    <span>Print This Deck</span>
+  </button>
 </div>
 
 <style>
@@ -107,64 +76,86 @@
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .toolbar-section {
+  .toolbar-left {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex: 1;
   }
 
-  .export-section {
-    margin-left: auto;
-  }
-
-  .export-btn {
-    display: inline-flex;
+  .icon-btn {
+    display: flex;
     align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    padding: 0 14px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    color: var(--theme-text, #ffffff);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: 13px;
     cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    transition: background 0.15s, color 0.15s;
   }
 
-  .export-btn:hover:not(:disabled) {
-    background: var(--theme-accent-muted, rgba(74, 158, 255, 0.15));
-    border-color: var(--theme-accent, #4a9eff);
+  .icon-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--theme-text, #fff);
   }
 
-  .export-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #4a9eff);
-    outline-offset: 2px;
-  }
-
-  .export-btn:disabled {
-    opacity: 0.4;
+  .icon-btn:disabled {
+    opacity: 0.3;
     cursor: not-allowed;
+  }
+
+  .icon-btn.spinning i {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   .progress-text {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: 13px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     white-space: nowrap;
   }
 
-  .error-text {
-    display: inline-flex;
+  .print-btn {
+    display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: var(--font-size-min, 14px);
-    color: #f87171;
+    gap: 8px;
+    padding: 10px 22px;
+    min-height: 44px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #fff;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
     white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .print-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3);
+  }
+
+  .print-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .print-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   @media (max-width: 767px) {
@@ -173,10 +164,9 @@
       row-gap: 8px;
     }
 
-    .export-section {
-      margin-left: 0;
+    .print-btn {
       width: 100%;
-      justify-content: flex-end;
+      justify-content: center;
     }
   }
 </style>

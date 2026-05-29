@@ -5,9 +5,11 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CardPair } from "$lib/features/choreo-card/services/types";
   import type { CardSizeId } from "$lib/features/choreo-card/domain/card-sizes";
+  import type { PrintPDFMode } from "$lib/features/choreo-card/services/print-pdf-exporter";
   import { getTnDElementByIconPath, TND_ELEMENTS, type TnDElement } from "$lib/features/choreo-card/domain/tnd-element";
   import PrintPreviewPages from "$lib/features/choreo-card/components/print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "$lib/features/choreo-card/components/print-preview/PrintPreviewToolbar.svelte";
+  import PrintDialog from "$lib/features/choreo-card/components/print-preview/PrintDialog.svelte";
 
   let releases: DeckRelease[] = $state([]);
   let selectedDeck: DeckRelease | null = $state(null);
@@ -26,10 +28,13 @@
   let isRendering = $state(false);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
-  let isExporting = $state(false);
-  let exportStatus = $state("");
-  let exportError = $state("");
   let rerenderKey = $state(0);
+
+  let showPrintDialog = $state(false);
+  let isExporting = $state(false);
+  let exportProgress = $state(0);
+  let exportTotal = $state(0);
+  let exportError = $state("");
 
   $effect(() => {
     getAllReleases()
@@ -113,24 +118,27 @@
     URL.revokeObjectURL(url);
   }
 
-  async function handleExportPDF() {
+  async function handleExportPDF(mode: PrintPDFMode) {
     if (renderedPairs.length === 0) return;
     isExporting = true;
     exportError = "";
-    exportStatus = "Preparing PDF...";
+    exportProgress = 0;
+    exportTotal = 0;
     try {
       const { exportHomePrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-exporter");
       const deckName = `Deck_${String(selectedDeck!.deckNumber).padStart(3, "0")}`;
+      const suffix = mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print";
       const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize, (current, total) => {
-        exportStatus = `Building PDF — sheet ${current} of ${total}`;
-      });
-      exportStatus = "Downloading...";
-      triggerDownload(blob, `${deckName}_print.pdf`);
+        exportProgress = current;
+        exportTotal = total;
+      }, mode);
+      triggerDownload(blob, `${deckName}${suffix}.pdf`);
     } catch (e) {
       exportError = `PDF export failed: ${e instanceof Error ? e.message : e}`;
     } finally {
       isExporting = false;
-      exportStatus = "";
+      exportProgress = 0;
+      exportTotal = 0;
     }
   }
 
@@ -138,20 +146,22 @@
     if (renderedPairs.length === 0) return;
     isExporting = true;
     exportError = "";
-    exportStatus = "Preparing ZIP...";
+    exportProgress = 0;
+    exportTotal = 0;
     try {
       const { exportDeckZIP } = await import("$lib/features/choreo-card/services/print-zip-exporter");
       const deckName = `Deck_${String(selectedDeck!.deckNumber).padStart(3, "0")}`;
       const blob = await exportDeckZIP(renderedPairs, deckName, (current, total) => {
-        exportStatus = `Packing card ${current} of ${total}`;
+        exportProgress = current;
+        exportTotal = total;
       });
-      exportStatus = "Downloading...";
       triggerDownload(blob, `${deckName}_cards.zip`);
     } catch (e) {
       exportError = `ZIP export failed: ${e instanceof Error ? e.message : e}`;
     } finally {
       isExporting = false;
-      exportStatus = "";
+      exportProgress = 0;
+      exportTotal = 0;
     }
   }
 </script>
@@ -215,15 +225,11 @@
           {cardSize}
           totalCards={sequences.length}
           {isRendering}
-          {isExporting}
-          {exportStatus}
-          {exportError}
           {renderProgress}
           {renderTotal}
           onCardSizeChange={(s) => { cardSize = s; }}
-          onExportPDF={handleExportPDF}
-          onExportZIP={handleExportZIP}
           onRerender={() => { rerenderKey++; }}
+          onPrint={() => { showPrintDialog = true; }}
         />
 
         <div class="preview-area">
@@ -252,6 +258,25 @@
         <div class="loading">No sequences loaded</div>
       {/if}
     </div>
+  {/if}
+
+  {#if showPrintDialog && selectedDeck}
+    <PrintDialog
+      title="Print Deck #{String(selectedDeck.deckNumber).padStart(3, '0')}"
+      subtitle={selectedDeck.notes}
+      cardCount={sequences.length}
+      {tndElements}
+      {cardSize}
+      theme={selectedTheme}
+      {isExporting}
+      {exportProgress}
+      {exportTotal}
+      {exportError}
+      onExportPDF={handleExportPDF}
+      onExportZIP={handleExportZIP}
+      onCardSizeChange={(s) => { cardSize = s; }}
+      onClose={() => { if (!isExporting) showPrintDialog = false; }}
+    />
   {/if}
 </div>
 

@@ -13,6 +13,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { getCatalogLayoutPolicy } from "../../domain/catalog-layout-policy";
   import { cardCache, type RenderedCard, type CachedCard } from "./print-preview-cache";
   import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
+  import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
 
   interface Props {
     sequences: SequenceData[];
@@ -41,6 +42,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
     /** "sheets" = print-ready pages with fronts+backs, "grid" = flowing card grid (fronts only) */
     displayMode?: "sheets" | "grid";
+    /** Grid mode only: render each card's back image stacked beneath its front */
+    showBacks?: boolean;
     /** Deck ID for QR attribution tracking */
     deckId?: string;
     /** Deck name for QR attribution tracking */
@@ -67,6 +70,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onPairsReady,
     onRenderStateChange,
     displayMode = "sheets",
+    showBacks = false,
     deckId,
     deckName,
   }: Props = $props();
@@ -194,7 +198,11 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       footer?.right ?? "",
       layout,
       rerenderKey,
-      "v6",
+      // Content fingerprint: self-invalidates whenever the sequence's rendered
+      // state changes (reversal flips, re-derived letters, recomputed
+      // orientations), so the cache never serves a stale variant. Reversal
+      // variants reuse the base seq id, so id alone would collide.
+      hashSequenceContent(seq),
     ].join("|");
     return `${seqId}::${optsPart}`;
   }
@@ -486,9 +494,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
         {#each renderedCards as card, idx (idx)}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="card-cell"
+            class="card-item"
             class:clickable={!!onCardClick}
-            style:aspect-ratio="{cardAspect}"
             role="button"
             tabindex="0"
             onclick={() => { const seq = sequences[idx]; if (seq) onCardClick?.(seq, card.frontUrl, () => rerenderCard(idx)); }}
@@ -502,7 +509,14 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             }}
             oncontextmenu={(e) => handleCardContextMenu(e, idx)}
           >
-            <img src={card.frontUrl} alt="{card.label} front" />
+            <div class="card-cell" style:aspect-ratio="{cardAspect}">
+              <img src={card.frontUrl} alt="{card.label} front" />
+            </div>
+            {#if showBacks && card.backUrl}
+              <div class="card-cell" style:aspect-ratio="{cardAspect}">
+                <img src={card.backUrl} alt="{card.label} back" />
+              </div>
+            {/if}
           </div>
         {/each}
       </div>
@@ -561,22 +575,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             {/each}
           </div>
         {/each}
-
-        <!-- ═══ FLIP DIVIDER ═══ -->
-        <div class="flip-divider">
-          <div class="flip-divider-line"></div>
-          <div class="flip-divider-content">
-            <span class="flip-divider-icon">↻</span>
-            <span class="flip-divider-title">FLIP YOUR PAPER</span>
-            <div class="flip-divider-steps">
-              <span>1. Remove printed fronts from output tray</span>
-              <span>2. Flip stack on the long edge</span>
-              <span>3. Reinsert — top edge goes in first</span>
-              <span>4. Print remaining pages (backs)</span>
-            </div>
-          </div>
-          <div class="flip-divider-line"></div>
-        </div>
 
         <!-- ═══ PHASE 2: ALL BACKS ═══ -->
         {#each sheets as sheet, sheetIndex (sheetIndex)}
@@ -687,6 +685,25 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     width: 100%;
     align-content: center;
     justify-content: center;
+  }
+
+  .card-item {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card-item.clickable {
+    cursor: pointer;
+  }
+
+  .card-item.clickable .card-cell {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .card-item.clickable:hover .card-cell {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-card, 0 4px 20px rgba(0, 0, 0, 0.3));
   }
 
   .card-cell {
@@ -805,61 +822,5 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   .guide-bold {
     font-weight: 600;
-  }
-
-  /* Flip divider between fronts and backs */
-  .flip-divider {
-    width: 100%;
-    max-width: 800px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 24px 0;
-  }
-
-  .flip-divider-line {
-    width: 100%;
-    height: 1px;
-    background: repeating-linear-gradient(
-      90deg,
-      var(--theme-text-dim, rgba(255, 255, 255, 0.3)) 0,
-      var(--theme-text-dim, rgba(255, 255, 255, 0.3)) 6px,
-      transparent 6px,
-      transparent 12px
-    );
-  }
-
-  .flip-divider-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 24px;
-    border: 1px dashed var(--theme-text-dim, rgba(255, 255, 255, 0.2));
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-  }
-
-  .flip-divider-icon {
-    font-size: 28px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    line-height: 1;
-  }
-
-  .flip-divider-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--theme-text, #ffffff);
-    letter-spacing: 0.08em;
-  }
-
-  .flip-divider-steps {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    font-size: 11px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 </style>
