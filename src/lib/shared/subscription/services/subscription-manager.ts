@@ -22,7 +22,7 @@ import {
 import { auth, getFirestoreInstance } from "../../auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
-import type { SubscriptionInfo, SubscriptionStatus } from "./contracts/types";
+import type { SubscriptionInfo, SubscriptionStatus } from "./types";
 
 const DEFAULT_SUBSCRIPTION_INFO: SubscriptionInfo = {
   status: "none",

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { NudgeConfig } from "../services/contracts/types";
+	import type { NudgeConfig } from "../services/types";
 
 	interface Props {
 		nudge: NudgeConfig;

@@ -1,5 +1,5 @@
 import type { CapabilityFeatureId } from "$lib/shared/auth/domain/models/FeatureFlag";
-import type { NudgeConfig } from "../services/contracts/types";
+import type { NudgeConfig } from "../services/types";
 
 export const CAPABILITY_NUDGES: Record<CapabilityFeatureId, NudgeConfig> = {
 	"capability:export:effects": {

@@ -1,7 +1,7 @@
 import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
 import { CAPABILITY_NUDGES } from "../domain/capability-nudges";
-import type { PremiumGateResult } from "./contracts/types";
+import type { PremiumGateResult } from "./types";
 import type { CapabilityFeatureId } from "$lib/shared/auth/domain/models/FeatureFlag";
 
 function notAllowed(capability: CapabilityFeatureId): PremiumGateResult {

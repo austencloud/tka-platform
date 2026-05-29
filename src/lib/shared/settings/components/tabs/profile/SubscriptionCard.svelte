@@ -6,7 +6,7 @@
   import { getSubscriptionInfo, onSubscriptionChange, createPortalSession } from "$lib/shared/subscription/services/subscription-manager";
   import { onMount, onDestroy } from "svelte";
   import { goto } from "$app/navigation";
-  import type { SubscriptionInfo } from "../../../../subscription/services/contracts/types";
+  import type { SubscriptionInfo } from "../../../../subscription/services/types";
   import type { HapticFeedback } from "../../../../application/services/implementations/HapticFeedback";
 
   interface Props {
