@@ -81,6 +81,8 @@
     bluePropType: PropType | undefined;
     redPropType: PropType | undefined;
     onStepClick: ((stepIndex: number) => void) | undefined;
+    /** When true, the start-position cell is clickable too (calls onStepClick(-1)). */
+    clickableStart?: boolean;
     onGridScrollRefChange: (el: HTMLDivElement | undefined) => void;
     // CellRenderer pass-through props
     showStepNumbers: boolean;
@@ -123,6 +125,7 @@
     bluePropType,
     redPropType,
     onStepClick,
+    clickableStart = false,
     onGridScrollRefChange,
     showStepNumbers,
     crossfadeActive,
