@@ -10,6 +10,7 @@
   import { formatMotionText } from "./formatters";
   import PipelineTraceSection from "./PipelineTraceSection.svelte";
   import CollapsibleSection from "$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte";
+  import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
 
   type MotionColor = "blue" | "red";
 
@@ -29,6 +30,7 @@
 
   const colorClass = $derived(color === "blue" ? "blue-column" : "red-column");
   const label = $derived(color === "blue" ? "Blue Motion" : "Red Motion");
+  const isSelected = $derived(selectedArrowState.selectedArrow?.color === color);
 </script>
 
 <CollapsibleSection
@@ -50,36 +52,24 @@
     </button>
   {/snippet}
 
-  <section class="column {colorClass}">
+  <section class="column {colorClass}" class:selected={isSelected}>
     {#if motion}
-      <div class="data-block">
-        <div class="data-row"><span class="key">type</span><span class="val type-val">{motion.motionType}</span></div>
-        <div class="data-row"><span class="key">turns</span><span class="val">{motion.turns === "fl" ? "float" : motion.turns}</span></div>
-        <div class="data-row"><span class="key">rotation</span><span class="val">{motion.rotationDirection}</span></div>
-        <div class="data-row"><span class="key">startLoc</span><span class="val">{motion.startLocation}</span></div>
-        <div class="data-row"><span class="key">endLoc</span><span class="val">{motion.endLocation}</span></div>
-        <div class="data-row"><span class="key">arrowLoc</span><span class="val">{motion.arrowLocation}</span></div>
-        <div class="data-row"><span class="key">startOri</span><span class="val">{motion.startOrientation}</span></div>
-        <div class="data-row"><span class="key">endOri</span><span class="val">{motion.endOrientation}</span></div>
-        {#if motion.prefloatMotionType}
-          <div class="data-row warn-row"><span class="key">prefloat</span><span class="val warn-val">{motion.prefloatMotionType}</span></div>
-        {/if}
+      <div class="motion-line">
+        <span class="mt">{motion.motionType}</span>
+        <span class="rot">{motion.rotationDirection}</span>
+        <span class="path">{motion.startLocation}→{motion.endLocation}</span>
+        <span class="ori">{motion.startOrientation}→{motion.endOrientation}</span>
+        <span class="turns">{motion.turns === "fl" ? "float" : `${motion.turns}t`}</span>
+        {#if motion.prefloatMotionType}<span class="warn-val">pf:{motion.prefloatMotionType}</span>{/if}
       </div>
-
-      <div class="subsection">
-        <h4>Arrow placement</h4>
-        <div class="data-block">
-          <div class="data-row"><span class="key">posX</span><span class="val num">{motion.arrowPlacementData?.positionX?.toFixed(2) ?? "-"}</span></div>
-          <div class="data-row"><span class="key">posY</span><span class="val num">{motion.arrowPlacementData?.positionY?.toFixed(2) ?? "-"}</span></div>
-          <div class="data-row"><span class="key">angle</span><span class="val num">{motion.arrowPlacementData?.rotationAngle?.toFixed(1) ?? "-"}°</span></div>
-          <div class="data-row"><span class="key">mirrored</span><span class="val bool">{motion.arrowPlacementData?.svgMirrored ? "true" : "false"}</span></div>
-          {#if rotationOverride}
-            <div class="data-row" class:override-active={rotationOverride.hasOverride}><span class="key">rotOverride</span><span class="val bool">{rotationOverride.hasOverride ? "true" : "false"}</span></div>
-          {/if}
-          {#if motion.arrowPlacementData?.manualAdjustmentX || motion.arrowPlacementData?.manualAdjustmentY}
-            <div class="data-row warn-row"><span class="key">manual</span><span class="val num">({motion.arrowPlacementData?.manualAdjustmentX?.toFixed(2) ?? 0}, {motion.arrowPlacementData?.manualAdjustmentY?.toFixed(2) ?? 0})</span></div>
-          {/if}
-        </div>
+      <div class="placement-line">
+        <span class="pl">{motion.arrowPlacementData?.positionX?.toFixed(0) ?? "-"}, {motion.arrowPlacementData?.positionY?.toFixed(0) ?? "-"}</span>
+        <span class="pl">{motion.arrowPlacementData?.rotationAngle?.toFixed(0) ?? "-"}°</span>
+        {#if motion.arrowPlacementData?.svgMirrored}<span class="pl mir">mirrored</span>{/if}
+        {#if rotationOverride?.hasOverride}<span class="pl ov">rotOverride</span>{/if}
+        {#if motion.arrowPlacementData?.manualAdjustmentX || motion.arrowPlacementData?.manualAdjustmentY}
+          <span class="pl warn-val">manual ({motion.arrowPlacementData?.manualAdjustmentX?.toFixed(0) ?? 0}, {motion.arrowPlacementData?.manualAdjustmentY?.toFixed(0) ?? 0})</span>
+        {/if}
       </div>
 
       <PipelineTraceSection {diagnostics} />
@@ -113,61 +103,21 @@
   .copy-btn:hover { border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2)); }
   .copy-btn:focus-visible { outline: 2px solid var(--theme-accent, #58a6ff); outline-offset: 1px; }
   .copied-label { color: var(--semantic-success, #7ee787); font-weight: 600; }
-  /* Read-only info: pack key/value pairs into a dense 2-col grid so the
-     section stays short instead of one row per value. */
-  .data-block {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 16px;
-    row-gap: 2px;
-  }
-  .data-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 4px 8px;
-    gap: 10px;
-    border-radius: 6px;
-    min-width: 0;
-  }
-  /* Anomaly rows span the full width so they stay prominent. */
-  .data-row.warn-row,
-  .data-row.override-active { grid-column: 1 / -1; }
-  .data-row.warn-row { background: color-mix(in srgb, var(--semantic-warning, #d29922) 14%, transparent); }
-  .data-row.override-active { background: color-mix(in srgb, var(--semantic-success, #3fb950) 14%, transparent); }
-  .data-row.override-active .val { color: var(--semantic-success, #7ee787); font-weight: 600; }
-  .key {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-    white-space: nowrap;
-  }
-  .val {
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text, #fff);
-    text-align: right;
-    user-select: all;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .val.type-val { color: var(--semantic-warning, #ffa657); font-weight: 600; }
-  .val.num { color: var(--semantic-info, #79c0ff); }
-  .val.bool { color: var(--prop-red, #ff7b72); }
-  .val.warn-val { color: var(--semantic-warning, #d29922); }
-  .subsection {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-  .subsection h4 {
-    margin: 0 0 6px 0;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-  }
+  .motion-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; padding: 2px; }
+  .motion-line .mt { color: var(--semantic-warning, #ffa657); }
+  .motion-line .rot { color: var(--theme-accent, #d2a8ff); }
+  .motion-line .path { color: var(--theme-text, #fff); }
+  .motion-line .ori { color: var(--semantic-info, #79c0ff); }
+  .motion-line .turns { color: var(--theme-text-dim, #8b949e); }
+  .motion-line .warn-val { color: var(--semantic-warning, #d29922); font-size: var(--font-size-compact, 12px); }
+  .placement-line { display: flex; flex-wrap: wrap; gap: 10px; font-size: var(--font-size-compact, 12px); color: var(--theme-text-dim, #8b949e); font-variant-numeric: tabular-nums; padding: 0 2px 4px; }
+  .placement-line .pl { color: var(--theme-text-muted, #c9d1d9); }
+  .placement-line .mir { font-style: italic; color: var(--theme-text-dim, #6b7480); }
+  .placement-line .ov { color: var(--semantic-success, #3fb950); }
+  .placement-line .warn-val { color: var(--semantic-warning, #d29922); }
+  .column.selected { box-shadow: 0 0 0 1px var(--prop-blue, #58a6ff); }
+  .red-column.selected { box-shadow: 0 0 0 1px var(--prop-red, #f85149); }
+  .blue-column.selected { box-shadow: 0 0 0 1px var(--prop-blue, #58a6ff); }
   .empty-state {
     padding: 20px;
     text-align: center;
