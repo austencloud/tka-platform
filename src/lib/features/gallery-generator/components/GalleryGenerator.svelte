@@ -15,10 +15,10 @@
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
-  import { GalleryRenderer } from "../services/GalleryRenderer";
+  import { GalleryRenderer } from "../services/gallery-renderer";
   import { writeToGallery } from "../services/gallery-writer";
   import { uploadGalleryImage } from "../services/cloud-gallery-uploader";
-  import { galleryPersistence } from "../services/GalleryPersistence";
+  import { galleryPersistence } from "../services/gallery-persistence";
 
   import GallerySettings from "./GallerySettings.svelte";
   import GalleryActions from "./GalleryActions.svelte";
