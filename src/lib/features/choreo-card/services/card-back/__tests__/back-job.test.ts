@@ -8,7 +8,7 @@ describe("BackJob", () => {
       width: 1644, height: 2244, bleedPx: 72,
       borderGradient: grad, bgGradient: grad,
       decorations: null,
-      mandalaOptions: { offsetX: 0, offsetY: 0 } as BackJob["mandalaOptions"],
+      mandala: null as BackJob["mandala"],
       bitmaps: [] as PlacedBitmap[],
     };
     expect(() => JSON.stringify(job)).not.toThrow();
