@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getStickerLabContext } from "../context/sticker-lab-context";
   import SheetSizePicker from "./SheetSizePicker.svelte";
-  import { StickerSheetPdfExporter } from "../services/StickerSheetPdfExporter";
+  import { StickerSheetPdfExporter } from "../services/sticker-sheet-pdf-exporter";
   import {
     getPrimitivePaths,
     loadPrimitivePaths,

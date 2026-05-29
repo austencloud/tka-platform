@@ -3,7 +3,7 @@ import type { StickerSheet, StickerUnit } from "../domain/sticker-types";
 import {
   SHEET_DIMENSIONS_IN, STICKER_GAP_IN, STICKER_TILE_SIZE_PX, STICKER_DPI, } from "../domain/sticker-constants";
 import { renderStickerUnitSVG } from "./sticker-unit-renderer";
-import { rasterizeSvgToPng } from "./rasterizeSvg";
+import { rasterizeSvgToPng } from "./rasterize-svg";
 import type { StickerMandalaLookup } from "./types";
 
 const PDF_POINTS_PER_INCH = 72;

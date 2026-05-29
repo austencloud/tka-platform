@@ -10,7 +10,7 @@ import {
   createDefaultStickerUnit,
 } from "../domain/sticker-types";
 import { MAX_COPIES_PER_STICKER } from "../domain/sticker-constants";
-import { LocalStickerSheetRepository } from "../services/LocalStickerSheetRepository";
+import { LocalStickerSheetRepository } from "../services/local-sticker-sheet-repository";
 
 export interface StickerLabState {
   readonly sheet: StickerSheet;
