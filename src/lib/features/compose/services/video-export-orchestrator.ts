@@ -602,6 +602,45 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           const timestampMicros = i * frameDurationMicros;
           const isKeyframe = i % keyframeInterval === 0;
 
+          // Pre-encode frame dump (DEV). This PNG is the EXACT pixels handed to
+          // the encoder — captured from the offscreen composite before any H.264
+          // quantization. Compare it against (a) a live-canvas screenshot at the
+          // same beat and (b) the encoded video frame at the same timestamp:
+          //   - PNG already grainy  → compositor upscale is the culprit
+          //   - PNG crisp, video grainy → encoder (bitrate / 4:2:0) is the culprit
+          // Frame index overridable via window.__tka_export_frame_dump; defaults
+          // to the timeline midpoint.
+          if (import.meta.env.DEV) {
+            const dumpTarget =
+              ((window as unknown as Record<string, unknown>)
+                .__tka_export_frame_dump as number | undefined) ??
+              Math.floor(totalFrames / 2);
+            if (i === dumpTarget) {
+              // Flatten over opaque black to mirror exactly what the H.264
+              // encoder receives: VideoFrame RGBA → encoder drops alpha, so any
+              // semi-transparent glow pixel is shown over black. An alpha-
+              // preserved PNG would hide that, so we composite over black here.
+              const flat = document.createElement("canvas");
+              flat.width = offscreenCanvas.width;
+              flat.height = offscreenCanvas.height;
+              const flatCtx = flat.getContext("2d");
+              if (flatCtx) {
+                flatCtx.fillStyle = "#000";
+                flatCtx.fillRect(0, 0, flat.width, flat.height);
+                flatCtx.drawImage(offscreenCanvas, 0, 0);
+                flat.toBlob((b) => {
+                  if (!b) return;
+                  const url = URL.createObjectURL(b);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `preencode-frame-${i}.png`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }, "image/png");
+              }
+            }
+          }
+
           // Transfer the buffer zero-copy to the worker
           this.backgroundEncoder.addFrame(
             frameData,
