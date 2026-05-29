@@ -30,6 +30,8 @@ import type { VideoExporter } from "$lib/shared/animation-engine/services/implem
 import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/implementations/CompositeVideoRenderer";
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/implementations/ExportGlyphPrerenderer";
 import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
+import { getRenderContextRegistry } from "$lib/shared/animation-engine/getRenderContextRegistry";
+import type { RenderContext } from "$lib/shared/animation-engine/services/implementations/RenderContextRegistry";
 
 import type { VideoExportFormat, VideoExportProgress, VideoEffectOverrides, IVideoExportOrchestrator, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 export type { VideoExportFormat, VideoExportProgress, VideoResolution, VideoEffectOverrides, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
@@ -229,6 +231,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       options.effectOverrides
     );
 
+    let liveContext: RenderContext | null = null;
+
     try {
       onProgress({ progress: 0, stage: "capturing" });
 
@@ -391,6 +395,19 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // The square animation area in the output
       const outputCanvasSize = isCompositeMode ? sourceWidth : outputWidth;
 
+      // Resize the live rendering context to output resolution so trail/effect
+      // overlays render natively at export size instead of being upscaled from
+      // viewport resolution via drawImage (which softens glow/shadowBlur).
+      if (!isCompositeMode) {
+        const contexts = getRenderContextRegistry().getAll();
+        liveContext = contexts.find(c => c.canvas === canvas) ?? null;
+        if (liveContext) {
+          liveContext.resizer.pauseObservation();
+          liveContext.resize(outputCanvasSize);
+          await this.waitForAnimationFrame();
+        }
+      }
+
       // Set canvas dimensions based on mode
       if (isCompositeMode) {
         const compositeDims = this.compositeRenderer.getCompositeDimensions();
@@ -446,6 +463,16 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // Frame duration in microseconds for WebCodecs timestamps
       const frameDurationMicros = Math.round(1_000_000 / fps);
 
+      // Trail-fidelity diagnostic. When enabled via window.__tka_trail_diag.enable(),
+      // log the actual accumulator stamp count per captured frame. Expected: 1 per
+      // active color (1 or 2). A higher value proves the leading edge is being
+      // re-stamped multiple times at the same virtualTime — the "doubly opaque" bug.
+      const trailDiag = typeof window !== "undefined"
+        ? ((window as unknown as Record<string, unknown>).__tka_trail_diag as
+            | { read(): { stamps: number; lastDt: number; lastFade: number } }
+            | undefined)
+        : undefined;
+
       for (let i = 0; i < totalFrames; i++) {
         if (this.shouldCancel) {
           throw new Error("Export cancelled");
@@ -496,8 +523,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           playbackController.calculateStateForStep(playbackPosition);
         }
 
-        // Wait for the UI + canvas to render the new beat
-        await this.waitForAnimationFrame();
+        // Wait for the render loop to paint the new beat.
+        // Single rAF: calculateStateForStep is synchronous, so the render
+        // loop picks up the new prop state on the very next frame.
+        // Two rAFs would cause the trail overlay to fade+stamp twice at
+        // the same tip position, boosting opacity above the live preview.
         await this.waitForAnimationFrame();
 
         // Guard: if the live canvas temporarily lost dimensions (Svelte re-render
@@ -568,6 +598,13 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           await inlineExporter.addFrame(offscreenCanvas);
         }
 
+        if (trailDiag) {
+          const d = trailDiag.read();
+          console.log(
+            `[trail-diag] frame=${i} stamps=${d.stamps} dt=${d.lastDt.toFixed(5)}s fade=${d.lastFade.toFixed(5)} (expected stamps: 1 per active color)`
+          );
+        }
+
         onProgress({
           progress: (i + 1) / totalFrames,
           stage: "capturing",
@@ -616,6 +653,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const fireDiagCleanup = typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>).__tka_fire_diag as { disable(): void } | undefined : undefined;
       if (fireDiagCleanup) {
         fireDiagCleanup.disable();
+      }
+
+      // Restore rendering context to viewport resolution
+      if (liveContext) {
+        liveContext.restoreSize();
+        liveContext.resizer.resumeObservation();
       }
 
       this.restoreEffectState(visibilityManager, savedEffectState);

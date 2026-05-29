@@ -154,6 +154,11 @@ export class AnimationRenderLoop {
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
+  // Timestamp of the last frame that actually stamped the trail accumulator.
+  // Separate from lastTrailFrameTime (which uses 0 as an uninitialized
+  // sentinel) so the export-duplicate guard works correctly even when the
+  // virtualTime is exactly 0 (the first export frame: i/fps * 1000 = 0).
+  private lastStampedTrailTime: number | null = null;
   private rafId: number | null = null;
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
@@ -1020,10 +1025,28 @@ export class AnimationRenderLoop {
       if (this.lastTrailFrameTime === 0) {
         this.trailOverlay.setVisible(true);
       }
+      // Re-stamp only when (virtual) time has advanced. During export the
+      // render loop ticks multiple times at the SAME virtualTime — one
+      // calculateStateForStep sets the position, then several rAF ticks fire
+      // while the frame is composited/encoded. On those repeat ticks dt is 0,
+      // so there is no fade, yet advanceAccumulator would re-stamp the leading
+      // edge at globalAlpha 1.0. Drawing the same semi-transparent line over
+      // itself compounds it toward solid — the export "doubly opaque" trail
+      // bug. The accumulator already holds this timestamp's stamp from the
+      // first tick, so skip the duplicate. Live playback's rAF clock always
+      // advances, so this is a no-op there.
+      const isDuplicateTimestamp =
+        this.lastStampedTrailTime !== null &&
+        currentTime === this.lastStampedTrailTime;
+      if (isDuplicateTimestamp) {
+        // No new stamp this tick; visible trail canvas keeps the first-tick
+        // composite, which the exporter reads.
+      } else {
       const dt = this.lastTrailFrameTime > 0
         ? (currentTime - this.lastTrailFrameTime) / 1000
         : 1 / 60;
       this.lastTrailFrameTime = currentTime;
+      this.lastStampedTrailTime = currentTime;
 
       this.trailOverlay.renderFrame({
         blueTrailPoints: effectiveBlueMotionVisible ? trailPoints.blue : [],
@@ -1041,10 +1064,12 @@ export class AnimationRenderLoop {
         redPropType: params.redPropType,
         tipEffectMap: params.tipEffectMap,
       });
+      }
     } else if (this.trailOverlay && !effectiveTrailsVisible && this.lastTrailFrameTime > 0) {
       this.trailOverlay.clear();
       this.trailOverlay.setVisible(false);
       this.lastTrailFrameTime = 0;
+      this.lastStampedTrailTime = null;
     }
 
     // Render scene

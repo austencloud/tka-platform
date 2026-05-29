@@ -40,6 +40,51 @@ const RING_BUFFER_HEADROOM = 20;
 /** Default visible leading edge when no settings have been applied yet. */
 const DEFAULT_LEADING_EDGE = 20;
 
+/**
+ * Export-fidelity diagnostic. Counts how many times the trail accumulator is
+ * actually stamped (one stamp per active color per time-advanced frame) and
+ * records the last fade input (deltaTime) / output (fadeAmount). Enable from
+ * the console before exporting:
+ *   window.__tka_trail_diag.enable()
+ * The video exporter reads this per captured frame and logs the stamp count,
+ * so any value above the active-color count (1 or 2) proves duplicate stamping
+ * — the cause of the "doubly opaque" export trail.
+ */
+const trailDiag = {
+  enabled: false,
+  stamps: 0,
+  lastDt: 0,
+  lastFade: 0,
+};
+
+function ensureTrailDiagHook(): void {
+  if (typeof window === "undefined") return;
+  const w = window as unknown as Record<string, unknown>;
+  if (w.__tka_trail_diag) return;
+  w.__tka_trail_diag = {
+    enable() {
+      trailDiag.enabled = true;
+      trailDiag.stamps = 0;
+    },
+    disable() {
+      trailDiag.enabled = false;
+    },
+    reset() {
+      trailDiag.stamps = 0;
+    },
+    /** Read the accumulated stamp count + last fade values, then reset the count. */
+    read() {
+      const snapshot = {
+        stamps: trailDiag.stamps,
+        lastDt: trailDiag.lastDt,
+        lastFade: trailDiag.lastFade,
+      };
+      trailDiag.stamps = 0;
+      return snapshot;
+    },
+  };
+}
+
 export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
@@ -126,6 +171,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
   initialize(container: HTMLElement, width: number, height: number): void {
     this.dispose();
+    ensureTrailDiagHook();
 
     const canvas = document.createElement("canvas");
     canvas.width = width;
@@ -353,6 +399,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       trailSettings.fadeDurationMs,
       deltaTime
     );
+    if (trailDiag.enabled) {
+      trailDiag.lastDt = deltaTime;
+      trailDiag.lastFade = fadeAmount;
+    }
     const overlaySettings = {
       ...trailSettings,
       glowBlur: 0,
@@ -493,6 +543,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       accumCtx.globalAlpha = 1.0;
       accumCtx.drawImage(this.bufferCanvas!, 0, 0);
       accumCtx.restore();
+      if (trailDiag.enabled) trailDiag.stamps++;
     }
   }
 
