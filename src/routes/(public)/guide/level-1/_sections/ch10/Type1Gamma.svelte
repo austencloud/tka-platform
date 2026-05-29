@@ -1,52 +1,48 @@
 <script lang="ts">
   import GuideSection from "../../_components/GuideSection.svelte";
-  import GuidePictographGrid from "../../_components/GuidePictographGrid.svelte";
-  import { getGuideData } from "../../_data/guide-data-context";
-
-  const data = getGuideData();
-
-  function p(id: string) {
-    return data.pictographs[id] ?? null;
-  }
-
-  const gammaRows = [
-    {
-      label: "Quarter-Opp",
-      sublabel: "Γ → Γ",
-      cells: [
-        { data: p("J-0"), label: "M" },
-        { data: p("K-0"), label: "N" },
-        { data: p("L-0"), label: "O" },
-      ],
-    },
-    {
-      label: "Quarter-Same",
-      sublabel: "Γ → Γ",
-      cells: [
-        { data: p("M-0"), label: "S" },
-        { data: p("N-0"), label: "T" },
-        { data: p("O-0"), label: "U" },
-        { data: p("P-0"), label: "V" },
-      ],
-    },
-  ];
+  import GuideMotionVideo from "../../_components/GuideMotionVideo.svelte";
 </script>
 
 <GuideSection id="type-1-gamma" title="Gamma">
   <p>
-    Gamma, aka quarter-time, is based on two often forgotten modes:
-    Quarter-Opp and Quarter-Same.
+    When both hands start at a right angle to each other (gamma),
+    dual-shifts create a different set of movements.
   </p>
   <p>
-    Quarter-Opp has variations of parallel and antiparallel.
+    In gamma, one hand is at a cardinal point and the other is at an
+    adjacent cardinal point, forming a 90-degree angle through the center.
   </p>
-  <p>
-    When in gamma, you can move to any other variation of gamma.
-  </p>
-
-  <GuidePictographGrid rows={gammaRows} />
-
-  <p>
-    Practice using Dual-Shifts to create other non-continuous Γ→Γ variations!
-  </p>
+  <div class="motion-pair">
+    <div class="motion-demo">
+      <span class="motion-label">Gamma to gamma</span>
+      <GuideMotionVideo id="t1-gamma-to-gamma" label="Dual-shift from gamma to gamma" />
+    </div>
+    <div class="motion-demo">
+      <span class="motion-label">Gamma (opposite direction)</span>
+      <GuideMotionVideo id="t1-gamma-opposite" label="Dual-shift at gamma, hands moving in opposite directions" />
+    </div>
+  </div>
 </GuideSection>
+
+<style>
+  .motion-pair {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin: 1.5rem 0;
+    max-width: 600px;
+  }
+
+  .motion-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .motion-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: oklch(0.70 0.04 270);
+  }
+</style>

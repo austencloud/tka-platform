@@ -1,34 +1,51 @@
 <script lang="ts">
   import GuideSection from "../../_components/GuideSection.svelte";
-  import GuidePictographGrid from "../../_components/GuidePictographGrid.svelte";
-  import { getGuideData } from "../../_data/guide-data-context";
-
-  const data = getGuideData();
-
-  function p(id: string) {
-    return data.pictographs[id] ?? null;
-  }
-
-  const rows = [
-    {
-      label: "Static",
-      sublabel: "Both hands remain still",
-      cells: [
-        { data: p("α-0"), label: "α" },
-        { data: p("β-0"), label: "β" },
-        { data: p("γ-0"), label: "Γ" },
-      ],
-    },
-  ];
+  import GuideMotionVideo from "../../_components/GuideMotionVideo.svelte";
 </script>
 
 <GuideSection id="type-6-static" title="Type 6 - Static">
   <p>
-    Static motions are indicated by no arrow.
+    <span class="type-static"><strong>Static</strong></span> means both hands
+    remain at their current positions. No motion occurs.
   </p>
   <p>
-    Later on, static sequences gain complexity when adding prop rotations.
+    Later, static positions gain complexity when adding prop rotations.
   </p>
-
-  <GuidePictographGrid rows={rows} />
+  <div class="motion-trio">
+    <div class="motion-demo">
+      <span class="motion-label">Static at alpha</span>
+      <GuideMotionVideo id="t6-static-alpha" label="Static: both hands hold at alpha (opposite points)" />
+    </div>
+    <div class="motion-demo">
+      <span class="motion-label">Static at beta</span>
+      <GuideMotionVideo id="t6-static-beta" label="Static: both hands hold at beta (same point)" />
+    </div>
+    <div class="motion-demo">
+      <span class="motion-label">Static at gamma</span>
+      <GuideMotionVideo id="t6-static-gamma" label="Static: both hands hold at gamma (right angle)" />
+    </div>
+  </div>
 </GuideSection>
+
+<style>
+  .motion-trio {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+    max-width: 700px;
+  }
+
+  .motion-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .motion-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: oklch(0.70 0.04 270);
+  }
+</style>

@@ -1,31 +1,39 @@
 <script lang="ts">
   import GuideSection from "../../_components/GuideSection.svelte";
-  import GuidePictographGrid from "../../_components/GuidePictographGrid.svelte";
-  import { getGuideData } from "../../_data/guide-data-context";
-
-  const data = getGuideData();
-
-  function p(id: string) {
-    return data.pictographs[id] ?? null;
-  }
-
-  const rows = [
-    {
-      label: "Dash",
-      sublabel: "One dashes, one static",
-      cells: [
-        { data: p("Y-0"), label: "Φ" },
-        { data: p("Z-0"), label: "Ψ" },
-        { data: p("Σ-0"), label: "Λ" },
-      ],
-    },
-  ];
+  import GuideMotionVideo from "../../_components/GuideMotionVideo.svelte";
 </script>
 
 <GuideSection id="type-4-dash" title="Type 4 - Dash">
   <p>
-    With a Dash, one prop executes a dash and the other remains static.
+    A <span class="type-dash"><strong>Dash</strong></span> (capital D) is when
+    one hand dashes to the opposite point while the other stays still.
   </p>
-
-  <GuidePictographGrid rows={rows} />
+  <div class="motion-pair">
+    <div class="motion-demo">
+      <span class="motion-label">Red dashes, blue stays</span>
+      <GuideMotionVideo id="t4-dash" label="Dash: right hand dashes across while left hand stays static" />
+    </div>
+  </div>
 </GuideSection>
+
+<style>
+  .motion-pair {
+    display: grid;
+    grid-template-columns: 1fr;
+    max-width: 280px;
+    margin: 1.5rem 0;
+  }
+
+  .motion-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .motion-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: oklch(0.70 0.04 270);
+  }
+</style>

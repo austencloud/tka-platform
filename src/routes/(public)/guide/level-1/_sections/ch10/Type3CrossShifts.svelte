@@ -1,46 +1,40 @@
 <script lang="ts">
   import GuideSection from "../../_components/GuideSection.svelte";
-  import GuidePictographGrid from "../../_components/GuidePictographGrid.svelte";
-  import { getGuideData } from "../../_data/guide-data-context";
-
-  const data = getGuideData();
-
-  function p(id: string) {
-    return data.pictographs[id] ?? null;
-  }
-
-  const rows = [
-    {
-      label: "Cross-Shifts",
-      sublabel: "Shift + Dash combined",
-      cells: [
-        { data: p("V-0"), label: "Σ-" },
-        { data: p("W-0"), label: "Δ-" },
-        { data: p("X-0"), label: "θ-" },
-        { data: p("Y-0"), label: "Ω-" },
-      ],
-    },
-  ];
+  import GuideMotionVideo from "../../_components/GuideMotionVideo.svelte";
 </script>
 
 <GuideSection id="type-3-cross-shifts" title="Type 3 - Cross-Shifts">
   <p>
-    A Cross-Shift combines a shift and a dash.
-    Since a dash has further to travel, it moves slightly faster.
+    A <span class="type-cross-shift"><strong>Cross-Shift</strong></span> combines
+    a shift and a dash. One hand shifts to an adjacent point while the other
+    dashes straight through the center to the opposite point.
   </p>
-  <p>
-    Cross-Shifts use the same letters as Shifts, but each letter is followed by a
-    dash to indicate that the other hand is dashing into its end position.
-    They are spoken as "W Dash" or "Sigma Dash".
-  </p>
-  <p>
-    A dash symbol in the glyph equals a dash arrow on the graph.
-    The end position for each Type 2/3 letter remains the same.
-  </p>
-  <p>
-    Cross-Shifts can be tricky to remember. It helps to first picture the corresponding
-    Type 2 pictograph, then add the dash arrow without changing any other variables.
-  </p>
-
-  <GuidePictographGrid rows={rows} />
+  <div class="motion-pair">
+    <div class="motion-demo">
+      <span class="motion-label">Red shifts, blue dashes</span>
+      <GuideMotionVideo id="t3-cross-shift" label="Cross-shift: right hand shifts while left hand dashes across" />
+    </div>
+  </div>
 </GuideSection>
+
+<style>
+  .motion-pair {
+    display: grid;
+    grid-template-columns: 1fr;
+    max-width: 280px;
+    margin: 1.5rem 0;
+  }
+
+  .motion-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .motion-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: oklch(0.70 0.04 270);
+  }
+</style>
