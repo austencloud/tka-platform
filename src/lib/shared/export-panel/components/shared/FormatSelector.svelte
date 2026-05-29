@@ -14,7 +14,7 @@
   Domain: Export Panel - Single Media Format Selection
 -->
 <script lang="ts">
-  import type { MediaFormat } from "../../domain/models/MediaFormat";
+  import type { MediaFormat } from "../../domain/models/media-format";
 
   let {
     selectedFormat = "animation",

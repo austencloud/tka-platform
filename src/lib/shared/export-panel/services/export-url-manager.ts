@@ -14,7 +14,7 @@ import {
   openAnimationPanel,
   updateAnimationPanelState,
 } from "$lib/shared/navigation/services/sheet-router";
-import type { ExportUrlCallbacks, ExportAnimationUrlState } from "../contracts/types";
+import type { ExportUrlCallbacks, ExportAnimationUrlState } from "./types";
 import { browser } from "$app/environment";
 
 export class ExportUrlManager {

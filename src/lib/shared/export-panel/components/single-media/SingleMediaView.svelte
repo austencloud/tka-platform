@@ -10,7 +10,7 @@
   - Primary export button at bottom (hidden for animation - it has its own)
 -->
 <script lang="ts">
-  import type { MediaFormat } from "../../domain/models/MediaFormat";
+  import type { MediaFormat } from "../../domain/models/media-format";
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
   import { getAnimationExportContext } from "../../context/animation-export-context.svelte";
   import FormatSelector from "../shared/FormatSelector.svelte";

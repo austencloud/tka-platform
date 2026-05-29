@@ -2,7 +2,7 @@
 
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
-import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchestrator";
+import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orchestrator";
   /**
    * SequenceDrawerHost
    *
@@ -27,10 +27,10 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
-  import type { ExportSettings } from "$lib/shared/export-panel/domain/models/ExportSettings";
+  import type { ExportSettings } from "$lib/shared/export-panel/domain/models/export-settings";
   import type { ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { ExportOrchestrator } from "$lib/shared/export-panel/services/implementations/ExportOrchestrator";
+  import type { ExportOrchestrator } from "$lib/shared/export-panel/services/export-orchestrator";
 
   import { getSequenceRepository } from "$lib/shared/create/getSequenceRepository";
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
@@ -46,7 +46,7 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/getExportOrchest
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
-  import { ExportUrlManager } from "$lib/shared/export-panel/services/implementations/ExportUrlManager";
+  import { ExportUrlManager } from "$lib/shared/export-panel/services/export-url-manager";
   import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
   import {
     createAnimationPanelState,

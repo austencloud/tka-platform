@@ -14,7 +14,7 @@
 -->
 <script lang="ts">
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
-  import type { MediaFormat } from "../../domain/models/MediaFormat";
+  import type { MediaFormat } from "../../domain/models/media-format";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
 
   let {

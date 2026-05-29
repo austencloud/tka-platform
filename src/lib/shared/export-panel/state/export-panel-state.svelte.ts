@@ -14,10 +14,10 @@
  * Domain: Export Panel - Unified State Management
  */
 
-import type { ShareMode } from "../domain/models/ShareMode";
-import type { MediaFormat } from "../domain/models/MediaFormat";
-import type { CompositeLayout } from "../domain/models/CompositeLayout";
-import { DEFAULT_COMPOSITE_LAYOUT } from "../domain/models/CompositeLayout";
+import type { ShareMode } from "../domain/models/share-mode";
+import type { MediaFormat } from "../domain/models/media-format";
+import type { CompositeLayout } from "../domain/models/composite-layout";
+import { DEFAULT_COMPOSITE_LAYOUT } from "../domain/models/composite-layout";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 /** Settings for animation export */

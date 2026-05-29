@@ -13,7 +13,7 @@
   Domain: Export Panel - Mode Selection Control
 -->
 <script lang="ts">
-  import type { ShareMode } from "../../domain/models/ShareMode";
+  import type { ShareMode } from "../../domain/models/share-mode";
 
   let {
     mode = "single",

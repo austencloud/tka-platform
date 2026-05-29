@@ -10,8 +10,8 @@
 import type { Sharer } from "$lib/shared/share/services/implementations/Sharer";
 import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ExportSettings } from "../../domain/models/ExportSettings";
-import type { ExportResult, AnimationExportDependencies, ExportUserInfo } from "../contracts/types";
+import type { ExportSettings } from "../domain/models/export-settings";
+import type { ExportResult, AnimationExportDependencies, ExportUserInfo } from "./types";
 import type { ShareOptions } from "$lib/shared/share/domain/models/ShareOptions";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";

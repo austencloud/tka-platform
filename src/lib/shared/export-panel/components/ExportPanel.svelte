@@ -19,7 +19,7 @@
   import PerformanceSettingsPanel from "./settings/PerformanceSettings.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { untrack } from "svelte";
-  import type { ExportSettings } from "../domain/models/ExportSettings";
+  import type { ExportSettings } from "../domain/models/export-settings";
 
   let {
     sequence,

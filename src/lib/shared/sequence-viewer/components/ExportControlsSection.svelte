@@ -10,7 +10,7 @@
   - Integrates with existing export settings panels
 -->
 <script lang="ts">
-  import type { MediaFormat } from "$lib/shared/export-panel/domain/models/MediaFormat";
+  import type { MediaFormat } from "$lib/shared/export-panel/domain/models/media-format";
   import type { ExportProgress, ExportSettings } from "../domain/types";
   import ExportButton from "$lib/shared/export-panel/components/shared/ExportButton.svelte";
   import SettingsPanel from "$lib/shared/export-panel/components/settings/SettingsPanel.svelte";
