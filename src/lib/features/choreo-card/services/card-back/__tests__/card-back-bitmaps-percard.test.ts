@@ -58,7 +58,7 @@ import {
   rasterizeStartPosPictograph,
   CARD_RENDER_WIDTH,
   __setRasterizeFnForTest,
-  __setPrepareFnForTest,
+  __setRenderPictoFnForTest,
 } from "../card-back-bitmaps-percard";
 
 const CQI = CARD_RENDER_WIDTH / 100; // 16.44
@@ -71,31 +71,49 @@ interface RasterizeCall {
   opts?: { containerWidth?: number; settleFrames?: number; settleMs?: number };
 }
 
-interface PrepareCall {
-  data: unknown;
-  options: { themeMode: "dark" | "light" };
+interface RenderPictoCall {
+  pictograph: unknown;
+  options: { size: number; visibility: Record<string, unknown> };
+}
+
+// jsdom has no OffscreenCanvas / createImageBitmap; stub them so the pictograph
+// rasterizer's compositing step runs without error (the real composite is
+// verified in the browser harness).
+function stubCanvasGlobals() {
+  const fakeCtx = {
+    save: vi.fn(), restore: vi.fn(), clip: vi.fn(), beginPath: vi.fn(),
+    moveTo: vi.fn(), arcTo: vi.fn(), closePath: vi.fn(), stroke: vi.fn(),
+    drawImage: vi.fn(), lineWidth: 0, strokeStyle: "",
+  };
+  vi.stubGlobal("OffscreenCanvas", class {
+    constructor(public width: number, public height: number) {}
+    getContext() { return fakeCtx; }
+  });
+  vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ width: 1, height: 1, close: vi.fn() })));
 }
 
 describe("card-back-bitmaps-percard rasterizers", () => {
   let rasterizeCalls: RasterizeCall[];
-  let prepareCalls: PrepareCall[];
+  let renderPictoCalls: RenderPictoCall[];
 
   beforeEach(() => {
     rasterizeCalls = [];
-    prepareCalls = [];
+    renderPictoCalls = [];
     __setRasterizeFnForTest(async (Comp, props, w, h, opts) => {
       rasterizeCalls.push({ Comp, props, w, h, opts });
       return { close: vi.fn() } as unknown as ImageBitmap;
     });
-    __setPrepareFnForTest(async (data, options) => {
-      prepareCalls.push({ data, options });
-      return {};
+    __setRenderPictoFnForTest(async (pictograph, options) => {
+      renderPictoCalls.push({ pictograph, options: options as RenderPictoCall["options"] });
+      return { width: options.size, height: options.size } as unknown as OffscreenCanvas;
     });
+    stubCanvasGlobals();
   });
 
   afterEach(() => {
     __setRasterizeFnForTest(null);
-    __setPrepareFnForTest(null);
+    __setRenderPictoFnForTest(null);
+    vi.unstubAllGlobals();
   });
 
   describe("rasterizeTurnGlyph", () => {
@@ -179,62 +197,34 @@ describe("card-back-bitmaps-percard rasterizers", () => {
   describe("rasterizeStartPosPictograph", () => {
     const pictographData = { letter: "A", motions: {} };
 
-    it("mounts StartPositionPictograph with pictographData + darkMode props", async () => {
+    it("renders the pictograph via the Canvas2D pipeline (not a DOM mount)", async () => {
       await rasterizeStartPosPictograph(pictographData, true);
-
-      expect(rasterizeCalls).toHaveLength(1);
-      const call = rasterizeCalls[0]!;
-      expect(call.Comp).toBe(StartPositionPictograph);
-      expect(call.props).toEqual({ pictographData, darkMode: true });
+      expect(renderPictoCalls).toHaveLength(1);
+      expect(rasterizeCalls).toHaveLength(0); // no mount+screenshot
+      expect(renderPictoCalls[0]!.pictograph).toBe(pictographData);
     });
 
-    it("rasterizes at the start-pos size (12cqi × 12cqi)", async () => {
-      await rasterizeStartPosPictograph(pictographData, false);
-      const call = rasterizeCalls[0]!;
-      expect(call.w).toBe(Math.round(12 * CQI));
-      expect(call.h).toBe(Math.round(12 * CQI));
-      expect(call.opts?.containerWidth).toBe(CARD_RENDER_WIDTH);
-    });
-
-    it("pre-warms the prepare cache with the matching themeMode (dark)", async () => {
-      await rasterizeStartPosPictograph(pictographData, true);
-      expect(prepareCalls).toHaveLength(1);
-      expect(prepareCalls[0]!.data).toBe(pictographData);
-      expect(prepareCalls[0]!.options).toEqual({ themeMode: "dark" });
-    });
-
-    it("pre-warms with light themeMode when darkMode is false", async () => {
-      await rasterizeStartPosPictograph(pictographData, false);
-      expect(prepareCalls[0]!.options).toEqual({ themeMode: "light" });
-    });
-
-    it("pre-warms BEFORE mounting the component", async () => {
-      const order: string[] = [];
-      __setPrepareFnForTest(async () => {
-        order.push("prepare");
-        return {};
+    it("renders at the 1.3× zoomed start-pos size", async () => {
+      await rasterizeStartPosPictograph(pictographData, false, {
+        containerWidth: 1529, cqi: 15.29, textMutedColor: "rgba(0,0,0,0.55)", textColor: "#111",
       });
-      __setRasterizeFnForTest(async () => {
-        order.push("rasterize");
-        return { close: vi.fn() } as unknown as ImageBitmap;
-      });
-      await rasterizeStartPosPictograph(pictographData, true);
-      expect(order).toEqual(["prepare", "rasterize"]);
+      const box = Math.round(12 * 15.29);
+      expect(renderPictoCalls[0]!.options.size).toBe(Math.round(box * 1.3));
     });
 
-    it("passes the standalone settle budget (3 frames + 400ms) downstream", async () => {
+    it("passes the StartPositionPictograph visibility flags", async () => {
       await rasterizeStartPosPictograph(pictographData, true);
-      const call = rasterizeCalls[0]!;
-      expect(call.opts?.settleFrames).toBe(3);
-      expect(call.opts?.settleMs).toBe(400);
+      const v = renderPictoCalls[0]!.options.visibility;
+      expect(v.darkMode).toBe(true);
+      expect(v.handPointVisibility).toBe("all");
+      expect(v.showTKA).toBe(false);
+      expect(v.showReversals).toBe(false);
+      expect(v.showPositions).toBe(false);
     });
 
-    it("still rasterizes when pre-warm throws (component handles the fallback)", async () => {
-      __setPrepareFnForTest(async () => {
-        throw new Error("prepare failed");
-      });
-      await rasterizeStartPosPictograph(pictographData, true);
-      expect(rasterizeCalls).toHaveLength(1);
+    it("returns an ImageBitmap", async () => {
+      const bmp = await rasterizeStartPosPictograph(pictographData, false);
+      expect(bmp).toBeTruthy();
     });
   });
 });

@@ -30,6 +30,12 @@
   /* Mirrors CardBack.svelte `.back` font + `.corner` flex so the glyph paints
      identically inside its own crop box. */
   .step-count-slot {
+    /* Fill the rasterize box so justify-content:flex-end right-aligns the number
+       to the box's right edge (matching CardBack.svelte's `.corner.bottom-right
+       { right: 3.2cqi }`). Without an explicit width the slot shrinks to the
+       glyph and the alignment is a no-op → the number lands off-position. */
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: flex-end;
     justify-content: flex-end;

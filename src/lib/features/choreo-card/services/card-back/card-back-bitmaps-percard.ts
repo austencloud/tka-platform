@@ -46,12 +46,13 @@
 
 import TurnPatternGlyph from "../../components/card-back/TurnPatternGlyph.svelte";
 import ReversalPatternGlyph from "../../components/card-back/ReversalPatternGlyph.svelte";
-import StartPositionPictograph from "../../components/card-back/StartPositionPictograph.svelte";
 import CardBackStepCount from "../../components/card-back/CardBackStepCount.svelte";
 import CardBackLoopRow from "../../components/card-back/CardBackLoopRow.svelte";
 import type { TurnGlyphEntry } from "../../components/card-back/card-back-data";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { rasterizeComponent } from "./rasterize-node";
+import { getCanvas2DRenderer } from "$lib/shared/render/get-canvas-2d-renderer";
+import type { DirectRenderOptions } from "$lib/shared/render/services/contracts/IDirectRenderer";
+import type { RenderCanvas } from "$lib/shared/render/services/contracts/types";
 
 // ── Render scale (matches card-back-bitmaps-constant.ts / card-back-layout.ts) ─
 /** Card back render width in px (822 logical * scale 2). */
@@ -63,11 +64,10 @@ const CQI = CARD_RENDER_WIDTH / 100; // 16.44
 // (glyph 10×6cqi, start-pos 12×12cqi, step-count slot 20×9cqi) — see each
 // rasterizer. CQI / CARD_RENDER_WIDTH below back the DEFAULT_CTX fallback only.
 
-// Settle budget for the async pictograph. Standalone (vs the full-card render)
-// the grid/prop/arrow SVG assets load cold, so give a more generous budget than
-// card-back-dom-renderer.ts's 2 rAF + 200ms.
-const PICTO_SETTLE_FRAMES = 3;
-const PICTO_SETTLE_MS = 400;
+// The start-position pictograph renders via Canvas2DDirectRenderer (the proven
+// front-card pipeline): grid + props + arrows drawn directly to canvas on the
+// main thread. No DOM mount, no async-paint timing — reliable per card (the
+// mount+screenshot path rendered intermittently as SVG assets loaded late).
 
 /**
  * Border-frame-aware render context, supplied by the job builder so the per-card
@@ -131,33 +131,44 @@ export function __setRasterizeFnForTest(fn: RasterizeFn | null): void {
 }
 
 /**
- * The prepare function StartPositionPictograph's $effect uses. Indirection lets
- * tests assert the pre-warm happens with the right options without running the
- * real (async, DOM-touching) preparer.
+ * Render-a-pictograph indirection (for the start position). Defaults to the
+ * shared Canvas2DDirectRenderer singleton, lazily initialized once. Injectable
+ * so tests assert the call without running the real (asset-loading) renderer.
  */
-type PrepareFn = (
-  data: PictographData,
-  options: { themeMode: "dark" | "light" },
-) => Promise<unknown>;
+type RenderPictoFn = (
+  pictograph: unknown,
+  options: DirectRenderOptions,
+) => Promise<RenderCanvas>;
 
-/**
- * Default prepare: lazy-imports PictographPreparer so this module's static
- * import graph stays light. The preparer's dependency chain (arrow/prop loaders
- * → firebase/protobufjs) crashes vitest on import, and tests inject a fake
- * prepare anyway, so deferring the import to call time keeps the suite loadable.
- */
-const defaultPrepare: PrepareFn = async (data, options) => {
-  const { pictographPreparer } = await import(
-    "$lib/shared/pictograph/shared/services/implementations/PictographPreparer"
-  );
-  return pictographPreparer.prepareSingle(data, options);
+let directRendererReady: Promise<void> | null = null;
+const defaultRenderPicto: RenderPictoFn = async (pictograph, options) => {
+  const renderer = getCanvas2DRenderer();
+  directRendererReady ??= renderer.initialize();
+  await directRendererReady;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return renderer.renderPictograph(pictograph as any, options);
 };
 
-let prepare: PrepareFn = defaultPrepare;
+let renderPicto: RenderPictoFn = defaultRenderPicto;
 
-/** Test-only: swap the underlying prepare implementation. */
-export function __setPrepareFnForTest(fn: PrepareFn | null): void {
-  prepare = fn ?? defaultPrepare;
+/** Test-only: swap the underlying renderPictograph implementation. */
+export function __setRenderPictoFnForTest(fn: RenderPictoFn | null): void {
+  renderPicto = fn ?? defaultRenderPicto;
+}
+
+/** Trace a rounded-rect path (for the start-pos box clip + border). */
+function roundRectPath(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number,
+): void {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
 }
 
 // ── Turn glyph (per-card) ──────────────────────────────────────────────────
@@ -255,19 +266,18 @@ export function rasterizeStepCount(
   );
 }
 
-// ── Start-position pictograph (per-card, async prep) ───────────────────────
+// ── Start-position pictograph (per-card) ───────────────────────────────────
 
 /**
  * Rasterize the mini start-position pictograph into a 12cqi × 12cqi bitmap.
  *
- * Mounts the real StartPositionPictograph with the same props CardBack.svelte
- * passes (`pictographData={sequence.startPosition}` + `darkMode`). To beat the
- * component's async prep, the prepare cache is pre-warmed here with the same
- * options the component's `$effect` uses, and the screenshot waits the
- * production settle budget (see ASYNC PICTOGRAPH TIMING in the module header).
+ * Renders the pictograph via Canvas2DDirectRenderer (DOM-free, reliable) at the
+ * 1.3× zoom StartPositionPictograph applies (`.picto-zoom { scale(1.3) }`),
+ * composited into the box with the rounded border + overflow-clip, matching
+ * CardBack's `.start-pos-picto` (border 0.3cqi `--card-text-muted`, radius 1cqi).
+ * Visibility mirrors StartPositionPictograph's PictographRenderer props.
  *
- * @param pictographData The start position data (SequenceData.startPosition),
- *   structurally a PictographData — passed straight through, as CardBack does.
+ * @param pictographData The start position data (SequenceData.startPosition).
  * @param darkMode Theme dark-mode flag (CardBack passes `isDarkTheme`).
  */
 export async function rasterizeStartPosPictograph(
@@ -275,32 +285,46 @@ export async function rasterizeStartPosPictograph(
   darkMode: boolean,
   ctx: PerCardRenderCtx = DEFAULT_CTX,
 ): Promise<ImageBitmap> {
-  const w = Math.round(12 * ctx.cqi);
-  const h = Math.round(12 * ctx.cqi);
-  // 1) Pre-warm the prepare cache so the component's internal $effect resolves
-  //    synchronously from PictographPreparer.prepareCache. Mirror the exact
-  //    options StartPositionPictograph uses: { themeMode: darkMode ? dark : light }.
-  try {
-    await prepare(pictographData as PictographData, {
-      themeMode: darkMode ? "dark" : "light",
-    });
-  } catch {
-    // Component has its own try/catch fallback (renders raw data on failure);
-    // proceed and let it handle the failure path identically to the live card.
-  }
+  const box = Math.round(12 * ctx.cqi);
+  const borderW = Math.max(1, Math.round(0.3 * ctx.cqi));
+  const radius = 1 * ctx.cqi;
+  const pictoSize = Math.round(box * 1.3); // .picto-zoom scale(1.3)
 
-  // 2) Mount + screenshot with the production settle budget so the renderer's
-  //    grid/prop/arrow SVG children are in the DOM before the snapshot.
-  return rasterize(
-    StartPositionPictograph,
-    { pictographData, darkMode },
-    w,
-    h,
-    {
-      containerWidth: ctx.containerWidth,
-      cssVars: ctxCssVars(ctx),
-      settleFrames: PICTO_SETTLE_FRAMES,
-      settleMs: PICTO_SETTLE_MS,
+  const picto = await renderPicto(pictographData, {
+    size: pictoSize,
+    visibility: {
+      darkMode,
+      showTKA: false,
+      showTnD: false,
+      showElemental: false,
+      showPositions: false,
+      showReversals: false,
+      showNonRadialPoints: false,
+      handPointVisibility: "all",
     },
+  });
+
+  const out = new OffscreenCanvas(box, box);
+  const octx = out.getContext("2d") as OffscreenCanvasRenderingContext2D;
+  const inset = borderW / 2;
+  // Clip to the rounded box (overflow:hidden) and draw the 1.3× pictograph
+  // centered so the zoom overflows + clips at the edges, like the live card.
+  octx.save();
+  roundRectPath(octx, inset, inset, box - borderW, box - borderW, radius);
+  octx.clip();
+  octx.drawImage(
+    picto as unknown as CanvasImageSource,
+    (box - pictoSize) / 2,
+    (box - pictoSize) / 2,
+    pictoSize,
+    pictoSize,
   );
+  octx.restore();
+  // Border on the edge.
+  octx.lineWidth = borderW;
+  octx.strokeStyle = ctx.textMutedColor;
+  roundRectPath(octx, inset, inset, box - borderW, box - borderW, radius);
+  octx.stroke();
+
+  return createImageBitmap(out);
 }
