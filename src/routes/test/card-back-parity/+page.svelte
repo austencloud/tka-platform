@@ -181,14 +181,21 @@
     const results: ParityRow[] = [];
     let done = 0;
     const totalRuns = selected.length * THEMES.length;
+    let oldTotalMs = 0, newTotalMs = 0;
+    const perCardMs: { old: number; new: number; first: boolean }[] = [];
 
     for (const seq of selected) {
       for (const theme of THEMES) {
         status = `rendering ${seq.word ?? seq.name ?? seq.id} (${theme}) — ${++done}/${totalRuns}`;
         const lvl = seq.level ?? 0;
         try {
+          const t0 = performance.now();
           const oldCanvas = await renderOld(seq, theme);
+          const t1 = performance.now();
           const newCanvas = await renderNew(seq, theme);
+          const t2 = performance.now();
+          oldTotalMs += t1 - t0; newTotalMs += t2 - t1;
+          perCardMs.push({ old: Math.round(t1 - t0), new: Math.round(t2 - t1), first: done === 1 });
           const { diffPct, maxDelta, diffCanvas } = diff(oldCanvas, newCanvas);
           results.push({
             label: `${seq.word ?? seq.name ?? seq.id}`,
@@ -237,6 +244,17 @@
       outputSize: { width: OUT_W, height: OUT_H },
       worstDiffPct: Number(worst.toFixed(4)),
       worstMaxDelta: maxDelta,
+      perf: {
+        oldTotalMs: Math.round(oldTotalMs),
+        newTotalMs: Math.round(newTotalMs),
+        oldAvgMs: Math.round(oldTotalMs / Math.max(1, results.length)),
+        newAvgMs: Math.round(newTotalMs / Math.max(1, results.length)),
+        // steady-state avg excluding the first (cold: renderer init + cache fill)
+        newAvgMsWarm: Math.round(
+          perCardMs.slice(1).reduce((s, p) => s + p.new, 0) / Math.max(1, perCardMs.length - 1),
+        ),
+        firstCardMs: perCardMs[0] ?? null,
+      },
       errors: results.filter((r) => r.error).map((r) => ({ label: r.label, theme: r.theme, error: r.error })),
       rows: results.map((r) => ({
         label: r.label,
