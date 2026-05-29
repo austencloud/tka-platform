@@ -1,7 +1,7 @@
-import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
-import type { AdditionalLayerRenderData } from "../../domain/types/AnimationRenderTypes";
+import type { TrailPoint, TrailSettings } from "../domain/types/TrailTypes";
+import type { AdditionalLayerRenderData } from "../domain/types/AnimationRenderTypes";
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
+import type { TipEffectMap } from "../domain/types/TipEffectTypes";
 
 export interface TrailOverlayRenderParams {
   blueTrailPoints: TrailPoint[];

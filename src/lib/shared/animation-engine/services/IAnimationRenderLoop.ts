@@ -5,23 +5,23 @@
  * Handles RAF scheduling, trail point gathering, and scene rendering.
  */
 
-import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
-import type { ITrailCapturer, AdditionalLayerProps } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
-import type { TrailSettings } from "../../domain/types/TrailTypes";
+import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import type { ITrailCapturer, AdditionalLayerProps } from "$lib/shared/animation-engine/services/ITrailCapturer";
+import type { TrailSettings } from "../domain/types/TrailTypes";
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import type { AnimationPathCache } from "$lib/shared/animation-engine/services/implementations/AnimationPathCache";
-import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
-import type { FireTipTracker } from "../implementations/FireTipTracker";
-import type { FireOverlayConfig, PropFlameColor } from "../../domain/types/FireTypes";
-import type { LedTipTracker } from "../implementations/LedTipTracker";
-import type { LedOverlayConfig } from "../../domain/types/LedTypes";
+import type { AnimationPathCache } from "$lib/shared/animation-engine/services/animation-path-cache";
+import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/frame-budget-monitor'
+import type { FireTipTracker } from "./fire-tip-tracker";
+import type { FireOverlayConfig, PropFlameColor } from "../domain/types/FireTypes";
+import type { LedTipTracker } from "./led-tip-tracker";
+import type { LedOverlayConfig } from "../domain/types/LedTypes";
 import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Pulse2DParams, Silk2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
-import type { EffectRendererLike } from "../effects/EffectRenderer";
+import type { EffectType, TipEffectMap } from "../domain/types/TipEffectTypes";
+import type { EffectRendererLike } from "./effects/EffectRenderer";
 
 /**
  * Configuration for render loop initialization

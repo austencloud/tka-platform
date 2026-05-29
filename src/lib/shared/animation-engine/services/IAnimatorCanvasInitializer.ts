@@ -5,7 +5,7 @@
  * Handles service loading, renderer setup, texture loading, and sub-service wiring.
  */
 
-import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
+import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 /**

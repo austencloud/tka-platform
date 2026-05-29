@@ -5,11 +5,11 @@
  * Provides access to core animation dependencies.
  */
 
-import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
-import type { ISVGGenerator } from "$lib/shared/animation-engine/services/contracts/ISVGGenerator";
-import type { ITrailCapturer } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
-import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
-import type { TurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
+import type { ITrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
+import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
 
 /**
