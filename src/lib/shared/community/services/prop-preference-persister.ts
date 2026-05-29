@@ -1,7 +1,7 @@
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { PropPreferences, CatdogCombo } from "./contracts/types";
+import type { PropPreferences, CatdogCombo } from "./types";
 
 const DEFAULT_PREFS: PropPreferences = {
   propsISpinWith: [],

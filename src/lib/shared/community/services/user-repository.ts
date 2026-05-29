@@ -30,7 +30,7 @@ import { ALL_ACHIEVEMENTS } from "$lib/shared/gamification/domain/constants/achi
 import type {
   Achievement,
 } from "$lib/shared/gamification/domain/models/achievement-models";
-import type { PaginatedUsersResult, PaginatedQueryOptions } from "./contracts/types";
+import type { PaginatedUsersResult, PaginatedQueryOptions } from "./types";
 import type {
   EnhancedUserProfile,
   UserProfile,

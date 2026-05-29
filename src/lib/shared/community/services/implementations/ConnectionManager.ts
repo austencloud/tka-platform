@@ -23,7 +23,7 @@ import {
 import type { Timestamp, DocumentData } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import type { ConnectionInfo, MutualFollowInfo, SharedSequenceSummary, ConnectionDocument } from "../contracts/types";
+import type { ConnectionInfo, MutualFollowInfo, SharedSequenceSummary, ConnectionDocument } from "../types";
 
 /**
  * Firestore follow document structure

@@ -2,7 +2,7 @@ import type { DocumentSnapshot } from "firebase/firestore";
 import type {
   CreatorSortCriteria,
   EnhancedUserProfile,
-} from "../../domain/models/enhanced-user-profile";
+} from "../domain/models/enhanced-user-profile";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { Timestamp } from 'firebase/firestore';
 

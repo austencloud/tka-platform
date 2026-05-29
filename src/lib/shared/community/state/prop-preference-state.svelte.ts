@@ -6,7 +6,7 @@ import {
   setFavoriteProp,
   setCatdogFavorite as persistCatdogFavorite,
 } from "../services/prop-preference-persister";
-import type { CatdogCombo } from "../services/contracts/types";
+import type { CatdogCombo } from "../services/types";
 
 export function createPropPreferenceState(
   userId: string

@@ -26,7 +26,7 @@ import type {
   MutualFollowInfo,
   SharedSequenceSummary,
   ConnectionDocument,
-} from "./contracts/types";
+} from "./types";
 
 const USERS_COLLECTION = "users";
 const CONNECTIONS_SUBCOLLECTION = "connections";

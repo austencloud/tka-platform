@@ -9,7 +9,7 @@
 
   import { onMount } from "svelte";
   import { getConnectionInfo } from "$lib/shared/community/services/connection-manager";
-  import type { ConnectionInfo } from "$lib/shared/community/services/contracts/types";
+  import type { ConnectionInfo } from "$lib/shared/community/services/types";
   import ConnectionNotes from "./ConnectionNotes.svelte";
   import ConnectionMutualStatus from "./ConnectionMutualStatus.svelte";
   import ConnectionSharedSequences from "./ConnectionSharedSequences.svelte";

@@ -6,7 +6,7 @@
    * Horizontal scroll on mobile, grid on desktop.
    */
 
-  import type { SharedSequenceSummary } from "$lib/shared/community/services/contracts/types";
+  import type { SharedSequenceSummary } from "$lib/shared/community/services/types";
 
   interface Props {
     sharedSequences: SharedSequenceSummary[];
