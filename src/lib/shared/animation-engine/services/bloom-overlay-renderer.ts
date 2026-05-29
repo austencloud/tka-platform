@@ -16,7 +16,7 @@ import {
   Bloom2DRenderer,
   type BloomTipInput,
 } from "$lib/shared/effects/renderers/Bloom2DRenderer";
-import { EffectRenderer } from "../effects/EffectRenderer";
+import { EffectRenderer } from "./effects/EffectRenderer";
 
 export class BloomOverlayRenderer extends EffectRenderer {
   private renderer = new Bloom2DRenderer();
@@ -34,7 +34,7 @@ export class BloomOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectPlugin } from "./effects/EffectPlugin";
 import type { BloomIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 

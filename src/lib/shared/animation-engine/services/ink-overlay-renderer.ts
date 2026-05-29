@@ -17,7 +17,7 @@ import {
   Ink2DRenderer,
   type InkTipInput,
 } from "$lib/shared/effects/renderers/Ink2DRenderer";
-import { EffectRenderer } from "../effects/EffectRenderer";
+import { EffectRenderer } from "./effects/EffectRenderer";
 
 export class InkOverlayRenderer extends EffectRenderer {
   private renderer = new Ink2DRenderer();
@@ -39,7 +39,7 @@ export class InkOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectPlugin } from "./effects/EffectPlugin";
 import type { InkIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 

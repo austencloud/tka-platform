@@ -10,20 +10,20 @@
  * - Velocity clamping for physics stability
  */
 
-import type { LedTipData, LedOverlayConfig } from "../../domain/types/LedTypes";
-import { hexToLedColor, resolveHandColor } from "../../domain/types/LedTypes";
+import type { LedTipData, LedOverlayConfig } from "../domain/types/LedTypes";
+import { hexToLedColor, resolveHandColor } from "../domain/types/LedTypes";
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import { getTipPoints } from "../../domain/types/PropTipPoints";
-import { evaluatePattern as evaluatePatternNew } from "../../domain/patterns/evaluator";
+import { getTipPoints } from "../domain/types/PropTipPoints";
+import { evaluatePattern as evaluatePatternNew } from "../domain/patterns/evaluator";
 import {
 	createReusableContext,
 	type TipEvaluationContext,
 	type TipRelationData,
-} from "../../domain/patterns/context";
+} from "../domain/patterns/context";
 import {
   calculatePropCenter,
   type PropEndpointConfig,
-} from "../prop-position-calculator";
+} from "./prop-position-calculator";
 
 export interface LedTipTrackerConfig {
 	canvasSize: number;

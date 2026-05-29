@@ -3,7 +3,7 @@ import {
   Frost2DRenderer,
   type FrostTipInput,
 } from "$lib/shared/effects/renderers/Frost2DRenderer";
-import { EffectRenderer } from "../effects/EffectRenderer";
+import { EffectRenderer } from "./effects/EffectRenderer";
 
 export class FrostOverlayRenderer extends EffectRenderer {
   private renderer = new Frost2DRenderer();
@@ -25,7 +25,7 @@ export class FrostOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectPlugin } from "./effects/EffectPlugin";
 import type { FrostIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 

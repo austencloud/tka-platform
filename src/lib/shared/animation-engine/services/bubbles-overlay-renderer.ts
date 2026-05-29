@@ -17,7 +17,7 @@ import {
   Bubbles2DRenderer,
   type BubblesTipInput,
 } from "$lib/shared/effects/renderers/Bubbles2DRenderer";
-import { EffectRenderer } from "../effects/EffectRenderer";
+import { EffectRenderer } from "./effects/EffectRenderer";
 
 export class BubblesOverlayRenderer extends EffectRenderer {
   private renderer = new Bubbles2DRenderer();
@@ -39,7 +39,7 @@ export class BubblesOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectPlugin } from "./effects/EffectPlugin";
 import type { BubblesIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 

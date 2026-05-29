@@ -16,7 +16,7 @@ import {
   Water2DRenderer,
   type WaterTipInput,
 } from "$lib/shared/effects/renderers/Water2DRenderer";
-import { EffectRenderer } from "../effects/EffectRenderer";
+import { EffectRenderer } from "./effects/EffectRenderer";
 
 export class WaterOverlayRenderer extends EffectRenderer {
   private renderer = new Water2DRenderer();
@@ -38,7 +38,7 @@ export class WaterOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectPlugin } from "./effects/EffectPlugin";
 import type { WaterIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 

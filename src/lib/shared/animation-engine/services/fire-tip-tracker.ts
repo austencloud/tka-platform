@@ -9,12 +9,12 @@
  */
 
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import type { PropTipData, RenderedPropTransform } from "../../domain/types/FireTypes";
-import { getTipPoints, type TipPoint } from "../../domain/types/PropTipPoints";
+import type { PropTipData, RenderedPropTransform } from "../domain/types/FireTypes";
+import { getTipPoints, type TipPoint } from "../domain/types/PropTipPoints";
 import {
   calculatePropCenter,
   type PropEndpointConfig,
-} from "../prop-position-calculator";
+} from "./prop-position-calculator";
 
 export interface FireTipTrackerConfig {
   canvasSize: number;

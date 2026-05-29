@@ -16,7 +16,7 @@ import {
   Sparkles2DRenderer,
   type SparklesTipInput,
 } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
-import { EffectRenderer } from "../effects/EffectRenderer";
+import { EffectRenderer } from "./effects/EffectRenderer";
 
 export class SparklesOverlayRenderer extends EffectRenderer {
   private renderer = new Sparkles2DRenderer();
@@ -36,7 +36,7 @@ export class SparklesOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectPlugin } from "./effects/EffectPlugin";
 import type { SparklesIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 

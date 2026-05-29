@@ -17,7 +17,7 @@ import {
   Petals2DRenderer,
   type PetalsTipInput,
 } from "$lib/shared/effects/renderers/Petals2DRenderer";
-import { EffectRenderer } from "../effects/EffectRenderer";
+import { EffectRenderer } from "./effects/EffectRenderer";
 
 export class PetalsOverlayRenderer extends EffectRenderer {
   private renderer = new Petals2DRenderer();
@@ -39,7 +39,7 @@ export class PetalsOverlayRenderer extends EffectRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectPlugin } from "./effects/EffectPlugin";
 import type { PetalsIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
