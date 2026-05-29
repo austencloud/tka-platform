@@ -1,9 +1,9 @@
-import type { HeartbeatMode, HeartbeatStats, HeartbeatEvent } from "../contracts/types";
+import type { HeartbeatMode, HeartbeatStats, HeartbeatEvent } from "./types";
 import type {
 	AdaptiveHeartbeatConfig,
 	ConnectionQuality
-} from '../../domain/sync-types';
-import { DEFAULT_ADAPTIVE_HEARTBEAT_CONFIG } from '../../domain/sync-types';
+} from '../domain/sync-types';
+import { DEFAULT_ADAPTIVE_HEARTBEAT_CONFIG } from '../domain/sync-types';
 
 interface BatteryManager extends EventTarget {
 	charging: boolean;

@@ -1,6 +1,6 @@
-import type { MessageBatcherConfig, MessagePriority, QueuedMessage, BatchFlushEvent } from "../contracts/types";
-import { DEFAULT_MESSAGE_BATCHER_CONFIG } from "../contracts/types";
-import type { SyncMessage } from '../../domain/sync-messages';
+import type { MessageBatcherConfig, MessagePriority, QueuedMessage, BatchFlushEvent } from "./types";
+import { DEFAULT_MESSAGE_BATCHER_CONFIG } from "./types";
+import type { SyncMessage } from '../domain/sync-messages';
 
 interface BatchTimers {
 	high: ReturnType<typeof setTimeout> | null;

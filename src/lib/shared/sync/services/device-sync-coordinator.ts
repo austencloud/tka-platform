@@ -1,9 +1,9 @@
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 import type { PeerConnectionManager } from '$lib/shared/lan-sync/services/implementations/PeerConnectionManager'
-import type { AdaptiveHeartbeat } from "../implementations/AdaptiveHeartbeat";
-import type { MessageBatcher } from "../implementations/MessageBatcher";
-import type { MessagePriority } from "../contracts/types";
-import type { MobileConnectionAdapter } from "../implementations/MobileConnectionAdapter";
+import type { AdaptiveHeartbeat } from "./adaptive-heartbeat";
+import type { MessageBatcher } from "./message-batcher";
+import type { MessagePriority } from "./types";
+import type { MobileConnectionAdapter } from "./mobile-connection-adapter";
 import type {
 	SyncConnectionState,
 	SyncedRoomState,
@@ -11,15 +11,15 @@ import type {
 	ViewMode,
 	PeerInfo,
 	ConnectionQuality
-} from '../../domain/sync-types';
-import type { SyncMessage } from '../../domain/sync-messages';
+} from '../domain/sync-types';
+import type { SyncMessage } from '../domain/sync-messages';
 import {
 	generateNodeId,
 	createInitialRoomState,
 	createInitialConnectionState,
 	DEFAULT_SYNC_CONFIG,
 	CONNECTION_QUALITY_THRESHOLDS
-} from '../../domain/sync-types';
+} from '../domain/sync-types';
 import {
 	createJoinMessage,
 	createWelcomeMessage,
@@ -32,11 +32,11 @@ import {
 	createStateResponseMessage,
 	deserializeRoomState,
 	serializeMessage,
-} from '../../domain/sync-messages';
-import { HybridLogicalClock } from './HybridLogicalClock';
-import { PlaybackPositionCalculator } from './PlaybackPositionCalculator';
-import { StateMerger } from './StateMerger';
-import { SequenceLocalCache } from './SequenceLocalCache';
+} from '../domain/sync-messages';
+import { HybridLogicalClock } from './hybrid-logical-clock';
+import { PlaybackPositionCalculator } from './playback-position-calculator';
+import { StateMerger } from './state-merger';
+import { SequenceLocalCache } from './sequence-local-cache';
 
 interface PendingHeartbeat {
 	seq: number;

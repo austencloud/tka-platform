@@ -1,5 +1,5 @@
 
-import type { NetworkStatusMonitor } from "$lib/shared/sync/services/implementations/NetworkStatusMonitor";
+import type { NetworkStatusMonitor } from "$lib/shared/sync/services/network-status-monitor";
 import type { GalleryOfflineCache } from "./GalleryOfflineCache";
 import type { OfflineCacheStats } from "../../domain/offline-cache-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

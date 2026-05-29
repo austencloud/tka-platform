@@ -1,11 +1,11 @@
-import type { MergeResult } from "../contracts/types";
-import type { HybridLogicalClock } from './HybridLogicalClock';
+import type { MergeResult } from "./types";
+import type { HybridLogicalClock } from './hybrid-logical-clock';
 import type {
 	PlaybackIntent,
 	PeerInfo,
 	SyncedRoomState,
 	ViewMode
-} from '../../domain/sync-types';
+} from '../domain/sync-types';
 
 /**
  * All operations are immutable - inputs are never mutated.

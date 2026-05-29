@@ -27,6 +27,34 @@ export interface RasterizeOptions {
   containerWidth?: number;
   /** Output device pixel scale passed to domToCanvas. Defaults to 1. */
   scale?: number;
+  /**
+   * Number of animation frames to wait AFTER `document.fonts.ready` before
+   * snapshotting. Defaults to 1 (the original behavior). Components that mount
+   * a child which itself kicks off async work in an `$effect` (e.g.
+   * StartPositionPictograph → PictographRenderer, which loads grid/prop/arrow
+   * SVGs after its prep `$effect` resolves) need more frames so the downstream
+   * markup is in the DOM before the screenshot. Each extra frame also lets any
+   * pending microtask-resolved `$state` (resolved-from-cache prepares) flush.
+   */
+  settleFrames?: number;
+  /**
+   * Extra milliseconds to wait after the settle frames before snapshotting.
+   * Defaults to 0. The production full-card renderer
+   * (card-back-dom-renderer.ts) uses `2 rAF + setTimeout(200)` to let the async
+   * pictograph finish loading its grid/prop/arrow SVGs; pass `settleMs: 200`
+   * (with `settleFrames: 2`) to match that budget for the standalone
+   * pictograph rasterizer.
+   */
+  settleMs?: number;
+}
+
+/** Resolve after `frames` consecutive animation frames. */
+async function waitFrames(frames: number): Promise<void> {
+  for (let i = 0; i < Math.max(0, frames); i++) {
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+  }
 }
 
 /**
@@ -47,6 +75,8 @@ export async function rasterizeComponent(
 ): Promise<ImageBitmap> {
   const containerWidth = opts.containerWidth ?? w;
   const scale = opts.scale ?? 1;
+  const settleFrames = opts.settleFrames ?? 1;
+  const settleMs = opts.settleMs ?? 0;
 
   const container = document.createElement("div");
   container.style.position = "fixed";
@@ -63,11 +93,14 @@ export async function rasterizeComponent(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component = mount(Comp as any, { target: container, props });
 
-    // Deterministic settle: fonts loaded + one paint frame.
+    // Deterministic settle: fonts loaded + `settleFrames` paint frames.
     if (typeof document !== "undefined" && document.fonts?.ready) {
       await document.fonts.ready;
     }
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await waitFrames(settleFrames);
+    if (settleMs > 0) {
+      await new Promise<void>((resolve) => setTimeout(resolve, settleMs));
+    }
 
     const { domToCanvas } = await import("modern-screenshot");
     const canvas = await domToCanvas(container, { width: w, height: h, scale });

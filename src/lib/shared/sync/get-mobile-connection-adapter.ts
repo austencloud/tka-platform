@@ -1,6 +1,6 @@
-import { MobileConnectionAdapter } from './services/implementations/MobileConnectionAdapter';
-import { getNetworkStatusMonitor } from './getNetworkStatusMonitor';
-import { getMessageBatcher } from './getMessageBatcher';
+import { MobileConnectionAdapter } from './services/mobile-connection-adapter';
+import { getNetworkStatusMonitor } from './get-network-status-monitor';
+import { getMessageBatcher } from './get-message-batcher';
 
 let instance: MobileConnectionAdapter | null = null;
 

@@ -7,7 +7,7 @@
  * @see https://cse.buffalo.edu/tech-reports/2014-04.pdf
  */
 
-import type { HLCTimestamp, SerializedHLC } from '../../domain/sync-types';
+import type { HLCTimestamp, SerializedHLC } from '../domain/sync-types';
 /**
  * Default maximum allowed drift from wall clock time.
  * If the logical clock drifts more than this, we reset to prevent unbounded drift.

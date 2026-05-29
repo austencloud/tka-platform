@@ -10,8 +10,8 @@
  * requiring constant network messages during playback.
  */
 
-import type { PlaybackIntent } from '../../domain/sync-types';
-import type { PositionResult } from "../contracts/types";
+import type { PlaybackIntent } from '../domain/sync-types';
+import type { PositionResult } from "./types";
 
 /** Default beat duration (60 BPM = 1000ms per beat) */
 const DEFAULT_BEAT_DURATION_MS = 1000;

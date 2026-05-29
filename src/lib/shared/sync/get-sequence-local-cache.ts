@@ -1,4 +1,4 @@
-import { SequenceLocalCache } from './services/implementations/SequenceLocalCache';
+import { SequenceLocalCache } from './services/sequence-local-cache';
 
 let instance: SequenceLocalCache | null = null;
 export function getSequenceLocalCache(): SequenceLocalCache {

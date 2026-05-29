@@ -5,7 +5,7 @@ import type {
 	ViewMode,
 	SyncConnectionStatus
 } from '../domain/sync-types';
-import type { DeviceSyncCoordinator } from '../services/implementations/DeviceSyncCoordinator';
+import type { DeviceSyncCoordinator } from '../services/device-sync-coordinator';
 import { createInitialConnectionState } from '../domain/sync-types';
 
 

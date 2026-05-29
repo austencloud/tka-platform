@@ -1,6 +1,6 @@
-import type { MobileConnectionConfig, NetworkType, RecoveryState, NetworkChangeEvent, RecoveryStateEvent } from "../contracts/types";
-import { DEFAULT_MOBILE_CONNECTION_CONFIG } from "../contracts/types";
-import type { ConnectionQuality } from '../../domain/sync-types';
+import type { MobileConnectionConfig, NetworkType, RecoveryState, NetworkChangeEvent, RecoveryStateEvent } from "./types";
+import { DEFAULT_MOBILE_CONNECTION_CONFIG } from "./types";
+import type { ConnectionQuality } from '../domain/sync-types';
 
 interface NetworkInformation extends EventTarget {
 	type?: string;

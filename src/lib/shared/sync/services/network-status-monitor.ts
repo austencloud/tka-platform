@@ -1,4 +1,4 @@
-import type { NetworkStatus, NetworkConnectionType, EffectiveConnectionType, NetworkStatusChangeEvent } from "../contracts/types";
+import type { NetworkStatus, NetworkConnectionType, EffectiveConnectionType, NetworkStatusChangeEvent } from "./types";
 
 interface NetworkInformation extends EventTarget {
 	type?: string;

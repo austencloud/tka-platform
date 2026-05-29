@@ -1,9 +1,9 @@
-import { DeviceSyncCoordinator } from './services/implementations/DeviceSyncCoordinator';
+import { DeviceSyncCoordinator } from './services/device-sync-coordinator';
 import { getPeerConnectionManager } from '$lib/shared/lan-sync/getPeerConnectionManager';
-import { getSequenceLocalCache } from './getSequenceLocalCache';
-import { getAdaptiveHeartbeat } from './getAdaptiveHeartbeat';
-import { getMessageBatcher } from './getMessageBatcher';
-import { getMobileConnectionAdapter } from './getMobileConnectionAdapter';
+import { getSequenceLocalCache } from './get-sequence-local-cache';
+import { getAdaptiveHeartbeat } from './get-adaptive-heartbeat';
+import { getMessageBatcher } from './get-message-batcher';
+import { getMobileConnectionAdapter } from './get-mobile-connection-adapter';
 
 let instance: DeviceSyncCoordinator | null = null;
 

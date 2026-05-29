@@ -10,7 +10,7 @@
 
 import { browser } from "$app/environment";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceLocalCacheStats } from "../contracts/types";
+import type { SequenceLocalCacheStats } from "./types";
 
 const DB_NAME = "sequence-local-cache";
 const STORE_NAME = "sequences";

@@ -1,6 +1,6 @@
-import type { SyncedRoomState } from "../../domain/sync-types";
-import {  } from "../../domain/sync-types";
-import type { SyncMessage } from "../../domain/sync-messages";
+import type { SyncedRoomState } from "../domain/sync-types";
+import {  } from "../domain/sync-types";
+import type { SyncMessage } from "../domain/sync-messages";
 
 // --- From IMobileConnectionAdapter ---
 /**
