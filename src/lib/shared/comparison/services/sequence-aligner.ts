@@ -9,10 +9,10 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { AlignmentResult, AlignedBeatPair, LocalAlignmentResult, CircularAlignmentResult, AlignmentOptions } from "../contracts/types";
-import type { StepSignatureGenerator } from "./StepSignatureGenerator";
-import type { SpatialTransformDetector } from "./SpatialTransformDetector";
-import type { SpatialTransform } from "../../domain/models/signatures";
+import type { AlignmentResult, AlignedBeatPair, LocalAlignmentResult, CircularAlignmentResult, AlignmentOptions } from "./types";
+import type { StepSignatureGenerator } from "./step-signature-generator";
+import type { SpatialTransformDetector } from "./spatial-transform-detector";
+import type { SpatialTransform } from "../domain/models/signatures";
 
 const DEFAULT_OPTIONS: Required<AlignmentOptions> = {
   gapOpenPenalty: -0.5,
@@ -582,8 +582,8 @@ export class SequenceAligner {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { stepSignatureGenerator } from "./StepSignatureGenerator";
-import { spatialTransformDetector } from "./SpatialTransformDetector";
+import { stepSignatureGenerator } from "./step-signature-generator";
+import { spatialTransformDetector } from "./spatial-transform-detector";
 
 export const sequenceAligner = new SequenceAligner(
   stepSignatureGenerator,

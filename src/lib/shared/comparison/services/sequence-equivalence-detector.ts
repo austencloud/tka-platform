@@ -10,7 +10,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceCanonicalizer } from "./SequenceCanonicalizer";
+import type { SequenceCanonicalizer } from "./sequence-canonicalizer";
 
 /**
  * Result of equivalence comparison
@@ -68,8 +68,8 @@ interface LocalMotionSignature {
   readonly turns: number | string;
   readonly orientationTransition: string;
 }
-import type { StepSignatureGenerator } from "./StepSignatureGenerator";
-import type { SpatialTransformDetector } from "./SpatialTransformDetector";
+import type { StepSignatureGenerator } from "./step-signature-generator";
+import type { SpatialTransformDetector } from "./spatial-transform-detector";
 import type { WordCyclicEquivalenceDetector } from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -436,11 +436,11 @@ export class SequenceEquivalenceDetector {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { sequenceCanonicalizer } from "./SequenceCanonicalizer";
-import { stepSignatureGenerator } from "./StepSignatureGenerator";
-import { spatialTransformDetector } from "./SpatialTransformDetector";
+import { sequenceCanonicalizer } from "./sequence-canonicalizer";
+import { stepSignatureGenerator } from "./step-signature-generator";
+import { spatialTransformDetector } from "./spatial-transform-detector";
 import * as wordCyclicEquivalenceDetector from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
-import type { MotionSignature, StepSignature } from '../../domain/models/signatures';
+import type { MotionSignature, StepSignature } from '../domain/models/signatures';
 
 export const sequenceEquivalenceDetector = new SequenceEquivalenceDetector(
   sequenceCanonicalizer,

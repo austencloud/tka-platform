@@ -10,9 +10,9 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SimilarityReport, CommonSubsequence, SimilarityBreakdown, QuickSimilarityResult, SimilarityOptions } from "../contracts/types";
-import type { StepSignatureGenerator } from "./StepSignatureGenerator";
-import type { SequenceAligner } from "./SequenceAligner";
+import type { SimilarityReport, CommonSubsequence, SimilarityBreakdown, QuickSimilarityResult, SimilarityOptions } from "./types";
+import type { StepSignatureGenerator } from "./step-signature-generator";
+import type { SequenceAligner } from "./sequence-aligner";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 const DEFAULT_OPTIONS: Required<SimilarityOptions> = {
@@ -562,8 +562,8 @@ export class SimilarityCalculator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { stepSignatureGenerator } from "./StepSignatureGenerator";
-import { sequenceAligner } from "./SequenceAligner";
+import { stepSignatureGenerator } from "./step-signature-generator";
+import { sequenceAligner } from "./sequence-aligner";
 
 export const similarityCalculator = new SimilarityCalculator(
   stepSignatureGenerator,

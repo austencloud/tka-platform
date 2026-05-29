@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { SpatialTransformDetector } from './services/implementations/SpatialTransformDetector';
+import { SpatialTransformDetector } from './services/spatial-transform-detector';
 
 let instance: SpatialTransformDetector | null = null;
 

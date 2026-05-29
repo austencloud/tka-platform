@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { MotionSignatureGenerator } from './services/implementations/MotionSignatureGenerator';
+import { MotionSignatureGenerator } from './services/motion-signature-generator';
 
 let instance: MotionSignatureGenerator | null = null;
 

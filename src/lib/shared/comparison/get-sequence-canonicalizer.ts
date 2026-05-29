@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
-import { SequenceCanonicalizer } from './services/implementations/SequenceCanonicalizer';
-import { getStepSignatureGenerator } from './getStepSignatureGenerator';
+import { SequenceCanonicalizer } from './services/sequence-canonicalizer';
+import { getStepSignatureGenerator } from './get-step-signature-generator';
 import * as wordCyclicEquivalenceDetector from '$lib/shared/foundation/utils/word-cyclic-equivalence-detector';
 
 let instance: SequenceCanonicalizer | null = null;

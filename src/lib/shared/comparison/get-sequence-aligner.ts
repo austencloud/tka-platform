@@ -1,8 +1,8 @@
 import { browser } from '$app/environment';
 
-import { SequenceAligner } from './services/implementations/SequenceAligner';
-import { getStepSignatureGenerator } from './getStepSignatureGenerator';
-import { getSpatialTransformDetector } from './getSpatialTransformDetector';
+import { SequenceAligner } from './services/sequence-aligner';
+import { getStepSignatureGenerator } from './get-step-signature-generator';
+import { getSpatialTransformDetector } from './get-spatial-transform-detector';
 
 let instance: SequenceAligner | null = null;
 

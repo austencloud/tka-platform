@@ -6,12 +6,12 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { MotionSignatureGenerator } from "./MotionSignatureGenerator";
+import type { MotionSignatureGenerator } from "./motion-signature-generator";
 import type {
   StepSignature,
   StepComparisonResult,
   MotionSignature,
-} from "../../domain/models/signatures";
+} from "../domain/models/signatures";
 import type {
   GridPosition} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
@@ -218,6 +218,6 @@ export class StepSignatureGenerator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { motionSignatureGenerator } from "./MotionSignatureGenerator";
+import { motionSignatureGenerator } from "./motion-signature-generator";
 
 export const stepSignatureGenerator = new StepSignatureGenerator(motionSignatureGenerator);

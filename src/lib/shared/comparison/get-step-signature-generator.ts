@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { StepSignatureGenerator } from './services/implementations/StepSignatureGenerator';
-import { getMotionSignatureGenerator } from './getMotionSignatureGenerator';
+import { StepSignatureGenerator } from './services/step-signature-generator';
+import { getMotionSignatureGenerator } from './get-motion-signature-generator';
 
 let instance: StepSignatureGenerator | null = null;
 

@@ -1,6 +1,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SpatialTransform } from "../../domain/models/signatures";
-import type { SequenceSignature } from "../../domain/models/signatures";
+import type { SpatialTransform } from "../domain/models/signatures";
+import type { SequenceSignature } from "../domain/models/signatures";
 
 /**
  * Result of aligning two sequences.

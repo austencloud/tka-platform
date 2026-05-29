@@ -1,8 +1,8 @@
 import { browser } from '$app/environment';
 
-import { SimilarityCalculator } from './services/implementations/SimilarityCalculator';
-import { getStepSignatureGenerator } from './getStepSignatureGenerator';
-import { getSequenceAligner } from './getSequenceAligner';
+import { SimilarityCalculator } from './services/similarity-calculator';
+import { getStepSignatureGenerator } from './get-step-signature-generator';
+import { getSequenceAligner } from './get-sequence-aligner';
 
 let instance: SimilarityCalculator | null = null;
 
