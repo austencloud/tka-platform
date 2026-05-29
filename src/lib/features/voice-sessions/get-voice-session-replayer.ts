@@ -1,4 +1,4 @@
-import { VoiceSessionReplayer } from './services/VoiceSessionReplayer';
+import { VoiceSessionReplayer } from './services/voice-session-replayer';
 import { getCommandInterpreter } from '$lib/shared/voice-control/getCommandInterpreter';
 
 let instance: VoiceSessionReplayer | null = null;

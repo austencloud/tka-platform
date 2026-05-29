@@ -9,7 +9,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type * as VoiceSessionRepositoryModule from "$lib/shared/voice-sessions/services/voice-session-repository";
   import type * as VoiceSessionFormatterModule from "$lib/features/voice-sessions/services/voice-session-formatter";
-  import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/VoiceSessionReplayer";
+  import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/voice-session-replayer";
   import type { VoiceSessionPreview, VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
   import SavedSessionItem from "./SavedSessionItem.svelte";
   import SessionDetailView from "./SessionDetailView.svelte";

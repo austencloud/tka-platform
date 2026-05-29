@@ -9,7 +9,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { VoiceSession, VoiceSessionEvent, ResolutionTier } from "$lib/shared/voice-control/domain/voice-session-types";
   import type * as VoiceSessionFormatterModule from "$lib/features/voice-sessions/services/voice-session-formatter";
-  import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/VoiceSessionReplayer";
+  import type { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/voice-session-replayer";
   import type { ReplayResult, ReplayDiffType } from "$lib/features/voice-sessions/domain/replay-types";
 
   let {

@@ -2,7 +2,7 @@ import { VoiceSessionRecorder } from '$lib/shared/voice-control/services/impleme
 import * as voiceSessionFormatter from './services/voice-session-formatter';
 import * as voiceSessionRepository from '$lib/shared/voice-sessions/services/voice-session-repository';
 import * as voiceSessionAnalyzer from './services/voice-session-analyzer';
-import { VoiceSessionReplayer } from './services/VoiceSessionReplayer';
+import { VoiceSessionReplayer } from './services/voice-session-replayer';
 import * as tierPromotionEngine from './services/tier-promotion-engine';
 import { getCommandInterpreter } from '$lib/shared/voice-control/getVoiceControlServices';
 
