@@ -33,9 +33,16 @@
     currentStep: number;
     isPlaying: boolean;
     avatarState: AvatarInstanceState;
+    /** Explicit prop-type override from the viewer's Theirs/Mine toggle.
+     *  When set, takes precedence over sequenceData.intendedProp and
+     *  creatorIntent.propConfig so the viewer's prop-context choice is
+     *  respected in the 3D scene. Accepts string so Viewer3DCanvas can
+     *  pass through without needing to import PropType. */
+    bluePropTypeOverride?: string | null;
+    redPropTypeOverride?: string | null;
   }
 
-  let { sequenceData, currentStep, isPlaying, avatarState }: Props = $props();
+  let { sequenceData, currentStep, isPlaying, avatarState, bluePropTypeOverride = null, redPropTypeOverride = null }: Props = $props();
   // The `avatarState` prop is kept for backward-compat with Viewer3DCanvas;
   // Task 14 removes it. The scene now iterates viewer3DState.performerManager.
   $effect(() => {
@@ -277,8 +284,10 @@
     _detachUndo?.();
   });
 
-  // Resolve prop type: prefer sequence's intended prop, fall back to settings
+  // Resolve prop type: explicit viewer override wins, then sequence's intended
+  // prop, then creator config, then global settings.
   const bluePropType = $derived.by((): PropType => {
+    if (bluePropTypeOverride) return bluePropTypeOverride as PropType;
     if (sequenceData?.intendedProp?.bluePropType) return sequenceData.intendedProp.bluePropType;
     if (sequenceData?.creatorIntent?.propConfig?.bluePropType) return sequenceData.creatorIntent.propConfig.bluePropType;
     try {
@@ -287,6 +296,7 @@
     } catch { return PropType.STAFF; }
   });
   const redPropType = $derived.by((): PropType => {
+    if (redPropTypeOverride) return redPropTypeOverride as PropType;
     if (sequenceData?.intendedProp?.redPropType) return sequenceData.intendedProp.redPropType;
     if (sequenceData?.creatorIntent?.propConfig?.redPropType) return sequenceData.creatorIntent.propConfig.redPropType;
     try {

@@ -61,6 +61,8 @@
     isPlaying,
     bpm = 60,
     onBpmChange = () => {},
+    bluePropType = null,
+    redPropType = null,
     hideOverlays = false,
     fullScreen = false,
     onExitFullScreen,
@@ -181,6 +183,8 @@
             {currentStep}
             {isPlaying}
             {avatarState}
+            bluePropTypeOverride={bluePropType}
+            redPropTypeOverride={redPropType}
           />
         </ScenePostProcessing>
       </Canvas>
