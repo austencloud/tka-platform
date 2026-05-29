@@ -6,14 +6,13 @@
  *
  * Platform-agnostic: uses ISequenceDataProvider for data loading.
  */
-import type { ITransitionGraph } from "../contracts/ITransitionGraph.js";
-import type { BrowserDataProvider } from "../../data/implementations/BrowserDataProvider.js";
-import type { PositionGroup, LetterPositionInfo } from "../../domain/models/SequenceEngineTypes.js";
+import type { BrowserDataProvider } from "../data/browser-data-provider.js";
+import type { PositionGroup, LetterPositionInfo } from "../domain/models/sequence-engine-types.js";
 /**
  * Transition graph for letter sequence building.
  * Manages valid transitions and finds bridge paths using BFS.
  */
-export declare class TransitionGraph implements ITransitionGraph {
+export declare class TransitionGraph {
     private readonly dataProvider;
     private letterPositions;
     private lettersByStartGroup;

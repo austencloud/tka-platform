@@ -7,15 +7,15 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { TransitionGraph } from "$lib/shared/sequence-engine/services/implementations/TransitionGraph";
-import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/implementations/BrowserDataProvider";
+import { TransitionGraph } from "$lib/shared/sequence-engine/services/transition-graph";
+import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/browser-data-provider";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 
 import type {
   LetterPositionInfo,
   LetterCategory,
 } from "../../domain/models/spell-models";
-import type { PositionGroup } from "$lib/shared/sequence-engine/domain/models/SequenceEngineTypes";
+import type { PositionGroup } from "$lib/shared/sequence-engine/domain/models/sequence-engine-types";
 
 /**
  * Browser-specific transition graph using the shared engine.

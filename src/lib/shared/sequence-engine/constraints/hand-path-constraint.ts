@@ -19,8 +19,8 @@ import type {
   ConstraintContext,
   ConstraintScore,
   ConstraintMotionData,
-} from "../types";
-import { ConstraintType, type ConstraintMode } from "../constraint-types";
+} from "./types";
+import { ConstraintType, type ConstraintMode } from "./constraint-types";
 
 /**
  * Hand path direction enum

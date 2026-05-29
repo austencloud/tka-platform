@@ -12,7 +12,7 @@ import type {
   SequenceStep,
   SequenceResult,
   Orientation,
-} from "../domain/models/SequenceEngineTypes";
+} from "../domain/models/sequence-engine-types";
 
 export function calculateEndOrientation(
   motionType: string,

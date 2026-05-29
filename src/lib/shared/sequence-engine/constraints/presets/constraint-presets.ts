@@ -5,9 +5,9 @@
  * These are the options exposed to users in the UI.
  */
 
-import { ContinuityConstraint } from "../implementations/ContinuityConstraint";
-import { ReversalConstraint } from "../implementations/ReversalConstraint";
-import { HandPathConstraint } from "../implementations/HandPathConstraint";
+import { ContinuityConstraint } from "../continuity-constraint";
+import { ReversalConstraint } from "../reversal-constraint";
+import { HandPathConstraint } from "../hand-path-constraint";
 import type { ConstraintSet } from "../types";
 
 /**

@@ -5,8 +5,8 @@
  * Wraps the existing ILetterQueryHandler and fetches letter mappings.
  */
 
-import type { LetterVariationData } from "../contracts/types";
-import type { LetterMappingsJson } from "../../domain/models/SequenceEngineTypes";
+import type { LetterVariationData } from "./types";
+import type { LetterMappingsJson } from "../domain/models/sequence-engine-types";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

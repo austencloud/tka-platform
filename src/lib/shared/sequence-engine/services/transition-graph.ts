@@ -7,20 +7,19 @@
  * Platform-agnostic: uses ISequenceDataProvider for data loading.
  */
 
-import type { ITransitionGraph } from "../contracts/ITransitionGraph.js";
-import type { BrowserDataProvider } from "../../data/implementations/BrowserDataProvider.js";
+import type { BrowserDataProvider } from "../data/browser-data-provider";
 import type {
   PositionGroup,
   LetterPositionInfo,
   LetterMappingsJson,
   LetterMappingData,
-} from "../../domain/models/SequenceEngineTypes.js";
+} from "../domain/models/sequence-engine-types";
 
 /**
  * Transition graph for letter sequence building.
  * Manages valid transitions and finds bridge paths using BFS.
  */
-export class TransitionGraph implements ITransitionGraph {
+export class TransitionGraph {
   private letterPositions: Map<string, LetterPositionInfo> = new Map();
   private lettersByStartGroup: Map<PositionGroup, string[]> = new Map();
   private lettersByEndGroup: Map<PositionGroup, string[]> = new Map();

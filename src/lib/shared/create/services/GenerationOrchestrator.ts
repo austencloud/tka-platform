@@ -27,7 +27,7 @@ import {
   setLetterTransitionGraph,
   type ISequenceDataProvider,
 } from "@tka/sequence-engine";
-import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/implementations/BrowserDataProvider";
+import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/browser-data-provider";
 import { letterQueryHandler as globalLetterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 
 // The engine's word-based generation path reads from a global transition

@@ -9,9 +9,9 @@ export * from "./constraint-types";
 export * from "./types";
 
 // Constraint implementations
-export { ContinuityConstraint, type ContinuityMode } from "./implementations/ContinuityConstraint";
-export { ReversalConstraint, type ReversalMode } from "./implementations/ReversalConstraint";
-export { HandPathConstraint, type HandPathConstraintMode, HandPath as ConstraintHandPath } from "./implementations/HandPathConstraint";
+export { ContinuityConstraint, type ContinuityMode } from "./continuity-constraint";
+export { ReversalConstraint, type ReversalMode } from "./reversal-constraint";
+export { HandPathConstraint, type HandPathConstraintMode, HandPath as ConstraintHandPath } from "./hand-path-constraint";
 
 // Presets
 export {
@@ -21,4 +21,4 @@ export {
   type ConstraintPresetId,
   type ConstraintPresetMeta,
   type ConstraintSetOptions,
-} from "./presets/ConstraintPresets";
+} from "./presets/constraint-presets";

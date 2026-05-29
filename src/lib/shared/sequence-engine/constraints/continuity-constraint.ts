@@ -5,13 +5,13 @@
  * Continuity means the rotation direction doesn't change (no reversal).
  */
 
-import { ConstraintType, type ConstraintMode } from "../constraint-types";
+import { ConstraintType, type ConstraintMode } from "./constraint-types";
 import type {
   IVariationConstraint,
   ConstraintContext,
   ConstraintScore,
   ConstraintPictographData,
-} from "../types";
+} from "./types";
 
 export type ContinuityMode = "maximize" | "enforce" | "allow";
 

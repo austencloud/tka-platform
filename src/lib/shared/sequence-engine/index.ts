@@ -15,7 +15,7 @@ export * from "@tka/sequence-engine";
 export {
   BrowserDataProvider,
   createBrowserDataProvider,
-} from "./data/implementations/BrowserDataProvider";
+} from "./data/browser-data-provider";
 
 // Constraints (re-export from constraints submodule)
 export * from "./constraints";

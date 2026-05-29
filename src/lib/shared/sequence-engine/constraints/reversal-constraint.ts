@@ -4,13 +4,13 @@
  * Controls the frequency of direction reversals in a sequence.
  */
 
-import { ConstraintType, type ConstraintMode } from "../constraint-types";
+import { ConstraintType, type ConstraintMode } from "./constraint-types";
 import type {
   IVariationConstraint,
   ConstraintContext,
   ConstraintScore,
   ConstraintPictographData,
-} from "../types";
+} from "./types";
 
 export type ReversalMode = "every" | "minimize" | "count";
 
