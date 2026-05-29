@@ -357,6 +357,8 @@
         onTnDTurnPatternToggle={handleTnDTurnPatternToggle}
         onTnDTurnPatternsSet={handleSetTnDTurnPatterns}
         onDraw={handleDraw}
+        variationConfig={rs.variationConfig}
+        onVariationConfigChange={(c) => { rs.variationConfig = c; }}
       />
     {:else if rs.step === "review"}
       <ReviewStep
