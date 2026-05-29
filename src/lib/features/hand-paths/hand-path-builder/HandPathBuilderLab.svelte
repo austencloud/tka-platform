@@ -19,7 +19,7 @@
   import { createBuilderState } from "./state/builder-state.svelte";
   import { setBuilderContext } from "./context/builder-context";
   import InteractiveCanvas from "$lib/shared/interactive-canvas/InteractiveCanvas.svelte";
-  import { HandPathAnimator, getPathD } from "./services/HandPathAnimator";
+  import { HandPathAnimator, getPathD } from "./services/hand-path-animator";
   import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
