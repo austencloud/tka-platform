@@ -121,7 +121,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     activeReversal = resolved;
     seedError = "";
     if (!resolved.isCleanLoop) return;
-    browseState.setReversalPattern(resolved.id === "continuous" ? null : resolved.id);
+    browseState.setReversalPattern(resolved.id);
   }
 
   async function handleSelectFamily(familyId: string) {
@@ -600,7 +600,7 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     <div class="level-container level-interior">
       <TnDFamilyDrillDown
         familyId={activeTnDFamilyId}
-        catalogs={tndCatalogs}
+        catalogs={browseState.filteredCatalogs}
         {handPointsVisible}
         {showGrid}
         {showTKA}
