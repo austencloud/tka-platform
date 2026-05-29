@@ -39,6 +39,7 @@
   import { createExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
@@ -77,6 +78,36 @@
   const loaderWord = $derived(
     data?.meta?.word ? simplifyRepeatedWord(data.meta.word) : ""
   );
+
+  // ── Load progress bar ──
+  // The heavy resolve+cache+player phase is opaque (one big Promise.all with no
+  // sub-progress), so we anchor the bar to real phase completions and trickle
+  // it toward each milestone's ceiling in between — it never stalls and never
+  // lies about reaching a milestone it hasn't hit. Snaps to 100 on success.
+  let loadProgress = $state(0);
+  let trickleTimer: ReturnType<typeof setInterval> | null = null;
+
+  function setProgress(v: number) {
+    loadProgress = Math.max(loadProgress, v);
+  }
+
+  function trickleTo(ceiling: number) {
+    stopTrickle();
+    trickleTimer = setInterval(() => {
+      if (loadProgress < ceiling) {
+        setProgress(loadProgress + Math.max(0.4, (ceiling - loadProgress) * 0.08));
+      }
+    }, 200);
+  }
+
+  function stopTrickle() {
+    if (trickleTimer) {
+      clearInterval(trickleTimer);
+      trickleTimer = null;
+    }
+  }
+
+  onDestroy(stopTrickle);
 
   let resolvedSeq: SequenceData | null = $state(null);
   let seqWord = $state("");
@@ -275,6 +306,9 @@
     }
 
     try {
+      setProgress(8);
+      trickleTo(30);
+
       // Paint the word as a pulsing glyph loader ASAP — just this word's
       // glyphs, before the heavy resolve + full glyph cache init below.
       const baseLetters = wordBaseLetters(loaderWord);
@@ -287,6 +321,11 @@
         }
       }
 
+      // Heaviest phase: short-code resolve + full glyph cache + player chunk.
+      // No sub-progress available, so trickle toward 85 until it completes.
+      setProgress(35);
+      trickleTo(85);
+
       const [seq_, PlayerModule] = await Promise.all([
         shortCodeManager.resolveShortCode(shortCode),
         getGlyphCache().initialize().then(() =>
@@ -296,9 +335,13 @@
 
       let seq = seq_;
       if (!seq) {
+        stopTrickle();
         pageState = { kind: "error", message: "Sequence not found" };
         return;
       }
+
+      setProgress(88);
+      trickleTo(96);
 
       seq = await hydrateSequence(seq, {
         letterDeriver: getLetterDeriver(),
@@ -328,8 +371,11 @@
 
       effectsConfig.setActiveEffect("trails");
 
+      stopTrickle();
+      setProgress(100);
       pageState = { kind: "playing", word };
     } catch (err: unknown) {
+      stopTrickle();
       pageState = {
         kind: "error",
         message: err instanceof Error ? err.message : "Failed to load sequence",
@@ -362,6 +408,9 @@
       {#if glyphsReady && loaderWord}
         <div class="word-loader">
           <TKAWordGlyph word={loaderWord} height={40} darkMode />
+        </div>
+        <div class="loader-progress">
+          <ProgressBar percent={loadProgress} height={4} />
         </div>
       {:else}
         <div class="dots-loader" aria-label="Loading">
@@ -526,6 +575,12 @@
     display: flex;
     justify-content: center;
     animation: word-pulse 1.4s ease-in-out infinite;
+  }
+
+  .loader-progress {
+    width: 160px;
+    max-width: 60%;
+    margin: 1rem auto 0;
   }
 
   @keyframes word-pulse {
