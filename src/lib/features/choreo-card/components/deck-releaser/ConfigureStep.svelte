@@ -3,6 +3,11 @@
   import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
   import TnDTurnMatrix from "../TnDTurnMatrix.svelte";
   import { TND_BY_FAMILY } from "../../domain/tnd-element";
+  import {
+    BOOK_PATTERNS,
+    TURN_PATTERNS,
+    type VariationConfig,
+  } from "../../services/deck-variation";
 
   type DeckMode = "loop" | "tnd";
 
@@ -28,6 +33,8 @@
     onTnDTurnPatternsSet: (patterns: Set<string>) => void;
     onDraw: () => void;
     isLoading: boolean;
+    variationConfig: VariationConfig;
+    onVariationConfigChange: (config: VariationConfig) => void;
   }
 
   let {
@@ -52,6 +59,8 @@
     onTnDTurnPatternsSet,
     onDraw,
     isLoading,
+    variationConfig,
+    onVariationConfigChange,
   }: Props = $props();
 
   const PRESETS = [
@@ -59,6 +68,39 @@
     { id: "beginner", label: "Beginner", icon: "fa-seedling", weights: { 16: 10, 12: 20, 8: 30, 4: 40 } },
     { id: "advanced", label: "Advanced", icon: "fa-fire", weights: { 16: 40, 12: 30, 8: 20, 4: 10 } },
   ] as const;
+
+  // Reversals offered to LOOP decks: book family minus red-/blue-book.
+  const OFFERED_REVERSALS = BOOK_PATTERNS.filter((p) =>
+    ["book", "long-book", "alternating"].includes(p.id),
+  );
+
+  const VARIATION_PRESETS = [
+    { id: "clean", label: "Clean", icon: "fa-feather", rf: 0, tf: 0 },
+    { id: "sprinkle", label: "Sprinkle", icon: "fa-wand-magic-sparkles", rf: 0.3, tf: 0.4 },
+    { id: "spicy", label: "Spicy", icon: "fa-pepper-hot", rf: 0.6, tf: 0.7 },
+  ] as const;
+
+  function toggleReversal(id: string) {
+    const next = new Set(variationConfig.enabledReversals);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    onVariationConfigChange({ ...variationConfig, enabledReversals: [...next] });
+  }
+
+  function toggleTurn(id: string) {
+    const next = new Set(variationConfig.enabledTurnPatterns);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    onVariationConfigChange({ ...variationConfig, enabledTurnPatterns: [...next] });
+  }
+
+  function setReversalFreq(v: number) {
+    onVariationConfigChange({ ...variationConfig, reversalFrequency: v / 100 });
+  }
+  function setTurnFreq(v: number) {
+    onVariationConfigChange({ ...variationConfig, turnFrequency: v / 100 });
+  }
+  function applyVariationPreset(rf: number, tf: number) {
+    onVariationConfigChange({ ...variationConfig, reversalFrequency: rf, turnFrequency: tf });
+  }
 
   const totalWeight = $derived(weights.reduce((s, w) => s + w.weight, 0));
 
@@ -196,6 +238,63 @@
               <span class="weight-count">~{cardCount(w)} cards</span>
               <span class="pool-size">({w.available.toLocaleString()} available)</span>
             </div>
+          {/each}
+        </div>
+      </div>
+
+      <div class="control-group">
+        <span class="control-label">Variation</span>
+        <div class="preset-row">
+          {#each VARIATION_PRESETS as p (p.id)}
+            <button type="button" class="preset-btn" onclick={() => applyVariationPreset(p.rf, p.tf)}>
+              <i class="fas {p.icon}" aria-hidden="true"></i>
+              {p.label}
+            </button>
+          {/each}
+        </div>
+
+        <div class="weight-row variation-freq">
+          <span class="step-label">Reversals</span>
+          <input
+            type="range" min="0" max="100"
+            value={Math.round(variationConfig.reversalFrequency * 100)}
+            class="weight-slider"
+            oninput={(e) => setReversalFreq(parseInt((e.target as HTMLInputElement).value))}
+          />
+          <span class="weight-pct">{Math.round(variationConfig.reversalFrequency * 100)}%</span>
+        </div>
+        <div class="toggle-row">
+          {#each OFFERED_REVERSALS as r (r.id)}
+            <button
+              type="button"
+              class="toggle-chip"
+              class:selected={variationConfig.enabledReversals.includes(r.id)}
+              aria-pressed={variationConfig.enabledReversals.includes(r.id)}
+              onclick={() => toggleReversal(r.id)}
+            >{r.label}</button>
+          {/each}
+        </div>
+
+        <div class="weight-row variation-freq">
+          <span class="step-label">Turns</span>
+          <input
+            type="range" min="0" max="100"
+            value={Math.round(variationConfig.turnFrequency * 100)}
+            class="weight-slider"
+            oninput={(e) => setTurnFreq(parseInt((e.target as HTMLInputElement).value))}
+          />
+          <span class="weight-pct">{Math.round(variationConfig.turnFrequency * 100)}%</span>
+        </div>
+        <div class="toggle-row">
+          {#each TURN_PATTERNS as t (t.id)}
+            <button
+              type="button"
+              class="toggle-chip"
+              class:selected={variationConfig.enabledTurnPatterns.includes(t.id)}
+              aria-pressed={variationConfig.enabledTurnPatterns.includes(t.id)}
+              title={t.pattern}
+              onclick={() => toggleTurn(t.id)}
+            >{t.label}</button>
           {/each}
         </div>
       </div>
@@ -608,6 +707,40 @@
     font-size: 11px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
     text-align: right;
+  }
+
+  .variation-freq {
+    grid-template-columns: 80px 1fr 48px;
+  }
+
+  .toggle-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .toggle-chip {
+    min-height: 36px;
+    padding: 6px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 999px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .toggle-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--theme-text, #fff);
+  }
+
+  .toggle-chip.selected {
+    background: rgba(139, 92, 246, 0.18);
+    border-color: var(--theme-accent, #8b5cf6);
+    color: var(--theme-text, #fff);
   }
 
   .draw-btn {
