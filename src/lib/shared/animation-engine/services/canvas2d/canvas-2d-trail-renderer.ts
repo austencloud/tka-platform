@@ -19,8 +19,8 @@ import {
   TrailEffect,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
-import type { AdditionalLayerRenderData } from "$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer";
-import { DEFAULT_CANVAS_SIZE } from "$lib/shared/animation-engine/services/implementations/CanvasResizer.svelte";
+import type { AdditionalLayerRenderData } from "$lib/shared/animation-engine/services/canvas-2d-animation-renderer";
+import { DEFAULT_CANVAS_SIZE } from "$lib/shared/animation-engine/services/canvas-resizer.svelte";
 
 // ============================================================================
 // CATMULL-ROM SPLINE (pure math, no framework dependencies)
