@@ -14,7 +14,7 @@ import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contra
 import type {
   LetterPositionInfo,
   LetterCategory,
-} from "../../domain/models/spell-models";
+} from "../domain/models/spell-models";
 import type { PositionGroup } from "$lib/shared/sequence-engine/domain/models/sequence-engine-types";
 
 /**

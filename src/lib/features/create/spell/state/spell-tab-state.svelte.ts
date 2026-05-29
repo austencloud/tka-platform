@@ -12,17 +12,17 @@
  */
 
 import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
-import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
-import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
 import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
-import { createSequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
-import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
-import type { UndoMetadata } from "../../shared/services/implementations/UndoManager";
-import type { UndoOperationType } from "../../shared/services/implementations/UndoManager";
+import { createSequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
+import type { SequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
+import type { UndoMetadata } from "../../shared/services/undo-manager";
+import type { UndoOperationType } from "../../shared/services/undo-manager";
 import { createUndoController } from "$lib/features/create/shared/state/create-module/undo-controller.svelte";
-import { undoManager } from "$lib/features/create/shared/services/implementations/UndoManager";
+import { undoManager } from "$lib/features/create/shared/services/undo-manager";
 import { browser } from "$app/environment";
 import type {
   LetterSource,

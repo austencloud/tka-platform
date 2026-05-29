@@ -1,13 +1,13 @@
 import { browser } from '$app/environment';
 
-import { RandomSequenceGenerator } from './services/implementations/RandomSequenceGenerator';
+import { RandomSequenceGenerator } from './services/random-sequence-generator';
 import * as loopEndPositionResolver from './services/loop-end-position-resolver';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
 import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
-import { getStartPositionValidator } from './getStartPositionValidator';
+import { getStartPositionValidator } from './get-start-position-validator';
 import * as orientationContinuityValidator from './services/orientation-continuity-validator';
-import { getSequenceExtender } from '$lib/features/create/shared/getSequenceExtender';
-import { getStepConverter } from '$lib/features/create/generate/shared/getStepConverter';
+import { getSequenceExtender } from '$lib/features/create/shared/get-sequence-extender';
+import { getStepConverter } from '$lib/features/create/generate/shared/get-step-converter';
 import { reversalDetector } from '$lib/shared/create/services/reversal-detector';
 
 let instance: RandomSequenceGenerator | null = null;

@@ -1,11 +1,11 @@
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { VariationConstraints } from "../../domain/models/spell-models";
+import type { VariationConstraints } from "../domain/models/spell-models";
 import type { ConstraintSet } from "$lib/shared/sequence-engine/constraints/types";
-import type { LetterSource } from "../../domain/models/spell-models";
+import type { LetterSource } from "../domain/models/spell-models";
 import type { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { SpellPreferences } from "../../domain/models/spell-models";
+import type { SpellPreferences } from "../domain/models/spell-models";
 
 /**
  * Details about an orientation continuity error

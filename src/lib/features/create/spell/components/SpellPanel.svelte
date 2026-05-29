@@ -10,17 +10,17 @@ Same functionality, different density.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
+  import type { SequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
 import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { VariationExplorationOrchestrator } from "../services/implementations/VariationExplorationOrchestrator";
-  import type { RandomSequenceGenerator } from "../services/implementations/RandomSequenceGenerator";
+  import type { VariationExplorationOrchestrator } from "../services/variation-exploration-orchestrator";
+  import type { RandomSequenceGenerator } from "../services/random-sequence-generator";
   import * as spellServiceLoaderModule from "../services/spell-service-loader";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
-  import { UndoOperationType } from "../../shared/services/implementations/UndoManager";
+  import { UndoOperationType } from "../../shared/services/undo-manager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import WordInput from "./WordInput.svelte";
@@ -29,7 +29,7 @@ import { getDeviceDetector } from "$lib/shared/device/getDeviceDetector";
   import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
   import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
-  import { getVariationExplorationOrchestrator as getVariationExplorationOrchestratorGetter } from "$lib/features/create/spell/getVariationExplorationOrchestrator";
+  import { getVariationExplorationOrchestrator as getVariationExplorationOrchestratorGetter } from "$lib/features/create/spell/get-variation-exploration-orchestrator";
 
   // Props
   let {

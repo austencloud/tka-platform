@@ -5,7 +5,7 @@
  * Each beat's start orientation must match the previous beat's end orientation.
  */
 
-import type { OrientationContinuityError, TransitionValidationResult } from "./contracts/types";
+import type { OrientationContinuityError, TransitionValidationResult } from "./types";
 
 /**
  * Interface describing the shape of the orientation continuity validator module.

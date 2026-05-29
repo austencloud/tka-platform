@@ -6,18 +6,18 @@
  */
 
 
-import type { LetterTransitionGraph } from "./implementations/LetterTransitionGraph";
-import type { WordSequenceGenerator } from "./implementations/WordSequenceGenerator";
-import type { VariationConstraintBuilder } from "./implementations/VariationConstraintBuilder";
-import type { RandomSequenceGenerator } from "./implementations/RandomSequenceGenerator";
-import type { SequenceExtender } from "../../shared/services/implementations/SequenceExtender";
+import type { LetterTransitionGraph } from "./letter-transition-graph";
+import type { WordSequenceGenerator } from "./word-sequence-generator";
+import type { VariationConstraintBuilder } from "./variation-constraint-builder";
+import type { RandomSequenceGenerator } from "./random-sequence-generator";
+import type { SequenceExtender } from "../../shared/services/sequence-extender";
 
 // Direct singleton imports
-import { letterTransitionGraph as letterTransitionGraphSingleton } from "./implementations/LetterTransitionGraph";
-import { wordSequenceGenerator as wordSequenceGeneratorSingleton } from "./implementations/WordSequenceGenerator";
-import { variationConstraintBuilder as variationConstraintBuilderSingleton } from "./implementations/VariationConstraintBuilder";
-import { randomSequenceGenerator as randomSequenceGeneratorSingleton } from "./implementations/RandomSequenceGenerator";
-import { sequenceExtender as sequenceExtenderSingleton } from "$lib/features/create/shared/services/implementations/SequenceExtender";
+import { letterTransitionGraph as letterTransitionGraphSingleton } from "./letter-transition-graph";
+import { wordSequenceGenerator as wordSequenceGeneratorSingleton } from "./word-sequence-generator";
+import { variationConstraintBuilder as variationConstraintBuilderSingleton } from "./variation-constraint-builder";
+import { randomSequenceGenerator as randomSequenceGeneratorSingleton } from "./random-sequence-generator";
+import { sequenceExtender as sequenceExtenderSingleton } from "$lib/features/create/shared/services/sequence-extender";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 
 export async function getWordGenerator(): Promise<WordSequenceGenerator> {

@@ -7,12 +7,12 @@
  */
 
 
-import type { LetterTypeClassifier } from "../letter-type-classifier";
+import type { LetterTypeClassifier } from "./letter-type-classifier";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type {
   SpellPreferences,
   VariationConstraints,
-} from "../../domain/models/spell-models";
+} from "../domain/models/spell-models";
 
 export class VariationConstraintBuilder {
   constructor(private readonly letterTypeClassifier: LetterTypeClassifier) {}
@@ -51,7 +51,7 @@ export class VariationConstraintBuilder {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import * as letterTypeClassifier from "../letter-type-classifier";
+import * as letterTypeClassifier from "./letter-type-classifier";
 
 export const variationConstraintBuilder = new VariationConstraintBuilder(
   letterTypeClassifier

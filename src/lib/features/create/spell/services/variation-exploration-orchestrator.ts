@@ -5,10 +5,10 @@
  */
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { LetterSource } from "../../domain/models/spell-models";
-import type { WordParseResult, WordParseOptions } from "../contracts/types";
-import type { LetterTransitionGraph } from "./LetterTransitionGraph";
-import type { WordSequenceGenerator } from "./WordSequenceGenerator";
+import type { LetterSource } from "../domain/models/spell-models";
+import type { WordParseResult, WordParseOptions } from "./types";
+import type { LetterTransitionGraph } from "./letter-transition-graph";
+import type { WordSequenceGenerator } from "./word-sequence-generator";
 
 // Letters with dash motions (Type 3, 4, and 5)
 const DASH_LETTERS: Set<string> = new Set([
@@ -147,7 +147,7 @@ export class VariationExplorationOrchestrator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import * as spellServiceLoader from "../spell-service-loader";
+import * as spellServiceLoader from "./spell-service-loader";
 
 export const variationExplorationOrchestrator = new VariationExplorationOrchestrator(
   spellServiceLoader

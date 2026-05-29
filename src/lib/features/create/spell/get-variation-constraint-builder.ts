@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { VariationConstraintBuilder } from './services/implementations/VariationConstraintBuilder';
+import { VariationConstraintBuilder } from './services/variation-constraint-builder';
 import * as letterTypeClassifier from './services/letter-type-classifier';
 
 let instance: VariationConstraintBuilder | null = null;

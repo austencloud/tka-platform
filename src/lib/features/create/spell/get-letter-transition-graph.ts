@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { LetterTransitionGraph } from './services/implementations/LetterTransitionGraph';
+import { LetterTransitionGraph } from './services/letter-transition-graph';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
 
 let instance: LetterTransitionGraph | null = null;

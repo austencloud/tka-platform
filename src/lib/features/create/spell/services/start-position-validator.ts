@@ -5,7 +5,7 @@
  * Start positions must have startPosition === endPosition (no movement).
  */
 
-import type { LetterTransitionGraph } from "../implementations/LetterTransitionGraph";
+import type { LetterTransitionGraph } from "./letter-transition-graph";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -101,7 +101,7 @@ export class StartPositionValidator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { letterTransitionGraph } from "./LetterTransitionGraph";
+import { letterTransitionGraph } from "./letter-transition-graph";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 
 export const startPositionValidator = new StartPositionValidator(
