@@ -24,6 +24,9 @@
     mossIntensity: number;
     columnCount: number;
     zOffset?: number;
+    /** Lifts the platform's base above groundY — set to the seabed surface height
+     *  so the dais sits ON the sand instead of buried in it. */
+    groundOffset?: number;
   }
 
   interface Props {
@@ -34,6 +37,9 @@
   const groundY = $derived(userProportionsState.groundY);
 
   const elevation = $derived(config.elevation ?? 0);
+  // Base reference for all vertical placement. groundOffset raises it to the
+  // seabed surface so the platform stands on the sand rather than sinking in.
+  const baseY = $derived(groundY + (config.groundOffset ?? 0));
 
   let bodyGeometry = $state<BoxGeometry | undefined>(undefined);
   let topGeometry = $state<PlaneGeometry | undefined>(undefined);
@@ -338,7 +344,7 @@
     <T.Mesh
       geometry={bodyGeometry}
       material={bodyMaterial}
-      position.y={groundY + elevation + config.height / 2}
+      position.y={baseY + elevation + config.height / 2}
     />
 
     <!-- Bioluminescent top surface -->
@@ -346,7 +352,7 @@
       geometry={topGeometry}
       material={topMaterial}
       rotation.x={-Math.PI / 2}
-      position.y={groundY + elevation + config.height + 0.001}
+      position.y={baseY + elevation + config.height + 0.001}
     />
 
     <!-- Overgrown column stumps on top -->
@@ -356,7 +362,7 @@
         geometry={columnGeometry}
         material={columnMaterial}
         position.x={col.x}
-        position.y={groundY + elevation + config.height + colHeight * 0.5}
+        position.y={baseY + elevation + config.height + colHeight * 0.5}
         position.z={col.z}
         scale.y={col.scaleY}
       />
@@ -369,7 +375,7 @@
           geometry={supportPillarGeometry}
           material={bodyMaterial}
           position.x={pillar.x}
-          position.y={groundY + elevation / 2}
+          position.y={baseY + elevation / 2}
           position.z={pillar.z}
         />
       {/each}
