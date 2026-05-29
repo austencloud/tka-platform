@@ -13,11 +13,19 @@
  *   - loop icons      (icon-constant): the 6 LOOP component icons + quartered variants
  *
  * RENDER SCALE — single source of truth:
- *   The card back renders at 1644×2244 (822×1122 logical * scale 2).
- *   1cqi = 1644 / 100 = 16.44px. Every box size below is `<n>cqi * CQI`.
- *   Elements are mounted inside a container whose inline-size = CARD_RENDER_WIDTH
- *   (1644) so cqi units resolve identically to the live card. The bitmap crop
- *   is each element's own layout box (from card-back-layout.ts).
+ *   The card back renders at 1644×2244 (822×1122 logical * scale 2). BUT cqi on
+ *   the live card resolves against the BORDER-FRAME CONTENT box, not the full
+ *   card: `.border-frame` carries `container-type:inline-size` and
+ *   `padding:borderWidth cqi`, so every inner `cqi` is sized against
+ *   (cardWidth − 2·borderPx). We therefore mount each element inside a container
+ *   whose inline-size = that inner content width, so its cqi units (`cqiEff`)
+ *   match the live card exactly. Computing against the full 1644 width oversizes
+ *   everything ~7-8%. See `borderAwareBasis()`.
+ *
+ *   Brand + URL are flex-column slots whose block size is text-flow driven, so
+ *   they rasterize at NATURAL height (rasterize-node `naturalHeight`) — a fixed
+ *   crop dropped the last line ("Choreo Cards" / "© <year>"). The builder then
+ *   anchors them by the bitmap's own height.
  *
  * PARITY: the brand/url/loop markup + styles are reproduced VERBATIM in the
  * standalone extraction components (CardBackBrand / CardBackUrl /
@@ -36,18 +44,23 @@ import { rasterizeComponent } from "./rasterize-node";
 // ── Render scale (matches card-back-layout.ts / CardBack.svelte) ───────────
 /** Card back render width in px (822 logical * scale 2). */
 export const CARD_RENDER_WIDTH = 1644;
-/** 1cqi in px at the card render width. */
-const CQI = CARD_RENDER_WIDTH / 100; // 16.44
 
-// ── Element box sizes (lifted from CardBack.svelte CSS via card-back-layout) ─
-// .brand-slot height ≈ 11.2cqi (main 4.4cqi + gap 0.8 + ornament ~2 + gap 0.8 + sub 3.2)
-const BRAND_H = 11.2 * CQI;
-// .url-slot height ≈ 8cqi (ornament 1.6 + gap 0.6 + url 3.0 + gap 0.6 + year 2.2)
-const URL_H = 8 * CQI;
-// .level-badge DifficultyBadge size="7cqi" (7cqi square)
-const BADGE_SIZE = 7 * CQI;
-// .loop-icon-cell width:9cqi height:9cqi
-const LOOP_CELL_SIZE = 9 * CQI;
+/**
+ * Border-frame content-box basis for a theme. `.border-frame` resolves its own
+ * `padding:borderWidth cqi` against ~card width, then `.back` (and every cqi
+ * inside it) resolves against the resulting CONTENT box. This mirrors
+ * computeCardBackLayout's border math so the rasterizers render at the SAME cqi
+ * as the live card / layout boxes.
+ *
+ * @param theme Theme name → getCardBackThemeVisuals(theme).borderWidth (proof
+ *              mode = 3.5; default 2 if a theme omits it).
+ */
+function borderAwareBasis(theme: string): { innerWidth: number; cqiEff: number } {
+  const borderWidth = getCardBackThemeVisuals(theme).borderWidth ?? 2;
+  const borderPx = borderWidth * (CARD_RENDER_WIDTH / 100);
+  const innerWidth = CARD_RENDER_WIDTH - 2 * borderPx;
+  return { innerWidth, cqiEff: innerWidth / 100 };
+}
 
 // ── LOOP icon map (verbatim from CardBack.svelte) ──────────────────────────
 /** fa class + color + label for each surfaced LOOP component. */
@@ -71,7 +84,7 @@ type RasterizeFn = (
   props: Record<string, unknown>,
   w: number,
   h: number,
-  opts?: { containerWidth?: number },
+  opts?: { containerWidth?: number; naturalHeight?: boolean },
 ) => Promise<ImageBitmap>;
 
 let rasterize: RasterizeFn = rasterizeComponent;
@@ -83,7 +96,7 @@ export function __setRasterizeFnForTest(fn: RasterizeFn | null): void {
 
 const brandCache = new Map<string, Promise<ImageBitmap>>();
 const urlCache = new Map<string, Promise<ImageBitmap>>();
-const badgeCache = new Map<number, Promise<ImageBitmap>>();
+const badgeCache = new Map<string, Promise<ImageBitmap>>();
 const loopIconCache = new Map<string, Promise<ImageBitmap>>();
 
 /**
@@ -107,36 +120,46 @@ function cached<K>(
 
 /**
  * Rasterize the brand slot ("The Kinetic Alphabet" + ornament + "Choreo Cards")
- * for `theme`. Cache key: theme name.
+ * for `theme`. Cache key: theme name (per-theme borderWidth → cqi is isolated).
+ *
+ * Rendered full-content-box width at the border-aware cqi, at NATURAL height so
+ * the "Choreo Cards" sub-line is never cropped. The builder anchors the
+ * resulting bitmap (top:3.2cqi, horizontally centered) by its own height.
  */
 export function rasterizeBrand(theme: string): Promise<ImageBitmap> {
-  return cached(brandCache, theme, () =>
-    rasterize(
+  return cached(brandCache, theme, () => {
+    const { innerWidth } = borderAwareBasis(theme);
+    return rasterize(
       CardBackBrand,
       { theme: getCardBackThemeVisuals(theme) },
-      CARD_RENDER_WIDTH,
-      Math.round(BRAND_H),
-      { containerWidth: CARD_RENDER_WIDTH },
-    ),
-  );
+      Math.round(innerWidth),
+      0, // ignored — naturalHeight measures the laid-out content
+      { containerWidth: Math.round(innerWidth), naturalHeight: true },
+    );
+  });
 }
 
 // ── URL (theme-constant) ───────────────────────────────────────────────────
 
 /**
  * Rasterize the url slot (ornament + "tkaflowarts.com" + "© <year>") for
- * `theme`. Cache key: theme name.
+ * `theme`. Cache key: theme name (per-theme borderWidth → cqi is isolated).
+ *
+ * Rendered full-content-box width at the border-aware cqi, at NATURAL height so
+ * the "© <year>" line is never cropped. The builder anchors the resulting bitmap
+ * (bottom:2.8cqi, horizontally centered) by its own height.
  */
 export function rasterizeUrl(theme: string): Promise<ImageBitmap> {
-  return cached(urlCache, theme, () =>
-    rasterize(
+  return cached(urlCache, theme, () => {
+    const { innerWidth } = borderAwareBasis(theme);
+    return rasterize(
       CardBackUrl,
       { theme: getCardBackThemeVisuals(theme) },
-      CARD_RENDER_WIDTH,
-      Math.round(URL_H),
-      { containerWidth: CARD_RENDER_WIDTH },
-    ),
-  );
+      Math.round(innerWidth),
+      0, // ignored — naturalHeight measures the laid-out content
+      { containerWidth: Math.round(innerWidth), naturalHeight: true },
+    );
+  });
 }
 
 // ── Difficulty badge (level-constant) ──────────────────────────────────────

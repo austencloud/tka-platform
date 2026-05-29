@@ -117,8 +117,22 @@ export async function rasterizeComponent(
       await new Promise<void>((resolve) => setTimeout(resolve, settleMs));
     }
 
+    // In natural-height mode, measure the laid-out content and snapshot at that
+    // height so nothing is cropped. The mounted root is the container's first
+    // element child (the slot's root <div>); fall back to the container box.
+    let cropH = h;
+    if (naturalHeight) {
+      const root = container.firstElementChild as HTMLElement | null;
+      const measured =
+        root?.getBoundingClientRect().height ||
+        root?.offsetHeight ||
+        container.scrollHeight ||
+        h;
+      cropH = Math.ceil(measured);
+    }
+
     const { domToCanvas } = await import("modern-screenshot");
-    const canvas = await domToCanvas(container, { width: w, height: h, scale });
+    const canvas = await domToCanvas(container, { width: w, height: cropH, scale });
 
     return await createImageBitmap(canvas);
   } finally {
