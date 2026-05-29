@@ -28,9 +28,11 @@
     viewer3DState.setNavMode(mode);
   }
 
-  // Deep-link: /coven?seq=<id> loads that sequence and skips the picker.
+  // Resolve which sequence to load on entry: a ?seq= deep-link wins, otherwise
+  // fall back to the sequence persisted from the last visit. Either way the
+  // page owns hydration (the state only persists the id, not the full data).
   $effect(() => {
-    const id = $page.url.searchParams.get("seq");
+    const id = $page.url.searchParams.get("seq") ?? hub.lastSequenceId;
     if (!id) return;
     getBrowseLoader()
       .loadFullSequenceData(id, id)
@@ -38,7 +40,7 @@
         if (seq) hub.setSequence(seq);
       })
       .catch((err: unknown) => {
-        console.warn("[CovenPage] Failed to load deep-linked sequence:", err);
+        console.warn("[CovenPage] Failed to load sequence:", err);
       });
   });
 </script>
@@ -66,7 +68,12 @@
       cameraPlayerPhysics={cameraPlayer.physicsProvider}
     />
     <ForestScene showStage={false} clearingRadius={28} />
-    <CovenHub sequence={hub.activeSequence} />
+    <!-- Covens (~144 rigs at full LOD) starve the GPU. While the picker is open
+         its thumbnail render queue needs that GPU, so don't mount the covens
+         until a sequence is chosen and the picker closes. -->
+    {#if !hub.pickerOpen}
+      <CovenHub sequence={hub.activeSequence} />
+    {/if}
   </Canvas>
 </div>
 
