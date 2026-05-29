@@ -5,16 +5,19 @@
   const sceneFeatures = getSceneFeatureContext();
   const stageOn = $derived(sceneFeatures?.isEnabled("stage") ?? true);
 
-  // Green-glow bioluminescent ruins platform — the original ocean stage values
-  // (recovered from the pre-ocean-v2 monolith). Top surface sits at
-  // groundY + elevation(1.0) + height(0.5) = groundY + 1.5, which is exactly the
-  // OCEAN performer foot offset, so the performer stands on the platform.
+  // Green-glow bioluminescent ruins platform — recovered colours/dimensions
+  // from the pre-ocean-v2 monolith. ocean-v2's seabed sits ~1.5 above groundY,
+  // so groundOffset=1.5 plants the dais ON the sand; elevation 0.5 raises the
+  // deck on visible support pillars. Deck top = groundY + 1.5 + 0.5 + 0.5 = 2.5,
+  // matched by the OCEAN performer offset in Viewer3DScene so the performer
+  // stands on the deck. (SEABED 1.5 + DECK RISE 1.0.)
   const config = $derived({
     enabled: stageOn,
     width: 8,
     depth: 6,
     height: 0.5,
-    elevation: 1.0,
+    elevation: 0.5,
+    groundOffset: 1.5,
     stoneColor: "#1a2028",
     runeGlowColor: "#44ddaa",
     glowIntensity: 0.5,

@@ -71,9 +71,9 @@
       case BackgroundType.WINTER:
         return 0.45;
       case BackgroundType.OCEAN:
-        // 1.5 lands the performer on the ruins-platform top
-        // (groundY + elevation 1.0 + height 0.5). See OceanStage.
-        return 1.5;
+        // 1.5 = seabed surface. With the Stage on, +1.0 (OceanStage deck rise:
+        // elevation 0.5 + height 0.5) stands the performer on the ruins dais.
+        return 1.5 + (sceneFeatures.isEnabled("stage") ? 1.0 : 0);
       case BackgroundType.EMBER:
         return 0.5;
       case BackgroundType.BLOSSOM:
