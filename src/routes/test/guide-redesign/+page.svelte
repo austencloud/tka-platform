@@ -371,7 +371,7 @@
         <p class="p-bleeding">
           Motions describe how hands travel between positions:
           <span class="term" tabindex="0">shift<span class="term-tip">Hand moves to an adjacent grid point.</span></span>,
-          <span class="term" tabindex="0">dash<span class="term-tip">Hand stays in place but changes orientation.</span></span>, and
+          <span class="term" tabindex="0">dash<span class="term-tip">Hand moves in a straight line to the opposite grid point.</span></span>, and
           <span class="term" tabindex="0">static<span class="term-tip">Hand doesn't move at all.</span></span>.
         </p>
       </div>

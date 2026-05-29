@@ -34,10 +34,10 @@ zero rAF, and demos appear instantly with no mount/unmount churn.
 
 ## Why not a Node/CI build step
 
-`VideoPreRenderer` is browser-only — it uses `MediaRecorder`, `IndexedDB`,
-`document`, and `requestAnimationFrame` (verified in
-`src/lib/shared/animation-engine/services/implementations/VideoPreRenderer.ts`).
-It cannot run in a Node/Vite build step.
+The animation render path is browser-only — `Canvas2DAnimationRenderer` needs
+`document`/canvas, and the encoders (`WebCodecsVideoEncoder`,
+`WasmVideoEncoder`) need `VideoEncoder`/`VideoFrame`. It cannot run in a
+Node/Vite build step.
 
 Two alternatives were rejected:
 
@@ -50,11 +50,29 @@ Two alternatives were rejected:
   automatically. Faithful but flaky and heavier than a 19-asset, rarely-rebaked
   set warrants.
 
-Chosen path: **in-browser one-time bake** using the existing `VideoPreRenderer`
-wholesale. It is pixel-identical (it *is* the live renderer), reuses existing
-infra (no hand-rolling), bakes all assets from one click, and adds no
-dependency. Precedent exists in `src/routes/test/card-back-capture/+page.svelte`,
-which renders to blobs in-browser the same way.
+Chosen path: **in-browser one-time bake** composing the existing
+`Canvas2DAnimationRenderer` (the exact renderer behind the live
+`AnimatorCanvas` — pixel-identical output) with the existing `VideoExporter`
+(`getVideoExporter().createManualExporter`, which the app's Download Animation
+feature already uses). Reuses existing infra, bakes all assets from one click,
+and adds no dependency. Precedent exists in
+`src/routes/test/card-back-capture/+page.svelte`, which renders to blobs
+in-browser the same way.
+
+### Why VideoExporter, not VideoPreRenderer
+
+`VideoPreRenderer` also renders sequences in-browser, but it (a) captures via
+`MediaRecorder` in real time — wall-clock-paced frame capture risks timing
+jitter and a non-deterministic loop seam; (b) emits mp4 only when
+`MediaRecorder.isTypeSupported("video/mp4")` (browser-dependent; Chrome falls
+back to webm); and (c) hardcodes staff props, both-hands-visible, and light
+theme (lines 220–223, 298–322, 367–391). `VideoExporter.createManualExporter`
+instead pumps frames deterministically with explicit per-frame timestamps
+(WebCodecs) and always emits H.264 mp4 (WASM fallback on Firefox), so the loop
+seam is exact and the format is guaranteed. The bake drives
+`Canvas2DAnimationRenderer` directly (passing hand prop type, per-color
+visibility, dark mode, no nonradial points) and feeds each rendered frame to
+the exporter.
 
 ## Architecture
 
@@ -88,37 +106,45 @@ Dev-only page. For each config:
 1. Build the same `SequenceData` `GuideMotionDemo` builds today (reuse that
    construction logic — extract a shared `buildGuideMotionSequence(config)`
    helper so the bake route and any future use share one builder).
-2. Run `VideoPreRenderer` at 2× resolution (512×512), seamless loop (first
-   frame == last frame), opaque (dark grid baked in).
-3. Encode `{id}.webm` (VP9) and `{id}.mp4` (H.264 — required for iOS/Safari
-   autoplay).
+2. Drive an offscreen `Canvas2DAnimationRenderer` at 2× resolution (512×512),
+   dark mode on, hand props, no nonradial points, per-config blue visibility —
+   stepping the orchestrator deterministically from position 0 to 1 (one
+   animation period). Feed each rendered frame to
+   `VideoExporter.createManualExporter`.
+3. `finish()` → one `{id}.mp4` (H.264). H.264 plays everywhere including iOS
+   Safari, so a single format covers all targets — no webm needed.
 4. POST each blob to the dev write endpoint.
 
 UI shows progress (`n / 19 baked`) and a preview grid so output is eyeballed
-before commit. Content-hash dedup: configs that serialize identically share one
-asset (Type1 #7 and #9 are byte-identical → 18 unique files from 19 instances).
+before commit. No content-hash dedup — all 19 are baked as their own file. (#7
+and #9 render identically; baking the duplicate costs a few seconds of one-time
+dev work, far cheaper than a runtime alias/manifest indirection. YAGNI.)
 
 ### 3. Dev write endpoint — `+server.ts`
 
-A dev-only `POST` handler that writes blobs to
-`static/guide/level-1/motions/{id}.{webm,mp4}` via `fs.writeFile`. Guarded to
+A dev-only `POST` handler that writes the mp4 blob to
+`static/guide/level-1/motions/{id}.mp4` via `fs.writeFile`. Guarded to
 non-production (`import.meta.env.DEV`) so it never ships as a live write
-surface. This is the bridge from browser blob to committed asset.
+surface. The `id` is validated against the known config-id allowlist before any
+path is built (no traversal). This is the bridge from browser blob to committed
+asset.
 
 ### 4. Runtime consumer — `GuideMotionVideo.svelte`
 
 A dumb video element keyed by `id`:
 
 ```svelte
-<video autoplay loop muted playsinline preload="metadata" aria-label={label}>
-  <source src={`/guide/level-1/motions/${id}.webm`} type="video/webm" />
-  <source src={`/guide/level-1/motions/${id}.mp4`} type="video/mp4" />
-</video>
+<video
+  src={`/guide/level-1/motions/${id}.mp4`}
+  autoplay loop muted playsinline preload="metadata"
+  aria-label={label}
+></video>
 ```
 
-Square aspect ratio (`aspect-ratio: 1`), `loading` deferred below the fold.
-Replaces all 19 `<GuideMotionDemo>` instances across the 8 section files —
-each call site passes only `id` (and an `aria-label`/`alt` for accessibility).
+Square aspect ratio (`aspect-ratio: 1`), `preload="metadata"` so below-the-fold
+demos stay cheap. Replaces all 19 `<GuideMotionDemo>` instances across the 8
+section files — each call site passes only `id` and an `aria-label` for
+accessibility.
 
 `GuideMotionDemo.svelte` and its `AnimatorCanvas` usage are removed from the
 guide entirely. The live builder logic is preserved only where the bake route
@@ -127,12 +153,12 @@ needs it (`buildGuideMotionSequence`).
 ## Data flow
 
 ```
-guide-motion-configs.ts (19 configs, 18 unique)
+guide-motion-configs.ts (19 configs)
         │
-        ├──► bake route ──► VideoPreRenderer ──► blobs ──► POST ──► fs.writeFile
-        │                                                          static/guide/level-1/motions/*.{webm,mp4}
+        ├──► bake route ──► Canvas2DAnimationRenderer ──► frames ──► VideoExporter ──► mp4 blob ──► POST ──► fs.writeFile
+        │                                                                                          static/guide/level-1/motions/{id}.mp4
         │
-        └──► section files ──► <GuideMotionVideo id="…" /> ──► <video src="/guide/level-1/motions/{id}.webm">
+        └──► section files ──► <GuideMotionVideo id="…" /> ──► <video src="/guide/level-1/motions/{id}.mp4">
 ```
 
 The configs file is the shared contract. Bake produces assets keyed by `id`;
@@ -142,16 +168,17 @@ same array.
 ## Asset spec
 
 - **Resolution:** 512×512 (2× the ~256px display ceiling; crisp on retina).
-- **Formats:** VP9 webm (primary) + H.264 mp4 (iOS/Safari autoplay fallback).
-  `MediaRecorder` mp4 output is browser-dependent (`VideoPreRenderer` falls back
-  to webm when `MediaRecorder.isTypeSupported` rejects mp4). The bake route must
-  guarantee an mp4 exists — if `MediaRecorder` won't emit it, transcode via the
-  existing WebCodecs/Wasm encoder pipeline (`WebCodecsVideoEncoder` /
-  `WasmVideoEncoder`). Exact mechanism is an implementation-plan detail.
-- **Opaque:** dark grid + hand baked in; no alpha channel.
-- **Loop:** one full animation cycle, first frame == last frame for a seamless
-  seam. This is a quality gate verified visually on the bake route preview.
-- **Budget:** short low-motion loops; expected ~100KB each, ~2MB total for 18
+- **Format:** H.264 mp4 only. `VideoExporter` emits H.264 via WebCodecs
+  (`WebCodecsVideoEncoder`, Chrome/Safari/Edge) or the WASM `h264-mp4-encoder`
+  fallback (Firefox). H.264 mp4 autoplays inline everywhere including iOS
+  Safari, so no second format is needed.
+- **Opaque:** dark grid + hand baked in; no alpha channel (mp4 has none).
+- **Loop:** the bake steps the orchestrator from position 0 (start pose) to
+  position 1 (end pose) for the single step. `<video loop>` snaps end→start,
+  exactly as the live `GuideMotionDemo` loop does today. Statics are uniform
+  frames (perfectly seamless); shifts/dashes snap back like the live demo. This
+  is a quality gate verified visually on the bake route preview.
+- **Budget:** short low-motion loops; expected ~100KB each, ~2MB total for 19
   assets, lazy-loaded below the fold.
 
 ## The 19 configs (grounded enumeration)
@@ -181,7 +208,8 @@ DASH cuts straight across to the opposite point; STATIC stays.
 | 18 | `t6-static-beta` | S static | S static | yes |
 | 19 | `t6-static-gamma` | E static | S static | yes |
 
-#7 and #9 serialize identically → 18 unique assets via content-hash dedup.
+#7 and #9 render identically but are baked as separate files (`t1-together-same.mp4`,
+`t1-together-to-split.mp4`) — no dedup, see Bake route §2.
 
 ## Error handling
 
@@ -196,12 +224,15 @@ DASH cuts straight across to the opposite point; STATIC stays.
 
 ## Testing / verification
 
-- Bake-route preview grid: all 18 assets render correct motion (shifts arc,
-  dashes straight, statics hold) and loop seamlessly. Verified visually.
-- Guide page after swap: `npm run check` clean; the page mounts no
-  `AnimatorCanvas` (grep the guide tree for zero `AnimationPlaybackController` /
-  `AnimatorCanvas` references); demos play instantly with no mount/unmount on
-  scroll.
+- Unit (vitest, jsdom): `buildGuideMotionSequence` produces correct motions
+  (arc vs linear pathShape, `PropType.HAND`, correct start/end locations, blue
+  visibility); `GUIDE_MOTION_CONFIGS` has 19 entries with unique slug ids;
+  `isKnownMotionId` accepts known ids and rejects traversal/unknown strings.
+- Bake-route preview grid (visual): all 19 assets render correct motion (shifts
+  arc, dashes straight, statics hold) and loop cleanly.
+- Guide page after swap: `npm run check` clean; the guide tree greps to zero
+  `AnimationPlaybackController` / `AnimatorCanvas` references; demos play
+  instantly with no mount/unmount on scroll.
 - Asset budget: total `static/guide/level-1/motions/` size under ~3MB.
 
 ## Re-bake workflow
@@ -217,11 +248,13 @@ assets are generated, not hand-authored.
 ## Files
 
 **Create:**
-- `src/routes/(public)/guide/level-1/_components/guide-motion-configs.ts` — config array + `buildGuideMotionSequence` helper. (Grep found no existing guide-motion config module; configs are currently inline in section files.)
+- `src/routes/(public)/guide/level-1/_components/guide-motion-configs.ts` — `GuideMotionConfig` interface, `GUIDE_MOTION_CONFIGS` array, `buildGuideMotionSequence` helper, `GUIDE_MOTION_IDS` set + `isKnownMotionId`. (Grep found no existing guide-motion config module; configs are currently inline in section files.)
 - `src/routes/(public)/guide/level-1/_components/GuideMotionVideo.svelte` — video consumer. (Grep found no existing `<video>`-loop primitive for guide demos.)
+- `src/routes/test/guide-motion-bake/bake-motion.ts` — browser-only bake helper composing `Canvas2DAnimationRenderer` + `VideoExporter`.
 - `src/routes/test/guide-motion-bake/+page.svelte` — bake UI. (Follows the `card-back-capture` capture-route pattern.)
 - `src/routes/test/guide-motion-bake/+server.ts` — dev-only write endpoint.
-- `static/guide/level-1/motions/*.{webm,mp4}` — 18 baked assets (generated).
+- `static/guide/level-1/motions/*.mp4` — 19 baked assets (generated).
+- `tests/unit/guide/guide-motion-configs.test.ts` — unit tests for the configs module.
 
 **Edit:**
 - 8 section files in `_sections/ch10/` — swap `<GuideMotionDemo>` → `<GuideMotionVideo id="…">`.
@@ -232,7 +265,13 @@ assets are generated, not hand-authored.
 
 ## Reused infra (never-hand-roll justification)
 
-- `VideoPreRenderer` — does the entire render→encode→blob pipeline. Reused as-is.
-- `card-back-capture` route — the in-browser capture-to-blob pattern. Followed.
-- `AnimatorCanvas` / animation services — invoked only inside `VideoPreRenderer`
-  during bake; not re-implemented.
+- `Canvas2DAnimationRenderer` — the exact renderer behind the live
+  `AnimatorCanvas`; reused directly so baked frames are pixel-identical.
+- `VideoExporter` (`getVideoExporter().createManualExporter`) — the app's
+  existing manual-frame-pump H.264 encoder (WebCodecs + WASM fallback). Reused
+  as-is for the render→mp4 step.
+- `getSequenceAnimationOrchestrator` / `generateBluePropSvg` / `generateRedPropSvg`
+  — the same state + asset helpers `VideoPreRenderer` uses; reused for prop
+  state and dimensions.
+- `card-back-capture` route — the in-browser capture-to-blob page pattern.
+  Followed for the bake UI.
