@@ -1,28 +1,7 @@
-<script lang="ts" module>
-  import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
-  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-  import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-
-  // One loader shared across every GltfAsset instance. The DRACOLoader spins up
-  // a worker pool, so we configure it once rather than per mount. Both decoders
-  // are always attached — a meshopt-only GLB simply never invokes Draco and vice
-  // versa, so callers don't need to know which compression an asset uses.
-  let sharedLoader: GLTFLoader | null = null;
-
-  function getLoader(): GLTFLoader {
-    if (sharedLoader) return sharedLoader;
-    const draco = new DRACOLoader();
-    draco.setDecoderPath("/draco/");
-    const loader = new GLTFLoader();
-    loader.setDRACOLoader(draco);
-    loader.setMeshoptDecoder(MeshoptDecoder);
-    sharedLoader = loader;
-    return loader;
-  }
-</script>
-
 <script lang="ts">
   import { T } from "@threlte/core";
+  import { useDraco, useKtx2, useMeshopt } from "@threlte/extras";
+  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import {
     Mesh,
     MeshStandardMaterial,
@@ -30,6 +9,14 @@
     type Material,
   } from "three";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+
+  // Draco/meshopt/KTX2 decoders are shared instances cached by the threlte hooks
+  // (useKtx2 also wires renderer.detectSupport). All three are attached so a GLB
+  // may use any combination of compressions transparently to the caller.
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.setDRACOLoader(useDraco("/draco/"));
+  gltfLoader.setMeshoptDecoder(useMeshopt());
+  gltfLoader.setKTX2Loader(useKtx2("/basis/"));
 
   interface Props {
     /** Path to the optimized GLB (served from static/, e.g. /models/ocean/stage.glb). */
@@ -89,7 +76,7 @@
     const key = progressFeatureKey;
     let cancelled = false;
 
-    getLoader().load(
+    gltfLoader.load(
       currentUrl,
       (gltf) => {
         if (cancelled) return;

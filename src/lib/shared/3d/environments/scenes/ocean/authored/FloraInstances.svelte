@@ -1,8 +1,7 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+  import { useDraco, useKtx2, useMeshopt } from "@threlte/extras";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-  import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
   import {
     Mesh,
     MeshStandardMaterial,
@@ -19,11 +18,12 @@
 
   let { quality, onProgress, onReady }: Props = $props();
 
-  const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath("/draco/");
+  // Shared decoder instances (cached per-path by the threlte hooks); detectSupport
+  // for KTX2 is wired automatically against the active renderer by useKtx2.
   const gltfLoader = new GLTFLoader();
-  gltfLoader.setDRACOLoader(dracoLoader);
-  gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+  gltfLoader.setDRACOLoader(useDraco("/draco/"));
+  gltfLoader.setMeshoptDecoder(useMeshopt());
+  gltfLoader.setKTX2Loader(useKtx2("/basis/"));
 
   function enhanceMaterials(scene: Object3D): void {
     scene.traverse((child) => {
@@ -44,7 +44,7 @@
     let cancelled = false;
 
     gltfLoader.load(
-      "/models/ocean/ocean_flora_scene.glb",
+      "/models/ocean/ocean_flora_scene_meshoptwebp.glb",
       (gltf) => {
         if (cancelled) return;
         enhanceMaterials(gltf.scene);

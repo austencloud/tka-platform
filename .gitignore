@@ -341,3 +341,8 @@ src-tauri/target/
 
 # Blender export intermediates (pre-optimization). Optimized GLBs are committed; *_raw are not.
 static/models/**/*_raw.glb
+static/models/**/*_decimated.glb
+static/models/**/_tmp_*.glb
+
+# Local KTX-Software / texture-tool binaries (platform-specific, not source).
+.tools/

@@ -2,39 +2,72 @@
 /**
  * Optimize the raw Blender ocean scene GLB for web delivery.
  *
- * Pipeline:
- * 1. Resize textures to 1024px max
- * 2. Compress textures to WebP
- * 3. Deduplicate meshes/textures
- * 4. Create GPU instances for repeated objects
- * 5. Weld vertices
- * 6. Gentle geometry simplification (keep 65%)
- * 7. Draco geometry compression
- * 8. Prune unused data
+ * 2026 delivery format: KTX2/Basis Universal textures (GPU-compressed — stay
+ * compressed in VRAM, the binding constraint on mobile WebGL) + meshopt geometry
+ * (EXT_meshopt_compression, faster decode than Draco, no separate decoder fetch).
  *
- * Input:  static/models/ocean/ocean_scene_raw.glb
+ * Two hard constraints shape the pass order:
+ *   - KTX-Software (toktx/ktx) reads ONLY PNG/JPEG, never WebP/AVIF. Textures must
+ *     be PNG before the KTX2 passes or they are silently skipped.
+ *   - gltf-transform's `optimize` CLI cannot output PNG (only ktx2/webp/avif/auto/
+ *     false), and reading meshopt-compressed geometry back needs a decoder dep.
+ * So we normalize textures to PNG with the core API (sharp) on UNCOMPRESSED
+ * geometry, then KTX2-encode, then apply meshopt last.
+ *
+ * Passes:
+ *   1. optimize  geometry simplify/instance/flatten + resize textures→1024 (webp,
+ *                to bound memory) — geometry left UNCOMPRESSED so pass 2 can read it
+ *   2. (API)     normalize all textures → PNG (KTX-readable, via sharp)
+ *   3. uastc     KTX2 UASTC for normal / metallicRoughness / occlusion
+ *   4. etc1s     KTX2 ETC1S for baseColor / emissive
+ *   5. meshopt   EXT_meshopt_compression geometry (applied last)
+ *
+ * KTX2 encoding needs KTX-Software; a local copy in .tools/ktx/ is put on PATH.
+ *
+ * Input:  static/models/ocean/ocean_scene_raw.glb   (from blender-export-ocean-full.py)
  * Output: static/models/ocean/ocean_flora_scene.glb
  *
- * Usage: node scripts/optimize-ocean-glb.mjs
+ * Usage:  NODE_OPTIONS=--max-old-space-size=8192 node scripts/optimize-ocean-glb.mjs
  */
 import { execSync } from "child_process";
-import { existsSync, statSync } from "fs";
+import { existsSync, statSync, rmSync } from "fs";
 import { resolve } from "path";
+import { createRequire } from "module";
+import { pathToFileURL } from "url";
+import sharp from "sharp";
 
 const INPUT = resolve("static/models/ocean/ocean_scene_raw.glb");
 const OUTPUT = resolve("static/models/ocean/ocean_flora_scene.glb");
-const TMP1 = resolve("static/models/ocean/_tmp_step1.glb");
-const TMP2 = resolve("static/models/ocean/_tmp_step2.glb");
+const TMP_SLIM = resolve("static/models/ocean/_tmp_slim.glb");
+const TMP_PNG = resolve("static/models/ocean/_tmp_png.glb");
+const TMP_UASTC = resolve("static/models/ocean/_tmp_uastc.glb");
+const TMP_ETC = resolve("static/models/ocean/_tmp_etc.glb");
 
-function fileSize(p) {
-  return (statSync(p).size / (1024 * 1024)).toFixed(1);
-}
+// Local KTX-Software on PATH so the uastc/etc1s passes can transcode.
+const KTX_BIN = resolve(".tools/ktx");
+const SEP = process.platform === "win32" ? ";" : ":";
+const ENV = { ...process.env, PATH: `${KTX_BIN}${SEP}${process.env.PATH}` };
+
+// gltf-transform core/functions/extensions live in the pnpm store under the cli.
+const CLI_PKG_JSON = resolve(
+  "node_modules/.pnpm/@gltf-transform+cli@4.3.0/node_modules/@gltf-transform/cli/package.json"
+);
+const req = createRequire(CLI_PKG_JSON);
+const { NodeIO } = await import(pathToFileURL(req.resolve("@gltf-transform/core")));
+const { ALL_EXTENSIONS } = await import(
+  pathToFileURL(req.resolve("@gltf-transform/extensions"))
+);
+const { textureCompress } = await import(
+  pathToFileURL(req.resolve("@gltf-transform/functions"))
+);
+
+const fileSize = (p) => (statSync(p).size / (1024 * 1024)).toFixed(1);
 
 function run(label, cmd) {
   console.log(`\n── ${label} ──`);
   console.log(`  $ ${cmd}`);
   try {
-    execSync(cmd, { stdio: "inherit" });
+    execSync(cmd, { stdio: "inherit", env: ENV });
   } catch (e) {
     console.error(`  FAILED: ${e.message}`);
     process.exit(1);
@@ -43,24 +76,26 @@ function run(label, cmd) {
 
 if (!existsSync(INPUT)) {
   console.error(`Input not found: ${INPUT}`);
-  console.error("Run the Blender export first:");
-  console.error(
-    '  "C:/Program Files/Blender Foundation/Blender 5.0/blender.exe" --background blender/ocean_scene.blend --python scripts/blender-export-ocean-full.py'
-  );
+  console.error("Run the Blender export first (blender-export-ocean-full.py).");
+  process.exit(1);
+}
+if (!existsSync(resolve(KTX_BIN, "toktx.exe")) && !existsSync(resolve(KTX_BIN, "toktx"))) {
+  console.error(`KTX-Software not found in ${KTX_BIN} (need toktx/ktx for KTX2).`);
   process.exit(1);
 }
 
 console.log(`Input: ${INPUT} (${fileSize(INPUT)} MB)`);
 
-// Use gltf-transform optimize for the full pipeline
+// 1. Geometry simplify/instance/flatten + resize textures→1024. Geometry left
+//    uncompressed (--compress false) so pass 2's NodeIO read needs no codec dep.
 run(
-  "Full optimization (resize→webp→dedup→instance→simplify→draco→prune)",
+  "Geometry simplify/instance/flatten + resize→1024 (uncompressed geometry)",
   [
     "npx gltf-transform optimize",
-    `"${INPUT}" "${OUTPUT}"`,
+    `"${INPUT}" "${TMP_SLIM}"`,
+    "--compress false",
     "--texture-compress webp",
     "--texture-size 1024",
-    "--compress draco",
     "--simplify true",
     "--simplify-ratio 0.65",
     "--simplify-error 0.001",
@@ -69,7 +104,47 @@ run(
   ].join(" ")
 );
 
+// 2. Normalize ALL textures → PNG so KTX-Software can read them (it rejects WebP).
+console.log("\n── Normalize textures → PNG (sharp, KTX-readable) ──");
+{
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+  const doc = await io.read(TMP_SLIM);
+  await doc.transform(textureCompress({ encoder: sharp, targetFormat: "png" }));
+  await io.write(TMP_PNG, doc);
+  console.log(`  wrote ${TMP_PNG} (${fileSize(TMP_PNG)} MB)`);
+}
+
+// 3. KTX2 UASTC for quality-sensitive maps.
+run(
+  "KTX2 UASTC (normal / metallicRoughness / occlusion)",
+  [
+    "npx gltf-transform uastc",
+    `"${TMP_PNG}" "${TMP_UASTC}"`,
+    '--slots "{normalTexture,metallicRoughnessTexture,occlusionTexture}"',
+    "--level 4",
+    "--zstd 18",
+  ].join(" ")
+);
+
+// 4. KTX2 ETC1S for color maps.
+run(
+  "KTX2 ETC1S (baseColor / emissive)",
+  [
+    "npx gltf-transform etc1s",
+    `"${TMP_UASTC}" "${TMP_ETC}"`,
+    '--slots "{baseColorTexture,emissiveTexture}"',
+    "--quality 200",
+  ].join(" ")
+);
+
+// 5. Meshopt geometry compression, applied last (after textures are KTX2).
+run("Meshopt geometry compression", `npx gltf-transform meshopt "${TMP_ETC}" "${OUTPUT}"`);
+
 console.log(`\nOutput: ${OUTPUT} (${fileSize(OUTPUT)} MB)`);
 
-// Inspect result
+for (const tmp of [TMP_SLIM, TMP_PNG, TMP_UASTC, TMP_ETC]) {
+  if (existsSync(tmp)) rmSync(tmp);
+}
+
+// Proof: textures should read KTX2; meshes carry EXT_meshopt_compression.
 run("Inspect result", `npx gltf-transform inspect "${OUTPUT}"`);

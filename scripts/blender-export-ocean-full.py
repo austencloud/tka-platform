@@ -24,9 +24,12 @@ output_path = os.path.join(output_dir, "ocean_scene_raw.glb")
 os.makedirs(output_dir, exist_ok=True)
 
 SKIP_PREFIXES = [
-    "Stage_", "Water", "Torch", "Light", "Camera",
+    "Stage_", "Dais_", "Water", "Torch", "Light", "Camera",
     "Performer", "Grid", "Empty", "Armature",
 ]
+# Dais_ skipped: the live stage is the programmatic RuinsPlatform (an animated
+# bioluminescent shader that can't bake to glTF — the Blender-first rule's
+# shader exception), so the Blender dais box must not ship as dead geometry.
 
 bpy.ops.object.select_all(action='DESELECT')
 
@@ -56,6 +59,10 @@ if not selected:
 has_seabed = any("Seabed" in n or "seabed" in n for n in selected)
 print(f"Seabed included: {has_seabed}")
 
+# Export CLEAN — no Draco here. Compression is a single, final pass owned by
+# gltf-transform (optimize-ocean-glb.mjs): KTX2 textures + EXT_meshopt_compression.
+# Compressing in Blender too would force gltf-transform to decode→simplify→
+# re-compress, stacking two lossy quantization passes for zero benefit.
 export_kwargs = dict(
     filepath=output_path,
     use_selection=True,
@@ -68,20 +75,14 @@ export_kwargs = dict(
     export_image_format='AUTO',
 )
 
+# Emit EXT_mesh_gpu_instancing from Geometry Nodes instances when supported,
+# preserving authoring intent rather than re-deriving instances downstream.
 try:
-    bpy.ops.export_scene.gltf(
-        **export_kwargs,
-        export_draco_mesh_compression_enable=True,
-        export_draco_mesh_compression_level=6,
-        export_draco_position_quantization=14,
-        export_draco_normal_quantization=10,
-        export_draco_texcoord_quantization=12,
-        export_draco_color_quantization=10,
-    )
-    compression = "Draco (level 6)"
+    bpy.ops.export_scene.gltf(**export_kwargs, export_gpu_instances=True)
+    compression = "Clean (gpu_instances=True; compression owned by gltf-transform)"
 except TypeError:
     bpy.ops.export_scene.gltf(**export_kwargs)
-    compression = "None (Draco not available)"
+    compression = "Clean (compression owned by gltf-transform)"
 
 file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
 print(f"\nCompression: {compression}")

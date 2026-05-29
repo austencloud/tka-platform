@@ -1,7 +1,6 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
-  import { useGltf } from "@threlte/extras";
-  import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+  import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
   import { FogExp2, Color } from "three";
   import {
     detectOceanQuality,
@@ -40,10 +39,10 @@
 
   // ── Environment GLB ───────────────────────────────────────────────────
 
-  const environmentGlb = useGltf(
-    "/models/ocean/ocean-environment.glb",
-    { meshoptDecoder: MeshoptDecoder }
-  );
+  const environmentGlb = useGltf("/models/ocean/ocean-environment.glb", {
+    meshoptDecoder: useMeshopt(),
+    ktx2Loader: useKtx2("/basis/"),
+  });
 
   // The environment feature loads two GLBs: the seabed (ocean-environment.glb,
   // above) and the flora scene (inside FloraInstances). The loading bar must
