@@ -10,10 +10,12 @@ import { join } from "path";
 const MAX_BYTES = 25 * 1024 * 1024;
 const OUTPUT_DIR = ".svelte-kit/cloudflare";
 
+// guides/ stays: 3 downloadable PDFs (~28 MB total), each under the 25 MiB
+// per-file cap. They were swept in with the May-13 deploy-size trim but are
+// user-facing downloads linked from the landing page (/guides/level-N.pdf).
 const DIRS_TO_REMOVE = [
   "screenshots",
   "thumbnails",
-  "guides",
 ];
 
 function walk(dir) {
