@@ -35,7 +35,7 @@
   const ringStations = $derived(
     Array.from({ length: ringCount }, (_, i) => {
       const angle = (i / ringCount) * Math.PI * 2;
-      const effect = EFFECTS[i % EFFECTS.length];
+      const effect = EFFECTS[i % EFFECTS.length]!;
       return {
         i,
         x: Math.sin(angle) * ringRadius,

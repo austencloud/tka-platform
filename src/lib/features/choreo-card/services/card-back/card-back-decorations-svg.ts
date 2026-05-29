@@ -556,7 +556,7 @@ function buildAutumn(): string {
 
   let s = "";
   for (let i = 0; i < leaves.length; i++) {
-    const leaf = leaves[i];
+    const leaf = leaves[i]!;
     s += `<g transform="translate(${leaf.x},${leaf.y}) rotate(${leaf.r}) scale(${leaf.s})" opacity="0.1">`;
     if (i % 3 === 0) {
       // Maple leaf

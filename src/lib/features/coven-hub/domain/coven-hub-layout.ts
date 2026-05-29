@@ -31,7 +31,7 @@ export function computeCovenLayout(effectIds: readonly string[]): CovenSlot[] {
     slots.push({
       id: `coven-${effectIds[i]}`,
       kind: "satellite",
-      effectId: effectIds[i],
+      effectId: effectIds[i]!,
       x: Math.sin(angle) * radius,
       z: Math.cos(angle) * radius,
     });

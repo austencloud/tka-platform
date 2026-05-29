@@ -121,10 +121,10 @@
     let maxDelta = 0;
     const total = OUT_W * OUT_H;
     for (let i = 0; i < a.data.length; i += 4) {
-      const dr = Math.abs(a.data[i] - b.data[i]);
-      const dg = Math.abs(a.data[i + 1] - b.data[i + 1]);
-      const db = Math.abs(a.data[i + 2] - b.data[i + 2]);
-      const da = Math.abs(a.data[i + 3] - b.data[i + 3]);
+      const dr = Math.abs(a.data[i]! - b.data[i]!);
+      const dg = Math.abs(a.data[i + 1]! - b.data[i + 1]!);
+      const db = Math.abs(a.data[i + 2]! - b.data[i + 2]!);
+      const da = Math.abs(a.data[i + 3]! - b.data[i + 3]!);
       const worst = Math.max(dr, dg, db, da);
       if (worst > maxDelta) maxDelta = worst;
       if (worst > AA_TOLERANCE) {
@@ -135,7 +135,7 @@
         out.data[i + 3] = 255;
       } else {
         // Show a faint grayscale of the original where pixels match.
-        const g = (a.data[i] + a.data[i + 1] + a.data[i + 2]) / 3;
+        const g = (a.data[i]! + a.data[i + 1]! + a.data[i + 2]!) / 3;
         out.data[i] = out.data[i + 1] = out.data[i + 2] = g * 0.4;
         out.data[i + 3] = 255;
       }
@@ -170,7 +170,7 @@
     rows = [];
     status = "selecting sequences…";
 
-    const selected = selectSequences(engine.allSequences);
+    const selected = selectSequences([...engine.allSequences]);
     if (selected.length === 0) {
       status = "no renderable sequences found";
       running = false;
