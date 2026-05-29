@@ -19,7 +19,7 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import {
   MotionType,
   MotionColor,
@@ -29,7 +29,10 @@ import type {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
 import {
   getHandRotationDirection,
@@ -41,8 +44,6 @@ import { Period } from "../domain/models/circular-models";
 
 export class RotatedInvertedLOOPExecutor {
   constructor(
-    private OrientationCalculator: OrientationCalculator,
-    private gridPositionDeriver: GridPositionDeriver,
     private loopParams: LOOPParameterProvider
   ) {}
 
@@ -198,12 +199,12 @@ export class RotatedInvertedLOOPExecutor {
     };
 
     // Update orientations
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
     const finalStep =
-      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+      updateEndOrientations(stepWithStartOri);
 
     return finalStep;
   }
@@ -314,7 +315,7 @@ export class RotatedInvertedLOOPExecutor {
 
     // Derive position from both locations
     const newEndPosition =
-      this.gridPositionDeriver.getGridPositionFromLocations(
+      getGridPositionFromLocations(
         newBlueEndLoc,
         newRedEndLoc
       );
@@ -412,13 +413,8 @@ export class RotatedInvertedLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-
 import { loopParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
 
 export const rotatedInvertedLOOPExecutor = new RotatedInvertedLOOPExecutor(
-  orientationCalculator,
-  gridPositionDeriver,
   loopParameterProvider
 );

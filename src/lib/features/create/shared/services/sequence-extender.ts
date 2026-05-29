@@ -137,7 +137,6 @@ import type { ReversalDetector } from "$lib/shared/create/services/reversal-dete
 import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
 type StepConverter = typeof StepConverterSingleton;
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { LOOPValidator } from "./loop-validator";
 import type { SequenceAnalyzer } from "./sequence-analyzer";
 import type { BridgeFinder } from "./bridge-finder";
@@ -153,7 +152,6 @@ export class SequenceExtender {
     private reversalDetector: ReversalDetector,
     private letterQueryHandler: ILetterQueryHandler,
     private stepConverter: StepConverter,
-    private orientationCalculator: OrientationCalculator,
     private loopValidator: LOOPValidator,
     private sequenceAnalyzer: SequenceAnalyzer,
     private bridgeFinder: BridgeFinder,
@@ -347,10 +345,7 @@ export class SequenceExtender {
     // but the app reads from motions.blue/motions.red. Without this recalculation,
     // the motions field carries stale orientations from the source step's spread,
     // causing the choreo card to render wrong prop angles.
-    extendedSequence = recalculateAllOrientations(
-      extendedSequence,
-      this.orientationCalculator
-    );
+    extendedSequence = recalculateAllOrientations(extendedSequence);
 
     // Process reversals for the extended sequence
     // This detects rotation direction changes between consecutive steps
@@ -481,10 +476,7 @@ export class SequenceExtender {
     };
 
     // Recalculate orientations
-    extendedSequence = recalculateAllOrientations(
-      extendedSequence,
-      this.orientationCalculator
-    );
+    extendedSequence = recalculateAllOrientations(extendedSequence);
 
     return extendedSequence;
   }
@@ -517,7 +509,6 @@ import { loopExecutorSelector } from "$lib/features/create/generate/circular/ser
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { loopValidator } from "./loop-validator";
 import { sequenceAnalyzer } from "./sequence-analyzer";
 import { bridgeFinder } from "./bridge-finder";
@@ -528,7 +519,6 @@ export const sequenceExtender = new SequenceExtender(
   reversalDetector,
   letterQueryHandler,
   stepConverter,
-  orientationCalculator,
   loopValidator,
   sequenceAnalyzer,
   bridgeFinder,

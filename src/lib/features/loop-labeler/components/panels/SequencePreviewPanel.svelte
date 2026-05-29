@@ -15,8 +15,7 @@
     Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-  import { orientationCalculator as orientationCalculatorDirect } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+  import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 
   interface Props {
     sequence: SequenceEntry | null;
@@ -160,15 +159,6 @@
   // Zero Turns toggle - temporary view that removes all turns
   let showZeroTurns = $state(false);
 
-  // Lazy-load orientation calculator to avoid SSR issues
-  let orientationCalculator: OrientationCalculator | null = null;
-  function getOrientationCalculator(): OrientationCalculator {
-    if (!orientationCalculator) {
-      orientationCalculator = orientationCalculatorDirect;
-    }
-    return orientationCalculator;
-  }
-
   /**
    * Create a zero-turns version of steps with proper orientation propagation.
    * Uses the existing OrientationCalculator service which correctly handles:
@@ -183,8 +173,6 @@
     startPos: StartPositionData | null
   ): StepData[] {
     if (!startPos) return steps;
-
-    const calculator = getOrientationCalculator();
 
     // Get initial orientations from start position
     let blueOrientation =
@@ -208,7 +196,7 @@
           startOrientation: blueOrientation,
         });
         // Use the canonical orientation calculator
-        const endOri = calculator.calculateEndOrientation(
+        const endOri = calculateEndOrientation(
           tempMotion,
           MotionColor.BLUE
         );
@@ -233,7 +221,7 @@
           startOrientation: redOrientation,
         });
         // Use the canonical orientation calculator
-        const endOri = calculator.calculateEndOrientation(
+        const endOri = calculateEndOrientation(
           tempMotion,
           MotionColor.RED
         );

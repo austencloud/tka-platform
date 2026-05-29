@@ -11,9 +11,7 @@
   import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
   import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
 
-  import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
-  import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import {
     animationSettings,
     TrackingMode,
@@ -98,9 +96,7 @@
         browseLoader,
         generationOrchestrator,
         sequenceTransformer,
-        startPositionDeriver,
-        orientationCalculator,
-        gridPositionDeriver
+        startPositionDeriver
       );
 
       metricsRepository = new SpinnerMetricsRepository();

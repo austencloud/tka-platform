@@ -10,11 +10,9 @@ import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { ICreateModuleState } from "../../types/create-module-types";
 
 vi.mock(
-  "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator",
+  "$lib/shared/pictograph/prop/services/orientation-calculator",
   () => ({
-    orientationCalculator: {
-      calculateEndOrientation: () => "in",
-    },
+    calculateEndOrientation: () => "in",
   })
 );
 

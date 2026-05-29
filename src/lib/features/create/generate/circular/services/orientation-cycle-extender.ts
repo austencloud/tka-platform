@@ -6,15 +6,17 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   updateSequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 
 export class OrientationCycleExtender {
   constructor(
-    private readonly cycleDetector: OrientationCycleDetector,
-    private readonly orientationCalculator: OrientationCalculator
+    private readonly cycleDetector: OrientationCycleDetector
   ) {}
 
   extendIfNeeded(sequence: SequenceData): SequenceData {
@@ -38,12 +40,12 @@ export class OrientationCycleExtender {
           stepNumber: extendedSteps.length + 1,
         };
 
-        cloned = this.orientationCalculator.updateStartOrientations(
+        cloned = updateStartOrientations(
           cloned,
           previousBeat
         );
 
-        cloned = this.orientationCalculator.updateEndOrientations(cloned);
+        cloned = updateEndOrientations(cloned);
 
         extendedSteps.push(cloned);
         previousBeat = cloned;
@@ -61,9 +63,7 @@ export class OrientationCycleExtender {
 }
 
 import { orientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 
 export const orientationCycleExtender = new OrientationCycleExtender(
-  orientationCycleDetector,
-  orientationCalculator
+  orientationCycleDetector
 );

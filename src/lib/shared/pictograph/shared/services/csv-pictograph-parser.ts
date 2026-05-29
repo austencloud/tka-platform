@@ -6,7 +6,7 @@ import { createMotionData } from "../domain/models/MotionData";
 import type { PictographData } from "../domain/models/PictographData";
 import { createPictographData } from "../domain/factories/createPictographData";
 import type { EnumMapper } from "../../../foundation/services/implementations/data/EnumMapper";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type {
   CSVRow,
   ICSVPictographParser,
@@ -47,8 +47,7 @@ function mapSkewDir(value: string | undefined): SkewDirection | null {
 
 export class CSVPictographParser implements ICSVPictographParser {
   constructor(
-    private readonly enumMapper: EnumMapper,
-    private readonly orientationService: OrientationCalculator
+    private readonly enumMapper: EnumMapper
   ) {}
 
   parseCSVRowToPictograph(row: CSVRow, gridMode: GridMode): PictographData {
@@ -67,7 +66,7 @@ export class CSVPictographParser implements ICSVPictographParser {
       gridMode: gridMode, 
     });
 
-    const blueEndOrientation = this.orientationService.calculateEndOrientation(
+    const blueEndOrientation = calculateEndOrientation(
       tempBlueMotion,
       MotionColor.BLUE
     );
@@ -106,7 +105,7 @@ export class CSVPictographParser implements ICSVPictographParser {
       gridMode: gridMode, 
     });
 
-    const redEndOrientation = this.orientationService.calculateEndOrientation(
+    const redEndOrientation = calculateEndOrientation(
       tempRedMotion,
       MotionColor.RED
     );
@@ -191,9 +190,7 @@ export class CSVPictographParser implements ICSVPictographParser {
 }
 
 import { enumMapper } from "../../../foundation/services/implementations/data/EnumMapper";
-import { orientationCalculator } from "../../prop/services/implementations/OrientationCalculator";
 
 export const csvPictographParser = new CSVPictographParser(
-  enumMapper,
-  orientationCalculator
+  enumMapper
 );

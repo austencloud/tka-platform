@@ -28,8 +28,6 @@ import {
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
 import {
   mirrorBeat,
@@ -90,7 +88,6 @@ export function duplicateSequence(
  */
 export async function mirrorSequence(
   sequence: SequenceData,
-  positionDeriver: GridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
@@ -98,17 +95,17 @@ export async function mirrorSequence(
 
   const mirroredBeats = await Promise.all(
     sequence.steps.map((step) =>
-      mirrorBeat(step, gridMode, positionDeriver, motionQueryHandler, targetHand)
+      mirrorBeat(step, gridMode, motionQueryHandler, targetHand)
     )
   );
 
   // Transform start positions (always StartPositionData, never StepData)
   const mirroredStartPosition = sequence.startPosition
-    ? mirrorStartPosition(sequence.startPosition, targetHand, positionDeriver)
+    ? mirrorStartPosition(sequence.startPosition, targetHand)
     : undefined;
 
   const mirroredStartingPositionStep = sequence.startingPosition
-    ? mirrorStartPosition(sequence.startingPosition, targetHand, positionDeriver)
+    ? mirrorStartPosition(sequence.startingPosition, targetHand)
     : undefined;
 
   return updateSequenceData(sequence, {
@@ -127,7 +124,6 @@ export async function mirrorSequence(
  */
 export async function flipSequence(
   sequence: SequenceData,
-  positionDeriver: GridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
@@ -135,17 +131,17 @@ export async function flipSequence(
 
   const flippedBeats = await Promise.all(
     sequence.steps.map((step) =>
-      flipBeat(step, gridMode, positionDeriver, motionQueryHandler, targetHand)
+      flipBeat(step, gridMode, motionQueryHandler, targetHand)
     )
   );
 
   // Transform start positions (always StartPositionData, never StepData)
   const flippedStartPosition = sequence.startPosition
-    ? flipStartPosition(sequence.startPosition, targetHand, positionDeriver)
+    ? flipStartPosition(sequence.startPosition, targetHand)
     : undefined;
 
   const flippedStartingPositionStep = sequence.startingPosition
-    ? flipStartPosition(sequence.startingPosition, targetHand, positionDeriver)
+    ? flipStartPosition(sequence.startingPosition, targetHand)
     : undefined;
 
   return updateSequenceData(sequence, {
@@ -165,7 +161,6 @@ export async function flipSequence(
 export async function rotateSequence(
   sequence: SequenceData,
   rotationAmount: number,
-  positionDeriver: GridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
@@ -177,7 +172,6 @@ export async function rotateSequence(
         step,
         rotationAmount,
         gridMode,
-        positionDeriver,
         motionQueryHandler,
         targetHand
       )
@@ -186,11 +180,11 @@ export async function rotateSequence(
 
   // Transform start positions (always StartPositionData, never StepData)
   const rotatedStartPosition = sequence.startPosition
-    ? rotateStartPosition(sequence.startPosition, rotationAmount, positionDeriver, targetHand)
+    ? rotateStartPosition(sequence.startPosition, rotationAmount, targetHand)
     : undefined;
 
   const rotatedStartingPositionStep = sequence.startingPosition
-    ? rotateStartPosition(sequence.startingPosition, rotationAmount, positionDeriver, targetHand)
+    ? rotateStartPosition(sequence.startingPosition, rotationAmount, targetHand)
     : undefined;
 
   // Only toggle grid mode when both hands are rotated
@@ -240,7 +234,6 @@ export function colorSwapSequence(sequence: SequenceData): SequenceData {
 export async function invertSequence(
   sequence: SequenceData,
   motionQueryHandler: IMotionQueryHandler,
-  orientationCalculator: OrientationCalculator,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
   if (sequence.steps.length === 0) return sequence;
@@ -260,11 +253,11 @@ export async function invertSequence(
 
   // Transform start positions (always StartPositionData, never StepData)
   const invertedStartPosition = sequence.startPosition
-    ? invertStartPosition(sequence.startPosition, orientationCalculator, targetHand)
+    ? invertStartPosition(sequence.startPosition, targetHand)
     : undefined;
 
   const invertedStartingPositionStep = sequence.startingPosition
-    ? invertStartPosition(sequence.startingPosition, orientationCalculator, targetHand)
+    ? invertStartPosition(sequence.startingPosition, targetHand)
     : undefined;
 
   const invertedSequence = updateSequenceData(sequence, {
@@ -275,7 +268,7 @@ export async function invertSequence(
     }),
   });
 
-  return recalculateAllOrientations(invertedSequence, orientationCalculator);
+  return recalculateAllOrientations(invertedSequence);
 }
 
 /**

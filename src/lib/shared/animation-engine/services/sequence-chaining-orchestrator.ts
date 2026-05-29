@@ -17,7 +17,7 @@ export type { SourceMode };
 import * as propTypeApplierModule from "$lib/shared/landing/services/prop-type-applier";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class SequenceChainingOrchestrator {
@@ -250,12 +250,12 @@ export class SequenceChainingOrchestrator {
     let position = finalStep?.endPosition ?? null;
 
     // Fallback 1: derive from motion end locations
-    if (!position && gridPositionDeriver && finalStep?.motions) {
+    if (!position && finalStep?.motions) {
       const blueMotion = finalStep.motions[MotionColor.BLUE];
       const redMotion = finalStep.motions[MotionColor.RED];
       if (blueMotion?.endLocation && redMotion?.endLocation) {
         try {
-          position = gridPositionDeriver.getGridPositionFromLocations(
+          position = getGridPositionFromLocations(
             blueMotion.endLocation,
             redMotion.endLocation
           );

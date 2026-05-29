@@ -11,7 +11,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface OrientationCycleResult {
@@ -22,7 +22,6 @@ export interface OrientationCycleResult {
 }
 
 export class OrientationCycleDetector {
-  constructor(private readonly orientationCalculator: OrientationCalculator) {}
 
   detectOrientationCycle(sequence: SequenceData): OrientationCycleResult {
     const steps = sequence.steps;
@@ -54,14 +53,14 @@ export class OrientationCycleDetector {
 
         if (blueMotion) {
           const adjusted = { ...blueMotion, startOrientation: currentBlue };
-          currentBlue = this.orientationCalculator.calculateEndOrientation(
+          currentBlue = calculateEndOrientation(
             adjusted,
             MotionColor.BLUE
           );
         }
         if (redMotion) {
           const adjusted = { ...redMotion, startOrientation: currentRed };
-          currentRed = this.orientationCalculator.calculateEndOrientation(
+          currentRed = calculateEndOrientation(
             adjusted,
             MotionColor.RED
           );
@@ -139,8 +138,4 @@ export class OrientationCycleDetector {
   }
 }
 
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-
-export const orientationCycleDetector = new OrientationCycleDetector(
-  orientationCalculator
-);
+export const orientationCycleDetector = new OrientationCycleDetector();

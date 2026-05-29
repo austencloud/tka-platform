@@ -33,7 +33,10 @@ import type {
   GridPosition,
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
   VERTICAL_MIRROR_LOCATION_MAP,
@@ -43,7 +46,7 @@ import { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class StrictMirroredLOOPExecutor {
-  constructor(private OrientationCalculator: OrientationCalculator) {}
+  constructor() {}
 
   /**
    * Execute the strict mirrored LOOP.
@@ -152,11 +155,11 @@ export class StrictMirroredLOOPExecutor {
       },
     };
 
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
-    return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+    return updateEndOrientations(stepWithStartOri);
   }
 
   /**
@@ -193,11 +196,11 @@ export class StrictMirroredLOOPExecutor {
       },
     };
 
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
-    return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+    return updateEndOrientations(stepWithStartOri);
   }
 
   private _getMirroredPosition(sourceStep: StepData): GridPosition | null {
@@ -257,8 +260,4 @@ export class StrictMirroredLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-
-export const strictMirroredLOOPExecutor = new StrictMirroredLOOPExecutor(
-  orientationCalculator
-);
+export const strictMirroredLOOPExecutor = new StrictMirroredLOOPExecutor();

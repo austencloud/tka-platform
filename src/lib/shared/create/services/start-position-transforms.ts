@@ -15,8 +15,8 @@ import { createStartPositionData } from "$lib/shared/create/factories/createStar
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,
@@ -51,14 +51,13 @@ function deriveLetterFromGridPosition(
  * Used after single-hand transforms to find the new combined position.
  */
 function deriveGridPositionFromMotions(
-  startPos: StartPositionData,
-  positionDeriver: GridPositionDeriver
+  startPos: StartPositionData
 ): GridPosition | null {
   const blueMotion = startPos.motions[MotionColor.BLUE];
   const redMotion = startPos.motions[MotionColor.RED];
 
   if (blueMotion && redMotion) {
-    return positionDeriver.getGridPositionFromLocations(
+    return getGridPositionFromLocations(
       blueMotion.startLocation,
       redMotion.startLocation
     );
@@ -69,12 +68,10 @@ function deriveGridPositionFromMotions(
 /**
  * Mirror a start position across the vertical axis (E ↔ W).
  * @param targetHand - Which hand(s) to transform. Defaults to "both".
- * @param positionDeriver - Required for single-hand transforms to derive new grid position.
  */
 export function mirrorStartPosition(
   startPos: StartPositionData,
-  targetHand: TargetHand = "both",
-  positionDeriver?: GridPositionDeriver
+  targetHand: TargetHand = "both"
 ): StartPositionData {
   const mirroredMotions = { ...startPos.motions };
   const blueMotion = startPos.motions[MotionColor.BLUE];
@@ -95,11 +92,9 @@ export function mirrorStartPosition(
     newGridPosition = startPos.gridPosition
       ? VERTICAL_MIRROR_POSITION_MAP[startPos.gridPosition]
       : null;
-  } else if (positionDeriver) {
-    const tempStartPos = createStartPositionData({ ...startPos, motions: mirroredMotions });
-    newGridPosition = deriveGridPositionFromMotions(tempStartPos, positionDeriver);
   } else {
-    newGridPosition = startPos.gridPosition ?? null;
+    const tempStartPos = createStartPositionData({ ...startPos, motions: mirroredMotions });
+    newGridPosition = deriveGridPositionFromMotions(tempStartPos);
   }
 
   // Derive letter from new grid position
@@ -117,12 +112,10 @@ export function mirrorStartPosition(
 /**
  * Flip a start position across the horizontal axis (N ↔ S).
  * @param targetHand - Which hand(s) to transform. Defaults to "both".
- * @param positionDeriver - Required for single-hand transforms to derive new grid position.
  */
 export function flipStartPosition(
   startPos: StartPositionData,
-  targetHand: TargetHand = "both",
-  positionDeriver?: GridPositionDeriver
+  targetHand: TargetHand = "both"
 ): StartPositionData {
   const flippedMotions = { ...startPos.motions };
   const blueMotion = startPos.motions[MotionColor.BLUE];
@@ -143,11 +136,9 @@ export function flipStartPosition(
     newGridPosition = startPos.gridPosition
       ? HORIZONTAL_MIRROR_POSITION_MAP[startPos.gridPosition]
       : null;
-  } else if (positionDeriver) {
-    const tempStartPos = createStartPositionData({ ...startPos, motions: flippedMotions });
-    newGridPosition = deriveGridPositionFromMotions(tempStartPos, positionDeriver);
   } else {
-    newGridPosition = startPos.gridPosition ?? null;
+    const tempStartPos = createStartPositionData({ ...startPos, motions: flippedMotions });
+    newGridPosition = deriveGridPositionFromMotions(tempStartPos);
   }
 
   // Derive letter from new grid position
@@ -170,7 +161,6 @@ export function flipStartPosition(
 export function rotateStartPosition(
   startPos: StartPositionData,
   rotationAmount: number,
-  positionDeriver: GridPositionDeriver,
   targetHand: TargetHand = "both"
 ): StartPositionData {
   const rotatedMotions = { ...startPos.motions };
@@ -198,7 +188,7 @@ export function rotateStartPosition(
   const redMotion = rotatedMotions[MotionColor.RED];
 
   if (blueMotion && redMotion) {
-    rotatedGridPosition = positionDeriver.getGridPositionFromLocations(
+    rotatedGridPosition = getGridPositionFromLocations(
       blueMotion.startLocation,
       redMotion.startLocation
     );
@@ -249,13 +239,10 @@ export function colorSwapStartPosition(
  * Invert a start position's motion types and rotation directions.
  * Recalculates endOrientation based on the new motion.
  * @param targetHand - Which hand(s) to transform. Defaults to "both".
- * @param positionDeriver - Required for single-hand transforms to derive new grid position.
  */
 export function invertStartPosition(
   startPos: StartPositionData,
-  orientationCalculator: OrientationCalculator,
-  targetHand: TargetHand = "both",
-  positionDeriver?: GridPositionDeriver
+  targetHand: TargetHand = "both"
 ): StartPositionData {
   const invertedMotions = { ...startPos.motions };
   const startBlueMotion = startPos.motions[MotionColor.BLUE];
@@ -269,7 +256,7 @@ export function invertStartPosition(
       motionType: invertMotionType(blueMotion.motionType),
       rotationDirection: reverseRotationDirection(blueMotion.rotationDirection),
     });
-    const newEndOrientation = orientationCalculator.calculateEndOrientation(
+    const newEndOrientation = calculateEndOrientation(
       invertedBlueMotion,
       MotionColor.BLUE
     );
@@ -286,7 +273,7 @@ export function invertStartPosition(
       motionType: invertMotionType(redMotion.motionType),
       rotationDirection: reverseRotationDirection(redMotion.rotationDirection),
     });
-    const newEndOrientation = orientationCalculator.calculateEndOrientation(
+    const newEndOrientation = calculateEndOrientation(
       invertedRedMotion,
       MotionColor.RED
     );
@@ -296,12 +283,7 @@ export function invertStartPosition(
     };
   }
 
-  // For single-hand transforms, derive new grid position from motion locations
-  let newGridPosition: GridPosition | null = startPos.gridPosition ?? null;
-  if (targetHand !== "both" && positionDeriver) {
-    const tempStartPos = createStartPositionData({ ...startPos, motions: invertedMotions });
-    newGridPosition = deriveGridPositionFromMotions(tempStartPos, positionDeriver);
-  }
+  const newGridPosition: GridPosition | null = startPos.gridPosition ?? null;
 
   // Derive letter from grid position
   const newLetter = deriveLetterFromGridPosition(newGridPosition);

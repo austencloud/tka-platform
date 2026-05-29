@@ -8,7 +8,7 @@ import type { CSVRow } from "../../../foundation/services/data/ICSVPictographPar
 import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModels";
 import type { CsvLoader } from "../../../foundation/services/data/csv-loader";
 import type { IMotionQueryHandler } from "../../../foundation/services/data/data-contracts";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type { Orientation } from "../domain/enums/pictograph-enums";
 
 interface ICSVParser {
@@ -22,8 +22,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
   constructor(
     private csvLoader: CsvLoader,
     private CSVParser: ICSVParser,
-    private csvPictographParser: ICSVPictographParser,
-    private OrientationCalculator: OrientationCalculator
+    private csvPictographParser: ICSVPictographParser
   ) {}
 
   private async ensureInitialized(): Promise<void> {
@@ -319,7 +318,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       arrowLocation: originalMotion.arrowLocation,
     });
 
-    return this.OrientationCalculator.calculateEndOrientation(
+    return calculateEndOrientation(
       transformedMotionData,
       color
     );
@@ -437,11 +436,9 @@ export class MotionQueryHandler implements IMotionQueryHandler {
 import { csvLoader } from "../../../foundation/services/data/csv-loader";
 import { csvParser } from "../../../foundation/services/implementations/data/CsvParser";
 import { csvPictographParser } from "./csv-pictograph-parser";
-import { orientationCalculator } from "../../prop/services/implementations/OrientationCalculator";
 
 export const motionQueryHandler = new MotionQueryHandler(
   csvLoader,
   csvParser,
-  csvPictographParser,
-  orientationCalculator
+  csvPictographParser
 );

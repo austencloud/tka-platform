@@ -16,14 +16,21 @@ export interface OrientationContinuityValidator {
   validateTransition: (
     lastStep: StepData,
     nextPictograph: PictographData,
-    orientationCalculator: OrientationCalculator
+    orientationCalculator: OrientationCalculatorDep
   ) => TransitionValidationResult;
 }
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+/**
+ * Structural type for the orientation calculator dependency.
+ * The validateTransition param is accepted for signature compatibility but unused.
+ */
+type OrientationCalculatorDep = {
+  calculateEndOrientation: (...args: never[]) => unknown;
+};
 
 export function validateSequence(sequence: SequenceData): OrientationContinuityError[] {
   const errors: OrientationContinuityError[] = [];
@@ -74,7 +81,7 @@ export function validateSequence(sequence: SequenceData): OrientationContinuityE
 export function validateTransition(
   lastStep: StepData,
   nextPictograph: PictographData,
-  _orientationCalculator: OrientationCalculator
+  _orientationCalculator: OrientationCalculatorDep
 ): TransitionValidationResult {
   const errors: OrientationContinuityError[] = [];
 

@@ -9,10 +9,9 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { RotationRelation } from "./types";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 
 export class PositionAnalyzer {
-  constructor(private positionMapper: GridPositionDeriver) {}
 
   /**
    * Get the position group (Alpha, Beta, Gamma) from a GridPosition
@@ -40,7 +39,7 @@ export class PositionAnalyzer {
     }
 
     try {
-      const endPosition = this.positionMapper.getGridPositionFromLocations(
+      const endPosition = getGridPositionFromLocations(
         pictographData.motions.blue.endLocation,
         pictographData.motions.red.endLocation
       );
@@ -123,6 +122,4 @@ export class PositionAnalyzer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-
-export const positionAnalyzer = new PositionAnalyzer(gridPositionDeriver);
+export const positionAnalyzer = new PositionAnalyzer();

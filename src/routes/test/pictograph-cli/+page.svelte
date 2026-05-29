@@ -6,7 +6,7 @@
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import { Canvas2DDirectRenderer } from "$lib/shared/render/services/canvas-2d-direct-renderer";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+  import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   // All letters organized by type
@@ -59,9 +59,6 @@
     }
   }
 
-  // Orientation calculator for recalculating endOrientation when turns change
-  const orientationCalculator = new OrientationCalculator();
-
   async function renderAll() {
     if (!renderer || variations.length === 0) return;
 
@@ -78,7 +75,7 @@
       if (blueTurnsOverride !== null && pictograph.motions?.blue) {
         pictograph.motions.blue.turns = blueTurnsOverride;
         // Recalculate endOrientation based on new turns value
-        pictograph.motions.blue.endOrientation = orientationCalculator.calculateEndOrientation(
+        pictograph.motions.blue.endOrientation = calculateEndOrientation(
           pictograph.motions.blue,
           MotionColor.BLUE
         );
@@ -86,7 +83,7 @@
       if (redTurnsOverride !== null && pictograph.motions?.red) {
         pictograph.motions.red.turns = redTurnsOverride;
         // Recalculate endOrientation based on new turns value
-        pictograph.motions.red.endOrientation = orientationCalculator.calculateEndOrientation(
+        pictograph.motions.red.endOrientation = calculateEndOrientation(
           pictograph.motions.red,
           MotionColor.RED
         );

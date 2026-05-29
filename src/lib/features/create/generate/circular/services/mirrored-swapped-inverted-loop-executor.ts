@@ -32,7 +32,10 @@ import type {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
 import {
   INVERTED_LOOP_VALIDATION_SET,
@@ -44,7 +47,6 @@ import type { ILOOPExecutor } from "./contracts/ILOOPExecutor";
 
 export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   constructor(
-    private OrientationCalculator: OrientationCalculator,
     private loopParams: LOOPParameterProvider
   ) {}
 
@@ -184,12 +186,12 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     };
 
     // Update orientations
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
     const finalStep =
-      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+      updateEndOrientations(stepWithStartOri);
 
     return finalStep;
   }
@@ -345,10 +347,8 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { loopParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
 
 export const mirroredSwappedInvertedLOOPExecutor = new MirroredSwappedInvertedLOOPExecutor(
-  orientationCalculator,
   loopParameterProvider
 );

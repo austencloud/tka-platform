@@ -15,7 +15,6 @@ import type { RandomSequenceGenerationOptions } from "./types";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { StartPositionValidator } from "./start-position-validator";
 import type { OrientationContinuityValidator } from "./orientation-continuity-validator";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { SequenceExtender } from "../../shared/services/sequence-extender";
 import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
 type StepConverter = typeof StepConverterSingleton;
@@ -46,7 +45,6 @@ export class RandomSequenceGenerator {
     private letterQueryHandler: ILetterQueryHandler,
     private startPositionValidator: StartPositionValidator,
     private orientationContinuityValidator: OrientationContinuityValidator,
-    private orientationCalculator: OrientationCalculator,
     private sequenceExtender: SequenceExtender,
     private stepConverter: StepConverter,
     private reversalDetector: ReversalDetector,
@@ -878,7 +876,7 @@ export class RandomSequenceGenerator {
     // Recalculate all orientations using proper propagation
     // This uses the start position's end orientations as the baseline
     // and calculates each step's end orientation based on motion type
-    sequence = recalculateAllOrientations(sequence, this.orientationCalculator);
+    sequence = recalculateAllOrientations(sequence);
 
     // Detect and apply reversal markers
     sequence = this.reversalDetector.processReversals(sequence);
@@ -970,7 +968,6 @@ export class RandomSequenceGenerator {
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { startPositionValidator } from "./start-position-validator";
 import * as orientationContinuityValidator from "./orientation-continuity-validator";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { sequenceExtender } from "$lib/features/create/shared/services/sequence-extender";
 import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
@@ -980,7 +977,6 @@ export const randomSequenceGenerator = new RandomSequenceGenerator(
   letterQueryHandler,
   startPositionValidator,
   orientationContinuityValidator,
-  orientationCalculator,
   sequenceExtender,
   stepConverter,
   reversalDetector,

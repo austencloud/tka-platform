@@ -10,22 +10,13 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 export class PositionDeriver {
-  constructor(private gridPositionDeriver: GridPositionDeriver | null) {}
-
   async derivePositionsForSequence(
     sequence: SequenceData
   ): Promise<SequenceData> {
-    if (!this.gridPositionDeriver) {
-      console.warn(
-        "GridPositionDeriver not available - positions will not be derived"
-      );
-      return sequence;
-    }
-
     // Derive positions for all steps in the sequence
     const beatsWithPositions = sequence.steps.map((step) =>
       this.derivePositionsForBeat(step)
@@ -76,21 +67,17 @@ export class PositionDeriver {
       return beat;
     }
 
-    if (!this.gridPositionDeriver) {
-      return beat;
-    }
-
     try {
       // Calculate start position from starting hand locations
       const startPosition: GridPosition =
-        this.gridPositionDeriver.getGridPositionFromLocations(
+        getGridPositionFromLocations(
           beat.motions.blue.startLocation,
           beat.motions.red.startLocation
         );
 
       // Calculate end position from ending hand locations
       const endPosition: GridPosition =
-        this.gridPositionDeriver.getGridPositionFromLocations(
+        getGridPositionFromLocations(
           beat.motions.blue.endLocation,
           beat.motions.red.endLocation
         );

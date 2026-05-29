@@ -3,7 +3,6 @@ import { browser } from '$app/environment';
 import { RandomSequenceGenerator } from './services/random-sequence-generator';
 import * as loopEndPositionResolver from './services/loop-end-position-resolver';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
-import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
 import { getStartPositionValidator } from './get-start-position-validator';
 import * as orientationContinuityValidator from './services/orientation-continuity-validator';
 import { getSequenceExtender } from '$lib/features/create/shared/get-sequence-extender';
@@ -18,7 +17,6 @@ export function getRandomSequenceGenerator(): RandomSequenceGenerator {
 		letterQueryHandler,
 		getStartPositionValidator(),
 		orientationContinuityValidator,
-		orientationCalculator,
 		getSequenceExtender(),
 		getStepConverter(),
 		reversalDetector,

@@ -10,8 +10,6 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import type { TargetHand } from "$lib/shared/create/state/panel-coordination-state.svelte";
 
@@ -31,9 +29,7 @@ import {
 export class SequenceTransformer {
   constructor(
     private readonly motionQueryHandler: IMotionQueryHandler,
-    private readonly orientationCalculator: OrientationCalculator,
-    private readonly reversalDetector: ReversalDetector,
-    private readonly positionDeriver: GridPositionDeriver
+    private readonly reversalDetector: ReversalDetector
   ) {}
 
   clearSequence(sequence: SequenceData): SequenceData {
@@ -50,7 +46,6 @@ export class SequenceTransformer {
   ): Promise<SequenceData> {
     return mirrorSequence(
       sequence,
-      this.positionDeriver,
       this.motionQueryHandler,
       targetHand
     );
@@ -62,7 +57,6 @@ export class SequenceTransformer {
   ): Promise<SequenceData> {
     return flipSequence(
       sequence,
-      this.positionDeriver,
       this.motionQueryHandler,
       targetHand
     );
@@ -81,7 +75,6 @@ export class SequenceTransformer {
     return rotateSequence(
       sequence,
       rotationAmount,
-      this.positionDeriver,
       this.motionQueryHandler,
       targetHand
     );
@@ -94,7 +87,6 @@ export class SequenceTransformer {
     return invertSequence(
       sequence,
       this.motionQueryHandler,
-      this.orientationCalculator,
       targetHand
     );
   }
@@ -132,13 +124,9 @@ export class SequenceTransformer {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
 export const sequenceTransformer = new SequenceTransformer(
   motionQueryHandler,
-  orientationCalculator,
-  reversalDetector,
-  gridPositionDeriver
+  reversalDetector
 );

@@ -24,7 +24,10 @@ import {
   MotionColor,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   INVERTED_LOOP_VALIDATION_SET,
   SWAPPED_POSITION_MAP,
@@ -33,7 +36,7 @@ import {
 import type { Period } from "../domain/models/circular-models";
 
 export class SwappedInvertedLOOPExecutor {
-  constructor(private OrientationCalculator: OrientationCalculator) {}
+  constructor() {}
 
   /**
    * Execute the swapped-inverted LOOP
@@ -168,12 +171,12 @@ export class SwappedInvertedLOOPExecutor {
     };
 
     // Update orientations
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
     const finalStep =
-      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+      updateEndOrientations(stepWithStartOri);
 
     return finalStep;
   }
@@ -335,8 +338,4 @@ export class SwappedInvertedLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-
-export const swappedInvertedLOOPExecutor = new SwappedInvertedLOOPExecutor(
-  orientationCalculator
-);
+export const swappedInvertedLOOPExecutor = new SwappedInvertedLOOPExecutor();

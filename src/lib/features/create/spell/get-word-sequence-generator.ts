@@ -3,7 +3,6 @@ import { WordSequenceGenerator } from './services/word-sequence-generator';
 import { getLetterTransitionGraph } from './get-letter-transition-graph';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
 import { getStepConverter } from '$lib/features/create/generate/shared/get-step-converter';
-import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
 import { getSequenceExtender } from '$lib/features/create/shared/get-sequence-extender';
 import { getStartPositionValidator } from './get-start-position-validator';
 import * as orientationContinuityValidator from './services/orientation-continuity-validator';
@@ -17,7 +16,6 @@ export function getWordSequenceGenerator(): WordSequenceGenerator {
 		getLetterTransitionGraph(),
 		letterQueryHandler,
 		getStepConverter(),
-		orientationCalculator,
 		getSequenceExtender(),
 		getStartPositionValidator(),
 		orientationContinuityValidator,

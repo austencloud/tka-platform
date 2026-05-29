@@ -55,7 +55,7 @@ import {
   RotationDirection,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("TurnPatternManager");
@@ -345,7 +345,7 @@ function updateMotionStartOrientation(
     startOrientation: newStartOrientation,
   });
 
-  const newEndOrientation = orientationCalculator.calculateEndOrientation(
+  const newEndOrientation = calculateEndOrientation(
     tempMotion,
     color
   );
@@ -519,7 +519,7 @@ function createUpdatedMotion(
     rotationDirection: updatedRotationDirection,
     motionType: updatedMotionType,
   });
-  const newEndOrientation = orientationCalculator.calculateEndOrientation(
+  const newEndOrientation = calculateEndOrientation(
     tempMotion,
     color
   );

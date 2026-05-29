@@ -9,11 +9,10 @@ import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/d
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PositionAnalyzer } from "./position-analyzer";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 
 export class OptionLoader {
   constructor(
-    private positionMapper: GridPositionDeriver,
     private motionQueryHandler: IMotionQueryHandler,
     private positionAnalyzer: PositionAnalyzer
   ) {}
@@ -54,7 +53,7 @@ export class OptionLoader {
 
         // Calculate the start position of this option
         const optionStartPosition =
-          this.positionMapper.getGridPositionFromLocations(
+          getGridPositionFromLocations(
             option.motions.blue.startLocation,
             option.motions.red.startLocation
           );
@@ -78,12 +77,10 @@ export class OptionLoader {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { positionAnalyzer } from "./position-analyzer";
 
 export const optionLoader = new OptionLoader(
-  gridPositionDeriver,
   motionQueryHandler,
   positionAnalyzer
 );

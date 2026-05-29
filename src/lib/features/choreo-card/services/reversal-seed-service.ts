@@ -36,7 +36,6 @@ import {
   type ResolvedReversalPattern,
 } from "../domain/reversal-transform";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { Catalog } from "../domain/models/Catalog";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -142,7 +141,7 @@ export function transformSequence(
   // Recompute the orientation chain from the start position baseline. The flip
   // changed motionType/rotationDirection, so end orientations cascade.
   const withSteps = updateSequenceData(clone, { steps: transformedSteps });
-  const reoriented = recalculateAllOrientations(withSteps, orientationCalculator);
+  const reoriented = recalculateAllOrientations(withSteps);
 
   // Recompute the displayed word from the new letters.
   const word = reoriented.steps

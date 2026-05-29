@@ -1,4 +1,4 @@
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -13,7 +13,6 @@ import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 export class StartPositionDeriver {
-  constructor(private gridPositionDeriver: GridPositionDeriver) {}
 
   deriveFromFirstBeat(firstStep: StepData): StartPositionData {
     const blueMotion = firstStep.motions?.[MotionColor.BLUE];
@@ -28,7 +27,7 @@ export class StartPositionDeriver {
     const blueStartLocation = blueMotion.startLocation;
     const redStartLocation = redMotion.startLocation;
 
-    const gridPosition = this.gridPositionDeriver.getGridPositionFromLocations(
+    const gridPosition = getGridPositionFromLocations(
       blueStartLocation,
       redStartLocation
     );
@@ -129,6 +128,4 @@ export class StartPositionDeriver {
   }
 }
 
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-
-export const startPositionDeriver = new StartPositionDeriver(gridPositionDeriver);
+export const startPositionDeriver = new StartPositionDeriver();

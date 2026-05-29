@@ -2,8 +2,6 @@
  * Module singleton getters for all 15 LOOP executor variations + the selector.
  */
 import { browser } from '$app/environment';
-import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
-import { gridPositionDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver';
 import { getLOOPParameterProvider } from '$lib/features/create/generate/shared/get-loop-parameter-provider';
 
 import { StrictRotatedLOOPExecutor } from './services/strict-rotated-loop-executor';
@@ -57,35 +55,35 @@ function _check() {
 
 export function getStrictRotatedLOOPExecutor() {
 	_check();
-	return _strictRotated ??= new StrictRotatedLOOPExecutor(orientationCalculator, gridPositionDeriver);
+	return _strictRotated ??= new StrictRotatedLOOPExecutor();
 }
 export function getStrictMirroredLOOPExecutor() {
 	_check();
-	return _strictMirrored ??= new StrictMirroredLOOPExecutor(orientationCalculator);
+	return _strictMirrored ??= new StrictMirroredLOOPExecutor();
 }
 export function getStrictFlippedLOOPExecutor() {
 	_check();
-	return _strictFlipped ??= new StrictFlippedLOOPExecutor(orientationCalculator);
+	return _strictFlipped ??= new StrictFlippedLOOPExecutor();
 }
 export function getStrictSwappedLOOPExecutor() {
 	_check();
-	return _strictSwapped ??= new StrictSwappedLOOPExecutor(orientationCalculator, gridPositionDeriver);
+	return _strictSwapped ??= new StrictSwappedLOOPExecutor();
 }
 export function getStrictInvertedLOOPExecutor() {
 	_check();
-	return _strictInverted ??= new StrictInvertedLOOPExecutor(orientationCalculator);
+	return _strictInverted ??= new StrictInvertedLOOPExecutor();
 }
 export function getMirroredSwappedLOOPExecutor() {
 	_check();
-	return _mirroredSwapped ??= new MirroredSwappedLOOPExecutor(orientationCalculator);
+	return _mirroredSwapped ??= new MirroredSwappedLOOPExecutor();
 }
 export function getSwappedInvertedLOOPExecutor() {
 	_check();
-	return _swappedInverted ??= new SwappedInvertedLOOPExecutor(orientationCalculator);
+	return _swappedInverted ??= new SwappedInvertedLOOPExecutor();
 }
 export function getRotatedSwappedLOOPExecutor() {
 	_check();
-	return _rotatedSwapped ??= new RotatedSwappedLOOPExecutor(orientationCalculator, gridPositionDeriver);
+	return _rotatedSwapped ??= new RotatedSwappedLOOPExecutor();
 }
 export function getRewoundLOOPExecutor() {
 	_check();
@@ -95,15 +93,15 @@ export function getRewoundLOOPExecutor() {
 // Executors that need LOOPParameterProvider
 export function getMirroredInvertedLOOPExecutor() {
 	_check();
-	return _mirroredInverted ??= new MirroredInvertedLOOPExecutor(orientationCalculator, getLOOPParameterProvider());
+	return _mirroredInverted ??= new MirroredInvertedLOOPExecutor(getLOOPParameterProvider());
 }
 export function getRotatedInvertedLOOPExecutor() {
 	_check();
-	return _rotatedInverted ??= new RotatedInvertedLOOPExecutor(orientationCalculator, gridPositionDeriver, getLOOPParameterProvider());
+	return _rotatedInverted ??= new RotatedInvertedLOOPExecutor(getLOOPParameterProvider());
 }
 export function getMirroredSwappedInvertedLOOPExecutor() {
 	_check();
-	return _mirroredSwappedInverted ??= new MirroredSwappedInvertedLOOPExecutor(orientationCalculator, getLOOPParameterProvider());
+	return _mirroredSwappedInverted ??= new MirroredSwappedInvertedLOOPExecutor(getLOOPParameterProvider());
 }
 
 // Composite executors

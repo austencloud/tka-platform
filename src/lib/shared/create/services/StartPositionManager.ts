@@ -15,10 +15,9 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridLocationsFromPosition } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 
 export class StartPositionManager {
-  constructor(private gridPositionDeriver: GridPositionDeriver) {}
 
   async getStartPositions(gridMode: GridMode, blueOrientation?: Orientation, redOrientation?: Orientation): Promise<PictographData[]> {
     return this.getDefaultStartPositions(gridMode, blueOrientation, redOrientation);
@@ -150,8 +149,8 @@ export class StartPositionManager {
   private getHandLocationsForPosition(
     position: GridPosition
   ): [GridLocation, GridLocation] {
-    // Use the GridPositionDeriver service to get hand locations for any position
-    return this.gridPositionDeriver.getGridLocationsFromPosition(position);
+    // Use the canonical deriver to get hand locations for any position
+    return getGridLocationsFromPosition(position);
   }
 
   selectStartPosition(position: PictographData): void {
@@ -185,6 +184,4 @@ export class StartPositionManager {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-
-export const startPositionManager = new StartPositionManager(gridPositionDeriver);
+export const startPositionManager = new StartPositionManager();

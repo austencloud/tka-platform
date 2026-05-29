@@ -10,7 +10,7 @@
 
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -98,7 +98,7 @@ export function enrichStepsWithGridPositions(steps: StepData[]): void {
     if (blue?.startLocation && red?.startLocation) {
       try {
         mutable.startPosition =
-          gridPositionDeriver.getGridPositionFromLocations(
+          getGridPositionFromLocations(
             blue.startLocation as GridLocation,
             red.startLocation as GridLocation
           );
@@ -110,7 +110,7 @@ export function enrichStepsWithGridPositions(steps: StepData[]): void {
     if (blue?.endLocation && red?.endLocation) {
       try {
         mutable.endPosition =
-          gridPositionDeriver.getGridPositionFromLocations(
+          getGridPositionFromLocations(
             blue.endLocation as GridLocation,
             red.endLocation as GridLocation
           );

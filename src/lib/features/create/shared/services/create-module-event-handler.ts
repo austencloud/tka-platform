@@ -13,9 +13,11 @@ import type { SequenceData } from "../../../../shared/foundation/domain/models/S
 
 import type { ConstructCoordinator } from "./construct-coordinator";
 import type { PictographData } from "../../../../shared/pictograph/shared/domain/models/PictographData";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
-import { orientationCalculator as orientationCalculatorDirect } from "../../../../shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { createStepData } from "$lib/shared/create/factories/createStepData";
 
@@ -23,7 +25,6 @@ import { getConstructCoordinator } from "$lib/features/create/shared/get-constru
 
 export class CreateModuleEventHandler {
   private constructCoordinator: ConstructCoordinator | null = null;
-  private OrientationCalculator: OrientationCalculator | null = null;
   private ReversalDetector: ReversalDetector | null = null;
   private initialized = false;
 
@@ -58,19 +59,11 @@ export class CreateModuleEventHandler {
       this.constructCoordinator = null;
     }
 
-    // Use direct import instead of container for HMR performance
-    this.OrientationCalculator = orientationCalculatorDirect;
-
     this.ReversalDetector = reversalDetector;
 
-    // Only mark as initialized if at least one service resolved
-    if (
-      this.constructCoordinator ||
-      this.OrientationCalculator ||
-      this.ReversalDetector
-    ) {
-      this.initialized = true;
-    }
+    // Orientation calculation is now provided by canonical module functions
+    // (always available), so initialization succeeds whenever any service is present.
+    this.initialized = true;
   }
 
   /**
@@ -163,7 +156,7 @@ export class CreateModuleEventHandler {
       performance.mark("beat-data-created");
 
       // 🔄 OPTIMIZATION: Calculate orientations BEFORE UI update to batch into single update
-      if (currentSequence.steps.length > 0 && this.OrientationCalculator) {
+      if (currentSequence.steps.length > 0) {
         const lastStep =
           currentSequence.steps[currentSequence.steps.length - 1];
 
@@ -171,7 +164,7 @@ export class CreateModuleEventHandler {
         if (lastStep && !lastStep.isBlank && !stepData.isBlank) {
           try {
             // Update start orientations from the last beat's end orientations
-            stepData = this.OrientationCalculator.updateStartOrientations(
+            stepData = updateStartOrientations(
               stepData,
               lastStep
             );
@@ -179,7 +172,7 @@ export class CreateModuleEventHandler {
 
             // Update end orientations based on the motion calculations
             stepData =
-              this.OrientationCalculator.updateEndOrientations(stepData);
+              updateEndOrientations(stepData);
             performance.mark("end-orientations-complete");
           } catch (orientationError) {
             console.warn(

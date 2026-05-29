@@ -9,7 +9,6 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
 type StepConverter = typeof StepConverterSingleton;
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { SequenceExtender } from "../../shared/services/sequence-extender";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -38,7 +37,6 @@ export class WordSequenceGenerator {
     private transitionGraph: LetterTransitionGraph,
     private letterQueryHandler: ILetterQueryHandler,
     private stepConverter: StepConverter,
-    private orientationCalculator: OrientationCalculator,
     private sequenceExtender: SequenceExtender,
     private startPositionValidator: StartPositionValidator,
     private orientationContinuityValidator: OrientationContinuityValidator,
@@ -124,10 +122,7 @@ export class WordSequenceGenerator {
       // Recalculate all orientations to ensure chain integrity
       // The CSV data may not have proper orientation continuity,
       // so we propagate orientations from the start position
-      sequence = recalculateAllOrientations(
-        sequence,
-        this.orientationCalculator
-      );
+      sequence = recalculateAllOrientations(sequence);
 
       // Detect reversals in the sequence
       sequence = this.reversalDetector.processReversals(sequence);
@@ -772,10 +767,7 @@ export class WordSequenceGenerator {
     };
 
     // Recalculate orientations for the new sequence
-    const recalculatedSequence = recalculateAllOrientations(
-      newSequence,
-      this.orientationCalculator
-    );
+    const recalculatedSequence = recalculateAllOrientations(newSequence);
 
     return { success: true, sequence: recalculatedSequence };
   }
@@ -787,7 +779,6 @@ export class WordSequenceGenerator {
 import { letterTransitionGraph } from "./letter-transition-graph";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { sequenceExtender } from "$lib/features/create/shared/services/sequence-extender";
 import { startPositionValidator } from "./start-position-validator";
 import * as orientationContinuityValidator from "./orientation-continuity-validator";
@@ -797,7 +788,6 @@ export const wordSequenceGenerator = new WordSequenceGenerator(
   letterTransitionGraph,
   letterQueryHandler,
   stepConverter,
-  orientationCalculator,
   sequenceExtender,
   startPositionValidator,
   orientationContinuityValidator,

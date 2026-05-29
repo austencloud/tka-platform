@@ -5,7 +5,6 @@ import { getLOOPExecutorSelector } from '$lib/features/create/generate/circular/
 import { getReversalDetector } from './get-reversal-detector';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
 import { getStepConverter } from '$lib/features/create/generate/shared/get-step-converter';
-import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
 import { getLOOPValidator } from './get-loop-validator';
 import { getSequenceAnalyzer } from './get-sequence-analyzer';
 import { getBridgeFinder } from './get-bridge-finder';
@@ -20,7 +19,6 @@ export function getSequenceExtender(): SequenceExtender {
 		getReversalDetector(),
 		letterQueryHandler,
 		getStepConverter(),
-		orientationCalculator,
 		getLOOPValidator(),
 		getSequenceAnalyzer(),
 		getBridgeFinder(),

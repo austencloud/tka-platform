@@ -34,7 +34,7 @@ import {
 } from "$lib/shared/create/domain/strict-loop-position-maps";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import {
   MotionColor,
   MotionType,
@@ -57,7 +57,7 @@ export class LOOPDetector implements ILOOPDetector {
     }
 
     try {
-      return gridPositionDeriver.getGridPositionFromLocations(
+      return getGridPositionFromLocations(
         blueMotion.startLocation as GridLocation,
         redMotion.startLocation as GridLocation
       );
@@ -80,7 +80,7 @@ export class LOOPDetector implements ILOOPDetector {
     }
 
     try {
-      return gridPositionDeriver.getGridPositionFromLocations(
+      return getGridPositionFromLocations(
         blueMotion.endLocation as GridLocation,
         redMotion.endLocation as GridLocation
       );

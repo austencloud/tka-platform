@@ -14,11 +14,14 @@
  */
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
@@ -29,10 +32,7 @@ import { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class StrictRotatedLOOPExecutor {
-  constructor(
-    private OrientationCalculator: OrientationCalculator,
-    private gridPositionDeriver: GridPositionDeriver
-  ) {}
+  constructor() {}
 
   /**
    * Execute the strict rotated LOOP
@@ -172,12 +172,12 @@ export class StrictRotatedLOOPExecutor {
     };
 
     // Update orientations
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
     const finalStep =
-      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+      updateEndOrientations(stepWithStartOri);
 
     return finalStep;
   }
@@ -293,7 +293,7 @@ export class StrictRotatedLOOPExecutor {
     const newRedEndLoc = redLocationMap[previousRedEndLoc as GridLocation];
 
     // Derive GridPosition from (blue, red) location tuple using GridPositionDeriver
-    const newPosition = this.gridPositionDeriver.getGridPositionFromLocations(
+    const newPosition = getGridPositionFromLocations(
       newBlueEndLoc,
       newRedEndLoc
     );
@@ -343,10 +343,4 @@ export class StrictRotatedLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-
-export const strictRotatedLOOPExecutor = new StrictRotatedLOOPExecutor(
-  orientationCalculator,
-  gridPositionDeriver
-);
+export const strictRotatedLOOPExecutor = new StrictRotatedLOOPExecutor();

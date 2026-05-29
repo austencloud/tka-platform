@@ -20,13 +20,16 @@ import {
   MotionColor,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type {
   GridLocation,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   getHandRotationDirection,
   getLocationMapForHandRotation,
@@ -37,10 +40,7 @@ import { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class RotatedSwappedLOOPExecutor {
-  constructor(
-    private OrientationCalculator: OrientationCalculator,
-    private gridPositionDeriver: GridPositionDeriver
-  ) {}
+  constructor() {}
 
   /**
    * Execute the rotated-swapped LOOP
@@ -183,12 +183,12 @@ export class RotatedSwappedLOOPExecutor {
     };
 
     // Update orientations
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
     const finalStep =
-      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+      updateEndOrientations(stepWithStartOri);
 
     return finalStep;
   }
@@ -302,7 +302,7 @@ export class RotatedSwappedLOOPExecutor {
 
     // Derive position from both locations
     const newEndPosition =
-      this.gridPositionDeriver.getGridPositionFromLocations(
+      getGridPositionFromLocations(
         newBlueEndLoc,
         newRedEndLoc
       );
@@ -376,10 +376,4 @@ export class RotatedSwappedLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-
-export const rotatedSwappedLOOPExecutor = new RotatedSwappedLOOPExecutor(
-  orientationCalculator,
-  gridPositionDeriver
-);
+export const rotatedSwappedLOOPExecutor = new RotatedSwappedLOOPExecutor();

@@ -14,7 +14,7 @@ import type {
 import {
   MotionColor
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 
 /**
  * Propagate orientations for a single color through all steps.
@@ -23,8 +23,7 @@ import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services
 export function propagateOrientationsForColor(
   steps: StepData[],
   color: MotionColor,
-  initialOrientation: Orientation,
-  orientationCalculator: OrientationCalculator
+  initialOrientation: Orientation
 ): StepData[] {
   const updatedSteps = [...steps];
   let previousEndOrientation: Orientation = initialOrientation;
@@ -42,7 +41,7 @@ export function propagateOrientationsForColor(
       startOrientation: previousEndOrientation,
     });
 
-    const newEndOrientation = orientationCalculator.calculateEndOrientation(
+    const newEndOrientation = calculateEndOrientation(
       tempMotionData,
       color
     );
@@ -71,8 +70,7 @@ export function propagateOrientationsForColor(
  * Uses the start position orientations as the baseline.
  */
 export function recalculateAllOrientations(
-  sequence: SequenceData,
-  orientationCalculator: OrientationCalculator
+  sequence: SequenceData
 ): SequenceData {
   if (sequence.steps.length === 0 || !sequence.startPosition) {
     return sequence;
@@ -89,8 +87,7 @@ export function recalculateAllOrientations(
     updatedSteps = propagateOrientationsForColor(
       updatedSteps,
       MotionColor.BLUE,
-      blueStartOrientation,
-      orientationCalculator
+      blueStartOrientation
     );
   }
 
@@ -100,8 +97,7 @@ export function recalculateAllOrientations(
     updatedSteps = propagateOrientationsForColor(
       updatedSteps,
       MotionColor.RED,
-      redStartOrientation,
-      orientationCalculator
+      redStartOrientation
     );
   }
 

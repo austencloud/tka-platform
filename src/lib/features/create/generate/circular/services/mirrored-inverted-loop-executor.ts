@@ -26,7 +26,10 @@ import type {
   GridLocation,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
 import {
   MIRRORED_INVERTED_VALIDATION_SET,
@@ -37,7 +40,6 @@ import type { Period } from "../domain/models/circular-models";
 
 export class MirroredInvertedLOOPExecutor {
   constructor(
-    private OrientationCalculator: OrientationCalculator,
     private loopParams: LOOPParameterProvider
   ) {}
 
@@ -176,12 +178,12 @@ export class MirroredInvertedLOOPExecutor {
     };
 
     // Update orientations
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
     const finalStep =
-      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+      updateEndOrientations(stepWithStartOri);
 
     return finalStep;
   }
@@ -320,10 +322,8 @@ export class MirroredInvertedLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { loopParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
 
 export const mirroredInvertedLOOPExecutor = new MirroredInvertedLOOPExecutor(
-  orientationCalculator,
   loopParameterProvider
 );

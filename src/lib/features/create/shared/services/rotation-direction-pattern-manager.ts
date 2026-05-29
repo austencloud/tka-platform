@@ -64,7 +64,7 @@ import {
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { createStepData } from "$lib/shared/create/factories/createStepData";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -491,7 +491,7 @@ function applyRotationToMotion(
     rotationDirection: newRotationDirection,
     motionType: newMotionType,
   });
-  const newEndOrientation = orientationCalculator.calculateEndOrientation(
+  const newEndOrientation = calculateEndOrientation(
     tempMotion,
     color
   );
@@ -568,7 +568,7 @@ function updateMotionStartOrientation(
     startOrientation: newStartOrientation,
   });
 
-  const newEndOrientation = orientationCalculator.calculateEndOrientation(
+  const newEndOrientation = calculateEndOrientation(
     tempMotion,
     color
   );

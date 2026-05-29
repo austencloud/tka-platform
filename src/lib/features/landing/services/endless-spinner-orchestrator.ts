@@ -14,8 +14,7 @@ import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSe
 import type { GenerationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type {
   EndState, PositionGroup, SpinnerStats } from "$lib/shared/landing/domain/types";
 import {
@@ -305,9 +304,7 @@ export class EndlessSpinnerOrchestrator {
     private readonly browseLoader: PublicSequencesLoader,
     private readonly generationOrchestrator: GenerationOrchestrator,
     private readonly sequenceTransformer: SequenceTransformer,
-    private readonly startPositionDeriver: StartPositionDeriver,
-    private readonly orientationCalculator: OrientationCalculator,
-    private readonly gridPositionDeriver: GridPositionDeriver
+    private readonly startPositionDeriver: StartPositionDeriver
   ) {}
 
   async initialize(): Promise<void> {
@@ -412,7 +409,7 @@ export class EndlessSpinnerOrchestrator {
 
     if (blueMotion?.endLocation && redMotion?.endLocation) {
       try {
-        return this.gridPositionDeriver.getGridPositionFromLocations(
+        return getGridPositionFromLocations(
           blueMotion.endLocation,
           redMotion.endLocation
         );
@@ -564,10 +561,7 @@ export class EndlessSpinnerOrchestrator {
 
       // Step 4: Always recalculate orientations through all steps
       // This ensures orientation chain integrity after rotation transforms
-      const orientationCorrected = recalculateAllOrientations(
-        finalSequence,
-        this.orientationCalculator
-      );
+      const orientationCorrected = recalculateAllOrientations(finalSequence);
 
       // Step 5: Determine the sequence's grid mode from actual motion locations.
       // We derive from the first step's motions rather than trusting sequence.gridMode,

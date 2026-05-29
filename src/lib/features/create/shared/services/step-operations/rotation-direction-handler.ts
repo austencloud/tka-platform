@@ -27,7 +27,7 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
   getStepDataFromState,
@@ -99,7 +99,7 @@ export function updateRotationDirection(
     rotationDirection: newRotationDirection,
     motionType: newMotionType,
   });
-  const newEndOrientation = orientationCalculator.calculateEndOrientation(
+  const newEndOrientation = calculateEndOrientation(
     tempMotionData,
     colorKey
   );

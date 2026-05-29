@@ -25,7 +25,10 @@ import type {
   GridPosition,
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   HORIZONTAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_LOCATION_MAP,
@@ -35,7 +38,7 @@ import { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class StrictFlippedLOOPExecutor {
-  constructor(private OrientationCalculator: OrientationCalculator) {}
+  constructor() {}
 
   executeLOOP(sequence: StepData[], period: Period): StepData[] {
     this._validateSequence(sequence);
@@ -126,11 +129,11 @@ export class StrictFlippedLOOPExecutor {
       },
     };
 
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
-    return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+    return updateEndOrientations(stepWithStartOri);
   }
 
   private _createCopiedEntry(
@@ -168,11 +171,11 @@ export class StrictFlippedLOOPExecutor {
       },
     };
 
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
-    return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+    return updateEndOrientations(stepWithStartOri);
   }
 
   private _getFlippedPosition(sourceStep: StepData): GridPosition | null {
@@ -226,8 +229,4 @@ export class StrictFlippedLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-
-export const strictFlippedLOOPExecutor = new StrictFlippedLOOPExecutor(
-  orientationCalculator
-);
+export const strictFlippedLOOPExecutor = new StrictFlippedLOOPExecutor();

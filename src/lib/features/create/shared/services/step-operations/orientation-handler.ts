@@ -13,7 +13,7 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
   getStepDataFromState,
@@ -52,7 +52,7 @@ export function updateStepOrientation(
     startOrientation: orientation as MotionData["startOrientation"],
   });
 
-  const newEndOrientation = orientationCalculator.calculateEndOrientation(
+  const newEndOrientation = calculateEndOrientation(
     tempMotionData,
     colorKey
   );
@@ -246,7 +246,7 @@ export function calculatePropagatedSteps(
       startOrientation: previousEndOrientation,
     });
 
-    const newEndOrientation = orientationCalculator.calculateEndOrientation(
+    const newEndOrientation = calculateEndOrientation(
       tempMotionData,
       color as MotionColor
     );

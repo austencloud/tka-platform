@@ -20,10 +20,13 @@ import {
   MotionColor,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   SWAPPED_POSITION_MAP,
   SWAPPED_LOOP_VALIDATION_SET,
@@ -32,10 +35,7 @@ import { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class StrictSwappedLOOPExecutor {
-  constructor(
-    private OrientationCalculator: OrientationCalculator,
-    private gridPositionDeriver: GridPositionDeriver
-  ) {}
+  constructor() {}
 
   executeLOOP(sequence: StepData[], period: Period): StepData[] {
     this._validateSequence(sequence);
@@ -122,12 +122,12 @@ export class StrictSwappedLOOPExecutor {
     );
 
     const actualStartPosition =
-      this.gridPositionDeriver.getGridPositionFromLocations(
+      getGridPositionFromLocations(
         blueMotion.startLocation,
         redMotion.startLocation
       );
     const actualEndPosition =
-      this.gridPositionDeriver.getGridPositionFromLocations(
+      getGridPositionFromLocations(
         blueMotion.endLocation,
         redMotion.endLocation
       );
@@ -144,11 +144,11 @@ export class StrictSwappedLOOPExecutor {
       },
     };
 
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
-    return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+    return updateEndOrientations(stepWithStartOri);
   }
 
   private _createCopiedEntry(
@@ -186,11 +186,11 @@ export class StrictSwappedLOOPExecutor {
       },
     };
 
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
-    return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+    return updateEndOrientations(stepWithStartOri);
   }
 
   private _createSwappedMotion(
@@ -222,10 +222,4 @@ export class StrictSwappedLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-
-export const strictSwappedLOOPExecutor = new StrictSwappedLOOPExecutor(
-  orientationCalculator,
-  gridPositionDeriver
-);
+export const strictSwappedLOOPExecutor = new StrictSwappedLOOPExecutor();

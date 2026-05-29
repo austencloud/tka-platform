@@ -5,12 +5,11 @@
  * Migrated from utils/betaDetection.ts to proper service architecture.
  */
 
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { getGridPositionFromLocations } from "../../grid/services/grid-position-deriver";
 import type { GridPosition } from "../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../../shared/domain/models/PictographData";
 
 export class BetaDetector {
-  constructor(private positionMapper: GridPositionDeriver) {}
 
   /**
    * Check if a grid position is a beta position
@@ -28,7 +27,7 @@ export class BetaDetector {
       return false;
     }
 
-    const startPosition = this.positionMapper.getGridPositionFromLocations(
+    const startPosition = getGridPositionFromLocations(
       pictographData.motions.blue.startLocation,
       pictographData.motions.red.startLocation
     );
@@ -58,6 +57,4 @@ export class BetaDetector {
 // DIRECT EXPORT - Use this instead of betaDetector
 // This avoids DI container rebuilds when this file changes
 // ============================================================================
-import { gridPositionDeriver } from "../../grid/services/implementations/GridPositionDeriver";
-
-export const betaDetector = new BetaDetector(gridPositionDeriver);
+export const betaDetector = new BetaDetector();

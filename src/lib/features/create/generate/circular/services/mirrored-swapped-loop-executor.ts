@@ -26,7 +26,10 @@ import type {
   GridPosition,
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
   VERTICAL_MIRROR_LOCATION_MAP,
@@ -37,7 +40,7 @@ import type { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class MirroredSwappedLOOPExecutor {
-  constructor(private OrientationCalculator: OrientationCalculator) {}
+  constructor() {}
 
   /**
    * Execute the mirrored-swapped LOOP
@@ -166,12 +169,12 @@ export class MirroredSwappedLOOPExecutor {
     };
 
     // Update orientations
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
     const finalStep =
-      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+      updateEndOrientations(stepWithStartOri);
 
     return finalStep;
   }
@@ -333,8 +336,4 @@ export class MirroredSwappedLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-
-export const mirroredSwappedLOOPExecutor = new MirroredSwappedLOOPExecutor(
-  orientationCalculator
-);
+export const mirroredSwappedLOOPExecutor = new MirroredSwappedLOOPExecutor();

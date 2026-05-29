@@ -17,7 +17,10 @@ import {
   MotionColor,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import {
+  updateStartOrientations,
+  updateEndOrientations,
+} from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
   INVERTED_LOOP_VALIDATION_SET,
   getInvertedLetter,
@@ -25,7 +28,7 @@ import {
 import { Period } from "../domain/models/circular-models";
 
 export class StrictInvertedLOOPExecutor {
-  constructor(private OrientationCalculator: OrientationCalculator) {}
+  constructor() {}
 
   executeLOOP(sequence: StepData[], period: Period): StepData[] {
     this._validateSequence(sequence);
@@ -115,11 +118,11 @@ export class StrictInvertedLOOPExecutor {
       },
     };
 
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
-    return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+    return updateEndOrientations(stepWithStartOri);
   }
 
   private _createCopiedEntry(
@@ -157,11 +160,11 @@ export class StrictInvertedLOOPExecutor {
       },
     };
 
-    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+    const stepWithStartOri = updateStartOrientations(
       newStep,
       previousStep
     );
-    return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
+    return updateEndOrientations(stepWithStartOri);
   }
 
   private _getInvertedLetter(sourceStep: StepData): Letter {
@@ -218,8 +221,4 @@ export class StrictInvertedLOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-
-export const strictInvertedLOOPExecutor = new StrictInvertedLOOPExecutor(
-  orientationCalculator
-);
+export const strictInvertedLOOPExecutor = new StrictInvertedLOOPExecutor();

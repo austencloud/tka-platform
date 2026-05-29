@@ -18,8 +18,6 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-  import { orientationCalculator as orientationCalculatorInstance } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import { generationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
   import {
@@ -159,9 +157,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
         browseLoader as any,
         generationOrchestrator,
         sequenceTransformer as any,
-        startPositionDeriverInstance,
-        orientationCalculatorInstance as any,
-        gridPositionDeriverInstance as any
+        startPositionDeriverInstance
       );
 
       // Noop infinite generator (this surface is library-only)
