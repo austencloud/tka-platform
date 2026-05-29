@@ -30,7 +30,7 @@ import {
   DEFAULT_CANVAS_SIZE,
 } from "./canvas-resizer.svelte";
 import { FrameBudgetMonitor } from "./frame-budget-monitor";
-import { DeviceTierDetector } from "./implementations/DeviceTierDetector";
+import { detectDeviceTier } from "./device-tier-detector";
 import { AnimatorCanvasInitializer } from "./animator-canvas-initializer";
 import type { FireOverlayConfig } from "../domain/types/FireTypes";
 import type { FireDefaultsLoader } from "./fire-defaults-loader";
@@ -148,7 +148,7 @@ export class AnimationEngine {
   // ============================================================================
   private readonly canvasInitializer = new AnimatorCanvasInitializer();
   private readonly frameBudgetMonitor: FrameBudgetMonitor =
-    new FrameBudgetMonitor(new DeviceTierDetector().detect());
+    new FrameBudgetMonitor(detectDeviceTier());
   private fireDefaultsLoader: FireDefaultsLoader | null = null;
 
   // ============================================================================
