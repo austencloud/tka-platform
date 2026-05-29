@@ -339,6 +339,17 @@ export async function buildBackJob(
 
   const hasStartPos = !!sequence.startPosition;
 
+  // Per-card render context: border-aware cqi basis + the proof text colors the
+  // live card sets on `.back` (so bare-mounted glyphs / pictograph borders don't
+  // fall back to near-white and vanish on the white proof background).
+  const a = layout.anchors;
+  const perCardCtx = {
+    containerWidth: a.innerWidth,
+    cqi: a.cqiEff,
+    textMutedColor: visuals.textMutedColor ?? "rgba(0, 0, 0, 0.55)",
+    textColor: visuals.textColor ?? "#111111",
+  };
+
   const [
     brandBmp,
     urlBmp,
@@ -352,11 +363,11 @@ export async function buildBackJob(
     d.rasterizeBrand(opts.theme),
     d.rasterizeUrl(opts.theme),
     d.rasterizeDifficultyBadge(data.level.number, opts.theme),
-    d.rasterizeTurnGlyph(data.turnGlyphEntries),
-    d.rasterizeReversalGlyph(data.reversalSequence, data.reversalPeriod),
-    d.rasterizeStepCount(data.stepCount, undefined, undefined, visuals.textMutedColor),
+    d.rasterizeTurnGlyph(data.turnGlyphEntries, perCardCtx),
+    d.rasterizeReversalGlyph(data.reversalSequence, data.reversalPeriod, perCardCtx),
+    d.rasterizeStepCount(data.stepCount, perCardCtx),
     hasStartPos
-      ? d.rasterizeStartPosPictograph(sequence.startPosition, darkMode)
+      ? d.rasterizeStartPosPictograph(sequence.startPosition, darkMode, perCardCtx)
       : Promise.resolve(null),
     Promise.all(
       activeLoop.map((comp) => {

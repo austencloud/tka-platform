@@ -58,20 +58,46 @@ export const CARD_RENDER_WIDTH = 1644;
 /** 1cqi in px at the card render width. */
 const CQI = CARD_RENDER_WIDTH / 100; // 16.44
 
-// ── Element box sizes (lifted from CardBack.svelte / card-back-layout.ts) ──────
-// .glyph-box { width: 10cqi; height: 6cqi } — shared by turn + reversal glyphs.
-const GLYPH_BOX_W = 10 * CQI;
-const GLYPH_BOX_H = 6 * CQI;
-// .start-pos-picto { width: 12cqi; height: 12cqi } (CardBack :global override).
-const START_POS_SIZE = 12 * CQI;
-// .corner-label { font-size: 9cqi; line-height: 1 } in a 20cqi right-aligned slot.
-const STEP_COUNT_W = 20 * CQI;
-const STEP_COUNT_H = 9 * CQI;
+// Box sizes are derived per-call from the border-aware PerCardRenderCtx.cqi
+// (glyph 10×6cqi, start-pos 12×12cqi, step-count slot 20×9cqi) — see each
+// rasterizer. CQI / CARD_RENDER_WIDTH below back the DEFAULT_CTX fallback only.
 
-// Settle budget for the async pictograph — mirrors card-back-dom-renderer.ts
-// (2 rAF + 200ms) so the renderer's grid/prop/arrow SVG children are painted.
-const PICTO_SETTLE_FRAMES = 2;
-const PICTO_SETTLE_MS = 200;
+// Settle budget for the async pictograph. Standalone (vs the full-card render)
+// the grid/prop/arrow SVG assets load cold, so give a more generous budget than
+// card-back-dom-renderer.ts's 2 rAF + 200ms.
+const PICTO_SETTLE_FRAMES = 3;
+const PICTO_SETTLE_MS = 400;
+
+/**
+ * Border-frame-aware render context, supplied by the job builder so the per-card
+ * elements render at the SAME cqi basis as the live card (border-frame content
+ * box, not the full card width) and inherit `--card-text-muted` / `--card-text`
+ * (which the live card sets on `.back`; mounted bare, glyphs/pictograph borders
+ * otherwise fall back to near-white and vanish on the white proof background).
+ */
+export interface PerCardRenderCtx {
+  /** Border-frame content-box inline size in px (= card width − 2·borderPx). */
+  containerWidth: number;
+  /** 1cqi in px against the border-frame content box. */
+  cqi: number;
+  /** Proof/theme muted text color (CardBack sets this as --card-text-muted). */
+  textMutedColor: string;
+  /** Proof/theme text color (CardBack sets this as --card-text). */
+  textColor: string;
+}
+
+/** Fallback context (full-width cqi, dark proof text) when none is supplied. */
+const DEFAULT_CTX: PerCardRenderCtx = {
+  containerWidth: CARD_RENDER_WIDTH,
+  cqi: CQI,
+  textMutedColor: "rgba(0, 0, 0, 0.55)",
+  textColor: "#111111",
+};
+
+/** CSS custom props to inject so bare-mounted components match the live card. */
+function ctxCssVars(ctx: PerCardRenderCtx): Record<string, string> {
+  return { "--card-text-muted": ctx.textMutedColor, "--card-text": ctx.textColor };
+}
 
 // ── Test-injectable rasterize indirection (matches the constant sibling) ───────
 
@@ -139,15 +165,14 @@ export function __setPrepareFnForTest(fn: PrepareFn | null): void {
  */
 export function rasterizeTurnGlyph(
   entries: TurnGlyphEntry[],
-  w: number = Math.round(GLYPH_BOX_W),
-  h: number = Math.round(GLYPH_BOX_H),
+  ctx: PerCardRenderCtx = DEFAULT_CTX,
 ): Promise<ImageBitmap> {
   return rasterize(
     TurnPatternGlyph,
     { entries },
-    w,
-    h,
-    { containerWidth: CARD_RENDER_WIDTH },
+    Math.round(10 * ctx.cqi),
+    Math.round(6 * ctx.cqi),
+    { containerWidth: ctx.containerWidth, align: "end-center", cssVars: ctxCssVars(ctx) },
   );
 }
 
@@ -162,15 +187,14 @@ export function rasterizeTurnGlyph(
 export function rasterizeReversalGlyph(
   sequence: string,
   period: number,
-  w: number = Math.round(GLYPH_BOX_W),
-  h: number = Math.round(GLYPH_BOX_H),
+  ctx: PerCardRenderCtx = DEFAULT_CTX,
 ): Promise<ImageBitmap> {
   return rasterize(
     ReversalPatternGlyph,
     { sequence, period },
-    w,
-    h,
-    { containerWidth: CARD_RENDER_WIDTH },
+    Math.round(10 * ctx.cqi),
+    Math.round(6 * ctx.cqi),
+    { containerWidth: ctx.containerWidth, align: "end-center", cssVars: ctxCssVars(ctx) },
   );
 }
 
@@ -186,18 +210,14 @@ export function rasterizeReversalGlyph(
  */
 export function rasterizeStepCount(
   count: number,
-  w: number = Math.round(STEP_COUNT_W),
-  h: number = Math.round(STEP_COUNT_H),
-  textMutedColor?: string,
+  ctx: PerCardRenderCtx = DEFAULT_CTX,
 ): Promise<ImageBitmap> {
-  const props: Record<string, unknown> = { count };
-  if (textMutedColor !== undefined) props.textMutedColor = textMutedColor;
   return rasterize(
     CardBackStepCount,
-    props,
-    w,
-    h,
-    { containerWidth: CARD_RENDER_WIDTH },
+    { count, textMutedColor: ctx.textMutedColor },
+    Math.round(20 * ctx.cqi),
+    Math.round(9 * ctx.cqi),
+    { containerWidth: ctx.containerWidth, align: "end-center", cssVars: ctxCssVars(ctx) },
   );
 }
 
@@ -219,9 +239,10 @@ export function rasterizeStepCount(
 export async function rasterizeStartPosPictograph(
   pictographData: unknown,
   darkMode: boolean,
-  w: number = Math.round(START_POS_SIZE),
-  h: number = Math.round(START_POS_SIZE),
+  ctx: PerCardRenderCtx = DEFAULT_CTX,
 ): Promise<ImageBitmap> {
+  const w = Math.round(12 * ctx.cqi);
+  const h = Math.round(12 * ctx.cqi);
   // 1) Pre-warm the prepare cache so the component's internal $effect resolves
   //    synchronously from PictographPreparer.prepareCache. Mirror the exact
   //    options StartPositionPictograph uses: { themeMode: darkMode ? dark : light }.
@@ -242,7 +263,8 @@ export async function rasterizeStartPosPictograph(
     w,
     h,
     {
-      containerWidth: CARD_RENDER_WIDTH,
+      containerWidth: ctx.containerWidth,
+      cssVars: ctxCssVars(ctx),
       settleFrames: PICTO_SETTLE_FRAMES,
       settleMs: PICTO_SETTLE_MS,
     },

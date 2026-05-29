@@ -55,6 +55,20 @@ export interface RasterizeOptions {
    * measured content height so callers can anchor by it.
    */
   naturalHeight?: boolean;
+  /**
+   * CSS custom properties to set on the container, inherited by the mounted
+   * component. The live card sets `--card-text` / `--card-text-muted` on `.back`;
+   * components mounted bare (ReversalPatternGlyph empty dots, StartPositionPictograph
+   * border) otherwise fall back to a near-white value and vanish on the white proof
+   * background. Pass the proof theme's muted/text colors here.
+   */
+  cssVars?: Record<string, string>;
+  /**
+   * Replicate the `.glyph-box` flex context (align-items:flex-end;
+   * justify-content:center) so a corner glyph sits bottom-center within its box,
+   * matching CardBack.svelte. Default "none" = top-left natural flow.
+   */
+  align?: "none" | "end-center";
 }
 
 /** Resolve after `frames` consecutive animation frames. */
@@ -101,6 +115,16 @@ export async function rasterizeComponent(
     container.style.overflow = "hidden";
   }
   container.style.containerType = "inline-size";
+  if (opts.align === "end-center") {
+    container.style.display = "flex";
+    container.style.alignItems = "flex-end";
+    container.style.justifyContent = "center";
+  }
+  if (opts.cssVars) {
+    for (const [k, v] of Object.entries(opts.cssVars)) {
+      container.style.setProperty(k, v);
+    }
+  }
   document.body.appendChild(container);
 
   let component: ReturnType<typeof mount> | undefined;

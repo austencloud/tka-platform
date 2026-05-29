@@ -65,6 +65,12 @@
 
 <style>
   .start-pos-picto {
+    /* Fill the parent box. In the live card, CardBack.svelte's :global override
+       forces 12cqi; standalone (offscreen rasterization for the new card-back
+       render path) there's no override, so fill 100% of the sized container. */
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -75,5 +81,13 @@
 
   .picto-zoom {
     transform: scale(1.3);
+  }
+
+  /* The inner pictograph SVG must fill the box. CardBack.svelte applies this as a
+     :global override for the live card; scope it here so standalone rasterization
+     (new render path) sizes the SVG identically. */
+  .picto-zoom :global(svg) {
+    width: 100%;
+    height: 100%;
   }
 </style>

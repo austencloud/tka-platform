@@ -120,11 +120,13 @@ describe("card-back-bitmaps-percard rasterizers", () => {
       expect(call.opts?.containerWidth).toBe(CARD_RENDER_WIDTH);
     });
 
-    it("honors explicit width/height overrides", async () => {
-      await rasterizeTurnGlyph([{ blue: 0, red: 0 }], 200, 120);
+    it("uses the border-aware ctx cqi for box size + container", async () => {
+      const ctx = { containerWidth: 1529, cqi: 15.29, textMutedColor: "rgba(0,0,0,0.55)", textColor: "#111" };
+      await rasterizeTurnGlyph([{ blue: 0, red: 0 }], ctx);
       const call = rasterizeCalls[0]!;
-      expect(call.w).toBe(200);
-      expect(call.h).toBe(120);
+      expect(call.w).toBe(Math.round(10 * 15.29));
+      expect(call.h).toBe(Math.round(6 * 15.29));
+      expect(call.opts?.containerWidth).toBe(1529);
     });
   });
 
@@ -154,7 +156,8 @@ describe("card-back-bitmaps-percard rasterizers", () => {
       expect(rasterizeCalls).toHaveLength(1);
       const call = rasterizeCalls[0]!;
       expect(call.Comp).toBe(CardBackStepCount);
-      expect(call.props).toEqual({ count: 8 });
+      // default ctx supplies the proof muted color
+      expect(call.props).toEqual({ count: 8, textMutedColor: "rgba(0, 0, 0, 0.55)" });
     });
 
     it("rasterizes at the step-count slot size (20cqi × 9cqi)", async () => {
@@ -165,8 +168,9 @@ describe("card-back-bitmaps-percard rasterizers", () => {
       expect(call.opts?.containerWidth).toBe(CARD_RENDER_WIDTH);
     });
 
-    it("forwards an explicit textMutedColor", async () => {
-      await rasterizeStepCount(8, undefined, undefined, "rgba(0,0,0,0.6)");
+    it("forwards the ctx textMutedColor into the step-count props", async () => {
+      const ctx = { containerWidth: 1529, cqi: 15.29, textMutedColor: "rgba(0,0,0,0.6)", textColor: "#111" };
+      await rasterizeStepCount(8, ctx);
       const call = rasterizeCalls[0]!;
       expect(call.props).toEqual({ count: 8, textMutedColor: "rgba(0,0,0,0.6)" });
     });
@@ -218,11 +222,11 @@ describe("card-back-bitmaps-percard rasterizers", () => {
       expect(order).toEqual(["prepare", "rasterize"]);
     });
 
-    it("passes the production settle budget (2 frames + 200ms) downstream", async () => {
+    it("passes the standalone settle budget (3 frames + 400ms) downstream", async () => {
       await rasterizeStartPosPictograph(pictographData, true);
       const call = rasterizeCalls[0]!;
-      expect(call.opts?.settleFrames).toBe(2);
-      expect(call.opts?.settleMs).toBe(200);
+      expect(call.opts?.settleFrames).toBe(3);
+      expect(call.opts?.settleMs).toBe(400);
     });
 
     it("still rasterizes when pre-warm throws (component handles the fallback)", async () => {

@@ -327,8 +327,8 @@ describe("buildBackJob", () => {
       { width: WIDTH, height: HEIGHT, bleedPx: BLEED, theme: "cosmic" },
       deps,
     );
-    // rasterizeStepCount(count, w?, h?, textMutedColor)
+    // rasterizeStepCount(count, ctx) — ctx carries the proof muted color
     const args = calls.step![0]!;
-    expect(args[3]).toBe("rgba(0, 0, 0, 0.55)");
+    expect((args[1] as { textMutedColor: string }).textMutedColor).toBe("rgba(0, 0, 0, 0.55)");
   });
 });
