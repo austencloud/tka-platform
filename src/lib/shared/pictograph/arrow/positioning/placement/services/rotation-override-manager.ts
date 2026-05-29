@@ -11,7 +11,7 @@
 
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import type { TurnsTupleGenerator } from "./implementations/TurnsTupleGenerator";
+import type { TurnsTupleGenerator } from "./turns-tuple-generator";
 import {
   generateOrientationKey,
   resolveEffectiveOriKey,
@@ -252,7 +252,7 @@ export class RotationOverrideManager implements IRotationOverrideManager {
 // Dependencies are imported from their direct exports.
 // ============================================================================
 
-import { turnsTupleGenerator } from "./implementations/TurnsTupleGenerator";
+import { turnsTupleGenerator } from "./turns-tuple-generator";
 import { rotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
 
 

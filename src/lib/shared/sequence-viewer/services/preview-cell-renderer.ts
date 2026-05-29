@@ -71,7 +71,7 @@ export interface PreviewCellRenderOptions {
   /** Show red motion (prop + arrow). When false, renderer skips red entirely. Default: true. */
   showRedMotion?: boolean;
 }
-import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
 import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
 import { cellCacheKeyDeriver } from "./cell-cache-key-deriver";

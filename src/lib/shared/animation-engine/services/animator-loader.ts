@@ -6,7 +6,7 @@
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/canvas-2d-animation-renderer";
-import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import {
   generateGridSvg,
   generatePropSvg,

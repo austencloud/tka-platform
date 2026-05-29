@@ -11,7 +11,7 @@ import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { GlobalAdjustmentKey } from "../domain/GlobalArrowAdjustment";
 import type { KeyGeneratorPropOptions } from "./types";
-import type { TurnsTupleGenerator } from "../../placement/services/implementations/TurnsTupleGenerator";
+import type { TurnsTupleGenerator } from "../../placement/services/turns-tuple-generator";
 import {
   generateOrientationKey,
   resolveEffectiveOriKey,

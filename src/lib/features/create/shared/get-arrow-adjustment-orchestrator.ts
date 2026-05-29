@@ -4,8 +4,8 @@ import { ArrowAdjustmentOrchestrator } from './services/arrow-adjustment-orchest
 import { screenSpaceAdjustmentTransformer } from '$lib/shared/pictograph/arrow/positioning/calculation/services/screen-space-adjustment-transformer';
 import { arrowAdjustmentCalculator } from '$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-adjustment-calculator';
 import { arrowLocationCalculator } from '$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator';
-import { pictographPreparer } from '$lib/shared/pictograph/shared/services/implementations/PictographPreparer';
-import { turnsTupleGenerator } from '$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator';
+import { pictographPreparer } from '$lib/shared/pictograph/shared/services/pictograph-preparer';
+import { turnsTupleGenerator } from '$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator';
 
 let instance: ArrowAdjustmentOrchestrator | null = null;
 

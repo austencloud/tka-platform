@@ -12,7 +12,7 @@
 <script lang="ts">
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
-  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import PictographRenderer from "$lib/shared/pictograph/shared/components/PictographRenderer.svelte";
 
   interface Props {

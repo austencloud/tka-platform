@@ -15,7 +15,7 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-
   import LayerTabBar from "./LayerTabBar.svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
-  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import type { ArrowAdjustmentOrchestrator } from "../../services/arrow-adjustment-orchestrator";

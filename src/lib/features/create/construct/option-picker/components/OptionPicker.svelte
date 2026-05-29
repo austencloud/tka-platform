@@ -16,7 +16,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/getDarkModePro
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { calculateDeviceAwareSize } from "../services/option-grid-fit-calculator";
 
   import { createOptionPickerState } from "../state/option-picker-state.svelte";

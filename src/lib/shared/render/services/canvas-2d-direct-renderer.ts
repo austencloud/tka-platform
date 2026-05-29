@@ -11,8 +11,8 @@ import { getSvgImageCache } from "./svg-image-cache";
 import { getSvgAssetLoader } from "./svg-asset-loader";
 import { isDashLetter } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 import type { Letter } from "../../foundation/domain/models/Letter";
-import type { PictographPreparer } from "../../pictograph/shared/services/implementations/PictographPreparer";
-import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import type { PictographPreparer } from "../../pictograph/shared/services/pictograph-preparer";
+import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import {
   drawTKAGlyph,
   drawTurnsColumn,

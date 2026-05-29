@@ -19,7 +19,7 @@
  */
 
 import type { RetroPictographData } from "../../shared/domain/pictograph-types";
-import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import { EraRendererBase } from "../../shared/services/era-renderer-base";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

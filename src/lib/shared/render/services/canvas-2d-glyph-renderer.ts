@@ -11,7 +11,7 @@ import { interpretTurnColors, BLUE_HEX, RED_HEX } from "../../pictograph/tka-gly
 import { calculateTurnPositions } from "../../pictograph/tka-glyph/utils/turn-position-calculator";
 import { calculateTnDFromPictograph } from "../../pictograph/shared/domain/utils/tnd-calculator";
 import { calculateReversalPositions } from "../core";
-import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import type { GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
 import type { MotionData } from "../../pictograph/shared/domain/models/MotionData";
 import { MotionColor, getElementImagePath } from "../../pictograph/shared/domain/enums/pictograph-enums";

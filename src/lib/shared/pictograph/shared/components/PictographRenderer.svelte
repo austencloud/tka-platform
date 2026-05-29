@@ -37,8 +37,8 @@ Usage:
   import DurationGlyph from "./DurationGlyph.svelte";
   import PathShapeGlyph from "./PathShapeGlyph.svelte";
   import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
-  import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-  import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+  import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/turns-tuple-generator";
+  import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import { calculateTnDFromPictograph } from "../domain/utils/tnd-calculator";
 

@@ -6,7 +6,7 @@ import type { LayerRenderOptions, LayerVisibility } from "../../render/services/
 export type PreWarmPriority = "background" | "user-visible" | "user-blocking";
 import { cellCacheKeyDeriver } from "./cell-cache-key-deriver";
 import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
-import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";

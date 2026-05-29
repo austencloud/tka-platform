@@ -10,7 +10,7 @@
   import { PixelRenderer } from "$lib/features/retro/win95/services/pixel-renderer";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import { createAsciiLabState } from "./ascii-pictograph-lab-state.svelte";
-  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 
   const labState = createAsciiLabState();
   const renderer = new PixelRenderer(pictographPreparer);

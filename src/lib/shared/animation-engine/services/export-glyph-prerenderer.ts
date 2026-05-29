@@ -21,7 +21,7 @@ export interface GlyphAsset {
   yOffset: number;
 }
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import { interpretTurnColors } from "$lib/shared/pictograph/tka-glyph/services/turn-color-interpreter";
 import {
   getLetterImagePath,

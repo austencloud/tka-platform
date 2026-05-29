@@ -28,7 +28,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
-  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { rotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/rotation-override-manager";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";

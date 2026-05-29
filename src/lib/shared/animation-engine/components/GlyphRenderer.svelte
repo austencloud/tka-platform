@@ -30,7 +30,7 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+  import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
   import { onMount } from "svelte";
 
   let {

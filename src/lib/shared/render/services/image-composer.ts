@@ -1049,7 +1049,7 @@ export class ImageComposer {
 
     const themeMode = visibilitySettings.darkMode ? "dark" : "light";
     const { pictographPreparer: preparer } = await import(
-      "../../pictograph/shared/services/implementations/PictographPreparer"
+      "../../pictograph/shared/services/pictograph-preparer"
     );
     const preparedPictograph = await preparer.prepareSingle(pictographData, {
       themeMode,

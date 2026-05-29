@@ -2,7 +2,7 @@
   import { onMount, tick } from "svelte";
   import { browser } from "$app/environment";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import { Canvas2DDirectRenderer } from "$lib/shared/render/services/canvas-2d-direct-renderer";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

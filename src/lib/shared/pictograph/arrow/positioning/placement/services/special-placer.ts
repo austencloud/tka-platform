@@ -25,7 +25,7 @@ import {
   mapToLegacyBucket,
 } from "../../key-generation/services/special-placement-ori-key-generator";
 import type { SpecialPlacementDataProvider } from "./special-placement-data-provider";
-import type { TurnsTupleGenerator } from "./implementations/TurnsTupleGenerator";
+import type { TurnsTupleGenerator } from "./turns-tuple-generator";
 import type { SpecialPlacementLookup } from "./special-placement-lookup";
 import { getGlobalAdjustmentRepository } from "../../global/services/global-adjustment-singleton";
 
@@ -403,7 +403,7 @@ export class SpecialPlacer {
 // ============================================================================
 
 import { specialPlacementDataProvider } from "./special-placement-data-provider";
-import { turnsTupleGenerator } from "./implementations/TurnsTupleGenerator";
+import { turnsTupleGenerator } from "./turns-tuple-generator";
 import { specialPlacementLookup } from "./special-placement-lookup";
 
 export const specialPlacer = new SpecialPlacer(

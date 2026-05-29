@@ -12,8 +12,8 @@ import { calculateAdjustment } from "./keyboard-arrow-adjuster";
 import type { ScreenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/screen-space-adjustment-transformer";
 import type { ArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-adjustment-calculator";
 import type { ArrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
-import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
+import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import { GlobalAdjustmentKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-key-generator";
 import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
 import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
@@ -371,8 +371,8 @@ export class ArrowAdjustmentOrchestrator {
 import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/screen-space-adjustment-transformer";
 import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-adjustment-calculator";
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
-import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
-import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
+import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 
 export const arrowAdjustmentOrchestrator = new ArrowAdjustmentOrchestrator(
   screenSpaceAdjustmentTransformer,

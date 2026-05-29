@@ -15,7 +15,7 @@
   } from "firebase/firestore";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
-  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
   const logger = createComponentLogger("ArrowAdjustmentHistory");

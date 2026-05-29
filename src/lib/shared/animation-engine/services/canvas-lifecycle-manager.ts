@@ -14,7 +14,7 @@ import type { IPropTextureLoader } from "$lib/shared/animation-engine/services/I
 import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import type { ISVGGenerator as SVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import type { SequenceAnimationOrchestrator } from "./sequence-animation-orchestrator";
 import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";

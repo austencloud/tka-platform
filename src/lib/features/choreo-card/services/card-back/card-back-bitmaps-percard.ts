@@ -99,7 +99,7 @@ const defaultRenderPicto: RenderPictoFn = async (pictograph, options) => {
   if (!directRenderer) {
     const [{ Canvas2DDirectRenderer }, { pictographPreparer }] = await Promise.all([
       import("$lib/shared/render/services/canvas-2d-direct-renderer"),
-      import("$lib/shared/pictograph/shared/services/implementations/PictographPreparer"),
+      import("$lib/shared/pictograph/shared/services/pictograph-preparer"),
     ]);
     directRenderer = new Canvas2DDirectRenderer(pictographPreparer);
     directRendererReady = directRenderer.initialize();

@@ -11,7 +11,7 @@
  * - drawTintedImage mirrors Canvas2DDirectRenderer.drawColoredImage (OffscreenCanvas tint)
  */
 
-import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";

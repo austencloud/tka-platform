@@ -16,7 +16,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getCanvas2DRenderer } from "$lib/shared/render/get-canvas-2d-renderer";
-  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import "$lib/features/retro/dos/styles/dos-terminal.css";
 
   const svgToBraille = new SvgToBrailleConverter(
