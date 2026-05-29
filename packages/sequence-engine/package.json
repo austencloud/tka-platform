@@ -42,7 +42,7 @@
     "src"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b",
     "clean": "rimraf dist",
     "prepublishOnly": "npm run clean && npm run build"
   },
