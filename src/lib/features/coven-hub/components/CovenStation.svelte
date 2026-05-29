@@ -32,7 +32,6 @@
   import { buildTipEffectMap } from "$lib/features/coven-hub/domain/coven-effect-map";
   import type { LodBand } from "$lib/features/coven-hub/domain/coven-lod";
   import { useGltf } from "@threlte/extras";
-  import Stage3D from "$lib/shared/3d/components/Stage3D.svelte";
 
   interface Props {
     stationId: string;
@@ -245,15 +244,17 @@
 <!-- Formation root - positioned at world coords -->
 <T.Group name={`performer-station-${stationId}`} position.x={worldX} position.z={worldZ}>
 
-  <!-- Ritual platform: GLB stage if provided, otherwise the wooden Stage3D fallback -->
+  <!-- Ritual platform: bespoke GLB stage when stageModel is set, otherwise the
+       original stone disc (keeps the museum exhibit identical until GLBs land). -->
   {#if stageGltf}
     {#await stageGltf then gltf}
       <T is={gltf.scene} position.y={PLATFORM_HEIGHT} />
     {/await}
   {:else}
-    <T.Group position.y={PLATFORM_HEIGHT}>
-      <Stage3D width={PLATFORM_RADIUS * 2} depth={PLATFORM_RADIUS * 2} />
-    </T.Group>
+    <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
+      <T.CylinderGeometry args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]} />
+      <T.MeshStandardMaterial color={platformColor} roughness={0.9} />
+    </T.Mesh>
   {/if}
   <!-- Decorative ring at acolyte circle -->
   <T.Mesh position.y={PLATFORM_HEIGHT + 0.005} rotation.x={-Math.PI / 2}>
