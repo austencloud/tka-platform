@@ -236,7 +236,9 @@ export const DEFAULT_BRIDGE_CONFIG: Required<GameBridgeConfig> = {
   reconnectDelay: 1000,
   maxReconnectDelay: 30000,
   reconnectBackoff: 1.5,
-  maxReconnectAttempts: Infinity,
+  // Capped so an absent dev MCP server (the common case) stops retrying after
+  // ~5 backed-off attempts instead of spamming "Scheduling reconnect" forever.
+  maxReconnectAttempts: 5,
   connectionTimeout: 5000,
   debug: false,
 };
