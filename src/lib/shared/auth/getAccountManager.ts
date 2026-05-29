@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { AccountManager } from './services/implementations/AccountManager';
+import { AccountManager } from './services/account-manager';
 import { getHapticFeedback } from '../application/get-haptic-feedback';
 
 let instance: AccountManager | null = null;

@@ -11,7 +11,7 @@
     loadPreviewSection,
     isSectionLoaded,
   } from "../../../debug/state/user-preview-state.svelte";
-  import type { AccountManager } from '$lib/shared/auth/services/implementations/AccountManager'
+  import type { AccountManager } from '$lib/shared/auth/services/account-manager'
   import { onMount } from "svelte";
   import {
     createProfileSettingsState,

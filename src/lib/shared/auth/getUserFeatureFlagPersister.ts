@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { UserFeatureFlagPersister } from './services/implementations/UserFeatureFlagPersister';
+import { UserFeatureFlagPersister } from './services/user-feature-flag-persister';
 
 let instance: UserFeatureFlagPersister | null = null;
 

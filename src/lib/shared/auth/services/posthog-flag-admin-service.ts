@@ -4,8 +4,8 @@ import { type UserRole, hasRolePrivilege } from "../domain/models/UserRole";
 import { auth } from "../firebase";
 import { reloadFeatureFlags, setUserProperties } from "../../analytics/services/posthog";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import type { GlobalFeatureFlagPersister } from "./implementations/GlobalFeatureFlagPersister";
-import type { UserFeatureFlagPersister } from "./implementations/UserFeatureFlagPersister";
+import type { GlobalFeatureFlagPersister } from "./global-feature-flag-persister";
+import type { UserFeatureFlagPersister } from "./user-feature-flag-persister";
 
 export interface FlagUpdateResult {
   action: "created" | "updated" | "role_updated";

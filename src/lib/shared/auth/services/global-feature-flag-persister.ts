@@ -34,11 +34,11 @@ import {
   serverTimestamp,
   type Unsubscribe,
 } from "firebase/firestore";
-import { auth, getFirestoreInstance } from "../../firebase";
+import { auth, getFirestoreInstance } from "../firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import { isValidUserRole } from "../../domain/models/FeatureFlag";
-import type { UserRole } from "../../domain/models/UserRole";
-import type { GlobalFlagOverrides } from "../contracts/types";
+import { isValidUserRole } from "../domain/models/FeatureFlag";
+import type { UserRole } from "../domain/models/UserRole";
+import type { GlobalFlagOverrides } from "./types";
 
 const LOG_PREFIX = "[GlobalFeatureFlagPersister]";
 const FIRESTORE_DOC_PATH = "config/featureFlags";

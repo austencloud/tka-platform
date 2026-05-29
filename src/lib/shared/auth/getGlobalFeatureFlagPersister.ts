@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { GlobalFeatureFlagPersister } from './services/implementations/GlobalFeatureFlagPersister';
+import { GlobalFeatureFlagPersister } from './services/global-feature-flag-persister';
 
 let instance: GlobalFeatureFlagPersister | null = null;
 

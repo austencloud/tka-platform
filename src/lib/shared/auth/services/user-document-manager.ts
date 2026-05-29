@@ -7,10 +7,10 @@
 
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { type User } from "firebase/auth";
-import { getFirestoreInstance } from "../../firebase";
-import { getProviderIds } from '../profile-picture-manager';
-import { generateUniqueUsername, claimUsername } from '../username-validator';
-import { formatUsername } from "../../domain/models/UsernameValidation";
+import { getFirestoreInstance } from "../firebase";
+import { getProviderIds } from './profile-picture-manager';
+import { generateUniqueUsername, claimUsername } from './username-validator';
+import { formatUsername } from "../domain/models/UsernameValidation";
 
 import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
 

@@ -36,9 +36,9 @@ import {
   getAllFeatureFlags,
   setUserProperties,
 } from "../../analytics/services/posthog";
-import { GlobalFeatureFlagPersister } from "./implementations/GlobalFeatureFlagPersister";
-import { UserFeatureFlagPersister } from "./implementations/UserFeatureFlagPersister";
-import type { GlobalFlagOverrides } from "./contracts/types";
+import { GlobalFeatureFlagPersister } from "./global-feature-flag-persister";
+import { UserFeatureFlagPersister } from "./user-feature-flag-persister";
+import type { GlobalFlagOverrides } from "./types";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { DEFAULT_FEATURE_FLAGS, getDefaultFeatureConfig } from "../domain/default-feature-flags";
 import { createPostHogFlagAdminService } from "./posthog-flag-admin-service";

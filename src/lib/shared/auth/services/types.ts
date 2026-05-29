@@ -6,7 +6,7 @@
  * so they apply across all users and devices, not just the admin's browser.
  */
 
-import type { UserRole } from "../../domain/models/UserRole";
+import type { UserRole } from "../domain/models/UserRole";
 
 export interface GlobalFlagOverrides {
   globalFlagOverrides: Record<string, boolean>;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { onMount, onDestroy } from "svelte";
-  import { InAppBrowserDetector } from "../services/implementations/InAppBrowserDetector";
+  import { InAppBrowserDetector } from "../services/in-app-browser-detector";
   import { setIabBannerVisible } from "../state/iab-banner-state.svelte";
 
   const detector = new InAppBrowserDetector();

@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { UserDocumentManager } from './services/implementations/UserDocumentManager';
+import { UserDocumentManager } from './services/user-document-manager';
 
 let instance: UserDocumentManager | null = null;
 
