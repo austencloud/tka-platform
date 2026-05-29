@@ -12,12 +12,12 @@ import type {
   CompositionWorkerInMessage,
   CompositionWorkerOutMessage,
   GlyphTransferEntry,
-} from "../services/implementations/CompositionDispatcher";
+} from "../services/composition-dispatcher";
 import type { CompositionProgressCallback, RenderCanvas } from "../services/contracts/types";
-import type { ImageComposer } from '../services/implementations/ImageComposer';
-import type { PictographBlobCache } from '../services/implementations/PictographBlobCache';
-import type { PictographMemoryCache } from '../services/implementations/PictographMemoryCache';
-import type { TextRenderer } from '../services/implementations/TextRenderer';
+import type { ImageComposer } from '../services/image-composer';
+import type { PictographBlobCache } from '../services/pictograph-blob-cache';
+import type { PictographMemoryCache } from '../services/pictograph-memory-cache';
+import type { TextRenderer } from '../services/text-renderer';
 
 // ---------------------------------------------------------------------------
 // Worker-safe cache stubs

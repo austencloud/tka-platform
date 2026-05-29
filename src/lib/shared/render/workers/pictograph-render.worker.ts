@@ -1,7 +1,7 @@
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
 import type { LayerRenderOptions, LayerVisibility } from "../services/contracts/types";
-import { LayerCompositor } from "../services/implementations/LayerCompositor";
-import { SvgAssetLoader } from "../services/implementations/SvgAssetLoader";
+import { LayerCompositor } from "../services/layer-compositor";
+import { SvgAssetLoader } from "../services/svg-asset-loader";
 
 export interface InitMessage {
   type: "init";
