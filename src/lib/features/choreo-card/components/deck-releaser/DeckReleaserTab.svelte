@@ -178,13 +178,17 @@
 
   function composeFullDeck() {
     if (rs.deckMode === 'tnd') {
-      const tndCards = buildTnDCards(rs.tndFamilies, rs.selectedTnDFamilies, rs.selectedTnDTurnPatterns);
+      const tndCards = buildTnDCards(rs.tndFamilies, rs.selectedTnDFamilies, rs.selectedTnDTurnPatterns, rs.startOriMode);
       return tndCards.map((c, i) => ({ ...c, position: i + 1 }));
     }
     const cards = composeDeck(pool, rs.weights, rs.totalCards, { center: rs.notes });
     return cards.map((c) => {
-      const variation = rollVariation(c.stepCount, rs.variationConfig, Math.random);
-      return variation ? { ...c, variation } : c;
+      const rolled = rollVariation(c.stepCount, rs.variationConfig, Math.random);
+      const variation = {
+        ...(rolled ?? {}),
+        ...(rs.startOriMode !== "radial" ? { startOriMode: rs.startOriMode } : {}),
+      };
+      return Object.keys(variation).length > 0 ? { ...c, variation } : c;
     });
   }
 

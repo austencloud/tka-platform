@@ -72,3 +72,19 @@ describe("buildTnDCards (cartesian)", () => {
     expect(buildTnDCards(families, new Set(["tog-same"]), new Set())).toEqual([]);
   });
 });
+
+describe("buildTnDCards — startOriMode", () => {
+  it("stamps the deck-wide register onto every card's variation", () => {
+    const families = getTnDFamilyOptions([baseCatalog()]);
+    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]), "nonradial");
+    expect(cards.length).toBeGreaterThan(0);
+    expect(cards.every((c) => c.variation?.startOriMode === "nonradial")).toBe(true);
+    expect(cards.every((c) => c.variation?.turnPattern === "1|1")).toBe(true);
+  });
+
+  it("omits startOriMode when register is radial (default)", () => {
+    const families = getTnDFamilyOptions([baseCatalog()]);
+    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]), "radial");
+    expect(cards.every((c) => c.variation?.startOriMode === undefined)).toBe(true);
+  });
+});

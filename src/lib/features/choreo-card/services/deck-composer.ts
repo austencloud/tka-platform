@@ -1,5 +1,6 @@
 import type { Catalog } from "../domain/models/Catalog";
 import type { CardFooter, DeckReleaseCard, StepCountWeight } from "../domain/models/DeckRelease";
+import type { StartOriMode } from "./deck-variation";
 import { TND_BY_FAMILY } from "../domain/tnd-element";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
@@ -286,6 +287,7 @@ export function buildTnDCards(
   tndFamilies: TnDFamilyOption[],
   selectedFamilies: Set<string>,
   selectedTurnPatterns?: Set<string>,
+  startOriMode: StartOriMode = "radial",
 ): DeckReleaseCard[] {
   const patterns = selectedTurnPatterns ? [...selectedTurnPatterns] : [];
   if (patterns.length === 0) return [];
@@ -300,7 +302,11 @@ export function buildTnDCards(
           stepCount: 4,
           word: entry.sequenceId,
           position: 0,
-          variation: { turnPattern: pattern, turnLabel: pattern },
+          variation: {
+            turnPattern: pattern,
+            turnLabel: pattern,
+            ...(startOriMode !== "radial" ? { startOriMode } : {}),
+          },
           footer: tndFooter(fam.familyId, entry.turnRatio),
         });
       }
