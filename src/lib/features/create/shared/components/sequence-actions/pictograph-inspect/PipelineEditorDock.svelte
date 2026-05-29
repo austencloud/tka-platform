@@ -304,6 +304,22 @@
     return true;
   }
 
+  // Ctrl/Cmd+S anywhere (while the dock is active), or Enter inside the X/Y
+  // inputs, commits the save. Returns true when it handled the event.
+  function handleSaveHotkey(event: KeyboardEvent): boolean {
+    const isSaveCombo =
+      event.key.toLowerCase() === "s" && (event.ctrlKey || event.metaKey);
+    const target = event.target as HTMLElement;
+    const isEnterInInput =
+      event.key === "Enter" && target?.tagName === "INPUT";
+    if (!isSaveCombo && !isEnterInInput) return false;
+    event.preventDefault();
+    const canSave =
+      hasLocalChanges || (editTarget === "global" && !!currentLayerValue);
+    if (canSave) handleSave();
+    return true;
+  }
+
   async function handleWASDMovement(key: "w" | "a" | "s" | "d", increment: number) {
     const directionMap: Record<string, { dx: number; dy: number }> = {
       w: { dx: 0, dy: -increment },
@@ -563,7 +579,7 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => { if (activeColor) handleKeydown(e); }} />
+<svelte:window onkeydown={(e) => { if (!activeColor) return; if (handleSaveHotkey(e)) return; handleKeydown(e); }} />
 
 <footer class="editor-dock" class:idle={!activeColor} style="--c: {colorToken}">
   {#if !activeColor}
@@ -587,7 +603,7 @@
       <label class="dock-input-label">Y<input type="number" class="dock-input" bind:value={editY} onchange={handleNumericChange} /></label>
     </div>
 
-    <span class="dock-hint"><kbd>W A S D</kbd> move · Shift ×4 · Ctrl+Shift ×40 · live preview
+    <span class="dock-hint"><kbd>W A S D</kbd> move · Shift ×4 · Ctrl+Shift ×40 · <kbd>Ctrl+S</kbd> save · live preview
       {#if hasLocalChanges}<span class="dock-unsaved"><i class="fas fa-circle" aria-hidden="true"></i> Unsaved</span>{/if}
     </span>
 
