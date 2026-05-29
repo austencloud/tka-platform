@@ -1,9 +1,9 @@
 import { browser } from '$app/environment';
-import { PromoOrchestrator } from './services/implementations/PromoOrchestrator';
-import { getPromoSceneManager } from './getPromoSceneManager';
-import { getScreenshotInjector } from './getScreenshotInjector';
-import { getPromoAnimationController } from './getPromoAnimationController';
-import { getPromoVideoExporter } from './getPromoVideoExporter';
+import { PromoOrchestrator } from './services/promo-orchestrator';
+import { getPromoSceneManager } from './get-promo-scene-manager';
+import { getScreenshotInjector } from './get-screenshot-injector';
+import { getPromoAnimationController } from './get-promo-animation-controller';
+import { getPromoVideoExporter } from './get-promo-video-exporter';
 
 let instance: PromoOrchestrator | null = null;
 

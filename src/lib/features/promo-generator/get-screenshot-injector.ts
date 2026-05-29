@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ScreenshotInjector } from './services/implementations/ScreenshotInjector';
+import { ScreenshotInjector } from './services/screenshot-injector';
 
 let instance: ScreenshotInjector | null = null;
 

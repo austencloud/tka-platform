@@ -8,19 +8,19 @@
  */
 
 import type * as THREE from "three";
-import { Timeline, type TweenOptions } from "../../animation/Timeline";
-import type { AnimationPlaybackState, AnimationProgressCallback } from "../contracts/types";
+import { Timeline, type TweenOptions } from "../animation/timeline";
+import type { AnimationPlaybackState, AnimationProgressCallback } from "./types";
 import type {
   AnimationPreset,
   AnimationKeyframe,
   CameraState,
   DeviceState,
-} from "../../domain/promo-models";
+} from "../domain/promo-models";
 import {
   ANIMATION_PRESETS,
   getPresetById,
   DEFAULT_PRESET_ID,
-} from "../../presets/animation-presets";
+} from "../presets/animation-presets";
 
 export class PromoAnimationController {
   private device: THREE.Group | null = null;

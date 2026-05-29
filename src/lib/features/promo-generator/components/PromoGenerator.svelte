@@ -7,16 +7,16 @@
    */
 
   import { onMount, onDestroy } from "svelte";
-  import { getPromoOrchestrator } from "$lib/features/promo-generator/getPromoOrchestrator";
+  import { getPromoOrchestrator } from "$lib/features/promo-generator/get-promo-orchestrator";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { PromoOrchestrator } from "../services/implementations/PromoOrchestrator";
+  import type { PromoOrchestrator } from "../services/promo-orchestrator";
   import type {
     PromoGeneratorState,
     AnimationPreset,
     ExportConfig,
     EnvironmentType,
   } from "../domain/promo-models";
-  import type { ExportStage } from "../services/contracts/types";
+  import type { ExportStage } from "../services/types";
   // Props
   interface Props {
     initialModelPath?: string;

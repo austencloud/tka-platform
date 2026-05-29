@@ -10,13 +10,13 @@ import type * as THREE from "three";
 import type {
   ExportProgressCallback,
   ExportResult,
-} from "../contracts/types";
+} from "./types";
 import type {
   ExportConfig,
   ExportResolution,
   ExportFormat,
-} from "../../domain/promo-models";
-import { RESOLUTION_DIMENSIONS } from "../../domain/promo-models";
+} from "../domain/promo-models";
+import { RESOLUTION_DIMENSIONS } from "../domain/promo-models";
 
 export class PromoVideoExporter {
   private renderer: THREE.WebGLRenderer | null = null;

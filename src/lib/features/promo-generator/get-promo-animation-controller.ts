@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { PromoAnimationController } from './services/implementations/PromoAnimationController';
+import { PromoAnimationController } from './services/promo-animation-controller';
 
 let instance: PromoAnimationController | null = null;
 

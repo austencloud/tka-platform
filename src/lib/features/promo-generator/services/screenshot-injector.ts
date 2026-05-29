@@ -9,7 +9,7 @@ import {
   Mesh, Texture, TextureLoader, SRGBColorSpace,
   MeshBasicMaterial, FrontSide,
 } from "three";
-import type { ScreenshotContent } from "../../domain/promo-models";
+import type { ScreenshotContent } from "../domain/promo-models";
 
 export class ScreenshotInjector {
   private screenMesh: Mesh | null = null;

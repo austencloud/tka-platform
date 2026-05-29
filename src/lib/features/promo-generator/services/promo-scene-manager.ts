@@ -21,7 +21,7 @@ import type {
   EnvironmentConfig,
   EnvironmentType,
   SceneRefs,
-} from "../../domain/promo-models";
+} from "../domain/promo-models";
 
 /**
  * Default device configurations

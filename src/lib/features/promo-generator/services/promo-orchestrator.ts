@@ -5,12 +5,12 @@
  * Coordinates scene management, animations, and video export.
  */
 
-import type { PromoSceneManager } from "./PromoSceneManager";
-import type { ScreenshotInjector } from "./ScreenshotInjector";
-import type { PromoAnimationController } from "../implementations/PromoAnimationController";
-import type { AnimationProgressCallback } from "../contracts/types";
-import type { PromoVideoExporter } from "../implementations/PromoVideoExporter";
-import type { ExportProgressCallback, ExportResult } from "../contracts/types";
+import type { PromoSceneManager } from "./promo-scene-manager";
+import type { ScreenshotInjector } from "./screenshot-injector";
+import type { PromoAnimationController } from "./promo-animation-controller";
+import type { AnimationProgressCallback } from "./types";
+import type { PromoVideoExporter } from "./promo-video-exporter";
+import type { ExportProgressCallback, ExportResult } from "./types";
 import type {
   DeviceType,
   EnvironmentType,
@@ -19,7 +19,7 @@ import type {
   ExportConfig,
   PromoGeneratorState,
   ScreenshotContent,
-} from "../../domain/promo-models";
+} from "../domain/promo-models";
 
 export class PromoOrchestrator {
   private animationFrame: number | null = null;
