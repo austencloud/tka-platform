@@ -1,5 +1,5 @@
-import { PoiDeviceManager } from './services/implementations/PoiDeviceManager';
-import { getOpenPixelPoiAdapter } from './getOpenPixelPoiAdapter';
+import { PoiDeviceManager } from './services/poi-device-manager';
+import { getOpenPixelPoiAdapter } from './get-open-pixel-poi-adapter';
 
 let instance: PoiDeviceManager | null = null;
 

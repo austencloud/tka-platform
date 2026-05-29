@@ -1,5 +1,5 @@
-import type { IPoiConnection } from "../contracts/types";
-import type { PoiDeviceInfo } from "../../domain/DeviceTypes";
+import type { IPoiConnection } from "./types";
+import type { PoiDeviceInfo } from "../domain/device-types";
 import type { StripPattern } from "$lib/shared/poi/domain/StripPattern";
 import {
   BLE_START_BYTE,
@@ -9,7 +9,7 @@ import {
   OPP_MAX_PIXELS,
   NORDIC_UART_SERVICE,
   NORDIC_UART_TX,
-} from "../../domain/DeviceTypes";
+} from "../domain/device-types";
 
 /**
  * Build the complete BLE packet for an Open-Pixel-Poi pattern upload.

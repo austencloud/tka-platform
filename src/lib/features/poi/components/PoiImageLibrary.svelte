@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
-  import type { PoiImageLibraryEntry } from "../domain/PoiImageLibraryEntry";
+  import type { PoiImageLibraryEntry } from "../domain/poi-image-library-entry";
 
   const poi = getPoiContext();
 

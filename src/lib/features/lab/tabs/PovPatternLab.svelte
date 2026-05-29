@@ -6,8 +6,8 @@
 -->
 <script lang="ts">
 
-import { getPoiDeviceManager } from "$lib/features/poi/getPoiDeviceManager";
-import { getStripPatternEngine } from "$lib/features/poi/getStripPatternEngine";
+import { getPoiDeviceManager } from "$lib/features/poi/get-poi-device-manager";
+import { getStripPatternEngine } from "$lib/features/poi/get-strip-pattern-engine";
   import { onDestroy } from "svelte";
   import { createPoiState } from "$lib/features/poi/state/poi-state.svelte";
   import { setPoiContext } from "$lib/features/poi/context/poi-context";

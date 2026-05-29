@@ -1,4 +1,4 @@
-import type { PoiDeviceInfo } from "../../domain/DeviceTypes";
+import type { PoiDeviceInfo } from "../domain/device-types";
 import type { StripPattern } from "$lib/shared/poi/domain/StripPattern";
 
 export interface IPoiConnection {

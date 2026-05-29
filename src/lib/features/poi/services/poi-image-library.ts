@@ -8,7 +8,7 @@
  * use a content hash as the stable document ID for dedup.
  */
 
-import type { PoiImageLibraryEntry } from "../domain/PoiImageLibraryEntry";
+import type { PoiImageLibraryEntry } from "../domain/poi-image-library-entry";
 import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
 import {
   getStorageInstance,

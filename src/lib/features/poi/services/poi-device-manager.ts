@@ -1,6 +1,6 @@
-import type { OpenPixelPoiAdapter } from "./OpenPixelPoiAdapter";
-import type { IPoiConnection } from "../contracts/types";
-import type { PoiDeviceInfo } from "../../domain/DeviceTypes";
+import type { OpenPixelPoiAdapter } from "./open-pixel-poi-adapter";
+import type { IPoiConnection } from "./types";
+import type { PoiDeviceInfo } from "../domain/device-types";
 import type { StripPattern } from "$lib/shared/poi/domain/StripPattern";
 
 /**
