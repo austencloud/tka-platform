@@ -1,5 +1,5 @@
-import { HallOfShameVoter } from './services/HallOfShameVoter';
-import { getAgeVerifier } from './getAgeVerifier';
+import { HallOfShameVoter } from './services/hall-of-shame-voter';
+import { getAgeVerifier } from './get-age-verifier';
 
 let instance: HallOfShameVoter | null = null;
 export function getHallOfShameVoter(): HallOfShameVoter {

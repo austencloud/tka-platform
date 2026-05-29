@@ -20,7 +20,7 @@ import {
 	getCountFromServer
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import type { AgeVerifier } from "./AgeVerifier";
+import type { AgeVerifier } from "./age-verifier";
 import type {
 	HallOfShameEntry,
 	ShameLoadParams,

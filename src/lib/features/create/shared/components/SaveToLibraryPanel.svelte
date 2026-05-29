@@ -24,7 +24,7 @@
   import { getCreateModuleContext } from "../context/create-module-context";
   import { getLibrarySaveService } from "$lib/features/library/getLibrarySaveService";
   import { getContentModerator } from "$lib/features/moderation/getContentModerator";
-  import { getHallOfShameSubmitter } from "$lib/features/hall-of-shame/getHallOfShameSubmitter";
+  import { getHallOfShameSubmitter } from "$lib/features/hall-of-shame/get-hall-of-shame-submitter";
   import { createSavePanelState } from "../state/save-panel-state.svelte";
 
   interface Props {

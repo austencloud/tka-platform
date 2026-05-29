@@ -1,4 +1,4 @@
-import { AgeVerifier } from './services/AgeVerifier';
+import { AgeVerifier } from './services/age-verifier';
 
 let instance: AgeVerifier | null = null;
 export function getAgeVerifier(): AgeVerifier {

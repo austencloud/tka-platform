@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
 
-import { getAgeVerifier } from "$lib/features/hall-of-shame/getAgeVerifier";
+import { getAgeVerifier } from "$lib/features/hall-of-shame/get-age-verifier";
 	import { t } from '$lib/shared/i18n/i18n.svelte';
 	import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
 	import ModalHeader from '$lib/shared/foundation/ui/modal/ModalHeader.svelte';

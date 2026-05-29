@@ -5,7 +5,7 @@ import { computeHash as computeSequenceHash } from "$lib/shared/library/services
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
 import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
-import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/HallOfShameSubmitter";
+import type { HallOfShameSubmitter } from "$lib/features/hall-of-shame/services/hall-of-shame-submitter";
 import type { LibrarySaveService } from "$lib/features/library/services/LibrarySaveService";
 import type { SaveProgress } from "$lib/shared/library/domain/library-contract-types";
 import type { CreateModuleContext } from "../context/create-module-context";

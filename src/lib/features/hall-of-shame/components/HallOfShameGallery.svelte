@@ -7,12 +7,12 @@
 -->
 <script lang="ts">
 
-import { getAgeVerifier } from "$lib/features/hall-of-shame/getAgeVerifier";
-import { getHallOfShameLoader } from "$lib/features/hall-of-shame/getHallOfShameLoader";
+import { getAgeVerifier } from "$lib/features/hall-of-shame/get-age-verifier";
+import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-shame-loader";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { HallOfShameLoader } from "../services/HallOfShameLoader";
-  import type { AgeVerifier } from "../services/AgeVerifier";
+  import type { HallOfShameLoader } from "../services/hall-of-shame-loader";
+  import type { AgeVerifier } from "../services/age-verifier";
   import type {
     HallOfShameEntry,
     ShameCategory,

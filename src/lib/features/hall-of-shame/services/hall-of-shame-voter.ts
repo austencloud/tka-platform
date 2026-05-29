@@ -18,7 +18,7 @@ import {
 	runTransaction
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '$lib/shared/auth/firebase';
-import type { AgeVerifier } from "./AgeVerifier";
+import type { AgeVerifier } from "./age-verifier";
 import type { HallOfShameEntry, HallOfShameVote } from '../domain/models/hall-of-shame-models';
 
 export class HallOfShameVoter {
