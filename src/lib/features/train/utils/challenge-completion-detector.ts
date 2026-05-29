@@ -7,8 +7,8 @@
 import type {
   TrainChallenge,
   TrainChallengeScore,
-} from "../domain/models/TrainChallengeModels";
-import { PracticeMode } from "../domain/enums/TrainEnums";
+} from "../domain/models/train-challenge-models";
+import { PracticeMode } from "../domain/enums/train-enums";
 
 export interface SessionResult {
   totalSteps: number;

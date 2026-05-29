@@ -8,8 +8,8 @@
 import type {
   TrainChallenge,
   UserTrainChallengeProgress,
-} from "../domain/models/TrainChallengeModels";
-import type { TrainChallengeManager } from "../services/implementations/TrainChallengeManager";
+} from "../domain/models/train-challenge-models";
+import type { TrainChallengeManager } from "../services/train-challenge-manager";
 
 interface ChallengesTabState {
   selectedChallengeId: string | null;

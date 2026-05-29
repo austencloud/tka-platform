@@ -5,7 +5,7 @@
  * Also persists last-used sequence and recent sequence history for quick resume.
  */
 
-import { PracticeMode } from "../domain/enums/TrainEnums";
+import { PracticeMode } from "../domain/enums/train-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 

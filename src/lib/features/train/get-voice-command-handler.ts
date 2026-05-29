@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { VoiceCommandHandler } from './services/implementations/VoiceCommandHandler';
+import { VoiceCommandHandler } from './services/voice-command-handler';
 
 let instance: VoiceCommandHandler | null = null;
 

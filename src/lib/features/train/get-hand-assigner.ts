@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
-import { HandAssigner } from './services/implementations/HandAssigner';
-import { getHandTrackingStabilizer } from './getHandTrackingStabilizer';
+import { HandAssigner } from './services/hand-assigner';
+import { getHandTrackingStabilizer } from './get-hand-tracking-stabilizer';
 
 let instance: HandAssigner | null = null;
 

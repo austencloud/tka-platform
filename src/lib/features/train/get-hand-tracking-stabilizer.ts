@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { HandTrackingStabilizer } from './services/implementations/HandTrackingStabilizer';
+import { HandTrackingStabilizer } from './services/hand-tracking-stabilizer';
 
 let instance: HandTrackingStabilizer | null = null;
 

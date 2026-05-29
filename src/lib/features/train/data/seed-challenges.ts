@@ -5,8 +5,8 @@
  * These can be used for initial setup or testing.
  */
 
-import type { TrainChallenge } from "../domain/models/TrainChallengeModels";
-import { PracticeMode } from "../domain/enums/TrainEnums";
+import type { TrainChallenge } from "../domain/models/train-challenge-models";
+import { PracticeMode } from "../domain/enums/train-enums";
 
 export const SEED_CHALLENGES: Omit<TrainChallenge, "id" | "createdAt">[] = [
   // === BEGINNER CHALLENGES ===

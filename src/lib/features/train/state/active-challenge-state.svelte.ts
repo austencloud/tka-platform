@@ -6,7 +6,7 @@
  * and the Practice tab can read it to configure appropriately.
  */
 
-import type { TrainChallenge } from "../domain/models/TrainChallengeModels";
+import type { TrainChallenge } from "../domain/models/train-challenge-models";
 
 function createActiveChallengeState() {
   let activeChallenge = $state<TrainChallenge | null>(null);

@@ -8,12 +8,12 @@
  * - Processes challenge progression
  */
 
-import type * as performanceHistoryTrackerModule from "../performance-history-tracker";
+import type * as performanceHistoryTrackerModule from "./performance-history-tracker";
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
-import type { TrainChallengeManager } from "./TrainChallengeManager";
+import type { TrainChallengeManager } from "./train-challenge-manager";
 import type { StoredPerformance } from "$lib/shared/train/domain/TrainDatabaseModels";
-import type { TrainChallenge } from "../../domain/models/TrainChallengeModels";
-import { PracticeMode } from "../../domain/enums/TrainEnums";
+import type { TrainChallenge } from "../domain/models/train-challenge-models";
+import { PracticeMode } from "../domain/enums/train-enums";
 
 export interface SessionCompletionParams {
   totalSteps: number;
@@ -59,9 +59,9 @@ import {
   checkChallengeRequirement,
   sessionResultToScore,
   type SessionResult,
-} from "../../utils/challenge-completion-detector";
-import { activeChallengeState } from "../../state/active-challenge-state.svelte";
-import { addNotification } from "$lib/shared/gamification/state/notification-state.svelte";
+} from "../utils/challenge-completion-detector";
+import { activeChallengeState } from "../state/active-challenge-state.svelte.ts";
+import { addNotification } from "$lib/shared/gamification/state/notification-state.svelte.ts";
 
 export class SessionCompletionProcessor {
   constructor(

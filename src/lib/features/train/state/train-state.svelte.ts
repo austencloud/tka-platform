@@ -6,7 +6,7 @@
  * ```svelte
  * <script lang="ts">
  *   import { initTrainState, getTrainState } from '$lib/features/train/state';
- *   import { TrainMode } from '$lib/features/train/domain/enums/TrainEnums';
+ *   import { TrainMode } from '$lib/features/train/domain/enums/train-enums';
  *
  *   // Initialize state in root component
  *   const trainState = initTrainState({ defaultBpm: 120 });
@@ -42,7 +42,7 @@ import {
   TrainMode,
   VisualizationMode,
   DetectionMethod,
-} from "../domain/enums/TrainEnums";
+} from "../domain/enums/train-enums";
 
 export interface TrainStateConfig {
   defaultBpm: number;

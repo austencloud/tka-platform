@@ -6,7 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import { PracticeMode } from "../../domain/enums/TrainEnums";
+  import { PracticeMode } from "../../domain/enums/train-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

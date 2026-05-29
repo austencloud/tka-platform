@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { TrainChallengeManager } from './services/implementations/TrainChallengeManager';
+import { TrainChallengeManager } from './services/train-challenge-manager';
 import { getAchievementManager } from '$lib/shared/gamification/getAchievementManager';
 
 let instance: TrainChallengeManager | null = null;

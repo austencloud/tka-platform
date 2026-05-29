@@ -7,13 +7,13 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount } from "svelte";
-  import { getTrainChallengeManager } from "$lib/features/train/getTrainChallengeManager";
+  import { getTrainChallengeManager } from "$lib/features/train/get-train-challenge-manager";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type {
     TrainChallengeFilter,
     TrainChallengeSortBy,
-  } from "../../domain/models/TrainChallengeModels";
+  } from "../../domain/models/train-challenge-models";
   import {
     getDifficultySortIndex,
     type ChallengeDifficulty,

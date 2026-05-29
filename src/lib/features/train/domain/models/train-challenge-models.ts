@@ -1,4 +1,4 @@
-import type { PracticeMode } from "../enums/TrainEnums";
+import type { PracticeMode } from "../enums/train-enums";
 import type { ChallengeDifficulty } from "$lib/shared/gamification/domain/models/achievement-models";
 
 export type TrainChallengeRequirementType =

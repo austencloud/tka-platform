@@ -6,7 +6,7 @@
 		TrackingSession,
 		NormalizedPoint
 	} from '../domain/models';
-	import { SimplePropTracker } from '../services/implementations/SimplePropTracker';
+	import { SimplePropTracker } from '../services/simple-prop-tracker';
 	import VideoCanvas from './VideoCanvas.svelte';
 	import TrajectoryOverlay from './TrajectoryOverlay.svelte';
 	import ControlBar from './ControlBar.svelte';

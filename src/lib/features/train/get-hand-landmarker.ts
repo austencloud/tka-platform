@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { HandLandmarker } from './services/implementations/HandLandmarker';
+import { HandLandmarker } from './services/hand-landmarker';
 
 let instance: HandLandmarker | null = null;
 

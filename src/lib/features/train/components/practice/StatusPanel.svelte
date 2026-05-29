@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { getPositionDetector } from "$lib/features/train/getPositionDetector";
+  import { getPositionDetector } from "$lib/features/train/get-position-detector";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

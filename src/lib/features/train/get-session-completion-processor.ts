@@ -1,9 +1,9 @@
 import { browser } from '$app/environment';
 
-import { SessionCompletionProcessor } from './services/implementations/SessionCompletionProcessor';
-import { getPerformanceHistoryTracker } from './getPerformanceHistoryTracker';
+import { SessionCompletionProcessor } from './services/session-completion-processor';
+import { getPerformanceHistoryTracker } from './get-performance-history-tracker';
 import { getAchievementManager } from '$lib/shared/gamification/getAchievementManager';
-import { getTrainChallengeManager } from './getTrainChallengeManager';
+import { getTrainChallengeManager } from './get-train-challenge-manager';
 
 let instance: SessionCompletionProcessor | null = null;
 

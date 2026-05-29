@@ -11,8 +11,8 @@
   import type {
     TrainChallenge,
     UserTrainChallengeProgress,
-  } from "../../domain/models/TrainChallengeModels";
-  import { calculateChallengeProgress } from "../../domain/models/TrainChallengeModels";
+  } from "../../domain/models/train-challenge-models";
+  import { calculateChallengeProgress } from "../../domain/models/train-challenge-models";
   import type { ChallengeDifficulty } from "$lib/shared/gamification/domain/models/achievement-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

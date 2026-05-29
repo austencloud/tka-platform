@@ -8,7 +8,7 @@
   - compact: When true, shows icon-only (for use in space-constrained areas)
 -->
 <script lang="ts">
-  import { PracticeMode } from "../../domain/enums/TrainEnums";
+  import { PracticeMode } from "../../domain/enums/train-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { TrainChallenge } from "../domain/models/TrainChallengeModels";
+  import type { TrainChallenge } from "../domain/models/train-challenge-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 

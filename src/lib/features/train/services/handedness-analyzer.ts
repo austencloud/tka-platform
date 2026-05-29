@@ -6,7 +6,7 @@
  * MediaPipe's handedness classification.
  */
 
-import type { HandLandmark } from "./implementations/HandLandmarker";
+import type { HandLandmark } from "./hand-landmarker";
 
 export type PalmOrientation = "facing" | "away" | "unknown";
 export type AnatomicalHandedness = "left" | "right" | null;

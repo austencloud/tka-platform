@@ -9,7 +9,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import { PracticeMode } from "../../domain/enums/TrainEnums";
+  import { PracticeMode } from "../../domain/enums/train-enums";
   import AdaptiveModeConfig from "./AdaptiveModeConfig.svelte";
   import StepModeConfig from "./StepModeConfig.svelte";
   import TimedModeConfig from "./TimedModeConfig.svelte";

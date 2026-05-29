@@ -5,11 +5,11 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getTrainChallengeManager } from "$lib/features/train/getTrainChallengeManager";
-  import type { TrainChallengeManager as TrainChallengeManagerService } from "$lib/features/train/services/implementations/TrainChallengeManager";
-  import type { TrainChallenge, TrainChallengeRequirementType } from "$lib/features/train/domain/models/TrainChallengeModels";
+  import { getTrainChallengeManager } from "$lib/features/train/get-train-challenge-manager";
+  import type { TrainChallengeManager as TrainChallengeManagerService } from "$lib/features/train/services/train-challenge-manager";
+  import type { TrainChallenge, TrainChallengeRequirementType } from "$lib/features/train/domain/models/train-challenge-models";
   import type { ChallengeDifficulty } from "$lib/shared/gamification/domain/models/achievement-models";
-  import { PracticeMode } from "$lib/features/train/domain/enums/TrainEnums";
+  import { PracticeMode } from "$lib/features/train/domain/enums/train-enums";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import { collection, addDoc, serverTimestamp } from "firebase/firestore";
   import { getTrainChallengesPath } from "$lib/shared/gamification/data/firestore-collections";

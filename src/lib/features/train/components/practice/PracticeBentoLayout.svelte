@@ -26,7 +26,7 @@
   import type { DetectionFrame } from "$lib/shared/train/domain/DetectionFrame";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { TrainMode, PracticeMode } from "../../domain/enums/TrainEnums";
+  import { TrainMode, PracticeMode } from "../../domain/enums/train-enums";
   import CameraSection from "./CameraSection.svelte";
   import GridSection from "./GridSection.svelte";
   import ControlBar from "./ControlBar.svelte";

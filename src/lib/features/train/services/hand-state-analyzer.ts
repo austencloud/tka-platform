@@ -6,7 +6,7 @@
  * center calculation based on hand state.
  */
 
-import type { HandLandmark } from "./implementations/HandLandmarker";
+import type { HandLandmark } from "./hand-landmarker";
 import type { HandState } from "$lib/shared/train/domain/DetectionFrame";
 
 export interface HandStateAnalysisResult {

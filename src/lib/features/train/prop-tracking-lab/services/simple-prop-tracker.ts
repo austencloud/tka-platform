@@ -17,8 +17,8 @@ import type {
 	TrackedFrame,
 	TrackingConfig,
 	NormalizedPoint
-} from '../../domain/models';
-import { DEFAULT_TRACKING_CONFIG } from '../../domain/models';
+} from '../domain/models';
+import { DEFAULT_TRACKING_CONFIG } from '../domain/models';
 
 export class SimplePropTracker {
 	private config: TrackingConfig = { ...DEFAULT_TRACKING_CONFIG };

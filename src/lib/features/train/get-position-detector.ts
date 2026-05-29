@@ -1,8 +1,8 @@
 import { browser } from '$app/environment';
 
-import { MediaPipeDetector } from './services/implementations/MediaPipeDetector';
-import { getHandLandmarker } from './getHandLandmarker';
-import { getHandTrackingStabilizer } from './getHandTrackingStabilizer';
+import { MediaPipeDetector } from './services/media-pipe-detector';
+import { getHandLandmarker } from './get-hand-landmarker';
+import { getHandTrackingStabilizer } from './get-hand-tracking-stabilizer';
 
 let instance: MediaPipeDetector | null = null;
 

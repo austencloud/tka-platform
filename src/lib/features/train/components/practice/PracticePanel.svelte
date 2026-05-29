@@ -10,7 +10,7 @@
   import TrainModePanel from "../TrainModePanel.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { activeChallengeState } from "../../state/active-challenge-state.svelte";
-  import { formatChallengeRequirement } from "../../domain/models/TrainChallengeModels";
+  import { formatChallengeRequirement } from "../../domain/models/train-challenge-models";
 
   const practiceState = getTrainPracticeState();
 

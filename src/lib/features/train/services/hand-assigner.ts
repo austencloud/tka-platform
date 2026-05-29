@@ -6,7 +6,7 @@
  * single-hand detection. Also handles hand persistence.
  */
 
-import type { HandTrackingStabilizer } from "./HandTrackingStabilizer";
+import type { HandTrackingStabilizer } from "./hand-tracking-stabilizer";
 import type { DetectedPosition } from "$lib/shared/train/domain/DetectionFrame";
 
 export interface DetectedHandData {
@@ -20,7 +20,7 @@ export interface HandAssignmentResult {
   blue: DetectedPosition | null;
   red: DetectedPosition | null;
 }
-import { mapToQuadrant } from "../quadrant-mapper";
+import { mapToQuadrant } from "./quadrant-mapper";
 
 // How many frames to persist a hand after it disappears
 const HAND_PERSISTENCE_FRAMES = 5;

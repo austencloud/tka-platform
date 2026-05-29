@@ -21,8 +21,8 @@ import type {
   UserTrainChallengeProgress,
   TrainChallengeFilters,
   TrainChallengeScore,
-} from "../../domain/models/TrainChallengeModels";
-import { isChallengeAvailable } from "../../domain/models/TrainChallengeModels";
+} from "../domain/models/train-challenge-models";
+import { isChallengeAvailable } from "../domain/models/train-challenge-models";
 import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
 
 export class TrainChallengeManager {

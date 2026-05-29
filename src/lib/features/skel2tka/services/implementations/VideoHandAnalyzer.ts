@@ -18,7 +18,7 @@ import type {
   DetectionFrame,
   DetectedPosition,
 } from "$lib/shared/train/domain/DetectionFrame";
-import type { HandLandmark } from "$lib/features/train/services/implementations/HandLandmarker";
+import type { HandLandmark } from "$lib/features/train/services/hand-landmarker";
 import { mapToQuadrant } from "$lib/features/train/services/quadrant-mapper";
 import type { ExtractedFrame, HandTimeline, ProgressCallback } from "../../domain/models";
 import type { ImageModeHandLandmarker } from "./ImageModeHandLandmarker";

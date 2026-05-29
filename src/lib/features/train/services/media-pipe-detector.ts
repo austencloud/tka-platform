@@ -12,8 +12,8 @@
  * while internally using decomposed, single-responsibility services.
  */
 
-import type { HandLandmark } from "./HandLandmarker";
-import type { DetectedHandData } from "./HandAssigner";
+import type { HandLandmark } from "./hand-landmarker";
+import type { DetectedHandData } from "./hand-assigner";
 
 export interface DetectionCapabilities {
   supportsRealtime: boolean;
@@ -29,11 +29,11 @@ import type {
   DetectionFrame,
   DetectedPosition,
 } from "$lib/shared/train/domain/DetectionFrame";
-import type { HandLandmarker } from "./HandLandmarker";
-import type { HandTrackingStabilizer } from "./HandTrackingStabilizer";
-import { analyzeHandedness } from "../handedness-analyzer";
-import { analyzeHandState, calculatePalmCenter, getReferencePoint } from "../hand-state-analyzer";
-import { mapToQuadrant, isValidForMode } from "../quadrant-mapper";
+import type { HandLandmarker } from "./hand-landmarker";
+import type { HandTrackingStabilizer } from "./hand-tracking-stabilizer";
+import { analyzeHandedness } from "./handedness-analyzer";
+import { analyzeHandState, calculatePalmCenter, getReferencePoint } from "./hand-state-analyzer";
+import { mapToQuadrant, isValidForMode } from "./quadrant-mapper";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 // How many frames to persist a hand after it disappears (for stability)

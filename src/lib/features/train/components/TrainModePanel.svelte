@@ -8,22 +8,22 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import { onMount, onDestroy } from "svelte";
   import { createTrainState } from "../state/train-state.svelte";
-  import { TrainMode, PracticeMode } from "../domain/enums/TrainEnums";
+  import { TrainMode, PracticeMode } from "../domain/enums/train-enums";
   import type {
     AdaptiveConfig,
     StepConfig,
     TimedConfig,
   } from "../state/train-practice-state.svelte";
   import ResultsScreen from "./ResultsScreen.svelte";
-  import type { MediaPipeDetector } from "../services/implementations/MediaPipeDetector";
+  import type { MediaPipeDetector } from "../services/media-pipe-detector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { getSessionCompletionProcessor } from "$lib/features/train/getSessionCompletionProcessor";
-  import { getPositionDetector } from "$lib/features/train/getPositionDetector";
+  import { getSessionCompletionProcessor } from "$lib/features/train/get-session-completion-processor";
+  import { getPositionDetector } from "$lib/features/train/get-position-detector";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type {
     XPBreakdown,
     ChallengeProgressResult,
-  } from "../services/implementations/SessionCompletionProcessor";
+  } from "../services/session-completion-processor";
   import { getTrainPracticeState } from "../state/train-practice-state.svelte";
   import ModeSettingsSheet from "./practice/ModeSettingsSheet.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
