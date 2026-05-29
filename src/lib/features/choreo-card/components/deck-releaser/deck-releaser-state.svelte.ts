@@ -2,6 +2,7 @@ import type { DeckRelease, DeckReleaseCard, StepCountWeight } from "../../domain
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 type Step = "configure" | "review" | "released";
 
@@ -13,6 +14,8 @@ interface PersistedSession {
   deckMode: "loop" | "tnd";
   totalCards: number;
   notes: string;
+  name: string;
+  description: string;
 }
 
 function loadSession(): PersistedSession | null {
@@ -35,8 +38,22 @@ class DeckReleaserState {
   weights = $state<StepCountWeight[]>([]);
   totalCards = $state(52);
   notes = $state("Fire Drums 2026");
+  name = $state("");
+  description = $state("");
+  // When viewing a released deck, these pin the render to the deck's release-time
+  // visual settings so the content-hash cache key matches what was cached. Null
+  // while composing a fresh deck (follow live settings).
+  themeOverride = $state<string | null>(null);
+  bluePropOverride = $state<PropType | null>(null);
+  redPropOverride = $state<PropType | null>(null);
   get theme() {
-    return settingsService.settings.backgroundType ?? "cosmic";
+    return this.themeOverride ?? settingsService.settings.backgroundType ?? "cosmic";
+  }
+  get bluePropType(): PropType {
+    return this.bluePropOverride ?? settingsService.settings.bluePropType ?? PropType.STAFF;
+  }
+  get redPropType(): PropType {
+    return this.redPropOverride ?? settingsService.settings.redPropType ?? PropType.STAFF;
   }
   nextDeckNumber = $state(1);
   releasedNumber = $state<number | null>(null);
@@ -61,6 +78,8 @@ class DeckReleaserState {
       this.deckMode = saved.deckMode;
       this.totalCards = saved.totalCards;
       this.notes = saved.notes;
+      this.name = saved.name ?? "";
+      this.description = saved.description ?? "";
     }
   }
 
@@ -71,6 +90,8 @@ class DeckReleaserState {
       deckMode: this.deckMode,
       totalCards: this.totalCards,
       notes: this.notes,
+      name: this.name,
+      description: this.description,
     });
   }
 
@@ -83,6 +104,11 @@ class DeckReleaserState {
     this.sequences = [];
     this.releasedNumber = null;
     this.viewingRelease = null;
+    this.name = "";
+    this.description = "";
+    this.themeOverride = null;
+    this.bluePropOverride = null;
+    this.redPropOverride = null;
     this.step = "configure";
     this.persist();
   }

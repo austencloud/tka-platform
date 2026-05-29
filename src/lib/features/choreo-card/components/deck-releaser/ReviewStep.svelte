@@ -9,16 +9,22 @@
   import PrintDialog from "../print-preview/PrintDialog.svelte";
   import CardInspectModal from "../CardInspectModal.svelte";
   import type { CardSizeId } from "../../domain/card-sizes";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
     cards: DeckReleaseCard[];
     sequences: SequenceData[];
     theme: string;
+    bluePropType?: PropType;
+    redPropType?: PropType;
     nextDeckNumber: number;
+    deckName?: string;
     onSwapCard: (index: number) => void;
     onRedraw: () => void;
     onRelease: () => void;
     onBack: () => void;
+    /** Provided when viewing a released deck: commit an inline name edit. */
+    onRename?: (name: string) => void;
     isReleasing: boolean;
     readOnly?: boolean;
     footers?: CardFooter[];
@@ -29,16 +35,38 @@
     cards,
     sequences,
     theme,
+    bluePropType,
+    redPropType,
     nextDeckNumber,
+    deckName = "",
     onSwapCard,
     onRedraw,
     onRelease,
     onBack,
+    onRename,
     isReleasing,
     readOnly = false,
     footers,
     onContextMenu,
   }: Props = $props();
+
+  const deckNumberLabel = $derived(`Deck #${String(nextDeckNumber).padStart(3, "0")}`);
+  let nameDraft = $state(deckName);
+  $effect(() => { nameDraft = deckName; });
+
+  function commitName() {
+    const t = nameDraft.trim();
+    if (t && t !== deckName) {
+      onRename?.(t);
+    } else {
+      nameDraft = deckName;
+    }
+  }
+
+  function handleNameKey(e: KeyboardEvent) {
+    if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+    else if (e.key === "Escape") { nameDraft = deckName; (e.currentTarget as HTMLInputElement).blur(); }
+  }
 
   let cardSize = $state<CardSizeId>("poker");
   let renderedPairs = $state<CardPair[]>([]);
@@ -181,8 +209,22 @@
     </button>
 
     <div class="deck-info">
-      <h2 class="deck-number">Deck #{String(nextDeckNumber).padStart(3, "0")}</h2>
+      {#if onRename}
+        <input
+          class="deck-name-input"
+          type="text"
+          bind:value={nameDraft}
+          onblur={commitName}
+          onkeydown={handleNameKey}
+          maxlength="60"
+          aria-label="Deck name (click to edit)"
+          title="Click to rename"
+        />
+      {:else}
+        <h2 class="deck-number">{deckName || deckNumberLabel}</h2>
+      {/if}
       <div class="distribution">
+        <span class="deck-number-tag">{deckNumberLabel}</span>
         {#each distribution as d (d.step)}
           <span class="dist-chip">{d.step}-step: {d.count}</span>
         {/each}
@@ -225,6 +267,8 @@
       sequences={sortedSequences}
       {cardSize}
       {theme}
+      {bluePropType}
+      {redPropType}
       {rerenderKey}
       footers={sortedFooters}
       {tndElements}
@@ -341,6 +385,44 @@
     font-size: 18px;
     font-weight: 700;
     color: var(--theme-text, #fff);
+  }
+
+  .deck-name-input {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    margin: 0;
+    padding: 4px 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--theme-text, #fff);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: text;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .deck-name-input:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  }
+
+  .deck-name-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--theme-accent, #8b5cf6);
+  }
+
+  .deck-number-tag {
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
   }
 
   .distribution {

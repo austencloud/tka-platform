@@ -21,10 +21,18 @@ export async function getNextDeckNumber(): Promise<number> {
   return snap.exists() ? (snap.data().next as number) : 1;
 }
 
+export interface ReleaseMeta {
+  name: string;
+  description: string;
+  bluePropType: string;
+  redPropType: string;
+}
+
 export async function releaseDeck(
   cards: DeckReleaseCard[],
   theme: string,
   notes: string,
+  meta: ReleaseMeta,
 ): Promise<DeckRelease> {
   const db = await getFirestoreInstance();
   const counterRef = doc(db, getDeckReleaseCounterPath());
@@ -43,7 +51,11 @@ export async function releaseDeck(
     const manifest: DeckRelease = {
       deckNumber,
       createdAt: new Date().toISOString(),
+      name: meta.name,
+      description: meta.description,
       theme,
+      bluePropType: meta.bluePropType,
+      redPropType: meta.redPropType,
       cardCount: cards.length,
       notes,
       sequences: cards,
@@ -58,6 +70,16 @@ export async function releaseDeck(
   });
 
   return release;
+}
+
+/** Patch the editable name/description of an already-released deck. */
+export async function updateDeckMeta(
+  deckNumber: number,
+  patch: { name?: string; description?: string },
+): Promise<void> {
+  const db = await getFirestoreInstance();
+  const manifestRef = doc(db, getDeckReleaseManifestPath(deckNumber));
+  await setDoc(manifestRef, patch, { merge: true });
 }
 
 export async function getAllReleases(): Promise<DeckRelease[]> {

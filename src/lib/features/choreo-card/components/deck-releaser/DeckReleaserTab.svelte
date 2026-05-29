@@ -17,10 +17,12 @@
     type CatalogPoolFilter,
   } from "../../services/deck-composer";
   import type { DeckRelease } from "../../domain/models/DeckRelease";
-  import { getNextDeckNumber, releaseDeck, getAllReleases } from "../../services/deck-release-store";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { getNextDeckNumber, releaseDeck, getAllReleases, updateDeckMeta } from "../../services/deck-release-store";
   import ConfigureStep from "./ConfigureStep.svelte";
   import ReviewStep from "./ReviewStep.svelte";
   import ReleaseHistoryPanel from "./ReleaseHistoryPanel.svelte";
+  import DeckReleaseNameModal from "./DeckReleaseNameModal.svelte";
   import { releaserState as rs } from "./deck-releaser-state.svelte";
 
   interface Props {
@@ -34,6 +36,7 @@
   let releasedIds = $state<Set<string>>(new Set());
   let releases = $state<DeckRelease[]>([]);
   let isLoadingReleases = $state(true);
+  let showNameModal = $state(false);
 
   const ICON_UPGRADES: Record<string, string> = {
     "/images/elements/sun-v2.png": "/images/elements/sun-v4.png",
@@ -233,14 +236,26 @@
     }
   }
 
-  async function handleRelease() {
+  function openReleaseModal() {
+    showNameModal = true;
+  }
+
+  async function handleConfirmRelease(name: string, description: string) {
     rs.isReleasing = true;
     try {
-      const release = await releaseDeck(rs.cards, rs.theme, rs.notes);
+      const release = await releaseDeck(rs.cards, rs.theme, rs.notes, {
+        name,
+        description,
+        bluePropType: rs.bluePropType,
+        redPropType: rs.redPropType,
+      });
+      rs.name = name;
+      rs.description = description;
       rs.releasedNumber = release.deckNumber;
       rs.nextDeckNumber = release.deckNumber + 1;
       releases = [release, ...releases];
       for (const card of release.sequences ?? []) releasedIds.add(card.sequenceId);
+      showNameModal = false;
       rs.step = "released";
       rs.persist();
     } catch (err) {
@@ -252,6 +267,22 @@
     }
   }
 
+  async function handleRenameDeck(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed || !rs.viewingRelease) return;
+    const deckNumber = rs.viewingRelease.deckNumber;
+    rs.name = trimmed;
+    releases = releases.map(r => r.deckNumber === deckNumber ? { ...r, name: trimmed } : r);
+    if (rs.viewingRelease) rs.viewingRelease = { ...rs.viewingRelease, name: trimmed };
+    rs.persist();
+    try {
+      await updateDeckMeta(deckNumber, { name: trimmed });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Rename failed";
+      toast.error(`Couldn't save deck name: ${msg}`);
+    }
+  }
+
   function handleStartNew() {
     rs.reset();
   }
@@ -260,7 +291,15 @@
     rs.viewingRelease = release;
     rs.cards = release.sequences;
     rs.notes = release.notes;
+    rs.name = release.name ?? release.notes ?? `Deck #${String(release.deckNumber).padStart(3, "0")}`;
+    rs.description = release.description ?? "";
     rs.nextDeckNumber = release.deckNumber;
+    // Pin render to the deck's release-time visuals so the content-hash cache
+    // key matches what was stored (otherwise live setting changes force a
+    // full re-render every view). Older decks have no prop snapshot → staff.
+    rs.themeOverride = release.theme ?? null;
+    rs.bluePropOverride = (release.bluePropType as PropType | undefined) ?? null;
+    rs.redPropOverride = (release.redPropType as PropType | undefined) ?? null;
     rs.step = "review";
     rs.persist();
 
@@ -299,15 +338,26 @@
         cards={rs.cards}
         sequences={rs.sequences}
         theme={rs.theme}
+        bluePropType={rs.bluePropType}
+        redPropType={rs.redPropType}
         nextDeckNumber={rs.nextDeckNumber}
+        deckName={rs.name}
         isReleasing={rs.isReleasing}
         readOnly={rs.viewingRelease !== null}
         {footers}
         {onContextMenu}
         onSwapCard={handleSwapCard}
         onRedraw={handleRedraw}
-        onRelease={handleRelease}
-        onBack={() => { rs.viewingRelease = null; rs.step = "configure"; rs.persist(); }}
+        onRelease={openReleaseModal}
+        onRename={rs.viewingRelease !== null ? handleRenameDeck : undefined}
+        onBack={() => {
+          rs.viewingRelease = null;
+          rs.themeOverride = null;
+          rs.bluePropOverride = null;
+          rs.redPropOverride = null;
+          rs.step = "configure";
+          rs.persist();
+        }}
       />
     {:else if rs.step === "released"}
       <div class="released-step">
@@ -318,8 +368,11 @@
           <h2 class="released-title">
             Deck #{String(rs.releasedNumber).padStart(3, "0")} Released
           </h2>
+          <p class="released-notes">{rs.name}</p>
+          {#if rs.description}
+            <p class="released-description">{rs.description}</p>
+          {/if}
           <p class="released-detail">{rs.cards.length} cards saved to Firebase</p>
-          <p class="released-notes">{rs.notes}</p>
           <div class="released-actions">
             <button type="button" class="new-deck-btn" onclick={handleStartNew}>
               <i class="fas fa-plus" aria-hidden="true"></i>
@@ -340,6 +393,16 @@
     />
   </div>
 </div>
+
+<DeckReleaseNameModal
+  bind:open={showNameModal}
+  deckNumber={rs.nextDeckNumber}
+  initialName={rs.name}
+  initialDescription={rs.description}
+  isReleasing={rs.isReleasing}
+  onConfirm={handleConfirmRelease}
+  onCancel={() => { if (!rs.isReleasing) showNameModal = false; }}
+/>
 
 <style>
   .deck-releaser {
@@ -401,9 +464,16 @@
 
   .released-notes {
     margin: 0;
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     color: var(--theme-accent, #a78bfa);
+  }
+
+  .released-description {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
   }
 
   .released-actions {
