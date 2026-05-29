@@ -1,0 +1,88 @@
+/**
+ * rasterize-node.ts
+ *
+ * Generic offscreen rasterizer: mounts a Svelte component into a fixed,
+ * off-screen container, waits for fonts + one animation frame, snapshots it
+ * with modern-screenshot's domToCanvas, and returns an ImageBitmap.
+ *
+ * Modeled on card-back-dom-renderer.ts, but with two deliberate differences:
+ *   1. Output is an ImageBitmap (worker-transferable), not an HTMLCanvasElement.
+ *   2. Settling waits on `document.fonts.ready` + one rAF instead of a fixed
+ *      setTimeout(200) — deterministic, no arbitrary delay.
+ *
+ * The container is given `container-type: inline-size` and an explicit
+ * `containerWidth` so that `cqi`-based CSS inside the mounted markup resolves
+ * against the real card render width. The output crop is governed by `w`/`h`
+ * (the element's own layout box), independent of `containerWidth`.
+ */
+
+import { mount, unmount } from "svelte";
+
+export interface RasterizeOptions {
+  /**
+   * Inline-size of the container for `cqi` resolution. Defaults to `w`.
+   * For card-back brand/url/loop elements pass the real card render width
+   * (1644) so cqi units match the live card.
+   */
+  containerWidth?: number;
+  /** Output device pixel scale passed to domToCanvas. Defaults to 1. */
+  scale?: number;
+}
+
+/**
+ * Mount `Comp` with `props`, rasterize a `w`×`h` region to an ImageBitmap.
+ *
+ * @param Comp   A Svelte 5 component (mount-compatible).
+ * @param props  Props passed to the component.
+ * @param w      Output crop width in px (the element's layout box width).
+ * @param h      Output crop height in px (the element's layout box height).
+ * @param opts   See RasterizeOptions.
+ */
+export async function rasterizeComponent(
+  Comp: unknown,
+  props: Record<string, unknown>,
+  w: number,
+  h: number,
+  opts: RasterizeOptions = {},
+): Promise<ImageBitmap> {
+  const containerWidth = opts.containerWidth ?? w;
+  const scale = opts.scale ?? 1;
+
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.left = "-99999px";
+  container.style.top = "-99999px";
+  container.style.width = `${containerWidth}px`;
+  container.style.height = `${h}px`;
+  container.style.overflow = "hidden";
+  container.style.containerType = "inline-size";
+  document.body.appendChild(container);
+
+  let component: ReturnType<typeof mount> | undefined;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component = mount(Comp as any, { target: container, props });
+
+    // Deterministic settle: fonts loaded + one paint frame.
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    const { domToCanvas } = await import("modern-screenshot");
+    const canvas = await domToCanvas(container, { width: w, height: h, scale });
+
+    return await createImageBitmap(canvas);
+  } finally {
+    if (component) {
+      try {
+        unmount(component);
+      } catch {
+        /* component already torn down */
+      }
+    }
+    if (container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
+  }
+}
