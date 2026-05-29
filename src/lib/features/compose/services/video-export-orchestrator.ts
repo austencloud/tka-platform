@@ -602,6 +602,35 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           const timestampMicros = i * frameDurationMicros;
           const isKeyframe = i % keyframeInterval === 0;
 
+          // Parity capture (automated test harness). When
+          // window.__tka_parity_capture lists frame indices, stash a COPY of
+          // the pre-encode RGBA for those frames — cloned now, before addFrame
+          // transfers (neuters) the buffer. The trail-export-parity page then
+          // decodes the finished MP4 and diffs decoded-vs-preencode, isolating
+          // pure encoder fidelity from any compositor difference.
+          const parity = (window as unknown as Record<string, unknown>)
+            .__tka_parity_capture as
+            | {
+                stride: number;
+                max: number;
+                captured: Record<
+                  number,
+                  { w: number; h: number; data: Uint8ClampedArray }
+                >;
+              }
+            | undefined;
+          if (
+            parity &&
+            i % parity.stride === 0 &&
+            Object.keys(parity.captured).length < parity.max
+          ) {
+            parity.captured[i] = {
+              w: offscreenCanvas.width,
+              h: offscreenCanvas.height,
+              data: new Uint8ClampedArray(frameData.data),
+            };
+          }
+
           // Pre-encode frame dump (DEV). This PNG is the EXACT pixels handed to
           // the encoder — captured from the offscreen composite before any H.264
           // quantization. Compare it against (a) a live-canvas screenshot at the
