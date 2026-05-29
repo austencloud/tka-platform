@@ -28,6 +28,8 @@
     startInFps?: boolean;
     /** Fired when the player enters a new wing (or leaves all wings). */
     onWingChange?: (wingId: string | null) => void;
+    /** False when the museum is mounted-but-hidden (keep-alive) - pause the scene */
+    visible?: boolean;
   }
 
   const props: Props = $props();
@@ -64,6 +66,29 @@
   function handleGeometryReady(): void {
     meshesReady = true;
     checkFullyReady();
+  }
+
+  // ── WebGL context-loss resilience ──
+  // Under memory pressure (especially mobile, where the WebGL context cap is as
+  // low as 2-8 per principal) the browser can evict our context even while
+  // mounted. preventDefault keeps it recoverable; on restore we force the ready
+  // gate after a short grace so we never strand on a black canvas.
+  let canvasAreaEl: HTMLDivElement | undefined;
+  let canvasEl: HTMLCanvasElement | null = null;
+  let contextRestoreTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function handleContextLost(e: Event): void {
+    e.preventDefault();
+    console.warn("[DimensionFlipProof] WebGL context lost");
+  }
+  function handleContextRestored(): void {
+    console.warn("[DimensionFlipProof] WebGL context restored");
+    if (contextRestoreTimer) clearTimeout(contextRestoreTimer);
+    contextRestoreTimer = setTimeout(() => {
+      texturesReady = true;
+      meshesReady = true;
+      checkFullyReady();
+    }, 2000);
   }
 
   $effect(() => {
@@ -446,6 +471,16 @@
       }
     }, 15_000);
 
+    // Attach context-loss listeners to this component's canvas (scoped to
+    // canvasAreaEl, not a global querySelector, so keep-alive coexistence with
+    // other modules' canvases can't grab the wrong one). Deferred so the Canvas
+    // has rendered its <canvas> element.
+    const canvasHookTimer = setTimeout(() => {
+      canvasEl = canvasAreaEl?.querySelector<HTMLCanvasElement>("canvas") ?? null;
+      canvasEl?.addEventListener("webglcontextlost", handleContextLost, false);
+      canvasEl?.addEventListener("webglcontextrestored", handleContextRestored, false);
+    }, 0);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
@@ -453,6 +488,10 @@
       // Clean up debounce timer
       if (hmrSaveTimer !== null) clearTimeout(hmrSaveTimer);
       clearTimeout(watchdog);
+      clearTimeout(canvasHookTimer);
+      if (contextRestoreTimer) clearTimeout(contextRestoreTimer);
+      canvasEl?.removeEventListener("webglcontextlost", handleContextLost);
+      canvasEl?.removeEventListener("webglcontextrestored", handleContextRestored);
     };
   });
 
@@ -463,10 +502,11 @@
 <div class="museum-container">
   <!-- 3D Canvas -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="canvas-area" onwheel={handleWheel}>
+  <div class="canvas-area" onwheel={handleWheel} bind:this={canvasAreaEl}>
     <Canvas>
       <Museum3DScene
         grid={props.grid}
+        visible={props.visible}
         {flipRequested}
         {resetRequested}
         {modeChangeRequested}
