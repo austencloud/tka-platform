@@ -20,16 +20,16 @@
 import type {
   ITrailOverlayCanvas,
   TrailOverlayRenderParams,
-} from "../contracts/ITrailOverlayCanvas";
-import type { TrailPoint } from "../../domain/types/TrailTypes";
-import { TrackingMode } from "../../domain/types/TrailTypes";
+} from "./ITrailOverlayCanvas";
+import type { TrailPoint } from "../domain/types/TrailTypes";
+import { TrackingMode } from "../domain/types/TrailTypes";
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import { calculatePropCenter } from "$lib/shared/animation-engine/services/prop-position-calculator";
-import { getTipPoints } from "../../domain/types/PropTipPoints";
-import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
+import { getTipPoints } from "../domain/types/PropTipPoints";
+import { getTrailPointConfig } from "../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
-import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/implementations/canvas2d/Canvas2DVisibilityFadeManager";
-import { resolveEffect } from "../../domain/types/TipEffectTypes";
+import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-visibility-fade-manager";
+import { resolveEffect } from "../domain/types/TipEffectTypes";
 
 import type { RenderBackend } from "$lib/shared/render-graph/domain/backend";
 import type { FrameGraph } from "$lib/shared/render-graph/domain/frame-graph";
@@ -592,11 +592,11 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 // void (not boolean) and has no isInitialized(). The descriptor casts to
 // EffectRendererLike so the registry can hold it uniformly; consumers of the
 // trails branch cast back to ITrailOverlayCanvas via the kind:"trails" path.
-import type { EffectPlugin } from "../effects/EffectPlugin";
-import type { EffectRendererLike } from "../effects/EffectRenderer";
+import type { EffectPlugin } from "./effects/EffectPlugin";
+import type { EffectRendererLike } from "./effects/EffectRenderer";
 import type { TrailsIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
-import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
+import { TrailOverlayCanvas } from "./trail-overlay-canvas";
 
 export const trailsEffectPlugin: EffectPlugin<TrailsIntent> = {
   id: "trails",
