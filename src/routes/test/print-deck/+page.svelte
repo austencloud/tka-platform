@@ -3,6 +3,8 @@
   import { loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
   import type { DeckRelease, CardFooter } from "$lib/features/choreo-card/domain/models/DeckRelease";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { resolveDeckSequences } from "$lib/features/choreo-card/services/deck-variation";
+  import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
   import type { CardPair } from "$lib/features/choreo-card/services/types";
   import type { CardSizeId } from "$lib/features/choreo-card/domain/card-sizes";
   import type { PrintPDFMode } from "$lib/features/choreo-card/services/print-pdf-exporter";
@@ -56,27 +58,37 @@
     sequences = [];
     footers = [];
 
-    const catalogGroups = new Map<string, { seqId: string; position: number; footer: CardFooter }[]>();
+    // Load each distinct base sequence once, keyed catalogId::sequenceId.
+    const seen = new Set<string>();
+    const byCatalog = new Map<string, string[]>();
     for (const card of deck.sequences) {
-      const group = catalogGroups.get(card.sourceCatalogId) ?? [];
-      group.push({ seqId: card.sequenceId, position: card.position, footer: card.footer });
-      catalogGroups.set(card.sourceCatalogId, group);
+      const key = `${card.sourceCatalogId}::${card.sequenceId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const ids = byCatalog.get(card.sourceCatalogId) ?? [];
+      ids.push(card.sequenceId);
+      byCatalog.set(card.sourceCatalogId, ids);
     }
 
-    const positionedResults: { position: number; sequence: SequenceData; footer: CardFooter }[] = [];
-
-    for (const [catalogId, cards] of catalogGroups) {
+    const baseByKey = new Map<string, SequenceData>();
+    for (const [catalogId, seqIds] of byCatalog) {
       loadStatus = `Fetching from ${catalogId}...`;
-      const ids = cards.map(c => c.seqId);
-      const seqs = await loadSequencesByIds(catalogId, ids);
-      const seqMap = new Map(seqs.map(s => [s.id, s]));
+      const loaded = await loadSequencesByIds(catalogId, seqIds);
+      for (const s of loaded) baseByKey.set(`${catalogId}::${s.id}`, s);
+    }
 
-      for (const card of cards) {
-        const seq = seqMap.get(card.seqId);
-        if (seq) {
-          positionedResults.push({ position: card.position, sequence: seq, footer: card.footer });
-        }
-      }
+    const needsVariation = deck.sequences.some((c) => c.variation);
+    const edges = needsVariation ? await loadDiamondEdges() : [];
+
+    // Resolve positionally — each card gets its own variant (TnD-safe).
+    const resolved = resolveDeckSequences(deck.sequences, baseByKey, edges);
+
+    // Pair resolved sequences with their card metadata for element-based sorting.
+    const positionedResults: { position: number; sequence: SequenceData; footer: CardFooter }[] = [];
+    for (let i = 0; i < deck.sequences.length; i++) {
+      const card = deck.sequences[i]!;
+      const seq = resolved[i]?.sequence;
+      if (seq) positionedResults.push({ position: card.position, sequence: seq, footer: card.footer });
     }
 
     positionedResults.sort((a, b) => a.position - b.position);
