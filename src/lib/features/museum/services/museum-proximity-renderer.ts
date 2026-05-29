@@ -10,13 +10,13 @@
  * to apply.
  */
 
-import { ProximityGrid } from "./ProximityGrid";
+import { ProximityGrid } from "./proximity-grid";
 import type {
   RoomChunk,
   PlaquePlacement,
   TorchPosition,
   LightPosition,
-} from "./MuseumGeometryBuilder";
+} from "./museum-geometry-builder";
 import type { MuseumGrid } from "../domain/museum-grid-types";
 
 // ── Constants ──

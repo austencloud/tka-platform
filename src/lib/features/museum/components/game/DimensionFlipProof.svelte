@@ -5,7 +5,7 @@
   import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
   import { tileKey } from "../../domain/museum-grid-types";
   import type { MuseumGrid, ExhibitDefinition, PerformerDefinition, WingRegion } from "../../domain/museum-grid-types";
-  import { SOLID_TYPES } from "../../services/MuseumPhysicsProvider";
+  import { SOLID_TYPES } from "../../services/museum-physics-provider";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import PlacementPickerPanel from "../editor/PlacementPickerPanel.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";

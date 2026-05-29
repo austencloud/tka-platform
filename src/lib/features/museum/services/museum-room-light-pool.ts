@@ -1,4 +1,4 @@
-import type { RoomLight } from "./MuseumGeometryBuilder";
+import type { RoomLight } from "./museum-geometry-builder";
 
 export interface RoomLightSlot {
   x: number;

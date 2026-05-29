@@ -17,16 +17,16 @@ import type { MuseumGrid } from "../domain/museum-grid-types";
 import type { RoomEdge } from "../domain/layout-types";
 import type {
   RoomChunk,
-} from "./MuseumGeometryBuilder";
+} from "./museum-geometry-builder";
 import {
   bucketMuseumTilesByRoom,
   buildRoomChunk,
   dryRunFromWorkerTransfer,
-} from "./MuseumGeometryBuilder";
-import type { MuseumGeometryDryRun } from "./MuseumGeometryBuilder";
+} from "./museum-geometry-builder";
+import type { MuseumGeometryDryRun } from "./museum-geometry-builder";
 import type { RoomBuiltResponse } from "../workers/geometry-worker-protocol";
 import type { SerializedBucketEntry } from "../domain/room-descriptor";
-import { RoomLifecycleManager } from "./RoomLifecycleManager";
+import { RoomLifecycleManager } from "./room-lifecycle-manager";
 
 // ── Types ──
 

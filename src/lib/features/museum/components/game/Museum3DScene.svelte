@@ -11,7 +11,7 @@
   import { tileKey } from "../../domain/museum-grid-types";
   import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
   import type { AvatarState } from "@austencloud/camera-3d";
-  import { createMuseumPhysicsProvider, MuseumPhysicsProvider } from "../../services/MuseumPhysicsProvider";
+  import { createMuseumPhysicsProvider, MuseumPhysicsProvider } from "../../services/museum-physics-provider";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
@@ -20,7 +20,7 @@
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
   import MuseumVillageEmbed from "./MuseumVillageEmbed.svelte";
-  import { preloadVillageAvatarModels } from "../../services/MuseumVillageManager";
+  import { preloadVillageAvatarModels } from "../../services/museum-village-manager";
   import MuseumTorch3D from "./MuseumTorch3D.svelte";
 
   // Start preloading village avatar models immediately - they'll be cached
@@ -32,10 +32,10 @@
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
   import PlacementGhost from '../editor/PlacementGhost.svelte';
   import { preloadAllFixtureModels, addTorchToScene, removeTorchFromScene } from './MuseumTorch3D.svelte';
-  import { createPortalConfig, PortalProximityChecker } from "../../services/MuseumPortals";
-  import { MuseumEditorPlacement } from "../../services/MuseumEditorPlacement";
-  import { createEmptyPool, recomputeNearbyRoomLights as recomputeNearbyLightsFromPool, type RoomLightSlot } from "../../services/MuseumRoomLightPool";
-  import { MuseumAtmosphere } from "../../services/MuseumAtmosphere";
+  import { createPortalConfig, PortalProximityChecker } from "../../services/museum-portals";
+  import { MuseumEditorPlacement } from "../../services/museum-editor-placement";
+  import { createEmptyPool, recomputeNearbyRoomLights as recomputeNearbyLightsFromPool, type RoomLightSlot } from "../../services/museum-room-light-pool";
+  import { MuseumAtmosphere } from "../../services/museum-atmosphere";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
@@ -47,7 +47,7 @@
     TorchPosition,
     LightPosition,
     RoomLight,
-  } from "../../services/MuseumGeometryBuilder";
+  } from "../../services/museum-geometry-builder";
   import { MUSEUM_EDGES } from "../../data/museum-room-graph";
 
   // ── Extracted modules ──

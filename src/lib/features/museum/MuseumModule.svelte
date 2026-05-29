@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { buildMuseumGrid } from "./services/MuseumGridBuilder";
+  import { buildMuseumGrid } from "./services/museum-grid-builder";
   import { MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG } from "./data/museum-room-graph";
   import { serializeGrid, deserializeGrid } from "./domain/museum-grid-types";
   import type { MuseumGrid } from "./domain/museum-grid-types";
@@ -7,7 +7,7 @@
   import { setEditorContext } from "./state/editor-context";
   import { createSoundscapePlayer } from "./audio/soundscape-player.svelte";
   import { setSoundscapeContext } from "./audio/soundscape-context";
-  import { destroyMuseumVillage } from "./services/MuseumVillageManager";
+  import { destroyMuseumVillage } from "./services/museum-village-manager";
   import RoomPicker from "./components/RoomPicker.svelte";
   import SoundscapeBubble from "./components/audio/SoundscapeBubble.svelte";
 

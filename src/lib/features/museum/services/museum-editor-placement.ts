@@ -6,7 +6,7 @@ import {
   type Scene,
 } from "three";
 import type { MuseumGrid, WingTheme, Direction } from "../domain/museum-grid-types";
-import { museum3dEditorState } from "../state/museum-3d-editor-state.svelte";
+import { museum3dEditorState } from "../state/museum-3d-editor-state.svelte.ts";
 import { savePlacement, removePlacement } from "./placement-persister";
 
 export interface TorchSceneFns {

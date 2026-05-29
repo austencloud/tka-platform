@@ -14,8 +14,8 @@
  */
 
 import type { MuseumGrid } from "../domain/museum-grid-types";
-import type { MuseumPhysicsProvider } from "./MuseumPhysicsProvider";
-import type { PortalProximityChecker } from "./MuseumPortals";
+import type { MuseumPhysicsProvider } from "./museum-physics-provider";
+import type { PortalProximityChecker } from "./museum-portals";
 
 // ── Constants ──
 

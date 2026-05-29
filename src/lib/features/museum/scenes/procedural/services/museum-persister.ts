@@ -6,7 +6,7 @@ import {
   remove,
   update,
 } from "firebase/database";
-import type { MuseumMetadata } from "./contracts/types";
+import type { MuseumMetadata } from "./types";
 import type { MuseumExhibit } from "../domain/museum-types";
 
 function db() {

@@ -17,7 +17,7 @@ import type {
   MuseumGeometryDryRun,
   PlaquePlacement,
   TorchPosition,
-} from "../services/MuseumGeometryBuilder";
+} from "../services/museum-geometry-builder";
 
 // ── Serialized tile bucket types ──
 

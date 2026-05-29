@@ -9,7 +9,7 @@
   useProgress() reads globally. No manual progress reporting needed.
 -->
 <script module lang="ts">
-  import { MuseumModelLoader } from "../../services/MuseumModelLoader";
+  import { MuseumModelLoader } from "../../services/museum-model-loader";
 
   // One loader shared across all mounts and HMR cycles. The internal
   // GLB cache survives remounts so furniture models are never re-fetched.
