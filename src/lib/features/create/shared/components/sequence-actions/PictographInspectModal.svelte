@@ -24,6 +24,7 @@
   import MotionColumn from "./pictograph-inspect/MotionColumn.svelte";
   import { formatAllForAI } from "./pictograph-inspect/formatters";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import PipelineEditorDock from "./pictograph-inspect/PipelineEditorDock.svelte";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
 
   interface Props {
@@ -45,8 +46,6 @@
 
   let blueDiagnostics = $state<PipelineDiagnostics | null>(null);
   let redDiagnostics = $state<PipelineDiagnostics | null>(null);
-  let blueMotionColumnRef: MotionColumn | undefined = $state();
-  let redMotionColumnRef: MotionColumn | undefined = $state();
 
   // Lookup keys for debugging
   let lookupKeys = $state<{
@@ -74,10 +73,8 @@
       lastSelectedColor = color;
       if (color === "blue") {
         blueOpen = true;
-        queueMicrotask(() => blueMotionColumnRef?.enterEditMode());
       } else if (color === "red") {
         redOpen = true;
-        queueMicrotask(() => redMotionColumnRef?.enterEditMode());
       }
     });
     return unsubscribe;
@@ -348,19 +345,6 @@
       } else {
         requestClose();
       }
-      return;
-    }
-
-    if (["w", "a", "s", "d"].includes(e.key.toLowerCase())) {
-      const color = selectedArrowState.selectedArrow?.color ?? null;
-      if (color === "red") {
-        if (redMotionColumnRef?.handleWASDKeydown(e)) return;
-      } else if (color === "blue") {
-        if (blueMotionColumnRef?.handleWASDKeydown(e)) return;
-      } else {
-        if (blueMotionColumnRef?.handleWASDKeydown(e)) return;
-        if (redMotionColumnRef?.handleWASDKeydown(e)) return;
-      }
     }
   }
 </script>
@@ -424,7 +408,6 @@
               onCopy={copyToClipboard}
               open={blueOpen}
               onToggle={(next) => (blueOpen = next)}
-              bind:this={blueMotionColumnRef}
             />
 
             <MotionColumn
@@ -438,11 +421,17 @@
               onCopy={copyToClipboard}
               open={redOpen}
               onToggle={(next) => (redOpen = next)}
-              bind:this={redMotionColumnRef}
             />
           </div>
         </div>
       </div>
+
+      <PipelineEditorDock
+        {stepData}
+        {blueDiagnostics}
+        {redDiagnostics}
+        onDiagnosticsChanged={refreshDiagnostics}
+      />
     </div>
   </div>
 {/if}
