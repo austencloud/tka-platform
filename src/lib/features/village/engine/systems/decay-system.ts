@@ -1,6 +1,6 @@
 import type { World } from "miniplex";
 import type { VillageEntity } from "../../domain/village-types";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
+import type { VillageEventEmitter } from "../village-event-emitter";
 import {
 	DECAY_GRACE_PERIOD,
 	DECAY_PER_TICK,

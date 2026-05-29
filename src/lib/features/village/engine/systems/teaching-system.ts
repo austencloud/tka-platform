@@ -1,7 +1,7 @@
 import type { World } from "miniplex";
 import type { VillageEntity, LearnedSequence } from "../../domain/village-types";
-import type { VillageConfig } from "../VillageConfig";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
+import type { VillageConfig } from "../village-config";
+import type { VillageEventEmitter } from "../village-event-emitter";
 import {
 	TEACHING_SPEED_TICKS_PER_BEAT,
 	PROFICIENCY_THRESHOLD,

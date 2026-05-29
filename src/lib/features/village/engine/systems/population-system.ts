@@ -1,10 +1,10 @@
 import type { World } from "miniplex";
 import type { VillageEntity } from "../../domain/village-types";
-import type { VillageConfig } from "../VillageConfig";
+import type { VillageConfig } from "../village-config";
 import type * as PersonalityGeneratorModule from "../../services/personality-generator";
-import type { LineageTracker } from "../../services/LineageTracker";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
-import { createAvatarEntity } from "../VillageWorld";
+import type { LineageTracker } from "../../services/lineage-tracker";
+import type { VillageEventEmitter } from "../village-event-emitter";
+import { createAvatarEntity } from "../village-world";
 import {
 	AVATAR_NAMES,
 	MAKER_POSITION_ANGLE,

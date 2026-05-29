@@ -5,7 +5,7 @@
 <script lang="ts">
 	import { T } from "@threlte/core";
 	import { HTML } from "@threlte/extras";
-	import type { Monument } from "../engine/systems/MonumentSystem";
+	import type { Monument } from "../engine/systems/monument-system";
 	import { getVillageVisualContext } from "../state/village-context";
 
 	interface Props {

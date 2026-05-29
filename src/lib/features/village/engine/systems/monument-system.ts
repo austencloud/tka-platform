@@ -1,6 +1,6 @@
 import type { World } from "miniplex";
 import type { VillageEntity } from "../../domain/village-types";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
+import type { VillageEventEmitter } from "../village-event-emitter";
 import { MONUMENT_GENERATION_THRESHOLD } from "../../domain/village-constants";
 
 export interface Monument {

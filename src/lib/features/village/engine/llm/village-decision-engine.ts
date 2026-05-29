@@ -8,9 +8,9 @@ import type {
 	IdleAction,
 } from "./village-llm-types";
 import type { VillageEntity } from "../../domain/village-types";
-import { OllamaProvider } from "./OllamaProvider";
-import { DeterministicProvider } from "./DeterministicProvider";
-import { VillageEventLog } from "./VillageEventLog";
+import { OllamaProvider } from "./ollama-provider";
+import { DeterministicProvider } from "./deterministic-provider";
+import { VillageEventLog } from "./village-event-log";
 import { buildIdlePrompt } from "./prompt-builder";
 
 const VALID_IDLE_ACTIONS: Set<string> = new Set(["seek", "wander", "perform", "invent"]);

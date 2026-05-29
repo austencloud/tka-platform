@@ -1,7 +1,7 @@
 import type { World } from "miniplex";
 import type { VillageEntity, Season } from "../../domain/village-types";
-import type { VillageConfig } from "../VillageConfig";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
+import type { VillageConfig } from "../village-config";
+import type { VillageEventEmitter } from "../village-event-emitter";
 import { SEASON_DURATION, SEASON_CYCLE } from "../../domain/village-constants";
 
 export class SeasonSystem {

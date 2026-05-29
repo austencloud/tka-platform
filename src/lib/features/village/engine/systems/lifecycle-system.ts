@@ -1,6 +1,6 @@
 import type { World } from "miniplex";
 import type { VillageEntity } from "../../domain/village-types";
-import type { VillageConfig } from "../VillageConfig";
+import type { VillageConfig } from "../village-config";
 
 export class LifecycleSystem {
 	constructor(private config: VillageConfig) {}

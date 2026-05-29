@@ -1,8 +1,8 @@
 import type { World } from "miniplex";
 import type { VillageEntity, LearnedSequence } from "../../domain/village-types";
-import type { VillageConfig } from "../VillageConfig";
+import type { VillageConfig } from "../village-config";
 import type * as SequenceMutatorModule from "../../services/sequence-mutator";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
+import type { VillageEventEmitter } from "../village-event-emitter";
 import { INTERACTION_COOLDOWN_BASE } from "../../domain/village-constants";
 
 export class RecombinationSystem {

@@ -1,6 +1,6 @@
 import type { World } from "miniplex";
 import type { VillageEntity, StyleSchool } from "../../domain/village-types";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
+import type { VillageEventEmitter } from "../village-event-emitter";
 import {
 	STYLE_SIMILARITY_THRESHOLD,
 	STYLE_SCHOOL_MIN_MEMBERS,

@@ -5,28 +5,28 @@ import type {
 	VillageEventKey,
 	PopulationStats,
 } from "../domain/village-types";
-import type { VillageConfig } from "./VillageConfig";
+import type { VillageConfig } from "./village-config";
 import type * as SequenceMutatorModule from "../services/sequence-mutator";
-import type { VillageEventEmitter } from "./VillageEventEmitter";
-import { createVillageWorld } from "./VillageWorld";
+import type { VillageEventEmitter } from "./village-event-emitter";
+import { createVillageWorld } from "./village-world";
 import * as personalityGenerator from "../services/personality-generator";
-import { LineageTracker } from "../services/LineageTracker";
-import { LifecycleSystem } from "./systems/LifecycleSystem";
-import { MovementSystem } from "./systems/MovementSystem";
-import { SocialSystem } from "./systems/SocialSystem";
-import { TeachingSystem } from "./systems/TeachingSystem";
-import { RecombinationSystem } from "./systems/RecombinationSystem";
-import { PopulationSystem } from "./systems/PopulationSystem";
-import { DecaySystem } from "./systems/DecaySystem";
-import { PerformanceSystem } from "./systems/PerformanceSystem";
-import { FuneralSystem } from "./systems/FuneralSystem";
-import { MonumentSystem } from "./systems/MonumentSystem";
-import { ProximityLearningSystem } from "./systems/ProximityLearningSystem";
-import { StyleDriftSystem } from "./systems/StyleDriftSystem";
-import { PropSystem } from "./systems/PropSystem";
-import { CircleSystem } from "./systems/CircleSystem";
-import { SeasonSystem } from "./systems/SeasonSystem";
-import { VillageDecisionEngine } from "./llm/VillageDecisionEngine";
+import { LineageTracker } from "../services/lineage-tracker";
+import { LifecycleSystem } from "./systems/lifecycle-system";
+import { MovementSystem } from "./systems/movement-system";
+import { SocialSystem } from "./systems/social-system";
+import { TeachingSystem } from "./systems/teaching-system";
+import { RecombinationSystem } from "./systems/recombination-system";
+import { PopulationSystem } from "./systems/population-system";
+import { DecaySystem } from "./systems/decay-system";
+import { PerformanceSystem } from "./systems/performance-system";
+import { FuneralSystem } from "./systems/funeral-system";
+import { MonumentSystem } from "./systems/monument-system";
+import { ProximityLearningSystem } from "./systems/proximity-learning-system";
+import { StyleDriftSystem } from "./systems/style-drift-system";
+import { PropSystem } from "./systems/prop-system";
+import { CircleSystem } from "./systems/circle-system";
+import { SeasonSystem } from "./systems/season-system";
+import { VillageDecisionEngine } from "./llm/village-decision-engine";
 
 export class VillageOrchestrator implements VillageEventEmitter {
 	private world: World<VillageEntity>;

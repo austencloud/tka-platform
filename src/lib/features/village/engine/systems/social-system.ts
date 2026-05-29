@@ -1,7 +1,7 @@
 import type { World } from "miniplex";
 import type { VillageEntity, LearnedSequence } from "../../domain/village-types";
-import type { VillageConfig } from "../VillageConfig";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
+import type { VillageConfig } from "../village-config";
+import type { VillageEventEmitter } from "../village-event-emitter";
 import {
 	IDLE_THRESHOLD_BASE,
 	INTERACTION_COOLDOWN_BASE,
@@ -13,7 +13,7 @@ import {
 	STYLE_INCOMPATIBILITY_THRESHOLD,
 } from "../../domain/village-constants";
 
-import type { VillageDecisionEngine } from "../llm/VillageDecisionEngine";
+import type { VillageDecisionEngine } from "../llm/village-decision-engine";
 
 const SEEK_RADIUS = 5;
 

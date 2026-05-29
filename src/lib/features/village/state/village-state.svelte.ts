@@ -8,10 +8,10 @@
 import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
 // propInterpolator / sequenceConverter are now module-level functions
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { VillageOrchestrator } from "../engine/VillageOrchestrator";
+import { VillageOrchestrator } from "../engine/village-orchestrator";
 import * as sequenceMutator from "../services/sequence-mutator";
-import type { VillageConfig } from "../engine/VillageConfig";
-import { createDefaultConfig } from "../engine/VillageConfig";
+import type { VillageConfig } from "../engine/village-config";
+import { createDefaultConfig } from "../engine/village-config";
 import type {
 	VillageEntity,
 	PopulationStats,

@@ -1,6 +1,6 @@
 import type { World } from "miniplex";
 import type { VillageEntity, LifecyclePhase } from "../../domain/village-types";
-import type { VillageConfig } from "../VillageConfig";
+import type { VillageConfig } from "../village-config";
 import {
 	WALK_SPEED_YOUTH,
 	WALK_SPEED_ADULT,

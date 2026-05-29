@@ -4,7 +4,7 @@ import type {
 	DroppedProp,
 	PropArtifact,
 } from "../../domain/village-types";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
+import type { VillageEventEmitter } from "../village-event-emitter";
 import {
 	MAKER_CRAFT_DURATION,
 	PROP_WEAR_PROFILES,

@@ -1,6 +1,6 @@
 import type { World } from "miniplex";
 import type { VillageEntity, EffectCircle, EffectAffinity } from "../../domain/village-types";
-import type { VillageEventEmitter } from "../VillageEventEmitter";
+import type { VillageEventEmitter } from "../village-event-emitter";
 import { CIRCLE_RADIUS, CIRCLE_MIN_MEMBERS } from "../../domain/village-constants";
 
 export class CircleSystem {
