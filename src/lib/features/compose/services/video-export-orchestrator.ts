@@ -549,6 +549,40 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             previewDarkMode: isDarkMode,
           });
           offscreen.engine.update(props);
+
+          // DEV export-fidelity diagnostic. Captures what the OFFSCREEN engine
+          // actually received (prop types, trail enablement, trail/effect state)
+          // at representative frames, so a divergence from the live canvas is
+          // visible in the data. Enable is implicit in DEV; the blob is pushed to
+          // window.__tka_export_diag and logged for copy. Compare propTypes +
+          // visibility.tipEffectMap (should contain "trails") + core trail state.
+          if (
+            import.meta.env.DEV &&
+            (i === 0 || i === Math.floor(totalFrames / 2) || i === totalFrames - 1)
+          ) {
+            try {
+              const diag = offscreen.engine.captureEffectDiagnostics();
+              const blob = {
+                frame: i,
+                fedProps: {
+                  bluePropType: props.bluePropType,
+                  redPropType: props.redPropType,
+                  hasTrailSettings: props.externalTrailSettings != null,
+                  trailSettings: props.externalTrailSettings ?? null,
+                  hasBlueProp: props.blueProp != null,
+                  hasRedProp: props.redProp != null,
+                },
+                engineDiag: diag,
+              };
+              const w = window as unknown as Record<string, unknown>;
+              const log = (w.__tka_export_diag as unknown[] | undefined) ?? [];
+              log.push(blob);
+              w.__tka_export_diag = log;
+              console.log(`[export-diag] frame ${i}`, JSON.stringify(blob, null, 2));
+            } catch (e) {
+              console.warn("[export-diag] capture failed", e);
+            }
+          }
         }
 
         // Wait for the render loop to paint the new beat.
