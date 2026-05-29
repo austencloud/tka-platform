@@ -347,6 +347,11 @@ dialog.drawer-content {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.45);
   flex-shrink: 0;
+  cursor: grab;
+}
+
+.drawer-content.dragging .drawer-handle {
+  cursor: grabbing;
 }
 
 /* Handle for right placement in side-by-side mode - vertical on left edge */

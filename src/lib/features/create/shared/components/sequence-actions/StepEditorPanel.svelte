@@ -518,6 +518,23 @@
     position: relative;
     container-type: size;
     container-name: step-editor;
+    /* Whole panel is swipe-draggable — show the grab affordance everywhere */
+    cursor: grab;
+  }
+
+  /* Restore natural cursors on elements that need their own (cursor inherits) */
+  .editor-panel :global(input),
+  .editor-panel :global(textarea),
+  .editor-panel :global(select),
+  .editor-panel :global([role="slider"]),
+  .editor-panel :global([contenteditable]) {
+    cursor: auto;
+  }
+
+  /* While actively dragging, force the closed-fist cursor across the panel */
+  :global(.drawer-content.dragging) .editor-panel,
+  :global(.drawer-content.dragging) .editor-panel :global(*) {
+    cursor: grabbing;
   }
 
   /* ============================================================================
