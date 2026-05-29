@@ -109,9 +109,18 @@
     onBuildStage?: (stage: string) => void;
     /** Called when async geometry build completes - all meshes are ready to render */
     onGeometryReady?: () => void;
+    /** False when the museum is mounted-but-hidden (keep-alive) - pause per-frame work */
+    visible?: boolean;
   }
 
   const props: Props = $props();
+
+  // Keep-alive: request a repaint when the scene becomes visible again, so it
+  // shows the current frame immediately on resume (render loop was paused while
+  // hidden). invalidate is a no-op under continuous render but harmless.
+  $effect(() => {
+    if (props.visible !== false) (threlteCtx as any).invalidate?.();
+  });
 
   // Resolve initial-value props as plain consts (used once at init, not reactive)
   const grid = props.grid;
@@ -427,6 +436,11 @@
   // When fpsActive, UnifiedCameraController owns the camera - we don't touch it.
   useTask((delta) => {
     if (!camera) return;
+
+    // Keep-alive: pause per-frame scene work while hidden (no movement, no
+    // streaming, no atmosphere). One-time camera init/onReady already ran on the
+    // first visible frame, since the keep-alive host only mounts museum when active.
+    if (props.visible === false) return;
 
     // In editor mode, OrbitControls owns the camera - skip all movement/animation
     if (museum3dEditorState.editorActive) return;
@@ -1018,7 +1032,7 @@
      Pre-warm behind loading overlay absorbs the shader compilation cost.
      Bloom off in top-down avoids the render target switch that causes 8s stall.
      spawnPosition gives the pre-warm a second render from FPS perspective. -->
-<MuseumPostProcessing {geometryReady} {fpsActive} {animating} spawnPosition={{ x: spawnWorldX, z: spawnWorldZ }} />
+<MuseumPostProcessing {geometryReady} {fpsActive} {animating} spawnPosition={{ x: spawnWorldX, z: spawnWorldZ }} visible={props.visible} />
 
 <!-- Per-room ambient fill lights - fixed pool of MAX_ROOM_LIGHTS slots.
      Slots are always mounted (no shader recompilation). Unused slots have intensity=0. -->

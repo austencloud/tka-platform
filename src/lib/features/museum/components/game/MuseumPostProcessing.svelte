@@ -32,6 +32,8 @@
     animating?: boolean;
     /** Spawn position for FPS pre-warm (world coordinates) */
     spawnPosition?: { x: number; z: number };
+    /** False when the museum is mounted-but-hidden (keep-alive) - skip rendering */
+    visible?: boolean;
   }
 
   const props: Props = $props();
@@ -86,6 +88,11 @@
   const sizeVec = new Vector2();
 
   useTask(() => {
+    // Keep-alive: skip all rendering while the museum is hidden. This is the
+    // only render call in the museum, so gating it here stops GPU draw entirely
+    // regardless of Threlte's frame-loop mode.
+    if (props.visible === false) return;
+
     const gl = getRenderer();
     const sc = getScene();
     const cam = getCamera();
