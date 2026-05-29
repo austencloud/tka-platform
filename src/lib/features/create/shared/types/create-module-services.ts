@@ -8,11 +8,11 @@
  */
 
 import type { StartPositionManager } from "$lib/shared/create/services/StartPositionManager";
-import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
-import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
-import type { NavigationSyncer } from "../services/implementations/NavigationSyncer";
+import type { StepOperator } from "$lib/features/create/shared/services/step-operator";
+import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/create-module-orchestrator";
+import type { NavigationSyncer } from "../services/navigation-syncer";
 import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
-import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
 import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { Sharer } from "../../../../shared/share/services/sharer";
 

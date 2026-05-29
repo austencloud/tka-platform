@@ -7,10 +7,10 @@
 -->
 <script lang="ts">
 
-import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getArrowAdjustmentOrchestrator";
+import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-  import type { AdjustmentTargetKey } from "../../services/implementations/ArrowAdjustmentOrchestrator";
+  import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orchestrator";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import LayerTabBar from "./LayerTabBar.svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
@@ -18,8 +18,8 @@ import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getA
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import type { ArrowAdjustmentOrchestrator } from "../../services/implementations/ArrowAdjustmentOrchestrator";
-import type { SelectedArrowContext } from "../../services/implementations/ArrowAdjustmentOrchestrator";
+  import type { ArrowAdjustmentOrchestrator } from "../../services/arrow-adjustment-orchestrator";
+import type { SelectedArrowContext } from "../../services/arrow-adjustment-orchestrator";
   import type { GlobalAdjustmentKey } from "$lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 

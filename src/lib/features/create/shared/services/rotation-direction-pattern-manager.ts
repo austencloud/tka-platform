@@ -35,7 +35,7 @@ import type {
   RotationDirectionPatternCreateData,
   RotationDirectionPatternEntry,
   RotationDirectionValue,
-} from "../domain/models/RotationDirectionPatternData";
+} from "../domain/models/rotation-direction-pattern-data";
 import type { TargetHand } from "$lib/shared/create/services/turn-pattern-manager";
 
 /**

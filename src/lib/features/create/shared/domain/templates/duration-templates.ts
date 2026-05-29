@@ -15,7 +15,7 @@ import type {
   DurationPatternEntry,
   DurationValue,
   DurationPattern,
-} from "../models/DurationPatternData";
+} from "../models/duration-pattern-data";
 
 /**
  * Template categories for duration patterns

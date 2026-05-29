@@ -18,7 +18,7 @@ import { configureShortCodeManager } from "../qr/getShortCodeManager";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 
 import { registerLoopDetector } from "../create/getLoopDetector";
-import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
 
 import { registerLoopDisplayResolver } from "../loop-labeler/getLoopDisplayResolver";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";

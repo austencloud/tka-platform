@@ -46,6 +46,15 @@ export interface RasterizeOptions {
    * pictograph rasterizer.
    */
   settleMs?: number;
+  /**
+   * When true, ignore the passed `h` crop and snapshot the mounted root at its
+   * NATURAL content height (measured via the container's `scrollHeight` /
+   * mounted root `getBoundingClientRect().height` after settle). Use this for
+   * flex-column slots whose block size is text-flow driven (brand / url): a
+   * fixed `h` crops the last line. The returned bitmap's `.height` reflects the
+   * measured content height so callers can anchor by it.
+   */
+  naturalHeight?: boolean;
 }
 
 /** Resolve after `frames` consecutive animation frames. */
@@ -77,14 +86,20 @@ export async function rasterizeComponent(
   const scale = opts.scale ?? 1;
   const settleFrames = opts.settleFrames ?? 1;
   const settleMs = opts.settleMs ?? 0;
+  const naturalHeight = opts.naturalHeight ?? false;
 
   const container = document.createElement("div");
   container.style.position = "fixed";
   container.style.left = "-99999px";
   container.style.top = "-99999px";
   container.style.width = `${containerWidth}px`;
-  container.style.height = `${h}px`;
-  container.style.overflow = "hidden";
+  // Natural-height mode lets the mounted content drive the box height: don't pin
+  // a fixed height and don't crop, so the full flex-column (incl. the last line)
+  // is laid out and measurable. Fixed-height mode keeps the original crop box.
+  if (!naturalHeight) {
+    container.style.height = `${h}px`;
+    container.style.overflow = "hidden";
+  }
   container.style.containerType = "inline-size";
   document.body.appendChild(container);
 

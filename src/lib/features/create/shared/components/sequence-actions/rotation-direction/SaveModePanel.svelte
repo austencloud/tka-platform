@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { formatRotationValue } from "../../../domain/models/RotationDirectionPatternData";
+  import { formatRotationValue } from "../../../domain/models/rotation-direction-pattern-data";
 
   interface Props {
     sequence: SequenceData | null;

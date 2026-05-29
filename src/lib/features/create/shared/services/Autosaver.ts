@@ -24,7 +24,7 @@ import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import {
   createDraftSequence,
   type DraftSequence,
-} from "../domain/DraftSequence";
+} from "../domain/draft-sequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { db } from "$lib/shared/persistence/database/tka-database";
 import { UserWorkType } from "$lib/shared/persistence/domain/enums/user-work-type";

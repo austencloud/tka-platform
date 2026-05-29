@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { UndoOperationType } from "../../../../services/implementations/UndoManager";
+  import { UndoOperationType } from "../../../../services/undo-manager";
   import type { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 

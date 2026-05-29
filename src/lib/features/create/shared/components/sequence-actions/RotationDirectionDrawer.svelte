@@ -16,7 +16,7 @@ import * as rotationDirectionPatternManagerModule from "$lib/features/create/sha
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { RotationDirectionPattern } from "../../domain/models/RotationDirectionPatternData";
+  import type { RotationDirectionPattern } from "../../domain/models/rotation-direction-pattern-data";
   import {
     templateToPattern,
     createUniformPattern,

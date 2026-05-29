@@ -7,7 +7,7 @@
   arrow; idle until an arrow is selected.
 -->
 <script lang="ts">
-  import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getArrowAdjustmentOrchestrator";
+  import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type {
     PipelineDiagnostics,
@@ -17,7 +17,7 @@
   import type {
     ArrowAdjustmentOrchestrator,
     SelectedArrowContext,
-  } from "../../../services/implementations/ArrowAdjustmentOrchestrator";
+  } from "../../../services/arrow-adjustment-orchestrator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import LayerTabBar from "../../arrow-adjustment/LayerTabBar.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";

@@ -30,37 +30,37 @@ export async function getLoopExecutor(
   switch (tag) {
     case "sr": {
       const mod = await import(
-        "$lib/features/create/generate/circular/services/implementations/StrictRotatedLOOPExecutor"
+        "$lib/features/create/generate/circular/services/strict-rotated-loop-executor"
       );
       return mod.strictRotatedLOOPExecutor;
     }
     case "sm": {
       const mod = await import(
-        "$lib/features/create/generate/circular/services/implementations/StrictMirroredLOOPExecutor"
+        "$lib/features/create/generate/circular/services/strict-mirrored-loop-executor"
       );
       return mod.strictMirroredLOOPExecutor;
     }
     case "sf": {
       const mod = await import(
-        "$lib/features/create/generate/circular/services/implementations/StrictFlippedLOOPExecutor"
+        "$lib/features/create/generate/circular/services/strict-flipped-loop-executor"
       );
       return mod.strictFlippedLOOPExecutor;
     }
     case "ss": {
       const mod = await import(
-        "$lib/features/create/generate/circular/services/implementations/StrictSwappedLOOPExecutor"
+        "$lib/features/create/generate/circular/services/strict-swapped-loop-executor"
       );
       return mod.strictSwappedLOOPExecutor;
     }
     case "si": {
       const mod = await import(
-        "$lib/features/create/generate/circular/services/implementations/StrictInvertedLOOPExecutor"
+        "$lib/features/create/generate/circular/services/strict-inverted-loop-executor"
       );
       return mod.strictInvertedLOOPExecutor;
     }
     case "rw": {
       const mod = await import(
-        "$lib/features/create/generate/circular/services/implementations/RewoundLOOPExecutor"
+        "$lib/features/create/generate/circular/services/rewound-loop-executor"
       );
       return mod.rewoundLOOPExecutor;
     }

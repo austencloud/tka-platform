@@ -9,7 +9,7 @@
 <script lang="ts">
 
 import { getPropInterpolator } from "$lib/shared/animation-engine/getPropInterpolator";
-import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
+import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
 import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransformer";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -35,7 +35,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/endless-spinner-orchestrator";
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/infinite-sequence-generator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/spinner-metrics-repository";
-  import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
+  import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";

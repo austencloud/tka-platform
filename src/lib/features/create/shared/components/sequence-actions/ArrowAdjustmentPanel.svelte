@@ -17,12 +17,12 @@
 -->
 <script lang="ts">
 
-import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/getArrowAdjustmentOrchestrator";
+import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { ArrowAdjustmentOrchestrator } from "../../services/implementations/ArrowAdjustmentOrchestrator";
-import type { AdjustmentTargetKey } from "../../services/implementations/ArrowAdjustmentOrchestrator";
+  import type { ArrowAdjustmentOrchestrator } from "../../services/arrow-adjustment-orchestrator";
+import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orchestrator";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { onMount } from "svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";

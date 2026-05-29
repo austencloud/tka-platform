@@ -5,15 +5,15 @@
  * and provides the unified API expected by the rest of the application.
  */
 
-import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
-import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
+import { createSequenceState } from "./sequence-state-orchestrator.svelte";
+import type { SequenceState } from "./sequence-state-orchestrator.svelte";
 import { createCreateModulePersistenceController } from "./create-module/persistence-controller.svelte";
 import { createNavigationController } from "./create-module/navigation-controller.svelte";
 import { createOptionHistoryManager } from "./create-module/option-history-manager.svelte";
 import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
-import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
-import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
 import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -24,8 +24,8 @@ import type { GeneratorTabState } from "./generator-tab-state.svelte";
 import type { ConstructTabState } from "./construct-tab-state.svelte";
 import type { AssembleTabState } from "./assemble-tab-state.svelte";
 import type { UndoController } from "./create-module/undo-controller.svelte";
-import type { UndoMetadata } from "../services/implementations/UndoManager";
-import type { UndoOperationType } from "../services/implementations/UndoManager";
+import type { UndoMetadata } from "../services/undo-manager";
+import type { UndoOperationType } from "../services/undo-manager";
 
 /**
  * Creates the main Create Module state orchestrator

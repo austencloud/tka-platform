@@ -13,7 +13,7 @@
 -->
 <script lang="ts">
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { LOOPOption } from "../../../features/create/shared/services/implementations/LOOPValidator";
+  import type { LOOPOption } from "../../../features/create/shared/services/loop-validator";
   import type { CircularizationOption } from "$lib/shared/create/domain/spell-models";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { slide } from "svelte/transition";

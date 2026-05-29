@@ -16,7 +16,7 @@
   import LOOPPicker from "$lib/shared/components/loop-picker/LOOPPicker.svelte";
   import BridgePictographGrid from "$lib/shared/components/loop-picker/BridgePictographGrid.svelte";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { ExtensionAnalysis, CircularizationOption } from "../../services/implementations/SequenceExtender";
+  import type { ExtensionAnalysis, CircularizationOption } from "../../services/sequence-extender";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
   interface Props {

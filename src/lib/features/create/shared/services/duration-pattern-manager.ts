@@ -26,7 +26,7 @@ import type {
   DurationPattern,
   DurationPatternCreateData,
   DurationPatternEntry,
-} from "../domain/models/DurationPatternData";
+} from "../domain/models/duration-pattern-data";
 /**
  * Result of applying a duration pattern to a sequence
  */

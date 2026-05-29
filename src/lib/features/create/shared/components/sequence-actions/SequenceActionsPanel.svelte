@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
 
-import { getExtensionFlowCoordinator } from "$lib/features/create/shared/getExtensionFlowCoordinator";
+import { getExtensionFlowCoordinator } from "$lib/features/create/shared/get-extension-flow-coordinator";
 import * as firstStepAnalyzerModule from "$lib/features/create/shared/services/first-step-analyzer";
 import * as sequenceJsonExporterModule from "$lib/features/create/shared/services/sequence-json-exporter";
 import * as sequenceTransferHandlerModule from "$lib/features/create/shared/services/sequence-transfer-handler";
@@ -14,13 +14,13 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { ExtensionAnalysis, CircularizationOption } from "../../services/implementations/SequenceExtender";
+  import type { ExtensionAnalysis, CircularizationOption } from "../../services/sequence-extender";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import type { ExtensionFlowCoordinator } from "../../services/implementations/ExtensionFlowCoordinator";
+  import type { ExtensionFlowCoordinator } from "../../services/extension-flow-coordinator";
   import type { SubDrawerType } from "../../services/sub-drawer-state-persister";
   type FirstStepAnalyzer = typeof firstStepAnalyzerModule;
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import { UndoOperationType } from "../../services/implementations/UndoManager";
+  import { UndoOperationType } from "../../services/undo-manager";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";

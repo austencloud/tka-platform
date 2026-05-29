@@ -13,7 +13,7 @@
 -->
 <script lang="ts">
 
-import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
+import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -21,19 +21,19 @@ import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
+  import type { StepOperator } from "$lib/features/create/shared/services/step-operator";
   import {
     MotionColor,
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PathShapeValue } from "../../services/implementations/step-operations/PathShapeHandler";
+  import type { PathShapeValue } from "../../services/step-operations/path-shape-handler";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import {
     getSettings,
     updateSettings,
   } from "$lib/shared/application/state/app-state.svelte";
-  import { UndoOperationType } from "../../services/implementations/UndoManager";
+  import { UndoOperationType } from "../../services/undo-manager";
 
   const logger = createComponentLogger("StepEditorCoordinator");
 

@@ -27,7 +27,7 @@
     MotionType,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PathShapeValue } from "../../services/implementations/step-operations/PathShapeHandler";
+  import type { PathShapeValue } from "../../services/step-operations/path-shape-handler";
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";

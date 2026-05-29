@@ -4,7 +4,7 @@
   List of user's saved rotation direction patterns with apply and delete actions.
 -->
 <script lang="ts">
-  import type { RotationDirectionPattern } from "../../../domain/models/RotationDirectionPatternData";
+  import type { RotationDirectionPattern } from "../../../domain/models/rotation-direction-pattern-data";
 
   interface Props {
     patterns: RotationDirectionPattern[];

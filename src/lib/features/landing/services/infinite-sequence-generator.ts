@@ -25,7 +25,7 @@ import {
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { VERTICAL_MIRROR_POSITION_MAP } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
 import type { GenerationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
-import type { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
+import type { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 import type { GeneratedSequenceInfo, GenerationSettings } from "../domain/models/spinner-models";
 import type { EndState } from "$lib/shared/landing/domain/types";
 import type { SpinnerMetricsRepository } from "./spinner-metrics-repository";

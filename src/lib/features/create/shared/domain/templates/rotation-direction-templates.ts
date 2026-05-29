@@ -16,7 +16,7 @@ import type {
   RotationDirectionPatternEntry,
   RotationDirectionValue,
   RotationDirectionPattern,
-} from "../models/RotationDirectionPatternData";
+} from "../models/rotation-direction-pattern-data";
 
 /**
  * Template categories

@@ -21,7 +21,7 @@
   } from "$lib/shared/application/state/app-state.svelte";
   import PropControlPair from "./PropControlPair.svelte";
   import PropTurnsControl from "./PropTurnsControl.svelte";
-  import type { PathShapeValue } from "../../services/implementations/step-operations/PathShapeHandler";
+  import type { PathShapeValue } from "../../services/step-operations/path-shape-handler";
 
   interface Props {
     hasSelection: boolean;

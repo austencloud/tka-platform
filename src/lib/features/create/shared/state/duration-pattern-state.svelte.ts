@@ -5,7 +5,7 @@
  * Used by the Duration Pattern Drawer UI to display available patterns.
  */
 
-import type { DurationPattern } from "../domain/models/DurationPatternData";
+import type { DurationPattern } from "../domain/models/duration-pattern-data";
 import {
   loadPatterns as dpLoadPatterns,
   extractPattern as dpExtractPattern,

@@ -10,12 +10,12 @@
  */
 
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-import type { SequenceState } from "../SequenceStateOrchestrator.svelte";
-import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { SequenceState } from "../sequence-state-orchestrator.svelte";
+import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
 import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import type { OptionHistoryManager } from "./option-history-manager.svelte";
 
-import { getDeepLinkSequenceHandler } from "$lib/features/create/shared/getDeepLinkSequenceHandler";
+import { getDeepLinkSequenceHandler } from "$lib/features/create/shared/get-deep-link-sequence-handler";
 
 type ConstructTabState =
   | {

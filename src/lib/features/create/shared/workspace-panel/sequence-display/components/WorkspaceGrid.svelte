@@ -16,7 +16,7 @@
     MIN_DURATION,
     MAX_DURATION,
     DURATION_STEP_FINE,
-  } from "../../../services/implementations/step-operations/DurationHandler";
+  } from "../../../services/step-operations/duration-handler";
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
   import DurationResizeHandle from "./DurationResizeHandle.svelte";

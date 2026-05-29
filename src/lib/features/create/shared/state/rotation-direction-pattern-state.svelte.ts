@@ -5,7 +5,7 @@
  * Used by the Rotation Direction Applicator UI to display available patterns.
  */
 
-import type { RotationDirectionPattern } from "../domain/models/RotationDirectionPatternData";
+import type { RotationDirectionPattern } from "../domain/models/rotation-direction-pattern-data";
 import {
   loadPatterns as rdLoadPatterns,
   extractPattern as rdExtractPattern,

@@ -28,7 +28,7 @@ import {
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 
-import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/getGenerationOrchestrator";
+import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
 
 import type {
   RetroPictographData,

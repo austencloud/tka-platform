@@ -11,7 +11,7 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/Sta
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { SimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
 import type { createCreateModuleState } from "../state/create-module-state.svelte";
-import type { SequenceState } from "../state/SequenceStateOrchestrator.svelte";
+import type { SequenceState } from "../state/sequence-state-orchestrator.svelte";
 
 /**
  * Create Module State type (actual state object from factory)

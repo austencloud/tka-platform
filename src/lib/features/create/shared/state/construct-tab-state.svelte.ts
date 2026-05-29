@@ -18,19 +18,19 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 
 const debug = createComponentLogger("ConstructTabState");
 import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
-import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
-import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/create-module-orchestrator";
+import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
 import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
-import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
 import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
-import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
-import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
-import type { UndoMetadata } from "../services/implementations/UndoManager";
-import { UndoOperationType } from "../services/implementations/UndoManager";
+import { createSequenceState } from "./sequence-state-orchestrator.svelte";
+import type { SequenceState } from "./sequence-state-orchestrator.svelte";
+import type { UndoMetadata } from "../services/undo-manager";
+import { UndoOperationType } from "../services/undo-manager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-import type { IFilterPersister } from "../../construct/option-picker/services/FilterPersister";
+import type { IFilterPersister } from "../../construct/option-picker/services/filter-persister";
 
 /**
  * Minimal interface for createModuleState dependency
@@ -40,9 +40,9 @@ interface CreateModuleStateMinimal {
   readonly activeSection: BuildModeId | null;
 }
 import { createUndoController } from "./create-module/undo-controller.svelte";
-import { undoManager } from "../services/implementations/UndoManager";
+import { undoManager } from "../services/undo-manager";
 
-import { getFilterPersister } from "$lib/features/create/construct/option-picker/getFilterPersister";
+import { getFilterPersister } from "$lib/features/create/construct/option-picker/get-filter-persister";
 
 /**
  * Creates construct tab state for construct-specific concerns

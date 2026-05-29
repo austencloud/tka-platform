@@ -19,7 +19,7 @@
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { onMount, onDestroy } from "svelte";
-  import { formatDurationCompact } from "../../domain/models/DurationPatternData";
+  import { formatDurationCompact } from "../../domain/models/duration-pattern-data";
 
   interface Props {
     /** Sequence to preview with duration pattern applied */

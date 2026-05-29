@@ -8,11 +8,11 @@ import type { ViewportManager } from '$lib/shared/device/services/implementation
 
 import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
 import type { StartPositionManager } from "$lib/shared/create/services/StartPositionManager";
-import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/implementations/CreateModuleOrchestrator";
-import type { SequencePersister } from "$lib/features/create/shared/services/implementations/SequencePersister";
+import type { CreateModuleOrchestrator } from "$lib/features/create/shared/services/create-module-orchestrator";
+import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
 import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
-import type { SequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
 import type { createCreateModuleState } from "../state/create-module-state.svelte";
 import type { createConstructTabState } from "../state/construct-tab-state.svelte";

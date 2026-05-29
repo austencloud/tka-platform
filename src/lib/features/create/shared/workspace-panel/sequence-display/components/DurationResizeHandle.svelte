@@ -6,7 +6,7 @@
     MAX_DURATION,
     DURATION_STEP_FINE,
     DURATION_STEP_COARSE,
-  } from "../../../services/implementations/step-operations/DurationHandler";
+  } from "../../../services/step-operations/duration-handler";
 
   interface Props {
     currentDuration: number;

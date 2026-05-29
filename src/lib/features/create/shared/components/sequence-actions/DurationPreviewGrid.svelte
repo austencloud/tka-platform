@@ -5,7 +5,7 @@
   Used in the save mode to show the current sequence's duration pattern.
 -->
 <script lang="ts">
-  import { formatDurationCompact } from "../../domain/models/DurationPatternData";
+  import { formatDurationCompact } from "../../domain/models/duration-pattern-data";
 
   interface Props {
     /** Array of duration values (one per step) */

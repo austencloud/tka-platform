@@ -8,7 +8,7 @@
   import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
   import ArrowLayerModal from "../../../components/arrow-adjustment/ArrowLayerModal.svelte";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
-  import { createStepCellAnimationManager } from "../services/implementations/StepCellAnimationManager";
+  import { createStepCellAnimationManager } from "../services/step-cell-animation-manager";
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
 
 

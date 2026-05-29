@@ -12,10 +12,10 @@ import type { ConstructTabState } from "../state/construct-tab-state.svelte";
 import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
 import type { NavigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { ResponsiveLayoutManager } from "$lib/shared/create/services/ResponsiveLayoutManager";
-import type { NavigationSyncer } from "./implementations/NavigationSyncer";
-import type { DeepLinkSequenceHandler } from "./implementations/DeepLinkSequenceHandler";
-import type { StepOperator } from "./implementations/StepOperator";
-import type { Autosaver } from "./Autosaver";
+import type { NavigationSyncer } from "./navigation-syncer";
+import type { DeepLinkSequenceHandler } from "./deep-link-sequence-handler";
+import type { StepOperator } from "./step-operator";
+import type { Autosaver } from "./autosaver";
 import type { LetterSource } from "$lib/shared/create/domain/spell-models";
 
 /**
@@ -53,16 +53,16 @@ export interface CreateModuleEffectCoordinator {
 import {
   createAutoEditPanelEffect,
   createAutoStepEditorEffect,
-} from "../state/managers/AutoEditPanelManager.svelte";
-import { createCurrentWordDisplayEffect } from "../state/managers/CurrentWordDisplayManager.svelte";
-import { createLayoutEffects } from "../state/managers/LayoutManager.svelte";
-import { createNavigationSyncEffects } from "../state/managers/NavigationSyncManager.svelte";
-import { createPWAEngagementEffect } from "../state/managers/PWAEngagementManager.svelte";
-import { createGlobalStateSyncEffects } from "../state/managers/GlobalStateSyncManager.svelte";
-import { createCreationFlowEffects } from "../state/managers/CreationFlowManager.svelte";
-import { createPendingEditEffect } from "../state/managers/PendingEditManager.svelte";
-import { createPropTypeSyncEffect } from "../state/managers/PropTypeSyncManager.svelte";
-import { createAutosaveEffect } from "../state/managers/AutosaveManager.svelte";
+} from "../state/managers/auto-edit-panel-manager.svelte";
+import { createCurrentWordDisplayEffect } from "../state/managers/current-word-display-manager.svelte";
+import { createLayoutEffects } from "../state/managers/layout-manager.svelte";
+import { createNavigationSyncEffects } from "../state/managers/navigation-sync-manager.svelte";
+import { createPWAEngagementEffect } from "../state/managers/pwa-engagement-manager.svelte";
+import { createGlobalStateSyncEffects } from "../state/managers/global-state-sync-manager.svelte";
+import { createCreationFlowEffects } from "../state/managers/creation-flow-manager.svelte";
+import { createPendingEditEffect } from "../state/managers/pending-edit-manager.svelte";
+import { createPropTypeSyncEffect } from "../state/managers/prop-type-sync-manager.svelte";
+import { createAutosaveEffect } from "../state/managers/autosave-manager.svelte";
 
 export function setupEffects(config: CreateModuleEffectConfig): () => void {
   const {

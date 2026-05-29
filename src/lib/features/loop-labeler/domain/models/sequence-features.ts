@@ -9,7 +9,7 @@ import type {
   GridMode,
   GridPositionGroup,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { CircularityAnalysis, StrictLoopType } from "../../../create/shared/services/implementations/SequenceAnalyzer";
+import type { CircularityAnalysis, StrictLoopType } from "../../../create/shared/services/sequence-analyzer";
 
 /**
  * Position group dominance analysis

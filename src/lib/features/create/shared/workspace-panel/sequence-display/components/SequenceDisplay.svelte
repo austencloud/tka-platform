@@ -2,7 +2,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
-import type { SequenceState } from "../../../state/SequenceStateOrchestrator.svelte";
+import type { SequenceState } from "../../../state/sequence-state-orchestrator.svelte";
   import { getCreateModuleContext } from "../../../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
@@ -12,15 +12,15 @@ import type { SequenceState } from "../../../state/SequenceStateOrchestrator.sve
   import LevelInfoModal from "./LevelInfoModal.svelte";
   import LOOPInfoModal from "./LOOPInfoModal.svelte";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-  import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { formatLOOPTypeForDisplay } from "$lib/shared/create/services/loop-type-utils";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { analyzeDifficulty } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
-  import { updateStepDuration } from "../../../services/implementations/step-operations/DurationHandler";
-  import { UndoOperationType } from "../../../services/implementations/UndoManager";
+  import { updateStepDuration } from "../../../services/step-operations/duration-handler";
+  import { UndoOperationType } from "../../../services/undo-manager";
 
   let {
     sequenceState,

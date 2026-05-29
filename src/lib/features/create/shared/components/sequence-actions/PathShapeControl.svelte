@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PathShapeValue } from "../../services/implementations/step-operations/PathShapeHandler";
+  import type { PathShapeValue } from "../../services/step-operations/path-shape-handler";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   interface Props {

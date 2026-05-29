@@ -8,7 +8,7 @@
    */
   import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-  import { formatBasicInfo } from "./formatters";
+  import { formatBasicInfo, formatRotationOverrideKey } from "./formatters";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   interface LookupKeys {
@@ -75,8 +75,8 @@
     {#if lookupKeys}
       <span class="lk">ori_key <b>{lookupKeys.oriKey}</b></span>
       <span class="lk">turns <b>{lookupKeys.turnsTuple}</b></span>
-      {#if lookupKeys.blueRotationOverrideKey}<span class="lk">blue_rot <b>{lookupKeys.blueRotationOverrideKey}</b></span>{/if}
-      {#if lookupKeys.redRotationOverrideKey}<span class="lk">red_rot <b>{lookupKeys.redRotationOverrideKey}</b></span>{/if}
+      {#if lookupKeys.blueRotationOverrideKey}<span class="lk" title="blue rotation override key: {lookupKeys.blueRotationOverrideKey}">blue rot <b>{formatRotationOverrideKey(lookupKeys.blueRotationOverrideKey)}</b></span>{/if}
+      {#if lookupKeys.redRotationOverrideKey}<span class="lk" title="red rotation override key: {lookupKeys.redRotationOverrideKey}">red rot <b>{formatRotationOverrideKey(lookupKeys.redRotationOverrideKey)}</b></span>{/if}
     {/if}
     <button class="copy-btn" onclick={() => onCopy(formatBasicInfo(displayData, blueMotion, redMotion), "basic")} title="Copy Basic Info" aria-label="Copy Basic Info">
       <i class="fas fa-copy" aria-hidden="true"></i>{#if copiedSection === "basic"}<span class="copied">Copied!</span>{/if}

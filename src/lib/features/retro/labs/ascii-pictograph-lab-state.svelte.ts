@@ -23,8 +23,8 @@ import type {
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 
-import { getRandomSequenceGenerator } from "$lib/features/create/spell/getRandomSequenceGenerator";
-import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/getVariationExplorationOrchestrator";
+import { getRandomSequenceGenerator } from "$lib/features/create/spell/get-random-sequence-generator";
+import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/get-variation-exploration-orchestrator";
 
 /** Which rendering layers are active */
 export interface RenderLayers {

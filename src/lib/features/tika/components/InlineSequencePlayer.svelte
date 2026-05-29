@@ -8,14 +8,14 @@
 <script lang="ts">
 
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
-import { getWordSequenceGenerator } from "$lib/features/create/spell/getWordSequenceGenerator";
+import { getWordSequenceGenerator } from "$lib/features/create/spell/get-word-sequence-generator";
 import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequenceMotionLoader";
   import { onMount, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
   import type { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
-  import type { WordSequenceGenerator } from "$lib/features/create/spell/services/implementations/WordSequenceGenerator";
+  import type { WordSequenceGenerator } from "$lib/features/create/spell/services/word-sequence-generator";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { InlineSequencePlayer } from "../types";
 

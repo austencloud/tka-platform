@@ -16,7 +16,7 @@ import * as durationPatternManagerModule from "$lib/features/create/shared/servi
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { DurationPattern } from "../../domain/models/DurationPatternData";
+  import type { DurationPattern } from "../../domain/models/duration-pattern-data";
   import {
     getTemplatesForStepCount,
     getCategoryInfo,

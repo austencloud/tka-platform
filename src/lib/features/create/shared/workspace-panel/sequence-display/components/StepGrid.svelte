@@ -24,7 +24,7 @@
     calculateTimelineUnitSize,
     calculateTimelinePadding,
   } from "$lib/shared/create/utils/grid-calculations";
-  import { formatDurationCompact } from "../../../domain/models/DurationPatternData";
+  import { formatDurationCompact } from "../../../domain/models/duration-pattern-data";
   import WorkspaceGrid from "./WorkspaceGrid.svelte";
 
   // Services

@@ -1,7 +1,7 @@
 <script lang="ts">
 
-import { getCreateModuleInitializer } from "$lib/features/create/shared/getCreateModuleInitializer";
-import { getExtensionFlowCoordinator } from "$lib/features/create/shared/getExtensionFlowCoordinator";
+import { getCreateModuleInitializer } from "$lib/features/create/shared/get-create-module-initializer";
+import { getExtensionFlowCoordinator } from "$lib/features/create/shared/get-extension-flow-coordinator";
 import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
 
   /**
@@ -49,10 +49,10 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import ErrorBanner from "./ErrorBanner.svelte";
   import AltHotkeyOverlay from "../../components/AltHotkeyOverlay.svelte";
   import type { CreateModuleOrchestrators } from "../types/create-module-services";
-  import type { CreateModuleInitializer } from "../services/implementations/CreateModuleInitializer";
-  import type { CreateModuleHandlers } from "../services/implementations/CreateModuleHandlers";
+  import type { CreateModuleInitializer } from "../services/create-module-initializer";
+  import type { CreateModuleHandlers } from "../services/create-module-handlers";
   import type { CreateModuleEffectCoordinator } from "../services/create-module-effect-coordinator";
-  import type { PanelPersister } from "../services/implementations/PanelPersister.svelte";
+  import type { PanelPersister } from "../services/panel-persister.svelte";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { createConstructTabState as ConstructTabStateType } from "../state/construct-tab-state.svelte";
   import { createPanelCoordinationState } from "../state/panel-coordination-state.svelte";
@@ -71,8 +71,8 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import OrientationPickerDrawer from "$lib/features/create/construct/start-position-picker/components/OrientationPickerDrawer.svelte";
   import SaveToLibraryPanel from "./SaveToLibraryPanel.svelte";
   import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
-  import { SessionManager } from "../services/SessionManager.svelte";
-  import { Autosaver } from "../services/Autosaver";
+  import { SessionManager } from "../services/session-manager.svelte";
+  import { Autosaver } from "../services/autosaver";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
@@ -80,13 +80,13 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/AuthNudgeTrigger";
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
-  import { createPanelHeightTracker } from "../state/managers/PanelHeightTracker.svelte";
+  import { createPanelHeightTracker } from "../state/managers/panel-height-tracker.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { formatLOOPTypeForDisplay } from "$lib/shared/create/services/loop-type-utils";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { UndoOperationType } from "../services/implementations/UndoManager";
+  import { UndoOperationType } from "../services/undo-manager";
 
   const logger = createComponentLogger("CreateModule");
 

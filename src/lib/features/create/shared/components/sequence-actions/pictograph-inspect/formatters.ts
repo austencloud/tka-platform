@@ -19,6 +19,17 @@ export function formatMotionTypeLabel(motionType: string | undefined): string {
   return motionType.charAt(0).toUpperCase() + motionType.slice(1);
 }
 
+/**
+ * Rotation-override lookup keys all share the constant `_rot_angle_override`
+ * suffix, which duplicates the chip's own label. Strip it and the underscores
+ * so only the distinguishing part shows (e.g. "dash", "static from layer1",
+ * or the color for special letters). The full raw key stays available on hover.
+ */
+export function formatRotationOverrideKey(key: string | null): string {
+  if (!key) return "";
+  return key.replace(/_rot_angle_override$/, "").replace(/_/g, " ") || key;
+}
+
 /** "noRotation" -> "No Rotation", "cw" -> "CW", "ccw" -> "CCW". */
 export function formatRotationLabel(
   rotationDirection: string | undefined

@@ -6,10 +6,10 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceState } from "../SequenceStateOrchestrator.svelte";
-import type { UndoManager } from "../../services/implementations/UndoManager";
-import type { UndoMetadata } from "../../services/implementations/UndoManager";
-import { UndoOperationType } from "../../services/implementations/UndoManager";
+import type { SequenceState } from "../sequence-state-orchestrator.svelte";
+import type { UndoManager } from "../../services/undo-manager";
+import type { UndoMetadata } from "../../services/undo-manager";
+import { UndoOperationType } from "../../services/undo-manager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { clearPropPositionCache } from "$lib/shared/pictograph/prop/prop-position-cache";

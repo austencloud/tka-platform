@@ -1,0 +1,730 @@
+/**
+ * Sequence State Orchestrator
+ *
+ * Composes all sub-states and operations into a unified sequence state:
+ * - Core state (sequences, loading, errors)
+ * - Selection state (beat selection, start position)
+ * - Arrow state (arrow positioning)
+ * - Animation state (removal animations)
+ * - Persistence coordination
+ * - Beat operations
+ * - Transform operations
+ * - Service integration
+ *
+ * RESPONSIBILITY: Composition and delegation, minimal business logic
+ *
+ * REPLACES: The 890-line god object sequence-state.svelte.ts
+ */
+
+import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+import type { ArrowPosition } from "$lib/shared/pictograph/arrow/orchestration/domain/arrow-models";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
+import type { TargetHand } from "./panel-coordination-state.svelte";
+import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
+import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
+import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
+import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
+import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
+import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
+import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
+import { createSequenceAnimationState } from "./animation/sequence-animation-state.svelte";
+import { createSequenceArrowState } from "./arrow/sequence-arrow-state.svelte";
+import { createSequenceCoreState } from "./core/sequence-core-state.svelte";
+import { createSequenceBeatOperations } from "./operations/sequence-step-operations";
+import { createSequenceTransformOperations } from "./operations/sequence-transform-operations";
+import { createSequencePersistenceCoordinator } from "./persistence/sequence-persistence-coordinator.svelte";
+import { createSequenceSelectionState } from "./selection/sequence-selection-state.svelte";
+import { isStep } from "$lib/features/create/shared/domain/type-guards/pictograph-type-guards";
+
+/**
+ * Clean service configuration - no more type gymnastics!
+ */
+export interface SequenceStateServices {
+  sequenceService?: SequenceRepository;
+  SequencePersister?: SequencePersister;
+  sequenceStatisticsService?: SequenceStatsCalculator;
+  SequenceTransformer?: SequenceTransformer;
+  sequenceValidationService?: SequenceValidator;
+  ReversalDetector?: ReversalDetector;
+  /**
+   * IMPORTANT: Tab ID for persistence isolation.
+   * Each tab (construct, assembler, generator) should have its own persisted data.
+   * If not provided, persistence will use navigationState.currentSection which can cause
+   * cross-tab data pollution.
+   */
+  tabId?: BuildModeId;
+}
+
+export function createSequenceState(services: SequenceStateServices) {
+  const {
+    sequenceService,
+    SequencePersister,
+    sequenceStatisticsService,
+    SequenceTransformer,
+    sequenceValidationService,
+    tabId, // Tab ID for persistence isolation
+    ReversalDetector,
+  } = services;
+
+  // Create sub-states
+  const coreState = createSequenceCoreState();
+  const selectionState = createSequenceSelectionState();
+  const arrowState = createSequenceArrowState();
+  const animationState = createSequenceAnimationState();
+
+  // Create persistence coordinator with tab ID for isolated persistence
+  const persistenceCoordinator = createSequencePersistenceCoordinator(
+    SequencePersister ?? null,
+    ReversalDetector
+      ? (seq: SequenceData) => ReversalDetector.processReversals(seq)
+      : undefined,
+    tabId // Pass tab ID for persistence isolation
+  );
+
+  // 🚀 PERFORMANCE: Debounced auto-save to prevent excessive persistence operations
+  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  const SAVE_DEBOUNCE_MS = 500; // Wait 500ms after last change before saving
+
+  // Create operation facades
+  const stepOperations = createSequenceBeatOperations({
+    coreState,
+    selectionState,
+    animationState,
+    ReversalDetector,
+    onSave: saveSequenceDataOnly,
+  });
+
+  const transformOperations = createSequenceTransformOperations({
+    coreState,
+    selectionState,
+    sequenceStatisticsService: sequenceStatisticsService ?? null,
+    SequenceTransformer: SequenceTransformer ?? null,
+    sequenceValidationService: sequenceValidationService ?? null,
+    onSave: saveSequenceDataOnly,
+  });
+
+  // ============================================================================
+  // PERSISTENCE INTEGRATION
+  // ============================================================================
+
+  async function initializeWithPersistence(): Promise<void> {
+    // Check if there's a pending deep link OR pending edit - if so, skip persistence restoration
+    // This prevents overwriting deep link/pending edit sequences with old saved state
+    let hasDeepLink = false;
+    let hasPendingEdit = false;
+    try {
+      hasDeepLink = deepLinker.hasDataForModule("create") ?? false;
+
+      // Also check for pending edit from Browse gallery (stored in localStorage)
+      hasPendingEdit =
+        localStorage.getItem("tka-pending-edit-sequence") !== null;
+    } catch {
+      // Service not available - assume no deep link
+      void 0; // Suppress unused catch binding warning
+    }
+
+    if (hasDeepLink || hasPendingEdit) {
+      // Still initialize the coordinator but don't load saved state
+      await persistenceCoordinator.initialize();
+      return;
+    }
+
+    const savedState = await persistenceCoordinator.initialize();
+
+    if (savedState) {
+      coreState.setCurrentSequence(savedState.currentSequence);
+      selectionState.setStartPosition(savedState.selectedStartPosition);
+    }
+  }
+
+  async function saveCurrentState(
+    activeBuildSection: BuildModeId
+  ): Promise<void> {
+    await persistenceCoordinator.saveState({
+      currentSequence: coreState.currentSequence,
+      selectedStartPosition: selectionState.selectedStartPosition,
+      hasStartPosition: selectionState.hasStartPosition,
+      activeBuildSection,
+    });
+  }
+
+  async function saveSequenceDataOnly(): Promise<void> {
+    await persistenceCoordinator.saveSequenceOnly(
+      coreState.currentSequence,
+      selectionState.selectedStartPosition,
+      selectionState.hasStartPosition
+    );
+  }
+
+  // ============================================================================
+  // SEQUENCE SERVICE INTEGRATION
+  // ============================================================================
+
+  async function loadSequences(): Promise<void> {
+    if (!sequenceService) return;
+
+    coreState.setLoading(true);
+    coreState.clearError();
+
+    try {
+      const sequences = await sequenceService.getAllSequences();
+      coreState.setSequences(sequences);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Unknown error loading sequences";
+      coreState.setError(errorMessage);
+      console.error("Failed to load sequences:", error);
+    } finally {
+      coreState.setLoading(false);
+    }
+  }
+
+  async function createSequence(request: {
+    name: string;
+    length: number;
+  }): Promise<SequenceData | null> {
+    if (!sequenceService) return null;
+
+    coreState.setLoading(true);
+    coreState.clearError();
+
+    try {
+      const sequence = await sequenceService.createSequence({
+        ...request,
+        word: request.name,
+      });
+
+      coreState.addSequence(sequence);
+      coreState.setCurrentSequence(sequence);
+
+      // Log sequence creation for analytics
+      try {
+        void logSequenceAction("create", sequence.id, {
+          sequenceWord: sequence.word,
+          sequenceLength: sequence.steps.length,
+        });
+      } catch {
+        // Silently fail - activity logging is non-critical
+      }
+
+      return sequence;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Unknown error creating sequence";
+      coreState.setError(errorMessage);
+      console.error("Failed to create sequence:", error);
+      return null;
+    } finally {
+      coreState.setLoading(false);
+    }
+  }
+
+  async function updateSequenceBeats(
+    sequenceId: string,
+    stepIndex: number,
+    stepData: StepData
+  ): Promise<void> {
+    if (!sequenceService) return;
+
+    try {
+      await sequenceService.updateStep(sequenceId, stepIndex, stepData);
+      // Update local state
+      if (
+        coreState.currentSequence &&
+        stepIndex >= 0 &&
+        stepIndex < coreState.currentSequence.steps.length
+      ) {
+        const newSteps = [...coreState.currentSequence.steps];
+        newSteps[stepIndex] = stepData;
+        coreState.setCurrentSequence({
+          ...coreState.currentSequence,
+          steps: newSteps,
+        });
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error updating beat";
+      coreState.setError(errorMessage);
+      console.error("Failed to update beat:", error);
+    }
+  }
+
+  // ============================================================================
+  // ENHANCED SEQUENCE OPERATIONS
+  // ============================================================================
+
+  function setCurrentSequence(sequence: SequenceData | null): void {
+    // Normalize step numbers for imported sequences (e.g., from Browse gallery).
+    // Steps loaded from Firestore may lack stepNumber, causing step selection to fail
+    // because selectStep() validates stepNumber against the sequence length.
+    if (sequence?.steps?.length) {
+      const needsNormalization = sequence.steps.some(
+        (step, index) => step.stepNumber !== index + 1
+      );
+      if (needsNormalization) {
+        sequence = {
+          ...sequence,
+          steps: sequence.steps.map((step, index) => ({
+            ...step,
+            stepNumber: index + 1,
+          })),
+        };
+      }
+    }
+
+    // Recompute reversal indicators so dashes (noRotation) don't break the chain.
+    // The detector looks past noRotation beats to find the last real rotation direction
+    // and compares it with the current beat's direction.
+    if (sequence?.steps?.length && ReversalDetector) {
+      sequence = ReversalDetector.processReversals(sequence);
+    }
+
+    // Only clear selection when loading a NEW sequence, not when updating the current one
+    // This preserves beat selection during beat edits (turns, orientation changes, etc.)
+    const previousSequenceId = coreState.currentSequence?.id;
+    const newSequenceId = sequence?.id;
+    const isLoadingNewSequence = previousSequenceId !== newSequenceId;
+
+    coreState.setCurrentSequence(sequence);
+
+    if (isLoadingNewSequence) {
+      selectionState.clearSelection();
+    }
+
+    // Update start position from sequence
+    // Check both startingPosition (full beat format) and startPosition (raw position data)
+    // Sequences from Browse gallery may only have startPosition
+    let startPosBeat: StartPositionData | null =
+      sequence?.startingPosition || sequence?.startPosition || null;
+
+    // If no explicit start position but sequence has steps, derive from the first beat
+    // and stamp it back onto the sequence so all downstream code (transforms, saves)
+    // sees a real startPosition instead of undefined.
+    if (!startPosBeat && sequence?.steps?.length) {
+      try {
+        const derived = startPositionDeriver.getOrDeriveStartPosition(sequence);
+        // getOrDeriveStartPosition returns StartPositionData when deriving from steps
+        // The StepData return type is for legacy compatibility only
+        if (derived && "isStartPosition" in derived) {
+          startPosBeat = derived as StartPositionData;
+
+          // Write it back onto the sequence so transforms (swap, mirror, etc.)
+          // can operate on it directly instead of seeing undefined
+          sequence = {
+            ...sequence,
+            startPosition: startPosBeat,
+            startingPosition: startPosBeat,
+          };
+          coreState.setCurrentSequence(sequence);
+        }
+      } catch (error) {
+        console.warn("Failed to derive start position from first beat:", error);
+      }
+    }
+
+    if (startPosBeat) {
+      selectionState.setStartPosition(startPosBeat);
+    } else {
+      selectionState.setStartPosition(null);
+    }
+
+    // 🚀 PERFORMANCE: Debounced auto-save to prevent blocking on every beat addition
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    saveTimeout = setTimeout(() => {
+      saveSequenceDataOnly().catch((error) => {
+        console.error("Failed to auto-save sequence state:", error);
+      });
+    }, SAVE_DEBOUNCE_MS);
+  }
+
+  function setSelectedStartPosition(
+    startPosition: StartPositionData | null
+  ): void {
+    selectionState.setStartPosition(startPosition);
+
+    // 🚀 PERFORMANCE: Debounced auto-save
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    saveTimeout = setTimeout(() => {
+      saveSequenceDataOnly().catch((error) => {
+        console.error("Failed to auto-save start position state:", error);
+      });
+    }, SAVE_DEBOUNCE_MS);
+  }
+
+  async function clearSequenceCompletely(): Promise<void> {
+    try {
+      animationState.startClearing();
+
+      // Reduced delay to match the beat-grid CSS transition (300ms)
+      // This allows the clearing animation and layout transition to happen simultaneously
+      // The CSS transition on .step-grid.clearing is 300ms, so we wait for it to complete
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // 🐛 FIX: Cancel any pending auto-save AND prevent new one from being set
+      // This prevents a race condition where auto-save fires after clearState(),
+      // re-populating the storage with stale data
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+      }
+
+      // Use coreState directly to avoid triggering auto-save in setCurrentSequence()
+      coreState.setCurrentSequence(null);
+      selectionState.reset();
+      coreState.clearError();
+
+      await persistenceCoordinator.clearState();
+
+      animationState.endClearing();
+    } catch (error) {
+      console.error("❌ SequenceState: Failed to clear sequence:", error);
+      coreState.setError(
+        error instanceof Error ? error.message : "Failed to clear sequence"
+      );
+      animationState.endClearing();
+    }
+  }
+
+  function getCurrentSequenceData(): StepData[] {
+    const sequence = coreState.currentSequence;
+    if (sequence) {
+      const steps = sequence.steps || [];
+      const startPosition =
+        sequence.startingPosition || sequence.startPosition;
+
+      if (steps.length > 0) {
+        return steps.map((beat: StepData) => beat).filter(Boolean);
+      } else if (startPosition) {
+        // MIGRATION: Only include start position if it's actually StepData (legacy data)
+        // Modern StartPositionData should not be included in steps array
+        if (isStep(startPosition) && !startPosition.isBlank) {
+          return [startPosition];
+        }
+        // If it's a StartPositionData, don't include it in the steps array
+        // (Start positions are not steps)
+         
+        return [];
+      }
+    }
+
+    // FIXED: Don't return selectedStartPosition here!
+    // The selectedStartPosition is tracked separately in construct-tab-state.
+    // Returning it here causes the option picker to think there's a sequence when there isn't.
+    // This was causing the "no options available" bug.
+    return [];
+  }
+
+  function getSelectedStepData(): StepData | null {
+    // If start position is selected, return it as StepData
+    if (
+      selectionState.isStartPositionSelected &&
+      selectionState.selectedStartPosition
+    ) {
+      return {
+        ...selectionState.selectedStartPosition,
+        stepNumber: 0,
+        duration: 1,
+        blueReversal: false,
+        redReversal: false,
+        isBlank: false,
+      };
+    }
+
+    // Otherwise return selected beat
+    if (
+      selectionState.selectedStepIndex === null ||
+      !coreState.currentSequence
+    ) {
+      return null;
+    }
+
+    return (
+      coreState.currentSequence.steps[selectionState.selectedStepIndex] ?? null
+    );
+  }
+
+  function selectStep(stepNumber: number | null): void {
+    if (stepNumber === null) {
+      selectionState.clearSelection();
+      return;
+    }
+
+    // Validate stepNumber is within valid range
+    // stepNumber 0 = start position (always valid if we have a start position)
+    // stepNumber 1 to N = steps in the sequence
+    const currentSequence = coreState.currentSequence;
+
+    if (stepNumber === 0) {
+      // Start position - always allow selection
+      selectionState.selectStep(stepNumber);
+    } else if (
+      currentSequence &&
+      stepNumber >= 1 &&
+      stepNumber <= currentSequence.steps.length
+    ) {
+      // Regular beat - validate it exists
+      selectionState.selectStep(stepNumber);
+    } else {
+      selectionState.clearSelection();
+    }
+  }
+
+  function resetSequenceState(): void {
+    coreState.reset();
+    selectionState.reset();
+    arrowState.reset();
+    animationState.reset();
+  }
+
+  // ============================================================================
+  // PUBLIC API - Unified interface matching original
+  // ============================================================================
+
+  return {
+    // State getters - delegate to sub-states
+    get currentSequence() {
+      return coreState.currentSequence;
+    },
+    get sequences() {
+      return coreState.sequences;
+    },
+    get isLoading() {
+      return coreState.isLoading;
+    },
+    get error() {
+      return coreState.error;
+    },
+    get selectedStepIndex() {
+      return selectionState.selectedStepIndex;
+    },
+    get selectedStepNumber() {
+      return selectionState.selectedStepNumber;
+    },
+    get selectedSequenceId() {
+      return coreState.selectedSequenceId;
+    },
+    get showStepNumbers() {
+      return true;
+    },
+    get gridMode() {
+      return coreState.gridMode;
+    },
+    /** Direct read bypassing the spread-derived getter */
+    get orientationCycleCount(): 1 | 2 | 4 {
+      return coreState.orientationCycleCount;
+    },
+    get arrowPositions() {
+      return arrowState.arrowPositions;
+    },
+    get arrowPositioningInProgress() {
+      return arrowState.arrowPositioningInProgress;
+    },
+    get arrowPositioningError() {
+      return arrowState.arrowPositioningError;
+    },
+    get selectedStartPosition() {
+      return selectionState.selectedStartPosition;
+    },
+    get hasStartPosition() {
+      return selectionState.hasStartPosition;
+    },
+    get isInitialized() {
+      return persistenceCoordinator.isInitialized;
+    },
+    get selectedStepData() {
+      return getSelectedStepData();
+    },
+
+    // Computed getters
+    getCurrentSequence: () => coreState.currentSequence,
+    getCurrentSequenceData,
+    getSequences: () => coreState.sequences,
+    getIsLoading: () => coreState.isLoading,
+    getError: () => coreState.error,
+    getSelectedStepIndex: () => selectionState.selectedStepIndex,
+    getSelectedStepNumber: () => selectionState.selectedStepNumber,
+    getSelectedSequenceId: () => coreState.selectedSequenceId,
+    getRemovingStepIndex: () => animationState.removingStepIndex,
+    getRemovingBeatIndices: () => animationState.removingStepIndices,
+    getIsClearing: () => animationState.isClearing,
+    getShowStepNumbers: () => true,
+    getGridMode: () => coreState.gridMode,
+    getArrowPositions: () => arrowState.arrowPositions,
+    getArrowPositioningInProgress: () => arrowState.arrowPositioningInProgress,
+    getArrowPositioningError: () => arrowState.arrowPositioningError,
+    getCurrentBeats: () =>
+      coreState.currentSequence ? [...coreState.currentSequence.steps] : [],
+    getSelectedStepData,
+    getSelectedBeat: () =>
+      stepOperations.getStep(selectionState.selectedStepIndex ?? 0),
+    getHasCurrentSequence: () => coreState.hasSequence,
+    getSequenceCount: () => coreState.sequenceCount,
+    getHasUnsavedChanges: () =>
+      coreState.currentSequence !== null && coreState.sequences.length > 0,
+    getHasArrowPositions: () => arrowState.hasArrowPositions,
+    getArrowPositioningComplete: () => arrowState.arrowPositioningComplete,
+    hasSequence: () => coreState.hasSequence,
+    stepCount: () => stepOperations.getStepCount(),
+    sequenceStatistics: () => transformOperations.getSequenceStatistics(),
+    sequenceWord: () => transformOperations.generateSequenceWord(),
+    sequenceDuration: () => transformOperations.calculateSequenceDuration(),
+
+    // Core actions
+    setCurrentSequence,
+    addSequence: (sequence: SequenceData) => {
+      coreState.addSequence(sequence);
+      setCurrentSequence(sequence);
+    },
+    updateSequence: (sequence: SequenceData) =>
+      coreState.updateSequence(sequence),
+    removeSequence: (sequenceId: string) =>
+      coreState.removeSequence(sequenceId),
+    setSequences: (sequences: SequenceData[]) =>
+      coreState.setSequences(sequences),
+    setLoading: (loading: boolean) => coreState.setLoading(loading),
+    setError: (error: string | null) => coreState.setError(error),
+    clearError: () => coreState.clearError(),
+    updateCurrentBeat: (stepIndex: number, stepData: StepData) => {
+      if (
+        coreState.currentSequence &&
+        stepIndex >= 0 &&
+        stepIndex < coreState.currentSequence.steps.length
+      ) {
+        const newSteps = [...coreState.currentSequence.steps];
+        newSteps[stepIndex] = stepData;
+        coreState.setCurrentSequence({
+          ...coreState.currentSequence,
+          steps: newSteps,
+        });
+      }
+    },
+
+    // Selection actions
+    selectStep,
+    clearSelection: () => selectionState.clearSelection(),
+    selectStartPositionForEditing: () => selectionState.selectStartPosition(),
+    isStepSelected: (stepNumber: number) =>
+      selectionState.isStepSelected(stepNumber),
+    setSelectedStartPosition,
+
+    // Grid mode
+    setGridMode: (mode: GridMode) => coreState.setGridMode(mode),
+    setShowStepNumbers: () => {}, // No-op, always shown
+
+    // Arrow state
+    setArrowPositions: (positions: Map<string, ArrowPosition>) =>
+      arrowState.setArrowPositions(positions),
+    setArrowPositioningInProgress: (inProgress: boolean) =>
+      arrowState.setPositioningInProgress(inProgress),
+    setArrowPositioningError: (error: string | null) =>
+      arrowState.setPositioningError(error),
+    getArrowPosition: (color: string) => arrowState.getArrowPosition(color),
+    clearArrowPositions: () => arrowState.clearArrowPositions(),
+
+    // Animation state - expose for undo operations
+    animationState,
+
+    // Reset
+    resetSequenceState,
+
+    // Beat operations - delegate to facade
+    addStep: (stepData?: Partial<StepData>) => stepOperations.addStep(stepData),
+    removeStep: (stepIndex: number) => stepOperations.removeStep(stepIndex),
+    removeStepWithAnimation: (stepIndex: number, onComplete?: () => void) =>
+      stepOperations.removeStepWithAnimation(stepIndex, onComplete),
+    removeStepAndSubsequent: (stepIndex: number) =>
+      stepOperations.removeStepAndSubsequent(stepIndex),
+    removeStepAndSubsequentWithAnimation: (
+      stepIndex: number,
+      onComplete?: () => void
+    ) =>
+      stepOperations.removeStepAndSubsequentWithAnimation(
+        stepIndex,
+        onComplete
+      ),
+    updateStep: (stepIndex: number, stepData: Partial<StepData>) =>
+      stepOperations.updateStep(stepIndex, stepData),
+    insertStep: (stepIndex: number, stepData?: Partial<StepData>) =>
+      stepOperations.insertStep(stepIndex, stepData),
+    clearSequence: () => stepOperations.clearSequence(),
+    clearSequenceCompletely,
+    getStep: (index: number) => stepOperations.getStep(index),
+    hasContent: () => stepOperations.hasContent(),
+
+    // Transform operations - delegate to facade (with targetHand support)
+    setStartPosition: (startPosition: StartPositionData | null) =>
+      transformOperations.setStartPosition(startPosition),
+    mirrorSequence: (targetHand: TargetHand = "both") =>
+      transformOperations.mirrorSequence(targetHand),
+    flipSequence: (targetHand: TargetHand = "both") =>
+      transformOperations.flipSequence(targetHand),
+    invertSequence: (targetHand: TargetHand = "both") =>
+      transformOperations.invertSequence(targetHand),
+    swapColors: () => transformOperations.swapColors(),
+    rotateSequence: (
+      direction: "clockwise" | "counterclockwise",
+      targetHand: TargetHand = "both"
+    ) => transformOperations.rotateSequence(direction, targetHand),
+    rewindSequence: (targetHand: TargetHand = "both") =>
+      transformOperations.rewindSequence(targetHand),
+    shiftStartPosition: (targetStepNumber: number) =>
+      transformOperations.shiftStartPosition(targetStepNumber),
+    duplicateSequence: (newName?: string) =>
+      transformOperations.duplicateSequence(newName),
+    validateCurrentSequence: (): ValidationResult | null =>
+      transformOperations.validateSequence(),
+
+    // Persistence
+    initializeWithPersistence,
+    saveCurrentState,
+    saveSequenceDataOnly,
+    clearPersistedState: async () => {
+      // 🐛 FIX: Cancel any pending auto-save before clearing persistence
+      // This prevents the auto-save from firing after clearState() and re-populating storage
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+      }
+      await persistenceCoordinator.clearState();
+    },
+    updateCachedActiveTab: (activeTab: BuildModeId) =>
+      persistenceCoordinator.updateCachedActiveTab(activeTab),
+
+    // Service integration
+    loadSequences,
+    createSequence,
+    updateSequenceBeats,
+
+    // Multi-select operations
+    get selectedStepNumbers() {
+      return selectionState.selectedStepNumbers;
+    },
+    get isMultiSelectMode() {
+      return selectionState.isMultiSelectMode;
+    },
+    get selectionCount() {
+      return selectionState.selectionCount;
+    },
+    enterMultiSelectMode: (stepNumber: number) =>
+      selectionState.enterMultiSelectMode(stepNumber),
+    exitMultiSelectMode: () => selectionState.exitMultiSelectMode(),
+    toggleStepInMultiSelect: (stepNumber: number) =>
+      selectionState.toggleStepInMultiSelect(stepNumber),
+  };
+}
+
+export type SequenceState = ReturnType<typeof createSequenceState>;

@@ -6,13 +6,13 @@
 -->
 <script lang="ts">
 
-import { getStepOperator } from "$lib/features/create/shared/getStepOperator";
+import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { onMount } from "svelte";
   import Toast from "../components/Toast.svelte";
   import SequenceDisplay from "../sequence-display/components/SequenceDisplay.svelte";
-  import type { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
-  import type { SequenceState } from "../../state/SequenceStateOrchestrator.svelte";
+  import type { StepOperator } from "$lib/features/create/shared/services/step-operator";
+  import type { SequenceState } from "../../state/sequence-state-orchestrator.svelte";
   import type { CreateModuleState } from "../../state/create-module-state.svelte";
   import type { IAnimationStateRef } from "../../types/create-module-types";
   import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";

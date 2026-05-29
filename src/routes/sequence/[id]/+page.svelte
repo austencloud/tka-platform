@@ -11,7 +11,7 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import { getShortCodeManager } from "$lib/shared/qr/getShortCodeManager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
-  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { parsePropsFromURL, parseSequenceRouteId, decodeSequenceWithCompression, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { decodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";

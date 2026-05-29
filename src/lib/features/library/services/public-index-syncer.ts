@@ -41,7 +41,7 @@ import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/getPub
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
-import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
 import { periodToNumber } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
