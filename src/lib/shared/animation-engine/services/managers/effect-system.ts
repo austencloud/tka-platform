@@ -18,29 +18,29 @@
  * CanvasLifecycleManager is imported as `import type` only.
  */
 
-import { EffectRendererManager } from "../EffectRendererManager";
-import { EffectController } from "../EffectController";
-import type { AnimatorState } from "../../../state/animator-state.svelte";
-import type { CanvasLifecycleManager } from "../CanvasLifecycleManager";
+import { EffectRendererManager } from "../effect-renderer-manager";
+import { EffectController } from "../effect-controller";
+import type { AnimatorState } from "../../state/animator-state.svelte";
+import type { CanvasLifecycleManager } from "../canvas-lifecycle-manager";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { FireOverlayConfig, FireColorCurve } from "../../../domain/types/FireTypes";
+import type { FireOverlayConfig, FireColorCurve } from "../../domain/types/FireTypes";
 import {
   BASE_FIRE_PHYSICS,
   BASE_COLOR_CURVE,
   intensityToPhysics,
-} from "../../../domain/types/FireTypes";
-import type { LedOverlayConfig } from "../../../domain/types/LedTypes";
-import type { TipEffectMap, TipEffortMap } from "../../../domain/types/TipEffectTypes";
-import { semanticToCharcoalParams, type CharcoalSparkParams } from "../../../domain/types/CharcoalSparkTypes";
+} from "../../domain/types/FireTypes";
+import type { LedOverlayConfig } from "../../domain/types/LedTypes";
+import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
+import { semanticToCharcoalParams, type CharcoalSparkParams } from "../../domain/types/CharcoalSparkTypes";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { AnimationVisibilityState } from "../AnimationVisibilitySynchronizer";
-import type { AnimationVisibilityStateManager } from "../../../state/animation-visibility-state.svelte";
-import type { ITrailOverlayCanvas } from "../../contracts/ITrailOverlayCanvas";
-import type { FireTipTracker } from "../FireTipTracker";
-import type { WebGLFireRenderer } from "../fire/WebGLFireRenderer";
-import type { CharcoalSparkRenderer } from "../charcoal/CharcoalSparkRenderer";
-import type { WebGLLedRenderer } from "../led/WebGLLedRenderer";
-import { EFFECT_PLUGINS } from "../../effects/registry";
+import type { AnimationVisibilityState } from "../animation-visibility-synchronizer";
+import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
+import type { ITrailOverlayCanvas } from "../ITrailOverlayCanvas";
+import type { FireTipTracker } from "../fire-tip-tracker";
+import type { WebGLFireRenderer } from "../fire/web-gl-fire-renderer";
+import type { CharcoalSparkRenderer } from "../charcoal/charcoal-spark-renderer";
+import type { WebGLLedRenderer } from "../led/web-gl-led-renderer";
+import { EFFECT_PLUGINS } from "../effects/registry";
 
 // ── Helpers (mirrored from engine — keep in sync) ───────────────────────────
 
@@ -307,7 +307,7 @@ export class EffectSystem {
     this._rendererManager.fireRenderer?.snapshotFireCanvas?.();
   }
 
-  captureDiagnostics(context: import("../EffectController").DiagnosticContext): Record<string, unknown> {
+  captureDiagnostics(context: import("../effect-controller").DiagnosticContext): Record<string, unknown> {
     return this._controller.captureDiagnostics(context);
   }
 

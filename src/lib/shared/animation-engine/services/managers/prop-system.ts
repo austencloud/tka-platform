@@ -15,13 +15,13 @@
  * Does NOT import AnimationEngine — keeps the dependency graph acyclic.
  */
 
-import { animationSettings as animationSettingsState } from "../../../state/animation-settings-state.svelte";
-import type { AnimatorState } from "../../../state/animator-state.svelte";
-import type { RenderFrameParams } from "../../contracts/IAnimationRenderLoop";
-import type { AnimationEngineProps } from "../AnimationEngine.svelte";
-import { PropTypeManager } from "../PropTypeManager";
-import { PropPipeline } from "../PropPipeline";
-import type { CanvasLifecycleManager } from "../CanvasLifecycleManager";
+import { animationSettings as animationSettingsState } from "../../state/animation-settings-state.svelte";
+import type { AnimatorState } from "../../state/animator-state.svelte";
+import type { RenderFrameParams } from "../IAnimationRenderLoop";
+import type { AnimationEngineProps } from "../animation-engine.svelte";
+import { PropTypeManager } from "../prop-type-manager";
+import { PropPipeline } from "../prop-pipeline";
+import type { CanvasLifecycleManager } from "../canvas-lifecycle-manager";
 
 export class PropSystem {
   // ── Owned services ──────────────────────────────────────────────────────────

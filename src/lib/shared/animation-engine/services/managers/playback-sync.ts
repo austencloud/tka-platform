@@ -23,21 +23,21 @@
  * CanvasLifecycleManager and sibling managers are imported as `import type` only.
  */
 
-import { StateSynchronizer } from "../StateSynchronizer";
-import type { AnimatorState } from "../../../state/animator-state.svelte";
-import type { CanvasLifecycleManager } from "../CanvasLifecycleManager";
-import type { PropSystem } from "./PropSystem";
-import type { FrameSystem } from "./FrameSystem";
-import type { EffectSystem } from "./EffectSystem";
-import type { AnimationVisibilityState } from "../AnimationVisibilitySynchronizer";
-import type { AnimationVisibilityStateManager } from "../../../state/animation-visibility-state.svelte";
-import type { AnimationEngineProps, AnimationEngineCallbacks } from "../AnimationEngine.svelte";
+import { StateSynchronizer } from "../state-synchronizer";
+import type { AnimatorState } from "../../state/animator-state.svelte";
+import type { CanvasLifecycleManager } from "../canvas-lifecycle-manager";
+import type { PropSystem } from "./prop-system";
+import type { FrameSystem } from "./frame-system";
+import type { EffectSystem } from "./effect-system";
+import type { AnimationVisibilityState } from "../animation-visibility-synchronizer";
+import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
+import type { AnimationEngineProps, AnimationEngineCallbacks } from "../animation-engine.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { TrailSettings } from "../../../domain/types/TrailTypes";
-import { DEFAULT_CANVAS_SIZE } from "../CanvasResizer.svelte";
+import type { TrailSettings } from "../../domain/types/TrailTypes";
+import { DEFAULT_CANVAS_SIZE } from "../canvas-resizer.svelte";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ export interface PlaybackSyncDeps {
   setCanvasSize: (s: number) => void;
   buildFrameDeps: () => {
     effectsConfigState: import("$lib/shared/effects/state/effects-config-state.svelte").EffectsConfigState | null;
-    effectRendererManager: import("../EffectRendererManager").EffectRendererManager;
+    effectRendererManager: import("../effect-renderer-manager").EffectRendererManager;
     getVM: () => AnimationVisibilityStateManager;
   };
 }
@@ -590,7 +590,7 @@ export class PlaybackSync {
   }
 
   /** Returns true if any entry in the map has the given effect type. */
-  private hasEffectInMap(map: import("../../../domain/types/TipEffectTypes").TipEffectMap | undefined, effect: string): boolean {
+  private hasEffectInMap(map: import("../../domain/types/TipEffectTypes").TipEffectMap | undefined, effect: string): boolean {
     if (!map) return false;
     return Object.values(map).some((a) => a.effect === effect);
   }

@@ -17,17 +17,17 @@
  * Does NOT import AnimationEngine — keeps the dependency graph acyclic.
  */
 
-import { FrameParameterBuilder } from "../FrameParameterBuilder";
-import { FrameBuilderService } from "../FrameBuilderService";
-import type { AnimatorState } from "../../../state/animator-state.svelte";
-import type { CanvasLifecycleManager } from "../CanvasLifecycleManager";
-import type { PropSystem } from "./PropSystem";
-import type { AnimationEngineProps } from "../AnimationEngine.svelte";
-import type { RenderFrameParams } from "../../contracts/IAnimationRenderLoop";
-import type { TrailSettings } from "../../../domain/types/TrailTypes";
+import { FrameParameterBuilder } from "../frame-parameter-builder";
+import { FrameBuilderService } from "../frame-builder-service";
+import type { AnimatorState } from "../../state/animator-state.svelte";
+import type { CanvasLifecycleManager } from "../canvas-lifecycle-manager";
+import type { PropSystem } from "./prop-system";
+import type { AnimationEngineProps } from "../animation-engine.svelte";
+import type { RenderFrameParams } from "../IAnimationRenderLoop";
+import type { TrailSettings } from "../../domain/types/TrailTypes";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { EffectRendererManager } from "../EffectRendererManager";
+import type { EffectRendererManager } from "../effect-renderer-manager";
 
 export class FrameSystem {
   // ── Owned services ──────────────────────────────────────────────────────────
