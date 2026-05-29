@@ -1,5 +1,5 @@
 import type { ExhibitSlot } from "$lib/shared/museum/domain/museum-types";
-import type { InteractionTarget } from "$lib/shared/museum/services/contracts/types";
+import type { InteractionTarget } from "$lib/shared/museum/services/types";
 
 const INTERACTION_DISTANCE = 3.0; // meters
 const INTERACTION_ANGLE = Math.PI / 4; // 45 degrees
