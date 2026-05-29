@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   rollVariation,
   applyVariationDescriptor,
+  applyVariation,
+  DEFAULT_VARIATION_CONFIG,
   type Rng,
 } from "../deck-variation";
 import type { VariationConfig } from "../deck-variation";
@@ -102,5 +104,33 @@ describe("applyVariationDescriptor", () => {
     const seq = twoStepSeq();
     const { sequence } = applyVariationDescriptor(seq, {}, []);
     expect(sequence.steps[0]!.motions!.blue!.turns).toBe(0);
+  });
+});
+
+describe("applyVariation (compose wrapper)", () => {
+  it("preserves the AppliedVariation shape with all keys", () => {
+    const seq = twoStepSeq();
+    const cfg = { ...DEFAULT_VARIATION_CONFIG, reversalFrequency: 0, turnFrequency: 0 };
+    const result = applyVariation(seq, cfg, [], () => 0.99);
+    expect(result.sequence).toBe(seq); // no variation rolled → base returned
+    expect(result.variation).toEqual({
+      reversalPatternId: null,
+      reversalLabel: null,
+      reversalSequence: null,
+      turnPattern: null,
+      turnLabel: null,
+      turnLoopClosed: true,
+      warnings: [],
+    });
+  });
+
+  it("maps a rolled turn into AppliedVariation fields", () => {
+    const cfg = {
+      reversalFrequency: 0, enabledReversals: [],
+      turnFrequency: 1, enabledTurnPatterns: ["hold-1"],
+    };
+    const result = applyVariation(twoStepSeq(), cfg, [], seededRng([0.0, 0.0]));
+    expect(result.variation.turnPattern).toBe("1|1");
+    expect(result.variation.turnLabel).toBe("Hold 1");
   });
 });

@@ -273,7 +273,8 @@ function loopCloses(seq: SequenceData): { blue: boolean; red: boolean } {
 }
 
 /**
- * Roll and apply variations to a single drawn sequence. Pure given `rng`.
+ * Roll + apply in one shot. Thin wrapper over rollVariation + applyVariationDescriptor.
+ * Used by the test route; the releaser rolls and applies separately (compose vs seam).
  */
 export function applyVariation(
   seq: SequenceData,
@@ -281,68 +282,38 @@ export function applyVariation(
   edges: CsvEdge[],
   rng: Rng = Math.random,
 ): VariantResult {
-  const stepCount = seq.steps.length;
-  const warnings: string[] = [];
-  let working = seq;
-
-  let reversalPatternId: string | null = null;
-  let reversalLabel: string | null = null;
-  let reversalSequence: string | null = null;
-
-  if (config.enabledReversals.length > 0 && rng() < config.reversalFrequency) {
-    const resolved = pickReversal(stepCount, config.enabledReversals, rng);
-    if (resolved) {
-      working = transformSequence(working, resolved, edges);
-      reversalPatternId = resolved.id;
-      reversalLabel = resolved.label;
-      reversalSequence = resolved.sequence;
-    }
+  const variation = rollVariation(seq.steps.length, config, rng);
+  if (!variation) {
+    return {
+      sequence: seq,
+      variation: {
+        reversalPatternId: null,
+        reversalLabel: null,
+        reversalSequence: null,
+        turnPattern: null,
+        turnLabel: null,
+        turnLoopClosed: true,
+        warnings: [],
+      },
+    };
   }
 
-  let turnPattern: string | null = null;
-  let turnLabel: string | null = null;
-  let turnLoopClosed = true;
-
-  if (config.enabledTurnPatterns.length > 0 && rng() < config.turnFrequency) {
-    const preset = pickTurnPattern(stepCount, config.enabledTurnPatterns, rng);
-    if (preset) {
-      const unit = parseTurnUnit(preset.pattern);
-      const base = loopCloses(working);
-      const entries: TurnPatternEntry[] = [];
-      for (let i = 0; i < stepCount; i++) {
-        const u = unit[i % unit.length]!;
-        entries.push({ stepIndex: i, blue: u.blue, red: u.red });
-      }
-      const pattern: TurnPattern = {
-        id: "variation",
-        name: "variation",
-        userId: "",
-        createdAt: null as unknown as TurnPattern["createdAt"],
-        stepCount,
-        entries,
-      };
-      const res = applyPattern(pattern, working, "both");
-      if (res.success && res.sequence) {
-        working = res.sequence;
-        turnPattern = preset.pattern;
-        turnLabel = preset.label;
-        const closed = loopCloses(working);
-        turnLoopClosed = (closed.blue || !base.blue) && (closed.red || !base.red);
-        if (res.warnings) warnings.push(...res.warnings);
-      }
-    }
-  }
+  const { sequence, turnLoopClosed } = applyVariationDescriptor(seq, variation, edges);
+  const reversalLabel = variation.reversalPatternId
+    ? BOOK_PATTERNS.find((p) => p.id === variation.reversalPatternId)?.label ??
+      variation.reversalPatternId
+    : null;
 
   return {
-    sequence: working,
+    sequence,
     variation: {
-      reversalPatternId,
+      reversalPatternId: variation.reversalPatternId ?? null,
       reversalLabel,
-      reversalSequence,
-      turnPattern,
-      turnLabel,
+      reversalSequence: variation.reversalSequence ?? null,
+      turnPattern: variation.turnPattern ?? null,
+      turnLabel: variation.turnLabel ?? null,
       turnLoopClosed,
-      warnings,
+      warnings: [],
     },
   };
 }
