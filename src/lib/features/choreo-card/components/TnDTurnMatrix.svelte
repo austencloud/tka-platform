@@ -1,37 +1,105 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
+  import type { TnDTurnPatternOption } from "../services/deck-composer";
   import { parseTurnPattern, TURN_VALUES } from "../domain/turn-pattern-parser";
 
   interface Props {
-    catalogs: Catalog[];
-    onSelectCatalog: (catalog: Catalog) => void;
+    // Navigate mode (catalog browser): click a cell to open that catalog.
+    catalogs?: Catalog[];
+    onSelectCatalog?: (catalog: Catalog) => void;
+    // Select mode (deck-releaser picker): multi-select turn patterns.
+    patternOptions?: TnDTurnPatternOption[];
+    selected?: Set<string>;
+    onToggle?: (turnPattern: string) => void;
+    onSetPatterns?: (patterns: Set<string>) => void;
   }
 
-  const { catalogs, onSelectCatalog }: Props = $props();
+  const {
+    catalogs = [],
+    onSelectCatalog,
+    patternOptions,
+    selected,
+    onToggle,
+    onSetPatterns,
+  }: Props = $props();
+
+  const selectable = $derived(patternOptions != null);
 
   type CellKey = `${number},${number}`;
+
+  interface SelectCell {
+    turnPattern: string;
+    count: number;
+  }
 
   const catalogMap = $derived.by(() => {
     const map = new Map<CellKey, Catalog>();
     for (const catalog of catalogs) {
       const coord = parseTurnPattern(catalog.turnPattern);
       if (!coord) continue;
-      const key: CellKey = `${coord.blue},${coord.red}`;
-      map.set(key, catalog);
+      map.set(`${coord.blue},${coord.red}`, catalog);
     }
     return map;
   });
 
-  function cellCatalog(blue: number, red: number): Catalog | undefined {
-    return catalogMap.get(`${blue},${red}`);
-  }
+  const selectMap = $derived.by(() => {
+    const map = new Map<CellKey, SelectCell>();
+    for (const opt of patternOptions ?? []) {
+      const coord = parseTurnPattern(opt.turnPattern);
+      if (!coord) continue;
+      map.set(`${coord.blue},${coord.red}`, { turnPattern: opt.turnPattern, count: opt.sequenceCount });
+    }
+    return map;
+  });
 
   function formatTurn(v: number): string {
     return Number.isInteger(v) ? String(v) : v.toFixed(1);
   }
+
+  // ── Presets (select mode) ──
+  function allPatterns(): Set<string> {
+    return new Set((patternOptions ?? []).map((o) => o.turnPattern));
+  }
+
+  function filteredPatterns(pred: (blue: number, red: number) => boolean): Set<string> {
+    const out = new Set<string>();
+    for (const opt of patternOptions ?? []) {
+      const coord = parseTurnPattern(opt.turnPattern);
+      if (coord && pred(coord.blue, coord.red)) out.add(opt.turnPattern);
+    }
+    return out;
+  }
+
+  const presets = [
+    { id: "all", label: "Select All", icon: "fa-check-double", build: () => allPatterns() },
+    {
+      id: "whole",
+      label: "Whole Turns",
+      icon: "fa-circle",
+      build: () => filteredPatterns((b, r) => Number.isInteger(b) && Number.isInteger(r)),
+    },
+    { id: "matched", label: "Matched", icon: "fa-equals", build: () => filteredPatterns((b, r) => b === r) },
+    { id: "clear", label: "Clear", icon: "fa-xmark", build: () => new Set<string>() },
+  ] as const;
 </script>
 
 <div class="matrix-container">
+  {#if selectable}
+    <div class="preset-bar">
+      {#each presets as preset (preset.id)}
+        <button
+          type="button"
+          class="preset-btn"
+          class:danger={preset.id === "clear"}
+          onclick={() => onSetPatterns?.(preset.build())}
+        >
+          <i class="fas {preset.icon}" aria-hidden="true"></i>
+          {preset.label}
+        </button>
+      {/each}
+    </div>
+  {/if}
+
   <div class="matrix-grid-wrapper">
     <div class="matrix-grid" role="grid" aria-label="TnD turn combination matrix">
       <!-- Corner cell -->
@@ -55,34 +123,68 @@
         </div>
 
         {#each TURN_VALUES as red (red)}
-          {@const catalog = cellCatalog(blue, red)}
           {@const isSymmetric = blue === red}
-          {#if catalog}
-            <button
-              type="button"
-              class="cell"
-              class:symmetric={isSymmetric}
-              role="gridcell"
-              aria-label="{catalog.totalSequences} sequences, blue {formatTurn(blue)} red {formatTurn(red)}{isSymmetric ? ' (symmetric)' : ''}"
-              onclick={() => onSelectCatalog(catalog)}
-            >
-              <span class="turn-pair">
-                {#if isSymmetric}
-                  <span class="turn-sym">{formatTurn(blue)}T</span>
-                {:else}
-                  <span class="turn-blue">{formatTurn(blue)}</span>
-                  <span class="turn-sep">|</span>
-                  <span class="turn-red">{formatTurn(red)}</span>
-                {/if}
-              </span>
-              <span class="cell-count">{catalog.totalSequences} seq</span>
-            </button>
+          {#if selectable}
+            {@const cell = selectMap.get(`${blue},${red}`)}
+            {#if cell}
+              {@const isSelected = selected?.has(cell.turnPattern) ?? false}
+              <button
+                type="button"
+                class="cell"
+                class:symmetric={isSymmetric}
+                class:selected={isSelected}
+                role="gridcell"
+                aria-selected={isSelected}
+                aria-label="Blue {formatTurn(blue)} red {formatTurn(red)}, {cell.count} sequences{isSymmetric ? ' (matched)' : ''}{isSelected ? ' — selected' : ''}"
+                onclick={() => onToggle?.(cell.turnPattern)}
+              >
+                <span class="turn-pair">
+                  {#if isSymmetric}
+                    <span class="turn-sym">{formatTurn(blue)}T</span>
+                  {:else}
+                    <span class="turn-blue">{formatTurn(blue)}</span>
+                    <span class="turn-sep">|</span>
+                    <span class="turn-red">{formatTurn(red)}</span>
+                  {/if}
+                </span>
+                <span class="cell-count">{cell.count}</span>
+              </button>
+            {:else}
+              <div
+                class="cell empty"
+                role="gridcell"
+                aria-label="No deck for blue {formatTurn(blue)}, red {formatTurn(red)}"
+              ></div>
+            {/if}
           {:else}
-            <div
-              class="cell empty"
-              role="gridcell"
-              aria-label="No deck for blue {formatTurn(blue)}, red {formatTurn(red)}"
-            ></div>
+            {@const catalog = catalogMap.get(`${blue},${red}`)}
+            {#if catalog}
+              <button
+                type="button"
+                class="cell"
+                class:symmetric={isSymmetric}
+                role="gridcell"
+                aria-label="{catalog.totalSequences} sequences, blue {formatTurn(blue)} red {formatTurn(red)}{isSymmetric ? ' (symmetric)' : ''}"
+                onclick={() => onSelectCatalog?.(catalog)}
+              >
+                <span class="turn-pair">
+                  {#if isSymmetric}
+                    <span class="turn-sym">{formatTurn(blue)}T</span>
+                  {:else}
+                    <span class="turn-blue">{formatTurn(blue)}</span>
+                    <span class="turn-sep">|</span>
+                    <span class="turn-red">{formatTurn(red)}</span>
+                  {/if}
+                </span>
+                <span class="cell-count">{catalog.totalSequences} seq</span>
+              </button>
+            {:else}
+              <div
+                class="cell empty"
+                role="gridcell"
+                aria-label="No deck for blue {formatTurn(blue)}, red {formatTurn(red)}"
+              ></div>
+            {/if}
           {/if}
         {/each}
       {/each}
@@ -93,11 +195,52 @@
 <style>
   .matrix-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 16px;
     width: 100%;
     padding: 24px;
     box-sizing: border-box;
+  }
+
+  .preset-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .preset-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 6px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .preset-btn i {
+    font-size: 11px;
+  }
+
+  .preset-btn:hover {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #10b981;
+  }
+
+  .preset-btn.danger:hover {
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.35);
+    color: #f87171;
   }
 
   .matrix-grid-wrapper {
@@ -195,6 +338,23 @@
     background: rgba(183, 99, 205, 0.22);
     border-color: rgba(183, 99, 205, 0.45);
     box-shadow: 0 4px 20px rgba(183, 99, 205, 0.35);
+  }
+
+  /* Selected state (select mode) */
+  .cell.selected {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.35);
+  }
+
+  .cell.selected:hover {
+    background: rgba(16, 185, 129, 0.28);
+    border-color: rgba(16, 185, 129, 0.7);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .cell.selected .cell-count {
+    color: rgba(16, 185, 129, 0.8);
   }
 
   .cell.empty {

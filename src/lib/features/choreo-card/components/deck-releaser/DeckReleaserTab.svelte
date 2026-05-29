@@ -152,6 +152,10 @@
     rs.selectedTnDTurnPatterns = next;
   }
 
+  function handleSetTnDTurnPatterns(patterns: Set<string>) {
+    rs.selectedTnDTurnPatterns = patterns;
+  }
+
   const tndCardCount = $derived(
     buildTnDCards(rs.tndFamilies, rs.selectedTnDFamilies, rs.selectedTnDTurnPatterns).length
   );
@@ -331,6 +335,7 @@
         onSliceTypeToggle={handleSliceTypeToggle}
         onTnDFamilyToggle={handleTnDFamilyToggle}
         onTnDTurnPatternToggle={handleTnDTurnPatternToggle}
+        onTnDTurnPatternsSet={handleSetTnDTurnPatterns}
         onDraw={handleDraw}
       />
     {:else if rs.step === "review"}

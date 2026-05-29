@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
   import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
+  import TnDTurnMatrix from "../TnDTurnMatrix.svelte";
 
   type DeckMode = "loop" | "tnd";
 
@@ -23,6 +24,7 @@
     onSliceTypeToggle: (sliceType: 'halved' | 'quartered') => void;
     onTnDFamilyToggle: (familyId: string) => void;
     onTnDTurnPatternToggle: (tp: string) => void;
+    onTnDTurnPatternsSet: (patterns: Set<string>) => void;
     onDraw: () => void;
     isLoading: boolean;
   }
@@ -46,6 +48,7 @@
     onSliceTypeToggle,
     onTnDFamilyToggle,
     onTnDTurnPatternToggle,
+    onTnDTurnPatternsSet,
     onDraw,
     isLoading,
   }: Props = $props();
@@ -198,19 +201,12 @@
     {:else}
       <div class="control-group">
         <span class="control-label">Turn Patterns</span>
-        <div class="tnd-turns">
-          {#each tndTurnPatterns as tp (tp.turnPattern)}
-            <button
-              type="button"
-              class="tnd-turn-btn"
-              class:selected={selectedTnDTurnPatterns.has(tp.turnPattern)}
-              onclick={() => onTnDTurnPatternToggle(tp.turnPattern)}
-            >
-              <span class="tnd-turn-label">{tp.label}</span>
-              <span class="tnd-turn-count">{tp.sequenceCount}</span>
-            </button>
-          {/each}
-        </div>
+        <TnDTurnMatrix
+          patternOptions={tndTurnPatterns}
+          selected={selectedTnDTurnPatterns}
+          onToggle={onTnDTurnPatternToggle}
+          onSetPatterns={onTnDTurnPatternsSet}
+        />
       </div>
 
       <div class="control-group">
@@ -416,50 +412,6 @@
   .source-stats {
     font-size: 11px;
     opacity: 0.7;
-  }
-
-  .tnd-turns {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .tnd-turn-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    min-width: 56px;
-    min-height: 44px;
-    padding: 8px 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    cursor: pointer;
-    transition: all 0.15s ease;
-    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
-  }
-
-  .tnd-turn-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-  }
-
-  .tnd-turn-btn.selected {
-    background: rgba(16, 185, 129, 0.1);
-    border-color: rgba(16, 185, 129, 0.4);
-    color: #10b981;
-  }
-
-  .tnd-turn-label {
-    font-size: 14px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .tnd-turn-count {
-    font-size: 10px;
-    opacity: 0.6;
   }
 
   .tnd-families {
