@@ -106,6 +106,11 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 	const stepSize = $derived(useContext ? ctx?.state?.stepPlaybackStepSize ?? 1 : 1 as const);
 	const isExporting = $derived(useContext ? ctx?.state?.isExporting ?? false : false);
 	const exportProgress = $derived(useContext ? ctx?.state?.exportProgress ?? null : null);
+	// Deterministic export time. The video orchestrator freezes panelState's
+	// virtualTime per captured frame; the engine's render loop must read it so the
+	// trail's duplicate-stamp guard fires (one stamp per frozen frame). Undefined
+	// during live playback → render loop falls back to its free-running rAF clock.
+	const virtualTime = $derived(animState?.virtualTime);
 
 	// Derived: current step data for canvas
 	const stepData = $derived.by(() => {
@@ -285,6 +290,7 @@ import { getSequenceMotionLoader } from "$lib/shared/sequence-viewer/getSequence
 						{sequenceData}
 						{currentStep}
 						{isPlaying}
+						{virtualTime}
 						word={hideWordHeader ? null : (sequenceData?.word ?? sequence?.word ?? null)}
 						onPlaybackToggle={togglePlayback}
 						{trailSettings}
