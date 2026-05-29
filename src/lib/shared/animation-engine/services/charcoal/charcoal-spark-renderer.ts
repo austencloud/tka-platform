@@ -21,12 +21,12 @@ import type {
 	FireFrameInput,
 	FireOverlayConfig,
 	PropTipData,
-} from "../../../domain/types/FireTypes";
+} from "../../domain/types/FireTypes";
 import type {
 	CharcoalSpark,
 	CharcoalSparkParams,
-} from "../../../domain/types/CharcoalSparkTypes";
-import { DEFAULT_CHARCOAL_PARAMS } from "../../../domain/types/CharcoalSparkTypes";
+} from "../../domain/types/CharcoalSparkTypes";
+import { DEFAULT_CHARCOAL_PARAMS } from "../../domain/types/CharcoalSparkTypes";
 
 // ============================================================================
 // Constants
@@ -998,9 +998,9 @@ export class CharcoalSparkRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../../effects/EffectPlugin";
-import type { EffectRendererManager } from "../EffectRendererManager";
-import type { EffectRendererLike } from "../../effects/EffectRenderer";
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectRendererManager } from "../effect-renderer-manager";
+import type { EffectRendererLike } from "../effects/EffectRenderer";
 import type { CharcoalIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 
