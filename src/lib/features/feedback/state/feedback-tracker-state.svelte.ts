@@ -12,7 +12,7 @@ import type {
   FeedbackType,
   FeedbackStatus,
 } from "$lib/shared/feedback/domain/models/feedback-models";
-import { feedbackService } from "$lib/shared/feedback/services/implementations/FeedbackRepository";
+import { feedbackService } from "$lib/shared/feedback/services/feedback-repository";
 
 /**
  * Public-safe subset of a FeedbackItem.

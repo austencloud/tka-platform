@@ -167,7 +167,7 @@ export class ErrorHandler {
 
       // Dynamically import feedback service singleton to avoid circular dependencies
       const { feedbackService } =
-        await import("$lib/shared/feedback/services/implementations/FeedbackRepository");
+        await import("$lib/shared/feedback/services/feedback-repository");
 
       // Build bug report
       const errorReport = this.buildErrorReport(appError, additionalComment);

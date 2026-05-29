@@ -12,7 +12,7 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { inboxState } from "../state/inbox-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { notificationService } from "$lib/shared/feedback/services/implementations/Notifier";
+  import { notificationService } from "$lib/shared/feedback/services/notifier";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { toast } from "../../toast/state/toast-state.svelte";
   import ConversationList from "./messages/ConversationList.svelte";

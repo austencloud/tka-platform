@@ -13,7 +13,7 @@
  */
 
 import type { FeedbackFormData, FeedbackFormErrors, FeedbackSubmitStatus, FeedbackType, FeedbackUploadProgress, StagedImageState, } from "$lib/shared/feedback/domain/models/feedback-models";
-import { feedbackService } from "$lib/shared/feedback/services/implementations/FeedbackRepository";
+import { feedbackService } from "$lib/shared/feedback/services/feedback-repository";
 import * as imageStager from "../services/image-stager";
 import type { StagedUploadHandle } from "$lib/shared/feedback/domain/feedback-contract-types";
 import { authState } from "$lib/shared/auth/state/authState.svelte";

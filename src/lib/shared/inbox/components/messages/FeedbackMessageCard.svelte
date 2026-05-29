@@ -14,7 +14,7 @@
     STATUS_CONFIG,
   } from "$lib/shared/feedback/domain/models/feedback-models";
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
-  import { feedbackService } from "$lib/shared/feedback/services/implementations/FeedbackRepository";
+  import { feedbackService } from "$lib/shared/feedback/services/feedback-repository";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setNotificationTargetFeedback } from "$lib/shared/feedback/state/notification-action-state.svelte";

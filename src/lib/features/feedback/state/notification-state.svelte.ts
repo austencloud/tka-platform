@@ -6,7 +6,7 @@
  */
 
 import type { UserNotification } from "$lib/shared/feedback/domain/models/notification-models";
-import { notificationService } from "$lib/shared/feedback/services/implementations/Notifier";
+import { notificationService } from "$lib/shared/feedback/services/notifier";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
 /**

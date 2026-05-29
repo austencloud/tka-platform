@@ -9,7 +9,7 @@
   import { CHANGELOG_CATEGORIES } from "$lib/shared/versioning/domain/constants/changelog-constants";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
-  import { feedbackService } from "$lib/shared/feedback/services/implementations/FeedbackRepository";
+  import { feedbackService } from "$lib/shared/feedback/services/feedback-repository";
   import { createFeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
   import EditableReleaseNotes from "./EditableReleaseNotes.svelte";
   import ChangeGroupSection from "./ChangeGroupSection.svelte";
@@ -17,7 +17,7 @@
   import NoChangelogState from "./NoChangelogState.svelte";
   import ActionToast from "./ActionToast.svelte";
   import ContributorBadge from "./ContributorBadge.svelte";
-  import { getContributorLoader } from "$lib/shared/feedback/getContributorLoader";
+  import { getContributorLoader } from "$lib/shared/feedback/get-contributor-loader";
   import type { Contributor } from "$lib/shared/versioning/domain/models/contributor-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { changelogEditState } from "./state/changelog-edit-state.svelte";

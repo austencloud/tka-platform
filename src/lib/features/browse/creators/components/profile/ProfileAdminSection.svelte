@@ -23,7 +23,7 @@
   } from "$lib/shared/auth/domain/models/UserRole";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
-  import { getContributorLoader } from "$lib/shared/feedback/getContributorLoader";
+  import { getContributorLoader } from "$lib/shared/feedback/get-contributor-loader";
   import { onDestroy } from "svelte";
 
   interface Props {

@@ -8,7 +8,7 @@
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { getContributorLoader } from "$lib/shared/feedback/getContributorLoader";
+  import { getContributorLoader } from "$lib/shared/feedback/get-contributor-loader";
   import {
     CATEGORY_ICONS,
     CATEGORY_LABELS,
