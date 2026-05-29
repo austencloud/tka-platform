@@ -19,7 +19,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../auth/firebase";
-import { db } from "../../persistence/database/TKADatabase";
+import { db } from "../../persistence/database/tka-database";
 import { getUserNotificationsPath } from "../data/firestore-collections";
 import type { AchievementNotification } from "../domain/models/achievement-models";
 import { getMilestoneForLevel } from "../domain/constants/xp-constants";

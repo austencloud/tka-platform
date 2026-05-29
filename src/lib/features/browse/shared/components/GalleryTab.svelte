@@ -4,7 +4,7 @@
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { BrowseEngine } from "$lib/shared/browse/engine/types";
-  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
 
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";

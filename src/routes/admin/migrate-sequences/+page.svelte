@@ -6,7 +6,7 @@
    * Access at: /admin/migrate-sequences
    */
 
-  import { db } from "$lib/shared/persistence/database/TKADatabase";
+  import { db } from "$lib/shared/persistence/database/tka-database";
   import { onMount } from "svelte";
 
   // Debug: Log database info

@@ -8,7 +8,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "../../../auth/firebase";
-import { db } from "../../../persistence/database/TKADatabase";
+import { db } from "../../../persistence/database/tka-database";
 import { getUserSkillProgressPath } from "../../data/firestore-collections";
 import type { UserSkillProgress } from "../../domain/models/challenge-models";
 import { firestoreDataToUserSkillProgress } from "./skill-progression-firestore-codec";

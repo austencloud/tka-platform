@@ -5,7 +5,7 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequenceDataProvider";
-  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { onDestroy } from "svelte";
 
   interface Props {

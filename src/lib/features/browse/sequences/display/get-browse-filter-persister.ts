@@ -1,10 +1,9 @@
 import { browser } from '$app/environment';
-import type { IFilterPersister } from '$lib/shared/persistence/services/contracts/IFilterPersister';
-import { FilterPersister } from '$lib/shared/persistence/services/implementations/FilterPersister';
+import { FilterPersister } from '$lib/shared/persistence/services/filter-persister';
 
-let instance: IFilterPersister | null = null;
+let instance: FilterPersister | null = null;
 
-export function getBrowseFilterPersister(): IFilterPersister {
+export function getBrowseFilterPersister(): FilterPersister {
 	if (!browser) throw new Error('getBrowseFilterPersister() is browser-only');
 	return instance ??= new FilterPersister();
 }

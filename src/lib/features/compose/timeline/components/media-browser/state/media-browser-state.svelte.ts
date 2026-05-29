@@ -8,8 +8,8 @@ import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSe
 import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
 import type { BrowseFilter } from "$lib/shared/browse/services/implementations/BrowseFilter";
 import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
-import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
-import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
+import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
 import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";

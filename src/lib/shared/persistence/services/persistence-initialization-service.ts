@@ -10,7 +10,7 @@ import {
   initialize as persistenceInitialize,
   getActiveTab,
   getStorageInfo,
-} from "../dexie-persistence-service";
+} from "./dexie-persistence-service";
 
 export class PersistenceInitializationService {
   private isInitialized = false;

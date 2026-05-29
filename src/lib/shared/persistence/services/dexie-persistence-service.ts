@@ -7,10 +7,10 @@ import {
   type SequenceData,
 } from "../../foundation/domain/models/SequenceData";
 import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
-import { db } from "../database/TKADatabase";
-import { UserWorkType } from "../domain/enums/UserWorkType";
-import type { UserProject } from "../domain/models/UserProject";
-import type { UserWorkData } from "../domain/models/UserWorkData";
+import { db } from "../database/tka-database";
+import { UserWorkType } from "../domain/enums/user-work-type";
+import type { UserProject } from "../domain/models/user-project";
+import type { UserWorkData } from "../domain/models/user-work-data";
 
 export async function initialize(): Promise<void> {
   try {

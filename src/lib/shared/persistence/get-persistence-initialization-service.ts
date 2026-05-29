@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { PersistenceInitializationService } from './services/implementations/PersistenceInitializationService';
+import { PersistenceInitializationService } from './services/persistence-initialization-service';
 
 let instance: PersistenceInitializationService | null = null;
 

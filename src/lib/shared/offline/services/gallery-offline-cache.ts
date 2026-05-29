@@ -6,7 +6,7 @@
  * that PublicSequencesLoader uses for online data.
  */
 
-import { db } from "$lib/shared/persistence/database/TKADatabase";
+import { db } from "$lib/shared/persistence/database/tka-database";
 import type { GallerySequenceConverter } from "./types";
 import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/PublicSequenceIndex";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

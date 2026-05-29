@@ -26,8 +26,8 @@ import {
   type DraftSequence,
 } from "../domain/DraftSequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { db } from "$lib/shared/persistence/database/TKADatabase";
-import { UserWorkType } from "$lib/shared/persistence/domain/enums/UserWorkType";
+import { db } from "$lib/shared/persistence/database/tka-database";
+import { UserWorkType } from "$lib/shared/persistence/domain/enums/user-work-type";
 
 export class Autosaver {
   private autosaveInterval: number | null = null;

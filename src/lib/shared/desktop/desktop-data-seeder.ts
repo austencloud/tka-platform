@@ -1,4 +1,4 @@
-import { db } from "$lib/shared/persistence/database/TKADatabase";
+import { db } from "$lib/shared/persistence/database/tka-database";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { AppSettings } from "$lib/shared/settings/domain/AppSettings";
 

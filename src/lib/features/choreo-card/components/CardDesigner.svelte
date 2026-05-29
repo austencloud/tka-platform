@@ -17,7 +17,7 @@
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
-  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
   import DesignerSettingsSidebar from "./designer/DesignerSettingsSidebar.svelte";
   import CardDesignerContextMenuHost from "./context-menu/CardDesignerContextMenuHost.svelte";

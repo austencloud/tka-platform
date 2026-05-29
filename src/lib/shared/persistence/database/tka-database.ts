@@ -40,8 +40,8 @@ import {
   DEFAULT_USER_WORK_VERSION,
   TABLE_INDEXES,
 } from "../domain/constants/DATABASE_CONSTANTS";
-import type { UserProject } from "../domain/models/UserProject";
-import type { UserWorkData } from "../domain/models/UserWorkData";
+import type { UserProject } from "../domain/models/user-project";
+import type { UserWorkData } from "../domain/models/user-work-data";
 
 // ============================================================================
 // DATABASE CLASS

@@ -21,7 +21,7 @@ import {
   limit,
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../auth/firebase";
-import { db } from "../../persistence/database/TKADatabase";
+import { db } from "../../persistence/database/tka-database";
 import {
   getUserAchievementsPath,
   getUserXPPath,

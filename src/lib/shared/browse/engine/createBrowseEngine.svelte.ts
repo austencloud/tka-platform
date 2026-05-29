@@ -20,8 +20,8 @@ import type {
 	SectionGroupBy,
 } from "./types";
 
-import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
-import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
+import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
 import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import { DEFAULT_BROWSE_VIEW_MODE, type BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 import type { SectionConfig, SequenceSection } from "$lib/shared/browse/domain/models/browse-models";

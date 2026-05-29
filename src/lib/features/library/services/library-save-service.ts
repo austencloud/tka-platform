@@ -26,7 +26,7 @@ import type {
 import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
 import { LibraryError } from "$lib/shared/library/services/LibraryRepository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte.ts";
-import { db } from "$lib/shared/persistence/database/TKADatabase";
+import { db } from "$lib/shared/persistence/database/tka-database";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";

@@ -5,7 +5,7 @@
  * Data is stored locally for fast access and offline support.
  */
 
-import { db } from "$lib/shared/persistence/database/TKADatabase";
+import { db } from "$lib/shared/persistence/database/tka-database";
 import type { StoredPerformance } from "$lib/shared/train/domain/TrainDatabaseModels";
 import type { PerformanceScore } from "$lib/shared/train/domain/PerformanceData";
 

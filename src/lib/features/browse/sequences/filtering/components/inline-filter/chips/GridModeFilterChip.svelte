@@ -5,9 +5,9 @@ Options: All, Diamond, Box, Skewed. Each shows contextual count.
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import FilterChipBase from "../FilterChipBase.svelte";
-  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
 

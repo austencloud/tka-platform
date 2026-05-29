@@ -6,7 +6,7 @@
 
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../auth/firebase";
-import { db } from "../../persistence/database/TKADatabase";
+import { db } from "../../persistence/database/tka-database";
 import { getUserStreakPath } from "../data/firestore-collections";
 import { toast } from "../../toast/state/toast-state.svelte";
 import type { UserStreak } from "../domain/models/achievement-models";

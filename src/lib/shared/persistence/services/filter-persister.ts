@@ -4,20 +4,19 @@
  * Just saves/loads basic filter history - no complex state management.
  */
 
-import { BrowseFilterType } from "../../domain/enums/FilteringEnums";
-import type { BrowseFilterValue } from "../../domain/types/FilteringTypes";
+import { BrowseFilterType } from "../domain/enums/filtering-enums";
+import type { BrowseFilterValue } from "../domain/types/filtering-types";
 import type {
   FilterHistoryEntry,
-  IFilterPersister,
   SimpleBrowseState,
-} from "../contracts/IFilterPersister";
+} from "./filter-persister-types";
 import {
   safeSessionStorageGet,
   safeSessionStorageSet,
   removeSessionStorageItem as safeSessionStorageRemove,
-} from "../../../foundation/services/storage-manager";
+} from "../../foundation/services/storage-manager";
 
-export class FilterPersister implements IFilterPersister {
+export class FilterPersister {
   private readonly CACHE_VERSION = "v2.1"; // ✅ ROBUST: Cache versioning
   private readonly BROWSE_STATE_KEY = `tka-${this.CACHE_VERSION}-browse-state`;
   private readonly FILTER_HISTORY_KEY = `tka-${this.CACHE_VERSION}-filter-history`;

@@ -4,8 +4,8 @@
  * Just the essential models for basic filtering.
  */
 
-import type { BrowseFilterType } from "../enums/FilteringEnums";
-import type { BrowseFilterValue } from "../types/FilteringTypes";
+import type { BrowseFilterType } from "../enums/filtering-enums";
+import type { BrowseFilterValue } from "../types/filtering-types";
 
 /**
  * Simple active filter - just type and value

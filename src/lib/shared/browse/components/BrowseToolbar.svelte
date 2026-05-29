@@ -18,7 +18,7 @@
   import FavoritesFilterChip from "$lib/shared/browse/components/filter-chips/FavoritesFilterChip.svelte";
   import LengthFilterChip from "$lib/shared/browse/components/filter-chips/LengthFilterChip.svelte";
   import LOOPFilterChip from "$lib/shared/browse/components/filter-chips/LOOPFilterChip.svelte";
-  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import type { SequenceSource } from "../engine/types";
 
   interface Props {

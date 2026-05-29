@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { db } from "$lib/shared/persistence/database/TKADatabase";
+import { db } from "$lib/shared/persistence/database/tka-database";
 import type { DailyChallenge } from "$lib/shared/gamification/domain/models/achievement-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {

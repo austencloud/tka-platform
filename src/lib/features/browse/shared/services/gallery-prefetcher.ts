@@ -18,7 +18,7 @@ import {
 } from "$lib/shared/library/library-events";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GalleryCacheEntry } from "$lib/shared/offline/domain/offline-cache-types";
-import { db } from "$lib/shared/persistence/database/TKADatabase";
+import { db } from "$lib/shared/persistence/database/tka-database";
 
 export class GalleryPrefetcher {
   private _isWarmed = false;

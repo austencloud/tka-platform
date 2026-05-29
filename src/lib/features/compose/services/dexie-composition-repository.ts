@@ -7,7 +7,7 @@
  */
 
 import type { Composition } from "$lib/shared/animation-engine/domain/compose-types";
-import { db } from "$lib/shared/persistence/database/TKADatabase";
+import { db } from "$lib/shared/persistence/database/tka-database";
 
 /**
  * Options for querying compositions
