@@ -143,14 +143,25 @@ function applyReversalPattern(steps, patternId) {
     );
   }
 
+  // Reversal is CUMULATIVE (reversal-detector.ts: a beat reverses when its spin
+  // differs from the previous beat). A pattern symbol TOGGLES a running per-hand
+  // parity; a beat's motion is flipped from base whenever parity is true. The
+  // stored reversal flag still marks the toggle beat (the spin-change), which is
+  // what the detector re-derives. Absolute per-beat flipping made book/PPPP
+  // uniform-anti, which the detector reads back as "continuous".
+  let blueParity = false;
+  let redParity = false;
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
     const { blueReversal, redReversal } = getReversalFlagsForBeat(pattern.sequence, i);
 
+    if (blueReversal) blueParity = !blueParity;
+    if (redReversal)  redParity  = !redParity;
+
     step.blueReversal = blueReversal;
     step.redReversal  = redReversal;
-    step.blueMotionType = applyReversalToMotion(step.blueMotionType, blueReversal);
-    step.redMotionType  = applyReversalToMotion(step.redMotionType,  redReversal);
+    step.blueMotionType = applyReversalToMotion(step.blueMotionType, blueParity);
+    step.redMotionType  = applyReversalToMotion(step.redMotionType,  redParity);
   }
 
   return steps;

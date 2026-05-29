@@ -103,16 +103,18 @@ function makeSteps(count: number, blueMotion = "pro", redMotion = "pro") {
 }
 
 describe("applyReversalPattern", () => {
-  it("book pattern on all-pro steps → all anti, all flags set", () => {
+  it("book pattern on all-pro steps → alternating anti/pro (cumulative), all flags set", () => {
     const steps = makeSteps(4, "pro", "pro");
     applyReversalPattern(steps, "book");
 
-    for (const step of steps) {
+    // PPPP toggles parity every beat: flipped, base, flipped, base → anti/pro/anti/pro.
+    const expected = ["anti", "pro", "anti", "pro"];
+    steps.forEach((step, i) => {
       expect(step.blueReversal).toBe(true);
       expect(step.redReversal).toBe(true);
-      expect(step.blueMotionType).toBe("anti");
-      expect(step.redMotionType).toBe("anti");
-    }
+      expect(step.blueMotionType).toBe(expected[i]);
+      expect(step.redMotionType).toBe(expected[i]);
+    });
   });
 
   it("continuous pattern (-) leaves all pro steps unchanged", () => {
@@ -140,7 +142,9 @@ describe("applyReversalPattern", () => {
     expect(steps[1].blueReversal).toBe(true);
     expect(steps[1].redReversal).toBe(false);
     expect(steps[1].blueMotionType).toBe("anti");
-    expect(steps[1].redMotionType).toBe("pro");
+    // Cumulative: red toggled at beat 0 and not at beat 1, so red parity is still
+    // reversed here → red stays anti (not back to pro).
+    expect(steps[1].redMotionType).toBe("anti");
 
     expect(steps[2].redReversal).toBe(true);
     expect(steps[2].blueReversal).toBe(false);
@@ -169,10 +173,11 @@ describe("applyReversalPattern", () => {
     ];
     applyReversalPattern(steps, "book");
 
-    expect(steps[0].blueMotionType).toBe("anti"); // pro → anti
+    // PPPP: beat0 parity→true (flip), beat1 parity→false (base).
+    expect(steps[0].blueMotionType).toBe("anti"); // pro flipped → anti
     expect(steps[0].redMotionType).toBe("dash");  // dash unchanged
     expect(steps[1].blueMotionType).toBe("static"); // static unchanged
-    expect(steps[1].redMotionType).toBe("pro");   // anti → pro
+    expect(steps[1].redMotionType).toBe("anti");  // parity back to base → red anti unchanged
   });
 
   it("throws when given an unknown pattern id", () => {
