@@ -23,7 +23,7 @@ Variation support:
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
+  import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/share-options";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
@@ -180,7 +180,7 @@ Variation support:
           async action() {
             try {
               const { sharer } = await import(
-                "$lib/shared/share/services/implementations/Sharer"
+                "$lib/shared/share/services/sharer"
               );
               await sharer.downloadImage(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
               toast.success("Image saved");
@@ -197,7 +197,7 @@ Variation support:
           async action() {
             try {
               const { sharer } = await import(
-                "$lib/shared/share/services/implementations/Sharer"
+                "$lib/shared/share/services/sharer"
               );
               const blob = await sharer.getImageBlob(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
               await navigator.clipboard.write([

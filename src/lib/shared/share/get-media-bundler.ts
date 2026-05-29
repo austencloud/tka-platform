@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { MediaBundler } from './services/implementations/MediaBundler';
-import { getSharer } from './getSharer';
+import { MediaBundler } from './services/media-bundler';
+import { getSharer } from './get-sharer';
 
 let instance: MediaBundler | null = null;
 

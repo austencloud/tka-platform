@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
+import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
   /**
    * Video Record Coordinator Component
    *
@@ -18,7 +18,7 @@ import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
   } from "../SaveToLibraryDialog.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { RecordingResult } from "$lib/shared/video-record/services/types";
-  import type { R2VideoUploader } from "$lib/shared/share/services/implementations/R2VideoUploader";
+  import type { R2VideoUploader } from "$lib/shared/share/services/r2-video-uploader";
   import { saveRecording } from "$lib/shared/video-record/services/recording-persister";
   import {
     createRecordingMetadata,

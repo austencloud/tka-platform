@@ -34,9 +34,9 @@ export function buildChoreoCardContextMenu(
         async action() {
           try {
             const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
-            const { DEFAULT_SHARE_OPTIONS } = await import("$lib/shared/share/domain/models/ShareOptions");
+            const { DEFAULT_SHARE_OPTIONS } = await import("$lib/shared/share/domain/models/share-options");
             const { sharer } = await import(
-              "$lib/shared/share/services/implementations/Sharer"
+              "$lib/shared/share/services/sharer"
             );
             await sharer.downloadImage(sequence, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
             toast.success("Image saved");
@@ -54,9 +54,9 @@ export function buildChoreoCardContextMenu(
         async action() {
           try {
             const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
-            const { DEFAULT_SHARE_OPTIONS } = await import("$lib/shared/share/domain/models/ShareOptions");
+            const { DEFAULT_SHARE_OPTIONS } = await import("$lib/shared/share/domain/models/share-options");
             const { sharer } = await import(
-              "$lib/shared/share/services/implementations/Sharer"
+              "$lib/shared/share/services/sharer"
             );
             const blob = await sharer.getImageBlob(sequence, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
             await navigator.clipboard.write([

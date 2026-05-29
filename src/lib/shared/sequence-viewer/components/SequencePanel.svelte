@@ -12,8 +12,8 @@
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { SequenceImageSharer } from "$lib/shared/share/services/implementations/SequenceImageSharer";
-  import { getSequenceImageSharer } from "$lib/shared/share/getSequenceImageSharer";
+  import type { SequenceImageSharer } from "$lib/shared/share/services/sequence-image-sharer";
+  import { getSequenceImageSharer } from "$lib/shared/share/get-sequence-image-sharer";
   import type { SequenceDetailLoader } from "$lib/shared/browse/services/SequenceDetailLoader";
   import type { VideoCountManager } from "$lib/shared/browse/services/VideoCountManager";
   import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";

@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import { getVideoUploader } from "$lib/shared/share/getVideoUploader";
+  import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
   import { saveVideo } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";

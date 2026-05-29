@@ -12,7 +12,7 @@ import { getDeepLinkSequenceHandler } from './getDeepLinkSequenceHandler';
 import { getDeepLinker } from '$lib/shared/navigation/getDeepLinker';
 import { getCreateModuleHandlers } from './getCreateModuleHandlers';
 import { getCreateModuleEffectCoordinator } from './getCreateModuleEffectCoordinator';
-import { getSharer } from '$lib/shared/share/getSharer';
+import { getSharer } from '$lib/shared/share/get-sharer';
 import { getPanelPersister } from './getPanelPersister';
 import * as sequenceStatsCalculator from './services/sequence-stats-calculator';
 import { getSequenceTransformer } from '$lib/shared/create/getSequenceTransformer';

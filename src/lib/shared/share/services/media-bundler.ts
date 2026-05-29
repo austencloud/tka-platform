@@ -1,11 +1,11 @@
-import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import type { InstagramMediaItem } from "../../domain/models/InstagramMedia";
-import type { ShareOptions } from "../../domain/models/ShareOptions";
+import type { SequenceData } from "../../foundation/domain/models/SequenceData";
+import type { InstagramMediaItem } from "../domain/models/instagram-media";
+import type { ShareOptions } from "../domain/models/share-options";
 import {
   INSTAGRAM_MEDIA_CONSTRAINTS,
   validateMediaItem,
-} from "../../domain/models/InstagramMedia";
-import type { Sharer } from "./Sharer";
+} from "../domain/models/instagram-media";
+import type { Sharer } from "./sharer";
 
 export class MediaBundler {
   constructor(private shareService: Sharer) {}

@@ -7,11 +7,11 @@
 import type {
   InstagramLink,
   InstagramUrlValidation,
-} from "../domain/models/InstagramLink";
+} from "../domain/models/instagram-link";
 import {
   INSTAGRAM_URL_PATTERNS,
   createInstagramLink,
-} from "../domain/models/InstagramLink";
+} from "../domain/models/instagram-link";
 
 export function extractPostId(url: string): string | null {
   const trimmedUrl = url.trim();

@@ -1,8 +1,8 @@
 import { getErrorHandler } from "$lib/shared/application/getErrorHandler";
-import { getUploadUrl, startMultipart, getPartUrl, completeMultipart, listParts, deleteByPrefix } from "../r2-presigner";
+import { getUploadUrl, startMultipart, getPartUrl, completeMultipart, listParts, deleteByPrefix } from "./r2-presigner";
 import { getAuthSync } from "$lib/shared/auth/firebase";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
-import type { VideoUploadResult, UploadOptions, MultipartUploadState } from "../contracts/types";
+import type { VideoUploadResult, UploadOptions, MultipartUploadState } from "./types";
 
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024;
 const PART_SIZE = 10 * 1024 * 1024;

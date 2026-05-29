@@ -11,7 +11,7 @@ import {
   type CollaborativeVideo,
   type VideoVisibility,
 } from "../domain/CollaborativeVideo";
-import type { VideoUploadResult } from "../../share/services/contracts/types";
+import type { VideoUploadResult } from "../../share/services/types";
 
 export interface CreateVideoFromUploadOptions {
   /** The upload result from R2VideoUploader */

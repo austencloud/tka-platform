@@ -7,13 +7,13 @@
  * Domain: Export Panel - Export Orchestration
  */
 
-import type { Sharer } from "$lib/shared/share/services/implementations/Sharer";
+import type { Sharer } from "$lib/shared/share/services/sharer";
 import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ExportSettings } from "../domain/models/export-settings";
 import type { ExportResult, AnimationExportDependencies, ExportUserInfo } from "./types";
-import type { ShareOptions } from "$lib/shared/share/domain/models/ShareOptions";
-import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
+import type { ShareOptions } from "$lib/shared/share/domain/models/share-options";
+import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/share-options";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { VIDEO_EXPORT_SUCCESS_DELAY_MS } from "$lib/shared/animation-engine/domain/constants/timing";
 import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";

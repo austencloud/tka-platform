@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { ExportOrchestrator } from './services/export-orchestrator';
-import { getSharer } from '$lib/shared/share/getSharer';
+import { getSharer } from '$lib/shared/share/get-sharer';
 
 let instance: ExportOrchestrator | null = null;
 

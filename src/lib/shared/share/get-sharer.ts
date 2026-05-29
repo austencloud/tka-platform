@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { Sharer } from './services/implementations/Sharer';
+import { Sharer } from './services/sharer';
 import { getSequenceRenderer } from '$lib/shared/render/getSequenceRenderer';
 
 let instance: Sharer | null = null;
