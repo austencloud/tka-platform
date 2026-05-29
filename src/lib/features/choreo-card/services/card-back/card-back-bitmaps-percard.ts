@@ -462,13 +462,18 @@ export async function rasterizeStepCount(
   const boxH = Math.round(9 * cqi);
   const { canvas, ctx: ctx2d } = makeCanvas(boxW, boxH);
 
-  ctx2d.font = `700 ${9 * cqi}px "Segoe UI", system-ui, -apple-system, sans-serif`;
+  const fontPx = 9 * cqi;
+  ctx2d.font = `700 ${fontPx}px "Segoe UI", system-ui, -apple-system, sans-serif`;
   ctx2d.fillStyle = ctx.textMutedColor;
   ctx2d.textAlign = "right";
   ctx2d.textBaseline = "alphabetic";
-  // line-height:1 at font-size 9cqi → the glyph box equals the slot height; the
-  // alphabetic baseline sits at the box bottom (descenders are negligible for digits).
-  ctx2d.fillText(String(count), boxW, boxH);
+  // line-height:1: the glyph baseline sits one font-descent ABOVE the line-box
+  // bottom (= slot bottom). Putting the alphabetic baseline at boxH draws the
+  // digit ~a descent too low; lift it by the real font descent so the bottom of
+  // the digit lands at the slot bottom like the live `.corner-label`.
+  const m = ctx2d.measureText(String(count));
+  const descent = m.fontBoundingBoxDescent || m.actualBoundingBoxDescent || fontPx * 0.21;
+  ctx2d.fillText(String(count), boxW, boxH - descent);
 
   return createImageBitmap(canvas);
 }
