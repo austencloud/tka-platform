@@ -133,6 +133,12 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   // context (not script-scoped), so it is passed in at the call site.
   function selectSplitMode(ctx: OrchestratorContext) {
     ctx.viewerState.exitExport();
+    // Mobile has no comparison-mode bar, so the only split pairing it can show
+    // is 2D + Card. Force it here (and via the effect below) so a pairing
+    // persisted from desktop (e.g. 2D + 3D) can't strand a mobile user.
+    if (isMobileWidth) {
+      ctx.viewerState.setSplitConfig({ leftPane: 'animation', rightPane: 'card' });
+    }
     ctx.viewerState.setViewerMode('split');
     setTimeout(() => rerenderTrigger++, 280);
   }
@@ -508,11 +514,13 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                       onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
                       playbackMode={ctx.playbackMode}
                       onPlaybackModeChange={ctx.handlePlaybackModeChange}
-                      splitConfig={ctx.viewerState.viewerMode === 'card'
+                      splitConfig={isMobileWidth && ctx.viewerState.viewerMode === 'split'
+                        ? { leftPane: 'animation', rightPane: 'card' }
+                        : (ctx.viewerState.viewerMode === 'card'
                         ? { ...ctx.viewerState.splitConfig, rightPane: 'card' }
                         : (ctx.viewerState.viewerMode !== 'split' && (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d' || ctx.viewerState.viewerMode === 'mandala')
                           ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
-                          : ctx.viewerState.splitConfig)}
+                          : ctx.viewerState.splitConfig))}
                       onSplitConfigReplace={(config) => ctx.viewerState.setSplitConfig(config)}
                       isLoggedIn={ctx.isLoggedIn}
                       onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}

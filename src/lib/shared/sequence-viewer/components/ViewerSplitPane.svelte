@@ -307,7 +307,7 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
   data-landscape={layout.isLandscapeMobile || undefined}
   data-focused={layout.focusedPane}
 >
-  {#if !layout.focusedPane && !isExporting && onSplitConfigReplace}
+  {#if !layout.focusedPane && !isExporting && onSplitConfigReplace && !layout.isMobile}
     <ComparisonModeBar current={comparisonMode} onSelect={selectComparisonMode} />
   {/if}
 
