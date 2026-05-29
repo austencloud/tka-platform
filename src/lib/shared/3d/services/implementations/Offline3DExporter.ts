@@ -37,7 +37,7 @@ import { tick } from "svelte";
 import { Vector2 } from "three";
 import type { BackgroundVideoEncoder } from "$lib/shared/animation-engine/services/implementations/BackgroundVideoEncoder";
 import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-import type { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
+import type { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
 
 export interface Offline3DExportOptions {
   fps: number;
@@ -113,9 +113,9 @@ import {
   getExportDimensions,
   calculateBitrate,
 } from "$lib/shared/animation-engine/domain/video-export-calculations";
-import type { CanvasFrameCapturer } from "$lib/shared/video-export/services/implementations/CanvasFrameCapturer";
+import type { CanvasFrameCapturer } from "$lib/shared/video-export/services/canvas-frame-capturer";
 import { interpolateKeyframes } from "$lib/shared/video-export/services/camera-keyframe-interpolator";
-import { ExportDiagnostics } from "$lib/shared/video-export/domain/ExportDiagnostics";
+import { ExportDiagnostics } from "$lib/shared/video-export/domain/export-diagnostics";
 
 const KEYFRAME_INTERVAL = 30;
 const FALLBACK_ASPECT_RATIO = 16 / 9;

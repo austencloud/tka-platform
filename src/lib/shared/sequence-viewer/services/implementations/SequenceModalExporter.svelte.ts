@@ -12,7 +12,7 @@ import type { AnimationPanelState } from "$lib/shared/animation-engine/state/ani
 
 import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/getOffline3DExporter";
-import type { CameraKeyframeBuffer } from '$lib/shared/video-export/domain/CameraKeyframe';
+import type { CameraKeyframeBuffer } from '$lib/shared/video-export/domain/camera-keyframe';
 
 export interface VideoExportEffectOverrides {
   fire?: boolean;

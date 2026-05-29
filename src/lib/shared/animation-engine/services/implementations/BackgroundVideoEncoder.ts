@@ -23,7 +23,7 @@ import type {
   ExportWorkerMessage,
   ExportWorkerResponse,
 } from "$lib/shared/animation-engine/workers/video-export.worker";
-import type { CapturedFrame } from "$lib/shared/video-export/domain/CapturedFrame";
+import type { CapturedFrame } from "$lib/shared/video-export/domain/captured-frame";
 
 export class BackgroundVideoEncoder {
   private worker: Worker | null = null;

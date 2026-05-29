@@ -18,7 +18,7 @@
  */
 
 import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
-import type { CapturedFrame } from "$lib/shared/video-export/domain/CapturedFrame";
+import type { CapturedFrame } from "$lib/shared/video-export/domain/captured-frame";
 
 // ---------------------------------------------------------------------------
 // WebCodecs feature detection

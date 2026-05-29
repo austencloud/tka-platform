@@ -1,4 +1,4 @@
-import { CanvasFrameCapturer } from './services/implementations/CanvasFrameCapturer';
+import { CanvasFrameCapturer } from './services/canvas-frame-capturer';
 
 let instance: CanvasFrameCapturer | null = null;
 export function getCanvasFrameCapturer(): CanvasFrameCapturer {

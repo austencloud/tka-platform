@@ -1,5 +1,5 @@
-import type { CameraKeyframe } from "$lib/shared/video-export/domain/CameraKeyframe";
-import type { InterpolatedCamera } from "./contracts/types";
+import type { CameraKeyframe } from "$lib/shared/video-export/domain/camera-keyframe";
+import type { InterpolatedCamera } from "./types";
 
 function lerpVec3(
   a: [number, number, number],
