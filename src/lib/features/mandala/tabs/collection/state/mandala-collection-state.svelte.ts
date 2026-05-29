@@ -1,6 +1,6 @@
 import type { CollectedMandala } from "../domain/mandala-collection-types";
-import { LocalMandalaCollectionRepository } from "../services/LocalMandalaCollectionRepository";
-import { loadMandalas, saveMandala, removeMandala } from "../services/FirebaseMandalaCollectionRepository";
+import { LocalMandalaCollectionRepository } from "../services/local-mandala-collection-repository";
+import { loadMandalas, saveMandala, removeMandala } from "../services/firebase-mandala-collection-repository";
 
 const localRepo = new LocalMandalaCollectionRepository();
 
