@@ -1,6 +1,6 @@
 import type { EffectType } from "../../domain/types/TipEffectTypes";
 import type { EffectRendererLike } from "./EffectRenderer";
-import type { EffectRendererManager } from "../implementations/EffectRendererManager";
+import type { EffectRendererManager } from "../effect-renderer-manager";
 
 /** Dispatch strategy for an effect — selects the host's lifecycle/render path. */
 export type EffectKind = "canvas2d" | "webgl" | "led" | "trails";

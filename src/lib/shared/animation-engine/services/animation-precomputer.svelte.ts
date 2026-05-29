@@ -9,21 +9,21 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { TrailSettings } from "../../domain/types/TrailTypes";
-import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
-import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
-import { AnimationPathCache } from "$lib/shared/animation-engine/services/implementations/AnimationPathCache";
-import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+import type { TrailSettings } from "../domain/types/TrailTypes";
+import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import { AnimationPathCache } from "$lib/shared/animation-engine/services/animation-path-cache";
+import { getAnimationVisibilityManager } from "../state/animation-visibility-state.svelte";
 import {
   SequenceFramePreRenderer,
   type PreRenderProgress,
-} from "$lib/shared/animation-engine/services/implementations/SequenceFramePreRenderer";
+} from "$lib/shared/animation-engine/services/sequence-frame-pre-renderer";
 import type {
   PrecomputationServiceConfig,
   PrecomputationState,
   PropDimensions,
-} from "../contracts/IAnimationPrecomputer";
+} from "./IAnimationPrecomputer";
 
 // ============================================================================
 // GLOBAL PATH CACHE

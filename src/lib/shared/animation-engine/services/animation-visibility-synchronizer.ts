@@ -5,8 +5,8 @@
  * animation visibility settings at once.
  */
 
-import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
-import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
+import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
+import type { EffectType, TipEffectMap } from "../domain/types/TipEffectTypes";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 /**

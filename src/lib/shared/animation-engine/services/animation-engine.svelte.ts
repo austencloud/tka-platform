@@ -19,35 +19,35 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
-import { type TrailSettings } from "../../domain/types/TrailTypes";
-import type { AdditionalLayerProps } from "../../domain/types/TrailCaptureTypes";
-import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
+import { type TrailSettings } from "../domain/types/TrailTypes";
+import type { AdditionalLayerProps } from "../domain/types/TrailCaptureTypes";
+import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import type { TipEffortMap } from "../../domain/types/TipEffectTypes";
+import type { TipEffortMap } from "../domain/types/TipEffectTypes";
 
 // Services
 import {
   DEFAULT_CANVAS_SIZE,
-} from "./CanvasResizer.svelte";
-import { FrameBudgetMonitor } from "./FrameBudgetMonitor";
-import { DeviceTierDetector } from "./DeviceTierDetector";
-import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
-import type { FireOverlayConfig } from "../../domain/types/FireTypes";
-import type { FireDefaultsLoader } from "./FireDefaultsLoader";
-import type { LedOverlayConfig } from "../../domain/types/LedTypes";
+} from "./canvas-resizer.svelte";
+import { FrameBudgetMonitor } from "./frame-budget-monitor";
+import { DeviceTierDetector } from "./implementations/DeviceTierDetector";
+import { AnimatorCanvasInitializer } from "./animator-canvas-initializer";
+import type { FireOverlayConfig } from "../domain/types/FireTypes";
+import type { FireDefaultsLoader } from "./fire-defaults-loader";
+import type { LedOverlayConfig } from "../domain/types/LedTypes";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
-import { LiveRenderContext } from "./RenderContext";
-import type { RenderContext } from "./RenderContextRegistry";
+import { LiveRenderContext } from "./render-context";
+import type { RenderContext } from "./render-context-registry";
 
 // Extracted modules
-import { CanvasLifecycleManager, type LifecycleInitCtx } from "./CanvasLifecycleManager";
-import { PropSystem } from "./managers/PropSystem";
-import { FrameSystem } from "./managers/FrameSystem";
-import { EffectSystem } from "./managers/EffectSystem";
-import { PlaybackSync } from "./managers/PlaybackSync";
-import type { EffectType, TipEffectMap } from '../../domain/types/TipEffectTypes';
-import { createAnimatorState, type AnimatorState } from '../../state/animator-state.svelte';
+import { CanvasLifecycleManager, type LifecycleInitCtx } from "./canvas-lifecycle-manager";
+import { PropSystem } from "./managers/prop-system";
+import { FrameSystem } from "./managers/frame-system";
+import { EffectSystem } from "./managers/effect-system";
+import { PlaybackSync } from "./managers/playback-sync";
+import type { EffectType, TipEffectMap } from '../domain/types/TipEffectTypes';
+import { createAnimatorState, type AnimatorState } from '../state/animator-state.svelte';
 
 // ── Effects helper utility (used by initialize + hasEffectInMap) ────────────
 

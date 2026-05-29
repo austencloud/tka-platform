@@ -7,7 +7,7 @@
  * 3. Type-safe access to Dark Mode state
  */
 
-import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+import { getAnimationVisibilityManager } from "../state/animation-visibility-state.svelte";
 
 export class DarkModeProvider {
   private manager = getAnimationVisibilityManager();

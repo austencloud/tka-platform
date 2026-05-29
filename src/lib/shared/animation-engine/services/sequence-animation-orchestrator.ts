@@ -16,7 +16,7 @@ import type {
   SequenceMetadata,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import type { AnimationStateManager } from "$lib/shared/animation-engine/services/implementations/AnimationStateManager";
+import type { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
 import {
   validateSteps,
   calculateBeatState,
@@ -24,7 +24,7 @@ import {
   calculateBeatStateDurationAware,
   getStepStartTime,
 } from "$lib/shared/animation-engine/services/step-calculator";
-import type { PropInterpolator } from "$lib/shared/animation-engine/services/implementations/PropInterpolator";
+import type { PropInterpolator } from "$lib/shared/animation-engine/services/prop-interpolator";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";

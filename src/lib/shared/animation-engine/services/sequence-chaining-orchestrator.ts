@@ -7,7 +7,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { EndState } from "$lib/shared/landing/domain/types";
 import type { IInfiniteSequenceGenerator, IEndlessSpinnerOrchestrator, IBroadcastProvider, PlaybackHistoryEntry, SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";

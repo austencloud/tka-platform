@@ -4,8 +4,8 @@
  */
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
-import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/canvas-2d-animation-renderer";
 import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import {
   generateGridSvg,
@@ -15,7 +15,7 @@ import {
   generateBlueStaffSvg,
   generateRedStaffSvg,
 } from "$lib/shared/animation-engine/services/svg-generator";
-import type { ISVGGenerator } from "$lib/shared/animation-engine/services/contracts/ISVGGenerator";
+import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
 import { getTrailCapturer } from "$lib/shared/animation-engine/getTrailCapturer";
 
@@ -23,7 +23,7 @@ import type {
   AnimatorServices,
   AnimatorServiceLoadResult,
   AnimationRendererLoadResult,
-} from "./contracts/IAnimatorLoader";
+} from "./IAnimatorLoader";
 
 export function loadAnimatorServices(): AnimatorServiceLoadResult {
   try {

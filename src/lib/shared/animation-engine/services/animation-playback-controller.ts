@@ -11,8 +11,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-import type { AnimationLoop } from "$lib/shared/animation-engine/services/implementations/AnimationLoop";
-import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+import type { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
+import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-animation-state.svelte";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";

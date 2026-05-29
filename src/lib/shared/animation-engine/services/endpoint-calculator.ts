@@ -13,7 +13,7 @@ import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { AngleCalculatorLike } from "../angle-calculator";
+import type { AngleCalculatorLike } from "./angle-calculator";
 import {
   calculateProTargetAngle,
   calculateAntispinTargetAngle,

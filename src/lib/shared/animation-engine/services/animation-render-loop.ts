@@ -9,32 +9,32 @@
  * Handles RAF scheduling, trail point gathering, and scene rendering.
  */
 
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
-import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/contracts/ITrailCapturer";
-import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
-import { TrailMode } from "../../domain/types/TrailTypes";
-import type { AnimationPathCache } from "$lib/shared/animation-engine/services/implementations/AnimationPathCache";
-import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor'
-import type { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
-import type { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";
-import type { RenderedPropTransform, PropTipData } from "../../domain/types/FireTypes";
-import type { FireTipTrackerConfig } from "./FireTipTracker";
-import type { FireTipTracker } from "./FireTipTracker";
-import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/implementations/led/WebGLLedRenderer'
-import type { LedTipTrackerConfig } from "./LedTipTracker";
-import type { LedTipTracker } from "./LedTipTracker";
-import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import type { ITrailCapturer as TrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
+import type { TrailPoint, TrailSettings } from "../domain/types/TrailTypes";
+import { TrailMode } from "../domain/types/TrailTypes";
+import type { AnimationPathCache } from "$lib/shared/animation-engine/services/animation-path-cache";
+import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/frame-budget-monitor'
+import type { WebGLFireRenderer } from "./fire/web-gl-fire-renderer";
+import type { CharcoalSparkRenderer } from "./charcoal/charcoal-spark-renderer";
+import type { RenderedPropTransform, PropTipData } from "../domain/types/FireTypes";
+import type { FireTipTrackerConfig } from "./fire-tip-tracker";
+import type { FireTipTracker } from "./fire-tip-tracker";
+import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/led/web-gl-led-renderer'
+import type { LedTipTrackerConfig } from "./led-tip-tracker";
+import type { LedTipTracker } from "./led-tip-tracker";
+import type { ITrailOverlayCanvas } from "./ITrailOverlayCanvas";
 import type {
   RenderLoopConfig,
   RenderFrameParams,
-} from "../contracts/IAnimationRenderLoop";
-import type { EffectRendererLike } from "../effects/EffectRenderer";
-import { QualityTier } from "../../domain/types/QualityTypes";
-import { effectErrorSignal } from "../../state/effect-error-signal.svelte";
-import { resolveEffect } from "../../domain/types/TipEffectTypes";
-import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
-import type { FireTipUpdateResult } from './FireTipTracker';
-import type { FireFrameInput } from '../../domain/types/FireTypes';
+} from "./IAnimationRenderLoop";
+import type { EffectRendererLike } from "./effects/EffectRenderer";
+import { QualityTier } from "../domain/types/QualityTypes";
+import { effectErrorSignal } from "../state/effect-error-signal.svelte";
+import { resolveEffect } from "../domain/types/TipEffectTypes";
+import type { EffectType, TipEffectMap } from "../domain/types/TipEffectTypes";
+import type { FireTipUpdateResult } from './fire-tip-tracker';
+import type { FireFrameInput } from '../domain/types/FireTypes';
 
 // ============================================================================
 // Longtask observer singleton - one PerformanceObserver shared across every

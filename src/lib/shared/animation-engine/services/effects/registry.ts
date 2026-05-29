@@ -10,22 +10,22 @@
 import type { EffectPlugin } from "./EffectPlugin";
 import type { EffectType } from "../../domain/types/TipEffectTypes";
 
-import { fireEffectPlugin } from "../implementations/fire/WebGLFireRenderer";
-import { charcoalEffectPlugin } from "../implementations/charcoal/CharcoalSparkRenderer";
-import { ledEffectPlugin } from "../implementations/led/WebGLLedRenderer";
-import { trailsEffectPlugin } from "../implementations/TrailOverlayWebGL2";
-import { zapEffectPlugin } from "../implementations/ZapOverlayRenderer";
-import { sparklesEffectPlugin } from "../implementations/SparklesOverlayRenderer";
-import { echoEffectPlugin } from "../implementations/EchoOverlayRenderer";
-import { bloomEffectPlugin } from "../implementations/BloomOverlayRenderer";
-import { waterEffectPlugin } from "../implementations/WaterOverlayRenderer";
-import { bubblesEffectPlugin } from "../implementations/BubblesOverlayRenderer";
-import { petalsEffectPlugin } from "../implementations/PetalsOverlayRenderer";
-import { smokeEffectPlugin } from "../implementations/SmokeOverlayRenderer";
-import { inkEffectPlugin } from "../implementations/InkOverlayRenderer";
-import { frostEffectPlugin } from "../implementations/FrostOverlayRenderer";
-import { silkEffectPlugin } from "../implementations/SilkOverlayRenderer";
-import { pulseEffectPlugin } from "../implementations/PulseOverlayRenderer";
+import { fireEffectPlugin } from "../fire/web-gl-fire-renderer";
+import { charcoalEffectPlugin } from "../charcoal/charcoal-spark-renderer";
+import { ledEffectPlugin } from "../led/web-gl-led-renderer";
+import { trailsEffectPlugin } from "../trail-overlay-web-gl2";
+import { zapEffectPlugin } from "../zap-overlay-renderer";
+import { sparklesEffectPlugin } from "../sparkles-overlay-renderer";
+import { echoEffectPlugin } from "../echo-overlay-renderer";
+import { bloomEffectPlugin } from "../bloom-overlay-renderer";
+import { waterEffectPlugin } from "../water-overlay-renderer";
+import { bubblesEffectPlugin } from "../bubbles-overlay-renderer";
+import { petalsEffectPlugin } from "../petals-overlay-renderer";
+import { smokeEffectPlugin } from "../smoke-overlay-renderer";
+import { inkEffectPlugin } from "../ink-overlay-renderer";
+import { frostEffectPlugin } from "../frost-overlay-renderer";
+import { silkEffectPlugin } from "../silk-overlay-renderer";
+import { pulseEffectPlugin } from "../pulse-overlay-renderer";
 
 /** The single source of truth for all effects. Add a new effect by adding one line here. */
 export const EFFECT_PLUGINS: readonly EffectPlugin[] = [

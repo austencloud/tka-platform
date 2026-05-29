@@ -4,14 +4,14 @@
  * Orchestrates the complex async initialization sequence for AnimatorCanvas.
  */
 
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
-import { loadAnimationRenderer } from "../animator-loader";
-import { DEFAULT_CANVAS_SIZE } from "./CanvasResizer.svelte";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import { loadAnimationRenderer } from "./animator-loader";
+import { DEFAULT_CANVAS_SIZE } from "./canvas-resizer.svelte";
 import type {
   InitializationResult,
   InitializerCallbacks,
   InitializerDependencies,
-} from "../contracts/IAnimatorCanvasInitializer";
+} from "./IAnimatorCanvasInitializer";
 
 /**
  * Measure the actual size of a container element.

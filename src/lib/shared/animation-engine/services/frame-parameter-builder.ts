@@ -10,14 +10,14 @@
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { RenderFrameParams } from "../contracts/IAnimationRenderLoop";
-import { type TrailSettings, DEFAULT_TRAIL_SETTINGS, TrailMode } from "../../domain/types/TrailTypes";
-import { TrackingMode } from "../../domain/types/TrailTypes";
-import { DEFAULT_PROP_DIMENSIONS } from "../contracts/IPropTextureLoader";
-import { DEFAULT_PROP_FLAME_COLORS } from "../../domain/types/FireTypes";
-import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
+import type { RenderFrameParams } from "./IAnimationRenderLoop";
+import { type TrailSettings, DEFAULT_TRAIL_SETTINGS, TrailMode } from "../domain/types/TrailTypes";
+import { TrackingMode } from "../domain/types/TrailTypes";
+import { DEFAULT_PROP_DIMENSIONS } from "./IPropTextureLoader";
+import { DEFAULT_PROP_FLAME_COLORS } from "../domain/types/FireTypes";
+import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/SettingsState.svelte";
-import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
+import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 import type {
@@ -65,9 +65,9 @@ import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
-import type { AnimationEngineProps } from "./AnimationEngine.svelte";
-import type { AnimatorState } from "../../state/animator-state.svelte";
-import type { EffectRendererManager } from "./EffectRendererManager";
+import type { AnimationEngineProps } from "./animation-engine.svelte";
+import type { AnimatorState } from "../state/animator-state.svelte";
+import type { EffectRendererManager } from "./effect-renderer-manager";
 
 export class FrameParameterBuilder {
   // ── Effect intent caches ────────────────────────────────────────────

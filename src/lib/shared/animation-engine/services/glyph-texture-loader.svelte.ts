@@ -5,11 +5,11 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import type {
   GlyphTextureState,
   PendingGlyph,
-} from "../contracts/IGlyphTextureLoader";
+} from "./IGlyphTextureLoader";
 
 export class GlyphTextureLoader {
   // Reactive state - owned by service

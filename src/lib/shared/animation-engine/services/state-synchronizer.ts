@@ -1,7 +1,7 @@
-import type { CanvasResizer } from "./CanvasResizer.svelte";
-import type { EffectRendererManager } from "./EffectRendererManager";
-import type { TrailCapturer } from "./TrailCapturer";
-import type { IAnimationRenderLoop } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderLoop";
+import type { CanvasResizer } from "./canvas-resizer.svelte";
+import type { EffectRendererManager } from "./effect-renderer-manager";
+import type { TrailCapturer } from "./trail-capturer";
+import type { IAnimationRenderLoop } from "$lib/shared/animation-engine/services/IAnimationRenderLoop";
 
 export interface SyncServiceDeps {
   canvasResizerService: CanvasResizer | null;
