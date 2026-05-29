@@ -31,12 +31,12 @@ import type {
   VegetationCategory,
   ManifestBiome,
   VegetationManifest,
-} from "../../domain/vegetation-categories";
+} from "../domain/vegetation-categories";
 import {
   CATEGORY_SCALE_RANGES,
   CATEGORY_Y_OFFSET,
   isVegetationCategory,
-} from "../../domain/vegetation-categories";
+} from "../domain/vegetation-categories";
 
 // ============================================================================
 // CONSTANTS

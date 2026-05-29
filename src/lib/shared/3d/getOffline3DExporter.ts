@@ -1,4 +1,4 @@
-import { Offline3DExporter } from './services/implementations/Offline3DExporter';
+import { Offline3DExporter } from './services/offline-3d-exporter';
 import { getBackgroundVideoEncoder } from '$lib/shared/animation-engine/getBackgroundVideoEncoder';
 import { getCanvasFrameCapturer } from '$lib/shared/video-export/get-canvas-frame-capturer';
 

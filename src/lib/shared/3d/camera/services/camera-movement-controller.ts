@@ -10,8 +10,8 @@
 
 import type { PerspectiveCamera} from "three";
 import { Vector3 as ThreeVector3 } from "three";
-import { CameraMode } from "../../types";
-import type { PhysicsProvider, Vector3 } from "../../types";
+import { CameraMode } from "../types";
+import type { PhysicsProvider, Vector3 } from "../types";
 
 /**
  * Movement input state

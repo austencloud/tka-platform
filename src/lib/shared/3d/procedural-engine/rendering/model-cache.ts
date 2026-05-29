@@ -13,7 +13,7 @@ import {
   type Material,
 } from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { ModelRegistry } from "../vegetation/services/implementations/ModelRegistry";
+import { ModelRegistry } from "../vegetation/services/model-registry";
 import type { VegetationCategory, ManifestBiome } from "../vegetation/domain/vegetation-categories";
 
 // ============================================================================

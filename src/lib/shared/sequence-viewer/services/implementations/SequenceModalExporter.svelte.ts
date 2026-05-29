@@ -1,5 +1,5 @@
 import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-import type { Offline3DExporter } from "$lib/shared/3d/services/implementations/Offline3DExporter";
+import type { Offline3DExporter } from "$lib/shared/3d/services/offline-3d-exporter";
 import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";

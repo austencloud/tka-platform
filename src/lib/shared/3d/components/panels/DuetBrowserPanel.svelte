@@ -10,7 +10,7 @@ import { getDuetPersister } from "$lib/shared/3d/getDuetPersister";
 
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { DuetPersister } from "../../services/implementations/DuetPersister";
+  import type { DuetPersister } from "../../services/duet-persister";
   import type {
     DuetSequence,
     DuetSequenceWithData,

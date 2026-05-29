@@ -11,8 +11,8 @@ import type {
   DuetSequence,
   DuetSequenceWithData,
   CreateDuetInput,
-} from "../../domain/duet-sequence";
-import { createDuetSequence } from "../../domain/duet-sequence";
+} from "../domain/duet-sequence";
+import { createDuetSequence } from "../domain/duet-sequence";
 
 const STORAGE_KEY = "tka-3d-duets";
 
