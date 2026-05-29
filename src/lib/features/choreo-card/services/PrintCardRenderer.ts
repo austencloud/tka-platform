@@ -14,6 +14,8 @@ import type { ImageComposer } from "../../../shared/render/services/implementati
 import type { PrintRenderOptions } from "./types";
 import { renderCardBack } from "./card-back-dom-renderer";
 import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-renderer";
+import { buildBackJob } from "./card-back/card-back-job-builder";
+import { paintBackJob } from "./card-back/card-back-raster";
 
 
 // MPC poker card defaults
@@ -202,12 +204,36 @@ export class PrintCardRenderer {
     const bleedPx = options.bleedPx ?? MPC_BLEED;
     const theme = options.theme ?? this.theme;
 
-    return renderCardBack(sequence, {
-      width: canvasWidth,
-      height: canvasHeight,
-      bleedPx,
-      theme,
-    });
+    // The back currently rasterizes at scale 2 (the DOM renderer's
+    // modern-screenshot scale:2) → 1644x2244. Match that with the new BackJob
+    // path so the CardPair seam + print output stay pixel-identical in size.
+    const scale = 2;
+    try {
+      const job = await buildBackJob(sequence, {
+        width: canvasWidth * scale,
+        height: canvasHeight * scale,
+        bleedPx: bleedPx * scale,
+        theme,
+      });
+      const off = paintBackJob(job);
+      // Convert OffscreenCanvas → HTMLCanvasElement for the CardPair seam.
+      const out = document.createElement("canvas");
+      out.width = off.width;
+      out.height = off.height;
+      out.getContext("2d")!.drawImage(off, 0, 0);
+      return out;
+    } catch (err) {
+      console.warn(
+        "[PrintCardRenderer] new back path failed, falling back to DOM renderer:",
+        err,
+      );
+      return renderCardBack(sequence, {
+        width: canvasWidth,
+        height: canvasHeight,
+        bleedPx,
+        theme,
+      });
+    }
   }
 
   async renderInfoCardFront(theme?: string): Promise<HTMLCanvasElement> {

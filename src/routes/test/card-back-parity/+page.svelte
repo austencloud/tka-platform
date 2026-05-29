@@ -1,0 +1,441 @@
+<script lang="ts">
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { renderCardBack } from "$lib/features/choreo-card/services/card-back-dom-renderer";
+  import { buildBackJob } from "$lib/features/choreo-card/services/card-back/card-back-job-builder";
+  import { paintBackJob } from "$lib/features/choreo-card/services/card-back/card-back-raster";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
+  import { onMount, onDestroy } from "svelte";
+
+  // Logical MPC dimensions; both render paths end at scale-2 (1644x2244).
+  const LOGICAL_W = 822;
+  const LOGICAL_H = 1122;
+  const LOGICAL_BLEED = 36;
+  const SCALE = 2;
+  const OUT_W = LOGICAL_W * SCALE; // 1644
+  const OUT_H = LOGICAL_H * SCALE; // 2244
+
+  // A pixel "differs" if any channel delta exceeds this anti-aliasing tolerance.
+  const AA_TOLERANCE = 8;
+
+  // Themes to exercise. cosmic is the default; ocean adds a second palette.
+  const THEMES = ["cosmic", "ocean"] as const;
+
+  interface ParityRow {
+    label: string;
+    theme: string;
+    seqId: string;
+    level: number | string;
+    hasLoop: boolean;
+    hasStartPos: boolean;
+    diffPct: number; // % of pixels that differ
+    maxDelta: number; // worst single-channel delta seen
+    oldCanvas: HTMLCanvasElement;
+    newCanvas: HTMLCanvasElement;
+    diffCanvas: HTMLCanvasElement;
+    error?: string;
+  }
+
+  const engine = createBrowseEngine({ persistKey: null, minColumns: 2, initialColumns: 3 });
+
+  let status = $state("idle");
+  let running = $state(false);
+  let rows = $state<ParityRow[]>([]);
+  let summaryJson = $state("{}");
+  let loadError = $state<string | null>(null);
+
+  let oldSlot: HTMLDivElement;
+
+  onMount(async () => {
+    try {
+      await engine.initialize();
+    } catch (err) {
+      loadError = err instanceof Error ? err.message : String(err);
+    }
+  });
+
+  onDestroy(() => engine.destroy());
+
+  /** Pick a representative subset spanning levels, loop/no-loop, startPos/no. */
+  function selectSequences(all: SequenceData[]): SequenceData[] {
+    const renderable = all.filter((s) => Array.isArray(s.steps) && s.steps.length > 0);
+    const picked: SequenceData[] = [];
+    const seen = new Set<string>();
+
+    const want = (pred: (s: SequenceData) => boolean) => {
+      const hit = renderable.find((s) => !seen.has(s.id) && pred(s));
+      if (hit) {
+        picked.push(hit);
+        seen.add(hit.id);
+      }
+    };
+
+    const lvl = (s: SequenceData) => s.level ?? 0;
+    const hasLoop = (s: SequenceData) => !!s.isCircular || !!s.loopType;
+    const hasStart = (s: SequenceData) => !!s.startPosition;
+
+    // Matrix coverage
+    want((s) => lvl(s) === 1 && !hasLoop(s) && hasStart(s));
+    want((s) => lvl(s) === 1 && hasLoop(s));
+    want((s) => lvl(s) === 2 && hasStart(s));
+    want((s) => lvl(s) === 2 && hasLoop(s));
+    want((s) => lvl(s) === 3 && hasStart(s));
+    want((s) => lvl(s) === 3 && hasLoop(s));
+    want((s) => !hasStart(s)); // explicit no-start-position case
+    want((s) => hasLoop(s) && hasStart(s)); // loop + start together
+
+    // Top up to ~8 with any remaining renderable sequences.
+    for (const s of renderable) {
+      if (picked.length >= 8) break;
+      if (!seen.has(s.id)) {
+        picked.push(s);
+        seen.add(s.id);
+      }
+    }
+    return picked;
+  }
+
+  /** Normalize any canvas to OUT_W x OUT_H (the DOM path may emit a different size). */
+  function normalize(src: HTMLCanvasElement | OffscreenCanvas): HTMLCanvasElement {
+    const out = document.createElement("canvas");
+    out.width = OUT_W;
+    out.height = OUT_H;
+    const ctx = out.getContext("2d")!;
+    ctx.drawImage(src as CanvasImageSource, 0, 0, OUT_W, OUT_H);
+    return out;
+  }
+
+  /** Compute % differing pixels + max channel delta + a red diff overlay. */
+  function diff(
+    oldC: HTMLCanvasElement,
+    newC: HTMLCanvasElement,
+  ): { diffPct: number; maxDelta: number; diffCanvas: HTMLCanvasElement } {
+    const a = oldC.getContext("2d")!.getImageData(0, 0, OUT_W, OUT_H);
+    const b = newC.getContext("2d")!.getImageData(0, 0, OUT_W, OUT_H);
+    const diffCanvas = document.createElement("canvas");
+    diffCanvas.width = OUT_W;
+    diffCanvas.height = OUT_H;
+    const dctx = diffCanvas.getContext("2d")!;
+    const out = dctx.createImageData(OUT_W, OUT_H);
+
+    let differing = 0;
+    let maxDelta = 0;
+    const total = OUT_W * OUT_H;
+    for (let i = 0; i < a.data.length; i += 4) {
+      const dr = Math.abs(a.data[i] - b.data[i]);
+      const dg = Math.abs(a.data[i + 1] - b.data[i + 1]);
+      const db = Math.abs(a.data[i + 2] - b.data[i + 2]);
+      const da = Math.abs(a.data[i + 3] - b.data[i + 3]);
+      const worst = Math.max(dr, dg, db, da);
+      if (worst > maxDelta) maxDelta = worst;
+      if (worst > AA_TOLERANCE) {
+        differing++;
+        out.data[i] = 255;
+        out.data[i + 1] = 0;
+        out.data[i + 2] = 0;
+        out.data[i + 3] = 255;
+      } else {
+        // Show a faint grayscale of the original where pixels match.
+        const g = (a.data[i] + a.data[i + 1] + a.data[i + 2]) / 3;
+        out.data[i] = out.data[i + 1] = out.data[i + 2] = g * 0.4;
+        out.data[i + 3] = 255;
+      }
+    }
+    dctx.putImageData(out, 0, 0);
+    return { diffPct: (differing / total) * 100, maxDelta, diffCanvas };
+  }
+
+  async function renderNew(seq: SequenceData, theme: string): Promise<HTMLCanvasElement> {
+    const job = await buildBackJob(seq, {
+      width: OUT_W,
+      height: OUT_H,
+      bleedPx: LOGICAL_BLEED * SCALE,
+      theme,
+    });
+    return normalize(paintBackJob(job));
+  }
+
+  async function renderOld(seq: SequenceData, theme: string): Promise<HTMLCanvasElement> {
+    const c = await renderCardBack(seq, {
+      width: LOGICAL_W,
+      height: LOGICAL_H,
+      bleedPx: LOGICAL_BLEED,
+      theme,
+    });
+    return normalize(c);
+  }
+
+  async function run() {
+    if (running) return;
+    running = true;
+    rows = [];
+    status = "selecting sequences…";
+
+    const selected = selectSequences(engine.allSequences);
+    if (selected.length === 0) {
+      status = "no renderable sequences found";
+      running = false;
+      summaryJson = JSON.stringify({ error: "no renderable sequences" }, null, 2);
+      return;
+    }
+
+    const results: ParityRow[] = [];
+    let done = 0;
+    const totalRuns = selected.length * THEMES.length;
+
+    for (const seq of selected) {
+      for (const theme of THEMES) {
+        status = `rendering ${seq.word ?? seq.name ?? seq.id} (${theme}) — ${++done}/${totalRuns}`;
+        const lvl = seq.level ?? 0;
+        try {
+          const oldCanvas = await renderOld(seq, theme);
+          const newCanvas = await renderNew(seq, theme);
+          const { diffPct, maxDelta, diffCanvas } = diff(oldCanvas, newCanvas);
+          results.push({
+            label: `${seq.word ?? seq.name ?? seq.id}`,
+            theme,
+            seqId: seq.id,
+            level: lvl,
+            hasLoop: !!seq.isCircular || !!seq.loopType,
+            hasStartPos: !!seq.startPosition,
+            diffPct,
+            maxDelta,
+            oldCanvas,
+            newCanvas,
+            diffCanvas,
+          });
+        } catch (err) {
+          const blank = document.createElement("canvas");
+          blank.width = OUT_W;
+          blank.height = OUT_H;
+          results.push({
+            label: `${seq.word ?? seq.name ?? seq.id}`,
+            theme,
+            seqId: seq.id,
+            level: lvl,
+            hasLoop: !!seq.isCircular || !!seq.loopType,
+            hasStartPos: !!seq.startPosition,
+            diffPct: NaN,
+            maxDelta: NaN,
+            oldCanvas: blank,
+            newCanvas: blank,
+            diffCanvas: blank,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    }
+
+    rows = results;
+
+    const valid = results.filter((r) => !r.error && !Number.isNaN(r.diffPct));
+    const worst = valid.reduce((m, r) => Math.max(m, r.diffPct), 0);
+    const maxDelta = valid.reduce((m, r) => Math.max(m, r.maxDelta), 0);
+    const summary = {
+      count: results.length,
+      themes: THEMES,
+      aaTolerance: AA_TOLERANCE,
+      outputSize: { width: OUT_W, height: OUT_H },
+      worstDiffPct: Number(worst.toFixed(4)),
+      worstMaxDelta: maxDelta,
+      errors: results.filter((r) => r.error).map((r) => ({ label: r.label, theme: r.theme, error: r.error })),
+      rows: results.map((r) => ({
+        label: r.label,
+        theme: r.theme,
+        seqId: r.seqId,
+        level: r.level,
+        hasLoop: r.hasLoop,
+        hasStartPos: r.hasStartPos,
+        diffPct: Number.isNaN(r.diffPct) ? null : Number(r.diffPct.toFixed(4)),
+        maxDelta: Number.isNaN(r.maxDelta) ? null : r.maxDelta,
+        error: r.error ?? null,
+      })),
+    };
+    summaryJson = JSON.stringify(summary, null, 2);
+    status = `done — worst diff ${worst.toFixed(3)}% across ${results.length} renders`;
+    running = false;
+  }
+
+  function attach(node: HTMLDivElement, canvas: HTMLCanvasElement) {
+    canvas.style.width = "100%";
+    canvas.style.height = "auto";
+    node.appendChild(canvas);
+    return {
+      destroy() {
+        if (canvas.parentNode === node) node.removeChild(canvas);
+      },
+    };
+  }
+</script>
+
+<svelte:head>
+  <title>Card Back Parity — Old DOM vs New BackJob</title>
+</svelte:head>
+
+<div class="page">
+  <header>
+    <h1>Card Back Parity Harness</h1>
+    <p>
+      Renders representative card backs via the OLD DOM screenshot path and the NEW BackJob
+      paint path, then pixel-diffs them. AA tolerance: {AA_TOLERANCE} per channel. Output:
+      {OUT_W}×{OUT_H}.
+    </p>
+    <div class="controls">
+      <button type="button" onclick={run} disabled={running || !!loadError}>
+        {running ? "Running…" : "Run parity check"}
+      </button>
+      <span class="status">{loadError ? `load error: ${loadError}` : status}</span>
+    </div>
+  </header>
+
+  <pre id="parity-summary">{summaryJson}</pre>
+
+  {#if rows.length > 0}
+    <table class="stats">
+      <thead>
+        <tr>
+          <th>Sequence</th><th>Theme</th><th>Level</th><th>Loop</th><th>Start</th>
+          <th>% diff</th><th>max Δ</th><th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each rows as r}
+          <tr class:bad={r.error || (r.diffPct ?? 0) > 1}>
+            <td>{r.label}</td>
+            <td>{r.theme}</td>
+            <td>{r.level}</td>
+            <td>{r.hasLoop ? "yes" : "no"}</td>
+            <td>{r.hasStartPos ? "yes" : "no"}</td>
+            <td>{Number.isNaN(r.diffPct) ? "—" : r.diffPct.toFixed(3) + "%"}</td>
+            <td>{Number.isNaN(r.maxDelta) ? "—" : r.maxDelta}</td>
+            <td>{r.error ?? ""}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+
+    <div class="grid">
+      {#each rows as r}
+        <div class="cell">
+          <div class="cell-head">{r.label} — {r.theme} ({r.diffPct.toFixed(3)}%)</div>
+          <div class="trio">
+            <figure><figcaption>OLD (DOM)</figcaption><div use:attach={r.oldCanvas}></div></figure>
+            <figure><figcaption>NEW (BackJob)</figcaption><div use:attach={r.newCanvas}></div></figure>
+            <figure><figcaption>DIFF (red = differs)</figcaption><div use:attach={r.diffCanvas}></div></figure>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  <div bind:this={oldSlot} class="offscreen"></div>
+</div>
+
+<style>
+  .page {
+    min-height: 100vh;
+    background: #15151b;
+    color: #ddd;
+    padding: 24px;
+    font-family: system-ui, sans-serif;
+  }
+  header h1 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    color: #fff;
+  }
+  header p {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #999;
+    max-width: 720px;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  button {
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.5);
+    background: rgba(99, 102, 241, 0.3);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .status {
+    font-size: 13px;
+    color: #8ab4f8;
+  }
+  #parity-summary {
+    background: #0c0c10;
+    border: 1px solid #2a2a33;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    color: #b8c0cc;
+    max-height: 240px;
+    overflow: auto;
+    white-space: pre-wrap;
+  }
+  table.stats {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  table.stats th,
+  table.stats td {
+    border: 1px solid #2a2a33;
+    padding: 6px 10px;
+    text-align: left;
+  }
+  table.stats th {
+    background: #1d1d26;
+    color: #fff;
+  }
+  tr.bad td {
+    background: rgba(220, 38, 38, 0.18);
+  }
+  .grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .cell {
+    border: 1px solid #2a2a33;
+    border-radius: 8px;
+    padding: 12px;
+    background: #1a1a22;
+  }
+  .cell-head {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .trio {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  figure {
+    margin: 0;
+  }
+  figcaption {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 4px;
+  }
+  .offscreen {
+    position: fixed;
+    left: -99999px;
+    top: -99999px;
+  }
+</style>
