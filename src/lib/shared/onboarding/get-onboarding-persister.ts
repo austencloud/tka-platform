@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { OnboardingPersister } from './services/implementations/OnboardingPersister';
+import { OnboardingPersister } from './services/onboarding-persister';
 
 let instance: OnboardingPersister | null = null;
 

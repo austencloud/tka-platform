@@ -16,14 +16,14 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import type { OnboardingStatus } from "../contracts/types";
+import type { OnboardingStatus } from "./types";
 import {
   ONBOARDING_COMPLETED_KEY,
   ONBOARDING_COMPLETED_AT_KEY,
   ONBOARDING_SKIPPED_KEY,
   getModuleOnboardingKey,
   getModuleOnboardingTimestampKey,
-} from "../../config/storage-keys";
+} from "../config/storage-keys";
 
 const LAST_SEEN_VERSION_KEY = "tka-last-seen-version";
 

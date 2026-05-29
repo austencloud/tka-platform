@@ -9,8 +9,8 @@
  * the service when available.
  */
 
-import { getOnboardingPersister } from "$lib/shared/onboarding/getOnboardingPersister";
-import type { OnboardingPersister } from "../services/implementations/OnboardingPersister";
+import { getOnboardingPersister } from "$lib/shared/onboarding/get-onboarding-persister";
+import type { OnboardingPersister } from "../services/onboarding-persister";
 
 // Lazy service resolution to avoid circular dependencies
 let _onboardingService: OnboardingPersister | null = null;
