@@ -1,3 +1,4 @@
+import { browser } from "$app/environment";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import { createSceneLabState } from "$lib/features/lab/tabs/scene-lab/state/scene-lab-state.svelte";
 import { createComposerEditorState } from "$lib/shared/3d/scene-composer/composer-editor-state.svelte";
@@ -10,9 +11,37 @@ import type { SceneLabContext } from "$lib/features/lab/tabs/scene-lab/context/s
 
 export type ThemeMode = "2d" | "3d";
 
+const STORAGE_KEY = "tka-themes-lab";
+
+function loadPersisted(): { themeId: ThemeId; mode: ThemeMode } {
+  const fallback = { themeId: "ocean" as ThemeId, mode: "2d" as ThemeMode };
+  if (!browser) return fallback;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<{ themeId: ThemeId; mode: ThemeMode }>;
+    return {
+      themeId: parsed.themeId && getThemeOption(parsed.themeId) ? parsed.themeId : fallback.themeId,
+      mode: parsed.mode === "3d" || parsed.mode === "2d" ? parsed.mode : fallback.mode,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function persist(themeId: ThemeId, mode: ThemeMode): void {
+  if (!browser) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ themeId, mode }));
+  } catch {
+    // localStorage unavailable (private mode / quota) — UI pref is non-critical.
+  }
+}
+
 export function createThemesLabState() {
-  let themeId = $state<ThemeId>("ocean");
-  let mode = $state<ThemeMode>("2d");
+  const persisted = loadPersisted();
+  let themeId = $state<ThemeId>(persisted.themeId);
+  let mode = $state<ThemeMode>(persisted.mode);
 
   const sceneState = createSceneLabState();
   const composerState = createComposerEditorState();
@@ -22,6 +51,7 @@ export function createThemesLabState() {
 
   function setTheme(id: ThemeId) {
     themeId = id;
+    persist(themeId, mode);
 
     const option = getThemeOption(id);
     if (!option) return;
@@ -34,6 +64,7 @@ export function createThemesLabState() {
 
   function setMode(m: ThemeMode) {
     mode = m;
+    persist(themeId, mode);
   }
 
   const sceneLabContext: SceneLabContext = {
