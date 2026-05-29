@@ -9,15 +9,15 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/getHapticFeedback";
-  import type { DeviceCategory } from "../../services/contracts/types";
-  import type { ScreenshotMetadata } from "../../services/contracts/types";
+  import type { DeviceCategory } from "../../services/types";
+  import type { ScreenshotMetadata } from "../../services/types";
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-  import type { ScreenshotTagController } from "../../services/implementations/ScreenshotTagController";
-  import type { GalleryItem } from "../../services/contracts/types";
-  import { getScreenshotOrchestrator } from "../../getScreenshotOrchestrator";
-  import { getScreenshotUploadOrchestrator } from "../../getScreenshotUploadOrchestrator";
-  import { getScreenshotTagController } from "../../getScreenshotTagController";
-  import { getScreenshotLoader } from "../../getScreenshotLoader";
+  import type { ScreenshotTagController } from "../../services/screenshot-tag-controller";
+  import type { GalleryItem } from "../../services/types";
+  import { getScreenshotOrchestrator } from "../../get-screenshot-orchestrator";
+  import { getScreenshotUploadOrchestrator } from "../../get-screenshot-upload-orchestrator";
+  import { getScreenshotTagController } from "../../get-screenshot-tag-controller";
+  import { getScreenshotLoader } from "../../get-screenshot-loader";
   import { toMediaItems } from "../../services/gallery-item-adapter";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";

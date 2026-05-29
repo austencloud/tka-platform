@@ -1,5 +1,5 @@
 
-import { StanceSimulator, restPoseFromHeight } from './services/implementations/StanceSimulator';
+import { StanceSimulator, restPoseFromHeight } from './services/stance-simulator';
 import { userProportionsState } from "@austencloud/scene-3d";
 
 let instance: StanceSimulator | null = null;

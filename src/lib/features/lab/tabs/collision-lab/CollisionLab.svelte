@@ -1,9 +1,9 @@
 <script lang="ts">
 
-import { getCollisionLabPoseLabelRepository } from "$lib/features/lab/tabs/collision-lab/getCollisionLabPoseLabelRepository";
+import { getCollisionLabPoseLabelRepository } from "$lib/features/lab/tabs/collision-lab/get-collision-lab-pose-label-repository";
 import { enumerateDiamondInOut } from "$lib/features/lab/tabs/collision-lab/services/diamond-pose-enumerator";
-import { getStanceCandidateGenerator } from "$lib/features/lab/tabs/collision-lab/getStanceCandidateGenerator";
-import { getStanceOptimizer } from "$lib/features/lab/tabs/collision-lab/getStanceOptimizer";
+import { getStanceCandidateGenerator } from "$lib/features/lab/tabs/collision-lab/get-stance-candidate-generator";
+import { getStanceOptimizer } from "$lib/features/lab/tabs/collision-lab/get-stance-optimizer";
   /**
    * CollisionLab
    *

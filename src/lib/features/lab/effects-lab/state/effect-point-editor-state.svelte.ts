@@ -1,5 +1,5 @@
-import type { TipPointOverrideProvider } from "../services/implementations/TipPointOverrideProvider";
-import type { EffectPointsPersister } from "../services/implementations/EffectPointsPersister";
+import type { TipPointOverrideProvider } from "../services/tip-point-override-provider";
+import type { EffectPointsPersister } from "../services/effect-points-persister";
 import type { TipPoint } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";

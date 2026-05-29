@@ -1,5 +1,5 @@
-import type { OptimizerBounds, OptimizerInput } from "../services/contracts/types";
-import type { SimPropTarget } from "../services/contracts/types";
+import type { OptimizerBounds, OptimizerInput } from "./types";
+import type { SimPropTarget } from "./types";
 import type { DiamondPosition, PoseDefinition } from "../domain/types";
 import type { Plane } from "@austencloud/scene-3d";
 import {

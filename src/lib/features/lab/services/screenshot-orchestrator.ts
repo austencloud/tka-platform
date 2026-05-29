@@ -5,7 +5,7 @@
  * into the app bundle. Keep in sync with tests/screenshots/devices.ts.
  */
 
-import type { DeviceInfo, ModuleGroup, RouteNode, CaptureRequest, CaptureStartResult, CaptureJobStatus } from "./contracts/types";
+import type { DeviceInfo, ModuleGroup, RouteNode, CaptureRequest, CaptureStartResult, CaptureJobStatus } from "./types";
 
 // Hardcoded device list - mirrors tests/screenshots/devices.ts
 const DEVICES: DeviceInfo[] = [

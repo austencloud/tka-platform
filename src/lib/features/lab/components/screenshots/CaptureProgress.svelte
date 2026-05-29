@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { CaptureJobStatus } from "../../services/contracts/types";
+  import type { CaptureJobStatus } from "../../services/types";
 
   interface OrchestratorLike {
     getJobStatus(jobId: string): Promise<CaptureJobStatus>;

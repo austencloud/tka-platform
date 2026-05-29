@@ -3,7 +3,7 @@
   Supports selection mode with checkbox overlays and tag chip display.
 -->
 <script lang="ts">
-  import type { GalleryItem } from "../../services/contracts/types";
+  import type { GalleryItem } from "../../services/types";
   import type { MediaTag } from "@austencloud/media-tagging-types";
   import { TagChip } from "@austencloud/media-tagging-ui";
 

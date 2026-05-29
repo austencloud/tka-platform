@@ -12,7 +12,7 @@
   import {
     getEffectDescriptor,
     type EffectMode,
-  } from "./domain/EffectDescriptor";
+  } from "./domain/effect-descriptor";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   const MODE_KEY = "effects-lab-active-mode";

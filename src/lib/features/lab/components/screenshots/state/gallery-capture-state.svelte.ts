@@ -6,8 +6,8 @@
  * retry logic, and cleanup.
  */
 
-import type { DeviceInfo, RouteNode, CaptureJobStatus, CaptureStartResult } from "../../../services/contracts/types";
-import type { ScreenshotUploadOrchestrator } from "../../../services/implementations/ScreenshotUploadOrchestrator";
+import type { DeviceInfo, RouteNode, CaptureJobStatus, CaptureStartResult } from "../../../services/types";
+import type { ScreenshotUploadOrchestrator } from "../../../services/screenshot-upload-orchestrator";
 
 interface ScreenshotOrchestratorLike {
   getRoutes(): RouteNode[];
@@ -15,7 +15,7 @@ interface ScreenshotOrchestratorLike {
   startCapture(request: { routes: string[]; devices: string[] }): Promise<CaptureStartResult>;
   getJobStatus?(jobId: string): Promise<CaptureJobStatus>;
 }
-import type { UploadProgress } from "../../../services/contracts/types";
+import type { UploadProgress } from "../../../services/types";
 
 export type CapturePhase = "idle" | "capturing" | "uploading";
 

@@ -1,5 +1,5 @@
 import type { Vector3 } from "three";
-import type { StanceOptimizer } from "./implementations/StanceOptimizer";
+import type { StanceOptimizer } from "./stance-optimizer";
 import type { PoseDefinition, PoseLabel, StancePose } from "../domain/types";
 import type { ReachabilityInfo } from "../state/collision-lab-state.svelte";
 import { poseToOptimizerInput, OPTIMIZER_BOUNDS } from "./pose-target-mapper";

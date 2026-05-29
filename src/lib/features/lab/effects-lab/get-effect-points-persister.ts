@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { EffectPointsPersister } from './services/implementations/EffectPointsPersister';
+import { EffectPointsPersister } from './services/effect-points-persister';
 
 let instance: EffectPointsPersister | null = null;
 

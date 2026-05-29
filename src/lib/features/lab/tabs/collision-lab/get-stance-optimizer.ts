@@ -1,6 +1,6 @@
 
-import { StanceOptimizer } from './services/implementations/StanceOptimizer';
-import { getStanceSimulator } from './getStanceSimulator';
+import { StanceOptimizer } from './services/stance-optimizer';
+import { getStanceSimulator } from './get-stance-simulator';
 
 let instance: StanceOptimizer | null = null;
 export function getStanceOptimizer(): StanceOptimizer {

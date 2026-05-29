@@ -42,7 +42,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
   import type { SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";
 
-  import { getEffectDescriptor } from "../domain/EffectDescriptor";
+  import { getEffectDescriptor } from "../domain/effect-descriptor";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";

@@ -7,8 +7,8 @@
 -->
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
-	import { getTipPointOverrideProvider } from "../getTipPointOverrideProvider";
-	import { getEffectPointsPersister } from "../getEffectPointsPersister";
+	import { getTipPointOverrideProvider } from "../get-tip-point-override-provider";
+	import { getEffectPointsPersister } from "../get-effect-points-persister";
 	import { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
 	import EffectPropTypeSelector from "./EffectPropTypeSelector.svelte";
 	import EffectPointSvgCanvas from "./EffectPointSvgCanvas.svelte";

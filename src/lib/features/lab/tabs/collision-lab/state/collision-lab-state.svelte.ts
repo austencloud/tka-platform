@@ -15,12 +15,12 @@
  * inside the factory. This matches the state-management rule.
  */
 
-import type { LocalPoseLabelRepository } from "../services/implementations/LocalPoseLabelRepository";
-import type { OptimizerResult } from "../services/contracts/types";
-import type { SimResult } from "../services/contracts/types";
-import type { CandidateGenerator } from "../services/implementations/CandidateGenerator";
-import type { StanceOptimizer } from "../services/implementations/StanceOptimizer";
-import { REACH_FEASIBILITY_TOLERANCE } from "../services/implementations/StanceSimulator";
+import type { LocalPoseLabelRepository } from "../services/local-pose-label-repository";
+import type { OptimizerResult } from "../services/types";
+import type { SimResult } from "../services/types";
+import type { CandidateGenerator } from "../services/candidate-generator";
+import type { StanceOptimizer } from "../services/stance-optimizer";
+import { REACH_FEASIBILITY_TOLERANCE } from "../services/stance-simulator";
 import type {
   PoseDefinition,
   PoseLabel,

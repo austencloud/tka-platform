@@ -6,7 +6,7 @@
  * recently uploaded screenshots to avoid re-uploading on consecutive captures.
  */
 
-import type { UploadProgress, ScreenshotMetadata, UploadScreenshotParams, DeviceInfo, RouteNode } from "../contracts/types";
+import type { UploadProgress, ScreenshotMetadata, UploadScreenshotParams, DeviceInfo, RouteNode } from "./types";
 
 interface ScreenshotUploaderLike {
   upload(params: UploadScreenshotParams): Promise<ScreenshotMetadata>;

@@ -5,7 +5,7 @@
   Displays Trails / Fire / LED buttons with effect-specific accent colors.
 -->
 <script lang="ts">
-  import { EFFECT_DESCRIPTORS, type EffectMode } from "../domain/EffectDescriptor";
+  import { EFFECT_DESCRIPTORS, type EffectMode } from "../domain/effect-descriptor";
 
   interface Props {
     activeMode: EffectMode;

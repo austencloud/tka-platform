@@ -1,6 +1,6 @@
 import { PROP_TIP_POINTS, type PropTipConfig } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
-import type { EffectPoint } from "../contracts/types";
-import type { EffectPointsPersister } from "./EffectPointsPersister";
+import type { EffectPoint } from "./types";
+import type { EffectPointsPersister } from "./effect-points-persister";
 import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
 /** Deep-copy that works on Svelte 5 $state proxies (structuredClone cannot clone them). */

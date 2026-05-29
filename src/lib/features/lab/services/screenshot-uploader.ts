@@ -8,7 +8,7 @@
  * Follows the upload pattern from ProfilePictureManager.
  */
 
-import type { UploadScreenshotParams, ScreenshotMetadata } from "./contracts/types";
+import type { UploadScreenshotParams, ScreenshotMetadata } from "./types";
 import {
   getStorageInstance,
   getFirestoreInstance,

@@ -7,8 +7,8 @@
  */
 
 import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
-import type { ScreenshotTagController } from "../../../services/implementations/ScreenshotTagController";
-import type { GalleryItem } from "../../../services/contracts/types";
+import type { ScreenshotTagController } from "../../../services/screenshot-tag-controller";
+import type { GalleryItem } from "../../../services/types";
 import type { MediaTag } from "@austencloud/media-tagging-types";
 
 export interface GallerySelectionDeps {

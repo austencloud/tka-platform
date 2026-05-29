@@ -35,8 +35,8 @@
  * Domain: Collision Lab - AI-assisted multiple-choice labeling
  */
 
-import type { OptimizerBounds, OptimizerInput, OptimizerResult } from "../contracts/types";
-import type { StanceOptimizer } from "./StanceOptimizer";
+import type { OptimizerBounds, OptimizerInput, OptimizerResult } from "./types";
+import type { StanceOptimizer } from "./stance-optimizer";
 import type {
   CandidateSet,
   PoseDefinition,

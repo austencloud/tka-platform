@@ -5,7 +5,7 @@
   Supports both built-in presets and custom user presets.
 -->
 <script lang="ts">
-  import { LAYOUT_PRESETS } from "../services/LayoutPresets";
+  import { LAYOUT_PRESETS } from "../services/layout-presets";
   import type { LayoutPreset } from "../domain/types";
 
   let {

@@ -6,7 +6,7 @@
  */
 
 import type { MediaItem } from "@austencloud/media-tagging-types";
-import type { GalleryItem } from "./contracts/types";
+import type { GalleryItem } from "./types";
 
 export function toMediaItem(item: GalleryItem): MediaItem {
   return {

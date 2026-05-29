@@ -3,7 +3,7 @@
   Matches CaptureProgress styling. Shows phases: deduplicating, uploading, completed, failed.
 -->
 <script lang="ts">
-  import type { UploadProgress } from "../../services/contracts/types";
+  import type { UploadProgress } from "../../services/types";
 
   interface Props {
     progress: UploadProgress;

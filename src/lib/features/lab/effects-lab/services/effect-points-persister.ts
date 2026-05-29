@@ -21,7 +21,7 @@ import {
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import type { EffectPoint } from "../contracts/types";
+import type { EffectPoint } from "./types";
 import type { TrailPointConfig, TrailPointSource } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
 const LOG_PREFIX = "[EffectPointsPersister]";

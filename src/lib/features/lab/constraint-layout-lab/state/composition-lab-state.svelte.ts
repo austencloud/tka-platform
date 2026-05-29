@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
-import { LAYOUT_PRESETS, resetCellIdCounter, findPresetById } from "../services/LayoutPresets";
-import { solveConstraints, GRID_SIZE } from "../services/ConstraintSolver";
+import { LAYOUT_PRESETS, resetCellIdCounter, findPresetById } from "../services/layout-presets";
+import { solveConstraints, GRID_SIZE } from "../services/constraint-solver";
 import {
   saveLayoutState,
   loadLayoutState,
@@ -10,7 +10,7 @@ import {
   customPresetToLayoutPreset,
   exportLayoutAsJSON,
   type CustomPreset,
-} from "../services/LayoutPersistence";
+} from "../services/layout-persistence";
 import type {
   ConstraintCell,
   ContainerBounds,

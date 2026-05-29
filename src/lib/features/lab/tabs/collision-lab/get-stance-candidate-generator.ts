@@ -1,5 +1,5 @@
-import { CandidateGenerator } from './services/implementations/CandidateGenerator';
-import { getStanceOptimizer } from './getStanceOptimizer';
+import { CandidateGenerator } from './services/candidate-generator';
+import { getStanceOptimizer } from './get-stance-optimizer';
 
 let instance: CandidateGenerator | null = null;
 export function getStanceCandidateGenerator(): CandidateGenerator {

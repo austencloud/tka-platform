@@ -6,7 +6,7 @@
  */
 
 import type { Plane } from "@austencloud/scene-3d";
-import type { SimResult } from '../services/contracts/types';
+import type { SimResult } from '../services/types';
 
 export type DiamondPosition = "N" | "E" | "S" | "W";
 export type HandOrientation = "in" | "out"; // radial | antiradial

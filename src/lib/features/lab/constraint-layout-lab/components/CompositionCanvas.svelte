@@ -11,7 +11,7 @@
 -->
 <script lang="ts">
   import type { ConstraintCell, DragState, ContainerBounds } from "../domain/types";
-  import { generateSnapGuides, findSnapPosition } from "../services/ConstraintSolver";
+  import { generateSnapGuides, findSnapPosition } from "../services/constraint-solver";
 
   let {
     cells,

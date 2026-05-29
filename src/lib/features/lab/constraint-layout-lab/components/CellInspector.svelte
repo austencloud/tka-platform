@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import type { ConstraintCell, CellMediaType } from "../domain/types";
-  import { MEDIA_COLORS } from "../services/LayoutPresets";
+  import { MEDIA_COLORS } from "../services/layout-presets";
 
   let {
     cell,

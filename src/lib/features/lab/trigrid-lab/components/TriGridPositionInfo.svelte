@@ -6,7 +6,7 @@
 <script lang="ts">
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { TriGridMode } from "../domain/trigrid-types";
-  import { getTriGridPositionResolver } from "../getTriGridPositionResolver";
+  import { getTriGridPositionResolver } from "../get-tri-grid-position-resolver";
   import { TRIGRID_AVAILABLE_LETTER_TYPES } from "../domain/trigrid-constants";
 
   interface Props {

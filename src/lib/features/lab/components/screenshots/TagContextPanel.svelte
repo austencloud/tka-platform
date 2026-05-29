@@ -4,7 +4,7 @@
   Shows a list of all tags with toggle-on/off per screenshot, plus a "New tag" action.
 -->
 <script lang="ts">
-  import type { GalleryItem } from "../../services/contracts/types";
+  import type { GalleryItem } from "../../services/types";
   import type { MediaTag } from "@austencloud/media-tagging-types";
   import { TAG_COLORS } from "@austencloud/media-tagging-types";
 

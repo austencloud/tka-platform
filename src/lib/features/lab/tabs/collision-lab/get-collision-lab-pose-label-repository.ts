@@ -1,4 +1,4 @@
-import { LocalPoseLabelRepository } from './services/implementations/LocalPoseLabelRepository';
+import { LocalPoseLabelRepository } from './services/local-pose-label-repository';
 
 let instance: LocalPoseLabelRepository | null = null;
 export function getCollisionLabPoseLabelRepository(): LocalPoseLabelRepository {
