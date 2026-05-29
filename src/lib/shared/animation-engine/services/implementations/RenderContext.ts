@@ -58,10 +58,6 @@ export class LiveRenderContext implements RenderContext {
     this.resize(containerSize);
   }
 
-  triggerRender(): void {
-    this.renderLoop.triggerRender(() => ({} as any));
-  }
-
   dispose(): void {
     this.effectManager.dispose();
     this.renderLoop.dispose();

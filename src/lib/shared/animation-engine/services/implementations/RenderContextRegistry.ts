@@ -20,7 +20,6 @@ export interface RenderContext {
 
   resize(size: number): void;
   restoreSize(): void;
-  triggerRender(): void;
   dispose(): void;
 }
 

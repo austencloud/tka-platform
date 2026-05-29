@@ -8,7 +8,7 @@ const getRenderContext = vi.fn(() => ({
   id: "x", canvas: fakeCanvas, container: {} as any,
   renderer: {} as any, effectManager: {} as any, trailCapturer: {} as any,
   renderLoop: {} as any, resizer: {} as any, precomputer: {} as any,
-  size: 720, resize() {}, restoreSize() {}, triggerRender() {}, dispose,
+  size: 720, resize() {}, restoreSize() {}, dispose,
 }));
 
 // NOTE: vitest 4 cannot `new` a mock whose implementation is an arrow fn, so the
