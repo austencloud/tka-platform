@@ -223,12 +223,13 @@ export async function buildBackJob(
   const data = deriveCardBackData(sequence);
   const visuals = getCardBackThemeVisuals(opts.theme);
 
-  // 2) Layout boxes from the CSS-equivalent cqi positions.
-  const cqi = opts.width / 100;
+  // 2) Layout boxes from the CSS-equivalent cqi positions. cqi resolves against
+  //    the border-frame content-box (inset by `borderWidth` cqi padding), matching
+  //    CardBack.svelte's `container-type: inline-size` on `.border-frame`.
   const layout = computeCardBackLayout(data, {
     width: opts.width,
     height: opts.height,
-    cqi,
+    borderWidthCqi: visuals.borderWidth ?? 2,
   });
 
   // 3) Parse the proof-mode single-layer gradients.

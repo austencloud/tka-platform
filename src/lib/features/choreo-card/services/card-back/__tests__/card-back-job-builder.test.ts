@@ -181,7 +181,7 @@ describe("buildBackJob", () => {
     const layout = computeCardBackLayout(data, {
       width: WIDTH,
       height: HEIGHT,
-      cqi: WIDTH / 100,
+      borderWidthCqi: 3.5, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
     });
     const job = await buildBackJob(
       seq,
@@ -228,7 +228,7 @@ describe("buildBackJob", () => {
     const layout = computeCardBackLayout(data, {
       width: WIDTH,
       height: HEIGHT,
-      cqi: WIDTH / 100,
+      borderWidthCqi: 3.5, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
     });
     const job = await buildBackJob(
       seq,
@@ -265,7 +265,7 @@ describe("buildBackJob", () => {
     const layout = computeCardBackLayout(data, {
       width: WIDTH,
       height: HEIGHT,
-      cqi: WIDTH / 100,
+      borderWidthCqi: 3.5, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
     });
     const jobStart = await buildBackJob(
       seqStart,
@@ -284,7 +284,7 @@ describe("buildBackJob", () => {
     const layout = computeCardBackLayout(data, {
       width: WIDTH,
       height: HEIGHT,
-      cqi: WIDTH / 100,
+      borderWidthCqi: 3.5, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
     });
     const job = await buildBackJob(
       seq,

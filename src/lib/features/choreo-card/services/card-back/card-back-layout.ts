@@ -90,16 +90,32 @@ const LOOP_DISPLAY_ORDER: LOOPComponent[] = [
 /**
  * Convert the CardBack.svelte CSS layout into pixel placement boxes.
  *
+ * CRITICAL — the border frame: in CardBack.svelte, `container-type: inline-size`
+ * is on `.border-frame`, which wraps `.back` with `padding: borderWidth cqi`
+ * (proof mode = 3.5cqi). So every `cqi` inside the card resolves against the
+ * border-frame CONTENT-box (≈93% of card width), and all element positions are
+ * inset by the border padding. Computing cqi against the full card width
+ * over-sizes everything ~7-8% and shifts it up. We therefore compute in the
+ * inner (border-frame content-box) coordinate space and offset every box by the
+ * border inset. Verified against the live DOM render: this brings mandala extent
+ * + center to within ~1px of the old path.
+ *
  * @param data    CardBackData for the sequence (used for loopComponents).
- * @param dims    Render dimensions. Pass the `.back` element's pixel size and
- *                cqi = width / 100 (1% of container inline-size).
- *                At 1644×2244: cqi = 16.44.
+ * @param dims    Full card pixel size + the proof/theme `borderWidth` in cqi
+ *                (from the card-back theme visuals; proof mode = 3.5).
  */
 export function computeCardBackLayout(
   data: CardBackData,
-  dims: { width: number; height: number; cqi: number },
+  dims: { width: number; height: number; borderWidthCqi: number },
 ): CardBackLayout {
-  const { width, height, cqi } = dims;
+  // The border-frame padding insets `.back` and shrinks the cqi basis.
+  // borderPx: border-frame's own padding (its cqi resolves against ~card width).
+  const borderPx = dims.borderWidthCqi * (dims.width / 100);
+  const ox = borderPx;          // .back content-box origin x (from card edge)
+  const oy = borderPx;          // .back content-box origin y
+  const width = dims.width - 2 * borderPx;    // .back content-box inline size
+  const height = dims.height - 2 * borderPx;  // .back content-box block size
+  const cqi = width / 100;      // cqi resolves against border-frame content-box
 
   // ── BRAND ────────────────────────────────────────────────────────────────
   // .brand-slot { top: 3.2cqi; left: 0; right: 0; }
@@ -231,15 +247,18 @@ export function computeCardBackLayout(
     h: urlHeight,
   };
 
+  // Offset every box from inner (.back content-box) space into full-card space.
+  const off = (p: Placement): Placement => ({ x: p.x + ox, y: p.y + oy, w: p.w, h: p.h });
+
   return {
-    brand,
-    topLeftGlyph,
-    topRightGlyph,
-    mandala,
-    loopRow: { items: loopItems },
-    levelBadge,
-    startPos,
-    stepCount,
-    url,
+    brand: off(brand),
+    topLeftGlyph: off(topLeftGlyph),
+    topRightGlyph: off(topRightGlyph),
+    mandala: off(mandala),
+    loopRow: { items: loopItems.map(off) },
+    levelBadge: off(levelBadge),
+    startPos: off(startPos),
+    stepCount: off(stepCount),
+    url: off(url),
   };
 }
