@@ -8,7 +8,7 @@ ARCHITECTURAL NOTE
 This component is a thin wrapper around AnimationEngine.
 
 All orchestration logic has been extracted to:
-  src/lib/shared/animation-engine/services/implementations/AnimationEngine.svelte.ts
+  src/lib/shared/animation-engine/services/animation-engine.svelte.ts
 
 The component's role:
 1. Mount container element
