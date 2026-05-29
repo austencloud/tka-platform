@@ -38,6 +38,7 @@ import type {
   TurnPatternEntry,
   TurnValue,
 } from "$lib/shared/create/domain/TurnPatternData";
+import type { CardVariation } from "../domain/models/DeckRelease";
 
 export type Rng = () => number;
 
@@ -164,6 +165,37 @@ function pickTurnPattern(
   );
   if (candidates.length === 0) return null;
   return candidates[Math.floor(rng() * candidates.length)] ?? null;
+}
+
+/**
+ * Roll a frozen variation recipe for one card. Pure given `rng`. Needs only
+ * `stepCount` — sequences are not loaded at compose time. Preserves the rng call
+ * order reversal-gate → pickReversal → turn-gate → pickTurnPattern.
+ */
+export function rollVariation(
+  stepCount: number,
+  config: VariationConfig,
+  rng: Rng = Math.random,
+): CardVariation | null {
+  const v: CardVariation = {};
+
+  if (config.enabledReversals.length > 0 && rng() < config.reversalFrequency) {
+    const resolved = pickReversal(stepCount, config.enabledReversals, rng);
+    if (resolved) {
+      v.reversalPatternId = resolved.id;
+      v.reversalSequence = resolved.sequence;
+    }
+  }
+
+  if (config.enabledTurnPatterns.length > 0 && rng() < config.turnFrequency) {
+    const preset = pickTurnPattern(stepCount, config.enabledTurnPatterns, rng);
+    if (preset) {
+      v.turnPattern = preset.pattern;
+      v.turnLabel = preset.label;
+    }
+  }
+
+  return v.reversalSequence != null || v.turnPattern != null ? v : null;
 }
 
 /** Does the loop close on each hand? (last endOrientation === first startOrientation) */
