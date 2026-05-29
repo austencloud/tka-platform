@@ -29,6 +29,7 @@
     readOnly?: boolean;
     footers?: CardFooter[];
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
+    brokenLoopCount?: number;
   }
 
   let {
@@ -48,6 +49,7 @@
     readOnly = false,
     footers,
     onContextMenu,
+    brokenLoopCount = 0,
   }: Props = $props();
 
   const deckNumberLabel = $derived(`Deck #${String(nextDeckNumber).padStart(3, "0")}`);
@@ -236,6 +238,13 @@
         {#if stepSummary}
           <span class="meta-sep" aria-hidden="true">·</span>
           <span class="meta-steps">{stepSummary}</span>
+        {/if}
+        {#if brokenLoopCount > 0}
+          <span class="meta-sep" aria-hidden="true">·</span>
+          <span class="meta-broken" title="These cards' turns don't return the prop to its start orientation. Redraw to reroll.">
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+            {brokenLoopCount} break loop
+          </span>
         {/if}
       </div>
     </div>
@@ -451,6 +460,14 @@
 
   .meta-steps {
     font-weight: 600;
+  }
+
+  .meta-broken {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+    color: #fbbf24;
   }
 
   .action-buttons {

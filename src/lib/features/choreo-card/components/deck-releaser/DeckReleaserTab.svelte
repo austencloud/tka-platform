@@ -371,6 +371,7 @@
         deckName={rs.name}
         isReleasing={rs.isReleasing}
         readOnly={rs.viewingRelease !== null}
+        brokenLoopCount={rs.brokenLoopCount}
         {footers}
         {onContextMenu}
         onSwapCard={handleSwapCard}
