@@ -3,7 +3,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { DEFAULT_VARIATION_CONFIG, type VariationConfig } from "../../services/deck-variation";
+import { DEFAULT_VARIATION_CONFIG, type VariationConfig, type StartOriMode } from "../../services/deck-variation";
 
 type Step = "configure" | "review" | "released";
 
@@ -18,6 +18,7 @@ interface PersistedSession {
   name: string;
   description: string;
   variationConfig?: VariationConfig;
+  startOriMode?: StartOriMode;
 }
 
 function loadSession(): PersistedSession | null {
@@ -50,6 +51,7 @@ class DeckReleaserState {
   redPropOverride = $state<PropType | null>(null);
   brokenLoopCount = $state(0);
   variationConfig = $state<VariationConfig>({ ...DEFAULT_VARIATION_CONFIG });
+  startOriMode = $state<StartOriMode>("radial");
   get theme() {
     return this.themeOverride ?? settingsService.settings.backgroundType ?? "cosmic";
   }
@@ -85,6 +87,7 @@ class DeckReleaserState {
       this.name = saved.name ?? "";
       this.description = saved.description ?? "";
       if (saved.variationConfig) this.variationConfig = saved.variationConfig;
+      if (saved.startOriMode) this.startOriMode = saved.startOriMode;
     }
   }
 
@@ -98,6 +101,7 @@ class DeckReleaserState {
       name: this.name,
       description: this.description,
       variationConfig: this.variationConfig,
+      startOriMode: this.startOriMode,
     });
   }
 
