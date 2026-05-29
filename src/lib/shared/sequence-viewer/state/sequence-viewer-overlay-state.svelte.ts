@@ -80,21 +80,35 @@ async function mintAndSyncShortCode(sequence: SequenceData, token: number): Prom
 	if (token !== _openToken || !_isOpen) return;
 
 	let code: string | null = null;
-	try {
-		const result = await manager.createShortCode(sequence, {
-			embedSequenceData: true,
-		});
-		code = result.code;
-	} catch (firebaseError) {
+
+	// Guests can't write to Firestore (shortcodes require auth — see
+	// firestore.rules). Skip the doomed write and mint a self-contained
+	// inline code directly: no DB clutter, no console noise, works offline.
+	if (!authState.isAuthenticated) {
 		try {
 			const offline = await manager.createOfflineCode(sequence);
 			code = offline.code;
 		} catch (offlineError) {
-			console.warn(
-				'[SequenceViewerOverlay] URL sync failed - neither Firestore nor offline encoding succeeded.',
-				{ firebaseError, offlineError },
-			);
+			console.warn('[SequenceViewerOverlay] URL sync failed - offline encoding failed.', offlineError);
 			return;
+		}
+	} else {
+		try {
+			const result = await manager.createShortCode(sequence, {
+				embedSequenceData: true,
+			});
+			code = result.code;
+		} catch (firebaseError) {
+			try {
+				const offline = await manager.createOfflineCode(sequence);
+				code = offline.code;
+			} catch (offlineError) {
+				console.warn(
+					'[SequenceViewerOverlay] URL sync failed - neither Firestore nor offline encoding succeeded.',
+					{ firebaseError, offlineError },
+				);
+				return;
+			}
 		}
 	}
 

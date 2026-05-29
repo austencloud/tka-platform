@@ -11,6 +11,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getQRCodeGenerator } from "$lib/shared/qr/getQRCodeGenerator";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getMandalaPlacements } from "../services/getMandalaPlacements";
   import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
   import { encodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
@@ -80,7 +81,11 @@
   const qrCacheKey = $derived.by(() => {
     if (!showQRCode || !sequence) return "";
     const seqId = sequence.id ?? sequence.word ?? "unknown";
-    return `${seqId}:${darkMode}${encodedViewMode ? `:${encodedViewMode}` : ""}`;
+    // Auth state is part of the key: guests get inline (offline) QR codes,
+    // signed-in users get Firestore short codes. A guest who signs in
+    // mid-session re-derives the key and regenerates the correct code.
+    const authTag = authState.isAuthenticated ? "a" : "g";
+    return `${seqId}:${darkMode}:${authTag}${encodedViewMode ? `:${encodedViewMode}` : ""}`;
   });
 
   $effect(() => {
@@ -109,6 +114,10 @@
     const bProp = bluePropType ? String(bluePropType) : undefined;
     const rProp = redPropType ? String(redPropType) : undefined;
     const vm = encodedViewMode;
+    // Guests generate self-contained inline QR codes (no Firestore write,
+    // no auth, no DB clutter). Signed-in users mint short codes for the
+    // shorter URL + scan analytics.
+    const offline = !authState.isAuthenticated;
     const qrGenerator = getQRCodeGenerator();
     if (!qrGenerator || !seq) return;
 
@@ -118,7 +127,7 @@
         margin: 1,
         style: "modern",
         darkMode: isDark,
-        offline: false,
+        offline,
         bluePropType: bProp,
         redPropType: rProp,
         viewMode: vm,
