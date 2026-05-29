@@ -137,18 +137,23 @@ export class ThumbnailRenderQueue {
     const controller = new AbortController();
     this.activeControllers.set(task.id, controller);
 
+    // Hold the timer id so we can clear it once the render settles. Without the
+    // clear, a render that wins the race leaves the timeout pending; it fires
+    // later and rejects an orphaned promise → "UNHANDLED PROMISE REJECTION".
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
       // Race the render against a timeout to reclaim the slot if it hangs
       const result = await Promise.race([
         task.execute(controller.signal),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Render timeout")), RENDER_TIMEOUT_MS)
-        ),
+        new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error("Render timeout")), RENDER_TIMEOUT_MS);
+        }),
       ]);
       task.resolve(result);
     } catch (error) {
       task.reject(error instanceof Error ? error : new Error(String(error)));
     } finally {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
       this.activeCount--;
       this.activeIds.delete(task.id);
       this.activeControllers.delete(task.id);
