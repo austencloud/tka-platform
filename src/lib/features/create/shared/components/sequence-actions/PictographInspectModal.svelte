@@ -99,9 +99,15 @@
       lookupKeys = null;
       blueDiagnostics = null;
       redDiagnostics = null;
-      basicOpen = false;
-      blueOpen = false;
-      redOpen = false;
+      // Wide desktop / 4K: the columns pack side-by-side, so start everything
+      // expanded — no reason to make the user click through on a big screen.
+      // Narrow: start collapsed to avoid a tall scroll tower.
+      const wide =
+        typeof window !== "undefined" &&
+        window.matchMedia("(min-width: 1600px)").matches;
+      basicOpen = wide;
+      blueOpen = wide;
+      redOpen = wide;
       lastSelectedColor = null;
       calculateArrowPositions();
     }
