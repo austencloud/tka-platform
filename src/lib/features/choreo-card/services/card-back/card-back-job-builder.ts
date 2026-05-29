@@ -62,6 +62,8 @@ import {
   rasterizeReversalGlyph,
   rasterizeStepCount,
   rasterizeStartPosPictograph,
+  rasterizeLoopRow,
+  type LoopRowCol,
 } from "./card-back-bitmaps-percard";
 import { rasterizeDecorations } from "./card-back-decorations-svg";
 
@@ -158,6 +160,7 @@ export interface BuildBackJobDeps {
   rasterizeUrl: typeof rasterizeUrl;
   rasterizeDifficultyBadge: typeof rasterizeDifficultyBadge;
   rasterizeLoopIcon: typeof rasterizeLoopIcon;
+  rasterizeLoopRow: typeof rasterizeLoopRow;
   rasterizeTurnGlyph: typeof rasterizeTurnGlyph;
   rasterizeReversalGlyph: typeof rasterizeReversalGlyph;
   rasterizeStepCount: typeof rasterizeStepCount;
@@ -189,6 +192,7 @@ const realDeps: BuildBackJobDeps = {
   rasterizeUrl,
   rasterizeDifficultyBadge,
   rasterizeLoopIcon,
+  rasterizeLoopRow,
   rasterizeTurnGlyph,
   rasterizeReversalGlyph,
   rasterizeStepCount,
@@ -350,6 +354,22 @@ export async function buildBackJob(
     textColor: visuals.textColor ?? "#111111",
   };
 
+  // Build the loop columns (icon kind + color + label) for the whole row, mirroring
+  // CardBack.svelte node-selection exactly:
+  //   ROTATED  → always quartered (fa-arrows-spin).
+  //   INVERTED → quartered (checkerboard) only when inversionPeriod === QUARTERED.
+  //   SWAPPED  → SwapIcon.
+  const loopCols: LoopRowCol[] = activeLoop.map((comp) => {
+    const meta = LOOP_ICONS[comp];
+    const color = meta?.color ?? "#ffffff";
+    const label = meta?.label ?? "";
+    if (comp === LOOPComponent.SWAPPED) return { kind: "swap", color, label };
+    if (comp === LOOPComponent.INVERTED && loopDisplay.inversionPeriod === Period.QUARTERED)
+      return { kind: "checkerboard", color, label };
+    if (comp === LOOPComponent.ROTATED) return { kind: "fa", fa: "fas fa-arrows-spin", color, label };
+    return { kind: "fa", fa: meta?.fa ?? "", color, label };
+  });
+
   const [
     brandBmp,
     urlBmp,
@@ -358,7 +378,7 @@ export async function buildBackJob(
     reversalBmp,
     stepCountBmp,
     startPosBmp,
-    loopBmps,
+    loopRowBmp,
   ] = await Promise.all([
     d.rasterizeBrand(opts.theme),
     d.rasterizeUrl(opts.theme),
@@ -369,24 +389,9 @@ export async function buildBackJob(
     hasStartPos
       ? d.rasterizeStartPosPictograph(sequence.startPosition, darkMode, perCardCtx)
       : Promise.resolve(null),
-    Promise.all(
-      activeLoop.map((comp) => {
-        // Mirror CardBack.svelte node-selection exactly:
-        //   ROTATED  → always quartered (fa-arrows-spin) — comp === ROTATED.
-        //   INVERTED → quartered only when inversionPeriod === QUARTERED.
-        //   SWAPPED  → SwapIcon (handled inside rasterizeLoopIcon).
-        const quarteredRot = comp === LOOPComponent.ROTATED;
-        const quarteredInv =
-          comp === LOOPComponent.INVERTED &&
-          loopDisplay.inversionPeriod === Period.QUARTERED;
-        const color = LOOP_ICONS[comp]?.color ?? "#ffffff";
-        return d.rasterizeLoopIcon(comp, color, {
-          quarteredRot,
-          quarteredInv,
-          theme: opts.theme,
-        });
-      }),
-    ),
+    loopCols.length > 0
+      ? d.rasterizeLoopRow(loopCols, perCardCtx)
+      : Promise.resolve(null),
   ]);
 
   // Brand + url are rendered at NATURAL height (no crop), so anchor them by the
@@ -410,11 +415,21 @@ export async function buildBackJob(
     });
   }
 
-  loopBmps.forEach((bitmap, i) => {
-    const placement = layout.loopRow.items[i];
-    if (!placement) return;
-    bitmaps.push({ kind: "loop-icon", bitmap, placement });
-  });
+  // Loop row: one centered bitmap (full inner width × natural height), bottom
+  // edge at 28cqi above the content-box bottom (CardBack `.loop-row { bottom:28cqi }`).
+  if (loopRowBmp) {
+    const a2 = layout.anchors;
+    bitmaps.push({
+      kind: "loop-icon",
+      bitmap: loopRowBmp,
+      placement: {
+        x: a2.ox,
+        y: a2.oy + a2.innerHeight - 28 * a2.cqiEff - loopRowBmp.height,
+        w: loopRowBmp.width,
+        h: loopRowBmp.height,
+      },
+    });
+  }
 
   // 8) Assemble.
   return {

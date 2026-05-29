@@ -83,6 +83,10 @@ function makeFakeDeps(overrides: Partial<BuildBackJobDeps> = {}): {
       record("loop", a);
       return fakeBitmap(`loop:${a[0]}`);
     }),
+    rasterizeLoopRow: vi.fn(async (...a) => {
+      record("loopRow", a);
+      return fakeBitmap("loopRow", 800, 200);
+    }),
     rasterizeTurnGlyph: vi.fn(async (...a) => {
       record("turn", a);
       return fakeBitmap("turn");
@@ -296,28 +300,28 @@ describe("buildBackJob", () => {
     expect(startBitmaps[0]!.placement).toEqual(layout.startPos);
   });
 
-  it("emits one loop-icon per active component, placed at loopRow.items[i]", async () => {
-    const { deps } = makeFakeDeps();
+  it("emits one centered loop-row bitmap with columns for the active components", async () => {
+    const { deps, calls } = makeFakeDeps();
     const seq = makeSequence(); // mirrored_swapped → MIRRORED + SWAPPED
-    const data = deriveCardBackData(seq);
-    const layout = computeCardBackLayout(data, {
-      width: WIDTH,
-      height: HEIGHT,
-      borderWidthCqi: 3.5, // proof-mode borderWidth for "cosmic" (matches builder via getProofModeVisuals)
-    });
     const job = await buildBackJob(
       seq,
       { width: WIDTH, height: HEIGHT, bleedPx: BLEED, theme: "cosmic" },
       deps,
     );
 
+    // Exactly one loop-icon bitmap (the whole row), not one per component.
     const loopBitmaps = job.bitmaps.filter((b) => b.kind === "loop-icon");
-    const activeCount = layout.loopRow.items.length;
-    expect(activeCount).toBeGreaterThan(0);
-    expect(loopBitmaps).toHaveLength(activeCount);
-    loopBitmaps.forEach((b, i) => {
-      expect(b.placement).toEqual(layout.loopRow.items[i]);
-    });
+    expect(loopBitmaps).toHaveLength(1);
+
+    // rasterizeLoopRow received cols for the active components (each with a label).
+    const cols = calls.loopRow![0]![0] as { label: string }[];
+    expect(cols.length).toBeGreaterThan(0);
+    for (const c of cols) expect(c.label).toBeTruthy();
+
+    // Row bitmap spans the full content-box width, centered.
+    const a = job.bitmaps.find((b) => b.kind === "loop-icon")!;
+    const borderPx = 3.5 * (WIDTH / 100);
+    expect(a.placement.x).toBeCloseTo(borderPx, 0); // x = content-box origin (ox)
   });
 
   it("forwards the proof-mode muted text color into the step-count rasterizer", async () => {

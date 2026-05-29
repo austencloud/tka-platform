@@ -48,6 +48,7 @@ import TurnPatternGlyph from "../../components/card-back/TurnPatternGlyph.svelte
 import ReversalPatternGlyph from "../../components/card-back/ReversalPatternGlyph.svelte";
 import StartPositionPictograph from "../../components/card-back/StartPositionPictograph.svelte";
 import CardBackStepCount from "../../components/card-back/CardBackStepCount.svelte";
+import CardBackLoopRow from "../../components/card-back/CardBackLoopRow.svelte";
 import type { TurnGlyphEntry } from "../../components/card-back/card-back-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { rasterizeComponent } from "./rasterize-node";
@@ -105,6 +106,9 @@ interface RasterizeFnOpts {
   containerWidth?: number;
   settleFrames?: number;
   settleMs?: number;
+  cssVars?: Record<string, string>;
+  align?: "none" | "end-center";
+  naturalHeight?: boolean;
 }
 
 /**
@@ -195,6 +199,36 @@ export function rasterizeReversalGlyph(
     Math.round(10 * ctx.cqi),
     Math.round(6 * ctx.cqi),
     { containerWidth: ctx.containerWidth, align: "end-center", cssVars: ctxCssVars(ctx) },
+  );
+}
+
+// ── Loop row (per-card) ────────────────────────────────────────────────────
+
+/** One loop column: icon kind + fa class + color + label. */
+export interface LoopRowCol {
+  kind: "swap" | "checkerboard" | "fa";
+  fa?: string;
+  color: string;
+  label: string;
+}
+
+/**
+ * Rasterize the entire loop-component row (icons + labels) as ONE centered
+ * bitmap spanning the content-box width. Rendered at natural height so the
+ * icon-cell (9cqi) + gap + label (2.2cqi) all fit. The builder places this at
+ * the loop-row Y (bottom:28cqi), full inner width, so the flex row stays
+ * centered exactly as the live card.
+ */
+export function rasterizeLoopRow(
+  cols: LoopRowCol[],
+  ctx: PerCardRenderCtx = DEFAULT_CTX,
+): Promise<ImageBitmap> {
+  return rasterize(
+    CardBackLoopRow,
+    { cols },
+    ctx.containerWidth,
+    Math.round(12 * ctx.cqi), // fallback height; naturalHeight measures the real row
+    { containerWidth: ctx.containerWidth, cssVars: ctxCssVars(ctx), naturalHeight: true },
   );
 }
 
