@@ -470,7 +470,10 @@
   }
 
   .modal-body {
-    flex: 1;
+    /* Hug content (no flex-grow) so the modal never letterboxes into a
+       viewport-tall shell with a dead band below the panels. Shrinks + scrolls
+       only when content exceeds the capped modal height. */
+    flex: 0 1 auto;
     min-height: 0;
     overflow-y: auto;
     padding: 16px;
@@ -484,10 +487,13 @@
     gap: 20px;
     align-items: start;
   }
+  /* Center the pictograph against the taller detail column so the focal
+     element sits balanced instead of pinned to the top with a void beneath.
+     Sticky keeps it in view if the detail side ever scrolls. */
   .pictograph-rail {
     position: sticky;
-    top: 0;
-    align-self: start;
+    top: 16px;
+    align-self: center;
   }
   .pictograph-frame {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
