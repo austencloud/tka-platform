@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { MultiFilter } from './services/implementations/MultiFilter';
-import { BrowseFilter } from './services/implementations/BrowseFilter';
+import { MultiFilter } from './services/multi-filter';
+import { BrowseFilter } from './services/browse-filter';
 
 let instance: MultiFilter | null = null;
 

@@ -9,7 +9,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
 import type { ActiveFilter } from "$lib/shared/browse/domain/multi-filter-models";
-import type { BrowseFilter } from "./BrowseFilter";
+import type { BrowseFilter } from "./browse-filter";
 export class MultiFilter {
   constructor(private readonly browseFilter: BrowseFilter) {}
 

@@ -6,7 +6,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { BrowseThumbnailProvider } from "$lib/shared/browse/services/BrowseThumbnailProvider";
-import type { BrowseFilter } from "$lib/shared/browse/services/implementations/BrowseFilter";
+import type { BrowseFilter } from "$lib/shared/browse/services/browse-filter";
 import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
 import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
