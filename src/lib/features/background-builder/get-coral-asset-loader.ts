@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { CoralAssetLoader } from './services/CoralAssetLoader';
+import { CoralAssetLoader } from './services/coral-asset-loader';
 
 let instance: CoralAssetLoader | null = null;
 

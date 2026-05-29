@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { UFOStatusPoller } from './services/UFOStatusPoller';
+import { UFOStatusPoller } from './services/ufo-status-poller';
 
 let instance: UFOStatusPoller | null = null;
 

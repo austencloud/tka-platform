@@ -5,7 +5,7 @@ import type {
   OceanLayers,
   QualityLevel,
 } from "@austencloud/backgrounds";
-import type { CoralSceneRenderer } from "../services/CoralSceneRenderer";
+import type { CoralSceneRenderer } from "../services/coral-scene-renderer";
 
 export interface OceanLabDeps {
   getBackgroundSystem: () => OceanBackgroundOrchestrator;

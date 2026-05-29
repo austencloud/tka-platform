@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { CosmicLabController } from './services/CosmicLabController';
+import { CosmicLabController } from './services/cosmic-lab-controller';
 
 let instance: CosmicLabController | null = null;
 

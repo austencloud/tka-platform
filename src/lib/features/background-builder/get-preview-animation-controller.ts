@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { PreviewAnimationController } from './services/PreviewAnimationController';
+import { PreviewAnimationController } from './services/preview-animation-controller';
 
 let instance: PreviewAnimationController | null = null;
 

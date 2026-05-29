@@ -3,7 +3,7 @@
   import type { ForestLayers, TreeTypeVisibility, EcologicalPattern, QualityLevel, TreeCategory, RenderedTree, } from "@austencloud/backgrounds";
   import {
     getForestSettings, updateForestSettings, } from "../state/background-builder-state.svelte";
-  import { getPreviewAnimationController } from "../getPreviewAnimationController";
+  import { getPreviewAnimationController } from "../get-preview-animation-controller";
   import type { PreviewStats } from "../services/types";
 
   // Child components

@@ -3,8 +3,8 @@
   import { type QualityLevel, type UFOMood, type WobbleType } from "@austencloud/backgrounds";
   import type { CosmicDensityPreset, CosmicLabMode } from "$lib/shared/background-builder/domain/lab-settings-types";
   import type { UFOStatusSnapshot } from "../services/types";
-  import { getCosmicLabController } from "../getCosmicLabController";
-  import { getUFOStatusPoller } from "../getUFOStatusPoller";
+  import { getCosmicLabController } from "../get-cosmic-lab-controller";
+  import { getUFOStatusPoller } from "../get-ufo-status-poller";
   import {
     getCosmicSettings,
     updateCosmicSettings,

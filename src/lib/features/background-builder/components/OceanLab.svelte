@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { getCoralSceneRenderer } from "../getCoralSceneRenderer";
-  import { getOceanBackgroundSystem } from "../getOceanBackgroundSystem";
+  import { getCoralSceneRenderer } from "../get-coral-scene-renderer";
+  import { getOceanBackgroundSystem } from "../get-ocean-background-system";
   import {
     type FishMarineLife,
     type FishMood,
@@ -14,7 +14,7 @@
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
   import PersonalityBars from "./PersonalityBars.svelte";
-  import type { CoralSceneRenderer } from "../services/CoralSceneRenderer";
+  import type { CoralSceneRenderer } from "../services/coral-scene-renderer";
   import { createOceanLabState } from "../state/deep-ocean-lab-state.svelte";
   import {
     type ColorPreset,
