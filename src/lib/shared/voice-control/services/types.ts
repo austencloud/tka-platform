@@ -7,8 +7,8 @@ import type {
   ResolutionTier,
   LLMResolutionDetails,
   ChatResponseDetails,
-} from "../../domain/voice-session-types";
-import type { VoiceCommand, VoiceCommandCategory, CommandResult } from "../../domain/voice-command-types";
+} from "../domain/voice-session-types";
+import type { VoiceCommand, VoiceCommandCategory, CommandResult } from "../domain/voice-command-types";
 
 // === From IVoiceSessionRecorder ===
 

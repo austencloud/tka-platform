@@ -8,7 +8,7 @@
 
 import type {
   CollaborativeVideo,
-} from "../../domain/CollaborativeVideo";
+} from "../domain/CollaborativeVideo";
 
 /**
  * Result of querying videos for a user's library
