@@ -39,6 +39,7 @@ import type {
   TurnValue,
 } from "$lib/shared/create/domain/TurnPatternData";
 import type { CardVariation } from "../domain/models/DeckRelease";
+import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export type Rng = () => number;
 
@@ -202,6 +203,21 @@ export interface AppliedDescriptorResult {
   sequence: SequenceData;
   /** false when an applied turn pattern breaks per-hand loop closure. */
   turnLoopClosed: boolean;
+}
+
+export type StartOriMode = "radial" | "nonradial" | "split";
+
+/** Resolve a register to its per-hand start-orientation pair (rendering seed). */
+export function resolveStartOrientation(mode: StartOriMode): { blue: Orientation; red: Orientation } {
+  switch (mode) {
+    case "nonradial":
+      return { blue: Orientation.COUNTER, red: Orientation.COUNTER };
+    case "split":
+      return { blue: Orientation.IN, red: Orientation.COUNTER };
+    case "radial":
+    default:
+      return { blue: Orientation.IN, red: Orientation.IN };
+  }
 }
 
 /**

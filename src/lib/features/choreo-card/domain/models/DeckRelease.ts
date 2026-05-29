@@ -22,6 +22,8 @@ export interface CardVariation {
   turnPattern?: string;
   /** Display label for the applied turn pattern, e.g. "Pulse 1" or "1|2". */
   turnLabel?: string;
+  /** Start-orientation register, deck-wide. Absent / "radial" → canonical in|in. */
+  startOriMode?: "radial" | "nonradial" | "split";
 }
 
 export interface DeckReleaseCard {

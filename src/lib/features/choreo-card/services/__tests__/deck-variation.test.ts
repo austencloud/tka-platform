@@ -160,3 +160,14 @@ describe("resolveDeckSequences (positional seam)", () => {
     expect(out[0]!.turnLoopClosed).toBe(true);
   });
 });
+
+import { resolveStartOrientation, type StartOriMode } from "../deck-variation";
+import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+describe("resolveStartOrientation", () => {
+  it("maps each register to its per-hand orientation pair", () => {
+    expect(resolveStartOrientation("radial")).toEqual({ blue: Orientation.IN, red: Orientation.IN });
+    expect(resolveStartOrientation("nonradial")).toEqual({ blue: Orientation.COUNTER, red: Orientation.COUNTER });
+    expect(resolveStartOrientation("split")).toEqual({ blue: Orientation.IN, red: Orientation.COUNTER });
+  });
+});
