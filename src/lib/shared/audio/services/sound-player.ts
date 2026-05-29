@@ -12,7 +12,7 @@
  * - error.mp3
  */
 
-import type { SoundType } from "../contracts/types";
+import type { SoundType } from "./types";
 
 // Sound file paths (relative to /static/)
 const SOUND_FILES: Record<SoundType, string> = {
