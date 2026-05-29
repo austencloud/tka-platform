@@ -17,7 +17,7 @@ vi.mock("../AnimationEngine.svelte", () => ({
   AnimationEngine: vi.fn(function () { return { initialize, getRenderContext, dispose }; }),
 }));
 
-import { RenderContextFactory } from "../RenderContextFactory";
+import { RenderContextFactory } from "../render-context-factory";
 
 describe("RenderContextFactory.createOffscreenContext", () => {
   beforeEach(() => { initialize.mockClear(); dispose.mockClear(); getRenderContext.mockClear(); });
