@@ -13,7 +13,7 @@ import type {
 } from "../../domain/voice-command-types";
 import { getAnimationPlaybackRef } from "../../../coordinators/animation-playback-ref.svelte";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
-import type { IVoiceCommandHandler } from "../contracts/types";
+import type { IVoiceCommandHandler } from "../types";
 
 export class PlaybackCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["playback"];

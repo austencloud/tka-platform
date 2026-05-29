@@ -12,7 +12,7 @@ import type {
   CommandResult,
 } from "../../domain/voice-command-types";
 import { getSequenceViewerRef } from "../../../coordinators/sequence-viewer-ref.svelte";
-import type { IVoiceCommandHandler } from "../contracts/types";
+import type { IVoiceCommandHandler } from "../types";
 
 export class SequenceCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["sequence"];

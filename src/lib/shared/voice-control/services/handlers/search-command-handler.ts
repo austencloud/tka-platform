@@ -12,7 +12,7 @@ import type {
   VoiceCommandCategory,
   CommandResult,
 } from "../../domain/voice-command-types";
-import type { IVoiceCommandHandler } from "../contracts/types";
+import type { IVoiceCommandHandler } from "../types";
 
 export class SearchCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["search"];

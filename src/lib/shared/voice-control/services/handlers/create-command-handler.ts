@@ -11,7 +11,7 @@ import type {
   CommandResult,
 } from "../../domain/voice-command-types";
 import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state-ref.svelte";
-import type { IVoiceCommandHandler } from "../contracts/types";
+import type { IVoiceCommandHandler } from "../types";
 
 export class CreateCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["create"];

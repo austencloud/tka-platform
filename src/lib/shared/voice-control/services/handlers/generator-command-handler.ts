@@ -9,7 +9,7 @@ import {
 } from "$lib/shared/create/state/generator-voice-ref.svelte";
 import type { GeneratorHelpId } from "$lib/shared/create/domain/generator-help-content";
 import type { UIGenerationConfig } from "$lib/shared/create/utils/config-mapper";
-import type { IVoiceCommandHandler } from "../contracts/types";
+import type { IVoiceCommandHandler } from "../types";
 
 // Parameter metadata for validation
 interface NumericParamMeta {

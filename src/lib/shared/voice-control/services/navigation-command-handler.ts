@@ -13,7 +13,7 @@ import type {
 import { handleModuleChange, handleSectionChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
 import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
 import type { ModuleId } from "../../navigation/domain/types";
-import type { IVoiceCommandHandler } from "./contracts/types";
+import type { IVoiceCommandHandler } from "./types";
 
 export class NavigationCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["navigation"];

@@ -12,7 +12,7 @@ import type {
 } from "../../domain/voice-command-types";
 import { settingsService } from "../../../settings/state/SettingsState.svelte";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
-import type { IVoiceCommandHandler } from "../contracts/types";
+import type { IVoiceCommandHandler } from "../types";
 
 export class PropCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["prop"];
