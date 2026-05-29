@@ -765,7 +765,14 @@
   };
 
   (async () => {
-    await geometryStreamer.runInitialLoad(streamerCallbacks);
+    try {
+      await geometryStreamer.runInitialLoad(streamerCallbacks);
+    } catch (err) {
+      // A worker crash/timeout rejected the lobby build. Don't hang the loading
+      // overlay on black forever - log it and fall through to reveal whatever
+      // geometry did load (corridors + any rooms that built).
+      console.error("[Museum3DScene] Initial geometry load failed:", err);
+    }
 
     // Mount fixtures for currently loaded rooms
     props.onBuildStage?.("Mounting fixtures");

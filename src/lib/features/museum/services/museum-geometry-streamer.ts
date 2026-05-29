@@ -35,6 +35,16 @@ export interface PerRoomBuckets {
   roomBuckets: Map<string, MuseumGeometryDryRun>;
 }
 
+interface PendingBuild {
+  resolve: (response: RoomBuiltResponse) => void;
+  reject: (error: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+}
+
+// A room build that gets no worker reply within this window is treated as a
+// failure rather than an infinite hang (which freezes the loading overlay).
+const BUILD_TIMEOUT_MS = 10_000;
+
 export interface StreamerCallbacks {
   addChunkToScene(chunk: RoomChunk): void;
   onBuildStage?(stage: string): void;
@@ -56,7 +66,7 @@ export class MuseumGeometryStreamer {
 
   // ── Worker state ──
   private readonly worker: Worker;
-  private readonly pendingBuilds = new Map<string, (response: RoomBuiltResponse) => void>();
+  private readonly pendingBuilds = new Map<string, PendingBuild>();
   private firstRoomActivated = false;
 
   // References
@@ -86,16 +96,43 @@ export class MuseumGeometryStreamer {
     this.worker.onmessage = (event: MessageEvent) => {
       const msg = event.data;
       if (msg.type === "room-built") {
-        const resolve = this.pendingBuilds.get(msg.roomId);
-        if (resolve) {
+        const pending = this.pendingBuilds.get(msg.roomId);
+        if (pending) {
+          clearTimeout(pending.timer);
           this.pendingBuilds.delete(msg.roomId);
-          resolve(msg as RoomBuiltResponse);
+          pending.resolve(msg as RoomBuiltResponse);
         }
       }
     };
+
+    // A worker that fails to boot (broken module import, OOM) would otherwise
+    // leave every pending build promise hanging forever - the loading overlay
+    // sticks on "Building lobby" with no error. Surface it and reject pending
+    // builds so the await chain unwinds and the scene can reveal what loaded.
+    this.worker.onerror = (event) => {
+      this.failAllPending(new Error(`Geometry worker crashed: ${event.message || "unknown error"}`));
+    };
+    this.worker.onmessageerror = () => {
+      this.failAllPending(new Error("Geometry worker message deserialization failed"));
+    };
+  }
+
+  private failAllPending(error: Error): void {
+    console.error("[MuseumGeometryStreamer]", error);
+    for (const pending of this.pendingBuilds.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(error);
+    }
+    this.pendingBuilds.clear();
   }
 
   dispose(): void {
+    // Reject (quietly) any in-flight builds so awaiting callers unwind on teardown.
+    for (const pending of this.pendingBuilds.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(new Error("Streamer disposed"));
+    }
+    this.pendingBuilds.clear();
     this.worker.terminate();
   }
 
@@ -142,8 +179,14 @@ export class MuseumGeometryStreamer {
   }
 
   private requestRoomBuild(roomId: string, priority: number): Promise<RoomBuiltResponse> {
-    return new Promise((resolve) => {
-      this.pendingBuilds.set(roomId, resolve);
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        if (this.pendingBuilds.delete(roomId)) {
+          reject(new Error(`Geometry worker timed out building "${roomId}" (no reply in ${BUILD_TIMEOUT_MS}ms)`));
+        }
+      }, BUILD_TIMEOUT_MS);
+      this.pendingBuilds.set(roomId, { resolve, reject, timer });
+
       const cached = this.lifecycleManager.getCachedDescriptor(roomId);
       const buckets = this.perRoomBuckets.roomBuckets.get(roomId);
       const wing = this.grid.wings.find((w) => w.id === roomId);
@@ -164,6 +207,11 @@ export class MuseumGeometryStreamer {
           wing: { bounds: wing.bounds, theme: wing.theme },
           priority,
         });
+      } else {
+        // No bucket/wing data - posting nothing would hang the promise forever.
+        clearTimeout(timer);
+        this.pendingBuilds.delete(roomId);
+        reject(new Error(`No geometry data for room "${roomId}" (missing buckets or wing)`));
       }
     });
   }
@@ -284,7 +332,11 @@ export class MuseumGeometryStreamer {
 
     for (const roomId of sortedRooms) {
       const dist = distances.get(roomId) ?? 99;
-      this.activateRoom(roomId, dist, callbacks); // fire-and-forget
+      // fire-and-forget; swallow per-room failures so one bad room doesn't
+      // surface as an unhandled rejection (the room just stays unbuilt).
+      this.activateRoom(roomId, dist, callbacks).catch((err) => {
+        console.warn(`[MuseumGeometryStreamer] room "${roomId}" failed to stream:`, err);
+      });
     }
 
     // 6. Compile shaders for newly added rooms during idle time

@@ -432,12 +432,27 @@
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("blur", handleBlur);
+
+    // Watchdog: never strand the loading overlay on black. If neither the
+    // texture nor the geometry track has reported ready within this window
+    // (e.g. a worker crash that even the streamer's own guards missed), force
+    // the reveal - a usable scene beats an indefinite black screen.
+    const watchdog = setTimeout(() => {
+      if (!sceneReady) {
+        console.warn("[DimensionFlipProof] Ready watchdog fired - forcing scene reveal");
+        texturesReady = true;
+        meshesReady = true;
+        checkFullyReady();
+      }
+    }, 15_000);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
       // Clean up debounce timer
       if (hmrSaveTimer !== null) clearTimeout(hmrSaveTimer);
+      clearTimeout(watchdog);
     };
   });
 

@@ -10,6 +10,7 @@
   import { destroyMuseumVillage } from "./services/museum-village-manager";
   import RoomPicker from "./components/RoomPicker.svelte";
   import SoundscapeBubble from "./components/audio/SoundscapeBubble.svelte";
+  import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
 
   import { onMount, untrack } from "svelte";
   import { page } from "$app/state";
@@ -18,12 +19,49 @@
   import { setDesktopSidebarForcedHidden } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
   // ── Loading gate ──
-  // A brief fade-from-black covers the scene until the lobby is ready
-  // (~200ms via worker). No progress bar needed - the load is fast.
+  // A fade-from-black covers the scene until the lobby is ready. A progress
+  // bar gives real feedback so a slow or stalled load is visible instead of a
+  // bare icon on black. Two parallel load tracks feed it:
+  //   - geometry build (tile bucketing → corridors → lobby → fixtures)
+  //   - textures/models (Three.js DefaultLoadingManager, 0-1)
   let showOverlay = $state(true);
   let overlayFading = $state(false);
 
+  let textureFraction = $state(0);   // 0-1 from DefaultLoadingManager
+  let geometryFraction = $state(0);  // 0-1 derived from build-stage milestones
+  let displayedPercent = $state(0);  // monotonic 0-100 shown in the bar
+  let stageLabel = $state("Opening the doors");
+
+  // Build-stage strings (emitted by the geometry streamer) → completion
+  // fraction + user-facing label. Stages fire in order as the lobby streams in.
+  const STAGE_INFO: Record<string, { fraction: number; label: string }> = {
+    "Tile bucketing":    { fraction: 0.15, label: "Mapping the halls" },
+    "Building corridors":{ fraction: 0.4,  label: "Carving corridors" },
+    "Building lobby":    { fraction: 0.7,  label: "Raising the lobby" },
+    "Mounting fixtures": { fraction: 0.9,  label: "Hanging the exhibits" },
+  };
+
+  function handleLoadProgress(p: number) {
+    if (p > textureFraction) textureFraction = p;
+  }
+
+  function handleBuildStage(stage: string) {
+    const info = STAGE_INFO[stage];
+    if (!info) return;
+    stageLabel = info.label;
+    if (info.fraction > geometryFraction) geometryFraction = info.fraction;
+  }
+
+  // Weighted blend — geometry build dominates the wait, textures fill the rest.
+  // Clamped monotonic so the bar never jumps backward if a track resets.
+  $effect(() => {
+    const blended = (geometryFraction * 0.65 + textureFraction * 0.35) * 100;
+    if (blended > displayedPercent) displayedPercent = blended;
+  });
+
   function handleAllLoaded() {
+    displayedPercent = 100;
+    stageLabel = "Welcome";
     overlayFading = true;
     setTimeout(() => { showOverlay = false; }, 600);
   }
@@ -263,9 +301,18 @@
 <div class="museum-module">
   <!-- Loading gate - brief fade-from-black until lobby is ready -->
   {#if showOverlay}
-    <div class="museum-loading-overlay" class:fading={overlayFading} role="status">
+    <div class="museum-loading-overlay" class:fading={overlayFading} role="status" aria-live="polite">
       <div class="overlay-icon">
         <i class="fas fa-landmark" aria-hidden="true"></i>
+      </div>
+      <div class="overlay-progress">
+        <ProgressBar
+          percent={displayedPercent}
+          label={stageLabel}
+          showPercent
+          color="rgba(200, 180, 140, 0.85)"
+          height={4}
+        />
       </div>
     </div>
   {/if}
@@ -286,6 +333,8 @@
           <DimensionFlipProof
             grid={liveGrid}
             onAllLoaded={handleAllLoaded}
+            onLoadProgress={handleLoadProgress}
+            onBuildStage={handleBuildStage}
             startInFps={selectedRoom !== null}
             onWingChange={(id) => soundscapePlayer.setCurrentWing(id)}
           />
@@ -371,6 +420,10 @@
     opacity: 0.5;
     animation: overlay-pulse 2s ease-in-out infinite;
     will-change: opacity;
+  }
+
+  .overlay-progress {
+    width: min(260px, 60vw);
   }
 
   @keyframes overlay-pulse {
