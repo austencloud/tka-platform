@@ -26,156 +26,62 @@ import type { CharcoalSparkParams } from "../../domain/types/CharcoalSparkTypes"
 import { semanticToCharcoalParams } from "../../domain/types/CharcoalSparkTypes";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { RenderFrameParams, RenderLoopConfig } from "../contracts/IAnimationRenderLoop";
+import type { EffectRendererLike } from "../effects/EffectRenderer";
+import { EFFECT_PLUGINS, EFFECT_PLUGIN_BY_ID } from "../effects/registry";
 
-import { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
-import { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";
+import type { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";
+import type { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
+// WebGLLedRenderer imported as value — syncLedOverlay uses deferred init (requestAnimationFrame)
+// that still directly instantiates it. Task 8 (Map-backing) will switch to plugin.createRenderer().
 import { WebGLLedRenderer } from "./led/WebGLLedRenderer";
-import { ZapOverlayRenderer } from "./ZapOverlayRenderer";
-import { SparklesOverlayRenderer } from "./SparklesOverlayRenderer";
-import { EchoOverlayRenderer } from "./EchoOverlayRenderer";
-import { BloomOverlayRenderer } from "./BloomOverlayRenderer";
-import { WaterOverlayRenderer } from "./WaterOverlayRenderer";
-import { BubblesOverlayRenderer } from "./BubblesOverlayRenderer";
-import { PetalsOverlayRenderer } from "./PetalsOverlayRenderer";
-import { SmokeOverlayRenderer } from "./SmokeOverlayRenderer";
-import { InkOverlayRenderer } from "./InkOverlayRenderer";
-import { FrostOverlayRenderer } from "./FrostOverlayRenderer";
-import { SilkOverlayRenderer } from "./SilkOverlayRenderer";
-import { PulseOverlayRenderer } from "./PulseOverlayRenderer";
-import { TrailOverlayWebGL2 } from "./TrailOverlayWebGL2";
-import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
+import type { ZapOverlayRenderer } from "./ZapOverlayRenderer";
+import type { SparklesOverlayRenderer } from "./SparklesOverlayRenderer";
+import type { EchoOverlayRenderer } from "./EchoOverlayRenderer";
+import type { BloomOverlayRenderer } from "./BloomOverlayRenderer";
+import type { WaterOverlayRenderer } from "./WaterOverlayRenderer";
+import type { BubblesOverlayRenderer } from "./BubblesOverlayRenderer";
+import type { PetalsOverlayRenderer } from "./PetalsOverlayRenderer";
+import type { SmokeOverlayRenderer } from "./SmokeOverlayRenderer";
+import type { InkOverlayRenderer } from "./InkOverlayRenderer";
+import type { FrostOverlayRenderer } from "./FrostOverlayRenderer";
+import type { SilkOverlayRenderer } from "./SilkOverlayRenderer";
+import type { PulseOverlayRenderer } from "./PulseOverlayRenderer";
 
 /** Callback to obtain current frame params (used to trigger re-renders). */
 export type FrameParamsProvider = () => RenderFrameParams;
 
-/** Minimal renderer interface shared by all overlay renderers. */
-interface OverlayRenderer {
-  initialize(container: HTMLElement, w: number, h: number): boolean;
-  dispose(): void;
-  isInitialized(): boolean;
-  resize?(w: number, h: number): void;
-  setCanvasZIndex?(z: number): void;
-}
+/**
+ * Overlay effects driven by EFFECT_PLUGINS (kind canvas2d | webgl).
+ * Excludes led (unique deferred lifecycle) and trails (handled separately).
+ */
+type OverlayEffectId = Exclude<EffectType, "none" | "led" | "trails">;
 
-/** Registry entry describing one overlay effect's lifecycle. */
-interface OverlayEffectEntry {
-  /** Effect type name (matches EffectType union member). */
-  effect: Exclude<EffectType, "none" | "led" | "trails">;
-  /** Key on `this` where the renderer instance lives. */
-  rendererField: keyof EffectRendererManager & string;
-  /** Key on RenderLoopConfig for updateConfig(). */
-  configKey: keyof RenderLoopConfig & string;
-  /** Constructor to create the renderer. */
-  RendererClass: new () => OverlayRenderer;
-  /** Optional hook called after successful initialization. */
-  onInit?: (mgr: EffectRendererManager, renderer: OverlayRenderer) => void;
-  /** Optional hook called on disable (after dispose). */
-  onDisable?: (mgr: EffectRendererManager) => void;
-  /** If false, skip triggerRender() at end. Default true. */
-  triggerRender?: boolean;
-}
+/**
+ * P2.2 shim: maps plugin id → named renderer field on the class.
+ * Task 8 (P2.3) will dissolve this entirely by replacing the 16 named fields
+ * with a Map<EffectType, EffectRendererLike>.
+ */
+const RENDERER_FIELD: Record<OverlayEffectId, keyof EffectRendererManager & string> = {
+  fire: "fireRenderer",
+  charcoal: "charcoalRenderer",
+  zap: "zapRenderer",
+  sparkles: "sparklesRenderer",
+  echo: "echoRenderer",
+  bloom: "bloomRenderer",
+  water: "waterRenderer",
+  bubbles: "bubblesRenderer",
+  petals: "petalsRenderer",
+  smoke: "smokeRenderer",
+  ink: "inkRenderer",
+  frost: "frostRenderer",
+  silk: "silkRenderer",
+  pulse: "pulseRenderer",
+};
 
-/** The 14 registry-driven overlay effects (LED excluded — unique lifecycle). */
-const OVERLAY_REGISTRY: readonly OverlayEffectEntry[] = [
-  {
-    effect: "fire",
-    rendererField: "fireRenderer",
-    configKey: "fireRenderer",
-    RendererClass: WebGLFireRenderer,
-    onDisable: (mgr) => {
-      if (!mgr.isEffectEnabled("charcoal")) {
-        mgr.fireTipTracker?.reset();
-      }
-    },
-  },
-  {
-    effect: "charcoal",
-    rendererField: "charcoalRenderer",
-    configKey: "charcoalRenderer",
-    RendererClass: CharcoalSparkRenderer,
-    onInit: (mgr, renderer) => {
-      const charcoalParams = mgr.getCharcoalParamsFromConfig();
-      if (charcoalParams) (renderer as CharcoalSparkRenderer).setParams(charcoalParams);
-    },
-    onDisable: (mgr) => {
-      if (!mgr.isEffectEnabled("fire")) {
-        mgr.fireTipTracker?.reset();
-      }
-    },
-  },
-  {
-    effect: "zap",
-    rendererField: "zapRenderer",
-    configKey: "zapRenderer",
-    RendererClass: ZapOverlayRenderer,
-  },
-  {
-    effect: "sparkles",
-    rendererField: "sparklesRenderer",
-    configKey: "sparklesRenderer",
-    RendererClass: SparklesOverlayRenderer,
-  },
-  {
-    effect: "echo",
-    rendererField: "echoRenderer",
-    configKey: "echoRenderer",
-    RendererClass: EchoOverlayRenderer,
-  },
-  {
-    effect: "bloom",
-    rendererField: "bloomRenderer",
-    configKey: "bloomRenderer",
-    RendererClass: BloomOverlayRenderer,
-  },
-  {
-    effect: "water",
-    rendererField: "waterRenderer",
-    configKey: "waterRenderer",
-    RendererClass: WaterOverlayRenderer,
-  },
-  {
-    effect: "bubbles",
-    rendererField: "bubblesRenderer",
-    configKey: "bubblesRenderer",
-    RendererClass: BubblesOverlayRenderer,
-  },
-  {
-    effect: "petals",
-    rendererField: "petalsRenderer",
-    configKey: "petalsRenderer",
-    RendererClass: PetalsOverlayRenderer,
-  },
-  {
-    effect: "smoke",
-    rendererField: "smokeRenderer",
-    configKey: "smokeRenderer",
-    RendererClass: SmokeOverlayRenderer,
-  },
-  {
-    effect: "ink",
-    rendererField: "inkRenderer",
-    configKey: "inkRenderer",
-    RendererClass: InkOverlayRenderer,
-  },
-  {
-    effect: "frost",
-    rendererField: "frostRenderer",
-    configKey: "frostRenderer",
-    RendererClass: FrostOverlayRenderer,
-  },
-  {
-    effect: "silk",
-    rendererField: "silkRenderer",
-    configKey: "silkRenderer",
-    RendererClass: SilkOverlayRenderer,
-  },
-  {
-    effect: "pulse",
-    rendererField: "pulseRenderer",
-    configKey: "pulseRenderer",
-    RendererClass: PulseOverlayRenderer,
-  },
-];
+/** The 14 plugins that use the generic overlay lifecycle (canvas2d + webgl, no led/trails). */
+const OVERLAY_PLUGINS = EFFECT_PLUGINS.filter(
+  (p) => p.kind === "canvas2d" || p.kind === "webgl"
+) as readonly (typeof EFFECT_PLUGINS[number] & { id: OverlayEffectId })[];
 
 export class EffectRendererManager {
   // ── Renderer instances ──────────────────────────────────────────────
@@ -209,8 +115,8 @@ export class EffectRendererManager {
 
   // ── Previous-frame flags for change detection ───────────────────────
   /** Map from effect name to whether tips are currently enabled. LED uses ledConfig.enabled instead. */
-  private prevEffectEnabled: Map<OverlayEffectEntry["effect"], boolean> = new Map(
-    OVERLAY_REGISTRY.map(e => [e.effect, false])
+  private prevEffectEnabled: Map<OverlayEffectId, boolean> = new Map(
+    OVERLAY_PLUGINS.map(p => [p.id as OverlayEffectId, false])
   );
 
   // Legacy accessors for external callers that read these flags directly
@@ -252,11 +158,12 @@ export class EffectRendererManager {
   effectsConfigState: EffectsConfigState | null = null;
 
   // ── Registry helpers (consolidate dynamic property access) ──────────
-  private getOverlayRenderer(field: OverlayEffectEntry["rendererField"]): OverlayRenderer | null {
+  // P2.2 shim: accesses named fields by string key until Task 8 replaces them with a Map.
+  private getOverlayRenderer(field: string): EffectRendererLike | null {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (this as any)[field] as OverlayRenderer | null;
+    return (this as any)[field] as EffectRendererLike | null;
   }
-  private setOverlayRenderer(field: OverlayEffectEntry["rendererField"], value: OverlayRenderer | null): void {
+  private setOverlayRenderer(field: string, value: EffectRendererLike | null): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this as any)[field] = value;
   }
@@ -295,7 +202,7 @@ export class EffectRendererManager {
   }
 
   /** Check whether a given overlay effect is currently enabled. */
-  isEffectEnabled(effect: OverlayEffectEntry["effect"]): boolean {
+  isEffectEnabled(effect: OverlayEffectId): boolean {
     return this.prevEffectEnabled.get(effect) ?? false;
   }
 
@@ -303,61 +210,66 @@ export class EffectRendererManager {
 
   /**
    * Generic init/destroy lifecycle for a single registry-driven overlay effect.
+   * Driven by EFFECT_PLUGINS (canvas2d + webgl kinds) via the P2.2 RENDERER_FIELD shim.
    */
-  private syncOverlay(entry: OverlayEffectEntry): void {
-    const enabled = this.prevEffectEnabled.get(entry.effect) ?? false;
+  private syncOverlay(plugin: typeof OVERLAY_PLUGINS[number]): void {
+    const id = plugin.id as OverlayEffectId;
+    const rendererField = RENDERER_FIELD[id];
+    const enabled = this.prevEffectEnabled.get(id) ?? false;
 
     if (enabled) {
-      const current = this.getOverlayRenderer(entry.rendererField);
+      const current = this.getOverlayRenderer(rendererField);
       if (!current?.isInitialized()) {
         if (!this.containerElement) return;
-        const renderer: OverlayRenderer = new entry.RendererClass();
+        const renderer = plugin.createRenderer();
         const success = renderer.initialize(
           this.containerElement,
           this.canvasSize,
           this.canvasSize,
         );
         if (success) {
-          this.setOverlayRenderer(entry.rendererField, renderer);
+          this.setOverlayRenderer(rendererField, renderer);
           this.renderLoopService?.updateConfig({
-            [entry.configKey]: renderer,
+            [plugin.configKey]: renderer,
           } as Partial<RenderLoopConfig>);
-          entry.onInit?.(this, renderer);
+          plugin.onInit?.(this, renderer);
         } else {
-          this.setOverlayRenderer(entry.rendererField, null);
+          this.setOverlayRenderer(rendererField, null);
         }
       }
     } else {
-      const current = this.getOverlayRenderer(entry.rendererField);
+      const current = this.getOverlayRenderer(rendererField);
       if (current?.isInitialized()) {
         current.dispose();
-        this.setOverlayRenderer(entry.rendererField, null);
+        this.setOverlayRenderer(rendererField, null);
       }
       this.renderLoopService?.updateConfig({
-        [entry.configKey]: null,
+        [plugin.configKey]: null,
       } as Partial<RenderLoopConfig>);
-      entry.onDisable?.(this);
+      plugin.onDisable?.(this);
     }
 
-    if (entry.triggerRender !== false) {
+    if (plugin.triggerRender !== false) {
       this.triggerRender();
     }
   }
 
   /**
-   * Sync a single effect overlay by name. Finds the registry entry and delegates.
+   * Sync a single effect overlay by name. Finds the plugin and delegates.
    */
-  syncEffectOverlay(effect: OverlayEffectEntry["effect"]): void {
-    const entry = OVERLAY_REGISTRY.find(e => e.effect === effect);
-    if (entry) this.syncOverlay(entry);
+  syncEffectOverlay(effect: OverlayEffectId): void {
+    const plugin = EFFECT_PLUGIN_BY_ID[effect] as typeof OVERLAY_PLUGINS[number] | undefined;
+    if (plugin && (plugin.kind === "canvas2d" || plugin.kind === "webgl")) {
+      this.syncOverlay(plugin);
+    }
   }
 
   /**
    * Sync all 14 registry-driven overlay effects.
    */
   syncAllOverlays(): void {
-    for (const entry of OVERLAY_REGISTRY) {
-      this.syncOverlay(entry);
+    for (const plugin of OVERLAY_PLUGINS) {
+      this.syncOverlay(plugin);
     }
   }
 
@@ -490,12 +402,13 @@ export class EffectRendererManager {
    * per-cell assignments correctly spin up / tear down overlay renderers.
    */
   syncEffectFlagsFromEffectiveMap(): void {
-    for (const entry of OVERLAY_REGISTRY) {
-      const has = this.hasEffectInEffectiveMap(entry.effect);
-      const prev = this.prevEffectEnabled.get(entry.effect) ?? false;
+    for (const plugin of OVERLAY_PLUGINS) {
+      const id = plugin.id as OverlayEffectId;
+      const has = this.hasEffectInEffectiveMap(id);
+      const prev = this.prevEffectEnabled.get(id) ?? false;
       if (has !== prev) {
-        this.prevEffectEnabled.set(entry.effect, has);
-        this.syncOverlay(entry);
+        this.prevEffectEnabled.set(id, has);
+        this.syncOverlay(plugin);
       }
     }
 
@@ -520,8 +433,8 @@ export class EffectRendererManager {
     };
     apply("trails", this.trailOverlay);
     apply("led", this.ledRenderer);
-    for (const entry of OVERLAY_REGISTRY) {
-      apply(entry.effect, this.getOverlayRenderer(entry.rendererField));
+    for (const plugin of OVERLAY_PLUGINS) {
+      apply(plugin.id, this.getOverlayRenderer(RENDERER_FIELD[plugin.id as OverlayEffectId]));
     }
   }
 
@@ -529,18 +442,10 @@ export class EffectRendererManager {
 
   /** Runtime A/B toggle: set `window.__TKA_TRAIL_GPU = false` before
    *  a sequence starts to use the legacy Canvas2D overlay instead of
-   *  the WebGL2 backend. Default is WebGL2. */
+   *  the WebGL2 backend. Default is WebGL2.
+   *  Thin wrapper — factory logic now lives in trailsEffectPlugin.createRenderer(). */
   createTrailOverlay(): ITrailOverlayCanvas {
-    const flag =
-      typeof window !== "undefined"
-        ? (window as { __TKA_TRAIL_GPU?: boolean }).__TKA_TRAIL_GPU
-        : undefined;
-    if (flag === false) {
-       
-      console.info("[TrailOverlay] using legacy Canvas2D (window.__TKA_TRAIL_GPU = false)");
-      return new TrailOverlayCanvas();
-    }
-    return new TrailOverlayWebGL2();
+    return EFFECT_PLUGIN_BY_ID.trails.createRenderer() as unknown as ITrailOverlayCanvas;
   }
 
   // ── Resize ──────────────────────────────────────────────────────────
@@ -549,8 +454,8 @@ export class EffectRendererManager {
   resizeAll(newSize: number): void {
     this.canvasSize = newSize;
     // Resize all registry-driven renderers
-    for (const entry of OVERLAY_REGISTRY) {
-      this.getOverlayRenderer(entry.rendererField)?.resize?.(newSize, newSize);
+    for (const plugin of OVERLAY_PLUGINS) {
+      this.getOverlayRenderer(RENDERER_FIELD[plugin.id as OverlayEffectId])?.resize?.(newSize, newSize);
     }
     // LED + trail handled separately
     this.ledRenderer?.resize(newSize, newSize);
@@ -568,11 +473,11 @@ export class EffectRendererManager {
    * initializeCanvas gap. Called after renderLoopService is ready.
    */
   wirePostInitOverlays(): void {
-    for (const entry of OVERLAY_REGISTRY) {
-      const renderer = this.getOverlayRenderer(entry.rendererField);
+    for (const plugin of OVERLAY_PLUGINS) {
+      const renderer = this.getOverlayRenderer(RENDERER_FIELD[plugin.id as OverlayEffectId]);
       if (renderer?.isInitialized() && this.renderLoopService) {
         this.renderLoopService.updateConfig({
-          [entry.configKey]: renderer,
+          [plugin.configKey]: renderer,
         } as Partial<RenderLoopConfig>);
       }
     }
@@ -588,10 +493,11 @@ export class EffectRendererManager {
    * Called at end of initialize() in case $effects haven't triggered yet.
    */
   ensureEnabledOverlays(): void {
-    for (const entry of OVERLAY_REGISTRY) {
-      const enabled = this.prevEffectEnabled.get(entry.effect) ?? false;
-      if (enabled && !this.getOverlayRenderer(entry.rendererField)?.isInitialized()) {
-        this.syncOverlay(entry);
+    for (const plugin of OVERLAY_PLUGINS) {
+      const id = plugin.id as OverlayEffectId;
+      const enabled = this.prevEffectEnabled.get(id) ?? false;
+      if (enabled && !this.getOverlayRenderer(RENDERER_FIELD[id])?.isInitialized()) {
+        this.syncOverlay(plugin);
       }
     }
     if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
@@ -638,9 +544,10 @@ export class EffectRendererManager {
 
   dispose(): void {
     // Dispose all registry-driven renderers
-    for (const entry of OVERLAY_REGISTRY) {
-      this.getOverlayRenderer(entry.rendererField)?.dispose();
-      this.setOverlayRenderer(entry.rendererField, null);
+    for (const plugin of OVERLAY_PLUGINS) {
+      const field = RENDERER_FIELD[plugin.id as OverlayEffectId];
+      this.getOverlayRenderer(field)?.dispose();
+      this.setOverlayRenderer(field, null);
     }
     this.fireTipTracker = null;
 
