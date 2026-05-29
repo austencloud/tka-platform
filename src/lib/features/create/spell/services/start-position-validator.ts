@@ -6,7 +6,7 @@
  */
 
 import type { LetterTransitionGraph } from "./letter-transition-graph";
-import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

@@ -1,4 +1,4 @@
-import type { ViewerPreferences } from "./contracts/types";
+import type { ViewerPreferences } from "./types";
 import type { SoloPropData } from "../domain/models/SoloPropData";
 import type { StepPairingData } from "../domain/models/StepPairingData";
 import type { SoloPropStepData } from "../domain/models/SoloPropStepData";

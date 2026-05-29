@@ -11,7 +11,7 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-import type { SvgImageConverter } from '$lib/shared/foundation/services/implementations/SvgImageConverter'
+import type { SvgImageConverter } from '$lib/shared/foundation/services/svg-image-converter'
 
 export interface GlyphAsset {
   image: HTMLImageElement;

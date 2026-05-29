@@ -1,4 +1,4 @@
-import type { SEOLinkOptions } from "./contracts/types";
+import type { SEOLinkOptions } from "./types";
 
 export function createSEOLink(path: string, options: SEOLinkOptions = {}): string {
   const { tab, section, seoMode = false } = options;

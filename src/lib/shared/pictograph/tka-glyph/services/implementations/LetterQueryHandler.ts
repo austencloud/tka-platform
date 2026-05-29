@@ -15,12 +15,12 @@ import type { Letter } from "../../../../foundation/domain/models/Letter";
 import type {
   CSVRow,
   ICSVPictographParser,
-} from "../../../../foundation/services/contracts/data/ICSVPictographParser";
+} from "../../../../foundation/services/data/ICSVPictographParser";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
-import type { CsvLoader } from "../../../../foundation/services/implementations/data/CsvLoader";
+import type { CsvLoader } from "../../../../foundation/services/data/csv-loader";
 import type {
   ILetterQueryHandler,
-} from "../../../../foundation/services/contracts/data/data-contracts";
+} from "../../../../foundation/services/data/data-contracts";
 
 interface CsvParseError {
   error: string;
@@ -390,7 +390,7 @@ export class LetterQueryHandler implements ILetterQueryHandler {
 }
 
 // Direct singleton export for HMR-friendly imports
-import { csvLoader } from "../../../../foundation/services/implementations/data/CsvLoader";
+import { csvLoader } from "../../../../foundation/services/data/csv-loader";
 import { csvParser } from "../../../../foundation/services/implementations/data/CsvParser";
 import { csvPictographParser } from "../../../shared/services/implementations/CSVPictographParser";
 

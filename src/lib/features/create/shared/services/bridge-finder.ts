@@ -15,7 +15,7 @@ import type { CircularizationOption } from "./sequence-extender";
 import type { OrientationAlignment } from "./orientation-alignment-calculator";
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { PositionAnalyzer } from "../../construct/option-picker/services/position-analyzer";
 import type { LOOPValidator } from "./loop-validator";
 import type { SequenceAnalyzer } from "./sequence-analyzer";

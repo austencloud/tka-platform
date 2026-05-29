@@ -28,7 +28,7 @@ import {
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 
 // Orbit path for floating prop (cardinal directions clockwise)
 const CLOCKWISE_ORBIT: GridLocation[] = [

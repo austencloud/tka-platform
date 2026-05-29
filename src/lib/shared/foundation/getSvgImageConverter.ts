@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { SvgImageConverter } from './services/implementations/SvgImageConverter';
+import { SvgImageConverter } from './services/svg-image-converter';
 
 let instance: SvgImageConverter | null = null;
 

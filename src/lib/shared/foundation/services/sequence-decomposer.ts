@@ -1,8 +1,8 @@
-import { createSoloProp } from "../solo-prop-factory";
-import type { SequenceData } from "../../domain/models/SequenceData";
-import type { SoloPropData } from "../../domain/models/SoloPropData";
-import type { SoloPropStepData } from "../../domain/models/SoloPropStepData";
-import type { StepPairingData } from "../../domain/models/StepPairingData";
+import { createSoloProp } from "./solo-prop-factory";
+import type { SequenceData } from "../domain/models/SequenceData";
+import type { SoloPropData } from "../domain/models/SoloPropData";
+import type { SoloPropStepData } from "../domain/models/SoloPropStepData";
+import type { StepPairingData } from "../domain/models/StepPairingData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {

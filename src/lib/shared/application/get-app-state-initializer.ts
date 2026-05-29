@@ -1,4 +1,4 @@
-import { createAppStateInitializer } from '../foundation/services/implementations/data/app-state-initializer.svelte';
+import { createAppStateInitializer } from '../foundation/services/data/app-state-initializer.svelte';
 
 type AppStateInitializer = ReturnType<typeof createAppStateInitializer>;
 

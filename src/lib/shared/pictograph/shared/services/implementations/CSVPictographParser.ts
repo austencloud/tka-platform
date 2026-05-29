@@ -10,7 +10,7 @@ import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services
 import type {
   CSVRow,
   ICSVPictographParser,
-} from "../../../../foundation/services/contracts/data/ICSVPictographParser";
+} from "../../../../foundation/services/data/ICSVPictographParser";
 import { Orientation } from "../../domain/enums/pictograph-enums";
 
 function mapHandPath(value: string | undefined): HandPath | null {

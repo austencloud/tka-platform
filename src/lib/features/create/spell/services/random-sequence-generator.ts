@@ -12,7 +12,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { VariationConstraints } from "../domain/models/spell-models";
 import type { RandomSequenceGenerationOptions } from "./types";
-import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { StartPositionValidator } from "./start-position-validator";
 import type { OrientationContinuityValidator } from "./orientation-continuity-validator";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";

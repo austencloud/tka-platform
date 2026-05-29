@@ -12,7 +12,7 @@ import type {
   ICreateModuleState,
   BatchEditChanges,
 } from "../types/create-module-types";
-import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 // Import handlers

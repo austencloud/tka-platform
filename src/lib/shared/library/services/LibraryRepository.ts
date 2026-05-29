@@ -46,7 +46,7 @@ import type { ConflictResolver } from "$lib/shared/offline/services/conflict-res
 import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
 import { getTagMigrator } from "$lib/shared/library/getTagMigrator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceHydrator } from '$lib/shared/foundation/services/implementations/SequenceHydrator'
+import type { SequenceHydrator } from '$lib/shared/foundation/services/sequence-hydrator'
 import type {
   LibraryStats, LibraryQueryOptions } from "$lib/shared/library/domain/library-contract-types";
 import type {

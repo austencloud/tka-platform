@@ -14,7 +14,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import type { HandPathData } from "../domain/models/HandPathData";
-import type { HandPathFilters } from "./contracts/types";
+import type { HandPathFilters } from "./types";
 import type { ArtifactProvenance } from "../domain/models/ArtifactProvenance";
 
 function toDateOrUndefined(value: unknown): Date | undefined {

@@ -14,7 +14,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../types/create-module-types";
-import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {

@@ -1,4 +1,4 @@
-import type { DownloadOptions, BatchDownloadOptions, DownloadResult } from "./contracts/types";
+import type { DownloadOptions, BatchDownloadOptions, DownloadResult } from "./types";
 
 export async function downloadBlob(
   blob: Blob,

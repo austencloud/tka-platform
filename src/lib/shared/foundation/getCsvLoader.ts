@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { CsvLoader } from './services/implementations/data/CsvLoader';
+import { CsvLoader } from './services/data/csv-loader';
 
 let instance: CsvLoader | null = null;
 

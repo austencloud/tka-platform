@@ -9,7 +9,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";

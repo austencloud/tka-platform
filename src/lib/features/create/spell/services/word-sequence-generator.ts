@@ -6,7 +6,7 @@
 
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
 type StepConverter = typeof StepConverterSingleton;
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";

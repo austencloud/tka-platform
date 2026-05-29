@@ -1,4 +1,4 @@
-import { SequenceDecomposer } from './services/implementations/SequenceDecomposer';
+import { SequenceDecomposer } from './services/sequence-decomposer';
 
 let instance: SequenceDecomposer | null = null;
 

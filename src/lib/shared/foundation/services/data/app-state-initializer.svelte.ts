@@ -1,4 +1,4 @@
-import type { IAppStateInitializer } from "../../../../application/state/app-state-contracts";
+import type { IAppStateInitializer } from "../../../application/state/app-state-contracts";
 
 export function createAppStateInitializer(): IAppStateInitializer {
   let isInitialized = $state<boolean>(false);

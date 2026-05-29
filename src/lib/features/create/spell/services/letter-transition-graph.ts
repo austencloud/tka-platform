@@ -9,7 +9,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { TransitionGraph } from "$lib/shared/sequence-engine/services/transition-graph";
 import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/browser-data-provider";
-import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 
 import type {
   LetterPositionInfo,

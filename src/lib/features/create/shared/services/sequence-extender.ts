@@ -134,7 +134,7 @@ export interface ExtensionApplyResult {
 }
 import type { LOOPExecutorSelector } from "$lib/features/create/generate/circular/services/loop-executor-selector";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
-import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { stepConverter as StepConverterSingleton } from "$lib/features/create/generate/shared/services/step-converter";
 type StepConverter = typeof StepConverterSingleton;
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";

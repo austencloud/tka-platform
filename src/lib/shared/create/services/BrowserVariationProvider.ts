@@ -11,7 +11,7 @@
  */
 
 import type { PictographData as EnginePictographData } from "@tka/sequence-engine/generation";
-import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { PictographData as AppPictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData as AppMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionData as EngineMotionData } from "@tka/sequence-engine/generation";

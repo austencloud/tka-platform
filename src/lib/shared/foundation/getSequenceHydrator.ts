@@ -1,5 +1,5 @@
 
-import { SequenceHydrator } from './services/implementations/SequenceHydrator';
+import { SequenceHydrator } from './services/sequence-hydrator';
 import { getSequenceDecomposer } from './getSequenceDecomposer';
 
 let instance: SequenceHydrator | null = null;
