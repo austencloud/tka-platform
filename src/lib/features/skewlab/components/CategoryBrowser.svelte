@@ -18,7 +18,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
 

@@ -168,6 +168,6 @@ export class StepOperator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 
 export const stepOperator = new StepOperator(motionQueryHandler);

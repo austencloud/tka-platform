@@ -4,7 +4,7 @@ import type {
   PreparedPictographData,
   PreparedRenderData,
 } from "../../domain/models/PreparedPictographData";
-import type { PrepareOptions } from "../contracts/types";
+import type { PrepareOptions } from "../types";
 import type { ArrowLifecycleManager } from "../../../arrow/orchestration/services/arrow-lifecycle-manager";
 import type { PropSvgLoader } from "../../../prop/services/prop-svg-loader";
 import type { PropPlacer } from "../../../prop/services/prop-placer";

@@ -12,7 +12,7 @@
   import { SvgToBrailleConverter } from "$lib/features/retro/dos/services/svg-to-braille-converter";
   import AsciiRawPreview from "./AsciiRawPreview.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getCanvas2DRenderer } from "$lib/shared/render/get-canvas-2d-renderer";

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { StartPositionValidator } from './services/start-position-validator';
 import { getLetterTransitionGraph } from './get-letter-transition-graph';
-import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
+import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
 
 let instance: StartPositionValidator | null = null;
 

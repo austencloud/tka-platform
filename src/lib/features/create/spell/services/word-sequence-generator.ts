@@ -785,7 +785,7 @@ export class WordSequenceGenerator {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { letterTransitionGraph } from "./letter-transition-graph";
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { sequenceExtender } from "$lib/features/create/shared/services/sequence-extender";

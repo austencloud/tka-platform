@@ -7,20 +7,20 @@
 
 import type { CodexLetterMapping } from "$lib/shared/learn/domain/codex-models";
 import type { CodexLetterMappingRepo } from "$lib/shared/learn/services/CodexLetterMappingRepo";
-import type { MotionType } from "../../../shared/domain/enums/pictograph-enums";
-import type { PictographData } from "../../../shared/domain/models/PictographData";
+import type { MotionType } from "../../shared/domain/enums/pictograph-enums";
+import type { PictographData } from "../../shared/domain/models/PictographData";
 import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModels";
 
-import type { Letter } from "../../../../foundation/domain/models/Letter";
+import type { Letter } from "../../../foundation/domain/models/Letter";
 import type {
   CSVRow,
   ICSVPictographParser,
-} from "../../../../foundation/services/data/ICSVPictographParser";
-import { GridMode } from "../../../grid/domain/enums/grid-enums";
-import type { CsvLoader } from "../../../../foundation/services/data/csv-loader";
+} from "../../../foundation/services/data/ICSVPictographParser";
+import { GridMode } from "../../grid/domain/enums/grid-enums";
+import type { CsvLoader } from "../../../foundation/services/data/csv-loader";
 import type {
   ILetterQueryHandler,
-} from "../../../../foundation/services/data/data-contracts";
+} from "../../../foundation/services/data/data-contracts";
 
 interface CsvParseError {
   error: string;
@@ -390,9 +390,9 @@ export class LetterQueryHandler implements ILetterQueryHandler {
 }
 
 // Direct singleton export for HMR-friendly imports
-import { csvLoader } from "../../../../foundation/services/data/csv-loader";
-import { csvParser } from "../../../../foundation/services/implementations/data/CsvParser";
-import { csvPictographParser } from "../../../shared/services/implementations/CSVPictographParser";
+import { csvLoader } from "../../../foundation/services/data/csv-loader";
+import { csvParser } from "../../../foundation/services/implementations/data/CsvParser";
+import { csvPictographParser } from "../../shared/services/csv-pictograph-parser";
 
 export const letterQueryHandler = new LetterQueryHandler(
   csvLoader,

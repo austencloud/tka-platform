@@ -13,7 +13,7 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/Sta
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { GenerationOrchestrator } from "$lib/shared/create/services/GenerationOrchestrator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
-import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import type {

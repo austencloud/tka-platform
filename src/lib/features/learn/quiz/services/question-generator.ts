@@ -8,7 +8,7 @@
 import * as SequenceQuestionGenerator from "./sequence-question-generator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   QuizAnswerFormat,

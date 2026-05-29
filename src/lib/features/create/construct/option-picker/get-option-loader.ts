@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { OptionLoader } from './services/option-loader';
 import { gridPositionDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver';
-import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
+import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/motion-query-handler';
 import { getPositionAnalyzer } from './get-position-analyzer';
 
 let instance: OptionLoader | null = null;

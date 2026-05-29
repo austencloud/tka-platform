@@ -515,13 +515,13 @@ export class SequenceExtender {
 // ============================================================================
 import { loopExecutorSelector } from "$lib/features/create/generate/circular/services/loop-executor-selector";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { stepConverter } from "$lib/features/create/generate/shared/services/step-converter";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { loopValidator } from "./loop-validator";
 import { sequenceAnalyzer } from "./sequence-analyzer";
 import { bridgeFinder } from "./bridge-finder";
-import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 
 export const sequenceExtender = new SequenceExtender(
   loopExecutorSelector,

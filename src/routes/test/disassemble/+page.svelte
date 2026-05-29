@@ -8,7 +8,7 @@ import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import * as propTypeApplier from "$lib/shared/landing/services/prop-type-applier";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";

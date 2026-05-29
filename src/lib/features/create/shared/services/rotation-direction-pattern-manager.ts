@@ -63,7 +63,7 @@ import {
   RotationDirection,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { createStepData } from "$lib/shared/create/factories/createStepData";

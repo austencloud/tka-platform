@@ -5,7 +5,7 @@ import { MotionColor, HandPath, SkewDirection } from "../../domain/enums/pictogr
 import { createMotionData } from "../../domain/models/MotionData";
 import type { PictographData } from "../../domain/models/PictographData";
 import { createPictographData } from "../../domain/factories/createPictographData";
-import type { EnumMapper } from "../../../../foundation/services/implementations/data/EnumMapper";
+import type { EnumMapper } from "../../../foundation/services/implementations/data/EnumMapper";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type {
   CSVRow,
@@ -190,8 +190,8 @@ export class CSVPictographParser implements ICSVPictographParser {
   }
 }
 
-import { enumMapper } from "../../../../foundation/services/implementations/data/EnumMapper";
-import { orientationCalculator } from "../../../prop/services/implementations/OrientationCalculator";
+import { enumMapper } from "../../../foundation/services/implementations/data/EnumMapper";
+import { orientationCalculator } from "../../prop/services/implementations/OrientationCalculator";
 
 export const csvPictographParser = new CSVPictographParser(
   enumMapper,

@@ -19,7 +19,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { calculateMotionType, calculateRotationDirection } from "$lib/features/create/assemble/services/hand-path-motion-calculator";
-import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import type { BuilderStep } from "../state/assemble-state.svelte";
 
 /** Derive MotionType (PRO/ANTI/DASH/STATIC) from step data */

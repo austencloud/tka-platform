@@ -6,7 +6,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 -->
 <script lang="ts">
   import { GridMode, GridLocation } from "../domain/enums/grid-enums";
-  import { svgPreloader } from "$lib/shared/pictograph/shared/services/implementations/SvgPreloader";
+  import { svgPreloader } from "$lib/shared/pictograph/shared/services/svg-preloader";
   import { getGridRotationDirection } from "../state/grid-rotation-state.svelte";
 
   let {

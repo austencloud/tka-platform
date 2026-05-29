@@ -17,7 +17,7 @@
   import { XPRenderer } from "$lib/features/retro/winxp/services/xp-renderer";
   import { SvgToBrailleConverter } from "$lib/features/retro/dos/services/svg-to-braille-converter";
   import AsciiRawPreview from "./AsciiRawPreview.svelte";
-  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { RetroPictographData, RetroHandData } from "$lib/features/retro/shared/domain/pictograph-types";

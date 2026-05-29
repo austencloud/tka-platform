@@ -12,7 +12,7 @@
   import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
-  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
   import { GalleryRenderer } from "../services/gallery-renderer";

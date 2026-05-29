@@ -11,7 +11,7 @@
    * (NOT letterQueryHandler which goes to Codex - that's for the Learn tab only)
    */
   import { onMount } from 'svelte';
-  import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
+  import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/motion-query-handler';
   import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/PictographData';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
   import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';

@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { BridgeFinder } from './services/bridge-finder';
-import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
+import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
 import { getPositionAnalyzer } from '$lib/features/create/construct/option-picker/get-position-analyzer';
 import { getLOOPValidator } from './get-loop-validator';
 import { getSequenceAnalyzer } from './get-sequence-analyzer';

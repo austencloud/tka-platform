@@ -12,7 +12,7 @@
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { TriGridMode } from "../domain/trigrid-types";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { svgPreloader } from "$lib/shared/pictograph/shared/services/implementations/SvgPreloader";
+  import { svgPreloader } from "$lib/shared/pictograph/shared/services/svg-preloader";
   import { getTriGridCalculator } from "../get-tri-grid-calculator";
   import { TRIGRID_SVG_SIZE } from "../domain/trigrid-constants";
   import { applyColorToSvg } from "$lib/shared/utils/svg-color-utils";

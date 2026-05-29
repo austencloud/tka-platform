@@ -6,7 +6,7 @@
  * the selected example will show a visible change when transformed.
  */
 
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";

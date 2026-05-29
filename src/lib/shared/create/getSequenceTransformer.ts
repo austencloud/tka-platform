@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { SequenceTransformer } from '$lib/shared/create/services/SequenceTransformer';
-import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
+import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/motion-query-handler';
 import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
 import { gridPositionDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver';
 import { getReversalDetector } from '$lib/shared/create/getReversalDetector';

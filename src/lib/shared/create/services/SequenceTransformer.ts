@@ -131,7 +131,7 @@ export class SequenceTransformer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";

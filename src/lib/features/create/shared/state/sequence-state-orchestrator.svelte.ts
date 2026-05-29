@@ -26,7 +26,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import { deepLinker } from "$lib/shared/navigation/services/deep-linker";
 import type { TargetHand } from "./panel-coordination-state.svelte";
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
-import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
 import type { SequenceRepository } from "$lib/shared/create/services/SequenceRepository";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";

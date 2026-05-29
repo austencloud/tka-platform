@@ -5,7 +5,7 @@ import type { CodexLetterMappingRepo } from '$lib/shared/learn/services/CodexLet
 import { getCodexLetterMappingRepo } from './get-codex-letter-mapping-repo';
 import * as codexPictographUpdater from './services/codex-pictograph-updater';
 import { getQuizRepoManager } from '$lib/features/learn/quiz/get-quiz-repo-manager';
-import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
+import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
 
 let instance: Codex | null = null;
 

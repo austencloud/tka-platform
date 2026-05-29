@@ -967,7 +967,7 @@ export class RandomSequenceGenerator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { startPositionValidator } from "./start-position-validator";
 import * as orientationContinuityValidator from "./orientation-continuity-validator";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";

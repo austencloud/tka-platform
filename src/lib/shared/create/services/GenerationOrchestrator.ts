@@ -28,7 +28,7 @@ import {
   type ISequenceDataProvider,
 } from "@tka/sequence-engine";
 import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/browser-data-provider";
-import { letterQueryHandler as globalLetterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { letterQueryHandler as globalLetterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 
 // The engine's word-based generation path reads from a global transition
 // graph singleton (mirrors mcp-server/src/shared/server-context.ts which
@@ -239,7 +239,7 @@ export class GenerationOrchestrator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { BrowserVariationProvider } from "$lib/shared/create/services/BrowserVariationProvider";
 import { BuildResultTransformer } from "$lib/shared/create/services/BuildResultTransformer";
 import { sequenceMetadataManager } from "$lib/shared/create/services/sequence-metadata-manager";

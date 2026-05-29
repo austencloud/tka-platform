@@ -14,7 +14,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     MotionColor,

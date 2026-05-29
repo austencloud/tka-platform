@@ -79,7 +79,7 @@ export class OptionLoader {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { positionAnalyzer } from "./position-analyzer";
 
 export const optionLoader = new OptionLoader(

@@ -297,7 +297,7 @@ export class BridgeFinder {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { positionAnalyzer } from "$lib/features/create/construct/option-picker/services/position-analyzer";
 import { loopValidator } from "./loop-validator";
 import { sequenceAnalyzer } from "./sequence-analyzer";

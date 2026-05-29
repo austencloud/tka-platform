@@ -102,7 +102,7 @@ export class StartPositionValidator {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { letterTransitionGraph } from "./letter-transition-graph";
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 
 export const startPositionValidator = new StartPositionValidator(
   letterTransitionGraph,

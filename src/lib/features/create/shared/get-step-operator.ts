@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { StepOperator } from './services/step-operator';
-import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
+import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/motion-query-handler';
 
 let instance: StepOperator | null = null;
 

@@ -9,7 +9,7 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { PoiValidationResult } from "../domain/poi-models";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

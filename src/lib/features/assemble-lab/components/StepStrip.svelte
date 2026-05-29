@@ -28,7 +28,7 @@
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { calculateMotionType, calculateRotationDirection } from "$lib/features/create/assemble/services/hand-path-motion-calculator";
-  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();

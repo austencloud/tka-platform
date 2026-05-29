@@ -37,7 +37,7 @@ import { getSequenceTransformer } from "$lib/shared/create/getSequenceTransforme
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/spinner-metrics-repository";
   import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { createEndlessPlayback, type EndlessPlaybackState } from "$lib/shared/animation-engine/state/endless-playback-state.svelte";
   import type { SourceMode } from "$lib/shared/animation-engine/domain/chaining-types";

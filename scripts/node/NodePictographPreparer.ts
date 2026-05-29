@@ -16,7 +16,7 @@ import type {
 } from "../../src/lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import type {
   PrepareOptions,
-} from "../../src/lib/shared/pictograph/shared/services/contracts/types";
+} from "../../src/lib/shared/pictograph/shared/services/types";
 import type { IArrowLifecycleManager } from "../../src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowLifecycleManager";
 import type { IPropSvgLoader } from "../../src/lib/shared/pictograph/prop/services/contracts/IPropSvgLoader";
 import type { IPropPlacer } from "../../src/lib/shared/pictograph/prop/services/contracts/IPropPlacer";

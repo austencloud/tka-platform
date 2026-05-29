@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { StartPositionSelector } from './services/start-position-selector';
-import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
+import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
 import { getPictographFilter } from './get-pictograph-filter';
 import { getStepConverter } from './get-step-converter';
 

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { WordSequenceGenerator } from './services/word-sequence-generator';
 import { getLetterTransitionGraph } from './get-letter-transition-graph';
-import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
+import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
 import { getStepConverter } from '$lib/features/create/generate/shared/get-step-converter';
 import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
 import { getSequenceExtender } from '$lib/features/create/shared/get-sequence-extender';

@@ -6,7 +6,7 @@
  * Orchestrates loading, positioning, and rendering coordination.
  */
 
-import type { ArrowLifecycleResult } from "../../../arrow/orchestration/domain/arrow-models";
+import type { ArrowLifecycleResult } from "../../arrow/orchestration/domain/arrow-models";
 
 export interface PictographRenderingState {
   readonly arrowLifecycleResult: ArrowLifecycleResult;
@@ -26,9 +26,9 @@ export interface PictographRenderingState {
  * Used before rendering to eliminate per-component async calculations.
  */
 
-import type { PreparedPictographData } from "../../domain/models/PreparedPictographData";
-import type { ThemeMode } from "../../../../utils/svg-color-utils";
-import type { PropType } from "../../../prop/domain/enums/PropType";
+import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
+import type { ThemeMode } from "../../../utils/svg-color-utils";
+import type { PropType } from "../../prop/domain/enums/PropType";
 
 // Re-export for convenience
 export type { PreparedPictographData };

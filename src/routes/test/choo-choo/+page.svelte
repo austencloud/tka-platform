@@ -11,7 +11,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { getAnimationPlaybackController } from "$lib/shared/animation-engine/getAnimationPlaybackController";
 
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/implementations/AnimationPlaybackController";
-  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import {
     generateChooChoo,

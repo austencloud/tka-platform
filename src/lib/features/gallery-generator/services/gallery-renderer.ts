@@ -11,7 +11,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";

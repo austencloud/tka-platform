@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import { GenerationOrchestrator } from '$lib/shared/create/services/GenerationOrchestrator';
 import { BrowserVariationProvider } from './services/browser-variation-provider';
 import { BuildResultTransformer } from './services/build-result-transformer';
-import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
+import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/letter-query-handler';
 import { reversalDetector } from '$lib/shared/create/services/reversal-detector';
 import { getOrientationCycleDetector } from '$lib/features/create/generate/circular/get-orientation-cycle-detector';
 import { getSequenceMetadataManager } from './get-sequence-metadata-manager';

@@ -12,7 +12,7 @@ import type { AnimationPlaybackController } from "$lib/shared/animation-engine/s
 import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
 import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import { getClaudeCodeCopier } from "$lib/shared/browse/getClaudeCodeCopier";
-import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
