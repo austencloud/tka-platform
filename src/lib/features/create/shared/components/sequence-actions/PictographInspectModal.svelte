@@ -84,11 +84,14 @@
   });
 
 
-  // Calculate arrow positions when modal opens
+  // Calculate arrow positions when modal opens. Reset stale state on the OPEN
+  // transition (these writes aren't effect deps, so they don't re-trigger).
+  // Close-side teardown — especially the GLOBAL selectedArrowState.clearSelection()
+  // — must NOT live here: mutating global state inside a reactive effect fires
+  // observers mid-flush, re-entering the effect graph and throwing
+  // effect_update_depth_exceeded. Teardown lives in requestClose() instead.
   $effect(() => {
     if (show && stepData) {
-      calculateArrowPositions();
-    } else if (!show) {
       calculatedData = null;
       pictographDataState = null;
       blueRotationOverride = null;
@@ -99,9 +102,23 @@
       basicOpen = false;
       blueOpen = false;
       redOpen = false;
-      selectedArrowState.clearSelection();
+      lastSelectedColor = null;
+      calculateArrowPositions();
     }
   });
+
+  // Imperative close: clear global selection + collapse sections, THEN ask the
+  // parent to hide. Runs in an event handler (not a reactive flush), so the
+  // global notifyObservers() cascade is processed in a normal, non-re-entrant
+  // update cycle.
+  function requestClose() {
+    selectedArrowState.clearSelection();
+    basicOpen = false;
+    blueOpen = false;
+    redOpen = false;
+    lastSelectedColor = null;
+    onClose();
+  }
 
   async function calculateArrowPositions() {
     if (!stepData) return;
@@ -314,7 +331,7 @@
 
   function handleBackdropClick(e: MouseEvent) {
     if (e.target === e.currentTarget) {
-      onClose();
+      requestClose();
     }
   }
 
@@ -323,7 +340,7 @@
       if (selectedArrowState.selectedArrow) {
         selectedArrowState.clearSelection();
       } else {
-        onClose();
+        requestClose();
       }
       return;
     }
@@ -361,7 +378,7 @@
         {isCalculating}
         {getCopyAllData}
         {getCopyJsonData}
-        {onClose}
+        onClose={requestClose}
       />
 
       <div class="modal-body">
