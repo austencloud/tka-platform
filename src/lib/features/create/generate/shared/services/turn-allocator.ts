@@ -5,7 +5,7 @@
  * Extracted from SequenceGenerationService for single responsibility.
  */
 import type { TurnAllocation } from "$lib/shared/create/domain/generator-contract-types";
-import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
+import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
 
 export class TurnAllocator {
   constructor(private loopParams: LOOPParameterProvider) {}
@@ -25,6 +25,6 @@ export class TurnAllocator {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { loopParameterProvider } from "./LOOPParameterProvider";
+import { loopParameterProvider } from "./loop-parameter-provider";
 
 export const turnAllocator = new TurnAllocator(loopParameterProvider);

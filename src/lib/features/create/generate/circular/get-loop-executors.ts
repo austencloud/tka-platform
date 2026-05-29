@@ -4,24 +4,24 @@
 import { browser } from '$app/environment';
 import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
 import { gridPositionDeriver } from '$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver';
-import { getLOOPParameterProvider } from '$lib/features/create/generate/shared/getLOOPParameterProvider';
+import { getLOOPParameterProvider } from '$lib/features/create/generate/shared/get-loop-parameter-provider';
 
-import { StrictRotatedLOOPExecutor } from './services/implementations/StrictRotatedLOOPExecutor';
-import { StrictMirroredLOOPExecutor } from './services/implementations/StrictMirroredLOOPExecutor';
-import { StrictFlippedLOOPExecutor } from './services/implementations/StrictFlippedLOOPExecutor';
-import { StrictSwappedLOOPExecutor } from './services/implementations/StrictSwappedLOOPExecutor';
-import { StrictInvertedLOOPExecutor } from './services/implementations/StrictInvertedLOOPExecutor';
-import { MirroredSwappedLOOPExecutor } from './services/implementations/MirroredSwappedLOOPExecutor';
-import { SwappedInvertedLOOPExecutor } from './services/implementations/SwappedInvertedLOOPExecutor';
-import { MirroredInvertedLOOPExecutor } from './services/implementations/MirroredInvertedLOOPExecutor';
-import { RotatedSwappedLOOPExecutor } from './services/implementations/RotatedSwappedLOOPExecutor';
-import { RotatedInvertedLOOPExecutor } from './services/implementations/RotatedInvertedLOOPExecutor';
-import { MirroredRotatedLOOPExecutor } from './services/implementations/MirroredRotatedLOOPExecutor';
-import { MirroredRotatedInvertedLOOPExecutor } from './services/implementations/MirroredRotatedInvertedLOOPExecutor';
-import { MirroredSwappedInvertedLOOPExecutor } from './services/implementations/MirroredSwappedInvertedLOOPExecutor';
-import { MirroredRotatedInvertedSwappedLOOPExecutor } from './services/implementations/MirroredRotatedInvertedSwappedLOOPExecutor';
-import { RewoundLOOPExecutor } from './services/implementations/RewoundLOOPExecutor';
-import { LOOPExecutorSelector } from './services/implementations/LOOPExecutorSelector';
+import { StrictRotatedLOOPExecutor } from './services/strict-rotated-loop-executor';
+import { StrictMirroredLOOPExecutor } from './services/strict-mirrored-loop-executor';
+import { StrictFlippedLOOPExecutor } from './services/strict-flipped-loop-executor';
+import { StrictSwappedLOOPExecutor } from './services/strict-swapped-loop-executor';
+import { StrictInvertedLOOPExecutor } from './services/strict-inverted-loop-executor';
+import { MirroredSwappedLOOPExecutor } from './services/mirrored-swapped-loop-executor';
+import { SwappedInvertedLOOPExecutor } from './services/swapped-inverted-loop-executor';
+import { MirroredInvertedLOOPExecutor } from './services/mirrored-inverted-loop-executor';
+import { RotatedSwappedLOOPExecutor } from './services/rotated-swapped-loop-executor';
+import { RotatedInvertedLOOPExecutor } from './services/rotated-inverted-loop-executor';
+import { MirroredRotatedLOOPExecutor } from './services/mirrored-rotated-loop-executor';
+import { MirroredRotatedInvertedLOOPExecutor } from './services/mirrored-rotated-inverted-loop-executor';
+import { MirroredSwappedInvertedLOOPExecutor } from './services/mirrored-swapped-inverted-loop-executor';
+import { MirroredRotatedInvertedSwappedLOOPExecutor } from './services/mirrored-rotated-inverted-swapped-loop-executor';
+import { RewoundLOOPExecutor } from './services/rewound-loop-executor';
+import { LOOPExecutorSelector } from './services/loop-executor-selector';
 
 // Basic executors (orientationCalculator only)
 let _strictMirrored: StrictMirroredLOOPExecutor | null = null;

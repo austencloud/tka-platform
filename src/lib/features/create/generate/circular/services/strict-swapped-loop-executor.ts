@@ -27,8 +27,8 @@ import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services
 import {
   SWAPPED_POSITION_MAP,
   SWAPPED_LOOP_VALIDATION_SET,
-} from "../../domain/constants/strict-loop-position-maps";
-import { Period } from "../../domain/models/circular-models";
+} from "../domain/constants/strict-loop-position-maps";
+import { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class StrictSwappedLOOPExecutor {

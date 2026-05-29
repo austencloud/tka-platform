@@ -22,9 +22,9 @@ import {
   MotionColor,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { Period } from "../../domain/models/circular-models";
-import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
-import { LoopViabilityError } from "../../../shared/domain/errors/LoopViabilityError";
+import { Period } from "../domain/models/circular-models";
+import type { ILOOPExecutor } from "./contracts/ILOOPExecutor";
+import { LoopViabilityError } from "../../shared/domain/errors/loop-viability-error";
 
 export class RewoundLOOPExecutor implements ILOOPExecutor {
   /**

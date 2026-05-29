@@ -27,9 +27,10 @@
  * IMPORTANT: After rotation, sequence returns to home, which is valid for mirrored-swapped-inverted
  */
 
-import { Period } from "../../domain/models/circular-models";
-import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+
+import { Period } from "../domain/models/circular-models";
+import type { ILOOPExecutor } from "./contracts/ILOOPExecutor";
 
 export class MirroredRotatedInvertedSwappedLOOPExecutor implements ILOOPExecutor {
   constructor(
@@ -70,14 +71,3 @@ export class MirroredRotatedInvertedSwappedLOOPExecutor implements ILOOPExecutor
     return finalSequence;
   }
 }
-
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-import { strictRotatedLOOPExecutor } from "./StrictRotatedLOOPExecutor";
-import { mirroredSwappedInvertedLOOPExecutor } from "./MirroredSwappedInvertedLOOPExecutor";
-
-export const mirroredRotatedInvertedSwappedLOOPExecutor = new MirroredRotatedInvertedSwappedLOOPExecutor(
-  strictRotatedLOOPExecutor,
-  mirroredSwappedInvertedLOOPExecutor
-);

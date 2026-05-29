@@ -1,32 +1,56 @@
 /**
- * Strict Inverted LOOP Executor
+ * Strict Mirrored LOOP Executor
  *
- * Supports both halved (period 2) and quartered (period 4) inverted LOOPs.
+ * Supports both halved (period 2) and quartered (period 4) mirrored LOOPs.
  *
- * Inverted is the pro↔anti and CW↔CCW flip. Positions stay the same (start
- * and end positions equal). Period 2 applies one inversion; period 4 applies
- * two inversions with orientation evolving between, matching the structure
- * in StrictMirroredLOOPExecutor.
+ * Period 2 (halved):
+ *   Q1 (beats 1..N)       - partial (from input)
+ *   Q2 (beats N+1..2N)    - vertical mirror of Q1
+ *   Closes positionally + orientationally in 2N beats.
+ *
+ * Period 4 (quartered):
+ *   Q1 (beats 1..N)       - partial
+ *   Q2 (beats N+1..2N)    - vertical mirror of Q1 (returns to start position)
+ *   Q3 (beats 2N+1..3N)   - same positions/motions as Q1, new start orientation
+ *   Q4 (beats 3N+1..4N)   - vertical mirror of Q3
+ *   Closes in 4N beats when the partial's per-hand turn total is ≡ 1 or 3 (mod 4).
+ *   L1/L2 partials have whole-turn totals (≡ 0 or 2) and close at period 2;
+ *   L3+ partials with half turns can reach the period-4 parity.
+ *
+ * The period-4 mechanism works because the orientation wheel has 4-cycle
+ * structure. Mirror is an order-2 reflection on the classification axis
+ * (mirror twice = identity), but orientation evolves via turn accumulation
+ * each pass. With the right turn parity, two mirror cycles advance the
+ * wheel by 180° per cycle (or 90° per quarter), closing at pass 4.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
-  MotionType,
-  MotionColor,
   RotationDirection,
+  MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type {
+  GridPosition,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import {
-  INVERTED_LOOP_VALIDATION_SET,
-  getInvertedLetter,
-} from "../../domain/constants/strict-loop-position-maps";
-import { Period } from "../../domain/models/circular-models";
+  VERTICAL_MIRROR_POSITION_MAP,
+  VERTICAL_MIRROR_LOCATION_MAP,
+  MIRRORED_LOOP_VALIDATION_SET,
+} from "../domain/constants/strict-loop-position-maps";
+import { Period } from "../domain/models/circular-models";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
-export class StrictInvertedLOOPExecutor {
+export class StrictMirroredLOOPExecutor {
   constructor(private OrientationCalculator: OrientationCalculator) {}
 
+  /**
+   * Execute the strict mirrored LOOP.
+   *
+   * @param sequence - Partial sequence including start position at index 0.
+   * @param period - HALVED → period 2 (default). QUARTERED → period 4.
+   */
   executeLOOP(sequence: StepData[], period: Period): StepData[] {
     this._validateSequence(sequence);
 
@@ -45,14 +69,18 @@ export class StrictInvertedLOOPExecutor {
 
     for (let offset = 0; offset < beatsToGenerate; offset++) {
       const stepNumber = firstGeneratedStepNumber + offset;
+
+      // Quarter 0 is the partial (already in sequence).
+      // Quarter 1 = mirror of Q1. Quarter 2 = copy of Q1. Quarter 3 = mirror of Q3.
+      // Odd quarters apply the mirror transform; even quarters copy.
       const quarterIdx = Math.floor((stepNumber - 1) / partialLength);
       const sourceStepNumber = ((stepNumber - 1) % partialLength) + 1;
-      const applyInversion = quarterIdx % 2 === 1;
+      const applyMirror = quarterIdx % 2 === 1;
 
       const sourceStep = sequence[sourceStepNumber - 1]!;
 
-      const newStep = applyInversion
-        ? this._createInvertedEntry(sourceStep, lastStep, stepNumber)
+      const newStep = applyMirror
+        ? this._createMirroredEntry(sourceStep, lastStep, stepNumber)
         : this._createCopiedEntry(sourceStep, lastStep, stepNumber);
 
       sequence.push(newStep);
@@ -63,6 +91,10 @@ export class StrictInvertedLOOPExecutor {
     return sequence;
   }
 
+  /**
+   * Validate that the partial sequence can perform a mirrored LOOP.
+   * Requirement: vertical_mirror(start_position) === end_position.
+   */
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
@@ -79,35 +111,40 @@ export class StrictInvertedLOOPExecutor {
 
     const key = `${startPos},${endPos}`;
 
-    if (!INVERTED_LOOP_VALIDATION_SET.has(key)) {
+    if (!MIRRORED_LOOP_VALIDATION_SET.has(key)) {
+      const expectedEnd =
+        VERTICAL_MIRROR_POSITION_MAP[startPos as GridPosition];
       throw new Error(
-        `Invalid position pair for inverted LOOP: ${startPos} → ${endPos}. ` +
-          `For an inverted LOOP, the sequence must end at the same position it started (${startPos}).`
+        `Invalid position pair for mirrored LOOP: ${startPos} → ${endPos}. ` +
+          `For a mirrored LOOP from ${startPos}, the sequence must end at ${expectedEnd}.`
       );
     }
   }
 
-  private _createInvertedEntry(
+  /**
+   * Create a beat that is the vertical mirror of a source beat.
+   * Used for Q2 and Q4 in the period-4 structure (and Q2 in period-2).
+   */
+  private _createMirroredEntry(
     sourceStep: StepData,
     previousStep: StepData,
     stepNumber: number
   ): StepData {
-    const invertedLetter = this._getInvertedLetter(sourceStep);
+    const newEndPosition = this._getMirroredPosition(sourceStep);
 
     const newStep: StepData = {
       ...sourceStep,
       id: `step-${stepNumber}`,
       stepNumber,
-      letter: invertedLetter,
       startPosition: previousStep.endPosition ?? null,
-      endPosition: sourceStep.endPosition ?? null,
+      endPosition: newEndPosition,
       motions: {
-        [MotionColor.BLUE]: this._createInvertedMotion(
+        [MotionColor.BLUE]: this._createMirroredMotion(
           MotionColor.BLUE,
           previousStep,
           sourceStep
         ),
-        [MotionColor.RED]: this._createInvertedMotion(
+        [MotionColor.RED]: this._createMirroredMotion(
           MotionColor.RED,
           previousStep,
           sourceStep
@@ -122,6 +159,11 @@ export class StrictInvertedLOOPExecutor {
     return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
   }
 
+  /**
+   * Create a beat that copies a source beat's positions/motions verbatim,
+   * with orientations propagated from the previous step.
+   * Used for Q3 in the period-4 structure (same letters as Q1, new orientations).
+   */
   private _createCopiedEntry(
     sourceStep: StepData,
     previousStep: StepData,
@@ -130,9 +172,7 @@ export class StrictInvertedLOOPExecutor {
     const sourceBlue = sourceStep.motions[MotionColor.BLUE];
     const sourceRed = sourceStep.motions[MotionColor.RED];
     if (!sourceBlue || !sourceRed) {
-      throw new Error(
-        `Source step ${sourceStep.stepNumber} is missing motion data`
-      );
+      throw new Error(`Source step ${sourceStep.stepNumber} is missing motion data`);
     }
 
     const newStep: StepData = {
@@ -144,15 +184,11 @@ export class StrictInvertedLOOPExecutor {
       motions: {
         [MotionColor.BLUE]: {
           ...sourceBlue,
-          startLocation:
-            previousStep.motions[MotionColor.BLUE]?.endLocation ??
-            sourceBlue.startLocation,
+          startLocation: previousStep.motions[MotionColor.BLUE]?.endLocation ?? sourceBlue.startLocation,
         },
         [MotionColor.RED]: {
           ...sourceRed,
-          startLocation:
-            previousStep.motions[MotionColor.RED]?.endLocation ??
-            sourceRed.startLocation,
+          startLocation: previousStep.motions[MotionColor.RED]?.endLocation ?? sourceRed.startLocation,
         },
       },
     };
@@ -164,15 +200,15 @@ export class StrictInvertedLOOPExecutor {
     return this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
   }
 
-  private _getInvertedLetter(sourceStep: StepData): Letter {
-    const letter = sourceStep.letter;
-    if (!letter) {
-      throw new Error("Source step must have a letter");
+  private _getMirroredPosition(sourceStep: StepData): GridPosition | null {
+    const endPos = sourceStep.endPosition;
+    if (!endPos) {
+      throw new Error("Source step must have an end position");
     }
-    return getInvertedLetter(letter as string) as Letter;
+    return VERTICAL_MIRROR_POSITION_MAP[endPos as GridPosition];
   }
 
-  private _createInvertedMotion(
+  private _createMirroredMotion(
     color: MotionColor,
     previousStep: StepData,
     sourceStep: StepData
@@ -184,26 +220,29 @@ export class StrictInvertedLOOPExecutor {
       throw new Error(`Missing motion data for ${color}`);
     }
 
+    const mirroredEndLocation = this._getMirroredLocation(
+      sourceMotion.endLocation as GridLocation
+    );
+    const mirroredPropRotDir = this._getMirroredPropRotDir(
+      sourceMotion.rotationDirection
+    );
+
     return {
       ...sourceMotion,
-      motionType: this._getInvertedMotionType(
-        sourceMotion.motionType as MotionType
-      ),
       startLocation: previousMotion.endLocation,
-      endLocation: sourceMotion.endLocation,
-      rotationDirection: this._getInvertedPropRotDir(
-        sourceMotion.rotationDirection as RotationDirection
-      ),
+      endLocation: mirroredEndLocation,
+      rotationDirection: mirroredPropRotDir,
+      prefloatRotationDirection: sourceMotion.prefloatRotationDirection
+        ? this._getMirroredPropRotDir(sourceMotion.prefloatRotationDirection)
+        : undefined,
     };
   }
 
-  private _getInvertedMotionType(motionType: MotionType): MotionType {
-    if (motionType === MotionType.PRO) return MotionType.ANTI;
-    if (motionType === MotionType.ANTI) return MotionType.PRO;
-    return motionType;
+  private _getMirroredLocation(location: GridLocation): GridLocation {
+    return VERTICAL_MIRROR_LOCATION_MAP[location];
   }
 
-  private _getInvertedPropRotDir(
+  private _getMirroredPropRotDir(
     propRotDir: RotationDirection
   ): RotationDirection {
     if (propRotDir === RotationDirection.CLOCKWISE) {
@@ -220,6 +259,6 @@ export class StrictInvertedLOOPExecutor {
 // ============================================================================
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 
-export const strictInvertedLOOPExecutor = new StrictInvertedLOOPExecutor(
+export const strictMirroredLOOPExecutor = new StrictMirroredLOOPExecutor(
   orientationCalculator
 );

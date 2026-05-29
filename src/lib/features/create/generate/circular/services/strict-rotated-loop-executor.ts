@@ -24,8 +24,8 @@ import {
   QUARTERED_LOOPS,
   getHandRotationDirection,
   getLocationMapForHandRotation,
-} from "../../domain/constants/circular-position-maps";
-import { Period } from "../../domain/models/circular-models";
+} from "../domain/constants/circular-position-maps";
+import { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class StrictRotatedLOOPExecutor {

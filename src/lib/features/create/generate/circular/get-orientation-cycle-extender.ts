@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
-import { OrientationCycleExtender } from './services/implementations/OrientationCycleExtender';
+import { OrientationCycleExtender } from './services/orientation-cycle-extender';
 import { orientationCalculator } from '$lib/shared/pictograph/prop/services/implementations/OrientationCalculator';
-import { getOrientationCycleDetector } from './getOrientationCycleDetector';
+import { getOrientationCycleDetector } from './get-orientation-cycle-detector';
 
 let instance: OrientationCycleExtender | null = null;
 

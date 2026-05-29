@@ -1,5 +1,5 @@
-import { LOOPType } from "../../domain/models/circular-models";
-import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
+import { LOOPType } from "../domain/models/circular-models";
+import type { ILOOPExecutor } from "./contracts/ILOOPExecutor";
 
 /**
  * Service for selecting the appropriate LOOP executor based on LOOP type
@@ -111,21 +111,21 @@ export class LOOPExecutorSelector {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { strictRotatedLOOPExecutor } from "./StrictRotatedLOOPExecutor";
-import { strictMirroredLOOPExecutor } from "./StrictMirroredLOOPExecutor";
-import { strictFlippedLOOPExecutor } from "./StrictFlippedLOOPExecutor";
-import { strictSwappedLOOPExecutor } from "./StrictSwappedLOOPExecutor";
-import { strictInvertedLOOPExecutor } from "./StrictInvertedLOOPExecutor";
-import { mirroredSwappedLOOPExecutor } from "./MirroredSwappedLOOPExecutor";
-import { swappedInvertedLOOPExecutor } from "./SwappedInvertedLOOPExecutor";
-import { mirroredInvertedLOOPExecutor } from "./MirroredInvertedLOOPExecutor";
-import { rotatedSwappedLOOPExecutor } from "./RotatedSwappedLOOPExecutor";
-import { rotatedInvertedLOOPExecutor } from "./RotatedInvertedLOOPExecutor";
-import { mirroredRotatedLOOPExecutor } from "./MirroredRotatedLOOPExecutor";
-import { mirroredRotatedInvertedLOOPExecutor } from "./MirroredRotatedInvertedLOOPExecutor";
-import { mirroredSwappedInvertedLOOPExecutor } from "./MirroredSwappedInvertedLOOPExecutor";
-import { mirroredRotatedInvertedSwappedLOOPExecutor } from "./MirroredRotatedInvertedSwappedLOOPExecutor";
-import { rewoundLOOPExecutor } from "./RewoundLOOPExecutor";
+import { strictRotatedLOOPExecutor } from "./strict-rotated-loop-executor";
+import { strictMirroredLOOPExecutor } from "./strict-mirrored-loop-executor";
+import { strictFlippedLOOPExecutor } from "./strict-flipped-loop-executor";
+import { strictSwappedLOOPExecutor } from "./strict-swapped-loop-executor";
+import { strictInvertedLOOPExecutor } from "./strict-inverted-loop-executor";
+import { mirroredSwappedLOOPExecutor } from "./mirrored-swapped-loop-executor";
+import { swappedInvertedLOOPExecutor } from "./swapped-inverted-loop-executor";
+import { mirroredInvertedLOOPExecutor } from "./mirrored-inverted-loop-executor";
+import { rotatedSwappedLOOPExecutor } from "./rotated-swapped-loop-executor";
+import { rotatedInvertedLOOPExecutor } from "./rotated-inverted-loop-executor";
+import { mirroredRotatedLOOPExecutor } from "./mirrored-rotated-loop-executor";
+import { mirroredRotatedInvertedLOOPExecutor } from "./mirrored-rotated-inverted-loop-executor";
+import { mirroredSwappedInvertedLOOPExecutor } from "./mirrored-swapped-inverted-loop-executor";
+import { mirroredRotatedInvertedSwappedLOOPExecutor } from "./mirrored-rotated-inverted-swapped-loop-executor";
+import { rewoundLOOPExecutor } from "./rewound-loop-executor";
 
 export const loopExecutorSelector = new LOOPExecutorSelector(
   strictRotatedLOOPExecutor,

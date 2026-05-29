@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { LOOPParameterProvider } from './services/implementations/LOOPParameterProvider';
-import { getPictographFilter } from './getPictographFilter';
+import { LOOPParameterProvider } from './services/loop-parameter-provider';
+import { getPictographFilter } from './get-pictograph-filter';
 
 let instance: LOOPParameterProvider | null = null;
 

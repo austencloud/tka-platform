@@ -27,10 +27,11 @@
  * IMPORTANT: After rotation, sequence returns to home, which is valid for inverted mirror
  */
 
+import { Period } from "../domain/models/circular-models";
+import type { ILOOPExecutor } from "./contracts/ILOOPExecutor";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
-
-import { Period } from "../../domain/models/circular-models";
-import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
+import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { VERTICAL_MIRROR_POSITION_MAP } from "../domain/constants/strict-loop-position-maps";
 
 export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
   constructor(
@@ -46,6 +47,20 @@ export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
    * @returns The complete circular sequence with all steps
    */
   executeLOOP(sequence: StepData[], period: Period): StepData[] {
+    // Validate: composed mirrored+rotated only works when start is on the vertical axis.
+    // After rotation returns to home, the mirrored-inverted executor requires
+    // end == vertical_mirror(start), which only holds when the position is self-mirroring.
+    const startPos = sequence[0]?.startPosition;
+    if (startPos) {
+      const mirroredPos = VERTICAL_MIRROR_POSITION_MAP[startPos as GridPosition];
+      if (mirroredPos && mirroredPos !== startPos) {
+        throw new Error(
+          `Mirrored-rotated-inverted LOOP requires a start position on the vertical axis. ` +
+          `Got ${startPos} which mirrors to ${mirroredPos}.`
+        );
+      }
+    }
+
     // Step 1: Apply ROTATED with user-selected slice size
     // HALVED: doubles the sequence (e.g., 4 steps → 8 steps)
     // QUARTERED: quadruples the sequence (e.g., 2 steps → 8 steps)
@@ -70,3 +85,14 @@ export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
     return finalSequence;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { strictRotatedLOOPExecutor } from "./strict-rotated-loop-executor";
+import { mirroredInvertedLOOPExecutor } from "./mirrored-inverted-loop-executor";
+
+export const mirroredRotatedInvertedLOOPExecutor = new MirroredRotatedInvertedLOOPExecutor(
+  strictRotatedLOOPExecutor,
+  mirroredInvertedLOOPExecutor
+);

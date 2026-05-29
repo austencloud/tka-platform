@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
-import { TurnAllocator } from './services/implementations/TurnAllocator';
-import { getLOOPParameterProvider } from './getLOOPParameterProvider';
+import { TurnAllocator } from './services/turn-allocator';
+import { getLOOPParameterProvider } from './get-loop-parameter-provider';
 
 let instance: TurnAllocator | null = null;
 

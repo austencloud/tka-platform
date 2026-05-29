@@ -12,16 +12,16 @@
  */
 
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { getInvertedLetter } from "../../../circular/domain/constants/strict-loop-position-maps";
+import { getInvertedLetter } from "../../circular/domain/constants/strict-loop-position-maps";
 import type {
   RotationDirections,
   TurnAllocation,
-} from "../../domain/models/generate-models";
+} from "../domain/models/generate-models";
 import {
   DifficultyLevel,
   PropContinuity,
-} from "../../domain/models/generate-models";
-import type { pictographFilter as PictographFilterSingleton } from "../pictograph-filter";
+} from "../domain/models/generate-models";
+import type { pictographFilter as PictographFilterSingleton } from "./pictograph-filter";
 type PictographFilter = typeof PictographFilterSingleton;
 
 export class LOOPParameterProvider {
@@ -231,6 +231,6 @@ export class LOOPParameterProvider {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { pictographFilter } from "../pictograph-filter";
+import { pictographFilter } from "./pictograph-filter";
 
 export const loopParameterProvider = new LOOPParameterProvider(pictographFilter);

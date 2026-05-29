@@ -5,14 +5,14 @@ Delegates ALL logic to services (SRP compliant)
 <script lang="ts">
 
 import { buildCardDescriptors } from "$lib/features/create/generate/shared/services/card-configurator";
-import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/getLOOPParameterProvider";
+import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/get-loop-parameter-provider";
   import { onMount, getContext } from "svelte";
   import { flip } from "svelte/animate";
   import type { PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { quintOut } from "svelte/easing";
 
   import type { CardDescriptor } from "$lib/shared/create/domain/generator-contract-types";
-  import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
+  import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
   import { calculateResponsiveFontSize } from "../shared/services/responsive-typographer";
   import type { UIGenerationConfig } from "../state/generate-config.svelte";
   import type { StartEndOptionsState } from "../state/start-end-options-state.svelte";

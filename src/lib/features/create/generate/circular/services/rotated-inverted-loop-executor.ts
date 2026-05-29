@@ -1,49 +1,53 @@
 /**
- * Rotated Swapped LOOP Executor
+ * Rotated Inverted LOOP Executor
  *
- * Executes the rotated-swapped LOOP (Linked Orbital Offset Pattern) by combining:
- * 1. SWAPPED: Blue does what Red did, Red does what Blue did
- * 2. ROTATED: Rotate locations based on handpath direction (90°, 180°, or 270°)
+ * Executes the rotated-inverted LOOP (Linked Orbital Offset Pattern) by combining:
+ * 1. ROTATED: Rotate locations based on handpath direction (90°, 180°, or 270°)
+ * 2. INVERTED: Flip letters (A↔B), flip motion types (PRO↔ANTI), flip prop rotation (CW↔CCW)
  *
  * This creates a sequence where:
- * - Colors are swapped (Blue performs Red's actions and vice versa)
- * - Locations are rotated based on the handpath direction of each color's motion
- * - Motion types stay the same (from opposite color due to swap)
- * - Prop rotation directions stay the same (from opposite color due to swap)
- * - Letters stay the same
+ * - Letters are flipped (inverted effect)
+ * - Motion types are flipped (PRO ↔ ANTI) (inverted effect)
+ * - Prop rotation directions are flipped (CW ↔ CCW) (inverted effect)
+ * - Locations are rotated based on the handpath direction
+ * - **Colors are NOT swapped** (Blue stays Blue, Red stays Red)
  *
  * IMPORTANT: Supports both quartered and halved slice sizes
  * IMPORTANT: End position is calculated from rotated locations
  */
 
-import {
-  MotionColor,
-  MotionType,
-} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import {
+  MotionType,
+  MotionColor,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type {
   GridLocation,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
 import {
   getHandRotationDirection,
   getLocationMapForHandRotation,
   HALVED_LOOPS,
   QUARTERED_LOOPS,
-} from "../../domain/constants/circular-position-maps";
-import { Period } from "../../domain/models/circular-models";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+} from "../domain/constants/circular-position-maps";
+import { Period } from "../domain/models/circular-models";
 
-export class RotatedSwappedLOOPExecutor {
+export class RotatedInvertedLOOPExecutor {
   constructor(
     private OrientationCalculator: OrientationCalculator,
-    private gridPositionDeriver: GridPositionDeriver
+    private gridPositionDeriver: GridPositionDeriver,
+    private loopParams: LOOPParameterProvider
   ) {}
 
   /**
-   * Execute the rotated-swapped LOOP
+   * Execute the rotated-inverted LOOP
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
    * @param period - Slice size for the LOOP (quartered or halved)
@@ -76,7 +80,7 @@ export class RotatedSwappedLOOPExecutor {
     let lastStep = sequence[sequence.length - 1]!;
     let nextStepNumber = lastStep.stepNumber + 1;
 
-    // Skip first two steps in the loop (start from beat 2)
+    // Generate LOOP steps
     const finalIntendedLength = sequenceLength + entriesToAdd;
     for (let i = 0; i < entriesToAdd; i++) {
       const nextStep = this._createNewLOOPEntry(
@@ -100,7 +104,7 @@ export class RotatedSwappedLOOPExecutor {
   }
 
   /**
-   * Validate that the sequence can perform a rotated-swapped LOOP
+   * Validate that the sequence can perform a rotated-inverted LOOP
    */
   private _validateSequence(sequence: StepData[], period: Period): void {
     if (sequence.length < 2) {
@@ -123,14 +127,14 @@ export class RotatedSwappedLOOPExecutor {
 
     if (!validationSet.has(key)) {
       throw new Error(
-        `Invalid position pair for rotated-swapped ${period} LOOP: ${startPos} → ${endPos}. ` +
+        `Invalid position pair for rotated-inverted ${period} LOOP: ${startPos} → ${endPos}. ` +
           `The end position must match the ${period} rotation requirement.`
       );
     }
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat with SWAP + ROTATION
+   * Create a new LOOP entry by transforming a previous beat with ROTATION + INVERTED
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -147,37 +151,48 @@ export class RotatedSwappedLOOPExecutor {
       period
     );
 
+    // Get the inverted letter (INVERTED effect)
+    if (!previousMatchingStep.letter) {
+      throw new Error("Previous matching beat must have a letter");
+    }
+    if (!this.loopParams) {
+      throw new Error(
+        "LOOPParameterProvider is null - likely a module initialization order issue. " +
+        "Check that loopParameterProvider is imported before RotatedInvertedLOOPExecutor singleton."
+      );
+    }
+    const invertedLetter = this.loopParams.getInvertedLetter(
+      previousMatchingStep.letter as string
+    ) as Letter;
+
     // Calculate the rotated end position
     const rotatedEndPosition = this._getRotatedEndPosition(
       previousStep,
       previousMatchingStep
     );
 
-    // Create the new beat with swapped and rotated attributes
-    // KEY: Blue gets attributes from Red's matching beat (SWAP)
-    //      Red gets attributes from Blue's matching beat (SWAP)
-    //      Then locations are rotated based on handpath direction
+    // Create the new beat with rotated and inverted attributes
+    // KEY: No color swapping - Blue stays Blue, Red stays Red
+    //      Motion types are flipped (PRO ↔ ANTI)
+    //      Prop rotations are flipped (CW ↔ CCW)
+    //      Locations are rotated based on handpath direction
     const newStep: StepData = {
       ...previousMatchingStep,
       id: `step-${stepNumber}`,
       stepNumber,
-      letter: previousMatchingStep.letter ?? null, // Same letter
+      letter: invertedLetter, // INVERTED: Flip letter
       startPosition: previousStep.endPosition ?? null,
       endPosition: rotatedEndPosition,
       motions: {
-        // SWAP: Blue does what Red did, but with rotated transformation
-        [MotionColor.BLUE]: this._createRotatedSwappedMotion(
+        [MotionColor.BLUE]: this._createRotatedInvertedMotion(
           MotionColor.BLUE,
           previousStep,
-          previousMatchingStep,
-          true // isSwapped = true (use opposite color's data)
+          previousMatchingStep
         ),
-        // SWAP: Red does what Blue did, but with rotated transformation
-        [MotionColor.RED]: this._createRotatedSwappedMotion(
+        [MotionColor.RED]: this._createRotatedInvertedMotion(
           MotionColor.RED,
           previousStep,
-          previousMatchingStep,
-          true // isSwapped = true (use opposite color's data)
+          previousMatchingStep
         ),
       },
     };
@@ -248,7 +263,6 @@ export class RotatedSwappedLOOPExecutor {
 
     if (period === Period.QUARTERED) {
       // Quartered: length = base * 4, so base = length / 4
-      // Each quarter references the PREVIOUS quarter (chained rotation)
       const baseLength = Math.floor(length / 4);
       for (let i = baseLength + 1; i <= length; i++) {
         map[i] = i - baseLength;
@@ -271,19 +285,17 @@ export class RotatedSwappedLOOPExecutor {
     previousStep: StepData,
     previousMatchingStep: StepData
   ): GridPosition | null {
-    // Get hand rotation directions from the matching beat (before swap)
-    // Blue will use Red's handpath (due to swap)
-    // Red will use Blue's handpath (due to swap)
+    // Get hand rotation directions from the matching beat (same color)
     const blueHandRotDir = getHandRotationDirection(
-      previousMatchingStep.motions[MotionColor.RED]!
-        .startLocation as GridLocation,
-      previousMatchingStep.motions[MotionColor.RED]!.endLocation as GridLocation
-    );
-    const redHandRotDir = getHandRotationDirection(
       previousMatchingStep.motions[MotionColor.BLUE]!
         .startLocation as GridLocation,
       previousMatchingStep.motions[MotionColor.BLUE]!
         .endLocation as GridLocation
+    );
+    const redHandRotDir = getHandRotationDirection(
+      previousMatchingStep.motions[MotionColor.RED]!
+        .startLocation as GridLocation,
+      previousMatchingStep.motions[MotionColor.RED]!.endLocation as GridLocation
     );
 
     // Get the location maps for rotation
@@ -311,35 +323,20 @@ export class RotatedSwappedLOOPExecutor {
   }
 
   /**
-   * Create rotated-swapped motion data for the new beat
-   * Combines color swapping with location rotation
+   * Create rotated-inverted motion data for the new beat
+   * Combines location rotation with motion type and prop rotation flipping
    */
-  private _createRotatedSwappedMotion(
+  private _createRotatedInvertedMotion(
     color: MotionColor,
     previousStep: StepData,
-    previousMatchingStep: StepData,
-    isSwapped: boolean
+    previousMatchingStep: StepData
   ): MotionData {
-    // SWAP: Get the opposite color's motion data for the PATTERN
-    const oppositeColor =
-      color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
-
-    // For CONTINUITY: Always use same color from previous beat
-    // (Blue continues from where Blue ended, Red continues from where Red ended)
-    // The swap affects which PATTERN to follow, not where to continue from
     const previousMotion = previousStep.motions[color];
-
-    // For PATTERN: When swapped, this color follows the opposite color's movement pattern
-    const matchingMotion = isSwapped
-      ? previousMatchingStep.motions[oppositeColor]
-      : previousMatchingStep.motions[color];
+    const matchingMotion = previousMatchingStep.motions[color]; // Same color (no swap)
 
     if (!previousMotion || !matchingMotion) {
       throw new Error(`Missing motion data for ${color}`);
     }
-
-    // Get start location from previous motion's end (for continuity)
-    const startLocation = previousMotion.endLocation;
 
     // Get hand rotation direction from the matching motion
     const handRotDir = getHandRotationDirection(
@@ -350,26 +347,65 @@ export class RotatedSwappedLOOPExecutor {
     // Get location map for this rotation direction
     const locationMap = getLocationMapForHandRotation(handRotDir);
 
-    // For STATIC motions, end = start (no movement)
-    // For other motions, rotate the end location
-    const endLocation =
-      matchingMotion.motionType === MotionType.STATIC
-        ? startLocation
-        : locationMap[startLocation as GridLocation];
+    // Rotate the end location (ROTATED effect)
+    const rotatedEndLocation =
+      locationMap[previousMotion.endLocation as GridLocation];
 
-    // Create rotated-swapped motion
-    const rotatedSwappedMotion = {
+    // Flip the motion type (INVERTED effect)
+    const invertedMotionType = this._getInvertedMotionType(
+      matchingMotion.motionType
+    );
+
+    // Flip the prop rotation direction (INVERTED effect)
+    const invertedPropRotDir = this._getInvertedPropRotDir(
+      matchingMotion.rotationDirection
+    );
+
+    // Create rotated-inverted motion
+    const rotatedInvertedMotion = {
       ...matchingMotion,
-      color, // IMPORTANT: Preserve the color (Blue stays Blue, Red stays Red)
-      motionType: matchingMotion.motionType, // Same motion type (from opposite color due to swap)
-      startLocation,
-      endLocation,
-      rotationDirection: matchingMotion.rotationDirection, // Same rotation direction (from opposite color due to swap)
+      color, // Preserve the color (no swap)
+      motionType: invertedMotionType, // INVERTED: Flip motion type
+      startLocation: previousMotion.endLocation,
+      endLocation: rotatedEndLocation, // ROTATED: Rotate location
+      rotationDirection: invertedPropRotDir, // INVERTED: Flip prop rotation
       // Start orientation will be set by OrientationCalculator
       // End orientation will be calculated by OrientationCalculator
     };
 
-    return rotatedSwappedMotion;
+    return rotatedInvertedMotion;
+  }
+
+  /**
+   * Get the inverted motion type (flip PRO ↔ ANTI)
+   * STATIC and DASH stay the same
+   */
+  private _getInvertedMotionType(motionType: MotionType): MotionType {
+    if (motionType === MotionType.PRO) {
+      return MotionType.ANTI;
+    } else if (motionType === MotionType.ANTI) {
+      return MotionType.PRO;
+    }
+
+    // STATIC and DASH stay the same
+    return motionType;
+  }
+
+  /**
+   * Get the inverted prop rotation direction (flip CW ↔ CCW)
+   * NO_ROTATION stays NO_ROTATION
+   */
+  private _getInvertedPropRotDir(
+    propRotDir: RotationDirection
+  ): RotationDirection {
+    if (propRotDir === RotationDirection.CLOCKWISE) {
+      return RotationDirection.COUNTER_CLOCKWISE;
+    } else if (propRotDir === RotationDirection.COUNTER_CLOCKWISE) {
+      return RotationDirection.CLOCKWISE;
+    }
+
+    // NO_ROTATION stays NO_ROTATION
+    return propRotDir;
   }
 }
 
@@ -379,7 +415,10 @@ export class RotatedSwappedLOOPExecutor {
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
-export const rotatedSwappedLOOPExecutor = new RotatedSwappedLOOPExecutor(
+import { loopParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
+
+export const rotatedInvertedLOOPExecutor = new RotatedInvertedLOOPExecutor(
   orientationCalculator,
-  gridPositionDeriver
+  gridPositionDeriver,
+  loopParameterProvider
 );

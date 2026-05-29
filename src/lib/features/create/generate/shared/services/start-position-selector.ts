@@ -15,7 +15,7 @@ import type {
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { stepConverter as StepConverterType } from "$lib/features/create/generate/shared/services/step-converter";
-import type { pictographFilter as PictographFilterType } from "../pictograph-filter";
+import type { pictographFilter as PictographFilterType } from "./pictograph-filter";
 
 // Local aliases so the constructor param annotations are readable
 type StepConverter = typeof StepConverterType;
@@ -79,8 +79,8 @@ export class StartPositionSelector {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
-import { pictographFilter } from "../pictograph-filter";
-import { stepConverter } from "../step-converter";
+import { pictographFilter } from "./pictograph-filter";
+import { stepConverter } from "./step-converter";
 
 export const startPositionSelector = new StartPositionSelector(
   letterQueryHandler,

@@ -30,8 +30,8 @@ import {
   HORIZONTAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_LOCATION_MAP,
   FLIPPED_LOOP_VALIDATION_SET,
-} from "../../domain/constants/strict-loop-position-maps";
-import { Period } from "../../domain/models/circular-models";
+} from "../domain/constants/strict-loop-position-maps";
+import { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 export class StrictFlippedLOOPExecutor {

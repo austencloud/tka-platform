@@ -1,8 +1,8 @@
 import { browser } from '$app/environment';
-import { StartPositionSelector } from './services/implementations/StartPositionSelector';
+import { StartPositionSelector } from './services/start-position-selector';
 import { letterQueryHandler } from '$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler';
-import { getPictographFilter } from './getPictographFilter';
-import { getStepConverter } from './getStepConverter';
+import { getPictographFilter } from './get-pictograph-filter';
+import { getStepConverter } from './get-step-converter';
 
 let instance: StartPositionSelector | null = null;
 

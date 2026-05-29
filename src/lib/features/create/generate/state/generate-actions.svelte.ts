@@ -6,7 +6,7 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
-import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
+import type { SequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
 import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
 import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/arrow-position-cache";
 import { clearPropPositionCache } from "$lib/shared/pictograph/prop/prop-position-cache";
@@ -21,13 +21,13 @@ import {
   templateToPattern,
 } from "$lib/features/create/shared/domain/templates/duration-templates";
 import type { SpellModeState } from "./spell-mode-state.svelte";
-import type { UndoMetadata } from "../../shared/services/implementations/UndoManager";
-import type { UndoOperationType } from "../../shared/services/implementations/UndoManager";
-import { UndoOperationType as UndoOp } from "../../shared/services/implementations/UndoManager";
-import type { VariationExplorationOrchestrator } from "../../spell/services/implementations/VariationExplorationOrchestrator";
+import type { UndoMetadata } from "../../shared/services/undo-manager";
+import type { UndoOperationType } from "../../shared/services/undo-manager";
+import { UndoOperationType as UndoOp } from "../../shared/services/undo-manager";
+import type { VariationExplorationOrchestrator } from "../../spell/services/variation-exploration-orchestrator";
 import * as spellServiceLoaderModule from "$lib/features/create/spell/services/spell-service-loader";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
+import { sequenceExtender } from "$lib/features/create/shared/services/sequence-extender";
 import {
   LOOPType,
   Period,
@@ -39,10 +39,10 @@ import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTi
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
+import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 
 import { applyPattern as dpApplyPattern } from "$lib/features/create/shared/services/duration-pattern-manager";
-import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/getVariationExplorationOrchestrator";
+import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/get-variation-exploration-orchestrator";
 
 // Letters with dash motions (Type 3, 4, and 5)
 const DASH_LETTERS: Set<string> = new Set([

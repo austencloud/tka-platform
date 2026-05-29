@@ -1,49 +1,44 @@
 /**
- * Mirrored Swapped LOOP Executor
+ * Swapped Inverted LOOP Executor
  *
- * Executes the mirrored-swapped LOOP (Linked Orbital Offset Pattern) by combining:
+ * Executes the swapped-inverted LOOP (Linked Orbital Offset Pattern) by combining:
  * 1. SWAPPED: Blue does what Red did, Red does what Blue did
- * 2. MIRRORED: Mirror locations vertically (E↔W), flip prop rotation (CW↔CCW)
+ * 2. INVERTED: Flip letters, flip motion types (PRO↔ANTI), flip prop rotation (CW↔CCW)
  *
  * This creates a sequence where:
  * - Colors are swapped (Blue performs Red's actions and vice versa)
- * - Locations are mirrored vertically across the north-south axis
- * - Prop rotation directions are flipped
- * - Motion types stay the same
- * - Letters stay the same
+ * - Letters are inverted (A↔B, D↔E, etc.)
+ * - Motion types are flipped (PRO↔ANTI)
+ * - Prop rotation directions are flipped (CW↔CCW)
+ * - Locations stay the same (returns to starting position)
  *
  * IMPORTANT: Slice size is ALWAYS halved (no quartering)
- * IMPORTANT: End position must be vertical mirror of start position
+ * IMPORTANT: End position must equal start position (returns to start)
  */
 
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
-  RotationDirection,
-  MotionColor,
   MotionType,
+  MotionColor,
+  RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type {
-  GridPosition,
-  GridLocation,
-} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import {
-  VERTICAL_MIRROR_POSITION_MAP,
-  VERTICAL_MIRROR_LOCATION_MAP,
-  SWAPPED_POSITION_MAP,
-  MIRRORED_SWAPPED_VALIDATION_SET,
-} from "../../domain/constants/strict-loop-position-maps";
-import type { Period } from "../../domain/models/circular-models";
-import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  INVERTED_LOOP_VALIDATION_SET,
+  getInvertedLetter,
+} from "../domain/constants/strict-loop-position-maps";
+import type { Period } from "../domain/models/circular-models";
 
-export class MirroredSwappedLOOPExecutor {
+export class SwappedInvertedLOOPExecutor {
   constructor(private OrientationCalculator: OrientationCalculator) {}
 
   /**
-   * Execute the mirrored-swapped LOOP
+   * Execute the swapped-inverted LOOP
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
-   * @param period - Ignored (mirrored-swapped LOOP always uses halved)
+   * @param period - Ignored (swapped-inverted LOOP always uses halved)
    * @returns The complete circular sequence with all steps
    */
   executeLOOP(sequence: StepData[], _period: Period): StepData[] {
@@ -87,8 +82,8 @@ export class MirroredSwappedLOOPExecutor {
   }
 
   /**
-   * Validate that the sequence can perform a mirrored-swapped LOOP
-   * Requirement: end_position must be vertical mirror of start_position
+   * Validate that the sequence can perform a swapped-inverted LOOP
+   * Requirement: end_position === start_position (returns to start)
    */
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
@@ -104,19 +99,19 @@ export class MirroredSwappedLOOPExecutor {
       throw new Error("Sequence steps must have valid start and end positions");
     }
 
-    // Check if the (start, end) pair is valid for mirrored-swapped
+    // Check if the (start, end) pair is valid for swapped-inverted (must return to start)
     const key = `${startPos},${endPos}`;
 
-    if (!MIRRORED_SWAPPED_VALIDATION_SET.has(key)) {
+    if (!INVERTED_LOOP_VALIDATION_SET.has(key)) {
       throw new Error(
-        `Invalid position pair for mirrored-swapped LOOP: ${startPos} → ${endPos}. ` +
-          `For a mirrored-swapped LOOP, the end position must be the vertical mirror of start position.`
+        `Invalid position pair for swapped-inverted LOOP: ${startPos} → ${endPos}. ` +
+          `For a swapped-inverted LOOP, the sequence must end at the same position it started (${startPos}).`
       );
     }
   }
 
   /**
-   * Create a new LOOP entry by transforming a previous beat with SWAP + MIRROR
+   * Create a new LOOP entry by transforming a previous beat with SWAP + INVERTED
    */
   private _createNewLOOPEntry(
     sequence: StepData[],
@@ -131,32 +126,30 @@ export class MirroredSwappedLOOPExecutor {
       finalIntendedLength
     );
 
-    // Get the mirrored AND swapped end position
-    // For mirrored+swapped LOOP, we need to apply both transformations to the grid position
-    const mirroredSwappedEndPosition =
-      this._getMirroredSwappedPosition(previousMatchingStep);
+    // Get inverted letter
+    const invertedLetter = this._getInvertedLetter(previousMatchingStep);
 
-    // Create the new beat with swapped and mirrored attributes
-    // KEY: Continuity is NORMAL (same color continues from where it was)
-    //      But motion PATTERNS are swapped (blue does red's pattern, red does blue's)
-    //      Then patterns are mirrored (cw↔ccw, e↔w)
+    // Create the new beat with swapped and inverted attributes
+    // KEY: Blue gets attributes from Red's matching beat (SWAP)
+    //      Red gets attributes from Blue's matching beat (SWAP)
+    //      Then motion types and rotations are flipped (INVERTED)
     const newStep: StepData = {
       ...previousMatchingStep,
       id: `step-${stepNumber}`,
       stepNumber,
-      letter: previousMatchingStep.letter ?? null, // Same letter
-      startPosition: previousStep.endPosition ?? null, // NORMAL continuity (not swapped)
-      endPosition: mirroredSwappedEndPosition,
+      letter: invertedLetter, // INVERTED
+      startPosition: previousStep.endPosition ?? null,
+      endPosition: previousMatchingStep.endPosition ?? null, // Same as matching beat (returns to start), handle undefined
       motions: {
-        // SWAP: Blue does what Red did, but with mirrored transformation
-        [MotionColor.BLUE]: this._createMirroredSwappedMotion(
+        // SWAP: Blue does what Red did, with inverted transformation
+        [MotionColor.BLUE]: this._createSwappedInvertedMotion(
           MotionColor.BLUE,
           previousStep,
           previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
         ),
-        // SWAP: Red does what Blue did, but with mirrored transformation
-        [MotionColor.RED]: this._createMirroredSwappedMotion(
+        // SWAP: Red does what Blue did, with inverted transformation
+        [MotionColor.RED]: this._createSwappedInvertedMotion(
           MotionColor.RED,
           previousStep,
           previousMatchingStep,
@@ -220,103 +213,103 @@ export class MirroredSwappedLOOPExecutor {
   }
 
   /**
-   * Get the mirrored AND swapped position
-   * For mirrored+swapped LOOP, the end position must reflect both transformations:
-   * 1. First mirror the position (east↔west)
-   * 2. Then swap the colors (blue↔red positions)
+   * Get inverted letter
    */
-  private _getMirroredSwappedPosition(
-    previousMatchingStep: StepData
-  ): GridPosition | null {
-    const endPos = previousMatchingStep.endPosition;
+  private _getInvertedLetter(previousMatchingStep: StepData): Letter {
+    const letter = previousMatchingStep.letter;
 
-    if (!endPos) {
-      throw new Error("Previous matching beat must have an end position");
+    if (!letter) {
+      throw new Error("Previous matching beat must have a letter");
     }
 
-    // First mirror, then swap (same order as LOOPEndPositionSelector)
-    const mirroredPosition =
-      VERTICAL_MIRROR_POSITION_MAP[endPos as GridPosition];
-    const mirroredSwappedPosition = SWAPPED_POSITION_MAP[mirroredPosition];
+    const invertedLetter = getInvertedLetter(letter as string) as Letter;
 
-    return mirroredSwappedPosition;
+    return invertedLetter;
   }
 
   /**
-   * Create mirrored-swapped motion data for the new beat
-   * Combines color swapping with location mirroring and rotation flipping
-   *
-   * KEY INSIGHT:
-   * - CONTINUITY is NORMAL: Same color continues from where it ended
-   * - PATTERN is SWAPPED: Blue does what Red did, Red does what Blue did
-   * - PATTERN is MIRRORED: Locations flip e↔w, rotations flip cw↔ccw
+   * Create swapped-inverted motion data for the new beat
+   * Combines color swapping with inverted transformations
    */
-  private _createMirroredSwappedMotion(
+  private _createSwappedInvertedMotion(
     color: MotionColor,
     previousStep: StepData,
     previousMatchingStep: StepData,
-    _isSwapped: boolean // Kept for interface compatibility, always true for this executor
+    isSwapped: boolean
   ): MotionData {
-    // Get the opposite color for pattern swapping
+    // SWAP: Get the opposite color's motion data for the PATTERN
     const oppositeColor =
       color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
 
-    // NORMAL CONTINUITY: Same color continues from where it was
-    // (Blue continues from Blue's previous end, Red continues from Red's previous end)
+    // For CONTINUITY: Always use same color from previous beat
+    // (Blue continues from where Blue ended, Red continues from where Red ended)
+    // The swap affects which PATTERN to follow, not where to continue from
     const previousMotion = previousStep.motions[color];
 
-    // SWAPPED PATTERN: Get the pattern from the opposite color's matching beat
-    // (Blue follows Red's pattern from beat 1, Red follows Blue's pattern from beat 1)
-    const matchingMotion = previousMatchingStep.motions[oppositeColor];
+    // For PATTERN: When swapped, this color follows the opposite color's movement pattern
+    const matchingMotion = isSwapped
+      ? previousMatchingStep.motions[oppositeColor]
+      : previousMatchingStep.motions[color];
 
     if (!previousMotion || !matchingMotion) {
       throw new Error(`Missing motion data for ${color}`);
     }
 
-    // Get start location from THIS color's previous end (NORMAL continuity)
+    // Get start location from previous motion's end (for continuity)
     const startLocation = previousMotion.endLocation;
 
-    // For STATIC motions, end = start (no movement)
-    // For other motions, mirror the end location vertically
-    const endLocation =
-      matchingMotion.motionType === MotionType.STATIC
-        ? startLocation
-        : this._getMirroredLocation(matchingMotion.endLocation as GridLocation);
+    // INVERTED: Flip the motion type (PRO ↔ ANTI)
+    const invertedMotionType = this._getInvertedMotionType(
+      matchingMotion.motionType
+    );
 
-    // Flip the prop rotation direction (mirroring effect)
-    const mirroredPropRotDir = this._getMirroredPropRotDir(
+    // For STATIC motions, end = start (no movement)
+    // For other motions, keep the matching motion's end location
+    const endLocation =
+      invertedMotionType === MotionType.STATIC
+        ? startLocation
+        : matchingMotion.endLocation;
+
+    // INVERTED: Flip the prop rotation direction
+    const invertedPropRotDir = this._getInvertedPropRotDir(
       matchingMotion.rotationDirection
     );
 
-    // Create mirrored-swapped motion
-    const mirroredSwappedMotion = {
+    // Create swapped-inverted motion
+    const swappedInvertedMotion = {
       ...matchingMotion,
       color, // IMPORTANT: Preserve the color (Blue stays Blue, Red stays Red)
-      motionType: matchingMotion.motionType, // Same motion type (no inverted flip)
+      motionType: invertedMotionType, // Flipped
       startLocation,
       endLocation,
-      rotationDirection: mirroredPropRotDir,
+      rotationDirection: invertedPropRotDir, // Flipped
       // Start orientation will be set by OrientationCalculator
       // End orientation will be calculated by OrientationCalculator
     };
 
-    return mirroredSwappedMotion;
+    return swappedInvertedMotion;
   }
 
   /**
-   * Mirror a location vertically (flip east/west)
+   * Get inverted motion type (flip PRO ↔ ANTI)
+   * Other motion types (FLOAT, DASH, STATIC) remain unchanged
    */
-  private _getMirroredLocation(location: GridLocation): GridLocation {
-    const mirrored = VERTICAL_MIRROR_LOCATION_MAP[location];
+  private _getInvertedMotionType(motionType: MotionType): MotionType {
+    if (motionType === MotionType.PRO) {
+      return MotionType.ANTI;
+    } else if (motionType === MotionType.ANTI) {
+      return MotionType.PRO;
+    }
 
-    return mirrored;
+    // FLOAT, DASH, STATIC stay the same
+    return motionType;
   }
 
   /**
-   * Mirror prop rotation direction (flip CLOCKWISE ↔ COUNTER_CLOCKWISE)
+   * Get inverted prop rotation direction (flip CLOCKWISE ↔ COUNTER_CLOCKWISE)
    * NO_ROTATION stays NO_ROTATION
    */
-  private _getMirroredPropRotDir(
+  private _getInvertedPropRotDir(
     propRotDir: RotationDirection
   ): RotationDirection {
     if (propRotDir === RotationDirection.CLOCKWISE) {
@@ -329,12 +322,3 @@ export class MirroredSwappedLOOPExecutor {
     return propRotDir;
   }
 }
-
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-
-export const mirroredSwappedLOOPExecutor = new MirroredSwappedLOOPExecutor(
-  orientationCalculator
-);

@@ -22,11 +22,11 @@
  * IMPORTANT: End position for generation must match the rotation requirement
  */
 
-import { Period } from "../../domain/models/circular-models";
-import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
+import { Period } from "../domain/models/circular-models";
+import type { ILOOPExecutor } from "./contracts/ILOOPExecutor";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { VERTICAL_MIRROR_POSITION_MAP } from "../../domain/constants/strict-loop-position-maps";
+import { VERTICAL_MIRROR_POSITION_MAP } from "../domain/constants/strict-loop-position-maps";
 
 export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
   constructor(
@@ -82,8 +82,8 @@ export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { strictRotatedLOOPExecutor } from "./StrictRotatedLOOPExecutor";
-import { strictMirroredLOOPExecutor } from "./StrictMirroredLOOPExecutor";
+import { strictRotatedLOOPExecutor } from "./strict-rotated-loop-executor";
+import { strictMirroredLOOPExecutor } from "./strict-mirrored-loop-executor";
 
 export const mirroredRotatedLOOPExecutor = new MirroredRotatedLOOPExecutor(
   strictRotatedLOOPExecutor,
