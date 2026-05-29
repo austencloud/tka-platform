@@ -258,6 +258,41 @@ export function applyVariationDescriptor(
   return { sequence: working, turnLoopClosed };
 }
 
+export interface ResolvedDeckSequence {
+  sequence: SequenceData;
+  turnLoopClosed: boolean;
+}
+
+/** Card fields the seam needs — a structural subset of DeckReleaseCard. */
+interface ResolvableCard {
+  sequenceId: string;
+  sourceCatalogId: string;
+  variation?: CardVariation;
+}
+
+/**
+ * Resolve every card POSITIONALLY (by index) against a preloaded base map keyed
+ * `${sourceCatalogId}::${sequenceId}`. Cards sharing a base id each get their own
+ * variant — never collapsed. Cards whose base is missing are skipped.
+ */
+export function resolveDeckSequences(
+  cards: ResolvableCard[],
+  baseByKey: Map<string, SequenceData>,
+  edges: CsvEdge[],
+): ResolvedDeckSequence[] {
+  const out: ResolvedDeckSequence[] = [];
+  for (const card of cards) {
+    const base = baseByKey.get(`${card.sourceCatalogId}::${card.sequenceId}`);
+    if (!base) continue;
+    if (!card.variation) {
+      out.push({ sequence: base, turnLoopClosed: true });
+      continue;
+    }
+    out.push(applyVariationDescriptor(base, card.variation, edges));
+  }
+  return out;
+}
+
 /** Does the loop close on each hand? (last endOrientation === first startOrientation) */
 function loopCloses(seq: SequenceData): { blue: boolean; red: boolean } {
   const steps = seq.steps;

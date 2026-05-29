@@ -3,6 +3,7 @@ import {
   rollVariation,
   applyVariationDescriptor,
   applyVariation,
+  resolveDeckSequences,
   DEFAULT_VARIATION_CONFIG,
   type Rng,
 } from "../deck-variation";
@@ -132,5 +133,30 @@ describe("applyVariation (compose wrapper)", () => {
     const result = applyVariation(twoStepSeq(), cfg, [], seededRng([0.0, 0.0]));
     expect(result.variation.turnPattern).toBe("1|1");
     expect(result.variation.turnLabel).toBe("Hold 1");
+  });
+});
+
+describe("resolveDeckSequences (positional seam)", () => {
+  it("expands many cards over one base id into distinct variants (TnD collapse fix)", () => {
+    const base = twoStepSeq(); // id "TEST"
+    const map = new Map([["cat::TEST", base]]);
+    const cards = [
+      { sequenceId: "TEST", sourceCatalogId: "cat", variation: { turnPattern: "0|0" } },
+      { sequenceId: "TEST", sourceCatalogId: "cat", variation: { turnPattern: "1|1" } },
+      { sequenceId: "TEST", sourceCatalogId: "cat", variation: { turnPattern: "2|2" } },
+    ];
+    const out = resolveDeckSequences(cards, map, []);
+    expect(out).toHaveLength(3); // NOT collapsed to 1
+    expect(out[0]!.sequence.steps[0]!.motions!.blue!.turns).toBe(0);
+    expect(out[1]!.sequence.steps[0]!.motions!.blue!.turns).toBe(1);
+    expect(out[2]!.sequence.steps[0]!.motions!.blue!.turns).toBe(2);
+  });
+
+  it("returns base untouched when a card has no variation", () => {
+    const base = twoStepSeq();
+    const map = new Map([["cat::TEST", base]]);
+    const out = resolveDeckSequences([{ sequenceId: "TEST", sourceCatalogId: "cat" }], map, []);
+    expect(out[0]!.sequence).toBe(base);
+    expect(out[0]!.turnLoopClosed).toBe(true);
   });
 });
