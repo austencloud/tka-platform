@@ -37,7 +37,7 @@
       style={getButtonStyle(effect)}
       onclick={() => onSelect(effect.id)}
     >
-      <i class="fas {effect.icon}" aria-hidden="true"></i>
+      <i class="fas {effect.icon}" aria-hidden="true" style:color={effect.color}></i>
       <span class="effect-label">{effect.label}</span>
     </button>
   {/each}

@@ -571,8 +571,10 @@
                   in:fly={{ y: reduceMotion ? 0 : panelDirection * 24, duration: reduceMotion ? 0 : 200, delay: 60 }}
                   out:fly={{ y: reduceMotion ? 0 : panelDirection * -12, duration: reduceMotion ? 0 : 120 }}
                 >
-                  <h2 class="panel-title">{activePillLabel}</h2>
-                  {@render pillBody()}
+                  <div class="panel-center-inner">
+                    <h2 class="panel-title">{activePillLabel}</h2>
+                    {@render pillBody()}
+                  </div>
                 </div>
               {/key}
             {/if}
@@ -738,8 +740,20 @@
     right: 0;
     bottom: 0;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     will-change: opacity, transform;
     backface-visibility: hidden;
+  }
+
+  /* Vertically center the section content within the tall panel.
+     auto block margins collapse to 0 when content overflows, so it
+     still scrolls from the top — no clipping on long sections. */
+  .panel-center-inner {
+    margin: auto 0;
+    width: 100%;
+    max-width: 560px;
+    align-self: center;
   }
 
   .section-hint {

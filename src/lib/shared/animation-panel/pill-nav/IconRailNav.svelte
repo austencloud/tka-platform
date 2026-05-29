@@ -97,60 +97,66 @@
 
 <style>
   .icon-rail {
-    width: 44px;
+    width: 64px;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.02);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 8px 0;
-    gap: 2px;
+    padding: 10px 4px;
+    gap: 8px;
   }
 
+  /* Mirrors the 3D viewer rail-chip visual language (ViewerPopover.svelte .rail-chip):
+     glassmorphic chips, blur, drop shadow, scale-on-hover — clearly clickable. */
   .rail-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.6);
-    background: none;
-    border: none;
-    border-left: 2px solid transparent;
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.62);
+    background: rgba(20, 22, 32, 0.78);
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     cursor: pointer;
-    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
     -webkit-tap-highlight-color: transparent;
   }
 
   .rail-btn:hover:not([aria-selected="true"]) {
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.8);
+    transform: scale(1.08);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: rgba(255, 255, 255, 0.85);
   }
 
   .rail-btn:focus-visible {
     outline: 2px solid var(--pill-focus, #4a9eff);
-    outline-offset: -2px;
+    outline-offset: 2px;
   }
 
   .rail-btn[aria-selected="true"] {
-    background: color-mix(in srgb, var(--pill-accent, #8b5cf6) 15%, transparent);
-    border-left-color: color-mix(in srgb, var(--pill-accent, #a855f7) 100%, transparent);
+    background: color-mix(in srgb, var(--pill-accent, #8b5cf6) 18%, transparent);
+    border-color: color-mix(in srgb, var(--pill-accent, #a855f7) 50%, transparent);
     color: color-mix(in srgb, var(--pill-accent, #d4b4ff) 100%, white);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--pill-accent, #8b5cf6) 25%, transparent);
   }
 
   .effort-dot {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .rail-btn {
       transition: none;
+    }
+    .rail-btn:hover:not([aria-selected="true"]) {
+      transform: none;
     }
   }
 

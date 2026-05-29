@@ -392,6 +392,7 @@ Last audit: 2025-12-27
   class="animation-container"
   data-focused={focused || undefined}
   data-fill={fillContainer || undefined}
+  data-no-progress={hideProgressBar || undefined}
   data-view={viewState}
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}
@@ -592,6 +593,18 @@ Last audit: 2025-12-27
     overflow: hidden;
   }
 
+  /* When the progress bar is relocated out of the canvas (e.g. mobile split,
+     where the transport lives in its own bar below the choreo card), the
+     8.5rem reservation above over-reserves by the height of an absent pill.
+     Reclaim it in portrait so the square canvas grows to fill the pane.
+     Overhead drops to header (~3.3rem) + breathing room. */
+  @container (max-aspect-ratio: 1.15) {
+    .animation-container[data-no-progress] .content-wrapper {
+      width: min(calc(100cqw - 12px), calc(100cqh - 3.5rem - 12px));
+      max-width: calc(100cqh - 3.5rem);
+    }
+  }
+
   /* Header slot: in portrait, takes natural height at top */
   .header-slot {
     flex-shrink: 0;
@@ -644,6 +657,15 @@ Last audit: 2025-12-27
       width: calc(100cqh - 2.5rem);
       max-width: calc(100cqh - 2.5rem);
       height: auto;
+    }
+
+    /* No in-canvas progress bar (relocated transport): the 2.5rem here was
+       breathing room above an absent pill. Header is already hidden in this
+       branch, so drop nearly all the overhead and let the square grow to the
+       pane's full height. */
+    .animation-container[data-no-progress] .content-wrapper {
+      width: calc(100cqh - 1rem);
+      max-width: calc(100cqh - 1rem);
     }
 
     .header-slot {
