@@ -157,13 +157,64 @@
 	let rotationDeg: number = $state(0);
 	let rafId: number = 0;
 
+	// Fixed reference period (seconds) for rotation. animateRotation is "degrees
+	// per this many seconds" — independent of the undulation period. Matches the
+	// default animatePeriod (5) so existing default speed is unchanged.
+	const ROTATION_REF_PERIOD = 5;
+
+	// Shape-morph state: when pathShape changes, geometry lerps from the old shape
+	// to the new one over MORPH_MS instead of snapping, while the breathing/rotation
+	// animation keeps running.
+	const MORPH_MS = 1200;
+	let morphRafId: number = 0;
+	let lastShape: MandalaPathShape = pathShape;
+	let activeMorph: { from: MandalaPathShape; t: number } | null = $state(null);
+
 	onMount(() => {
 		calculator = getMandalaGeometryCalculator();
 		return () => {
 			if (rafId) cancelAnimationFrame(rafId);
+			if (morphRafId) cancelAnimationFrame(morphRafId);
 		};
 	});
 
+	function optionsFor(shape: MandalaPathShape): MandalaPathOptions | undefined {
+		if (shape === "hybrid") return { motionAware: true };
+		if (shape !== "arc") return { pathShape: shape };
+		return undefined;
+	}
+
+	// Drive a morph whenever pathShape changes. Reads pathShape (tracked); lastShape
+	// is non-reactive so reassigning it doesn't retrigger. activeMorph is set inside
+	// the rAF (outside tracking), so updating progress never re-runs this effect.
+	$effect(() => {
+		const target = pathShape;
+		if (target === lastShape) return;
+		const from = lastShape;
+		lastShape = target;
+
+		if (morphRafId) cancelAnimationFrame(morphRafId);
+		let start: number | null = null;
+		const stepMorph = (ts: number) => {
+			if (start === null) start = ts;
+			const lin = Math.min(1, (ts - start) / MORPH_MS);
+			activeMorph = { from, t: EASING_FNS.bloom(lin) };
+			if (lin < 1) {
+				morphRafId = requestAnimationFrame(stepMorph);
+			} else {
+				activeMorph = null;
+				morphRafId = 0;
+			}
+		};
+		morphRafId = requestAnimationFrame(stepMorph);
+	});
+
+	// Animation loop depends ONLY on `animate`. Every tunable (min/max dx, period,
+	// rotation, easing) is read live inside the rAF tick — which runs outside the
+	// reactive tracking context — so adjusting speed/spin/depth retunes the motion
+	// in place without re-running the effect or restarting the cycle. Phase is
+	// accumulated from frame deltas, so changing the period only changes the rate,
+	// never the position (no jump, fully continuous).
 	$effect(() => {
 		if (!animate) {
 			if (rafId) {
@@ -173,27 +224,28 @@
 			return;
 		}
 
-		const minDx = animateMin;
-		const maxDx = animateMax;
-		const period = animatePeriod;
-		const rotPerCycle = animateRotation;
-		const easeFn = EASING_FNS[animateEasing];
-		let startTime: number | null = null;
-		let lastPhase = 0;
+		let lastTime: number | null = null;
+		let phaseAccum = 0;
 
 		function tick(time: number) {
-			if (startTime === null) startTime = time;
-			const elapsed = (time - startTime) / 1000;
-			const phase = (elapsed % period) / period;
-			const triangle = phase < 0.5 ? phase * 2 : 2 - phase * 2;
-			const eased = easeFn(triangle);
-			animatedDx = minDx + (maxDx - minDx) * eased;
+			if (lastTime === null) lastTime = time;
+			const dtSec = (time - lastTime) / 1000;
+			lastTime = time;
 
-			if (rotPerCycle !== 0) {
-				const dt = phase >= lastPhase ? phase - lastPhase : phase + (1 - lastPhase);
-				rotationDeg += dt * rotPerCycle;
+			const period = animatePeriod > 0 ? animatePeriod : 5;
+			const cyclesElapsed = dtSec / period;
+			phaseAccum = (phaseAccum + cyclesElapsed) % 1;
+
+			const triangle = phaseAccum < 0.5 ? phaseAccum * 2 : 2 - phaseAccum * 2;
+			const eased = EASING_FNS[animateEasing](triangle);
+			animatedDx = animateMin + (animateMax - animateMin) * eased;
+
+			if (animateRotation !== 0) {
+				// Rotation runs on its own fixed-rate clock (ROTATION_REF_PERIOD),
+				// fully decoupled from animatePeriod so the undulation-speed slider
+				// never changes how fast the mandala spins.
+				rotationDeg += (dtSec / ROTATION_REF_PERIOD) * animateRotation;
 			}
-			lastPhase = phase;
 
 			rafId = requestAnimationFrame(tick);
 		}
@@ -211,20 +263,29 @@
 		tipDx ?? (animate ? animatedDx : MANDALA_STANDARD_TIP_DX)
 	);
 
-	const pathOptions = $derived.by((): MandalaPathOptions | undefined => {
-		if (pathShape === "hybrid") return { motionAware: true };
-		if (pathShape !== "arc") return { pathShape };
-		return undefined;
-	});
+	const pathOptions = $derived(optionsFor(pathShape));
 
 	const paths = $derived.by((): MandalaPaths | null => {
 		if (!calculator || !sequence?.steps) return null;
+		const tip = { dx: effectiveDx, dy: 0 };
+		const morph = activeMorph;
+		if (morph) {
+			return calculator.calculateMorphed(
+				sequence.steps,
+				bluePropType,
+				redPropType,
+				optionsFor(morph.from),
+				pathOptions,
+				morph.t,
+				tip
+			);
+		}
 		return calculator.calculate(
 			sequence.steps,
 			bluePropType,
 			redPropType,
 			pathOptions,
-			{ dx: effectiveDx, dy: 0 }
+			tip
 		);
 	});
 

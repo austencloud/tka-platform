@@ -335,6 +335,38 @@ function computeTipPosition(
 	return { x: tipX, y: tipY };
 }
 
+// ─── Point-set interpolation (shape morphing) ───────────────────────────────
+
+// Arc/linear/concave produce point arrays with IDENTICAL length and ordering
+// for the same sequence (sample count derives from motion turns, not shape).
+// So corresponding points map 1:1 and a shape transition is a per-point lerp.
+function lerpPointSet(
+	a: MandalaPoint[],
+	b: MandalaPoint[],
+	t: number
+): MandalaPoint[] {
+	const n = Math.min(a.length, b.length);
+	const out: MandalaPoint[] = new Array(n);
+	for (let i = 0; i < n; i++) {
+		const pa = a[i]!;
+		const pb = b[i]!;
+		out[i] = {
+			x: pa.x + (pb.x - pa.x) * t,
+			y: pa.y + (pb.y - pa.y) * t,
+		};
+	}
+	return out;
+}
+
+function pointSetsToPaths(sets: MandalaPoint[][]): SVGPathData[] {
+	const out: SVGPathData[] = [];
+	for (let i = 0; i < sets.length; i++) {
+		const d = pointsToSVGPath(sets[i]!);
+		if (d) out.push({ d, tipIndex: i });
+	}
+	return out;
+}
+
 // ─── Catmull-Rom to Bezier SVG path conversion ─────────────────────────────
 
 function pointsToSVGPath(points: MandalaPoint[]): string {
@@ -524,6 +556,63 @@ export class MandalaGeometryCalculator {
 		return parts.join("|");
 	}
 
+	private computePointSets(
+		stepsWithMotions: readonly StepLike[],
+		options: MandalaPathOptions | undefined,
+		dx: number,
+		dy: number
+	): { blue: MandalaPoint[][]; red: MandalaPoint[][] } {
+		const tips = [{ dx: -dx, dy }, { dx, dy }];
+		const gridRadius = MANDALA_GRID_RADIUS;
+		const samplesPerBeat = BASE_SAMPLES_PER_BEAT;
+
+		const blue: MandalaPoint[][] = [];
+		const red: MandalaPoint[][] = [];
+
+		for (const tip of tips) {
+			blue.push(generatePathPoints(stepsWithMotions, "blue", tip, gridRadius, samplesPerBeat, options));
+			red.push(generatePathPoints(stepsWithMotions, "red", tip, gridRadius, samplesPerBeat, options));
+		}
+
+		return { blue, red };
+	}
+
+	// Path geometry interpolated between two shapes (optionsFrom → optionsTo) at
+	// morph progress t∈[0,1]. Point sets share length/ordering across shapes, so
+	// this is a per-point lerp. Used to morph shape transitions in place while the
+	// breathing/rotation animation continues. Never cached (called per frame).
+	calculateMorphed(
+		steps: readonly StepLike[],
+		_bluePropType: string | undefined,
+		_redPropType: string | undefined,
+		optionsFrom: MandalaPathOptions | undefined,
+		optionsTo: MandalaPathOptions | undefined,
+		t: number,
+		tipOverride?: { dx: number; dy: number }
+	): MandalaPaths {
+		const stepsWithMotions = steps.filter(
+			(s) => s.motions?.blue || s.motions?.red
+		);
+		if (stepsWithMotions.length === 0) {
+			return { blue: [], red: [], purple: [] };
+		}
+
+		const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
+		const dy = tipOverride?.dy ?? 0;
+
+		const from = this.computePointSets(stepsWithMotions, optionsFrom, dx, dy);
+		const to = this.computePointSets(stepsWithMotions, optionsTo, dx, dy);
+
+		const blueSets = from.blue.map((set, i) => lerpPointSet(set, to.blue[i] ?? set, t));
+		const redSets = from.red.map((set, i) => lerpPointSet(set, to.red[i] ?? set, t));
+
+		return {
+			blue: pointSetsToPaths(blueSets),
+			red: pointSetsToPaths(redSets),
+			purple: [],
+		};
+	}
+
 	calculate(
 		steps: readonly StepLike[],
 		_bluePropType?: string,
@@ -554,44 +643,13 @@ export class MandalaGeometryCalculator {
 
 		const dx = tipOverride?.dx ?? MANDALA_STANDARD_TIP_DX;
 		const dy = tipOverride?.dy ?? 0;
-		const standardTips = [{ dx: -dx, dy }, { dx: dx, dy }];
-		const blueTips = standardTips;
-		const redTips = standardTips;
 
-		const gridRadius = MANDALA_GRID_RADIUS;
-		const samplesPerBeat = BASE_SAMPLES_PER_BEAT;
-
-		// Generate points for each hand + tip combination
-		const bluePointSets: MandalaPoint[][] = [];
-		const redPointSets: MandalaPoint[][] = [];
-
-		for (const tip of blueTips) {
-			bluePointSets.push(
-				generatePathPoints(stepsWithMotions, "blue", tip, gridRadius, samplesPerBeat, options)
-			);
-		}
-
-		for (const tip of redTips) {
-			redPointSets.push(
-				generatePathPoints(stepsWithMotions, "red", tip, gridRadius, samplesPerBeat, options)
-			);
-		}
-
-		// Convert point arrays to SVG path data
-		const blue: SVGPathData[] = [];
-		const red: SVGPathData[] = [];
-
-		for (let i = 0; i < bluePointSets.length; i++) {
-			const d = pointsToSVGPath(bluePointSets[i]!);
-			if (d) blue.push({ d, tipIndex: i });
-		}
-
-		for (let i = 0; i < redPointSets.length; i++) {
-			const d = pointsToSVGPath(redPointSets[i]!);
-			if (d) red.push({ d, tipIndex: i });
-		}
-
-		const result: MandalaPaths = { blue, red, purple: [] };
+		const sets = this.computePointSets(stepsWithMotions, options, dx, dy);
+		const result: MandalaPaths = {
+			blue: pointSetsToPaths(sets.blue),
+			red: pointSetsToPaths(sets.red),
+			purple: [],
+		};
 
 		if (!skipCache) {
 			const key = this.buildCacheKey(steps, _bluePropType, _redPropType, options);
