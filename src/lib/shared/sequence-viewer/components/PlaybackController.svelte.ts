@@ -105,6 +105,9 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   // ── Scrub gesture ──
   let wasPlayingBeforeScrub = false;
 
+  // ── Start-cell hold-then-play ──
+  let startHoldTimer: ReturnType<typeof setTimeout> | null = null;
+
   // ── Handlers ──
 
   function handlePlaybackToggle() {
@@ -153,15 +156,35 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
 
   function handleStepClick(stepIndex: number, blockClicks: boolean, editingPane: string | null) {
     if (blockClicks) return;
-    if (editingPane !== 'image' || isPlayingLocal) return;
+    // Seek-on-click works in the normal viewer (split / single) and image-export
+    // preview. Video-upload editing reserves cell clicks for attaching clips.
+    if (editingPane === 'video-upload') return;
+    if (!_playbackController) return;
 
-    if (_playbackController) {
-      _hapticService?.trigger("selection");
-      const targetStep = stepIndex + 1;
-      arrivedViaStepping = false;
-      modalAnimationState.setCurrentStep(targetStep);
-      _playbackController.seekToStep(targetStep);
+    _hapticService?.trigger("selection");
+    arrivedViaStepping = false;
+
+    if (startHoldTimer !== null) {
+      clearTimeout(startHoldTimer);
+      startHoldTimer = null;
     }
+
+    // Start position (index -1): park at the start pose, hold a beat, then play.
+    if (stepIndex < 0) {
+      if (isPlayingLocal) _playbackController.togglePlayback();
+      modalAnimationState.setCurrentStep(0);
+      _playbackController.seekToStep(0);
+      startHoldTimer = setTimeout(() => {
+        startHoldTimer = null;
+        if (_playbackController && !isPlayingLocal) _playbackController.togglePlayback();
+      }, 700);
+      return;
+    }
+
+    // Regular step: snap to it and preserve play state (snap + keep playing).
+    const targetStep = stepIndex + 1;
+    modalAnimationState.setCurrentStep(targetStep);
+    _playbackController.seekToStep(targetStep);
   }
 
   function handlePracticeStart(sequence: SequenceData | null) {
@@ -237,6 +260,10 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   }
 
   function dispose() {
+    if (startHoldTimer !== null) {
+      clearTimeout(startHoldTimer);
+      startHoldTimer = null;
+    }
     stopPracticeIfActive();
     cleanupSubscription?.();
     unregisterVisibilityObserver();
