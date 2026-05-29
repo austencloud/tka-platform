@@ -65,7 +65,7 @@ export class BackgroundVideoEncoder {
     // Spawn the worker. Vite resolves the URL at build time via
     // `new URL("...", import.meta.url)` so the worker file is bundled correctly.
     this.worker = new Worker(
-      new URL("../../workers/video-export.worker.ts", import.meta.url),
+      new URL("../workers/video-export.worker.ts", import.meta.url),
       { type: "module" }
     );
 
