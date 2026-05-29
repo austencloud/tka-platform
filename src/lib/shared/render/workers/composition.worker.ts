@@ -88,6 +88,7 @@ function postResult(
 async function handleInit(
   glyphs: ImageBitmap[],
   glyphMeta: GlyphTransferEntry[],
+  bundle: import("../services/card-asset-bundle").AssetBundle,
 ): Promise<void> {
   // Dynamic-import the pipeline classes.  If any import fails (e.g. because a
   // transitive dep references `document` or Svelte stores), the error
@@ -135,6 +136,12 @@ async function handleInit(
     canvas2DRenderer,
     layerCompositor,
   );
+
+  // Seed the singleton SVG caches from the transferred bundle so the worker
+  // NEVER calls createImageBitmap(svgBlob) (which fails on the app's SVGs in
+  // worker scope). Built on the main thread, index-aligned keys/bitmaps + grids.
+  const { seedCachesFromBundle } = await import("../services/card-asset-bundle");
+  seedCachesFromBundle(bundle);
 
   // Attempt to register fonts in the worker context
   try {
@@ -247,7 +254,7 @@ self.onmessage = (event: MessageEvent<CompositionWorkerInMessage>) => {
 
   switch (msg.type) {
     case "init":
-      handleInit(msg.glyphs, msg.glyphMeta).catch((err) => {
+      handleInit(msg.glyphs, msg.glyphMeta, msg.bundle).catch((err) => {
         console.error("[composition.worker] Init failed:", err);
         postResult({
           type: "error",
@@ -255,6 +262,51 @@ self.onmessage = (event: MessageEvent<CompositionWorkerInMessage>) => {
           message: `Init failed: ${err instanceof Error ? err.message : String(err)}`,
         });
       });
+      break;
+
+    case "probe":
+      // Capability check: paint a minimal SVG-free back job (no seeded bundle
+      // needed — mandala/decorations null) and report whether it produced
+      // non-blank pixels. Proves init -> OffscreenCanvas -> paint end to end.
+      (async () => {
+        try {
+          const { paintBackJob } = await import(
+            "$lib/features/choreo-card/services/card-back/card-back-raster"
+          );
+          const job = {
+            width: 64,
+            height: 64,
+            bleedPx: 4,
+            borderGradient: {
+              type: "linear",
+              angleDeg: 0,
+              stops: [
+                { offset: 0, color: "#000" },
+                { offset: 1, color: "#000" },
+              ],
+            },
+            bgGradient: {
+              type: "linear",
+              angleDeg: 0,
+              stops: [
+                { offset: 0, color: "#fff" },
+                { offset: 1, color: "#fff" },
+              ],
+            },
+            decorations: null,
+            mandala: null,
+            bitmaps: [],
+          };
+          const off = paintBackJob(job as never);
+          const ctx = off.getContext("2d")!;
+          const px = ctx.getImageData(0, 0, off.width, off.height).data;
+          let nonZero = 0;
+          for (let i = 3; i < px.length; i += 4) if (px[i] !== 0) nonZero++;
+          postResult({ type: "probe-result", ok: nonZero > 0 });
+        } catch (err) {
+          postResult({ type: "probe-result", ok: false, error: String(err) });
+        }
+      })();
       break;
 
     case "compose":

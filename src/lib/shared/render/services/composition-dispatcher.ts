@@ -16,7 +16,12 @@ export interface GlyphTransferEntry {
 }
 
 export type CompositionWorkerInMessage =
-  | { type: "init"; glyphs: ImageBitmap[]; glyphMeta: GlyphTransferEntry[] }
+  | {
+      type: "init";
+      glyphs: ImageBitmap[];
+      glyphMeta: GlyphTransferEntry[];
+      bundle: import("./card-asset-bundle").AssetBundle;
+    }
   | {
       type: "compose";
       id: number;
@@ -24,13 +29,15 @@ export type CompositionWorkerInMessage =
       options: Partial<SequenceExportOptions>;
       qrBitmap: ImageBitmap | null;
     }
-  | { type: "cancel"; id: number };
+  | { type: "cancel"; id: number }
+  | { type: "probe" };
 
 export type CompositionWorkerOutMessage =
   | { type: "init-done" }
   | { type: "result"; id: number; bitmap: ImageBitmap }
   | { type: "progress"; id: number; current: number; total: number; stage: string }
-  | { type: "error"; id: number; message: string };
+  | { type: "error"; id: number; message: string }
+  | { type: "probe-result"; ok: boolean; error?: string };
 
 // ---- Pool management ----
 
@@ -58,6 +65,7 @@ export class CompositionDispatcher {
   private initializing: Promise<void> | null = null;
   private nextRequestId = 1;
   private pendingRequests = new Map<number, PendingRequest>();
+  private pendingBundle: import("./card-asset-bundle").AssetBundle | null = null;
 
   private static workerSupport: boolean | null = null;
 
@@ -66,20 +74,63 @@ export class CompositionDispatcher {
     private readonly textRenderer: TextRenderer,
   ) {}
 
-  static canUseWorker(): boolean {
-    if (CompositionDispatcher.workerSupport !== null) {
-      return CompositionDispatcher.workerSupport;
-    }
-    CompositionDispatcher.workerSupport = CompositionDispatcher.detectWorkerSupport();
-    return CompositionDispatcher.workerSupport;
+  /** Set the AssetBundle seeded into each worker's SVG caches at init time. */
+  setAssetBundle(bundle: import("./card-asset-bundle").AssetBundle): void {
+    this.pendingBundle = bundle;
   }
 
-  private static detectWorkerSupport(): boolean {
-    // Workers disabled: the render pipeline imports SvelteKit-only modules
-    // ($env/dynamic/public, Firebase auth → window) that crash in Worker scope.
-    // Main-thread rendering works identically (same ImageComposer path) and
-    // is proven reliable via the print-preview pipeline.
-    return false;
+  static canUseWorker(): boolean {
+    // Returns the cached probe result. `false` until probeWorkerSupport() has
+    // run and confirmed the worker can boot + paint. A later task wires the
+    // probe call at the dispatch call site.
+    return CompositionDispatcher.workerSupport === true;
+  }
+
+  /**
+   * Probe-once worker capability check. Boots a throwaway worker and verifies
+   * it can paint an SVG-free back job end to end (init → OffscreenCanvas →
+   * paint → transfer). Caches the result so subsequent calls are free.
+   */
+  static async probeWorkerSupport(): Promise<boolean> {
+    if (CompositionDispatcher.workerSupport !== null) return CompositionDispatcher.workerSupport;
+    if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") {
+      return (CompositionDispatcher.workerSupport = false);
+    }
+    try {
+      const ok = await CompositionDispatcher.runProbe();
+      return (CompositionDispatcher.workerSupport = ok);
+    } catch {
+      return (CompositionDispatcher.workerSupport = false);
+    }
+  }
+
+  // Bootstraps via the SVG-free back paint path: a minimal proof-mode BackJob
+  // needs NO seeded bundle (mandala null, decorations null), so it verifies
+  // init -> OffscreenCanvas -> paint -> transfer end to end.
+  private static runProbe(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      const w = new Worker(new URL("../workers/composition.worker.ts", import.meta.url), {
+        type: "module",
+      });
+      const timeout = setTimeout(() => {
+        w.terminate();
+        resolve(false);
+      }, 8000);
+      w.onerror = () => {
+        clearTimeout(timeout);
+        w.terminate();
+        resolve(false);
+      };
+      w.onmessage = (e: MessageEvent) => {
+        const d = e.data as CompositionWorkerOutMessage;
+        if (d?.type === "probe-result") {
+          clearTimeout(timeout);
+          w.terminate();
+          resolve(!!d.ok);
+        }
+      };
+      w.postMessage({ type: "probe" } satisfies CompositionWorkerInMessage);
+    });
   }
 
   async compose(
@@ -149,7 +200,9 @@ export class CompositionDispatcher {
   }
 
   private handleWorkerMessage(data: CompositionWorkerOutMessage): void {
-    if (data.type === "init-done") return;
+    // init-done is handled during init; probe-result is only seen by the
+    // throwaway probe worker, never the pool — both lack a request id.
+    if (data.type === "init-done" || data.type === "probe-result") return;
 
     const pending = this.pendingRequests.get(data.id);
     if (!pending) return;
@@ -279,13 +332,48 @@ export class CompositionDispatcher {
           isDash: e.isDash,
         }));
 
+        // Clone the AssetBundle per worker (transfer consumes the originals,
+        // same reason the glyphs are cloned per worker). Empty bundle when none
+        // was set — the worker simply seeds nothing.
+        const bundle = this.pendingBundle;
+        let bundleClone: import("./card-asset-bundle").AssetBundle = {
+          keys: [],
+          bitmaps: [],
+          grids: { diamond: null, box: null, diamondNonRadial: null, boxNonRadial: null },
+        };
+        const bundleTransfer: Transferable[] = [];
+        if (bundle) {
+          const clonedBmps = await Promise.all(
+            bundle.bitmaps.map((b) => createImageBitmap(b)),
+          );
+          // grids are typed DrawableImage | null (HTMLImageElement | ImageBitmap);
+          // createImageBitmap accepts both via ImageBitmapSource. The main-thread
+          // bundle builder only ever produces ImageBitmaps, but honor the type.
+          type GridSlot = import("./card-asset-bundle").AssetBundle["grids"]["diamond"];
+          const cloneGrid = async (g: GridSlot): Promise<ImageBitmap | null> =>
+            g ? await createImageBitmap(g as ImageBitmapSource) : null;
+          bundleClone = {
+            keys: [...bundle.keys],
+            bitmaps: clonedBmps,
+            grids: {
+              diamond: await cloneGrid(bundle.grids.diamond),
+              box: await cloneGrid(bundle.grids.box),
+              diamondNonRadial: await cloneGrid(bundle.grids.diamondNonRadial),
+              boxNonRadial: await cloneGrid(bundle.grids.boxNonRadial),
+            },
+          };
+          bundleTransfer.push(...clonedBmps);
+          for (const v of Object.values(bundleClone.grids)) if (v) bundleTransfer.push(v);
+        }
+
         const initMessage: CompositionWorkerInMessage = {
           type: "init",
           glyphs: clonedBitmaps,
           glyphMeta,
+          bundle: bundleClone,
         };
 
-        worker.postMessage(initMessage, clonedBitmaps);
+        worker.postMessage(initMessage, [...clonedBitmaps, ...bundleTransfer]);
       } catch (err) {
         console.error(`[CompositionDispatcher] Failed to create worker ${i}:`, err);
       }
