@@ -49,6 +49,16 @@
       "staff"
     );
   });
+
+  // The prop type baked into the saved motion data. When it diverges from the
+  // active (rendered) prop, surface it — stale stored props explain odd placement.
+  const storedPropType = $derived(
+    blueMotion?.propType ?? redMotion?.propType ?? null
+  );
+  const propDiffers = $derived(
+    storedPropType != null &&
+      storedPropType.toLowerCase() !== String(activePropType).toLowerCase()
+  );
 </script>
 
 <div class="info-bar">
@@ -57,6 +67,7 @@
     <span class="bl">{blueMotion?.gridMode ?? redMotion?.gridMode ?? "—"}</span>
     <span class="sep">·</span>
     <span class="bl">{activePropType}</span>
+    {#if propDiffers}<span class="bl stored" title="Prop type stored in the saved motion data differs from the active setting">(stored: {storedPropType})</span>{/if}
     <span class="sep">·</span>
     <span class="bl path">{displayData?.startPosition ?? "—"} → {displayData?.endPosition ?? "—"}</span>
   </div>
@@ -78,6 +89,7 @@
   .basic-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-size: var(--font-size-min, 16px); font-weight: 600; color: var(--theme-text-muted, #c9d1d9); font-variant-numeric: tabular-nums; }
   .basic-line .letter { color: var(--semantic-info, #79c0ff); font-weight: 800; font-size: 19px; }
   .basic-line .path { color: var(--theme-text, #fff); }
+  .basic-line .stored { color: var(--semantic-warning, #d29922); font-size: var(--font-size-compact, 12px); font-weight: 500; }
   .basic-line .sep { color: var(--theme-stroke-strong, #3a4250); }
   .lookup { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .lk { font-size: var(--font-size-compact, 12px); color: var(--theme-text-dim, #6b7480); background: var(--theme-card-bg, rgba(255,255,255,0.04)); border: 1px solid var(--theme-stroke, rgba(255,255,255,0.1)); border-radius: 6px; padding: 3px 8px; font-variant-numeric: tabular-nums; }

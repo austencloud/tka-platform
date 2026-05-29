@@ -20,7 +20,7 @@
   import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
 
   import InspectModalHeader from "./pictograph-inspect/InspectModalHeader.svelte";
-  import BasicInfoColumn from "./pictograph-inspect/BasicInfoColumn.svelte";
+  import BasicInfoBar from "./pictograph-inspect/BasicInfoBar.svelte";
   import MotionColumn from "./pictograph-inspect/MotionColumn.svelte";
   import { formatAllForAI } from "./pictograph-inspect/formatters";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -368,7 +368,7 @@
         onClose={requestClose}
       />
 
-      <BasicInfoColumn
+      <BasicInfoBar
         {displayData}
         {blueMotion}
         {redMotion}
