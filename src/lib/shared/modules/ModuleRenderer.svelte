@@ -59,7 +59,6 @@
   // switches instead of being destroyed/recreated by {#key activeModule}.
   // The controller tracks mount/visibility/eviction; we render those modules in
   // a persistent host below the keyed block and bypass the keyed path for them.
-  // (import added at top alongside other imports)
   const KEEP_ALIVE_MODULES = ["museum"];
 
   // Reactive tick: bumped by the controller's onChange so derived reads re-run.
@@ -86,6 +85,14 @@
   const mountedKeepAlive = $derived.by(() => {
     keepAliveVersion; // dependency
     return keepAlive.mountedModules();
+  });
+
+  // Which keep-alive module is currently visible (tracked via keepAliveVersion so
+  // the host's display toggle reacts when visibility flips without the list
+  // changing). Direct keepAlive.isVisible() calls in markup are NOT reactive.
+  const visibleId = $derived.by(() => {
+    keepAliveVersion; // dependency
+    return mountedKeepAlive.find((id) => keepAlive.isVisible(id)) ?? null;
   });
 
   // Register cache clearing callback for HMR
@@ -390,10 +397,10 @@
   {#if Loaded}
     <div
       class="keep-alive-host"
-      style:display={keepAlive.isVisible(moduleId) ? "flex" : "none"}
-      aria-hidden={!keepAlive.isVisible(moduleId)}
+      style:display={moduleId === visibleId ? "flex" : "none"}
+      aria-hidden={moduleId !== visibleId}
     >
-      <Loaded visible={keepAlive.isVisible(moduleId)} />
+      <Loaded visible={moduleId === visibleId} />
     </div>
   {/if}
 {/each}
