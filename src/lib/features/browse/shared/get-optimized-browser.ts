@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { OptimizedBrowser } from './services/implementations/OptimizedBrowser';
+import { OptimizedBrowser } from './services/optimized-browser';
 import { getDeviceDetector } from '$lib/shared/device/getDeviceDetector';
 
 let instance: OptimizedBrowser | null = null;

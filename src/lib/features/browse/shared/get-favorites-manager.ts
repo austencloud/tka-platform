@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { FavoritesManager } from './services/implementations/FavoritesManager';
+import { FavoritesManager } from './services/favorites-manager';
 
 let instance: FavoritesManager | null = null;
 

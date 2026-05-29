@@ -5,7 +5,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import { getBrowseEventHandler } from "../getBrowseEventHandler";
+  import { getBrowseEventHandler } from "../get-browse-event-handler";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { onMount, onDestroy, setContext } from "svelte";
@@ -19,7 +19,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
 
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 
-  import type { BrowseEventHandler } from "../services/implementations/BrowseEventHandler";
+  import type { BrowseEventHandler } from "../services/browse-event-handler";
   import CollectionsBrowsePanel from "../../collections/components/CollectionsBrowsePanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
@@ -32,7 +32,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/getOfflineCache
     getCreatorIdFromURL,
     type BrowseLocation,
   } from "$lib/shared/browse/state/browse-navigation-state.svelte";
-  import { BrowseScrollBehavior } from "../services/implementations/BrowseScrollBehavior";
+  import { BrowseScrollBehavior } from "../services/browse-scroll-behavior";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";

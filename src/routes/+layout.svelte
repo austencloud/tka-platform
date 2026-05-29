@@ -236,7 +236,7 @@
     const prefetchBrowseData = async () => {
       // Gallery: warm from IndexedDB cache, sync from Firestore in background
       try {
-        const { getGalleryPrefetcher } = await import("$lib/features/browse/shared/getGalleryPrefetcher");
+        const { getGalleryPrefetcher } = await import("$lib/features/browse/shared/get-gallery-prefetcher");
         const prefetcher = getGalleryPrefetcher();
         if (prefetcher && typeof prefetcher.prefetch === "function") {
           prefetcher.prefetch().catch((err: unknown) =>

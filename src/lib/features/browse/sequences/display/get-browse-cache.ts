@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { BrowseCache } from './services/implementations/BrowseCache';
+import { BrowseCache } from './services/browse-cache';
 
 let instance: BrowseCache | null = null;
 

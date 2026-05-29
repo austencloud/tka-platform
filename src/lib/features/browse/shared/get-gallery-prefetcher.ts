@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { GalleryPrefetcher } from './services/implementations/GalleryPrefetcher';
+import { GalleryPrefetcher } from './services/gallery-prefetcher';
 import { getBrowseLoader } from '$lib/shared/browse/getBrowseLoader';
 import { getGalleryOfflineCache } from '$lib/shared/offline/getGalleryOfflineCache';
 

@@ -6,7 +6,7 @@
  * loader. Solo modes query the hand path or solo prop repositories directly.
  */
 
-import type { BrowseQueryResult } from "../contracts/types";
+import type { BrowseQueryResult } from "./types";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { SoloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
 import type { HandPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";

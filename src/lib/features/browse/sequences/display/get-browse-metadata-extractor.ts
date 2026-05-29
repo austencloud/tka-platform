@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { BrowseMetadataExtractor } from './services/implementations/BrowseMetadataExtractor';
+import { BrowseMetadataExtractor } from './services/browse-metadata-extractor';
 
 let instance: BrowseMetadataExtractor | null = null;
 
