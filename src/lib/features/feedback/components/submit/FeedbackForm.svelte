@@ -6,11 +6,11 @@
   import type { HapticFeedback } from "$lib/shared/application/services/implementations/HapticFeedback";
   import type { DeviceDetector } from '$lib/shared/device/services/implementations/DeviceDetector'
   import type { VoiceRecordingResult } from "$lib/shared/feedback/domain/feedback-contract-types";
-  import { getVoiceRecorder } from "$lib/features/feedback/getVoiceRecorder";
+  import { getVoiceRecorder } from "$lib/features/feedback/get-voice-recorder";
   import * as transcriptionClient from "$lib/features/feedback/services/transcription-client";
-  import { getFormDraftPersister } from "$lib/features/feedback/getFormDraftPersister";
-  import { getFeedbackTypeResolver } from "$lib/features/feedback/getFeedbackTypeResolver";
-  import { getAudioAnalyzer } from "$lib/features/feedback/getAudioAnalyzer";
+  import { getFormDraftPersister } from "$lib/features/feedback/get-form-draft-persister";
+  import { getFeedbackTypeResolver } from "$lib/features/feedback/get-feedback-type-resolver";
+  import { getAudioAnalyzer } from "$lib/features/feedback/get-audio-analyzer";
   import type { FeedbackSubmitState } from "../../state/feedback-submit-state.svelte";
   import { TYPE_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
   import type { FeedbackType } from "$lib/shared/feedback/domain/models/feedback-models";

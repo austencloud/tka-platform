@@ -4,7 +4,7 @@
   import type { FeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
   import type { KanbanBoardState } from "../../state/kanban-board-state.svelte";
   import { createKanbanBoardState } from "../../state/kanban-board-state.svelte";
-  import { getFeedbackSorter } from "$lib/features/feedback/getFeedbackSorter";
+  import { getFeedbackSorter } from "$lib/features/feedback/get-feedback-sorter";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { STATUS_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
   import KanbanMobileView from "./KanbanMobileView.svelte";
@@ -25,7 +25,7 @@
   const sortingService = getFeedbackSorter();
 
   // Get claim status deriver for UI indicators
-  import { FeedbackSorter } from "../../services/FeedbackSorter";
+  import { FeedbackSorter } from "../../services/feedback-sorter";
   const claimStatusDeriver = sortingService instanceof FeedbackSorter
     ? sortingService.getClaimStatusDeriver()
     : undefined;

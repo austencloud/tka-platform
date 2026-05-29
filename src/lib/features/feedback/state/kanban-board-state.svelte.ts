@@ -5,7 +5,7 @@ import type {
 } from "$lib/shared/feedback/domain/models/feedback-models";
 import { STATUS_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
 import { safeLocalStorageGet, safeLocalStorageSet } from '$lib/shared/foundation/services/storage-manager';
-import { FeedbackSorter } from "../services/FeedbackSorter";
+import { FeedbackSorter } from "../services/feedback-sorter";
 
 type KanbanStatus = "new" | "in-progress" | "in-review" | "completed";
 

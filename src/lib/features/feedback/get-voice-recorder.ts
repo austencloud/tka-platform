@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { VoiceRecorder } from './services/VoiceRecorder';
+import { VoiceRecorder } from './services/voice-recorder';
 
 let instance: VoiceRecorder | null = null;
 

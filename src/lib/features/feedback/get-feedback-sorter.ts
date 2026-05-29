@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { FeedbackSorter } from './services/FeedbackSorter';
+import { FeedbackSorter } from './services/feedback-sorter';
 
 let instance: FeedbackSorter | null = null;
 

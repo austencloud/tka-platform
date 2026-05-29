@@ -1,7 +1,7 @@
 <!-- VoiceWaveform - Real-time audio frequency bar visualization -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import type { AudioAnalyzer } from "../../services/AudioAnalyzer";
+	import type { AudioAnalyzer } from "../../services/audio-analyzer";
 
 	const { analyzer } = $props<{
 		analyzer: AudioAnalyzer;

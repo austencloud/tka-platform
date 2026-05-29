@@ -19,7 +19,7 @@ import { getFCMTokenManager } from "$lib/shared/push/getFCMTokenManager";
     getPreferenceKeyForType,
   } from "$lib/shared/feedback/domain/models/notification-models";
   import PreferenceGroup from "./notifications/PreferenceGroup.svelte";
-  import type { PreferenceItem } from "./notifications/PreferenceItem";
+  import type { PreferenceItem } from "./notifications/preference-item";
   import {
     userPreviewState,
     getPreviewNotificationPreferences,

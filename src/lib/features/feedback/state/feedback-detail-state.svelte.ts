@@ -9,8 +9,8 @@
 import type { FeedbackItem, FeedbackType, FeedbackPriority, FeedbackStatus, } from "$lib/shared/feedback/domain/models/feedback-models";
 import type { FeedbackManageState } from "$lib/shared/feedback/state/feedback-manage-state.svelte";
 import { TYPE_CONFIG, PRIORITY_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
-import { getFeedbackEditor } from "$lib/features/feedback/getFeedbackEditor";
-import { getFeedbackFormatter } from "$lib/features/feedback/getFeedbackFormatter";
+import { getFeedbackEditor } from "$lib/features/feedback/get-feedback-editor";
+import { getFeedbackFormatter } from "$lib/features/feedback/get-feedback-formatter";
 
 /**
  * Creates reactive state for feedback detail panel
