@@ -1,0 +1,14 @@
+src/lib/shared/community/getConnectionManager.ts
+src/lib/shared/community/get-connection-manager.ts
+src/lib/shared/community/getLeaderboardManager.ts
+src/lib/shared/community/get-leaderboard-manager.ts
+src/lib/shared/community/services/contracts/types.ts
+src/lib/shared/community/services/types.ts
+src/lib/features/browse/creators/components/profile/ConnectionMutualStatus.svelte
+src/lib/features/browse/creators/components/profile/ConnectionSharedSequences.svelte
+src/lib/features/browse/creators/components/profile/ProfileConnectionSection.svelte
+src/lib/shared/community/services/connection-manager.ts
+src/lib/shared/community/services/implementations/ConnectionManager.ts
+src/lib/shared/community/services/prop-preference-persister.ts
+src/lib/shared/community/services/user-repository.ts
+src/lib/shared/community/state/prop-preference-state.svelte.ts

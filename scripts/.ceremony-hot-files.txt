@@ -1,0 +1,10 @@
+src/lib/features/choreo-card/services/card-back/__tests__/card-back-job-builder.test.ts
+src/lib/features/choreo-card/services/card-back/__tests__/gradient-parse.test.ts
+src/lib/features/choreo-card/services/card-back/card-back-job-builder.ts
+src/lib/features/choreo-card/services/card-back/gradient-parse.ts
+src/lib/features/choreo-card/services/deck-variation.ts
+src/lib/shared/animation-engine/components/AnimatorCanvas.svelte
+src/lib/shared/animation-engine/components/SplitCanvasView.svelte
+src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte
+src/lib/shared/sequence-viewer/components/ViewerOverflowMenu.svelte
+src/routes/test/deck-variation/+page.svelte

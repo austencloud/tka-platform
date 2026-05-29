@@ -11,15 +11,15 @@ const files = [];
   }
 })(root);
 
-const HOT = [
-  'src/lib/shared/animation-engine/',
-  'src/lib/shared/3d/',
-  'src/lib/shared/sequence-viewer/',
-  'src/lib/features/choreo-card/',
-  'src/lib/features/create/',
-  'src/lib/features/admin/',
-];
-const isHot = (f) => HOT.some((h) => f.startsWith(h));
+// TRUE hot set = exact uncommitted files (read from scripts/.ceremony-hot-files.txt), normalized.
+const hotList = fs
+  .readFileSync('scripts/.ceremony-hot-files.txt', 'utf8')
+  .split('\n')
+  .map((s) => s.trim())
+  .filter(Boolean)
+  .map((s) => s.split(path.sep).join('/'));
+const HOT = new Set(hotList);
+const isHot = (f) => HOT.has(f);
 
 const importRe = /from\s+["'](\.[^"']+|\$lib[^"']+)["']/g;
 function resolveSpec(fromFile, spec) {
@@ -31,15 +31,16 @@ function resolveSpec(fromFile, spec) {
   return null;
 }
 
+// Candidate modules: all shared/* (except the 3 still-hot dirs) + create subtree as one bucket.
 const sharedRoot = 'src/lib/shared';
-const mods = fs
+const sharedMods = fs
   .readdirSync(sharedRoot, { withFileTypes: true })
   .filter((e) => e.isDirectory())
-  .map((e) => e.name)
-  .filter((m) => !['animation-engine', '3d', 'sequence-viewer'].includes(m));
+  .map((e) => 'shared/' + e.name);
 
 const modFiles = {};
-for (const m of mods) modFiles[m] = files.filter((f) => f.startsWith(sharedRoot + '/' + m + '/'));
+for (const m of sharedMods) modFiles[m] = files.filter((f) => f.startsWith('src/lib/' + m + '/'));
+modFiles['features/create'] = files.filter((f) => f.startsWith('src/lib/features/create/'));
 
 const hotImportsTarget = {};
 for (const f of files) {
@@ -53,12 +54,12 @@ for (const f of files) {
 }
 
 const safe = [], deferred = [];
-for (const m of mods) {
-  const hotConsumed = modFiles[m].some((f) => hotImportsTarget[f]);
+for (const [m, fl] of Object.entries(modFiles)) {
+  const hotConsumed = fl.some((f) => hotImportsTarget[f]);
   (hotConsumed ? deferred : safe).push(m);
 }
 console.log('SAFE (no hot consumers) ' + safe.length + ':');
 console.log('  ' + safe.sort().join(' '));
 console.log();
-console.log('DEFERRED (hot consumers exist) ' + deferred.length + ':');
+console.log('DEFERRED (still has hot consumers) ' + deferred.length + ':');
 console.log('  ' + deferred.sort().join(' '));

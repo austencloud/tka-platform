@@ -33,7 +33,7 @@ const opt = (name, def) => {
 
 const prompt = opt("prompt");
 const texturePrompt = opt("texture-prompt", prompt);
-const aiModel = opt("ai-model", "meshy-5");
+const aiModel = opt("ai-model", "meshy-6");
 const artStyle = opt("art-style", "realistic");
 const polycount = Number(opt("polycount", "30000"));
 const out = resolve(opt("out", "static/models/ocean/stage_meshy_raw.glb"));
