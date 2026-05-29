@@ -317,7 +317,7 @@ export function createNavigationState() {
           // ignore
         }
 
-        void import("../../presence/getPresenceTracker").then(({ getPresenceTracker }) => {
+        void import("../../presence/get-presence-tracker").then(({ getPresenceTracker }) => {
           getPresenceTracker().updateLocation(moduleId, nextTab || null);
         }).catch(() => {});
       }
@@ -386,7 +386,7 @@ export function createNavigationState() {
     }
 
     try {
-      import("../../presence/getPresenceTracker").then(({ getPresenceTracker }) => {
+      import("../../presence/get-presence-tracker").then(({ getPresenceTracker }) => {
         void getPresenceTracker().updateLocation(currentModule, tabId);
       }).catch(() => { /* presence is non-critical */ });
     } catch {

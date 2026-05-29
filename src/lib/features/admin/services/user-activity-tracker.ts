@@ -15,7 +15,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { PresenceTracker } from "$lib/shared/presence/services/implementations/PresenceTracker";
+import type { PresenceTracker } from "$lib/shared/presence/services/presence-tracker";
 import type {
   UserWithActivity, SessionSummary, UserActivityQueryOptions } from "./types";
 import type {

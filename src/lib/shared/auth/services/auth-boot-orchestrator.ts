@@ -1,6 +1,6 @@
 import type { User } from "firebase/auth";
 import { logSessionStart } from "../../analytics/services/posthog-activity-logger";
-import { getPresenceTracker } from "../../presence/getPresenceTracker";
+import { getPresenceTracker } from "../../presence/get-presence-tracker";
 import { ensureSystemCollections } from "$lib/shared/library/services/collection-manager";
 
 export async function initializeChildServices(

@@ -26,7 +26,7 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
-import { getPresenceTracker } from "../../presence/getPresenceTracker";
+import { getPresenceTracker } from "../../presence/get-presence-tracker";
 
 import { auth } from "../firebase";
 import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
