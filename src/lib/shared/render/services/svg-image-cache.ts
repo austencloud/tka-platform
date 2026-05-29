@@ -356,6 +356,16 @@ export class SvgImageCache {
     };
   }
 
+  /** Synchronously seed a decoded image under `key` (worker cache pre-population). */
+  setImage(key: string, image: DrawableImage): void {
+    this.cache.set(key, image);
+  }
+
+  /** Snapshot of the cache map (key → drawable). Used to build an AssetBundle. */
+  entries(): Map<string, DrawableImage> {
+    return new Map(this.cache);
+  }
+
   /**
    * Clear the cache
    */
