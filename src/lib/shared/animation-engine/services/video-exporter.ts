@@ -22,8 +22,8 @@ export interface VideoExportOptions {
   autoDownload?: boolean;
 }
 import { VIDEO_EXPORT_FPS } from "$lib/shared/animation-engine/domain/constants/timing";
-import { WebCodecsVideoEncoder } from "$lib/shared/animation-engine/services/implementations/WebCodecsVideoEncoder";
-import { WasmVideoEncoder } from "$lib/shared/animation-engine/services/implementations/WasmVideoEncoder";
+import { WebCodecsVideoEncoder } from "$lib/shared/animation-engine/services/web-codecs-video-encoder";
+import { WasmVideoEncoder } from "$lib/shared/animation-engine/services/wasm-video-encoder";
 
 export class VideoExporter {
   private isCurrentlyExporting = false;

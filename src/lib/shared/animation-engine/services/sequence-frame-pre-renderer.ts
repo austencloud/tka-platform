@@ -13,8 +13,8 @@
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceAnimationOrchestrator";
-import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/contracts/IAnimationRenderer";
+import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+import type { IAnimationRenderer as AnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
@@ -135,7 +135,7 @@ export class SequenceFramePreRenderer {
 
     // Import Canvas2DAnimationRenderer class directly
     const { Canvas2DAnimationRenderer } =
-      await import("$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer");
+      await import("$lib/shared/animation-engine/services/canvas-2d-animation-renderer");
     const offscreenRenderer = new Canvas2DAnimationRenderer();
 
     // Initialize with offscreen container

@@ -64,7 +64,7 @@ export interface VideoRenderOptions {
   /** Video quality (0-1, default: 0.9) */
   quality?: number;
 }
-import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer";
+import { Canvas2DAnimationRenderer } from "$lib/shared/animation-engine/services/canvas-2d-animation-renderer";
 import { generateBluePropSvg, generateRedPropSvg } from "$lib/shared/animation-engine/services/svg-generator";
 import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/getSequenceAnimationOrchestrator";
 
