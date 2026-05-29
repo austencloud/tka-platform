@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { canvas2DDirectRenderer, type Canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
+  import { canvas2DDirectRenderer, type Canvas2DDirectRenderer } from '$lib/shared/render/services/canvas-2d-direct-renderer';
 
   let status = $state('Initializing...');
   let renderer: Canvas2DDirectRenderer | null = null;

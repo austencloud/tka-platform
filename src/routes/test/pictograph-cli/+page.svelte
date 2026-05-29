@@ -4,7 +4,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
-  import { Canvas2DDirectRenderer } from "$lib/shared/render/services/implementations/Canvas2DDirectRenderer";
+  import { Canvas2DDirectRenderer } from "$lib/shared/render/services/canvas-2d-direct-renderer";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

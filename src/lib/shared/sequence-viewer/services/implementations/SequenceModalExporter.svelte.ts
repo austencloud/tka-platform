@@ -1,7 +1,7 @@
 import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
 import type { Offline3DExporter } from "$lib/shared/3d/services/implementations/Offline3DExporter";
-import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
-import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
+import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
+import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";

@@ -213,7 +213,7 @@
     containerReady = true;
 
     // Preload TKA letter glyph images in background (canvas headers fall back to text until ready)
-    import("$lib/shared/render/services/implementations/TextRenderer")
+    import("$lib/shared/render/services/text-renderer")
       .then(({ textRenderer }) => textRenderer.preloadGlyphImages())
       .catch(() => {});
 

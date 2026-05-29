@@ -16,7 +16,7 @@ Supports letter highlighting during animation playback.
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
+  import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { browser } from "$app/environment";
 

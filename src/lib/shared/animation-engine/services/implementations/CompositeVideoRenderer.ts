@@ -30,7 +30,7 @@ export interface StepGridPosition {
   height: number; // Beat cell height
 }
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ImageComposer } from "../../../../shared/render/services/implementations/ImageComposer";
+import type { ImageComposer } from "../../../../shared/render/services/image-composer";
 import { calculateLayout } from "$lib/shared/render/services/layout-calculator";
 
 export class CompositeVideoRenderer {

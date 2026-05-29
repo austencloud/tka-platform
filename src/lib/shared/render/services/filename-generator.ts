@@ -5,7 +5,7 @@
  */
 
 import type { SequenceData } from "../../foundation/domain/models/SequenceData";
-import type { SequenceExportOptions } from "../domain/models/SequenceExportOptions";
+import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 
 export interface FilenameOptions {
   includeDate?: boolean;

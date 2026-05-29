@@ -72,8 +72,8 @@ export interface PreviewCellRenderOptions {
   showRedMotion?: boolean;
 }
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
-import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
-import { getWorkerRenderPool } from "$lib/shared/render/services/implementations/WorkerRenderPool";
+import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
+import { getWorkerRenderPool } from "$lib/shared/render/services/worker-render-pool";
 import { cellCacheKeyDeriver } from "./implementations/CellCacheKeyDeriver";
 
 function filterSoloMotions(

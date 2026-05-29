@@ -22,13 +22,14 @@
   import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { ShortCodeManager } from "$lib/shared/qr/services/implementations/ShortCodeManager";
   import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
-  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
-  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { greekToAscii } from "$lib/shared/create/domain/spell-constants";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -36,7 +37,7 @@
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { createExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
-  import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
+  import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
@@ -67,6 +68,15 @@
     | { kind: "playing"; word: string };
 
   let pageState = $state<PageState>({ kind: "loading" });
+
+  // ── Loading-state word glyphs ──
+  // The scanned word arrives at SSR (data.meta.word) long before the heavy
+  // sequence resolve finishes. We priority-load just this word's glyphs so it
+  // paints as a pulsing loader instead of a generic spinner.
+  let glyphsReady = $state(false);
+  const loaderWord = $derived(
+    data?.meta?.word ? simplifyRepeatedWord(data.meta.word) : ""
+  );
 
   let resolvedSeq: SequenceData | null = $state(null);
   let seqWord = $state("");
@@ -231,6 +241,20 @@
     }
   }
 
+  // Unique base letters for a word, reusing the renderer's own tokenization so
+  // the priority-loaded glyphs exactly match what TKAWordGlyph will request.
+  function wordBaseLetters(word: string): string[] {
+    if (!word) return [];
+    const seen = new Set<string>();
+    for (const segment of compressWord(word)) {
+      for (const token of segment.tokens) {
+        const base = isDashLetter(token) ? getBaseLetter(token) : token;
+        if (base) seen.add(base);
+      }
+    }
+    return [...seen];
+  }
+
   onMount(async () => {
     if (browser) {
       const checkViewport = () => {
@@ -251,6 +275,18 @@
     }
 
     try {
+      // Paint the word as a pulsing glyph loader ASAP — just this word's
+      // glyphs, before the heavy resolve + full glyph cache init below.
+      const baseLetters = wordBaseLetters(loaderWord);
+      if (baseLetters.length > 0) {
+        try {
+          await getGlyphCache().loadGlyphsByLetter(baseLetters);
+          glyphsReady = true;
+        } catch {
+          /* leave glyphsReady false -> dots placeholder */
+        }
+      }
+
       const [seq_, PlayerModule] = await Promise.all([
         shortCodeManager.resolveShortCode(shortCode),
         getGlyphCache().initialize().then(() =>
@@ -323,8 +359,15 @@
 <div class="page">
   {#if pageState.kind === "loading"}
     <div class="center-content">
-      <div class="spinner"></div>
-      <p class="status-text">Loading sequence...</p>
+      {#if glyphsReady && loaderWord}
+        <div class="word-loader">
+          <TKAWordGlyph word={loaderWord} height={40} darkMode />
+        </div>
+      {:else}
+        <div class="dots-loader" aria-label="Loading">
+          <span></span><span></span><span></span>
+        </div>
+      {/if}
     </div>
   {:else if pageState.kind === "error"}
     <div class="center-content">
@@ -479,18 +522,45 @@
     text-decoration: none;
   }
 
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.15);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    margin: 0 auto 1rem;
-    animation: spin 0.8s linear infinite;
+  .word-loader {
+    display: flex;
+    justify-content: center;
+    animation: word-pulse 1.4s ease-in-out infinite;
   }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
+  @keyframes word-pulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.97); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  .dots-loader {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .dots-loader span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--theme-accent);
+    animation: dot-pulse 1.2s ease-in-out infinite;
+  }
+
+  .dots-loader span:nth-child(2) { animation-delay: 0.2s; }
+  .dots-loader span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dot-pulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .word-loader,
+    .dots-loader span {
+      animation: none;
+    }
+    .word-loader { opacity: 0.85; }
   }
 
   /* ── Player layout ── */

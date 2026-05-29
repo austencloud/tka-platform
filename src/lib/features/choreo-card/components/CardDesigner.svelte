@@ -11,7 +11,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
+  import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import { onMount, onDestroy } from "svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";

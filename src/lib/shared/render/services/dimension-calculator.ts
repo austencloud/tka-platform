@@ -8,7 +8,7 @@
  * Critical: All calculations match desktop determine_additional_heights() exactly.
  */
 
-import type { SequenceExportOptions } from "../domain/models/SequenceExportOptions";
+import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 
 // Base constants matching desktop application
 const BASE_MARGIN = 50; // Match desktop BASE_MARGIN

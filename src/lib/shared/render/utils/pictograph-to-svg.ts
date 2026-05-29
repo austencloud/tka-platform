@@ -338,7 +338,7 @@ async function waitForImagesLoaded(domContainer: HTMLElement): Promise<void> {
   }
 
   // Use module singleton getter (only in browser contexts where this function runs)
-  const { getGlyphCache } = await import("../getGlyphCache");
+  const { getGlyphCache } = await import("../get-glyph-cache");
   const glyphCache = getGlyphCache();
 
   const imagePromises = Array.from(images).map(async (img) => {

@@ -5,9 +5,9 @@
  * Used by batch-rerender-gallery.js script for server-side rendering.
  */
 
-import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
+import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceExportOptions } from "$lib/shared/render/domain/models/SequenceExportOptions";
+import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { json } from "@sveltejs/kit";

@@ -1,9 +1,0 @@
-import { browser } from '$app/environment';
-import { PictographKeyHasher } from './services/implementations/PictographKeyHasher';
-
-let instance: PictographKeyHasher | null = null;
-
-export function getPictographKeyHasher(): PictographKeyHasher {
-	if (!browser) throw new Error('getPictographKeyHasher() is browser-only');
-	return instance ??= new PictographKeyHasher();
-}

@@ -26,7 +26,7 @@ export const GET: RequestHandler = async (event) => {
   try {
     // Dynamically import so Node.js canvas works server-side
     const { createCanvas: _createCanvas } = await import('canvas');
-    const { canvas2DDirectRenderer } = await import('$lib/shared/render/services/implementations/Canvas2DDirectRenderer');
+    const { canvas2DDirectRenderer } = await import('$lib/shared/render/services/canvas-2d-direct-renderer');
 
     // Load CSV data
     const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');

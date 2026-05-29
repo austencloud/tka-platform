@@ -7,7 +7,7 @@ import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
 import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { renderHeader, type LOOPComponentId } from "@tka/render-composition";
 import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import { textRenderer } from "$lib/shared/render/services/implementations/TextRenderer";
+import { textRenderer } from "$lib/shared/render/services/text-renderer";
 
 // Constants from standalone_animator.html
 // Using "strict" hand point offset (actual hand position, further from center)

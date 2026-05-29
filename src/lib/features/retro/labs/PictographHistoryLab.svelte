@@ -24,7 +24,7 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
-  import { getCanvas2DRenderer } from "$lib/shared/render/getCanvas2DRenderer";
+  import { getCanvas2DRenderer } from "$lib/shared/render/get-canvas-2d-renderer";
 
   // Pixel size of the canonical render - each era scales it to fit its
   // own grid diameter when compositing.

@@ -2,7 +2,7 @@
   import { simplifyAndTruncate, simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
-  import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
+  import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { browser } from "$app/environment";
 

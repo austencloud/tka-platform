@@ -18,7 +18,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 	import type { ControlsLevel, MediaType } from "../domain/types";
-	import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
+	import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
 	import { onMount, onDestroy } from "svelte";
 	import AnimationPlayer from "./AnimationPlayer.svelte";
 	import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";

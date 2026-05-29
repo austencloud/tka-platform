@@ -99,11 +99,11 @@ async function handleInit(
     { LayerCompositor },
     { PictographKeyHasher },
   ] = await Promise.all([
-    import("../services/implementations/ImageComposer"),
-    import("../services/implementations/TextRenderer"),
-    import("../services/implementations/Canvas2DDirectRenderer"),
-    import("../services/implementations/LayerCompositor"),
-    import("../services/implementations/PictographKeyHasher"),
+    import("../services/image-composer"),
+    import("../services/text-renderer"),
+    import("../services/canvas-2d-direct-renderer"),
+    import("../services/layer-compositor"),
+    import("../services/pictograph-key-hasher"),
   ]);
 
   // --- TextRenderer: populate with transferred glyph bitmaps ---

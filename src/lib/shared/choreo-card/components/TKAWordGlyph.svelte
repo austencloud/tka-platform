@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getGlyphCache } from "$lib/shared/render/getGlyphCache";
+  import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { compressWord, type CompressedSegment } from "$lib/shared/foundation/utils/word-simplifier";
 

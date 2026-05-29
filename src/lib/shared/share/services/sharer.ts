@@ -1,4 +1,4 @@
-import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
+import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import type { SequenceData } from "../../foundation/domain/models/SequenceData";
 import type { ShareOptions } from "../domain/models/share-options";
 import { PreviewCache } from "./preview-cache";
@@ -260,7 +260,7 @@ export class Sharer {
   };
 }
 
-import { sequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
+import { sequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import type { ImageGenerationProgressCallback } from "./types";
 
 export const sharer = new Sharer(sequenceRenderer);

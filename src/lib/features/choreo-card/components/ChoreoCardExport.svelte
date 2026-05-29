@@ -11,7 +11,7 @@
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
+  import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import { onMount } from "svelte";
   import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
 

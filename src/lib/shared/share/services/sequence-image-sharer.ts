@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
+import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import type { ShareResult } from "./types";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 

@@ -28,7 +28,7 @@ import { getBackgroundVideoEncoder } from "../animation-engine/getBackgroundVide
 import { VideoExportOrchestrator } from "$lib/features/compose/services/video-export-orchestrator";
 
 import { getQRCodeGenerator } from "../qr/getQRCodeGenerator";
-import { getImageComposer } from "../render/getImageComposer";
+import { getImageComposer } from "../render/get-image-composer";
 
 registerPublicIndexSyncerFactory(getPublicIndexSyncer);
 registerTagMigrator(migrateSequenceTags);

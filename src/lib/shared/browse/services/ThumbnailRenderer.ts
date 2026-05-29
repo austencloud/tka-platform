@@ -12,7 +12,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { CompositionDispatcher } from "$lib/shared/render/services/implementations/CompositionDispatcher";
+import type { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
 import type { StartPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";

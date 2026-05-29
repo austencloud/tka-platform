@@ -26,8 +26,8 @@
     createSequenceData,
     type SequenceData,
   } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
-  import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
+  import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
+  import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 
   // Legacy data types from meta.json files
   interface LegacyMotionAttributes {

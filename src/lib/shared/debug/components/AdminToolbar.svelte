@@ -30,7 +30,7 @@
   import { getThumbnailLocalCache } from "$lib/shared/browse/getThumbnailLocalCache";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/getThumbnailRenderOrchestrator";
   import { getQuickAccessPersister } from "$lib/shared/debug/get-quick-access-persister";
-  import { getImageComposer } from "$lib/shared/render/getImageComposer";
+  import { getImageComposer } from "$lib/shared/render/get-image-composer";
   import type { QuickAccessPersister } from "../services/quick-access-persister";
 import type { QuickAccessUser } from "../services/types";
   import { tikaPictographCache } from "$lib/shared/tika/services/TikaPictographCache";

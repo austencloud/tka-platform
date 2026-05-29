@@ -18,7 +18,7 @@
   import { Letter } from '$lib/shared/foundation/domain/models/Letter';
   import { PropType } from '$lib/shared/pictograph/prop/domain/enums/PropType';
   import { renderPictographToSVG } from '$lib/shared/render/utils/pictograph-to-svg';
-  import { Canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
+  import { Canvas2DDirectRenderer } from '$lib/shared/render/services/canvas-2d-direct-renderer';
   import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
   import { PublicSequencesLoader } from '$lib/shared/browse/services/PublicSequencesLoader';
 

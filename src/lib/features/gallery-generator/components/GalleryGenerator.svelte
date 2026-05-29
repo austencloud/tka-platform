@@ -9,9 +9,9 @@
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getBrowseLoader } from "$lib/shared/browse/getBrowseLoader";
-  import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
+  import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-  import type { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
+  import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";

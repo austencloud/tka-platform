@@ -15,7 +15,7 @@
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { getCanvas2DRenderer } from "$lib/shared/render/getCanvas2DRenderer";
+  import { getCanvas2DRenderer } from "$lib/shared/render/get-canvas-2d-renderer";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import "$lib/features/retro/dos/styles/dos-terminal.css";
 

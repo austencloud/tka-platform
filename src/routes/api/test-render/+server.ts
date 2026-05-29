@@ -1,11 +1,11 @@
 
-import { getSequenceRenderer } from "$lib/shared/render/getSequenceRenderer";
+import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
 import { withRateLimit } from "$lib/server/security/withRateLimit";
 
-import { getSequencePersister } from "$lib/features/create/shared/getSequencePersister";
+import { getSequencePersister } from "$lib/features/create/shared/get-sequence-persister";
 
 export const POST: RequestHandler = async (event) => {
   const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, "ip");
