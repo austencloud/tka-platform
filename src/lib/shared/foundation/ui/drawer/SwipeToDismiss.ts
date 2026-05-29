@@ -312,6 +312,14 @@ export class SwipeToDismiss {
       return;
     }
 
+    // General opt-out: any element marked `data-swipe-block` owns its own touch
+    // gestures, so the whole region (not just the slider thumb) is exempt from
+    // dismiss. The relocated mobile playback transport uses this so grabbing the
+    // scrubber bar is never mistaken for a swipe-to-close.
+    if (target.closest("[data-swipe-block]")) {
+      return;
+    }
+
     // Bail out for canvases that own pointer gestures (e.g., Three.js/Threlte
     // 3D viewer orbit controls). The 2D animation canvas has no drag
     // interaction of its own, so it should pass through to dismiss. Canvases

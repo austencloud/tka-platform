@@ -6,6 +6,8 @@
   WAI-ARIA menu pattern with keyboard navigation.
 -->
 <script lang="ts">
+  import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
+
   interface Props {
     isPublished?: boolean;
     onCopyLink?: () => void;
@@ -19,6 +21,8 @@
     onVideoUpload?: () => void;
     variant?: 'header' | 'footer';
     dropDown?: boolean;
+    /** Horizontal edge the popover aligns to. 'left' when the trigger sits at the screen's left edge. */
+    align?: 'left' | 'right';
     isFavorite?: boolean;
     onFavoriteToggle?: () => void;
     isSaved?: boolean;
@@ -26,6 +30,13 @@
     onRemix?: () => void;
     onCopyData?: () => void;
     copyDataFeedback?: boolean;
+    /** When set, a Left/Right motion-visibility chip row renders atop the menu. */
+    motionVisibility?: {
+      showBlue: boolean;
+      showRed: boolean;
+      onToggleBlue: () => void;
+      onToggleRed: () => void;
+    };
   }
 
   let {
@@ -41,6 +52,7 @@
     onVideoUpload,
     variant = 'header',
     dropDown = false,
+    align = 'right',
     isFavorite = false,
     onFavoriteToggle,
     isSaved = true,
@@ -48,6 +60,7 @@
     onRemix,
     onCopyData,
     copyDataFeedback = false,
+    motionVisibility,
   }: Props = $props();
 
   let isOpen = $state(false);
@@ -167,11 +180,12 @@
   });
 
   let hasItems = $derived(menuItems.length > 0);
+  let hasContent = $derived(hasItems || !!motionVisibility);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-{#if hasItems}
-  <div class="overflow-wrapper" class:drop-down={dropDown} onkeydown={handleKeydown}>
+{#if hasContent}
+  <div class="overflow-wrapper" class:drop-down={dropDown} class:align-left={align === 'left'} onkeydown={handleKeydown}>
     <button
       bind:this={triggerEl}
       type="button"
@@ -190,6 +204,20 @@
       <div class="overflow-backdrop" onclick={close} onkeydown={() => {}}></div>
 
       <div bind:this={menuEl} class="overflow-popover" role="menu" aria-label="More actions">
+        {#if motionVisibility}
+          <div class="motion-vis-section">
+            <span class="motion-vis-label">Motion</span>
+            <MotionColorChips
+              showBlue={motionVisibility.showBlue}
+              showRed={motionVisibility.showRed}
+              onToggleBlue={motionVisibility.onToggleBlue}
+              onToggleRed={motionVisibility.onToggleRed}
+            />
+          </div>
+          {#if hasItems}
+            <div class="menu-divider"></div>
+          {/if}
+        {/if}
         {#each menuItems as item}
           {#if item.dividerBefore}
             <div class="menu-divider"></div>
@@ -273,6 +301,11 @@
     top: calc(100% + 8px);
   }
 
+  .overflow-wrapper.align-left .overflow-popover {
+    right: auto;
+    left: 0;
+  }
+
   .overflow-item {
     display: flex;
     align-items: center;
@@ -345,6 +378,27 @@
     height: 1px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     margin: 4px 8px;
+  }
+
+  .motion-vis-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px 8px 2px;
+  }
+
+  .motion-vis-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .motion-vis-section :global(.motion-color-chips) {
+    width: 100%;
+  }
+
+  .motion-vis-section :global(.chip) {
+    flex: 1;
   }
 
   .overflow-trigger.header-variant {

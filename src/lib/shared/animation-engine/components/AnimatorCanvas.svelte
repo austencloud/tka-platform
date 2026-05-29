@@ -34,6 +34,7 @@ Last audit: 2025-12-27
   import WordHeader from "./layers/WordHeader.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
@@ -93,6 +94,7 @@ Last audit: 2025-12-27
     virtualTime = undefined,
     onToggle3DView = undefined,
     contextId = undefined,
+    tapToToggle = false,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -157,6 +159,10 @@ Last audit: 2025-12-27
     virtualTime?: number;
     onToggle3DView?: () => void;
     contextId?: string;
+    /** When true, a quick tap on the canvas body toggles play/pause and flashes
+     *  a transient play/pause icon. Off by default so views with their own tap
+     *  semantics are unaffected. */
+    tapToToggle?: boolean;
   } = $props();
 
   const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
@@ -176,6 +182,11 @@ Last audit: 2025-12-27
   let viewState = $state<ViewState>("assembled");
   let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  let longPressFired = false;
+  let pointerStart: { x: number; y: number; t: number } | null = null;
+  let tapFeedbackSeq = 0;
+  let tapFeedback = $state<{ icon: "play" | "pause"; key: number } | null>(null);
+  let tapFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   const isDisassembledView = $derived(viewState !== "assembled");
   // Mount the split view in the DOM for all non-assembled states.
@@ -225,13 +236,57 @@ Last audit: 2025-12-27
   }
 
   function handlePointerDown(e: PointerEvent) {
+    pointerStart = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+    longPressFired = false;
     if (e.button !== 0 || e.pointerType === "mouse" || disableContextMenu) return;
     const x = e.clientX;
     const y = e.clientY;
     longPressTimer = setTimeout(() => {
       longPressTimer = null;
+      longPressFired = true;
       contextMenuHost?.openContextMenu(x, y);
     }, 500);
+  }
+
+  function handlePointerMove(e: PointerEvent) {
+    cancelLongPress();
+    if (pointerStart) {
+      const dx = e.clientX - pointerStart.x;
+      const dy = e.clientY - pointerStart.y;
+      if (dx * dx + dy * dy > 100) pointerStart = null; // moved >10px → not a tap
+    }
+  }
+
+  function handlePointerUp(e: PointerEvent) {
+    cancelLongPress();
+    if (!tapToToggle || longPressFired || !pointerStart) {
+      pointerStart = null;
+      return;
+    }
+    const dx = e.clientX - pointerStart.x;
+    const dy = e.clientY - pointerStart.y;
+    const elapsed = e.timeStamp - pointerStart.t;
+    pointerStart = null;
+    if (dx * dx + dy * dy > 100 || elapsed > 500) return;
+    const target = e.target as HTMLElement | null;
+    if (
+      target?.closest(
+        'button, a, [role="slider"], [role="menu"], [role="menuitem"], .unified-timeline, input',
+      )
+    )
+      return;
+    onPlaybackToggle();
+    showTapFeedback(!isPlaying);
+  }
+
+  function showTapFeedback(willPlay: boolean) {
+    getHapticFeedback().impact("light");
+    tapFeedback = { icon: willPlay ? "play" : "pause", key: ++tapFeedbackSeq };
+    if (tapFeedbackTimer !== null) clearTimeout(tapFeedbackTimer);
+    tapFeedbackTimer = setTimeout(() => {
+      tapFeedback = null;
+      tapFeedbackTimer = null;
+    }, 600);
   }
 
   function cancelLongPress() {
@@ -340,8 +395,8 @@ Last audit: 2025-12-27
   data-view={viewState}
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}
-  onpointermove={cancelLongPress}
-  onpointerup={cancelLongPress}
+  onpointermove={handlePointerMove}
+  onpointerup={handlePointerUp}
   onpointercancel={cancelLongPress}
 >
   <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
@@ -433,6 +488,14 @@ Last audit: 2025-12-27
     </div>
   </div>
 
+  {#if tapFeedback}
+    {#key tapFeedback.key}
+      <div class="tap-feedback" aria-hidden="true">
+        <i class="fas {tapFeedback.icon === 'play' ? 'fa-play' : 'fa-pause'}"></i>
+      </div>
+    {/key}
+  {/if}
+
   {#if !disableContextMenu}
     <CanvasContextMenuHost
       bind:this={contextMenuHost}
@@ -453,6 +516,55 @@ Last audit: 2025-12-27
     height: 100%;
     width: 100%;
     container-type: size;
+    position: relative;
+  }
+
+  /* Transient play/pause flash on canvas tap — teaches the tap-to-toggle gesture
+     the way video players do (icon pops, then fades). pointer-events:none so it
+     never eats the next tap. */
+  .tap-feedback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  .tap-feedback i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 36px;
+    animation: tapFeedbackPop 600ms cubic-bezier(0.2, 0, 0, 1) forwards;
+  }
+
+  @keyframes tapFeedbackPop {
+    0% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    25% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.3);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tap-feedback i {
+      animation-duration: 250ms;
+    }
   }
 
   /* ===========================================

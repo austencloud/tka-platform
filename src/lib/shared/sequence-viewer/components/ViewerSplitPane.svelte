@@ -18,6 +18,8 @@
   import { COMPARISON_MODE_LAYOUTS, splitConfigToMode, type ComparisonMode } from '../services/viewer-state-persistence';
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
+  import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
   import PerformerHub from "$lib/shared/3d/components/controls/PerformerHub.svelte";
@@ -171,6 +173,19 @@
     if (_2dLeftActive) _2dLeftMounted = true;
   });
 
+  // Portrait-mobile split relocates the 2D canvas transport to a full-width bar
+  // below the card (above the bottom nav), freeing the canvas to fill its row.
+  const showMobileTransport = $derived(
+    layout.isMobile && !layout.isLandscapeMobile && !layout.focusedPane && _2dLeftActive
+  );
+  const mobileTransportAdapter = createAnimatorPlaybackAdapter({
+    getCurrentStep: () => playback.currentStep,
+    getSteps: () => playback.animationState.sequenceData?.steps ?? [],
+    getIsPlaying: () => playback.isPlaying,
+    onSeek: (target) => onProgressBarSeek?.(target),
+    onTogglePlay: () => onPlaybackToggle?.(),
+  });
+
   let _2dRightMounted = $state(false);
   const _2dRightActive = $derived(splitConfig.rightPane === 'animation');
   $effect(() => {
@@ -306,6 +321,7 @@
 data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
   data-landscape={layout.isLandscapeMobile || undefined}
   data-focused={layout.focusedPane}
+  data-mobile-transport={showMobileTransport || undefined}
 >
   {#if !layout.focusedPane && !isExporting && onSplitConfigReplace && !layout.isMobile}
     <ComparisonModeBar current={comparisonMode} onSelect={selectComparisonMode} />
@@ -416,7 +432,8 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
               onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
               focused={layout.focusedPane === "animation"}
               suppress2DOverlays={false}
-              hideProgressBar={false}
+              hideProgressBar={showMobileTransport}
+              tapToToggle={showMobileTransport}
             />
           </div>
         {/if}
@@ -610,6 +627,12 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
       {/if}
     </div>
   </div>
+
+  {#if showMobileTransport}
+    <div class="mobile-transport-bar" data-swipe-block>
+      <UnifiedTimeline playback={mobileTransportAdapter} hidePlay />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -638,6 +661,30 @@ data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "
     position: relative;
     /* No grid transition — animated grid-template-columns causes ChoreoCard's
        ResizeObserver to fire on every frame, producing a tiny→expand resize cascade. */
+  }
+
+  /* Portrait-mobile split: canvas + card share the flexible space, transport
+     pins to a full-width auto row below the card. */
+  .split-view[data-mobile-transport] {
+    grid-template-rows: 1fr 1fr auto;
+  }
+
+  .mobile-transport-bar {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    z-index: 10;
+  }
+
+  /* Match the viewer's solid dark panel surface (preview-column uses the same
+     token) instead of the floating-overlay glass the pill wears inside a canvas,
+     and shave vertical padding so the bar stays compact on short phones. */
+  .mobile-transport-bar :global(.transport-pill) {
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    backdrop-filter: none;
+    border-top-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    padding-top: 4px;
+    padding-bottom: 4px;
   }
 
   .media-pane.persistent-3d,

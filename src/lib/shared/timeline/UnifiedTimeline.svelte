@@ -8,9 +8,12 @@
   let {
     playback,
     visible = true,
+    hidePlay = false,
   }: {
     playback: UnifiedPlaybackContext;
     visible?: boolean;
+    /** Hide the play/pause button (e.g. when tap-to-toggle on the canvas covers it). */
+    hidePlay?: boolean;
   } = $props();
 
   const currentTimeLabel = $derived(formatTime(playback.elapsed));
@@ -159,17 +162,15 @@
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="unified-timeline" role="group" aria-label="Playback transport" onkeydown={onKeydown}>
     <div class="transport-pill">
-      <button
-        class="pill-play"
-        onclick={(e) => { e.stopPropagation(); playback.togglePlay(); }}
-        aria-label={playback.isPlaying ? "Pause" : "Play"}
-      >
-        <i class="fas {playback.isPlaying ? 'fa-pause' : 'fa-play'}"></i>
-      </button>
-
-      <span class="pill-time">
-        {currentTimeLabel} / {totalTimeLabel}
-      </span>
+      {#if !hidePlay}
+        <button
+          class="pill-play"
+          onclick={(e) => { e.stopPropagation(); playback.togglePlay(); }}
+          aria-label={playback.isPlaying ? "Pause" : "Play"}
+        >
+          <i class="fas {playback.isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+        </button>
+      {/if}
 
       {#if hasTempo}
         <div class="tempo-group">
@@ -326,17 +327,6 @@
 
   .pill-play:active {
     transform: scale(0.94);
-  }
-
-  .pill-time {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.78);
-    font-variant-numeric: tabular-nums;
-    min-width: 80px;
-    text-align: center;
-    white-space: nowrap;
-    user-select: none;
   }
 
   .pill-track {

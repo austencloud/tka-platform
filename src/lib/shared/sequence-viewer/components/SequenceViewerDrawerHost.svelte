@@ -319,53 +319,86 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         {@const isRecordSceneActive = isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl}
         {@const isSidebarExportActive = isAnyExportActive && !isRecordSceneActive}
         {@const showRail = !isMobileWidth}
+        {#snippet overflowMenu(includeMotion: boolean)}
+          <ViewerOverflowMenu
+            variant="header"
+            dropDown
+            align={includeMotion ? 'left' : 'right'}
+            isFavorite={ctx.isFavorite}
+            onFavoriteToggle={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
+            isSaved={ctx.isSaved}
+            onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
+            onRemix={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
+            onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
+            copyDataFeedback={copyClaudeFeedback}
+            practiceActive={ctx.practiceActive}
+            onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
+            onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
+            isPublished={ctx.isPublished}
+            onPublish={ctx.isOwned && ctx.isSaved ? () => ctx.invokeGatedAction("publish", ctx.handlePublishAction) : undefined}
+            onUnpublish={ctx.isOwned && ctx.isSaved ? ctx.handleUnpublishAction : undefined}
+            onDeleteRequest={ctx.isOwned && ctx.isSaved ? () => (deleteConfirmOpen = true) : undefined}
+            motionVisibility={includeMotion
+              ? {
+                  showBlue: ctx.viewerVisibility.blueMotion,
+                  showRed: ctx.viewerVisibility.redMotion,
+                  onToggleBlue: () => ctx.viewerVisibility.toggleBlue(),
+                  onToggleRed: () => ctx.viewerVisibility.toggleRed(),
+                }
+              : undefined}
+          />
+        {/snippet}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <header class="drawer-header">
                 <div class="drawer-header-left-actions">
-                  <button
-                    type="button"
-                    class="header-action-btn"
-                    class:favorited={ctx.isFavorite}
-                    onclick={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-                    aria-label={ctx.isFavorite ? "Remove from favorites" : "Add to favorites"}
-                  >
-                    <i class="fas fa-heart" aria-hidden="true"></i>
-                  </button>
-
-                  {#if !ctx.isSaved}
-                    <button
-                      type="button"
-                      class="header-action-btn save"
-                      onclick={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-                      aria-label="Save sequence"
-                    >
-                      <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-                    </button>
-                  {/if}
-
-                  <button
-                    type="button"
-                    class="header-action-btn remix"
-                    onclick={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-                    aria-label="Remix"
-                  >
-                    <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-                  </button>
-
-                  <span class="header-action-divider"></span>
-
-                  <MotionVisibilityToggle />
-
-                  {#if authState.isAdmin}
+                  {#if isMobileWidth}
+                    {@render overflowMenu(true)}
+                  {:else}
                     <button
                       type="button"
                       class="header-action-btn"
-                      onclick={handleCopyForClaude}
-                      aria-label="Copy sequence data for Claude"
-                      title="Copy for Claude"
+                      class:favorited={ctx.isFavorite}
+                      onclick={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
+                      aria-label={ctx.isFavorite ? "Remove from favorites" : "Add to favorites"}
                     >
-                      <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
+                      <i class="fas fa-heart" aria-hidden="true"></i>
                     </button>
+
+                    {#if !ctx.isSaved}
+                      <button
+                        type="button"
+                        class="header-action-btn save"
+                        onclick={() => ctx.invokeGatedAction("save", ctx.handleSave)}
+                        aria-label="Save sequence"
+                      >
+                        <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+                      </button>
+                    {/if}
+
+                    <button
+                      type="button"
+                      class="header-action-btn remix"
+                      onclick={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
+                      aria-label="Remix"
+                    >
+                      <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+                    </button>
+
+                    <span class="header-action-divider"></span>
+
+                    <MotionVisibilityToggle />
+
+                    {#if authState.isAdmin}
+                      <button
+                        type="button"
+                        class="header-action-btn"
+                        onclick={handleCopyForClaude}
+                        aria-label="Copy sequence data for Claude"
+                        title="Copy for Claude"
+                      >
+                        <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
+                      </button>
+                    {/if}
                   {/if}
                 </div>
 
@@ -418,24 +451,9 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
                     </button>
                   {/if}
 
-                  <ViewerOverflowMenu
-                    variant="header"
-                    dropDown
-                    isFavorite={ctx.isFavorite}
-                    onFavoriteToggle={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-                    isSaved={ctx.isSaved}
-                    onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-                    onRemix={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
-                    onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
-                    copyDataFeedback={copyClaudeFeedback}
-                    practiceActive={ctx.practiceActive}
-                    onPracticeToggle={() => ctx.practiceActive ? ctx.handlePracticeStop() : ctx.handlePracticeStart()}
-                    onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
-                    isPublished={ctx.isPublished}
-                    onPublish={ctx.isOwned && ctx.isSaved ? () => ctx.invokeGatedAction("publish", ctx.handlePublishAction) : undefined}
-                    onUnpublish={ctx.isOwned && ctx.isSaved ? ctx.handleUnpublishAction : undefined}
-                    onDeleteRequest={ctx.isOwned && ctx.isSaved ? () => (deleteConfirmOpen = true) : undefined}
-                  />
+                  {#if !isMobileWidth}
+                    {@render overflowMenu(false)}
+                  {/if}
 
                   <button
                     type="button"
@@ -697,7 +715,7 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 6px;
+    padding: calc(env(safe-area-inset-top, 0px) + 2px) 12px 2px;
     min-height: var(--min-touch-target);
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
