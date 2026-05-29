@@ -1,15 +1,15 @@
-import { MotionColor } from "../../domain/enums/pictograph-enums";
-import { GridMode } from "../../../grid/domain/enums/grid-enums";
-import type { MotionData } from "../../domain/models/MotionData";
-import { createMotionData } from "../../domain/models/MotionData";
-import type { PictographData } from "../../domain/models/PictographData";
-import type { ICSVPictographParser as ICSVPictographParser } from "../../../../foundation/services/data/ICSVPictographParser";
-import type { CSVRow } from "../../../../foundation/services/data/ICSVPictographParser";
+import { MotionColor } from "../domain/enums/pictograph-enums";
+import { GridMode } from "../../grid/domain/enums/grid-enums";
+import type { MotionData } from "../domain/models/MotionData";
+import { createMotionData } from "../domain/models/MotionData";
+import type { PictographData } from "../domain/models/PictographData";
+import type { ICSVPictographParser as ICSVPictographParser } from "../../../foundation/services/data/ICSVPictographParser";
+import type { CSVRow } from "../../../foundation/services/data/ICSVPictographParser";
 import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModels";
-import type { CsvLoader } from "../../../../foundation/services/data/csv-loader";
+import type { CsvLoader } from "../../../foundation/services/data/csv-loader";
 import type { IMotionQueryHandler } from "../../../foundation/services/data/data-contracts";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import type { Orientation } from "../../domain/enums/pictograph-enums";
+import type { Orientation } from "../domain/enums/pictograph-enums";
 
 interface ICSVParser {
   parseCSV(csvText: string): { rows: ParsedCsvRow[] };
@@ -434,7 +434,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
   }
 }
 
-import { csvLoader } from "../../../../foundation/services/data/csv-loader";
+import { csvLoader } from "../../../foundation/services/data/csv-loader";
 import { csvParser } from "../../../foundation/services/implementations/data/CsvParser";
 import { csvPictographParser } from "./csv-pictograph-parser";
 import { orientationCalculator } from "../../prop/services/implementations/OrientationCalculator";

@@ -1,17 +1,17 @@
-import type { GridMode } from "../../../grid/domain/enums/grid-enums";
-import { GridPosition } from "../../../grid/domain/enums/grid-enums";
-import type { Letter } from "../../../../foundation/domain/models/Letter";
-import { MotionColor, HandPath, SkewDirection } from "../../domain/enums/pictograph-enums";
-import { createMotionData } from "../../domain/models/MotionData";
-import type { PictographData } from "../../domain/models/PictographData";
-import { createPictographData } from "../../domain/factories/createPictographData";
+import type { GridMode } from "../../grid/domain/enums/grid-enums";
+import { GridPosition } from "../../grid/domain/enums/grid-enums";
+import type { Letter } from "../../../foundation/domain/models/Letter";
+import { MotionColor, HandPath, SkewDirection } from "../domain/enums/pictograph-enums";
+import { createMotionData } from "../domain/models/MotionData";
+import type { PictographData } from "../domain/models/PictographData";
+import { createPictographData } from "../domain/factories/createPictographData";
 import type { EnumMapper } from "../../../foundation/services/implementations/data/EnumMapper";
 import type { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type {
   CSVRow,
   ICSVPictographParser,
-} from "../../../../foundation/services/data/ICSVPictographParser";
-import { Orientation } from "../../domain/enums/pictograph-enums";
+} from "../../../foundation/services/data/ICSVPictographParser";
+import { Orientation } from "../domain/enums/pictograph-enums";
 
 function mapHandPath(value: string | undefined): HandPath | null {
   if (!value) return null;

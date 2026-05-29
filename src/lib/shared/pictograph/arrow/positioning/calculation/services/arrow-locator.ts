@@ -4,7 +4,7 @@
  * Determines arrow location based on start and end positions using the same logic
  * as the desktop app's ShiftLocationCalculator.
  */
-import type { ArrowLocationInput } from "./contracts/types";
+import type { ArrowLocationInput } from "./types";
 
 export function calculateArrowLocation(input: ArrowLocationInput): string {
   const { startLocation, endLocation, motionType } = input;

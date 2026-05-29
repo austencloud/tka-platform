@@ -12,7 +12,7 @@ import {
   allClockwisePairs,
   allCounterClockwisePairs,
 } from "../config/HandpathDirectionMaps";
-import type { HandpathDirection } from "./contracts/types";
+import type { HandpathDirection } from "./types";
 
 export function calculateHandpathDirection(
   startLocation: GridLocation,
