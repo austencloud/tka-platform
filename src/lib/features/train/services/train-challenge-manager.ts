@@ -23,7 +23,7 @@ import type {
   TrainChallengeScore,
 } from "../domain/models/train-challenge-models";
 import { isChallengeAvailable } from "../domain/models/train-challenge-models";
-import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
+import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
 
 export class TrainChallengeManager {
   private _achievementService: AchievementManager | null = null;

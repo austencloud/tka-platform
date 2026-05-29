@@ -1,4 +1,4 @@
-import type { UserSkillProgress } from "../../../domain/models/challenge-models";
+import type { UserSkillProgress } from "../../domain/models/challenge-models";
 
 type TimestampLike = { toDate?: () => Date } | undefined;
 

@@ -1,12 +1,12 @@
 import type {
   SkillCategory,
   SkillProgression,
-} from "../../../domain/models/challenge-models";
+} from "../../domain/models/challenge-models";
 import {
   ALL_SKILLS,
   getSkillsByCategory as getSkillsByCategoryFromDefinitions,
   getSkillById as getSkillByIdFromDefinitions,
-} from "../../../domain/constants/skill-definitions";
+} from "../../domain/constants/skill-definitions";
 
 export function getActiveSkills(): SkillProgression[] {
   return ALL_SKILLS.filter((skill) => skill.isActive);

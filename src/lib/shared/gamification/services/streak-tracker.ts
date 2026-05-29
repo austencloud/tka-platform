@@ -5,11 +5,11 @@
  */
 
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { auth, getFirestoreInstance } from "../../../auth/firebase";
-import { db } from "../../../persistence/database/TKADatabase";
-import { getUserStreakPath } from "../../data/firestore-collections";
-import { toast } from "../../../toast/state/toast-state.svelte";
-import type { UserStreak } from "../../domain/models/achievement-models";
+import { auth, getFirestoreInstance } from "../../auth/firebase";
+import { db } from "../../persistence/database/TKADatabase";
+import { getUserStreakPath } from "../data/firestore-collections";
+import { toast } from "../../toast/state/toast-state.svelte";
+import type { UserStreak } from "../domain/models/achievement-models";
 
 export class StreakTracker {
   private _initialized = false;

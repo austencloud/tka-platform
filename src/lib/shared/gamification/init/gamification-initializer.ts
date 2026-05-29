@@ -4,9 +4,9 @@
  * Call this once on app startup to initialize all gamification services.
  */
 
-import { getAchievementManager } from "../getAchievementManager";
-import { getDailyChallengeManager } from "../getDailyChallengeManager";
-import { getStreakTracker } from "../getStreakTracker";
+import { getAchievementManager } from "../get-achievement-manager";
+import { getDailyChallengeManager } from "../get-daily-challenge-manager";
+import { getStreakTracker } from "../get-streak-tracker";
 import type { XPEventMetadata } from "../domain/models/achievement-models";
 
 // ITI containers are loaded synchronously, no need for async loading

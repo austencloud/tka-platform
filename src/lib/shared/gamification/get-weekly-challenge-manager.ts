@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { WeeklyChallengeManager } from './services/implementations/WeeklyChallengeManager';
-import { getAchievementManager } from './getAchievementManager';
+import { WeeklyChallengeManager } from './services/weekly-challenge-manager';
+import { getAchievementManager } from './get-achievement-manager';
 
 let instance: WeeklyChallengeManager | null = null;
 

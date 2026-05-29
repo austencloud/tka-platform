@@ -1,7 +1,7 @@
 import type {
   SkillProgression,
   UserSkillProgress,
-} from "../../../domain/models/challenge-models";
+} from "../../domain/models/challenge-models";
 
 export function getMasteredSkillsFromProgress(params: {
   allSkills: SkillProgression[];

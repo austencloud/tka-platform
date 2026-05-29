@@ -10,7 +10,7 @@ import type {
   UserChallengeProgress,
   XPActionType,
   XPEventMetadata,
-} from "../../domain/models/achievement-models";
+} from "../domain/models/achievement-models";
 import type {
   WeeklyChallenge,
   UserWeeklyChallengeProgress,
@@ -21,13 +21,13 @@ import type {
   LeaderboardCategory,
   LeaderboardTimeframe,
   LeaderboardData,
-} from "../../domain/models/challenge-models";
-import type { DailyChallengeManager } from "./DailyChallengeManager";
-import type { WeeklyChallengeManager } from "./WeeklyChallengeManager";
-import type { SkillProgressionTracker } from "./SkillProgressionTracker";
-import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
-import type { StreakTracker } from '$lib/shared/gamification/services/implementations/StreakTracker'
-import type { SkillProgressActionType } from "../contracts/types";
+} from "../domain/models/challenge-models";
+import type { DailyChallengeManager } from "./daily-challenge-manager";
+import type { WeeklyChallengeManager } from "./weekly-challenge-manager";
+import type { SkillProgressionTracker } from "./skill-progression-tracker";
+import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
+import type { StreakTracker } from '$lib/shared/gamification/services/streak-tracker'
+import type { SkillProgressActionType } from "./types";
 
 export class ChallengeCoordinator {
   private _initialized = false;

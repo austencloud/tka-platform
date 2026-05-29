@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
-import { SkillProgressionTracker } from './services/implementations/SkillProgressionTracker';
-import { getAchievementManager } from './getAchievementManager';
+import { SkillProgressionTracker } from './services/skill-progression-tracker';
+import { getAchievementManager } from './get-achievement-manager';
 
 let instance: SkillProgressionTracker | null = null;
 

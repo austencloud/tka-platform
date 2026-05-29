@@ -7,7 +7,7 @@
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
-  import { getStreakTracker } from "$lib/shared/gamification/getStreakTracker";
+  import { getStreakTracker } from "$lib/shared/gamification/get-streak-tracker";
 
   let currentStreak = $state(0);
   let isActive = $state(false);

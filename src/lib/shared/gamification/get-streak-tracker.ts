@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { StreakTracker } from './services/implementations/StreakTracker';
+import { StreakTracker } from './services/streak-tracker';
 
 let instance: StreakTracker | null = null;
 

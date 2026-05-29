@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { AchievementManager } from './services/implementations/AchievementManager';
+import { AchievementManager } from './services/achievement-manager';
 
 let instance: AchievementManager | null = null;
 

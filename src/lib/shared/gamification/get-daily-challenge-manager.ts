@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { DailyChallengeManager } from './services/implementations/DailyChallengeManager';
-import { getAchievementManager } from './getAchievementManager';
+import { DailyChallengeManager } from './services/daily-challenge-manager';
+import { getAchievementManager } from './get-achievement-manager';
 
 let instance: DailyChallengeManager | null = null;
 

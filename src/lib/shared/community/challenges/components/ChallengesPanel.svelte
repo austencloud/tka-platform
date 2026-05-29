@@ -6,7 +6,7 @@
    */
 
   import { onMount } from "svelte";
-  import { getChallengeCoordinator } from "$lib/shared/gamification/getChallengeCoordinator";
+  import { getChallengeCoordinator } from "$lib/shared/gamification/get-challenge-coordinator";
   import type { ChallengeDashboard } from "$lib/shared/gamification/domain/models/challenge-models";
   import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";

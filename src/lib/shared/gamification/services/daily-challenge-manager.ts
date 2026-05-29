@@ -15,19 +15,19 @@ import {
   where,
   serverTimestamp,
 } from "firebase/firestore";
-import { auth, getFirestoreInstance } from "../../../auth/firebase";
-import { db } from "../../../persistence/database/TKADatabase";
+import { auth, getFirestoreInstance } from "../../auth/firebase";
+import { db } from "../../persistence/database/TKADatabase";
 import {
   getDailyChallengesPath,
   getUserChallengeProgressPath,
-} from "../../data/firestore-collections";
-import { toast } from "../../../toast/state/toast-state.svelte";
+} from "../data/firestore-collections";
+import { toast } from "../../toast/state/toast-state.svelte";
 import type {
   DailyChallenge,
   UserChallengeProgress,
   XPEventMetadata,
-} from "../../domain/models/achievement-models";
-import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
+} from "../domain/models/achievement-models";
+import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("DailyChallengeManager");

@@ -20,18 +20,18 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
-import { auth, getFirestoreInstance } from "../../../auth/firebase";
-import { db } from "../../../persistence/database/TKADatabase";
+import { auth, getFirestoreInstance } from "../../auth/firebase";
+import { db } from "../../persistence/database/TKADatabase";
 import {
   getUserAchievementsPath,
   getUserXPPath,
   getUserXPEventsPath,
-} from "../../data/firestore-collections";
+} from "../data/firestore-collections";
 import {
   calculateLevelFromXP,
   XP_REWARDS,
-} from "../../domain/constants/xp-constants";
-import { ALL_ACHIEVEMENTS } from "../../domain/constants/achievement-definitions";
+} from "../domain/constants/xp-constants";
+import { ALL_ACHIEVEMENTS } from "../domain/constants/achievement-definitions";
 import type {
   Achievement,
   UserAchievement,
@@ -39,7 +39,7 @@ import type {
   XPActionType,
   XPGainEvent,
   XPEventMetadata,
-} from "../../domain/models/achievement-models";
+} from "../domain/models/achievement-models";
 import {
   showXPGain,
   showLevelUp,

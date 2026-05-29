@@ -2,7 +2,7 @@ import type {
   SkillCategory,
   SkillProgression,
   UserSkillProgress,
-} from "../../../domain/models/challenge-models";
+} from "../../domain/models/challenge-models";
 
 export function calculateSkillStats(params: {
   allSkills: SkillProgression[];

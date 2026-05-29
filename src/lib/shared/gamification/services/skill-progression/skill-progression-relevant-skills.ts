@@ -1,8 +1,8 @@
 import type {
   SkillProgression,
   UserSkillProgress,
-} from "../../../domain/models/challenge-models";
-import type { SkillProgressActionType, SkillProgressMetadata } from "../../contracts/types";
+} from "../../domain/models/challenge-models";
+import type { SkillProgressActionType, SkillProgressMetadata } from "../types";
 
 export function findRelevantSkills(params: {
   availableSkills: SkillProgression[];

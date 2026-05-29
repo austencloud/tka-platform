@@ -8,9 +8,9 @@ Features:
 - Respects prefers-reduced-motion
 -->
 <script lang="ts">
-	import { getStreakTracker } from '$lib/shared/gamification/getStreakTracker';
+	import { getStreakTracker } from '$lib/shared/gamification/get-streak-tracker';
 	import { onMount, onDestroy } from 'svelte';
-	import type { StreakTracker } from '$lib/shared/gamification/services/implementations/StreakTracker'
+	import type { StreakTracker } from '$lib/shared/gamification/services/streak-tracker'
 
 	let {
 		onStreakMilestone

@@ -17,25 +17,25 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
-import { auth, getFirestoreInstance } from "../../../auth/firebase";
-import { db } from "../../../persistence/database/TKADatabase";
+import { auth, getFirestoreInstance } from "../../auth/firebase";
+import { db } from "../../persistence/database/TKADatabase";
 import {
   getWeeklyChallengesPath,
   getUserWeeklyProgressPath,
-} from "../../data/firestore-collections";
-import { toast } from "../../../toast/state/toast-state.svelte";
+} from "../data/firestore-collections";
+import { toast } from "../../toast/state/toast-state.svelte";
 import type {
   WeeklyChallenge,
   UserWeeklyChallengeProgress,
-} from "../../domain/models/challenge-models";
+} from "../domain/models/challenge-models";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("WeeklyChallengeManager");
 import {
   getWeeklyChallengeId,
   getCurrentWeekNumber,
-} from "../../domain/models/challenge-models";
-import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
+} from "../domain/models/challenge-models";
+import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
 
 export class WeeklyChallengeManager {
   private _initialized = false;

@@ -1,14 +1,14 @@
 import type {
   SkillProgression,
   UserSkillProgress,
-} from "../../../domain/models/challenge-models";
-import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
-import { computeSkillProgressUpdate } from "./SkillProgressionUpdate";
+} from "../../domain/models/challenge-models";
+import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
+import { computeSkillProgressUpdate } from "./skill-progression-update";
 import {
   persistSkillProgressIncrement,
   persistSkillProgressLevelCompletion,
   persistStartedSkill,
-} from "./SkillProgressionPersistence";
+} from "./skill-progression-persistence";
 
 type UpdateSkillProgressResult = {
   progress: UserSkillProgress;

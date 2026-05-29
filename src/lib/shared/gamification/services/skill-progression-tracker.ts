@@ -5,43 +5,43 @@
  * Skills represent long-term goals across Letter Mastery, Concept Mastery, and Practice Goals.
  */
 
-import { auth } from "../../../auth/firebase";
+import { auth } from "../../auth/firebase";
 import type {
   SkillProgression,
   UserSkillProgress,
   SkillCategory,
   SkillLevel,
-} from "../../domain/models/challenge-models";
-import type { SkillProgressActionType, SkillProgressMetadata } from "../contracts/types";
-import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
-import { calculateSkillStats } from "./skill-progression/SkillProgressionStats";
-import { getRecommendedSkills } from "./skill-progression/SkillProgressionRecommendations";
-import { findRelevantSkills } from "./skill-progression/SkillProgressionRelevantSkills";
-import { getCompletedSkillIdsFromProgress } from "./skill-progression/SkillProgressionCompletedSkills";
-import { loadAllUserSkillProgress } from "./skill-progression/SkillProgressionPersistence";
+} from "../domain/models/challenge-models";
+import type { SkillProgressActionType, SkillProgressMetadata } from "./types";
+import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
+import { calculateSkillStats } from "./skill-progression/skill-progression-stats";
+import { getRecommendedSkills } from "./skill-progression/skill-progression-recommendations";
+import { findRelevantSkills } from "./skill-progression/skill-progression-relevant-skills";
+import { getCompletedSkillIdsFromProgress } from "./skill-progression/skill-progression-completed-skills";
+import { loadAllUserSkillProgress } from "./skill-progression/skill-progression-persistence";
 import {
   getActiveSkillById,
   getActiveSkills,
   getActiveSkillsByCategory,
-} from "./skill-progression/SkillProgressionDefinitions";
+} from "./skill-progression/skill-progression-definitions";
 import {
   getAvailableSkills as getAvailableSkillsForUser,
   getLockedSkills as getLockedSkillsForUser,
-} from "./skill-progression/SkillProgressionAvailability";
+} from "./skill-progression/skill-progression-availability";
 import {
   getCategoryPossibleLevels,
   getUserProgressByCategory as getUserProgressByCategoryFromProgress,
-} from "./skill-progression/SkillProgressionCategory";
+} from "./skill-progression/skill-progression-category";
 import {
   getMasteredSkillsFromProgress,
   getRecentCompletionsFromProgress,
   getSkillsInProgressFromProgress,
-} from "./skill-progression/SkillProgressionQueries";
+} from "./skill-progression/skill-progression-queries";
 import {
   startSkillForUser,
   trackSkillActionForUser,
   updateSkillProgressForUser,
-} from "./skill-progression/SkillProgressionMutations";
+} from "./skill-progression/skill-progression-mutations";
 
 export class SkillProgressionTracker {
   private _initialized = false;

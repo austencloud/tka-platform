@@ -39,7 +39,7 @@ import {
   UserProfileDocSchema,
 } from "$lib/shared/library/domain/library-schemas";
 import type { ErrorHandler } from '$lib/shared/application/services/implementations/ErrorHandler'
-import type { AchievementManager } from '$lib/shared/gamification/services/implementations/AchievementManager'
+import type { AchievementManager } from '$lib/shared/gamification/services/achievement-manager'
 import type { OrientationCycleDetector } from "$lib/shared/create/services/OrientationCycleDetector";
 import type { IPublicIndexSyncer as PublicIndexSyncer } from "$lib/shared/library/services/IPublicIndexSyncer";
 import type { ConflictResolver } from "$lib/shared/offline/services/conflict-resolver";

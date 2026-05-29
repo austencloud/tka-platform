@@ -1,6 +1,6 @@
-import type { SkillProgression } from "../../../domain/models/challenge-models";
-import { isSkillUnlocked } from "../../../domain/models/challenge-models";
-import { ALL_SKILLS } from "../../../domain/constants/skill-definitions";
+import type { SkillProgression } from "../../domain/models/challenge-models";
+import { isSkillUnlocked } from "../../domain/models/challenge-models";
+import { ALL_SKILLS } from "../../domain/constants/skill-definitions";
 
 export type LockedSkillReason = "prerequisite" | "level" | "not_active";
 

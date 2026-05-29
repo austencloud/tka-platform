@@ -1,10 +1,10 @@
 import { browser } from '$app/environment';
-import { ChallengeCoordinator } from './services/implementations/ChallengeCoordinator';
-import { getDailyChallengeManager } from './getDailyChallengeManager';
-import { getWeeklyChallengeManager } from './getWeeklyChallengeManager';
-import { getSkillProgressionTracker } from './getSkillProgressionTracker';
-import { getAchievementManager } from './getAchievementManager';
-import { getStreakTracker } from './getStreakTracker';
+import { ChallengeCoordinator } from './services/challenge-coordinator';
+import { getDailyChallengeManager } from './get-daily-challenge-manager';
+import { getWeeklyChallengeManager } from './get-weekly-challenge-manager';
+import { getSkillProgressionTracker } from './get-skill-progression-tracker';
+import { getAchievementManager } from './get-achievement-manager';
+import { getStreakTracker } from './get-streak-tracker';
 
 let instance: ChallengeCoordinator | null = null;
 
