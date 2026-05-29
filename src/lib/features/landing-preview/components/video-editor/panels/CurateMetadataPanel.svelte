@@ -6,7 +6,7 @@
    */
   import CategoryField from "../fields/CategoryField.svelte";
   import PerformerField from "../fields/PerformerField.svelte";
-  import type { VideoEditorController } from "../../../state/VideoEditorController.svelte";
+  import type { VideoEditorController } from "../../../state/video-editor-controller.svelte";
   import type { ShowcaseVideo } from "../../../types";
 
   interface Props {

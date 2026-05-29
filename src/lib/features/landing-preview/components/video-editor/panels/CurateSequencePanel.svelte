@@ -5,7 +5,7 @@
    * Left panel for curate mode - sequence/word selection with larger thumbnails.
    */
   import LinkedSequenceChip from "../../LinkedSequenceChip.svelte";
-  import type { VideoEditorController } from "../../../state/VideoEditorController.svelte";
+  import type { VideoEditorController } from "../../../state/video-editor-controller.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 

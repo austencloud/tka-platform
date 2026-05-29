@@ -4,7 +4,7 @@
    *
    * Bottom bar showing keyboard shortcut hints for the current mode.
    */
-  import type { VideoEditorMode } from "../../state/VideoEditorController.svelte";
+  import type { VideoEditorMode } from "../../state/video-editor-controller.svelte";
 
   interface Props {
     mode: VideoEditorMode;

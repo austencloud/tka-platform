@@ -19,7 +19,7 @@ import type {
 } from "../types";
 import type * as videoCuratorPersisterModule from "../services/video-curator-persister";
 type VideoCuratorPersister = typeof videoCuratorPersisterModule;
-import type { SequenceMatcher } from "../services/SequenceMatcher";
+import type { SequenceMatcher } from "../services/sequence-matcher";
 import type { VideoCache } from "$lib/shared/video/services/implementations/VideoCache";
 
 export type VideoEditorMode = "closed" | "browse" | "curate" | "link" | "rename";

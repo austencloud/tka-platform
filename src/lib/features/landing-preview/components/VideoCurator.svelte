@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { getSequenceMatcher } from "$lib/features/landing-preview/getSequenceMatcher";
+import { getSequenceMatcher } from "$lib/features/landing-preview/get-sequence-matcher";
 import * as videoCuratorLoader from "$lib/features/landing-preview/services/video-curator-loader";
 import * as videoCuratorPersister from "$lib/features/landing-preview/services/video-curator-persister";
   /**
@@ -18,7 +18,7 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
   import VideoCropEditor from "./VideoCropEditor.svelte";
   import VideoSnipEditor from "./VideoSnipEditor.svelte";
   import CroppedVideoPlayer from "./CroppedVideoPlayer.svelte";
-  import { createVideoEditorController } from "../state/VideoEditorController.svelte";
+  import { createVideoEditorController } from "../state/video-editor-controller.svelte";
   import type { ShowcaseVideo, VideoCategory, UserProfile } from "../types";
 
   // Services from DI container

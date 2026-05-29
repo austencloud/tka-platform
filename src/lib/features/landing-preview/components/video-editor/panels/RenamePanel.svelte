@@ -5,7 +5,7 @@
    * Focused panel for renaming videos that still have Instagram shortcode names.
    * Also allows optionally linking to a matching sequence.
    */
-  import type { VideoEditorController } from "../../../state/VideoEditorController.svelte";
+  import type { VideoEditorController } from "../../../state/video-editor-controller.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 

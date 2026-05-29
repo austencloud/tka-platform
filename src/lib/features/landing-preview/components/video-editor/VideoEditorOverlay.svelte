@@ -16,7 +16,7 @@
   import CurateMetadataPanel from "./panels/CurateMetadataPanel.svelte";
   import LinkPanel from "./panels/LinkPanel.svelte";
   import RenamePanel from "./panels/RenamePanel.svelte";
-  import type { VideoEditorController } from "../../state/VideoEditorController.svelte";
+  import type { VideoEditorController } from "../../state/video-editor-controller.svelte";
 
   interface Props {
     controller: VideoEditorController;

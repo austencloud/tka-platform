@@ -4,7 +4,7 @@
    *
    * Info panel content for link mode - focused sequence matching workflow.
    */
-  import type { VideoEditorController } from "../../../state/VideoEditorController.svelte";
+  import type { VideoEditorController } from "../../../state/video-editor-controller.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
