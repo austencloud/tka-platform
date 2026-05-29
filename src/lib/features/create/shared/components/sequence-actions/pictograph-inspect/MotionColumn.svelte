@@ -7,7 +7,6 @@
    */
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
   import { formatMotionText } from "./formatters";
   import PipelineTraceSection from "./PipelineTraceSection.svelte";
   import CollapsibleSection from "$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte";
@@ -21,24 +20,12 @@
     copiedSection: string | null;
     onCopy: (text: string, section: string) => void;
     diagnostics: PipelineDiagnostics | null;
-    stepData: StepData;
-    onDiagnosticsChanged?: () => void;
     open: boolean;
     onToggle: (next: boolean) => void;
   }
 
-  let { color, motion, rotationOverride, copiedSection, onCopy, diagnostics, stepData, onDiagnosticsChanged, open, onToggle }: Props =
+  let { color, motion, rotationOverride, copiedSection, onCopy, diagnostics, open, onToggle }: Props =
     $props();
-
-  let pipelineTraceRef: PipelineTraceSection | undefined = $state();
-
-  export function handleWASDKeydown(event: KeyboardEvent): boolean {
-    return pipelineTraceRef?.handleKeydown(event) ?? false;
-  }
-
-  export function enterEditMode(): void {
-    pipelineTraceRef?.enterEditMode();
-  }
 
   const colorClass = $derived(color === "blue" ? "blue-column" : "red-column");
   const label = $derived(color === "blue" ? "Blue Motion" : "Red Motion");
@@ -95,13 +82,7 @@
         </div>
       </div>
 
-      <PipelineTraceSection
-        {diagnostics}
-        {color}
-        {stepData}
-        {onDiagnosticsChanged}
-        bind:this={pipelineTraceRef}
-      />
+      <PipelineTraceSection {diagnostics} />
     {:else}
       <div class="empty-state">No {color} motion</div>
     {/if}

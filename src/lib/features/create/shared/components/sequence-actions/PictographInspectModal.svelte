@@ -402,8 +402,6 @@
               motion={blueMotion}
               rotationOverride={blueRotationOverride}
               diagnostics={blueDiagnostics}
-              stepData={stepData}
-              onDiagnosticsChanged={refreshDiagnostics}
               {copiedSection}
               onCopy={copyToClipboard}
               open={blueOpen}
@@ -415,8 +413,6 @@
               motion={redMotion}
               rotationOverride={redRotationOverride}
               diagnostics={redDiagnostics}
-              stepData={stepData}
-              onDiagnosticsChanged={refreshDiagnostics}
               {copiedSection}
               onCopy={copyToClipboard}
               open={redOpen}
