@@ -1,31 +1,27 @@
-import { LiveRenderContext } from "./RenderContext";
 import type { RenderContext } from "./RenderContextRegistry";
-
-export interface LiveContextOptions {
-  id?: string;
-}
+import { AnimationEngine } from "./AnimationEngine.svelte";
 
 export interface OffscreenContextOptions {
   id?: string;
 }
 
-export class RenderContextFactory {
-  async createLiveContext(
-    _container: HTMLDivElement,
-    _options?: LiveContextOptions
-  ): Promise<RenderContext> {
-    throw new Error(
-      "createLiveContext not yet wired. AnimatorCanvas still uses AnimationEngine directly."
-    );
-  }
+/** Handle from createOffscreenContext: the headless engine, its render context,
+ *  and a dispose that tears down both + removes the offscreen DOM node. */
+export interface OffscreenContextHandle {
+  engine: AnimationEngine;
+  context: RenderContext;
+  dispose(): void;
+}
 
+export class RenderContextFactory {
   async createOffscreenContext(
     size: number,
-    options?: OffscreenContextOptions
-  ): Promise<RenderContext> {
-    const id = options?.id ?? `offscreen-${Math.random().toString(36).slice(2, 8)}`;
+    options?: OffscreenContextOptions,
+  ): Promise<OffscreenContextHandle> {
+    const id = options?.id ?? `offscreen-${size}`;
 
     const container = document.createElement("div");
+    container.setAttribute("data-offscreen-render", id);
     container.style.position = "absolute";
     container.style.left = "-9999px";
     container.style.top = "-9999px";
@@ -34,93 +30,23 @@ export class RenderContextFactory {
     container.style.pointerEvents = "none";
     document.body.appendChild(container);
 
-    const [
-      { Canvas2DAnimationRenderer },
-      { EffectRendererManager },
-      { TrailCapturer },
-      { AnimationRenderLoop },
-      { AnimationPrecomputer },
-      { CanvasResizer },
-      { FireTipTracker },
-      { LedTipTracker },
-      { DeviceTierDetector },
-      { FrameBudgetMonitor },
-    ] = await Promise.all([
-      import("$lib/shared/animation-engine/services/implementations/Canvas2DAnimationRenderer"),
-      import("$lib/shared/animation-engine/services/implementations/EffectRendererManager"),
-      import("$lib/shared/animation-engine/services/implementations/TrailCapturer"),
-      import("$lib/shared/animation-engine/services/implementations/AnimationRenderLoop"),
-      import("$lib/shared/animation-engine/services/implementations/AnimationPrecomputer.svelte"),
-      import("$lib/shared/animation-engine/services/implementations/CanvasResizer.svelte"),
-      import("$lib/shared/animation-engine/services/implementations/FireTipTracker"),
-      import("$lib/shared/animation-engine/services/implementations/LedTipTracker"),
-      import("$lib/shared/animation-engine/services/implementations/DeviceTierDetector"),
-      import("$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor"),
-    ]);
+    const engine = new AnimationEngine();
+    await engine.initialize(container, {});
 
-    const renderer = new Canvas2DAnimationRenderer();
-    await renderer.initialize(container, size);
-    const canvas = renderer.getCanvas()!;
-
-    const fireTipTracker = new FireTipTracker();
-    const ledTipTracker = new LedTipTracker();
-
-    const effectManager = new EffectRendererManager();
-    effectManager.fireTipTracker = fireTipTracker;
-    effectManager.ledTipTracker = ledTipTracker;
-
-    const trailCapturer = new TrailCapturer();
-
-    const deviceTier = new DeviceTierDetector().detect();
-    const frameBudgetMonitor = new FrameBudgetMonitor(deviceTier);
-
-    const renderLoop = new AnimationRenderLoop();
-    renderLoop.initialize({
-      renderer,
-      TrailCapturer: trailCapturer,
-      pathCache: null,
-      canvasSize: size,
-      frameBudgetMonitor,
-      fireTipTracker,
-      ledTipTracker,
-    });
-
-    effectManager.wire({
-      containerElement: container,
-      canvasSize: size,
-      renderLoopService: renderLoop,
-      getFrameParams: () => ({} as any),
-      getVM: () => undefined as any,
-    });
-
-    const trailOverlay = effectManager.createTrailOverlay();
-    trailOverlay.initialize(container, size, size);
-    effectManager.trailOverlay = trailOverlay;
-    renderLoop.updateConfig({ renderers: { trails: trailOverlay as unknown as import("../effects/EffectRenderer").EffectRendererLike } });
-
-    const resizer = new CanvasResizer();
-    resizer.initialize(container, renderer);
-
-    const precomputer = new AnimationPrecomputer();
-
-    const ctx = new LiveRenderContext({
-      id,
-      canvas,
-      container,
-      renderer,
-      effectManager,
-      trailCapturer,
-      renderLoop,
-      resizer,
-      precomputer,
-    });
-
-    const originalDispose = ctx.dispose.bind(ctx);
-    ctx.dispose = () => {
-      originalDispose();
+    const context = engine.getRenderContext(id, container);
+    if (!context) {
+      engine.dispose();
       container.remove();
-    };
+      throw new Error("createOffscreenContext: engine.getRenderContext returned null");
+    }
 
-    return ctx;
+    return {
+      engine,
+      context,
+      dispose() {
+        engine.dispose();
+        container.remove();
+      },
+    };
   }
 }
