@@ -32,6 +32,7 @@ import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/servic
 import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
 import { RenderContextFactory } from "$lib/shared/animation-engine/services/implementations/RenderContextFactory";
 import { assembleExportEngineProps } from "./export-engine-props";
+import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
 import type { VideoExportFormat, VideoExportProgress, VideoEffectOverrides, IVideoExportOrchestrator, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 export type { VideoExportFormat, VideoExportProgress, VideoResolution, VideoEffectOverrides, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
@@ -542,6 +543,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             isSeamlesslyLoopable: playbackController.isSeamlesslyLoopable,
             backgroundAlpha: 1, // engine bg opaque at export, matches live hero
             showNonRadialPoints: true, // no viewer non-radial key; live default is true
+            trailSettings: animationSettings.trail,
           });
           offscreen.engine.update(props);
         }

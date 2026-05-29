@@ -1,12 +1,20 @@
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { AnimationEngineProps } from "$lib/shared/animation-engine/services/implementations/AnimationEngine.svelte";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 
 export interface ExportFrameContext {
   virtualTime: number;
   isSeamlesslyLoopable: boolean;
   backgroundAlpha: number;
   showNonRadialPoints: boolean;
+  /**
+   * Live trail settings. Load-bearing: PlaybackSync only initializes the trail
+   * capturer + syncs trail params when externalTrailSettings is defined. Omitting
+   * it leaves the offscreen engine with no trail capturer → trails never draw and
+   * props blank along the path. The engine self-applies the unilateral constraint.
+   */
+  trailSettings: TrailSettings;
 }
 
 /**
@@ -33,5 +41,6 @@ export function assembleExportEngineProps(
     isSeamlesslyLoopable: frame.isSeamlesslyLoopable,
     virtualTime: frame.virtualTime,
     showNonRadialPoints: frame.showNonRadialPoints,
+    externalTrailSettings: frame.trailSettings,
   };
 }

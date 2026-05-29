@@ -1,10 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { assembleExportEngineProps } from "../export-engine-props";
+import { assembleExportEngineProps, type ExportFrameContext } from "../export-engine-props";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PropState } from "$lib/shared/foundation/domain/types/PropState";
+import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 
 const blue: PropState = { x: 1, y: 2, angle: 10 } as unknown as PropState;
 const red: PropState = { x: 3, y: 4, angle: 20 } as unknown as PropState;
+const trail = { lineWidth: 8, fadeDurationMs: 500 } as unknown as TrailSettings;
+
+function frame(overrides: Partial<ExportFrameContext> = {}): ExportFrameContext {
+  return {
+    virtualTime: 0,
+    isSeamlesslyLoopable: false,
+    backgroundAlpha: 1,
+    showNonRadialPoints: true,
+    trailSettings: trail,
+    ...overrides,
+  };
+}
 
 function fakePanel(overrides: Record<string, unknown> = {}) {
   return {
@@ -20,12 +33,12 @@ function fakePanel(overrides: Record<string, unknown> = {}) {
 
 describe("assembleExportEngineProps", () => {
   it("maps panel prop states + frame context into AnimationEngineProps", () => {
-    const props = assembleExportEngineProps(fakePanel(), {
+    const props = assembleExportEngineProps(fakePanel(), frame({
       virtualTime: 999,
       isSeamlesslyLoopable: true,
       backgroundAlpha: 1,
       showNonRadialPoints: false,
-    });
+    }));
     expect(props.blueProp).toBe(blue);
     expect(props.redProp).toBe(red);
     expect(props.currentStep).toBe(5);
@@ -37,18 +50,21 @@ describe("assembleExportEngineProps", () => {
     expect(props.isPlaying).toBe(true);
   });
 
+  it("passes through trail settings (regression: dropped settings broke export trails)", () => {
+    const props = assembleExportEngineProps(fakePanel(), frame());
+    expect(props.externalTrailSettings).toBe(trail);
+  });
+
   it("falls back to DIAMOND grid when sequenceData has none", () => {
     const props = assembleExportEngineProps(
       fakePanel({ sequenceData: { steps: [] } as any }),
-      { virtualTime: 0, isSeamlesslyLoopable: false, backgroundAlpha: 1, showNonRadialPoints: true },
+      frame(),
     );
     expect(props.gridMode).toBe(GridMode.DIAMOND);
   });
 
   it("omits letter/stepData (glyph is composited separately)", () => {
-    const props = assembleExportEngineProps(fakePanel(), {
-      virtualTime: 0, isSeamlesslyLoopable: false, backgroundAlpha: 1, showNonRadialPoints: true,
-    });
+    const props = assembleExportEngineProps(fakePanel(), frame());
     expect(props.letter).toBeUndefined();
     expect(props.stepData).toBeUndefined();
   });
