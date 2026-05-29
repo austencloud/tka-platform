@@ -76,7 +76,7 @@ function flipMotion(motion: MutableMotion | undefined, reversed: boolean): void 
  * fields (both of which Firestore rejects) and yields plain mutable objects
  * that we can transform without violating the readonly domain types.
  */
-function transformSequence(
+export function transformSequence(
   seq: SequenceData,
   pattern: ResolvedReversalPattern,
   edges: CsvEdge[],
