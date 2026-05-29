@@ -45,17 +45,32 @@
     { meshoptDecoder: MeshoptDecoder }
   );
 
+  // The environment feature loads two GLBs: the seabed (ocean-environment.glb,
+  // above) and the flora scene (inside FloraInstances). The loading bar must
+  // represent BOTH, and never bounce — so we fold them into one combined
+  // fraction here. Seabed is a binary step (useGltf gives no byte progress);
+  // flora reports real loaded/total. Ready fires only when both have landed.
+  const SEABED_WEIGHT = 0.4;
+  const FLORA_WEIGHT = 0.6;
+
+  let floraFraction = $state(0);
+  let floraLoaded = $state(false);
+
   function handleFloraProgress(fraction: number) {
-    sceneFeatures?.reportProgress("environment", fraction * 0.9);
+    floraFraction = fraction;
   }
 
   function handleFloraReady() {
-    sceneFeatures?.reportReady("environment");
+    floraLoaded = true;
+    floraFraction = 1;
   }
 
   $effect(() => {
-    if ($environmentGlb) {
-      sceneFeatures?.reportProgress("environment", 0.05);
+    const seabed = $environmentGlb ? 1 : 0;
+    const combined = seabed * SEABED_WEIGHT + floraFraction * FLORA_WEIGHT;
+    sceneFeatures?.reportProgress("environment", combined);
+    if ($environmentGlb && floraLoaded) {
+      sceneFeatures?.reportReady("environment");
     }
   });
 
@@ -64,8 +79,8 @@
   $effect(() => {
     const s = scene.current;
     if (!s) return;
-    const fogColor = new Color("#4a8aaa");
-    s.fog = new FogExp2(fogColor.getHex(), 0.004);
+    const fogColor = new Color("#0d0d10");
+    s.fog = new FogExp2(fogColor.getHex(), 0.012);
     s.background = fogColor;
     return () => {
       if (s) {

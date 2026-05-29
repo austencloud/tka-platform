@@ -1,5 +1,3 @@
-import { Vector3 } from 'three';
-
 export interface FishEventUniforms {
 	uDartCount: { value: number };
 	uDartIndices: { value: Int32Array };
@@ -7,7 +5,6 @@ export interface FishEventUniforms {
 	uExcursionCount: { value: number };
 	uExcursionIndices: { value: Int32Array };
 	uExcursionBias: { value: Float32Array };
-	uScatterOrigin: { value: Vector3 };
 }
 
 export class FishEventSystem {
@@ -28,7 +25,7 @@ export class FishEventSystem {
 		}
 	}
 
-	tick(dt: number, uniforms: FishEventUniforms, rayPosition: Vector3): void {
+	tick(dt: number, uniforms: FishEventUniforms): void {
 		let dartCount = 0;
 		let excursionCount = 0;
 		const dartIndices = uniforms.uDartIndices.value;
@@ -63,6 +60,5 @@ export class FishEventSystem {
 
 		uniforms.uDartCount.value = dartCount;
 		uniforms.uExcursionCount.value = excursionCount;
-		uniforms.uScatterOrigin.value.copy(rayPosition);
 	}
 }

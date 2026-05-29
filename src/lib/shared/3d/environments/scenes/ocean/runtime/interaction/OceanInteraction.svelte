@@ -1,33 +1,31 @@
 <script lang="ts">
   import { useThrelte, useTask } from '@threlte/core';
   import { Vector3 } from 'three';
-  import { createFishScatterState } from './fish-scatter';
+  import { createFishScatterState, type CursorRayState } from './fish-scatter';
   import { createOceanAudio } from './ocean-audio';
   import { sceneAudioState } from '../../../../../state/scene-audio-state.svelte';
 
   // ── Props ─────────────────────────────────────────────────────────────
 
+  export interface CursorRay {
+    origin: Vector3;
+    dir: Vector3;
+    active: boolean;
+  }
+
   interface Props {
-    swimHeight?: [number, number];
-    groundY?: number;
-    rayPosition?: Vector3;
+    cursorRay?: CursorRay;
   }
 
   let {
-    swimHeight = [2, 7] as [number, number],
-    groundY = -1,
-    rayPosition = $bindable(new Vector3(0, -999, 0)),
+    cursorRay = $bindable({ origin: new Vector3(), dir: new Vector3(0, 0, -1), active: false }),
   }: Props = $props();
 
   const { renderer, camera } = useThrelte();
 
-  // ── Derived swim plane Y ───────────────────────────────────────────────
-
-  const swimPlaneY = $derived(groundY + (swimHeight[0] + swimHeight[1]) / 2);
-
   // ── Fish scatter state ─────────────────────────────────────────────────
 
-  const scatter = createFishScatterState();
+  const scatter: CursorRayState = createFishScatterState();
 
   // ── Audio ──────────────────────────────────────────────────────────────
 
@@ -76,9 +74,11 @@
     if (!cam || !mouseOnCanvas) {
       scatter.clear();
     } else {
-      scatter.update(lastNdcX, lastNdcY, cam, swimPlaneY);
+      scatter.update(lastNdcX, lastNdcY, cam);
     }
-    rayPosition.copy(scatter.rayPosition);
+    cursorRay.origin.copy(scatter.origin);
+    cursorRay.dir.copy(scatter.dir);
+    cursorRay.active = scatter.active;
   });
 
   // ── Event listeners ────────────────────────────────────────────────────

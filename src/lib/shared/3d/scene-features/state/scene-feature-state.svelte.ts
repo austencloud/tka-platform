@@ -60,7 +60,12 @@ export function createSceneFeatureState(
 
   function reportProgress(key: string, fraction: number): void {
     const clamped = Math.max(0, Math.min(1, fraction));
-    if (progressMap[key] === clamped) return;
+    // Loading progress is monotonic within a load cycle: never let a late or
+    // out-of-order reporter drag the bar backward (e.g. a second asset
+    // resolving after the first has already climbed). resetReady() clears the
+    // key, so a genuine reload starts fresh from 0.
+    const current = progressMap[key] ?? 0;
+    if (clamped <= current) return;
     console.debug(`[SceneFeature] ${key} progress: ${(clamped * 100).toFixed(0)}%`);
     progressMap = { ...progressMap, [key]: clamped };
   }

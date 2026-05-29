@@ -1,7 +1,21 @@
 # Ocean Performer Stage via GLB — Design
 
+> **Revision 2026-05-28 (post-implementation):** The wooden plank stage in
+> `ocean_scene.blend` was exported through the GLB pipeline and wired in, but the
+> user identified the real target as a previously-deleted **programmatic** stage:
+> `RuinsPlatform.svelte` — a shader-driven weathered-stone platform with a
+> bioluminescent green voronoi crack network + moss, removed when the ocean
+> monolith was replaced by ocean-v2 (`6f87220c1`). It was recovered from git and
+> restored to `scenes/ocean/runtime/RuinsPlatform.svelte`, rendered via
+> `OceanStage.svelte` with the original ocean config (`runeGlowColor #44ddaa`).
+> Because it is an animated shader effect, it fits the Blender-first rule's
+> procedural exception. **Kept from the GLB work:** the reusable `GltfAsset`
+> primitive and the parameterized `blender-export-glb.py` exporter — the
+> foundation for the deferred environment registry. The wooden `stage.glb`
+> artifact is unused (left in place; could become a swap option later).
+
 **Date:** 2026-05-28
-**Status:** Approved (brainstorm), ready for implementation
+**Status:** Implemented (stage restored via recovered RuinsPlatform); GltfAsset + exporter retained for the deferred registry
 **Scope:** Restore the performer stage under the ocean scene as an optimized GLB, loaded through a new reusable `GltfAsset` primitive. The swappable whole-environment registry is explicitly **deferred** to a follow-on spec.
 
 ## Problem

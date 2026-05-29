@@ -20,7 +20,9 @@ uniform sampler2D tTraits;
 uniform vec3 uSchoolCenters[50];
 uniform float uSchoolRadius;
 
-uniform vec3 uScatterOrigin;
+uniform vec3 uCursorRayOrigin;
+uniform vec3 uCursorRayDir;
+uniform float uCursorActive;
 uniform float uScatterRadius;
 uniform float uScatterForce;
 uniform float uScatterStartTime;
@@ -214,11 +216,19 @@ void main() {
     steer.xz += safeNormalize2(pos.xz) * pen * 3.0;
   }
 
+  // Scatter against the cursor RAY, not a single world point. Distance is the
+  // perpendicular gap from the fish to the cursor's line of sight, so a fish
+  // under the cursor flees regardless of its depth — fixes the dead scatter a
+  // plane-intersection origin caused (fish off the plane's depth read as far).
   float scatterIntensity = 0.0;
-  float distToRay = distance(pos, uScatterOrigin);
+  vec3 toCursor = pos - uCursorRayOrigin;
+  float alongRay = max(dot(toCursor, uCursorRayDir), 0.0);
+  vec3 closestOnRay = uCursorRayOrigin + uCursorRayDir * alongRay;
+  vec3 rejection = pos - closestOnRay;
+  float distToRay = length(rejection);
   float boldScatter = uScatterRadius * (1.3 - boldness * 0.6);
-  if (distToRay < boldScatter && uScatterForce > 0.0 && uScatterOrigin.y > -900.0) {
-    vec3 away = safeNormalize(pos - uScatterOrigin);
+  if (distToRay < boldScatter && uScatterForce > 0.0 && uCursorActive > 0.5) {
+    vec3 away = safeNormalize(rejection);
     float proximity = 1.0 - distToRay / boldScatter;
 
     vec3 tangent = safeNormalize(cross(away, vec3(0.0, 1.0, 0.0)));

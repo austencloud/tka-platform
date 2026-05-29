@@ -71,6 +71,8 @@
       case BackgroundType.WINTER:
         return 0.45;
       case BackgroundType.OCEAN:
+        // 1.5 lands the performer on the ruins-platform top
+        // (groundY + elevation 1.0 + height 0.5). See OceanStage.
         return 1.5;
       case BackgroundType.EMBER:
         return 0.5;

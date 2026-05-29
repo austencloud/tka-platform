@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { HalfFloatType, Vector2, ACESFilmicToneMapping, NoToneMapping } from "three";
+  import { HalfFloatType, Vector2, AgXToneMapping, NoToneMapping } from "three";
   import {
     EffectComposer,
     RenderPass,
@@ -80,46 +80,46 @@
     // to maintain even ping-pong parity.
     if (isOcean) {
       renderer.shadowMap.enabled = true;
-      renderer.toneMapping = ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 2.8;
+      renderer.toneMapping = AgXToneMapping;
+      renderer.toneMappingExposure = 1.0;
     }
-
-    const effects: import("postprocessing").Effect[] = [];
 
     if (isOcean) {
-      effects.push(new WaterAbsorptionEffect({
-        absorptionR: 0.02,
-        absorptionG: 0.005,
-        absorptionB: 0.001,
-        maxDepth: 50.0,
-      }));
-      effects.push(new RefractionCausticsEffect());
+      composer.addPass(new EffectPass(cam,
+        new WaterAbsorptionEffect({
+          absorptionR: 0.02,
+          absorptionG: 0.005,
+          absorptionB: 0.001,
+          maxDepth: 50.0,
+        }),
+        new RefractionCausticsEffect(),
+      ));
     }
 
+    const colorEffects: import("postprocessing").Effect[] = [];
+
     if (enableBloom) {
-      effects.push(
+      colorEffects.push(
         new BloomEffect({
-          intensity: 1.5,
-          luminanceThreshold: 0.4,
+          intensity: 0.8,
+          luminanceThreshold: 0.6,
           luminanceSmoothing: 0.3,
           mipmapBlur: true,
-          radius: 0.7,
+          radius: 0.5,
           levels: bloomLevels,
           resolutionScale: bloomResolutionScale,
         }),
       );
     }
 
-    effects.push(
+    colorEffects.push(
       new VignetteEffect({
         darkness: 0.3,
         offset: 0.35,
       }),
     );
 
-    if (effects.length > 0) {
-      composer.addPass(new EffectPass(cam, ...effects));
-    }
+    composer.addPass(new EffectPass(cam, ...colorEffects));
 
     if (isOcean) {
       composer.addPass(new EffectPass(cam, new UnderwaterDistortionEffect()));

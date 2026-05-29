@@ -31,8 +31,9 @@ export interface FishFrameUniforms {
 	scatterForce: number;
 	scatterWaveSpeed: number;
 	scatterStartTime: number;
-	rayPosition: Vector3;
-	mouseActive: boolean;
+	cursorRayOrigin: Vector3;
+	cursorRayDir: Vector3;
+	cursorActive: boolean;
 	cameraRight: Vector3;
 }
 
@@ -233,7 +234,9 @@ export function createFishComputeSystem(
 	velU.uPerceptionCos = { value: Math.cos((perceptionAngle * Math.PI) / 180) };
 	velU.uSchoolCenters = { value: schoolCenterVecs };
 	velU.uSchoolRadius = { value: 6.0 };
-	velU.uScatterOrigin = { value: new Vector3(0, 0, 0) };
+	velU.uCursorRayOrigin = { value: new Vector3(0, 0, 0) };
+	velU.uCursorRayDir = { value: new Vector3(0, 0, -1) };
+	velU.uCursorActive = { value: 0 };
 	velU.uScatterRadius = { value: scatterRadius };
 	velU.uScatterForce = { value: scatterForce };
 	velU.uScatterStartTime = { value: 0 };
@@ -278,7 +281,9 @@ export function createFishComputeSystem(
 	stU.uThreatMatrix = { value: THREAT_MATRIX };
 	stU.uHuntMatrix = { value: HUNT_MATRIX };
 	stU.uSchoolCenters = velU.uSchoolCenters;
-	stU.uScatterOrigin = velU.uScatterOrigin;
+	stU.uCursorRayOrigin = velU.uCursorRayOrigin;
+	stU.uCursorRayDir = velU.uCursorRayDir;
+	stU.uCursorActive = velU.uCursorActive;
 	stU.uScatterRadius = { value: scatterRadius };
 	stU.uCameraRight = { value: new Vector3(1, 0, 0) };
 	stU.textureTraits = { value: traitsTex };
@@ -348,8 +353,14 @@ export function createFishComputeSystem(
 			velUni.uScatterForce!.value = frame.scatterForce;
 			velUni.uScatterWaveSpeed!.value = frame.scatterWaveSpeed;
 
-			const flashThisFrame = frame.mouseActive && !prevMouseActive;
-			prevMouseActive = frame.mouseActive;
+			// Cursor ray drives scatter in both velocity and state shaders; stUni
+			// shares the same uniform objects (assigned at init), so one copy updates both.
+			velUni.uCursorRayOrigin!.value.copy(frame.cursorRayOrigin);
+			velUni.uCursorRayDir!.value.copy(frame.cursorRayDir);
+			velUni.uCursorActive!.value = frame.cursorActive ? 1.0 : 0.0;
+
+			const flashThisFrame = frame.cursorActive && !prevMouseActive;
+			prevMouseActive = frame.cursorActive;
 			velUni.uFlashBurst!.value = flashThisFrame ? 1.0 : 0.0;
 
 			velUni.uScatterStartTime!.value = frame.scatterStartTime;
@@ -362,7 +373,7 @@ export function createFishComputeSystem(
 			stUni.uCameraRight!.value.copy(frame.cameraRight);
 
 			if (eventSystem) {
-				eventSystem.tick(dt, velUni as unknown as FishEventUniforms, frame.rayPosition);
+				eventSystem.tick(dt, velUni as unknown as FishEventUniforms);
 			}
 
 			gpu.compute();

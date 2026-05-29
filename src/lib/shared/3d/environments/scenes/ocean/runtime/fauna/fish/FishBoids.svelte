@@ -11,6 +11,7 @@
   } from './fish-species';
   import { createFishComputeSystem, type FishComputeSystem, type FishFrameUniforms } from './fish-compute';
   import { createFishRenderSystem, type FishRenderSystem, type ExtractedModel } from './fish-render';
+  import type { CursorRay } from '../../interaction/OceanInteraction.svelte';
 
   // ── Props ─────────────────────────────────────────────────────────────
 
@@ -26,24 +27,23 @@
     scatterWaveSpeed?: number;
     perceptionAngle?: number;
     halfSpeedTime?: number;
-    rayPosition?: Vector3;
+    cursorRay?: CursorRay;
     modelBasePath?: string;
-    scatterOrigin?: Vector3;
   }
 
   let {
-    targetSize = 0.08,
+    targetSize = 1.0,
     swimHeight = [2, 7] as [number, number],
     speed = [0.5, 1.2] as [number, number],
     stageRadius = 5,
     boundRadius = 18,
     currentStrength = 0.3,
-    scatterRadius = 6.0,
-    scatterForce = 8.0,
+    scatterRadius = 8.5,
+    scatterForce = 16.0,
     scatterWaveSpeed = 0.15,
     perceptionAngle = 135,
     halfSpeedTime = 0.5,
-    rayPosition = new Vector3(0, 0, 0),
+    cursorRay,
     modelBasePath = '/models/ocean/pack/',
   }: Props = $props();
 
@@ -208,6 +208,8 @@
   // ── Per-frame update ──────────────────────────────────────────────────
 
   let elapsed = 0;
+  const cursorRayOrigin = new Vector3();
+  const cursorRayDir = new Vector3(0, 0, -1);
 
   useTask((delta) => {
     if (!computeSystem || !renderSystem || renderSystem.materials.length === 0) return;
@@ -223,7 +225,11 @@
       cameraRight.set(e[0], e[1], e[2]).normalize();
     }
 
-    const mouseActive = rayPosition.y > -900;
+    const cursorActive = cursorRay?.active ?? false;
+    if (cursorRay) {
+      cursorRayOrigin.copy(cursorRay.origin);
+      cursorRayDir.copy(cursorRay.dir);
+    }
 
     // ── Handle pending spawns ──
     if (pendingSpawns.length > 0) {
@@ -372,8 +378,9 @@
       scatterForce,
       scatterWaveSpeed,
       scatterStartTime,
-      rayPosition,
-      mouseActive,
+      cursorRayOrigin,
+      cursorRayDir,
+      cursorActive,
       cameraRight,
     };
 

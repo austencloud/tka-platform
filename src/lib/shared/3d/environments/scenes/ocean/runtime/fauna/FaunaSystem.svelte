@@ -1,18 +1,18 @@
 <script lang="ts">
   import type { OceanQualityConfig } from "../../quality/ocean-quality";
-  import type { Vector3 } from "three";
   import FishBoids from "./fish/FishBoids.svelte";
   import JellyfishSwarm from "./jellyfish/JellyfishSwarm.svelte";
+  import type { CursorRay } from "../interaction/OceanInteraction.svelte";
 
   interface Props {
     quality: OceanQualityConfig;
-    rayPosition?: Vector3;
+    cursorRay?: CursorRay;
   }
 
-  let { quality, rayPosition }: Props = $props();
+  let { quality, cursorRay }: Props = $props();
 </script>
 
-<FishBoids {rayPosition} />
+<FishBoids {cursorRay} />
 
 {#if quality.maxJellyfish > 0}
   <JellyfishSwarm {quality} />

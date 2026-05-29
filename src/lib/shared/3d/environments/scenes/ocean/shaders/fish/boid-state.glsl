@@ -13,7 +13,9 @@ uniform float uHuntMatrix[36];
 
 uniform vec3 uSchoolCenters[50];
 
-uniform vec3 uScatterOrigin;
+uniform vec3 uCursorRayOrigin;
+uniform vec3 uCursorRayDir;
+uniform float uCursorActive;
 uniform float uScatterRadius;
 uniform vec3 uCameraRight;
 
@@ -54,9 +56,13 @@ void main() {
     newState = 0.0;
   }
 
-  float rayDist = distance(pos, uScatterOrigin);
-  if (rayDist < uScatterRadius && uScatterOrigin.y > -900.0) {
-    vec3 awayFromRay = safeNormalize(pos - uScatterOrigin);
+  vec3 toCursorS = pos - uCursorRayOrigin;
+  float alongRayS = max(dot(toCursorS, uCursorRayDir), 0.0);
+  vec3 closestOnRayS = uCursorRayOrigin + uCursorRayDir * alongRayS;
+  vec3 rejectionS = pos - closestOnRayS;
+  float rayDist = length(rejectionS);
+  if (rayDist < uScatterRadius && uCursorActive > 0.5) {
+    vec3 awayFromRay = safeNormalize(rejectionS);
     float lateralSign = sign(dot(awayFromRay, uCameraRight));
     if (abs(lateralSign) < 0.01) lateralSign = 1.0;
     vec3 lateralDir = uCameraRight * lateralSign;

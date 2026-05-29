@@ -1,46 +1,44 @@
-import { Raycaster, Plane, Vector3, Vector2, type Camera } from 'three';
+import { Raycaster, Vector2, Vector3, type Camera } from 'three';
 
-export interface FishScatterState {
-  rayPosition: Vector3;
-  update(ndcX: number, ndcY: number, camera: Camera, swimPlaneY: number): void;
+export interface CursorRayState {
+  /** Cursor ray origin (camera position) in world space. */
+  origin: Vector3;
+  /** Normalized cursor ray direction in world space. */
+  dir: Vector3;
+  /** True while the cursor is over the canvas. */
+  active: boolean;
+  update(ndcX: number, ndcY: number, camera: Camera): void;
   clear(): void;
 }
 
-export function createFishScatterState(): FishScatterState {
+/**
+ * Exposes the cursor's world-space ray for fish scatter. The boid shaders test
+ * each fish's perpendicular distance to this ray, so scatter is depth-correct:
+ * a fish under the cursor flees no matter how far it sits from the camera. This
+ * replaced a plane-intersection origin, which only worked when the camera
+ * looked steeply down and went dead at the near-level lab/viewer angles.
+ */
+export function createFishScatterState(): CursorRayState {
   const raycaster = new Raycaster();
   const ndc = new Vector2();
-  const hitPoint = new Vector3();
-  const projPoint = new Vector3();
-  const rayPosition = new Vector3(0, -999, 0);
+  const origin = new Vector3();
+  const dir = new Vector3(0, 0, -1);
 
-  function update(ndcX: number, ndcY: number, camera: Camera, swimPlaneY: number): void {
-    ndc.set(ndcX, ndcY);
-    raycaster.setFromCamera(ndc, camera);
+  const state: CursorRayState = {
+    origin,
+    dir,
+    active: false,
+    update(ndcX, ndcY, camera) {
+      ndc.set(ndcX, ndcY);
+      raycaster.setFromCamera(ndc, camera);
+      origin.copy(raycaster.ray.origin);
+      dir.copy(raycaster.ray.direction).normalize();
+      state.active = true;
+    },
+    clear() {
+      state.active = false;
+    },
+  };
 
-    const swimPlane = new Plane(new Vector3(0, 1, 0), -swimPlaneY);
-    const planeHit = raycaster.ray.intersectPlane(swimPlane, hitPoint);
-
-    if (planeHit) {
-      rayPosition.copy(hitPoint);
-    } else {
-      // Fallback: project along ray to swimPlaneY
-      const camPos = raycaster.ray.origin;
-      const dir = raycaster.ray.direction;
-      const t = dir.y !== 0 ? (swimPlaneY - camPos.y) / dir.y : 0;
-      if (t > 0) {
-        projPoint.copy(dir).multiplyScalar(t).add(camPos);
-        rayPosition.copy(projPoint);
-      } else {
-        projPoint.copy(dir).multiplyScalar(30).add(camPos);
-        projPoint.y = swimPlaneY;
-        rayPosition.copy(projPoint);
-      }
-    }
-  }
-
-  function clear(): void {
-    rayPosition.set(0, -999, 0);
-  }
-
-  return { rayPosition, update, clear };
+  return state;
 }
