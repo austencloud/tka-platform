@@ -24,21 +24,19 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import type { LetterDeriver } from '$lib/shared/navigation/services/letter-deriver'
 import type { PositionDeriver } from '$lib/shared/navigation/services/position-deriver'
 import type { ILOOPDetector } from "$lib/shared/create/services/ILOOPDetector";
-import type { GridModeDeriver } from "../../pictograph/grid/services/implementations/GridModeDeriver";
+import { deriveGridMode } from "../../pictograph/grid/services/grid-mode-deriver";
 
 export interface SequenceHydratorDeps {
   letterDeriver: LetterDeriver | null;
   positionDeriver: PositionDeriver | null;
   loopDetector: ILOOPDetector | null;
-  gridModeDeriver: GridModeDeriver | null;
 }
 
 export async function hydrateSequence(
   sequence: SequenceData,
   deps: SequenceHydratorDeps
 ): Promise<SequenceData> {
-  const { letterDeriver, positionDeriver, loopDetector, gridModeDeriver } =
-    deps;
+  const { letterDeriver, positionDeriver, loopDetector } = deps;
 
   const [withLetters, withPositions] = await Promise.all([
     letterDeriver
@@ -96,15 +94,10 @@ export async function hydrateSequence(
   // Using the start position's motions isn't reliable - at beat 0 the
   // encoded form may be a blank placeholder (no motions carried).
   let gridMode: GridMode | undefined;
-  if (gridModeDeriver) {
-    for (const step of merged.steps) {
-      if (step.motions?.blue && step.motions?.red) {
-        gridMode = gridModeDeriver.deriveGridMode(
-          step.motions.blue,
-          step.motions.red
-        );
-        break;
-      }
+  for (const step of merged.steps) {
+    if (step.motions?.blue && step.motions?.red) {
+      gridMode = deriveGridMode(step.motions.blue, step.motions.red);
+      break;
     }
   }
 

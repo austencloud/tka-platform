@@ -12,7 +12,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
-  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { parsePropsFromURL, parseSequenceRouteId, decodeSequenceWithCompression, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
   import { decodeViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
@@ -304,7 +303,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
             letterDeriver: getLetterDeriver(),
             positionDeriver: getPositionDeriver(),
             loopDetector,
-            gridModeDeriver,
           });
 
           sequence = applyUrlMetadata(decoded);
@@ -357,7 +355,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
               letterDeriver: getLetterDeriver(),
               positionDeriver: getPositionDeriver(),
               loopDetector,
-              gridModeDeriver,
             });
             isLoading = false;
             return;
@@ -418,7 +415,6 @@ import { getSequenceDataProvider } from "$lib/shared/sequence-viewer/getSequence
         letterDeriver: getLetterDeriver(),
         positionDeriver: getPositionDeriver(),
         loopDetector,
-        gridModeDeriver,
       });
       // Apply URL prop preferences (from QR codes with embedded prop info)
       applyUrlPropPreferences();

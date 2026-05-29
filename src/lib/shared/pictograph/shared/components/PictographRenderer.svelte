@@ -36,8 +36,7 @@ Usage:
   import StepNumber from "./StepNumber.svelte";
   import DurationGlyph from "./DurationGlyph.svelte";
   import PathShapeGlyph from "./PathShapeGlyph.svelte";
-  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
-  import type { GridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+  import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
   import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
   import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
@@ -176,7 +175,7 @@ Usage:
         return GridMode.DIAMOND;
       }
       try {
-        return gridModeDeriver.deriveGridMode(
+        return deriveGridMode(
           pictograph.motions.blue,
           pictograph.motions.red
         );

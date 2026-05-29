@@ -9,7 +9,7 @@
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { generateOrientationKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
-  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+  import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
   import { calculateAllArrowPoints } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
   import { specialPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/special-placer";
   import { generateRotationAngleOverrideKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/rotation-angle-override-key-generator";
@@ -197,7 +197,7 @@
 
       let gridMode = "diamond";
       if (blueMotionData && redMotionData) {
-        gridMode = gridModeDeriver.deriveGridMode(
+        gridMode = deriveGridMode(
           blueMotionData,
           redMotionData
         );

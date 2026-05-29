@@ -12,12 +12,11 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
-import type { GridModeDeriver } from "../../pictograph/grid/services/implementations/GridModeDeriver";
+import { deriveGridMode } from "../../pictograph/grid/services/grid-mode-deriver";
 
 export class LetterDeriver {
   constructor(
-    private motionQueryHandler: IMotionQueryHandler | null,
-    private gridModeDeriver: GridModeDeriver | null
+    private motionQueryHandler: IMotionQueryHandler | null
   ) {}
 
   async deriveLettersForSequence(
@@ -26,13 +25,6 @@ export class LetterDeriver {
     if (!this.motionQueryHandler) {
       console.warn(
         "MotionQueryHandler not available - letters will not be derived"
-      );
-      return sequence;
-    }
-
-    if (!this.gridModeDeriver) {
-      console.warn(
-        "GridModeDeriver not available - letters will not be derived"
       );
       return sequence;
     }
@@ -90,13 +82,13 @@ export class LetterDeriver {
       return beat;
     }
 
-    if (!this.motionQueryHandler || !this.gridModeDeriver) {
+    if (!this.motionQueryHandler) {
       return beat;
     }
 
     try {
       // Derive the correct grid mode from the motions
-      const gridMode = this.gridModeDeriver.deriveGridMode(
+      const gridMode = deriveGridMode(
         beat.motions.blue,
         beat.motions.red
       );

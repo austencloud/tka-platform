@@ -23,7 +23,6 @@
   import { ShortCodeManager } from "$lib/shared/qr/services/short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
-  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { getLetterDeriver } from "$lib/shared/navigation/getLetterDeriver";
   import { getPositionDeriver } from "$lib/shared/navigation/getPositionDeriver";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
@@ -347,7 +346,6 @@
         letterDeriver: getLetterDeriver(),
         positionDeriver: getPositionDeriver(),
         loopDetector,
-        gridModeDeriver,
       });
 
       resolvedSeq = seq;

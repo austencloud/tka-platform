@@ -34,7 +34,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { getLoopDetector } from "$lib/shared/create/getLoopDetector";
-  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
@@ -246,7 +245,6 @@ import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
         letterDeriver: getLetterDeriver(),
         positionDeriver: getPositionDeriver(),
         loopDetector: getLoopDetector(),
-        gridModeDeriver,
       });
 
       if (overlay.isOpen) return;
