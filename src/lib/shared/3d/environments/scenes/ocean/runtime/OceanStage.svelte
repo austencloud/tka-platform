@@ -5,24 +5,24 @@
   const sceneFeatures = getSceneFeatureContext();
   const stageOn = $derived(sceneFeatures?.isEnabled("stage") ?? true);
 
-  // Green-glow bioluminescent ruins platform — recovered colours/dimensions
-  // from the pre-ocean-v2 monolith. ocean-v2's seabed sits ~1.5 above groundY,
-  // so groundOffset=1.5 plants the dais ON the sand; elevation 0.5 raises the
-  // deck on visible support pillars. Deck top = groundY + 1.5 + 0.5 + 0.5 = 2.5,
-  // matched by the OCEAN performer offset in Viewer3DScene so the performer
-  // stands on the deck. (SEABED 1.5 + DECK RISE 1.0.)
+  // The original gorgeous stage: a rectangular weathered-stone dais (8×6) with an
+  // animated bioluminescent green crack network on top — a live shader that can't
+  // bake to glTF, so this stays procedural (Blender-first rule's shader exception).
+  //   width 8 × depth 6, slab height 0.5, elevation 0.5 → deck top at +1.0.
+  //   groundOffset 1.5 = seabed surface; performer offset (1.5 + 1.0) in
+  //   Viewer3DScene stands the performer on the flat deck.
   const config = $derived({
     enabled: stageOn,
     width: 8,
     depth: 6,
     height: 0.5,
     elevation: 0.5,
-    groundOffset: 1.5,
     stoneColor: "#1a2028",
     runeGlowColor: "#44ddaa",
     glowIntensity: 0.5,
     mossIntensity: 0.8,
     columnCount: 6,
+    groundOffset: 1.5,
   });
 </script>
 
