@@ -12,7 +12,7 @@
  */
 
 import { registerPublicIndexSyncerFactory } from "$lib/shared/library/getLibraryRepository";
-import { getPublicIndexSyncer } from "$lib/features/library/getPublicIndexSyncer";
+import { getPublicIndexSyncer } from "$lib/features/library/get-public-index-syncer";
 
 import { registerTagMigrator } from "$lib/shared/library/getTagMigrator";
 import { migrateSequenceTags } from "$lib/features/library/services/migrations/tag-migration";

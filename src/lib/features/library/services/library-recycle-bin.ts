@@ -18,7 +18,7 @@ import {
 } from "$lib/shared/library/data/firestore-paths";
 import { notifyLibraryMutated } from "$lib/shared/library/library-events";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/LibrarySequence";
-import type { PublicIndexSyncer } from "./PublicIndexSyncer";
+import type { PublicIndexSyncer } from "./public-index-syncer";
 import { LibraryError } from "$lib/shared/library/services/LibraryRepository";
 
 export class LibraryRecycleBin {

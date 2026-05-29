@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
 
-import { getSoloPropSaveOrchestrator } from "$lib/features/library/getSoloPropSaveOrchestrator";
+import { getSoloPropSaveOrchestrator } from "$lib/features/library/get-solo-prop-save-orchestrator";
   import {
     MotionColor,
     MotionType,
@@ -17,7 +17,7 @@ import { getSoloPropSaveOrchestrator } from "$lib/features/library/getSoloPropSa
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
   import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
-  import type { SoloPropSaveOrchestrator } from "$lib/features/library/services/SoloPropSaveOrchestrator";
+  import type { SoloPropSaveOrchestrator } from "$lib/features/library/services/solo-prop-save-orchestrator";
   import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
   import OrientationExplainer from "./OrientationExplainer.svelte";
   import GridModePicker from "./GridModePicker.svelte";

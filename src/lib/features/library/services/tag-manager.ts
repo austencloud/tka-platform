@@ -25,8 +25,8 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
-import type { LibraryTag, CreateTagOptions } from "../domain/models/Tag";
-import { createTag } from "../domain/models/Tag";
+import type { LibraryTag, CreateTagOptions } from "../domain/models/tag";
+import { createTag } from "../domain/models/tag";
 import { getUserTagsPath, getUserTagPath } from "$lib/shared/library/data/firestore-paths";
 
 /**

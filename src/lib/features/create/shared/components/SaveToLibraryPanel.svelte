@@ -22,7 +22,7 @@
   import HallOfShameGate from "$lib/features/hall-of-shame/components/HallOfShameGate.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
-  import { getLibrarySaveService } from "$lib/features/library/getLibrarySaveService";
+  import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
   import { getContentModerator } from "$lib/features/moderation/get-content-moderator";
   import { getHallOfShameSubmitter } from "$lib/features/hall-of-shame/get-hall-of-shame-submitter";
   import { createSavePanelState } from "../state/save-panel-state.svelte";
