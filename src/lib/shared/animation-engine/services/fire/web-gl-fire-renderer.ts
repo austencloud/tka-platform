@@ -26,14 +26,14 @@
  * and 256×256 rgba16float ping-pong textures. Gated behind window.__TKA_UNIFIED_VIEWER.
  */
 
-import { FireFrameCache } from "./FireFrameCache";
+import { FireFrameCache } from "./fire-frame-cache";
 import type {
   FireFrameInput,
   FireOverlayConfig,
   FirePhysicsParams,
   PropTipData,
-} from "../../../domain/types/FireTypes";
-import { DEFAULT_PHYSICS } from "../../../domain/types/FireTypes";
+} from "../../domain/types/FireTypes";
+import { DEFAULT_PHYSICS } from "../../domain/types/FireTypes";
 import {
   VERTEX_SHADER,
   SPLAT_FRAG,
@@ -49,12 +49,12 @@ import {
   DISPLAY_FRAG,
   BLOOM_COMPOSITE_FRAG,
   CURL_NOISE_FRAG,
-} from "./FluidShaderSources";
+} from "./fluid-shader-sources";
 import {
   BLOOM_DOWNSAMPLE_FRAG,
   BLOOM_UPSAMPLE_FRAG,
-} from "../led/LedShaderSources";
-import { BASE_COLOR_CURVE } from "../../../domain/types/FireTypes";
+} from "../led/led-shader-sources";
+import { BASE_COLOR_CURVE } from "../../domain/types/FireTypes";
 
 const MAX_DPR = 2;
 const _DEFAULT_JACOBI_ITERATIONS = 12;
@@ -1625,8 +1625,8 @@ export class WebGLFireRenderer {
 }
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
-import type { EffectPlugin } from "../../effects/EffectPlugin";
-import type { EffectRendererManager } from "../EffectRendererManager";
+import type { EffectPlugin } from "../effects/EffectPlugin";
+import type { EffectRendererManager } from "../effect-renderer-manager";
 import type { FireIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 

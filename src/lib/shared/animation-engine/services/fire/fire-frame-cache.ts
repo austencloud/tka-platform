@@ -12,7 +12,7 @@
  * invalidates the cache and triggers a fresh recording on the next loop.
  */
 
-import { VERTEX_SHADER } from "./FluidShaderSources";
+import { VERTEX_SHADER } from "./fluid-shader-sources";
 
 // ============================================================
 // Blit shader: draw a cached texture to the screen
