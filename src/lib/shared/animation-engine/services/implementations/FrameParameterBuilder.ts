@@ -265,7 +265,7 @@ export class FrameParameterBuilder {
         this.zapConfig = resolveZap2D(intent);
       }
     }
-    fp.zapConfig = erm.prevHasZapTips ? this.zapConfig : null;
+    fp.zapConfig = erm.wasEnabled("zap") ? this.zapConfig : null;
 
     // Sparkles overlay config - re-resolve when SparklesIntent changes via
     // reference identity (Phase 1b pattern; cheaper than JSON diff and safe
@@ -277,7 +277,7 @@ export class FrameParameterBuilder {
         this.sparklesConfig = resolveSparkles2D(intent);
       }
     }
-    fp.sparklesConfig = erm.prevHasSparklesTips ? this.sparklesConfig : null;
+    fp.sparklesConfig = erm.wasEnabled("sparkles") ? this.sparklesConfig : null;
 
     // Echo overlay config - re-resolve when EchoIntent changes via
     // reference identity (mirrors sparkles; cheap and EffectsConfigState
@@ -289,7 +289,7 @@ export class FrameParameterBuilder {
         this.echoConfig = resolveEcho2D(intent);
       }
     }
-    fp.echoConfig = erm.prevHasEchoTips ? this.echoConfig : null;
+    fp.echoConfig = erm.wasEnabled("echo") ? this.echoConfig : null;
 
     // Bloom overlay config - re-resolve when BloomIntent changes via
     // reference identity (mirrors echo/sparkles; EffectsConfigState
@@ -301,7 +301,7 @@ export class FrameParameterBuilder {
         this.bloomConfig = resolveBloom2D(intent);
       }
     }
-    fp.bloomConfig = erm.prevHasBloomTips ? this.bloomConfig : null;
+    fp.bloomConfig = erm.wasEnabled("bloom") ? this.bloomConfig : null;
 
     // Water overlay config - re-resolve when WaterIntent changes via
     // reference identity (same pattern as bloom/echo/sparkles).
@@ -312,7 +312,7 @@ export class FrameParameterBuilder {
         this.waterConfig = resolveWater2D(intent);
       }
     }
-    fp.waterConfig = erm.prevHasWaterTips ? this.waterConfig : null;
+    fp.waterConfig = erm.wasEnabled("water") ? this.waterConfig : null;
 
     // Bubbles overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
@@ -322,7 +322,7 @@ export class FrameParameterBuilder {
         this.bubblesConfig = resolveBubbles2D(intent);
       }
     }
-    fp.bubblesConfig = erm.prevHasBubblesTips ? this.bubblesConfig : null;
+    fp.bubblesConfig = erm.wasEnabled("bubbles") ? this.bubblesConfig : null;
 
     // Petals overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
@@ -332,7 +332,7 @@ export class FrameParameterBuilder {
         this.petalsConfig = resolvePetals2D(intent);
       }
     }
-    fp.petalsConfig = erm.prevHasPetalsTips ? this.petalsConfig : null;
+    fp.petalsConfig = erm.wasEnabled("petals") ? this.petalsConfig : null;
 
     // Smoke overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
@@ -342,7 +342,7 @@ export class FrameParameterBuilder {
         this.smokeConfig = resolveSmoke2D(intent);
       }
     }
-    fp.smokeConfig = erm.prevHasSmokeTips ? this.smokeConfig : null;
+    fp.smokeConfig = erm.wasEnabled("smoke") ? this.smokeConfig : null;
 
     // Ink overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
@@ -352,7 +352,7 @@ export class FrameParameterBuilder {
         this.inkConfig = resolveInk2D(intent);
       }
     }
-    fp.inkConfig = erm.prevHasInkTips ? this.inkConfig : null;
+    fp.inkConfig = erm.wasEnabled("ink") ? this.inkConfig : null;
 
     // Frost overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
@@ -362,7 +362,7 @@ export class FrameParameterBuilder {
         this.frostConfig = resolveFrost2D(intent);
       }
     }
-    fp.frostConfig = erm.prevHasFrostTips ? this.frostConfig : null;
+    fp.frostConfig = erm.wasEnabled("frost") ? this.frostConfig : null;
 
     // Silk overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
@@ -372,7 +372,7 @@ export class FrameParameterBuilder {
         this.silkConfig = resolveSilk2D(intent);
       }
     }
-    fp.silkConfig = erm.prevHasSilkTips ? this.silkConfig : null;
+    fp.silkConfig = erm.wasEnabled("silk") ? this.silkConfig : null;
 
     // Pulse overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
@@ -382,7 +382,7 @@ export class FrameParameterBuilder {
         this.pulseConfig = resolvePulse2D(intent);
       }
     }
-    fp.pulseConfig = erm.prevHasPulseTips ? this.pulseConfig : null;
+    fp.pulseConfig = erm.wasEnabled("pulse") ? this.pulseConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.

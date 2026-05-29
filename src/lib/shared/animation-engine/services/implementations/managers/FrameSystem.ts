@@ -62,8 +62,8 @@ export class FrameSystem {
   ): RenderFrameParams {
     return this.frameParameterBuilder.getFrameParams(props, this.state, {
       prevDarkMode: this.deps.propSystem.prevDarkMode,
-      prevHasFireTips: buildDeps.effectRendererManager.prevHasFireTips,
-      prevHasCharcoalTips: buildDeps.effectRendererManager.prevHasCharcoalTips,
+      prevHasFireTips: buildDeps.effectRendererManager.wasEnabled("fire"),
+      prevHasCharcoalTips: buildDeps.effectRendererManager.wasEnabled("charcoal"),
       trailsSuppressedUntilTextureLoad:
         this.deps.propSystem.propTypeManager.trailsSuppressedUntilTextureLoad,
       effectsConfigState: buildDeps.effectsConfigState,

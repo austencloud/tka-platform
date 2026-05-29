@@ -40,6 +40,7 @@ import type { FireTipTracker } from "../FireTipTracker";
 import type { WebGLFireRenderer } from "../fire/WebGLFireRenderer";
 import type { CharcoalSparkRenderer } from "../charcoal/CharcoalSparkRenderer";
 import type { WebGLLedRenderer } from "../led/WebGLLedRenderer";
+import { EFFECT_PLUGINS } from "../../effects/registry";
 
 // ── Helpers (mirrored from engine — keep in sync) ───────────────────────────
 
@@ -108,7 +109,7 @@ export class EffectSystem {
   // ── Renderer accessors (for retained engine branches) ──────────────────────
 
   get trailOverlay(): ITrailOverlayCanvas | null {
-    return this._rendererManager.trailOverlay;
+    return this._rendererManager.getRenderer("trails") as unknown as ITrailOverlayCanvas | null;
   }
 
   get fireTipTracker(): FireTipTracker | null {
@@ -116,15 +117,15 @@ export class EffectSystem {
   }
 
   get fireRenderer(): WebGLFireRenderer | null {
-    return this._rendererManager.fireRenderer;
+    return this._rendererManager.getRenderer("fire") as WebGLFireRenderer | null;
   }
 
   get charcoalRenderer(): CharcoalSparkRenderer | null {
-    return this._rendererManager.charcoalRenderer;
+    return this._rendererManager.getRenderer("charcoal") as CharcoalSparkRenderer | null;
   }
 
   get ledRenderer(): WebGLLedRenderer | null {
-    return this._rendererManager.ledRenderer;
+    return this._rendererManager.getRenderer("led") as WebGLLedRenderer | null;
   }
 
   // ── Init prev-state (called from engine.initialize()) ──────────────────────
@@ -142,20 +143,16 @@ export class EffectSystem {
 
     const erm = this._rendererManager;
 
-    erm.prevHasFireTips = hasEffectInMap(ecs?.tipEffectMap, "fire");
-    erm.prevHasCharcoalTips = hasEffectInMap(ecs?.tipEffectMap, "charcoal");
-    erm.prevHasZapTips = hasEffectInMap(ecs?.tipEffectMap, "zap");
-    erm.prevHasSparklesTips = hasEffectInMap(ecs?.tipEffectMap, "sparkles");
-    erm.prevHasEchoTips = hasEffectInMap(ecs?.tipEffectMap, "echo");
-    erm.prevHasBloomTips = hasEffectInMap(ecs?.tipEffectMap, "bloom");
-    erm.prevHasWaterTips = hasEffectInMap(ecs?.tipEffectMap, "water");
-    erm.prevHasBubblesTips = hasEffectInMap(ecs?.tipEffectMap, "bubbles");
-    erm.prevHasPetalsTips = hasEffectInMap(ecs?.tipEffectMap, "petals");
-    erm.prevHasSmokeTips = hasEffectInMap(ecs?.tipEffectMap, "smoke");
-    erm.prevHasInkTips = hasEffectInMap(ecs?.tipEffectMap, "ink");
-    erm.prevHasFrostTips = hasEffectInMap(ecs?.tipEffectMap, "frost");
-    erm.prevHasSilkTips = hasEffectInMap(ecs?.tipEffectMap, "silk");
-    erm.prevHasPulseTips = hasEffectInMap(ecs?.tipEffectMap, "pulse");
+    // Set was-enabled flags for all overlay effects via the registry loop
+    for (const plugin of EFFECT_PLUGINS) {
+      if (plugin.kind === "canvas2d" || plugin.kind === "webgl") {
+        // OverlayEffectId = Exclude<EffectType, "none" | "led" | "trails">
+        erm.setWasEnabled(
+          plugin.id as Exclude<typeof plugin.id, "none" | "led" | "trails">,
+          hasEffectInMap(ecs?.tipEffectMap, plugin.id)
+        );
+      }
+    }
 
     // Build fireConfig from base params + slider mappings
     erm.fireConfig.colorBlend = this._prevColorBlend;
@@ -253,7 +250,7 @@ export class EffectSystem {
     }
 
     // Sync charcoal params independently
-    if (erm.prevHasCharcoalTips && erm.charcoalRenderer?.isInitialized()) {
+    if (erm.wasEnabled("charcoal") && erm.charcoalRenderer?.isInitialized()) {
       const currentCharcoalParams = getCharcoalParamsFromConfig(ecs);
       const currentCharcoalJson = JSON.stringify(currentCharcoalParams);
       if (currentCharcoalJson !== this._prevCharcoalParamsJson) {
