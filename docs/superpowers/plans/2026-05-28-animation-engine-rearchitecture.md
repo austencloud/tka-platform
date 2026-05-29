@@ -531,6 +531,8 @@ Each manager is one task group: write a focused unit test, extract the verified 
 
 ## Phase P3 — Offscreen export; delete the resize hack
 
+> ✅ **COMPLETE — SUPERSEDED.** P3 was merged with P5 and re-specced once it was found that `createOffscreenContext` was half-built (hand-wired duplicate, `getFrameParams: () => ({})` stub). Delivered via `docs/superpowers/specs/2026-05-29-p3p5-unified-render-context-export-design.md` + `docs/superpowers/plans/2026-05-29-p3p5-unified-render-context-export-plan.md`. AnimationEngine is now the sole construction authority; export renders on a fresh per-export headless offscreen engine; resize hack deleted. Commits `14fafa795`, `df4152729`, `6e088c53c`, `7c862092096`. The tasks below are historical.
+
 **Why:** `VideoExportOrchestrator` resizes the **live** canvas up/down (`:402-661`) — the anti-pattern (and `a6d7558bd` proved it doesn't fix fidelity). `createOffscreenContext` (`RenderContextFactory.ts:22`) already builds a full native-res pipeline with zero callers.
 
 ### Task P3.1: Route export through the offscreen context (TDD)
@@ -583,6 +585,8 @@ Each manager is one task group: write a focused unit test, extract the verified 
 ---
 
 ## Phase P5 — Implement `createLiveContext`; build via factory; delete dead stubs
+
+> ✅ **COMPLETE — SUPERSEDED (merged into P3).** Decision reversed after investigation: `createLiveContext` was **deleted**, not implemented. CanvasSurface keeps its direct `new AnimationEngine()` (cleaner reactive component ownership); unification = AnimationEngine is the sole construction authority, with the factory's `createOffscreenContext` as a headless-engine wrapper. The `triggerRender` empty-params stub was removed. Delivered via the 2026-05-29 P3+P5 spec/plan. The tasks below are historical.
 
 **Why:** Close the loop — `createLiveContext` (`RenderContextFactory.ts:13`) still throws; `CanvasSurface` should build through the factory so live and offscreen contexts share one construction path.
 
