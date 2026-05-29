@@ -7,7 +7,7 @@
   import { setEditorContext } from "./state/editor-context";
   import { createSoundscapePlayer } from "./audio/soundscape-player.svelte";
   import { setSoundscapeContext } from "./audio/soundscape-context";
-  import { destroyMuseumVillage } from "./services/museum-village-manager";
+  import { destroyMuseumVillage, setMuseumVillageVisible } from "./services/museum-village-manager";
   import RoomPicker from "./components/RoomPicker.svelte";
   import SoundscapeBubble from "./components/audio/SoundscapeBubble.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
@@ -17,6 +17,13 @@
   import { goto } from "$app/navigation";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { setDesktopSidebarForcedHidden } from "$lib/shared/layout/desktop-sidebar-state.svelte";
+
+  interface Props {
+    /** False when mounted-but-hidden (keep-alive). Default true so the module
+     *  behaves normally when rendered standalone or in tests. */
+    visible?: boolean;
+  }
+  let { visible = true }: Props = $props();
 
   // ── Loading gate ──
   // A fade-from-black covers the scene until the lobby is ready. A progress
@@ -60,6 +67,7 @@
   });
 
   function handleAllLoaded() {
+    if (!showOverlay) return; // already revealed — ignore duplicate/late signals
     displayedPercent = 100;
     stageLabel = "Welcome";
     overlayFading = true;
@@ -258,6 +266,13 @@
   setSoundscapeContext(soundscapePlayer);
   onMount(() => soundscapePlayer.initialize());
 
+  // Keep-alive: pause the village sim while hidden, resume when shown. Full
+  // teardown (destroyMuseumVillage) is NOT called here — it only runs on real
+  // unmount (idle eviction) via the onMount cleanup below.
+  $effect(() => {
+    setMuseumVillageVisible(visible);
+  });
+
   // Module mode: museum | edit | showroom | 3p-test
   type ModuleMode = "museum" | "edit" | "showroom" | "3p-test";
   const LAST_MODE_KEY = "museum-last-mode";
@@ -332,6 +347,7 @@
         {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
           <DimensionFlipProof
             grid={liveGrid}
+            {visible}
             onAllLoaded={handleAllLoaded}
             onLoadProgress={handleLoadProgress}
             onBuildStage={handleBuildStage}
