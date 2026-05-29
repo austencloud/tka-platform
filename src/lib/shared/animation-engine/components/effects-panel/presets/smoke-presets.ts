@@ -8,7 +8,7 @@ function applySmoke(
   presetId: string,
   patch: Partial<SmokeIntent>,
 ): void {
-  state.updateSmoke(patch);
+  state.updateEffect("smoke", patch);
   // updateSmoke nulls activePresets.smoke; restore so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

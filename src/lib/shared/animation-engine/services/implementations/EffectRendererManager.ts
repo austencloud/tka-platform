@@ -192,7 +192,7 @@ export class EffectRendererManager {
         if (success) {
           this.renderers.set(id, renderer);
           this.renderLoopService?.updateConfig({
-            [plugin.configKey]: renderer,
+            renderers: { [id]: renderer },
           } as Partial<RenderLoopConfig>);
           plugin.onInit?.(this, renderer);
         } else {
@@ -206,7 +206,7 @@ export class EffectRendererManager {
         this.renderers.delete(id);
       }
       this.renderLoopService?.updateConfig({
-        [plugin.configKey]: null,
+        renderers: { [id]: null },
       } as Partial<RenderLoopConfig>);
       plugin.onDisable?.(this);
     }
@@ -269,7 +269,7 @@ export class EffectRendererManager {
           if (success) {
             this.renderers.set("led", ledRenderer);
             this.renderLoopService?.updateConfig({
-              ledRenderer: ledRenderer,
+              renderers: { led: ledRenderer },
             });
             // Trigger a render now that the renderer is ready
             this.triggerRender();
@@ -286,7 +286,7 @@ export class EffectRendererManager {
       const led = this.renderers.get("led");
       led?.dispose();
       this.renderers.delete("led");
-      this.renderLoopService?.updateConfig({ ledRenderer: null });
+      this.renderLoopService?.updateConfig({ renderers: { led: null } });
       this.ledTipTracker?.reset();
     }
   }
@@ -441,20 +441,20 @@ export class EffectRendererManager {
    * initializeCanvas gap. Called after renderLoopService is ready.
    */
   wirePostInitOverlays(): void {
+    // Build a single renderers partial and send one updateConfig call.
+    const renderersUpdate: Partial<Record<EffectType, EffectRendererLike>> = {};
     for (const plugin of OVERLAY_PLUGINS) {
       const renderer = this.renderers.get(plugin.id as OverlayEffectId);
-      if (renderer?.isInitialized() && this.renderLoopService) {
-        this.renderLoopService.updateConfig({
-          [plugin.configKey]: renderer,
-        } as Partial<RenderLoopConfig>);
+      if (renderer?.isInitialized()) {
+        renderersUpdate[plugin.id as OverlayEffectId] = renderer;
       }
     }
     const led = this.renderers.get("led");
-    if (led?.isInitialized() && this.renderLoopService) {
-      this.renderLoopService.updateConfig({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ledRenderer: led as any,
-      });
+    if (led?.isInitialized()) {
+      renderersUpdate["led"] = led;
+    }
+    if (Object.keys(renderersUpdate).length > 0 && this.renderLoopService) {
+      this.renderLoopService.updateConfig({ renderers: renderersUpdate });
     }
   }
 

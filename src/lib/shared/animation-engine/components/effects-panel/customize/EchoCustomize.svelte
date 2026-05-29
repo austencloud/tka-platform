@@ -27,7 +27,7 @@
             type="button"
             role="radio"
             aria-checked={state.echo.shape === "staff"}
-            onclick={() => state.updateEcho({ shape: "staff" })}
+            onclick={() => state.updateEffect("echo", { shape: "staff" })}
           >
             <i class="fas fa-ruler" aria-hidden="true"></i>
             Staff
@@ -38,7 +38,7 @@
             type="button"
             role="radio"
             aria-checked={state.echo.shape === "tips"}
-            onclick={() => state.updateEcho({ shape: "tips" })}
+            onclick={() => state.updateEffect("echo", { shape: "tips" })}
           >
             <i class="fas fa-circle" aria-hidden="true"></i>
             Tips
@@ -49,7 +49,7 @@
             type="button"
             role="radio"
             aria-checked={state.echo.shape === "both"}
-            onclick={() => state.updateEcho({ shape: "both" })}
+            onclick={() => state.updateEffect("echo", { shape: "both" })}
           >
             <i class="fas fa-layer-group" aria-hidden="true"></i>
             Both
@@ -67,7 +67,7 @@
             type="button"
             role="radio"
             aria-checked={state.echo.colorMode === "solid"}
-            onclick={() => state.updateEcho({ colorMode: "solid" })}
+            onclick={() => state.updateEffect("echo", { colorMode: "solid" })}
           >
             Solid
           </button>
@@ -77,7 +77,7 @@
             type="button"
             role="radio"
             aria-checked={state.echo.colorMode === "rainbow"}
-            onclick={() => state.updateEcho({ colorMode: "rainbow" })}
+            onclick={() => state.updateEffect("echo", { colorMode: "rainbow" })}
           >
             Rainbow
           </button>
@@ -87,7 +87,7 @@
             type="button"
             role="radio"
             aria-checked={state.echo.colorMode === "prop-matched"}
-            onclick={() => state.updateEcho({ colorMode: "prop-matched" })}
+            onclick={() => state.updateEffect("echo", { colorMode: "prop-matched" })}
           >
             Prop-Matched
           </button>
@@ -97,7 +97,7 @@
             type="button"
             role="radio"
             aria-checked={state.echo.colorMode === "gradient"}
-            onclick={() => state.updateEcho({ colorMode: "gradient" })}
+            onclick={() => state.updateEffect("echo", { colorMode: "gradient" })}
           >
             Gradient
           </button>
@@ -113,7 +113,7 @@
                 type="color"
                 value={state.echo.color}
                 oninput={(e) =>
-                  state.updateEcho({ color: (e.currentTarget as HTMLInputElement).value })}
+                  state.updateEffect("echo", { color: (e.currentTarget as HTMLInputElement).value })}
               />
             </label>
           </div>
@@ -131,7 +131,7 @@
           step="0.05"
           value={state.echo.intensity}
           oninput={(e) =>
-            state.updateEcho({ intensity: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("echo", { intensity: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{Math.round(state.echo.intensity * 100)}%</span>
       </div>
@@ -147,7 +147,7 @@
           step="0.5"
           value={state.echo.decay}
           oninput={(e) =>
-            state.updateEcho({ decay: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("echo", { decay: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{state.echo.decay}b</span>
       </div>
@@ -163,7 +163,7 @@
           step="0.25"
           value={state.echo.interval}
           oninput={(e) =>
-            state.updateEcho({ interval: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("echo", { interval: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{state.echo.interval}b</span>
       </div>
@@ -179,7 +179,7 @@
           step="1"
           value={state.echo.thickness}
           oninput={(e) =>
-            state.updateEcho({ thickness: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("echo", { thickness: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{state.echo.thickness}px</span>
       </div>

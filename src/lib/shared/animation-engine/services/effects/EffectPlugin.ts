@@ -1,5 +1,4 @@
 import type { EffectType } from "../../domain/types/TipEffectTypes";
-import type { RenderLoopConfig } from "../contracts/IAnimationRenderLoop";
 import type { EffectRendererLike } from "./EffectRenderer";
 import type { EffectRendererManager } from "../implementations/EffectRendererManager";
 
@@ -21,8 +20,12 @@ export interface EffectPlugin<C = unknown> {
   createRenderer(): EffectRendererLike;
   /** Default config seed for effects-config-state. */
   defaultConfig: C;
-  /** Key on RenderLoopConfig where this effect's renderer slot lives. */
-  configKey: keyof RenderLoopConfig & string;
+  /**
+   * Legacy config-key string kept for reference (previously mapped to a named
+   * RenderLoopConfig slot; now renderers live in RenderLoopConfig.renderers[id]).
+   * Still carried by each plugin for documentation purposes.
+   */
+  configKey: string;
   /** Whether per-frame dispatch needs dt. Default false. */
   needsDt?: boolean;
   /** Skip triggerRender() after lifecycle sync. Default true (= trigger). */

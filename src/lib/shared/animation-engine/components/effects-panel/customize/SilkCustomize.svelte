@@ -44,7 +44,7 @@
               type="button"
               role="radio"
               aria-checked={state.silk.palette === p.id}
-              onclick={() => state.updateSilk({ palette: p.id })}
+              onclick={() => state.updateEffect("silk", { palette: p.id })}
             >
               <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
               {p.label}
@@ -62,7 +62,7 @@
                 type="color"
                 value={state.silk.customColor}
                 oninput={(e) =>
-                  state.updateSilk({
+                  state.updateEffect("silk", {
                     customColor: (e.currentTarget as HTMLInputElement).value,
                   })}
               />
@@ -81,7 +81,7 @@
               type="button"
               role="radio"
               aria-checked={state.silk.trackingMode === t.id}
-              onclick={() => state.updateSilk({ trackingMode: t.id })}
+              onclick={() => state.updateEffect("silk", { trackingMode: t.id })}
             >
               {t.label}
             </button>
@@ -99,7 +99,7 @@
           step="0.05"
           value={state.silk.intensity}
           oninput={(e) =>
-            state.updateSilk({
+            state.updateEffect("silk", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -116,7 +116,7 @@
           step="0.05"
           value={state.silk.width}
           oninput={(e) =>
-            state.updateSilk({
+            state.updateEffect("silk", {
               width: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -133,7 +133,7 @@
           step="0.05"
           value={state.silk.duration}
           oninput={(e) =>
-            state.updateSilk({
+            state.updateEffect("silk", {
               duration: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -150,7 +150,7 @@
           step="0.05"
           value={state.silk.flutter}
           oninput={(e) =>
-            state.updateSilk({
+            state.updateEffect("silk", {
               flutter: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -167,7 +167,7 @@
           step="0.05"
           value={state.silk.tautness}
           oninput={(e) =>
-            state.updateSilk({
+            state.updateEffect("silk", {
               tautness: +(e.currentTarget as HTMLInputElement).value,
             })}
         />

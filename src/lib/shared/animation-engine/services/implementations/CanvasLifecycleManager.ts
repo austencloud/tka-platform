@@ -409,7 +409,7 @@ export class CanvasLifecycleManager {
 
     erm.trailOverlay = erm.createTrailOverlay();
     erm.trailOverlay.initialize(containerElement, canvasSize, canvasSize);
-    renderLoop.updateConfig({ trailOverlay: erm.trailOverlay });
+    renderLoop.updateConfig({ renderers: { trails: erm.trailOverlay as unknown as import("../effects/EffectRenderer").EffectRendererLike } });
     erm.syncEffectLayers();
   }
 

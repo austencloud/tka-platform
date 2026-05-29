@@ -8,7 +8,7 @@ function applyWater(
   presetId: string,
   patch: Partial<WaterIntent>,
 ): void {
-  state.updateWater(patch);
+  state.updateEffect("water", patch);
   // updateWater nulls activePresets.water; restore so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

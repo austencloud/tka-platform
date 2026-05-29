@@ -8,7 +8,7 @@ function applySilk(
   presetId: string,
   patch: Partial<SilkIntent>,
 ): void {
-  state.updateSilk(patch);
+  state.updateEffect("silk", patch);
   state.applyPreset({
     id: presetId,
     effectType: "silk",

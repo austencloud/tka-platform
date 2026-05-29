@@ -24,22 +24,11 @@ import type { WebGLLedRenderer } from '$lib/shared/animation-engine/services/imp
 import type { LedTipTrackerConfig } from "./LedTipTracker";
 import type { LedTipTracker } from "./LedTipTracker";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
-import type { ZapOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/ZapOverlayRenderer'
-import type { SparklesOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SparklesOverlayRenderer'
-import type { EchoOverlayRenderer } from "./EchoOverlayRenderer";
-import type { BloomOverlayRenderer } from "./BloomOverlayRenderer";
-import type { WaterOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/WaterOverlayRenderer'
-import type { BubblesOverlayRenderer } from "./BubblesOverlayRenderer";
-import type { PetalsOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/PetalsOverlayRenderer'
-import type { SmokeOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SmokeOverlayRenderer'
-import type { InkOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/InkOverlayRenderer'
-import type { FrostOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/FrostOverlayRenderer'
-import type { SilkOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/SilkOverlayRenderer'
-import type { PulseOverlayRenderer } from '$lib/shared/animation-engine/services/implementations/PulseOverlayRenderer'
 import type {
   RenderLoopConfig,
   RenderFrameParams,
 } from "../contracts/IAnimationRenderLoop";
+import type { EffectRendererLike } from "../effects/EffectRenderer";
 import { QualityTier } from "../../domain/types/QualityTypes";
 import { effectErrorSignal } from "../../state/effect-error-signal.svelte";
 import { resolveEffect } from "../../domain/types/TipEffectTypes";
@@ -133,25 +122,15 @@ export class AnimationRenderLoop {
   private TrailCapturer: TrailCapturer | null = null;
   private pathCache: AnimationPathCache | null = null;
   private frameBudgetMonitor: FrameBudgetMonitor | null = null;
-  private fireRenderer: WebGLFireRenderer | null = null;
-  private charcoalRenderer: CharcoalSparkRenderer | null = null;
   private fireTipTracker: FireTipTracker | null = null;
-  private ledRenderer: WebGLLedRenderer | null = null;
   private ledTipTracker: LedTipTracker | null = null;
-  private trailOverlay: ITrailOverlayCanvas | null = null;
-  private zapRenderer: ZapOverlayRenderer | null = null;
-  private sparklesRenderer: SparklesOverlayRenderer | null = null;
-  private echoRenderer: EchoOverlayRenderer | null = null;
-  private bloomRenderer: BloomOverlayRenderer | null = null;
-  private waterRenderer: WaterOverlayRenderer | null = null;
-  private bubblesRenderer: BubblesOverlayRenderer | null = null;
-  private petalsRenderer: PetalsOverlayRenderer | null = null;
-  private smokeRenderer: SmokeOverlayRenderer | null = null;
-  private inkRenderer: InkOverlayRenderer | null = null;
-  private frostRenderer: FrostOverlayRenderer | null = null;
-  private silkRenderer: SilkOverlayRenderer | null = null;
-  private pulseRenderer: PulseOverlayRenderer | null = null;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
+  /**
+   * Registry-driven renderer map. Keyed by EffectType id.
+   * Populated/updated via initialize() and updateConfig().
+   * Replaces the 16 hand-typed named renderer fields from pre-P2.4.
+   */
+  private renderers = new Map<EffectType, EffectRendererLike>();
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
   // Timestamp of the last frame that actually stamped the trail accumulator.
@@ -240,25 +219,18 @@ export class AnimationRenderLoop {
     this.pathCache = config.pathCache;
     this.canvasSize = config.canvasSize;
     this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
-    this.fireRenderer = config.fireRenderer ?? null;
-    this.charcoalRenderer = config.charcoalRenderer ?? null;
     this.fireTipTracker = config.fireTipTracker ?? null;
-    this.ledRenderer = config.ledRenderer ?? null;
     this.ledTipTracker = config.ledTipTracker ?? null;
-    this.trailOverlay = config.trailOverlay ?? null;
-    this.zapRenderer = config.zapRenderer ?? null;
-    this.sparklesRenderer = config.sparklesRenderer ?? null;
-    this.echoRenderer = config.echoRenderer ?? null;
-    this.bloomRenderer = config.bloomRenderer ?? null;
-    this.waterRenderer = config.waterRenderer ?? null;
-    this.bubblesRenderer = config.bubblesRenderer ?? null;
-    this.petalsRenderer = config.petalsRenderer ?? null;
-    this.smokeRenderer = config.smokeRenderer ?? null;
-    this.inkRenderer = config.inkRenderer ?? null;
-    this.frostRenderer = config.frostRenderer ?? null;
-    this.silkRenderer = config.silkRenderer ?? null;
-    this.pulseRenderer = config.pulseRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
+
+    // Merge the initial renderers record into the Map.
+    if (config.renderers) {
+      for (const [id, renderer] of Object.entries(config.renderers)) {
+        if (renderer != null) {
+          this.renderers.set(id as EffectType, renderer);
+        }
+      }
+    }
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
     // can attribute main-thread stalls to the window in which they occurred.
@@ -279,44 +251,22 @@ export class AnimationRenderLoop {
     if (config.canvasSize !== undefined) this.canvasSize = config.canvasSize;
     if (config.frameBudgetMonitor !== undefined)
       this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
-    if (config.fireRenderer !== undefined)
-      this.fireRenderer = config.fireRenderer ?? null;
-    if (config.charcoalRenderer !== undefined)
-      this.charcoalRenderer = config.charcoalRenderer ?? null;
     if (config.fireTipTracker !== undefined)
       this.fireTipTracker = config.fireTipTracker ?? null;
-    if (config.ledRenderer !== undefined)
-      this.ledRenderer = config.ledRenderer ?? null;
     if (config.ledTipTracker !== undefined)
       this.ledTipTracker = config.ledTipTracker ?? null;
-    if (config.trailOverlay !== undefined)
-      this.trailOverlay = config.trailOverlay ?? null;
-    if (config.zapRenderer !== undefined)
-      this.zapRenderer = config.zapRenderer ?? null;
-    if (config.sparklesRenderer !== undefined)
-      this.sparklesRenderer = config.sparklesRenderer ?? null;
-    if (config.echoRenderer !== undefined)
-      this.echoRenderer = config.echoRenderer ?? null;
-    if (config.bloomRenderer !== undefined)
-      this.bloomRenderer = config.bloomRenderer ?? null;
-    if (config.waterRenderer !== undefined)
-      this.waterRenderer = config.waterRenderer ?? null;
-    if (config.bubblesRenderer !== undefined)
-      this.bubblesRenderer = config.bubblesRenderer ?? null;
-    if (config.petalsRenderer !== undefined)
-      this.petalsRenderer = config.petalsRenderer ?? null;
-    if (config.smokeRenderer !== undefined)
-      this.smokeRenderer = config.smokeRenderer ?? null;
-    if (config.inkRenderer !== undefined)
-      this.inkRenderer = config.inkRenderer ?? null;
-    if (config.frostRenderer !== undefined)
-      this.frostRenderer = config.frostRenderer ?? null;
-    if (config.silkRenderer !== undefined)
-      this.silkRenderer = config.silkRenderer ?? null;
-    if (config.pulseRenderer !== undefined)
-      this.pulseRenderer = config.pulseRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
+    // Merge renderer additions/removals from the registry record.
+    if (config.renderers !== undefined) {
+      for (const [id, renderer] of Object.entries(config.renderers as Record<string, EffectRendererLike | null | undefined>)) {
+        if (renderer != null) {
+          this.renderers.set(id as EffectType, renderer);
+        } else {
+          this.renderers.delete(id as EffectType);
+        }
+      }
+    }
   }
 
   start(getFrameParams: () => RenderFrameParams): void {
@@ -375,6 +325,10 @@ export class AnimationRenderLoop {
 
   /** Snapshot of render loop state for diagnostic reports. */
   getDiagnostics(): Record<string, unknown> {
+    const fireRenderer = this.renderers.get("fire") as (WebGLFireRenderer & { getDiagnostics?: () => unknown }) | undefined;
+    const charcoalRenderer = this.renderers.get("charcoal");
+    const ledRenderer = this.renderers.get("led");
+    const trailOverlay = this.renderers.get("trails");
     return {
       isRunning: this.rafId !== null,
       isDisposed: this.isDisposed,
@@ -390,12 +344,12 @@ export class AnimationRenderLoop {
       consecutiveIdleFrames: this.consecutiveIdleFrames,
       framesRenderedSinceStart: this.framesRenderedSinceStart,
       canvasSize: this.canvasSize,
-      fireRendererInitialized: this.fireRenderer?.isInitialized() ?? false,
-      charcoalRendererInitialized: this.charcoalRenderer?.isInitialized() ?? false,
-      ledRendererInitialized: this.ledRenderer?.isInitialized() ?? false,
-      hasTrailOverlay: !!this.trailOverlay,
+      fireRendererInitialized: fireRenderer?.isInitialized() ?? false,
+      charcoalRendererInitialized: charcoalRenderer?.isInitialized() ?? false,
+      ledRendererInitialized: ledRenderer?.isInitialized() ?? false,
+      hasTrailOverlay: !!trailOverlay,
       fireTipDiagnostics: this.fireTipTracker?.getDiagnostics?.() ?? null,
-      fireRendererDiagnostics: this.fireRenderer?.getDiagnostics?.() ?? null,
+      fireRendererDiagnostics: fireRenderer?.getDiagnostics?.() ?? null,
     };
   }
 
@@ -410,44 +364,14 @@ export class AnimationRenderLoop {
     this.pathCache = null;
     this.frameBudgetMonitor = null;
     this.getFrameParamsCallback = null;
-    // Clean up fire overlay
-    this.fireRenderer?.dispose();
-    this.fireRenderer = null;
-    // Clean up charcoal overlay
-    this.charcoalRenderer?.dispose();
-    this.charcoalRenderer = null;
     this.fireTipTracker = null;
-    // Clean up LED overlay
-    this.ledRenderer?.dispose();
-    this.ledRenderer = null;
     this.ledTipTracker = null;
-    // Clean up trail overlay
-    this.trailOverlay = null;
-    // Clean up zap overlay
-    this.zapRenderer?.dispose();
-    this.zapRenderer = null;
-    this.sparklesRenderer?.dispose();
-    this.sparklesRenderer = null;
-    this.echoRenderer?.dispose();
-    this.echoRenderer = null;
-    this.bloomRenderer?.dispose();
-    this.bloomRenderer = null;
-    this.waterRenderer?.dispose();
-    this.waterRenderer = null;
-    this.bubblesRenderer?.dispose();
-    this.bubblesRenderer = null;
-    this.petalsRenderer?.dispose();
-    this.petalsRenderer = null;
-    this.smokeRenderer?.dispose();
-    this.smokeRenderer = null;
-    this.inkRenderer?.dispose();
-    this.inkRenderer = null;
-    this.frostRenderer?.dispose();
-    this.frostRenderer = null;
-    this.silkRenderer?.dispose();
-    this.silkRenderer = null;
-    this.pulseRenderer?.dispose();
-    this.pulseRenderer = null;
+    // Dispose all renderers in the registry map.
+    // AnimationRenderLoop does not own the renderers' DOM canvas elements
+    // (EffectRendererManager owns those); we only hold the reference.
+    // Clear the map without calling dispose() here — callers that own the
+    // renderers (EffectRendererManager.dispose()) will call dispose() on them.
+    this.renderers.clear();
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -556,7 +480,7 @@ export class AnimationRenderLoop {
     {
       effect: "zap",
       configKey: "zapConfig",
-      getRenderer: (l) => l.zapRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("zap") ?? null) as EffectRenderer | null,
       needsDt: false,
       resetTimeOnInactive: false,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "zap"),
@@ -566,7 +490,7 @@ export class AnimationRenderLoop {
     {
       effect: "sparkles",
       configKey: "sparklesConfig",
-      getRenderer: (l) => l.sparklesRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("sparkles") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: false,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "sparkles"),
@@ -576,7 +500,7 @@ export class AnimationRenderLoop {
     {
       effect: "echo",
       configKey: "echoConfig",
-      getRenderer: (l) => l.echoRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("echo") ?? null) as EffectRenderer | null,
       needsDt: false,
       resetTimeOnInactive: false,
       buildInput: (ctx) => ({
@@ -591,7 +515,7 @@ export class AnimationRenderLoop {
     {
       effect: "bloom",
       configKey: "bloomConfig",
-      getRenderer: (l) => l.bloomRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("bloom") ?? null) as EffectRenderer | null,
       needsDt: false,
       resetTimeOnInactive: false,
       buildInput: (ctx) => AnimationRenderLoop.buildArrayTips(ctx.sharedTips, ctx.tipMap, "bloom", ctx.params, ctx.renderedTransforms),
@@ -601,7 +525,7 @@ export class AnimationRenderLoop {
     {
       effect: "water",
       configKey: "waterConfig",
-      getRenderer: (l) => l.waterRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("water") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "water"),
@@ -611,7 +535,7 @@ export class AnimationRenderLoop {
     {
       effect: "bubbles",
       configKey: "bubblesConfig",
-      getRenderer: (l) => l.bubblesRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("bubbles") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "bubbles"),
@@ -621,7 +545,7 @@ export class AnimationRenderLoop {
     {
       effect: "petals",
       configKey: "petalsConfig",
-      getRenderer: (l) => l.petalsRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("petals") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "petals"),
@@ -631,7 +555,7 @@ export class AnimationRenderLoop {
     {
       effect: "smoke",
       configKey: "smokeConfig",
-      getRenderer: (l) => l.smokeRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("smoke") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "smoke"),
@@ -641,7 +565,7 @@ export class AnimationRenderLoop {
     {
       effect: "ink",
       configKey: "inkConfig",
-      getRenderer: (l) => l.inkRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("ink") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "ink"),
@@ -651,7 +575,7 @@ export class AnimationRenderLoop {
     {
       effect: "frost",
       configKey: "frostConfig",
-      getRenderer: (l) => l.frostRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("frost") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "frost"),
@@ -661,7 +585,7 @@ export class AnimationRenderLoop {
     {
       effect: "silk",
       configKey: "silkConfig",
-      getRenderer: (l) => l.silkRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("silk") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildFourPosTips(ctx.sharedTips, ctx.tipMap, "silk"),
@@ -671,7 +595,7 @@ export class AnimationRenderLoop {
     {
       effect: "pulse",
       configKey: "pulseConfig",
-      getRenderer: (l) => l.pulseRenderer as EffectRenderer | null,
+      getRenderer: (l) => (l.renderers.get("pulse") ?? null) as EffectRenderer | null,
       needsDt: true,
       resetTimeOnInactive: true,
       buildInput: (ctx) => AnimationRenderLoop.buildArrayTips(ctx.sharedTips, ctx.tipMap, "pulse", ctx.params, ctx.renderedTransforms),
@@ -784,74 +708,40 @@ export class AnimationRenderLoop {
       hasTrailTips(params.tipEffectMap) && trailSettings.mode !== TrailMode.OFF;
     const backgroundTransitioning =
       this.renderer?.isBackgroundTransitioning() ?? false;
-    // Fire or charcoal overlay is active. fireConfig is passed only when either
-    // effect is active (see AnimationEngine.getFrameParams), so presence is the gate.
+
+    // Build a per-effect active map using the exact same gating semantics as before:
+    //   fire:     params.fireConfig != null && renderer.isInitialized()
+    //   charcoal: params.fireConfig != null && renderer.isInitialized()  (shares fireConfig gate)
+    //   led:      params.ledConfig?.enabled === true && renderer.isInitialized()
+    //   trails:   gated separately below (hasTrailTips + mode check)
+    //   all 12 canvas2d effects: params.{id}Config != null && renderer.isInitialized()
+    const activeByEffect = new Map<EffectType, boolean>();
+    const paramsAsRecord = params as unknown as Record<string, unknown>;
+    for (const entry of this.effectDispatchRegistry) {
+      const renderer = entry.getRenderer(this);
+      const cfgPresent = paramsAsRecord[entry.configKey] != null;
+      activeByEffect.set(entry.effect, cfgPresent && renderer?.isInitialized() === true);
+    }
+    // Special gates for fire, charcoal, led (not in effectDispatchRegistry)
     const fireActive =
       params.fireConfig != null &&
-      this.fireRenderer?.isInitialized() === true;
+      (this.renderers.get("fire")?.isInitialized() === true);
     const charcoalActive =
-      this.charcoalRenderer?.isInitialized() === true &&
-      params.fireConfig != null;
+      params.fireConfig != null &&
+      (this.renderers.get("charcoal")?.isInitialized() === true);
     const ledActive =
       params.ledConfig?.enabled === true &&
-      this.ledRenderer?.isInitialized() === true;
-    const zapActive =
-      params.zapConfig != null &&
-      this.zapRenderer?.isInitialized() === true;
-    const sparklesActive =
-      params.sparklesConfig != null &&
-      this.sparklesRenderer?.isInitialized() === true;
-    const echoActive =
-      params.echoConfig != null &&
-      this.echoRenderer?.isInitialized() === true;
-    const bloomActive =
-      params.bloomConfig != null &&
-      this.bloomRenderer?.isInitialized() === true;
-    const waterActive =
-      params.waterConfig != null &&
-      this.waterRenderer?.isInitialized() === true;
-    const bubblesActive =
-      params.bubblesConfig != null &&
-      this.bubblesRenderer?.isInitialized() === true;
-    const petalsActive =
-      params.petalsConfig != null &&
-      this.petalsRenderer?.isInitialized() === true;
-    const smokeActive =
-      params.smokeConfig != null &&
-      this.smokeRenderer?.isInitialized() === true;
-    const inkActive =
-      params.inkConfig != null &&
-      this.inkRenderer?.isInitialized() === true;
-    const frostActive =
-      params.frostConfig != null &&
-      this.frostRenderer?.isInitialized() === true;
-    const silkActive =
-      params.silkConfig != null &&
-      this.silkRenderer?.isInitialized() === true;
-    const pulseActive =
-      params.pulseConfig != null &&
-      this.pulseRenderer?.isInitialized() === true;
+      (this.renderers.get("led")?.isInitialized() === true);
+
+    const anyRegistryActive = [...activeByEffect.values()].some(Boolean);
+    const anyEffectActive = anyRegistryActive || fireActive || charcoalActive || ledActive;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
       this.needsRender ||
       isPlaying ||
       backgroundTransitioning ||
-      fireActive ||
-      charcoalActive ||
-      ledActive ||
-      zapActive ||
-      sparklesActive ||
-      echoActive ||
-      bloomActive ||
-      waterActive ||
-      bubblesActive ||
-      petalsActive ||
-      smokeActive ||
-      inkActive ||
-      frostActive ||
-      silkActive ||
-      pulseActive;
+      anyEffectActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -941,7 +831,7 @@ export class AnimationRenderLoop {
     // disable seamless loop wrap-around - the overlay accumulates pixels
     // across sequences, so wrap-around would draw the loop-back path on
     // top of the next sequence's trail.
-    const effectiveLoopable = this.trailOverlay
+    const effectiveLoopable = this.renderers.has("trails")
       ? false
       : (params.isSeamlesslyLoopable ?? false);
     const trailPoints = this.gatherTrailPoints(currentStep, trailSettings, effectiveLoopable, params.tipEffectMap);
@@ -990,25 +880,22 @@ export class AnimationRenderLoop {
     // WebGL overlay canvases can show through if not cleared.
     if (params.suppress2DOverlays && !this.wasSuppressed) {
       this.wasSuppressed = true;
-      // Clear all overlay canvases so stale frames don't show through the 3D layer
-      const overlayCanvases = [
-        this.fireRenderer?.isInitialized() ? this.fireRenderer.getCanvas() : null,
-        this.charcoalRenderer?.isInitialized() ? this.charcoalRenderer.getCanvas() : null,
-        this.ledRenderer?.isInitialized() ? this.ledRenderer.getCanvas() : null,
-      ];
-      for (const canvas of overlayCanvases) {
+      // Clear WebGL overlay canvases (fire, charcoal, led) so stale frames don't show through
+      for (const id of ["fire", "charcoal", "led"] as EffectType[]) {
+        const r = this.renderers.get(id) as (EffectRendererLike & { getCanvas?: () => HTMLCanvasElement | null }) | undefined;
+        if (!r?.isInitialized()) continue;
+        const canvas = r.getCanvas?.();
         if (!canvas) continue;
         const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-        if (gl) {
-          gl.clear(gl.COLOR_BUFFER_BIT);
-        }
+        if (gl) gl.clear(gl.COLOR_BUFFER_BIT);
       }
       // Clear trail overlay (Canvas2D)
-      if (this.trailOverlay) {
-        const trailCanvas = (this.trailOverlay as ITrailOverlayCanvas & { canvas?: HTMLCanvasElement }).canvas;
+      const trailOverlayRenderer = this.renderers.get("trails") as (ITrailOverlayCanvas & { canvas?: HTMLCanvasElement }) | undefined;
+      if (trailOverlayRenderer) {
+        const trailCanvas = trailOverlayRenderer.canvas;
         if (trailCanvas) {
-          const ctx = trailCanvas.getContext("2d");
-          if (ctx) ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+          const ctx2d = trailCanvas.getContext("2d");
+          if (ctx2d) ctx2d.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
         }
       }
       // Clear all registry effect overlays (Canvas2D)
@@ -1021,9 +908,10 @@ export class AnimationRenderLoop {
     }
 
     // Route trail rendering through the overlay canvas
-    if (this.trailOverlay && effectiveTrailsVisible && !params.suppress2DOverlays) {
+    const trailOverlay = this.renderers.get("trails") as ITrailOverlayCanvas | undefined;
+    if (trailOverlay && effectiveTrailsVisible && !params.suppress2DOverlays) {
       if (this.lastTrailFrameTime === 0) {
-        this.trailOverlay.setVisible(true);
+        trailOverlay.setVisible(true);
       }
       // Re-stamp only when (virtual) time has advanced. During export the
       // render loop ticks multiple times at the SAME virtualTime — one
@@ -1048,7 +936,7 @@ export class AnimationRenderLoop {
       this.lastTrailFrameTime = currentTime;
       this.lastStampedTrailTime = currentTime;
 
-      this.trailOverlay.renderFrame({
+      trailOverlay.renderFrame({
         blueTrailPoints: effectiveBlueMotionVisible ? trailPoints.blue : [],
         redTrailPoints: effectiveRedMotionVisible ? trailPoints.red : [],
         trailSettings,
@@ -1065,9 +953,9 @@ export class AnimationRenderLoop {
         tipEffectMap: params.tipEffectMap,
       });
       }
-    } else if (this.trailOverlay && !effectiveTrailsVisible && this.lastTrailFrameTime > 0) {
-      this.trailOverlay.clear();
-      this.trailOverlay.setVisible(false);
+    } else if (trailOverlay && !effectiveTrailsVisible && this.lastTrailFrameTime > 0) {
+      trailOverlay.clear();
+      trailOverlay.setVisible(false);
       this.lastTrailFrameTime = 0;
       this.lastStampedTrailTime = null;
     }
@@ -1099,7 +987,7 @@ export class AnimationRenderLoop {
           ? additionalLayerRenderData
           : undefined,
       trailSettings,
-      skipTrailRendering: !!this.trailOverlay,
+      skipTrailRendering: this.renderers.has("trails"),
       currentTime,
       visibility: {
         gridVisible: effectiveGridVisible,
@@ -1122,14 +1010,18 @@ export class AnimationRenderLoop {
     // Fire, charcoal, and zap all consume FireTipTracker output (zap reads the
     // same {x,y} positions but ignores velocity). The tracker is updated at most
     // once per frame and the result is shared across the three branches below.
-    const activeFireRenderer = this.fireRenderer?.isInitialized() ? this.fireRenderer : null;
-    const activeCharcoalRenderer = this.charcoalRenderer?.isInitialized() ? this.charcoalRenderer : null;
+    const activeFireRenderer = (this.renderers.get("fire") as WebGLFireRenderer | undefined)?.isInitialized()
+      ? (this.renderers.get("fire") as WebGLFireRenderer)
+      : null;
+    const activeCharcoalRenderer = (this.renderers.get("charcoal") as CharcoalSparkRenderer | undefined)?.isInitialized()
+      ? (this.renderers.get("charcoal") as CharcoalSparkRenderer)
+      : null;
     const hasFireOrCharcoalOverlay = this.fireTipTracker && (
       (activeFireRenderer && params.fireConfig != null) || activeCharcoalRenderer
     );
     const hasAnyRegistryOverlay = this.fireTipTracker && this.effectDispatchRegistry.some(entry => {
       const renderer = entry.getRenderer(this);
-      return renderer?.isInitialized() && params[entry.configKey] != null;
+      return renderer?.isInitialized() && (params as unknown as Record<string, unknown>)[entry.configKey] != null;
     });
     const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasAnyRegistryOverlay;
 
@@ -1250,8 +1142,11 @@ export class AnimationRenderLoop {
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire
+    const activeLedRenderer = (this.renderers.get("led") as WebGLLedRenderer | undefined)?.isInitialized()
+      ? (this.renderers.get("led") as WebGLLedRenderer)
+      : null;
     if (
-      this.ledRenderer?.isInitialized() &&
+      activeLedRenderer &&
       this.ledTipTracker &&
       params.ledConfig?.enabled &&
       !this.ledDisabledByError &&
@@ -1279,7 +1174,7 @@ export class AnimationRenderLoop {
         const ledTips = allLedTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, ledTipMap, {}) === 'led');
 
         if (ledTips.length > 0) {
-          this.ledRenderer.renderLeds(
+          activeLedRenderer.renderLeds(
             {
               tips: ledTips,
               currentTime,
@@ -1323,12 +1218,13 @@ export class AnimationRenderLoop {
       const hints = this.frameBudgetMonitor.getQualityHints();
       if (hints && hints.tier !== this.previousQualityTier) {
         this.previousQualityTier = hints.tier;
-        if (this.fireRenderer?.isInitialized()) {
+        const fireRenderer = this.renderers.get("fire") as WebGLFireRenderer | undefined;
+        if (fireRenderer?.isInitialized()) {
           // Map quality tier → fire simulation quality level
           const fireQuality = hints.tier === QualityTier.HIGH ? 3
             : hints.tier === QualityTier.MEDIUM ? 2
             : 1;
-          this.fireRenderer.setQuality(fireQuality);
+          fireRenderer.setQuality(fireQuality);
         }
       }
     }
@@ -1350,7 +1246,7 @@ export class AnimationRenderLoop {
       const now = performance.now();
       if (now - this.lastFrameDropLogTime > AnimationRenderLoop.FRAME_DROP_LOG_COOLDOWN_MS) {
         this.lastFrameDropLogTime = now;
-        const fireState = this.fireRenderer?.isInitialized()
+        const fireState = this.renderers.get("fire")?.isInitialized()
           ? (params.fireConfig != null ? "active" : "idle")
           : "off";
         const trailCount = this.reusableBlueTrailPoints.length + this.reusableRedTrailPoints.length;
@@ -1386,7 +1282,7 @@ export class AnimationRenderLoop {
       if (elapsed >= 1000) {
         const avgFps = (this.fpsWindowFrames / elapsed) * 1000;
         const avgRender = this.fpsWindowRenderMsSum / this.fpsWindowFrames;
-        const fireState = this.fireRenderer?.isInitialized()
+        const fireState = this.renderers.get("fire")?.isInitialized()
           ? (params.fireConfig != null ? "active" : "idle")
           : "off";
         const trailsOn = hasTrailTips(params.tipEffectMap);
@@ -1598,7 +1494,7 @@ export class AnimationRenderLoop {
           this.reusableRedTrailPoints.length = redCount;
         }
       }
-    } else if (this.TrailCapturer && !this.trailOverlay) {
+    } else if (this.TrailCapturer && !this.renderers.has("trails")) {
       // Fallback to real-time capture - only when NOT using the overlay.
       // The overlay accumulates pixels, so during the brief cache-rebuild
       // gap it's better to draw nothing (existing pixels fade naturally)

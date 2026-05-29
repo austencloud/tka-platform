@@ -8,7 +8,7 @@ function applyFrost(
   presetId: string,
   patch: Partial<FrostIntent>,
 ): void {
-  state.updateFrost(patch);
+  state.updateEffect("frost", patch);
   state.applyPreset({
     id: presetId,
     effectType: "frost",

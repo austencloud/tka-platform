@@ -8,7 +8,7 @@ function applyBloom(
   presetId: string,
   patch: Partial<BloomIntent>,
 ): void {
-  state.updateBloom(patch);
+  state.updateEffect("bloom", patch);
   // updateBloom nulls activePresets.bloom; restore it so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

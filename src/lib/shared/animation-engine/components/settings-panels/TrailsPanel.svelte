@@ -84,7 +84,7 @@
 	);
 
 	function resetDefaults(): void {
-		effectsConfig?.updateTrails({
+		effectsConfig?.updateEffect("trails", {
 			thickness: DEFAULT_EFFECTS_CONFIG.trails.thickness,
 			brightness: DEFAULT_EFFECTS_CONFIG.trails.brightness,
 			blueColor: defaultBlue,
@@ -126,7 +126,7 @@
 			max="12"
 			step="0.5"
 			value={lineWidth}
-			oninput={(e) => effectsConfig?.updateTrails({ thickness: Number((e.target as HTMLInputElement).value) })}
+			oninput={(e) => effectsConfig?.updateEffect("trails", { thickness: Number((e.target as HTMLInputElement).value) })}
 		/>
 		<span class="slider-value">{formatWidth(lineWidth)}</span>
 	</div>
@@ -142,7 +142,7 @@
 			value={maxOpacity}
 			oninput={(e) => {
 				const v = Number((e.target as HTMLInputElement).value);
-				effectsConfig?.updateTrails({ brightness: v });
+				effectsConfig?.updateEffect("trails", { brightness: v });
 			}}
 		/>
 		<span class="slider-value">{formatBrightness(maxOpacity)}</span>
@@ -172,7 +172,7 @@
 				<input
 					type="color"
 					value={blueColor}
-					oninput={(e) => effectsConfig?.updateTrails({ blueColor: (e.target as HTMLInputElement).value })}
+					oninput={(e) => effectsConfig?.updateEffect("trails", { blueColor: (e.target as HTMLInputElement).value })}
 				/>
 				<span class="color-hand">Blue</span>
 			</label>
@@ -180,7 +180,7 @@
 				<input
 					type="color"
 					value={redColor}
-					oninput={(e) => effectsConfig?.updateTrails({ redColor: (e.target as HTMLInputElement).value })}
+					oninput={(e) => effectsConfig?.updateEffect("trails", { redColor: (e.target as HTMLInputElement).value })}
 				/>
 				<span class="color-hand">Red</span>
 			</label>

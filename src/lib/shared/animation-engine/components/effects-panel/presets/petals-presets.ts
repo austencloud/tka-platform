@@ -8,7 +8,7 @@ function applyPetals(
   presetId: string,
   patch: Partial<PetalsIntent>,
 ): void {
-  state.updatePetals(patch);
+  state.updateEffect("petals", patch);
   // updatePetals nulls activePresets.petals; restore so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

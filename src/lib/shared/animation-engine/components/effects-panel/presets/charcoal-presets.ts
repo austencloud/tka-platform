@@ -10,14 +10,15 @@
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { CharcoalIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
 function applyCharcoal(
   state: EffectsConfigState,
   presetId: string,
-  patch: Parameters<EffectsConfigState["updateCharcoal"]>[0],
+  patch: Partial<CharcoalIntent>,
 ): void {
-  state.updateCharcoal(patch);
+  state.updateEffect("charcoal", patch);
   // updateCharcoal nulls activePresets.charcoal; restore it so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

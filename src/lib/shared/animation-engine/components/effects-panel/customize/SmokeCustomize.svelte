@@ -49,7 +49,7 @@
               type="button"
               role="radio"
               aria-checked={state.smoke.palette === p.id}
-              onclick={() => state.updateSmoke({ palette: p.id })}
+              onclick={() => state.updateEffect("smoke", { palette: p.id })}
             >
               <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
               {p.label}
@@ -67,7 +67,7 @@
                 type="color"
                 value={state.smoke.customColor}
                 oninput={(e) =>
-                  state.updateSmoke({
+                  state.updateEffect("smoke", {
                     customColor: (e.currentTarget as HTMLInputElement).value,
                   })}
               />
@@ -87,7 +87,7 @@
               type="button"
               role="radio"
               aria-checked={state.smoke.trackingMode === t.id}
-              onclick={() => state.updateSmoke({ trackingMode: t.id })}
+              onclick={() => state.updateEffect("smoke", { trackingMode: t.id })}
             >
               {t.label}
             </button>
@@ -106,7 +106,7 @@
           step="0.05"
           value={state.smoke.ambientEmission}
           oninput={(e) =>
-            state.updateSmoke({
+            state.updateEffect("smoke", {
               ambientEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -124,7 +124,7 @@
           step="0.05"
           value={state.smoke.motionEmission}
           oninput={(e) =>
-            state.updateSmoke({
+            state.updateEffect("smoke", {
               motionEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -142,7 +142,7 @@
           step="0.05"
           value={state.smoke.intensity}
           oninput={(e) =>
-            state.updateSmoke({
+            state.updateEffect("smoke", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -160,7 +160,7 @@
           step="0.05"
           value={state.smoke.curlStrength}
           oninput={(e) =>
-            state.updateSmoke({
+            state.updateEffect("smoke", {
               curlStrength: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -178,7 +178,7 @@
           step="0.05"
           value={state.smoke.riseSpeed}
           oninput={(e) =>
-            state.updateSmoke({
+            state.updateEffect("smoke", {
               riseSpeed: +(e.currentTarget as HTMLInputElement).value,
             })}
         />

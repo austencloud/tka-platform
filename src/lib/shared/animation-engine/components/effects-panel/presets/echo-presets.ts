@@ -8,7 +8,7 @@ function applyEcho(
   presetId: string,
   patch: Partial<EchoIntent>,
 ): void {
-  state.updateEcho(patch);
+  state.updateEffect("echo", patch);
   // updateEcho nulls activePresets.echo; restore it so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

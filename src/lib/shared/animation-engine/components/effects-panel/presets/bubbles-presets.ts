@@ -8,7 +8,7 @@ function applyBubbles(
   presetId: string,
   patch: Partial<BubblesIntent>,
 ): void {
-  state.updateBubbles(patch);
+  state.updateEffect("bubbles", patch);
   // updateBubbles nulls activePresets.bubbles; restore so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

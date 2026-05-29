@@ -63,7 +63,7 @@
               type="button"
               role="radio"
               aria-checked={state.pulse.trigger === t.id}
-              onclick={() => state.updatePulse({ trigger: t.id })}
+              onclick={() => state.updateEffect("pulse", { trigger: t.id })}
             >
               {t.label}
             </button>
@@ -82,7 +82,7 @@
               type="button"
               role="radio"
               aria-checked={state.pulse.style === s.id}
-              onclick={() => state.updatePulse({ style: s.id })}
+              onclick={() => state.updateEffect("pulse", { style: s.id })}
             >
               {s.label}
             </button>
@@ -101,7 +101,7 @@
               type="button"
               role="radio"
               aria-checked={state.pulse.palette === p.id}
-              onclick={() => state.updatePulse({ palette: p.id })}
+              onclick={() => state.updateEffect("pulse", { palette: p.id })}
             >
               <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
               {p.label}
@@ -121,7 +121,7 @@
               type="button"
               role="radio"
               aria-checked={state.pulse.colorMode === cm.id}
-              onclick={() => state.updatePulse({ colorMode: cm.id })}
+              onclick={() => state.updateEffect("pulse", { colorMode: cm.id })}
             >
               {cm.label}
             </button>
@@ -141,9 +141,9 @@
                 oninput={(e) => {
                   const val = (e.currentTarget as HTMLInputElement).value;
                   if (state.pulse.palette === "custom") {
-                    state.updatePulse({ customColor: val });
+                    state.updateEffect("pulse", { customColor: val });
                   } else {
-                    state.updatePulse({ color: val });
+                    state.updateEffect("pulse", { color: val });
                   }
                 }}
               />
@@ -163,7 +163,7 @@
               type="button"
               role="radio"
               aria-checked={state.pulse.trackingMode === t.id}
-              onclick={() => state.updatePulse({ trackingMode: t.id })}
+              onclick={() => state.updateEffect("pulse", { trackingMode: t.id })}
             >
               {t.label}
             </button>
@@ -183,7 +183,7 @@
             step="1"
             value={state.pulse.beatInterval}
             oninput={(e) =>
-              state.updatePulse({
+              state.updateEffect("pulse", {
                 beatInterval: +(e.currentTarget as HTMLInputElement).value,
               })}
           />
@@ -202,7 +202,7 @@
             step="0.05"
             value={state.pulse.velocityThreshold}
             oninput={(e) =>
-              state.updatePulse({
+              state.updateEffect("pulse", {
                 velocityThreshold: +(e.currentTarget as HTMLInputElement).value,
               })}
           />
@@ -221,7 +221,7 @@
           step="0.05"
           value={state.pulse.intensity}
           oninput={(e) =>
-            state.updatePulse({
+            state.updateEffect("pulse", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -238,7 +238,7 @@
           step="0.05"
           value={state.pulse.reach}
           oninput={(e) =>
-            state.updatePulse({
+            state.updateEffect("pulse", {
               reach: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -255,7 +255,7 @@
           step="0.1"
           value={state.pulse.lifetime}
           oninput={(e) =>
-            state.updatePulse({
+            state.updateEffect("pulse", {
               lifetime: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -272,7 +272,7 @@
           step="0.05"
           value={state.pulse.thickness}
           oninput={(e) =>
-            state.updatePulse({
+            state.updateEffect("pulse", {
               thickness: +(e.currentTarget as HTMLInputElement).value,
             })}
         />

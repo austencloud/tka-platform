@@ -12,6 +12,7 @@
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { FireIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 import type { FireColorCurve } from "../../../domain/types/FireTypes";
 import { hexToFlameColor } from "../../../domain/types/FireTypes";
@@ -69,20 +70,20 @@ export function saveCustomFireColors(colors: CustomFireColors): void {
 }
 
 export function applyCustomFireColors(state: EffectsConfigState, colors: CustomFireColors): void {
-  state.updateFire({
+  state.updateEffect("fire", {
     colorBlend: 1.0,
     propColors: [hexToFlameColor(colors.left), hexToFlameColor(colors.right)],
   });
 }
 
-// ── Helper (restores activePresets after updateFire nulls it) ──────────
+// ── Helper (restores activePresets after updateEffect("fire") nulls it) ──────────
 
 function applyFire(
   state: EffectsConfigState,
   presetId: string,
-  patch: Parameters<EffectsConfigState["updateFire"]>[0],
+  patch: Partial<FireIntent>,
 ): void {
-  state.updateFire(patch);
+  state.updateEffect("fire", patch);
   state.applyPreset({
     id: presetId,
     effectType: "fire",

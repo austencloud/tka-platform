@@ -50,7 +50,7 @@
               type="button"
               role="radio"
               aria-checked={state.water.palette === p.id}
-              onclick={() => state.updateWater({ palette: p.id })}
+              onclick={() => state.updateEffect("water", { palette: p.id })}
             >
               <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
               {p.label}
@@ -68,7 +68,7 @@
                 type="color"
                 value={state.water.customColor}
                 oninput={(e) =>
-                  state.updateWater({
+                  state.updateEffect("water", {
                     customColor: (e.currentTarget as HTMLInputElement).value,
                   })}
               />
@@ -88,7 +88,7 @@
               type="button"
               role="radio"
               aria-checked={state.water.spewStyle === s.id}
-              onclick={() => state.updateWater({ spewStyle: s.id })}
+              onclick={() => state.updateEffect("water", { spewStyle: s.id })}
             >
               <i class="fas {s.icon}" aria-hidden="true"></i>
               {s.label}
@@ -108,7 +108,7 @@
               type="button"
               role="radio"
               aria-checked={state.water.trackingMode === t.id}
-              onclick={() => state.updateWater({ trackingMode: t.id })}
+              onclick={() => state.updateEffect("water", { trackingMode: t.id })}
             >
               {t.label}
             </button>
@@ -127,7 +127,7 @@
           step="0.05"
           value={state.water.ambientEmission}
           oninput={(e) =>
-            state.updateWater({
+            state.updateEffect("water", {
               ambientEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -145,7 +145,7 @@
           step="0.05"
           value={state.water.motionEmission}
           oninput={(e) =>
-            state.updateWater({
+            state.updateEffect("water", {
               motionEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -163,7 +163,7 @@
           step="0.05"
           value={state.water.intensity}
           oninput={(e) =>
-            state.updateWater({
+            state.updateEffect("water", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -181,7 +181,7 @@
           step="0.05"
           value={state.water.clarity}
           oninput={(e) =>
-            state.updateWater({
+            state.updateEffect("water", {
               clarity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -199,7 +199,7 @@
           step="0.05"
           value={state.water.surfaceTension}
           oninput={(e) =>
-            state.updateWater({
+            state.updateEffect("water", {
               surfaceTension: +(e.currentTarget as HTMLInputElement).value,
             })}
         />

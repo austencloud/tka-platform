@@ -8,7 +8,7 @@ function applyInk(
   presetId: string,
   patch: Partial<InkIntent>,
 ): void {
-  state.updateInk(patch);
+  state.updateEffect("ink", patch);
   // updateInk nulls activePresets.ink; restore so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

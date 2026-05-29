@@ -44,7 +44,7 @@
               type="button"
               role="radio"
               aria-checked={state.petals.palette === p.id}
-              onclick={() => state.updatePetals({ palette: p.id })}
+              onclick={() => state.updateEffect("petals", { palette: p.id })}
             >
               <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
               {p.label}
@@ -62,7 +62,7 @@
                 type="color"
                 value={state.petals.customColor}
                 oninput={(e) =>
-                  state.updatePetals({
+                  state.updateEffect("petals", {
                     customColor: (e.currentTarget as HTMLInputElement).value,
                   })}
               />
@@ -82,7 +82,7 @@
               type="button"
               role="radio"
               aria-checked={state.petals.trackingMode === t.id}
-              onclick={() => state.updatePetals({ trackingMode: t.id })}
+              onclick={() => state.updateEffect("petals", { trackingMode: t.id })}
             >
               {t.label}
             </button>
@@ -101,7 +101,7 @@
           step="0.05"
           value={state.petals.ambientEmission}
           oninput={(e) =>
-            state.updatePetals({
+            state.updateEffect("petals", {
               ambientEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -119,7 +119,7 @@
           step="0.05"
           value={state.petals.motionEmission}
           oninput={(e) =>
-            state.updatePetals({
+            state.updateEffect("petals", {
               motionEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -137,7 +137,7 @@
           step="0.05"
           value={state.petals.intensity}
           oninput={(e) =>
-            state.updatePetals({
+            state.updateEffect("petals", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -155,7 +155,7 @@
           step="0.05"
           value={state.petals.swayAmplitude}
           oninput={(e) =>
-            state.updatePetals({
+            state.updateEffect("petals", {
               swayAmplitude: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -173,7 +173,7 @@
           step="0.05"
           value={state.petals.fallSpeed}
           oninput={(e) =>
-            state.updatePetals({
+            state.updateEffect("petals", {
               fallSpeed: +(e.currentTarget as HTMLInputElement).value,
             })}
         />

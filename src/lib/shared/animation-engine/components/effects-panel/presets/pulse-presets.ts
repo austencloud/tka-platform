@@ -8,7 +8,7 @@ function applyPulse(
   presetId: string,
   patch: Partial<PulseIntent>,
 ): void {
-  state.updatePulse(patch);
+  state.updateEffect("pulse", patch);
   state.applyPreset({
     id: presetId,
     effectType: "pulse",

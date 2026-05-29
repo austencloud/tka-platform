@@ -27,7 +27,7 @@
             type="button"
             role="radio"
             aria-checked={state.zap.mode === "arc"}
-            onclick={() => state.updateZap({ mode: "arc" })}
+            onclick={() => state.updateEffect("zap", { mode: "arc" })}
           >
             <i class="fas fa-bolt" aria-hidden="true"></i>
             Arc
@@ -38,7 +38,7 @@
             type="button"
             role="radio"
             aria-checked={state.zap.mode === "crackle"}
-            onclick={() => state.updateZap({ mode: "crackle" })}
+            onclick={() => state.updateEffect("zap", { mode: "crackle" })}
           >
             <i class="fas fa-asterisk" aria-hidden="true"></i>
             Crackle
@@ -56,7 +56,7 @@
           max="1"
           step="0.05"
           value={state.zap.intensity}
-          oninput={(e) => state.updateZap({ intensity: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) => state.updateEffect("zap", { intensity: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{Math.round(state.zap.intensity * 100)}%</span>
       </div>
@@ -71,7 +71,7 @@
           max="30"
           step="1"
           value={state.zap.frequency}
-          oninput={(e) => state.updateZap({ frequency: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) => state.updateEffect("zap", { frequency: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{state.zap.frequency}/s</span>
       </div>
@@ -86,7 +86,7 @@
           max="1"
           step="0.05"
           value={state.zap.branching}
-          oninput={(e) => state.updateZap({ branching: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) => state.updateEffect("zap", { branching: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{Math.round(state.zap.branching * 100)}%</span>
       </div>
@@ -99,7 +99,7 @@
             <input
               type="color"
               value={state.zap.leftColor}
-              oninput={(e) => state.updateZap({ leftColor: (e.currentTarget as HTMLInputElement).value })}
+              oninput={(e) => state.updateEffect("zap", { leftColor: (e.currentTarget as HTMLInputElement).value })}
             />
             <span class="color-hand">Blue</span>
           </label>
@@ -107,7 +107,7 @@
             <input
               type="color"
               value={state.zap.rightColor}
-              oninput={(e) => state.updateZap({ rightColor: (e.currentTarget as HTMLInputElement).value })}
+              oninput={(e) => state.updateEffect("zap", { rightColor: (e.currentTarget as HTMLInputElement).value })}
             />
             <span class="color-hand">Red</span>
           </label>

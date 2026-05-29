@@ -24,17 +24,17 @@
   const categories = Object.keys(CATEGORY_LABELS) as PatternCategory[];
 
   function selectPreset(preset: LedColorPreset) {
-    effectsConfig?.updateLed({ primaryColor: preset.primaryColor });
+    effectsConfig?.updateEffect("led", { primaryColor: preset.primaryColor });
   }
 
   function selectPattern(id: string) {
-    effectsConfig?.updateLed({ patternId: id });
+    effectsConfig?.updateEffect("led", { patternId: id });
     patternPickerOpen = false;
   }
 
   function addCustomColor(e: Event) {
     const color = (e.target as HTMLInputElement).value;
-    effectsConfig?.updateLed({ primaryColor: color });
+    effectsConfig?.updateEffect("led", { primaryColor: color });
   }
 </script>
 
@@ -97,7 +97,7 @@
       max="5.0"
       step="0.1"
       value={patternSpeed}
-      oninput={(e) => effectsConfig?.updateLed({ patternSpeed: parseFloat((e.target as HTMLInputElement).value) })}
+      oninput={(e) => effectsConfig?.updateEffect("led", { patternSpeed: parseFloat((e.target as HTMLInputElement).value) })}
       aria-label="Pattern speed"
     />
     <span class="speed-label">{patternSpeed.toFixed(1)}x</span>
@@ -106,7 +106,7 @@
         type="button"
         class="bright-btn"
         class:active={brightness === level}
-        onclick={() => effectsConfig?.updateLed({ brightness: level })}
+        onclick={() => effectsConfig?.updateEffect("led", { brightness: level })}
         aria-label="Brightness {level}"
       >
         {level}

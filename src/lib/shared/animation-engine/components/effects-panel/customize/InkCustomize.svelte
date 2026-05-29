@@ -50,7 +50,7 @@
               type="button"
               role="radio"
               aria-checked={state.ink.palette === p.id}
-              onclick={() => state.updateInk({ palette: p.id })}
+              onclick={() => state.updateEffect("ink", { palette: p.id })}
             >
               <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
               {p.label}
@@ -68,7 +68,7 @@
                 type="color"
                 value={state.ink.customColor}
                 oninput={(e) =>
-                  state.updateInk({
+                  state.updateEffect("ink", {
                     customColor: (e.currentTarget as HTMLInputElement).value,
                   })}
               />
@@ -88,7 +88,7 @@
               type="button"
               role="radio"
               aria-checked={state.ink.trackingMode === t.id}
-              onclick={() => state.updateInk({ trackingMode: t.id })}
+              onclick={() => state.updateEffect("ink", { trackingMode: t.id })}
             >
               {t.label}
             </button>
@@ -107,7 +107,7 @@
           step="0.05"
           value={state.ink.ambientEmission}
           oninput={(e) =>
-            state.updateInk({
+            state.updateEffect("ink", {
               ambientEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -125,7 +125,7 @@
           step="0.05"
           value={state.ink.motionEmission}
           oninput={(e) =>
-            state.updateInk({
+            state.updateEffect("ink", {
               motionEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -143,7 +143,7 @@
           step="0.05"
           value={state.ink.intensity}
           oninput={(e) =>
-            state.updateInk({
+            state.updateEffect("ink", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -161,7 +161,7 @@
           step="0.05"
           value={state.ink.viscosity}
           oninput={(e) =>
-            state.updateInk({
+            state.updateEffect("ink", {
               viscosity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -179,7 +179,7 @@
           step="0.05"
           value={state.ink.splatterIntensity}
           oninput={(e) =>
-            state.updateInk({
+            state.updateEffect("ink", {
               splatterIntensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />

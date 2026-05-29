@@ -33,7 +33,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 1,
     format: fmtInt,
     get: (s) => s.trails.thickness,
-    set: (s, v) => s.updateTrails({ thickness: Math.round(v) }),
+    set: (s, v) => s.updateEffect("trails", { thickness: Math.round(v) }),
   },
   fire: {
     label: "Intensity",
@@ -42,7 +42,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.fire.intensity,
-    set: (s, v) => s.updateFire({ intensity: v }),
+    set: (s, v) => s.updateEffect("fire", { intensity: v }),
   },
   led: {
     label: "Brightness",
@@ -51,7 +51,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 1,
     format: fmtInt,
     get: (s) => s.led.brightness,
-    set: (s, v) => s.updateLed({ brightness: Math.round(v) }),
+    set: (s, v) => s.updateEffect("led", { brightness: Math.round(v) }),
   },
   charcoal: {
     label: "Intensity",
@@ -60,7 +60,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.charcoal.intensity,
-    set: (s, v) => s.updateCharcoal({ intensity: v }),
+    set: (s, v) => s.updateEffect("charcoal", { intensity: v }),
   },
   zap: {
     label: "Intensity",
@@ -69,7 +69,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.zap.intensity,
-    set: (s, v) => s.updateZap({ intensity: v }),
+    set: (s, v) => s.updateEffect("zap", { intensity: v }),
   },
   sparkles: {
     label: "Rate",
@@ -78,7 +78,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.sparkles.rate,
-    set: (s, v) => s.updateSparkles({ rate: v }),
+    set: (s, v) => s.updateEffect("sparkles", { rate: v }),
   },
   echo: {
     label: "Intensity",
@@ -87,7 +87,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.echo.intensity,
-    set: (s, v) => s.updateEcho({ intensity: v }),
+    set: (s, v) => s.updateEffect("echo", { intensity: v }),
   },
   bloom: {
     label: "Intensity",
@@ -96,7 +96,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.bloom.intensity,
-    set: (s, v) => s.updateBloom({ intensity: v }),
+    set: (s, v) => s.updateEffect("bloom", { intensity: v }),
   },
   water: {
     label: "Intensity",
@@ -105,7 +105,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.water.intensity,
-    set: (s, v) => s.updateWater({ intensity: v }),
+    set: (s, v) => s.updateEffect("water", { intensity: v }),
   },
   bubbles: {
     label: "Intensity",
@@ -114,7 +114,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.bubbles.intensity,
-    set: (s, v) => s.updateBubbles({ intensity: v }),
+    set: (s, v) => s.updateEffect("bubbles", { intensity: v }),
   },
   petals: {
     label: "Intensity",
@@ -123,7 +123,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.petals.intensity,
-    set: (s, v) => s.updatePetals({ intensity: v }),
+    set: (s, v) => s.updateEffect("petals", { intensity: v }),
   },
   smoke: {
     label: "Intensity",
@@ -132,7 +132,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.smoke.intensity,
-    set: (s, v) => s.updateSmoke({ intensity: v }),
+    set: (s, v) => s.updateEffect("smoke", { intensity: v }),
   },
   ink: {
     label: "Intensity",
@@ -141,7 +141,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.ink.intensity,
-    set: (s, v) => s.updateInk({ intensity: v }),
+    set: (s, v) => s.updateEffect("ink", { intensity: v }),
   },
   frost: {
     label: "Intensity",
@@ -150,7 +150,7 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     step: 0.01,
     format: fmt2,
     get: (s) => s.frost.intensity,
-    set: (s, v) => s.updateFrost({ intensity: v }),
+    set: (s, v) => s.updateEffect("frost", { intensity: v }),
   },
 };
 

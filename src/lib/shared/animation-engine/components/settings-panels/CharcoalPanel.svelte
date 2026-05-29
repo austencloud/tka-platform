@@ -5,7 +5,7 @@
 	const effectsConfig = getEffectsConfigContext();
 
 	function resetDefaults(): void {
-		effectsConfig?.updateCharcoal(DEFAULT_EFFECTS_CONFIG.charcoal);
+		effectsConfig?.updateEffect("charcoal", DEFAULT_EFFECTS_CONFIG.charcoal);
 	}
 
 	const isDefault = $derived(
@@ -26,7 +26,7 @@
 			max="1"
 			step="0.02"
 			value={effectsConfig?.charcoal.intensity ?? DEFAULT_EFFECTS_CONFIG.charcoal.intensity}
-			oninput={(e) => effectsConfig?.updateCharcoal({ intensity: Number((e.target as HTMLInputElement).value) })}
+			oninput={(e) => effectsConfig?.updateEffect("charcoal", { intensity: Number((e.target as HTMLInputElement).value) })}
 		/>
 		<span class="slider-value">{Math.round((effectsConfig?.charcoal.intensity ?? DEFAULT_EFFECTS_CONFIG.charcoal.intensity) * 100)}%</span>
 	</div>
@@ -40,7 +40,7 @@
 			max="1"
 			step="0.02"
 			value={effectsConfig?.charcoal.spread ?? DEFAULT_EFFECTS_CONFIG.charcoal.spread}
-			oninput={(e) => effectsConfig?.updateCharcoal({ spread: Number((e.target as HTMLInputElement).value) })}
+			oninput={(e) => effectsConfig?.updateEffect("charcoal", { spread: Number((e.target as HTMLInputElement).value) })}
 		/>
 		<span class="slider-value">{Math.round((effectsConfig?.charcoal.spread ?? DEFAULT_EFFECTS_CONFIG.charcoal.spread) * 100)}%</span>
 	</div>
@@ -54,7 +54,7 @@
 			max="1"
 			step="0.02"
 			value={effectsConfig?.charcoal.glow ?? DEFAULT_EFFECTS_CONFIG.charcoal.glow}
-			oninput={(e) => effectsConfig?.updateCharcoal({ glow: Number((e.target as HTMLInputElement).value) })}
+			oninput={(e) => effectsConfig?.updateEffect("charcoal", { glow: Number((e.target as HTMLInputElement).value) })}
 		/>
 		<span class="slider-value">{Math.round((effectsConfig?.charcoal.glow ?? DEFAULT_EFFECTS_CONFIG.charcoal.glow) * 100)}%</span>
 	</div>

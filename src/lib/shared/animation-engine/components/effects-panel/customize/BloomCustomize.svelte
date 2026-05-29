@@ -18,7 +18,7 @@
     const next = [...state.bloom.palette];
     while (next.length <= i) next.push("#ffffff");
     next[i] = value;
-    state.updateBloom({ palette: next });
+    state.updateEffect("bloom", { palette: next });
   }
 </script>
 
@@ -40,7 +40,7 @@
             type="button"
             role="radio"
             aria-checked={state.bloom.colorMode === "solid"}
-            onclick={() => state.updateBloom({ colorMode: "solid" })}
+            onclick={() => state.updateEffect("bloom", { colorMode: "solid" })}
           >
             Solid
           </button>
@@ -50,7 +50,7 @@
             type="button"
             role="radio"
             aria-checked={state.bloom.colorMode === "prop-matched"}
-            onclick={() => state.updateBloom({ colorMode: "prop-matched" })}
+            onclick={() => state.updateEffect("bloom", { colorMode: "prop-matched" })}
           >
             Prop-Matched
           </button>
@@ -60,7 +60,7 @@
             type="button"
             role="radio"
             aria-checked={state.bloom.colorMode === "rainbow"}
-            onclick={() => state.updateBloom({ colorMode: "rainbow" })}
+            onclick={() => state.updateEffect("bloom", { colorMode: "rainbow" })}
           >
             Rainbow
           </button>
@@ -70,7 +70,7 @@
             type="button"
             role="radio"
             aria-checked={state.bloom.colorMode === "palette"}
-            onclick={() => state.updateBloom({ colorMode: "palette" })}
+            onclick={() => state.updateEffect("bloom", { colorMode: "palette" })}
           >
             Palette
           </button>
@@ -87,7 +87,7 @@
             type="button"
             role="radio"
             aria-checked={state.bloom.falloff === "smooth"}
-            onclick={() => state.updateBloom({ falloff: "smooth" })}
+            onclick={() => state.updateEffect("bloom", { falloff: "smooth" })}
           >
             Smooth
           </button>
@@ -97,7 +97,7 @@
             type="button"
             role="radio"
             aria-checked={state.bloom.falloff === "sharp"}
-            onclick={() => state.updateBloom({ falloff: "sharp" })}
+            onclick={() => state.updateEffect("bloom", { falloff: "sharp" })}
           >
             Sharp
           </button>
@@ -107,7 +107,7 @@
             type="button"
             role="radio"
             aria-checked={state.bloom.falloff === "ring"}
-            onclick={() => state.updateBloom({ falloff: "ring" })}
+            onclick={() => state.updateEffect("bloom", { falloff: "ring" })}
           >
             Ring
           </button>
@@ -123,7 +123,7 @@
                 type="color"
                 value={state.bloom.color}
                 oninput={(e) =>
-                  state.updateBloom({ color: (e.currentTarget as HTMLInputElement).value })}
+                  state.updateEffect("bloom", { color: (e.currentTarget as HTMLInputElement).value })}
               />
             </label>
           </div>
@@ -156,7 +156,7 @@
           step="0.05"
           value={state.bloom.intensity}
           oninput={(e) =>
-            state.updateBloom({ intensity: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("bloom", { intensity: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{Math.round(state.bloom.intensity * 100)}%</span>
       </div>
@@ -172,7 +172,7 @@
           step="2"
           value={state.bloom.radius}
           oninput={(e) =>
-            state.updateBloom({ radius: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("bloom", { radius: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{state.bloom.radius}px</span>
       </div>
@@ -188,7 +188,7 @@
           step="0.05"
           value={state.bloom.pulse}
           oninput={(e) =>
-            state.updateBloom({ pulse: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("bloom", { pulse: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{Math.round(state.bloom.pulse * 100)}%</span>
       </div>
@@ -204,7 +204,7 @@
           step="0.25"
           value={state.bloom.pulseRate}
           oninput={(e) =>
-            state.updateBloom({ pulseRate: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("bloom", { pulseRate: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{state.bloom.pulseRate}Hz</span>
       </div>

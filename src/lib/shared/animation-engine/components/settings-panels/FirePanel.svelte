@@ -22,7 +22,7 @@
 	}
 
 	function resetDefaults(): void {
-		effectsConfig?.updateFire(DEFAULT_EFFECTS_CONFIG.fire);
+		effectsConfig?.updateEffect("fire", DEFAULT_EFFECTS_CONFIG.fire);
 	}
 
 	const isDefault = $derived(
@@ -43,7 +43,7 @@
 			max="1"
 			step="0.05"
 			value={effectsConfig?.fire.intensity ?? DEFAULT_EFFECTS_CONFIG.fire.intensity}
-			oninput={(e) => effectsConfig?.updateFire({ intensity: Number((e.target as HTMLInputElement).value) })}
+			oninput={(e) => effectsConfig?.updateEffect("fire", { intensity: Number((e.target as HTMLInputElement).value) })}
 		/>
 		<span class="slider-value">{formatIntensity(effectsConfig?.fire.intensity ?? DEFAULT_EFFECTS_CONFIG.fire.intensity)}</span>
 	</div>
@@ -57,7 +57,7 @@
 			max="1"
 			step="0.05"
 			value={effectsConfig?.fire.colorBlend ?? DEFAULT_EFFECTS_CONFIG.fire.colorBlend}
-			oninput={(e) => effectsConfig?.updateFire({ colorBlend: Number((e.target as HTMLInputElement).value) })}
+			oninput={(e) => effectsConfig?.updateEffect("fire", { colorBlend: Number((e.target as HTMLInputElement).value) })}
 		/>
 		<span class="slider-value">{formatColorBlend(effectsConfig?.fire.colorBlend ?? DEFAULT_EFFECTS_CONFIG.fire.colorBlend)}</span>
 	</div>
@@ -71,7 +71,7 @@
 			max="1"
 			step="0.05"
 			value={effectsConfig?.fire.turbulence ?? DEFAULT_EFFECTS_CONFIG.fire.turbulence}
-			oninput={(e) => effectsConfig?.updateFire({ turbulence: Number((e.target as HTMLInputElement).value) })}
+			oninput={(e) => effectsConfig?.updateEffect("fire", { turbulence: Number((e.target as HTMLInputElement).value) })}
 		/>
 		<span class="slider-value">{formatTurbulence(effectsConfig?.fire.turbulence ?? DEFAULT_EFFECTS_CONFIG.fire.turbulence)}</span>
 	</div>

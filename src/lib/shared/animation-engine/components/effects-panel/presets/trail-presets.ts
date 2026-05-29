@@ -8,6 +8,7 @@
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { TrailsIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -47,7 +48,7 @@ export function saveCustomTrailColors(colors: CustomTrailColors): void {
 }
 
 export function applyCustomTrailColors(state: EffectsConfigState, colors: CustomTrailColors): void {
-  state.updateTrails({
+  state.updateEffect("trails", {
     thickness: 5,
     brightness: 1.0,
     blueColor: colors.blue,
@@ -58,9 +59,9 @@ export function applyCustomTrailColors(state: EffectsConfigState, colors: Custom
 function applyTrail(
   state: EffectsConfigState,
   presetId: string,
-  patch: Parameters<EffectsConfigState["updateTrails"]>[0],
+  patch: Partial<TrailsIntent>,
 ): void {
-  state.updateTrails(patch);
+  state.updateEffect("trails", patch);
   // updateTrails nulls activePresets.trails; restore it so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

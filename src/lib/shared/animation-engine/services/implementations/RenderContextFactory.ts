@@ -96,7 +96,7 @@ export class RenderContextFactory {
     const trailOverlay = effectManager.createTrailOverlay();
     trailOverlay.initialize(container, size, size);
     effectManager.trailOverlay = trailOverlay;
-    renderLoop.updateConfig({ trailOverlay });
+    renderLoop.updateConfig({ renderers: { trails: trailOverlay as unknown as import("../effects/EffectRenderer").EffectRendererLike } });
 
     const resizer = new CanvasResizer();
     resizer.initialize(container, renderer);

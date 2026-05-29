@@ -8,7 +8,7 @@ function applyZap(
   presetId: string,
   patch: Partial<ZapIntent>,
 ): void {
-  state.updateZap(patch);
+  state.updateEffect("zap", patch);
   // updateZap nulls activePresets.zap; restore it so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

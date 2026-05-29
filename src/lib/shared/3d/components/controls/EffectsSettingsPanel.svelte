@@ -164,7 +164,7 @@
         <button
           class="mode-chip"
           class:active={config.trails.rainbow}
-          onclick={() => config.updateTrails({ rainbow: true })}
+          onclick={() => config.updateEffect("trails", { rainbow: true })}
           aria-label="Trail color: Rainbow"
           aria-pressed={config.trails.rainbow}
         >
@@ -173,7 +173,7 @@
         <button
           class="mode-chip"
           class:active={!config.trails.rainbow}
-          onclick={() => config.updateTrails({ rainbow: false })}
+          onclick={() => config.updateEffect("trails", { rainbow: false })}
           aria-label="Trail color: Solid"
           aria-pressed={!config.trails.rainbow}
         >
@@ -188,7 +188,7 @@
         <button
           class="mode-chip"
           class:active={config.trails.trackingMode === "left_end"}
-          onclick={() => config.updateTrails({ trackingMode: "left_end" })}
+          onclick={() => config.updateEffect("trails", { trackingMode: "left_end" })}
           aria-label="Track left end only"
           aria-pressed={config.trails.trackingMode === "left_end"}
           title="Track left end only"
@@ -198,7 +198,7 @@
         <button
           class="mode-chip"
           class:active={config.trails.trackingMode === "both_ends"}
-          onclick={() => config.updateTrails({ trackingMode: "both_ends" })}
+          onclick={() => config.updateEffect("trails", { trackingMode: "both_ends" })}
           aria-label="Track both ends"
           aria-pressed={config.trails.trackingMode === "both_ends"}
           title="Track both ends"
@@ -208,7 +208,7 @@
         <button
           class="mode-chip"
           class:active={config.trails.trackingMode === "right_end"}
-          onclick={() => config.updateTrails({ trackingMode: "right_end" })}
+          onclick={() => config.updateEffect("trails", { trackingMode: "right_end" })}
           aria-label="Track right end only"
           aria-pressed={config.trails.trackingMode === "right_end"}
           title="Track right end only"

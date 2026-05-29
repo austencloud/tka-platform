@@ -18,7 +18,7 @@
     const next = [...state.sparkles.palette];
     while (next.length <= i) next.push("#ffffff");
     next[i] = value;
-    state.updateSparkles({ palette: next });
+    state.updateEffect("sparkles", { palette: next });
   }
 </script>
 
@@ -40,7 +40,7 @@
             type="button"
             role="radio"
             aria-checked={state.sparkles.mode === "burst"}
-            onclick={() => state.updateSparkles({ mode: "burst" })}
+            onclick={() => state.updateEffect("sparkles", { mode: "burst" })}
           >
             <i class="fas fa-bolt" aria-hidden="true"></i>
             Burst
@@ -51,7 +51,7 @@
             type="button"
             role="radio"
             aria-checked={state.sparkles.mode === "stream"}
-            onclick={() => state.updateSparkles({ mode: "stream" })}
+            onclick={() => state.updateEffect("sparkles", { mode: "stream" })}
           >
             <i class="fas fa-water" aria-hidden="true"></i>
             Stream
@@ -62,7 +62,7 @@
             type="button"
             role="radio"
             aria-checked={state.sparkles.mode === "trail"}
-            onclick={() => state.updateSparkles({ mode: "trail" })}
+            onclick={() => state.updateEffect("sparkles", { mode: "trail" })}
           >
             <i class="fas fa-route" aria-hidden="true"></i>
             Trail
@@ -80,7 +80,7 @@
             type="button"
             role="radio"
             aria-checked={state.sparkles.colorMode === "solid"}
-            onclick={() => state.updateSparkles({ colorMode: "solid" })}
+            onclick={() => state.updateEffect("sparkles", { colorMode: "solid" })}
           >
             Solid
           </button>
@@ -90,7 +90,7 @@
             type="button"
             role="radio"
             aria-checked={state.sparkles.colorMode === "rainbow"}
-            onclick={() => state.updateSparkles({ colorMode: "rainbow" })}
+            onclick={() => state.updateEffect("sparkles", { colorMode: "rainbow" })}
           >
             Rainbow
           </button>
@@ -100,7 +100,7 @@
             type="button"
             role="radio"
             aria-checked={state.sparkles.colorMode === "palette"}
-            onclick={() => state.updateSparkles({ colorMode: "palette" })}
+            onclick={() => state.updateEffect("sparkles", { colorMode: "palette" })}
           >
             Palette
           </button>
@@ -115,7 +115,7 @@
               <input
                 type="color"
                 value={state.sparkles.color}
-                oninput={(e) => state.updateSparkles({ color: (e.currentTarget as HTMLInputElement).value })}
+                oninput={(e) => state.updateEffect("sparkles", { color: (e.currentTarget as HTMLInputElement).value })}
               />
             </label>
           </div>
@@ -144,7 +144,7 @@
           id="sparkles-rate"
           type="range" min="0" max="1" step="0.05"
           value={state.sparkles.rate}
-          oninput={(e) => state.updateSparkles({ rate: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) => state.updateEffect("sparkles", { rate: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{Math.round(state.sparkles.rate * 100)}%</span>
       </div>
@@ -156,7 +156,7 @@
           id="sparkles-size"
           type="range" min="0" max="1" step="0.05"
           value={state.sparkles.size}
-          oninput={(e) => state.updateSparkles({ size: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) => state.updateEffect("sparkles", { size: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{Math.round(state.sparkles.size * 100)}%</span>
       </div>
@@ -168,7 +168,7 @@
           id="sparkles-lifetime"
           type="range" min="0.1" max="3" step="0.1"
           value={state.sparkles.lifetime}
-          oninput={(e) => state.updateSparkles({ lifetime: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) => state.updateEffect("sparkles", { lifetime: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{state.sparkles.lifetime.toFixed(1)}s</span>
       </div>
@@ -180,7 +180,7 @@
           id="sparkles-spread"
           type="range" min="0" max="30" step="1"
           value={state.sparkles.spread}
-          oninput={(e) => state.updateSparkles({ spread: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) => state.updateEffect("sparkles", { spread: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{state.sparkles.spread}px</span>
       </div>
@@ -192,7 +192,7 @@
           id="sparkles-gravity"
           type="range" min="0" max="1" step="0.05"
           value={state.sparkles.gravity}
-          oninput={(e) => state.updateSparkles({ gravity: +(e.currentTarget as HTMLInputElement).value })}
+          oninput={(e) => state.updateEffect("sparkles", { gravity: +(e.currentTarget as HTMLInputElement).value })}
         />
         <span class="slider-value">{Math.round(state.sparkles.gravity * 100)}%</span>
       </div>

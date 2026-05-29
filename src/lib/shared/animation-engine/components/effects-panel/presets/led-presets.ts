@@ -16,7 +16,7 @@ function applyLed(
   presetId: string,
   patch: Partial<LedIntent>,
 ): void {
-  state.updateLed(patch);
+  state.updateEffect("led", patch);
   // updateLed nulls activePresets.led; restore it so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

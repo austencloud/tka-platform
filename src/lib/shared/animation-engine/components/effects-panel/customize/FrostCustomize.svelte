@@ -44,7 +44,7 @@
               type="button"
               role="radio"
               aria-checked={state.frost.palette === p.id}
-              onclick={() => state.updateFrost({ palette: p.id })}
+              onclick={() => state.updateEffect("frost", { palette: p.id })}
             >
               <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
               {p.label}
@@ -62,7 +62,7 @@
                 type="color"
                 value={state.frost.customColor}
                 oninput={(e) =>
-                  state.updateFrost({
+                  state.updateEffect("frost", {
                     customColor: (e.currentTarget as HTMLInputElement).value,
                   })}
               />
@@ -81,7 +81,7 @@
               type="button"
               role="radio"
               aria-checked={state.frost.trackingMode === t.id}
-              onclick={() => state.updateFrost({ trackingMode: t.id })}
+              onclick={() => state.updateEffect("frost", { trackingMode: t.id })}
             >
               {t.label}
             </button>
@@ -99,7 +99,7 @@
           step="0.05"
           value={state.frost.ambientEmission}
           oninput={(e) =>
-            state.updateFrost({
+            state.updateEffect("frost", {
               ambientEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -116,7 +116,7 @@
           step="0.05"
           value={state.frost.motionEmission}
           oninput={(e) =>
-            state.updateFrost({
+            state.updateEffect("frost", {
               motionEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -133,7 +133,7 @@
           step="0.05"
           value={state.frost.intensity}
           oninput={(e) =>
-            state.updateFrost({
+            state.updateEffect("frost", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -150,7 +150,7 @@
           step="0.05"
           value={state.frost.crystallinity}
           oninput={(e) =>
-            state.updateFrost({
+            state.updateEffect("frost", {
               crystallinity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -167,7 +167,7 @@
           step="0.05"
           value={state.frost.spreadRate}
           oninput={(e) =>
-            state.updateFrost({
+            state.updateEffect("frost", {
               spreadRate: +(e.currentTarget as HTMLInputElement).value,
             })}
         />

@@ -27,6 +27,25 @@ import type {
   SilkIntent,
   PulseIntent,
 } from "../domain/EffectsConfig";
+
+export interface EffectConfigMap {
+  trails: TrailsIntent;
+  fire: FireIntent;
+  led: LedIntent;
+  charcoal: CharcoalIntent;
+  zap: ZapIntent;
+  sparkles: SparklesIntent;
+  echo: EchoIntent;
+  bloom: BloomIntent;
+  water: WaterIntent;
+  bubbles: BubblesIntent;
+  petals: PetalsIntent;
+  smoke: SmokeIntent;
+  ink: InkIntent;
+  frost: FrostIntent;
+  silk: SilkIntent;
+  pulse: PulseIntent;
+}
 import type { EffectsPreset } from "../domain/EffectsPreset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
@@ -188,134 +207,6 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     }, 300);
   }
 
-  function updateTrails(patch: Partial<TrailsIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update trails");
-    config.trails = { ...config.trails, ...patch };
-    config.activePresets.trails = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-trails");
-  }
-
-  function updateFire(patch: Partial<FireIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update fire");
-    config.fire = { ...config.fire, ...patch };
-    config.activePresets.fire = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-fire");
-  }
-
-  function updateLed(patch: Partial<LedIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update LED");
-    config.led = { ...config.led, ...patch };
-    config.activePresets.led = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-led");
-  }
-
-  function updateCharcoal(patch: Partial<CharcoalIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update charcoal");
-    config.charcoal = { ...config.charcoal, ...patch };
-    config.activePresets.charcoal = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-charcoal");
-  }
-
-  function updateZap(patch: Partial<ZapIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update zap");
-    config.zap = { ...config.zap, ...patch };
-    config.activePresets.zap = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-zap");
-  }
-
-  function updateSparkles(patch: Partial<SparklesIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update sparkles");
-    config.sparkles = { ...config.sparkles, ...patch };
-    config.activePresets.sparkles = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-sparkles");
-  }
-
-  function updateEcho(patch: Partial<EchoIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update echo");
-    config.echo = { ...config.echo, ...patch };
-    config.activePresets.echo = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-echo");
-  }
-
-  function updateBloom(patch: Partial<BloomIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update bloom");
-    config.bloom = { ...config.bloom, ...patch };
-    config.activePresets.bloom = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-bloom");
-  }
-
-  function updateWater(patch: Partial<WaterIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update water");
-    config.water = { ...config.water, ...patch };
-    config.activePresets.water = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-water");
-  }
-
-  function updateBubbles(patch: Partial<BubblesIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update bubbles");
-    config.bubbles = { ...config.bubbles, ...patch };
-    config.activePresets.bubbles = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-bubbles");
-  }
-
-  function updatePetals(patch: Partial<PetalsIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update petals");
-    config.petals = { ...config.petals, ...patch };
-    config.activePresets.petals = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-petals");
-  }
-
-  function updateSmoke(patch: Partial<SmokeIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update smoke");
-    config.smoke = { ...config.smoke, ...patch };
-    config.activePresets.smoke = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-smoke");
-  }
-
-  function updateInk(patch: Partial<InkIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update ink");
-    config.ink = { ...config.ink, ...patch };
-    config.activePresets.ink = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-ink");
-  }
-
-  function updateFrost(patch: Partial<FrostIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update frost");
-    config.frost = { ...config.frost, ...patch };
-    config.activePresets.frost = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-frost");
-  }
-
-  function updateSilk(patch: Partial<SilkIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update silk");
-    config.silk = { ...config.silk, ...patch };
-    config.activePresets.silk = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-silk");
-  }
-
-  function updatePulse(patch: Partial<PulseIntent>) {
-    sceneUndo.captureState("update-effect-config", "Update pulse");
-    config.pulse = { ...config.pulse, ...patch };
-    config.activePresets.pulse = null;
-    scheduleSave();
-    sceneUndo.commitStateCoalescing("effects-pulse");
-  }
-
   function updateEffect(effectId: string, patch: Record<string, unknown>) {
     if (!EFFECT_IDS.includes(effectId as any)) {
       throw new Error(`Unknown effect id: "${effectId}"`);
@@ -416,26 +307,14 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get effectLayerOverrides() { return config.effectLayerOverrides; },
     get version() { return version; },
 
+    effect<K extends keyof EffectConfigMap>(id: K): EffectConfigMap[K] {
+      return (config as unknown as Record<string, unknown>)[id] as EffectConfigMap[K];
+    },
+
     updateEffect,
     setActiveEffect,
     getEffectLayer,
     setEffectLayer,
-    updateTrails,
-    updateFire,
-    updateLed,
-    updateCharcoal,
-    updateZap,
-    updateSparkles,
-    updateEcho,
-    updateBloom,
-    updateWater,
-    updateBubbles,
-    updatePetals,
-    updateSmoke,
-    updateInk,
-    updateFrost,
-    updateSilk,
-    updatePulse,
     setTipEffectMap,
     applyPreset,
     updateOverride,

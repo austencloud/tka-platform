@@ -8,7 +8,7 @@ function applySparkles(
   presetId: string,
   patch: Partial<SparklesIntent>,
 ): void {
-  state.updateSparkles(patch);
+  state.updateEffect("sparkles", patch);
   // updateSparkles nulls activePresets.sparkles; restore it so the chip stays highlighted.
   state.applyPreset({
     id: presetId,

@@ -44,7 +44,7 @@
               type="button"
               role="radio"
               aria-checked={state.bubbles.palette === p.id}
-              onclick={() => state.updateBubbles({ palette: p.id })}
+              onclick={() => state.updateEffect("bubbles", { palette: p.id })}
             >
               <span class="swatch" style="background: {p.swatch}" aria-hidden="true"></span>
               {p.label}
@@ -62,7 +62,7 @@
                 type="color"
                 value={state.bubbles.customColor}
                 oninput={(e) =>
-                  state.updateBubbles({
+                  state.updateEffect("bubbles", {
                     customColor: (e.currentTarget as HTMLInputElement).value,
                   })}
               />
@@ -82,7 +82,7 @@
               type="button"
               role="radio"
               aria-checked={state.bubbles.trackingMode === t.id}
-              onclick={() => state.updateBubbles({ trackingMode: t.id })}
+              onclick={() => state.updateEffect("bubbles", { trackingMode: t.id })}
             >
               {t.label}
             </button>
@@ -101,7 +101,7 @@
           step="0.05"
           value={state.bubbles.ambientEmission}
           oninput={(e) =>
-            state.updateBubbles({
+            state.updateEffect("bubbles", {
               ambientEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -119,7 +119,7 @@
           step="0.05"
           value={state.bubbles.motionEmission}
           oninput={(e) =>
-            state.updateBubbles({
+            state.updateEffect("bubbles", {
               motionEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -137,7 +137,7 @@
           step="0.05"
           value={state.bubbles.intensity}
           oninput={(e) =>
-            state.updateBubbles({
+            state.updateEffect("bubbles", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -155,7 +155,7 @@
           step="0.05"
           value={state.bubbles.sizeJitter}
           oninput={(e) =>
-            state.updateBubbles({
+            state.updateEffect("bubbles", {
               sizeJitter: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
@@ -173,7 +173,7 @@
           step="0.05"
           value={state.bubbles.buoyancy}
           oninput={(e) =>
-            state.updateBubbles({
+            state.updateEffect("bubbles", {
               buoyancy: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
