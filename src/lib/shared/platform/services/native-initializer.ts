@@ -1,4 +1,4 @@
-import { isNative, isAndroid } from "../platform-detector";
+import { isNative, isAndroid } from "./platform-detector";
 
 export class NativeInitializer {
 	async initialize(): Promise<void> {

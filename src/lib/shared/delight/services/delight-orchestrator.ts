@@ -19,7 +19,7 @@ import {
 	type DelightConfig,
 	ACHIEVEMENT_INTENSITY_MAP,
 	INTENSITY_DEFAULTS
-} from '../../domain/delight-types';
+} from '../domain/delight-types';
 
 export class DelightOrchestrator {
 	private enabled: boolean = true;
