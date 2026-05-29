@@ -6,8 +6,8 @@
  */
 
 import type { GridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-import type { GridPosition } from "../../../grid/domain/enums/grid-enums";
-import type { PictographData } from "../../../shared/domain/models/PictographData";
+import type { GridPosition } from "../../grid/domain/enums/grid-enums";
+import type { PictographData } from "../../shared/domain/models/PictographData";
 
 export class BetaDetector {
   constructor(private positionMapper: GridPositionDeriver) {}
@@ -58,6 +58,6 @@ export class BetaDetector {
 // DIRECT EXPORT - Use this instead of betaDetector
 // This avoids DI container rebuilds when this file changes
 // ============================================================================
-import { gridPositionDeriver } from "../../../grid/services/implementations/GridPositionDeriver";
+import { gridPositionDeriver } from "../../grid/services/implementations/GridPositionDeriver";
 
 export const betaDetector = new BetaDetector(gridPositionDeriver);

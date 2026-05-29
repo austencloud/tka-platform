@@ -23,9 +23,9 @@
   import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
 
   // Prop SVG rendering
-  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
+  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/prop-svg-loader";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-  import { PropRotAngleManager } from "$lib/shared/pictograph/prop/services/implementations/PropRotAngleManager";
+  import { PropRotAngleManager } from "$lib/shared/pictograph/prop/services/prop-rot-angle-manager";
   import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";

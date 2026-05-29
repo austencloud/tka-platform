@@ -1,10 +1,10 @@
 import type {
-  GridLocation} from "../../../grid/domain/enums/grid-enums";
+  GridLocation} from "../../grid/domain/enums/grid-enums";
 import {
   GridMode,
-} from "../../../grid/domain/enums/grid-enums";
-import type { GridPointData } from "../../../grid/domain/models/grid-models";
-import { createGridPointData } from "../../../grid/utils/grid-coordinate-utils";
+} from "../../grid/domain/enums/grid-enums";
+import type { GridPointData } from "../../grid/domain/models/grid-models";
+import { createGridPointData } from "../../grid/utils/grid-coordinate-utils";
 
 // Cardinal locations use diamond grid coordinates
 const CARDINAL_LOCATIONS = new Set(["n", "e", "s", "w"]);

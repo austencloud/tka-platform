@@ -20,7 +20,7 @@
   import { setBuilderContext } from "./context/builder-context";
   import InteractiveCanvas from "$lib/shared/interactive-canvas/InteractiveCanvas.svelte";
   import { HandPathAnimator, getPathD } from "./services/hand-path-animator";
-  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
+  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/prop-svg-loader";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

@@ -6,12 +6,12 @@
  * Returns PropPlacementData that can be attached to PropPlacementData.
  */
 
-import { GridMode } from "../../../grid/domain/enums/grid-enums";
-import { deriveGridMode as _deriveGridMode } from "../../../grid/services/grid-mode-deriver";
-import { MotionColor } from "../../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../../shared/domain/models/MotionData";
-import type { PictographData } from "../../../shared/domain/models/PictographData";
-import { pictographRequiresStrictHandpoints } from "../../domain/enums/PropClassification";
+import { GridMode } from "../../grid/domain/enums/grid-enums";
+import { deriveGridMode as _deriveGridMode } from "../../grid/services/grid-mode-deriver";
+import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
+import type { MotionData } from "../../shared/domain/models/MotionData";
+import type { PictographData } from "../../shared/domain/models/PictographData";
+import { pictographRequiresStrictHandpoints } from "../domain/enums/PropClassification";
 
 // Settings interface for Node.js contexts where getSettings() isn't available
 interface PropPlacerSettings {
@@ -21,15 +21,15 @@ interface PropPlacerSettings {
   redBuugengFlipped?: boolean;
 }
 
-import { createPropPlacementFromPosition } from "../../domain/factories/createPropPlacementData";
+import { createPropPlacementFromPosition } from "../domain/factories/createPropPlacementData";
 // Removed: import { getSettings } from app-state.svelte
 // That import chain pulls in Firebase auth → window access → crashes in Web Workers.
 // Callers pass settings via constructor or motion data; STAFF is the safe default.
-import type { PropPlacementData } from "../../domain/models/PropPlacementData";
-import type { BetaDetector } from "./BetaDetector";
-import type { PropPlacementVisibility } from "../contracts/types";
-import DefaultPropPositioner from "./DefaultPropPositioner";
-import { PropRotAngleManager } from "./PropRotAngleManager";
+import type { PropPlacementData } from "../domain/models/PropPlacementData";
+import type { BetaDetector } from "./beta-detector";
+import type { PropPlacementVisibility } from "./types";
+import DefaultPropPositioner from "./default-prop-positioner";
+import { PropRotAngleManager } from "./prop-rot-angle-manager";
 import {
   calculateBetaOffset,
   type BetaOffsetInput,
@@ -217,6 +217,6 @@ export class PropPlacer {
 // Use this instead of propPlacer to avoid DI container rebuilds.
 // ============================================================================
 
-import { betaDetector } from "./BetaDetector";
+import { betaDetector } from "./beta-detector";
 
 export const propPlacer = new PropPlacer(betaDetector);

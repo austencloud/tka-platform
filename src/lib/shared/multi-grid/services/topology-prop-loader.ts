@@ -12,8 +12,8 @@
 
 import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
 import type { TopologyPropRenderData } from "./types";
-import { DefaultPropPositioner } from "$lib/shared/pictograph/prop/services/implementations/DefaultPropPositioner";
-import { PropRotAngleManager } from "$lib/shared/pictograph/prop/services/implementations/PropRotAngleManager";
+import { DefaultPropPositioner } from "$lib/shared/pictograph/prop/services/default-prop-positioner";
+import { PropRotAngleManager } from "$lib/shared/pictograph/prop/services/prop-rot-angle-manager";
 import { GridLocation as GridLocationEnum, GridMode as GridModeEnum } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {

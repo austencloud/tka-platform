@@ -17,9 +17,9 @@ import { ArrowSvgParser } from "../../src/lib/shared/pictograph/arrow/rendering/
 import { ArrowSvgColorTransformer } from "../../src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowSvgColorTransformer";
 import { GridModeDeriver } from "../../src/lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 import { GridPositionDeriver } from "../../src/lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-import { BetaDetector } from "../../src/lib/shared/pictograph/prop/services/implementations/BetaDetector";
+import { BetaDetector } from "../../src/lib/shared/pictograph/prop/services/beta-detector";
 import { OrientationCalculator } from "../../src/lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { PropPlacer } from "../../src/lib/shared/pictograph/prop/services/implementations/PropPlacer";
+import { PropPlacer } from "../../src/lib/shared/pictograph/prop/services/prop-placer";
 import { NodePictographPreparer } from "./NodePictographPreparer";
 
 // Import all arrow positioning services

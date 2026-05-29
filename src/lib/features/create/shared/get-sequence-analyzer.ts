@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 
 import { SequenceAnalyzer } from './services/sequence-analyzer';
-import { betaDetector } from '$lib/shared/pictograph/prop/services/implementations/BetaDetector';
+import { betaDetector } from '$lib/shared/pictograph/prop/services/beta-detector';
 
 let instance: SequenceAnalyzer | null = null;
 

@@ -6,8 +6,8 @@ import type {
 } from "../../domain/models/PreparedPictographData";
 import type { PrepareOptions } from "../contracts/types";
 import type { ArrowLifecycleManager } from "../../../arrow/orchestration/services/arrow-lifecycle-manager";
-import type { PropSvgLoader } from "../../../prop/services/implementations/PropSvgLoader";
-import type { PropPlacer } from "../../../prop/services/implementations/PropPlacer";
+import type { PropSvgLoader } from "../../../prop/services/prop-svg-loader";
+import type { PropPlacer } from "../../../prop/services/prop-placer";
 import { deriveGridMode as _deriveGridMode } from "../../../grid/services/grid-mode-deriver";
 import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
@@ -404,8 +404,8 @@ export class PictographPreparer {
 }
 
 import { arrowLifecycleManager } from "../../../arrow/orchestration/services/arrow-lifecycle-manager";
-import { propSvgLoader } from "../../../prop/services/implementations/PropSvgLoader";
-import { propPlacer } from "../../../prop/services/implementations/PropPlacer";
+import { propSvgLoader } from "../../../prop/services/prop-svg-loader";
+import { propPlacer } from "../../../prop/services/prop-placer";
 
 export const pictographPreparer = new PictographPreparer(
   arrowLifecycleManager,

@@ -21,7 +21,7 @@ export interface PropPlacementVisibility {
  * Fast, direct SVG loading for props - mirrors arrow loading approach
  */
 
-import type { ThemeMode } from "../../../../utils/svg-color-utils";
+import type { ThemeMode } from "../../../utils/svg-color-utils";
 
 /**
  * Options for prop SVG loading

@@ -1,7 +1,7 @@
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BetaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
+import type { BetaDetector } from "$lib/shared/pictograph/prop/services/beta-detector";
 
 /**
  * Circular Sequence Type
@@ -598,6 +598,6 @@ export class SequenceAnalyzer {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { betaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
+import { betaDetector } from "$lib/shared/pictograph/prop/services/beta-detector";
 
 export const sequenceAnalyzer = new SequenceAnalyzer(betaDetector);

@@ -5,10 +5,10 @@
  */
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import DefaultPropPositioner from "$lib/shared/pictograph/prop/services/implementations/DefaultPropPositioner";
+import DefaultPropPositioner from "$lib/shared/pictograph/prop/services/default-prop-positioner";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { propPlacer } from "$lib/shared/pictograph/prop/services/implementations/PropPlacer";
+import { propPlacer } from "$lib/shared/pictograph/prop/services/prop-placer";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
