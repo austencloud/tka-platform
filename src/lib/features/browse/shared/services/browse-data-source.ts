@@ -8,8 +8,8 @@
 
 import type { BrowseQueryResult } from "./types";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/PublicSequencesLoader";
-import type { SoloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
-import type { HandPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
+import type { SoloPropRepository } from "$lib/shared/foundation/services/solo-prop-repository-store";
+import type { HandPathRepository } from "$lib/shared/foundation/services/hand-path-repository-store";
 import type { BrowseViewMode } from "$lib/shared/browse/domain/BrowseViewMode";
 
 export class BrowseDataSource {

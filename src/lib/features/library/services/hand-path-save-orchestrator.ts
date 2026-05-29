@@ -7,7 +7,7 @@
  * hand-crafted paths and those automatically decomposed from sequences.
  */
 
-import type { HandPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
+import type { HandPathRepository } from "$lib/shared/foundation/services/hand-path-repository-store";
 import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
 import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
 

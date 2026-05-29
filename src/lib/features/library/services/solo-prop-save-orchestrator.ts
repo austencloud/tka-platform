@@ -7,8 +7,8 @@
  * so it appears in the hand path library too.
  */
 
-import type { SoloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
-import type { HandPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
+import type { SoloPropRepository } from "$lib/shared/foundation/services/solo-prop-repository-store";
+import type { HandPathRepository } from "$lib/shared/foundation/services/hand-path-repository-store";
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
 import type { ArtifactProvenance } from "$lib/shared/foundation/domain/models/ArtifactProvenance";
 
