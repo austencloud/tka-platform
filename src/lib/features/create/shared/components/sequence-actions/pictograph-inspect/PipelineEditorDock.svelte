@@ -208,6 +208,7 @@
   // The Default-tier lookup identity, surfaced by the diagnostics producer.
   const defaultLookup = $derived.by((): {
     gridMode: string;
+    propType: string;
     motionType: string;
     placementKey: string;
     turns: string;
@@ -217,6 +218,7 @@
     if (!d.gridMode || !d.motionType || !d.placementKey) return null;
     return {
       gridMode: d.gridMode,
+      propType: d.propType,
       motionType: d.motionType,
       placementKey: d.placementKey,
       turns: d.turns,
@@ -231,6 +233,7 @@
     return (
       getDefaultOverrideRepository()?.hasValue(
         lk.gridMode,
+        lk.propType,
         lk.motionType,
         lk.placementKey,
         lk.turns,
@@ -271,6 +274,12 @@
     if (!key) return null;
     return getGlobalAdjustmentRepository()?.getAdjustment(key) ?? null;
   });
+
+  const dockTitleText = $derived(
+    editTarget === "default"
+      ? `${colorName} · ${thisPropType} · Default`
+      : `${colorName} · ${tierLabel(editTarget)}`,
+  );
 
   function tierLabel(tier: PipelineTier): string {
     switch (tier) {
@@ -673,7 +682,7 @@
     const repo = getDefaultOverrideRepository();
     const lk = defaultLookup;
     if (!repo || !lk) return;
-    repo.saveDefaultLocal(lk.gridMode, lk.motionType, lk.placementKey, lk.turns, [editX, editY]);
+    repo.saveDefaultLocal(lk.gridMode, lk.propType, lk.motionType, lk.placementKey, lk.turns, [editX, editY]);
     pictographPreparer.clearCache();
     globalAdjustmentVersion.increment();
     hasLocalChanges = true;
@@ -685,7 +694,7 @@
     if (!repo || !lk) return;
     try {
       saveState = "saving";
-      await repo.saveDefault(lk.gridMode, lk.motionType, lk.placementKey, lk.turns, [editX, editY]);
+      await repo.saveDefault(lk.gridMode, lk.propType, lk.motionType, lk.placementKey, lk.turns, [editX, editY]);
       saveState = "saved";
       hasLocalChanges = false;
       getHapticFeedback()?.trigger("success");
@@ -702,8 +711,8 @@
     const lk = defaultLookup;
     if (!repo || !lk) return;
     try {
-      repo.deleteDefaultLocal(lk.gridMode, lk.motionType, lk.placementKey, lk.turns);
-      await repo.deleteDefault(lk.gridMode, lk.motionType, lk.placementKey, lk.turns);
+      repo.deleteDefaultLocal(lk.gridMode, lk.propType, lk.motionType, lk.placementKey, lk.turns);
+      await repo.deleteDefault(lk.gridMode, lk.propType, lk.motionType, lk.placementKey, lk.turns);
       pictographPreparer.clearCache();
       globalAdjustmentVersion.increment();
       hasLocalChanges = false;
@@ -723,7 +732,14 @@
   {:else}
     <div class="dock-head">
       <span class="dock-dot" style="background: {colorToken}"></span>
-      <span class="dock-title">{colorName} · {tierLabel(editTarget)}</span>
+      <!-- Ghost-sizer: the title box reserves the width of the longest possible
+           variant so flipping color (Red↔Blue) or tier never resizes the head
+           and shoves the rest of the dock row. The hidden sizer must hold the
+           widest combination of {colorName} · {tierLabel}. -->
+      <span class="dock-title">
+        <span class="dock-title-sizer" aria-hidden="true">Blue · bigdoublecontactball · Default</span>
+        <span class="dock-title-live">{dockTitleText}</span>
+      </span>
     </div>
 
     <div class="dock-tier">
@@ -777,8 +793,17 @@
   .dock-idle { display: flex; align-items: center; gap: 8px; color: var(--theme-text-dim, rgba(255,255,255,0.5)); font-size: var(--font-size-min, 14px); }
   .dock-head { display: flex; align-items: center; gap: 8px; }
   .dock-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
-  .dock-title { font-size: var(--font-size-min, 14px); font-weight: 700; white-space: nowrap; color: var(--theme-text, #fff); }
-  .dock-tier { min-width: 340px; }
+  /* inline-grid stacks sizer + live text in one cell; cell width = widest of
+     the two = the sizer. Live text left-aligns over it. No reflow on switch. */
+  .dock-title { display: inline-grid; font-size: var(--font-size-min, 14px); font-weight: 700; color: var(--theme-text, #fff); }
+  .dock-title-sizer,
+  .dock-title-live { grid-area: 1 / 1; white-space: nowrap; }
+  .dock-title-sizer { visibility: hidden; }
+  .dock-title-live { font-variant-numeric: tabular-nums; }
+  /* Wide enough that the equal-width segments fit their longest label
+     ("Special JSON" / "Prop Geometry") without clipping. Grows into spare
+     dock space, wraps to its own full-width row when the dock is cramped. */
+  .dock-tier { flex: 1 1 520px; min-width: 460px; max-width: 680px; }
   .dock-vals { display: flex; gap: 12px; }
   .dock-input-label { display: flex; align-items: center; gap: 6px; color: var(--theme-text-dim, rgba(255,255,255,0.6)); font-size: var(--font-size-min, 14px); font-weight: 600; }
   .dock-input {
