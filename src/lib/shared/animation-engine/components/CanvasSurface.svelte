@@ -262,21 +262,34 @@ captureEffectDiagnostics to the context menu.
     const el = containerElement;
     if (!el) return;
 
+    // Register the render context AFTER the (async) engine init resolves.
+    // getRenderContext returns null until the awaited lifecycle init has created
+    // the renderer/renderLoop/trailCapturer/resizer. The previous queueMicrotask
+    // fired before that completed, so getRenderContext returned null and the
+    // context was NEVER registered — silently disabling every registry consumer
+    // (the export's native-res resize and the export-start trail reset). The
+    // `disposed` guard prevents registering a context for an engine that was torn
+    // down before init finished.
+    let disposed = false;
     untrack(() => {
-      engineInstance.initialize(el, {
-        onCanvasReady,
-        onTrailSettingsChange: (settings) => {
-          externalTrailSettings = settings;
-        },
-        onEffectError,
-      });
-
-      queueMicrotask(() => {
-        const ctx = engineInstance.getRenderContext(resolvedContextId, el);
-        if (ctx) {
-          getRenderContextRegistry().register(ctx);
-        }
-      });
+      void engineInstance
+        .initialize(el, {
+          onCanvasReady,
+          onTrailSettingsChange: (settings) => {
+            externalTrailSettings = settings;
+          },
+          onEffectError,
+        })
+        .then(() => {
+          if (disposed) return;
+          const ctx = engineInstance.getRenderContext(resolvedContextId, el);
+          if (ctx) {
+            getRenderContextRegistry().register(ctx);
+          }
+        })
+        .catch(() => {
+          // Init failures surface via onEffectError; nothing to register.
+        });
     });
 
     // Dev-only: install the LED/fire console diagnostics on window. Gated on
@@ -291,6 +304,7 @@ captureEffectDiagnostics to the context menu.
     }
 
     return () => {
+      disposed = true;
       untrack(() => {
         disposeDiagnostics?.();
         getRenderContextRegistry().unregister(resolvedContextId);
