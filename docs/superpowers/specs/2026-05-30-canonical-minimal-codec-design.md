@@ -69,16 +69,27 @@ classification or a propagation of those inputs.
 
 | Field | Width | Notes |
 |-------|-------|-------|
-| prefloatMotionType | 1 char | the pro/anti the float came from — NOT derivable |
-| prefloatRotationDirection | 1 char | NOT derivable |
+| prefloatMotionType | 1 char | the pro/anti the float came from — NOT derivable from geometry (same locations could come from either) |
+
+`prefloatRotationDirection` is **NOT stored** — it is derived from
+`prefloatMotionType + startLoc + endLoc` via the same orbital-direction rule. The
+codebase already mandates this: `SoloPropStepData.ts:25-27` and
+`sequence-decomposer.ts:26-27` both document that prefloatRotationDirection is
+intentionally not persisted, and `step-deriver.ts:derivePrefloatRotation` is the
+canonical deriver. Storing it would violate the derive-don't-store principle this
+codec is built on.
 
 ### Derived on decode
 
 - **motionType** — from `{startLocation, endLocation, rotationDirection, turns}`
+- **handPath** (incl. hashIn/hashOut) — from locations (center involvement) +
+  orbital direction
 - **startOrientation** (per motion) — chained from the seed, per hand
 - **endOrientation** (per motion) — from motionType + turns + rotationDirection +
   locations + startOrientation
 - **propType** (per motion) — copied from the header value for the motion's color
+- **prefloatRotationDirection** (floats only) — from `prefloatMotionType` +
+  locations
 
 ### Why each derived field is safe to drop
 
@@ -178,7 +189,8 @@ the existing partial `deriveMotionType` at it. No new orbital table is authored.
 ### Why the rule is correct for each type
 
 - **float:** identified by the `turns == "fl"` marker before any geometry check.
-  Its underlying pro/anti is preserved as stored prefloat fields.
+  Its underlying pro/anti is preserved as the stored `prefloatMotionType`; the
+  prefloat rotation direction is then derived from that plus locations.
 - **shift (pro/anti):** `deriveHandOrbitalDirection` returns the arc direction;
   `rotationDirection` is guaranteed `cw`/`ccw` on shifts (see invariant below), so
   the pro/anti comparison always has a real direction to compare against.
@@ -203,27 +215,27 @@ a value derived later.
 
 ---
 
-## Known boundaries (flagged, out of scope today)
+## Fully handled (no stored field needed)
 
-These are not bugs in the design; they are the edges of what the current encoded
-space contains. Each is guarded by the parity ship gate below.
+- **hash (`HandMotionType.HASH_IN/OUT`):** pure geometry. A hash is a straight line
+  to/from center (dash−). On the `MotionType` axis it derives to `dash` (rotation
+  physics are dash-identical); on the `HandPath` axis `deriveHandPath` returns
+  `hashIn` (end is center) / `hashOut` (start is center) from center involvement.
+  Both directions are hash. Recovered entirely from the stored locations — no
+  caveat, no reserved marker. The parity gate asserts both derivers against real
+  data.
+- **center positions (Tau / Terra):** `c` is a valid `GridLocation`. A `c→c`
+  motion is `static` (start == end). A perimeter↔center motion is `dash`
+  (MotionType) + `hash` (HandPath), per above. Fully derived.
 
-- **hash (`HandMotionType.HASH_IN/OUT`):** not a `MotionType`; it is a `HandPath`
-  value. A hash is a straight line to/from center (dash−). On the `MotionType`
-  axis it derives to `dash` (rotation physics are dash-identical); on the
-  `HandPath` axis `deriveHandPath` returns `hashIn`/`hashOut` from center
-  involvement. Both are recovered from the stored locations — nothing is lost. The
-  parity gate asserts both derivers against real data.
+## Known boundaries (genuinely not derivable — flagged, out of scope today)
+
 - **skew (`SkewDirection +/-`, L5+):** arc length is **not** derivable from
   endpoints (e.g. S→NE spans multiple segments and is reachable by more than one
   arc). Skews are not in the current `MotionType` encoding. When L5+ skew encoding
-  lands, it MUST store an explicit skew marker; derivation cannot recover it. The
-  format reserves room for this; it is not built now.
-- **center positions (Tau / Terra):** `c` is a valid `GridLocation`. A `c→c`
-  motion is `static` (start == end). A perimeter↔center motion is `dash` on the
-  `MotionType` axis and `hash` (`hashIn` toward center / `hashOut` away from
-  center) on the `HandPath` axis. Both directions are hash. Covered by the parity
-  gate.
+  lands, it MUST store an explicit skew marker; derivation cannot recover it. This
+  is the one axis that earns a stored field when it arrives. Not built now; the
+  parity gate flags any current data that would need it.
 
 ---
 
@@ -298,8 +310,8 @@ the weeds."
    names the offending motion. This proves losslessness against real data, not
    against hand-reasoning.
 2. **Round-trip.** For a representative sequence set: encode → decode reproduces
-   every motion's motionType, startOrientation, endOrientation, propType, and
-   prefloat pair.
+   every motion's motionType, handPath, startOrientation, endOrientation,
+   propType, stored `prefloatMotionType`, and derived `prefloatRotationDirection`.
 3. **Orientation algebra** (carried over from the v2/v3 tests): pro/anti × turns
    parities, fractional turns, nonradial seeds.
 4. **Drift guard.** Extend `deriver-parity.test.ts` to assert the codec's
