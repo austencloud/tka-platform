@@ -130,70 +130,53 @@ const INLINE_PREFIX = "s~";
 // ============================================================================
 
 
-function encodeMotion(motion: MotionData | undefined, formatVersion: 1 | 2 | 3 = 3): string {
+function encodeMotion(motion: MotionData | undefined): string {
   if (!motion) return "";
 
   const startLoc = LOCATION_ENCODE[motion.startLocation];
   const endLoc = LOCATION_ENCODE[motion.endLocation];
-  const startOrient = ORIENTATION_ENCODE[motion.startOrientation];
-  const endOrient = ORIENTATION_ENCODE[motion.endOrientation];
-  const normalizedRotDir =
-    motion.rotationDirection === ("no_rotation" as RotationDirection)
-      ? RotationDirection.NO_ROTATION
-      : motion.rotationDirection;
-  const rotation =
-    ROTATION_ENCODE[normalizedRotDir] ??
-    (motion.motionType === "static" || motion.motionType === "dash"
-      ? ROTATION_ENCODE[RotationDirection.NO_ROTATION]
-      : undefined);
-  const turns = motion.turns === "fl" ? "f" : String(motion.turns);
-  const type = MOTION_TYPE_ENCODE[motion.motionType];
-  const prop = PROP_TYPE_ENCODE[motion.propType] ?? PROP_TYPE_ENCODE[PropType.STAFF];
+  const isFloat = motion.turns === "fl";
 
-  // v2 derives endOrientation on decode; v3 additionally chains startOrientation
-  // from the previous beat (carried as a per-sequence seed header), so neither
-  // orientation is required to encode in v3.
-  const startOrientRequired = formatVersion !== 3;
-  const endOrientRequired = formatVersion === 1;
-  if (
-    !startLoc || !endLoc ||
-    (startOrientRequired && !startOrient) ||
-    (endOrientRequired && !endOrient) ||
-    !rotation || !type || !prop
-  ) {
-    console.error("❌ URL Encoder: Motion has missing required fields!", {
-      hasStartLoc: !!startLoc,
-      hasEndLoc: !!endLoc,
-      hasStartOrient: !!startOrient,
-      hasEndOrient: !!endOrient,
-      hasRotation: !!rotation,
-      hasType: !!type,
-      hasProp: !!prop,
-      formatVersion,
-      motion: {
-        startLocation: motion.startLocation,
-        endLocation: motion.endLocation,
-        startOrientation: motion.startOrientation,
-        endOrientation: motion.endOrientation,
-        rotationDirection: motion.rotationDirection,
-        motionType: motion.motionType,
-        propType: motion.propType,
-      },
+  // A float does not spin: its own rotation is noRotation. The prefloat rotation
+  // (cw/ccw) is appended as a separate char so the type can be derived on decode.
+  const rotation = isFloat
+    ? ROTATION_ENCODE[RotationDirection.NO_ROTATION]
+    : ROTATION_ENCODE[
+        motion.rotationDirection === ("no_rotation" as RotationDirection)
+          ? RotationDirection.NO_ROTATION
+          : motion.rotationDirection
+      ] ??
+      (motion.motionType === "static" || motion.motionType === "dash"
+        ? ROTATION_ENCODE[RotationDirection.NO_ROTATION]
+        : undefined);
+
+  const turns = isFloat ? "f" : String(motion.turns);
+
+  if (!startLoc || !endLoc || !rotation) {
+    console.error("❌ Encoder: motion missing required fields", {
+      startLocation: motion.startLocation,
+      endLocation: motion.endLocation,
+      rotationDirection: motion.rotationDirection,
+      turns: motion.turns,
     });
     return "";
   }
 
-  if (formatVersion === 1)
-    return `${startLoc}${endLoc}${startOrient}${endOrient}${rotation}${turns}${type}${prop}`;
-  if (formatVersion === 2)
-    return `${startLoc}${endLoc}${startOrient}${rotation}${turns}${type}${prop}`;
-  return `${startLoc}${endLoc}${rotation}${turns}${type}${prop}`;
+  if (!isFloat) {
+    return `${startLoc}${endLoc}${rotation}${turns}`;
+  }
+
+  // Float: append prefloat rotation (always cw/ccw — floats are always shifts).
+  const prefloatRot =
+    ROTATION_ENCODE[motion.prefloatRotationDirection as RotationDirection] ??
+    ROTATION_ENCODE[RotationDirection.CLOCKWISE];
+  return `${startLoc}${endLoc}${rotation}${turns}${prefloatRot}`;
 }
 
 function encodeBeat(beat: StepData | StartPositionData, formatVersion: 1 | 2 | 3 = 3): string {
   const motions = beat.motions ?? { blue: undefined, red: undefined };
-  const blueMotion = encodeMotion(motions.blue, formatVersion);
-  const redMotion = encodeMotion(motions.red, formatVersion);
+  const blueMotion = encodeMotion(motions.blue);
+  const redMotion = encodeMotion(motions.red);
   return `${blueMotion}:${redMotion}`;
 }
 
