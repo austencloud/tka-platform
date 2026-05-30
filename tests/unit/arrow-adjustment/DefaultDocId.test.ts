@@ -18,6 +18,16 @@ describe("default doc id (prop-aware)", () => {
     });
   });
 
+  it("round-trips a multi-token prop (underscore in propType)", () => {
+    expect(generateDefaultDocId("diamond", "simple_staff", "pro")).toBe("diamond_simple_staff_pro");
+    expect(parseDefaultDocId("diamond_simple_staff_pro")).toEqual({
+      gridMode: "diamond", propType: "simple_staff", motionType: "pro",
+    });
+    expect(parseDefaultDocId("box_staff_v2_dash")).toEqual({
+      gridMode: "box", propType: "staff_v2", motionType: "dash",
+    });
+  });
+
   it("rejects malformed ids", () => {
     expect(parseDefaultDocId("diamond")).toBeNull();
   });

@@ -43,19 +43,19 @@ export function generateDefaultDocId(gridMode: string, propType: string, motionT
 export function parseDefaultDocId(
   docId: string,
 ): { gridMode: string; propType: string; motionType: string } | null {
+  // gridMode (diamond/box/skewed) and motionType (pro/anti/float/dash/static)
+  // are single tokens with no underscore, so the first segment is always the
+  // gridMode and the last is always the motionType. propType is everything in
+  // between — joined with "_" so multi-token props (simple_staff, staff_v2)
+  // round-trip. A legacy 2-part id ("{gridMode}_{motionType}") predates the
+  // prop dimension → staff.
   const parts = docId.split("_");
-  // Legacy 2-part ids ("{gridMode}_{motionType}") predate the prop dimension → staff.
-  if (parts.length === 2) {
-    const [gridMode, motionType] = parts;
-    if (!gridMode || !motionType) return null;
-    return { gridMode, propType: "staff", motionType };
-  }
-  if (parts.length === 3) {
-    const [gridMode, propType, motionType] = parts;
-    if (!gridMode || !propType || !motionType) return null;
-    return { gridMode, propType, motionType };
-  }
-  return null;
+  if (parts.length < 2) return null;
+  const gridMode = parts[0];
+  const motionType = parts[parts.length - 1];
+  if (!gridMode || !motionType) return null;
+  const propType = parts.length === 2 ? "staff" : parts.slice(1, -1).join("_");
+  return { gridMode, propType, motionType };
 }
 
 /** Build a doc body from an in-memory placements map. Inverse of a doc read. */
