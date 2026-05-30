@@ -113,6 +113,21 @@ export class ImageComposer {
   private async getVisibilitySettings(
     overrides?: SequenceExportOptions["visibilityOverrides"]
   ): Promise<PictographVisibilityOptions> {
+    // Tripwire: the LOCKED card path (deckCard / printMode) must pass a full,
+    // explicit visibility set so it never inherits the global vm. If a deckCard
+    // render arrives with partial overrides it would silently leak app-wide
+    // toggles onto printed cards — warn loudly in dev.
+    if (
+      (import.meta as any).env?.DEV &&
+      overrides?.printMode === true &&
+      overrides.showNonRadialPoints === undefined
+    ) {
+      console.warn(
+        "[ImageComposer] Locked card render passed partial visibilityOverrides " +
+          "(showNonRadialPoints undefined) — it will inherit the global vm. " +
+          "Use buildCanonicalCardVisibility() for deck/print renders.",
+      );
+    }
     if (
       overrides?.showTKA !== undefined &&
       overrides.showTnD !== undefined &&
