@@ -302,6 +302,7 @@ export class ArrowAdjustmentCalculator {
               letter: pictographData.letter || "",
               turnsTuple: String(jsonResult.turnsTupleKey),
               motionType: motionData.motionType?.toLowerCase() || "",
+              attributeKey: attrKey || "",
             });
             const fullOverride = specialOverrideRepo.getFullOverride(overrideKey);
             if (fullOverride) {
@@ -327,6 +328,10 @@ export class ArrowAdjustmentCalculator {
                 ? _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
                 : "diamond");
             const turnsTupleArr = generateTurnsTuple(pictographData);
+            const [, , attrKeyForOverride] = this.generateLookupKeys(
+              pictographData,
+              motionData
+            );
 
             for (const folder of [oriKey, mapToLegacyBucket(oriKey)]) {
               const overrideKey = generateSpecialOverrideKey({
@@ -335,6 +340,7 @@ export class ArrowAdjustmentCalculator {
                 letter: pictographData.letter,
                 turnsTuple: turnsTupleArr.join(","),
                 motionType: motionData.motionType?.toLowerCase() || "",
+                attributeKey: attrKeyForOverride || "",
               });
               const fullOverride = specialOverrideRepo.getFullOverride(overrideKey);
               if (fullOverride) {
@@ -574,6 +580,7 @@ export class ArrowAdjustmentCalculator {
             letter: pictographData.letter,
             turnsTuple: String(jsonResult.turnsTupleKey),
             motionType: motionData.motionType?.toLowerCase() || "",
+            attributeKey: attributeKey || "",
           });
 
           const override = specialOverrideRepo.getOverride(overrideKey);

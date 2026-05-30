@@ -37,6 +37,7 @@
     resolveEffectiveOriKey,
   } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
   import { generateTurnsTuple } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/turns-tuple-key-generator";
+  import { getKeyFromArrow } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/attribute-key-generator";
   import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
   import { getPropGeometryRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton";
   import { derivePropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-key-deriver";
@@ -110,6 +111,23 @@
     return (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff";
   });
 
+  // Per-arrow discriminator, identical to what the static special-placement
+  // lookup keys on. Without it both arrows of a same-motion-type letter share
+  // one override key and a nudge to one moves both.
+  const specialAttributeKey = $derived.by((): string => {
+    const c = activeColor ?? "blue";
+    const motion = stepData.motions?.[c];
+    if (!motion || !stepData.letter) return "";
+    const pictographData: PictographData = {
+      id: stepData.id,
+      letter: stepData.letter,
+      startPosition: stepData.startPosition,
+      endPosition: stepData.endPosition,
+      motions: stepData.motions as PictographData["motions"],
+    };
+    return getKeyFromArrow({} as never, pictographData, c);
+  });
+
   const specialOverrideKey = $derived.by((): string | null => {
     if (!diagnostics || !stepData.letter) return null;
     const motion = stepData.motions?.[activeColor ?? "blue"];
@@ -124,6 +142,7 @@
         letter: stepData.letter,
         turnsTuple: diagnostics.specialJson.turnsTupleKey,
         motionType: motion.motionType?.toLowerCase() || "",
+        attributeKey: specialAttributeKey,
       });
     }
 
@@ -145,6 +164,7 @@
       letter: stepData.letter,
       turnsTuple: turnsTupleArr.join(","),
       motionType: motion.motionType?.toLowerCase() || "",
+      attributeKey: specialAttributeKey,
     });
   });
 
@@ -482,6 +502,7 @@
       letter: stepData.letter,
       turnsTuple,
       motionType: motion.motionType?.toLowerCase() || "",
+      attributeKey: specialAttributeKey,
       adjustmentX: x,
       adjustmentY: y,
       originalX: original?.x ?? 0,

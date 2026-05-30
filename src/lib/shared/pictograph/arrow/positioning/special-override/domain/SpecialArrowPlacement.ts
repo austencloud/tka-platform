@@ -9,6 +9,10 @@ export interface SpecialArrowPlacement {
   readonly letter: string;
   readonly turnsTuple: string;
   readonly motionType: string;
+  // Per-arrow discriminator (the same attribute key the static special-placement
+  // JSON keys on — color for non-hybrid letters). Without this two arrows that
+  // share motionType collapse to one key and an override bleeds across both.
+  readonly attributeKey: string;
   readonly adjustmentX: number;
   readonly adjustmentY: number;
   readonly originalX: number;
@@ -23,6 +27,7 @@ export interface SpecialArrowPlacementInput {
   readonly letter: string;
   readonly turnsTuple: string;
   readonly motionType: string;
+  readonly attributeKey: string;
   readonly adjustmentX: number;
   readonly adjustmentY: number;
   readonly originalX: number;
@@ -37,6 +42,10 @@ export const SpecialArrowPlacementSchema = z
     letter: z.string(),
     turnsTuple: z.string(),
     motionType: z.string(),
+    // Legacy docs predate this field. Default to "" so they parse cleanly and
+    // become inert (an empty discriminator never matches a real 6-part key)
+    // rather than incorrectly bleeding across both arrows.
+    attributeKey: z.string().default(""),
     adjustmentX: z.number(),
     adjustmentY: z.number(),
     originalX: z.number(),
@@ -52,8 +61,9 @@ export function generateSpecialOverrideKey(input: {
   letter: string;
   turnsTuple: string;
   motionType: string;
+  attributeKey: string;
 }): string {
-  return `${input.gridMode}|${input.oriFolder}|${input.letter}|${input.turnsTuple}|${input.motionType}`;
+  return `${input.gridMode}|${input.oriFolder}|${input.letter}|${input.turnsTuple}|${input.motionType}|${input.attributeKey}`;
 }
 
 export function parseSpecialOverrideKey(key: string): {
@@ -62,12 +72,13 @@ export function parseSpecialOverrideKey(key: string): {
   letter: string;
   turnsTuple: string;
   motionType: string;
+  attributeKey: string;
 } | null {
   const parts = key.split("|");
-  if (parts.length !== 5) return null;
-  const [gridMode, oriFolder, letter, turnsTuple, motionType] = parts;
-  if (!gridMode || !oriFolder || !letter || !turnsTuple || !motionType) return null;
-  return { gridMode, oriFolder, letter, turnsTuple, motionType };
+  if (parts.length !== 6) return null;
+  const [gridMode, oriFolder, letter, turnsTuple, motionType, attributeKey] = parts;
+  if (!gridMode || !oriFolder || !letter || !turnsTuple || !motionType || !attributeKey) return null;
+  return { gridMode, oriFolder, letter, turnsTuple, motionType, attributeKey };
 }
 
 export function extractOriFolderFromPath(filePath: string): string {

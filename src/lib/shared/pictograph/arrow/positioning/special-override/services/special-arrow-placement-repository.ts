@@ -114,6 +114,7 @@ export class SpecialArrowPlacementRepository {
       letter: input.letter,
       turnsTuple: input.turnsTuple,
       motionType: input.motionType,
+      attributeKey: input.attributeKey,
       adjustmentX: input.adjustmentX,
       adjustmentY: input.adjustmentY,
       originalX: input.originalX,
