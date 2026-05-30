@@ -189,6 +189,11 @@ export interface IAnimationRenderLoop {
    */
   triggerRender(getFrameParams: () => RenderFrameParams): void;
 
+  /** Render ONE frame synchronously, now, with an explicit sim dt (seconds).
+   *  Bypasses rAF/needsRender scheduling — used by the offscreen export path so
+   *  rendering is deterministic. The free-running loop is never started. */
+  renderSync(params: RenderFrameParams, timeMs: number, dtSeconds: number): void;
+
   /**
    * Set a target FPS for preview throttling.
    * null = no throttling (render at native refresh rate).

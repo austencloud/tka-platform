@@ -317,6 +317,13 @@ export class AnimationRenderLoop {
     }
   }
 
+  /** Render ONE frame synchronously, now, with an explicit sim dt (seconds).
+   *  Bypasses rAF/needsRender scheduling — used by the offscreen export path so
+   *  rendering is deterministic. The free-running loop is never started. */
+  renderSync(params: RenderFrameParams, timeMs: number, dtSeconds: number): void {
+    this.render(params, timeMs, dtSeconds);
+  }
+
   setTargetFps(_fps: number | null): void {
     // No-op: FPS throttling removed - time-based animation interpolation
     // makes frame rate differences imperceptible in the preview.
