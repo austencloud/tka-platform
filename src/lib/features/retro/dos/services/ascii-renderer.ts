@@ -19,7 +19,7 @@
  * Domain: Retro DOS Era
  */
 
-import type { IAsciiRenderer, AsciiRenderOptions } from "./contracts/IAsciiRenderer";
+import type { IAsciiRenderer, AsciiRenderOptions } from "./IAsciiRenderer";
 import type {
 	RetroPictographData,
 	RetroHandData,
