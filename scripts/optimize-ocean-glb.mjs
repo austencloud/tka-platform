@@ -37,21 +37,7 @@ import { pathToFileURL } from "url";
 import sharp from "sharp";
 
 const INPUT = resolve("static/models/ocean/ocean_scene_raw.glb");
-// Profile: "base" (default, 512 all slots — byte-identical to prior builds) or
-// "hi" (baseColor/emissive 1024, normal/MR/occlusion 512). Pass `--profile hi`.
-const argIdx = process.argv.indexOf("--profile");
-const PROFILE = argIdx !== -1 ? process.argv[argIdx + 1] : "base";
-if (PROFILE !== "base" && PROFILE !== "hi") {
-  console.error(`Unknown --profile "${PROFILE}" (expected "base" or "hi").`);
-  process.exit(1);
-}
-const IS_HI = PROFILE === "hi";
-const OUTPUT = resolve(
-  `static/models/ocean/ocean_flora_scene${IS_HI ? "_hi" : ""}.glb`,
-);
-// Pass-1 resize cap. hi resizes to 1024 (color stays 1024; non-color shrunk to
-// 512 in pass 2). base keeps the historical 512-everything build.
-const TEXTURE_SIZE = IS_HI ? 1024 : 512;
+const OUTPUT = resolve("static/models/ocean/ocean_flora_scene.glb");
 const TMP_SLIM = resolve("static/models/ocean/_tmp_slim.glb");
 const TMP_PNG = resolve("static/models/ocean/_tmp_png.glb");
 const TMP_UASTC = resolve("static/models/ocean/_tmp_uastc.glb");
@@ -98,18 +84,18 @@ if (!existsSync(resolve(KTX_BIN, "toktx.exe")) && !existsSync(resolve(KTX_BIN, "
   process.exit(1);
 }
 
-console.log(`Input: ${INPUT} (${fileSize(INPUT)} MB)  profile=${PROFILE} → ${OUTPUT}`);
+console.log(`Input: ${INPUT} (${fileSize(INPUT)} MB)`);
 
-// 1. Geometry simplify/instance/flatten + resize textures→TEXTURE_SIZE. Geometry
-//    left uncompressed (--compress false) so pass 2's NodeIO read needs no codec dep.
+// 1. Geometry simplify/instance/flatten + resize textures→512. Geometry left
+//    uncompressed (--compress false) so pass 2's NodeIO read needs no codec dep.
 run(
-  `Geometry simplify/instance/flatten + resize→${TEXTURE_SIZE} (uncompressed geometry)`,
+  "Geometry simplify/instance/flatten + resize→512 (uncompressed geometry)",
   [
     "npx gltf-transform optimize",
     `"${INPUT}" "${TMP_SLIM}"`,
     "--compress false",
     "--texture-compress webp",
-    `--texture-size ${TEXTURE_SIZE}`,
+    "--texture-size 512",
     "--simplify true",
     // Source flora/rocks/seabed are photoscans (~7M unique verts). The OLD
     // 0.65/0.001 was a no-op: simplify-error 0.001 is a hard wall meshoptimizer
@@ -125,35 +111,12 @@ run(
   ].join(" ")
 );
 
-// 2. Normalize textures → PNG so KTX-Software can read them (it rejects WebP).
-//    hi: baseColor/emissive keep their 1024 size; normal/MR/occlusion are
-//    resized down to 512 (surface-detail maps don't need the extra res, and it
-//    keeps VRAM in budget). base: everything is already 512 from pass 1.
+// 2. Normalize ALL textures → PNG so KTX-Software can read them (it rejects WebP).
 console.log("\n── Normalize textures → PNG (sharp, KTX-readable) ──");
 {
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
   const doc = await io.read(TMP_SLIM);
-  if (IS_HI) {
-    await doc.transform(
-      textureCompress({
-        encoder: sharp,
-        targetFormat: "png",
-        slots: /(normalTexture|metallicRoughnessTexture|occlusionTexture)/,
-        resize: [512, 512],
-      }),
-    );
-    await doc.transform(
-      textureCompress({
-        encoder: sharp,
-        targetFormat: "png",
-        slots: /(baseColorTexture|emissiveTexture)/,
-      }),
-    );
-  } else {
-    await doc.transform(
-      textureCompress({ encoder: sharp, targetFormat: "png" }),
-    );
-  }
+  await doc.transform(textureCompress({ encoder: sharp, targetFormat: "png" }));
   await io.write(TMP_PNG, doc);
   console.log(`  wrote ${TMP_PNG} (${fileSize(TMP_PNG)} MB)`);
 }
