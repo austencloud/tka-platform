@@ -11,6 +11,7 @@
   import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
   import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { forceFreshReload } from "$lib/shared/foundation/services/force-fresh";
 
   // ── Sequence sourcing (same approach as /test/mandala-paths) ──────
   let decks: Catalog[] = $state([]);
@@ -154,6 +155,11 @@
         <button class:active={deviceId === d.id} onclick={() => (deviceId = d.id)}>{d.label}</button>
       {/each}
     </div>
+    <!-- Bust a stale service-worker-cached worker bundle (tunnel host SW serves
+         old export code). Keeps auth + collection; only clears SW + Cache Storage. -->
+    <button class="fresh-btn" onclick={() => forceFreshReload()} title="Unregister service workers, clear caches, hard reload">
+      <i class="fas fa-rotate" aria-hidden="true"></i> Force fresh
+    </button>
   </header>
 
   <!-- Phone/desktop frame: preview at the selected device size -->
@@ -319,6 +325,20 @@
     font-size: 0.72rem;
   }
   .device-seg button { font-size: 0.7rem; }
+  .fresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .fresh-btn:active { transform: scale(0.96); }
 
   /* ── Device frame ───────────────────────────────────────────────── */
   .phone {
