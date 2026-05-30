@@ -16,7 +16,10 @@ import type {
   SequenceMetadata,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import type { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
+import type {
+  AnimationStateManager,
+  InterpolationResult,
+} from "$lib/shared/animation-engine/services/animation-state-manager";
 import {
   validateSteps,
   calculateBeatState,
@@ -238,8 +241,39 @@ export class SequenceAnimationOrchestrator {
       return;
     }
 
-    // Determine interpolation based on effort timeline or global preset
-    let interpolationResult;
+    // Run the PURE interpolation chain (shared with samplePropStateAt — DRY:
+    // guarantees live render and over-sampled export never diverge).
+    const interpolationResult = this.interpolateAtBeat(stepState);
+
+    if (!interpolationResult?.isValid) {
+      console.warn(
+        "SequenceAnimationOrchestrator: Skipping beat without motion data",
+        {
+          stepNumber: stepState.currentStepData?.stepNumber,
+          stepIndex: stepState.currentStepIndex,
+        }
+      );
+      return;
+    }
+
+    // Use focused service to update prop states (the ONLY mutation).
+    this.animationStateService.updatePropStates(interpolationResult);
+  }
+
+  /**
+   * PURE interpolation chain for a resolved beat state.
+   *
+   * Extracted verbatim from calculateState's effort-timeline-vs-preset branch so
+   * both the live render (calculateState, which mutates afterward) and the export
+   * sampler (samplePropStateAt, which does not) share one source of truth.
+   *
+   * Reads no `this` mutable state beyond effortTimeline/visibility config; returns
+   * an InterpolationResult and mutates nothing.
+   */
+  private interpolateAtBeat(
+    stepState: ReturnType<typeof calculateBeatState>
+  ): InterpolationResult | undefined {
+    let interpolationResult: InterpolationResult | undefined;
 
     if (this.effortTimeline?.phrases?.length) {
       // Phrase mode: check if current beat falls within a phrase
@@ -272,19 +306,57 @@ export class SequenceAnimationOrchestrator {
       );
     }
 
-    if (!interpolationResult?.isValid) {
-      console.warn(
-        "SequenceAnimationOrchestrator: Skipping beat without motion data",
-        {
-          stepNumber: stepState.currentStepData?.stepNumber,
-          stepIndex: stepState.currentStepIndex,
-        }
-      );
-      return;
+    return interpolationResult;
+  }
+
+  /**
+   * PURE sampler: compute interpolated prop state at an arbitrary (fractional)
+   * step WITHOUT mutating the shared animation state. Built for the deterministic
+   * video export, which over-samples sub-positions to build dense trails and must
+   * not disturb the live render's shared state.
+   *
+   * Boundary: this covers ONLY the motion-beat interpolation path (step >= 1).
+   * The start-position special case (step < 1) and the missing-motion skip in
+   * calculateState mutate/short-circuit and are intentionally NOT represented
+   * here — a sampler at those positions returns the zero default. Callers that
+   * need start-position angles use calculateInitialAngles directly.
+   */
+  samplePropStateAt(step: number): { blue: PropState; red: PropState } {
+    const fallback = (): { blue: PropState; red: PropState } => ({
+      blue: { centerPathAngle: 0, staffRotationAngle: 0 },
+      red: { centerPathAngle: 0, staffRotationAngle: 0 },
+    });
+
+    if (this.steps.length === 0 || this.totalSteps === 0 || step < 1) {
+      return fallback();
     }
 
-    // Use focused service to update prop states
-    this.animationStateService.updatePropStates(interpolationResult);
+    // Same adjustedBeat + beat-state resolution calculateState uses (verbatim).
+    const adjustedBeat = step - 1;
+    const stepState = calculateBeatState(
+      adjustedBeat,
+      this.steps,
+      this.totalSteps
+    );
+
+    if (!stepState.isValid) {
+      return fallback();
+    }
+
+    const beatMotions = stepState.currentStepData?.motions;
+    if (!(beatMotions?.blue || beatMotions?.red)) {
+      return fallback();
+    }
+
+    const result = this.interpolateAtBeat(stepState);
+    if (!result?.isValid) {
+      return fallback();
+    }
+
+    return {
+      blue: result.blueAngles ?? { centerPathAngle: 0, staffRotationAngle: 0 },
+      red: result.redAngles ?? { centerPathAngle: 0, staffRotationAngle: 0 },
+    };
   }
 
   /**
