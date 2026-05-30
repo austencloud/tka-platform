@@ -86,6 +86,46 @@ export function getHandpathDirection(startLocation: string, endLocation: string)
   return handpathMap.get(key) || "static";
 }
 
+/**
+ * The shift-arc orbital direction for a hand path, or null when the path is not
+ * a shift (static / dash / hash geometry). Built on the canonical getHandpathDirection.
+ */
+export function deriveHandOrbitalDirection(
+  startLocation: string,
+  endLocation: string
+): "cw" | "ccw" | null {
+  const hp = getHandpathDirection(startLocation, endLocation);
+  return hp === "cw" || hp === "ccw" ? hp : null;
+}
+
+/**
+ * Full motion-type classifier from the irreducible stored fields. Unlike the
+ * partial create-module copies, this resolves ALL five MotionType values with no
+ * stored-type fallback, so the codec can derive motionType on decode.
+ *
+ * rotationDirection accepts enum string values ("cw"/"ccw"/"noRotation") OR the
+ * codec single-char form ("c"/"u"/"x").
+ */
+export function deriveMotionType(
+  startLocation: string,
+  endLocation: string,
+  rotationDirection: string,
+  turns: number | "fl"
+): "pro" | "anti" | "float" | "dash" | "static" {
+  if (turns === "fl") return "float";
+
+  const orbit = deriveHandOrbitalDirection(startLocation, endLocation);
+  if (orbit !== null) {
+    const rot = rotationDirection.toLowerCase();
+    const rotIsCw = rot === "cw" || rot === "c";
+    const motionDir = rotIsCw ? "cw" : "ccw";
+    return motionDir === orbit ? "pro" : "anti";
+  }
+
+  if (startLocation.toLowerCase() === endLocation.toLowerCase()) return "static";
+  return "dash";
+}
+
 export function switchOrientation(ori: Orientation): Orientation {
   const switchMap: Record<string, Orientation> = {
     in: "out",
