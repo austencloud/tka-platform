@@ -37,6 +37,7 @@
   import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
   import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/getVideoExportOrchestrator";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { Input, BufferSource, ALL_FORMATS, VideoSampleSink } from "mediabunny";
 
   // ---- Tunables ----------------------------------------------------------
@@ -51,6 +52,7 @@
   let word = $state("DJDJ");
   let resolution = $state<720 | 1080 | 2160>(1080);
   let fps = $state(50);
+  let codec = $state<"h264" | "av1">("av1");
   let status = $state("idle");
   let running = $state(false);
   let canvas: HTMLCanvasElement | null = null;
@@ -76,6 +78,12 @@
 
   // Per-instance playback stack (mirrors InlineAnimationPlayer).
   const animationState = createAnimationPanelState();
+  // Effects config drives trail rendering. setActiveEffect("trails") populates
+  // tipEffectMap {"*":{effect:"trails"}} — WITHOUT this the renderer filters
+  // every tip and no trail is drawn. Passing it to AnimatorCanvas also wires it
+  // into the global visibility manager (CanvasSurface), so the export path's
+  // applyEffectOverrides finds the same config.
+  const effectsConfigState = createEffectsConfigState();
   let playbackController: AnimationPlaybackController | null = null;
   let loadedSequence: SequenceData | null = null;
 
@@ -112,8 +120,10 @@
     );
     playbackController = new AnimationPlaybackController(orchestrator, loop);
 
-    // Pure trails: trails effect on, all chrome off (square frame).
+    // Pure trails: trails effect on (populates tipEffectMap), all chrome off.
+    effectsConfigState.setActiveEffect("trails");
     const vm = getAnimationVisibilityManager();
+    vm.effectsConfigState = effectsConfigState;
     vm.setActiveEffect("trails");
     vm.setVisibility("wordHeader", false);
     vm.setVisibility("progressBar", false);
@@ -134,23 +144,36 @@
     s.steps.some((st) => st?.motions?.blue && st?.motions?.red);
 
   async function loadSequence(): Promise<boolean> {
-    status = `loading sequence "${word}"…`;
+    const wanted = word.trim();
+    status = `loading sequence "${wanted}"…`;
     const repo = getSequenceRepository();
-    let seq = await repo.getSequence(word.trim()).catch(() => null);
+    const loader = new PublicSequencesLoader();
 
-    // Fallback: pull the first public sequence with real motion data so the
-    // harness runs even when the typed word isn't in this session's gallery.
+    // 1) Exact word: gallery repo, then public loader by word.
+    let seq = await repo.getSequence(wanted).catch(() => null);
     if (!hasMotion(seq)) {
-      status = `"${word}" not found — loading first public sequence…`;
-      const loader = new PublicSequencesLoader();
+      seq = await loader.loadFullSequenceData(wanted).catch(() => null);
+    }
+
+    // 2) Fallback: scan public sequences and pick the one with the MOST steps —
+    //    more steps = more prop travel = the big sweeping trails we need to test.
+    //    (The previous "first match" grabbed a near-static sequence with no
+    //    real ribbons, which is exactly what made the last run meaningless.)
+    if (!hasMotion(seq)) {
+      status = `"${wanted}" not found — scanning public for a high-motion sequence…`;
       const meta = await loader.loadSequenceMetadata();
-      for (const m of meta.slice(0, 40)) {
-        const full = await loader.loadFullSequenceData(m.word);
-        if (hasMotion(full)) {
-          seq = full;
-          word = full.word ?? full.name ?? m.word;
-          break;
+      let best: SequenceData | null = null;
+      let bestSteps = 0;
+      for (const m of meta.slice(0, 30)) {
+        const full = await loader.loadFullSequenceData(m.word).catch(() => null);
+        if (hasMotion(full) && full.steps.length > bestSteps) {
+          best = full;
+          bestSteps = full.steps.length;
         }
+      }
+      if (best) {
+        seq = best;
+        word = best.word ?? best.name ?? word;
       }
     }
 
@@ -355,6 +378,7 @@
         },
         {
           format: "mp4",
+          codec,
           resolution,
           fps,
           loopCount: 1,
@@ -440,6 +464,7 @@
         word,
         resolution,
         fps,
+        codec,
         verdict,
         perceptual: {
           worstDiffPct: worstPercDiffPct,
@@ -487,6 +512,13 @@
       </select>
     </label>
     <label>FPS <input type="number" bind:value={fps} min="10" max="60" disabled={running} /></label>
+    <label>
+      Codec
+      <select bind:value={codec} disabled={running}>
+        <option value="h264">H.264 (4:2:0)</option>
+        <option value="av1">AV1 (4:4:4)</option>
+      </select>
+    </label>
     <button onclick={run} disabled={running || !engineReady}>
       {running ? "running…" : "Run parity"}
     </button>
@@ -517,6 +549,7 @@
         sequenceData={animationState.sequenceData}
         isPlaying={animationState.isPlaying}
         trailSettings={animationSettings.trail}
+        {effectsConfigState}
         virtualTime={animationState.virtualTime}
         hideTkaGlyph={true}
         hideStepNumbers={true}
