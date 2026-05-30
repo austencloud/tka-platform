@@ -1206,8 +1206,8 @@ import type { Catalog } from "../../domain/models/Catalog";
 function baseCatalog(): Catalog {
   return {
     id: "l1-tnd-motions",
-    name: "VTG Motions (1:1)",
-    canonicalName: "vtg", description: "",
+    name: "TnD Motions (1:1)",
+    canonicalName: "tnd", description: "",
     families: [
       { id: "tog-same", label: "Tog-Same", typeCombo: "", sequenceIds: ["AA", "BB", "CC"] },
       { id: "split-same", label: "Split-Same", typeCombo: "", sequenceIds: ["DD", "EE"] },
@@ -1620,7 +1620,7 @@ git commit -m "fix(deck): resolve typecheck findings for variation integration"
 
 - [ ] **Step 1: Write the inventory script (dry-run default)**
 
-Create `scripts/teardown-tnd-materialized-decks.cjs`. Mirror the firebase-admin initialization used by `scripts/seed-vtg-turn-decks.cjs` (same service-account/env setup — read that script's top for the exact init and the `decks` collection path). The script must default to a DRY RUN that only lists, and require `--apply` to delete:
+Create `scripts/teardown-tnd-materialized-decks.cjs`. Mirror the firebase-admin initialization used by `scripts/seed-tnd-turn-decks.cjs` (same service-account/env setup — read that script's top for the exact init and the `decks` collection path). The script must default to a DRY RUN that only lists, and require `--apply` to delete:
 
 ```js
 // Usage:
@@ -1630,11 +1630,11 @@ Create `scripts/teardown-tnd-materialized-decks.cjs`. Mirror the firebase-admin 
 // Deletes TnD decks that became redundant once turns are applied at render time:
 //   - asymmetric === true            (42 blue|red enumerations)
 //   - symmetric turn variants        (turnPattern uniform with turns > 0)
-//   - named-pattern reversal variants (reversalPattern set, on a vtg base id)
+//   - named-pattern reversal variants (reversalPattern set, on a tnd base id)
 // PRESERVES: l1-tnd-motions (the zero-turn base — canonical source of truth).
 
 const admin = require("firebase-admin");
-// ... init exactly as scripts/seed-vtg-turn-decks.cjs does ...
+// ... init exactly as scripts/seed-tnd-turn-decks.cjs does ...
 const db = admin.firestore();
 
 const BASE_ID = "l1-tnd-motions";
@@ -1702,7 +1702,7 @@ git commit -m "chore(tnd): add gated teardown inventory script (dry-run default)
 ### Task 21: Execute teardown (ONLY after explicit confirmation)
 
 **Files:**
-- Delete: `scripts/seed-vtg-asymmetric-decks.cjs`, `scripts/seed-vtg-turn-decks.cjs`
+- Delete: `scripts/seed-tnd-asymmetric-decks.cjs`, `scripts/seed-tnd-turn-decks.cjs`
 
 - [ ] **Step 1: Confirm the gate**
 
@@ -1721,12 +1721,12 @@ Expected: `Found 0 teardown targets` and base preserved.
 - [ ] **Step 4: Remove the obsolete seed scripts**
 
 ```bash
-git rm scripts/seed-vtg-asymmetric-decks.cjs scripts/seed-vtg-turn-decks.cjs
+git rm scripts/seed-tnd-asymmetric-decks.cjs scripts/seed-tnd-turn-decks.cjs
 ```
 
 - [ ] **Step 5: Verify nothing references the deleted scripts/decks**
 
-Grep `seed-vtg-asymmetric-decks|seed-vtg-turn-decks` and `asymmetric` across `src/` + `scripts/` + `package.json`. Confirm no live consumer breaks (the `Catalog.asymmetric` field stays in the model, harmlessly unused).
+Grep `seed-tnd-asymmetric-decks|seed-tnd-turn-decks` and `asymmetric` across `src/` + `scripts/` + `package.json`. Confirm no live consumer breaks (the `Catalog.asymmetric` field stays in the model, harmlessly unused).
 
 - [ ] **Step 6: Commit**
 

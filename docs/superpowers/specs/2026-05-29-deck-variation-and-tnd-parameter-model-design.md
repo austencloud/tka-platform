@@ -117,7 +117,7 @@ Backed by `rs.variationConfig` (new `$state`, persisted in session). Reuse exist
 2. **LOOP variation:** `rollVariation` wiring in `composeFullDeck` LOOP branch; `ConfigureStep` variation UI + `rs.variationConfig`; Review badge.
 3. **TnD parameter model:** `getTnDFamilyOptions` base-only; `getTnDTurnPatternOptions` from `TURN_VALUES²`; `buildTnDCards` cartesian emitting `variation.turnPattern`; family-button dynamic count.
 4. **Browser unify:** `tnd-family-aggregator` sources base + applies ratio patterns.
-5. **Teardown (destructive, explicit confirm at this point only):** delete the 48 materialized + asymmetric Firestore decks; delete `scripts/seed-vtg-asymmetric-decks.cjs` and `scripts/seed-vtg-turn-decks.cjs`. Phases 1–4 leave them orphaned-but-harmless until then.
+5. **Teardown (destructive, explicit confirm at this point only):** delete the 48 materialized + asymmetric Firestore decks; delete `scripts/seed-tnd-asymmetric-decks.cjs` and `scripts/seed-tnd-turn-decks.cjs`. Phases 1–4 leave them orphaned-but-harmless until then.
 
 ## Other render paths
 

@@ -7,7 +7,7 @@
 
 The TnD "By Family" reversal strip shipped, but the seed UX is broken in three ways:
 
-1. **Existing named-pattern variants have broken family data.** Live Firestore audit: base continuous decks (`l1-tnd-motions`, `vtg-2to1-motions`) carry the proper six families (`split-same`, `tog-same`, `quarter-same`, `split-opp`, `tog-opp`, `quarter-opp`). The seeded reversal variants (`-book`, `-red-book`, `-blue-book`, `-long-book`, `-alternating`) collapse all 19 sequence ids under a single `{id:"unknown"}` family. The By-Family grid matches `theme.familyId` against `family.id`, so "unknown" never matches → every family card reads **0 sequences** for those patterns. The old CJS seed script (`scripts/seed-reversal-decks.cjs`) flattened the families during its `handPathFamily` re-derivation.
+1. **Existing named-pattern variants have broken family data.** Live Firestore audit: base continuous decks (`l1-tnd-motions`, `tnd-2to1-motions`) carry the proper six families (`split-same`, `tog-same`, `quarter-same`, `split-opp`, `tog-opp`, `quarter-opp`). The seeded reversal variants (`-book`, `-red-book`, `-blue-book`, `-long-book`, `-alternating`) collapse all 19 sequence ids under a single `{id:"unknown"}` family. The By-Family grid matches `theme.familyId` against `family.id`, so "unknown" never matches → every family card reads **0 sequences** for those patterns. The old CJS seed script (`scripts/seed-reversal-decks.cjs`) flattened the families during its `handPathFamily` re-derivation.
 
 2. **Seed can never trigger for named patterns.** `needsSeed` keys on `filteredCatalogs.length === 0`. The broken named variants exist (length > 0), so seeding is never offered, yet cards show 0 — a dead end.
 
@@ -46,7 +46,7 @@ A Node script using firebase-admin (same pattern as `scripts/seed-reversal-decks
 4. Firestore `update({ families })` per doc. Idempotent — re-running is a no-op once fixed.
 5. Log each rewrite (`{id}: unknown → 6 families`) and a final count.
 
-Expected: 10 catalogs rewritten (`l1-tnd-motions-{5 patterns}` + `vtg-2to1-motions-{5 patterns}`).
+Expected: 10 catalogs rewritten (`l1-tnd-motions-{5 patterns}` + `tnd-2to1-motions-{5 patterns}`).
 
 The script does NOT touch sequence docs (they are correct) and does NOT touch base or asymmetric catalogs.
 
