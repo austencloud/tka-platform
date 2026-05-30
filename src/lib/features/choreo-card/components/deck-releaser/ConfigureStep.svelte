@@ -39,6 +39,8 @@
     onVariationConfigChange: (config: VariationConfig) => void;
     startOriModes: Set<StartOriMode>;
     onToggleStartOriMode: (mode: StartOriMode) => void;
+    gridModes: Set<"diamond" | "box">;
+    onToggleGridMode: (mode: "diamond" | "box") => void;
   }
 
   let {
@@ -68,6 +70,8 @@
     onVariationConfigChange,
     startOriModes,
     onToggleStartOriMode,
+    gridModes,
+    onToggleGridMode,
   }: Props = $props();
 
   const PRESETS = [
@@ -91,6 +95,11 @@
     { id: "radial", label: "Radial", icon: "fa-arrows-up-down" },
     { id: "nonradial", label: "Nonradial", icon: "fa-arrows-left-right" },
     { id: "split", label: "Split", icon: "fa-arrows-turn-right" },
+  ];
+
+  const GRID_MODES: { id: "diamond" | "box"; label: string; icon: string }[] = [
+    { id: "diamond", label: "Diamond", icon: "fa-diamond" },
+    { id: "box", label: "Box", icon: "fa-square" },
   ];
 
   function toggleReversal(id: string) {
@@ -197,6 +206,25 @@
           >
             <i class="fas {r.icon}" aria-hidden="true"></i>
             {r.label}
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <div class="control-group">
+      <span class="control-label">Grid Mode</span>
+      <span class="control-hint">Select both for the full enumeration — each card emitted in diamond and box.</span>
+      <div class="mode-row">
+        {#each GRID_MODES as g (g.id)}
+          <button
+            type="button"
+            class="mode-btn"
+            class:selected={gridModes.has(g.id)}
+            aria-pressed={gridModes.has(g.id)}
+            onclick={() => onToggleGridMode(g.id)}
+          >
+            <i class="fas {g.icon}" aria-hidden="true"></i>
+            {g.label}
           </button>
         {/each}
       </div>

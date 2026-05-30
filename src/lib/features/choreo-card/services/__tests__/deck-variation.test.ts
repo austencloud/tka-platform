@@ -235,3 +235,17 @@ describe("applyVariationDescriptor — startOriMode", () => {
     expect(sequence.startPosition!.motions.red!.endOrientation).toBe(Orientation.CLOCK);
   });
 });
+
+describe("applyVariationDescriptor — box mode", () => {
+  it("rotates a beta seed CCW (−45°) into box; gridMode flips, no-op when diamond", () => {
+    // Fixture hands both start at N → beta family → CCW: N → NW.
+    const { sequence } = applyVariationDescriptor(seqWithStart(), { gridMode: "box" }, []);
+    expect(sequence.startPosition!.motions.blue!.startLocation).toBe("nw");
+    expect(sequence.startPosition!.motions.red!.startLocation).toBe("nw");
+    expect(sequence.startPosition!.gridMode).toBe("box");
+
+    // diamond / absent is a passthrough.
+    const same = applyVariationDescriptor(seqWithStart(), { gridMode: "diamond" }, []);
+    expect(same.sequence.startPosition!.motions.blue!.startLocation).toBe("n");
+  });
+});

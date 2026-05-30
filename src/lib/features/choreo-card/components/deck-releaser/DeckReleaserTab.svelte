@@ -163,6 +163,7 @@
       rs.selectedTnDFamilies,
       rs.selectedTnDTurnPatterns,
       [...rs.selectedStartOriModes],
+      [...rs.selectedGridModes],
     ).length
   );
 
@@ -183,32 +184,37 @@
 
   function composeFullDeck() {
     const registers = [...rs.selectedStartOriModes];
+    const grids = [...rs.selectedGridModes];
     if (rs.deckMode === 'tnd') {
       const tndCards = buildTnDCards(
         rs.tndFamilies,
         rs.selectedTnDFamilies,
         rs.selectedTnDTurnPatterns,
         registers,
+        grids,
       );
       return tndCards.map((c, i) => ({ ...c, position: i + 1 }));
     }
     const cards = composeDeck(pool, rs.weights, rs.totalCards, { center: rs.notes });
-    // Full enumeration: each composed card is emitted once per selected register,
-    // sharing the same rolled reversal/turn so register is the pure axis.
+    // Full enumeration: each composed card is emitted once per (register × grid
+    // mode), sharing the same rolled reversal/turn so register/grid are pure axes.
     const out: DeckReleaseCard[] = [];
     let position = 1;
     for (const c of cards) {
       const rolled = rollVariation(c.stepCount, rs.variationConfig, Math.random);
       for (const mode of registers) {
-        const variation = {
-          ...(rolled ?? {}),
-          ...(mode !== "radial" ? { startOriMode: mode } : {}),
-        };
-        out.push(
-          Object.keys(variation).length > 0
-            ? { ...c, position: position++, variation }
-            : { ...c, position: position++ },
-        );
+        for (const grid of grids) {
+          const variation = {
+            ...(rolled ?? {}),
+            ...(mode !== "radial" ? { startOriMode: mode } : {}),
+            ...(grid !== "diamond" ? { gridMode: grid } : {}),
+          };
+          out.push(
+            Object.keys(variation).length > 0
+              ? { ...c, position: position++, variation }
+              : { ...c, position: position++ },
+          );
+        }
       }
     }
     return out;
@@ -396,6 +402,8 @@
         onVariationConfigChange={(c) => { rs.variationConfig = c; }}
         startOriModes={rs.selectedStartOriModes}
         onToggleStartOriMode={(m) => rs.toggleStartOriMode(m)}
+        gridModes={rs.selectedGridModes}
+        onToggleGridMode={(m) => rs.toggleGridMode(m)}
       />
     {:else if rs.step === "review"}
       <ReviewStep

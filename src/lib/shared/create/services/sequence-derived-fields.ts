@@ -15,6 +15,7 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import { rotateMotion } from "./motion-transforms";
 
 /**
  * Recompute gridMode + start/end positions from a step's motions.
@@ -83,4 +84,58 @@ export function normalizeSequenceDerived(seq: SequenceData): SequenceData {
   const gridMode = firstReal?.gridMode ?? seq.gridMode;
 
   return updateSequenceData(seq, { steps, gridMode });
+}
+
+/** Minimal pose shape shared by StepData and StartPositionData for rotation. */
+type RotatablePose = {
+  motions?: StepData["motions"];
+  isBlank?: boolean;
+};
+
+/** Rotate one pose's hand locations by `steps` × 45°, then reconcile its derived
+ *  fields (positions + gridMode) from the rotated motions. */
+function rotatePose<T extends RotatablePose>(pose: T, steps: number): T {
+  if (pose.isBlank) return pose;
+  const blue = pose.motions?.[MotionColor.BLUE];
+  const red = pose.motions?.[MotionColor.RED];
+  if (!blue && !red) return pose;
+  const rotatedMotions = {
+    ...pose.motions,
+    ...(blue ? { [MotionColor.BLUE]: rotateMotion(blue, steps) } : {}),
+    ...(red ? { [MotionColor.RED]: rotateMotion(red, steps) } : {}),
+  };
+  return reconcileStepDerived({
+    ...pose,
+    motions: rotatedMotions,
+  } as unknown as StepData) as unknown as T;
+}
+
+/**
+ * Rotate an entire sequence's geometry by `steps` × 45° (sign = direction: +1 CW,
+ * −1 CCW) and reconcile derived fields. This is the sync box-mode transform —
+ * letters are rotation-invariant so NO dataset lookup is needed, and gridMode
+ * flips (diamond↔box on odd steps) via the reconciler. Pure; never mutates `seq`.
+ */
+export function rotateSequenceGeometry(seq: SequenceData, steps: number): SequenceData {
+  if (steps === 0) return seq;
+
+  const rotatedSteps = seq.steps.map((s) => rotatePose(s, steps));
+  const startPosition = seq.startPosition
+    ? rotatePose(seq.startPosition, steps)
+    : seq.startPosition;
+  const startingPosition = seq.startingPosition
+    ? rotatePose(seq.startingPosition, steps)
+    : seq.startingPosition;
+
+  const firstReal = rotatedSteps.find(
+    (s) => !s.isBlank && s.motions?.[MotionColor.BLUE] && s.motions?.[MotionColor.RED]
+  );
+  const gridMode = firstReal?.gridMode ?? startPosition?.gridMode ?? seq.gridMode;
+
+  return updateSequenceData(seq, {
+    steps: rotatedSteps,
+    startPosition,
+    startingPosition,
+    gridMode,
+  });
 }

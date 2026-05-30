@@ -44,6 +44,7 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
+import { rotateSequenceGeometry } from "$lib/shared/create/services/sequence-derived-fields";
 import {
   resolveStartOrientation,
   positionFamilyOf,
@@ -247,8 +248,28 @@ function applyStartOriMode(seq: SequenceData, mode: StartOriMode | undefined): S
 }
 
 /**
- * Deterministically apply a frozen descriptor to a base sequence. Pure. Reversal
- * (if present) via `transformSequence`; turns (if present) via `applyPattern`.
+ * Re-render a diamond-authored sequence in box mode: rotate the hand path 45°,
+ * direction per start-position family (alpha/gamma CW = +1, beta CCW = −1).
+ * No-op when gridMode isn't "box" or the family is unsupported (zeta/eta).
+ * Letters + element are rotation-invariant; positions + gridMode self-heal.
+ * NEVER mutates `seq`.
+ */
+function applyBoxMode(
+  seq: SequenceData,
+  gridMode: CardVariation["gridMode"],
+): SequenceData {
+  if (gridMode !== "box") return seq;
+  const sp = seq.startPosition;
+  const family = sp ? positionFamilyOf(sp) : null;
+  if (!family) return seq; // unsupported family — leave diamond
+  const steps = family === "beta" ? -1 : 1; // beta CCW, alpha/gamma CW
+  return rotateSequenceGeometry(seq, steps);
+}
+
+/**
+ * Deterministically apply a frozen descriptor to a base sequence. Pure. Box-mode
+ * rotation (if any) first, then register orientation seed, then reversal via
+ * `transformSequence`, then turns via `applyPattern`.
  * Turn-only (no reversal) is valid and is the TnD render path.
  */
 export function applyVariationDescriptor(
@@ -256,7 +277,8 @@ export function applyVariationDescriptor(
   variation: CardVariation,
   edges: CsvEdge[],
 ): AppliedDescriptorResult {
-  let working = applyStartOriMode(seq, variation.startOriMode);
+  let working = applyBoxMode(seq, variation.gridMode);
+  working = applyStartOriMode(working, variation.startOriMode);
 
   if (variation.reversalSequence) {
     const resolved: ResolvedReversalPattern = {

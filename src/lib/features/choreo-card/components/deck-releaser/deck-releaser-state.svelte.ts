@@ -21,6 +21,7 @@ interface PersistedSession {
   /** @deprecated single-select — migrated to startOriModes (multi-select). */
   startOriMode?: StartOriMode;
   startOriModes?: StartOriMode[];
+  gridModes?: ("diamond" | "box")[];
 }
 
 function loadSession(): PersistedSession | null {
@@ -56,6 +57,9 @@ class DeckReleaserState {
   /** Selected start-orientation registers. Multi-select → full enumeration
    *  (each base card is emitted once per selected register). Never empty. */
   selectedStartOriModes = $state<Set<StartOriMode>>(new Set(["radial"]));
+  /** Selected grid modes (diamond/box). Multi-select → full enumeration
+   *  (each base card emitted once per selected grid mode). Never empty. */
+  selectedGridModes = $state<Set<"diamond" | "box">>(new Set(["diamond"]));
   get theme() {
     return this.themeOverride ?? settingsService.settings.backgroundType ?? "cosmic";
   }
@@ -97,6 +101,9 @@ class DeckReleaserState {
         // Migrate legacy single-select sessions.
         this.selectedStartOriModes = new Set([saved.startOriMode]);
       }
+      if (saved.gridModes?.length) {
+        this.selectedGridModes = new Set(saved.gridModes);
+      }
     }
   }
 
@@ -111,6 +118,7 @@ class DeckReleaserState {
       description: this.description,
       variationConfig: this.variationConfig,
       startOriModes: [...this.selectedStartOriModes],
+      gridModes: [...this.selectedGridModes],
     });
   }
 
@@ -125,6 +133,19 @@ class DeckReleaserState {
       next.add(mode);
     }
     this.selectedStartOriModes = next;
+    this.persist();
+  }
+
+  /** Toggle a grid mode in/out of the selection. Never empties (≥1 active). */
+  toggleGridMode(mode: "diamond" | "box") {
+    const next = new Set(this.selectedGridModes);
+    if (next.has(mode)) {
+      if (next.size === 1) return;
+      next.delete(mode);
+    } else {
+      next.add(mode);
+    }
+    this.selectedGridModes = next;
     this.persist();
   }
 

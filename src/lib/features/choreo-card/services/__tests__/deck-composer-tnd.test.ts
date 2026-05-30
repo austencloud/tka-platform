@@ -110,3 +110,31 @@ describe("buildTnDCards — startOriMode", () => {
     expect(cards).toHaveLength(3); // 3 base × 1 pattern × 1 (radial) register
   });
 });
+
+describe("buildTnDCards — gridMode (box) enumeration", () => {
+  it("multiplies every base by each selected grid mode; box tags, diamond omits", () => {
+    const families = getTnDFamilyOptions([baseCatalog()]); // tog-same: 3 base seqs
+    const cards = buildTnDCards(
+      families,
+      new Set(["tog-same"]),
+      new Set(["1|1"]),
+      ["radial"],
+      ["diamond", "box"],
+    );
+    expect(cards).toHaveLength(3 * 2); // 3 base × 2 grid modes
+    expect(cards.filter((c) => c.variation?.gridMode === "box")).toHaveLength(3);
+    expect(cards.filter((c) => c.variation?.gridMode === undefined)).toHaveLength(3);
+  });
+
+  it("full enumeration: register × grid mode multiply together", () => {
+    const families = getTnDFamilyOptions([baseCatalog()]); // tog-same: 3
+    const cards = buildTnDCards(
+      families,
+      new Set(["tog-same"]),
+      new Set(["1|1"]),
+      ["radial", "nonradial"],
+      ["diamond", "box"],
+    );
+    expect(cards).toHaveLength(3 * 2 * 2); // 3 base × 2 registers × 2 grids
+  });
+});

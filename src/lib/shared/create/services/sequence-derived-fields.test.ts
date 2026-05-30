@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   reconcileStepDerived,
   normalizeSequenceDerived,
+  rotateSequenceGeometry,
 } from "./sequence-derived-fields";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createStepData } from "$lib/shared/create/factories/createStepData";
@@ -190,5 +191,73 @@ describe("normalizeSequenceDerived", () => {
     const twice = normalizeSequenceDerived(once);
     expect(twice.steps[0]!.startPosition).toBe(once.steps[0]!.startPosition);
     expect(twice.gridMode).toBe(once.gridMode);
+  });
+});
+
+describe("rotateSequenceGeometry", () => {
+  function alphaSeq(): SequenceData {
+    const sp = {
+      isStartPosition: true,
+      id: "sp",
+      motions: {
+        [MotionColor.BLUE]: createMotionData({
+          color: MotionColor.BLUE,
+          startLocation: GridLocation.NORTH,
+          endLocation: GridLocation.NORTH,
+        }),
+        [MotionColor.RED]: createMotionData({
+          color: MotionColor.RED,
+          startLocation: GridLocation.SOUTH,
+          endLocation: GridLocation.SOUTH,
+        }),
+      },
+    };
+    const step1 = createStepData({
+      stepNumber: 1,
+      motions: {
+        [MotionColor.BLUE]: createMotionData({
+          color: MotionColor.BLUE,
+          startLocation: GridLocation.NORTH,
+          endLocation: GridLocation.EAST,
+        }),
+        [MotionColor.RED]: createMotionData({
+          color: MotionColor.RED,
+          startLocation: GridLocation.SOUTH,
+          endLocation: GridLocation.WEST,
+        }),
+      },
+    });
+    return {
+      id: "a",
+      name: "t",
+      word: "",
+      steps: [step1],
+      startPosition: sp,
+      gridMode: GridMode.DIAMOND,
+      difficulty: 1,
+      metadata: {},
+    } as unknown as SequenceData;
+  }
+
+  it("rotates a diamond alpha seed +1 (CW 45°) into box, reconciling positions+gridMode", () => {
+    const out = rotateSequenceGeometry(alphaSeq(), 1);
+    const sp = out.startPosition!;
+    expect(sp.motions[MotionColor.BLUE]!.startLocation).toBe(GridLocation.NORTHEAST); // N → NE
+    expect(sp.motions[MotionColor.RED]!.startLocation).toBe(GridLocation.SOUTHWEST); // S → SW
+    expect(sp.gridMode).toBe(GridMode.BOX);
+    expect(out.steps[0]!.gridMode).toBe(GridMode.BOX);
+  });
+
+  it("round-trips: +1 then -1 restores original locations + diamond", () => {
+    const there = rotateSequenceGeometry(alphaSeq(), 1);
+    const back = rotateSequenceGeometry(there, -1);
+    expect(back.steps[0]!.motions![MotionColor.BLUE]!.startLocation).toBe(GridLocation.NORTH);
+    expect(back.steps[0]!.motions![MotionColor.RED]!.endLocation).toBe(GridLocation.WEST);
+    expect(back.steps[0]!.gridMode).toBe(GridMode.DIAMOND);
+  });
+
+  it("steps=0 is identity (same ref)", () => {
+    const s = alphaSeq();
+    expect(rotateSequenceGeometry(s, 0)).toBe(s);
   });
 });

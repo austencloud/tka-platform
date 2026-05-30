@@ -24,6 +24,9 @@ export interface CardVariation {
   turnLabel?: string;
   /** Start-orientation register, deck-wide. Absent / "radial" → canonical in|in. */
   startOriMode?: "radial" | "nonradial" | "split";
+  /** Grid-mode register, deck-wide. Absent / "diamond" → as-authored. "box" →
+   *  hand path rotated 45° (per-family direction: alpha/gamma CW, beta CCW). */
+  gridMode?: "diamond" | "box";
 }
 
 export interface DeckReleaseCard {

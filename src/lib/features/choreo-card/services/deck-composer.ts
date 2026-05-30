@@ -288,30 +288,35 @@ export function buildTnDCards(
   selectedFamilies: Set<string>,
   selectedTurnPatterns?: Set<string>,
   startOriModes: StartOriMode[] = ["radial"],
+  gridModes: ("diamond" | "box")[] = ["diamond"],
 ): DeckReleaseCard[] {
   const patterns = selectedTurnPatterns ? [...selectedTurnPatterns] : [];
   if (patterns.length === 0) return [];
-  // Full enumeration: every base × each selected register (radial/nonradial/split).
+  // Full enumeration: every base × each register × each grid mode.
   const registers = startOriModes.length > 0 ? startOriModes : (["radial"] as StartOriMode[]);
+  const grids = gridModes.length > 0 ? gridModes : (["diamond"] as ("diamond" | "box")[]);
   const cards: DeckReleaseCard[] = [];
   for (const fam of tndFamilies) {
     if (!selectedFamilies.has(fam.familyId)) continue;
     for (const pattern of patterns) {
       for (const entry of fam.entries) {
         for (const mode of registers) {
-          cards.push({
-            sequenceId: entry.sequenceId,
-            sourceCatalogId: entry.sourceCatalogId,
-            stepCount: 4,
-            word: entry.sequenceId,
-            position: 0,
-            variation: {
-              turnPattern: pattern,
-              turnLabel: pattern,
-              ...(mode !== "radial" ? { startOriMode: mode } : {}),
-            },
-            footer: tndFooter(fam.familyId, entry.turnRatio),
-          });
+          for (const grid of grids) {
+            cards.push({
+              sequenceId: entry.sequenceId,
+              sourceCatalogId: entry.sourceCatalogId,
+              stepCount: 4,
+              word: entry.sequenceId,
+              position: 0,
+              variation: {
+                turnPattern: pattern,
+                turnLabel: pattern,
+                ...(mode !== "radial" ? { startOriMode: mode } : {}),
+                ...(grid !== "diamond" ? { gridMode: grid } : {}),
+              },
+              footer: tndFooter(fam.familyId, entry.turnRatio),
+            });
+          }
         }
       }
     }
