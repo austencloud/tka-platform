@@ -30,6 +30,7 @@ import type { VideoExporter } from "$lib/shared/animation-engine/services/video-
 import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/composite-video-renderer";
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/export-glyph-prerenderer";
 import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
+import { OffscreenExportRenderer } from "./offscreen-export-renderer";
 import { getRenderContextRegistry } from "$lib/shared/animation-engine/getRenderContextRegistry";
 import type { RenderContext } from "$lib/shared/animation-engine/services/render-context-registry";
 import type { ITrailOverlayCanvas } from "$lib/shared/animation-engine/services/ITrailOverlayCanvas";
@@ -233,11 +234,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       options.effectOverrides
     );
 
-    // Non-composite export captures the LIVE rendering context (the warm engine
-    // that produces the on-screen preview). Resized to output res for the
-    // duration of the export, restored in finally. Declared at method scope so
-    // the finally block can restore it.
-    let liveContext: RenderContext | null = null;
+    // Non-composite export drives a fresh offscreen engine. Declared at method
+    // scope so the finally block can dispose it.
+    let offscreen: OffscreenExportRenderer | null = null;
 
     try {
       onProgress({ progress: 0, stage: "capturing" });
@@ -258,31 +257,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       await this.waitForAnimationFrame();
       await this.waitForAnimationFrame();
 
-      // Navier-Stokes fluid simulation needs ~60 frames to converge from
-      // zeroed state. Without warmup, the pressure field is unresolved and
-      // produces concentric ring artifacts. Run a short warmup at step 0
-      // so the simulation reaches steady state before capture begins.
+      // The Navier-Stokes fluid simulation (fire/charcoal) needs ~60 frames to
+      // converge from a zeroed state. That warmup now runs INSIDE the offscreen
+      // renderer's initialize() against its own fresh engine, so the orchestrator
+      // no longer warms the live engine here. needsFluidWarmup is still computed
+      // and threaded into offscreen.initialize() below.
       const ecs = visibilityManager.effectsConfigState;
       const tipMap = ecs?.tipEffectMap ?? {};
       const hasEffectInMap = (effect: string) => Object.values(tipMap).some(a => a.effect === effect);
       const needsFluidWarmup =
         hasEffectInMap("fire") ||
         hasEffectInMap("charcoal");
-      if (needsFluidWarmup) {
-        const WARMUP_FRAMES = 60;
-        for (let w = 0; w < WARMUP_FRAMES; w++) {
-          playbackController.calculateStateForStep(0);
-          await this.waitForAnimationFrame();
-        }
-        // Clear accumulated thermal energy from warmup (60 frames of fuel at
-        // stationary tips). Preserves converged pressure field. Without this,
-        // concentrated thermal buildup produces bloom halos absent from live preview.
-        fireCacheInvalidation.triggerThermalClear();
-        await this.waitForAnimationFrame();
-        // Reset fire diagnostic counter so export frames get logged (warmup consumed the first 5)
-        if (fireDiag) {
-          fireDiag.reset();
-        }
+      if (needsFluidWarmup && fireDiag) {
+        // Reset fire diagnostic counter so export frames get logged.
+        fireDiag.reset();
       }
 
       // Clear all overlay canvases: 2D (trails, LED) and WebGL display
@@ -401,35 +389,24 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // The square animation area in the output
       const outputCanvasSize = isCompositeMode ? sourceWidth : outputWidth;
 
-      // Resize the LIVE rendering context to output resolution so trail/effect
-      // overlays render natively at export size instead of being upscaled from
-      // viewport resolution via drawImage (which softens glow/shadowBlur). The
-      // live engine is the same warm renderer that produces the on-screen
-      // preview — its free-running rAF accumulates dense, smooth trail stamps,
-      // so the exported trails match the preview exactly (a fresh offscreen
-      // engine renders ~1 stamp per frame → sparse/blobby trails by comparison).
+      // Construct + warm a fresh offscreen export engine for the non-composite
+      // path. It renders each frame deterministically at output resolution with
+      // sub-stepped trail capture (matching live density without live's rAF
+      // jitter) and runs the fluid (fire/charcoal) warmup internally during
+      // initialize(). The compositor then reads its canvas + sibling overlays
+      // instead of the on-screen live canvas.
       if (!isCompositeMode) {
-        const contexts = getRenderContextRegistry().getAll();
-        liveContext = contexts.find((c) => c.canvas === canvas) ?? null;
-        if (liveContext) {
-          liveContext.resizer.pauseObservation();
-          liveContext.resize(outputCanvasSize);
-
-          // Reset trails to a clean slate before capturing. The export captures
-          // the WARM live engine, which may have been mid-loop — its trail
-          // accumulator still holds the previous loop's ribbon, so frame 0 shows
-          // a spurious stub already connected to the prop (visible ~0.5s as it
-          // fades, looking like it came from the final beat). Clear BOTH the
-          // capturer point buffers AND the overlay accumulator pixels so the
-          // exported sequence starts from an empty trail that builds up fresh.
-          liveContext.trailCapturer.clearTrails();
-          const trailOverlay = liveContext.effectManager.getRenderer(
-            "trails"
-          ) as unknown as ITrailOverlayCanvas | null;
-          trailOverlay?.clearBuffers();
-
-          await this.waitForAnimationFrame();
-        }
+        offscreen = new OffscreenExportRenderer(playbackController, panelState);
+        await offscreen.initialize({
+          outputCanvasSize,
+          fps,
+          needsFluidWarmup,
+          // The orchestrator resolves no prop-type string (neither options nor
+          // panelState expose one), so pass null — the capturer config tolerates
+          // null and the live geometry is driven by panelState prop states.
+          bluePropType: null,
+          redPropType: null,
+        });
       }
 
       // Set canvas dimensions based on mode
@@ -531,13 +508,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           playbackPosition = timeProgress / startPositionDuration;
           stepIndex = -1;
           isInStartPosition = true;
-          playbackController.calculateStateForStep(playbackPosition);
         } else if (endPositionHoldDuration > 0 && timeProgress >= motionEnd) {
           // End position hold - freeze on the completed last motion step (once, at the end)
           playbackPosition = steps.length + 1;
           stepIndex = steps.length - 1;
           isInEndHold = true;
-          playbackController.calculateStateForStep(playbackPosition);
         } else {
           // Motion steps phase - wrap time modulo one loop so N iterations play
           // back-to-back with no inter-iteration hold. Offset by +1 for the
@@ -548,29 +523,39 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           const rawStep = this.timeToBeat(wrappedMotionTime, cumulativeDurations, stepDurations);
           stepIndex = Math.floor(rawStep);
           playbackPosition = rawStep + 1;
-          playbackController.calculateStateForStep(playbackPosition);
         }
 
-        // The live engine renders itself: calculateStateForStep (above) updated
-        // panelState, the live AnimatorCanvas reacts and calls engine.update,
-        // and the engine's free-running rAF paints the new beat on the next tick.
-        // Wait for the render loop to paint the new beat.
-        // Single rAF: calculateStateForStep is synchronous, so the render
-        // loop picks up the new prop state on the very next frame.
-        // Two rAFs would cause the trail overlay to fade+stamp twice at
-        // the same tip position, boosting opacity above the live preview.
-        await this.waitForAnimationFrame();
+        // Render this frame.
+        //  - Non-composite: drive the offscreen engine deterministically. Its
+        //    renderFrame() calls calculateStateForStep internally and paints
+        //    synchronously, so no rAF wait is needed.
+        //  - Composite: the grid renderer consumes the live canvas; update
+        //    panel state and let the live render loop paint the new beat.
+        if (!isCompositeMode) {
+          offscreen!.renderFrame(playbackPosition, virtualTimeMs);
+        } else {
+          playbackController.calculateStateForStep(playbackPosition);
+          // Wait for the live render loop to paint the new beat. Single rAF:
+          // calculateStateForStep is synchronous, so the render loop picks up
+          // the new prop state on the very next frame.
+          await this.waitForAnimationFrame();
+        }
 
-        // Guard: if the live canvas temporarily lost dimensions (Svelte re-render
+        // Source canvas for the compositor: the offscreen engine canvas for the
+        // non-composite path (its overlays are siblings in its hidden container),
+        // or the live canvas for composite mode.
+        const sourceCanvas = isCompositeMode ? canvas : offscreen!.canvas;
+
+        // Guard: if the source canvas temporarily lost dimensions (Svelte re-render
         // or PixiJS resize), wait for recovery. If it doesn't recover, skip
         // rendering this frame - the offscreen canvas still holds the previous
         // frame's content, so the encoder will duplicate it (brief freeze in
         // the video, much better than aborting the entire export).
-        let canvasAvailable = canvas.width > 0 && canvas.height > 0;
+        let canvasAvailable = sourceCanvas.width > 0 && sourceCanvas.height > 0;
         if (!canvasAvailable) {
           for (let retry = 0; retry < 30; retry++) {
             await this.waitForAnimationFrame();
-            if (canvas.width > 0 && canvas.height > 0) {
+            if (sourceCanvas.width > 0 && sourceCanvas.height > 0) {
               canvasAvailable = true;
               break;
             }
@@ -584,7 +569,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           const compositeStepIndex = isInStartPosition ? 0 : Math.max(0, stepIndex);
           frameCompositor.renderCanvasLayers(
             offscreenCtx,
-            canvas,
+            sourceCanvas,
             !!isCompositeMode,
             compositeStepIndex,
             offscreenCanvas,
@@ -593,7 +578,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
           frameCompositor.renderOverlays(
             offscreenCtx,
-            canvas,
+            sourceCanvas,
             stepIndex,
             isInStartPosition,
             isInEndHold,
@@ -754,11 +739,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         fireDiagCleanup.disable();
       }
 
-      // Restore the live rendering context to viewport resolution.
-      if (liveContext) {
-        liveContext.restoreSize();
-        liveContext.resizer.resumeObservation();
-      }
+      // Dispose the offscreen export engine (releases its WebGL context + canvas).
+      offscreen?.dispose();
 
       this.restoreEffectState(visibilityManager, savedEffectState);
       this.restorePlaybackState(playbackController, captureState);
