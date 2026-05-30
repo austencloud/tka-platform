@@ -64,12 +64,12 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   import { setCreateModuleContext } from "../context/create-module-context";
   import LOOPCoordinator from "./coordinators/LOOPCoordinator.svelte";
   import StartEndCoordinator from "./coordinators/StartEndCoordinator.svelte";
-  import SequenceActionsCoordinator from "./coordinators/SequenceActionsCoordinator.svelte";
-  import StepEditorCoordinator from "./coordinators/StepEditorCoordinator.svelte";
-  import VideoRecordCoordinator from "./coordinators/VideoRecordCoordinator.svelte";
   import SequenceDrawerHost from "./coordinators/SequenceDrawerHost.svelte";
-  import OrientationPickerDrawer from "$lib/features/create/construct/start-position-picker/components/OrientationPickerDrawer.svelte";
-  import SaveToLibraryPanel from "./SaveToLibraryPanel.svelte";
+  // Deferred (loaded on first open via LazyMount) — keeps their ~110-file
+  // dependency subtrees out of the Create module's eager first-paint graph.
+  // See scripts/trace-create-three.cjs for the deferral analysis.
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
+  import { orientationPickerState } from "$lib/features/create/construct/start-position-picker/state/orientation-picker-state.svelte";
   import IndeterminateBar from "$lib/shared/components/loading/IndeterminateBar.svelte";
   import { SessionManager } from "../services/session-manager.svelte";
   import { Autosaver } from "../services/autosaver";
@@ -731,20 +731,32 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
     />
   </div>
 
-  <!-- Video Record Coordinator -->
-  <VideoRecordCoordinator />
+  <!-- Video Record Coordinator (deferred until first opened) -->
+  <LazyMount
+    loader={() => import("./coordinators/VideoRecordCoordinator.svelte")}
+    active={panelState.isVideoRecordPanelOpen}
+  />
 
-  <!-- Sequence Drawer Host (provides animation state + context) -->
+  <!-- Sequence Drawer Host (eager: owns animation deep-link restore + view-sequence redirect) -->
   <SequenceDrawerHost />
 
-  <!-- Orientation Picker Drawer (for start position picker) -->
-  <OrientationPickerDrawer />
+  <!-- Orientation Picker Drawer (deferred until first opened) -->
+  <LazyMount
+    loader={() => import("$lib/features/create/construct/start-position-picker/components/OrientationPickerDrawer.svelte")}
+    active={orientationPickerState.isOpen}
+  />
 
-  <!-- Sequence Actions Coordinator -->
-  <SequenceActionsCoordinator />
+  <!-- Sequence Actions Coordinator (deferred until first opened) -->
+  <LazyMount
+    loader={() => import("./coordinators/SequenceActionsCoordinator.svelte")}
+    active={panelState.isSequenceActionsPanelOpen}
+  />
 
-  <!-- Beat Editor Coordinator - Opens when clicking a pictograph -->
-  <StepEditorCoordinator />
+  <!-- Beat Editor Coordinator - Opens when clicking a pictograph (deferred until first opened) -->
+  <LazyMount
+    loader={() => import("./coordinators/StepEditorCoordinator.svelte")}
+    active={panelState.isStepEditorPanelOpen}
+  />
 
   <!-- LOOP Coordinator -->
   <LOOPCoordinator />
@@ -752,11 +764,16 @@ import { getLibraryRepository } from "$lib/shared/library/getLibraryRepository";
   <!-- Start/End Options Coordinator -->
   <StartEndCoordinator />
 
-  <!-- Save to Library Panel - Rendered at root level to avoid stacking context issues -->
-  <SaveToLibraryPanel
-    show={panelState.isSaveToLibraryPanelOpen}
-    word={currentDisplayWord}
-    onClose={() => panelState.closeSaveToLibraryPanel()}
+  <!-- Save to Library Panel - Rendered at root level to avoid stacking context
+       issues. Deferred until first opened; keep-alive preserves close animation. -->
+  <LazyMount
+    loader={() => import("./SaveToLibraryPanel.svelte")}
+    active={panelState.isSaveToLibraryPanelOpen}
+    props={{
+      show: panelState.isSaveToLibraryPanelOpen,
+      word: currentDisplayWord,
+      onClose: () => panelState.closeSaveToLibraryPanel(),
+    }}
   />
 
   <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit -->
