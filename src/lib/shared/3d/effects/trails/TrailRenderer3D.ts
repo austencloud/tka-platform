@@ -132,6 +132,7 @@ export class TrailRenderer3D {
   private alphas: Float32Array;
   private colors: Float32Array;
   private edges: Float32Array;
+  private indices: Uint32Array;
   private maxVertices: number;
   private readonly tempVec = new Vector3();
   private readonly tempTangent = new Vector3();
@@ -170,6 +171,25 @@ export class TrailRenderer3D {
       this.edges[v] = v % 2 === 0 ? -1 : 1;
     }
     this.geometry.setAttribute("edge", new BufferAttribute(this.edges, 1));
+
+    // Stitch the left/right vertex pairs into a continuous triangle strip via
+    // an index buffer. Without this, an un-indexed mesh draws every 3 verts as
+    // one isolated triangle (L0,R0,L1)(R1,L2,R2)... leaving gaps - the "teeny
+    // triangles with holes" look. Two triangles per quad between consecutive
+    // interpolated points (k → 2k=left, 2k+1=right). The index topology is
+    // fixed by vertex layout, so build it once; update() only moves drawRange.
+    const maxQuads = maxInterpolated - 1;
+    this.indices = new Uint32Array(maxQuads * 6);
+    for (let k = 0; k < maxQuads; k++) {
+      const a = 2 * k;       // left  of point k
+      const b = 2 * k + 1;   // right of point k
+      const c = 2 * k + 2;   // left  of point k+1
+      const d = 2 * k + 3;   // right of point k+1
+      const o = k * 6;
+      this.indices[o] = a;     this.indices[o + 1] = b;     this.indices[o + 2] = c;
+      this.indices[o + 3] = b; this.indices[o + 4] = d;     this.indices[o + 5] = c;
+    }
+    this.geometry.setIndex(new BufferAttribute(this.indices, 1));
 
     const material = createTrailMaterial({
       color: this.config.color,
@@ -300,7 +320,12 @@ export class TrailRenderer3D {
       (this.geometry.attributes.instanceColor as BufferAttribute).needsUpdate = true;
     }
 
-    this.geometry.setDrawRange(0, vertexIndex);
+    // Indexed draw: range is in index count, not vertex count. vertexIndex is
+    // the number of emitted verts (2 per interpolated point), so the strip has
+    // vertexIndex/2 points → (points - 1) quads → ×6 indices.
+    const emittedPoints = vertexIndex / 2;
+    const indexCount = Math.max(0, emittedPoints - 1) * 6;
+    this.geometry.setDrawRange(0, indexCount);
   }
 
   onLoopReset(): void {

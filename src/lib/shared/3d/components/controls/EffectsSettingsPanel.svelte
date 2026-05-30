@@ -257,32 +257,53 @@
     color: var(--theme-text-dim);
   }
 
+  /* Two rows of square touch-target buttons that flow into columns and expand
+     widthwise (horizontal scroll past the panel width). */
   .effect-chips {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-auto-flow: column;
+    grid-template-rows: repeat(2, 1fr);
+    grid-auto-columns: 64px;
     gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.35rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--theme-stroke-strong) transparent;
   }
 
   .effect-chip {
+    width: 64px;
+    height: 64px;
     min-height: var(--min-touch-target);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
+    gap: 0.2rem;
     background: var(--theme-panel-bg);
     border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
+    border-radius: 14px;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: 0.6rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast);
   }
 
+  .effect-chip span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Icons carry their effect color at all times (matches the 2D panel), dimmed
+     a touch until active. */
   .effect-chip i {
-    font-size: 1rem;
-    opacity: 0.6;
+    font-size: 1.1rem;
+    color: var(--color);
+    opacity: 0.85;
     transition: all var(--duration-fast);
   }
 
@@ -293,7 +314,7 @@
   }
 
   .effect-chip:hover i {
-    opacity: 0.9;
+    opacity: 1;
   }
 
   .effect-chip.active {
@@ -404,7 +425,11 @@
 
   @media (max-width: 400px) {
     .effect-chips {
-      grid-template-columns: repeat(2, 1fr);
+      grid-auto-columns: 56px;
+    }
+    .effect-chip {
+      width: 56px;
+      height: 56px;
     }
   }
 </style>
