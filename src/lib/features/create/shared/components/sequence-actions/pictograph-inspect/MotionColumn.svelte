@@ -73,7 +73,7 @@
         {/if}
       </div>
 
-      <PipelineTraceSection {diagnostics} />
+      <PipelineTraceSection {diagnostics} {color} />
     {:else}
       <div class="empty-state">No {color} motion</div>
     {/if}

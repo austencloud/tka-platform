@@ -41,6 +41,7 @@
   import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
   import { getPropGeometryRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton";
   import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
+  import { livePipelineEdit } from "./live-pipeline-edit.svelte";
   import { derivePropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-key-deriver";
   import type { PropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/PropGeometryAdjustment";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
@@ -75,6 +76,19 @@
     activeColor === "red" ? "var(--prop-red, #f85149)" : "var(--prop-blue, #58a6ff)"
   );
   const segColor = $derived<"blue" | "red">(activeColor === "red" ? "red" : "blue");
+
+  // Publish the in-flight edit so PipelineTraceSection can show the edited tier's
+  // value live (before Save). Only while an actual edit is pending on this color;
+  // cleared on Save/tier-switch/deselect (hasLocalChanges resets) and on teardown.
+  $effect(() => {
+    if (hasLocalChanges && activeColor) {
+      livePipelineEdit.publish({ color: activeColor, tier: editTarget, x: editX, y: editY });
+    } else {
+      livePipelineEdit.clear();
+    }
+    return () => livePipelineEdit.clear();
+  });
+
   const tierOptions = [
     { value: "global" as const, label: "Global" },
     { value: "special-json" as const, label: "Special JSON" },

@@ -10,30 +10,21 @@
     PipelineDiagnostics,
     PipelineTier,
   } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
-  import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
-  import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
+  import { livePipelineEdit } from "./live-pipeline-edit.svelte";
 
   interface Props {
     diagnostics: PipelineDiagnostics | null;
+    color: "blue" | "red";
   }
 
-  let { diagnostics }: Props = $props();
+  let { diagnostics, color }: Props = $props();
 
-  // Live Default value, synchronous O(1) repo lookup — no async pipeline rerun.
-  // Reactive to the same version bus the editor bumps on every WASD keystroke,
-  // so the Default row reflects the live edit immediately (not just after Save).
-  const liveDefaultValue = $derived.by((): { x: number; y: number } | null => {
-    const _ = globalAdjustmentVersion.version;
-    const d = diagnostics?.default;
-    if (!d?.gridMode || !d?.motionType || !d?.placementKey) return null;
-    const v = getDefaultOverrideRepository()?.getValue(
-      d.gridMode,
-      d.motionType,
-      d.placementKey,
-      d.turns,
-    );
-    return v ? { x: v[0], y: v[1] } : null;
-  });
+  // The in-flight edit for THIS motion's color, or null. Lets every tier row show
+  // the value being dragged live (before Save) — a plain reactive read off the
+  // shared editor signal, no async pipeline rerun.
+  const liveEdit = $derived(
+    livePipelineEdit.current?.color === color ? livePipelineEdit.current : null,
+  );
 
   function tierLabel(tier: PipelineTier): string {
     switch (tier) {
@@ -98,9 +89,13 @@
         {#if detail}
           <span class="tier-detail">{detail}</span>
         {/if}
-        <span class="tier-value" class:none={!info}>
-          {#if tier === "default" && liveDefaultValue}
-            {formatValue(liveDefaultValue)}
+        <span
+          class="tier-value"
+          class:none={!info && liveEdit?.tier !== tier}
+          class:live={liveEdit?.tier === tier}
+        >
+          {#if liveEdit?.tier === tier}
+            {formatValue({ x: liveEdit.x, y: liveEdit.y })}
           {:else}
             {info ? formatValue(info.value) : "none"}
           {/if}
@@ -198,6 +193,10 @@
   .tier-value.none {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-style: italic;
+  }
+  .tier-value.live {
+    color: var(--tier-color);
+    font-weight: 700;
   }
   .tier-badge {
     font-size: var(--font-size-compact, 12px);
