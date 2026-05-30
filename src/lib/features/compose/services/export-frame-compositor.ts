@@ -247,7 +247,14 @@ export class ExportFrameCompositor {
     if (isCompositeMode) {
       this.compositeRenderer.renderCompositeFrame(canvas, compositeStepIndex, offscreenCanvas);
     } else {
-      offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+      // Fill OPAQUE BLACK, not transparent. The encoder builds a VideoFrame as
+      // RGBA and H.264/AV1 drop the alpha channel — so any semi-transparent
+      // trail/glow pixel composited on a transparent base would encode at full
+      // straight-alpha intensity (bright/harsh) instead of the dim alpha-blended
+      // value shown on the live canvas. Pre-flattening over black makes the
+      // captured pixels opaque and correctly blended, matching the preview.
+      offscreenCtx.fillStyle = "#000";
+      offscreenCtx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
       const canvasY = headerHeight > 0 ? headerHeight : 0;
       offscreenCtx.drawImage(
         canvas,
