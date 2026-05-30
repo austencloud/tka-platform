@@ -30,6 +30,8 @@ import {
   paintCardFrontChrome,
   buildCellLayerOptions,
 } from "./card-front-assembler";
+import type { CardFrontLayout, CardFrontChromeDeps } from "./card-front-assembler";
+import type { LayerRenderOptions, LayerVisibility } from "./types";
 import { composeCardImage as composeCardImageFn } from "./card-composer";
 // getMandalaGeometryCalculator loaded dynamically to avoid pulling $app/environment into worker bundle
 import { renderMandalaToCanvas } from "../../mandala/services/mandala-renderer";
@@ -80,6 +82,58 @@ export class ImageComposer {
 
   setQRCodeGenerator(generator: QRCodeGenerator): void {
     this.qrCodeGenerator = generator;
+  }
+
+  // --- Passthroughs for the parallel card-front render path -----------------
+  // composeCardFrontParallel runs cell rasterization on a worker pool but reuses
+  // this composer for glyph preload, visibility resolution, chrome deps, the
+  // duration badge, and the per-cell main-thread fallback. These thin accessors
+  // expose exactly what that path needs without duplicating composer state.
+
+  async preloadHeaderGlyphs(): Promise<void> {
+    await this.TextRenderer.preloadGlyphImages();
+  }
+
+  async resolveVisibilitySettings(
+    options: Partial<SequenceExportOptions>
+  ): Promise<PictographVisibilityOptions> {
+    const v = await this.getVisibilitySettings(options.visibilityOverrides);
+    if (options.blueVisible === false) v.showBlueMotion = false;
+    if (options.redVisible === false) v.showRedMotion = false;
+    if (v.showBlueMotion === false || v.showRedMotion === false) v.showTKA = false;
+    return v;
+  }
+
+  get textRenderer() {
+    return this.TextRenderer;
+  }
+
+  get qrGenerator() {
+    return this.qrCodeGenerator;
+  }
+
+  drawDurationBadgePublic(
+    ctx: CanvasRenderingContext2D,
+    duration: number,
+    x: number,
+    y: number,
+    size: number,
+    dark: boolean
+  ): void {
+    this.drawDurationBadge(ctx, duration, x, y, size, dark);
+  }
+
+  async composeCellMainThread(
+    prepared: PreparedPictographData,
+    options: LayerRenderOptions,
+    visibility: LayerVisibility,
+    stepNumber: number | undefined
+  ): Promise<ImageBitmap> {
+    await this.ensureCanvas2DInitialized();
+    if (!this.layerCompositor) throw new Error("layerCompositor unavailable");
+    const result = await this.layerCompositor.compose(prepared, options, visibility, stepNumber);
+    const c = result.canvas;
+    return c instanceof OffscreenCanvas ? c.transferToImageBitmap() : createImageBitmap(c);
   }
 
   setCompositionalCaching(enabled: boolean): void {
@@ -358,45 +412,62 @@ export class ImageComposer {
       sequence,
       options,
       visibilitySettings,
-      {
-        textRenderer: this.TextRenderer,
-        qrCodeGenerator: this.qrCodeGenerator,
-        renderMandalas: (c) =>
-          this.renderMandalas(
-            c,
-            sequence,
-            columns,
-            rows,
-            stepSize,
-            gridOffsetY,
-            gridOffsetX,
-            isDarkMode,
-            options,
-            effectiveBluePropType,
-            effectiveRedPropType
-          ),
-        renderQRCode: async (c) => {
-          const emptyCell = findEmptyCellForQR(columns, rows, sequence, options);
-          if (emptyCell) {
-            await this.renderQRCode(
-              c,
-              sequence,
-              emptyCell,
-              stepSize,
-              gridOffsetY,
-              isDarkMode,
-              effectiveBluePropType,
-              effectiveRedPropType,
-              gridOffsetX,
-              options.deckId,
-              options.deckName,
-            );
-          }
-        },
-      }
+      this.buildChromeDeps(sequence, layout, options)
     );
 
     return canvas;
+  }
+
+  /**
+   * Single source of truth for the chrome (mandala/QR/header/footer) dependencies
+   * passed to paintCardFrontChrome. Used by both composeSequenceImage (main-thread
+   * serial path) and composeCardFrontParallel (worker-pool path) so the chrome
+   * renders byte-identically regardless of how the cells were rasterized.
+   */
+  buildChromeDeps(
+    sequence: SequenceData,
+    layout: CardFrontLayout,
+    options: Partial<SequenceExportOptions>
+  ): CardFrontChromeDeps {
+    const { columns, rows, stepSize, gridOffsetY, gridOffsetX, isDarkMode } = layout;
+    const effectiveBluePropType = options.bluePropTypeOverride ?? options.propTypeOverride;
+    const effectiveRedPropType = options.redPropTypeOverride ?? options.propTypeOverride;
+    return {
+      textRenderer: this.TextRenderer,
+      qrCodeGenerator: this.qrCodeGenerator,
+      renderMandalas: (c) =>
+        this.renderMandalas(
+          c,
+          sequence,
+          columns,
+          rows,
+          stepSize,
+          gridOffsetY,
+          gridOffsetX,
+          isDarkMode,
+          options,
+          effectiveBluePropType,
+          effectiveRedPropType
+        ),
+      renderQRCode: async (c) => {
+        const emptyCell = findEmptyCellForQR(columns, rows, sequence, options);
+        if (emptyCell) {
+          await this.renderQRCode(
+            c,
+            sequence,
+            emptyCell,
+            stepSize,
+            gridOffsetY,
+            isDarkMode,
+            effectiveBluePropType,
+            effectiveRedPropType,
+            gridOffsetX,
+            options.deckId,
+            options.deckName,
+          );
+        }
+      },
+    };
   }
 
   private writeThroughToPreviewCache(
