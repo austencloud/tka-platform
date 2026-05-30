@@ -55,6 +55,10 @@ interface PendingRequest {
   signal?: AbortSignal;
   abortHandler?: () => void;
   workerEntry: WorkerEntry;
+  // When set, the `result` branch resolves the raw inner ImageBitmap directly
+  // (no webp Blob conversion, no bitmap close — the caller owns it). Used by
+  // composeFrontBitmap so the main thread keeps the cheap stripe/bleed wrap.
+  resolveBitmap?: (bitmap: ImageBitmap) => void;
 }
 
 // One in-flight 1644x2244 RGBA card canvas per worker ≈ 14.7 MB; N = cores-1
@@ -222,6 +226,58 @@ export class CompositionDispatcher {
     });
   }
 
+  /**
+   * Compose the front pictograph composite on a pool worker and return the raw
+   * inner sequence ImageBitmap. The worker runs the same composeSequenceImage
+   * path; the main thread keeps the cheap, deterministic stripe/bleed wrap.
+   * The caller owns (and must dispose of) the returned bitmap.
+   */
+  async composeFrontBitmap(
+    sequence: SequenceData,
+    options: Partial<SequenceExportOptions>,
+    signal?: AbortSignal,
+  ): Promise<ImageBitmap> {
+    await this.ensureInitialized();
+
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
+    const id = this.nextRequestId++;
+    const worker = this.pickWorker();
+    worker.pendingCount++;
+
+    return new Promise<ImageBitmap>((resolve, reject) => {
+      const pending: PendingRequest = {
+        resolve: () => {}, // unused for the bitmap path
+        reject,
+        signal,
+        workerEntry: worker,
+        resolveBitmap: resolve,
+      };
+
+      if (signal) {
+        pending.abortHandler = () => {
+          worker.worker.postMessage({ type: "cancel", id } satisfies CompositionWorkerInMessage);
+        };
+        signal.addEventListener("abort", pending.abortHandler, { once: true });
+      }
+
+      this.pendingRequests.set(id, pending);
+
+      const plainSequence = JSON.parse(JSON.stringify(sequence));
+      const plainOptions = JSON.parse(JSON.stringify(options));
+
+      const message: CompositionWorkerInMessage = {
+        type: "compose",
+        id,
+        sequence: plainSequence,
+        options: plainOptions,
+        qrBitmap: null,
+      };
+
+      worker.worker.postMessage(message);
+    });
+  }
+
   private handleWorkerMessage(data: CompositionWorkerOutMessage): void {
     // init-done is handled during init; probe-result is only seen by the
     // throwaway probe worker, never the pool — both lack a request id.
@@ -247,6 +303,13 @@ export class CompositionDispatcher {
     pending.workerEntry.pendingCount--;
 
     if (data.type === "result") {
+      // Bitmap path (composeFrontBitmap): hand the raw inner bitmap to the
+      // caller without webp conversion. Cleanup above already ran. The caller
+      // owns the bitmap, so do NOT close it here.
+      if (pending.resolveBitmap) {
+        pending.resolveBitmap(data.bitmap);
+        return;
+      }
       const canvas = new OffscreenCanvas(data.bitmap.width, data.bitmap.height);
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(data.bitmap, 0, 0);

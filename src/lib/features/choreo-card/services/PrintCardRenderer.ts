@@ -11,6 +11,10 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ImageComposer } from "../../../shared/render/services/image-composer";
+import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
+import type { RenderCanvas } from "$lib/shared/render/services/types";
+import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
+import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
 import type { PrintRenderOptions } from "./types";
 import { renderCardBack } from "./card-back-dom-renderer";
 import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-renderer";
@@ -105,7 +109,7 @@ export class PrintCardRenderer {
     const dark = options.tndElement?.darkComplement ?? "#444444";
 
     // Render the sequence image (keep all existing options)
-    const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, {
+    const composeOptions: Partial<SequenceExportOptions> = {
       deckCard: { contentWidth: contentW, contentHeight: contentH },
       includeStartPosition: options.includeStartPosition,
       startPositionLayout: options.startPositionLayout ?? "row",
@@ -142,7 +146,11 @@ export class PrintCardRenderer {
       visibilityOverrides: {
         showTKA: options.showTKA,
         showTnD: false,
-        showElemental: false,
+        // TnD decks show each pictograph's own element glyph (bottom-right of
+        // the cell). Keyed on tndElement presence so only element-themed decks
+        // get it; generic choreo cards stay clean. drawElementalGlyph fits the
+        // art to its natural aspect, so water (tall) / air (wide) aren't squished.
+        showElemental: options.tndElement != null,
         showPositions: false,
         showReversals: true,
         showNonRadialPoints: false,
@@ -155,7 +163,25 @@ export class PrintCardRenderer {
         ...(options.bluePropType && { bluePropType: options.bluePropType }),
         ...(options.redPropType && { redPropType: options.redPropType }),
       },
-    });
+    };
+
+    // Route the inner pictograph composite through the worker pool when
+    // available; the cheap stripe/bleed wrap stays on the main thread. Any
+    // worker error falls back to the main-thread compose.
+    let sequenceCanvas: RenderCanvas | ImageBitmap;
+    if (CompositionDispatcher.canUseWorker()) {
+      try {
+        sequenceCanvas = await getCompositionDispatcher().composeFrontBitmap(
+          sequence,
+          composeOptions,
+        );
+      } catch (e) {
+        console.warn("[PrintCardRenderer] front worker failed, main-thread:", e);
+        sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
+      }
+    } else {
+      sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
+    }
 
     // Build the card canvas
     const mpcCanvas = document.createElement("canvas");
