@@ -8,30 +8,33 @@ import {
 } from "$lib/shared/pictograph/arrow/positioning/default-override/domain/DefaultArrowPlacement";
 
 describe("DefaultArrowPlacement domain", () => {
-  it("generates a doc id from gridMode + motionType", () => {
-    expect(generateDefaultDocId("box", "pro")).toBe("box_pro");
-    expect(generateDefaultDocId("diamond", "static")).toBe("diamond_static");
+  it("generates a doc id from gridMode + propType + motionType", () => {
+    expect(generateDefaultDocId("box", "staff", "pro")).toBe("box_staff_pro");
+    expect(generateDefaultDocId("diamond", "fan", "static")).toBe("diamond_fan_static");
   });
 
   it("round-trips a doc id", () => {
-    expect(parseDefaultDocId("box_pro")).toEqual({ gridMode: "box", motionType: "pro" });
+    expect(parseDefaultDocId("box_fan_pro")).toEqual({ gridMode: "box", propType: "fan", motionType: "pro" });
+    // Legacy 2-part ids predate the prop dimension → staff.
+    expect(parseDefaultDocId("box_pro")).toEqual({ gridMode: "box", propType: "staff", motionType: "pro" });
     expect(parseDefaultDocId("diamond_static")).toEqual({
       gridMode: "diamond",
+      propType: "staff",
       motionType: "static",
     });
   });
 
   it("returns null for a malformed doc id", () => {
     expect(parseDefaultDocId("box")).toBeNull();
-    expect(parseDefaultDocId("a_b_c")).toBeNull();
   });
 
   it("flattens a placements map into a doc body and reads a single value back", () => {
     const placements = {
       pro_to_layer1_alpha: { "1.5": [-35, 145] as [number, number], "2": [-10, -35] as [number, number] },
     };
-    const body = flattenPlacements("box", "pro", placements, "seed");
+    const body = flattenPlacements("box", "staff", "pro", placements, "seed");
     expect(body.gridMode).toBe("box");
+    expect(body.propType).toBe("staff");
     expect(body.motionType).toBe("pro");
     expect(body.placements.pro_to_layer1_alpha["1.5"]).toEqual([-35, 145]);
     expect(unflattenValue(body.placements, "pro_to_layer1_alpha", "1.5")).toEqual([-35, 145]);
