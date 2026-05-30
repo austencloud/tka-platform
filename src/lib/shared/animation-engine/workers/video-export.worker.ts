@@ -124,6 +124,14 @@ export interface ExportConfig {
   fps: number;
   bitrate: number;
   totalFrames: number;
+  /**
+   * Video codec. "h264" (default) = H.264 High profile, 4:2:0 — max
+   * compatibility but chroma-subsampled (fringes saturated edges on black).
+   * "av1" = AV1 High profile (4:4:4), no chroma subsampling — eliminates the
+   * edge/gradient fringe for near-exact parity with the on-screen render, at
+   * the cost of slower (often software) encode. WebCodecs path only.
+   */
+  codec?: "h264" | "av1";
 }
 
 // ---------------------------------------------------------------------------
@@ -176,6 +184,19 @@ function selectCodec(width: number, height: number): string {
   if (pixelArea <= 2_073_600) return "avc1.640028";
   if (pixelArea <= 8_912_896) return "avc1.640033";
   return "avc1.64003c";
+}
+
+/**
+ * AV1 High profile (profile 1) = 4:4:4, 8-bit. No chroma subsampling, so
+ * saturated red/blue edges and soft glow gradients survive intact — the lever
+ * for near-exact parity. seq_level_idx scales with resolution (08=4.0 covers
+ * 1080p, 13=5.1 covers 4K, 16=6.0 for 8K). Tier Main, bit depth 08.
+ */
+function selectCodecAv1(width: number, height: number): string {
+  const pixelArea = width * height;
+  if (pixelArea <= 2_073_600) return "av01.1.08M.08";
+  if (pixelArea <= 8_912_896) return "av01.1.13M.08";
+  return "av01.1.16M.08";
 }
 
 /**
@@ -284,8 +305,10 @@ function cleanup(): void {
 // ---------------------------------------------------------------------------
 
 async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
+  const useAv1 = config.codec === "av1";
+
   // Create mediabunny MP4 output with in-memory fast-start
-  videoSource = new EncodedVideoPacketSource("avc");
+  videoSource = new EncodedVideoPacketSource(useAv1 ? "av1" : "avc");
   output = new Output({
     format: new Mp4OutputFormat({ fastStart: "in-memory" }),
     target: new BufferTarget(),
@@ -325,7 +348,9 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
     },
   });
 
-  const codec = selectCodec(encoderWidth, encoderHeight);
+  const codec = useAv1
+    ? selectCodecAv1(encoderWidth, encoderHeight)
+    : selectCodec(encoderWidth, encoderHeight);
 
   // Omit `hardwareAcceleration` entirely - this is the spec default
   // (`"no-preference"`) and it's what production encoders should use.

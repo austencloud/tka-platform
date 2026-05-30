@@ -26,6 +26,12 @@ export interface VideoExportOrchestratorOptions {
   resolution?: VideoResolution;
   loopCount?: number;
   format?: VideoExportFormat;
+  /**
+   * Video codec for MP4 exports. "h264" (default) = 4:2:0, max compatibility.
+   * "av1" = AV1 High profile 4:4:4 — eliminates chroma-subsampling fringe for
+   * near-exact parity with the on-screen render (slower encode).
+   */
+  codec?: "h264" | "av1";
   effectOverrides?: VideoEffectOverrides;
   compositeMode?: "none" | "horizontal" | "vertical";
   gridStepSize?: number;

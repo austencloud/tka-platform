@@ -205,6 +205,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         fps,
         bitrate,
         totalFrames: totalFramesEstimate,
+        codec: options.codec,
       });
     } else {
       // Legacy inline exporter for WebM

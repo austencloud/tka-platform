@@ -18,6 +18,8 @@ export interface BackgroundExportConfig {
   fps: number;
   bitrate: number;
   totalFrames: number;
+  /** "h264" (default, 4:2:0) or "av1" (4:4:4, near-exact parity). */
+  codec?: "h264" | "av1";
 }
 import type {
   ExportWorkerMessage,
@@ -85,6 +87,7 @@ export class BackgroundVideoEncoder {
           fps: config.fps,
           bitrate: config.bitrate,
           totalFrames: config.totalFrames,
+          codec: config.codec,
         },
       });
     });
