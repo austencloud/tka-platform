@@ -4,8 +4,29 @@
  * 19 VTG base motions as quartered and halved rotated LOOPs.
  * Each card represents one fundamental VTG motion category.
  *
- * Same-direction motions (10): 1-beat seed → quartered LOOP → 4-beat sequence
- * Opposite-direction motions (9): 2-beat seed → halved LOOP → 4-beat sequence
+ * Same-direction motions (10): 1-letter seed walked 4 beats 90° around the grid.
+ * Opposite-direction motions (9): 2-letter seed alternated, walked 4 beats 180°.
+ *
+ * CANONICAL SOURCE: static/data/pictographs/DiamondPictographDataframe.csv.
+ * The CSV already contains every rotated beat of every VTG motion, so this
+ * seeder walks the CSV directly — it does NOT route through any rotation
+ * executor. Each of the 4 beats is one (letter, startPos, endPos[, blueDir])
+ * CSV row; orientations chain through the engine's OrientationCalculator.
+ *
+ * This is the single canonical seeder for decks/l1-vtg-motions. It folds in the
+ * former scripts/seed-vtg-togopp.ts (the tog-opp mirror-chirality re-seed): the
+ * 3 tog-opp sequences (DJDJ/EKEK/FLFL) walk beta5→alpha3→beta1→alpha7→beta5
+ * with blue=anti (EK/FL) / blue=pro (DJ), reproducing the live mirror chirality.
+ * The other 16 reproduce the original old-engine output byte-for-byte.
+ *
+ * Why no rotation executor: the function-based executeLOOP →
+ * executeStrictRotated → createRotatedStep in
+ * packages/sequence-engine/src/loop/execution/LOOPExecutor.ts reads
+ * step.motions.{blue,red} while seeders build flat blueMotion/redMotion steps,
+ * so it threw "Cannot read properties of undefined (reading 'blue')" for all 19
+ * seeds. That function path is dead for the app (the app uses the class-based
+ * StrictRotatedExecutor) but is still imported by scripts/seed-l1-deck.ts, so it
+ * is left in place; this seeder simply no longer depends on it.
  *
  * Usage: npx tsx scripts/seed-vtg-deck.ts [--dry-run]
  * Requires: serviceAccountKey.json in project root
@@ -16,17 +37,7 @@ import * as path from "path";
 import { randomUUID } from "crypto";
 import { fileURLToPath } from "url";
 
-import {
-  executeLOOP,
-  type PictographData,
-  type MotionData as McpMotionData,
-} from "../packages/sequence-engine/src/loop/execution/LOOPExecutor.js";
-import { LOOPType, Period } from "../packages/sequence-engine/src/loop/loop-types.js";
-import {
-  calculateOrientations,
-  calculateEndOrientation,
-} from "../packages/sequence-engine/src/core/orientation/OrientationCalculator.js";
-import type { SequenceStep } from "../packages/sequence-engine/src/core/types/sequence-engine-types.js";
+import { calculateEndOrientation } from "../packages/sequence-engine/src/core/orientation/OrientationCalculator.js";
 
 // ============================================================================
 // CONFIGURATION
@@ -43,70 +54,297 @@ const SERVICE_ACCOUNT_PATH = path.resolve(PROJECT_ROOT, "serviceAccountKey.json"
 const DECK_ID = "l1-vtg-motions";
 const DRY_RUN = process.argv.includes("--dry-run");
 
+// Period labels for metadata (matches the prior enum's two values).
+const PERIOD_QUARTERED = "quartered";
+const PERIOD_HALVED = "halved";
+type PeriodLabel = typeof PERIOD_QUARTERED | typeof PERIOD_HALVED;
+
 // ============================================================================
-// VTG MOTION DEFINITIONS
+// CSV ROW MODEL
 // ============================================================================
 
+interface CsvMotion {
+  motionType: string;
+  rotationDirection: string;
+  startLocation: string;
+  endLocation: string;
+}
+
+interface CsvRow {
+  letter: string;
+  startPosition: string;
+  endPosition: string;
+  timing: string;
+  direction: string;
+  blue: CsvMotion;
+  red: CsvMotion;
+}
+
 /**
- * Each VTG motion is defined by its seed letter(s), starting position,
- * slice size, and VTG family.
+ * Load the canonical diamond dataframe. Column order matches
+ * DiamondPictographDataframe.csv:
+ *   letter, startPosition, endPosition, timing, direction,
+ *   blueMotionType, blueRotationDirection, blueStartLocation, blueEndLocation,
+ *   redMotionType,  redRotationDirection,  redStartLocation,  redEndLocation
+ * The CSV is master truth and is never reordered or edited.
  */
-/**
- * Disambiguates which CSV pictograph variant to use for one seed beat.
- * A given (letter, startPos) can have two mirror-chirality pictographs
- * (e.g. D from beta5 → alpha7 vs → alpha3), and hybrid letters (F, L)
- * have two distinct pictographs sharing the same endPos. endPos picks the
- * chirality; blueDir breaks the hybrid tie. Both are matched against the
- * canonical DiamondPictographDataframe.csv — the CSV is never reordered.
- */
-interface SeedBeat {
-  endPos: string;   // target endPosition for this beat
-  blueDir: string;  // blue rotationDirection ("cw" | "ccw")
+function loadCsv(): CsvRow[] {
+  const content = fs.readFileSync(CSV_PATH, "utf-8");
+  const lines = content.trim().split("\n");
+  const rows: CsvRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const v = lines[i].split(",").map((s) => s.trim());
+    if (!v[0]) continue;
+    rows.push({
+      letter: v[0],
+      startPosition: v[1],
+      endPosition: v[2],
+      timing: v[3],
+      direction: v[4],
+      blue: { motionType: v[5], rotationDirection: v[6], startLocation: v[7], endLocation: v[8] },
+      red: { motionType: v[9], rotationDirection: v[10], startLocation: v[11], endLocation: v[12] },
+    });
+  }
+  return rows;
+}
+
+// ============================================================================
+// VTG MOTION DEFINITIONS
+//
+// Each VTG motion is a 4-beat walk. Every beat is one explicit
+// (letter, startPos, endPos) triple resolving to exactly one CSV row, plus an
+// optional blueDir discriminator for hybrid letters (F, L) that have two
+// pictographs per triple differing in which hand is anti vs pro.
+//
+// The 16 non-tog-opp walks reproduce the original old-engine output:
+//   - quartered (same-dir): the 1-letter seed walked CW 90° per beat
+//   - split-opp / quarter-opp halved: the 2-letter seed alternated, walked 180°
+// The 3 tog-opp walks use the mirror chirality (beta5→alpha3→beta1→alpha7).
+// ============================================================================
+
+interface BeatRef {
+  letter: string;
+  startPos: string;
+  endPos: string;
+  /** Blue rotationDirection discriminator for hybrid (F/L) ties. */
+  blueDir?: string;
 }
 
 interface VTGMotionDef {
   id: number;
-  seed: string[];        // 1 letter for quartered, 2 for halved
-  word: string;           // Full 4-beat word (e.g., "AAAA" or "JDJD")
-  vtg: string;            // VTG category label
-  familyId: string;       // Family grouping ID
-  startPos: string;       // Starting position
-  period: Period;   // Quartered (90°) or Halved (180°)
-  /**
-   * Explicit per-beat variant selection for the seed. When present, each
-   * seed letter is resolved to the exact CSV row matching its endPos+blueDir
-   * instead of taking the first letter match. Set only where the default
-   * first-match picks the wrong chirality (tog-opp DJ/EK/FL).
-   */
-  seedPath?: SeedBeat[];
+  word: string; // Full 4-beat word (e.g. "AAAA" or "JDJD")
+  vtg: string; // VTG category label
+  familyId: string; // Family grouping ID
+  startPos: string; // Starting position
+  period: PeriodLabel;
+  /** Seed letters, used only for the metadata.seed field. */
+  seed: string[];
+  /** The 4-beat walk; every beat is a unique CSV row. */
+  beats: BeatRef[];
 }
 
+/**
+ * Every VTG motion's 4-beat walk is written out explicitly as
+ * (letter, startPos, endPos) triples. The walk direction is NOT a uniform grid
+ * rotation — each VTG family circles the grid differently (e.g. SSSS walks
+ * gamma11→gamma9→gamma15→gamma13, UUUU walks gamma11→gamma13→gamma15→gamma9),
+ * so the positions are taken directly from the canonical production data rather
+ * than computed. findRow resolves each triple to the FIRST matching CSV row
+ * (verified: every live beat is triple-index 0); for the hybrid F/L beats a
+ * blueDir discriminator pins the blue=anti / red=pro pictograph.
+ *
+ * The 16 same-dir + split-opp + quarter-opp walks reproduce the original
+ * old-engine output (the 13 of them already in production are byte-identical;
+ * GGGG/HHHH/IIII follow the identical tog-same pattern but were never seeded).
+ * The 3 tog-opp walks (DJDJ/EKEK/FLFL) use the live mirror chirality
+ * (beta5→alpha3→beta1→alpha7→beta5).
+ */
 const VTG_MOTIONS: VTGMotionDef[] = [
-  // Same-Direction (Quartered — 1-beat seeds)
-  { id: 1,  seed: ["A"],      word: "AAAA", vtg: "Split-Same",   familyId: "split-same",   startPos: "alpha1",  period: Period.QUARTERED },
-  { id: 2,  seed: ["B"],      word: "BBBB", vtg: "Split-Same",   familyId: "split-same",   startPos: "alpha1",  period: Period.QUARTERED },
-  { id: 3,  seed: ["C"],      word: "CCCC", vtg: "Split-Same",   familyId: "split-same",   startPos: "alpha1",  period: Period.QUARTERED },
-  { id: 4,  seed: ["G"],      word: "GGGG", vtg: "Tog-Same",     familyId: "tog-same",     startPos: "beta5",   period: Period.QUARTERED },
-  { id: 5,  seed: ["H"],      word: "HHHH", vtg: "Tog-Same",     familyId: "tog-same",     startPos: "beta5",   period: Period.QUARTERED },
-  { id: 6,  seed: ["I"],      word: "IIII", vtg: "Tog-Same",     familyId: "tog-same",     startPos: "beta5",   period: Period.QUARTERED },
-  { id: 7,  seed: ["S"],      word: "SSSS", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: Period.QUARTERED },
-  { id: 8,  seed: ["T"],      word: "TTTT", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: Period.QUARTERED },
-  { id: 9,  seed: ["U"],      word: "UUUU", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: Period.QUARTERED },
-  { id: 10, seed: ["V"],      word: "VVVV", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: Period.QUARTERED },
+  // Same-Direction Quartered — Split-Same (alpha1, walks alpha1→alpha3→alpha5→alpha7)
+  {
+    id: 1, word: "AAAA", vtg: "Split-Same", familyId: "split-same", startPos: "alpha1", period: PERIOD_QUARTERED, seed: ["A"],
+    beats: [
+      { letter: "A", startPos: "alpha1", endPos: "alpha3" },
+      { letter: "A", startPos: "alpha3", endPos: "alpha5" },
+      { letter: "A", startPos: "alpha5", endPos: "alpha7" },
+      { letter: "A", startPos: "alpha7", endPos: "alpha1" },
+    ],
+  },
+  {
+    id: 2, word: "BBBB", vtg: "Split-Same", familyId: "split-same", startPos: "alpha1", period: PERIOD_QUARTERED, seed: ["B"],
+    beats: [
+      { letter: "B", startPos: "alpha1", endPos: "alpha3" },
+      { letter: "B", startPos: "alpha3", endPos: "alpha5" },
+      { letter: "B", startPos: "alpha5", endPos: "alpha7" },
+      { letter: "B", startPos: "alpha7", endPos: "alpha1" },
+    ],
+  },
+  {
+    id: 3, word: "CCCC", vtg: "Split-Same", familyId: "split-same", startPos: "alpha1", period: PERIOD_QUARTERED, seed: ["C"],
+    beats: [
+      { letter: "C", startPos: "alpha1", endPos: "alpha3", blueDir: "ccw" },
+      { letter: "C", startPos: "alpha3", endPos: "alpha5", blueDir: "ccw" },
+      { letter: "C", startPos: "alpha5", endPos: "alpha7", blueDir: "ccw" },
+      { letter: "C", startPos: "alpha7", endPos: "alpha1", blueDir: "ccw" },
+    ],
+  },
 
-  // Opposite-Direction (Halved — 2-beat seeds)
-  { id: 11, seed: ["J", "D"], word: "JDJD", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  period: Period.HALVED },
-  { id: 12, seed: ["K", "E"], word: "KEKE", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  period: Period.HALVED },
-  { id: 13, seed: ["L", "F"], word: "LFLF", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  period: Period.HALVED },
-  // tog-opp: pin the natural chirality (beta5→alpha3→beta1, blue leads CW for
-  // the pro/pro DJ, CCW for the anti EK/FL). Without seedPath the seeder takes
-  // the first CSV match, which is the mirror chirality (beta5→alpha7).
-  { id: 14, seed: ["D", "J"], word: "DJDJ", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED, seedPath: [{ endPos: "alpha3", blueDir: "cw" }, { endPos: "beta1", blueDir: "cw" }] },
-  { id: 15, seed: ["E", "K"], word: "EKEK", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED, seedPath: [{ endPos: "alpha3", blueDir: "ccw" }, { endPos: "beta1", blueDir: "ccw" }] },
-  { id: 16, seed: ["F", "L"], word: "FLFL", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED, seedPath: [{ endPos: "alpha3", blueDir: "ccw" }, { endPos: "beta1", blueDir: "ccw" }] },
-  { id: 17, seed: ["M", "P"], word: "MPMP", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", period: Period.HALVED },
-  { id: 18, seed: ["N", "Q"], word: "NQNQ", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", period: Period.HALVED },
-  { id: 19, seed: ["O", "R"], word: "OROR", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", period: Period.HALVED },
+  // Same-Direction Quartered — Tog-Same (beta5, walks beta5→beta7→beta1→beta3)
+  {
+    id: 4, word: "GGGG", vtg: "Tog-Same", familyId: "tog-same", startPos: "beta5", period: PERIOD_QUARTERED, seed: ["G"],
+    beats: [
+      { letter: "G", startPos: "beta5", endPos: "beta7" },
+      { letter: "G", startPos: "beta7", endPos: "beta1" },
+      { letter: "G", startPos: "beta1", endPos: "beta3" },
+      { letter: "G", startPos: "beta3", endPos: "beta5" },
+    ],
+  },
+  {
+    id: 5, word: "HHHH", vtg: "Tog-Same", familyId: "tog-same", startPos: "beta5", period: PERIOD_QUARTERED, seed: ["H"],
+    beats: [
+      { letter: "H", startPos: "beta5", endPos: "beta7" },
+      { letter: "H", startPos: "beta7", endPos: "beta1" },
+      { letter: "H", startPos: "beta1", endPos: "beta3" },
+      { letter: "H", startPos: "beta3", endPos: "beta5" },
+    ],
+  },
+  {
+    id: 6, word: "IIII", vtg: "Tog-Same", familyId: "tog-same", startPos: "beta5", period: PERIOD_QUARTERED, seed: ["I"],
+    beats: [
+      { letter: "I", startPos: "beta5", endPos: "beta7", blueDir: "ccw" },
+      { letter: "I", startPos: "beta7", endPos: "beta1", blueDir: "ccw" },
+      { letter: "I", startPos: "beta1", endPos: "beta3", blueDir: "ccw" },
+      { letter: "I", startPos: "beta3", endPos: "beta5", blueDir: "ccw" },
+    ],
+  },
+
+  // Same-Direction Quartered — Quarter-Same (gamma11). S/T walk
+  // gamma11→gamma9→gamma15→gamma13; U/V walk gamma11→gamma13→gamma15→gamma9.
+  {
+    id: 7, word: "SSSS", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: PERIOD_QUARTERED, seed: ["S"],
+    beats: [
+      { letter: "S", startPos: "gamma11", endPos: "gamma9" },
+      { letter: "S", startPos: "gamma9", endPos: "gamma15" },
+      { letter: "S", startPos: "gamma15", endPos: "gamma13" },
+      { letter: "S", startPos: "gamma13", endPos: "gamma11" },
+    ],
+  },
+  {
+    id: 8, word: "TTTT", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: PERIOD_QUARTERED, seed: ["T"],
+    beats: [
+      { letter: "T", startPos: "gamma11", endPos: "gamma9" },
+      { letter: "T", startPos: "gamma9", endPos: "gamma15" },
+      { letter: "T", startPos: "gamma15", endPos: "gamma13" },
+      { letter: "T", startPos: "gamma13", endPos: "gamma11" },
+    ],
+  },
+  {
+    id: 9, word: "UUUU", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: PERIOD_QUARTERED, seed: ["U"],
+    beats: [
+      { letter: "U", startPos: "gamma11", endPos: "gamma13" },
+      { letter: "U", startPos: "gamma13", endPos: "gamma15" },
+      { letter: "U", startPos: "gamma15", endPos: "gamma9" },
+      { letter: "U", startPos: "gamma9", endPos: "gamma11" },
+    ],
+  },
+  {
+    id: 10, word: "VVVV", vtg: "Quarter-Same", familyId: "quarter-same", startPos: "gamma11", period: PERIOD_QUARTERED, seed: ["V"],
+    beats: [
+      { letter: "V", startPos: "gamma11", endPos: "gamma13" },
+      { letter: "V", startPos: "gamma13", endPos: "gamma15" },
+      { letter: "V", startPos: "gamma15", endPos: "gamma9" },
+      { letter: "V", startPos: "gamma9", endPos: "gamma11" },
+    ],
+  },
+
+  // Opposite-Direction Halved — Split-Opp (alpha1, walks alpha1→beta3→alpha5→beta7)
+  {
+    id: 11, word: "JDJD", vtg: "Split-Opp", familyId: "split-opp", startPos: "alpha1", period: PERIOD_HALVED, seed: ["J", "D"],
+    beats: [
+      { letter: "J", startPos: "alpha1", endPos: "beta3" },
+      { letter: "D", startPos: "beta3", endPos: "alpha5" },
+      { letter: "J", startPos: "alpha5", endPos: "beta7" },
+      { letter: "D", startPos: "beta7", endPos: "alpha1" },
+    ],
+  },
+  {
+    id: 12, word: "KEKE", vtg: "Split-Opp", familyId: "split-opp", startPos: "alpha1", period: PERIOD_HALVED, seed: ["K", "E"],
+    beats: [
+      { letter: "K", startPos: "alpha1", endPos: "beta3" },
+      { letter: "E", startPos: "beta3", endPos: "alpha5" },
+      { letter: "K", startPos: "alpha5", endPos: "beta7" },
+      { letter: "E", startPos: "beta7", endPos: "alpha1" },
+    ],
+  },
+  {
+    id: 13, word: "LFLF", vtg: "Split-Opp", familyId: "split-opp", startPos: "alpha1", period: PERIOD_HALVED, seed: ["L", "F"],
+    beats: [
+      { letter: "L", startPos: "alpha1", endPos: "beta3", blueDir: "cw" },
+      { letter: "F", startPos: "beta3", endPos: "alpha5", blueDir: "cw" },
+      { letter: "L", startPos: "alpha5", endPos: "beta7", blueDir: "cw" },
+      { letter: "F", startPos: "beta7", endPos: "alpha1", blueDir: "cw" },
+    ],
+  },
+
+  // tog-opp: MIRROR chirality (beta5→alpha3→beta1→alpha7→beta5). DJ leads
+  // blue=pro, EK/FL lead blue=anti. Hybrid F/L need blueDir to pick the
+  // blue=anti, red=pro pictograph. These reproduce the live mirror state.
+  {
+    id: 14, word: "DJDJ", vtg: "Tog-Opp", familyId: "tog-opp", startPos: "beta5", period: PERIOD_HALVED, seed: ["D", "J"],
+    beats: [
+      { letter: "D", startPos: "beta5", endPos: "alpha3" },
+      { letter: "J", startPos: "alpha3", endPos: "beta1" },
+      { letter: "D", startPos: "beta1", endPos: "alpha7" },
+      { letter: "J", startPos: "alpha7", endPos: "beta5" },
+    ],
+  },
+  {
+    id: 15, word: "EKEK", vtg: "Tog-Opp", familyId: "tog-opp", startPos: "beta5", period: PERIOD_HALVED, seed: ["E", "K"],
+    beats: [
+      { letter: "E", startPos: "beta5", endPos: "alpha3" },
+      { letter: "K", startPos: "alpha3", endPos: "beta1" },
+      { letter: "E", startPos: "beta1", endPos: "alpha7" },
+      { letter: "K", startPos: "alpha7", endPos: "beta5" },
+    ],
+  },
+  {
+    id: 16, word: "FLFL", vtg: "Tog-Opp", familyId: "tog-opp", startPos: "beta5", period: PERIOD_HALVED, seed: ["F", "L"],
+    beats: [
+      { letter: "F", startPos: "beta5", endPos: "alpha3", blueDir: "ccw" },
+      { letter: "L", startPos: "alpha3", endPos: "beta1", blueDir: "ccw" },
+      { letter: "F", startPos: "beta1", endPos: "alpha7", blueDir: "ccw" },
+      { letter: "L", startPos: "alpha7", endPos: "beta5", blueDir: "ccw" },
+    ],
+  },
+
+  // Opposite-Direction Halved — Quarter-Opp (gamma11, walks gamma11→gamma1→gamma15→gamma5)
+  {
+    id: 17, word: "MPMP", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma11", period: PERIOD_HALVED, seed: ["M", "P"],
+    beats: [
+      { letter: "M", startPos: "gamma11", endPos: "gamma1" },
+      { letter: "P", startPos: "gamma1", endPos: "gamma15" },
+      { letter: "M", startPos: "gamma15", endPos: "gamma5" },
+      { letter: "P", startPos: "gamma5", endPos: "gamma11" },
+    ],
+  },
+  {
+    id: 18, word: "NQNQ", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma11", period: PERIOD_HALVED, seed: ["N", "Q"],
+    beats: [
+      { letter: "N", startPos: "gamma11", endPos: "gamma1" },
+      { letter: "Q", startPos: "gamma1", endPos: "gamma15" },
+      { letter: "N", startPos: "gamma15", endPos: "gamma5" },
+      { letter: "Q", startPos: "gamma5", endPos: "gamma11" },
+    ],
+  },
+  {
+    id: 19, word: "OROR", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma11", period: PERIOD_HALVED, seed: ["O", "R"],
+    beats: [
+      { letter: "O", startPos: "gamma11", endPos: "gamma1", blueDir: "ccw" },
+      { letter: "R", startPos: "gamma1", endPos: "gamma15", blueDir: "ccw" },
+      { letter: "O", startPos: "gamma15", endPos: "gamma5", blueDir: "ccw" },
+      { letter: "R", startPos: "gamma5", endPos: "gamma11", blueDir: "ccw" },
+    ],
+  },
 ];
 
 // ============================================================================
@@ -123,285 +361,105 @@ const VTG_FAMILIES = [
 ];
 
 // ============================================================================
-// CSV LOADING (shared with seed-l1-deck.ts)
+// CSV ROW LOOKUP
 // ============================================================================
 
-function loadDiamondDataframe(): PictographData[] {
-  const csvContent = fs.readFileSync(CSV_PATH, "utf-8");
-  const lines = csvContent.trim().split("\n");
-  if (lines.length < 2) return [];
-
-  const headers = lines[0].split(",").map((h) => h.trim());
-  const pictographs: PictographData[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(",").map((v) => v.trim());
-    const row: Record<string, string> = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index] || "";
-    });
-
-    if (!row.letter || row.letter.trim() === "") continue;
-
-    const blueOrientations = calculateOrientations({
-      motionType: row.blueMotionType,
-      turns: 0,
-      rotationDirection: row.blueRotationDirection || "cw",
-      startLocation: row.blueStartLocation,
-      endLocation: row.blueEndLocation,
-      startOrientation: "in",
-    });
-
-    const redOrientations = calculateOrientations({
-      motionType: row.redMotionType,
-      turns: 0,
-      rotationDirection: row.redRotationDirection || "cw",
-      startLocation: row.redStartLocation,
-      endLocation: row.redEndLocation,
-      startOrientation: "in",
-    });
-
-    pictographs.push({
-      letter: row.letter,
-      startPosition: row.startPosition,
-      endPosition: row.endPosition,
-      timing: row.timing,
-      direction: row.direction,
-      blueMotion: {
-        color: "blue",
-        startLocation: row.blueStartLocation,
-        endLocation: row.blueEndLocation,
-        motionType: row.blueMotionType,
-        rotationDirection: row.blueRotationDirection,
-        startOrientation: blueOrientations.startOrientation,
-        endOrientation: blueOrientations.endOrientation,
-      },
-      redMotion: {
-        color: "red",
-        startLocation: row.redStartLocation,
-        endLocation: row.redEndLocation,
-        motionType: row.redMotionType,
-        rotationDirection: row.redRotationDirection,
-        startOrientation: redOrientations.startOrientation,
-        endOrientation: redOrientations.endOrientation,
-      },
-    });
+/**
+ * Resolve a single beat to a CSV row by (letter, startPos, endPos) and, when
+ * given, blue rotationDirection. When the triple has two pictographs (hybrid
+ * letters C/F/L share an endPos across two variants), the FIRST CSV row in
+ * canonical order is taken — verified against the live deck, every production
+ * beat is exactly the first triple-match (and where a blueDir is supplied it
+ * already selects that same first row). Throws only when nothing matches, so a
+ * bad walk fails loudly rather than silently picking a wrong position.
+ */
+function findRow(rows: CsvRow[], b: BeatRef): CsvRow {
+  const matches = rows.filter(
+    (r) =>
+      r.letter === b.letter &&
+      r.startPosition === b.startPos &&
+      r.endPosition === b.endPos &&
+      (b.blueDir === undefined || r.blue.rotationDirection === b.blueDir)
+  );
+  if (matches.length === 0) {
+    const dir = b.blueDir ? ` blueDir=${b.blueDir}` : "";
+    throw new Error(`No CSV row for ${b.letter} ${b.startPos}>${b.endPos}${dir}`);
   }
-
-  return pictographs;
+  return matches[0];
 }
 
 // ============================================================================
-// ADJACENCY & SEED LOOKUP
+// ORIENTATION CHAINING
 // ============================================================================
 
-function buildAdjacencyMap(
-  pictographs: PictographData[]
-): Map<string, PictographData[]> {
-  const adj = new Map<string, PictographData[]>();
-  for (const p of pictographs) {
-    const list = adj.get(p.startPosition) ?? [];
-    list.push(p);
-    adj.set(p.startPosition, list);
-  }
-  return adj;
+interface BuiltMotion extends CsvMotion {
+  startOrientation: string;
+  endOrientation: string;
+}
+
+interface BuiltBeat {
+  letter: string;
+  startPosition: string;
+  endPosition: string;
+  blue: BuiltMotion;
+  red: BuiltMotion;
 }
 
 /**
- * Find a specific pictograph edge by letter and starting position.
- * For the VTG deck, each motion is precisely defined — we look up
- * the exact letter from the exact starting position.
- *
- * When a `beat` constraint is given, the match is narrowed to the exact
- * variant (endPosition + blue rotationDirection). This is how DJ/EK/FL pin
- * their natural chirality rather than relying on CSV row order.
+ * Chain orientations across beats: each beat's start orientation is the
+ * previous beat's end orientation. Both hands start at "in". This matches the
+ * chainOrientations behavior of the prior seeder (turns=0, default rotation
+ * "cw" when a row leaves it blank).
  */
-function findEdge(
-  letter: string,
-  startPos: string,
-  adj: Map<string, PictographData[]>,
-  beat?: SeedBeat
-): PictographData | null {
-  const edges = adj.get(startPos) ?? [];
-  return (
-    edges.find(
-      (e) =>
-        e.letter === letter &&
-        (!beat || e.endPosition === beat.endPos) &&
-        (!beat || e.blueMotion.rotationDirection === beat.blueDir)
-    ) ?? null
-  );
-}
-
-// ============================================================================
-// STEP BUILDERS (shared patterns from seed-l1-deck.ts)
-// ============================================================================
-
-function edgeToStep(edge: PictographData, stepNumber: number): SequenceStep {
-  return {
-    letter: edge.letter,
-    variation: 0,
-    startPosition: edge.startPosition,
-    endPosition: edge.endPosition,
-    blueMotion: { ...edge.blueMotion },
-    redMotion: { ...edge.redMotion },
-    stepNumber: stepNumber,
-    stepNumber,
-    isBridge: false,
-  };
-}
-
-function buildStartPositionStep(edge: PictographData): SequenceStep {
-  return {
-    letter: "α",
-    variation: 0,
-    startPosition: edge.startPosition,
-    endPosition: edge.startPosition,
-    blueMotion: {
-      color: "blue",
-      motionType: "static",
-      rotationDirection: "noRotation",
-      startLocation: edge.blueMotion.startLocation,
-      endLocation: edge.blueMotion.startLocation,
-      startOrientation: "in",
-      endOrientation: "in",
-    },
-    redMotion: {
-      color: "red",
-      motionType: "static",
-      rotationDirection: "noRotation",
-      startLocation: edge.redMotion.startLocation,
-      endLocation: edge.redMotion.startLocation,
-      startOrientation: "in",
-      endOrientation: "in",
-    },
-    stepNumber: 0,
-    stepNumber: 0,
-    isBridge: false,
-  };
-}
-
-// ============================================================================
-// POSITION FIX-UP (same as seed-l1-deck.ts)
-// ============================================================================
-
-function findMatchingPictograph(
-  step: SequenceStep,
-  allPictographs: PictographData[]
-): PictographData | null {
-  const bm = step.blueMotion;
-  const rm = step.redMotion;
-
-  for (const p of allPictographs) {
-    if (
-      p.blueMotion.motionType.toLowerCase() === bm.motionType.toLowerCase() &&
-      p.blueMotion.startLocation.toLowerCase() === bm.startLocation.toLowerCase() &&
-      p.blueMotion.endLocation.toLowerCase() === bm.endLocation.toLowerCase() &&
-      p.redMotion.motionType.toLowerCase() === rm.motionType.toLowerCase() &&
-      p.redMotion.startLocation.toLowerCase() === rm.startLocation.toLowerCase() &&
-      p.redMotion.endLocation.toLowerCase() === rm.endLocation.toLowerCase()
-    ) {
-      return p;
-    }
-  }
-  return null;
-}
-
-function fixPositionNames(
-  steps: SequenceStep[],
-  seedLength: number,
-  allPictographs: PictographData[]
-): SequenceStep[] {
-  return steps.map((step, i) => {
-    // Seed beats come from CSV — positions are correct
-    if (i < seedLength) return step;
-
-    const match = findMatchingPictograph(step, allPictographs);
-    if (match) {
-      return {
-        ...step,
-        startPosition: match.startPosition,
-        endPosition: match.endPosition,
-        letter: match.letter,
-      };
-    }
-    return step;
-  });
-}
-
-// ============================================================================
-// ORIENTATION CHAINING (same as seed-l1-deck.ts)
-// ============================================================================
-
-function chainOrientations(steps: SequenceStep[]): SequenceStep[] {
-  if (steps.length === 0) return steps;
-
+function chainOrientations(rows: CsvRow[]): BuiltBeat[] {
   let blueOri = "in";
   let redOri = "in";
-
-  return steps.map((step) => {
+  return rows.map((r) => {
     const blueStart = blueOri;
     const redStart = redOri;
-
     const blueEnd = calculateEndOrientation({
-      motionType: step.blueMotion.motionType,
+      motionType: r.blue.motionType,
       turns: 0,
-      rotationDirection: step.blueMotion.rotationDirection || "cw",
-      startLocation: step.blueMotion.startLocation,
-      endLocation: step.blueMotion.endLocation,
+      rotationDirection: r.blue.rotationDirection || "cw",
+      startLocation: r.blue.startLocation,
+      endLocation: r.blue.endLocation,
       startOrientation: blueStart,
     });
-
     const redEnd = calculateEndOrientation({
-      motionType: step.redMotion.motionType,
+      motionType: r.red.motionType,
       turns: 0,
-      rotationDirection: step.redMotion.rotationDirection || "cw",
-      startLocation: step.redMotion.startLocation,
-      endLocation: step.redMotion.endLocation,
+      rotationDirection: r.red.rotationDirection || "cw",
+      startLocation: r.red.startLocation,
+      endLocation: r.red.endLocation,
       startOrientation: redStart,
     });
-
     blueOri = blueEnd;
     redOri = redEnd;
-
     return {
-      ...step,
-      blueMotion: {
-        ...step.blueMotion,
-        startOrientation: blueStart,
-        endOrientation: blueEnd,
-      },
-      redMotion: {
-        ...step.redMotion,
-        startOrientation: redStart,
-        endOrientation: redEnd,
-      },
+      letter: r.letter,
+      startPosition: r.startPosition,
+      endPosition: r.endPosition,
+      blue: { ...r.blue, startOrientation: blueStart, endOrientation: blueEnd },
+      red: { ...r.red, startOrientation: redStart, endOrientation: redEnd },
     };
   });
 }
 
 // ============================================================================
-// HAND PATH TRACING (same as seed-l1-deck.ts)
+// HAND PATH TRACING
 // ============================================================================
 
-function traceHandPath(steps: SequenceStep[]): { blue: string; red: string } {
-  const blueLocations = [steps[0].blueMotion.startLocation];
-  const redLocations = [steps[0].redMotion.startLocation];
-
-  for (const step of steps) {
-    blueLocations.push(step.blueMotion.endLocation);
-    redLocations.push(step.redMotion.endLocation);
-  }
-
-  return {
-    blue: blueLocations.join("→"),
-    red: redLocations.join("→"),
-  };
+function computeHandPathId(beats: BuiltBeat[]): string {
+  const blue = [beats[0].blue.startLocation, ...beats.map((b) => b.blue.endLocation)].join("→");
+  const red = [beats[0].red.startLocation, ...beats.map((b) => b.red.endLocation)].join("→");
+  return [blue, red].sort().join("|");
 }
 
-function computeHandPathKey(steps: SequenceStep[]): string {
-  const trace = traceHandPath(steps);
-  return [trace.blue, trace.red].sort().join("|");
+function traceHandPath(beats: BuiltBeat[]): { blue: string; red: string } {
+  return {
+    blue: [beats[0].blue.startLocation, ...beats.map((b) => b.blue.endLocation)].join("→"),
+    red: [beats[0].red.startLocation, ...beats.map((b) => b.red.endLocation)].join("→"),
+  };
 }
 
 // ============================================================================
@@ -414,83 +472,17 @@ interface VTGSequence {
   vtg: string;
   familyId: string;
   startPos: string;
-  period: Period;
+  period: PeriodLabel;
+  seed: string[];
   handPathId: string;
-  steps: SequenceStep[];
-  startPositionStep: SequenceStep;
+  beats: BuiltBeat[];
 }
 
-/**
- * Build a single VTG motion sequence from its definition.
- *
- * For quartered (same-direction): look up the 1-beat seed letter,
- * feed [startPos, beat1] to executeLOOP with QUARTERED → 4 beats.
- *
- * For halved (opposite-direction): look up both seed letters,
- * feed [startPos, beat1, beat2] to executeLOOP with HALVED → 4 beats.
- */
-function buildVTGSequence(
-  def: VTGMotionDef,
-  adj: Map<string, PictographData[]>,
-  allPictographs: PictographData[]
-): VTGSequence | null {
-  // Look up seed edges from the CSV
-  const seedEdges: PictographData[] = [];
-  let currentPos = def.startPos;
-
-  for (let i = 0; i < def.seed.length; i++) {
-    const letter = def.seed[i];
-    const beat = def.seedPath?.[i];
-    const edge = findEdge(letter, currentPos, adj, beat);
-    if (!edge) {
-      const want = beat ? ` (endPos=${beat.endPos}, blueDir=${beat.blueDir})` : "";
-      console.error(`  ERROR: Could not find edge for letter "${letter}" from "${currentPos}"${want}`);
-      return null;
-    }
-    seedEdges.push(edge);
-    currentPos = edge.endPosition;
-  }
-
-  // Build the seed steps: [startPosition, ...beats]
-  const startStep = buildStartPositionStep(seedEdges[0]);
-  const beatSteps = seedEdges.map((edge, i) => edgeToStep(edge, i + 1));
-  const seedWord = def.seed.join("");
-
-  const inputSteps = [startStep, ...beatSteps];
-
-  // Execute the LOOP
-  const result = executeLOOP(
-    inputSteps,
-    seedWord,
-    LOOPType.ROTATED,
-    def.period,
-    allPictographs
-  );
-
-  if (!result.success) {
-    console.error(`  ERROR: LOOP execution failed for ${def.word}: ${result.error}`);
-    return null;
-  }
-
-  // The result has [startPos, beat1..beat4]
-  const rawSteps = result.steps.slice(1);
-  if (rawSteps.length !== 4) {
-    console.error(`  ERROR: Expected 4 beats, got ${rawSteps.length} for ${def.word}`);
-    return null;
-  }
-
-  // Fix position names on generated beats
-  const seedLength = def.seed.length;
-  const positionFixedSteps = fixPositionNames(rawSteps, seedLength, allPictographs);
-
-  // Chain orientations
-  const actualSteps = chainOrientations(positionFixedSteps);
-
-  // Compute hand path
-  const handPathId = computeHandPathKey(actualSteps);
-
+function buildVTGSequence(def: VTGMotionDef, rows: CsvRow[]): VTGSequence {
+  const csvRows = def.beats.map((b) => findRow(rows, b));
+  const beats = chainOrientations(csvRows);
+  const handPathId = computeHandPathId(beats);
   const seqId = `vtg-${def.familyId}-${def.word.toLowerCase()}`;
-
   return {
     seqId,
     word: def.word,
@@ -498,62 +490,79 @@ function buildVTGSequence(
     familyId: def.familyId,
     startPos: def.startPos,
     period: def.period,
+    seed: def.seed,
     handPathId,
-    steps: actualSteps,
-    startPositionStep: result.steps[0],
+    beats,
   };
 }
 
 // ============================================================================
-// FIRESTORE WRITE
+// FIRESTORE SHAPE
 // ============================================================================
 
-function buildFirestoreMotion(motion: McpMotionData, color: string) {
+function buildFirestoreMotion(m: BuiltMotion, color: string) {
   return {
-    motionType: motion.motionType,
-    rotationDirection: motion.rotationDirection,
-    startLocation: motion.startLocation,
-    endLocation: motion.endLocation,
+    motionType: m.motionType,
+    rotationDirection: m.rotationDirection,
+    startLocation: m.startLocation,
+    endLocation: m.endLocation,
     turns: 0,
-    startOrientation: motion.startOrientation,
-    endOrientation: motion.endOrientation,
+    startOrientation: m.startOrientation,
+    endOrientation: m.endOrientation,
     color,
     propType: "staff",
     gridMode: "diamond",
     isVisible: true,
-    arrowLocation: motion.endLocation,
+    arrowLocation: m.endLocation,
   };
 }
 
-function buildFirestoreStep(step: SequenceStep, stepNumber: number) {
+function buildFirestoreStep(beat: BuiltBeat, stepNumber: number) {
   return {
     id: randomUUID(),
     isStep: true,
     stepNumber,
-    letter: step.letter,
-    startPosition: step.startPosition,
-    endPosition: step.endPosition,
+    letter: beat.letter,
+    startPosition: beat.startPosition,
+    endPosition: beat.endPosition,
     gridMode: "diamond",
     duration: 1.0,
     blueReversal: false,
     redReversal: false,
     isBlank: false,
     motions: {
-      blue: buildFirestoreMotion(step.blueMotion, "blue"),
-      red: buildFirestoreMotion(step.redMotion, "red"),
+      blue: buildFirestoreMotion(beat.blue, "blue"),
+      red: buildFirestoreMotion(beat.red, "red"),
     },
   };
 }
 
-function buildFirestoreStartPosition(step: SequenceStep) {
+/**
+ * The start position is a static pose at the walk's startPos, using beat-1's
+ * start hand locations so the opening pose matches the walk's first beat.
+ */
+function buildFirestoreStartPosition(seq: VTGSequence) {
+  const first = seq.beats[0];
+  const staticMotion = (loc: string, color: string) =>
+    buildFirestoreMotion(
+      {
+        motionType: "static",
+        rotationDirection: "noRotation",
+        startLocation: loc,
+        endLocation: loc,
+        startOrientation: "in",
+        endOrientation: "in",
+      },
+      color
+    );
   return {
     isStartPosition: true,
     id: randomUUID(),
-    gridPosition: step.startPosition,
+    gridPosition: first.startPosition,
     gridMode: "diamond",
     motions: {
-      blue: buildFirestoreMotion(step.blueMotion, "blue"),
-      red: buildFirestoreMotion(step.redMotion, "red"),
+      blue: staticMotion(first.blue.startLocation, "blue"),
+      red: staticMotion(first.red.startLocation, "red"),
     },
   };
 }
@@ -568,9 +577,7 @@ interface FamilyMeta {
 async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
   const admin = await import("firebase-admin");
 
-  const serviceAccount = JSON.parse(
-    fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8")
-  );
+  const serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
 
   if (!admin.default.apps.length) {
     admin.default.initializeApp({
@@ -593,9 +600,8 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
     console.log("Old docs deleted.");
   }
 
-  // Write sequences
   const familySequenceIds = new Map<string, string[]>();
-  let batch = db.batch();
+  const batch = db.batch();
   let batchCount = 0;
 
   for (const seq of sequences) {
@@ -603,9 +609,7 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
     ids.push(seq.seqId);
     familySequenceIds.set(seq.familyId, ids);
 
-    const firestoreSteps = seq.steps.map((step, i) =>
-      buildFirestoreStep(step, i + 1)
-    );
+    const firestoreSteps = seq.beats.map((beat, i) => buildFirestoreStep(beat, i + 1));
 
     const seqRef = db.doc(`decks/${DECK_ID}/sequences/${seq.seqId}`);
     batch.set(seqRef, {
@@ -621,14 +625,14 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
       tags: ["vtg-deck", seq.familyId],
       thumbnails: [],
       steps: firestoreSteps,
-      startPosition: buildFirestoreStartPosition(seq.startPositionStep),
+      startPosition: buildFirestoreStartPosition(seq),
       metadata: {
         deckId: DECK_ID,
         familyId: seq.familyId,
         familyLabel: seq.vtg,
         handPathId: seq.handPathId,
         startPosition: seq.startPos,
-        seed: seq.word.slice(0, seq.period === Period.QUARTERED ? 1 : 2),
+        seed: seq.seed.join(""),
         vtgCategory: seq.vtg,
       },
       author: "TKA System",
@@ -668,44 +672,27 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
 async function main(): Promise<void> {
   console.log("=== Level 1 VTG Motions Deck Seeder ===\n");
 
-  // Load CSV
   console.log("Loading CSV data...");
-  const allPictographs = loadDiamondDataframe();
-  console.log(`  Loaded ${allPictographs.length} pictograph rows`);
+  const rows = loadCsv();
+  console.log(`  Loaded ${rows.length} pictograph rows`);
 
-  // Build adjacency
-  console.log("Building adjacency map...");
-  const adj = buildAdjacencyMap(allPictographs);
-  console.log(`  ${adj.size} positions with outgoing edges`);
-
-  // Build all 19 VTG sequences
   console.log("\nBuilding VTG sequences...");
   const sequences: VTGSequence[] = [];
-
   for (const def of VTG_MOTIONS) {
-    const seq = buildVTGSequence(def, adj, allPictographs);
-    if (seq) {
-      sequences.push(seq);
-      const sliceLabel = def.period === Period.QUARTERED ? "quartered" : "halved";
-      console.log(`  #${def.id} ${def.word} (${def.vtg}, ${sliceLabel}) ✓`);
-    } else {
-      console.error(`  #${def.id} ${def.word} FAILED`);
-    }
+    const seq = buildVTGSequence(def, rows);
+    sequences.push(seq);
+    console.log(`  #${def.id} ${def.word} (${def.vtg}, ${def.period}) ✓`);
   }
 
   console.log(`\nBuilt ${sequences.length}/${VTG_MOTIONS.length} sequences`);
 
-  // Group by family for display
   console.log("\nFamilies:");
   for (const family of VTG_FAMILIES) {
     const familySeqs = sequences.filter((s) => s.familyId === family.id);
     console.log(`  ${family.label} (${family.typeCombo}): ${familySeqs.length} sequences`);
-    for (const seq of familySeqs) {
-      console.log(`    ${seq.word}`);
-    }
+    for (const seq of familySeqs) console.log(`    ${seq.word}`);
   }
 
-  // Hand path stats
   const handPaths = new Map<string, VTGSequence[]>();
   for (const seq of sequences) {
     const group = handPaths.get(seq.handPathId) ?? [];
@@ -714,11 +701,10 @@ async function main(): Promise<void> {
   }
   console.log(`\n${handPaths.size} unique hand paths across ${sequences.length} sequences`);
 
-  // Hand path traces
   console.log("\nHand path traces:");
   let hpNum = 1;
-  for (const [hpId, seqs] of [...handPaths.entries()].sort()) {
-    const trace = traceHandPath(seqs[0].steps);
+  for (const [, seqs] of [...handPaths.entries()].sort()) {
+    const trace = traceHandPath(seqs[0].beats);
     const words = seqs.map((s) => s.word).join(", ");
     console.log(`  #${hpNum} [${seqs[0].vtg}] — ${seqs.length} sequence(s): ${words}`);
     console.log(`    Hand A: ${trace.blue}`);
@@ -726,23 +712,21 @@ async function main(): Promise<void> {
     hpNum++;
   }
 
-  // Sample sequence detail
   if (sequences.length > 0) {
     const sample = sequences[0];
     console.log(`\nSample: ${sample.seqId}`);
     console.log(`  Word: ${sample.word} | VTG: ${sample.vtg} | Start: ${sample.startPos}`);
-    for (const step of sample.steps) {
+    sample.beats.forEach((b, i) => {
       console.log(
-        `    Beat ${step.stepNumber}: ${step.letter} ` +
-          `blue=${step.blueMotion.motionType}[${step.blueMotion.startLocation}→${step.blueMotion.endLocation}] ` +
-          `ori=${step.blueMotion.startOrientation}→${step.blueMotion.endOrientation} | ` +
-          `red=${step.redMotion.motionType}[${step.redMotion.startLocation}→${step.redMotion.endLocation}] ` +
-          `ori=${step.redMotion.startOrientation}→${step.redMotion.endOrientation}`
+        `    Beat ${i + 1}: ${b.letter} ` +
+          `blue=${b.blue.motionType}[${b.blue.startLocation}→${b.blue.endLocation}] ` +
+          `ori=${b.blue.startOrientation}→${b.blue.endOrientation} | ` +
+          `red=${b.red.motionType}[${b.red.startLocation}→${b.red.endLocation}] ` +
+          `ori=${b.red.startOrientation}→${b.red.endOrientation}`
       );
-    }
+    });
   }
 
-  // Write or dry-run
   if (DRY_RUN) {
     console.log("\n--- DRY RUN — Skipping Firestore write ---");
     console.log(`Would write ${sequences.length} sequences in ${VTG_FAMILIES.length} families`);
@@ -761,7 +745,33 @@ async function main(): Promise<void> {
   console.log(`Firestore path: decks/${DECK_ID}`);
 }
 
-main().catch((err) => {
-  console.error("Seed failed:", err);
-  process.exit(1);
-});
+// Exports for verification tooling (e.g. a no-regression diff harness).
+// The build path is pure (CSV in → sequences out) and does not touch Firestore.
+export {
+  loadCsv,
+  buildVTGSequence,
+  buildFirestoreStep,
+  buildFirestoreStartPosition,
+  VTG_MOTIONS,
+  DECK_ID,
+};
+export type { VTGSequence, VTGMotionDef, BuiltBeat };
+
+// Only auto-run when executed directly (tsx scripts/seed-vtg-deck.ts), not when
+// imported by a verification harness. Compare resolved filesystem paths so the
+// check is robust to Windows drive-letter casing and file:// slash variants.
+const isDirectRun = (() => {
+  try {
+    const invoked = process.argv[1] ? path.resolve(process.argv[1]) : "";
+    return path.resolve(__filename) === invoked || invoked.endsWith("seed-vtg-deck.ts");
+  } catch {
+    return true;
+  }
+})();
+
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error("Seed failed:", err);
+    process.exit(1);
+  });
+}
