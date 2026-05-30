@@ -17,7 +17,7 @@
     exportProgress: number;
     exportTotal: number;
     exportError: string;
-    onExportPDF: (mode: PrintPDFMode) => void;
+    onExportPDF: (mode: PrintPDFMode, copies: number) => void;
     onExportZIP: () => void;
     onCardSizeChange: (size: CardSizeId) => void;
     onClose: () => void;
@@ -41,10 +41,31 @@
   }: Props = $props();
 
   let selectedFormat = $state<ExportFormat>("fronts");
+  let copies = $state(1);
 
   const sizeSpec = $derived(CARD_SIZES[cardSize]);
   const layout = $derived(getPageLayout(cardSize));
-  const sheetCount = $derived(Math.ceil(cardCount / layout.cardsPerPage));
+
+  // Sheets = Σ over colors of ceil(colorCount * copies / cardsPerPage), because
+  // each color is padded to whole sheets. Falls back to a flat estimate when the
+  // deck carries no element tags.
+  const sheetCount = $derived.by(() => {
+    const perPage = layout.cardsPerPage;
+    const tagged = tndElements.filter((e): e is TnDElement => !!e);
+    if (tagged.length === 0) {
+      return Math.ceil((cardCount * copies) / perPage);
+    }
+    const counts = new Map<string, number>();
+    let untagged = 0;
+    for (const el of tndElements) {
+      if (el) counts.set(el.element, (counts.get(el.element) ?? 0) + 1);
+      else untagged++;
+    }
+    let sheets = 0;
+    for (const c of counts.values()) sheets += Math.ceil((c * copies) / perPage);
+    if (untagged) sheets += Math.ceil((untagged * copies) / perPage);
+    return sheets;
+  });
 
   const elementCounts = $derived.by(() => {
     const counts = new Map<string, { element: TnDElement; count: number }>();
@@ -54,9 +75,13 @@
       if (entry) entry.count++;
       else counts.set(el.element, { element: el, count: 1 });
     }
+    const perPage = layout.cardsPerPage;
     return TND_ELEMENTS
       .filter((e) => counts.has(e.element))
-      .map((e) => counts.get(e.element)!);
+      .map((e) => {
+        const { element, count } = counts.get(e.element)!;
+        return { element, count, sheets: Math.ceil((count * copies) / perPage) };
+      });
   });
 
   const FORMAT_OPTIONS: {
@@ -108,8 +133,9 @@
 
   function handleExport() {
     if (isExporting) return;
+    const safeCopies = Math.max(1, Math.floor(copies || 1));
     if (selectedFormat === "zip") onExportZIP();
-    else onExportPDF(selectedFormat);
+    else onExportPDF(selectedFormat, safeCopies);
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -169,8 +195,12 @@
     <!-- Element breakdown -->
     {#if elementCounts.length > 0}
       <div class="elements" aria-label="Element breakdown">
-        {#each elementCounts as { element, count }}
-          <div class="element-pill" style="--el-color: {element.accentColor}">
+        {#each elementCounts as { element, count, sheets }}
+          <div
+            class="element-pill"
+            style="--el-color: {element.accentColor}"
+            title="{count} card{count === 1 ? '' : 's'} × {copies} = {sheets} sheet{sheets === 1 ? '' : 's'}"
+          >
             <img
               src={element.iconPath}
               alt={element.element}
@@ -178,7 +208,7 @@
               width="16"
               height="16"
             />
-            <span class="element-count">{count}</span>
+            <span class="element-count">{count} · {sheets}sh</span>
           </div>
         {/each}
       </div>
@@ -205,6 +235,21 @@
       <p class="format-hint">
         {FORMAT_OPTIONS.find((f) => f.id === selectedFormat)?.getHint()}
       </p>
+
+      {#if selectedFormat !== "zip"}
+        <div class="copies-row">
+          <label class="copies-label" for="print-copies">Copies per card</label>
+          <input
+            id="print-copies"
+            class="copies-input"
+            type="number"
+            min="1"
+            step="1"
+            bind:value={copies}
+            onblur={() => { copies = Math.max(1, Math.floor(copies || 1)); }}
+          />
+        </div>
+      {/if}
     </div>
 
     <!-- Error -->
@@ -464,6 +509,40 @@
     color: rgba(255, 255, 255, 0.35);
     text-align: center;
     min-height: 18px;
+  }
+
+  .copies-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+  }
+
+  .copies-label {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .copies-input {
+    width: 80px;
+    padding: 6px 10px;
+    min-height: 36px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+  }
+
+  .copies-input:focus {
+    outline: none;
+    border-color: rgba(139, 92, 246, 0.5);
   }
 
   .error {
