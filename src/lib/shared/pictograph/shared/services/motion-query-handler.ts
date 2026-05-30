@@ -3,8 +3,7 @@ import { GridMode } from "../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../domain/models/MotionData";
 import { createMotionData } from "../domain/models/MotionData";
 import type { PictographData } from "../domain/models/PictographData";
-import type { ICSVPictographParser as ICSVPictographParser } from "../../../foundation/services/data/ICSVPictographParser";
-import type { CSVRow } from "../../../foundation/services/data/ICSVPictographParser";
+import type { CSVPictographParser, CSVRow } from "./csv-pictograph-parser";
 import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModels";
 import type { CsvLoader } from "../../../foundation/services/data/csv-loader";
 import type { IMotionQueryHandler } from "../../../foundation/services/data/data-contracts";
@@ -22,7 +21,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
   constructor(
     private csvLoader: CsvLoader,
     private CSVParser: ICSVParser,
-    private csvPictographParser: ICSVPictographParser
+    private csvPictographParser: CSVPictographParser
   ) {}
 
   private async ensureInitialized(): Promise<void> {

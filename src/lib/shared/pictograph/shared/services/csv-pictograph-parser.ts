@@ -7,11 +7,34 @@ import type { PictographData } from "../domain/models/PictographData";
 import { createPictographData } from "../domain/factories/createPictographData";
 import type { EnumMapper } from "../../../foundation/services/implementations/data/EnumMapper";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
-import type {
-  CSVRow,
-  ICSVPictographParser,
-} from "../../../foundation/services/data/ICSVPictographParser";
 import { Orientation } from "../domain/enums/pictograph-enums";
+
+/**
+ * A single row of BoxPictographDataframe.csv — the CSV → PictographData input shape.
+ * Skewed-mode fields are present only in SkewedPictographDataframe.csv.
+ */
+export interface CSVRow {
+  letter: string;
+  startPosition: string;
+  endPosition: string;
+  timing: string;
+  direction: string;
+  blueMotionType: string;
+  blueRotationDirection: string;
+  blueStartLocation: string;
+  blueEndLocation: string;
+  redMotionType: string;
+  redRotationDirection: string;
+  redStartLocation: string;
+  redEndLocation: string;
+  blueSkewDir?: string;
+  blueHandPath?: string;
+  blueSkewSteps?: string;
+  redSkewDir?: string;
+  redHandPath?: string;
+  redSkewSteps?: string;
+  category?: string;
+}
 
 function mapHandPath(value: string | undefined): HandPath | null {
   if (!value) return null;
@@ -45,7 +68,7 @@ function mapSkewDir(value: string | undefined): SkewDirection | null {
   }
 }
 
-export class CSVPictographParser implements ICSVPictographParser {
+export class CSVPictographParser {
   constructor(
     private readonly enumMapper: EnumMapper
   ) {}

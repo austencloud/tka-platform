@@ -97,5 +97,3 @@ export interface IMotionQueryHandler {
     gridMode: GridMode
   ): Promise<string | null>;
 }
-
-// ICSVPictographParser moved to dedicated contract file

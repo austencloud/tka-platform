@@ -14,8 +14,8 @@ import type { ParsedCsvRow } from "$lib/shared/foundation/domain/models/CsvModel
 import type { Letter } from "../../../foundation/domain/models/Letter";
 import type {
   CSVRow,
-  ICSVPictographParser,
-} from "../../../foundation/services/data/ICSVPictographParser";
+  CSVPictographParser,
+} from "../../shared/services/csv-pictograph-parser";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import type { CsvLoader } from "../../../foundation/services/data/csv-loader";
 import type {
@@ -46,7 +46,7 @@ export class LetterQueryHandler implements ILetterQueryHandler {
   constructor(
     private csvLoader: CsvLoader,
     private CSVParser: ICSVParser,
-    private csvPictographParser: ICSVPictographParser,
+    private csvPictographParser: CSVPictographParser,
     // OPTIONAL: Only needed for Codex-specific methods (getPictographByLetter, getAllCodexPictographs)
     // NOT needed for getAllPictographVariations (used by Generate)
     private letterMappingRepo?: CodexLetterMappingRepo
