@@ -4,7 +4,7 @@
  * Module-scoped to "browse". Handles search, filter, and sort commands.
  */
 
-import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { ISubInterpreter } from "../ISubInterpreter";
 import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
 
 /** "search for fire" or "search fire" */

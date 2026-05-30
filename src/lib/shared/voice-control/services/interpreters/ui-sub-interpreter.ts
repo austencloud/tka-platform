@@ -5,7 +5,7 @@
  * Lower priority than module-specific interpreters but higher than navigation.
  */
 
-import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { ISubInterpreter } from "../ISubInterpreter";
 import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
 
 const SCROLL_UP_PHRASES = new Set(["scroll up", "page up"]);

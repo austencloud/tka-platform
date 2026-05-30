@@ -1,4 +1,4 @@
-import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { ISubInterpreter } from "../ISubInterpreter";
 import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
 import { MODULE_DEFINITIONS } from "../../../navigation/config/module-definitions";
 import type { ModuleDefinition } from "../../../navigation/domain/types";

@@ -5,7 +5,7 @@
  * Only active when the user is in the create module.
  */
 
-import type { ISubInterpreter } from "../contracts/ISubInterpreter";
+import type { ISubInterpreter } from "../ISubInterpreter";
 import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
 
 const UNDO_PHRASES = new Set(["undo", "go back one", "undo that"]);
