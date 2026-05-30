@@ -85,9 +85,11 @@ export interface FireFrameInput {
   tips: PropTipData[];
   /** Current time from performance.now() */
   currentTime: number;
-  /** Simulation timestep in SECONDS. Provided by the render core so the sim is
-   *  deterministic; replaces the renderer's old wall-clock (now - lastTime). */
-  dt: number;
+  /** Simulation timestep in SECONDS. When provided (export path), the sim steps
+   *  deterministically on it. When omitted (live, until every caller is
+   *  migrated), the renderer falls back to its wall-clock delta so live behavior
+   *  is byte-identical. */
+  dt?: number;
   /** Canvas dimensions in viewbox coordinates (e.g. 950x950) */
   canvasWidth: number;
   canvasHeight: number;

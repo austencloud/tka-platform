@@ -172,6 +172,9 @@ export class WebGLFireRenderer {
   // Timing
   private lastRenderTime = -1;
   private reducedMotion = false;
+  // Wall-clock timestamp of the previous sim step, used only as the fallback dt
+  // source when the caller does not supply an explicit input.dt (live path).
+  private lastTime = 0;
 
   // Turbulence clock for idle-fire flickering (cheap deterministic noise)
   private turbulenceClock = 0;
@@ -407,7 +410,7 @@ export class WebGLFireRenderer {
       const tipStr = tip0
         ? `tip0=(${Math.round(tip0.x)},${Math.round(tip0.y)}) spd=${Math.round(tip0.speed)} fs=${tip0.flameScale?.toFixed(2)}`
         : 'no-tips';
-      const rawDt = input.dt;
+      const rawDt = input.dt ?? 0;
       const subSteps = Math.max(1, Math.ceil(Math.min(Math.abs(rawDt), 0.066) / 0.017));
       console.log(
         `[fire-diag] frame ${this._diagFrameCount} | t=${input.currentTime.toFixed(1)} rawDt=${rawDt.toFixed(4)} subSteps=${subSteps} | ` +
@@ -726,7 +729,13 @@ export class WebGLFireRenderer {
     config: FireOverlayConfig
   ): void {
     const gl = this.gl!;
-    const totalDt = computeFireStepDt(input.dt, this.reducedMotion);
+    // Deterministic when an explicit dt is supplied (export); otherwise derive
+    // the wall-clock delta so the live path is byte-identical to before.
+    const srcDt =
+      input.dt ??
+      (this.lastTime > 0 ? (input.currentTime - this.lastTime) / 1000 : 0);
+    this.lastTime = input.currentTime;
+    const totalDt = computeFireStepDt(srcDt, this.reducedMotion);
 
     gl.viewport(0, 0, this.simWidth, this.simHeight);
     gl.disable(gl.BLEND);
