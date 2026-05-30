@@ -336,12 +336,32 @@
     cardInfo = "";
     try {
       cardStatus = "picking a sequence…";
-      const seq = engine.allSequences.find(
-        (s) => Array.isArray(s.steps) && s.steps.length > 0,
-      );
+      // QR only draws into an EMPTY grid cell (findEmptyCellForQR). Prefer a
+      // SHORT sequence so the step grid has at least one free cell for the QR.
+      const seq =
+        engine.allSequences.find(
+          (s) => Array.isArray(s.steps) && s.steps.length > 0 && s.steps.length <= 6,
+        ) ??
+        engine.allSequences.find(
+          (s) => Array.isArray(s.steps) && s.steps.length > 0,
+        );
       if (!seq) {
         cardStatus = "no renderable sequence found";
         return;
+      }
+
+      // Defensively wire the QR generator onto the singleton composer. In prod
+      // this is registered at app boot (deferred-registrations.ts), but this test
+      // route may render before that runs. getQRCodeGenerator is a browser-only
+      // singleton, so this is safe and idempotent.
+      const composer = getImageComposer();
+      try {
+        const { getQRCodeGenerator } = await import("$lib/shared/qr/getQRCodeGenerator");
+        (composer as unknown as { setQRCodeGenerator: (g: unknown) => void }).setQRCodeGenerator(
+          getQRCodeGenerator(),
+        );
+      } catch (e) {
+        console.warn("[harness] QR generator wiring failed:", e);
       }
 
       // Mirror PrintCardRenderer.renderFront: a REAL TnD choreo-card with the
@@ -370,6 +390,8 @@
         redPropTypeOverride: PropType.STAFF,
         accentColor: tnd.accentColor,
         accentTintOpacity: tnd.cardTintOpacity,
+        // deckId is the QR payload — required for the QR to resolve.
+        deckId: "parity-proof",
         showCreatorName: !!leftLabel,
         showNotes: !!(notes || leftLabel || rightLabel || tnd.iconPath),
         showBirthday: false,
@@ -379,8 +401,9 @@
         exportDate: new Date().toISOString(),
         visibilityOverrides: {
           ...canonical.visibilityOverrides,
+          // Mandala off so the QR lands in a clear empty cell (isolating QR here).
           showMandala: false,
-          showQRCode: false,
+          showQRCode: true,
         },
       } as Partial<SequenceExportOptions>;
 
@@ -397,7 +420,7 @@
       }
 
       cardStatus = "rendering MAIN card (reference)…";
-      const mainCanvas = await getImageComposer().composeSequenceImage(seq, frontOptions);
+      const mainCanvas = await composer.composeSequenceImage(seq, frontOptions);
       const mainCard = toCardCanvas(mainCanvas as CanvasImageSource);
       show(cardMainSlot, mainCard);
 
@@ -422,7 +445,7 @@
       show(cardParallelFramedSlot, parallelFramed);
 
       // Header + footer heights come from the same layout the renderers use.
-      const visibility = await getImageComposer().resolveVisibilitySettings(frontOptions);
+      const visibility = await composer.resolveVisibilitySettings(frontOptions);
       const layout = computeCardFrontLayout(seq, frontOptions, visibility);
       const headerH = layout.headerHeight;
       const footerH = layout.footerHeight;
