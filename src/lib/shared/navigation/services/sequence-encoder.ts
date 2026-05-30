@@ -17,6 +17,7 @@ import type { ArrowPlacementData } from "$lib/shared/pictograph/arrow/positionin
 import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/PropPlacementData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { CompressionResult, ShareURLResult, ShareURLMetadata, DeepLinkParseResult, QRSizeEstimate, SequenceRouteIdParseResult, URLPropOptions } from "./types";
+import { calculateEndOrientation } from "$lib/shared/render/core/calculations/orientation";
 
 const LOCATION_ENCODE: Record<GridLocation, string> = {
   [GridLocation.NORTH]: "no",
@@ -129,7 +130,7 @@ const INLINE_PREFIX = "s~";
 // ============================================================================
 
 
-function encodeMotion(motion: MotionData | undefined): string {
+function encodeMotion(motion: MotionData | undefined, formatVersion: 1 | 2 = 2): string {
   if (!motion) return "";
 
   const startLoc = LOCATION_ENCODE[motion.startLocation];
@@ -149,7 +150,9 @@ function encodeMotion(motion: MotionData | undefined): string {
   const type = MOTION_TYPE_ENCODE[motion.motionType];
   const prop = PROP_TYPE_ENCODE[motion.propType] ?? PROP_TYPE_ENCODE[PropType.STAFF];
 
-  if (!startLoc || !endLoc || !startOrient || !endOrient || !rotation || !type || !prop) {
+  // v2 derives endOrientation on decode, so it is not required to encode it.
+  const endOrientRequired = formatVersion === 1;
+  if (!startLoc || !endLoc || !startOrient || (endOrientRequired && !endOrient) || !rotation || !type || !prop) {
     console.error("❌ URL Encoder: Motion has missing required fields!", {
       hasStartLoc: !!startLoc,
       hasEndLoc: !!endLoc,
@@ -158,6 +161,7 @@ function encodeMotion(motion: MotionData | undefined): string {
       hasRotation: !!rotation,
       hasType: !!type,
       hasProp: !!prop,
+      formatVersion,
       motion: {
         startLocation: motion.startLocation,
         endLocation: motion.endLocation,
@@ -171,21 +175,25 @@ function encodeMotion(motion: MotionData | undefined): string {
     return "";
   }
 
-  return `${startLoc}${endLoc}${startOrient}${endOrient}${rotation}${turns}${type}${prop}`;
+  return formatVersion === 1
+    ? `${startLoc}${endLoc}${startOrient}${endOrient}${rotation}${turns}${type}${prop}`
+    : `${startLoc}${endLoc}${startOrient}${rotation}${turns}${type}${prop}`;
 }
 
-function encodeBeat(beat: StepData | StartPositionData): string {
+function encodeBeat(beat: StepData | StartPositionData, formatVersion: 1 | 2 = 2): string {
   const motions = beat.motions ?? { blue: undefined, red: undefined };
-  const blueMotion = encodeMotion(motions.blue);
-  const redMotion = encodeMotion(motions.red);
+  const blueMotion = encodeMotion(motions.blue, formatVersion);
+  const redMotion = encodeMotion(motions.red, formatVersion);
   return `${blueMotion}:${redMotion}`;
 }
 
 function decodeMotion(
   encoded: string,
-  color: "blue" | "red"
+  color: "blue" | "red",
+  formatVersion: 1 | 2 = 2
 ): MotionData | undefined {
-  if (!encoded || encoded.length < 10) return undefined;
+  const minLen = formatVersion === 1 ? 10 : 9;
+  if (!encoded || encoded.length < minLen) return undefined;
 
   let pos = 0;
 
@@ -196,7 +204,8 @@ function decodeMotion(
   pos += 2;
 
   const startOrientCode = encoded[pos++];
-  const endOrientCode = encoded[pos++];
+  // v1 stores endOrientation positionally; v2 derives it after decode.
+  const endOrientCode = formatVersion === 1 ? encoded[pos++] : undefined;
   const rotationCode = encoded[pos++];
 
   let turnsCode = "";
@@ -214,11 +223,22 @@ function decodeMotion(
   const startLocation = LOCATION_DECODE[startLocCode];
   const endLocation = LOCATION_DECODE[endLocCode];
   const startOrientation = ORIENTATION_DECODE[startOrientCode!];
-  const endOrientation = ORIENTATION_DECODE[endOrientCode!];
   const rotationDirection = ROTATION_DECODE[rotationCode!];
   const turns = turnsCode === "f" ? ("fl" as const) : parseFloat(turnsCode);
   const motionType = MOTION_TYPE_DECODE[typeCode!];
   const propType = PROP_TYPE_DECODE[propCode!];
+
+  const endOrientation =
+    formatVersion === 1
+      ? ORIENTATION_DECODE[endOrientCode!]
+      : (calculateEndOrientation({
+          motionType: motionType as unknown as string,
+          turns,
+          rotationDirection: rotationDirection as unknown as string,
+          startLocation: startLocation as unknown as string,
+          endLocation: endLocation as unknown as string,
+          startOrientation: startOrientation as unknown as string,
+        }) as Orientation);
 
   if (
     !startLocation ||
@@ -254,7 +274,7 @@ function decodeMotion(
   };
 }
 
-function decodeBeat(encoded: string, stepNumber: number): StepData {
+function decodeBeat(encoded: string, stepNumber: number, formatVersion: 1 | 2 = 2): StepData {
   const parts = encoded.split(":");
 
   if (parts.length !== 2) {
@@ -271,8 +291,8 @@ function decodeBeat(encoded: string, stepNumber: number): StepData {
     redReversal: false,
     isBlank: !blueEncoded && !redEncoded,
     motions: {
-      blue: decodeMotion(blueEncoded, "blue"),
-      red: decodeMotion(redEncoded, "red"),
+      blue: decodeMotion(blueEncoded, "blue", formatVersion),
+      red: decodeMotion(redEncoded, "red", formatVersion),
     },
     id: crypto.randomUUID(),
     letter: null,
@@ -411,9 +431,9 @@ export function encodeSequence(sequence: SequenceData): string {
     }
   }
 
-  const encodedStartPosition = encodeBeat(startPositionStep);
-  const encodedSteps = actualSteps.map((step) => encodeBeat(step));
-  return `${encodedStartPosition}|${encodedSteps.join("|")}`;
+  const encodedStartPosition = encodeBeat(startPositionStep, 2);
+  const encodedSteps = actualSteps.map((step) => encodeBeat(step, 2));
+  return `v2|${encodedStartPosition}|${encodedSteps.join("|")}`;
 }
 
 export function decodeSequence(encoded: string): SequenceData {
@@ -421,7 +441,17 @@ export function decodeSequence(encoded: string): SequenceData {
     throw new Error("Cannot decode empty sequence");
   }
 
-  const parts = encoded.split("|");
+  // v2 strings carry a leading "v2|" sentinel; everything else is legacy v1
+  // (which stored endOrientation positionally). Strip the sentinel and route
+  // the format version through to the motion decoder.
+  let formatVersion: 1 | 2 = 1;
+  let body = encoded;
+  if (encoded.startsWith("v2|")) {
+    formatVersion = 2;
+    body = encoded.slice(3);
+  }
+
+  const parts = body.split("|");
   if (parts.length < 1) {
     throw new Error("Invalid sequence encoding - missing data");
   }
@@ -459,13 +489,13 @@ export function decodeSequence(encoded: string): SequenceData {
     };
 
     const sequenceSteps = beatEncodings.map((encoding, index) =>
-      decodeBeat(encoding, startStep + index)
+      decodeBeat(encoding, startStep + index, formatVersion)
     );
 
     steps = [startPositionStep, ...sequenceSteps];
   } else {
     const startPositionEncoding = parts[0]!;
-    const startingPosition = decodeBeat(startPositionEncoding, 0);
+    const startingPosition = decodeBeat(startPositionEncoding, 0, formatVersion);
 
     const startPosition = createStartPositionData({
       id: startingPosition.id || crypto.randomUUID(),
@@ -479,7 +509,7 @@ export function decodeSequence(encoded: string): SequenceData {
     const beatEncodings = parts.slice(1).filter((e) => e && e.length > 0);
 
     steps = beatEncodings.map((encoding, index) =>
-      decodeBeat(encoding, index + 1)
+      decodeBeat(encoding, index + 1, formatVersion)
     );
 
     return {
@@ -781,3 +811,24 @@ export function verifySequenceRoundTrip(
 
   return { ok: true, decoded };
 }
+
+/**
+ * Re-encode a flat sequence string at a target format version. Used by the
+ * compositional decoder to recompute a recipe hash in the SAME version the
+ * original recipe was hashed in (old r1: recipes hashed on v1, new on v2).
+ */
+export function reencodeFlat(encoded: string, targetVersion: 1 | 2): string {
+  const seq = decodeSequence(encoded);
+  if (targetVersion === 2) return encodeSequence(seq);
+
+  // v1: re-emit start position + steps as 8-field motions, no sentinel.
+  const startBeat = seq.startPosition ?? seq.startingPosition;
+  const start = startBeat ? encodeBeat(startBeat, 1) : ":";
+  const steps = seq.steps
+    .filter((s) => s.stepNumber !== 0)
+    .map((s) => encodeBeat(s, 1));
+  return `${start}|${steps.join("|")}`;
+}
+
+/** Test-only handles for unit tests. Not part of the public API. */
+export const __test__ = { encodeMotion, decodeMotion, encodeBeat };
