@@ -144,13 +144,20 @@ export class CardFrontWorkerPool {
     const id = this.nextId++;
     const lane = this.pickLane();
     lane.pending++;
+    // The prepared cell data + resolved visibility carry Svelte $state proxies /
+    // non-cloneable refs, so a raw postMessage(job) throws "could not be cloned".
+    // Snapshot the job to plain JSON (same approach the legacy per-cell path used
+    // on preparedData), preserving the one real Transferable — footer.iconBitmap —
+    // out-of-band, then transfer it.
+    const icon = job.footer.iconBitmap;
+    const plainJob = JSON.parse(
+      JSON.stringify({ ...job, footer: { ...job.footer, iconBitmap: undefined } }),
+    ) as import("./front-job").FrontJob;
+    if (icon) plainJob.footer.iconBitmap = icon;
     return new Promise<ImageBitmap>((resolve, reject) => {
       this.pending.set(id, { resolve: resolve as (value: Blob | ImageBitmap) => void, reject });
-      // footer.iconBitmap is the only Transferable in the job; the prepared cell
-      // data is structured-cloned by postMessage. Transfer the icon so it's not
-      // copied.
-      const transfer = job.footer.iconBitmap ? [job.footer.iconBitmap] : [];
-      lane.worker.postMessage({ type: "paint-front", id, job }, transfer);
+      const transfer = icon ? [icon] : [];
+      lane.worker.postMessage({ type: "paint-front", id, job: plainJob }, transfer);
     });
   }
 
