@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  __test__,
   encodeSequence,
   decodeSequence,
 } from "$lib/shared/navigation/services/sequence-encoder";
@@ -12,7 +11,7 @@ import {
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
-function m(over: Record<string, unknown>) {
+function motion(over: Record<string, unknown> = {}) {
   return {
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -26,92 +25,90 @@ function m(over: Record<string, unknown>) {
   } as never;
 }
 
-describe("Task: v3 encodeMotion drops startOrientation", () => {
-  it("v3 is exactly one char shorter than v2 (the dropped startOrient char)", () => {
-    const motion = m({});
-    expect(__test__.encodeMotion(motion, 2).length - __test__.encodeMotion(motion, 3).length).toBe(1);
-  });
-  it("v3 is two chars shorter than v1 (no startOrient, no endOrient)", () => {
-    const motion = m({});
-    expect(__test__.encodeMotion(motion, 1).length - __test__.encodeMotion(motion, 3).length).toBe(2);
-  });
-});
+function step(stepNumber: number, blue: unknown, red: unknown) {
+  return {
+    stepNumber, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+    motions: { blue, red },
+    id: `s${stepNumber}`, letter: null, startPosition: null, endPosition: null,
+  };
+}
 
-describe("Task: v3 chains startOrientation from seed; derives both orientations", () => {
+function sequence(steps: unknown[]) {
+  return {
+    id: "x", name: "", word: "", steps,
+    thumbnails: [], isFavorite: false, isCircular: false, tags: [], metadata: {}, sequenceLength: steps.length - 1,
+  } as never;
+}
+
+describe("startOrientation chains from the seed, not stored per-motion", () => {
   // A 2-step sequence with a physically consistent chain (each startOri == the
-  // previous endOri, per hand). Built as v1 (stored), then re-encoded v3
-  // (drops both orientations) and decoded — must reproduce every orientation.
-  function buildConsistentV1(): string {
+  // previous endOri, per hand). In the canonical format neither start nor end
+  // orientation is stored per motion — the decoder chains startOri from the
+  // start-position seed and derives every endOri. Round-tripping must reproduce
+  // every orientation.
+  function buildConsistent() {
     // start position: both hands static, in/in (the seed)
-    const spBlue = __test__.encodeMotion(m({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
-    const spRed = __test__.encodeMotion(m({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
+    const spBlue = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const spRed = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
 
-    // step 1: blue pro 0 (in->in), red anti 0 (in->out)
-    const s1Blue = __test__.encodeMotion(m({ motionType: MotionType.PRO, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
-    const s1Red = __test__.encodeMotion(m({ motionType: MotionType.ANTI, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.OUT }), 1);
+    // step 1: blue pro 0 (in->in; n->e cw orbit, cw rot), red anti 0 (in->out; s->w cw orbit, ccw rot)
+    const s1Blue = motion({ rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const s1Red = motion({ rotationDirection: RotationDirection.COUNTER_CLOCKWISE, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.OUT });
 
-    // step 2: blue pro 0 (in->in), red anti 0 (out->in)
-    const s2Blue = __test__.encodeMotion(m({ motionType: MotionType.PRO, startLocation: GridLocation.EAST, endLocation: GridLocation.SOUTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
-    const s2Red = __test__.encodeMotion(m({ motionType: MotionType.ANTI, startLocation: GridLocation.WEST, endLocation: GridLocation.NORTH, startOrientation: Orientation.OUT, endOrientation: Orientation.IN }), 1);
+    // step 2: blue pro 0 (in->in; e->s cw orbit, cw rot), red anti 0 (out->in; w->n cw orbit, ccw rot)
+    const s2Blue = motion({ rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.EAST, endLocation: GridLocation.SOUTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const s2Red = motion({ rotationDirection: RotationDirection.COUNTER_CLOCKWISE, startLocation: GridLocation.WEST, endLocation: GridLocation.NORTH, startOrientation: Orientation.OUT, endOrientation: Orientation.IN });
 
-    return `${spBlue}:${spRed}|${s1Blue}:${s1Red}|${s2Blue}:${s2Red}`;
+    return sequence([
+      step(0, spBlue, spRed),
+      step(1, s1Blue, s1Red),
+      step(2, s2Blue, s2Red),
+    ]);
   }
 
-  it("v3 round-trip reproduces every startOrientation and endOrientation", () => {
-    const original = decodeSequence(buildConsistentV1()); // v1 stored
-    const v3 = encodeSequence(original);
-    expect(v3.startsWith("v3|")).toBe(true);
+  it("round-trip reproduces every startOrientation and endOrientation", () => {
+    const original = buildConsistent();
+    const encoded = encodeSequence(original);
+    expect(encoded).not.toMatch(/^v[123]\|/);
 
-    const derived = decodeSequence(v3);
+    const derived = decodeSequence(encoded);
 
-    // start position orientations
+    // start position (stepNumber 0) -> startPosition, not in steps[]
     for (const c of ["blue", "red"] as const) {
-      const o = original.startPosition!.motions[c];
+      const o = (original as never as { steps: { motions: Record<string, { startOrientation: Orientation; endOrientation: Orientation }> }[] }).steps[0].motions[c];
       const d = derived.startPosition!.motions[c];
-      expect(d!.startOrientation, `startPos ${c} startOri`).toBe(o!.startOrientation);
-      expect(d!.endOrientation, `startPos ${c} endOri`).toBe(o!.endOrientation);
+      expect(d!.startOrientation, `startPos ${c} startOri`).toBe(o.startOrientation);
+      expect(d!.endOrientation, `startPos ${c} endOri`).toBe(o.endOrientation);
     }
 
-    // step orientations
-    expect(derived.steps.length).toBe(original.steps.length);
-    for (let i = 0; i < original.steps.length; i++) {
+    // real steps land at derived.steps[0..] (stepNumber 1+)
+    const origSteps = (original as never as { steps: { motions: Record<string, { startOrientation: Orientation; endOrientation: Orientation }> }[] }).steps;
+    expect(derived.steps.length).toBe(origSteps.length - 1);
+    for (let i = 0; i < derived.steps.length; i++) {
       for (const c of ["blue", "red"] as const) {
-        const o = original.steps[i]!.motions[c];
+        const o = origSteps[i + 1].motions[c];
         const d = derived.steps[i]!.motions[c];
-        expect(d!.startOrientation, `step ${i} ${c} startOri`).toBe(o!.startOrientation);
-        expect(d!.endOrientation, `step ${i} ${c} endOri`).toBe(o!.endOrientation);
+        expect(d!.startOrientation, `step ${i} ${c} startOri`).toBe(o.startOrientation);
+        expect(d!.endOrientation, `step ${i} ${c} endOri`).toBe(o.endOrientation);
       }
     }
   });
 
-  it("v3 seed carries a non-default (nonradial) start orientation", () => {
+  it("seed carries a non-default (nonradial) start orientation through the chain", () => {
     // blue starts counter (nonradial); chain must preserve it as step-1 startOri.
-    const spBlue = __test__.encodeMotion(m({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, startOrientation: Orientation.COUNTER, endOrientation: Orientation.COUNTER }), 1);
-    const spRed = __test__.encodeMotion(m({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
-    const s1Blue = __test__.encodeMotion(m({ motionType: MotionType.PRO, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.COUNTER, endOrientation: Orientation.COUNTER }), 1);
-    const s1Red = __test__.encodeMotion(m({ motionType: MotionType.PRO, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
+    const spBlue = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.COUNTER, endOrientation: Orientation.COUNTER });
+    const spRed = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const s1Blue = motion({ motionType: MotionType.PRO, rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.COUNTER, endOrientation: Orientation.COUNTER });
+    const s1Red = motion({ motionType: MotionType.PRO, rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
 
-    const original = decodeSequence(`${spBlue}:${spRed}|${s1Blue}:${s1Red}`);
+    const original = sequence([
+      step(0, spBlue, spRed),
+      step(1, s1Blue, s1Red),
+    ]);
     const derived = decodeSequence(encodeSequence(original));
 
     expect(derived.startPosition!.motions.blue!.startOrientation).toBe(Orientation.COUNTER);
     expect(derived.steps[0]!.motions.blue!.startOrientation).toBe(Orientation.COUNTER);
     expect(derived.steps[0]!.motions.red!.startOrientation).toBe(Orientation.IN);
-  });
-});
-
-describe("Task: v1 and v2 still decode after v3 lands (regression)", () => {
-  it("legacy v1 un-prefixed string keeps stored orientations", () => {
-    const blue = __test__.encodeMotion(m({ motionType: MotionType.ANTI, startOrientation: Orientation.IN, endOrientation: Orientation.OUT }), 1);
-    const red = __test__.encodeMotion(m({ motionType: MotionType.PRO, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
-    const seq = decodeSequence(`${blue}:${red}|${blue}:${red}`);
-    expect(seq.steps[0]!.motions.blue!.endOrientation).toBe(Orientation.OUT);
-  });
-  it("v2 string still decodes (per-motion startOri, derived endOri)", () => {
-    const blue = __test__.encodeMotion(m({ motionType: MotionType.ANTI, startOrientation: Orientation.IN }), 2);
-    const red = __test__.encodeMotion(m({ motionType: MotionType.PRO, startOrientation: Orientation.IN }), 2);
-    const seq = decodeSequence(`v2|${blue}:${red}|${blue}:${red}`);
-    expect(seq.steps[0]!.motions.blue!.startOrientation).toBe(Orientation.IN);
-    expect(seq.steps[0]!.motions.blue!.endOrientation).toBe(Orientation.OUT); // anti 0 switches
   });
 });

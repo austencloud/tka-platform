@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { calculateEndOrientation as core } from "$lib/shared/render/core/calculations/orientation";
+import {
+  calculateEndOrientation as core,
+  deriveMotionType,
+} from "$lib/shared/render/core/calculations/orientation";
 // The sequence-engine copy is a positional-arg wrapper that delegates to core.
 import { calculateEndOrientation as engine } from "$lib/shared/sequence-engine/services/orientation-propagator";
 
@@ -44,5 +47,16 @@ describe("calculateEndOrientation copies agree with core", () => {
                 `${motionType}/${startOrientation}/${turns}/${rotationDirection}/${startLocation}->${endLocation}`
               ).toBe(expected);
             }
+  });
+});
+
+describe("deriveMotionType resolves pro/anti on shift pairs", () => {
+  it("diamond (cardinal) shift n->e: cw=pro, ccw=anti", () => {
+    expect(deriveMotionType("n", "e", "cw", 0)).toBe("pro");
+    expect(deriveMotionType("n", "e", "ccw", 0)).toBe("anti");
+  });
+  it("box (intercardinal) shift ne->se: cw=pro, ccw=anti", () => {
+    expect(deriveMotionType("ne", "se", "cw", 0)).toBe("pro");
+    expect(deriveMotionType("ne", "se", "ccw", 0)).toBe("anti");
   });
 });

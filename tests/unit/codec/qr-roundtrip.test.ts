@@ -1,7 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  __test__,
-  decodeSequence,
   encodeSequenceForQR,
   decodeSequenceFromQR,
 } from "$lib/shared/navigation/services/sequence-encoder";
@@ -27,30 +25,38 @@ function motion(over: Record<string, unknown> = {}) {
   } as never;
 }
 
-describe("Task 6: inline QR round-trip through the versioned codec", () => {
+function step(stepNumber: number, blue: unknown, red: unknown) {
+  return {
+    stepNumber, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+    motions: { blue, red },
+    id: `s${stepNumber}`, letter: null, startPosition: null, endPosition: null,
+  };
+}
+
+describe("QR round-trip preserves derived endOrientation", () => {
   it("encodeSequenceForQR -> decodeSequenceFromQR preserves derived endOrientation", async () => {
     // Consistent chain: STATIC start position (in/in), then one step.
-    const spBlue = __test__.encodeMotion(motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
-    const spRed = __test__.encodeMotion(motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
-    const s1Blue = __test__.encodeMotion(motion({ motionType: MotionType.ANTI, turns: 0, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.IN, endOrientation: Orientation.OUT }), 1);
-    const s1Red = __test__.encodeMotion(motion({ motionType: MotionType.PRO, turns: 0, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
-    const original = decodeSequence(`${spBlue}:${spRed}|${s1Blue}:${s1Red}`);
+    const spBlue = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    const spRed = motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, rotationDirection: RotationDirection.NO_ROTATION, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
+    // blue: n->e cw orbit + ccw rot => anti, anti 0 switches in->out
+    const s1Blue = motion({ turns: 0, rotationDirection: RotationDirection.COUNTER_CLOCKWISE, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.IN, endOrientation: Orientation.OUT });
+    // red: s->w cw orbit + cw rot => pro, pro 0 preserves in->in
+    const s1Red = motion({ turns: 0, rotationDirection: RotationDirection.CLOCKWISE, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.IN });
 
-    const qr = await encodeSequenceForQR(original); // s~... (v2 inline)
-    expect(qr.startsWith("s~")).toBe(true);
+    const original = {
+      id: "x", name: "", word: "", steps: [
+        step(0, spBlue, spRed),
+        step(1, s1Blue, s1Red),
+      ],
+      thumbnails: [], isFavorite: false, isCircular: false, tags: [], metadata: {}, sequenceLength: 1,
+    } as never;
+
+    const qr = await encodeSequenceForQR(original);
 
     const back = await decodeSequenceFromQR(qr);
-    expect(back.steps.length).toBe(original.steps.length);
-    for (let i = 0; i < original.steps.length; i++) {
-      for (const c of ["blue", "red"] as const) {
-        const o = original.steps[i]!.motions[c];
-        const d = back.steps[i]!.motions[c];
-        if (!o) {
-          expect(d).toBeFalsy();
-          continue;
-        }
-        expect(d!.endOrientation, `step ${i} ${c}`).toBe(o.endOrientation);
-      }
-    }
+    // Start position (stepNumber 0) lands on startPosition; the lone real step at steps[0].
+    expect(back.steps.length).toBe(1);
+    expect(back.steps[0]!.motions.blue!.endOrientation).toBe(Orientation.OUT); // anti 0 switches
+    expect(back.steps[0]!.motions.red!.endOrientation).toBe(Orientation.IN); // pro 0 preserves
   });
 });
