@@ -458,6 +458,15 @@ export class AnimationPlaybackController {
     return this.animationEngine.getCurrentPropStates();
   }
 
+  /**
+   * PURE prop-state sampler at an arbitrary (fractional) step. Used by the
+   * offscreen export renderer to over-sample trail sub-steps without mutating
+   * playback state. Passthrough to the orchestrator's shared interpolation chain.
+   */
+  samplePropStateAt(step: number): { blue: PropState; red: PropState } {
+    return this.animationEngine.samplePropStateAt(step);
+  }
+
   onLoopComplete(callback: () => void): void {
     this.loopCompleteCallback = callback;
   }
