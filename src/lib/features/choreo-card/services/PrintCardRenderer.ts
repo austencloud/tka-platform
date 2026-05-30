@@ -146,11 +146,7 @@ export class PrintCardRenderer {
       visibilityOverrides: {
         showTKA: options.showTKA,
         showTnD: false,
-        // TnD decks show each pictograph's own element glyph (bottom-right of
-        // the cell). Keyed on tndElement presence so only element-themed decks
-        // get it; generic choreo cards stay clean. drawElementalGlyph fits the
-        // art to its natural aspect, so water (tall) / air (wide) aren't squished.
-        showElemental: options.tndElement != null,
+        showElemental: false,
         showPositions: false,
         showReversals: true,
         showNonRadialPoints: false,
