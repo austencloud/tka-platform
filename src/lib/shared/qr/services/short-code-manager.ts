@@ -36,9 +36,13 @@ import {
 } from "$lib/shared/navigation/services/sequence-encoder";
 import type { PublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/public-sequence-hash-matcher";
 import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions } from "./types";
+import { ShortCodeCache, SHORT_CODE_CACHE_SCHEMA } from "./short-code-cache";
 
 const SHORTCODES_COLLECTION = "shortcodes";
 const MIN_CODE_LENGTH = 4;
+
+/** Firestore `in` query operand cap. Batch reads chunk to this. */
+const FIRESTORE_IN_LIMIT = 30;
 
 const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -73,8 +77,46 @@ export class ShortCodeManager {
 
   constructor(
     private readonly browseLoader: PublicSequencesLoader,
-    private readonly hashMatcher?: PublicSequenceHashMatcher
+    private readonly hashMatcher?: PublicSequenceHashMatcher,
+    private readonly codeCache: ShortCodeCache = new ShortCodeCache()
   ) {}
+
+  /**
+   * Cache key for a sequence's resolved code/URL. Keyed by the same inputs the
+   * code + URL vary on: the content hash (or word fallback) plus the URL-option
+   * discriminants (`bp`/`rp`/`vm`). `deckId`/`deckName` are NOT included — they
+   * only affect the stored record, never the code or URL (an existing code is
+   * reused regardless of deck).
+   */
+  private buildCacheKey(
+    hashOrWord: string,
+    options?: ShortCodeURLOptions
+  ): string {
+    return [
+      SHORT_CODE_CACHE_SCHEMA,
+      hashOrWord,
+      options?.bluePropType ?? "",
+      options?.redPropType ?? "",
+      options?.viewMode ?? "",
+    ].join(":");
+  }
+
+  /**
+   * Compute the content hash for a sequence (or null when the matcher is
+   * absent / the sequence has no steps). Same logic `createShortCode` uses.
+   */
+  private async tryComputeHash(
+    sequence: SequenceData
+  ): Promise<string | undefined> {
+    if (this.hashMatcher && sequence.steps && sequence.steps.length > 0) {
+      try {
+        return await this.hashMatcher.computeEncoderHash(sequence);
+      } catch {
+        return undefined;
+      }
+    }
+    return undefined;
+  }
 
   /**
    * Initialize Firestore instance (called lazily)
@@ -150,6 +192,16 @@ export class ShortCodeManager {
       throw new Error("Sequence must have steps, word, name, or id for short code generation");
     }
 
+    // Persistent-cache short-circuit. A sequence's code is global + content-
+    // addressed, so once resolved it never changes — read it locally and skip
+    // the Firestore round-trip entirely. This is the cold-deck speed fix:
+    // ~380ms/card network query → memory/IDB read.
+    const cacheKey = this.buildCacheKey(encoderHash ?? `w:${fallbackId}`, options);
+    const cached = await this.codeCache.get(cacheKey);
+    if (cached) {
+      return { code: cached.code, url: cached.url, isNew: false };
+    }
+
     // Single-flight dedup key. Two concurrent calls in the same tab for the
     // same sequence will share one Firestore round-trip and one promise.
     // Scope: options?.embedSequenceData affects the doc shape, so calls
@@ -169,9 +221,89 @@ export class ShortCodeManager {
     );
     this.inflightByKey.set(dedupKey, promise);
     try {
-      return await promise;
+      const result = await promise;
+      // Write through the persistent cache so the next render (this session or
+      // future) skips Firestore.
+      void this.codeCache.set(cacheKey, { code: result.code, url: result.url });
+      return result;
     } finally {
       this.inflightByKey.delete(dedupKey);
+    }
+  }
+
+  /**
+   * Batch-resolve every sequence's short code for a deck render in as few
+   * Firestore reads as possible, populating the persistent cache. Turns the
+   * first cold view of a fresh deck from N serial round-trips into ~⌈N/30⌉.
+   *
+   * Best-effort: anything not resolved here (no existing code, or the batch
+   * failed) falls through to per-card `createShortCode` at render time, which
+   * still creates + caches it. Never throws — a deck render must not block on
+   * code resolution.
+   */
+  async resolveCodesForDeck(
+    sequences: SequenceData[],
+    options?: ShortCodeURLOptions
+  ): Promise<void> {
+    if (sequences.length === 0) return;
+
+    try {
+      // 1. Compute the content hash + cache key for every sequence.
+      const items = await Promise.all(
+        sequences.map(async (seq) => {
+          const hash = await this.tryComputeHash(seq);
+          const fallbackId = seq.word || seq.name || seq.id;
+          const hashOrWord = hash ?? `w:${fallbackId ?? ""}`;
+          return {
+            hash,
+            cacheKey: this.buildCacheKey(hashOrWord, options),
+          };
+        })
+      );
+
+      // 2. Skip anything already cached.
+      const cacheHits = await this.codeCache.getMany(items.map((i) => i.cacheKey));
+      const misses = items.filter((i) => !cacheHits.has(i.cacheKey));
+
+      // 3. Only hash-bearing misses can be batch-queried. Dedup hashes —
+      //    repeated sequences across a deck share one operand.
+      const missHashes = [
+        ...new Set(misses.map((i) => i.hash).filter((h): h is string => !!h)),
+      ];
+      if (missHashes.length === 0) return;
+
+      const firestore = await this.ensureFirestore();
+      const hashToCode = new Map<string, string>();
+
+      // 4. Chunked `in` queries (Firestore caps the `in` list at 30).
+      for (let i = 0; i < missHashes.length; i += FIRESTORE_IN_LIMIT) {
+        const chunk = missHashes.slice(i, i + FIRESTORE_IN_LIMIT);
+        const snap = await getDocs(
+          query(
+            collection(firestore, SHORTCODES_COLLECTION),
+            where("encoderHash", "in", chunk)
+          )
+        );
+        for (const docSnap of snap.docs) {
+          const hash = (docSnap.data() as ShortCodeData).encoderHash;
+          // First write wins; a hash should map to one code, but guard anyway.
+          if (hash && !hashToCode.has(hash)) hashToCode.set(hash, docSnap.id);
+        }
+      }
+
+      // 5. Populate the cache for every miss whose code already exists.
+      await Promise.all(
+        misses.map((item) => {
+          if (!item.hash) return Promise.resolve();
+          const code = hashToCode.get(item.hash);
+          if (!code) return Promise.resolve(); // genuinely new — created at render
+          const url = this.buildUrlWithOptions(this.getBaseUrl(), code, options);
+          return this.codeCache.set(item.cacheKey, { code, url });
+        })
+      );
+    } catch (error) {
+      // Best-effort: never block a deck render on pre-resolution.
+      console.warn("[ShortCode] resolveCodesForDeck failed (falling back to per-card):", error);
     }
   }
 

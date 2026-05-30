@@ -12,6 +12,11 @@ import QRCodeStyling from "qr-code-styling";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ShortCodeManager } from "./short-code-manager";
 import type { QRCodeOptions, QRCodeResult, QRCodeStyle, QRStylePreset } from "./types";
+import {
+  getQrImageCache,
+  QR_IMAGE_CACHE_SCHEMA,
+  type QrImageCache,
+} from "./qr-image-cache";
 
 /**
  * Style presets for quick styling
@@ -44,7 +49,16 @@ const STYLE_PRESETS: Record<QRStylePreset, QRCodeStyle> = {
 };
 
 export class QRCodeGenerator {
-  constructor(private readonly shortCodeManager: ShortCodeManager) {}
+  /** Memory-only map of decoded QR images, keyed by dataUrl. The SVG render
+   *  is cached persistently (`imageCache`); this avoids re-decoding the same
+   *  dataURL into an `HTMLImageElement` within a session (e.g. every card in a
+   *  deck that shares a payload). */
+  private readonly decodedImages = new Map<string, HTMLImageElement>();
+
+  constructor(
+    private readonly shortCodeManager: ShortCodeManager,
+    private readonly imageCache: QrImageCache = getQrImageCache()
+  ) {}
 
   /**
    * Resolve style from preset name or object
@@ -125,6 +139,16 @@ export class QRCodeGenerator {
       };
     }
 
+    // Persistent image cache: the qr-code-styling render + getRawData is the
+    // expensive bit (the QR=93% bottleneck). Key on everything that changes the
+    // pixels — url + size + margin + resolved style — so a repeat payload is a
+    // pure cache read, no render.
+    const cacheKey = `${QR_IMAGE_CACHE_SCHEMA}:${size}:${margin}:${JSON.stringify(style)}:${url}`;
+    const cachedImage = await this.imageCache.get(cacheKey);
+    if (cachedImage) {
+      return cachedImage;
+    }
+
     const qrCode = new QRCodeStyling(
       this.createQROptions(url, size, margin, style)
     );
@@ -147,7 +171,9 @@ export class QRCodeGenerator {
     // Create data URL
     const dataUrl = `data:image/svg+xml;base64,${btoa(svgText)}`;
 
-    return { svg: svgText, dataUrl };
+    const result = { svg: svgText, dataUrl };
+    void this.imageCache.set(cacheKey, result);
+    return result;
   }
 
   async generateForSequence(
@@ -216,16 +242,24 @@ export class QRCodeGenerator {
     size: number,
     options?: QRCodeOptions
   ): Promise<HTMLImageElement> {
-    // Generate QR code with the specified size
+    // Generate QR code with the specified size (SVG render is cached upstream)
     const result = await this.generateForSequence(sequence, {
       ...options,
       size,
     });
 
+    // Reuse an already-decoded image for the same dataURL (deck cards sharing a
+    // payload decode once).
+    const existing = this.decodedImages.get(result.dataUrl);
+    if (existing) return existing;
+
     // Convert data URL to HTMLImageElement
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve(img);
+      img.onload = () => {
+        this.decodedImages.set(result.dataUrl, img);
+        resolve(img);
+      };
       img.onerror = () => reject(new Error("Failed to load QR code as image"));
       img.src = result.dataUrl;
     });
