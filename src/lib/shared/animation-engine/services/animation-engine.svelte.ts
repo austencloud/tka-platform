@@ -356,6 +356,15 @@ export class AnimationEngine {
     this.playbackSync.update(props);
   }
 
+  /** Render one export frame synchronously and deterministically. `timeMs` is
+   *  the frame's virtual time; `dtSeconds` is the fixed sim step (e.g. 1/fps).
+   *  Used by the offscreen export driver — no rAF, no live-engine mutation. */
+  renderFrame(props: AnimationEngineProps, timeMs: number, dtSeconds: number): void {
+    const params = this.frameSystem.buildFrameParams(props, this.buildFrameDeps());
+    params.virtualTime = timeMs;
+    this.lifecycleManager.renderLoop?.renderSync(params, timeMs, dtSeconds);
+  }
+
   /**
    * Handle glyph SVG ready callback from GlyphRenderer
    */
