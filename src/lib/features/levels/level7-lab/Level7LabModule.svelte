@@ -27,6 +27,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 
   // ============================================================================
   // STATE
@@ -223,6 +224,15 @@
   }
 
   const totalCount = $derived(ALPHA_POSITIONS.length + BETA_POSITIONS.length + GAMMA_POSITIONS.length);
+
+  const groupOptions = $derived<
+    { value: "all" | "alpha" | "beta" | "gamma"; label: string; count: number }[]
+  >([
+    { value: "all", label: "All", count: totalCount },
+    { value: "alpha", label: "Alpha", count: ALPHA_POSITIONS.length },
+    { value: "beta", label: "Beta", count: BETA_POSITIONS.length },
+    { value: "gamma", label: "Gamma", count: GAMMA_POSITIONS.length },
+  ]);
 </script>
 
 <div class="level7-lab">
@@ -237,18 +247,13 @@
   </header>
 
   <nav class="filter-chips">
-    <button class="chip" class:active={selectedGroup === "all"} onclick={() => (selectedGroup = "all")}>
-      All <span class="count">{totalCount}</span>
-    </button>
-    <button class="chip alpha" class:active={selectedGroup === "alpha"} onclick={() => (selectedGroup = "alpha")}>
-      Alpha <span class="count">{ALPHA_POSITIONS.length}</span>
-    </button>
-    <button class="chip beta" class:active={selectedGroup === "beta"} onclick={() => (selectedGroup = "beta")}>
-      Beta <span class="count">{BETA_POSITIONS.length}</span>
-    </button>
-    <button class="chip gamma" class:active={selectedGroup === "gamma"} onclick={() => (selectedGroup = "gamma")}>
-      Gamma <span class="count">{GAMMA_POSITIONS.length}</span>
-    </button>
+    <SegmentedControl
+      options={groupOptions}
+      value={selectedGroup}
+      onchange={(v) => (selectedGroup = v)}
+      color="accent"
+      size="sm"
+    />
   </nav>
 
   <div class="controls-row">
@@ -393,57 +398,9 @@
 
   /* Filter chips */
   .filter-chips {
-    display: flex;
-    gap: 0.5rem;
     padding: 0 1.5rem 1rem;
     flex-shrink: 0;
-    flex-wrap: wrap;
-  }
-
-  .chip {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 9999px;
-    background: transparent;
-    color: var(--theme-text-secondary, #888);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-  }
-
-  .chip:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, #fff);
-  }
-
-  .chip.active {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, #fff);
-  }
-
-  .chip.alpha.active { border-color: #a78bfa; }
-  .chip.beta.active { border-color: #fbbf24; }
-  .chip.gamma.active { border-color: #34d399; }
-
-  .chip .count {
-    font-size: var(--font-size-compact, 12px);
-    padding: 0.125rem 0.375rem;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .chip.active .count {
-    background: rgba(255, 255, 255, 0.15);
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
+    max-width: 32rem;
   }
 
   /* Controls row */
