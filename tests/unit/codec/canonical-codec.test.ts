@@ -37,3 +37,19 @@ describe("encodeMotion canonical format", () => {
     expect(__test__.encodeMotion(m)).toBe("noeaxfc");
   });
 });
+
+describe("decodeMotion derivation", () => {
+  it("derives pro/anti from rotation + locations", () => {
+    const m = __test__.decodeMotion("noeac0", "blue", Orientation.IN, PropType.STAFF);
+    expect(m?.motionType).toBe(MotionType.PRO);
+    expect(m?.startOrientation).toBe(Orientation.IN);
+    expect(m?.propType).toBe(PropType.STAFF);
+  });
+  it("derives float + prefloat rotation from the appended char", () => {
+    const m = __test__.decodeMotion("noeaxfc", "blue", Orientation.IN, PropType.STAFF);
+    expect(m?.motionType).toBe(MotionType.FLOAT);
+    expect(m?.rotationDirection).toBe(RotationDirection.NO_ROTATION);
+    expect(m?.prefloatRotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(m?.prefloatMotionType).toBe(MotionType.PRO);
+  });
+});

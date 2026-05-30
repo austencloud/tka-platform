@@ -17,7 +17,11 @@ import type { ArrowPlacementData } from "$lib/shared/pictograph/arrow/positionin
 import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/PropPlacementData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { CompressionResult, ShareURLResult, ShareURLMetadata, DeepLinkParseResult, QRSizeEstimate, SequenceRouteIdParseResult, URLPropOptions } from "./types";
-import { calculateEndOrientation } from "$lib/shared/render/core/calculations/orientation";
+import {
+  calculateEndOrientation,
+  deriveMotionType,
+  getHandpathDirection,
+} from "$lib/shared/render/core/calculations/orientation";
 
 const LOCATION_ENCODE: Record<GridLocation, string> = {
   [GridLocation.NORTH]: "no",
@@ -183,75 +187,68 @@ function encodeBeat(beat: StepData | StartPositionData, formatVersion: 1 | 2 | 3
 function decodeMotion(
   encoded: string,
   color: "blue" | "red",
-  formatVersion: 1 | 2 | 3 = 3,
-  chainStartOrientation?: Orientation
+  chainStartOrientation: Orientation,
+  propType: PropType
 ): MotionData | undefined {
-  const minLen = formatVersion === 1 ? 10 : formatVersion === 2 ? 9 : 8;
-  if (!encoded || encoded.length < minLen) return undefined;
+  if (!encoded || encoded.length < 6) return undefined;
 
   let pos = 0;
-
-  const startLocCode = encoded.slice(pos, pos + 2);
-  pos += 2;
-
-  const endLocCode = encoded.slice(pos, pos + 2);
-  pos += 2;
-
-  // v1/v2 store startOrientation positionally; v3 chains it from the previous
-  // beat (passed in). v1 also stores endOrientation; v2/v3 derive it.
-  const startOrientCode = formatVersion === 3 ? undefined : encoded[pos++];
-  const endOrientCode = formatVersion === 1 ? encoded[pos++] : undefined;
+  const startLocCode = encoded.slice(pos, pos + 2); pos += 2;
+  const endLocCode = encoded.slice(pos, pos + 2); pos += 2;
   const rotationCode = encoded[pos++];
 
   let turnsCode = "";
-  while (
-    pos < encoded.length &&
-    encoded[pos] &&
-    !MOTION_TYPE_DECODE[encoded[pos]!]
-  ) {
+  while (pos < encoded.length && /[0-9.f]/.test(encoded[pos]!)) {
     turnsCode += encoded[pos++];
   }
-
-  const typeCode = encoded[pos++];
-  const propCode = encoded[pos];
+  const isFloat = turnsCode === "f";
+  const prefloatRotCode = isFloat ? encoded[pos++] : undefined;
 
   const startLocation = LOCATION_DECODE[startLocCode];
   const endLocation = LOCATION_DECODE[endLocCode];
-  const startOrientation =
-    formatVersion === 3
-      ? (chainStartOrientation as Orientation)
-      : ORIENTATION_DECODE[startOrientCode!];
   const rotationDirection = ROTATION_DECODE[rotationCode!];
-  const turns = turnsCode === "f" ? ("fl" as const) : parseFloat(turnsCode);
-  const motionType = MOTION_TYPE_DECODE[typeCode!];
-  const propType = PROP_TYPE_DECODE[propCode!];
+  const turns = isFloat ? ("fl" as const) : parseFloat(turnsCode);
+  const startOrientation = chainStartOrientation;
 
-  const endOrientation =
-    formatVersion === 1
-      ? ORIENTATION_DECODE[endOrientCode!]
-      : (calculateEndOrientation({
-          motionType: motionType as unknown as string,
-          turns,
-          rotationDirection: rotationDirection as unknown as string,
-          startLocation: startLocation as unknown as string,
-          endLocation: endLocation as unknown as string,
-          startOrientation: startOrientation as unknown as string,
-        }) as Orientation);
-
-  if (
-    !startLocation ||
-    !endLocation ||
-    !startOrientation ||
-    !endOrientation ||
-    !rotationDirection ||
-    !motionType ||
-    !propType
-  ) {
+  if (!startLocation || !endLocation || !rotationDirection || !startOrientation) {
     throw new Error(`Invalid motion encoding: ${encoded}`);
   }
 
-  const MotionColorLocal = { BLUE: "blue" as const, RED: "red" as const };
-  const motionColor = color === "blue" ? MotionColorLocal.BLUE : MotionColorLocal.RED;
+  const motionType = deriveMotionType(
+    startLocation as unknown as string,
+    endLocation as unknown as string,
+    rotationDirection as unknown as string,
+    turns
+  ) as unknown as MotionType;
+
+  let prefloatRotationDirection: RotationDirection | undefined;
+  let prefloatMotionType: MotionType | undefined;
+  if (isFloat) {
+    prefloatRotationDirection =
+      ROTATION_DECODE[prefloatRotCode!] ?? RotationDirection.CLOCKWISE;
+    prefloatMotionType = deriveMotionType(
+      startLocation as unknown as string,
+      endLocation as unknown as string,
+      prefloatRotationDirection as unknown as string,
+      0
+    ) as unknown as MotionType;
+  }
+
+  const endOrientation = calculateEndOrientation({
+    motionType: motionType as unknown as string,
+    turns,
+    rotationDirection: rotationDirection as unknown as string,
+    startLocation: startLocation as unknown as string,
+    endLocation: endLocation as unknown as string,
+    startOrientation: startOrientation as unknown as string,
+  }) as Orientation;
+
+  const handPath = getHandpathDirection(
+    startLocation as unknown as string,
+    endLocation as unknown as string
+  );
+
+  const motionColor = color === "blue" ? ("blue" as const) : ("red" as const);
   const gridMode = inferGridModeFromMotion(startLocation, endLocation);
 
   return {
@@ -262,6 +259,7 @@ function decodeMotion(
     turns,
     startOrientation,
     endOrientation,
+    handPath,
     color: motionColor as unknown as MotionColor,
     isVisible: true,
     propType,
@@ -269,7 +267,9 @@ function decodeMotion(
     arrowLocation: startLocation,
     arrowPlacementData: {} as unknown as ArrowPlacementData,
     propPlacementData: {} as unknown as PropPlacementData,
-  };
+    ...(prefloatMotionType && { prefloatMotionType }),
+    ...(prefloatRotationDirection && { prefloatRotationDirection }),
+  } as MotionData;
 }
 
 function decodeBeat(encoded: string, stepNumber: number, formatVersion: 1 | 2 | 3 = 2): StepData {
