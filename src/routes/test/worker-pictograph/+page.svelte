@@ -59,6 +59,11 @@
   // 3 = Split-Opp / fire — a vivid orange, easy to eyeball.
   let selectedElementIdx = $state(3);
 
+  // Deck wall-time benchmark state.
+  let deckTiming = $state(false);
+  let deckStatus = $state("idle");
+  let deckResult = $state<string | null>(null);
+
   onMount(async () => {
     try {
       await engine.initialize();
@@ -330,6 +335,67 @@
     };
   }
 
+  // Shared by runFullCard AND timeDeck so both render the EXACT same card shape.
+  // Mirrors PrintCardRenderer.renderFront: a REAL TnD choreo-card with the
+  // element accent-color tint + element footer + QR. Built per-sequence.
+  function buildFrontOptions(): Partial<SequenceExportOptions> {
+    const tnd = TND_ELEMENTS[selectedElementIdx]!;
+    const canonical = buildCanonicalCardVisibility({
+      tndElement: tnd,
+      bluePropType: PropType.STAFF,
+      redPropType: PropType.STAFF,
+    });
+    const leftLabel = "Austen";
+    const rightLabel = "TKA";
+    const notes = tnd.name;
+    return {
+      deckCard: { contentWidth: CONTENT_W, contentHeight: CONTENT_H },
+      includeStartPosition: true,
+      startPositionLayout: "row",
+      addStepNumbers: true,
+      addWord: canonical.addWord,
+      addDifficultyLevel: false,
+      stepSize: 300, stepScale: 1, margin: 0, format: "PNG", quality: 1, scale: 1,
+      redVisible: true, blueVisible: true, addReversalSymbols: true, combinedGrids: false,
+      showLoopGlyph: false,
+      bluePropTypeOverride: PropType.STAFF,
+      redPropTypeOverride: PropType.STAFF,
+      accentColor: tnd.accentColor,
+      accentTintOpacity: tnd.cardTintOpacity,
+      // deckId is the QR payload — required for the QR to resolve.
+      deckId: "parity-proof",
+      showCreatorName: !!leftLabel,
+      showNotes: !!(notes || leftLabel || rightLabel || tnd.iconPath),
+      showBirthday: false,
+      leftLabel, rightLabel, notes,
+      iconPath: tnd.iconPath,
+      userName: "Austen",
+      exportDate: new Date().toISOString(),
+      visibilityOverrides: {
+        ...canonical.visibilityOverrides,
+        // Mandala off so the QR lands in a clear empty cell (isolating QR here).
+        showMandala: false,
+        showQRCode: true,
+      },
+    } as Partial<SequenceExportOptions>;
+  }
+
+  // Defensively wire the QR generator onto the singleton composer. In prod this
+  // is registered at app boot (deferred-registrations.ts), but this test route
+  // may render before that runs. getQRCodeGenerator is a browser-only singleton,
+  // so this is safe and idempotent. Shared by runFullCard + timeDeck.
+  async function ensureQRWired() {
+    const composer = getImageComposer();
+    try {
+      const { getQRCodeGenerator } = await import("$lib/shared/qr/getQRCodeGenerator");
+      (composer as unknown as { setQRCodeGenerator: (g: unknown) => void }).setQRCodeGenerator(
+        getQRCodeGenerator(),
+      );
+    } catch (e) {
+      console.warn("[harness] QR generator wiring failed:", e);
+    }
+  }
+
   async function runFullCard() {
     if (cardRunning) return;
     cardRunning = true;
@@ -350,62 +416,14 @@
         return;
       }
 
-      // Defensively wire the QR generator onto the singleton composer. In prod
-      // this is registered at app boot (deferred-registrations.ts), but this test
-      // route may render before that runs. getQRCodeGenerator is a browser-only
-      // singleton, so this is safe and idempotent.
+      await ensureQRWired();
       const composer = getImageComposer();
-      try {
-        const { getQRCodeGenerator } = await import("$lib/shared/qr/getQRCodeGenerator");
-        (composer as unknown as { setQRCodeGenerator: (g: unknown) => void }).setQRCodeGenerator(
-          getQRCodeGenerator(),
-        );
-      } catch (e) {
-        console.warn("[harness] QR generator wiring failed:", e);
-      }
 
       // Mirror PrintCardRenderer.renderFront: a REAL TnD choreo-card with the
       // element accent-color tint + element footer, so the parallel render is
       // verified against the full card look (not a stripped-down one).
       const tnd = TND_ELEMENTS[selectedElementIdx]!;
-      const canonical = buildCanonicalCardVisibility({
-        tndElement: tnd,
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
-      });
-      const leftLabel = "Austen";
-      const rightLabel = "TKA";
-      const notes = tnd.name;
-      const frontOptions = {
-        deckCard: { contentWidth: CONTENT_W, contentHeight: CONTENT_H },
-        includeStartPosition: true,
-        startPositionLayout: "row",
-        addStepNumbers: true,
-        addWord: canonical.addWord,
-        addDifficultyLevel: false,
-        stepSize: 300, stepScale: 1, margin: 0, format: "PNG", quality: 1, scale: 1,
-        redVisible: true, blueVisible: true, addReversalSymbols: true, combinedGrids: false,
-        showLoopGlyph: false,
-        bluePropTypeOverride: PropType.STAFF,
-        redPropTypeOverride: PropType.STAFF,
-        accentColor: tnd.accentColor,
-        accentTintOpacity: tnd.cardTintOpacity,
-        // deckId is the QR payload — required for the QR to resolve.
-        deckId: "parity-proof",
-        showCreatorName: !!leftLabel,
-        showNotes: !!(notes || leftLabel || rightLabel || tnd.iconPath),
-        showBirthday: false,
-        leftLabel, rightLabel, notes,
-        iconPath: tnd.iconPath,
-        userName: "Austen",
-        exportDate: new Date().toISOString(),
-        visibilityOverrides: {
-          ...canonical.visibilityOverrides,
-          // Mandala off so the QR lands in a clear empty cell (isolating QR here).
-          showMandala: false,
-          showQRCode: true,
-        },
-      } as Partial<SequenceExportOptions>;
+      const frontOptions = buildFrontOptions();
 
       cardStatus = "seeding worker pool…";
       const pool = getCardFrontWorkerPool();
@@ -478,6 +496,134 @@
       cardInfo = msg;
     } finally {
       cardRunning = false;
+    }
+  }
+
+  // --- DECK WALL-TIME BENCHMARK (parallel worker pool vs main thread) ---------
+  //
+  // Measures the multicore speedup of rendering a whole deck's worth of card
+  // fronts. Both paths render the SAME ~24 cards with the SAME bounded-concurrency
+  // lane model (matching PrintPreviewPages.renderAll's ~8 lanes) so the only
+  // variable is where the raster work runs: across pool workers (parallel) vs on
+  // the main thread (main). Wall-time via performance.now() deltas.
+
+  const BENCH_CARDS = 24;
+  const BENCH_LANES = 8; // matches PrintPreviewPages RENDER_CONCURRENCY ceiling
+
+  // Run `task(item)` over `items` with `laneCount` concurrent lanes sharing a
+  // single cursor — the SAME shape as PrintPreviewPages.renderAll. Used for both
+  // the parallel and main paths so the comparison is fair (identical overlap).
+  async function runLanes<T>(items: T[], laneCount: number, task: (item: T) => Promise<unknown>) {
+    let next = 0;
+    const lane = async () => {
+      while (true) {
+        const i = next++;
+        if (i >= items.length) return;
+        await task(items[i]!);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(laneCount, items.length) }, () => lane()));
+  }
+
+  async function timeDeck() {
+    if (deckTiming) return;
+    deckTiming = true;
+    deckResult = null;
+    try {
+      deckStatus = "picking sequences…";
+      // Prefer real distinct short sequences (short = QR lands in an empty cell);
+      // fall back to any with steps. Replicate up to BENCH_CARDS — wall-time is the
+      // goal, so a representative batch padded by repetition is fine.
+      const pool0 = engine.allSequences.filter(
+        (s) => Array.isArray(s.steps) && s.steps.length > 0 && s.steps.length <= 6,
+      );
+      const source = pool0.length > 0
+        ? pool0
+        : engine.allSequences.filter((s) => Array.isArray(s.steps) && s.steps.length > 0);
+      if (source.length === 0) {
+        deckStatus = "no renderable sequences found";
+        return;
+      }
+      const seqs: SequenceData[] = Array.from(
+        { length: BENCH_CARDS },
+        (_, i) => source[i % source.length]!,
+      );
+
+      await ensureQRWired();
+      const composer = getImageComposer();
+      // Same card shape as runFullCard, per sequence.
+      const frontOptions = buildFrontOptions();
+      const tnd = TND_ELEMENTS[selectedElementIdx]!;
+      const theme = "front" as const;
+
+      deckStatus = "seeding worker pool (once for the batch)…";
+      const pool = getCardFrontWorkerPool();
+      await pool.seedForDeck(
+        seqs,
+        { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, theme },
+        "bench",
+      );
+      const poolReady = pool.isReady();
+      if (!poolReady) {
+        deckStatus = "worker pool unavailable (no OffscreenCanvas) — skipping parallel run";
+      }
+
+      // Warm-up (intentional): render 1-2 cards each way and discard so neither
+      // timed window pays cold-cache cost (first-call asset decode, worker spin-up,
+      // composer scratch alloc). Results are thrown away.
+      deckStatus = "warming up…";
+      const warm = seqs.slice(0, 2);
+      if (poolReady) {
+        await runLanes(warm, BENCH_LANES, (s) => composeCardFrontParallel(s, frontOptions, pool));
+      }
+      await runLanes(warm, BENCH_LANES, (s) => composer.composeSequenceImage(s, frontOptions));
+
+      // PARALLEL run: render ALL seqs through the worker pool with BENCH_LANES
+      // concurrent lanes so the pool's workers stay saturated across cores.
+      let parallelMs = 0;
+      if (poolReady) {
+        deckStatus = "timing PARALLEL run…";
+        const t0 = performance.now();
+        await runLanes(seqs, BENCH_LANES, (s) => composeCardFrontParallel(s, frontOptions, pool));
+        parallelMs = performance.now() - t0;
+      }
+
+      // MAIN run: same lane shape on the main thread. Main-thread async still
+      // overlaps the awaits (asset/blob decode), so the concurrency shape is fair.
+      deckStatus = "timing MAIN run…";
+      const t1 = performance.now();
+      await runLanes(seqs, BENCH_LANES, (s) => composer.composeSequenceImage(s, frontOptions));
+      const mainMs = performance.now() - t1;
+
+      deckResult = JSON.stringify(
+        poolReady
+          ? {
+              cards: seqs.length,
+              cores: navigator.hardwareConcurrency,
+              parallelMs: Math.round(parallelMs),
+              mainMs: Math.round(mainMs),
+              speedup: +(mainMs / parallelMs).toFixed(2),
+            }
+          : {
+              cards: seqs.length,
+              cores: navigator.hardwareConcurrency,
+              parallelMs: null,
+              mainMs: Math.round(mainMs),
+              speedup: null,
+              note: "worker pool unavailable (no OffscreenCanvas) — parallel run skipped",
+            },
+        null,
+        2,
+      );
+      deckStatus = poolReady
+        ? `deck timed — ${tnd.name}: parallel ${Math.round(parallelMs)}ms vs main ${Math.round(mainMs)}ms (${+(mainMs / parallelMs).toFixed(2)}x)`
+        : `deck timed (main only) — ${Math.round(mainMs)}ms; parallel skipped`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      deckStatus = "DECK TIMING FAILED: " + msg;
+      deckResult = msg;
+    } finally {
+      deckTiming = false;
     }
   }
 </script>
@@ -556,6 +702,26 @@
     <figure><figcaption>MAIN (framed)</figcaption><div bind:this={cardMainFramedSlot} class="slot"></div></figure>
     <figure><figcaption>PARALLEL (framed)</figcaption><div bind:this={cardParallelFramedSlot} class="slot"></div></figure>
   </div>
+
+  <hr />
+
+  <h1>Deck Wall-Time Benchmark — Parallel Pool vs Main Thread</h1>
+  <p>
+    Renders a deck's worth of card fronts ({BENCH_CARDS} cards) BOTH ways and
+    measures wall-time. The worker pool is seeded once for the batch, then all
+    cards render through <code>composeCardFrontParallel</code> across {BENCH_LANES}
+    concurrent lanes (matching <code>PrintPreviewPages.renderAll</code>). The main
+    path uses the SAME lane shape via <code>composeSequenceImage</code> so the only
+    variable is where raster work runs. Speedup = mainMs / parallelMs.
+  </p>
+  <div class="controls">
+    <button type="button" onclick={timeDeck} disabled={deckTiming || !!loadError}>
+      {deckTiming ? "Timing…" : "Time deck (parallel vs main)"}
+    </button>
+    <span class="status">{loadError ? `load error: ${loadError}` : deckStatus}</span>
+  </div>
+
+  {#if deckResult}<pre>{deckResult}</pre>{/if}
 </div>
 
 <style>
