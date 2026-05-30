@@ -29,8 +29,8 @@ describe("default override read precedence", () => {
 
   it("prefers the resolver value over the static JSON value", async () => {
     const placer = new ArrowPlacer(fakeCache);
-    setDefaultOverrideResolver((grid, motion, key, turns) =>
-      grid === "box" && motion === "pro" && key === "pro_to_layer1_alpha" && turns === "1.5"
+    setDefaultOverrideResolver((grid, motion, key, turns, prop) =>
+      grid === "box" && motion === "pro" && key === "pro_to_layer1_alpha" && turns === "1.5" && prop === "staff"
         ? [7, 9]
         : null,
     );

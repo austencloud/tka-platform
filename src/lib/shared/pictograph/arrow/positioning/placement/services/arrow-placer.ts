@@ -10,13 +10,9 @@ import { GridMode } from "../../../../grid/domain/enums/grid-enums";
 import { jsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
 import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/simple-json-cache'
 import type {
-  AllPlacementData,
+  GridPlacementData,
   JsonPlacementData,
 } from "../domain/models/PlacementDataTypes";
-import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-
-const debug = createComponentLogger("ArrowPlacer");
-
 /**
  * Optional Firestore-first override for default base adjustments. Registered by
  * default-override-singleton on init. Unset in workers / pre-auth → pure JSON.
@@ -27,6 +23,7 @@ export type DefaultOverrideResolver = (
   motionType: string,
   placementKey: string,
   turns: string,
+  propType: string,
 ) => [number, number] | null;
 
 let defaultOverrideResolver: DefaultOverrideResolver | null = null;
@@ -37,37 +34,33 @@ export function setDefaultOverrideResolver(fn: DefaultOverrideResolver | null): 
 
 export class ArrowPlacer {
   private jsonCacheImpl: SimpleJsonCache;
-  private allPlacements: AllPlacementData = {
-    [GridMode.DIAMOND]: {},
-    [GridMode.BOX]: {},
-    [GridMode.SKEWED]: {}, // Uses diamond placements as base
-  };
 
-  // Track which grid modes have been loaded (lazy loading by grid mode)
-  private loadedGridModes = new Set<GridMode>();
+  // [gridMode][propType][motionType][placementKey][turns] = [x, y]
+  private allPlacements: Record<string, Record<string, GridPlacementData>> = {};
 
-  // File mapping for placement data
-  private readonly placementFiles: Record<string, Record<string, string>> = {
-    [GridMode.DIAMOND]: {
-      pro: "/data/arrow_placement/diamond/default/default_diamond_pro_placements.json",
-      anti: "/data/arrow_placement/diamond/default/default_diamond_anti_placements.json",
-      float:
-        "/data/arrow_placement/diamond/default/default_diamond_float_placements.json",
-      dash: "/data/arrow_placement/diamond/default/default_diamond_dash_placements.json",
-      static:
-        "/data/arrow_placement/diamond/default/default_diamond_static_placements.json",
-    },
-    [GridMode.BOX]: {
-      pro: "/data/arrow_placement/box/default/default_box_pro_placements.json",
-      anti: "/data/arrow_placement/box/default/default_box_anti_placements.json",
-      float:
-        "/data/arrow_placement/box/default/default_box_float_placements.json",
-      dash: "/data/arrow_placement/box/default/default_box_dash_placements.json",
-      static:
-        "/data/arrow_placement/box/default/default_box_static_placements.json",
-    },
-    // SKEWED mode doesn't have separate files - it uses both diamond and box
-  };
+  // Lazily-loaded (gridMode, propType) buckets, e.g. "diamond:fan".
+  private loadedKeys = new Set<string>();
+
+  // Props with their own seeded subfolder. Anything else resolves to staff root.
+  private static readonly SEEDED_PROPS = new Set([
+    "fan", "bigfan", "club", "bigclub", "triad", "bigtriad",
+    "minihoop", "bighoop", "buugeng", "bigbuugeng",
+    "doublestar", "bigdoublestar", "eightrings", "bigeightrings",
+  ]);
+
+  private readonly motionTypes = ["pro", "anti", "float", "dash", "static"] as const;
+
+  /** Resolve the 5 motion-type file paths for a (gridMode, propType). Seeded
+   *  props read their <prop>/ subfolder; staff and unseeded props read root. */
+  private filesFor(gridMode: string, propType: string): Record<string, string> {
+    const seeded = ArrowPlacer.SEEDED_PROPS.has(propType);
+    const sub = seeded ? `${propType}/` : "";
+    const files: Record<string, string> = {};
+    for (const mt of this.motionTypes) {
+      files[mt] = `/data/arrow_placement/${gridMode}/default/${sub}default_${gridMode}_${mt}_placements.json`;
+    }
+    return files;
+  }
 
   /**
    * Create ArrowPlacer with optional injectable JSON cache
@@ -78,105 +71,61 @@ export class ArrowPlacer {
   }
 
   /**
-   * Load all placement data from JSON files
-   * @deprecated Use ensureGridModeLoaded() for lazy loading by grid mode
+   * Load all placement data from JSON files (staff, diamond + box)
+   * @deprecated Use ensureLoaded(gridMode, propType) for lazy prop-aware loading
    */
   async loadPlacementData(): Promise<void> {
-    // Load both grid modes for backwards compatibility
-    await this.ensureGridModeLoaded(GridMode.DIAMOND);
-    await this.ensureGridModeLoaded(GridMode.BOX);
+    // Load both grid modes for backwards compatibility (staff scope)
+    await this.ensureLoaded(GridMode.DIAMOND, "staff");
+    await this.ensureLoaded(GridMode.BOX, "staff");
   }
 
   /**
-   * Ensure placement data is loaded for a specific grid mode (lazy loading)
-   * Only loads 5 files for the requested grid mode instead of all 10
-   * SKEWED mode loads BOTH diamond and box placements (arrows can be at either)
+   * Ensure placement data is loaded for a specific (grid mode, prop type).
+   * Only loads 5 files per bucket. SKEWED loads BOTH diamond and box for the
+   * same prop (arrows can end at cardinal or intercardinal positions).
    */
+  async ensureLoaded(gridMode: GridMode, propType: string): Promise<void> {
+    if (gridMode === GridMode.SKEWED) {
+      await this.ensureLoaded(GridMode.DIAMOND, propType);
+      await this.ensureLoaded(GridMode.BOX, propType);
+      return;
+    }
+    const key = `${gridMode}:${propType}`;
+    if (this.loadedKeys.has(key)) return;
+    await this.loadPlacements(gridMode, propType);
+    this.loadedKeys.add(key);
+  }
+
+  /** Back-compat: staff-scoped load. Prefer ensureLoaded(gridMode, propType). */
   async ensureGridModeLoaded(gridMode: GridMode): Promise<void> {
-    // For SKEWED mode, we need BOTH diamond and box placements
-    // because arrows can end at cardinal (diamond) OR intercardinal (box) positions
-    if (gridMode === GridMode.SKEWED) {
-      await this.ensureGridModeLoaded(GridMode.DIAMOND);
-      await this.ensureGridModeLoaded(GridMode.BOX);
-      this.loadedGridModes.add(GridMode.SKEWED);
-      return;
-    }
-
-    // Skip if already loaded
-    if (this.loadedGridModes.has(gridMode)) {
-      return;
-    }
-
-    // Log when we're loading a new grid mode (helps trace startup issues)
-    // Include stack trace to help identify what triggered the load
-    debug.log(
-      `Loading ${gridMode} mode placement data (lazy load triggered)`
-    );
-    if (gridMode === GridMode.BOX) {
-      debug.log(`BOX mode placement load triggered from:`, new Error().stack);
-    }
-
-    try {
-      await this.loadGridPlacements(gridMode);
-      this.loadedGridModes.add(gridMode);
-    } catch (error) {
-      console.error(
-        `❌ Failed to load ${gridMode} placement data:`,
-        error
-      );
-      throw new Error(
-        `Placement data loading failed: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-    }
+    await this.ensureLoaded(gridMode, "staff");
   }
 
-  /**
-   * Load placements for a specific grid mode
-   */
-  private async loadGridPlacements(gridMode: GridMode): Promise<void> {
-    // SKEWED mode should never reach here - it's handled by ensureGridModeLoaded
-    // which loads both DIAMOND and BOX modes instead
-    if (gridMode === GridMode.SKEWED) {
-      console.warn("loadGridPlacements called with SKEWED - should use ensureGridModeLoaded");
-      return;
-    }
-    const files = this.placementFiles[gridMode];
-    this.allPlacements[gridMode] = {};
-
-    for (const [motionType, filePath] of Object.entries(files ?? {})) {
+  private async loadPlacements(gridMode: GridMode, propType: string): Promise<void> {
+    const files = this.filesFor(gridMode, propType);
+    this.allPlacements[gridMode] ??= {};
+    const byMotion: GridPlacementData = {};
+    for (const [motionType, filePath] of Object.entries(files)) {
       try {
-        const placementData = await this.loadJsonFile(filePath);
-        // Filter out null values to match GridPlacementData type
-        const filteredData: {
-          [placementKey: string]: { [turns: string]: [number, number] };
-        } = {};
-        for (const [placementKey, turnsData] of Object.entries(
-          placementData ?? {}
-        )) {
-          filteredData[placementKey] = {};
+        const raw = await this.loadJsonFile(filePath);
+        const filtered: GridPlacementData[string] = {};
+        for (const [placementKey, turnsData] of Object.entries(raw ?? {})) {
+          filtered[placementKey] = {};
           for (const [turns, coords] of Object.entries(turnsData ?? {})) {
-            if (
-              coords !== null &&
-              Array.isArray(coords) &&
-              coords.length === 2 &&
-              typeof coords[0] === "number" &&
-              typeof coords[1] === "number"
-            ) {
-              filteredData[placementKey][turns] = coords as unknown as [
-                number,
-                number,
-              ];
+            if (Array.isArray(coords) && coords.length === 2 &&
+                typeof coords[0] === "number" && typeof coords[1] === "number") {
+              filtered[placementKey][turns] = coords as unknown as [number, number];
             }
           }
         }
-        this.allPlacements[gridMode][motionType] = filteredData;
+        byMotion[motionType] = filtered;
       } catch (error) {
-        console.warn(
-          `Could not load ${motionType} placements for ${gridMode}: ${error}`
-        );
-        this.allPlacements[gridMode][motionType] = {};
+        console.warn(`Could not load ${motionType} placements for ${gridMode}/${propType}: ${error}`);
+        byMotion[motionType] = {};
       }
     }
+    this.allPlacements[gridMode][propType] = byMotion;
   }
 
   /**
@@ -199,47 +148,28 @@ export class ArrowPlacer {
     motionType: MotionType,
     placementKey: string,
     turns: number | string,
-    gridMode: GridMode = GridMode.DIAMOND
+    gridMode: GridMode = GridMode.DIAMOND,
+    propType: string = "staff",
   ): Promise<{ x: number; y: number }> {
-    await this.ensureDataLoaded(gridMode);
-
+    await this.ensureLoaded(gridMode, propType);
     const turnsStr = this.formatTurnsForLookup(turns);
 
     // Firestore-first: an admin default override shadows the static JSON value.
-    if (defaultOverrideResolver) {
-      const override = defaultOverrideResolver(
-        gridMode as unknown as string,
-        motionType as unknown as string,
-        placementKey,
-        turnsStr
-      );
-      if (override) {
-        return { x: override[0], y: override[1] };
-      }
-    }
+    const override = defaultOverrideResolver
+      ? defaultOverrideResolver(
+          gridMode as unknown as string,
+          motionType as unknown as string,
+          placementKey,
+          turnsStr,
+          propType,
+        )
+      : null;
+    if (override) return { x: override[0], y: override[1] };
 
-    const gridPlacements = this.allPlacements[gridMode];
-    if (!gridPlacements) {
-      return { x: 0, y: 0 };
-    }
-
-    const motionPlacements = gridPlacements[motionType];
-    if (!motionPlacements) {
-      return { x: 0, y: 0 };
-    }
-
-    const placementData = motionPlacements[placementKey];
-    if (!placementData) {
-      return { x: 0, y: 0 };
-    }
-
-    const adjustment = placementData[turnsStr];
-    if (!adjustment) {
-      return { x: 0, y: 0 };
-    }
-
-    const [x, y] = adjustment;
-    return { x, y };
+    const adjustment =
+      this.allPlacements[gridMode]?.[propType]?.[motionType]?.[placementKey]?.[turnsStr];
+    if (!adjustment) return { x: 0, y: 0 };
+    return { x: adjustment[0], y: adjustment[1] };
   }
 
   /**
@@ -249,9 +179,9 @@ export class ArrowPlacer {
     motionType: MotionType,
     gridMode: GridMode = GridMode.DIAMOND
   ): Promise<string[]> {
-    await this.ensureDataLoaded(gridMode);
+    await this.ensureLoaded(gridMode, "staff");
 
-    const motionPlacements = this.allPlacements[gridMode]?.[motionType];
+    const motionPlacements = this.allPlacements[gridMode]?.["staff"]?.[motionType];
     if (!motionPlacements) {
       return [];
     }
@@ -260,28 +190,19 @@ export class ArrowPlacer {
   }
 
   /**
-   * Check if data is loaded for a grid mode (or any grid mode if not specified)
+   * Check if staff data is loaded for a grid mode (or diamond if not specified)
    */
   isLoaded(gridMode?: GridMode): boolean {
     if (gridMode) {
-      // SKEWED mode requires both DIAMOND and BOX to be loaded
+      // SKEWED mode requires both DIAMOND and BOX staff buckets to be loaded
       if (gridMode === GridMode.SKEWED) {
-        return this.loadedGridModes.has(GridMode.DIAMOND) &&
-               this.loadedGridModes.has(GridMode.BOX);
+        return this.loadedKeys.has(`${GridMode.DIAMOND}:staff`) &&
+               this.loadedKeys.has(`${GridMode.BOX}:staff`);
       }
-      return this.loadedGridModes.has(gridMode);
+      return this.loadedKeys.has(`${gridMode}:staff`);
     }
-    // For backwards compatibility, check if at least diamond is loaded
-    return this.loadedGridModes.has(GridMode.DIAMOND);
-  }
-
-  /**
-   * Ensure data is loaded for a specific grid mode (lazy loading)
-   */
-  private async ensureDataLoaded(
-    gridMode: GridMode = GridMode.DIAMOND
-  ): Promise<void> {
-    await this.ensureGridModeLoaded(gridMode);
+    // For backwards compatibility, check if at least diamond staff is loaded
+    return this.loadedKeys.has(`${GridMode.DIAMOND}:staff`);
   }
 
   /**
@@ -320,9 +241,9 @@ export class ArrowPlacer {
     placementKey: string,
     gridMode: GridMode = GridMode.DIAMOND
   ): Promise<{ [turns: string]: [number, number] }> {
-    await this.ensureDataLoaded(gridMode);
+    await this.ensureLoaded(gridMode, "staff");
 
-    const motionPlacements = this.allPlacements[gridMode]?.[motionType];
+    const motionPlacements = this.allPlacements[gridMode]?.["staff"]?.[motionType];
     return motionPlacements?.[placementKey] || {};
   }
 }
