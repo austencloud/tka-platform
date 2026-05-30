@@ -173,3 +173,61 @@ and re-embedding the same bitmap N times.
   is a single color, backs mirror correctly, blank cells align front/back, sheet
   labels name the element.
 - `npm run check` clean.
+
+---
+
+## v2 Addendum (2026-05-30) — WYSIWYG preview + control redesign
+
+User feedback after v1 shipped: (a) the numeric stepper is an antiquated control —
+TKA bans steppers/dropdowns/scrollbars; (b) copies should be set on the deck
+viewer page so the on-screen preview shows the grouped, copied layout *before*
+exporting, not buried in the print dialog.
+
+### Decisions
+- **Control:** segmented preset button group (same `role="radiogroup"` pattern as
+  `CardSizeToggle` / `MotionTypePills`) with values **1·3·6·9·12**, plus an inline
+  typed number field (spinner arrows hidden) for arbitrary counts. No stepper, no
+  dropdown, no scrollbar.
+- **Placement:** the control lives in `PrintPreviewToolbar` on the deck viewer
+  page (next to the size toggle). `copies` state lifts to `ReviewStep` and flows to
+  the preview (display), the dialog (estimate + export). The dialog drops its own
+  input and shows `Copies: N` read-only.
+- **Strict page isolation, always:** every sheet holds exactly one element even at
+  copies = 1 (≈6 mostly-empty sheets for a 6-element deck). Guarantees no
+  cross-color cut. Preview must equal export.
+
+### Single source of truth for layout
+`planPrintSlots` is generalized to a generic `<T>` so the SAME planner drives both
+the PDF exporter (`T = CardPair`) and the on-screen preview (`T = RenderedCard`).
+This guarantees the preview is pixel-for-pixel what prints. The slot type becomes
+`PlannedSlot<T> = { item: T | null; elementName: string | null }` (field renamed
+`pair` → `item`).
+
+### Preview repagination (`PrintPreviewPages.svelte`)
+- New `copies` prop (default 1).
+- The `sheets` derivation is replaced: it plans slots via `planPrintSlots` over an
+  index-carrying wrapper `{ card: RenderedCard; seqIndex: number }` (so click /
+  inspect / rerender still target the correct source card despite grouping,
+  copies, and blank padding), then chunks into pages of `cardsPerPage`.
+- The old row-boundary isolation logic (pad to `cols`) is removed in favor of
+  page-boundary isolation (the planner pads to `cardsPerPage`).
+- Front/back render loops iterate slots; blank slots (`item: null`) render the
+  existing `.card-cell.blank`. Sheet labels gain the element name
+  (`Fronts · Water · Sheet 1 of N`) to match the exported PDF.
+- Copies reuse cached `RenderedCard` data URLs — repeating a card costs an extra
+  `<img>`, never a re-render.
+
+### Control plumbing
+- New `CopiesSelect.svelte` (segmented presets + hidden-spinner number field).
+- `PrintPreviewToolbar` renders it; `ReviewStep` owns `copies` state and passes it
+  to toolbar, preview, and dialog.
+- `PrintDialog` gains a `copies: number` prop (default 1, so `CatalogBrowser` /
+  `TnDFamilyDrillDown` callers are unaffected), removes its stepper + local copies
+  state, and shows `Copies: N` as a read-only summary row. Its estimate math is
+  unchanged but reads the prop.
+
+### Verification (v2)
+- On the deck viewer, change copies on the toolbar → preview repaginates live to
+  one-color-per-full-sheet × N, labels name the element, no stepper present.
+- "Print This Deck" → dialog shows `Copies: N` read-only → exported PDF matches the
+  on-screen sheets exactly.
