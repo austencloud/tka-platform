@@ -355,10 +355,11 @@ export class MandalaViewerController {
           if (d.phase === "config") {
             console.log(`${tag} codec=${d.codec} hwSupported=${d.hwSupported} encoder=${d.encoder} res=${d.resolution} fps=${d.fps} frames=${d.totalFrames}`);
           } else {
+            const mp = +((d.resolution * d.resolution) / 1_000_000).toFixed(1);
             console.log(
-              `${tag} ${d.encodedFrames}/${d.totalFrames} · encode=${d.encodeFps}fps · render=${d.renderMs}ms wait=${d.encodeWaitMs}ms mux=${d.muxMs}ms · hwSupported=${d.hwSupported} codec=${d.codec}` +
-              (d.phase === "done" && d.encodeFps > 0 && d.encodeFps < 40
-                ? "  ⚠ encode-bound (likely software H.264 — runtime not hardware-accelerating)"
+              `${tag} ${d.encodedFrames}/${d.totalFrames} · encode=${d.encodeFps}fps · render=${d.renderMs}ms wait=${d.encodeWaitMs}ms mux=${d.muxMs}ms · ${mp}MP/frame codec=${d.codec}` +
+              (d.phase === "done" && d.encodeFps > 0 && d.encodeFps < 24
+                ? `  ⚠ encode-bound — H.264 can't keep up at ${d.resolution}² (${mp}MP). Lower resolution encodes ~(px ratio)× faster.`
                 : ""),
             );
           }
