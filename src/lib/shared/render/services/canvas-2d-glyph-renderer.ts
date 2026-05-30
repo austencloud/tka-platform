@@ -9,7 +9,7 @@ import { LetterType } from "../../foundation/domain/models/LetterType";
 import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../pictograph/tka-glyph/utils/turn-tuple-parser";
 import { interpretTurnColors, BLUE_HEX, RED_HEX } from "../../pictograph/tka-glyph/services/turn-color-interpreter";
 import { calculateTurnPositions } from "../../pictograph/tka-glyph/utils/turn-position-calculator";
-import { calculateTnDFromPictograph } from "../../pictograph/shared/domain/utils/tnd-calculator";
+import { deriveTnDFromPictograph } from "../../pictograph/shared/domain/utils/tnd-deriver";
 import { calculateReversalPositions } from "../core";
 import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import type { GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
@@ -299,7 +299,7 @@ export async function drawTurnsColumn(
 export async function drawTnDGlyph(
   ctx: CanvasRenderingContext2D,
   pictograph: PictographData,
-  gridMode: GridMode,
+  _gridMode: GridMode,
   size: number,
   isDarkMode: boolean
 ): Promise<void> {
@@ -312,7 +312,7 @@ export async function drawTnDGlyph(
     return;
   }
 
-  const tndResult = calculateTnDFromPictograph(pictograph, gridMode);
+  const tndResult = deriveTnDFromPictograph(pictograph);
   if (!tndResult.tndMode) return;
 
   const scale = size / VIEWBOX_SIZE;
@@ -348,7 +348,7 @@ export async function drawTnDGlyph(
 export async function drawElementalGlyph(
   ctx: CanvasRenderingContext2D,
   pictograph: PictographData,
-  gridMode: GridMode,
+  _gridMode: GridMode,
   size: number,
   _isDarkMode: boolean
 ): Promise<void> {
@@ -361,7 +361,7 @@ export async function drawElementalGlyph(
     return;
   }
 
-  const tndResult = calculateTnDFromPictograph(pictograph, gridMode);
+  const tndResult = deriveTnDFromPictograph(pictograph);
   if (!tndResult.elementalType) return;
 
   const scale = size / VIEWBOX_SIZE;

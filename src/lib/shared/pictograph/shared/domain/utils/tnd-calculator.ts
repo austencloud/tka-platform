@@ -12,7 +12,6 @@
 
 import { TnDMode as TnDMode, ElementalType } from "../enums/pictograph-enums";
 import type { Letter } from "../../../../foundation/domain/models/Letter";
-import type { PictographData } from "../models/PictographData";
 import { GridMode, GridPosition } from "../../../grid/domain/enums/grid-enums";
 
 export interface TnDCalculationResult {
@@ -145,38 +144,6 @@ const BOX_MODE_MAP: Record<
   U: TnDMode.QUARTER_SAME,
   V: TnDMode.QUARTER_SAME,
 };
-
-/**
- * Calculate VTG mode from pictograph data.
- *
- * This uses a lookup table approach, NOT motion property derivation.
- *
- * @param pictographData - Complete pictograph data
- * @param gridMode - Grid mode (DIAMOND or BOX)
- * @returns VTG calculation result with mode and elemental type
- */
-export function calculateTnDFromPictograph(
-  pictographData: PictographData | null | undefined,
-  gridMode: GridMode
-): TnDCalculationResult {
-  const defaultResult: TnDCalculationResult = {
-    tndMode: null,
-    elementalType: null,
-  };
-
-  if (!pictographData?.letter) {
-    return defaultResult;
-  }
-
-  const letter = pictographData.letter;
-  const startPosition = pictographData.startPosition;
-
-  if (!startPosition) {
-    return defaultResult;
-  }
-
-  return calculateTnD(letter, gridMode, startPosition);
-}
 
 /**
  * Calculate VTG mode from letter, grid mode, and start position.

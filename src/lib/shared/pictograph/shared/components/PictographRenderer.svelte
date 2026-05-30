@@ -40,7 +40,7 @@ Usage:
   import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/turns-tuple-generator";
   import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
-  import { calculateTnDFromPictograph } from "../domain/utils/tnd-calculator";
+  import { deriveTnDFromPictograph } from "../domain/utils/tnd-deriver";
 
   // Props - all explicit, no global state dependencies
   let {
@@ -263,7 +263,7 @@ Usage:
     if (!pictograph) {
       return { tndMode: null, elementalType: null };
     }
-    return calculateTnDFromPictograph(pictograph, gridMode);
+    return deriveTnDFromPictograph(pictograph);
   });
 
   // Turns tuple generation

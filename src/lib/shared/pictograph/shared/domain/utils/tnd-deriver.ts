@@ -24,7 +24,7 @@
  * Design: docs/superpowers/specs/2026-05-30-tnd-downbeat-deriver-and-gamma-split-design.md
  */
 
-import { TnDMode, MotionType, MotionColor } from "../enums/pictograph-enums";
+import { TnDMode, MotionColor } from "../enums/pictograph-enums";
 import type { GridLocation } from "../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../models/PictographData";
 import { deriveHandOrbitalDirection } from "../../../../render/core/calculations/orientation";
@@ -101,9 +101,10 @@ export function deriveTnD(
 }
 
 /**
- * Derive TnD from a pictograph by reading its blue/red rotating-shift motion.
- * Each hand's arc is the motion's start → end location; non-shift motions
- * (static/dash start positions) yield nulls.
+ * Derive TnD from a pictograph by reading its blue/red motion arcs.
+ * Each hand's arc is the motion's start → end location. Classification is purely
+ * geometric: only shift arcs (pro/anti/float — adjacent points) carry an orbital
+ * sense, so static start positions and dash/hash legs naturally yield nulls.
  */
 export function deriveTnDFromPictograph(
   p: PictographData | null | undefined
@@ -111,10 +112,6 @@ export function deriveTnDFromPictograph(
   const blue = p?.motions?.[MotionColor.BLUE];
   const red = p?.motions?.[MotionColor.RED];
   if (!blue || !red) return NULL_RESULT;
-
-  const isShift = (t: MotionType) =>
-    t === MotionType.PRO || t === MotionType.ANTI;
-  if (!isShift(blue.motionType) || !isShift(red.motionType)) return NULL_RESULT;
 
   return deriveTnD(
     blue.startLocation,
