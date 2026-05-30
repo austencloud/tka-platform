@@ -21,6 +21,7 @@ import { paintBackJob } from "./card-back/card-back-raster";
 import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
 import { getCardFrontWorkerPool } from "../../../shared/render/services/card-front-worker-pool";
 import { composeCardFrontParallel } from "../../../shared/render/services/compose-card-front-parallel";
+import { wrapContentInCardFrame } from "./card-front-frame";
 
 
 // MPC poker card defaults
@@ -29,78 +30,15 @@ const MPC_HEIGHT = 1122;
 const MPC_BLEED = 36;
 const CONTENT_WIDTH = MPC_WIDTH - MPC_BLEED * 2;   // 750
 
-// Colored frame thickness as a multiple of the print bleed. >1 pushes the
-// stripe border PAST the trim line into the safe area, so an imprecise cut
-// still lands on colored border instead of white content (cutting tolerance).
-// 1.3 = 30% thicker than the prior frame, which sat exactly on the 36px bleed.
-// Content (cells + header + footer) shrinks to fit the smaller inner area.
+// Colored frame thickness as a multiple of the print bleed. Must match the
+// frame module's BORDER_SCALE — both inset content by round(bleed * 1.3).
 const BORDER_SCALE = 1.3;
-
-const OUTER_RADIUS = 0;
-const INNER_RADIUS = 0;
 
 export class PrintCardRenderer {
   constructor(
     private readonly imageComposer: ImageComposer,
     private readonly theme: string = "cosmic"
   ) {}
-
-  /** Draw a rounded rectangle path (does not fill or stroke) */
-  private roundRectPath(
-    ctx: CanvasRenderingContext2D,
-    x: number, y: number, w: number, h: number, r: number
-  ): void {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, r);
-    ctx.closePath();
-  }
-
-  /** Fill the canvas with diagonal pinstripes */
-  private drawStripes(
-    ctx: CanvasRenderingContext2D,
-    w: number, h: number,
-    accent: string, dark: string,
-    stripeWidth: number = 6
-  ): void {
-    // Fill base with dark color
-    ctx.fillStyle = dark;
-    ctx.fillRect(0, 0, w, h);
-
-    // Draw diagonal accent stripes
-    ctx.fillStyle = accent;
-    const half = stripeWidth / 2;
-    const diagonal = Math.sqrt(w * w + h * h);
-    const count = Math.ceil(diagonal / stripeWidth) + 1;
-
-    ctx.save();
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate(-Math.PI / 4); // 45 degrees
-
-    for (let i = -count; i <= count; i++) {
-      const x = i * stripeWidth;
-      ctx.fillRect(x, -diagonal / 2, half, diagonal);
-    }
-    ctx.restore();
-  }
-
-  /** Draw the edge glow overlay */
-  private drawEdgeGlow(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-    const glowHeight = h * 0.2;
-
-    // Top glow
-    const topGrad = ctx.createLinearGradient(0, 0, 0, glowHeight);
-    topGrad.addColorStop(0, "rgba(255, 255, 255, 0.2)");
-    topGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
-    ctx.fillStyle = topGrad;
-    ctx.fillRect(0, 0, w, glowHeight);
-
-    // Bottom glow
-    const botGrad = ctx.createLinearGradient(0, h - glowHeight, 0, h);
-    botGrad.addColorStop(0, "rgba(255, 255, 255, 0)");
-    botGrad.addColorStop(1, "rgba(255, 255, 255, 0.2)");
-    ctx.fillStyle = botGrad;
-    ctx.fillRect(0, h - glowHeight, w, glowHeight);
-  }
 
   async renderFront(
     sequence: SequenceData,
@@ -182,42 +120,15 @@ export class PrintCardRenderer {
       sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
     }
 
-    // Build the card canvas
-    const mpcCanvas = document.createElement("canvas");
-    mpcCanvas.width = canvasW;
-    mpcCanvas.height = canvasH;
-    const ctx = mpcCanvas.getContext("2d")!;
-
-    const outerRadius = OUTER_RADIUS;
-    const innerRadius = INNER_RADIUS;
-
-    // 1. Clip to rounded outer card shape
-    ctx.save();
-    this.roundRectPath(ctx, 0, 0, canvasW, canvasH, outerRadius);
-    ctx.clip();
-
-    // 2. Draw stripe pattern across entire canvas
-    this.drawStripes(ctx, canvasW, canvasH, accent, dark);
-
-    // 3. Draw edge glow overlay
-    this.drawEdgeGlow(ctx, canvasW, canvasH);
-
-    // 4. Clip inner content area (rounded rect inset by the colored border)
-    ctx.save();
-    this.roundRectPath(ctx, border, border, contentW, contentH, innerRadius);
-    ctx.clip();
-
-    // 5. Fill inner area with white
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(border, border, contentW, contentH);
-
-    // 6. Draw sequence image - deckCard mode produces exact content dimensions, draw 1:1
-    ctx.drawImage(sequenceCanvas, border, border, contentW, contentH);
-
-    ctx.restore(); // inner clip
-    ctx.restore(); // outer clip
-
-    return mpcCanvas;
+    // Wrap the content in the MPC card frame (stripe border + edge glow +
+    // white inner area inset by the colored border). Single source of truth.
+    return wrapContentInCardFrame(sequenceCanvas, {
+      canvasWidth: canvasW,
+      canvasHeight: canvasH,
+      bleedPx: bleed,
+      accent,
+      dark,
+    });
   }
 
   async renderBack(
