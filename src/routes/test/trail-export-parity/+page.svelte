@@ -4,24 +4,20 @@
    *
    * Automated proof that the exported MP4's trails match the live render.
    *
-   * Pipeline per run:
-   *   1. Mount the live 2D animation engine (AnimatorCanvas) on a square canvas
-   *      with TRAILS enabled, header/glyph/progress hidden (pure trails frame).
-   *   2. Run the REAL video export (VideoExportOrchestrator) on it. A parity
-   *      hook in the orchestrator stashes a copy of the PRE-ENCODE composite
-   *      (window.__tka_parity_capture) for a strided sample of frames.
-   *   3. Decode the finished MP4 with mediabunny (VideoSampleSink) and pull the
-   *      decoded frame at each sampled timestamp.
-   *   4. Diff decoded-vs-preencode per frame: %pixels over tolerance + max
-   *      channel delta + red heatmap. The pre-encode composite was already
-   *      proven pixel-perfect against the live canvas, so this isolates pure
-   *      ENCODER fidelity.
+   * Pipeline per run (all phases reported through the ParityHarness progress bar):
+   *   1. Load a high-motion sequence into the offscreen live engine (trails on).
+   *   2. Warm the trail accumulator (play + loop 3s) to reproduce warm-state.
+   *   3. Run the REAL video export (VideoExportOrchestrator). A parity hook stashes
+   *      a copy of the PRE-ENCODE composite for a strided sample of frames.
+   *   4. Decode the finished MP4 (mediabunny) and diff decoded-vs-preencode per
+   *      frame → ENCODER gate (body, edges masked).
+   *   5. Re-render the sampled frames on the LIVE engine (resized to output res,
+   *      deterministic renderFrameSync drive) and diff offscreen-vs-live → LIVE
+   *      gate (the real test that the offscreen path didn't drop an effect).
    *
-   * Both sides are flattened over opaque black first — H.264 has no alpha, so
-   * the decoded frame is opaque; flattening the pre-encode the same way is the
-   * apples-to-apples comparison.
-   *
-   * Result is mirrored to window.__trailParityResult for headless inspection.
+   * The live engine is mounted OFFSCREEN: the live gate needs the real registered
+   * instance, but the viewer shouldn't watch it warm up and jump. Result mirrored
+   * to window.__trailParityResult for headless inspection.
    */
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -39,65 +35,32 @@
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { getRenderContextRegistry } from "$lib/shared/animation-engine/getRenderContextRegistry";
+  import { assembleExportEngineProps } from "$lib/shared/video-export/services/export-engine-props";
   import { Input, BufferSource, ALL_FORMATS, VideoSampleSink } from "mediabunny";
+  import ParityHarness from "$lib/shared/parity/ParityHarness.svelte";
+  import { diff, bodyDiff, flattenToCanvas, AA_TOLERANCE } from "$lib/shared/parity/image-diff";
+  import type { ParityRun, ParityRow, ParityVerdict } from "$lib/shared/parity/parity-types";
 
-  // ---- Tunables ----------------------------------------------------------
-  const AA_TOLERANCE = 8; // per-channel delta below which a pixel "matches"
+  // ---- Gate thresholds ---------------------------------------------------
   // Bit-exact parity vs a lossy codec is impossible — residual lives on hard
-  // edges (H.264 4:2:0 chroma). The meaningful test is BODY parity: diff only
-  // the interior with high-contrast edges masked out. Near-zero here proves the
-  // trail/prop body is clean and the residual is purely codec edge fringe.
-  const PASS_MAX_DELTA = 32; // body channel delta (edges excluded)
-  const PASS_DIFF_PCT = 0.5; // body % pixels over tolerance (edges excluded)
-  // Offscreen-vs-LIVE gate. This compares the deterministic offscreen export
-  // render against the LIVE rAF engine — the REAL test that the offscreen path
-  // didn't drop or mangle an effect (the pre-encode-vs-decoded diff can't see
-  // that, since both sides come from the offscreen path). The live frame is the
-  // small preview engine resized up to cap.w, accumulated frame-by-frame the
-  // rAF way (so trail density carries live's jitter, not the offscreen
-  // sub-stepper's pruned density). Because of that rAF-vs-substep difference,
-  // plus single-rAF settling per frame, this bound is deliberately looser than
-  // the encoder bound: a DROPPED or fundamentally wrong effect spikes far past
-  // these numbers, while honest density jitter stays under them.
+  // edges (4:2:0 chroma). The meaningful test is BODY parity: diff only the
+  // interior with high-contrast edges masked out.
+  const PASS_MAX_DELTA = 32; // body channel delta (edges excluded), encoder gate
+  const PASS_DIFF_PCT = 0.5; // body % pixels over tolerance, encoder gate
+  // Offscreen-vs-LIVE gate. Compares the deterministic offscreen export render
+  // against the REAL live engine driven through the same renderFrameSync path.
   const PASS_LIVE_MAX_DELTA = 40; // body channel delta, offscreen vs live
   const PASS_LIVE_DIFF_PCT = 1.0; // body % pixels over tolerance, offscreen vs live
 
   let word = $state("DJDJ");
   let resolution = $state<720 | 1080 | 2160>(1080);
-  let fps = $state(50);
+  // Default to the production export fps (VIDEO_EXPORT_FPS = 60). The trail
+  // overlay is render-cadence dependent, so the parity test runs at the same fps
+  // the shipped export uses.
+  let fps = $state(60);
   let codec = $state<"h264" | "av1">("av1");
-  let status = $state("idle");
-  let running = $state(false);
-  let canvas: HTMLCanvasElement | null = null;
-  let engineReady = $state(false);
 
-  type FrameRow = {
-    index: number;
-    timeSec: number;
-    diffPct: number;
-    maxDelta: number;
-    percDiffPct: number;
-    percMaxDelta: number;
-    // Offscreen-vs-live body diff for this frame (edges masked). Populated by the
-    // live-reference pass; 0/undefined until that pass runs.
-    liveDiffPct: number;
-    liveMaxDelta: number;
-    ref: HTMLCanvasElement;
-    dec: HTMLCanvasElement;
-    heat: HTMLCanvasElement;
-    // Live-rendered reference (offscreen size, flattened over black). Null until
-    // the live pass fills it.
-    live: HTMLCanvasElement | null;
-  };
-  let rows = $state<FrameRow[]>([]);
-  let verdict = $state<"" | "PASS" | "FAIL">("");
-  let worstDiffPct = $state(0); // full-res, edge-inclusive (informational)
-  let worstMaxDelta = $state(0);
-  let worstPercDiffPct = $state(0); // downscaled, body-only (verdict driver)
-  let worstPercMaxDelta = $state(0);
-  // Offscreen-vs-live worst-case (body, edges masked) — second verdict driver.
-  let worstLiveDiffPct = $state(0);
-  let worstLiveMaxDelta = $state(0);
+  let canvas: HTMLCanvasElement | null = null;
 
   // Per-instance playback stack (mirrors InlineAnimationPlayer).
   const animationState = createAnimationPanelState();
@@ -107,13 +70,6 @@
   // into the global visibility manager (CanvasSurface), so the export path's
   // applyEffectOverrides finds the same config.
   const effectsConfigState = createEffectsConfigState();
-  // Activate trails + wire the config into the global VM SYNCHRONOUSLY at script
-  // init, BEFORE AnimatorCanvas mounts. If trails aren't active when the engine
-  // initializes, the trail capturer/overlay aren't created, getRenderContext
-  // returns null, and the canvas never registers in the render-context registry
-  // — which means the export's resize + trail-reset (keyed off liveContext)
-  // would silently no-op (production wires this pre-init; the bare test page
-  // must match).
   effectsConfigState.setActiveEffect("trails");
   {
     const vm = getAnimationVisibilityManager();
@@ -134,18 +90,17 @@
     if (!seq?.steps?.length) return null;
     const idx = Math.min(
       Math.max(0, Math.floor(animationState.currentStep) - 1),
-      seq.steps.length - 1
+      seq.steps.length - 1,
     );
     return seq.steps[idx]?.letter ?? null;
   });
   let currentStepData = $derived.by(() => {
     const seq = animationState.sequenceData;
     if (!seq?.steps?.length) return null;
-    if (animationState.currentStep < 1 && seq.startPosition)
-      return seq.startPosition;
+    if (animationState.currentStep < 1 && seq.startPosition) return seq.startPosition;
     const idx = Math.min(
       Math.max(0, Math.floor(animationState.currentStep) - 1),
-      seq.steps.length - 1
+      seq.steps.length - 1,
     );
     return seq.steps[idx] ?? null;
   });
@@ -155,12 +110,8 @@
     const propInterpolator = getPropInterpolator();
     const stateManager = new AnimationStateManager();
     const loop = new AnimationLoop();
-    const orchestrator = new SequenceAnimationOrchestrator(
-      stateManager,
-      propInterpolator
-    );
+    const orchestrator = new SequenceAnimationOrchestrator(stateManager, propInterpolator);
     playbackController = new AnimationPlaybackController(orchestrator, loop);
-    // Trails + chrome-hiding configured synchronously at script init (above).
   });
 
   onDestroy(() => {
@@ -176,7 +127,6 @@
 
   async function loadSequence(): Promise<boolean> {
     const wanted = word.trim();
-    status = `loading sequence "${wanted}"…`;
     const repo = getSequenceRepository();
     const loader = new PublicSequencesLoader();
 
@@ -188,10 +138,7 @@
 
     // 2) Fallback: scan public sequences and pick the one with the MOST steps —
     //    more steps = more prop travel = the big sweeping trails we need to test.
-    //    (The previous "first match" grabbed a near-static sequence with no
-    //    real ribbons, which is exactly what made the last run meaningless.)
     if (!hasMotion(seq)) {
-      status = `"${wanted}" not found — scanning public for a high-motion sequence…`;
       const meta = await loader.loadSequenceMetadata();
       let best: SequenceData | null = null;
       let bestSteps = 0;
@@ -208,16 +155,10 @@
       }
     }
 
-    if (!hasMotion(seq)) {
-      status = `no sequence with motion data available`;
-      return false;
-    }
+    if (!hasMotion(seq)) return false;
     loadedSequence = seq;
     const ok = playbackController!.initialize(seq, animationState);
-    if (!ok) {
-      status = "playback init failed";
-      return false;
-    }
+    if (!ok) return false;
     // Let the live engine mount + warm up its trail accumulator.
     await raf();
     await raf();
@@ -229,160 +170,17 @@
     return new Promise((r) => requestAnimationFrame(() => r()));
   }
 
-  // Flatten an RGBA buffer over opaque black into a fresh canvas — mirrors
-  // exactly what the H.264 encoder receives (alpha dropped over black).
-  function flattenToCanvas(
-    data: Uint8ClampedArray,
-    w: number,
-    h: number
-  ): HTMLCanvasElement {
-    const tmp = document.createElement("canvas");
-    tmp.width = w;
-    tmp.height = h;
-    const tctx = tmp.getContext("2d")!;
-    const img = tctx.createImageData(w, h);
-    img.data.set(data);
-    tctx.putImageData(img, 0, 0);
-
-    const out = document.createElement("canvas");
-    out.width = w;
-    out.height = h;
-    const ctx = out.getContext("2d")!;
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, w, h);
-    ctx.drawImage(tmp, 0, 0); // source-over blends straight alpha over black
-    return out;
-  }
-
-  // Body-only diff: exclude high-contrast EDGES of the reference (where H.264
-  // 4:2:0 always fringes, irreducibly) and measure divergence on the remaining
-  // interior — the trail/prop BODY. Near-zero here = body parity is exact and
-  // the only residual is codec edge fringe.
-  const EDGE_LUMA_THRESH = 48; // neighbor luma jump that marks an edge
-  const EDGE_DILATE = 2; // px halo around edges to also exclude
-
-  function bodyDiff(
-    refC: HTMLCanvasElement,
-    decC: HTMLCanvasElement,
-    w: number,
-    h: number
-  ): { bodyDiffPct: number; bodyMaxDelta: number; edgePct: number } {
-    const a = refC.getContext("2d")!.getImageData(0, 0, w, h).data;
-    const b = decC.getContext("2d")!.getImageData(0, 0, w, h).data;
-    const n = w * h;
-    const luma = new Float32Array(n);
-    for (let p = 0; p < n; p++) {
-      const i = p * 4;
-      luma[p] = 0.299 * a[i]! + 0.587 * a[i + 1]! + 0.114 * a[i + 2]!;
-    }
-    // Edge bitmap from reference luma (4-neighbour gradient).
-    let edge = new Uint8Array(n);
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const p = y * w + x;
-        const l = luma[p]!;
-        let isEdge = 0;
-        if (x > 0 && Math.abs(l - luma[p - 1]!) > EDGE_LUMA_THRESH) isEdge = 1;
-        else if (x < w - 1 && Math.abs(l - luma[p + 1]!) > EDGE_LUMA_THRESH) isEdge = 1;
-        else if (y > 0 && Math.abs(l - luma[p - w]!) > EDGE_LUMA_THRESH) isEdge = 1;
-        else if (y < h - 1 && Math.abs(l - luma[p + w]!) > EDGE_LUMA_THRESH) isEdge = 1;
-        edge[p] = isEdge;
-      }
-    }
-    // Dilate the edge mask by EDGE_DILATE px (separable 4-neighbour passes).
-    for (let d = 0; d < EDGE_DILATE; d++) {
-      const next = new Uint8Array(edge);
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const p = y * w + x;
-          if (edge[p]) continue;
-          if (
-            (x > 0 && edge[p - 1]) ||
-            (x < w - 1 && edge[p + 1]) ||
-            (y > 0 && edge[p - w]) ||
-            (y < h - 1 && edge[p + w])
-          )
-            next[p] = 1;
-        }
-      }
-      edge = next;
-    }
-    let edgeCount = 0;
-    let bodyCount = 0;
-    let differing = 0;
-    let bodyMaxDelta = 0;
-    for (let p = 0; p < n; p++) {
-      if (edge[p]) {
-        edgeCount++;
-        continue;
-      }
-      bodyCount++;
-      const i = p * 4;
-      const dr = Math.abs(a[i]! - b[i]!);
-      const dg = Math.abs(a[i + 1]! - b[i + 1]!);
-      const db = Math.abs(a[i + 2]! - b[i + 2]!);
-      const worst = Math.max(dr, dg, db);
-      if (worst > bodyMaxDelta) bodyMaxDelta = worst;
-      if (worst > AA_TOLERANCE) differing++;
-    }
-    return {
-      bodyDiffPct: bodyCount ? (differing / bodyCount) * 100 : 0,
-      bodyMaxDelta,
-      edgePct: (edgeCount / n) * 100,
-    };
-  }
-
-  function diff(
-    refC: HTMLCanvasElement,
-    decC: HTMLCanvasElement,
-    w: number,
-    h: number
-  ): { diffPct: number; maxDelta: number; heat: HTMLCanvasElement } {
-    const a = refC.getContext("2d")!.getImageData(0, 0, w, h);
-    const b = decC.getContext("2d")!.getImageData(0, 0, w, h);
-    const heat = document.createElement("canvas");
-    heat.width = w;
-    heat.height = h;
-    const hctx = heat.getContext("2d")!;
-    const out = hctx.createImageData(w, h);
-
-    let differing = 0;
-    let maxDelta = 0;
-    const total = w * h;
-    for (let i = 0; i < a.data.length; i += 4) {
-      const dr = Math.abs(a.data[i]! - b.data[i]!);
-      const dg = Math.abs(a.data[i + 1]! - b.data[i + 1]!);
-      const db = Math.abs(a.data[i + 2]! - b.data[i + 2]!);
-      const worst = Math.max(dr, dg, db);
-      if (worst > maxDelta) maxDelta = worst;
-      if (worst > AA_TOLERANCE) {
-        differing++;
-        out.data[i] = 255;
-        out.data[i + 1] = 0;
-        out.data[i + 2] = 0;
-        out.data[i + 3] = 255;
-      } else {
-        const g = (a.data[i]! + a.data[i + 1]! + a.data[i + 2]!) / 3;
-        out.data[i] = out.data[i + 1] = out.data[i + 2] = g * 0.4;
-        out.data[i + 3] = 255;
-      }
-    }
-    hctx.putImageData(out, 0, 0);
-    return { diffPct: (differing / total) * 100, maxDelta, heat };
-  }
-
   // -------------------------------------------------------------------------
   // Live-reference pass support.
   // -------------------------------------------------------------------------
 
-  // Re-implements the orchestrator's frame→beat math (video-export-orchestrator
-  // .ts timeToBeat) so the live pass lands on the SAME playback position the
-  // offscreen export used for each frame index. Variable step durations map
-  // proportionally onto frames.
+  // Re-implements the orchestrator's frame→beat math (timeToBeat) so the live
+  // pass lands on the SAME playback position the offscreen export used for each
+  // frame index. Variable step durations map proportionally onto frames.
   function timeToBeatLive(
     timeProgress: number,
     cumulativeDurations: number[],
-    stepDurations: number[]
+    stepDurations: number[],
   ): number {
     const stepCount = stepDurations.length;
     if (stepCount === 0) return 0;
@@ -397,18 +195,15 @@
     return 0;
   }
 
-  // Find the LIVE render context for the on-screen AnimatorCanvas. Used to
-  // resize the live render to the offscreen frame size (cap.w) for a fair diff,
-  // and to reset its trail accumulator before the live pass.
+  // Find the LIVE render context for the offscreen AnimatorCanvas.
   function findLiveContext() {
     const reg = getRenderContextRegistry();
     return reg.getAll().find((c) => c.canvas === canvas) ?? null;
   }
 
-  // Composite the live main canvas + its overlay siblings (trail/effect layers)
-  // onto a square `size`×`size` canvas flattened over opaque black — mirroring
-  // how the offscreen pre-encode frame is flattened. Mirrors the orchestrator's
-  // sibling-canvas enumeration (container.querySelectorAll("canvas")).
+  // Composite the live main canvas + its overlay siblings onto a square
+  // `size`×`size` canvas flattened over opaque black — mirroring how the
+  // offscreen pre-encode frame is flattened.
   function compositeLiveToCanvas(size: number): HTMLCanvasElement {
     const out = document.createElement("canvas");
     out.width = size;
@@ -419,39 +214,30 @@
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     const container = canvas?.parentElement;
-    // Draw the main canvas first, then overlays in DOM order on top — the same
-    // stacking the live compositor presents to the user.
     if (canvas && canvas.width > 0 && canvas.height > 0) {
       ctx.drawImage(canvas, 0, 0, size, size);
     }
     if (container) {
       for (const layer of container.querySelectorAll("canvas")) {
         if (layer === canvas) continue;
-        if (layer.width > 0 && layer.height > 0)
-          ctx.drawImage(layer, 0, 0, size, size);
+        if (layer.width > 0 && layer.height > 0) ctx.drawImage(layer, 0, 0, size, size);
       }
     }
     return out;
   }
 
-  // Drive the LIVE rAF engine through the full timeline frame-by-frame,
+  // Drive the LIVE engine through the full timeline frame-by-frame,
   // accumulating trails the real way, and snapshot a live-rendered reference at
-  // each sampled frame index. Returns liveRef keyed by frame index (offscreen
-  // size, flattened over black).
-  //
-  // Sizing approach: OPTION (a) — resize the live render context up to `size`
-  // (= cap.w) so the live render is native-resolution, NOT a preview upscale.
-  // restoreSize() in the caller's finally puts the preview back.
+  // each sampled frame index. Resizes the live ctx up to `size` (caller restores).
   async function renderLiveReference(
     size: number,
-    sampledIndices: Set<number>
+    sampledIndices: Set<number>,
+    onFrame: (current: number, total: number) => void,
+    signal: AbortSignal,
   ): Promise<Record<number, HTMLCanvasElement>> {
     const liveRef: Record<number, HTMLCanvasElement> = {};
     if (!loadedSequence || !playbackController) return liveRef;
 
-    // Mirror the orchestrator's timeline math (same option values passed to
-    // executeExport: loopCount 1, includeAnimationStartPosition true,
-    // includeEndHold true). speed is read from the same panel state.
     const steps = animationState.sequenceData?.steps ?? [];
     const stepDurations = steps.map((s) => s.duration ?? 1);
     const totalDurationUnits =
@@ -484,7 +270,13 @@
     playbackController.jumpToStep(0);
     await raf();
 
+    // Drive the live engine DETERMINISTICALLY, mirroring the offscreen export:
+    // stop its free-running rAF loop and render each frame synchronously at a
+    // fixed 1/fps virtual clock via renderFrameSync (engine.renderFrame).
+    liveCtx?.renderLoop.stop();
+    const stepSeconds = 1 / fps;
     for (let i = 0; i < totalFrames; i++) {
+      if (signal.aborted) break;
       const timeProgress = (i / totalFrames) * totalDurationWithHolds;
       const virtualTimeMs = (i / fps) * 1000;
 
@@ -495,23 +287,25 @@
         playbackPosition = steps.length + 1;
       } else {
         const motionTime = timeProgress - motionStart;
-        const wrappedMotionTime =
-          totalDurationUnits > 0 ? motionTime % totalDurationUnits : 0;
-        const rawStep = timeToBeatLive(
-          wrappedMotionTime,
-          cumulativeDurations,
-          stepDurations
-        );
+        const wrappedMotionTime = totalDurationUnits > 0 ? motionTime % totalDurationUnits : 0;
+        const rawStep = timeToBeatLive(wrappedMotionTime, cumulativeDurations, stepDurations);
         playbackPosition = rawStep + 1;
       }
 
-      // Drive the live engine: set the virtual clock (trail timing) + the beat
-      // position, then await ONE rAF so the live render loop paints the new
-      // prop state and stamps its trail point the real (jittery) way.
-      animationState.setVirtualTime(virtualTimeMs);
       playbackController.calculateStateForStep(playbackPosition);
-      await raf();
+      const props = assembleExportEngineProps(animationState, {
+        virtualTime: virtualTimeMs,
+        isSeamlesslyLoopable: playbackController.isSeamlesslyLoopable,
+        backgroundAlpha: 1,
+        showNonRadialPoints: true,
+        trailSettings: animationSettings.trail,
+        bluePropType: null,
+        redPropType: null,
+        previewDarkMode: null,
+      });
+      liveCtx?.renderFrameSync(props, virtualTimeMs, stepSeconds);
 
+      onFrame(i + 1, totalFrames);
       if (sampledIndices.has(i)) {
         liveRef[i] = compositeLiveToCanvas(size);
       }
@@ -520,370 +314,321 @@
     return liveRef;
   }
 
-  async function run() {
-    if (running) return;
-    running = true;
-    rows = [];
-    verdict = "";
-    worstDiffPct = 0;
-    worstMaxDelta = 0;
-    worstPercDiffPct = 0;
-    worstPercMaxDelta = 0;
-    worstLiveDiffPct = 0;
-    worstLiveMaxDelta = 0;
-    (window as unknown as Record<string, unknown>).__trailParityResult =
-      undefined;
-
-    try {
-      if (!(await loadSequence())) return;
-
-      // Warm the trail accumulator the way a real user does — play and LOOP for
-      // a few seconds so the buffer holds a full ribbon (and a loop seam) before
-      // export. This reproduces the "stub already attached at frame 0" bug and
-      // verifies the export-start trail reset actually wipes it.
-      animationState.setShouldLoop(true);
-      playbackController!.togglePlayback();
-      status = "warming trail accumulator (play + loop 3s)…";
-      await new Promise((r) => setTimeout(r, 3000));
-      if (animationState.isPlaying) playbackController!.togglePlayback();
-      await raf();
-
-      // Silence the orchestrator's DEV PNG dump during parity runs.
-      (window as unknown as Record<string, unknown>).__tka_export_frame_dump =
-        -1;
-
-      // Arm the pre-encode capture: every Nth frame, cap the count.
-      const stride = Math.max(1, Math.round(fps / 3));
-      const capture = { stride, max: 16, captured: {} as Record<number, { w: number; h: number; data: Uint8ClampedArray }> };
-      (window as unknown as Record<string, unknown>).__tka_parity_capture =
-        capture;
-
-      status = "exporting (driving live engine + encoding)…";
-      const orchestrator = getVideoExportOrchestrator();
-      const blob = await orchestrator.executeExport(
-        canvas!,
-        playbackController!,
-        animationState,
-        (p) => {
-          if (p.stage === "capturing" && p.totalFrames)
-            status = `capturing ${p.currentFrame}/${p.totalFrames}…`;
-          else status = `export: ${p.stage}`;
-        },
-        {
-          format: "mp4",
-          codec,
-          resolution,
-          fps,
-          loopCount: 1,
-          effectOverrides: { trails: true },
-          includeAnimationStartPosition: true,
-          includeEndHold: true,
+  function makeRun(): ParityRun {
+    const cfg = { resolution, fps, codec };
+    return {
+      async run(ctx) {
+        ctx.onProgress({ phase: "loading sequence", detail: word.trim() });
+        if (!(await loadSequence())) {
+          return {
+            verdict: "FAIL",
+            summary: "no sequence with motion data",
+            gates: [],
+            result: { error: "load failed" },
+          };
         }
-      );
 
-      const captured = capture.captured;
-      const indices = Object.keys(captured)
-        .map(Number)
-        .sort((a, b) => a - b);
-      if (indices.length === 0) {
-        status = "no frames captured — export produced 0 sampled frames";
-        return;
-      }
-
-      status = `decoding MP4 (${(blob.size / 1e6).toFixed(1)} MB) and diffing ${indices.length} frames…`;
-      const buf = await blob.arrayBuffer();
-      const input = new Input({
-        formats: ALL_FORMATS,
-        source: new BufferSource(buf),
-      });
-      const track = await input.getPrimaryVideoTrack();
-      if (!track) {
-        status = "decode failed: no video track in MP4";
-        return;
-      }
-      const sink = new VideoSampleSink(track);
-
-      const newRows: FrameRow[] = [];
-      for (const idx of indices) {
-        const cap = captured[idx]!;
-        const timeSec = idx / fps;
-        const sample = await sink.getSample(timeSec);
-        if (!sample) continue;
-
-        const ref = flattenToCanvas(cap.data, cap.w, cap.h);
-
-        const dec = document.createElement("canvas");
-        dec.width = cap.w;
-        dec.height = cap.h;
-        const dctx = dec.getContext("2d")!;
-        dctx.fillStyle = "#000";
-        dctx.fillRect(0, 0, cap.w, cap.h);
-        // Draw decoded frame scaled to the reference size (1:1 when dims match).
-        dctx.drawImage(sample.toCanvasImageSource(), 0, 0, cap.w, cap.h);
-        sample.close();
-
-        const { diffPct, maxDelta, heat } = diff(ref, dec, cap.w, cap.h);
-        // Body-only diff (edges excluded) — the verdict driver.
-        const body = bodyDiff(ref, dec, cap.w, cap.h);
-        worstDiffPct = Math.max(worstDiffPct, diffPct);
-        worstMaxDelta = Math.max(worstMaxDelta, maxDelta);
-        worstPercDiffPct = Math.max(worstPercDiffPct, body.bodyDiffPct);
-        worstPercMaxDelta = Math.max(worstPercMaxDelta, body.bodyMaxDelta);
-        newRows.push({
-          index: idx,
-          timeSec,
-          diffPct,
-          maxDelta,
-          percDiffPct: body.bodyDiffPct,
-          percMaxDelta: body.bodyMaxDelta,
-          liveDiffPct: 0,
-          liveMaxDelta: 0,
-          ref,
-          dec,
-          heat,
-          live: null,
-        });
-        rows = [...newRows];
-      }
-
-      input.dispose();
-
-      // ---------------------------------------------------------------------
-      // LIVE-REFERENCE PASS — the REAL effect-fidelity gate.
-      //
-      // The pre-encode-vs-decoded diff above only exercises the ENCODER: both
-      // sides originate from the offscreen render, so a wrong/missing effect in
-      // the offscreen path stays invisible there. Here we re-render the SAME
-      // sampled frames on the LIVE rAF engine (sized up to the offscreen frame
-      // size) and diff offscreen-pre-encode vs live. A dropped trail or wrong
-      // density spikes THIS diff.
-      // ---------------------------------------------------------------------
-      const firstCap = captured[indices[0]!]!;
-      const liveSize = firstCap.w;
-      status = `live-reference pass: rendering ${indices.length} frames at ${liveSize}px on the live engine…`;
-
-      const liveCtx = findLiveContext();
-      const didResize = !!liveCtx;
-      let liveRef: Record<number, HTMLCanvasElement> = {};
-      try {
-        // OPTION (a): resize the live render context up to the offscreen frame
-        // size so we diff native-res live vs native-res offscreen (no preview
-        // upscale blur muddying the comparison).
-        liveCtx?.resize(liveSize);
+        // Warm the accumulator (indeterminate) — reproduces the warm-state the
+        // export-start reset must wipe.
+        animationState.setShouldLoop(true);
+        playbackController!.togglePlayback();
+        ctx.onProgress({ phase: "warming trail accumulator", detail: "play + loop 3s" });
+        await new Promise((r) => setTimeout(r, 3000));
+        if (animationState.isPlaying) playbackController!.togglePlayback();
         await raf();
-        liveRef = await renderLiveReference(liveSize, new Set(indices));
-      } finally {
-        // ALWAYS restore the preview size so the on-screen live engine isn't
-        // left rendering at export resolution.
-        if (didResize) {
-          liveCtx!.restoreSize();
-          await raf();
+
+        // Silence the orchestrator's DEV PNG dump during parity runs.
+        (window as unknown as Record<string, unknown>).__tka_export_frame_dump = -1;
+        const stride = Math.max(1, Math.round(cfg.fps / 3));
+        const capture = {
+          stride,
+          max: 16,
+          captured: {} as Record<number, { w: number; h: number; data: Uint8ClampedArray }>,
+        };
+        (window as unknown as Record<string, unknown>).__tka_parity_capture = capture;
+
+        try {
+          const orchestrator = getVideoExportOrchestrator();
+          const blob = await orchestrator.executeExport(
+            canvas!,
+            playbackController!,
+            animationState,
+            (p) => {
+              if (p.stage === "capturing" && p.totalFrames)
+                ctx.onProgress({ phase: "exporting", current: p.currentFrame, total: p.totalFrames });
+              else ctx.onProgress({ phase: "exporting", detail: p.stage });
+            },
+            {
+              format: "mp4",
+              codec: cfg.codec,
+              resolution: cfg.resolution,
+              fps: cfg.fps,
+              loopCount: 1,
+              effectOverrides: { trails: true },
+              includeAnimationStartPosition: true,
+              includeEndHold: true,
+            },
+          );
+
+          const captured = capture.captured;
+          const indices = Object.keys(captured)
+            .map(Number)
+            .sort((a, b) => a - b);
+          if (indices.length === 0) {
+            return {
+              verdict: "FAIL",
+              summary: "export produced 0 sampled frames",
+              gates: [],
+              result: { error: "no frames captured" },
+            };
+          }
+
+          ctx.onProgress({ phase: "decoding MP4", detail: `${(blob.size / 1e6).toFixed(1)} MB` });
+          const buf = await blob.arrayBuffer();
+          const input = new Input({ formats: ALL_FORMATS, source: new BufferSource(buf) });
+          const track = await input.getPrimaryVideoTrack();
+          if (!track) {
+            input.dispose();
+            return {
+              verdict: "FAIL",
+              summary: "no video track in MP4",
+              gates: [],
+              result: { error: "decode failed" },
+            };
+          }
+          const sink = new VideoSampleSink(track);
+
+          let worstDiffPct = 0,
+            worstMaxDelta = 0,
+            worstPercDiffPct = 0,
+            worstPercMaxDelta = 0;
+          const frameMeta: Record<
+            number,
+            {
+              ref: HTMLCanvasElement;
+              dec: HTMLCanvasElement;
+              heat: HTMLCanvasElement;
+              percDiffPct: number;
+              percMaxDelta: number;
+              diffPct: number;
+              maxDelta: number;
+            }
+          > = {};
+
+          let decoded = 0;
+          for (const idx of indices) {
+            if (ctx.signal.aborted) break;
+            const cap = captured[idx]!;
+            const timeSec = idx / cfg.fps;
+            ctx.onProgress({ phase: "decoding + diffing", current: ++decoded, total: indices.length });
+            const sample = await sink.getSample(timeSec);
+            if (!sample) continue;
+            const ref = flattenToCanvas(cap.data, cap.w, cap.h);
+            const dec = document.createElement("canvas");
+            dec.width = cap.w;
+            dec.height = cap.h;
+            const dctx = dec.getContext("2d")!;
+            dctx.fillStyle = "#000";
+            dctx.fillRect(0, 0, cap.w, cap.h);
+            dctx.drawImage(sample.toCanvasImageSource(), 0, 0, cap.w, cap.h);
+            sample.close();
+            const d = diff(ref, dec, cap.w, cap.h);
+            const body = bodyDiff(ref, dec, cap.w, cap.h);
+            worstDiffPct = Math.max(worstDiffPct, d.diffPct);
+            worstMaxDelta = Math.max(worstMaxDelta, d.maxDelta);
+            worstPercDiffPct = Math.max(worstPercDiffPct, body.bodyDiffPct);
+            worstPercMaxDelta = Math.max(worstPercMaxDelta, body.bodyMaxDelta);
+            frameMeta[idx] = {
+              ref,
+              dec,
+              heat: d.heat,
+              percDiffPct: body.bodyDiffPct,
+              percMaxDelta: body.bodyMaxDelta,
+              diffPct: d.diffPct,
+              maxDelta: d.maxDelta,
+            };
+          }
+          input.dispose();
+
+          // LIVE-REFERENCE PASS — the real effect-fidelity gate.
+          const firstCap = captured[indices[0]!]!;
+          const liveSize = firstCap.w;
+          const liveCtx = findLiveContext();
+          const didResize = !!liveCtx;
+          let liveRef: Record<number, HTMLCanvasElement> = {};
+          let worstLiveDiffPct = 0,
+            worstLiveMaxDelta = 0;
+          try {
+            liveCtx?.resize(liveSize);
+            await raf();
+            liveRef = await renderLiveReference(
+              liveSize,
+              new Set(indices),
+              (c, t) => ctx.onProgress({ phase: "live-reference pass", current: c, total: t }),
+              ctx.signal,
+            );
+          } finally {
+            if (didResize) {
+              liveCtx!.restoreSize();
+              await raf();
+            }
+          }
+
+          for (const idx of indices) {
+            const meta = frameMeta[idx];
+            if (!meta) continue;
+            const live = liveRef[idx] ?? null;
+            let liveDiffPct = 0,
+              liveMaxDelta = 0;
+            if (live) {
+              const cap = captured[idx]!;
+              const offscreenRef = flattenToCanvas(cap.data, cap.w, cap.h);
+              const lb = bodyDiff(offscreenRef, live, cap.w, cap.h);
+              liveDiffPct = lb.bodyDiffPct;
+              liveMaxDelta = lb.bodyMaxDelta;
+              worstLiveDiffPct = Math.max(worstLiveDiffPct, liveDiffPct);
+              worstLiveMaxDelta = Math.max(worstLiveMaxDelta, liveMaxDelta);
+            }
+            const cells = [
+              { label: "offscreen pre-encode", canvas: meta.ref },
+              ...(live ? [{ label: "live render", canvas: live }] : []),
+              { label: "decoded MP4", canvas: meta.dec },
+              { label: `encoder diff (red Δ>${AA_TOLERANCE})`, canvas: meta.heat },
+            ];
+            const row: ParityRow = {
+              id: idx,
+              title: `frame ${idx} · t=${(idx / cfg.fps).toFixed(3)}s`,
+              metrics: {
+                "live %": liveDiffPct,
+                "liveΔ": liveMaxDelta,
+                "enc %": meta.percDiffPct,
+                "encΔ": meta.percMaxDelta,
+              },
+              bad: liveDiffPct > PASS_LIVE_DIFF_PCT || meta.percDiffPct > PASS_DIFF_PCT,
+              cells,
+            };
+            ctx.addRow(row);
+          }
+
+          const encoderPass =
+            worstPercDiffPct <= PASS_DIFF_PCT && worstPercMaxDelta <= PASS_MAX_DELTA;
+          const livePass =
+            worstLiveDiffPct <= PASS_LIVE_DIFF_PCT && worstLiveMaxDelta <= PASS_LIVE_MAX_DELTA;
+          const verdict: ParityVerdict["verdict"] = encoderPass && livePass ? "PASS" : "FAIL";
+          return {
+            verdict,
+            summary: `live ${worstLiveDiffPct.toFixed(3)}% Δ${worstLiveMaxDelta} · encoder ${worstPercDiffPct.toFixed(3)}% Δ${worstPercMaxDelta} · full-res ${worstDiffPct.toFixed(3)}% Δ${worstMaxDelta}`,
+            gates: [
+              {
+                label: "live (offscreen vs live)",
+                pass: livePass,
+                detail: `${worstLiveDiffPct.toFixed(3)}% Δ${worstLiveMaxDelta} (≤${PASS_LIVE_DIFF_PCT}% Δ${PASS_LIVE_MAX_DELTA})`,
+              },
+              {
+                label: "encoder (pre-encode vs decoded)",
+                pass: encoderPass,
+                detail: `${worstPercDiffPct.toFixed(3)}% Δ${worstPercMaxDelta} (≤${PASS_DIFF_PCT}% Δ${PASS_MAX_DELTA})`,
+              },
+            ],
+            result: {
+              word: word.trim(),
+              resolution: cfg.resolution,
+              fps: cfg.fps,
+              codec: cfg.codec,
+              verdict,
+              encoderPass,
+              livePass,
+              live: { worstDiffPct: worstLiveDiffPct, worstMaxDelta: worstLiveMaxDelta },
+              perceptual: { worstDiffPct: worstPercDiffPct, worstMaxDelta: worstPercMaxDelta },
+              fullRes: { worstDiffPct, worstMaxDelta },
+            },
+          };
+        } finally {
+          (window as unknown as Record<string, unknown>).__tka_parity_capture = undefined;
         }
-      }
-
-      for (const r of newRows) {
-        const cap = captured[r.index]!;
-        const live = liveRef[r.index];
-        if (!live) continue;
-        const offscreenRef = flattenToCanvas(cap.data, cap.w, cap.h);
-        const lb = bodyDiff(offscreenRef, live, cap.w, cap.h);
-        r.liveDiffPct = lb.bodyDiffPct;
-        r.liveMaxDelta = lb.bodyMaxDelta;
-        r.live = live;
-        worstLiveDiffPct = Math.max(worstLiveDiffPct, lb.bodyDiffPct);
-        worstLiveMaxDelta = Math.max(worstLiveMaxDelta, lb.bodyMaxDelta);
-      }
-      rows = [...newRows];
-
-      // PASS now requires BOTH gates: the encoder gate (pre-encode vs decoded)
-      // AND the live gate (offscreen vs live). The live gate is the one that
-      // catches a missing/wrong effect in the offscreen render.
-      const encoderPass =
-        worstPercDiffPct <= PASS_DIFF_PCT && worstPercMaxDelta <= PASS_MAX_DELTA;
-      const livePass =
-        worstLiveDiffPct <= PASS_LIVE_DIFF_PCT &&
-        worstLiveMaxDelta <= PASS_LIVE_MAX_DELTA;
-      verdict = encoderPass && livePass ? "PASS" : "FAIL";
-      status =
-        `done — ${verdict} | live(offscreen vs live, edges masked) ${worstLiveDiffPct.toFixed(3)}% Δ${worstLiveMaxDelta} | ` +
-        `encoder body(edges masked) ${worstPercDiffPct.toFixed(3)}% Δ${worstPercMaxDelta} | ` +
-        `full-res(edge-incl) ${worstDiffPct.toFixed(3)}% Δ${worstMaxDelta}`;
-
-      (window as unknown as Record<string, unknown>).__trailParityResult = {
-        word,
-        resolution,
-        fps,
-        codec,
-        verdict,
-        encoderPass,
-        livePass,
-        // Offscreen render vs LIVE engine (the real effect-fidelity gate).
-        live: {
-          worstDiffPct: worstLiveDiffPct,
-          worstMaxDelta: worstLiveMaxDelta,
-          passMaxDelta: PASS_LIVE_MAX_DELTA,
-          passDiffPct: PASS_LIVE_DIFF_PCT,
-        },
-        perceptual: {
-          worstDiffPct: worstPercDiffPct,
-          worstMaxDelta: worstPercMaxDelta,
-        },
-        fullRes: { worstDiffPct, worstMaxDelta },
-        frames: newRows.map((r) => ({
-          index: r.index,
-          timeSec: r.timeSec,
-          diffPct: r.diffPct,
-          maxDelta: r.maxDelta,
-          percDiffPct: r.percDiffPct,
-          percMaxDelta: r.percMaxDelta,
-          liveDiffPct: r.liveDiffPct,
-          liveMaxDelta: r.liveMaxDelta,
-        })),
-      };
-    } catch (err) {
-      status = "error: " + (err instanceof Error ? err.message : String(err));
-      console.error("[trail-parity]", err);
-    } finally {
-      (window as unknown as Record<string, unknown>).__tka_parity_capture =
-        undefined;
-      running = false;
-    }
+      },
+    };
   }
 </script>
 
 <svelte:head><title>Trail Export Parity</title></svelte:head>
 
-<div class="page">
-  <h1>Trail Export Parity</h1>
-  <p class="sub">
-    Live render → real MP4 export → decode. Two gates: (1) ENCODER — pre-encode
-    vs decoded (Δ ≤ {PASS_MAX_DELTA}, ≤ {PASS_DIFF_PCT}%); (2) LIVE — offscreen
-    render vs the live rAF engine resized to output res, the real test that the
-    offscreen path didn't drop an effect (Δ ≤ {PASS_LIVE_MAX_DELTA}, ≤
-    {PASS_LIVE_DIFF_PCT}%). PASS requires both.
-  </p>
-
-  <div class="controls">
-    <label>Word <input bind:value={word} disabled={running} /></label>
+<ParityHarness
+  title="Trail Export Parity"
+  description={`Live render → real MP4 export → decode. Two gates: ENCODER (pre-encode vs decoded, edges masked, ≤${PASS_DIFF_PCT}% Δ${PASS_MAX_DELTA}) and LIVE (offscreen vs live engine at output res, edges masked, ≤${PASS_LIVE_DIFF_PCT}% Δ${PASS_LIVE_MAX_DELTA}). PASS requires both.`}
+  resultKey="trailParityResult"
+  run={makeRun}
+>
+  {#snippet controls()}
+    <label>Word <input bind:value={word} /></label>
     <label>
       Res
-      <select bind:value={resolution} disabled={running}>
+      <select bind:value={resolution}>
         <option value={720}>720</option>
         <option value={1080}>1080</option>
         <option value={2160}>2160 (4K)</option>
       </select>
     </label>
-    <label>FPS <input type="number" bind:value={fps} min="10" max="60" disabled={running} /></label>
+    <label>FPS <input type="number" bind:value={fps} min="10" max="60" /></label>
     <label>
       Codec
-      <select bind:value={codec} disabled={running}>
+      <select bind:value={codec}>
         <option value="h264">H.264 (4:2:0)</option>
         <option value="av1">AV1 (4:4:4)</option>
       </select>
     </label>
-    <button onclick={run} disabled={running || !engineReady}>
-      {running ? "running…" : "Run parity"}
-    </button>
-  </div>
+  {/snippet}
+</ParityHarness>
 
-  <div class="status" class:run={running}>{status}</div>
-
-  {#if verdict}
-    <div class="verdict" class:pass={verdict === "PASS"} class:fail={verdict === "FAIL"}>
-      {verdict} — live (offscreen vs live, edges masked) {worstLiveDiffPct.toFixed(3)}% · Δ{worstLiveMaxDelta}
-      <span class="sub2">
-        encoder (pre-encode vs decoded, edges masked): {worstPercDiffPct.toFixed(3)}% · Δ{worstPercMaxDelta}
-        · full-res (edge-inclusive): {worstDiffPct.toFixed(3)}% · Δ{worstMaxDelta}
-      </span>
-    </div>
-  {/if}
-
-  <!-- Live engine. Kept small on-screen; export drives it to output res. -->
-  <div class="live">
-    <span class="cap">live engine (trails)</span>
-    <div class="live-box">
-      <AnimatorCanvas
-        blueProp={animationState.bluePropState}
-        redProp={animationState.redPropState}
-        gridVisible={true}
-        {gridMode}
-        letter={currentLetter}
-        stepData={currentStepData}
-        sequenceData={animationState.sequenceData}
-        isPlaying={animationState.isPlaying}
-        trailSettings={animationSettings.trail}
-        {effectsConfigState}
-        virtualTime={animationState.virtualTime}
-        hideTkaGlyph={true}
-        hideStepNumbers={true}
-        hideProgressBar={true}
-        onCanvasReady={(c) => {
-          canvas = c;
-          engineReady = !!c;
-        }}
-      />
-    </div>
-  </div>
-
-  {#each rows as r (r.index)}
-    <div class="frame">
-      <div class="frame-head">
-        frame {r.index} · t={r.timeSec.toFixed(3)}s
-        · live {r.liveDiffPct.toFixed(3)}% Δ{r.liveMaxDelta}
-        · encoder {r.percDiffPct.toFixed(3)}% Δ{r.percMaxDelta}
-        · full-res {r.diffPct.toFixed(3)}% Δ{r.maxDelta}
-      </div>
-      <div class="triptych">
-        <figure><img src={r.ref.toDataURL()} alt="offscreen pre-encode" /><figcaption>offscreen pre-encode</figcaption></figure>
-        {#if r.live}
-          <figure><img src={r.live.toDataURL()} alt="live render" /><figcaption>live render</figcaption></figure>
-        {/if}
-        <figure><img src={r.dec.toDataURL()} alt="decoded" /><figcaption>decoded MP4</figcaption></figure>
-        <figure><img src={r.heat.toDataURL()} alt="diff" /><figcaption>encoder diff (red = Δ&gt;{AA_TOLERANCE})</figcaption></figure>
-      </div>
-    </div>
-  {/each}
+<!-- Real registered live engine, kept OFFSCREEN: the live gate diffs against this
+     actual instance, but the viewer shouldn't watch it warm up + jump. -->
+<div class="offscreen">
+  <AnimatorCanvas
+    blueProp={animationState.bluePropState}
+    redProp={animationState.redPropState}
+    gridVisible={true}
+    {gridMode}
+    letter={currentLetter}
+    stepData={currentStepData}
+    sequenceData={animationState.sequenceData}
+    isPlaying={animationState.isPlaying}
+    trailSettings={animationSettings.trail}
+    {effectsConfigState}
+    virtualTime={animationState.virtualTime}
+    hideTkaGlyph={true}
+    hideStepNumbers={true}
+    hideProgressBar={true}
+    onCanvasReady={(c) => {
+      canvas = c;
+    }}
+  />
 </div>
 
 <style>
-  .page {
-    padding: 20px;
-    background: #0d0d14;
+  .offscreen {
+    position: fixed;
+    left: -99999px;
+    top: -99999px;
+    width: 320px;
+    height: 320px;
+  }
+  :global(.controls label) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
     color: #eee;
-    min-height: 100vh;
-    font-family: system-ui, sans-serif;
   }
-  h1 { margin: 0 0 4px; }
-  .sub { color: #8a8aa0; margin: 0 0 16px; max-width: 60ch; font-size: 13px; }
-  .controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-  label { display: flex; align-items: center; gap: 6px; font-size: 14px; }
-  input, select {
-    background: #1c1c2e; color: #fff; border: 1px solid #444;
-    border-radius: 6px; padding: 6px 8px; font-size: 14px;
+  :global(.controls input),
+  :global(.controls select) {
+    background: #1c1c2e;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 14px;
   }
-  label input:not([type]) { width: 120px; }
-  input[type="number"] { width: 64px; }
-  button {
-    background: #4c6ef5; color: #fff; border: none; border-radius: 6px;
-    padding: 8px 18px; font-size: 14px; cursor: pointer;
+  :global(.controls input[type="number"]) {
+    width: 64px;
   }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  .status {
-    font-family: monospace; font-size: 13px; padding: 8px 12px;
-    background: #15152a; border-radius: 6px; margin-bottom: 12px;
-  }
-  .status.run { color: #ffd43b; }
-  .verdict { font-weight: 700; font-size: 18px; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; }
-  .verdict.pass { background: #133a1f; color: #51cf66; }
-  .verdict.fail { background: #3a1313; color: #ff6b6b; }
-  .verdict .sub2 { display: block; font-weight: 400; font-size: 12px; color: #9a9ab0; margin-top: 4px; }
-  .live { margin-bottom: 18px; }
-  .cap { font-size: 12px; color: #8a8aa0; }
-  .live-box { width: 320px; height: 320px; background: #000; border: 1px solid #333; border-radius: 8px; overflow: hidden; }
-  .frame { margin-bottom: 18px; border: 1px solid #2a2a40; border-radius: 8px; padding: 10px; background: #11111f; }
-  .frame-head { font-family: monospace; font-size: 12px; color: #b0b0c8; margin-bottom: 8px; }
-  .triptych { display: flex; gap: 12px; flex-wrap: wrap; }
-  figure { margin: 0; }
-  figure img { width: 280px; height: 280px; display: block; border: 1px solid #333; background: #000; }
-  figcaption { font-size: 11px; color: #888; margin-top: 4px; text-align: center; }
 </style>
