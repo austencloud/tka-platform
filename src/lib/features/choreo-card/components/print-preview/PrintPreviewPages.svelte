@@ -7,7 +7,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import type { CardPair } from "../../services/types";
   import type { PrintRenderOptions } from "../../services/types";
   import type { TnDElement } from "../../domain/tnd-element";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -15,7 +15,17 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { cardCache, type RenderedCard, type CachedCard } from "./print-preview-cache";
   import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
   import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
+  import { getCardAssetBundle } from "$lib/shared/render/services/get-card-asset-bundle";
+  import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
+  import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
+
+  // Render-schema version baked into every card cache key (memory + IndexedDB).
+  // Bump whenever the rendered pixels change for reasons NOT already captured by
+  // the keyed options below — e.g. the renderer now hides non-radial points or
+  // fits the elemental glyph to its natural aspect. Bumping rotates all keys so
+  // stale persisted renders (from older render logic) stop being served.
+  const CARD_RENDER_SCHEMA = "v2";
 
   interface Props {
     sequences: SequenceData[];
@@ -97,6 +107,11 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   let renderProgress = $state(0);
   let renderTotal = $state(0);
   let isRendering = $state(false);
+
+  // Tracks the theme/prop signature the worker pool was last seeded for. A change
+  // means the seeded SVG cache is stale, so the next render re-seeds (and drops
+  // the old pool). Empty string = no pool seeded yet.
+  let lastBundleKey = "";
 
   let layout = $derived(getPageLayout(cardSize));
   let sizeSpec = $derived(CARD_SIZES[cardSize]);
@@ -211,6 +226,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       ? getCatalogLayoutPolicy(stepCount)
       : "row";
     const optsPart = [
+      CARD_RENDER_SCHEMA,
       cardSize, theme, showGrid, showTKA, showWord,
       includeStartPosition, handPointsVisible,
       (tndElements?.[index]?.familyId ?? tndElement?.familyId ?? "none"),
@@ -352,6 +368,37 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     renderProgress = 0;
     renderedCards = [];
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
+
+    // Worker fast-path setup: probe once, build the deck's asset bundle, seed
+    // the worker pool. A theme/prop change invalidates the seeded SVG cache
+    // (keys are theme/color-hashed), so terminate the pool to force re-init +
+    // re-seed with the new bundle on the next compose.
+    try {
+      const workerOk = await CompositionDispatcher.probeWorkerSupport();
+      if (generation !== renderGeneration) return;
+      if (workerOk) {
+        // Match the renderer/preparer default (STAFF) when a prop is unset so the
+        // seeded SVG cache lines up with what the worker will request.
+        const bundleBlueProp = resolvedBlueProp ?? PropType.STAFF;
+        const bundleRedProp = resolvedRedProp ?? PropType.STAFF;
+        const bundleKey = `${theme}|${bundleBlueProp}|${bundleRedProp}`;
+        if (bundleKey !== lastBundleKey) {
+          const dispatcher = getCompositionDispatcher();
+          if (lastBundleKey !== "") dispatcher.terminate(); // drop stale-seeded workers
+          const bundle = await getCardAssetBundle(seqs, {
+            bluePropType: bundleBlueProp,
+            redPropType: bundleRedProp,
+            theme,
+          });
+          if (generation !== renderGeneration) return;
+          dispatcher.setAssetBundle(bundle);
+          lastBundleKey = bundleKey;
+        }
+      }
+    } catch (e) {
+      console.warn("[PrintPreview] worker bundle setup failed, main-thread path:", e);
+    }
+    if (generation !== renderGeneration) return;
 
     const renderer = getPrintCardRenderer();
     const cards: RenderedCard[] = new Array(seqs.length);
