@@ -1,12 +1,27 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { MandalaPathShape, MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
 import type {
+  MandalaPathShape,
+  MandalaPalette,
   MandalaColorMode,
   MandalaPresetId,
-} from "../components/MandalaViewerControls.svelte";
+} from "$lib/shared/mandala/domain/mandala-types";
 import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
-import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
-import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
+import {
+  deriveFrameMath,
+  renderMandalaFrameSVG,
+  type MandalaFrameSpec,
+  type MandalaFrameMath,
+} from "$lib/shared/mandala/services/mandala-frame-renderer";
+import type { MandalaExportOut } from "$lib/shared/mandala/workers/mandala-export.worker";
+import {
+  estimateExportTime,
+  recordExportThroughput,
+  hasDeviceMetrics,
+} from "$lib/shared/animation-panel/state/export-timing-tracker";
+
+export type MandalaExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
+export type MandalaExportResolution = 720 | 1080 | 2160;
+export type MandalaExportFps = 30 | 60;
 
 export interface MandalaControllerSources {
   getSequence: () => SequenceData;
@@ -17,6 +32,40 @@ export interface MandalaControllerSources {
 const BASE_PERIOD = 5;
 const COLOR_CYCLE_BREATHS = 3;
 const BG_COLOR = "#000000";
+
+const EXPORT_STORAGE_KEY = "tka_mandala_export";
+const BITRATE_BY_RES: Record<number, number> = {
+  720: 6_000_000,
+  1080: 12_000_000,
+  2160: 40_000_000,
+};
+
+function clampReps(n: number): number {
+  return Math.max(1, Math.min(10, Math.round(n)));
+}
+
+function loadExportConfig(): {
+  reps: number;
+  resolution: MandalaExportResolution;
+  fps: MandalaExportFps;
+} {
+  const def = { reps: 3, resolution: 1080 as MandalaExportResolution, fps: 60 as MandalaExportFps };
+  if (typeof localStorage === "undefined") return def;
+  try {
+    const raw = localStorage.getItem(EXPORT_STORAGE_KEY);
+    if (raw) {
+      const p = JSON.parse(raw) as Partial<typeof def>;
+      return {
+        reps: clampReps(p.reps ?? def.reps),
+        resolution: (p.resolution ?? def.resolution) as MandalaExportResolution,
+        fps: (p.fps ?? def.fps) as MandalaExportFps,
+      };
+    }
+  } catch {
+    // fall through to defaults
+  }
+  return def;
+}
 
 const PRESET_COLORS: Record<
   Exclude<MandalaPresetId, "custom">,
@@ -68,43 +117,6 @@ function sampleGradient(colors: string[], t: number): string {
   return lerpColor(colors[idx]!, colors[idx + 1]!, frac);
 }
 
-function breatheEase(t: number): number {
-  return Math.pow(Math.sin((t * Math.PI) / 2), 1.6);
-}
-
-function svgToCanvas(
-  svgStr: string,
-  canvas: HTMLCanvasElement,
-  rotDeg: number,
-  bg: string,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    img.onload = () => {
-      const ctx = canvas.getContext("2d")!;
-      const s = canvas.width;
-      ctx.clearRect(0, 0, s, s);
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, s, s);
-      ctx.save();
-      ctx.translate(s / 2, s / 2);
-      ctx.rotate((rotDeg * Math.PI) / 180);
-      ctx.translate(-s / 2, -s / 2);
-      ctx.drawImage(img, 0, 0, s, s);
-      ctx.restore();
-      URL.revokeObjectURL(url);
-      resolve();
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("SVG render failed"));
-    };
-    img.src = url;
-  });
-}
-
 /**
  * Shared animation + palette + export state for the mandala viewer.
  * Owns every tunable the controls expose so desktop (rail) and mobile
@@ -123,17 +135,63 @@ export class MandalaViewerController {
   lineWeight = $state(2.5);
   exporting = $state(false);
 
+  // Export config (persisted to localStorage).
+  exportReps = $state(3);
+  exportResolution = $state<MandalaExportResolution>(1080);
+  exportFps = $state<MandalaExportFps>(60);
+
+  // Export lifecycle (drives the fullscreen takeover).
+  exportPhase = $state<MandalaExportPhase>("idle");
+  exportProgress = $state(0);
+  exportError = $state<string | null>(null);
+
   readonly bgColor = BG_COLOR;
 
   #sources: MandalaControllerSources;
   #colorPhase = $state(0);
   #colorRafId = 0;
+  #worker: Worker | null = null;
+  #beforeUnload: ((e: BeforeUnloadEvent) => void) | null = null;
+  #cancelRequested = false;
+  #rasterCanvas: HTMLCanvasElement | null = null;
+  #rasterCtx: CanvasRenderingContext2D | null = null;
 
   period = $derived(BASE_PERIOD / this.speed);
   rangeMax = $derived(this.depth * 2.5);
 
+  // Device-calibrated estimate (seconds) for the current config + cycle length.
+  estimateSeconds = $derived(
+    estimateExportTime(this.exportResolution, this.exportFps, this.period, this.exportReps) ?? 0,
+  );
+  // True once we have real throughput samples for this resolution (vs fallback).
+  hasMetrics = $derived(hasDeviceMetrics(this.exportResolution));
+  // Total frames that will be encoded for the current config.
+  exportFrameCount = $derived(
+    Math.max(1, Math.ceil(this.period * this.exportFps)) * this.exportReps,
+  );
+
   constructor(sources: MandalaControllerSources) {
     this.#sources = sources;
+
+    const cfg = loadExportConfig();
+    this.exportReps = cfg.reps;
+    this.exportResolution = cfg.resolution;
+    this.exportFps = cfg.fps;
+
+    // Persist export config on change.
+    $effect(() => {
+      const snapshot = {
+        reps: this.exportReps,
+        resolution: this.exportResolution,
+        fps: this.exportFps,
+      };
+      if (typeof localStorage === "undefined") return;
+      try {
+        localStorage.setItem(EXPORT_STORAGE_KEY, JSON.stringify(snapshot));
+      } catch {
+        // ignore storage failures
+      }
+    });
 
     // Color-morph animation loop (flow mode only, paused respected).
     $effect(() => {
@@ -226,118 +284,244 @@ export class MandalaViewerController {
     };
   });
 
+  /** Legacy entry point (real viewer's side rail / download button). */
   async handleDownload(): Promise<void> {
+    this.startExport();
+  }
+
+  /**
+   * Export the mandala to an MP4. The main thread rasterizes each frame's SVG to
+   * an ImageBitmap (Chromium can't decode SVG in a Worker) and streams the
+   * bitmaps to a worker that composites the rotation and runs the heavy H.264
+   * encode off the main thread. `createImageBitmap` is async, so the live
+   * on-screen mandala keeps animating between frames.
+   */
+  startExport(): void {
     const sequence = this.#sources.getSequence();
-    if (this.exporting || !sequence?.steps) return;
+    if (
+      this.exporting ||
+      (this.exportPhase !== "idle" && this.exportPhase !== "complete" && this.exportPhase !== "error")
+    )
+      return;
+    if (!sequence?.steps) return;
+
+    this.exportError = null;
+    this.exportProgress = 0;
+    this.exportPhase = "capturing";
     this.exporting = true;
+    this.#cancelRequested = false;
+
+    const resolution = this.exportResolution;
+    const fps = this.exportFps;
+    const reps = this.exportReps;
+    const bitrate = BITRATE_BY_RES[resolution] ?? BITRATE_BY_RES[1080]!;
+    const startMs = performance.now();
+
+    const isFlow = this.colorMode === "flow";
+    // steps may be Svelte reactive proxies / domain class instances. JSON
+    // round-trip yields the plain data the geometry calc needs.
+    const plainSteps = JSON.parse(JSON.stringify(sequence.steps));
+    const spec: MandalaFrameSpec = {
+      steps: plainSteps,
+      bluePropType: this.#sources.getBluePropType(),
+      redPropType: this.#sources.getRedPropType(),
+      pathShape: this.pathShape,
+      lineWeight: this.lineWeight,
+      bgColor: this.bgColor,
+      resolution,
+      period: this.period,
+      reps,
+      fps,
+      rangeMax: this.rangeMax,
+      rotation: this.rotation,
+      morphColors: isFlow ? this.#getPresetMorph() : null,
+      solidPair: isFlow ? null : this.#getPresetPair(),
+    };
+
+    const math = deriveFrameMath(spec);
+    const totalFrames = math.totalFrames;
+
+    this.#beforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    if (typeof window !== "undefined") window.addEventListener("beforeunload", this.#beforeUnload);
+
+    const worker = new Worker(
+      new URL("../../mandala/workers/mandala-export.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    this.#worker = worker;
+
+    // Backpressure: keep at most MAX_INFLIGHT frames queued in the worker so a
+    // fast rasterizer can't pile thousands of bitmaps into worker memory.
+    const MAX_INFLIGHT = 12;
+    let encoded = 0;
+    let resume: (() => void) | null = null;
+
+    worker.onmessage = (e: MessageEvent<MandalaExportOut>) => {
+      const msg = e.data;
+      switch (msg.type) {
+        case "ready":
+          void this.#pumpFrames(worker, spec, math, () => MAX_INFLIGHT - (this.#framesSent - encoded), (r) => (resume = r));
+          break;
+        case "progress":
+          encoded = msg.frameIndex;
+          this.exportProgress = msg.frameIndex / msg.totalFrames;
+          if (resume) { const r = resume; resume = null; r(); }
+          break;
+        case "complete": {
+          recordExportThroughput(resolution, totalFrames, performance.now() - startMs);
+          const blob = new Blob([msg.buffer], { type: "video/mp4" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `mandala-${this.pathShape}-${this.preset}-${reps}x.mp4`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.exportPhase = "complete";
+          this.exporting = false;
+          this.#disposeWorker();
+          this.#clearBeforeUnload();
+          window.setTimeout(() => {
+            if (this.exportPhase === "complete") this.exportPhase = "idle";
+          }, 1400);
+          break;
+        }
+        case "error":
+          console.error("Mandala export failed:", msg.error);
+          this.exportError = msg.error;
+          this.exportPhase = "error";
+          this.exporting = false;
+          this.#disposeWorker();
+          this.#clearBeforeUnload();
+          break;
+      }
+    };
+    worker.onerror = (e) => {
+      console.error("Mandala export worker error:", e.message);
+      this.exportError = e.message || "Worker crashed";
+      this.exportPhase = "error";
+      this.exporting = false;
+      this.#disposeWorker();
+      this.#clearBeforeUnload();
+    };
+
+    worker.postMessage({ type: "config", width: resolution, height: resolution, fps, bitrate, bgColor: this.bgColor });
+  }
+
+  #framesSent = 0;
+
+  /**
+   * Rasterize each frame's SVG to an ImageBitmap on the main thread and transfer
+   * it to the encode worker, respecting backpressure (`slots()` returns how many
+   * more frames may be in flight; when 0, wait for the worker to drain).
+   */
+  async #pumpFrames(
+    worker: Worker,
+    spec: MandalaFrameSpec,
+    math: MandalaFrameMath,
+    slots: () => number,
+    setResume: (r: () => void) => void,
+  ): Promise<void> {
+    this.#framesSent = 0;
+    const calculator = getMandalaGeometryCalculator();
+    const size = spec.resolution;
 
     try {
-      const calculator = getMandalaGeometryCalculator();
-      const exportSize = 1080;
-      const fps = 30;
-      const cyclePeriod = this.period;
-      const totalFrames = Math.ceil(fps * cyclePeriod);
-      const bluePropType = this.#sources.getBluePropType();
-      const redPropType = this.#sources.getRedPropType();
-
-      const pathOpts: MandalaPathOptions | undefined =
-        this.pathShape === "hybrid" ? { motionAware: true }
-        : this.pathShape !== "arc" ? { pathShape: this.pathShape }
-        : undefined;
-
-      const isFlow = this.colorMode === "flow";
-      const morphColors = isFlow ? this.#getPresetMorph() : null;
-      const colorCycleFrames = totalFrames * COLOR_CYCLE_BREATHS;
-      const solidPair = !isFlow ? this.#getPresetPair() : null;
-
-      const canvas = document.createElement("canvas");
-      canvas.width = exportSize;
-      canvas.height = exportSize;
-
-      const h264Mod = await import("h264-mp4-encoder");
-      const createEncoder = h264Mod.createH264MP4Encoder ??
-        (h264Mod.default as { createH264MP4Encoder: () => Promise<unknown> })?.createH264MP4Encoder;
-      if (!createEncoder) throw new Error("h264-mp4-encoder unavailable");
-
-      const encoder = (await createEncoder()) as {
-        width: number; height: number; frameRate: number;
-        quantizationParameter: number;
-        initialize: () => void;
-        addFrameRgba: (data: Uint8Array) => void;
-        finalize: () => void;
-        FS: { readFile: (path: string) => Uint8Array };
-        delete: () => void;
-      };
-
-      encoder.width = exportSize;
-      encoder.height = exportSize;
-      encoder.frameRate = fps;
-      encoder.quantizationParameter = 18;
-      encoder.initialize();
-
-      const ctx = canvas.getContext("2d")!;
-      const maxDx = this.rangeMax;
-
-      for (let i = 0; i < totalFrames; i++) {
-        const phase = i / totalFrames;
-        const triangle = phase < 0.5 ? phase * 2 : 2 - phase * 2;
-        const eased = breatheEase(triangle);
-        const tipDx = maxDx * eased;
-        const rotDeg = phase * this.rotation;
-
-        let c1: string, c2: string;
-        let frameGradient:
-          | { blue: [string, string]; red: [string, string]; purple: [string, string] }
-          | undefined;
-
-        if (morphColors) {
-          const cPhase = (i % colorCycleFrames) / colorCycleFrames;
-          c1 = sampleGradient(morphColors, cPhase);
-          c2 = sampleGradient(morphColors, (cPhase + 0.4) % 1);
-          const c3 = sampleGradient(morphColors, (cPhase + 0.7) % 1);
-          const mix = mixColors(c1, c2);
-          frameGradient = { blue: [c1, c3], red: [c2, c1], purple: [mix, c3] };
-        } else {
-          c1 = solidPair![0];
-          c2 = solidPair![1];
+      for (let i = 0; i < math.totalFrames; i++) {
+        if (this.#cancelRequested) return;
+        while (slots() <= 0) {
+          await new Promise<void>((r) => setResume(r));
+          if (this.#cancelRequested) return;
         }
-        const mix = mixColors(c1, c2);
-        const framePalette: MandalaPalette = {
-          blueStroke: c1, blueFill: withAlpha(c1, 0.15),
-          redStroke: c2, redFill: withAlpha(c2, 0.15),
-          purpleStroke: mix, purpleFill: withAlpha(mix, 0.2),
-        };
 
-        const paths = calculator.calculate(
-          sequence.steps, bluePropType, redPropType, pathOpts, { dx: tipDx, dy: 0 },
-        );
-
-        const svgStr = renderMandalaSVG(paths, {
-          size: exportSize, style: "stroke", show: "both",
-          palette: framePalette, strokeWidth: this.lineWeight, tipDx,
-          gradient: frameGradient,
-        });
-        await svgToCanvas(svgStr, canvas, rotDeg, this.bgColor);
-
-        const imageData = ctx.getImageData(0, 0, exportSize, exportSize);
-        encoder.addFrameRgba(new Uint8Array(imageData.data.buffer));
+        const { svg, rotDeg } = renderMandalaFrameSVG(calculator, spec, math, i);
+        const bitmap = await this.#rasterizeSvg(svg, size);
+        if (this.#cancelRequested) {
+          bitmap.close();
+          return;
+        }
+        this.#framesSent++;
+        worker.postMessage({ type: "frame", bitmap, rotDeg, index: i, totalFrames: math.totalFrames }, [bitmap]);
       }
-
-      encoder.finalize();
-      const data = encoder.FS.readFile("output.mp4");
-      encoder.delete();
-
-      const blob = new Blob([data.buffer as ArrayBuffer], { type: "video/mp4" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `mandala-${this.pathShape}-${this.preset}-${this.speed}x.mp4`;
-      a.click();
-      URL.revokeObjectURL(url);
+      if (this.#cancelRequested) return;
+      this.exportPhase = "encoding";
+      worker.postMessage({ type: "finish" });
     } catch (err) {
-      console.error("Mandala export failed:", err);
-    } finally {
+      if (this.#cancelRequested) return;
+      console.error("Mandala frame pump failed:", err);
+      this.exportError = err instanceof Error ? err.message : String(err);
+      this.exportPhase = "error";
       this.exporting = false;
+      this.#disposeWorker();
+      this.#clearBeforeUnload();
     }
+  }
+
+  /**
+   * Rasterize a mandala SVG string to an ImageBitmap on the main thread.
+   * Chromium cannot `createImageBitmap` an SVG blob (InvalidStateError), so we
+   * decode via an <img>, draw to a reused canvas, then `createImageBitmap` the
+   * canvas (which Chrome does support) to get a transferable bitmap for the
+   * encode worker.
+   */
+  async #rasterizeSvg(svg: string, size: number): Promise<ImageBitmap> {
+    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+    try {
+      const img = new Image(size, size);
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("SVG frame failed to load"));
+        img.src = url;
+      });
+      if (!this.#rasterCanvas || this.#rasterCanvas.width !== size) {
+        this.#rasterCanvas = document.createElement("canvas");
+        this.#rasterCanvas.width = size;
+        this.#rasterCanvas.height = size;
+        this.#rasterCtx = this.#rasterCanvas.getContext("2d");
+      }
+      const ctx = this.#rasterCtx!;
+      ctx.clearRect(0, 0, size, size);
+      ctx.drawImage(img, 0, 0, size, size);
+      return await createImageBitmap(this.#rasterCanvas);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  cancelExport(): void {
+    this.#cancelRequested = true;
+    if (this.#worker) {
+      try {
+        this.#worker.postMessage({ type: "cancel" });
+      } catch {
+        // ignore
+      }
+      this.#disposeWorker();
+    }
+    this.#clearBeforeUnload();
+    this.#resetExport();
+  }
+
+  #disposeWorker(): void {
+    if (this.#worker) {
+      this.#worker.terminate();
+      this.#worker = null;
+    }
+  }
+
+  #clearBeforeUnload(): void {
+    if (this.#beforeUnload && typeof window !== "undefined") {
+      window.removeEventListener("beforeunload", this.#beforeUnload);
+      this.#beforeUnload = null;
+    }
+  }
+
+  #resetExport(): void {
+    this.exporting = false;
+    this.exportProgress = 0;
+    this.exportPhase = "idle";
+    this.exportError = null;
   }
 }

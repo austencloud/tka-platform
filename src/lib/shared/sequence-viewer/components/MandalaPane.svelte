@@ -1,6 +1,7 @@
 <script lang="ts">
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
-  import MandalaViewerControls from "./MandalaViewerControls.svelte";
+  import MandalaControlDock from "./MandalaControlDock.svelte";
+  import MandalaExportTakeover from "./MandalaExportTakeover.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
 
@@ -14,12 +15,15 @@
 
   let stageEl: HTMLDivElement | undefined = $state();
   let containerSize: number = $state(400);
+  let dockHeight = $state(76);
 
   const ctrl = new MandalaViewerController({
     getSequence: () => sequence,
     getBluePropType: () => bluePropType,
     getRedPropType: () => redPropType,
   });
+
+  const takeoverSize = $derived(Math.max(160, containerSize - 32));
 
   $effect(() => {
     if (!stageEl) return;
@@ -35,7 +39,7 @@
 </script>
 
 <div class="mandala-pane" style:background={ctrl.bgColor}>
-  <div class="mandala-stage" bind:this={stageEl}>
+  <div class="mandala-stage" bind:this={stageEl} style:padding-bottom="{dockHeight + 14}px">
     <SequenceMandala
       {sequence}
       animate={!ctrl.paused}
@@ -57,57 +61,33 @@
     />
   </div>
 
-  <aside class="controls-rail">
-    <MandalaViewerControls
-      paused={ctrl.paused}
-      pathShape={ctrl.pathShape}
-      rotation={ctrl.rotation}
-      speed={ctrl.speed}
-      depth={ctrl.depth}
-      colorMode={ctrl.colorMode}
-      preset={ctrl.preset}
-      customBlue={ctrl.customBlue}
-      customRed={ctrl.customRed}
-      strokeWidth={ctrl.lineWeight}
-      onPausedChange={(v) => { ctrl.paused = v; }}
-      onPathShapeChange={(v) => { ctrl.pathShape = v; }}
-      onRotationChange={(v) => { ctrl.rotation = v; }}
-      onSpeedChange={(v) => { ctrl.speed = v; }}
-      onDepthChange={(v) => { ctrl.depth = v; }}
-      onColorModeChange={(v) => { ctrl.colorMode = v; }}
-      onPresetChange={(v) => { ctrl.preset = v; }}
-      onCustomBlueChange={(v) => { ctrl.customBlue = v; }}
-      onCustomRedChange={(v) => { ctrl.customRed = v; }}
-      onStrokeWidthChange={(v) => { ctrl.lineWeight = v; }}
-      onDownload={ctrl.exporting ? undefined : () => ctrl.handleDownload()}
-    />
-  </aside>
+  <MandalaControlDock {ctrl} onHeightChange={(px) => (dockHeight = px)} />
+  <MandalaExportTakeover {ctrl} {sequence} {bluePropType} {redPropType} size={takeoverSize} />
 </div>
 
 <style>
   .mandala-pane {
+    position: relative;
     width: 100%;
     height: 100%;
-    display: flex;
     overflow: hidden;
   }
 
   .mandala-stage {
-    flex: 1;
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     min-width: 0;
-    position: relative;
+    transition: padding-bottom 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .mandala-stage :global(svg) {
+    width: 100%;
+    height: 100%;
   }
 
-  .controls-rail {
-    flex-shrink: 0;
-    width: fit-content;
-    height: 100%;
-    overflow-y: auto;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    backdrop-filter: blur(12px);
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  @media (prefers-reduced-motion: reduce) {
+    .mandala-stage { transition: none; }
   }
 </style>

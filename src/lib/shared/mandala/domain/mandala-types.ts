@@ -5,6 +5,12 @@ export interface SVGPathData {
 	tipIndex: number;
 }
 
+/** Mandala color mode: fixed two-color pair, or animated flow morph. */
+export type MandalaColorMode = "solid" | "flow";
+
+/** Named color presets for the mandala viewer (+ "custom" two-color picker). */
+export type MandalaPresetId = "aurora" | "neon" | "ember" | "twilight" | "ice" | "solar" | "custom";
+
 export interface MandalaPaths {
 	blue: SVGPathData[];
 	red: SVGPathData[];
