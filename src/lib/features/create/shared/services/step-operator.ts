@@ -24,7 +24,10 @@ import {
   updateStepPropType,
   bulkUpdatePropType,
 } from "./step-operations/prop-type-handler";
-import { updateRotationDirection } from "./step-operations/rotation-direction-handler";
+import {
+  updateRotationDirection,
+  recalculateLetterForBeat,
+} from "./step-operations/rotation-direction-handler";
 import {
   updateArrowAdjustment,
   persistBeatWithAdjustments,
@@ -72,6 +75,13 @@ export class StepOperator {
     _panelState: unknown
   ): void {
     updateStepTurns(stepNumber, color, turnAmount, createModuleState);
+    // A turns edit can convert to/from FLOAT, which changes the letter.
+    // Reuse the proven async letter reconcile (derives gridMode fresh).
+    void recalculateLetterForBeat(
+      stepNumber,
+      createModuleState,
+      this.motionQueryHandler
+    );
   }
 
   updateStepPropType(
