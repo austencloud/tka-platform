@@ -28,6 +28,7 @@ import {
   computeCardFrontLayout,
   paintCardFrontBackground,
   paintCardFrontChrome,
+  buildCellLayerOptions,
 } from "./card-front-assembler";
 import { composeCardImage as composeCardImageFn } from "./card-composer";
 // getMandalaGeometryCalculator loaded dynamically to avoid pulling $app/environment into worker bundle
@@ -828,26 +829,10 @@ export class ImageComposer {
       showRedMotion: visibilitySettings.showRedMotion,
     });
 
-    const rawHandVisibility = visibilitySettings.handPointVisibility ?? "all";
-    const handVisibility: "all" | "active" = rawHandVisibility === "none" ? "active" : rawHandVisibility;
-
-    const layerOptions = {
-      size: stepSize,
-      darkMode: visibilitySettings.darkMode ?? false,
-      showNonRadialPoints: visibilitySettings.showNonRadialPoints ?? false,
-      handPointVisibility: handVisibility,
-      bluePropType: visibilitySettings.bluePropType,
-      redPropType: visibilitySettings.redPropType,
-      showBlueMotion: visibilitySettings.showBlueMotion,
-      showRedMotion: visibilitySettings.showRedMotion,
-      showPositions: visibilitySettings.showPositions ?? false,
-      handPathMode: visibilitySettings.handPathMode ?? false,
-    };
-
-    const layerVisibility = {
-      showTKA: visibilitySettings.showTKA ?? true,
-      showReversals: visibilitySettings.showReversals ?? true,
-    };
+    const { options: layerOptions, visibility: layerVisibility } = buildCellLayerOptions(
+      stepSize,
+      visibilitySettings
+    );
 
     const result = await this.layerCompositor.compose(
       preparedPictograph as unknown as PreparedPictographData,
