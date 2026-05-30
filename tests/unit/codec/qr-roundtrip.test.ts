@@ -52,6 +52,7 @@ describe("QR round-trip preserves derived endOrientation", () => {
     } as never;
 
     const qr = await encodeSequenceForQR(original);
+    expect(qr.startsWith("s~")).toBe(true);
 
     const back = await decodeSequenceFromQR(qr);
     // Start position (stepNumber 0) lands on startPosition; the lone real step at steps[0].

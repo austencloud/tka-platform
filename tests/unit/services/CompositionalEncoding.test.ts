@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { compressForQR, decompressFromQR } from "$lib/shared/navigation/services/sequence-codec";
 import { encodeSequence, decodeSequence, encodeSequenceForQR, decodeSequenceFromQR, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
-import { CompositionalDecoder } from "$lib/shared/qr/services/implementations/CompositionalDecoder";
+import { CompositionalDecoder } from "$lib/shared/qr/services/compositional-decoder";
 import {
   RECIPE_PREFIX,
   LOOP_TYPE_TAGS,
   TAG_TO_LOOP_TYPE,
-} from "$lib/shared/qr/services/contracts/types";
-import { computeRecipeHash } from "$lib/shared/qr/services/implementations/compositional-utils";
+} from "$lib/shared/qr/services/types";
+import { computeRecipeHash } from "$lib/shared/qr/services/compositional-utils";
 import {
   createSequenceData,
   type SequenceData,
