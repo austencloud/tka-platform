@@ -9,7 +9,9 @@
 
 ## 1. Problem
 
-A step's `startPosition`, `endPosition`, and `letter` are **derived data** — pure functions of the two motions' grid locations and motion configuration. But they are also **stored** on the step, and per-motion edits mutate the motion while leaving the derived fields stale. Over a few single-hand edits the stored fields drift away from the real geometry and get **persisted in that corrupt state**.
+A step's `gridMode`, `startPosition`, `endPosition`, and `letter` are **derived data** — pure functions of the two motions' grid locations and motion configuration. But they are also **stored** (on the motions, the step, and the sequence), and per-motion edits mutate the motion while leaving the derived fields stale. Over a few single-hand edits the stored fields drift away from the real geometry and get **persisted in that corrupt state**.
+
+`gridMode` is derived too: both hands on cardinal locations (n/e/s/w) → DIAMOND; both on intercardinals (ne/se/sw/nw) → BOX; mixed → SKEWED (`deriveGridMode`, `grid-mode-deriver.ts:56`). So moving one hand from a cardinal to an intercardinal must flip the step's grid mode — and a stale stored `gridMode` then feeds the wrong lookup table downstream.
 
 ### Canonical reproduction (Austen, 2026-05-29)
 
@@ -61,9 +63,9 @@ The bug was *born* from each edit site independently choosing whether to recompu
 
 ## 3. The invariant
 
-> `startPosition`, `endPosition` are pure sync functions of `(blue.location, red.location)`.
-> `letter` is a pure async function of `(blue, red, gridMode)`.
-> Neither is ever stored stale after a mutation.
+> `gridMode`, `startPosition`, `endPosition` are pure **sync** functions of `(blue.location, red.location)`.
+> `letter` is a pure **async** function of `(blue, red, gridMode)` — and depends on the *freshly derived* gridMode.
+> None is ever stored stale after a mutation. Stored copies are never *trusted*; they are *recomputed* from the motions.
 
 Mirrors the codebase's existing, proven `recalculateAllOrientations` pattern (orientation is already reconciled this way).
 
@@ -71,23 +73,29 @@ Mirrors the codebase's existing, proven `recalculateAllOrientations` pattern (or
 
 ## 4. Architecture — two-layer reconciliation
 
-Positions are **sync + cheap + idempotent**; letter is **async + needs `motionQueryHandler`**. These get different chokepoints.
+`gridMode` + positions are **sync + cheap + idempotent**; letter is **async + needs `motionQueryHandler`**. These get different chokepoints, and gridMode must be reconciled *before* letter (letter lookup is keyed on gridMode).
 
-### Layer 1 — Sync position reconciliation at the state write chokepoint
+### Layer 1 — Sync gridMode + position reconciliation at the state write chokepoint
 
-`setCurrentSequence` (`sequence-core-state.svelte.ts:84`) is the single method every sequence write funnels through; it already normalizes `gridMode` from the sequence. Add a pure normalization pass there:
+`setCurrentSequence` (`sequence-core-state.svelte.ts:84`) is the single method every sequence write funnels through. Today it **trusts** the stored `sequence.gridMode` (lines 88-90: `state.gridMode = sequence.gridMode`) — that is the stale-trust bug for gridMode. It must **derive** instead. Add a pure normalization pass:
 
 ```ts
 // new: sequence-derived-fields.ts
-export function reconcileStepPositions(step: StepData): StepData;          // recompute start/endPosition from motions, guarded
-export function normalizeSequencePositions(seq: SequenceData): SequenceData; // map reconcileStepPositions over steps + startPosition
+export function reconcileStepDerived(step: StepData): StepData;             // recompute gridMode (per motion) + start/endPosition from motions, guarded
+export function normalizeSequenceDerived(seq: SequenceData): SequenceData;  // map reconcileStepDerived over steps + startPosition; recompute sequence.gridMode from the reconciled steps
 ```
 
-`setCurrentSequence` calls `normalizeSequencePositions(sequence)` before assigning. Because positions are derived, valid data normalizes to itself (no-op) and corrupt data **self-heals**. Covers every current and future edit path with zero per-handler wiring. O(steps), pure, sync.
+`setCurrentSequence` calls `normalizeSequenceDerived(sequence)` first, then sets `state.gridMode` from the **reconciled** sequence (not the incoming stored value). Because these fields are derived, valid data normalizes to itself (no-op) and corrupt data **self-heals**. Covers every current and future edit path with zero per-handler wiring. O(steps), pure, sync.
 
-Also apply `reconcileStepPositions` inside the single-hand branches of `mirrorBeat`/`flipBeat`/`rotateBeat` so the transform functions are correct in isolation (not only once written back) — they are reused by batch transforms and tests.
+`reconcileStepDerived` recomputes, per step:
+- `gridMode` on each motion via `deriveGridMode(blue, red)` (DIAMOND / BOX / SKEWED).
+- `startPosition` = `getGridPositionFromLocations(blue.start, red.start)`, `endPosition` = same for end locations.
 
-**Guard:** `getGridPositionFromLocations` *throws* on a location pair that isn't a valid position. The reconciler wraps it in try/catch and keeps the prior position on throw (an in-flight/invalid intermediate must not crash the editor). Logged at debug.
+Also apply `reconcileStepDerived` inside the single-hand branches of `mirrorBeat`/`flipBeat`/`rotateBeat` so the transform functions are correct in isolation (not only once written back) — they are reused by batch transforms and tests.
+
+**Sequence-level gridMode** is a summary of per-step gridMode (a sequence's steps are normally uniform). `normalizeSequenceDerived` sets `sequence.gridMode` from the reconciled steps (start position / first step; if steps disagree it reflects per-step truth and the sequence value is best-effort — per-step/per-motion gridMode is the authoritative copy the renderers read).
+
+**Guard:** `getGridPositionFromLocations` *throws* on a location pair that isn't a valid position, and `deriveGridMode` warns + defaults DIAMOND on an indeterminate pair. The reconciler wraps both, keeping the prior value on throw/warn (an in-flight/invalid intermediate must not crash the editor). Logged at debug.
 
 ### Layer 2 — Async letter reconciliation on edit-commit
 
@@ -104,9 +112,9 @@ Letter reconcile runs on **commit** (after the edit settles), never per drag-fra
 
 ### Functions reused (never hand-rolled)
 
+- `deriveGridMode(blue, red)` — `grid-mode-deriver.ts:56` (sync → DIAMOND/BOX/SKEWED; central to Layer 1).
 - `getGridPositionFromLocations` — `grid-position-deriver.ts:114` (sync, grid-agnostic: alpha/beta/gamma/zeta/eta).
-- `findLetterByMotionConfiguration` — `motion-query-handler.ts:326` (async, float/prefloat aware).
-- `_deriveGridMode(blue, red)` — `grid-mode-deriver.ts` (used by existing letter recompute).
+- `findLetterByMotionConfiguration` — `motion-query-handler.ts:326` (async, float/prefloat aware; consumes the freshly derived gridMode).
 - `recalculateLetterForBeat` — `rotation-direction-handler.ts:281` (generalized into `reconcileStepLetter`).
 
 ---
@@ -125,11 +133,11 @@ Letter reconcile runs on **commit** (after the edit settles), never per drag-fra
 
 ## 6. Affected files
 
-**New:** `src/lib/shared/create/services/sequence-derived-fields.ts` (`reconcileStepPositions`, `normalizeSequencePositions`, `reconcileStepLetter`).
+**New:** `src/lib/shared/create/services/sequence-derived-fields.ts` (`reconcileStepDerived`, `normalizeSequenceDerived`, `reconcileStepLetter`).
 
 **Edited:**
-- `sequence-core-state.svelte.ts:84` — call `normalizeSequencePositions` in `setCurrentSequence`.
-- `step-transforms.ts` — single-hand branches of `mirrorBeat`/`flipBeat`/`rotateBeat` call `reconcileStepPositions`; correct the misleading comments.
+- `sequence-core-state.svelte.ts:84` — `setCurrentSequence` calls `normalizeSequenceDerived(sequence)` first, then sets `state.gridMode` from the *reconciled* sequence instead of trusting the stored `sequence.gridMode` (replaces lines 88-90).
+- `step-transforms.ts` — single-hand branches of `mirrorBeat`/`flipBeat`/`rotateBeat` call `reconcileStepDerived`; correct the misleading comments.
 - `step-operations/turns-handler.ts` — add letter reconcile on commit.
 - single-hand transform caller(s) — add letter reconcile on commit (identify exact seam during planning).
 - `rotation-direction-handler.ts` — refactor its private letter recompute to the shared `reconcileStepLetter` (no behavior change).
@@ -139,12 +147,13 @@ Letter reconcile runs on **commit** (after the edit settles), never per drag-fra
 ## 7. Testing (TDD — failing test first)
 
 1. **Reproduction (red):** build a step from an alpha2 seed; edit one motion's location so geometry becomes GAMMA14; assert `startPosition === "gamma14"`, `endPosition` correct, `letter` re-derived (not `"M"`). Fails today.
-2. **Position reconcile unit:** `reconcileStepPositions` over diamond, box (intercardinal), and skewed (zeta/eta) pairs; asserts correct GridPosition.
-3. **Idempotency:** `normalizeSequencePositions(normalizeSequencePositions(seq)) === ` first result; valid data is a no-op.
-4. **Invalid-pair guard:** an invalid location pair keeps the prior position and does not throw.
-5. **Letter reconcile:** turns→float flips letter; rotation-direction PRO↔ANTI flips letter (regression-lock the existing behavior through the shared helper).
-6. **Negative regression:** an orientation-only edit changes neither `startPosition`/`endPosition` nor `letter`.
-7. **Browser verification:** re-render Austen's box-M after the fix; confirm the elemental glyph corrects (capture the label). Per verification-protocol.
+2. **Derived reconcile unit:** `reconcileStepDerived` over diamond (cardinal), box (intercardinal), and skewed (zeta/eta) pairs; asserts correct `gridMode` (DIAMOND/BOX/SKEWED) AND correct `startPosition`/`endPosition`.
+3. **gridMode flip:** a single-hand edit moving one hand cardinal→intercardinal flips the step's `gridMode` (e.g. DIAMOND→SKEWED, or BOX when both end up intercardinal); stored stale gridMode is overridden, not trusted.
+4. **Idempotency:** `normalizeSequenceDerived(normalizeSequenceDerived(seq)) === ` first result; valid data is a no-op.
+5. **Invalid-pair guard:** an invalid location pair / indeterminate gridMode keeps the prior values and does not throw.
+6. **Letter reconcile:** turns→float flips letter; rotation-direction PRO↔ANTI flips letter (regression-lock the existing behavior through the shared helper).
+7. **Negative regression:** an orientation-only edit changes neither `gridMode`, `startPosition`/`endPosition`, nor `letter`.
+8. **Browser verification:** re-render Austen's box-M after the fix; confirm the elemental glyph corrects (capture the label). Per verification-protocol.
 
 ---
 
