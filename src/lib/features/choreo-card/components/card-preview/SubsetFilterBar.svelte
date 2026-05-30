@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { CatalogFamily } from "../../domain/models/Catalog";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
 
   interface Props {
     families: readonly CatalogFamily[];
@@ -44,17 +45,15 @@
   <div class="filter-section">
     <span class="filter-label">Family</span>
     <div class="chip-row">
-      {#each families as family}
-        <button
-          class="chip"
-          class:active={selectedFamilyIds.includes(family.id)}
+      {#each families as family (family.id)}
+        <FilterChipBase
+          mode="toggle"
+          size="sm"
+          label={family.label}
+          count={family.sequenceIds.length}
+          active={selectedFamilyIds.includes(family.id)}
           onclick={() => toggleFamily(family.id)}
-          aria-label="Toggle {family.label} family filter"
-          aria-pressed={selectedFamilyIds.includes(family.id)}
-        >
-          {family.label}
-          <span class="chip-count">{family.sequenceIds.length}</span>
-        </button>
+        />
       {/each}
     </div>
   </div>
@@ -62,16 +61,14 @@
   <div class="filter-section">
     <span class="filter-label">Start</span>
     <div class="chip-row">
-      {#each positions as pos}
-        <button
-          class="chip"
-          class:active={activePosition === pos}
+      {#each positions as pos (pos)}
+        <FilterChipBase
+          mode="toggle"
+          size="sm"
+          label={pos}
+          active={activePosition === pos}
           onclick={() => togglePosition(pos)}
-          aria-label="Toggle {pos} position filter"
-          aria-pressed={activePosition === pos}
-        >
-          {pos}
-        </button>
+        />
       {/each}
     </div>
   </div>
@@ -113,33 +110,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-  }
-
-  .chip {
-    padding: 4px 10px;
-    border-radius: 14px;
-    font-size: var(--font-size-compact, 12px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: transparent;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
-  .chip.active {
-    background: var(--theme-accent, #4a9eff);
-    color: var(--theme-text, #fff);
-    border-color: var(--theme-accent, #4a9eff);
-  }
-
-  .chip:hover:not(.active) {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .chip-count {
-    opacity: 0.7;
-    margin-left: 4px;
   }
 
   .count-badge {

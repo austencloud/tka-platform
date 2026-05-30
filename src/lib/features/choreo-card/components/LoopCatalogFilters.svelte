@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Catalog } from "../domain/models/Catalog";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 
   interface Props {
     catalogs: Catalog[];
@@ -45,44 +46,37 @@
   );
 
   const totalCount = $derived(catalogs.length);
+
+  const sliceTypeOptions = $derived(
+    availableSliceTypes.map((s) => ({ value: s, label: SLICE_TYPE_META[s]?.label ?? s })),
+  );
+  const gridModeOptions = $derived(
+    availableGridModes.map((g) => ({ value: g, label: GRID_MODE_META[g] ?? g })),
+  );
 </script>
 
 <div class="loop-catalog-filters" role="toolbar" aria-label="Catalog filters">
   {#if availableSliceTypes.length > 1}
-    <div class="filter-group" role="radiogroup" aria-label="Slice type">
-      {#each availableSliceTypes as sliceType (sliceType)}
-        {@const meta = SLICE_TYPE_META[sliceType]}
-        <button
-          type="button"
-          role="radio"
-          class="filter-pill"
-          class:active={activeSliceType === sliceType}
-          aria-checked={activeSliceType === sliceType}
-          aria-label="Filter by {meta?.label ?? sliceType} slice type"
-          title={meta?.tooltip ?? sliceType}
-          onclick={() => onSliceTypeChange(sliceType)}
-        >
-          {meta?.label ?? sliceType}
-        </button>
-      {/each}
+    <div class="filter-group-wrap" role="group" aria-label="Slice type">
+      <SegmentedControl
+        options={sliceTypeOptions}
+        value={activeSliceType}
+        onchange={onSliceTypeChange}
+        color="accent"
+        size="sm"
+      />
     </div>
   {/if}
 
   {#if availableGridModes.length > 1}
-    <div class="filter-group" role="radiogroup" aria-label="Grid mode">
-      {#each availableGridModes as gridMode (gridMode)}
-        <button
-          type="button"
-          role="radio"
-          class="filter-pill"
-          class:active={activeGridMode === gridMode}
-          aria-checked={activeGridMode === gridMode}
-          aria-label="Filter by {GRID_MODE_META[gridMode] ?? gridMode} grid mode"
-          onclick={() => onGridModeChange(gridMode)}
-        >
-          {GRID_MODE_META[gridMode] ?? gridMode}
-        </button>
-      {/each}
+    <div class="filter-group-wrap" role="group" aria-label="Grid mode">
+      <SegmentedControl
+        options={gridModeOptions}
+        value={activeGridMode}
+        onchange={onGridModeChange}
+        color="accent"
+        size="sm"
+      />
     </div>
   {/if}
 
@@ -100,50 +94,14 @@
     justify-content: center;
   }
 
-  .filter-group {
-    display: flex;
-    gap: 0;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--radius-lg, 12px);
-    padding: 4px;
-  }
-
-  .filter-pill {
-    padding: 5px 14px;
-    border-radius: calc(var(--radius-lg, 12px) - 4px);
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    border: none;
-    background: transparent;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    white-space: nowrap;
-  }
-
-  .filter-pill.active {
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .filter-pill:not(.active):hover {
-    color: var(--theme-text, rgba(255, 255, 255, 0.8));
-  }
-
-  .filter-pill:focus-visible {
-    outline: 2px solid var(--theme-accent, #63b3ed);
-    outline-offset: 2px;
+  /* Each segmented control sized to its option labels; the toolbar wraps. */
+  .filter-group-wrap {
+    min-width: 180px;
   }
 
   .filter-count {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     white-space: nowrap;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .filter-pill {
-      transition: none;
-    }
   }
 </style>
