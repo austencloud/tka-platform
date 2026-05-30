@@ -12,6 +12,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { normalizeSequenceDerived } from "$lib/shared/create/services/sequence-derived-fields";
 
 export interface SequenceCoreStateData {
   currentSequence: SequenceData | null;
@@ -82,11 +83,16 @@ export function createSequenceCoreState() {
 
     // Setters
     setCurrentSequence(sequence: SequenceData | null) {
-      state.currentSequence = sequence;
-      state.selectedSequenceId = sequence?.id ?? null;
-      // Sync gridMode from the sequence if it has one defined
-      if (sequence?.gridMode !== undefined) {
-        state.gridMode = sequence.gridMode;
+      // Derived fields (gridMode, start/end positions) are recomputed from the
+      // motions here so stale stored copies from single-hand edits self-heal.
+      const reconciled = sequence
+        ? normalizeSequenceDerived(sequence)
+        : sequence;
+      state.currentSequence = reconciled;
+      state.selectedSequenceId = reconciled?.id ?? null;
+      // Derive gridMode from the reconciled sequence — never trust the stored value.
+      if (reconciled?.gridMode !== undefined) {
+        state.gridMode = reconciled.gridMode;
       }
     },
 
