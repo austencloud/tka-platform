@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { CatalogBrowseState } from "../state/catalog-browse-state.svelte";
-  import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import FilterChipRow from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipRow.svelte";
   import { LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { TND_FAMILY_LABELS } from "../state/catalog-browse-types";

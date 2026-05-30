@@ -5,7 +5,7 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import type { CatalogFamily } from "$lib/features/choreo-card/domain/models/Catalog";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
