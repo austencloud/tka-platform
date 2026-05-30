@@ -427,7 +427,7 @@ export class CompositionDispatcher {
           keys: [],
           bitmaps: [],
           grids: { diamond: null, box: null, diamondNonRadial: null, boxNonRadial: null },
-          glyphs: { keys: [], bitmaps: [] },
+          glyphs: { keys: [], bitmaps: [], naturalWidths: [], naturalHeights: [] },
         };
         if (bundle) {
           const clonedBmps = await Promise.all(
@@ -452,7 +452,12 @@ export class CompositionDispatcher {
               diamondNonRadial: await cloneGrid(bundle.grids.diamondNonRadial),
               boxNonRadial: await cloneGrid(bundle.grids.boxNonRadial),
             },
-            glyphs: { keys: [...bundle.glyphs.keys], bitmaps: clonedGlyphs },
+            glyphs: {
+              keys: [...bundle.glyphs.keys],
+              bitmaps: clonedGlyphs,
+              naturalWidths: [...bundle.glyphs.naturalWidths],
+              naturalHeights: [...bundle.glyphs.naturalHeights],
+            },
           };
         }
         // Reuse the exported helper instead of duplicating the transfer-list build.

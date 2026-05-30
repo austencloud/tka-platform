@@ -22,16 +22,33 @@ import type { GlyphImageData } from "@tka/render-composition";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 
-/** Transferable snapshot of header glyphs. `keys` and `bitmaps` are index-aligned. */
+/**
+ * Transferable snapshot of header glyphs. `keys`, `bitmaps`, `naturalWidths`,
+ * and `naturalHeights` are all index-aligned.
+ *
+ * `naturalWidths`/`naturalHeights` carry the glyph's TRUE source (viewBox)
+ * dimensions captured from the decoded HTMLImageElement — NOT the rasterized
+ * bitmap's dims. TKA letter glyphs are non-square viewBox-only SVGs (e.g. A.svg
+ * ≈ 0.75:1, W-.svg ≈ 1.89:1) but rasterize to a square canonical snapshot, so
+ * the header layout (`scale = availableH / naturalHeight; glyphW = naturalWidth
+ * * scale`) MUST use the source dims or every non-square glyph is distorted.
+ * This mirrors the GlyphTransferEntry contract in composition-dispatcher.ts,
+ * which likewise carries naturalWidth/naturalHeight from the source
+ * GlyphImageData, never from the bitmap.
+ */
 export interface GlyphBitmapSeed {
   keys: string[];
   bitmaps: ImageBitmap[];
+  naturalWidths: number[];
+  naturalHeights: number[];
 }
 
 // Fallback raster size for a dimensionless (viewBox-only) glyph SVG. Letter
 // glyphs are authored on a 200x100-ish wide viewBox, but a square canonical
-// snapshot preserves enough resolution; the natural aspect ratio is restored
-// from the decoded bitmap's own width/height. Matches card-asset-bundle.ts.
+// snapshot preserves enough resolution. The natural aspect ratio is NOT read
+// from the bitmap (which may be square) — it is carried separately in the seed
+// as naturalWidths/naturalHeights captured from the source HTMLImageElement,
+// exactly as TextRenderer.preloadGlyphImages does. Matches card-asset-bundle.ts.
 const GLYPH_SNAPSHOT_SIZE = 512;
 
 /**
@@ -89,9 +106,25 @@ function loadGlyphImage(dataUrl: string): Promise<HTMLImageElement | null> {
  *   3. tokenizeWord(displayWord) — each token IS the glyph cache key
  *      (TextRenderer.buildGlyphMap keys glyphImageCache by these tokens)
  * Deduped across all sequences.
+ *
+ * Custom-name coverage: the header actually renders `options.customName ||
+ * derivedWord` (card-front-assembler.ts:367). `options.customName` is a
+ * render-time UI override not available here (the seed input is SequenceData[]
+ * only), but the PERSISTED custom name lives on SequenceData.displayName (and
+ * the user's intended word on SequenceData.intendedWord). We tokenize those too
+ * so a saved custom-name deck card has its header glyphs seeded. A one-off
+ * render-time customName that matches neither the derived word nor the persisted
+ * displayName still falls back (the worker header path will simply have no glyph
+ * for an un-seeded token — see SeededGlyphSource.get returning undefined).
  */
 function collectGlyphKeys(sequences: SequenceData[]): string[] {
   const keys = new Set<string>();
+  const addWord = (word: string | undefined): void => {
+    if (!word) return;
+    for (const token of tokenizeWord(simplifyRepeatedWord(word))) {
+      if (token) keys.add(token);
+    }
+  };
   for (const seq of sequences) {
     const rawWord =
       seq.word ||
@@ -99,11 +132,9 @@ function collectGlyphKeys(sequences: SequenceData[]): string[] {
         .filter((step) => step.letter)
         .map((step) => step.letter)
         .join("");
-    if (!rawWord) continue;
-    const displayWord = simplifyRepeatedWord(rawWord);
-    for (const token of tokenizeWord(displayWord)) {
-      if (token) keys.add(token);
-    }
+    addWord(rawWord);
+    addWord(seq.displayName);
+    addWord(seq.intendedWord);
   }
   return [...keys];
 }
@@ -117,7 +148,8 @@ export async function buildGlyphBitmapSeed(
   sequences: SequenceData[],
 ): Promise<GlyphBitmapSeed> {
   const wanted = collectGlyphKeys(sequences);
-  if (wanted.length === 0) return { keys: [], bitmaps: [] };
+  if (wanted.length === 0)
+    return { keys: [], bitmaps: [], naturalWidths: [], naturalHeights: [] };
 
   // Dynamic import keeps get-glyph-cache (→ $app/environment) out of any
   // worker static graph that transitively reaches this module.
@@ -127,6 +159,8 @@ export async function buildGlyphBitmapSeed(
 
   const keys: string[] = [];
   const bitmaps: ImageBitmap[] = [];
+  const naturalWidths: number[] = [];
+  const naturalHeights: number[] = [];
 
   await Promise.all(
     wanted.map(async (key) => {
@@ -134,22 +168,31 @@ export async function buildGlyphBitmapSeed(
       if (!dataUrl) return;
       const img = await loadGlyphImage(dataUrl);
       if (!img) return;
+      // Capture the TRUE source dims from the decoded HTMLImageElement BEFORE
+      // rasterizing — exactly as TextRenderer.preloadGlyphImages does
+      // (text-renderer.ts:111-112). The bitmap may be a square canonical
+      // snapshot, so its dims are NOT the glyph's natural aspect ratio.
+      const naturalWidth = img.naturalWidth;
+      const naturalHeight = img.naturalHeight;
       const bmp = await glyphToBitmap(img);
       if (!bmp) return;
       keys.push(key);
       bitmaps.push(bmp);
+      naturalWidths.push(naturalWidth);
+      naturalHeights.push(naturalHeight);
     }),
   );
 
-  return { keys, bitmaps };
+  return { keys, bitmaps, naturalWidths, naturalHeights };
 }
 
 /**
  * A glyph source backed by transferred ImageBitmaps. Worker-safe: imports
  * nothing from get-glyph-cache. Reconstructs the GlyphImageData shape the header
- * renderer needs — naturalWidth/naturalHeight from the decoded bitmap, isDash
- * from the key suffix (matching TextRenderer.preloadGlyphImages exactly:
- * `letter.endsWith("-")`).
+ * renderer needs — naturalWidth/naturalHeight from the seed's SOURCE-captured
+ * arrays (NOT the bitmap's dims, which may be a square canonical snapshot and
+ * would distort every non-square glyph), isDash from the key suffix (matching
+ * TextRenderer.preloadGlyphImages exactly: `letter.endsWith("-")`).
  */
 export class SeededGlyphSource {
   private map = new Map<string, GlyphImageData>();
@@ -161,8 +204,8 @@ export class SeededGlyphSource {
       const bmp = seed.bitmaps[i]!;
       this.map.set(key, {
         image: bmp,
-        naturalWidth: bmp.width,
-        naturalHeight: bmp.height,
+        naturalWidth: seed.naturalWidths[i]!,
+        naturalHeight: seed.naturalHeights[i]!,
         isDash: key.endsWith("-"),
       });
     }
