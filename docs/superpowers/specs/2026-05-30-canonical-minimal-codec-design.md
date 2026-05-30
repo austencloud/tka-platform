@@ -126,7 +126,13 @@ deriveMotionType(startLoc, endLoc, rotationDirection, turns):
 **Reuse, not reinvention.** `deriveHandOrbitalDirection(startLoc, endLoc)` already
 exists (in `rotation-direction-pattern-manager.ts` and
 `step-operations/rotation-direction-handler.ts`). Its documented contract: return
-`cw`/`ccw` for a shift arc, `null` for a dash/static trajectory. The existing
+`cw`/`ccw` for a shift arc, `null` for a dash/static trajectory. Concretely it is
+a hardcoded pair table covering the two 90° shift families of the L1-4 space —
+diamond (cardinal: s→w, w→n, n→e, e→s + reverses) and box (intercardinal: ne→se,
+se→sw, sw→nw, nw→ne + reverses). Every pair NOT in that table returns `null`,
+which is precisely why the static/dash split downstream is safe for the current
+encodable space, and precisely where skews (L5+, cross-mode or extended arcs)
+would fall through — see boundaries. The existing
 `deriveMotionType` in those files is only a *partial* classifier (it resolves
 pro-vs-anti but returns the **stored** type for static/dash/float). Our codec has
 no stored type on decode, so we need the *full* classifier above — but it is built
