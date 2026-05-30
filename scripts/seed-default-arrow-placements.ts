@@ -12,6 +12,10 @@ import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import * as path from "path";
 import * as fs from "fs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const GRID_MODES = ["box", "diamond"] as const;
 const MOTION_TYPES = ["pro", "anti", "float", "dash", "static"] as const;
