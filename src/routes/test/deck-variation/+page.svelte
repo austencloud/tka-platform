@@ -287,11 +287,7 @@
           displayMode="grid"
           {footers}
           {rerenderKey}
-          showGrid={true}
-          showTKA={true}
-          showWord={true}
           includeStartPosition={true}
-          handPointsVisible={true}
         />
       </div>
     {/if}

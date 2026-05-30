@@ -47,10 +47,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     selectedCatalogId: string | null;
     catalogSequences: SequenceData[];
     isLoading: boolean;
-    handPointsVisible?: boolean;
-    showGrid?: boolean;
-    showTKA?: boolean;
-    showWord?: boolean;
     includeStartPosition?: boolean;
     onBackToCollections: () => void;
     onSelectCatalog: (catalogId: string, tndFamily?: string | null) => void;
@@ -66,10 +62,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
     selectedCatalogId,
     catalogSequences,
     isLoading,
-    handPointsVisible = true,
-    showGrid = true,
-    showTKA = true,
-    showWord = true,
     includeStartPosition = true,
     onBackToCollections,
     onSelectCatalog,
@@ -601,10 +593,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
       <TnDFamilyDrillDown
         familyId={activeTnDFamilyId}
         catalogs={browseState.filteredCatalogs}
-        {handPointsVisible}
-        {showGrid}
-        {showTKA}
-        {showWord}
         {includeStartPosition}
         onSelectSequence={onSelectSequence}
         onContextMenu={onContextMenu}
@@ -775,10 +763,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             tndElement={tndElement ?? undefined}
             {rerenderKey}
             isLoading={false}
-            {handPointsVisible}
-            {showGrid}
-            {showTKA}
-            {showWord}
             {includeStartPosition}
             deckMode={true}
             footers={sequenceFooters}
@@ -798,10 +782,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
             tndElement={tndElement ?? undefined}
             {rerenderKey}
             isLoading={false}
-            {handPointsVisible}
-            {showGrid}
-            {showTKA}
-            {showWord}
             {includeStartPosition}
             deckMode={true}
             displayMode="grid"
@@ -823,10 +803,6 @@ import { exportDeckZIP } from "$lib/features/choreo-card/services/print-zip-expo
 {#if inspectedSequence}
   <CardInspectModal
     sequence={inspectedSequence}
-    {handPointsVisible}
-    {showGrid}
-    {showTKA}
-    {showWord}
     {includeStartPosition}
     onContextMenu={onContextMenu ? (x, y, _rerender) => {
       onContextMenu(x, y, () => {

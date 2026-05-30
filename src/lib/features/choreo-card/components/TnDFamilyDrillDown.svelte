@@ -23,10 +23,6 @@ import type { CardPair } from "../services/types";
   interface Props {
     familyId: string;
     catalogs: Catalog[];
-    handPointsVisible?: boolean;
-    showGrid?: boolean;
-    showTKA?: boolean;
-    showWord?: boolean;
     includeStartPosition?: boolean;
     onSelectSequence: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
@@ -36,10 +32,6 @@ import type { CardPair } from "../services/types";
   const {
     familyId,
     catalogs,
-    handPointsVisible = true,
-    showGrid = true,
-    showTKA = true,
-    showWord = true,
     includeStartPosition = true,
     onSelectSequence,
     onContextMenu,
@@ -253,10 +245,6 @@ import type { CardPair } from "../services/types";
       tndElement={theme}
       {rerenderKey}
       isLoading={loading}
-      {handPointsVisible}
-      {showGrid}
-      {showTKA}
-      {showWord}
       {includeStartPosition}
       footers={allFooters}
       onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
@@ -281,10 +269,6 @@ import type { CardPair } from "../services/types";
           tndElement={theme}
           {rerenderKey}
           isLoading={false}
-          {handPointsVisible}
-          {showGrid}
-          {showTKA}
-          {showWord}
           {includeStartPosition}
           displayMode="grid"
           showBacks={true}

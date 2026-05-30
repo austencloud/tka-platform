@@ -253,11 +253,7 @@
             {footers}
             {tndElements}
             isLoading={false}
-            showGrid={true}
-            showTKA={true}
-            showWord={true}
             includeStartPosition={true}
-            handPointsVisible={true}
             deckMode={true}
             displayMode="sheets"
             deckId={String(selectedDeck.deckNumber).padStart(3, "0")}

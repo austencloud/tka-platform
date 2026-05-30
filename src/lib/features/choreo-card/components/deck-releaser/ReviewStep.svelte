@@ -290,11 +290,7 @@
       footers={sortedFooters}
       {tndElements}
       isLoading={false}
-      showGrid={true}
-      showTKA={true}
-      showWord={true}
       includeStartPosition={true}
-      handPointsVisible={true}
       deckMode={true}
       displayMode="sheets"
       deckId={String(nextDeckNumber).padStart(3, "0")}
@@ -310,10 +306,6 @@
   <CardInspectModal
     sequence={inspectedSequence}
     frontImageUrl={inspectedFrontImageUrl}
-    handPointsVisible={true}
-    showGrid={true}
-    showTKA={true}
-    showWord={true}
     includeStartPosition={true}
     onContextMenu={onContextMenu ? (x, y, _rerender) => {
       onContextMenu(x, y, () => {
