@@ -98,38 +98,41 @@
       {:else}
         <div class="takeover-bar"><div class="takeover-bar-fill" style:width="{pct}%"></div></div>
         <p class="takeover-phase">{phaseLabel}</p>
-
-        {#if d}
-          <div class="diag">
-            <div class="diag-row big">
-              <span class="diag-fps">{d.encodeFps}<small>fps</small></span>
-              {#if etaSec}<span class="diag-eta">~{etaSec}s left</span>{/if}
-            </div>
-            <div class="diag-grid">
-              <span class="k">res</span><span class="v">{d.resolution}² · {mp}MP</span>
-              <span class="k">encoder</span><span class="v" class:warn={d.encoder === "wasm" || !d.hwSupported}>{hwLabel}</span>
-              <span class="k">frames</span><span class="v">{d.encodedFrames}/{d.totalFrames}</span>
-              <span class="k">render</span><span class="v">{d.renderMs}ms</span>
-              <span class="k">enc&nbsp;wait</span><span class="v">{d.encodeWaitMs}ms</span>
-              <span class="k">vframe</span><span class="v">{d.vfMs}ms</span>
-              <span class="k">mux</span><span class="v">{d.muxMs}ms</span>
-              <span class="k">codec</span><span class="v small">{d.codec}</span>
-            </div>
-            {#if d.encoder === "wasm" || !d.hwSupported}
-              <p class="diag-note">No hardware H.264 — encoding in software. Lower the resolution for a big speedup.</p>
-            {/if}
-            <button class="takeover-btn ghost diag-copy" onclick={copyDiag}>
-              {copied ? "Copied ✓" : "Copy diagnostics"}
-            </button>
-          </div>
-        {/if}
-
         <p class="takeover-msg">Please don't navigate away.</p>
         {#if ctrl.exportPhase !== "complete"}
           <button class="takeover-btn ghost" onclick={() => ctrl.cancelExport()}>Cancel</button>
         {/if}
       {/if}
     </div>
+
+    {#if d && ctrl.exportPhase !== "error"}
+      <!-- Floating diag card: pinned top-center, above the bottom bar, its own
+           scroll so the Copy button stays reachable on short/folded screens. -->
+      <div class="diag-overlay">
+        <div class="diag">
+          <div class="diag-row big">
+            <span class="diag-fps">{d.encodeFps}<small>fps</small></span>
+            {#if etaSec}<span class="diag-eta">~{etaSec}s left</span>{/if}
+          </div>
+          <div class="diag-grid">
+            <span class="k">res</span><span class="v">{d.resolution}² · {mp}MP</span>
+            <span class="k">encoder</span><span class="v" class:warn={d.encoder === "wasm" || !d.hwSupported}>{hwLabel}</span>
+            <span class="k">frames</span><span class="v">{d.encodedFrames}/{d.totalFrames}</span>
+            <span class="k">render</span><span class="v">{d.renderMs}ms</span>
+            <span class="k">enc&nbsp;wait</span><span class="v">{d.encodeWaitMs}ms</span>
+            <span class="k">vframe</span><span class="v">{d.vfMs}ms</span>
+            <span class="k">mux</span><span class="v">{d.muxMs}ms</span>
+            <span class="k">codec</span><span class="v small">{d.codec}</span>
+          </div>
+          {#if d.encoder === "wasm" || !d.hwSupported}
+            <p class="diag-note">No hardware H.264 — encoding in software. Lower the resolution for a big speedup.</p>
+          {/if}
+          <button class="takeover-btn ghost diag-copy" onclick={copyDiag}>
+            {copied ? "Copied ✓" : "Copy diagnostics"}
+          </button>
+        </div>
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -185,7 +188,19 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
-  /* ── Live diagnostics readout ──────────────────────────────────── */
+  /* ── Live diagnostics readout (floating, top-pinned, scrollable) ── */
+  .diag-overlay {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40; /* above the viewer bottom bar */
+    width: min(340px, calc(100% - 24px));
+    max-height: min(70vh, calc(100% - 32px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    pointer-events: auto;
+  }
   .diag {
     width: 100%;
     display: flex;
@@ -193,8 +208,10 @@
     gap: 10px;
     padding: 12px 14px;
     border-radius: 14px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     font-variant-numeric: tabular-nums;
   }
   .diag-row.big {
