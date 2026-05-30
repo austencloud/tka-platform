@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { __test__ } from "$lib/shared/navigation/services/sequence-encoder";
+import { encodeSequence, decodeSequence } from "$lib/shared/navigation/services/sequence-encoder";
 import {
   MotionType, RotationDirection, Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -51,5 +52,38 @@ describe("decodeMotion derivation", () => {
     expect(m?.rotationDirection).toBe(RotationDirection.NO_ROTATION);
     expect(m?.prefloatRotationDirection).toBe(RotationDirection.CLOCKWISE);
     expect(m?.prefloatMotionType).toBe(MotionType.PRO);
+  });
+});
+
+describe("sequence round-trip (single format)", () => {
+  function staticMotion(loc: GridLocation, prop = PropType.STAFF) {
+    return motion({
+      motionType: MotionType.STATIC, startLocation: loc, endLocation: loc,
+      rotationDirection: RotationDirection.NO_ROTATION, turns: 0,
+      startOrientation: Orientation.IN, endOrientation: Orientation.IN, propType: prop,
+    });
+  }
+  it("round-trips a 1-step sequence; derives pro + carries prop via header; no version sentinel", () => {
+    const original = {
+      id: "x", name: "", word: "", steps: [
+        { stepNumber: 0, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+          motions: { blue: staticMotion(GridLocation.NORTH), red: staticMotion(GridLocation.SOUTH) },
+          id: "s0", letter: null, startPosition: null, endPosition: null },
+        { stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+          motions: {
+            blue: motion({ startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
+            red:  motion({ startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, rotationDirection: RotationDirection.CLOCKWISE, turns: 0 }),
+          },
+          id: "s1", letter: null, startPosition: null, endPosition: null },
+      ],
+      thumbnails: [], isFavorite: false, isCircular: false, tags: [], metadata: {}, sequenceLength: 1,
+    } as never;
+
+    const encoded = encodeSequence(original);
+    expect(encoded).not.toMatch(/^v[123]\|/);
+    const decoded = decodeSequence(encoded);
+    // start beat -> startPosition; the lone step lands at steps[0] (stepNumber 1).
+    expect(decoded.steps[0]!.motions.blue!.motionType).toBe(MotionType.PRO);
+    expect(decoded.steps[0]!.motions.blue!.propType).toBe(PropType.STAFF);
   });
 });

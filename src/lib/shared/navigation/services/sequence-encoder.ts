@@ -177,11 +177,9 @@ function encodeMotion(motion: MotionData | undefined): string {
   return `${startLoc}${endLoc}${rotation}${turns}${prefloatRot}`;
 }
 
-function encodeBeat(beat: StepData | StartPositionData, formatVersion: 1 | 2 | 3 = 3): string {
+function encodeBeat(beat: StepData | StartPositionData): string {
   const motions = beat.motions ?? { blue: undefined, red: undefined };
-  const blueMotion = encodeMotion(motions.blue);
-  const redMotion = encodeMotion(motions.red);
-  return `${blueMotion}:${redMotion}`;
+  return `${encodeMotion(motions.blue)}:${encodeMotion(motions.red)}`;
 }
 
 function decodeMotion(
@@ -270,33 +268,6 @@ function decodeMotion(
     ...(prefloatMotionType && { prefloatMotionType }),
     ...(prefloatRotationDirection && { prefloatRotationDirection }),
   } as MotionData;
-}
-
-function decodeBeat(encoded: string, stepNumber: number, formatVersion: 1 | 2 | 3 = 2): StepData {
-  const parts = encoded.split(":");
-
-  if (parts.length !== 2) {
-    throw new Error(`Invalid beat encoding: ${encoded}`);
-  }
-
-  const blueEncoded = parts[0]!;
-  const redEncoded = parts[1]!;
-
-  return {
-    stepNumber,
-    duration: 1,
-    blueReversal: false,
-    redReversal: false,
-    isBlank: !blueEncoded && !redEncoded,
-    motions: {
-      blue: decodeMotion(blueEncoded, "blue", formatVersion),
-      red: decodeMotion(redEncoded, "red", formatVersion),
-    },
-    id: crypto.randomUUID(),
-    letter: null,
-    startPosition: null,
-    endPosition: null,
-  };
 }
 
 function inferGridModeFromMotion(
@@ -429,51 +400,48 @@ export function encodeSequence(sequence: SequenceData): string {
     }
   }
 
-  // v3 carries the start-orientation seed (blue,red) in a 2-char header and
-  // chains every motion's startOrientation from the previous beat on decode.
   const spMotions = startPositionStep.motions ?? { blue: undefined, red: undefined };
   const blueSeed = ORIENTATION_ENCODE[spMotions.blue?.startOrientation as Orientation] ?? "i";
   const redSeed = ORIENTATION_ENCODE[spMotions.red?.startOrientation as Orientation] ?? "i";
-  const encodedStartPosition = encodeBeat(startPositionStep, 3);
-  const encodedSteps = actualSteps.map((step) => encodeBeat(step, 3));
-  return `v3|${blueSeed}${redSeed}|${encodedStartPosition}|${encodedSteps.join("|")}`;
+  const bluePropCode =
+    PROP_TYPE_ENCODE[(spMotions.blue?.propType ?? PropType.STAFF) as PropType] ??
+    PROP_TYPE_ENCODE[PropType.STAFF];
+  const redPropCode =
+    PROP_TYPE_ENCODE[(spMotions.red?.propType ?? PropType.STAFF) as PropType] ??
+    PROP_TYPE_ENCODE[PropType.STAFF];
+
+  const header = `${blueSeed}${redSeed}${bluePropCode}${redPropCode}`;
+  const encodedStartPosition = encodeBeat(startPositionStep);
+  const encodedSteps = actualSteps.map((step) => encodeBeat(step));
+  return `${header}|${encodedStartPosition}|${encodedSteps.join("|")}`;
 }
 
-/**
- * Decode a v3 flat string. Format: `v3|<blueSeed><redSeed>|<startPos>|<beat>...`
- * where each motion is 6-field (no stored orientation). startOrientation is
- * chained from the seed through each beat; endOrientation is derived per motion.
- */
-function decodeSequenceV3(body: string): SequenceData {
-  const parts = body.split("|");
-  const seed = parts[0] ?? "ii";
-  let blueOri = (ORIENTATION_DECODE[seed[0] ?? "i"] ?? Orientation.IN) as Orientation;
-  let redOri = (ORIENTATION_DECODE[seed[1] ?? "i"] ?? Orientation.IN) as Orientation;
+export function decodeSequence(encoded: string): SequenceData {
+  if (!encoded) throw new Error("Cannot decode empty sequence");
+
+  const parts = encoded.split("|");
+  if (parts.length < 2) throw new Error("Invalid sequence encoding - missing data");
+
+  const header = parts[0] ?? "iiSS";
+  let blueOri = (ORIENTATION_DECODE[header[0] ?? "i"] ?? Orientation.IN) as Orientation;
+  let redOri = (ORIENTATION_DECODE[header[1] ?? "i"] ?? Orientation.IN) as Orientation;
+  const blueProp = (PROP_TYPE_DECODE[header[2] ?? "S"] ?? PropType.STAFF) as PropType;
+  const redProp = (PROP_TYPE_DECODE[header[3] ?? "S"] ?? PropType.STAFF) as PropType;
 
   const beatEncodings = parts.slice(1);
-  if (beatEncodings.length === 0) {
-    throw new Error("Invalid v3 sequence encoding - no beats");
-  }
+  if (beatEncodings.length === 0) throw new Error("Invalid sequence encoding - no beats");
 
   const decodeChained = (enc: string, stepNumber: number): StepData => {
     const segs = enc.split(":");
-    const blueEnc = segs[0] ?? "";
-    const redEnc = segs[1] ?? "";
-    const blue = decodeMotion(blueEnc, "blue", 3, blueOri);
-    const red = decodeMotion(redEnc, "red", 3, redOri);
+    const blue = decodeMotion(segs[0] ?? "", "blue", blueOri, blueProp);
+    const red = decodeMotion(segs[1] ?? "", "red", redOri, redProp);
     if (blue) blueOri = blue.endOrientation;
     if (red) redOri = red.endOrientation;
     return {
-      stepNumber,
-      duration: 1,
-      blueReversal: false,
-      redReversal: false,
-      isBlank: !blueEnc && !redEnc,
+      stepNumber, duration: 1, blueReversal: false, redReversal: false,
+      isBlank: !(segs[0] ?? "") && !(segs[1] ?? ""),
       motions: { blue, red },
-      id: crypto.randomUUID(),
-      letter: null,
-      startPosition: null,
-      endPosition: null,
+      id: crypto.randomUUID(), letter: null, startPosition: null, endPosition: null,
     };
   };
 
@@ -487,138 +455,15 @@ function decodeSequenceV3(body: string): SequenceData {
     motions: startBeat.motions,
   });
 
-  const steps = beatEncodings
-    .slice(1)
+  const steps = beatEncodings.slice(1)
     .filter((e) => e && e.length > 0)
     .map((enc, index) => decodeChained(enc, index + 1));
 
   return {
-    id: crypto.randomUUID(),
-    name: "Shared Sequence",
-    word: "",
-    steps,
-    startingPosition: startPosition,
-    startPosition,
-    thumbnails: [],
-    isFavorite: false,
-    isCircular: false,
-    tags: [],
-    metadata: {},
-    sequenceLength: steps.length,
-  };
-}
-
-export function decodeSequence(encoded: string): SequenceData {
-  if (!encoded) {
-    throw new Error("Cannot decode empty sequence");
-  }
-
-  // v3 strings carry "v3|" (seed header + chained startOrientation); v2 carry
-  // "v2|" (per-motion startOrientation, derived endOrientation); everything else
-  // is legacy v1 (both orientations stored positionally).
-  let formatVersion: 1 | 2 | 3 = 1;
-  let body = encoded;
-  if (encoded.startsWith("v3|")) {
-    formatVersion = 3;
-    body = encoded.slice(3);
-  } else if (encoded.startsWith("v2|")) {
-    formatVersion = 2;
-    body = encoded.slice(3);
-  }
-
-  // v3 needs a sequential chaining pass; handle it in a dedicated path.
-  if (formatVersion === 3) {
-    return decodeSequenceV3(body);
-  }
-
-  const parts = body.split("|");
-  if (parts.length < 1) {
-    throw new Error("Invalid sequence encoding - missing data");
-  }
-
-  const firstPart = parts[0];
-  if (!firstPart) {
-    throw new Error("Invalid sequence encoding - empty first part");
-  }
-  const isLegacyFormat = /^\d+$/.test(firstPart);
-
-  let steps: StepData[];
-
-  if (isLegacyFormat) {
-    const startStep = parseInt(firstPart, 10);
-    if (isNaN(startStep)) {
-      throw new Error("Invalid start beat number");
-    }
-
-    const beatEncodings = parts.slice(1).filter((e) => e && e.length > 0);
-    if (beatEncodings.length === 0) {
-      throw new Error("No step data found in sequence");
-    }
-
-    const startPositionStep: StepData = {
-      stepNumber: 0,
-      motions: { blue: undefined, red: undefined },
-      duration: 1,
-      blueReversal: false,
-      redReversal: false,
-      isBlank: true,
-      id: crypto.randomUUID(),
-      letter: null,
-      startPosition: null,
-      endPosition: null,
-    };
-
-    const sequenceSteps = beatEncodings.map((encoding, index) =>
-      decodeBeat(encoding, startStep + index, formatVersion)
-    );
-
-    steps = [startPositionStep, ...sequenceSteps];
-  } else {
-    const startPositionEncoding = parts[0]!;
-    const startingPosition = decodeBeat(startPositionEncoding, 0, formatVersion);
-
-    const startPosition = createStartPositionData({
-      id: startingPosition.id || crypto.randomUUID(),
-      letter: startingPosition.letter,
-      gridPosition: startingPosition.startPosition,
-      startPosition: startingPosition.startPosition,
-      endPosition: startingPosition.endPosition,
-      motions: startingPosition.motions,
-    });
-
-    const beatEncodings = parts.slice(1).filter((e) => e && e.length > 0);
-
-    steps = beatEncodings.map((encoding, index) =>
-      decodeBeat(encoding, index + 1, formatVersion)
-    );
-
-    return {
-      id: crypto.randomUUID(),
-      name: "Shared Sequence",
-      word: "",
-      steps,
-      startingPosition: startPosition,
-      startPosition,
-      thumbnails: [],
-      isFavorite: false,
-      isCircular: false,
-      tags: [],
-      metadata: {},
-      sequenceLength: steps.length,
-    };
-  }
-
-  return {
-    id: crypto.randomUUID(),
-    name: "Shared Sequence",
-    word: "",
-    steps,
-    thumbnails: [],
-    isFavorite: false,
-    isCircular: false,
-    tags: [],
-    metadata: {},
-    sequenceLength: steps.length,
+    id: crypto.randomUUID(), name: "Shared Sequence", word: "",
+    steps, startingPosition: startPosition, startPosition,
+    thumbnails: [], isFavorite: false, isCircular: false,
+    tags: [], metadata: {}, sequenceLength: steps.length,
   };
 }
 
