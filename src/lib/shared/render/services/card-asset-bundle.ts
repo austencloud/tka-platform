@@ -17,14 +17,33 @@ export interface AssetBundle {
   grids: LoadedAssets["grids"];         // four grid drawables (ImageBitmap | null)
 }
 
+// Square fallback raster size for a dimensionless SVG (TKA pictograph assets +
+// grids are authored on a square viewBox, so a square snapshot is correct).
+const ASSET_SNAPSHOT_SIZE = 950;
+
 /** Re-decode any DrawableImage (HTMLImageElement | ImageBitmap) to an ImageBitmap. */
 async function toBitmap(img: DrawableImage | null): Promise<ImageBitmap | null> {
   if (!img) return null;
   try {
     return await createImageBitmap(img as ImageBitmapSource);
-  } catch (e) {
-    console.warn("[card-asset-bundle] skipping un-decodable cache entry:", e);
-    return null;
+  } catch {
+    // A viewBox-only SVG HTMLImageElement has no intrinsic size, so the bare
+    // createImageBitmap above throws InvalidStateError. Retry with explicit
+    // resize options (using natural dims when present, else a square canonical
+    // size) so the bundle never silently starves the worker pool.
+    try {
+      const el = img as HTMLImageElement;
+      const w = el.naturalWidth || el.width || ASSET_SNAPSHOT_SIZE;
+      const h = el.naturalHeight || el.height || ASSET_SNAPSHOT_SIZE;
+      return await createImageBitmap(img as ImageBitmapSource, {
+        resizeWidth: w,
+        resizeHeight: h,
+        resizeQuality: "high",
+      });
+    } catch (e) {
+      console.warn("[card-asset-bundle] skipping un-decodable cache entry:", e);
+      return null;
+    }
   }
 }
 

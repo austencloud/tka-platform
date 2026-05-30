@@ -262,9 +262,28 @@ export class SvgImageCache {
   }
 
   /**
-   * Browser fallback for loading images from URLs
+   * Browser implementation for loading images from URLs.
+   *
+   * For SVG URLs, fetch the text and route through browserSvgToImage so the
+   * width/height are injected from the viewBox. A raw `img.src = <svg url>` on a
+   * viewBox-only SVG (grids, turn numbers) yields a DIMENSIONLESS HTMLImageElement;
+   * a later createImageBitmap(img) snapshot (AssetBundle build, worker-pool seed)
+   * then throws InvalidStateError and the asset is dropped from the bundle —
+   * starving the worker pool. Routing through the sanitizer gives intrinsic
+   * dimensions with the correct aspect ratio. Mirrors bitmapLoadImageFromUrl.
    */
-  private browserLoadImageFromUrl(url: string): Promise<HTMLImageElement> {
+  private async browserLoadImageFromUrl(url: string): Promise<HTMLImageElement> {
+    if (url.endsWith(".svg") && typeof fetch !== "undefined") {
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const svgText = await response.text();
+          return await this.browserSvgToImage(svgText);
+        }
+      } catch {
+        // Fall through to the direct-load path below.
+      }
+    }
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
