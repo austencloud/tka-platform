@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { firestoreDate } from "$lib/shared/firestore";
+// Leaf import (pure zod), not the barrel: keeps this domain module free of the
+// firebase/firestore runtime that the barrel transitively pulls in.
+import { firestoreDate } from "$lib/shared/firestore/firestore-helpers";
 import type { Timestamp } from "firebase/firestore";
 
 /** A single base adjustment, pre directional-tuple rotation. */
@@ -46,7 +48,7 @@ export function parseDefaultDocId(
   return { gridMode, motionType };
 }
 
-/** Build a doc body from an in-memory placements map (used by the seed + local writes). */
+/** Build a doc body from an in-memory placements map. Inverse of a doc read. */
 export function flattenPlacements(
   gridMode: string,
   motionType: string,
