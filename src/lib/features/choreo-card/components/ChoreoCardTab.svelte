@@ -17,7 +17,6 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import ChoreoCardNavigation from "./Navigation.svelte";
   import ChoreoCardFilters from "./ChoreoCardFilters.svelte";
-  import ChoreoCardExport from "./ChoreoCardExport.svelte";
   import PageDisplay from "./PageDisplay.svelte";
   import type { Catalog } from "../domain/models/Catalog";
   import type { ThumbnailRenderOrchestrator } from "$lib/shared/browse/services/ThumbnailRenderOrchestrator";
@@ -42,11 +41,6 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   const STORAGE_KEY_FAVORITES = "choreoCard.favorites";
   const STORAGE_KEY_GRID_MODE = "choreoCard.gridMode";
   const STORAGE_KEY_AUTHOR = "choreoCard.author";
-  const STORAGE_KEY_SHOW_QR = "choreoCard.showQRCodes";
-  const STORAGE_KEY_HAND_POINTS = "choreoCard.handPointsVisible";
-  const STORAGE_KEY_SHOW_GRID = "choreoCard.showGrid";
-  const STORAGE_KEY_SHOW_TKA = "choreoCard.showTKA";
-  const STORAGE_KEY_SHOW_WORD = "choreoCard.showWord";
   const STORAGE_KEY_INCLUDE_START_POS = "choreoCard.includeStartPosition";
   const STORAGE_KEY_SELECTED_CATALOG = "choreoCard.selectedCatalogId";
   const STORAGE_KEY_TND_FAMILY = "choreoCard.tndFamily";
@@ -59,11 +53,6 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
     "wordCard.favorites": STORAGE_KEY_FAVORITES,
     "wordCard.gridMode": STORAGE_KEY_GRID_MODE,
     "wordCard.author": STORAGE_KEY_AUTHOR,
-    "wordCard.showQRCodes": STORAGE_KEY_SHOW_QR,
-    "wordCard.handPointsVisible": STORAGE_KEY_HAND_POINTS,
-    "wordCard.showGrid": STORAGE_KEY_SHOW_GRID,
-    "wordCard.showTKA": STORAGE_KEY_SHOW_TKA,
-    "wordCard.showWord": STORAGE_KEY_SHOW_WORD,
     "wordCard.includeStartPosition": STORAGE_KEY_INCLUDE_START_POS,
   };
 
@@ -127,13 +116,6 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
   let favorites = $state<boolean>(getPersistedBoolean(STORAGE_KEY_FAVORITES, false));
   let gridMode = $state<string | null>(getPersistedString(STORAGE_KEY_GRID_MODE));
   let author = $state<string | null>(getPersistedString(STORAGE_KEY_AUTHOR));
-  let showQRCodes = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_QR, true));
-
-  // Visibility state (local to choreo cards, defaults match global settings but can be overridden)
-  let handPointsVisible = $state<boolean>(getPersistedBoolean(STORAGE_KEY_HAND_POINTS, true));
-  let showGrid = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_GRID, true));
-  let showTKA = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_TKA, true));
-  let showWord = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_WORD, true));
   let includeStartPosition = $state<boolean>(getPersistedBoolean(STORAGE_KEY_INCLUDE_START_POS, true));
 
   // Context menu for right-click on any choreo card thumbnail.
@@ -462,12 +444,6 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
     persist(STORAGE_KEY_AUTHOR, value);
   }
 
-  function handleShowQRCodesChange(value: boolean) {
-    showQRCodes = value;
-    persist(STORAGE_KEY_SHOW_QR, String(value));
-  }
-
-
   function handleSelectSequence(sequence: SequenceData) {
     openSequenceViewer(sequence, {
       returnPath: "/choreo-cards",
@@ -607,10 +583,6 @@ import { getCachedCatalogs, loadCatalogs as fetchCatalogs, loadCatalogSequences,
           {selectedCatalogId}
           {catalogSequences}
           isLoading={isCatalogLoading || (isLoadingCatalogMetadata && catalogs.length === 0)}
-          {handPointsVisible}
-          {showGrid}
-          {showTKA}
-          {showWord}
           {includeStartPosition}
           tndFamilyId={selectedTnDFamily}
           onBackToCollections={handleBackToCollections}
