@@ -8,9 +8,23 @@
  */
 
 import type { MandalaGeometryCalculator } from "./mandala-geometry-calculator";
-import { renderMandalaSVG } from "./mandala-renderer";
+import { renderMandalaSVG, renderMandalaToCanvas } from "./mandala-renderer";
 import type { MandalaPathOptions } from "./types";
-import type { MandalaPalette, MandalaPathShape } from "../domain/mandala-types";
+import { DEFAULT_OVERLAP_CONFIG } from "../domain/mandala-types";
+import type {
+  MandalaPalette,
+  MandalaPaths,
+  MandalaPathShape,
+} from "../domain/mandala-types";
+import {
+  MANDALA_GRID_RADIUS,
+  ENGINE_GRID_RADIUS,
+  MANDALA_STANDARD_TIP_DX,
+} from "../domain/mandala-constants";
+
+// SVG glow filter stdDeviation (renderMandalaSVG `#glow`). The canvas render
+// emulates it with a device-space shadow, so multiply by the render scale.
+const GLOW_STDDEV = 3;
 
 // Matches SequenceMandala.ROTATION_REF_PERIOD + controller COLOR_CYCLE_BREATHS
 // so exported spin/color rates equal the on-screen rates.
@@ -129,38 +143,65 @@ function pathOptionsFor(shape: MandalaPathShape): MandalaPathOptions | undefined
   return undefined;
 }
 
-/**
- * Render frame `i`'s SVG + rotation. The rotation is returned separately so the
- * caller applies it as a canvas transform after rasterizing (enabling the solid-
- * mode bitmap cache).
- */
-export function renderMandalaFrameSVG(
+type FrameGradient = { blue: [string, string]; red: [string, string]; purple: [string, string] };
+
+export interface MandalaFrameRender {
+  paths: MandalaPaths;
+  palette: MandalaPalette;
+  gradient: FrameGradient | undefined;
+  tipDx: number;
+  rotDeg: number;
+  cacheKey: number | null;
+}
+
+/** Geometry for frame `i`. Depends ONLY on the undulation phase
+ *  (`i % framesPerCycle`), so it is identical across repetitions in both solid
+ *  and flow mode — cache it by cycle index to compute `framesPerCycle` sets
+ *  instead of `totalFrames`. */
+export interface MandalaFrameGeometry {
+  paths: MandalaPaths;
+  tipDx: number;
+}
+
+/** Per-cycle geometry index → geometry. Pass the same map across all frames of
+ *  one export so each undulation phase is computed once. */
+export type MandalaGeometryCache = Map<number, MandalaFrameGeometry>;
+
+function computeFrameGeometry(
   calculator: MandalaGeometryCalculator,
   spec: MandalaFrameSpec,
   math: MandalaFrameMath,
   i: number,
-): MandalaFrameOutput {
-  const { framesPerCycle, totalFrames, turns, colorCycles } = math;
-
-  const cyclePhase = (i % framesPerCycle) / framesPerCycle;
+): MandalaFrameGeometry {
+  const cyclePhase = (i % math.framesPerCycle) / math.framesPerCycle;
   const triangle = cyclePhase < 0.5 ? cyclePhase * 2 : 2 - cyclePhase * 2;
   const tipDx = spec.rangeMax * breatheEase(triangle);
+  const paths = calculator.calculate(
+    spec.steps as any,
+    spec.bluePropType,
+    spec.redPropType,
+    pathOptionsFor(spec.pathShape),
+    { dx: tipDx, dy: 0 },
+  );
+  return { paths, tipDx };
+}
 
-  const clipT = i / totalFrames;
-  const rotDeg = turns * 360 * clipT;
-
+function computeFrameColor(
+  spec: MandalaFrameSpec,
+  math: MandalaFrameMath,
+  i: number,
+): { palette: MandalaPalette; gradient: FrameGradient | undefined } {
+  const clipT = i / math.totalFrames;
   let c1: string, c2: string;
-  let frameGradient:
-    | { blue: [string, string]; red: [string, string]; purple: [string, string] }
-    | undefined;
+  let gradient: FrameGradient | undefined;
 
   if (spec.morphColors) {
-    const cPhase = (clipT * colorCycles) % 1;
+    const cPhase = (clipT * math.colorCycles) % 1;
     c1 = sampleGradient(spec.morphColors, cPhase);
     c2 = sampleGradient(spec.morphColors, (cPhase + 0.4) % 1);
     const c3 = sampleGradient(spec.morphColors, (cPhase + 0.7) % 1);
     const mix = mixColors(c1, c2);
-    frameGradient = { blue: [c1, c3], red: [c2, c1], purple: [mix, c3] };
+    gradient = { blue: [c1, c3], red: [c2, c1], purple: [mix, c3] };
   } else {
     c1 = spec.solidPair![0];
     c2 = spec.solidPair![1];
@@ -172,14 +213,110 @@ export function renderMandalaFrameSVG(
     redStroke: c2, redFill: withAlpha(c2, 0.15),
     purpleStroke: mix, purpleFill: withAlpha(mix, 0.2),
   };
+  return { palette, gradient };
+}
 
-  const paths = calculator.calculate(
-    spec.steps as any,
-    spec.bluePropType,
-    spec.redPropType,
-    pathOptionsFor(spec.pathShape),
-    { dx: tipDx, dy: 0 },
-  );
+/**
+ * Pure per-frame derivation: undulation tipDx, rotation, palette, flow gradient,
+ * and the computed geometry for frame `i`. Shared by the SVG path (any DOM
+ * consumer) and the canvas path (the export worker — fully off main thread).
+ */
+export function deriveFrameRender(
+  calculator: MandalaGeometryCalculator,
+  spec: MandalaFrameSpec,
+  math: MandalaFrameMath,
+  i: number,
+): MandalaFrameRender {
+  const { paths, tipDx } = computeFrameGeometry(calculator, spec, math, i);
+  const { palette, gradient } = computeFrameColor(spec, math, i);
+  const rotDeg = math.turns * 360 * (i / math.totalFrames);
+  // Solid mode: geometry depends only on undulation phase → cache per cycle.
+  const cacheKey = spec.morphColors ? null : i % math.framesPerCycle;
+  return { paths, palette, gradient, tipDx, rotDeg, cacheKey };
+}
+
+/** Reusable mask canvases for {@link renderMandalaToCanvas}'s purple-overlap
+ *  pass, so the export hot loop doesn't allocate two full-res OffscreenCanvas
+ *  per frame. */
+export interface MandalaRenderScratch {
+  a: OffscreenCanvas;
+  b: OffscreenCanvas;
+}
+
+/**
+ * Render frame `i` directly onto an OffscreenCanvas context — background, the
+ * seamless rotation, and the mandala (Path2D, gradient + glow parity with the
+ * on-screen SVG). Runs entirely in the export worker, so SVG rasterization
+ * never touches the main thread.
+ *
+ * @param geoCache  per-cycle geometry cache (compute each undulation phase once)
+ * @param scratch   reusable mask canvases (avoid per-frame allocation)
+ */
+export function renderMandalaFrameToCanvas(
+  ctx: OffscreenCanvasRenderingContext2D,
+  calculator: MandalaGeometryCalculator,
+  spec: MandalaFrameSpec,
+  math: MandalaFrameMath,
+  i: number,
+  geoCache?: MandalaGeometryCache,
+  scratch?: MandalaRenderScratch,
+): void {
+  const cycleKey = i % math.framesPerCycle;
+  let geo = geoCache?.get(cycleKey);
+  if (!geo) {
+    geo = computeFrameGeometry(calculator, spec, math, i);
+    geoCache?.set(cycleKey, geo);
+  }
+  const { palette, gradient } = computeFrameColor(spec, math, i);
+  const rotDeg = math.turns * 360 * (i / math.totalFrames);
+  const { paths, tipDx } = geo;
+  const size = spec.resolution;
+
+  // The on-screen SVG glow stdDeviation is expressed inside the scaled <g>, so
+  // its device-space blur equals stdDeviation × renderScale. Recompute the same
+  // scale renderMandalaToCanvas uses so the canvas shadow matches.
+  const center = size / 2;
+  const effectiveTipDx = Math.max(tipDx, MANDALA_STANDARD_TIP_DX);
+  const tipReach = (effectiveTipDx * MANDALA_GRID_RADIUS) / ENGINE_GRID_RADIUS;
+  const renderScale = center / ((MANDALA_GRID_RADIUS + tipReach) * 1.05);
+
+  ctx.fillStyle = spec.bgColor;
+  ctx.fillRect(0, 0, size, size);
+
+  ctx.save();
+  if (rotDeg !== 0) {
+    ctx.translate(center, center);
+    ctx.rotate((rotDeg * Math.PI) / 180);
+    ctx.translate(-center, -center);
+  }
+  renderMandalaToCanvas(ctx as unknown as CanvasRenderingContext2D, paths, {
+    size,
+    style: "stroke",
+    show: "both",
+    palette,
+    strokeWidth: spec.lineWeight,
+    tipDx,
+    gradient,
+    glow: { blur: GLOW_STDDEV * renderScale, bloomBlur: DEFAULT_OVERLAP_CONFIG.bloomBlur * renderScale },
+    offsetX: 0,
+    offsetY: 0,
+    maskScratch: scratch,
+  });
+  ctx.restore();
+}
+
+/**
+ * Render frame `i`'s SVG + rotation. The rotation is returned separately so a
+ * caller can apply it as a canvas transform after rasterizing. Retained for any
+ * DOM-side SVG consumer; the export worker uses {@link renderMandalaFrameToCanvas}.
+ */
+export function renderMandalaFrameSVG(
+  calculator: MandalaGeometryCalculator,
+  spec: MandalaFrameSpec,
+  math: MandalaFrameMath,
+  i: number,
+): MandalaFrameOutput {
+  const { paths, palette, gradient, tipDx, rotDeg, cacheKey } = deriveFrameRender(calculator, spec, math, i);
 
   const rawSvg = renderMandalaSVG(paths, {
     size: spec.resolution,
@@ -188,7 +325,7 @@ export function renderMandalaFrameSVG(
     palette,
     strokeWidth: spec.lineWeight,
     tipDx,
-    gradient: frameGradient,
+    gradient,
   });
 
   // renderMandalaSVG emits width/height="100%", which has no intrinsic pixel
@@ -198,9 +335,6 @@ export function renderMandalaFrameSVG(
     'width="100%" height="100%"',
     `width="${spec.resolution}" height="${spec.resolution}"`,
   );
-
-  // Solid mode: geometry+SVG depend only on undulation phase → cache per cycle.
-  const cacheKey = spec.morphColors ? null : i % framesPerCycle;
 
   return { svg, rotDeg, cacheKey };
 }

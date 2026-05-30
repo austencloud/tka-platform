@@ -31,11 +31,49 @@ function filledAttributes(strokeColor: string, fillColor: string, strokeWidth: n
 	return `fill="${fillColor}" stroke="${strokeColor}" stroke-width="${sw}" stroke-linecap="round"`;
 }
 
+/**
+ * Bounding box of an SVG path `d` string. The calculator emits only `M`/`C`
+ * commands with absolute coordinate pairs, so every number is an x or y in
+ * alternating order — pair them and track extents. Used to map an
+ * objectBoundingBox-style per-path gradient onto the canvas (parity with the
+ * SVG renderer's `<linearGradient gradientUnits="objectBoundingBox">`).
+ */
+function pathBBox(d: string): { minX: number; minY: number; maxX: number; maxY: number } {
+	const nums = d.match(/-?\d+(?:\.\d+)?/g);
+	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+	if (nums) {
+		for (let i = 0; i + 1 < nums.length; i += 2) {
+			const x = parseFloat(nums[i]!);
+			const y = parseFloat(nums[i + 1]!);
+			if (x < minX) minX = x;
+			if (y < minY) minY = y;
+			if (x > maxX) maxX = x;
+			if (y > maxY) maxY = y;
+		}
+	}
+	if (minX === Infinity) return { minX: 0, minY: 0, maxX: 1, maxY: 1 };
+	return { minX, minY, maxX, maxY };
+}
+
+/** Diagonal gradient across a path's bbox (top-left → bottom-right), matching
+ *  the SVG objectBoundingBox gradient with x1y1=(0,0) x2y2=(1,1). */
+function bboxGradient(
+	ctx: CanvasRenderingContext2D,
+	d: string,
+	stops: [string, string],
+): CanvasGradient {
+	const b = pathBBox(d);
+	const g = ctx.createLinearGradient(b.minX, b.minY, b.maxX, b.maxY);
+	g.addColorStop(0, stops[0]);
+	g.addColorStop(1, stops[1]);
+	return g;
+}
+
 function drawPath(
 	ctx: CanvasRenderingContext2D,
 	d: string,
-	strokeColor: string,
-	fillColor: string,
+	strokeColor: string | CanvasGradient,
+	fillColor: string | CanvasGradient,
 	style: "stroke" | "filled",
 	strokeWidth: number,
 ): void {
@@ -207,9 +245,15 @@ export function renderMandalaToCanvas(
 ): void {
 	const { size, style, show, strokeWidth = 2, offsetX, offsetY } = options;
 	const center = size / 2;
-	const tipReach = MANDALA_STANDARD_TIP_DX * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
+	// Match renderMandalaSVG: the extent grows with the (undulating) tip reach so
+	// breathing frames don't clip. Hardcoding STANDARD here drifted from the SVG
+	// render at larger tipDx — use the same effectiveTipDx formula.
+	const effectiveTipDx = Math.max(options.tipDx ?? MANDALA_STANDARD_TIP_DX, MANDALA_STANDARD_TIP_DX);
+	const tipReach = effectiveTipDx * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
 	const maxExtent = MANDALA_GRID_RADIUS + tipReach;
 	const scale = center / (maxExtent * 1.05);
+
+	const gradient = options.gradient;
 
 	ctx.save();
 
@@ -232,21 +276,23 @@ export function renderMandalaToCanvas(
 
 	if (show === "blue" || show === "both") {
 		if (glow) {
-			ctx.shadowColor = palette.blueStroke;
+			ctx.shadowColor = gradient ? gradient.blue[0] : palette.blueStroke;
 			ctx.shadowBlur = glow.blur;
 		}
 		for (const pathData of paths.blue) {
-			drawPath(ctx, pathData.d, palette.blueStroke, palette.blueFill, style, strokeWidth);
+			const stroke = gradient ? bboxGradient(ctx, pathData.d, gradient.blue) : palette.blueStroke;
+			drawPath(ctx, pathData.d, stroke, palette.blueFill, style, strokeWidth);
 		}
 	}
 
 	if (show === "red" || show === "both") {
 		if (glow) {
-			ctx.shadowColor = palette.redStroke;
+			ctx.shadowColor = gradient ? gradient.red[0] : palette.redStroke;
 			ctx.shadowBlur = glow.blur;
 		}
 		for (const pathData of paths.red) {
-			drawPath(ctx, pathData.d, palette.redStroke, palette.redFill, style, strokeWidth);
+			const stroke = gradient ? bboxGradient(ctx, pathData.d, gradient.red) : palette.redStroke;
+			drawPath(ctx, pathData.d, stroke, palette.redFill, style, strokeWidth);
 		}
 	}
 
@@ -262,10 +308,24 @@ export function renderMandalaToCanvas(
 		const w = ctx.canvas.width;
 		const h = ctx.canvas.height;
 
-		const maskB = new OffscreenCanvas(w, h);
-		const maskR = new OffscreenCanvas(w, h);
+		// Reuse caller-provided scratch canvases (export hot loop) when they match
+		// the target size; otherwise allocate fresh. Reused canvases must be
+		// cleared since the previous frame's mask is still on them.
+		const scratch = options.maskScratch;
+		const reuse = scratch && scratch.a.width === w && scratch.a.height === h && scratch.b.width === w && scratch.b.height === h;
+		const maskB = reuse ? scratch!.a : new OffscreenCanvas(w, h);
+		const maskR = reuse ? scratch!.b : new OffscreenCanvas(w, h);
 		const bC = maskB.getContext("2d")!;
 		const rC = maskR.getContext("2d")!;
+
+		if (reuse) {
+			bC.setTransform(1, 0, 0, 1, 0, 0);
+			rC.setTransform(1, 0, 0, 1, 0, 0);
+			bC.clearRect(0, 0, w, h);
+			rC.clearRect(0, 0, w, h);
+			bC.globalCompositeOperation = "source-over";
+			rC.globalCompositeOperation = "source-over";
+		}
 
 		bC.setTransform(transform);
 		rC.setTransform(transform);
@@ -282,7 +342,10 @@ export function renderMandalaToCanvas(
 		bC.drawImage(maskR, 0, 0);
 
 		bC.globalCompositeOperation = "source-in";
-		bC.fillStyle = options.palette?.purpleStroke ?? PURPLE_STROKE;
+		// The overlap is a thin masked region with a bloom halo; a single
+		// representative color (gradient start in flow mode) reads identically to
+		// the SVG's per-path purple gradient here.
+		bC.fillStyle = gradient ? gradient.purple[0] : (options.palette?.purpleStroke ?? PURPLE_STROKE);
 		bC.fillRect(0, 0, w, h);
 
 		ctx.save();
@@ -291,7 +354,7 @@ export function renderMandalaToCanvas(
 		if (glow) {
 			// Wider purple halo emulates the SVG `bloom` filter merged under the
 			// purple overlap core.
-			ctx.shadowColor = options.palette?.purpleStroke ?? PURPLE_STROKE;
+			ctx.shadowColor = gradient ? gradient.purple[0] : (options.palette?.purpleStroke ?? PURPLE_STROKE);
 			ctx.shadowBlur = glow.bloomBlur ?? glow.blur;
 		}
 		ctx.drawImage(maskB, 0, 0);

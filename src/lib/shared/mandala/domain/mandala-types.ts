@@ -74,6 +74,14 @@ export interface MandalaRenderOptions {
 	 * filters). `bloomBlur` is the wider halo applied to the purple overlap.
 	 */
 	glow?: { blur: number; bloomBlur?: number };
+	/**
+	 * Canvas-only: reusable mask canvases for the purple-overlap pass. When the
+	 * same pair is passed across many `renderMandalaToCanvas` calls (e.g. an
+	 * export hot loop), it avoids allocating two full-res OffscreenCanvas per
+	 * frame. Must match the target canvas size; mismatches fall back to fresh
+	 * allocation.
+	 */
+	maskScratch?: { a: OffscreenCanvas; b: OffscreenCanvas };
 }
 
 export type MandalaPathShape = "arc" | "linear" | "concave" | "hybrid";

@@ -5,13 +5,7 @@ import type {
   MandalaColorMode,
   MandalaPresetId,
 } from "$lib/shared/mandala/domain/mandala-types";
-import { getMandalaGeometryCalculator } from "$lib/shared/mandala/getMandalaGeometryCalculator";
-import {
-  deriveFrameMath,
-  renderMandalaFrameSVG,
-  type MandalaFrameSpec,
-  type MandalaFrameMath,
-} from "$lib/shared/mandala/services/mandala-frame-renderer";
+import type { MandalaFrameSpec } from "$lib/shared/mandala/services/mandala-frame-renderer";
 import type { MandalaExportOut } from "$lib/shared/mandala/workers/mandala-export.worker";
 import {
   estimateExportTime,
@@ -153,8 +147,6 @@ export class MandalaViewerController {
   #worker: Worker | null = null;
   #beforeUnload: ((e: BeforeUnloadEvent) => void) | null = null;
   #cancelRequested = false;
-  #rasterCanvas: HTMLCanvasElement | null = null;
-  #rasterCtx: CanvasRenderingContext2D | null = null;
 
   period = $derived(BASE_PERIOD / this.speed);
   rangeMax = $derived(this.depth * 2.5);
@@ -290,11 +282,10 @@ export class MandalaViewerController {
   }
 
   /**
-   * Export the mandala to an MP4. The main thread rasterizes each frame's SVG to
-   * an ImageBitmap (Chromium can't decode SVG in a Worker) and streams the
-   * bitmaps to a worker that composites the rotation and runs the heavy H.264
-   * encode off the main thread. `createImageBitmap` is async, so the live
-   * on-screen mandala keeps animating between frames.
+   * Export the mandala to an MP4. The worker runs the ENTIRE pipeline off the
+   * main thread — per-frame geometry, gradient/glow canvas render, rotation, and
+   * the H.264 encode — so the on-screen mandala keeps undulating without jank.
+   * The main thread only posts the spec once and reflects progress.
    */
   startExport(): void {
     const sequence = this.#sources.getSequence();
@@ -316,10 +307,11 @@ export class MandalaViewerController {
     const reps = this.exportReps;
     const bitrate = BITRATE_BY_RES[resolution] ?? BITRATE_BY_RES[1080]!;
     const startMs = performance.now();
+    const totalFrames = Math.max(1, Math.ceil(this.period * fps)) * reps;
 
     const isFlow = this.colorMode === "flow";
     // steps may be Svelte reactive proxies / domain class instances. JSON
-    // round-trip yields the plain data the geometry calc needs.
+    // round-trip yields the plain, structured-cloneable data the worker needs.
     const plainSteps = JSON.parse(JSON.stringify(sequence.steps));
     const spec: MandalaFrameSpec = {
       steps: plainSteps,
@@ -338,9 +330,6 @@ export class MandalaViewerController {
       solidPair: isFlow ? null : this.#getPresetPair(),
     };
 
-    const math = deriveFrameMath(spec);
-    const totalFrames = math.totalFrames;
-
     this.#beforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
@@ -353,22 +342,14 @@ export class MandalaViewerController {
     );
     this.#worker = worker;
 
-    // Backpressure: keep at most MAX_INFLIGHT frames queued in the worker so a
-    // fast rasterizer can't pile thousands of bitmaps into worker memory.
-    const MAX_INFLIGHT = 12;
-    let encoded = 0;
-    let resume: (() => void) | null = null;
-
     worker.onmessage = (e: MessageEvent<MandalaExportOut>) => {
       const msg = e.data;
       switch (msg.type) {
-        case "ready":
-          void this.#pumpFrames(worker, spec, math, () => MAX_INFLIGHT - (this.#framesSent - encoded), (r) => (resume = r));
-          break;
         case "progress":
-          encoded = msg.frameIndex;
           this.exportProgress = msg.frameIndex / msg.totalFrames;
-          if (resume) { const r = resume; resume = null; r(); }
+          break;
+        case "finalizing":
+          this.exportPhase = "encoding";
           break;
         case "complete": {
           recordExportThroughput(resolution, totalFrames, performance.now() - startMs);
@@ -393,6 +374,7 @@ export class MandalaViewerController {
           this.exportError = msg.error;
           this.exportPhase = "error";
           this.exporting = false;
+          this.#cancelRequested = true;
           this.#disposeWorker();
           this.#clearBeforeUnload();
           break;
@@ -403,91 +385,12 @@ export class MandalaViewerController {
       this.exportError = e.message || "Worker crashed";
       this.exportPhase = "error";
       this.exporting = false;
+      this.#cancelRequested = true;
       this.#disposeWorker();
       this.#clearBeforeUnload();
     };
 
-    worker.postMessage({ type: "config", width: resolution, height: resolution, fps, bitrate, bgColor: this.bgColor });
-  }
-
-  #framesSent = 0;
-
-  /**
-   * Rasterize each frame's SVG to an ImageBitmap on the main thread and transfer
-   * it to the encode worker, respecting backpressure (`slots()` returns how many
-   * more frames may be in flight; when 0, wait for the worker to drain).
-   */
-  async #pumpFrames(
-    worker: Worker,
-    spec: MandalaFrameSpec,
-    math: MandalaFrameMath,
-    slots: () => number,
-    setResume: (r: () => void) => void,
-  ): Promise<void> {
-    this.#framesSent = 0;
-    const calculator = getMandalaGeometryCalculator();
-    const size = spec.resolution;
-
-    try {
-      for (let i = 0; i < math.totalFrames; i++) {
-        if (this.#cancelRequested) return;
-        while (slots() <= 0) {
-          await new Promise<void>((r) => setResume(r));
-          if (this.#cancelRequested) return;
-        }
-
-        const { svg, rotDeg } = renderMandalaFrameSVG(calculator, spec, math, i);
-        const bitmap = await this.#rasterizeSvg(svg, size);
-        if (this.#cancelRequested) {
-          bitmap.close();
-          return;
-        }
-        this.#framesSent++;
-        worker.postMessage({ type: "frame", bitmap, rotDeg, index: i, totalFrames: math.totalFrames }, [bitmap]);
-      }
-      if (this.#cancelRequested) return;
-      this.exportPhase = "encoding";
-      worker.postMessage({ type: "finish" });
-    } catch (err) {
-      if (this.#cancelRequested) return;
-      console.error("Mandala frame pump failed:", err);
-      this.exportError = err instanceof Error ? err.message : String(err);
-      this.exportPhase = "error";
-      this.exporting = false;
-      this.#disposeWorker();
-      this.#clearBeforeUnload();
-    }
-  }
-
-  /**
-   * Rasterize a mandala SVG string to an ImageBitmap on the main thread.
-   * Chromium cannot `createImageBitmap` an SVG blob (InvalidStateError), so we
-   * decode via an <img>, draw to a reused canvas, then `createImageBitmap` the
-   * canvas (which Chrome does support) to get a transferable bitmap for the
-   * encode worker.
-   */
-  async #rasterizeSvg(svg: string, size: number): Promise<ImageBitmap> {
-    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
-    try {
-      const img = new Image(size, size);
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("SVG frame failed to load"));
-        img.src = url;
-      });
-      if (!this.#rasterCanvas || this.#rasterCanvas.width !== size) {
-        this.#rasterCanvas = document.createElement("canvas");
-        this.#rasterCanvas.width = size;
-        this.#rasterCanvas.height = size;
-        this.#rasterCtx = this.#rasterCanvas.getContext("2d");
-      }
-      const ctx = this.#rasterCtx!;
-      ctx.clearRect(0, 0, size, size);
-      ctx.drawImage(img, 0, 0, size, size);
-      return await createImageBitmap(this.#rasterCanvas);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
+    worker.postMessage({ type: "start", spec, bitrate });
   }
 
   cancelExport(): void {
