@@ -56,40 +56,50 @@ classification or a propagation of those inputs.
 | blue prop type | 1 char | sequence-wide; supports cat-dog mixed props |
 | red prop type | 1 char | sequence-wide |
 
-**Per motion:**
+**Per motion (uniform — no float special case):**
 
 | Field | Width | Notes |
 |-------|-------|-------|
 | startLocation | 2 char | |
 | endLocation | 2 char | |
-| rotationDirection | 1 char | `cw` / `ccw` / `noRotation` |
+| rotationDirection | 1 char | `cw` / `ccw` / `noRotation`. For a float this slot carries the **prefloat** rotation direction (always `cw`/`ccw`, since floats are always shifts). |
 | turns | existing turn-code | whole + half turns (0, 0.5, 1, 1.5, …) and `f` for float; encoding carried over from v3 unchanged |
 
-**Per FLOAT motion only (appended when `turns == "fl"`):**
+**Every motion is exactly these four fields.** There is no appended float tail.
 
-| Field | Width | Notes |
-|-------|-------|-------|
-| prefloatMotionType | 1 char | the pro/anti the float came from — NOT derivable from geometry (same locations could come from either) |
+The key symmetry: every motion already has a `rotationDirection` slot, and for a
+float that slot was otherwise wasted (it would hold `noRotation`, which carries no
+information). Instead, a float stores its **prefloat rotation direction** in that
+slot. This is sound because:
 
-`prefloatRotationDirection` is **NOT stored** — it is derived from
-`prefloatMotionType + startLoc + endLoc` via the same orbital-direction rule. The
-codebase already mandates this: `SoloPropStepData.ts:25-27` and
-`sequence-decomposer.ts:26-27` both document that prefloatRotationDirection is
-intentionally not persisted, and `step-deriver.ts:derivePrefloatRotation` is the
-canonical deriver. Storing it would violate the derive-don't-store principle this
-codec is built on.
+- Floats are always shifts (MCP: "float only applies to shifts"), so the prefloat
+  is always pro/anti, so the prefloat rotation is always `cw`/`ccw` — the slot
+  always carries a real value.
+- `prefloatMotionType` is then derived from that rotation + locations using the
+  **same** orbital rule that derives a normal motion's `motionType` from its
+  rotation. The `prefloatMotionType ↔ prefloatRotationDirection` map is the same
+  bijection as `motionType ↔ rotationDirection`, just applied to the prefloat
+  slot. The forward half already exists (`step-deriver.ts:derivePrefloatRotation`,
+  `SoloPropStepData.ts:25-27`); the codec uses its inverse on decode.
+
+So neither prefloat field is stored separately: the rotation lives in the existing
+per-motion rotation slot, and the motion type is derived. Float collapses to the
+same 4-field shape as every other motion.
 
 ### Derived on decode
 
-- **motionType** — from `{startLocation, endLocation, rotationDirection, turns}`
+- **isFloat** — `turns == "fl"`; sets `motionType = float` and routes the stored
+  rotation slot to `prefloatRotationDirection`
+- **motionType** (non-float) — from `{startLocation, endLocation,
+  rotationDirection, turns}`
+- **prefloatMotionType** (float only) — from the stored rotation slot + locations
+  (same orbital rule as motionType)
 - **handPath** (incl. hashIn/hashOut) — from locations (center involvement) +
   orbital direction
 - **startOrientation** (per motion) — chained from the seed, per hand
 - **endOrientation** (per motion) — from motionType + turns + rotationDirection +
-  locations + startOrientation
+  locations + startOrientation (floats use the locations-only handpath rule)
 - **propType** (per motion) — copied from the header value for the motion's color
-- **prefloatRotationDirection** (floats only) — from `prefloatMotionType` +
-  locations
 
 ### Why each derived field is safe to drop
 
@@ -106,11 +116,13 @@ codec is built on.
 
 ### Size
 
-Per-motion drops from 8 fields (v1) → 6 (v3) → **4** here (plus a 2-field tail on
-floats only). propType moves from N per-motion occurrences to 2 header chars. For
-a typical 8-step two-hand sequence the motion payload is roughly half of v1, and
-every redundant axis (orientation, motionType, per-motion prop) is structurally
-impossible to desynchronize from its source.
+Per-motion drops from 8 fields (v1) → 6 (v3) → **4** here, uniformly — floats
+included (the prefloat rotation rides in the existing rotation slot, so a float is
+the same 4 fields as anything else, no tail). propType moves from N per-motion
+occurrences to 2 header chars. For a typical 8-step two-hand sequence the motion
+payload is roughly half of v1, and every redundant axis (orientation, motionType,
+handPath, per-motion prop, prefloatMotionType) is structurally impossible to
+desynchronize from its source.
 
 ---
 
@@ -154,7 +166,7 @@ deriveMotionType(startLoc, endLoc, rotationDirection, turns):
 
 ```
 deriveHandPath(startLoc, endLoc, rotationDirection, turns):
-    if turns == "fl":                       return (cw|ccw|none per prefloat)
+    if turns == "fl":                       return orbit(startLoc, endLoc)  # the stored slot already holds prefloat cw/ccw
     orbit = deriveHandOrbitalDirection(startLoc, endLoc)
     if orbit != null:                        return orbit            # cw / ccw (shift)
     if startLoc == endLoc:                    return STATIC
@@ -189,8 +201,10 @@ the existing partial `deriveMotionType` at it. No new orbital table is authored.
 ### Why the rule is correct for each type
 
 - **float:** identified by the `turns == "fl"` marker before any geometry check.
-  Its underlying pro/anti is preserved as the stored `prefloatMotionType`; the
-  prefloat rotation direction is then derived from that plus locations.
+  The motion's stored rotation slot holds the prefloat rotation direction
+  (`cw`/`ccw`); `prefloatMotionType` is derived from that slot + locations via the
+  same orbital rule. Nothing about the float is stored beyond the four uniform
+  fields.
 - **shift (pro/anti):** `deriveHandOrbitalDirection` returns the arc direction;
   `rotationDirection` is guaranteed `cw`/`ccw` on shifts (see invariant below), so
   the pro/anti comparison always has a real direction to compare against.
@@ -203,10 +217,14 @@ Pro-vs-anti derivation requires that **every shift stores a `cw`/`ccw`
 rotationDirection, even at 0 turns.** Confirmed in
 `step-operations/turns-handler.ts:88-111`: the block that zeroes
 `rotationDirection` to `NO_ROTATION` at 0 turns is gated on `isDashOrStatic`.
-Shifts are exempt — a 0-turn pro/anti keeps its arc direction. Float is the only
-place a shift's rotationDirection is cleared (`turns-handler.ts:70-77`), and that
-case is caught first by the `turns == "fl"` branch, with the real direction
-preserved in `prefloatRotationDirection`.
+Shifts are exempt — a 0-turn pro/anti keeps its arc direction. In the live model a
+float clears `rotationDirection` to `NO_ROTATION` and stashes the real direction in
+`prefloatRotationDirection` (`turns-handler.ts:70-77`). The codec inverts this on
+**encode**: for a float it writes the prefloat rotation direction into the single
+stored rotation slot (never `noRotation`, since floats are always shifts), and on
+**decode** routes that slot back to `prefloatRotationDirection` while setting
+`motionType = float`. The `turns == "fl"` marker is what tells encode/decode which
+interpretation the slot takes.
 
 The decode pipeline orders derivation as a DAG with no cycles:
 `motionType` (needs only locs + rotDir + turns) → `startOrientation` (chained
@@ -278,8 +296,14 @@ and one decode path.
 ```
 encoded string
   -> parse header (2 ori seeds, 2 prop types)
-  -> for each motion: parse {startLoc, endLoc, rotDir, turns [+ prefloat if fl]}
-       -> deriveMotionType(locs, rotDir, turns)
+  -> for each motion: parse {startLoc, endLoc, rotDir, turns}   # 4 fields, uniform
+       if turns == "fl":
+         -> motionType = float
+         -> prefloatRotationDirection = rotDir           # the stored slot
+         -> prefloatMotionType = deriveMotionType-rule(locs, rotDir)
+       else:
+         -> motionType = deriveMotionType(locs, rotDir, turns)
+       -> handPath        = deriveHandPath(locs, rotDir, turns)
        -> startOrientation = running per-hand chain (seeded)
        -> endOrientation   = calculateEndOrientation(type, turns, rotDir, locs, startOri)
        -> propType         = header[color]
@@ -311,7 +335,9 @@ the weeds."
    against hand-reasoning.
 2. **Round-trip.** For a representative sequence set: encode → decode reproduces
    every motion's motionType, handPath, startOrientation, endOrientation,
-   propType, stored `prefloatMotionType`, and derived `prefloatRotationDirection`.
+   propType, and — for floats — both `prefloatMotionType` (derived) and
+   `prefloatRotationDirection` (the stored rotation slot). A float-specific case
+   asserts the stored rotation slot round-trips and the pro/anti is recovered.
 3. **Orientation algebra** (carried over from the v2/v3 tests): pro/anti × turns
    parities, fractional turns, nonradial seeds.
 4. **Drift guard.** Extend `deriver-parity.test.ts` to assert the codec's
@@ -331,10 +357,14 @@ on a guessed type.
 ## Success criteria
 
 - One encode path, one decode path; no version sentinels anywhere in the codec.
-- `motionType`, both orientations, and per-motion `propType` are absent from the
-  stored string and reconstructed on decode.
-- Exhaustive corpus parity test passes for every motion in both grid modes.
-- Round-trip preserves all derived fields + prefloat.
-- `deriveHandOrbitalDirection` / `deriveMotionType` / `calculateEndOrientation`
-  exist as exactly one canonical copy each.
+- Every motion is exactly four stored fields (startLoc, endLoc, rotationDirection,
+  turns); no float special-case tail.
+- `motionType`, `handPath`, both orientations, per-motion `propType`, and (for
+  floats) `prefloatMotionType` are absent from the stored string and reconstructed
+  on decode. A float's prefloat rotation rides in the existing rotation slot.
+- Exhaustive corpus parity test passes for every motion in both grid modes, on
+  both the `motionType` and `handPath` axes.
+- Round-trip preserves all derived fields, including float prefloat recovery.
+- `deriveHandOrbitalDirection` / `deriveMotionType` / `deriveHandPath` /
+  `calculateEndOrientation` exist as exactly one canonical copy each.
 - `reencodeFlat`, recipe-hash version logic, and the v1/v2/v3 branches are gone.
