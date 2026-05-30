@@ -737,27 +737,5 @@ export function verifySequenceRoundTrip(
   return { ok: true, decoded };
 }
 
-/**
- * Re-encode a flat sequence string at a target format version. Used by the
- * compositional decoder to recompute a recipe hash in the SAME version the
- * original recipe was hashed in (old r1: recipes hashed on v1, new on v2).
- */
-export function reencodeFlat(encoded: string, targetVersion: 1 | 2 | 3): string {
-  const seq = decodeSequence(encoded);
-  // encodeSequence emits v3 (current format).
-  if (targetVersion === 3) return encodeSequence(seq);
-
-  // v1/v2: re-emit start position + steps at the target version. The decoded
-  // sequence has all orientations populated, so the older fuller formats encode
-  // byte-identically to how they were originally produced.
-  const startBeat = seq.startPosition ?? seq.startingPosition;
-  const start = startBeat ? encodeBeat(startBeat, targetVersion) : ":";
-  const steps = seq.steps
-    .filter((s) => s.stepNumber !== 0)
-    .map((s) => encodeBeat(s, targetVersion));
-  const flat = `${start}|${steps.join("|")}`;
-  return targetVersion === 2 ? `v2|${flat}` : flat;
-}
-
 /** Test-only handles for unit tests. Not part of the public API. */
 export const __test__ = { encodeMotion, decodeMotion, encodeBeat };
