@@ -15,6 +15,16 @@ const POOL_SIZE = Math.max(
   (typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 4 : 4) - 1,
 );
 
+// Parallel front rendering is DISABLED: benchmarked 0.45x (2.2x SLOWER) vs the
+// main thread. Warm, per-cell raster is only ~13% of render time; ~87% is
+// main-thread assembly (borders/QR/mandala/header glyphs/footer + draw). The
+// worker pool can only offload that 13% and pays a per-cell tax for it — deep
+// clone of prepared data + PNG encode in-worker + createImageBitmap decode on
+// main. Amdahl + IPC = net loss. The infrastructure (assembler extraction,
+// seed bundle) is kept for a future full-card-in-worker rebuild, which is the
+// only path to a real multicore win but requires decoupling assembly from $env.
+const PARALLEL_FRONT_ENABLED = false;
+
 export class CardFrontWorkerPool {
   private lanes: Lane[] = [];
   private pending = new Map<number, PendingRender>();
@@ -24,6 +34,7 @@ export class CardFrontWorkerPool {
   private booted = false;
 
   isReady(): boolean {
+    if (!PARALLEL_FRONT_ENABLED) return false;
     return this.booted && this.lanes.length > 0 && this.deckKey !== null && this.lanes.every((l) => l.seeded);
   }
 
@@ -49,6 +60,7 @@ export class CardFrontWorkerPool {
     opts: { bluePropType: PropType; redPropType: PropType; theme: string },
     deckKey: string,
   ): Promise<void> {
+    if (!PARALLEL_FRONT_ENABLED) return; // disabled — see PARALLEL_FRONT_ENABLED note
     await this.boot();
     if (this.lanes.length === 0) return; // no OffscreenCanvas
     if (this.deckKey === deckKey && this.lanes.every((l) => l.seeded)) return;
