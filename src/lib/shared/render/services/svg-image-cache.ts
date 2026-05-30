@@ -14,7 +14,6 @@
  */
 
 // TEMP assembly profiler — DECODE phase tap. Times the SVG→drawable miss path.
-import { assemblyProbe } from "./__assembly-perf-probe";
 
 /** Union type for drawable images (works with canvas drawImage) */
 export type DrawableImage = ImageBitmap | HTMLImageElement;
@@ -44,15 +43,12 @@ export class SvgImageCache {
     }
 
     // Start loading
-    // TEMP assembly profiler — DECODE tap (svgToImage miss path).
-    const t0 = assemblyProbe.enabled ? performance.now() : 0;
     const loadPromise = this.svgToImage(svgString);
     this.pendingLoads.set(key, loadPromise);
 
     try {
       const img = await loadPromise;
       this.cache.set(key, img);
-      if (assemblyProbe.enabled) assemblyProbe.decodeMs += performance.now() - t0;
       return img;
     } finally {
       this.pendingLoads.delete(key);
@@ -76,15 +72,12 @@ export class SvgImageCache {
     }
 
     // Start loading
-    // TEMP assembly profiler — DECODE tap (URL load miss path).
-    const t0 = assemblyProbe.enabled ? performance.now() : 0;
     const loadPromise = this.loadImageFromUrl(url);
     this.pendingLoads.set(url, loadPromise);
 
     try {
       const img = await loadPromise;
       this.cache.set(url, img);
-      if (assemblyProbe.enabled) assemblyProbe.decodeMs += performance.now() - t0;
       return img;
     } finally {
       this.pendingLoads.delete(url);

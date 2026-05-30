@@ -51,8 +51,6 @@ import {
   DARK_MOTION_PURPLE_FILL,
 } from "../../mandala/domain/mandala-constants";
 import type { PreparedPictographData } from '../../pictograph/shared/domain/models/PreparedPictographData';
-// TEMP assembly profiler — phase timing for the cold-deck profiler harness.
-import { assemblyProbe } from "./__assembly-perf-probe";
 
 const yieldToEventLoop: () => Promise<void> =
   (globalThis as unknown as Record<string, Record<string, () => Promise<void>>>).scheduler?.yield?.bind((globalThis as unknown as Record<string, unknown>).scheduler) ??
@@ -438,8 +436,6 @@ export class ImageComposer {
       textRenderer: this.TextRenderer,
       qrCodeGenerator: this.qrCodeGenerator,
       renderMandalas: async (c) => {
-        // TEMP assembly profiler — MANDALA tap.
-        const t0 = assemblyProbe.enabled ? performance.now() : 0;
         await this.renderMandalas(
           c,
           sequence,
@@ -453,13 +449,10 @@ export class ImageComposer {
           effectiveBluePropType,
           effectiveRedPropType
         );
-        if (assemblyProbe.enabled) assemblyProbe.mandalaMs += performance.now() - t0;
       },
       renderQRCode: async (c) => {
         const emptyCell = findEmptyCellForQR(columns, rows, sequence, options);
         if (emptyCell) {
-          // TEMP assembly profiler — QR tap.
-          const t0 = assemblyProbe.enabled ? performance.now() : 0;
           await this.renderQRCode(
             c,
             sequence,
@@ -473,7 +466,6 @@ export class ImageComposer {
             options.deckId,
             options.deckName,
           );
-          if (assemblyProbe.enabled) assemblyProbe.qrMs += performance.now() - t0;
         }
       },
     };
@@ -914,18 +906,12 @@ export class ImageComposer {
       visibilitySettings
     );
 
-    // TEMP assembly profiler — CELL tap (LayerCompositor.compose per cell).
-    const cellT0 = assemblyProbe.enabled ? performance.now() : 0;
     const result = await this.layerCompositor.compose(
       preparedPictograph as unknown as PreparedPictographData,
       layerOptions,
       layerVisibility,
       stepNumber
     );
-    if (assemblyProbe.enabled) {
-      assemblyProbe.cellMs += performance.now() - cellT0;
-      assemblyProbe.cellCount++;
-    }
 
     if (result.cacheStats.baseFromCache) {
       this.compositionL2Hits++;
@@ -937,10 +923,7 @@ export class ImageComposer {
 
     const x = column * stepSize + horizontalOffset;
     const y = row * stepSize + titleOffset;
-    // TEMP assembly profiler — COMPOSITE tap (cell drawImage onto card canvas).
-    const compT0 = assemblyProbe.enabled ? performance.now() : 0;
     ctx.drawImage(result.canvas, x, y, stepSize, stepSize);
-    if (assemblyProbe.enabled) assemblyProbe.compositeMs += performance.now() - compT0;
   }
 
   async composeCardImage(
