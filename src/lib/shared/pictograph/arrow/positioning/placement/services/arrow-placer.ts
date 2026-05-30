@@ -17,6 +17,24 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("ArrowPlacer");
 
+/**
+ * Optional Firestore-first override for default base adjustments. Registered by
+ * default-override-singleton on init. Unset in workers / pre-auth → pure JSON.
+ * Returns the stored base [x, y] or null to fall through to the static map.
+ */
+export type DefaultOverrideResolver = (
+  gridMode: string,
+  motionType: string,
+  placementKey: string,
+  turns: string,
+) => [number, number] | null;
+
+let defaultOverrideResolver: DefaultOverrideResolver | null = null;
+
+export function setDefaultOverrideResolver(fn: DefaultOverrideResolver | null): void {
+  defaultOverrideResolver = fn;
+}
+
 export class ArrowPlacer {
   private jsonCacheImpl: SimpleJsonCache;
   private allPlacements: AllPlacementData = {
@@ -185,6 +203,21 @@ export class ArrowPlacer {
   ): Promise<{ x: number; y: number }> {
     await this.ensureDataLoaded(gridMode);
 
+    const turnsStr = this.formatTurnsForLookup(turns);
+
+    // Firestore-first: an admin default override shadows the static JSON value.
+    if (defaultOverrideResolver) {
+      const override = defaultOverrideResolver(
+        gridMode as unknown as string,
+        motionType as unknown as string,
+        placementKey,
+        turnsStr
+      );
+      if (override) {
+        return { x: override[0], y: override[1] };
+      }
+    }
+
     const gridPlacements = this.allPlacements[gridMode];
     if (!gridPlacements) {
       return { x: 0, y: 0 };
@@ -200,10 +233,7 @@ export class ArrowPlacer {
       return { x: 0, y: 0 };
     }
 
-    // Convert turns to string format used in JSON
-    const turnsStr = this.formatTurnsForLookup(turns);
     const adjustment = placementData[turnsStr];
-
     if (!adjustment) {
       return { x: 0, y: 0 };
     }
