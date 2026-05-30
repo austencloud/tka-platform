@@ -344,6 +344,11 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     // cores. deckKey changes when the visual inputs change → triggers a re-seed.
     try {
       const { getCardFrontWorkerPool } = await import("$lib/shared/render/services/card-front-worker-pool");
+      // deckKey uses seqs.length (not a content hash): the seeded bundle is a
+      // SUPERSET SVG cache (props/arrows/grids/letters) gated by prop type, not
+      // by which exact sequences are in the deck. A bundle miss only triggers
+      // the per-cell main-thread fallback, never a wrong render — per-card
+      // correctness is enforced separately by buildCacheKey's hashSequenceContent.
       const deckKey = [seqs.length, resolvedBlueProp, resolvedRedProp, resolvedBackground, CARD_RENDER_SCHEMA].join("|");
       await getCardFrontWorkerPool().seedForDeck(
         seqs,
