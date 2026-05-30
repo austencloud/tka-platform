@@ -269,38 +269,60 @@ export function renderMandalaToCanvas(
 		purpleFill: PURPLE_FILL,
 	};
 
-	// Opt-in soft glow: a matching-color canvas shadow under each stroke emulates
-	// the SVG `feGaussianBlur` glow filter (blurred copy merged beneath the crisp
-	// source). shadowBlur is DEVICE-space, so the value passed is already in px.
+	// Opt-in soft glow (export only). The original parity render set a
+	// `shadowBlur` on EVERY stroke — on mobile that is one offscreen blur per
+	// path (dozens per frame) and dominates render time. Collapse it to ONE blur
+	// per color: draw the color's crisp strokes onto a scratch canvas, then blit
+	// that whole layer to the target a single time with the shadow enabled, so
+	// the entire layer gets one halo. The per-stroke version already used a
+	// single representative shadow color per layer (gradient start in flow mode),
+	// and per-stroke globalAlpha accumulates identically on the scratch, so this
+	// is visually equivalent. Non-glow callers (card back, gallery) keep the
+	// direct draw with no extra canvas.
 	const glow = options.glow;
+	const w = ctx.canvas.width;
+	const h = ctx.canvas.height;
+	const sc = options.maskScratch;
+	const scratchFits = !!sc && sc.a.width === w && sc.a.height === h && sc.b.width === w && sc.b.height === h;
+	const glowBlue = glow ? (scratchFits ? sc!.a : new OffscreenCanvas(w, h)) : null;
+	const glowRed = glow ? (scratchFits ? sc!.b : new OffscreenCanvas(w, h)) : null;
+
+	const paintColor = (
+		layerPaths: { d: string }[],
+		solidStroke: string,
+		fillColor: string,
+		gradientPair: [string, string] | undefined,
+		glowCanvas: OffscreenCanvas | null,
+	): void => {
+		if (!glow || !glowCanvas) {
+			for (const p of layerPaths) {
+				const stroke = gradientPair ? bboxGradient(ctx, p.d, gradientPair) : solidStroke;
+				drawPath(ctx, p.d, stroke, fillColor, style, strokeWidth);
+			}
+			return;
+		}
+		const gctx = glowCanvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+		gctx.setTransform(1, 0, 0, 1, 0, 0);
+		gctx.globalCompositeOperation = "source-over";
+		gctx.clearRect(0, 0, w, h);
+		gctx.setTransform(ctx.getTransform());
+		for (const p of layerPaths) {
+			const stroke = gradientPair ? bboxGradient(gctx, p.d, gradientPair) : solidStroke;
+			drawPath(gctx, p.d, stroke, fillColor, style, strokeWidth);
+		}
+		ctx.save();
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.shadowColor = gradientPair ? gradientPair[0] : solidStroke;
+		ctx.shadowBlur = glow.blur;
+		ctx.drawImage(glowCanvas, 0, 0);
+		ctx.restore();
+	};
 
 	if (show === "blue" || show === "both") {
-		if (glow) {
-			ctx.shadowColor = gradient ? gradient.blue[0] : palette.blueStroke;
-			ctx.shadowBlur = glow.blur;
-		}
-		for (const pathData of paths.blue) {
-			const stroke = gradient ? bboxGradient(ctx, pathData.d, gradient.blue) : palette.blueStroke;
-			drawPath(ctx, pathData.d, stroke, palette.blueFill, style, strokeWidth);
-		}
+		paintColor(paths.blue, palette.blueStroke, palette.blueFill, gradient?.blue, glowBlue);
 	}
-
 	if (show === "red" || show === "both") {
-		if (glow) {
-			ctx.shadowColor = gradient ? gradient.red[0] : palette.redStroke;
-			ctx.shadowBlur = glow.blur;
-		}
-		for (const pathData of paths.red) {
-			const stroke = gradient ? bboxGradient(ctx, pathData.d, gradient.red) : palette.redStroke;
-			drawPath(ctx, pathData.d, stroke, palette.redFill, style, strokeWidth);
-		}
-	}
-
-	// Reset shadow so the mask-building passes below are crisp; the purple
-	// overlap gets its own (wider) bloom shadow when it is composited.
-	if (glow) {
-		ctx.shadowColor = "transparent";
-		ctx.shadowBlur = 0;
+		paintColor(paths.red, palette.redStroke, palette.redFill, gradient?.red, glowRed);
 	}
 
 	if (show === "both" && paths.blue.length > 0 && paths.red.length > 0) {
