@@ -7,7 +7,11 @@
   function avatarThumbUrl(id: string): string {
     return `${R2_CDN}/models/avatars/thumbnails/${id}.webp`;
   }
-  let thumbErrors = $state(new Set<string>());
+  // Track which thumbnails genuinely finished loading. The avatar icon is the
+  // always-rendered base layer; the thumbnail only paints once onload fires, so
+  // a missing/404 thumbnail can never flash a broken-image glyph. Upload
+  // thumbnails to the CDN later and they light up automatically.
+  let loadedThumbs = $state(new Set<string>());
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
   import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
   import EffectsSettingsPanel from "./EffectsSettingsPanel.svelte";
@@ -264,26 +268,25 @@
                 <button
                   class="avatar-card"
                   class:selected={performer?.avatarModelId === def.id}
-                  class:has-thumb={!thumbErrors.has(def.id)}
+                  class:has-thumb={loadedThumbs.has(def.id)}
                   role="radio"
                   aria-checked={performer?.avatarModelId === def.id}
                   onclick={() => pickAvatar(def.id as AvatarId)}
                   title={def.description}
                 >
-                  {#if !thumbErrors.has(def.id)}
-                    <img
-                      class="avatar-thumb"
-                      src={avatarThumbUrl(def.id)}
-                      alt={def.name}
-                      loading="lazy"
-                      onerror={() => { thumbErrors.add(def.id); thumbErrors = thumbErrors; }}
-                    />
-                  {:else}
-                    <i
-                      class="fas {def.icon ?? 'fa-user'}"
-                      aria-hidden="true"
-                    ></i>
-                  {/if}
+                  <i
+                    class="fas {def.icon ?? 'fa-user'} avatar-fallback-icon"
+                    class:hidden={loadedThumbs.has(def.id)}
+                    aria-hidden="true"
+                  ></i>
+                  <img
+                    class="avatar-thumb"
+                    class:loaded={loadedThumbs.has(def.id)}
+                    src={avatarThumbUrl(def.id)}
+                    alt=""
+                    loading="lazy"
+                    onload={() => loadedThumbs.add(def.id)}
+                  />
                   <span class="avatar-card-name">{def.name}</span>
                 </button>
               {/each}
@@ -781,6 +784,10 @@
     justify-content: flex-end;
   }
 
+  .avatar-fallback-icon.hidden {
+    display: none;
+  }
+
   .avatar-thumb {
     position: absolute;
     inset: 0;
@@ -788,8 +795,13 @@
     height: 100%;
     object-fit: cover;
     object-position: center top;
-    opacity: 0.75;
+    /* Hidden until a real onload fires, so a 404 never shows a broken glyph. */
+    opacity: 0;
     transition: opacity 160ms ease;
+  }
+
+  .avatar-thumb.loaded {
+    opacity: 0.75;
   }
 
   .avatar-card.has-thumb:hover .avatar-thumb,
