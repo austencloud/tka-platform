@@ -9,6 +9,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import type { TnDElement } from "../../domain/tnd-element";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
+  import { planPrintSlots } from "../../services/print-slot-planner";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getCatalogLayoutPolicy } from "../../domain/catalog-layout-policy";
@@ -38,6 +39,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     deckMode?: boolean;
     /** Bump to force a full re-render of all cards */
     rerenderKey?: number;
+    /** Whole-deck copies. Each element fills whole sheets, repeated N times.
+     *  Reuses cached renders — a copy costs one extra <img>, never a re-render. */
+    copies?: number;
     /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
     onCardContextMenu?: (x: number, y: number, rerender: () => void, sequence: SequenceData) => void;
     /** Left-click a card to inspect it (includes the pre-rendered front image URL and a rerender callback) */
@@ -72,6 +76,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     footers,
     deckMode = false,
     rerenderKey = 0,
+    copies = 1,
     onCardContextMenu,
     onCardClick,
     onPairsReady,
@@ -134,37 +139,35 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     Math.max(2, (typeof navigator !== "undefined" ? navigator.hardwareConcurrency : 0) || 4),
   );
 
-  // Group rendered cards into sheet batches with row isolation by element
+  function capitalize(s: string | null): string {
+    return s ? s[0]!.toUpperCase() + s.slice(1) : "";
+  }
+
+  interface SheetSlot {
+    card: RenderedCard;
+    seqIndex: number | null;
+    elementName: string | null;
+  }
+
+  // Strict page isolation: each element fills whole sheets (planner pads with
+  // blanks), whole-block-repeated `copies` times. This is the SAME planner the
+  // PDF exporter uses, so the on-screen preview is pixel-for-pixel what prints.
+  // We plan over an index-carrying wrapper so click / inspect / rerender still
+  // target the correct source card despite grouping, copies, and blank padding.
   let sheets = $derived.by(() => {
-    let cards = renderedCards;
-    const els = tndElements;
-    const cols = layout.cols;
-
-    const canIsolate = els && els.length > 0
-      && cards.length > 0
-      && cards.length === els.length;
-
-    if (canIsolate) {
-      const padded: RenderedCard[] = [];
-      for (let i = 0; i < cards.length; i++) {
-        padded.push(cards[i]!);
-        const cur = els[i]?.element ?? "__none__";
-        const nxt = i + 1 < cards.length ? (els[i + 1]?.element ?? "__none__") : null;
-        if (nxt !== null && cur !== nxt) {
-          const remainder = padded.length % cols;
-          if (remainder !== 0) {
-            for (let p = 0; p < cols - remainder; p++) padded.push(BLANK_CARD);
-          }
-        }
-      }
-      cards = padded;
+    const indexed = renderedCards.map((card, seqIndex) => ({ card, seqIndex }));
+    const slots = planPrintSlots(indexed, tndElements ?? [], copies, layout.cardsPerPage);
+    const pages: SheetSlot[][] = [];
+    for (let i = 0; i < slots.length; i += layout.cardsPerPage) {
+      pages.push(
+        slots.slice(i, i + layout.cardsPerPage).map((s) => ({
+          card: s.item?.card ?? BLANK_CARD,
+          seqIndex: s.item?.seqIndex ?? null,
+          elementName: s.elementName,
+        })),
+      );
     }
-
-    const result: RenderedCard[][] = [];
-    for (let i = 0; i < cards.length; i += layout.cardsPerPage) {
-      result.push(cards.slice(i, i + layout.cardsPerPage));
-    }
-    return result;
+    return pages;
   });
 
   function buildRenderOptions(stepCount?: number, footer?: CardFooter, cardIndex?: number): PrintRenderOptions {
@@ -596,44 +599,47 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       <div class="pages-scroll">
         <!-- ═══ PHASE 1: ALL FRONTS ═══ -->
         {#each sheets as sheet, sheetIndex (sheetIndex)}
-          <span class="page-label">Fronts · Sheet {sheetIndex + 1} of {sheets.length}</span>
+          {@const elName = capitalize(sheet[0]?.elementName ?? null)}
+          <span class="page-label">Fronts{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
           <div class="page">
             <div class="page-guide page-guide-top">
               {#if deckName}<span class="guide-text">{deckName}</span>{/if}
-              <span class="guide-text guide-bold">FRONTS · Sheet {sheetIndex + 1} of {sheets.length}</span>
+              <span class="guide-text guide-bold">FRONTS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
             </div>
             <div
               class="page-grid"
               style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
             >
-              {#each sheet as card, cardIndex (cardIndex)}
-                {#if !card.frontUrl}
+              {#each sheet as slot, cardIndex (cardIndex)}
+                {#if !slot.card.frontUrl}
                   <div class="card-cell blank" style:aspect-ratio="{cardAspect}"></div>
                 {:else}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                   class="card-cell"
-                  class:clickable={!!onCardClick}
+                  class:clickable={!!onCardClick && slot.seqIndex != null}
                   style:aspect-ratio="{cardAspect}"
                   role="button"
                   tabindex="0"
                   onclick={() => {
-                    const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                    const idx = slot.seqIndex;
+                    if (idx == null) return;
                     const seq = sequences[idx];
-                    if (seq) onCardClick?.(seq, card.frontUrl, () => rerenderCard(idx));
+                    if (seq) onCardClick?.(seq, slot.card.frontUrl, () => rerenderCard(idx));
                   }}
                   onkeydown={(e) => {
                     if (!onCardClick) return;
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                      const idx = slot.seqIndex;
+                      if (idx == null) return;
                       const seq = sequences[idx];
-                      if (seq) onCardClick(seq, card.frontUrl, () => rerenderCard(idx));
+                      if (seq) onCardClick(seq, slot.card.frontUrl, () => rerenderCard(idx));
                     }
                   }}
-                  oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
+                  oncontextmenu={(e) => { if (slot.seqIndex != null) handleCardContextMenu(e, slot.seqIndex); }}
                 >
-                  <img src={card.frontUrl} alt="{card.label} front" />
+                  <img src={slot.card.frontUrl} alt="{slot.card.label} front" />
                 </div>
                 {/if}
               {/each}
@@ -650,18 +656,19 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
         <!-- ═══ PHASE 2: ALL BACKS ═══ -->
         {#each sheets as sheet, sheetIndex (sheetIndex)}
-          <span class="page-label">Backs · Sheet {sheetIndex + 1} of {sheets.length}</span>
+          {@const elName = capitalize(sheet[0]?.elementName ?? null)}
+          <span class="page-label">Backs{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
           <div class="page">
             <div class="page-guide page-guide-top">
               {#if deckName}<span class="guide-text">{deckName}</span>{/if}
-              <span class="guide-text guide-bold">BACKS · Sheet {sheetIndex + 1} of {sheets.length}</span>
+              <span class="guide-text guide-bold">BACKS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
             </div>
             <div
               class="page-grid"
               style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
             >
-              {#each sheet as card, cardIndex (cardIndex)}
-                {#if !card.backUrl}
+              {#each sheet as slot, cardIndex (cardIndex)}
+                {#if !slot.card.backUrl}
                   <div
                     class="card-cell blank"
                     style:aspect-ratio="{cardAspect}"
@@ -672,29 +679,31 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                   class="card-cell"
-                  class:clickable={!!onCardClick}
+                  class:clickable={!!onCardClick && slot.seqIndex != null}
                   style:aspect-ratio="{cardAspect}"
                   style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
                   style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
                   role="button"
                   tabindex="0"
                   onclick={() => {
-                    const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                    const idx = slot.seqIndex;
+                    if (idx == null) return;
                     const seq = sequences[idx];
-                    if (seq) onCardClick?.(seq, card.frontUrl, () => rerenderCard(idx));
+                    if (seq) onCardClick?.(seq, slot.card.frontUrl, () => rerenderCard(idx));
                   }}
                   onkeydown={(e) => {
                     if (!onCardClick) return;
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                      const idx = slot.seqIndex;
+                      if (idx == null) return;
                       const seq = sequences[idx];
-                      if (seq) onCardClick(seq, card.frontUrl, () => rerenderCard(idx));
+                      if (seq) onCardClick(seq, slot.card.frontUrl, () => rerenderCard(idx));
                     }
                   }}
-                  oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
+                  oncontextmenu={(e) => { if (slot.seqIndex != null) handleCardContextMenu(e, slot.seqIndex); }}
                 >
-                  <img src={card.backUrl} alt="{card.label} back" />
+                  <img src={slot.card.backUrl} alt="{slot.card.label} back" />
                 </div>
                 {/if}
               {/each}

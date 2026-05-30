@@ -1,5 +1,6 @@
 <script lang="ts">
   import CardSizeToggle from "../card-preview/CardSizeToggle.svelte";
+  import CopiesSelect from "./CopiesSelect.svelte";
   import type { CardSizeId } from "../../domain/card-sizes";
 
   interface Props {
@@ -11,6 +12,9 @@
     onCardSizeChange: (size: CardSizeId) => void;
     onRerender?: () => void;
     onPrint: () => void;
+    /** Copies per card for the print layout. Omit to hide the control. */
+    copies?: number;
+    onCopiesChange?: (n: number) => void;
   }
 
   let {
@@ -22,6 +26,8 @@
     onCardSizeChange,
     onRerender,
     onPrint,
+    copies,
+    onCopiesChange,
   }: Props = $props();
 
   const progressText = $derived(
@@ -34,6 +40,11 @@
 <div class="toolbar" role="toolbar" aria-label="Print preview controls">
   <div class="toolbar-left">
     <CardSizeToggle selected={cardSize} onchange={onCardSizeChange} />
+
+    {#if copies != null && onCopiesChange}
+      <span class="copies-label">Copies</span>
+      <CopiesSelect value={copies} onchange={onCopiesChange} />
+    {/if}
 
     {#if onRerender}
       <button
@@ -81,6 +92,12 @@
     align-items: center;
     gap: 8px;
     flex: 1;
+  }
+
+  .copies-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    margin-left: 4px;
   }
 
   .icon-btn {

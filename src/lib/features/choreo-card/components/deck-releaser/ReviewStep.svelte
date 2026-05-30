@@ -74,6 +74,7 @@
   }
 
   let cardSize = $state<CardSizeId>("poker");
+  let copies = $state(1);
   let renderedPairs = $state<CardPair[]>([]);
   let isRendering = $state(false);
   let renderProgress = $state(0);
@@ -166,7 +167,7 @@
     URL.revokeObjectURL(url);
   }
 
-  async function handleExportPDF(mode: PrintPDFMode = 'combined', copies = 1) {
+  async function handleExportPDF(mode: PrintPDFMode = 'combined') {
     if (renderedPairs.length === 0) return;
     isExporting = true;
     exportError = "";
@@ -283,6 +284,8 @@
     onCardSizeChange={(s) => { cardSize = s; }}
     onRerender={() => { rerenderKey++; }}
     onPrint={() => { showPrintDialog = true; }}
+    {copies}
+    onCopiesChange={(n) => { copies = n; }}
   />
 
   <div class="preview-area">
@@ -293,6 +296,7 @@
       {bluePropType}
       {redPropType}
       {rerenderKey}
+      {copies}
       footers={sortedFooters}
       {tndElements}
       isLoading={false}
@@ -341,6 +345,7 @@
     cardCount={cards.length}
     {tndElements}
     {cardSize}
+    {copies}
     {theme}
     {isExporting}
     exportProgress={exportProgress}

@@ -12,6 +12,9 @@
     cardCount: number;
     tndElements?: (TnDElement | undefined)[];
     cardSize: CardSizeId;
+    /** Copies per card, chosen on the deck-viewer toolbar. Drives the estimate
+     *  and the export; this dialog only reflects it (no control here). */
+    copies?: number;
     theme: string;
     isExporting: boolean;
     exportProgress: number;
@@ -29,6 +32,7 @@
     cardCount,
     tndElements = [],
     cardSize,
+    copies = 1,
     theme,
     isExporting,
     exportProgress,
@@ -41,7 +45,6 @@
   }: Props = $props();
 
   let selectedFormat = $state<ExportFormat>("fronts");
-  let copies = $state(1);
 
   const sizeSpec = $derived(CARD_SIZES[cardSize]);
   const layout = $derived(getPageLayout(cardSize));
@@ -133,9 +136,8 @@
 
   function handleExport() {
     if (isExporting) return;
-    const safeCopies = Math.max(1, Math.floor(copies || 1));
     if (selectedFormat === "zip") onExportZIP();
-    else onExportPDF(selectedFormat, safeCopies);
+    else onExportPDF(selectedFormat, Math.max(1, Math.floor(copies || 1)));
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -238,16 +240,8 @@
 
       {#if selectedFormat !== "zip"}
         <div class="copies-row">
-          <label class="copies-label" for="print-copies">Copies per card</label>
-          <input
-            id="print-copies"
-            class="copies-input"
-            type="number"
-            min="1"
-            step="1"
-            bind:value={copies}
-            onblur={() => { copies = Math.max(1, Math.floor(copies || 1)); }}
-          />
+          <span class="copies-label">Copies per card</span>
+          <span class="copies-value">{copies}<span class="copies-hint">set on the deck toolbar</span></span>
         </div>
       {/if}
     </div>
@@ -527,22 +521,20 @@
     color: rgba(255, 255, 255, 0.6);
   }
 
-  .copies-input {
-    width: 80px;
-    padding: 6px 10px;
-    min-height: 36px;
-    font-size: 14px;
+  .copies-value {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
-    text-align: center;
     color: #fff;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
   }
 
-  .copies-input:focus {
-    outline: none;
-    border-color: rgba(139, 92, 246, 0.5);
+  .copies-hint {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.35);
   }
 
   .error {
