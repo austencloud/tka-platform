@@ -14,9 +14,6 @@
 
   interface Props {
     sequence: SequenceData | null;
-    handPointsVisible: boolean;
-    showGrid: boolean;
-    showTKA: boolean;
     showWord: boolean;
     includeStartPosition: boolean;
     startPositionLayout: "row" | "column";
@@ -30,9 +27,6 @@
 
   let {
     sequence,
-    handPointsVisible,
-    showGrid,
-    showTKA,
     showWord,
     includeStartPosition,
     startPositionLayout,
@@ -142,9 +136,6 @@
         <ChoreoCard
           {sequence}
           showWord={showWord}
-          handPointsVisible={handPointsVisible}
-          showGrid={showGrid}
-          showTKA={showTKA}
           includeStartPosition={includeStartPosition}
           {startPositionLayout}
           showQRCodes={showQRCode}

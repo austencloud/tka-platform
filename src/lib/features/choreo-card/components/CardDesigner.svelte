@@ -14,7 +14,7 @@
   import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
   import { onMount, onDestroy } from "svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+  import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/createBrowseEngine.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
@@ -120,29 +120,21 @@
   // ── Observer registrations ──────────────────────────────────────────
 
   const imageComposition = getImageCompositionManager();
-  const visibilityManager = getVisibilityStateManager();
 
-  let visibilityVersion = $state(0);
   let compositionVersion = $state(0);
 
-  function onVisibilityChanged(): void { visibilityVersion++; }
   function onCompositionChanged(): void { compositionVersion++; }
 
   onMount(() => {
-    visibilityManager.registerObserver(onVisibilityChanged, ["all"]);
     imageComposition.registerObserver(onCompositionChanged);
   });
 
   onDestroy(() => {
-    visibilityManager.unregisterObserver(onVisibilityChanged);
     imageComposition.unregisterObserver(onCompositionChanged);
     pickerEngine.destroy();
   });
 
   // Derived visibility props that react to observer changes
-  const handPointsVisible = $derived.by(() => { void visibilityVersion; return visibilityManager.getHandPointVisibility() === "all"; });
-  const showGrid = $derived.by(() => { void visibilityVersion; return visibilityManager.getGridVisibility(); });
-  const showTKA = $derived.by(() => { void visibilityVersion; return visibilityManager.getGlyphVisibility("tkaGlyph"); });
   const showWord = $derived.by(() => { void compositionVersion; return imageComposition.addWord; });
   const includeStartPosition = $derived.by(() => { void compositionVersion; return imageComposition.includeStartPosition; });
   const startPositionLayout = $derived.by(() => {
@@ -221,22 +213,18 @@
 
     try {
       const renderer = getSequenceRenderer();
+      const canonical = buildCanonicalCardVisibility({});
       const blob = await renderer.renderSequenceToBlob(seq, {
         stepSize: 300,
         format: "PNG" as const,
         quality: 1.0,
         includeStartPosition,
         addStepNumbers: true,
-        addWord: showWord,
+        addWord: canonical.addWord,
         addDifficultyLevel: false,
         addUserInfo: false,
         addReversalSymbols: true,
-        visibilityOverrides: {
-          darkMode: false,
-          printMode: true,
-          showGrid,
-          showTKA,
-        },
+        visibilityOverrides: canonical.visibilityOverrides,
       });
 
       const url = URL.createObjectURL(blob);
@@ -291,9 +279,6 @@
   <div class="preview-panel">
     <CardPreviewStack
       sequence={currentSequence}
-      {handPointsVisible}
-      {showGrid}
-      {showTKA}
       {showWord}
       {includeStartPosition}
       {startPositionLayout}

@@ -73,14 +73,9 @@
 
       const seq = sequences[0]!;
       const options: PrintRenderOptions = {
-        showGrid: true,
-        showTKA: true,
-        showWord: true,
-        showQRCode: true,
         showMandala: true,
         includeStartPosition: true,
         startPositionLayout: "row",
-        handPointsVisible: true,
         tndElement: el,
         notes: el.name,
         iconPath: el.iconPath,

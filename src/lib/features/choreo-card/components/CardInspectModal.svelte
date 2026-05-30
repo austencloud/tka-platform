@@ -11,9 +11,6 @@
 
   interface Props {
     sequence: SequenceData;
-    handPointsVisible?: boolean;
-    showGrid?: boolean;
-    showTKA?: boolean;
     showWord?: boolean;
     includeStartPosition?: boolean;
     onClose: () => void;
@@ -24,9 +21,6 @@
 
   let {
     sequence,
-    handPointsVisible = true,
-    showGrid = true,
-    showTKA = true,
     showWord = true,
     includeStartPosition = true,
     onClose,
@@ -109,9 +103,6 @@
     <div class="stack-wrapper" bind:this={stackEl} role="group" aria-label="Card preview">
       <CardPreviewStack
         {sequence}
-        {handPointsVisible}
-        {showGrid}
-        {showTKA}
         {showWord}
         {includeStartPosition}
         startPositionLayout={getCatalogLayoutPolicy(sequence.steps?.length ?? 0)}

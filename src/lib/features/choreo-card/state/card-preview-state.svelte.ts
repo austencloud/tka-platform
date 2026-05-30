@@ -220,11 +220,7 @@ export function createCardPreviewState(
         canvasWidth: size.canvasWidth,
         canvasHeight: size.canvasHeight,
         bleedPx: size.bleedPx,
-        showGrid: visibility.showGrid,
-        showTKA: visibility.showTKA,
-        showWord: visibility.showWord,
         includeStartPosition: visibility.includeStartPosition,
-        handPointsVisible: visibility.handPointsVisible,
         theme: visibility.theme,
       };
     },

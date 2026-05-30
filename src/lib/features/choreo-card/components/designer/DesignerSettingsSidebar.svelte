@@ -10,7 +10,6 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import type { BackgroundType } from "@austencloud/backgrounds";
 
   interface Props {
@@ -32,42 +31,23 @@
   }: Props = $props();
 
   const imageComposition = getImageCompositionManager();
-  const visibilityManager = getVisibilityStateManager();
 
   // Observer-driven reactivity: bump a version counter so $derived blocks re-read.
-  // Neither manager is rune-based, so we bridge via the observer pattern.
-  let visibilityVersion = $state(0);
+  // The manager is not rune-based, so we bridge via the observer pattern.
   let compositionVersion = $state(0);
 
-  function onVisibilityChanged(): void {
-    visibilityVersion++;
-  }
   function onCompositionChanged(): void {
     compositionVersion++;
   }
 
-  visibilityManager.registerObserver(onVisibilityChanged, ["all"]);
   imageComposition.registerObserver(onCompositionChanged);
 
   onDestroy(() => {
-    visibilityManager.unregisterObserver(onVisibilityChanged);
     imageComposition.unregisterObserver(onCompositionChanged);
   });
 
   // Read current state from managers, re-evaluated when version bumps.
   const currentTheme = $derived(settingsService.settings.backgroundType);
-  const handPointsOn = $derived.by(() => {
-    void visibilityVersion;
-    return visibilityManager.getHandPointVisibility() === "all";
-  });
-  const gridOn = $derived.by(() => {
-    void visibilityVersion;
-    return visibilityManager.getGridVisibility();
-  });
-  const tkaOn = $derived.by(() => {
-    void visibilityVersion;
-    return visibilityManager.getGlyphVisibility("tkaGlyph");
-  });
   const wordOn = $derived.by(() => {
     void compositionVersion;
     return imageComposition.addWord;
@@ -93,18 +73,6 @@
     if (e.key === "Escape" && open) {
       onClose();
     }
-  }
-
-  function toggleHandPoints(): void {
-    visibilityManager.setHandPointVisibility(handPointsOn ? "active" : "all");
-  }
-
-  function toggleGrid(): void {
-    visibilityManager.setGridVisibility(!gridOn);
-  }
-
-  function toggleTka(): void {
-    visibilityManager.setGlyphVisibility("tkaGlyph", !tkaOn);
   }
 
   function toggleWord(): void {
@@ -158,45 +126,6 @@
   <section>
     <span class="section-label">Display</span>
     <div class="toggle-list">
-      <button
-        class="toggle-row"
-        class:on={handPointsOn}
-        onclick={toggleHandPoints}
-        aria-pressed={handPointsOn}
-        aria-label="Toggle hand points"
-        type="button"
-      >
-        <i class="fas fa-hand-point-up toggle-icon" aria-hidden="true"></i>
-        <span class="toggle-label">Hand points</span>
-        <span class="toggle-indicator" aria-hidden="true"></span>
-      </button>
-
-      <button
-        class="toggle-row"
-        class:on={gridOn}
-        onclick={toggleGrid}
-        aria-pressed={gridOn}
-        aria-label="Toggle grid"
-        type="button"
-      >
-        <i class="fas fa-th toggle-icon" aria-hidden="true"></i>
-        <span class="toggle-label">Grid</span>
-        <span class="toggle-indicator" aria-hidden="true"></span>
-      </button>
-
-      <button
-        class="toggle-row"
-        class:on={tkaOn}
-        onclick={toggleTka}
-        aria-pressed={tkaOn}
-        aria-label="Toggle TKA glyphs"
-        type="button"
-      >
-        <i class="fas fa-font toggle-icon" aria-hidden="true"></i>
-        <span class="toggle-label">TKA glyphs</span>
-        <span class="toggle-indicator" aria-hidden="true"></span>
-      </button>
-
       <button
         class="toggle-row"
         class:on={wordOn}
