@@ -20,6 +20,8 @@
   import { getImageComposer } from "$lib/shared/render/get-image-composer";
   import { computeCardFrontLayout } from "$lib/shared/render/services/card-front-assembler";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
+  import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
+  import { buildCanonicalCardVisibility } from "$lib/features/choreo-card/domain/canonical-card-visibility";
   import { onMount, onDestroy } from "svelte";
 
   const SIZE = 600; // big single-cell render
@@ -43,6 +45,9 @@
   let cardMainSlot: HTMLDivElement;
   let cardParallelSlot: HTMLDivElement;
   let cardDiffSlot: HTMLDivElement;
+  // TnD element drives the accent-color tint + element footer on the full card.
+  // 3 = Split-Opp / fire — a vivid orange, easy to eyeball.
+  let selectedElementIdx = $state(3);
 
   onMount(async () => {
     try {
@@ -262,15 +267,17 @@
   }
 
   // Generalized diff: counts pixels that differ beyond threshold over the full
-  // w x h frame, and (separately) the differing pixels within the header band
-  // (rows where y < headerH). Returns both percentages plus a red-overlay canvas.
+  // w x h frame, plus (separately) the differing pixels within the header band
+  // (rows where y < headerH) and the footer band (rows where y >= h - footerH).
+  // Returns all three percentages plus a red-overlay canvas.
   function diffCard(
     a: HTMLCanvasElement,
     b: HTMLCanvasElement,
     w: number,
     h: number,
     headerH: number,
-  ): { pct: number; headerPct: number; canvas: HTMLCanvasElement } {
+    footerH: number,
+  ): { pct: number; headerPct: number; footerPct: number; canvas: HTMLCanvasElement } {
     const da = a.getContext("2d")!.getImageData(0, 0, w, h);
     const db = b.getContext("2d")!.getImageData(0, 0, w, h);
     const out = document.createElement("canvas");
@@ -280,7 +287,10 @@
     const od = octx.createImageData(w, h);
     let differ = 0;
     let headerDiffer = 0;
+    let footerDiffer = 0;
     const headerTotal = Math.max(0, Math.min(headerH, h)) * w;
+    const footerTotal = Math.max(0, Math.min(footerH, h)) * w;
+    const footerStartY = h - footerH;
     const total = w * h;
     for (let i = 0; i < da.data.length; i += 4) {
       const py = Math.floor(i / 4 / w);
@@ -293,6 +303,7 @@
       if (wgt > 8) {
         differ++;
         if (py < headerH) headerDiffer++;
+        if (py >= footerStartY) footerDiffer++;
         od.data[i] = 255; od.data[i + 3] = 255;
       } else {
         const g = (da.data[i]! + da.data[i + 1]! + da.data[i + 2]!) / 3;
@@ -304,6 +315,7 @@
     return {
       pct: (differ / total) * 100,
       headerPct: headerTotal > 0 ? (headerDiffer / headerTotal) * 100 : 0,
+      footerPct: footerTotal > 0 ? (footerDiffer / footerTotal) * 100 : 0,
       canvas: out,
     };
   }
@@ -322,20 +334,43 @@
         return;
       }
 
+      // Mirror PrintCardRenderer.renderFront: a REAL TnD choreo-card with the
+      // element accent-color tint + element footer, so the parallel render is
+      // verified against the full card look (not a stripped-down one).
+      const tnd = TND_ELEMENTS[selectedElementIdx]!;
+      const canonical = buildCanonicalCardVisibility({
+        tndElement: tnd,
+        bluePropType: PropType.STAFF,
+        redPropType: PropType.STAFF,
+      });
+      const leftLabel = "Austen";
+      const rightLabel = "TKA";
+      const notes = tnd.name;
       const frontOptions = {
         deckCard: { contentWidth: CARD_W, contentHeight: CARD_H },
         includeStartPosition: true,
         startPositionLayout: "row",
         addStepNumbers: true,
-        addWord: true,
+        addWord: canonical.addWord,
         addDifficultyLevel: false,
         stepSize: 300, stepScale: 1, margin: 0, format: "PNG", quality: 1, scale: 1,
         redVisible: true, blueVisible: true, addReversalSymbols: true, combinedGrids: false,
         showLoopGlyph: false,
+        bluePropTypeOverride: PropType.STAFF,
+        redPropTypeOverride: PropType.STAFF,
+        accentColor: tnd.accentColor,
+        accentTintOpacity: tnd.cardTintOpacity,
+        showCreatorName: !!leftLabel,
+        showNotes: !!(notes || leftLabel || rightLabel || tnd.iconPath),
+        showBirthday: false,
+        leftLabel, rightLabel, notes,
+        iconPath: tnd.iconPath,
+        userName: "Austen",
+        exportDate: new Date().toISOString(),
         visibilityOverrides: {
-          showTKA: true, showTnD: false, showElemental: false, showPositions: false,
-          showReversals: true, showNonRadialPoints: false, showGrid: true,
-          printMode: true, darkMode: false, handPointVisibility: "all",
+          ...canonical.visibilityOverrides,
+          showMandala: false,
+          showQRCode: false,
         },
       } as Partial<SequenceExportOptions>;
 
@@ -361,27 +396,34 @@
       const parallelCard = toCardCanvas(parallelCanvas as CanvasImageSource);
       show(cardParallelSlot, parallelCard);
 
-      // Header height comes from the same layout the renderers use.
+      // Header + footer heights come from the same layout the renderers use.
       const visibility = await getImageComposer().resolveVisibilitySettings(frontOptions);
       const layout = computeCardFrontLayout(seq, frontOptions, visibility);
       const headerH = layout.headerHeight;
+      const footerH = layout.footerHeight;
 
-      const { pct, headerPct, canvas: dc } = diffCard(mainCard, parallelCard, CARD_W, CARD_H, headerH);
+      const { pct, headerPct, footerPct, canvas: dc } = diffCard(
+        mainCard, parallelCard, CARD_W, CARD_H, headerH, footerH,
+      );
       show(cardDiffSlot, dc);
 
       cardInfo = JSON.stringify(
         {
           sequence: seq.word ?? seq.id,
+          element: tnd.name,
+          accentColor: tnd.accentColor,
           cards: 1,
           overallDiffPct: Number(pct.toFixed(4)),
           headerDiffPct: Number(headerPct.toFixed(4)),
+          footerDiffPct: Number(footerPct.toFixed(4)),
           headerHeight: headerH,
+          footerHeight: footerH,
           cardSize: { w: CARD_W, h: CARD_H },
         },
         null,
         2,
       );
-      cardStatus = `full card done — overall ${pct.toFixed(3)}% / header ${headerPct.toFixed(3)}%`;
+      cardStatus = `full card done — overall ${pct.toFixed(3)}% / header ${headerPct.toFixed(3)}% / footer ${footerPct.toFixed(3)}%`;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       cardStatus = "FULL CARD FAILED: " + msg;
@@ -423,9 +465,24 @@
     Renders an ENTIRE card front (header TKA glyphs, start position, all step
     cells, chrome) through <code>composeCardFrontParallel</code> (worker pool) and
     diffs it against the main-thread <code>ImageComposer.composeSequenceImage</code>.
-    Reports overall diff plus a header-band diff so the TKA word glyphs are
-    verified specifically.
+    Reports overall diff plus header-band and footer-band diffs so the TKA word
+    glyphs AND the element footer are verified specifically. Uses a REAL TnD
+    element so the accent-color tint + element footer are exercised on both the
+    main and parallel paths.
   </p>
+  <div class="elements">
+    <span class="elabel">Element:</span>
+    {#each TND_ELEMENTS as el, i (el.familyId)}
+      <button
+        type="button"
+        class="el"
+        class:active={i === selectedElementIdx}
+        style:--accent={el.accentColor}
+        onclick={() => (selectedElementIdx = i)}
+        disabled={cardRunning}
+      >{el.name}</button>
+    {/each}
+  </div>
   <div class="controls">
     <button type="button" onclick={runFullCard} disabled={cardRunning || !!loadError}>
       {cardRunning ? "Running…" : "Render FULL CARD (parallel vs main)"}
@@ -451,6 +508,11 @@
   button { padding: 10px 22px; border-radius: 8px; border: 1px solid rgba(99,102,241,0.5); background: rgba(99,102,241,0.3); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
   button:disabled { opacity: 0.5; cursor: default; }
   .status { font-size: 13px; color: #8ab4f8; }
+  .elements { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
+  .elabel { font-size: 13px; color: #999; }
+  .el { padding: 6px 14px; font-size: 13px; border-radius: 8px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); color: #eee; }
+  .el.active { background: var(--accent); color: #111; font-weight: 700; }
+  .el:disabled { opacity: 0.5; cursor: default; }
   pre { background: #0c0c10; border: 1px solid #2a2a33; border-radius: 8px; padding: 12px; font-size: 12px; color: #b8c0cc; white-space: pre-wrap; }
   .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
   figure { margin: 0; }
