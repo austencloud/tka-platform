@@ -345,6 +345,38 @@ const TND_MOTIONS: TnDMotionDef[] = [
       { letter: "R", startPos: "gamma5", endPos: "gamma11", blueDir: "ccw" },
     ],
   },
+  // Gamma SPLIT half (spec §4.2) — the mirror of MPMP/NQNQ/OROR. Lead letter
+  // reversed (P/Q/R first) and started at the split-half preimage gamma9, walking
+  // 9→3→13→7→9. Diamond = quarter-opp (Moon, gamma undivided there); box transform
+  // lands in GAMMA_DIAG → split-opp (Fire). familyId is the diamond classification;
+  // the deck releaser recomputes box at runtime (deck-composer TnD classification).
+  {
+    id: 20, word: "PMPM", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma9", period: PERIOD_HALVED, seed: ["P", "M"],
+    beats: [
+      { letter: "P", startPos: "gamma9", endPos: "gamma3" },
+      { letter: "M", startPos: "gamma3", endPos: "gamma13" },
+      { letter: "P", startPos: "gamma13", endPos: "gamma7" },
+      { letter: "M", startPos: "gamma7", endPos: "gamma9" },
+    ],
+  },
+  {
+    id: 21, word: "QNQN", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma9", period: PERIOD_HALVED, seed: ["Q", "N"],
+    beats: [
+      { letter: "Q", startPos: "gamma9", endPos: "gamma3" },
+      { letter: "N", startPos: "gamma3", endPos: "gamma13" },
+      { letter: "Q", startPos: "gamma13", endPos: "gamma7" },
+      { letter: "N", startPos: "gamma7", endPos: "gamma9" },
+    ],
+  },
+  {
+    id: 22, word: "RORO", vtg: "Quarter-Opp", familyId: "quarter-opp", startPos: "gamma9", period: PERIOD_HALVED, seed: ["R", "O"],
+    beats: [
+      { letter: "R", startPos: "gamma9", endPos: "gamma3", blueDir: "ccw" },
+      { letter: "O", startPos: "gamma3", endPos: "gamma13", blueDir: "ccw" },
+      { letter: "R", startPos: "gamma13", endPos: "gamma7", blueDir: "ccw" },
+      { letter: "O", startPos: "gamma7", endPos: "gamma9", blueDir: "ccw" },
+    ],
+  },
 ];
 
 // ============================================================================
