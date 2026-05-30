@@ -6,7 +6,7 @@ import type {
   MandalaPresetId,
 } from "$lib/shared/mandala/domain/mandala-types";
 import type { MandalaFrameSpec } from "$lib/shared/mandala/services/mandala-frame-renderer";
-import type { MandalaExportOut } from "$lib/shared/mandala/workers/mandala-export.worker";
+import type { MandalaExportOut, MandalaExportDiag } from "$lib/shared/mandala/workers/mandala-export.worker";
 import {
   estimateExportTime,
   recordExportThroughput,
@@ -138,6 +138,8 @@ export class MandalaViewerController {
   exportPhase = $state<MandalaExportPhase>("idle");
   exportProgress = $state(0);
   exportError = $state<string | null>(null);
+  /** Last export diagnostic (render/encode/mux split, HW status) — logged live. */
+  lastExportDiag = $state<MandalaExportDiag | null>(null);
 
   readonly bgColor = BG_COLOR;
 
@@ -345,6 +347,24 @@ export class MandalaViewerController {
     worker.onmessage = (e: MessageEvent<MandalaExportOut>) => {
       const msg = e.data;
       switch (msg.type) {
+        case "diag": {
+          // Surface where export wall-time goes so a slow export is diagnosable
+          // live (render vs encode-wait vs mux, and whether HW encode engaged).
+          const d = msg;
+          const tag = `[mandala-export ${d.phase}]`;
+          if (d.phase === "config") {
+            console.log(`${tag} codec=${d.codec} hwSupported=${d.hwSupported} encoder=${d.encoder} res=${d.resolution} fps=${d.fps} frames=${d.totalFrames}`);
+          } else {
+            console.log(
+              `${tag} ${d.encodedFrames}/${d.totalFrames} · encode=${d.encodeFps}fps · render=${d.renderMs}ms wait=${d.encodeWaitMs}ms mux=${d.muxMs}ms · hwSupported=${d.hwSupported} codec=${d.codec}` +
+              (d.phase === "done" && d.encodeFps > 0 && d.encodeFps < 40
+                ? "  ⚠ encode-bound (likely software H.264 — runtime not hardware-accelerating)"
+                : ""),
+            );
+          }
+          this.lastExportDiag = d;
+          break;
+        }
         case "progress":
           this.exportProgress = msg.frameIndex / msg.totalFrames;
           break;

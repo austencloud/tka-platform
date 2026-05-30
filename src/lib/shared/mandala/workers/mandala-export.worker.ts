@@ -48,11 +48,35 @@ interface StartMessage {
 interface CancelMessage { type: "cancel"; }
 export type MandalaExportIn = StartMessage | CancelMessage;
 
+/** Live diagnostic of where export wall-time goes. `phase` is "config" (emitted
+ *  once after the encoder is configured), "running" (periodic), or "done". */
+export interface MandalaExportDiag {
+  type: "diag";
+  phase: "config" | "running" | "done";
+  codec: string;
+  /** Whether the runtime reported the hardware-accelerated config as supported. */
+  hwSupported: boolean;
+  encoder: "webcodecs" | "wasm";
+  resolution: number;
+  fps: number;
+  totalFrames: number;
+  encodedFrames: number;
+  /** Cumulative ms in geometry+canvas render. */
+  renderMs: number;
+  /** Cumulative ms blocked on encoder backpressure (= encode-bound time). */
+  encodeWaitMs: number;
+  /** Cumulative ms in the mux (mediabunny add). */
+  muxMs: number;
+  /** Observed encode throughput so far (frames / wall-second since first frame). */
+  encodeFps: number;
+}
+
 export type MandalaExportOut =
   | { type: "progress"; frameIndex: number; totalFrames: number }
   | { type: "finalizing" }
   | { type: "complete"; buffer: ArrayBuffer }
-  | { type: "error"; error: string };
+  | { type: "error"; error: string }
+  | MandalaExportDiag;
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -138,6 +162,22 @@ async function runExport(msg: StartMessage): Promise<void> {
   const geoCache: MandalaGeometryCache = new Map();
   const scratch = { a: new OffscreenCanvas(size, size), b: new OffscreenCanvas(size, size) };
 
+  // ── Diagnostics ──
+  let renderMs = 0, waitMs = 0, muxMs = 0;
+  let codec = "";
+  let hwSupported = false;
+  let firstFrameMs = 0;
+  const encoderKind: "webcodecs" | "wasm" = hasWebCodecs ? "webcodecs" : "wasm";
+  const emitDiag = (phase: "config" | "running" | "done"): void => {
+    const elapsedS = firstFrameMs ? (performance.now() - firstFrameMs) / 1000 : 0;
+    post({
+      type: "diag", phase, codec, hwSupported, encoder: encoderKind,
+      resolution: size, fps: spec.fps, totalFrames, encodedFrames: encodedCount,
+      renderMs: Math.round(renderMs), encodeWaitMs: Math.round(waitMs), muxMs: Math.round(muxMs),
+      encodeFps: elapsedS > 0 ? +(encodedCount / elapsedS).toFixed(1) : 0,
+    });
+  };
+
   try {
     if (hasWebCodecs) {
       videoSource = new EncodedVideoPacketSource("avc");
@@ -147,9 +187,12 @@ async function runExport(msg: StartMessage): Promise<void> {
       const localSource = videoSource;
       videoEncoder = new VideoEncoder({
         output: async (chunk, meta) => {
+          const m0 = performance.now();
           await localSource.add(EncodedPacket.fromEncodedChunk(chunk), meta);
+          muxMs += performance.now() - m0;
           encodedCount++;
           post({ type: "progress", frameIndex: encodedCount, totalFrames });
+          if (encodedCount % 30 === 0) emitDiag("running");
         },
         error: (e) => {
           encoderErrored = true;
@@ -165,13 +208,17 @@ async function runExport(msg: StartMessage): Promise<void> {
         const hw = { ...base, hardwareAcceleration: "prefer-hardware" as const };
         let support: VideoEncoderSupport | null = null;
         try { support = await VideoEncoder.isConfigSupported(hw); } catch { support = null; }
-        await videoEncoder.configure(support?.supported ? hw : base);
+        codec = base.codec;
+        hwSupported = support?.supported ?? false;
+        await videoEncoder.configure(hwSupported ? hw : base);
       }
+      emitDiag("config");
     } else {
       const mod = await import("h264-mp4-encoder");
       const create = mod.createH264MP4Encoder ??
         (mod.default as { createH264MP4Encoder: () => Promise<H264MP4Encoder> })?.createH264MP4Encoder;
       if (!create) throw new Error("h264-mp4-encoder unavailable");
+      codec = "h264-wasm";
       wasm = await create();
       wasm.width = size;
       wasm.height = size;
@@ -185,13 +232,18 @@ async function runExport(msg: StartMessage): Promise<void> {
     for (let i = 0; i < totalFrames; i++) {
       if (cancelled) { cleanup(); return; }
 
+      if (i === 0) firstFrameMs = performance.now();
+      const r0 = performance.now();
       renderMandalaFrameToCanvas(ctx, calculator, spec, math, i, geoCache, scratch);
+      renderMs += performance.now() - r0;
 
       if (hasWebCodecs) {
         // Respect encoder backpressure so the queue (and final flush) stays shallow.
+        const w0 = performance.now();
         while (videoEncoder && videoEncoder.encodeQueueSize >= MAX_ENCODE_QUEUE && !cancelled && !encoderErrored) {
           await nextTick();
         }
+        waitMs += performance.now() - w0;
         if (cancelled) { cleanup(); return; }
         if (!videoEncoder || encoderErrored || videoEncoder.state !== "configured") {
           throw new Error("Encoder stopped accepting frames");
@@ -204,12 +256,14 @@ async function runExport(msg: StartMessage): Promise<void> {
         wasm!.addFrameRgba(data.data);
         encodedCount++;
         post({ type: "progress", frameIndex: encodedCount, totalFrames });
+        if (encodedCount % 30 === 0) emitDiag("running");
         if (i % 8 === 0) await nextTick(); // keep the worker event loop responsive to cancel
       }
     }
 
     if (cancelled) { cleanup(); return; }
 
+    emitDiag("done");
     post({ type: "finalizing" });
 
     let buffer: ArrayBuffer;
