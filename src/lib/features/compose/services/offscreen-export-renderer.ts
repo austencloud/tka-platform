@@ -25,6 +25,7 @@ import {
 } from "./export-engine-props";
 import { computeTrailSubSteps } from "./export-substep";
 import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 
@@ -57,8 +58,14 @@ export class OffscreenExportRenderer {
   async initialize(init: OffscreenExportInit): Promise<void> {
     this.init = init;
     this.dtSeconds = 1 / init.fps;
+    // Hand the offscreen engine the SAME visibility manager + effects config the
+    // export already configured (applyEffectOverrides set the active effect, e.g.
+    // trails/fire, on the global VM). Without this the offscreen engine renders
+    // props but NO effect overlay — captured trail points would go nowhere.
+    const vm = getAnimationVisibilityManager();
     this.handle = await new RenderContextFactory().createOffscreenContext(
       init.outputCanvasSize,
+      { visibilityManager: vm, effectsConfigState: vm.effectsConfigState },
     );
 
     // Prime the capturer config so the FIRST sub-step capture lands at the right
