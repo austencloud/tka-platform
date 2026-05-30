@@ -20,7 +20,12 @@ export interface AssetBundle {
 /** Re-decode any DrawableImage (HTMLImageElement | ImageBitmap) to an ImageBitmap. */
 async function toBitmap(img: DrawableImage | null): Promise<ImageBitmap | null> {
   if (!img) return null;
-  return createImageBitmap(img as ImageBitmapSource);
+  try {
+    return await createImageBitmap(img as ImageBitmapSource);
+  } catch (e) {
+    console.warn("[card-asset-bundle] skipping un-decodable cache entry:", e);
+    return null;
+  }
 }
 
 /**

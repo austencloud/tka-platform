@@ -154,6 +154,12 @@ export class SvgImageCache {
    * Browser fallback using HTMLImageElement (for environments without createImageBitmap)
    */
   private browserSvgToImage(svgString: string): Promise<HTMLImageElement> {
+    // Inject width/height from viewBox so the resulting HTMLImageElement has
+    // intrinsic (natural) dimensions. Without this, viewBox-only SVGs (grids,
+    // letter glyphs) produce a dimensionless image, and a later
+    // createImageBitmap(img) snapshot (AssetBundle build) throws
+    // InvalidStateError. Aligns the main decode with the worker decode.
+    const sanitized = this.sanitizeSvgForCreateImageBitmap(svgString);
     return new Promise((resolve, reject) => {
       const img = new Image();
 
@@ -167,8 +173,8 @@ export class SvgImageCache {
         reject(new Error("Failed to load SVG as image"));
       };
 
-      // Create blob URL from SVG string
-      const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+      // Create blob URL from sanitized SVG string
+      const blob = new Blob([sanitized], { type: "image/svg+xml;charset=utf-8" });
       img.src = URL.createObjectURL(blob);
     });
   }
