@@ -31,7 +31,8 @@ export interface DefaultPlacer {
     placementKey: string,
     turns: number | string,
     motionType: MotionType,
-    gridMode: GridMode
+    gridMode: GridMode,
+    propType?: string
   ): Promise<{ x: number; y: number }>;
 
   getAvailablePlacementKeys(

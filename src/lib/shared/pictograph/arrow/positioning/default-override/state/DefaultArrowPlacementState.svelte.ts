@@ -38,8 +38,13 @@ export function createDefaultArrowPlacementState() {
 
     /** Replace a whole doc (used by loadAll + onSnapshot). */
     setDoc(doc: DefaultArrowPlacementDoc): void {
+      // Key by the canonical 3-part id, NOT the raw doc.id. A legacy 2-part doc
+      // ("{grid}_{motion}") gets propType defaulted to "staff" by the schema, so
+      // re-keying to "{grid}_staff_{motion}" makes it reachable by the staff read
+      // path (which always computes the 3-part id). Matches setValue/removeValue.
+      const id = generateDefaultDocId(doc.gridMode, doc.propType, doc.motionType);
       const newMap = new Map(docsMap);
-      newMap.set(doc.id, doc);
+      newMap.set(id, doc);
       docsMap = newMap;
     },
 
@@ -107,7 +112,8 @@ export function createDefaultArrowPlacementState() {
       lastError = null;
       try {
         const newMap = new Map<string, DefaultArrowPlacementDoc>();
-        for (const doc of docs) newMap.set(doc.id, doc);
+        // Canonical 3-part key so legacy 2-part docs decode to the staff path.
+        for (const doc of docs) newMap.set(generateDefaultDocId(doc.gridMode, doc.propType, doc.motionType), doc);
         docsMap = newMap;
         isInitialized = true;
       } catch (error) {

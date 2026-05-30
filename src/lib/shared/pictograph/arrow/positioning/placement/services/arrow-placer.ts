@@ -181,6 +181,11 @@ export class ArrowPlacer {
     return { x: adjustment[0], y: adjustment[1] };
   }
 
+  // The enumeration/debug helpers below are intentionally staff-scoped: they
+  // back editor key-listing, and seeded prop datasets are byte-copies of staff
+  // (identical key sets). If a prop dataset ever diverges in its KEY set (not
+  // just values), thread propType through these too.
+
   /**
    * Get available placement keys for a motion type
    */
