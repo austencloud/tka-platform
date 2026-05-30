@@ -427,6 +427,7 @@ export class CompositionDispatcher {
           keys: [],
           bitmaps: [],
           grids: { diamond: null, box: null, diamondNonRadial: null, boxNonRadial: null },
+          glyphs: { keys: [], bitmaps: [] },
         };
         if (bundle) {
           const clonedBmps = await Promise.all(
@@ -438,6 +439,10 @@ export class CompositionDispatcher {
           type GridSlot = import("./card-asset-bundle").AssetBundle["grids"]["diamond"];
           const cloneGrid = async (g: GridSlot): Promise<ImageBitmap | null> =>
             g ? await createImageBitmap(g as ImageBitmapSource) : null;
+          // Clone the header glyph bitmaps too (transfer consumes the originals).
+          const clonedGlyphs = await Promise.all(
+            bundle.glyphs.bitmaps.map((b) => createImageBitmap(b)),
+          );
           bundleClone = {
             keys: [...bundle.keys],
             bitmaps: clonedBmps,
@@ -447,6 +452,7 @@ export class CompositionDispatcher {
               diamondNonRadial: await cloneGrid(bundle.grids.diamondNonRadial),
               boxNonRadial: await cloneGrid(bundle.grids.boxNonRadial),
             },
+            glyphs: { keys: [...bundle.glyphs.keys], bitmaps: clonedGlyphs },
           };
         }
         // Reuse the exported helper instead of duplicating the transfer-list build.
