@@ -8,7 +8,10 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 interface Lane { worker: Worker; seeded: boolean; pending: number; }
-interface PendingRender { resolve: (blob: Blob) => void; reject: (e: Error) => void; }
+// Carries both render-result (Blob, via composeCell) and front-result
+// (ImageBitmap, via composeFront). resolve is widened to accept either; each
+// call site narrows at the await boundary.
+interface PendingRender { resolve: (value: Blob | ImageBitmap) => void; reject: (e: Error) => void; }
 
 const POOL_SIZE = Math.max(
   1,
@@ -102,10 +105,31 @@ export class CardFrontWorkerPool {
       JSON.stringify({ type: "render", id, preparedData: prepared, options, visibility, stepNumber }),
     );
     const blob = await new Promise<Blob>((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      this.pending.set(id, { resolve: resolve as (value: Blob | ImageBitmap) => void, reject });
       lane.worker.postMessage(msg);
     });
     return createImageBitmap(blob);
+  }
+
+  /**
+   * Render a full card front in one worker round-trip: one `paint-front` job
+   * per card, the assembled ImageBitmap transferred back (zero-copy). This is
+   * the full-card-in-worker path (Task 8); composeCell remains for the legacy
+   * per-cell harness until it's retargeted.
+   */
+  async composeFront(job: import("./front-job").FrontJob): Promise<ImageBitmap> {
+    if (!this.isReady()) throw new Error("CardFrontWorkerPool not ready");
+    const id = this.nextId++;
+    const lane = this.pickLane();
+    lane.pending++;
+    return new Promise<ImageBitmap>((resolve, reject) => {
+      this.pending.set(id, { resolve: resolve as (value: Blob | ImageBitmap) => void, reject });
+      // footer.iconBitmap is the only Transferable in the job; the prepared cell
+      // data is structured-cloned by postMessage. Transfer the icon so it's not
+      // copied.
+      const transfer = job.footer.iconBitmap ? [job.footer.iconBitmap] : [];
+      lane.worker.postMessage({ type: "paint-front", id, job }, transfer);
+    });
   }
 
   private pickLane(): Lane {
@@ -118,6 +142,9 @@ export class CardFrontWorkerPool {
     if (msg.type === "render-result") {
       const p = this.pending.get(msg.id);
       if (p) { this.pending.delete(msg.id); this.decPending(); p.resolve(msg.blob); }
+    } else if (msg.type === "front-result") {
+      const p = this.pending.get(msg.id);
+      if (p) { this.pending.delete(msg.id); this.decPending(); p.resolve(msg.bitmap); }
     } else if (msg.type === "error" && msg.id >= 0) {
       const p = this.pending.get(msg.id);
       if (p) { this.pending.delete(msg.id); this.decPending(); p.reject(new Error(msg.message)); }
