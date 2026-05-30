@@ -53,29 +53,8 @@ export interface UserInfoFooterOptions {
   leftLabel?: string;
   rightLabel?: string;
   iconPath?: string;
-  /**
-   * Pre-loaded footer icon image. When supplied, it is forwarded straight to
-   * renderFooter and loadFooterIcon is skipped — this is the worker path (the
-   * seeded icon bitmap), where `new Image()` (used by loadFooterIcon) is
-   * unavailable. The main thread leaves this undefined and keeps passing
-   * iconPath, so its behavior is unchanged.
-   */
-  iconImage?: CanvasImageSource;
   accentColor?: string;
   accentTintOpacity?: number;
-}
-
-/**
- * An injectable source of header-glyph images, keyed by the same tokens
- * TextRenderer uses internally (tokenizeWord output — Letter enum value strings
- * like "A", "W-", "Σ-"). Returns the full GlyphImageData the header renderer
- * needs (image + intrinsic dimensions + isDash), not just the raw image, so the
- * dash-bar + glyph-width parity is preserved. Implemented by SeededGlyphSource
- * for worker-side rendering; when no source is set, TextRenderer falls back to
- * its own preloaded glyphImageCache (the unchanged main-thread path).
- */
-export interface GlyphSource {
-  get(key: string): GlyphImageData | undefined;
 }
 
 export class TextRenderer {
@@ -87,16 +66,6 @@ export class TextRenderer {
   constructor() {}
 
   private glyphImageCache = new Map<string, GlyphImageData>();
-  private glyphSource: GlyphSource | undefined;
-
-  /**
-   * Inject a glyph source (worker path). When set, buildGlyphMap reads glyph
-   * images from it by the same token key instead of the preloaded
-   * glyphImageCache. Leaving it unset keeps the main-thread header byte-identical.
-   */
-  setGlyphSource(src: GlyphSource): void {
-    this.glyphSource = src;
-  }
 
   async preloadGlyphImages(): Promise<void> {
     if (this.glyphImageCache.size > 0) return;
@@ -133,20 +102,13 @@ export class TextRenderer {
   }
 
   buildGlyphMap(word: string): Map<string, GlyphImageData> {
-    if (!word) {
-      return new Map();
-    }
-    // Single render path: only the glyph *source* swaps. When a GlyphSource is
-    // injected (worker), resolve glyphs from it; otherwise read the preloaded
-    // main-thread glyphImageCache exactly as before.
-    const source = this.glyphSource;
-    if (!source && this.glyphImageCache.size === 0) {
+    if (!word || this.glyphImageCache.size === 0) {
       return new Map();
     }
     const tokens = tokenizeWord(word);
     const result = new Map<string, GlyphImageData>();
     for (const token of tokens) {
-      const data = source ? source.get(token) : this.glyphImageCache.get(token);
+      const data = this.glyphImageCache.get(token);
       if (data) result.set(token, data);
     }
     return result;
@@ -319,9 +281,7 @@ export class TextRenderer {
         ? new Date(opts.userInfo.exportDate)
         : undefined;
 
-    // Prefer a pre-loaded icon (worker path — seeded bitmap, no new Image()).
-    // Otherwise fall back to loading from iconPath on the main thread.
-    const iconImage = opts.iconImage ?? (opts.iconPath ? await loadFooterIcon(opts.iconPath) : undefined);
+    const iconImage = opts.iconPath ? await loadFooterIcon(opts.iconPath) : undefined;
 
     renderFooter(ctx, {
       canvasWidth: opts.canvas.width,

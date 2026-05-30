@@ -12,15 +12,12 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ImageComposer } from "../../../shared/render/services/image-composer";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
-import type { RenderCanvas } from "$lib/shared/render/services/types";
 import type { PrintRenderOptions } from "./types";
 import { renderCardBack } from "./card-back-dom-renderer";
 import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-renderer";
 import { buildBackJob } from "./card-back/card-back-job-builder";
 import { paintBackJob } from "./card-back/card-back-raster";
 import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
-import { getCardFrontWorkerPool } from "../../../shared/render/services/card-front-worker-pool";
-import { buildFrontJob } from "../../../shared/render/services/build-front-job";
 import { wrapContentInCardFrame } from "./card-front-frame";
 
 
@@ -106,31 +103,7 @@ export class PrintCardRenderer {
       },
     };
 
-    // Render the full card front in one worker round-trip when the seeded pool
-    // is ready; else compose on the main thread. The pool gate
-    // (PARALLEL_FRONT_ENABLED) is currently off, so isReady() is false and the
-    // main-thread branch runs in production — this worker path stays dormant
-    // until the perf gate flips it.
-    const pool = getCardFrontWorkerPool();
-    let sequenceCanvas: RenderCanvas | HTMLCanvasElement;
-    if (pool.isReady()) {
-      try {
-        const job = await buildFrontJob(sequence, composeOptions);
-        const bitmap = await pool.composeFront(job);
-        // Draw the worker's full-card bitmap into a content canvas for the bleed wrap.
-        const content = document.createElement("canvas");
-        content.width = bitmap.width;
-        content.height = bitmap.height;
-        content.getContext("2d")!.drawImage(bitmap, 0, 0);
-        bitmap.close?.();
-        sequenceCanvas = content;
-      } catch (err) {
-        console.warn("[PrintCardRenderer] full-card worker failed, main-thread fallback:", err);
-        sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
-      }
-    } else {
-      sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
-    }
+    const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
 
     // Wrap the content in the MPC card frame (stripe border + edge glow +
     // white inner area inset by the colored border). Single source of truth.

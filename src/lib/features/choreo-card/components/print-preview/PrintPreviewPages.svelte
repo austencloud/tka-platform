@@ -343,30 +343,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
     const renderer = getPrintCardRenderer();
 
-    // Seed the worker pool once for this deck so renderFront fans cells across
-    // cores. deckKey changes when the visual inputs change → triggers a re-seed.
-    try {
-      const { getCardFrontWorkerPool } = await import("$lib/shared/render/services/card-front-worker-pool");
-      // deckKey uses seqs.length (not a content hash): the seeded bundle is a
-      // SUPERSET SVG cache (props/arrows/grids/letters) gated by prop type, not
-      // by which exact sequences are in the deck. A bundle miss only triggers
-      // the per-cell main-thread fallback, never a wrong render — per-card
-      // correctness is enforced separately by buildCacheKey's hashSequenceContent.
-      const deckKey = [seqs.length, resolvedBlueProp, resolvedRedProp, resolvedBackground, CARD_RENDER_SCHEMA].join("|");
-      await getCardFrontWorkerPool().seedForDeck(
-        seqs,
-        {
-          bluePropType: resolvedBlueProp ?? PropType.STAFF,
-          redPropType: resolvedRedProp ?? PropType.STAFF,
-          theme,
-        },
-        deckKey,
-      );
-      if (generation !== renderGeneration) return;
-    } catch (err) {
-      console.warn("[PrintPreview] pool seed failed; rendering on main thread:", err);
-    }
-
     const cards: RenderedCard[] = new Array(seqs.length);
     const pairs: (CardPair | null)[] = new Array(seqs.length).fill(null);
     let completed = 0;

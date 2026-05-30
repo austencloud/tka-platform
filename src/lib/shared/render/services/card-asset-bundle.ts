@@ -10,18 +10,11 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType
 import { getSvgImageCache, type DrawableImage } from "./svg-image-cache";
 import { getSvgAssetLoader } from "./svg-asset-loader";
 import type { LoadedAssets } from "./svg-asset-loader";
-import {
-  buildGlyphBitmapSeed,
-  SeededGlyphSource,
-  type GlyphBitmapSeed,
-} from "./glyph-bitmap-seed";
-import type { TextRenderer } from "./text-renderer";
 
 export interface AssetBundle {
   keys: string[];
   bitmaps: ImageBitmap[];               // index-aligned with keys
   grids: LoadedAssets["grids"];         // four grid drawables (ImageBitmap | null)
-  glyphs: GlyphBitmapSeed;              // header word-glyph bitmaps (keys index-aligned with bitmaps)
 }
 
 // Square fallback raster size for a dimensionless SVG (TKA pictograph assets +
@@ -87,63 +80,24 @@ export async function buildAssetBundle(
     boxNonRadial: await toBitmap(g.boxNonRadial),
   };
 
-  // Header word-glyph bitmaps. Built on the main thread (buildGlyphBitmapSeed
-  // dynamic-imports the $env-coupled GlyphCache); transferred into the worker
-  // and re-attached to a SeededGlyphSource so the worker TextRenderer can paint
-  // the TKA word header without touching get-glyph-cache.
-  const glyphs = await buildGlyphBitmapSeed(sequences);
-
-  return { keys, bitmaps, grids, glyphs };
+  return { keys, bitmaps, grids };
 }
 
 /** Collect every transferable in a bundle (for postMessage transfer list). */
 export function bundleTransferables(bundle: AssetBundle): Transferable[] {
   const t: Transferable[] = [...bundle.bitmaps];
   for (const v of Object.values(bundle.grids)) if (v) t.push(v);
-  t.push(...bundle.glyphs.bitmaps);
   return t;
 }
 
-/**
- * WORKER (or any) THREAD. Populate a cache + loader from a received bundle and
- * construct a SeededGlyphSource from the bundle's header glyphs.
- *
- * Returns the SeededGlyphSource so the caller (the worker seed handler — a later
- * task) can inject it into the worker's TextRenderer via
- * `textRenderer.setGlyphSource(source)`. seedCachesFromBundle deliberately does
- * NOT reach the worker's TextRenderer instance itself: the worker owns that
- * singleton and wires it at init, and keeping this function free of a
- * TextRenderer dependency keeps the SVG-cache seed and the glyph seed
- * independently testable. (The TextRenderer type import is type-only — no
- * runtime/worker-graph cost.)
- */
+/** WORKER (or any) THREAD. Populate a cache + loader from a received bundle. */
 export function seedCachesFromBundle(
   bundle: AssetBundle,
   cache = getSvgImageCache(),
   loader = getSvgAssetLoader(),
-): SeededGlyphSource {
+): void {
   for (let i = 0; i < bundle.keys.length; i++) {
     cache.setImage(bundle.keys[i]!, bundle.bitmaps[i]!);
   }
   loader.seedGrids(bundle.grids);
-
-  const glyphSource = new SeededGlyphSource();
-  glyphSource.seed(bundle.glyphs);
-  return glyphSource;
-}
-
-/**
- * Convenience wiring for callers that DO hold the worker's TextRenderer:
- * seed the SVG caches + grids AND inject the glyph source into the renderer in
- * one call. The worker seed handler can use this instead of threading the
- * returned source manually.
- */
-export function seedRendererFromBundle(
-  bundle: AssetBundle,
-  textRenderer: Pick<TextRenderer, "setGlyphSource">,
-  cache = getSvgImageCache(),
-  loader = getSvgAssetLoader(),
-): void {
-  const glyphSource = seedCachesFromBundle(bundle, cache, loader);
-  textRenderer.setGlyphSource(glyphSource);
 }
