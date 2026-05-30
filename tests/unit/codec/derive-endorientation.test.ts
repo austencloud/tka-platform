@@ -60,17 +60,20 @@ describe("Task 2: v2 decodeMotion derives endOrientation (hand-known algebra)", 
 });
 
 describe("Task 3 + 4: sequence sentinel + derived==original equivalence", () => {
-  it("encodeSequence emits v2| and v2 round-trip derives the original endOrientation", () => {
-    // Build a v1 (un-prefixed) flat string carrying TRUE stored endOrientations.
-    const blue = __test__.encodeMotion(motion({ motionType: MotionType.ANTI, turns: 0, endOrientation: Orientation.OUT }), 1);
-    const red = __test__.encodeMotion(motion({ motionType: MotionType.PRO, turns: 0, endOrientation: Orientation.IN }), 1);
-    const v1Flat = `${blue}:${red}|${blue}:${red}`; // startPos | step1
+  it("encodeSequence emits v3| and round-trip derives the original endOrientation", () => {
+    // Build a v1 flat string with a physically consistent chain: a STATIC start
+    // position (in/in), then a step whose startOri == the start position's endOri.
+    const spBlue = __test__.encodeMotion(motion({ motionType: MotionType.STATIC, startLocation: GridLocation.NORTH, endLocation: GridLocation.NORTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
+    const spRed = __test__.encodeMotion(motion({ motionType: MotionType.STATIC, startLocation: GridLocation.SOUTH, endLocation: GridLocation.SOUTH, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
+    const s1Blue = __test__.encodeMotion(motion({ motionType: MotionType.ANTI, turns: 0, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST, startOrientation: Orientation.IN, endOrientation: Orientation.OUT }), 1);
+    const s1Red = __test__.encodeMotion(motion({ motionType: MotionType.PRO, turns: 0, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST, startOrientation: Orientation.IN, endOrientation: Orientation.IN }), 1);
+    const v1Flat = `${spBlue}:${spRed}|${s1Blue}:${s1Red}`; // startPos | step1
 
     const original = decodeSequence(v1Flat); // v1 path, stored endOri
-    const v2Flat = encodeSequence(original); // drops endOri, adds sentinel
-    expect(v2Flat.startsWith("v2|")).toBe(true);
+    const v3Flat = encodeSequence(original); // current encoder emits v3
+    expect(v3Flat.startsWith("v3|")).toBe(true);
 
-    const derived = decodeSequence(v2Flat); // recomputes endOri
+    const derived = decodeSequence(v3Flat); // recomputes endOri (+ chains startOri)
     expect(derived.steps.length).toBe(original.steps.length);
     for (let i = 0; i < original.steps.length; i++) {
       for (const c of ["blue", "red"] as const) {

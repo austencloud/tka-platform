@@ -135,9 +135,14 @@ export class CompositionalDecoder implements ICompositionalDecoder {
     // Old r1: codes carry a v1 seed (no "v2|" sentinel) and were hashed on v1
     // flat; new codes carry a v2 seed hashed on v2. encodeSequence now always
     // emits v2, so re-emit in v1 when verifying a v1 seed.
-    const seedIsV2 = seedEncoded.startsWith("v2|");
-    const flatEncoded = this.flatEncoder.encode(fullSequence); // v2|...
-    const hashInput = seedIsV2 ? flatEncoded : reencodeFlat(flatEncoded, 1);
+    const seedVersion = seedEncoded.startsWith("v3|")
+      ? 3
+      : seedEncoded.startsWith("v2|")
+        ? 2
+        : 1;
+    const flatEncoded = this.flatEncoder.encode(fullSequence); // v3|... (current)
+    const hashInput =
+      seedVersion === 3 ? flatEncoded : reencodeFlat(flatEncoded, seedVersion as 1 | 2);
     const actualHash = await computeRecipeHash(hashInput);
 
     if (actualHash !== expectedHash) {
