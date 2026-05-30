@@ -19,6 +19,8 @@ import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-rend
 import { buildBackJob } from "./card-back/card-back-job-builder";
 import { paintBackJob } from "./card-back/card-back-raster";
 import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
+import { getCardFrontWorkerPool } from "../../../shared/render/services/card-front-worker-pool";
+import { composeCardFrontParallel } from "../../../shared/render/services/compose-card-front-parallel";
 
 
 // MPC poker card defaults
@@ -156,14 +158,19 @@ export class PrintCardRenderer {
       },
     };
 
-    // Worker front rendering is parked: the worker pipeline crashes on deep
-    // $env coupling + missing preparer wiring (see worker-pool-card-rendering
-    // spec). Fronts render on the proven main-thread path until a FrontJob
-    // (plain-data) worker rebuild lands.
-    const sequenceCanvas: RenderCanvas = await this.imageComposer.composeSequenceImage(
-      sequence,
-      composeOptions,
-    );
+    // Fan per-cell raster to the seeded worker pool when ready; else main thread.
+    const pool = getCardFrontWorkerPool();
+    let sequenceCanvas: RenderCanvas;
+    if (pool.isReady()) {
+      try {
+        sequenceCanvas = await composeCardFrontParallel(sequence, composeOptions, pool);
+      } catch (err) {
+        console.warn("[PrintCardRenderer] parallel front failed, main-thread fallback:", err);
+        sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
+      }
+    } else {
+      sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions);
+    }
 
     // Build the card canvas
     const mpcCanvas = document.createElement("canvas");

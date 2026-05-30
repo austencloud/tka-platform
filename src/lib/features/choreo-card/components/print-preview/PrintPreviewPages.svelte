@@ -7,7 +7,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import type { CardPair } from "../../services/types";
   import type { PrintRenderOptions } from "../../services/types";
   import type { TnDElement } from "../../domain/tnd-element";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -339,6 +339,26 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
 
     const renderer = getPrintCardRenderer();
+
+    // Seed the worker pool once for this deck so renderFront fans cells across
+    // cores. deckKey changes when the visual inputs change → triggers a re-seed.
+    try {
+      const { getCardFrontWorkerPool } = await import("$lib/shared/render/services/card-front-worker-pool");
+      const deckKey = [seqs.length, resolvedBlueProp, resolvedRedProp, resolvedBackground, CARD_RENDER_SCHEMA].join("|");
+      await getCardFrontWorkerPool().seedForDeck(
+        seqs,
+        {
+          bluePropType: resolvedBlueProp ?? PropType.STAFF,
+          redPropType: resolvedRedProp ?? PropType.STAFF,
+          theme,
+        },
+        deckKey,
+      );
+      if (generation !== renderGeneration) return;
+    } catch (err) {
+      console.warn("[PrintPreview] pool seed failed; rendering on main thread:", err);
+    }
+
     const cards: RenderedCard[] = new Array(seqs.length);
     const pairs: (CardPair | null)[] = new Array(seqs.length).fill(null);
     let completed = 0;
