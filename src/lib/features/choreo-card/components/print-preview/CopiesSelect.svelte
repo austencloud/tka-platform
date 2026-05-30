@@ -1,20 +1,35 @@
 <script lang="ts">
+  interface Annotation {
+    blanks: number;
+    perfect: boolean;
+  }
+
   interface Props {
     value: number;
     onchange: (n: number) => void;
     presets?: number[];
+    /** Optional per-count waste readout. When provided, each chip shows a tiny
+     *  badge ("fit" for zero-blank, else the blank count) and the custom field
+     *  shows the live blanks for whatever is typed. */
+    annotate?: (n: number) => Annotation | null;
   }
 
-  let { value, onchange, presets = [1, 3, 6, 9, 12] }: Props = $props();
+  let { value, onchange, presets = [1, 3, 6, 9, 12], annotate }: Props = $props();
 
   const isCustom = $derived(!presets.includes(value));
 
-  // Mirror the field to `value` only while it holds a custom (non-preset) count,
-  // so picking a preset visually clears the field's active state.
   let customText = $state(String(value));
   $effect(() => {
     if (isCustom) customText = String(value);
   });
+
+  const customAnnotation = $derived(annotate?.(Math.max(1, Math.floor(Number(customText) || 1))) ?? null);
+
+  function badge(n: number): string {
+    const a = annotate?.(n);
+    if (!a) return "";
+    return a.perfect ? "fit" : `${a.blanks}b`;
+  }
 
   function commitCustom() {
     const n = Math.max(1, Math.floor(Number(customText) || 1));
@@ -29,30 +44,38 @@
 
 <div class="copies-select" role="radiogroup" aria-label="Copies per card">
   {#each presets as p (p)}
+    {@const a = annotate?.(p)}
     <button
       type="button"
       class="copies-option"
       class:active={value === p}
+      class:perfect={a?.perfect}
       role="radio"
       aria-checked={value === p}
-      aria-label="{p} {p === 1 ? 'copy' : 'copies'} per card"
+      aria-label="{p} {p === 1 ? 'copy' : 'copies'} per card{a ? (a.perfect ? ', fills every sheet' : `, ${a.blanks} blank cells`) : ''}"
+      title={a ? (a.perfect ? "Fills every sheet — no wasted cards" : `${a.blanks} blank cells`) : undefined}
       onclick={() => onchange(p)}
     >
-      {p}
+      <span class="copies-num">{p}</span>
+      {#if badge(p)}<span class="copies-badge">{badge(p)}</span>{/if}
     </button>
   {/each}
-  <input
-    class="copies-custom"
-    class:active={isCustom}
-    type="number"
-    min="1"
-    inputmode="numeric"
-    aria-label="Custom copies per card"
-    placeholder="…"
-    bind:value={customText}
-    onblur={commitCustom}
-    onkeydown={onCustomKey}
-  />
+  <div class="copies-custom-wrap" class:active={isCustom}>
+    <input
+      class="copies-custom"
+      type="number"
+      min="1"
+      inputmode="numeric"
+      aria-label="Custom copies per card"
+      placeholder="…"
+      bind:value={customText}
+      onblur={commitCustom}
+      onkeydown={onCustomKey}
+    />
+    {#if isCustom && customAnnotation}
+      <span class="copies-badge">{customAnnotation.perfect ? "fit" : `${customAnnotation.blanks}b`}</span>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -65,12 +88,14 @@
   }
 
   .copies-option {
-    min-width: 36px;
-    min-height: 36px;
-    padding: 6px 12px;
-    font-size: var(--font-size-compact, 13px);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 4px 10px;
     background: transparent;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     border: none;
@@ -79,8 +104,24 @@
   }
 
   .copies-option:not(:last-child),
-  .copies-custom {
+  .copies-custom-wrap {
     border-right: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .copies-num {
+    font-size: var(--font-size-compact, 13px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+
+  .copies-badge {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    line-height: 1;
   }
 
   .copies-option.active {
@@ -88,36 +129,56 @@
     color: var(--theme-text, #fff);
   }
 
+  /* Perfect-fit chips get a subtle green tint when not selected. */
+  .copies-option.perfect:not(.active) .copies-badge {
+    color: #4ade80;
+    opacity: 1;
+  }
+
   .copies-option:hover:not(.active) {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     color: var(--theme-text, #fff);
   }
 
+  .copies-custom-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .copies-custom-wrap.active {
+    background: var(--theme-accent, #4a9eff);
+  }
+
   .copies-custom {
     width: 56px;
-    min-height: 36px;
-    padding: 6px 8px;
+    min-height: 40px;
+    padding: 4px 6px;
     text-align: center;
     font-size: var(--font-size-compact, 13px);
     font-variant-numeric: tabular-nums;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     background: transparent;
-    border-top: none;
-    border-bottom: none;
-    border-right: none;
-    border-left: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    transition: background 0.15s, color 0.15s;
+    border: none;
+    transition: color 0.15s;
   }
 
-  .copies-custom.active {
-    background: var(--theme-accent, #4a9eff);
+  .copies-custom-wrap.active .copies-custom {
+    color: var(--theme-text, #fff);
+  }
+
+  .copies-custom-wrap.active .copies-badge {
     color: var(--theme-text, #fff);
   }
 
   .copies-custom:focus {
     outline: none;
+  }
+
+  .copies-custom-wrap:focus-within {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #fff);
   }
 
   /* Strip the native spinner — TKA bans stepper controls. */

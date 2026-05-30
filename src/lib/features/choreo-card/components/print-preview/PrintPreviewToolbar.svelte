@@ -15,6 +15,10 @@
     /** Copies per card for the print layout. Omit to hide the control. */
     copies?: number;
     onCopiesChange?: (n: number) => void;
+    /** Deck-aware suggested copy counts (minimal empty space). */
+    copiesPresets?: number[];
+    /** Per-count waste readout for chip badges. */
+    copiesAnnotate?: (n: number) => { blanks: number; perfect: boolean } | null;
   }
 
   let {
@@ -28,6 +32,8 @@
     onPrint,
     copies,
     onCopiesChange,
+    copiesPresets,
+    copiesAnnotate,
   }: Props = $props();
 
   const progressText = $derived(
@@ -43,7 +49,12 @@
 
     {#if copies != null && onCopiesChange}
       <span class="copies-label">Copies</span>
-      <CopiesSelect value={copies} onchange={onCopiesChange} />
+      <CopiesSelect
+        value={copies}
+        onchange={onCopiesChange}
+        presets={copiesPresets}
+        annotate={copiesAnnotate}
+      />
     {/if}
 
     {#if onRerender}

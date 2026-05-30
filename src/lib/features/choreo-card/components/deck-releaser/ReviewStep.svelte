@@ -8,7 +8,8 @@
   import PrintPreviewToolbar from "../print-preview/PrintPreviewToolbar.svelte";
   import PrintDialog from "../print-preview/PrintDialog.svelte";
   import CardInspectModal from "../CardInspectModal.svelte";
-  import type { CardSizeId } from "../../domain/card-sizes";
+  import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
+  import { suggestCopyCounts, copyWaste } from "../../services/print-copy-suggester";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
@@ -102,6 +103,23 @@
   const sortedSequences = $derived(elementSorted.sequences);
   const sortedFooters = $derived(elementSorted.footers);
   const tndElements = $derived(elementSorted.tndElements);
+
+  // Element group sizes drive the copy-count suggester: each group fills whole
+  // sheets, so suggested copy counts are the ones that leave the fewest blanks.
+  const groupSizes = $derived.by(() => {
+    const counts = new Map<string, number>();
+    for (const el of tndElements) {
+      const key = el?.element ?? "__untagged__";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.values()];
+  });
+  const cardsPerPage = $derived(getPageLayout(cardSize).cardsPerPage);
+  const copiesPresets = $derived(suggestCopyCounts(groupSizes, cardsPerPage).map((s) => s.copies));
+  function copiesAnnotate(n: number) {
+    const w = copyWaste(groupSizes, cardsPerPage, n);
+    return { blanks: w.blanks, perfect: w.blanks === 0 };
+  }
 
   let showPrintDialog = $state(false);
   let isExporting = $state(false);
@@ -286,6 +304,8 @@
     onPrint={() => { showPrintDialog = true; }}
     {copies}
     onCopiesChange={(n) => { copies = n; }}
+    {copiesPresets}
+    {copiesAnnotate}
   />
 
   <div class="preview-area">
