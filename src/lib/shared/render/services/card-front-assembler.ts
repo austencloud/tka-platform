@@ -1,0 +1,443 @@
+import type { SequenceData } from "../../foundation/domain/models/SequenceData";
+import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
+import type { PictographVisibilityOptions } from "../utils/pictograph-to-svg";
+import type { RenderCanvas, LayerRenderOptions, LayerVisibility } from "./types";
+import type { TextRenderer } from "./text-renderer";
+import type { QRCodeGenerator } from "../../qr/services/qr-code-generator";
+import { calculateLayout } from "./layout-calculator";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+import { drawSmartCellBorders } from "./cell-border-renderer";
+import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
+import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
+import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import {
+  RESERVED_ORIENTATION_PRIMITIVES,
+  LOOPComponent,
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
+import {
+  calculateHeaderHeight as sharedHeaderHeight,
+  calculateFooterHeight as sharedFooterHeight,
+} from "@tka/render-composition";
+import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+
+const DECK_HEADER_RATIO = 0.133;
+const DECK_FOOTER_RATIO = 0.067;
+const DECK_HEADER_BG = "rgba(245, 245, 245, 0.98)";
+const DECK_BORDER_COLOR = "rgba(0, 0, 0, 0.1)";
+
+/**
+ * Layout geometry + derived metadata for a choreo-card front, computed once and
+ * shared by both the main-thread composer and any parallel render path. Pure
+ * data — no canvas, no mutation of inputs.
+ */
+export interface CardFrontLayout {
+  columns: number;
+  rows: number;
+  stepSize: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  headerHeight: number;
+  footerHeight: number;
+  gridOffsetX: number;
+  gridOffsetY: number;
+  isDarkMode: boolean;
+  derivedWord: string;
+  startColumn: number;
+  startRow: number;
+  stepsPerRow: number;
+  hasStartPosition: boolean;
+}
+
+function localHeaderHeight(stepCount: number, stepSize: number, columns?: number): number {
+  if (stepCount === 0) return 0;
+  return sharedHeaderHeight(stepSize, columns);
+}
+
+function localFooterHeight(stepSize: number, columns?: number): number {
+  return sharedFooterHeight(stepSize, columns);
+}
+
+/**
+ * Layout math extracted verbatim from ImageComposer.composeSequenceImage. Does
+ * NOT mutate `options` or `visibility`. The header/footer height for the
+ * non-deckCard branch reuses the same shared @tka/render-composition helpers the
+ * composer used (via its private calculateHeaderHeight/calculateFooterHeight).
+ */
+export function computeCardFrontLayout(
+  sequence: SequenceData,
+  options: Partial<SequenceExportOptions>,
+  visibility: PictographVisibilityOptions
+): CardFrontLayout {
+  const stepCount = sequence.steps.length;
+  let columns: number;
+  let rows: number;
+  if (options.columnCount != null && options.columnCount > 0) {
+    columns = options.columnCount;
+    const startCol = (options.includeStartPosition ?? false) ? 1 : 0;
+    const stepsPerRowLocal = columns - startCol;
+    const firstRowSteps = Math.min(stepsPerRowLocal, stepCount);
+    const remaining = stepCount - firstRowSteps;
+    rows = 1 + (remaining > 0 ? Math.ceil(remaining / stepsPerRowLocal) : 0);
+  } else {
+    [columns, rows] = calculateLayout(
+      stepCount,
+      options.includeStartPosition ?? false,
+      options.startPositionLayout ?? "row"
+    );
+  }
+
+  const rawWord =
+    sequence.word ||
+    sequence.steps
+      .filter((step) => step.letter)
+      .map((step) => step.letter)
+      .join("");
+
+  const derivedWord = simplifyRepeatedWord(rawWord);
+
+  const earlyLoopType = options.loopType ?? sequence.loopType;
+  const earlyShowLoopGlyph = options.showLoopGlyph !== false && !!earlyLoopType;
+  const showHeaderForLayout =
+    (options.addWord && (derivedWord || options.customName)) ||
+    options.addDifficultyLevel ||
+    earlyShowLoopGlyph;
+
+  const showCreatorName = options.showCreatorName ?? options.addUserInfo;
+  const showNotes = options.showNotes ?? options.addUserInfo;
+  const showBirthday = options.showBirthday ?? options.addUserInfo;
+  const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
+
+  let stepSize: number;
+  let canvasWidth: number;
+  let canvasHeight: number;
+  let headerHeight: number;
+  let footerHeight: number;
+
+  if (options.deckCard) {
+    const { contentWidth, contentHeight } = options.deckCard;
+    canvasWidth = contentWidth;
+
+    headerHeight = showHeaderForLayout
+      ? Math.floor(contentWidth * DECK_HEADER_RATIO)
+      : 0;
+    footerHeight = hasAnyFooterContent
+      ? Math.floor(contentWidth * DECK_FOOTER_RATIO)
+      : 0;
+
+    const availableHeight = contentHeight - headerHeight - footerHeight;
+    stepSize = Math.floor(Math.min(contentWidth / columns, availableHeight / rows));
+
+    canvasHeight = contentHeight;
+  } else {
+    const baseBeatSize = options.stepSize || 120;
+    stepSize = Math.floor(baseBeatSize * (options.stepScale || 1));
+    canvasWidth = columns * stepSize;
+
+    headerHeight = showHeaderForLayout
+      ? localHeaderHeight(stepCount, stepSize, columns)
+      : 0;
+    footerHeight = hasAnyFooterContent
+      ? localFooterHeight(stepSize, columns)
+      : 0;
+
+    canvasHeight = rows * stepSize + headerHeight + footerHeight;
+  }
+
+  const isDarkMode = visibility.darkMode ?? false;
+
+  const gridHeight = rows * stepSize;
+  const gridWidth = columns * stepSize;
+  const gridOffsetY = options.deckCard
+    ? headerHeight + Math.floor((canvasHeight - headerHeight - footerHeight - gridHeight) / 2)
+    : headerHeight;
+  const gridOffsetX = options.deckCard
+    ? Math.floor((canvasWidth - gridWidth) / 2)
+    : 0;
+
+  const layoutMode = options.startPositionLayout ?? "row";
+  const useColumnMode = layoutMode === "column" && options.includeStartPosition;
+  const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
+  const startColumn = useColumnMode ? 1 : 0;
+  const stepsPerRow = columns - startColumn;
+
+  // hasStartPosition mirrors composeSequenceImage: a start position exists when
+  // includeStartPosition is set AND there is an effective start position
+  // (explicit on the sequence, or derivable from the first step).
+  const hasStartPosition = !!(
+    options.includeStartPosition &&
+    (sequence.startPosition || (sequence.steps[0] ? true : false))
+  );
+
+  return {
+    columns,
+    rows,
+    stepSize,
+    canvasWidth,
+    canvasHeight,
+    headerHeight,
+    footerHeight,
+    gridOffsetX,
+    gridOffsetY,
+    isDarkMode,
+    derivedWord,
+    startColumn,
+    startRow,
+    stepsPerRow,
+    hasStartPosition,
+  };
+}
+
+/**
+ * Paints the card-front background fill + deckCard content rect + accent-tint
+ * side fills. Extracted verbatim from composeSequenceImage (the block that ran
+ * right after grid-offset computation).
+ */
+export function paintCardFrontBackground(
+  ctx: CanvasRenderingContext2D,
+  layout: CardFrontLayout,
+  options: Partial<SequenceExportOptions>
+): void {
+  const { isDarkMode, canvasWidth, canvasHeight, headerHeight, footerHeight, columns, rows, stepSize, gridOffsetX } =
+    layout;
+
+  ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
+
+  const gridHeight = rows * stepSize;
+  const gridWidth = columns * stepSize;
+
+  if (options.deckCard) {
+    ctx.fillRect(0, headerHeight, canvasWidth, canvasHeight - headerHeight - footerHeight);
+
+    if (!isDarkMode && options.accentColor && gridOffsetX > 0) {
+      const contentTop = headerHeight;
+      const contentH = canvasHeight - headerHeight - footerHeight;
+      const alphaHex = options.accentTintOpacity
+        ? Math.round(options.accentTintOpacity * 255).toString(16).padStart(2, "0")
+        : "18";
+      ctx.fillStyle = options.accentColor + alphaHex;
+      ctx.fillRect(0, contentTop, gridOffsetX, contentH);
+      ctx.fillRect(gridOffsetX + gridWidth, contentTop, canvasWidth - gridOffsetX - gridWidth, contentH);
+      ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
+    }
+  } else {
+    ctx.fillRect(0, headerHeight, canvasWidth, gridHeight);
+  }
+}
+
+/**
+ * Builds the per-cell LayerCompositor options + visibility, mirroring the
+ * option-building in ImageComposer.renderPictographWithLayerCompositor. The cell
+ * render loop stays inline in composeSequenceImage; this helper exists so the
+ * future parallel path can reproduce the exact same per-cell options.
+ */
+export function buildCellLayerOptions(
+  stepSize: number,
+  visibility: PictographVisibilityOptions
+): { options: LayerRenderOptions; visibility: LayerVisibility } {
+  const rawHandVisibility = visibility.handPointVisibility ?? "all";
+  const handVisibility: "all" | "active" = rawHandVisibility === "none" ? "active" : rawHandVisibility;
+
+  const options: LayerRenderOptions = {
+    size: stepSize,
+    darkMode: visibility.darkMode ?? false,
+    showNonRadialPoints: visibility.showNonRadialPoints ?? false,
+    handPointVisibility: handVisibility,
+    bluePropType: visibility.bluePropType,
+    redPropType: visibility.redPropType,
+    showBlueMotion: visibility.showBlueMotion,
+    showRedMotion: visibility.showRedMotion,
+    showPositions: visibility.showPositions ?? false,
+    handPathMode: visibility.handPathMode ?? false,
+  };
+
+  const layerVisibility: LayerVisibility = {
+    showTKA: visibility.showTKA ?? true,
+    showReversals: visibility.showReversals ?? true,
+  };
+
+  return { options, visibility: layerVisibility };
+}
+
+/**
+ * Dependencies the chrome painter needs from the owning ImageComposer instance.
+ * Mandala + QR are passed as pre-bound closures so the assembler stays free of
+ * the composer's prop-type / instance state.
+ */
+export interface CardFrontChromeDeps {
+  textRenderer: TextRenderer;
+  qrCodeGenerator?: QRCodeGenerator;
+  renderMandalas: (ctx: CanvasRenderingContext2D) => Promise<void>;
+  renderQRCode: (ctx: CanvasRenderingContext2D) => Promise<void>;
+}
+
+/**
+ * Paints all post-cell "chrome": smart cell borders, QR code, mandalas,
+ * loop-component resolution, and the word header + footer. Extracted verbatim
+ * from composeSequenceImage (everything after the cell render loop). The header
+ * renders TKA letter glyphs and MUST stay pixel-identical to the prior inline
+ * path.
+ */
+export async function paintCardFrontChrome(
+  canvas: RenderCanvas,
+  ctx: CanvasRenderingContext2D,
+  layout: CardFrontLayout,
+  sequence: SequenceData,
+  options: Partial<SequenceExportOptions>,
+  visibility: PictographVisibilityOptions,
+  deps: CardFrontChromeDeps
+): Promise<void> {
+  const { columns, rows, stepSize, gridOffsetY, gridOffsetX, isDarkMode, headerHeight, footerHeight, derivedWord } =
+    layout;
+
+  if (options.visibilityOverrides?.showQRCode && deps.qrCodeGenerator) {
+    await deps.renderQRCode(ctx);
+  }
+
+  if (options.visibilityOverrides?.showMandala && sequence.loopType) {
+    await deps.renderMandalas(ctx);
+  }
+
+  drawSmartCellBorders(
+    ctx,
+    columns,
+    rows,
+    stepSize,
+    sequence,
+    options,
+    gridOffsetY,
+    isDarkMode,
+    gridOffsetX
+  );
+
+  const loopTypeOverride = options.loopType;
+  let loopComponents: Set<LOOPComponent> | undefined;
+
+  const resolver = tryGetLoopDisplayResolver();
+  const display = resolver?.(sequence);
+  let rotationPeriod = display?.rotationPeriod;
+  let inversionPeriod = display?.inversionPeriod;
+  let loopPeriod = display?.period ?? 1;
+
+  if (display && display.components.size > 0) {
+    loopComponents = display.components;
+  } else if (loopTypeOverride) {
+    const parsed = parseLoopComponents(loopTypeOverride);
+    const filtered = new Set<LOOPComponent>();
+    for (const c of parsed) {
+      if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) filtered.add(c);
+    }
+    loopComponents = filtered.size > 0 ? filtered : undefined;
+
+    if (loopComponents && loopPeriod <= 1) {
+      const seqPeriod = sequence.period ?? (sequence.orientationCycleCount === 4 ? 4 : 2);
+      loopPeriod = seqPeriod;
+      if (loopComponents.has(LOOPComponent.ROTATED)) {
+        rotationPeriod = seqPeriod === 4 ? Period.QUARTERED : Period.HALVED;
+      }
+      if (loopComponents.has(LOOPComponent.INVERTED)) {
+        inversionPeriod = seqPeriod === 4 ? Period.QUARTERED : Period.HALVED;
+      }
+    }
+  }
+
+  // Filter LOOP components by view mode:
+  // - Swapped requires two hands (meaningless for single-hand view)
+  // - Inverted requires props (meaningless in hand-path mode)
+  if (loopComponents) {
+    const isHandPath = visibility.handPathMode ?? false;
+    const isSolo = visibility.showBlueMotion === false || visibility.showRedMotion === false;
+    if (isHandPath || isSolo) {
+      const filtered = new Set(loopComponents);
+      if (isSolo) filtered.delete(LOOPComponent.SWAPPED);
+      if (isHandPath) filtered.delete(LOOPComponent.INVERTED);
+      loopComponents = filtered.size > 0 ? filtered : undefined;
+    }
+  }
+  const showLoopGlyph =
+    options.showLoopGlyph !== false &&
+    loopComponents &&
+    loopComponents.size > 0;
+
+  const showHeader =
+    (options.addWord && (derivedWord || options.customName)) ||
+    options.addDifficultyLevel ||
+    showLoopGlyph;
+  if (showHeader && headerHeight > 0) {
+    const difficultyLevel = getDifficultyLevel(sequence);
+    const displayName = options.addWord ? (options.customName || derivedWord) : "";
+    const periodForRender =
+      rotationPeriod === Period.QUARTERED
+        ? "quartered"
+        : rotationPeriod === Period.HALVED
+          ? "halved"
+          : undefined;
+
+    const inversionForRender =
+      inversionPeriod === Period.QUARTERED
+        ? "quartered"
+        : inversionPeriod === Period.HALVED
+          ? "halved"
+          : undefined;
+
+    deps.textRenderer.renderWordHeader({
+      canvas,
+      word: displayName,
+      headerHeight,
+      difficultyLevel,
+      showDifficultyBadge: options.addDifficultyLevel,
+      darkMode: isDarkMode,
+      loopComponents: showLoopGlyph ? loopComponents : undefined,
+      backgroundColor: options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
+      borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
+      rotationPeriod: showLoopGlyph ? periodForRender : undefined,
+      inversionPeriod: showLoopGlyph ? inversionForRender : undefined,
+      period: showLoopGlyph ? loopPeriod : undefined,
+      accentColor: options.accentColor,
+      accentTintOpacity: options.accentTintOpacity,
+    });
+  }
+
+  const showCreatorName = options.showCreatorName ?? options.addUserInfo;
+  const showNotes = options.showNotes ?? options.addUserInfo;
+  const showBirthday = options.showBirthday ?? options.addUserInfo;
+  const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
+
+  if (hasAnyFooterContent && footerHeight > 0) {
+    await deps.textRenderer.renderUserInfo({
+      canvas,
+      userInfo: {
+        userName: options.userName || "",
+        exportDate: options.exportDate || new Date().toISOString(),
+        notes: options.notes || "",
+        birthday: options.birthday,
+      },
+      footerHeight,
+      darkMode: isDarkMode,
+      showCreatorName,
+      showNotes,
+      showBirthday,
+      customNotesText: options.customNotesText,
+      backgroundColor: options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
+      borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
+      leftLabel: options.leftLabel,
+      rightLabel: options.rightLabel,
+      iconPath: options.iconPath,
+      accentColor: options.accentColor,
+      accentTintOpacity: options.accentTintOpacity,
+    });
+  }
+}
+
+// Mirrors ImageComposer.getDifficultyLevel (private). Kept local so the chrome
+// painter has no dependency on the composer instance.
+function getDifficultyLevel(sequence: SequenceData): number {
+  if (sequence.steps && sequence.steps.length > 0) {
+    return calculateSequenceDifficultyLevel([...sequence.steps]);
+  }
+
+  if (typeof sequence.level === "number" && sequence.level > 0) {
+    return sequence.level;
+  }
+
+  return 1;
+}

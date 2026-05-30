@@ -4,20 +4,11 @@ import type { PictographData } from "../../pictograph/shared/domain/models/Picto
 import type { SequenceData } from "../../foundation/domain/models/SequenceData";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../utils/pictograph-to-svg";
-import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
-import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/getLoopDisplayResolver";
-import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-import {
-  RESERVED_ORIENTATION_PRIMITIVES,
-  LOOPComponent,
-} from "$lib/shared/foundation/domain/models/generation/generate-models";
-import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
 // These 5 imports are loaded dynamically at usage sites to avoid pulling
 // Svelte stores and $app/environment into the composition worker bundle.
 // See: getVisibilitySettings(), renderPictographDirect(), storePictographBlob()
 import type { PreviewCellRenderOptions } from "../../sequence-viewer/services/preview-cell-renderer";
-import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import type { CompositionProgressCallback } from "./types";
 import type { TextRenderer } from "./text-renderer";
@@ -26,18 +17,18 @@ import type { PictographKeyHasher } from "$lib/shared/render/services/pictograph
 import type { PictographMemoryCache } from "./pictograph-memory-cache";
 import type { Canvas2DDirectRenderer } from "./canvas-2d-direct-renderer";
 import type { LayerCompositor } from "./layer-compositor";
-import { calculateLayout } from "./layout-calculator";
 import { drawStepNumber } from "./step-number-renderer";
 import type { QRCodeGenerator } from "../../qr/services/qr-code-generator";
 import { getQRCellScale } from "../../qr/qr-cell-scale";
-import {
-  calculateHeaderHeight as sharedHeaderHeight,
-  calculateFooterHeight as sharedFooterHeight,
-} from "@tka/render-composition";
 import { blobToImage, canvasToImage, imageToBlob } from "./image-format-converter";
 import { createRenderCanvas } from "./create-render-canvas";
 import type { RenderCanvas } from "./types";
-import { drawSmartCellBorders, findEmptyCellForQR } from "./cell-border-renderer";
+import { findEmptyCellForQR } from "./cell-border-renderer";
+import {
+  computeCardFrontLayout,
+  paintCardFrontBackground,
+  paintCardFrontChrome,
+} from "./card-front-assembler";
 import { composeCardImage as composeCardImageFn } from "./card-composer";
 // getMandalaGeometryCalculator loaded dynamically to avoid pulling $app/environment into worker bundle
 import { renderMandalaToCanvas } from "../../mandala/services/mandala-renderer";
@@ -61,11 +52,6 @@ import type { PreparedPictographData } from '../../pictograph/shared/domain/mode
 const yieldToEventLoop: () => Promise<void> =
   (globalThis as unknown as Record<string, Record<string, () => Promise<void>>>).scheduler?.yield?.bind((globalThis as unknown as Record<string, unknown>).scheduler) ??
   (() => new Promise<void>((r) => setTimeout(r, 0)));
-
-const DECK_HEADER_RATIO = 0.133;
-const DECK_FOOTER_RATIO = 0.067;
-const DECK_HEADER_BG = "rgba(245, 245, 245, 0.98)";
-const DECK_BORDER_COLOR = "rgba(0, 0, 0, 0.1)";
 
 export class ImageComposer {
   private layer1Hits = 0;
@@ -243,80 +229,17 @@ export class ImageComposer {
       visibilitySettings.showTKA = false;
     }
 
-    const stepCount = sequence.steps.length;
-    let columns: number;
-    let rows: number;
-    if (options.columnCount != null && options.columnCount > 0) {
-      columns = options.columnCount;
-      const startCol = (options.includeStartPosition ?? false) ? 1 : 0;
-      const stepsPerRow = columns - startCol;
-      const firstRowSteps = Math.min(stepsPerRow, stepCount);
-      const remaining = stepCount - firstRowSteps;
-      rows = 1 + (remaining > 0 ? Math.ceil(remaining / stepsPerRow) : 0);
-    } else {
-      [columns, rows] = calculateLayout(
-        stepCount,
-        options.includeStartPosition ?? false,
-        options.startPositionLayout ?? "row"
-      );
-    }
-
-    const rawWord =
-      sequence.word ||
-      sequence.steps
-        .filter((step) => step.letter)
-        .map((step) => step.letter)
-        .join("");
-
-    const derivedWord = simplifyRepeatedWord(rawWord);
-
-    const earlyLoopType = options.loopType ?? sequence.loopType;
-    const earlyShowLoopGlyph = options.showLoopGlyph !== false && !!earlyLoopType;
-    const showHeaderForLayout =
-      (options.addWord && (derivedWord || options.customName)) ||
-      options.addDifficultyLevel ||
-      earlyShowLoopGlyph;
-
-    const showCreatorName = options.showCreatorName ?? options.addUserInfo;
-    const showNotes = options.showNotes ?? options.addUserInfo;
-    const showBirthday = options.showBirthday ?? options.addUserInfo;
-    const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
-
-    let stepSize: number;
-    let canvasWidth: number;
-    let canvasHeight: number;
-    let headerHeight: number;
-    let footerHeight: number;
-
-    if (options.deckCard) {
-      const { contentWidth, contentHeight } = options.deckCard;
-      canvasWidth = contentWidth;
-
-      headerHeight = showHeaderForLayout
-        ? Math.floor(contentWidth * DECK_HEADER_RATIO)
-        : 0;
-      footerHeight = hasAnyFooterContent
-        ? Math.floor(contentWidth * DECK_FOOTER_RATIO)
-        : 0;
-
-      const availableHeight = contentHeight - headerHeight - footerHeight;
-      stepSize = Math.floor(Math.min(contentWidth / columns, availableHeight / rows));
-
-      canvasHeight = contentHeight;
-    } else {
-      const baseBeatSize = options.stepSize || 120;
-      stepSize = Math.floor(baseBeatSize * (options.stepScale || 1));
-      canvasWidth = columns * stepSize;
-
-      headerHeight = showHeaderForLayout
-        ? this.calculateHeaderHeight(stepCount, stepSize, columns)
-        : 0;
-      footerHeight = hasAnyFooterContent
-        ? this.calculateFooterHeight(stepSize, columns)
-        : 0;
-
-      canvasHeight = rows * stepSize + headerHeight + footerHeight;
-    }
+    const layout = computeCardFrontLayout(sequence, options, visibilitySettings);
+    const {
+      columns,
+      rows,
+      stepSize,
+      canvasWidth,
+      canvasHeight,
+      gridOffsetX,
+      gridOffsetY,
+      isDarkMode,
+    } = layout;
 
     const canvas = createRenderCanvas(canvasWidth, canvasHeight);
 
@@ -327,35 +250,7 @@ export class ImageComposer {
       throw new Error("Failed to get 2D context");
     }
 
-    const isDarkMode = visibilitySettings.darkMode ?? false;
-    ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
-
-    const gridHeight = rows * stepSize;
-    const gridWidth = columns * stepSize;
-    const gridOffsetY = options.deckCard
-      ? headerHeight + Math.floor((canvasHeight - headerHeight - footerHeight - gridHeight) / 2)
-      : headerHeight;
-    const gridOffsetX = options.deckCard
-      ? Math.floor((canvasWidth - gridWidth) / 2)
-      : 0;
-
-    if (options.deckCard) {
-      ctx.fillRect(0, headerHeight, canvasWidth, canvasHeight - headerHeight - footerHeight);
-
-      if (!isDarkMode && options.accentColor && gridOffsetX > 0) {
-        const contentTop = headerHeight;
-        const contentH = canvasHeight - headerHeight - footerHeight;
-        const alphaHex = options.accentTintOpacity
-          ? Math.round(options.accentTintOpacity * 255).toString(16).padStart(2, '0')
-          : "18";
-        ctx.fillStyle = options.accentColor + alphaHex;
-        ctx.fillRect(0, contentTop, gridOffsetX, contentH);
-        ctx.fillRect(gridOffsetX + gridWidth, contentTop, canvasWidth - gridOffsetX - gridWidth, contentH);
-        ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
-      }
-    } else {
-      ctx.fillRect(0, headerHeight, canvasWidth, gridHeight);
-    }
+    paintCardFrontBackground(ctx, layout, options);
 
     let derivedStartPosition: StartPositionData | null = null;
     const firstStep = sequence.steps[0];
@@ -408,11 +303,7 @@ export class ImageComposer {
       });
     }
 
-    const layoutMode = options.startPositionLayout ?? "row";
-    const useColumnMode = layoutMode === "column" && options.includeStartPosition;
-    const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
-    const startColumn = useColumnMode ? 1 : 0;
-    const stepsPerRow = columns - startColumn;
+    const { startRow, startColumn, stepsPerRow } = layout;
 
     for (let i = 0; i < sequence.steps.length; i++) {
       if (signal?.aborted) throw new DOMException("Render aborted", "AbortError");
@@ -459,165 +350,50 @@ export class ImageComposer {
       });
     }
 
-    if (options.visibilityOverrides?.showQRCode && this.qrCodeGenerator) {
-      const emptyCell = findEmptyCellForQR(columns, rows, sequence, options);
-      if (emptyCell) {
-        await this.renderQRCode(
-          ctx,
-          sequence,
-          emptyCell,
-          stepSize,
-          gridOffsetY,
-          isDarkMode,
-          effectiveBluePropType,
-          effectiveRedPropType,
-          gridOffsetX,
-          options.deckId,
-          options.deckName,
-        );
-      }
-    }
-
-    if (options.visibilityOverrides?.showMandala && sequence.loopType) {
-      await this.renderMandalas(
-        ctx,
-        sequence,
-        columns,
-        rows,
-        stepSize,
-        gridOffsetY,
-        gridOffsetX,
-        isDarkMode,
-        options,
-        effectiveBluePropType,
-        effectiveRedPropType
-      );
-    }
-
-    drawSmartCellBorders(
+    await paintCardFrontChrome(
+      canvas,
       ctx,
-      columns,
-      rows,
-      stepSize,
+      layout,
       sequence,
       options,
-      gridOffsetY,
-      isDarkMode,
-      gridOffsetX
-    );
-
-    const loopTypeOverride = options.loopType;
-    let loopComponents: Set<LOOPComponent> | undefined;
-
-    const resolver = tryGetLoopDisplayResolver();
-    const display = resolver?.(sequence);
-    let rotationPeriod = display?.rotationPeriod;
-    let inversionPeriod = display?.inversionPeriod;
-    let loopPeriod = display?.period ?? 1;
-
-    if (display && display.components.size > 0) {
-      loopComponents = display.components;
-    } else if (loopTypeOverride) {
-      const parsed = parseLoopComponents(loopTypeOverride);
-      const filtered = new Set<LOOPComponent>();
-      for (const c of parsed) {
-        if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) filtered.add(c);
-      }
-      loopComponents = filtered.size > 0 ? filtered : undefined;
-
-      if (loopComponents && loopPeriod <= 1) {
-        const seqPeriod = sequence.period ?? (sequence.orientationCycleCount === 4 ? 4 : 2);
-        loopPeriod = seqPeriod;
-        if (loopComponents.has(LOOPComponent.ROTATED)) {
-          rotationPeriod = seqPeriod === 4 ? Period.QUARTERED : Period.HALVED;
-        }
-        if (loopComponents.has(LOOPComponent.INVERTED)) {
-          inversionPeriod = seqPeriod === 4 ? Period.QUARTERED : Period.HALVED;
-        }
-      }
-    }
-
-    // Filter LOOP components by view mode:
-    // - Swapped requires two hands (meaningless for single-hand view)
-    // - Inverted requires props (meaningless in hand-path mode)
-    if (loopComponents) {
-      const isHandPath = visibilitySettings.handPathMode ?? false;
-      const isSolo = visibilitySettings.showBlueMotion === false || visibilitySettings.showRedMotion === false;
-      if (isHandPath || isSolo) {
-        const filtered = new Set(loopComponents);
-        if (isSolo) filtered.delete(LOOPComponent.SWAPPED);
-        if (isHandPath) filtered.delete(LOOPComponent.INVERTED);
-        loopComponents = filtered.size > 0 ? filtered : undefined;
-      }
-    }
-    const showLoopGlyph =
-      options.showLoopGlyph !== false &&
-      loopComponents &&
-      loopComponents.size > 0;
-
-    const showHeader =
-      (options.addWord && (derivedWord || options.customName)) ||
-      options.addDifficultyLevel ||
-      showLoopGlyph;
-    if (showHeader && headerHeight > 0) {
-      const difficultyLevel = this.getDifficultyLevel(sequence);
-      const displayName = options.addWord ? (options.customName || derivedWord) : "";
-      const periodForRender =
-        rotationPeriod === Period.QUARTERED
-          ? "quartered"
-          : rotationPeriod === Period.HALVED
-            ? "halved"
-            : undefined;
-
-      const inversionForRender =
-        inversionPeriod === Period.QUARTERED
-          ? "quartered"
-          : inversionPeriod === Period.HALVED
-            ? "halved"
-            : undefined;
-
-      this.TextRenderer.renderWordHeader({
-        canvas,
-        word: displayName,
-        headerHeight,
-        difficultyLevel,
-        showDifficultyBadge: options.addDifficultyLevel,
-        darkMode: isDarkMode,
-        loopComponents: showLoopGlyph ? loopComponents : undefined,
-        backgroundColor: options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
-        borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
-        rotationPeriod: showLoopGlyph ? periodForRender : undefined,
-        inversionPeriod: showLoopGlyph ? inversionForRender : undefined,
-        period: showLoopGlyph ? loopPeriod : undefined,
-        accentColor: options.accentColor,
-        accentTintOpacity: options.accentTintOpacity,
-      });
-    }
-
-    if (hasAnyFooterContent && footerHeight > 0) {
-      await this.TextRenderer.renderUserInfo({
-        canvas,
-        userInfo: {
-          userName: options.userName || "",
-          exportDate: options.exportDate || new Date().toISOString(),
-          notes: options.notes || "",
-          birthday: options.birthday,
+      visibilitySettings,
+      {
+        textRenderer: this.TextRenderer,
+        qrCodeGenerator: this.qrCodeGenerator,
+        renderMandalas: (c) =>
+          this.renderMandalas(
+            c,
+            sequence,
+            columns,
+            rows,
+            stepSize,
+            gridOffsetY,
+            gridOffsetX,
+            isDarkMode,
+            options,
+            effectiveBluePropType,
+            effectiveRedPropType
+          ),
+        renderQRCode: async (c) => {
+          const emptyCell = findEmptyCellForQR(columns, rows, sequence, options);
+          if (emptyCell) {
+            await this.renderQRCode(
+              c,
+              sequence,
+              emptyCell,
+              stepSize,
+              gridOffsetY,
+              isDarkMode,
+              effectiveBluePropType,
+              effectiveRedPropType,
+              gridOffsetX,
+              options.deckId,
+              options.deckName,
+            );
+          }
         },
-        footerHeight,
-        darkMode: isDarkMode,
-        showCreatorName,
-        showNotes,
-        showBirthday,
-        customNotesText: options.customNotesText,
-        backgroundColor: options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
-        borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
-        leftLabel: options.leftLabel,
-        rightLabel: options.rightLabel,
-        iconPath: options.iconPath,
-        accentColor: options.accentColor,
-        accentTintOpacity: options.accentTintOpacity,
-      });
-    }
+      }
+    );
 
     return canvas;
   }
@@ -994,15 +770,6 @@ export class ImageComposer {
     return canvas;
   }
 
-  private calculateHeaderHeight(stepCount: number, stepSize: number, columns?: number): number {
-    if (stepCount === 0) return 0;
-    return sharedHeaderHeight(stepSize, columns);
-  }
-
-  private calculateFooterHeight(stepSize: number, columns?: number): number {
-    return sharedFooterHeight(stepSize, columns);
-  }
-
   private applyPropTypeOverride<
     T extends StepData | PictographData | StartPositionData,
   >(
@@ -1029,20 +796,6 @@ export class ImageComposer {
     };
 
     return result;
-  }
-
-  private getDifficultyLevel(sequence: SequenceData): number {
-    if (sequence.steps && sequence.steps.length > 0) {
-      return calculateSequenceDifficultyLevel([
-        ...sequence.steps,
-      ]);
-    }
-
-    if (typeof sequence.level === "number" && sequence.level > 0) {
-      return sequence.level;
-    }
-
-    return 1;
   }
 
   private async renderPictographWithLayerCompositor(
