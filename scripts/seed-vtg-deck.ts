@@ -51,6 +51,19 @@ const DRY_RUN = process.argv.includes("--dry-run");
  * Each VTG motion is defined by its seed letter(s), starting position,
  * slice size, and VTG family.
  */
+/**
+ * Disambiguates which CSV pictograph variant to use for one seed beat.
+ * A given (letter, startPos) can have two mirror-chirality pictographs
+ * (e.g. D from beta5 → alpha7 vs → alpha3), and hybrid letters (F, L)
+ * have two distinct pictographs sharing the same endPos. endPos picks the
+ * chirality; blueDir breaks the hybrid tie. Both are matched against the
+ * canonical DiamondPictographDataframe.csv — the CSV is never reordered.
+ */
+interface SeedBeat {
+  endPos: string;   // target endPosition for this beat
+  blueDir: string;  // blue rotationDirection ("cw" | "ccw")
+}
+
 interface VTGMotionDef {
   id: number;
   seed: string[];        // 1 letter for quartered, 2 for halved
@@ -59,6 +72,13 @@ interface VTGMotionDef {
   familyId: string;       // Family grouping ID
   startPos: string;       // Starting position
   period: Period;   // Quartered (90°) or Halved (180°)
+  /**
+   * Explicit per-beat variant selection for the seed. When present, each
+   * seed letter is resolved to the exact CSV row matching its endPos+blueDir
+   * instead of taking the first letter match. Set only where the default
+   * first-match picks the wrong chirality (tog-opp DJ/EK/FL).
+   */
+  seedPath?: SeedBeat[];
 }
 
 const VTG_MOTIONS: VTGMotionDef[] = [
@@ -78,9 +98,12 @@ const VTG_MOTIONS: VTGMotionDef[] = [
   { id: 11, seed: ["J", "D"], word: "JDJD", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  period: Period.HALVED },
   { id: 12, seed: ["K", "E"], word: "KEKE", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  period: Period.HALVED },
   { id: 13, seed: ["L", "F"], word: "LFLF", vtg: "Split-Opp",   familyId: "split-opp",    startPos: "alpha1",  period: Period.HALVED },
-  { id: 14, seed: ["D", "J"], word: "DJDJ", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED },
-  { id: 15, seed: ["E", "K"], word: "EKEK", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED },
-  { id: 16, seed: ["F", "L"], word: "FLFL", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED },
+  // tog-opp: pin the natural chirality (beta5→alpha3→beta1, blue leads CW for
+  // the pro/pro DJ, CCW for the anti EK/FL). Without seedPath the seeder takes
+  // the first CSV match, which is the mirror chirality (beta5→alpha7).
+  { id: 14, seed: ["D", "J"], word: "DJDJ", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED, seedPath: [{ endPos: "alpha3", blueDir: "cw" }, { endPos: "beta1", blueDir: "cw" }] },
+  { id: 15, seed: ["E", "K"], word: "EKEK", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED, seedPath: [{ endPos: "alpha3", blueDir: "ccw" }, { endPos: "beta1", blueDir: "ccw" }] },
+  { id: 16, seed: ["F", "L"], word: "FLFL", vtg: "Tog-Opp",     familyId: "tog-opp",      startPos: "beta5",   period: Period.HALVED, seedPath: [{ endPos: "alpha3", blueDir: "ccw" }, { endPos: "beta1", blueDir: "ccw" }] },
   { id: 17, seed: ["M", "P"], word: "MPMP", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", period: Period.HALVED },
   { id: 18, seed: ["N", "Q"], word: "NQNQ", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", period: Period.HALVED },
   { id: 19, seed: ["O", "R"], word: "OROR", vtg: "Quarter-Opp", familyId: "quarter-opp",  startPos: "gamma11", period: Period.HALVED },
@@ -188,14 +211,26 @@ function buildAdjacencyMap(
  * Find a specific pictograph edge by letter and starting position.
  * For the VTG deck, each motion is precisely defined — we look up
  * the exact letter from the exact starting position.
+ *
+ * When a `beat` constraint is given, the match is narrowed to the exact
+ * variant (endPosition + blue rotationDirection). This is how DJ/EK/FL pin
+ * their natural chirality rather than relying on CSV row order.
  */
 function findEdge(
   letter: string,
   startPos: string,
-  adj: Map<string, PictographData[]>
+  adj: Map<string, PictographData[]>,
+  beat?: SeedBeat
 ): PictographData | null {
   const edges = adj.get(startPos) ?? [];
-  return edges.find((e) => e.letter === letter) ?? null;
+  return (
+    edges.find(
+      (e) =>
+        e.letter === letter &&
+        (!beat || e.endPosition === beat.endPos) &&
+        (!beat || e.blueMotion.rotationDirection === beat.blueDir)
+    ) ?? null
+  );
 }
 
 // ============================================================================
@@ -403,10 +438,13 @@ function buildVTGSequence(
   const seedEdges: PictographData[] = [];
   let currentPos = def.startPos;
 
-  for (const letter of def.seed) {
-    const edge = findEdge(letter, currentPos, adj);
+  for (let i = 0; i < def.seed.length; i++) {
+    const letter = def.seed[i];
+    const beat = def.seedPath?.[i];
+    const edge = findEdge(letter, currentPos, adj, beat);
     if (!edge) {
-      console.error(`  ERROR: Could not find edge for letter "${letter}" from "${currentPos}"`);
+      const want = beat ? ` (endPos=${beat.endPos}, blueDir=${beat.blueDir})` : "";
+      console.error(`  ERROR: Could not find edge for letter "${letter}" from "${currentPos}"${want}`);
       return null;
     }
     seedEdges.push(edge);
