@@ -105,13 +105,26 @@ impossible to desynchronize from its source.
 
 ## Motion-type derivation rule
 
-Motion types (from Flow Arts Knowledge MCP, `MotionType` enum):
-`pro, anti, float, dash, static` — exactly five. `hash` is **not** a stored
-`MotionType` (it lives in `HandMotionType` / `SkewDirection`); it does not appear
-in the encoded space today.
+### Two independent axes
 
-The classifier is a composition of an existing, battle-tested primitive plus a
-trivial split:
+The TKA data model carries **two parallel classifications**, stored as separate
+CSV columns and separate model concepts:
+
+- **`MotionType`** (`{pro, anti, float, dash, static}` — exactly five). This is the
+  field the codec stores/derives. `hash` is **not** a `MotionType` value.
+- **`HandPath` / `HandMotionType`** (`{cw, ccw, dash, static, hashIn, hashOut}`).
+  This is where `hash` lives. `csv-pictograph-parser.ts:50-53` reads it from the
+  separate `blueHandPath` column; `hand-path-factory.ts:23` keys the centric path
+  off `locations.includes(CENTER)`.
+
+**Hash is the hand-path label for any straight-line motion touching center**
+(dash−, half-distance). Both directions are hash: `hashIn` = end is center,
+`hashOut` = start is center. Because hash is determined purely by center
+involvement and the codec stores both locations, **the hash label is always
+recoverable and never lost** — it does not need its own stored field on either
+axis.
+
+### Deriving the stored `motionType`
 
 ```
 deriveMotionType(startLoc, endLoc, rotationDirection, turns):
@@ -119,9 +132,28 @@ deriveMotionType(startLoc, endLoc, rotationDirection, turns):
     orbit = deriveHandOrbitalDirection(startLoc, endLoc)   # existing primitive
     if orbit != null:                        # it's a shift arc
         return (rotationDirection == orbit) ? PRO : ANTI
-    # orbit == null  => non-shift straight-line / stationary trajectory
-    return (startLoc == endLoc) ? STATIC : DASH
+    if startLoc == endLoc:                    return STATIC
+    # straight line (perimeter↔perimeter opposite, OR perimeter↔center):
+    # both are DASH on the MotionType axis; the HandPath axis labels the
+    # center-touching ones hash (hashIn/hashOut), derived separately below.
+    return DASH
 ```
+
+### Deriving the hand path (separate, geometry-only)
+
+```
+deriveHandPath(startLoc, endLoc, rotationDirection, turns):
+    if turns == "fl":                       return (cw|ccw|none per prefloat)
+    orbit = deriveHandOrbitalDirection(startLoc, endLoc)
+    if orbit != null:                        return orbit            # cw / ccw (shift)
+    if startLoc == endLoc:                    return STATIC
+    if startLoc == CENTER:                    return HASH_OUT        # center -> perimeter
+    if endLoc   == CENTER:                    return HASH_IN         # perimeter -> center
+    return DASH                                                      # perimeter <-> opposite
+```
+
+Both derivers consume the same stored fields and the same canonical
+`deriveHandOrbitalDirection` primitive.
 
 **Reuse, not reinvention.** `deriveHandOrbitalDirection(startLoc, endLoc)` already
 exists (in `rotation-direction-pattern-manager.ts` and
@@ -176,19 +208,22 @@ a value derived later.
 These are not bugs in the design; they are the edges of what the current encoded
 space contains. Each is guarded by the parity ship gate below.
 
-- **hash (`HandMotionType.HASH_IN/OUT`):** not a stored `MotionType`. A hash is a
-  straight line to/from center; `deriveHandOrbitalDirection` returns null for it,
-  so the classifier yields `dash` (its rotation physics are dash-identical). If
-  hash is ever promoted to a stored `MotionType`, it needs a center-involvement
-  branch. The parity gate will flag any current data that misclassifies.
+- **hash (`HandMotionType.HASH_IN/OUT`):** not a `MotionType`; it is a `HandPath`
+  value. A hash is a straight line to/from center (dash−). On the `MotionType`
+  axis it derives to `dash` (rotation physics are dash-identical); on the
+  `HandPath` axis `deriveHandPath` returns `hashIn`/`hashOut` from center
+  involvement. Both are recovered from the stored locations — nothing is lost. The
+  parity gate asserts both derivers against real data.
 - **skew (`SkewDirection +/-`, L5+):** arc length is **not** derivable from
   endpoints (e.g. S→NE spans multiple segments and is reachable by more than one
   arc). Skews are not in the current `MotionType` encoding. When L5+ skew encoding
   lands, it MUST store an explicit skew marker; derivation cannot recover it. The
   format reserves room for this; it is not built now.
 - **center positions (Tau / Terra):** `c` is a valid `GridLocation`. A `c→c`
-  motion is `static` (start == end); a perimeter↔center motion classifies as
-  `dash`. Covered by the parity gate.
+  motion is `static` (start == end). A perimeter↔center motion is `dash` on the
+  `MotionType` axis and `hash` (`hashIn` toward center / `hashOut` away from
+  center) on the `HandPath` axis. Both directions are hash. Covered by the parity
+  gate.
 
 ---
 
@@ -255,11 +290,13 @@ The parity test is the centerpiece and the direct answer to "is there a bug in
 the weeds."
 
 1. **Exhaustive corpus parity (ship gate).** Enumerate every motion in the real
-   pictograph dataframe (all letters, both grid modes). For each, run
-   `deriveMotionType(locs, rotDir, turns)` and assert it equals the stored
-   `motionType`. Any miss — center/hash, skew, an unexpected pair — fails the
-   build and names the offending motion. This proves losslessness against real
-   data, not against hand-reasoning.
+   pictograph dataframe (all letters, both grid modes, including centric/Tau/Terra
+   rows). For each, run `deriveMotionType(locs, rotDir, turns)` and assert it
+   equals the stored `motionType`, AND run `deriveHandPath(...)` and assert it
+   equals the stored `blueHandPath`/`redHandPath` (hashIn/hashOut/dash/static/
+   cw/ccw). Any miss — center/hash, skew, an unexpected pair — fails the build and
+   names the offending motion. This proves losslessness against real data, not
+   against hand-reasoning.
 2. **Round-trip.** For a representative sequence set: encode → decode reproduces
    every motion's motionType, startOrientation, endOrientation, propType, and
    prefloat pair.
