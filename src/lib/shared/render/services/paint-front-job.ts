@@ -164,10 +164,10 @@ export async function paintFrontJob(
     }
 
     if (job.footer.show && layout.footerHeight > 0) {
-      const iconImage =
-        job.footer.iconBitmapKey != null
-          ? glyphSource.get(job.footer.iconBitmapKey)?.image
-          : undefined;
+      // Footer element icon is carried inline on the job as an ImageBitmap
+      // (rasterized on the main thread by buildFrontJob) — not seeded with the
+      // glyphs, because it is per-card rather than per-deck.
+      const iconImage = job.footer.iconBitmap;
       await textRenderer.renderUserInfo({
         canvas,
         userInfo: {

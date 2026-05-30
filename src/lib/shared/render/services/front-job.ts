@@ -32,8 +32,14 @@ export interface FrontJobFooter {
   leftLabel?: string;
   rightLabel?: string;
   notes?: string;
-  /** Footer element icon, seeded like glyphs (undefined when none). */
-  iconBitmapKey?: string;
+  /**
+   * Footer element icon (TnD `iconPath`), rasterized to a bitmap on the MAIN
+   * thread in buildFrontJob and carried INLINE in the job (it is per-card, not
+   * part of the per-deck glyph seed). Undefined when no iconPath is set.
+   * TRANSFERABLE — composeFront (Task 8) must include this in the postMessage
+   * transfer list when present.
+   */
+  iconBitmap?: ImageBitmap;
   textColor: string;
   mutedColor: string;
 }
