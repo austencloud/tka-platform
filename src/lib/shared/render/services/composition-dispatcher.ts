@@ -366,6 +366,7 @@ export class CompositionDispatcher {
     const glyphEntries = await convertGlyphCacheToBitmaps(
       this.textRenderer.getGlyphCache(),
     );
+    console.log("[CompositionDispatcher] initPool glyphEntries:", glyphEntries.length, "bundle keys:", this.pendingBundle?.keys.length ?? 0, "grids:", this.pendingBundle ? Object.values(this.pendingBundle.grids).filter(Boolean).length : 0);
 
     const initPromises: Promise<void>[] = [];
 

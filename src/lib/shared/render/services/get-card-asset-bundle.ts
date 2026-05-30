@@ -1,44 +1,71 @@
 // src/lib/shared/render/services/get-card-asset-bundle.ts
 //
 // MAIN-THREAD entry point for building an AssetBundle before dispatching to the
-// worker pool. Supplies the real prepare-pass so the heavy pictograph-preparer
-// dependency is NOT pulled into worker/unit bundles (buildAssetBundle accepts
-// `prepareDeck` as an injection seam).
+// worker pool. Warms the singleton svgCache by RENDERING each sequence once at a
+// tiny size — preparing only selects svg asset strings and never populates the
+// cache (the decode+cache happens inside Canvas2DDirectRenderer at render time).
+// svgCache keys are content-hashed (independent of canvas size), so a tiny render
+// populates EXACTLY the keys the full-size worker renders will request.
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
+import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import { buildAssetBundle, type AssetBundle } from "./card-asset-bundle";
+import { getImageComposer } from "../get-image-composer";
+
+const WARM_W = 120;
+const WARM_H = 168; // ~5:7 card-ish; size is irrelevant to cache keys, just keep it tiny
 
 /**
- * Flatten a deck's steps + start position into the PictographData[] that
- * `prepareBatch` expects. StepData and StartPositionData both extend
- * PictographData directly, so no cast is required.
- */
-function deckPictographs(sequences: SequenceData[]): PictographData[] {
-  const out: PictographData[] = [];
-  for (const seq of sequences) {
-    if (seq.startPosition) out.push(seq.startPosition);
-    for (const step of seq.steps ?? []) out.push(step);
-  }
-  return out;
-}
-
-/**
- * MAIN THREAD. Runs a prepare-pass over every pictograph in the deck (warming
- * the singleton SVG caches), then delegates to `buildAssetBundle` to snapshot
- * the caches as transferable ImageBitmaps for the worker pool.
+ * MAIN THREAD. Renders every sequence once at a tiny size to populate the
+ * singleton svgCache + svgAssetLoader with every prop/arrow/grid/letter the
+ * full-size worker renders will need, then delegates to `buildAssetBundle` to
+ * snapshot the caches as transferable ImageBitmaps for the worker pool.
  */
 export function getCardAssetBundle(
   sequences: SequenceData[],
   opts: { bluePropType: PropType; redPropType: PropType; theme: string },
 ): Promise<AssetBundle> {
   return buildAssetBundle(sequences, opts, async (seqs, o) => {
-    await pictographPreparer.prepareBatch(deckPictographs(seqs), {
-      themeMode: "light",
-      bluePropType: o.bluePropType,
-      redPropType: o.redPropType,
-    });
+    const composer = getImageComposer();
+    const warmOptions: Partial<SequenceExportOptions> = {
+      deckCard: { contentWidth: WARM_W, contentHeight: WARM_H },
+      includeStartPosition: true,
+      startPositionLayout: "row",
+      addStepNumbers: true,
+      addWord: true, // exercises the word/glyph path too
+      stepSize: 300,
+      stepScale: 1,
+      scale: 1,
+      redVisible: true,
+      blueVisible: true,
+      addReversalSymbols: true,
+      combinedGrids: false,
+      bluePropTypeOverride: o.bluePropType,
+      redPropTypeOverride: o.redPropType,
+      visibilityOverrides: {
+        showTKA: true,
+        showTnD: false,
+        showElemental: false,
+        showPositions: false,
+        showReversals: true,
+        showNonRadialPoints: false,
+        showGrid: true,
+        printMode: true,
+        darkMode: false,
+        handPointVisibility: "all",
+        bluePropType: o.bluePropType,
+        redPropType: o.redPropType,
+      },
+    };
+    // Render each sequence once at tiny size to populate the singleton svgCache
+    // with every prop/arrow/grid/letter the full-size worker renders will need.
+    for (const seq of seqs) {
+      try {
+        await composer.composeSequenceImage(seq, warmOptions);
+      } catch (e) {
+        console.warn("[getCardAssetBundle] warm render failed for", seq.word ?? seq.id, e);
+      }
+    }
   });
 }

@@ -142,6 +142,7 @@ async function handleInit(
   // worker scope). Built on the main thread, index-aligned keys/bitmaps + grids.
   const { seedCachesFromBundle } = await import("../services/card-asset-bundle");
   seedCachesFromBundle(bundle);
+  console.log("[composition.worker] seeded glyphs:", glyphMeta.length, "bundle keys:", bundle.keys.length, "grids:", Object.values(bundle.grids).filter(Boolean).length);
 
   // Attempt to register fonts in the worker context
   try {
