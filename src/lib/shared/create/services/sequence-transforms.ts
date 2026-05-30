@@ -20,6 +20,7 @@ import {
 import { createStepData } from "$lib/shared/create/factories/createStepData";
 import { createStartPositionData } from "$lib/shared/create/factories/createStartPositionData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
 import {
   MotionColor,
   MotionType,
@@ -437,8 +438,6 @@ export async function deriveSequenceLetters(
   sequence: SequenceData,
   motionQueryHandler: IMotionQueryHandler
 ): Promise<SequenceData> {
-  const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
-
   // Derive letters for all steps in parallel
   const stepsWithLetters = await Promise.all(
     sequence.steps.map(async (step) => {
@@ -448,6 +447,11 @@ export async function deriveSequenceLetters(
       const redMotion = step.motions[MotionColor.RED];
 
       if (!blueMotion || !redMotion) return step;
+
+      // Derive gridMode per-step from the motions — never trust the stale
+      // sequence-level value (a box step inside a diamond-labelled sequence
+      // would otherwise be looked up under the wrong grid mode).
+      const gridMode = deriveGridMode(blueMotion, redMotion);
 
       try {
         const foundLetter =
