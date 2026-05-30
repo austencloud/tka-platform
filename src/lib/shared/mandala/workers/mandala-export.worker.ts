@@ -109,14 +109,27 @@ type H264MP4Encoder = {
   delete: () => void;
 };
 
+// Mobile GPUs (Qualcomm/Mali/Apple) reliably silicon-accelerate H.264
+// Constrained Baseline; many do NOT accelerate High and silently fall back to
+// a software path (WebCodecs may switch HW→SW "without notice"), which on
+// phones encodes at ~0.5fps. Desktop Windows Media Foundation is the opposite —
+// it accelerates Main/High, not Baseline. So pick the profile by platform.
+const IS_MOBILE = (() => {
+  try {
+    const uaData = (scope.navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData;
+    if (uaData && typeof uaData.mobile === "boolean") return uaData.mobile;
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(scope.navigator.userAgent);
+  } catch {
+    return false;
+  }
+})();
+
 function selectCodec(width: number, height: number): string {
-  // High profile (0x64). Windows Media Foundation HW encoders typically only
-  // accelerate Main/High, not Baseline (0x42) — matches the proven 2D exporter.
+  // Level byte tracks resolution; profile prefix tracks the platform's HW path.
+  // 0x64 = High, 0x42e0 = Constrained Baseline.
   const px = width * height;
-  if (px <= 921_600) return "avc1.64001f";
-  if (px <= 2_073_600) return "avc1.640028";
-  if (px <= 8_912_896) return "avc1.640033";
-  return "avc1.64003c";
+  const level = px <= 921_600 ? "1f" : px <= 2_073_600 ? "28" : px <= 8_912_896 ? "33" : "3c";
+  return IS_MOBILE ? `avc1.42e0${level}` : `avc1.6400${level}`;
 }
 
 const nextTick = () => new Promise<void>((r) => setTimeout(r, 0));
