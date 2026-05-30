@@ -40,9 +40,19 @@ import type {
   TurnValue,
 } from "$lib/shared/create/domain/TurnPatternData";
 import type { CardVariation } from "../domain/models/DeckRelease";
-import { Orientation, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
+import {
+  resolveStartOrientation,
+  positionFamilyOf,
+  type StartOriMode,
+} from "./start-ori-register";
+
+// Re-exported for backward compatibility — consumers import these from here.
+export { resolveStartOrientation } from "./start-ori-register";
+export type { StartOriMode } from "./start-ori-register";
 
 export type Rng = () => number;
 
@@ -208,31 +218,20 @@ export interface AppliedDescriptorResult {
   turnLoopClosed: boolean;
 }
 
-export type StartOriMode = "radial" | "nonradial" | "split";
-
-/** Resolve a register to its per-hand start-orientation pair (rendering seed). */
-export function resolveStartOrientation(mode: StartOriMode): { blue: Orientation; red: Orientation } {
-  switch (mode) {
-    case "nonradial":
-      return { blue: Orientation.COUNTER, red: Orientation.COUNTER };
-    case "split":
-      return { blue: Orientation.IN, red: Orientation.COUNTER };
-    case "radial":
-    default:
-      return { blue: Orientation.IN, red: Orientation.IN };
-  }
-}
-
 /**
  * Clone-safely re-seed a sequence's start-position orientations to `mode`'s pair,
- * then propagate forward. Returns the input UNCHANGED when mode is radial/undefined
- * or the sequence has no start position. NEVER mutates `seq` (shared across cards).
+ * then propagate forward. The pair is FAMILY-AWARE (alpha/beta/gamma differ — see
+ * start-ori-register.ts). Returns the input UNCHANGED when mode is radial/undefined,
+ * the sequence has no start position, or the family is unsupported (zeta/eta).
+ * NEVER mutates `seq` (shared across cards).
  */
 function applyStartOriMode(seq: SequenceData, mode: StartOriMode | undefined): SequenceData {
   if (!mode || mode === "radial") return seq;
   const sp = seq.startPosition;
   if (!sp) return seq;
-  const pair = resolveStartOrientation(mode);
+  const family = positionFamilyOf(sp);
+  if (!family) return seq; // unsupported family — leave at the radial default
+  const pair = resolveStartOrientation(mode, family);
   const reseed = (m: typeof sp.motions.blue, o: Orientation) =>
     m ? createMotionData({ ...m, startOrientation: o, endOrientation: o }) : m;
   const newStart = {

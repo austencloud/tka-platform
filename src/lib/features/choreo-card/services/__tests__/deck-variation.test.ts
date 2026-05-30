@@ -164,11 +164,15 @@ describe("resolveDeckSequences (positional seam)", () => {
 import { resolveStartOrientation, type StartOriMode } from "../deck-variation";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-describe("resolveStartOrientation", () => {
-  it("maps each register to its per-hand orientation pair", () => {
-    expect(resolveStartOrientation("radial")).toEqual({ blue: Orientation.IN, red: Orientation.IN });
-    expect(resolveStartOrientation("nonradial")).toEqual({ blue: Orientation.COUNTER, red: Orientation.COUNTER });
-    expect(resolveStartOrientation("split")).toEqual({ blue: Orientation.IN, red: Orientation.COUNTER });
+describe("resolveStartOrientation (family-aware)", () => {
+  it("maps register + family to its per-hand orientation pair", () => {
+    expect(resolveStartOrientation("radial", "alpha")).toEqual({ blue: Orientation.IN, red: Orientation.IN });
+    // nonradial: alpha/gamma = clock|counter; beta = counter|clock
+    expect(resolveStartOrientation("nonradial", "alpha")).toEqual({ blue: Orientation.CLOCK, red: Orientation.COUNTER });
+    expect(resolveStartOrientation("nonradial", "beta")).toEqual({ blue: Orientation.COUNTER, red: Orientation.CLOCK });
+    // mixed/split: blue radial; red = clock for beta, counter otherwise
+    expect(resolveStartOrientation("split", "alpha")).toEqual({ blue: Orientation.IN, red: Orientation.COUNTER });
+    expect(resolveStartOrientation("split", "beta")).toEqual({ blue: Orientation.IN, red: Orientation.CLOCK });
   });
 });
 
@@ -201,10 +205,11 @@ function seqWithStart() {
 
 describe("applyVariationDescriptor — startOriMode", () => {
   it("register-only (no turn/reversal) re-seeds AND propagates to every step", () => {
+    // Fixture hands both start at N → beta family → nonradial beta = counter|clock.
     const seq = seqWithStart();
     const { sequence } = applyVariationDescriptor(seq, { startOriMode: "nonradial" }, []);
     expect(sequence.startPosition!.motions.blue!.endOrientation).toBe(Orientation.COUNTER);
-    expect(sequence.startPosition!.motions.red!.endOrientation).toBe(Orientation.COUNTER);
+    expect(sequence.startPosition!.motions.red!.endOrientation).toBe(Orientation.CLOCK);
     expect(sequence.steps[0]!.motions!.blue!.startOrientation).toBe(Orientation.COUNTER);
   });
 
@@ -223,9 +228,10 @@ describe("applyVariationDescriptor — startOriMode", () => {
     expect(b.sequence).toBe(seq);
   });
 
-  it("split re-seeds blue radial, red nonradial", () => {
+  it("split re-seeds blue radial, red nonradial (beta fixture → red clock)", () => {
+    // Fixture hands both start at N → beta family → mixed beta = in|clock.
     const { sequence } = applyVariationDescriptor(seqWithStart(), { startOriMode: "split" }, []);
     expect(sequence.startPosition!.motions.blue!.endOrientation).toBe(Orientation.IN);
-    expect(sequence.startPosition!.motions.red!.endOrientation).toBe(Orientation.COUNTER);
+    expect(sequence.startPosition!.motions.red!.endOrientation).toBe(Orientation.CLOCK);
   });
 });
