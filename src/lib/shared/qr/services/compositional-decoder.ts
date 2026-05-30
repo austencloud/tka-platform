@@ -17,6 +17,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { createStartPositionData } from "$lib/shared/foundation/domain/factories/createStartPositionData";
 import { RECIPE_PREFIX, TAG_TO_LOOP_TYPE } from "./types";
 import type { ICompositionalDecoder } from "./types";
+import { reencodeFlat } from "$lib/shared/navigation/services/sequence-encoder";
 import {
   getLoopExecutor,
   getPeriodForTag,
@@ -129,9 +130,15 @@ export class CompositionalDecoder implements ICompositionalDecoder {
       startingPosition: restoredStartPos ?? seedSequence.startingPosition,
     };
 
-    // Audit fix #6: hash is computed on uncompressed flat encoding
-    const flatEncoded = this.flatEncoder.encode(fullSequence);
-    const actualHash = await computeRecipeHash(flatEncoded);
+    // Audit fix #6: hash is computed on uncompressed flat encoding.
+    // Version-aware: the original recipe hashed in the seed's format version.
+    // Old r1: codes carry a v1 seed (no "v2|" sentinel) and were hashed on v1
+    // flat; new codes carry a v2 seed hashed on v2. encodeSequence now always
+    // emits v2, so re-emit in v1 when verifying a v1 seed.
+    const seedIsV2 = seedEncoded.startsWith("v2|");
+    const flatEncoded = this.flatEncoder.encode(fullSequence); // v2|...
+    const hashInput = seedIsV2 ? flatEncoded : reencodeFlat(flatEncoded, 1);
+    const actualHash = await computeRecipeHash(hashInput);
 
     if (actualHash !== expectedHash) {
       throw new Error(
