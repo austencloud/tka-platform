@@ -393,6 +393,7 @@ export class ArrowAdjustmentCalculator {
       diagnostics.default = {
         value: { x: defaultResult.x, y: defaultResult.y },
         gridMode: identity.gridMode as unknown as string,
+        propType: identity.propType,
         motionType: identity.motionType as unknown as string,
         placementKey: identity.placementKey,
         turns: identity.turns,
@@ -664,6 +665,7 @@ export class ArrowAdjustmentCalculator {
     motionType: MotionType;
     placementKey: string;
     turns: string;
+    propType: string;
   }> {
     // Use gridMode from motion data if available, otherwise derive from locations
     const gridMode = (motionData.gridMode ||
@@ -703,6 +705,7 @@ export class ArrowAdjustmentCalculator {
       motionType: motionData.motionType as MotionType,
       placementKey,
       turns,
+      propType: motionData.propType?.toLowerCase() || "staff",
     };
   }
 
@@ -714,14 +717,15 @@ export class ArrowAdjustmentCalculator {
      * Calculate default adjustment - IDENTICAL to ArrowAdjustmentLookup.
      */
     try {
-      const { gridMode, motionType, placementKey, turns } =
+      const { gridMode, motionType, placementKey, turns, propType } =
         await this.resolveDefaultLookupIdentity(motionData, pictographData);
 
       const adjustmentPoint = await this.DefaultPlacer.getDefaultAdjustment(
         placementKey,
         turns,
         motionType,
-        gridMode
+        gridMode,
+        propType
       );
 
       return new Point(adjustmentPoint.x, adjustmentPoint.y);

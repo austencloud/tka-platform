@@ -49,6 +49,7 @@ export interface DefaultTierInfo {
   value: TierValue;
   /** Lookup identity so the editor can address the Firestore default field. */
   gridMode: string;
+  propType: string;
   motionType: string;
   placementKey: string;
   turns: string;

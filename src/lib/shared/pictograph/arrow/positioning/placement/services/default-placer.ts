@@ -18,7 +18,8 @@ export interface IDefaultPlacerJson {
     placementKey: string,
     turns: number | string,
     motionType: MotionType,
-    gridMode: GridMode
+    gridMode: GridMode,
+    propType: string
   ): Promise<{ x: number; y: number }>;
 
   getAvailablePlacementKeys(
@@ -62,18 +63,20 @@ export class DefaultPlacer {
     placementKey: string,
     turns: number | string,
     motionType: MotionType,
-    gridMode: GridMode
+    gridMode: GridMode,
+    propType: string = "staff"
   ): Promise<{ x: number; y: number }> {
     try {
-      // Lazy load only the grid mode we need (5 files instead of 10)
-      await this.placementDataService.ensureGridModeLoaded(gridMode);
+      // Lazy load only the grid mode + prop we need
+      await this.placementDataService.ensureLoaded(gridMode, propType);
 
       // Get the adjustment from the data service
       const adjustment = await this.placementDataService.getDefaultAdjustment(
         motionType,
         placementKey,
         turns,
-        gridMode
+        gridMode,
+        propType
       );
 
       return adjustment;
