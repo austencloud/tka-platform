@@ -8,6 +8,8 @@
     value: T;
     label: string;
     icon?: string; // FontAwesome class
+    /** Optional trailing count badge (e.g. number of items in this group). */
+    count?: number | null;
   }
 
   interface Props {
@@ -61,7 +63,10 @@
       {#if option.icon}
         <i class={option.icon} aria-hidden="true"></i>
       {:else}
-        {option.label}
+        <span class="segment-label">{option.label}</span>
+      {/if}
+      {#if option.count != null}
+        <span class="segment-count">{option.count}</span>
       {/if}
     </button>
   {/each}
@@ -120,7 +125,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 0.4rem;
     overflow: hidden;
+  }
+
+  .segment-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.1rem;
+    padding: 0.05rem 0.3rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, currentColor 14%, transparent);
+    font-size: var(--font-size-compact, 0.7rem);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
   }
 
   .sm .segment {

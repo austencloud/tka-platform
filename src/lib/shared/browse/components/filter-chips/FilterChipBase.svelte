@@ -6,15 +6,21 @@ Popover uses fixed positioning to escape overflow:hidden containers.
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     label: string;
     icon?: string;
+    /** Custom leading glyph rendered in the icon slot in place of `icon`
+     *  (e.g. an inline SVG mark). Takes precedence over `icon` when set. */
+    iconSnippet?: Snippet;
     active?: boolean;
     count?: number | null;
     chipColor?: string;
-    mode?: "toggle" | "dropdown";
+    /** toggle = on/off switch · dropdown = opens a popover · action = momentary button (no chevron, no switch role). */
+    mode?: "toggle" | "dropdown" | "action";
+    /** md = default chip · sm = denser padding for tight scrollable filter rows.
+     *  Touch-target floor is preserved in both sizes. */
+    size?: "sm" | "md";
     expanded?: boolean;
     disabled?: boolean;
     children?: Snippet;
@@ -24,10 +30,12 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   let {
     label,
     icon,
+    iconSnippet,
     active = false,
     count = null,
     chipColor = "var(--theme-accent)",
     mode = "dropdown",
+    size = "md",
     expanded = false,
     disabled = false,
     children,
@@ -52,6 +60,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   class:active
   class:disabled
   class:expanded
+  class:size-sm={size === "sm"}
   style="--chip-color: {chipColor};"
   type="button"
   role={mode === "toggle" ? "switch" : "button"}
@@ -63,7 +72,9 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   {onclick}
   bind:this={chipEl}
 >
-  {#if icon}
+  {#if iconSnippet}
+    {@render iconSnippet()}
+  {:else if icon}
     <i class={icon} aria-hidden="true"></i>
   {/if}
 
@@ -111,6 +122,13 @@ Popover uses fixed positioning to escape overflow:hidden containers.
       border-color var(--duration-fast, 150ms) ease,
       color var(--duration-fast, 150ms) ease,
       transform var(--duration-fast, 150ms) ease;
+  }
+
+  /* Denser variant for tight scrollable filter rows. Padding/gap tighten;
+     the touch-target floor (min-height) is intentionally kept for a11y. */
+  .filter-chip.size-sm {
+    gap: 4px;
+    padding: 6px 10px;
   }
 
   .filter-chip.active {
