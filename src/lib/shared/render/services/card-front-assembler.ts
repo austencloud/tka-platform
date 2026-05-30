@@ -19,6 +19,8 @@ import {
   calculateFooterHeight as sharedFooterHeight,
 } from "@tka/render-composition";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+// TEMP assembly profiler — header/footer/border phase timing for the cold-deck profiler.
+import { assemblyProbe } from "./__assembly-perf-probe";
 
 const DECK_HEADER_RATIO = 0.133;
 const DECK_FOOTER_RATIO = 0.067;
@@ -297,6 +299,8 @@ export async function paintCardFrontChrome(
     await deps.renderMandalas(ctx);
   }
 
+  // TEMP assembly profiler — BORDER tap.
+  const borderT0 = assemblyProbe.enabled ? performance.now() : 0;
   drawSmartCellBorders(
     ctx,
     columns,
@@ -308,6 +312,7 @@ export async function paintCardFrontChrome(
     isDarkMode,
     gridOffsetX
   );
+  if (assemblyProbe.enabled) assemblyProbe.borderMs += performance.now() - borderT0;
 
   const loopTypeOverride = options.loopType;
   let loopComponents: Set<LOOPComponent> | undefined;
@@ -379,6 +384,8 @@ export async function paintCardFrontChrome(
           ? "halved"
           : undefined;
 
+    // TEMP assembly profiler — HEADER tap.
+    const headerT0 = assemblyProbe.enabled ? performance.now() : 0;
     deps.textRenderer.renderWordHeader({
       canvas,
       word: displayName,
@@ -395,6 +402,7 @@ export async function paintCardFrontChrome(
       accentColor: options.accentColor,
       accentTintOpacity: options.accentTintOpacity,
     });
+    if (assemblyProbe.enabled) assemblyProbe.headerMs += performance.now() - headerT0;
   }
 
   const showCreatorName = options.showCreatorName ?? options.addUserInfo;
@@ -403,6 +411,8 @@ export async function paintCardFrontChrome(
   const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
 
   if (hasAnyFooterContent && footerHeight > 0) {
+    // TEMP assembly profiler — FOOTER tap.
+    const footerT0 = assemblyProbe.enabled ? performance.now() : 0;
     await deps.textRenderer.renderUserInfo({
       canvas,
       userInfo: {
@@ -425,6 +435,7 @@ export async function paintCardFrontChrome(
       accentColor: options.accentColor,
       accentTintOpacity: options.accentTintOpacity,
     });
+    if (assemblyProbe.enabled) assemblyProbe.footerMs += performance.now() - footerT0;
   }
 }
 

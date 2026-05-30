@@ -23,6 +23,14 @@
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { buildCanonicalCardVisibility } from "$lib/features/choreo-card/domain/canonical-card-visibility";
   import { wrapContentInCardFrame } from "$lib/features/choreo-card/services/card-front-frame";
+  import { getPictographKeyHasher } from "$lib/shared/render/get-pictograph-key-hasher";
+  import { getLayerCompositor as getLayerCompositorSingleton } from "$lib/shared/render/get-layer-compositor";
+  import { clearSvgImageCache } from "$lib/shared/render/services/svg-image-cache";
+  import {
+    assemblyProbe,
+    resetAssemblyProbe,
+    snapshotAssemblyProbe,
+  } from "$lib/shared/render/services/__assembly-perf-probe";
   import { onMount, onDestroy } from "svelte";
 
   const SIZE = 600; // big single-cell render
@@ -63,6 +71,11 @@
   let deckTiming = $state(false);
   let deckStatus = $state("idle");
   let deckResult = $state<string | null>(null);
+
+  // Cold-deck profiler state (dedup analysis + assembly phase breakdown).
+  let profiling = $state(false);
+  let profileStatus = $state("idle");
+  let profileResult = $state<string | null>(null);
 
   onMount(async () => {
     try {
@@ -698,6 +711,231 @@
       deckTiming = false;
     }
   }
+
+  // --- COLD-DECK PROFILER (dedup analysis + assembly phase breakdown) ---------
+  //
+  // Drives the caching-rebuild decision. Two outputs:
+  //   1. Dedup analysis (NO render): derive the pictograph content key for every
+  //      cell across all cards and count distinct vs total. Plus distinct words,
+  //      loop signatures, and QR payloads per card. These ratios quantify how
+  //      much persistent caching can eliminate.
+  //   2. Cold phase timing: clear ALL caches, render every card cold via the
+  //      production composeSequenceImage path, and read the assembly probe to see
+  //      where the time went (decode / cell / qr / mandala / header / footer /
+  //      border / composite). A warm second pass shows the cold-vs-warm gap.
+
+  const PROFILE_CARDS = 36;
+
+  // Mirror the renderer's per-cell key derivation EXACTLY:
+  // renderPictographAt builds finalVisibilitySettings = { ...resolvedVisibility,
+  // bluePropType: effectiveBlue ?? resolved.blue, redPropType: effectiveRed ??
+  // resolved.red } and applies the prop override onto the step's motions, then
+  // (legacy path) calls keyHasher.deriveKey(stepData, finalVisibilitySettings).
+  // We reproduce that input shape so the dedup count matches what a content cache
+  // keyed on deriveKey would actually collapse.
+  function applyPropOverrideToStep(
+    step: StepData,
+    blueProp?: PropType,
+    redProp?: PropType,
+  ): StepData {
+    if (!blueProp && !redProp) return step;
+    return {
+      ...step,
+      motions: {
+        blue:
+          step.motions.blue && blueProp
+            ? { ...step.motions.blue, propType: blueProp }
+            : step.motions.blue,
+        red:
+          step.motions.red && redProp
+            ? { ...step.motions.red, propType: redProp }
+            : step.motions.red,
+      },
+    } as StepData;
+  }
+
+  async function clearAllRenderCaches() {
+    // SVG decode cache (grids, letters, turn numbers, arrows/props decode source).
+    clearSvgImageCache();
+    // LayerCompositor base/gridPoints/tka/reversal canvas caches (the dominant
+    // per-cell redundancy eliminator).
+    getLayerCompositorSingleton().clearCache();
+    // ImageComposer memory + IndexedDB blob caches (legacy raster path + L1/L2).
+    const composer = getImageComposer();
+    await composer.clearCache(true);
+    // NOTE: GlyphCache (header glyph data-URL cache) exposes no clear() method,
+    // so header-glyph decode is already warm on first render. Its cost still
+    // shows up under headerMs (renderWordHeader), just not as a cold decode.
+  }
+
+  async function profileColdDeck() {
+    if (profiling) return;
+    profiling = true;
+    profileResult = null;
+    try {
+      profileStatus = "picking sequences…";
+      const source = engine.allSequences.filter(
+        (s) => Array.isArray(s.steps) && s.steps.length > 0,
+      );
+      if (source.length === 0) {
+        profileStatus = "no renderable sequences found";
+        return;
+      }
+      // Up to PROFILE_CARDS distinct sequences; report the actual count used.
+      const seqs: SequenceData[] = source.slice(0, PROFILE_CARDS);
+
+      await ensureQRWired();
+      const composer = getImageComposer();
+      const frontOptions = buildFrontOptions();
+
+      // Resolve visibility ONCE the way the renderer does, then merge the
+      // effective prop overrides per cell so the key matches the render path.
+      const visibility = await composer.resolveVisibilitySettings(frontOptions);
+      const effectiveBlue =
+        frontOptions.bluePropTypeOverride ?? frontOptions.propTypeOverride;
+      const effectiveRed =
+        frontOptions.redPropTypeOverride ?? frontOptions.propTypeOverride;
+      const cellVisibility = {
+        ...visibility,
+        bluePropType: effectiveBlue ?? visibility.bluePropType,
+        redPropType: effectiveRed ?? visibility.redPropType,
+      };
+
+      // --- 1. DEDUP ANALYSIS (no render) -------------------------------------
+      profileStatus = "deriving dedup keys (no render)…";
+      const hasher = getPictographKeyHasher();
+      const pictographKeys = new Set<string>();
+      const words = new Set<string>();
+      const loopSignatures = new Set<string>();
+      const qrPayloads = new Set<string>();
+      let totalCells = 0;
+
+      for (const seq of seqs) {
+        // Start position cell (composeSequenceImage renders it when
+        // includeStartPosition is set), derived from the first step when the
+        // sequence carries no explicit start position — mirrors the renderer.
+        const cells: StepData[] = [];
+        if (frontOptions.includeStartPosition) {
+          const sp =
+            (seq.startPosition as unknown as StepData | undefined) ??
+            (seq.steps[0]
+              ? ({ ...seq.steps[0], letter: undefined } as unknown as StepData)
+              : undefined);
+          if (sp) cells.push(sp);
+        }
+        for (const step of seq.steps) cells.push(step);
+
+        for (const cell of cells) {
+          const withProp = applyPropOverrideToStep(cell, effectiveBlue, effectiveRed);
+          const key = hasher.deriveKey(withProp, cellVisibility);
+          pictographKeys.add(key);
+          totalCells++;
+        }
+
+        // Header word: same simplified word the header renders.
+        const rawWord =
+          seq.word ||
+          seq.steps.filter((s) => s.letter).map((s) => s.letter).join("");
+        words.add(rawWord);
+
+        // Loop signature: the mandala/header-driving signal is the loop type.
+        loopSignatures.add(String(seq.loopType ?? "none"));
+
+        // QR payload: the QR encodes the sequence (deckId is constant in this
+        // harness, so the per-card payload distinction is the sequence identity).
+        qrPayloads.add(String(seq.id ?? seq.word ?? seq.name ?? ""));
+      }
+
+      const cards = seqs.length;
+      const distinctPictographs = pictographKeys.size;
+      const pictographDedupRatio = distinctPictographs / Math.max(1, totalCells);
+
+      // --- 2. COLD PHASE TIMING ----------------------------------------------
+      profileStatus = "clearing ALL caches for cold render…";
+      await clearAllRenderCaches();
+
+      profileStatus = "rendering deck COLD (assembly probe on)…";
+      assemblyProbe.enabled = true;
+      resetAssemblyProbe();
+      const coldT0 = performance.now();
+      for (const seq of seqs) {
+        await composer.composeSequenceImage(seq, frontOptions);
+      }
+      const coldTotalMs = performance.now() - coldT0;
+      const phase = snapshotAssemblyProbe();
+      assemblyProbe.enabled = false;
+
+      // --- 3. WARM SECOND PASS (caches now warm) -----------------------------
+      profileStatus = "rendering deck WARM (caches hot)…";
+      const warmT0 = performance.now();
+      for (const seq of seqs) {
+        await composer.composeSequenceImage(seq, frontOptions);
+      }
+      const warmTotalMs = performance.now() - warmT0;
+
+      const pct = (ms: number) =>
+        Number(((ms / Math.max(0.0001, coldTotalMs)) * 100).toFixed(2));
+
+      profileResult = JSON.stringify(
+        {
+          cards,
+          totalCells,
+          distinctPictographs,
+          pictographDedupRatio: Number(pictographDedupRatio.toFixed(4)),
+          distinctWords: words.size,
+          distinctWordsPerCard: Number((words.size / Math.max(1, cards)).toFixed(4)),
+          distinctLoopSignatures: loopSignatures.size,
+          distinctLoopSignaturesPerCard: Number(
+            (loopSignatures.size / Math.max(1, cards)).toFixed(4),
+          ),
+          distinctQrPayloads: qrPayloads.size,
+          distinctQrPayloadsPerCard: Number(
+            (qrPayloads.size / Math.max(1, cards)).toFixed(4),
+          ),
+          coldTotalMs: Math.round(coldTotalMs),
+          coldPerCardMs: Number((coldTotalMs / Math.max(1, cards)).toFixed(2)),
+          warmTotalMs: Math.round(warmTotalMs),
+          warmPerCardMs: Number((warmTotalMs / Math.max(1, cards)).toFixed(2)),
+          phaseBreakdownMs: {
+            decode: Math.round(phase.decodeMs),
+            cell: Math.round(phase.cellMs),
+            qr: Math.round(phase.qrMs),
+            mandala: Math.round(phase.mandalaMs),
+            header: Math.round(phase.headerMs),
+            footer: Math.round(phase.footerMs),
+            border: Math.round(phase.borderMs),
+            composite: Math.round(phase.compositeMs),
+          },
+          phaseBreakdownPct: {
+            decode: pct(phase.decodeMs),
+            cell: pct(phase.cellMs),
+            qr: pct(phase.qrMs),
+            mandala: pct(phase.mandalaMs),
+            header: pct(phase.headerMs),
+            footer: pct(phase.footerMs),
+            border: pct(phase.borderMs),
+            composite: pct(phase.compositeMs),
+          },
+          cellCount: phase.cellCount,
+        },
+        null,
+        2,
+      );
+      profileStatus = `cold deck profiled — ${cards} cards, dedup ${(
+        pictographDedupRatio * 100
+      ).toFixed(1)}% distinct, cold ${Math.round(coldTotalMs)}ms vs warm ${Math.round(
+        warmTotalMs,
+      )}ms`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      profileStatus = "PROFILE FAILED: " + msg;
+      profileResult = msg;
+      // Ensure the probe never stays enabled after a failure.
+      assemblyProbe.enabled = false;
+    } finally {
+      profiling = false;
+    }
+  }
 </script>
 
 <svelte:head><title>Worker Pictograph Proof</title></svelte:head>
@@ -799,6 +1037,31 @@
   </div>
 
   {#if deckResult}<pre>{deckResult}</pre>{/if}
+
+  <hr />
+
+  <h1>Cold-Deck Profiler — Dedup Ratios + Assembly Phase Breakdown</h1>
+  <p>
+    Measurement instrumentation for the caching-rebuild decision. First derives
+    the pictograph content key (<code>PictographKeyHasher.deriveKey</code>, the
+    same key the renderer's per-cell content cache would use) for every cell
+    across {PROFILE_CARDS} cards to report how many distinct pictographs exist vs
+    total cells — plus distinct words, loop signatures, and QR payloads per card.
+    Then clears ALL render caches (SVG decode, LayerCompositor layers, pictograph
+    memory + IndexedDB blob), renders the whole deck COLD through the production
+    <code>composeSequenceImage</code> path with the assembly probe on, and reports
+    where the time went per phase (decode / cell / qr / mandala / header / footer
+    / border / composite). A warm second pass shows the cold-vs-warm gap — what
+    persistent caching would save.
+  </p>
+  <div class="controls">
+    <button type="button" onclick={profileColdDeck} disabled={profiling || !!loadError}>
+      {profiling ? "Profiling…" : "Profile cold deck"}
+    </button>
+    <span class="status">{loadError ? `load error: ${loadError}` : profileStatus}</span>
+  </div>
+
+  {#if profileResult}<pre>{profileResult}</pre>{/if}
 </div>
 
 <style>
