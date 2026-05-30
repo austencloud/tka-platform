@@ -125,15 +125,26 @@ and a seed method to `SvgAssetLoader` so the worker fills caches without decodin
   on desktop, the target for deck rendering.
 - `init` message gains `bundle: AssetBundle`; `initPool` builds the bundle once
   and transfers a per-worker clone alongside the existing glyph bitmaps.
-- Add `compose-back` in-message + `composeBack(job: BackJob): Promise<ImageBitmap>`.
+- Add `compose-back` in-message + `composeBack(sequence, constantBitmaps): Promise<ImageBitmap>`.
+  The back's CONSTANT rasterizers (brand/url/difficulty-badge/loop-icons in
+  `card-back-bitmaps-constant.ts`) use `rasterizeComponent` (DOM mount +
+  screenshot) and CANNOT run in-worker — but they are cached once per
+  theme/level/icon. They are pre-built on the main thread (once per deck) and
+  passed to the worker. The worker then runs the FULL `buildBackJob` (per-card:
+  Path2D mandala, canvas-native glyphs, start-pos pictograph via the seeded
+  `Canvas2DDirectRenderer`) + `paintBackJob`. `buildBackJob` already accepts a
+  `deps` parameter — inject the constant bitmaps through it so the worker never
+  DOM-rasterizes. This is the real back win (the per-card build is what costs,
+  not the ~1ms composite).
 - Add a `decode-request`/`decode-response` round-trip pair as the never-fires
   safety net: on an in-worker cache miss, the worker asks the main thread to
   decode that one SVG and transfers the bitmap back.
 
 ### Modified: `composition.worker.ts`
 - On `init`: after building the pipeline, call `seedCachesFromBundle(bundle)`.
-- Add `handleComposeBack(job)` → `paintBackJob(job)` → `transferToImageBitmap()`
-  → `postResult`.
+- Add `handleComposeBack(sequence, constantBitmaps)` → `buildBackJob(sequence,
+  opts, deps={constant bitmaps injected})` → `paintBackJob(job)` →
+  `transferToImageBitmap()` → `postResult`.
 - On `getImage` miss (wrap the cache): post `decode-request`, await
   `decode-response`. (Implemented as a small async bridge keyed by request id.)
 
@@ -150,7 +161,8 @@ and a seed method to `SvgAssetLoader` so the worker fills caches without decodin
 1. `PrintPreviewPages.renderAll` → `buildAssetBundle(sequences, {props, theme})`.
 2. `dispatcher.ensureInitialized(bundle)` (idempotent; re-seed only if prop/theme
    changed — bundle identity keyed by `prop+theme`).
-3. Per card, per lane: `Promise.all([dispatcher.compose(front), dispatcher.composeBack(back)])`.
+3. Per card, per lane: `Promise.all([dispatcher.compose(front), dispatcher.composeBack(sequence, constantBitmaps)])`
+   where `constantBitmaps` are built once per deck (theme/level/icon-keyed cache).
 4. `ImageBitmap` → `HTMLCanvasElement` (existing CardPair seam) → cache + blob.
 
 ## Error handling — three fallback tiers
@@ -201,3 +213,51 @@ perf cliff: if tier-1 fails systematically, the logs make it visible.
 - **Font availability in-worker** — `composition.worker.ts:140` already attempts
   `FontFace` registration; glyph text falls back gracefully. Parity harness will
   catch any text drift.
+
+---
+
+## Phase 1 OUTCOME (2026-05-29) — Approach A BLOCKED; pivot to FrontJob
+
+Phase 0 infra built + Phase 1 front routing wired, then the parity harness +
+worker diagnostics caught that **Approach A (reuse the existing composition
+worker) does not work** — for the exact reasons the worker was gated off. Two
+of this spec's foundational assumptions were WRONG:
+
+1. **"The prepare-pass populates the caches."** FALSE. `pictograph-preparer`
+   only selects SVG asset strings; `svgCache` is populated by
+   `Canvas2DDirectRenderer` at RENDER time, not prepare time. Fixed by
+   warming via a tiny main-thread `composeSequenceImage` pass (commit
+   `1f3d92320`) + injecting SVG dims so viewBox-only SVGs snapshot
+   (`528d2c776`). Seeding then worked: diagnostics showed `bundle keys: 64,
+   grids: 2` delivered to the worker.
+
+2. **"The $env/dynamic/public coupling is stale."** FALSE — it is LIVE in the
+   deep render path. The worker crashes per-beat: `TypeError: Cannot read
+   properties of undefined (reading 'env') at public:1:47` (a transitive
+   `$env/dynamic/public` / sveltekit-env-global access, reached per pictograph,
+   not nameable from the collapsed stack). This is precisely why
+   `CompositionDispatcher.detectWorkerSupport()` was hard-`false`. The gate was
+   correct, not stale.
+
+3. **Bonus gap:** the worker never calls
+   `Canvas2DDirectRenderer.setGlobalPreparerGetter`, so even with the env crash
+   fixed, the worker has no preparer → props/arrows would not render.
+
+4. **Glyph cache near-empty in worker** (`initPool glyphEntries: 6`) → word
+   falls back to raw serif `fillText` instead of compressed TKA glyphs.
+
+**Verdict:** reusing the gated-off worker is a rabbit hole — each fix exposes the
+next reason it was disabled. **Production neutralized** (commit `7a7cee1d2`):
+`renderFront` stays main-thread (proven correct), the probe+bundle setup removed
+from `PrintPreviewPages`. Phase 0 infra (cache accessors, AssetBundle,
+dispatcher seed/probe) remains as DORMANT library code (nothing routes to the
+worker).
+
+**Next:** if true-multicore fronts are still wanted, do **Approach B (FrontJob)**
+as a FRESH sub-project — its own brainstorm → spec → plan. A plain-data FrontJob
++ a dumb paint worker that imports NOTHING SvelteKit-coupled sidesteps the $env
+wall entirely (the proven `paintBackJob` pattern, extended to fronts). It is a
+large extraction (the full `composeSequenceImage` layout/word/step-number/
+start-pos logic must be re-expressed as plain data + pre-decoded bitmaps) — do
+not start it on a tired context. Backs are already 52ms warm; main-thread fronts
+already render correctly — nothing is broken without this.
