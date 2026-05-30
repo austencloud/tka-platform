@@ -84,16 +84,10 @@ export interface PrintRenderOptions {
   canvasWidth?: number;
   canvasHeight?: number;
   bleedPx?: number;
-  showGrid: boolean;
-  showTKA: boolean;
-  showWord: boolean;
   includeStartPosition: boolean;
   startPositionLayout?: "row" | "column";
-  handPointsVisible: boolean;
   /** Override the default card back theme (e.g. "cosmic", "ocean") */
   theme?: string;
-  /** Show QR code in an empty grid cell */
-  showQRCode?: boolean;
   /** Override prop types (reads from settings when not provided) */
   bluePropType?: PropType;
   redPropType?: PropType;

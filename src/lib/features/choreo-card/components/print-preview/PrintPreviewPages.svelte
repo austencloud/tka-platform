@@ -17,16 +17,18 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
 
+  // Render-schema version baked into every card cache key (memory + IndexedDB).
+  // Bump when rendered pixels change for reasons NOT captured by the keyed
+  // options below — e.g. the canonical profile changes. Rotates all keys so
+  // stale persisted renders self-invalidate.
+  const CARD_RENDER_SCHEMA = "v2";
+
   interface Props {
     sequences: SequenceData[];
     cardSize: CardSizeId;
     theme: string;
     isLoading: boolean;
-    showGrid?: boolean;
-    showTKA?: boolean;
-    showWord?: boolean;
     includeStartPosition?: boolean;
-    handPointsVisible?: boolean;
     tndElement?: TnDElement;
     /** Per-card TnD elements, index-aligned with sequences (overrides single tndElement) */
     tndElements?: (TnDElement | undefined)[];
@@ -64,11 +66,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     cardSize,
     theme,
     isLoading,
-    showGrid = true,
-    showTKA = true,
-    showWord = true,
     includeStartPosition = true,
-    handPointsVisible = true,
     tndElement,
     tndElements,
     footers,
@@ -173,10 +171,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const imageComposition = getImageCompositionManager();
     const element = (cardIndex != null ? tndElements?.[cardIndex] : undefined) ?? tndElement;
     return {
-      showGrid,
-      showTKA,
-      showWord,
-      showQRCode: true,
       includeStartPosition,
       startPositionLayout:
         deckMode && stepCount != null
@@ -184,7 +178,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           : stepCount != null
             ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
             : imageComposition.startPositionLayout,
-      handPointsVisible,
       showMandala: true,
       theme,
       tndElement: element,
@@ -211,8 +204,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       ? getCatalogLayoutPolicy(stepCount)
       : "row";
     const optsPart = [
-      cardSize, theme, showGrid, showTKA, showWord,
-      includeStartPosition, handPointsVisible,
+      CARD_RENDER_SCHEMA,
+      cardSize, theme,
       (tndElements?.[index]?.familyId ?? tndElement?.familyId ?? "none"),
       resolvedBlueProp,
       resolvedRedProp,
@@ -254,11 +247,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const seqs = sequences;
     const _cardSize = cardSize;
     const _theme = theme;
-    const _showGrid = showGrid;
-    const _showTKA = showTKA;
-    const _showWord = showWord;
     const _includeStartPosition = includeStartPosition;
-    const _handPointsVisible = handPointsVisible;
     const _rerenderKey = rerenderKey;
     const _bgType = resolvedBackground;
     const _blueProp = resolvedBlueProp;
@@ -267,11 +256,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     // Void unused captures to satisfy linter
     void _cardSize;
     void _theme;
-    void _showGrid;
-    void _showTKA;
-    void _showWord;
     void _includeStartPosition;
-    void _handPointsVisible;
     void _rerenderKey;
     void _bgType;
     void _blueProp;
