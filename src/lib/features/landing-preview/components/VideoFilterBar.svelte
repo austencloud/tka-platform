@@ -5,6 +5,7 @@
    * Search bar, action buttons, and filter chips for the video curator.
    */
   import type { VideoCategory } from "../types";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
 
   interface Performer {
     id: string;
@@ -214,40 +215,44 @@
   <div class="chip-group toggles">
     <div class="chips">
       <!-- TKA Word filter -->
-      <button
-        class="chip toggle-chip"
-        class:active={filterHasWord === "yes"}
+      <FilterChipBase
+        mode="toggle"
+        size="sm"
+        label="Has Word"
+        icon="fas fa-font"
+        chipColor="#6366f1"
+        active={filterHasWord === "yes"}
         onclick={() => onHasWordChange(filterHasWord === "yes" ? "all" : "yes")}
-      >
-        <i class="fas fa-font" aria-hidden="true"></i>
-        Has Word
-      </button>
-      <button
-        class="chip toggle-chip"
-        class:active={filterHasWord === "no"}
+      />
+      <FilterChipBase
+        mode="toggle"
+        size="sm"
+        label="No Word"
+        icon="fas fa-font"
+        chipColor="#6366f1"
+        active={filterHasWord === "no"}
         onclick={() => onHasWordChange(filterHasWord === "no" ? "all" : "no")}
-      >
-        <i class="fas fa-font" style="opacity: 0.4" aria-hidden="true"></i>
-        No Word
-      </button>
+      />
 
       <!-- Featured filter -->
-      <button
-        class="chip toggle-chip featured-chip"
-        class:active={filterFeatured === true}
+      <FilterChipBase
+        mode="toggle"
+        size="sm"
+        label="Featured"
+        icon="fas fa-star"
+        chipColor="#f59e0b"
+        active={filterFeatured === true}
         onclick={() => onFeaturedChange(filterFeatured === true ? null : true)}
-      >
-        <i class="fas fa-star" aria-hidden="true"></i>
-        Featured
-      </button>
-      <button
-        class="chip toggle-chip"
-        class:active={filterFeatured === false}
+      />
+      <FilterChipBase
+        mode="toggle"
+        size="sm"
+        label="Not Featured"
+        icon="far fa-star"
+        chipColor="#6366f1"
+        active={filterFeatured === false}
         onclick={() => onFeaturedChange(filterFeatured === false ? null : false)}
-      >
-        <i class="far fa-star" aria-hidden="true"></i>
-        Not Featured
-      </button>
+      />
     </div>
   </div>
 
@@ -506,14 +511,6 @@
 
   .chip.add-chip:hover {
     border-style: solid;
-  }
-
-  .chip.toggle-chip {
-    --chip-color: #6366f1;
-  }
-
-  .chip.featured-chip {
-    --chip-color: #f59e0b;
   }
 
   .performer-chip {
