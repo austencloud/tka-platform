@@ -11,9 +11,11 @@
     getTnDFamilyOptions,
     getTnDTurnPatternOptions,
     buildTnDCards,
+    buildTnDSeedClasses,
     composeDeck,
     swapCard,
     prunePool,
+    TND_BASE_CATALOG_ID,
     type CatalogPoolFilter,
   } from "../../services/deck-composer";
   import type { DeckRelease, DeckReleaseCard } from "../../domain/models/DeckRelease";
@@ -87,7 +89,17 @@
     try {
       catalogs = await loadCatalogs();
       rs.sourceSummaries = getCatalogSourceSummaries(catalogs);
-      rs.tndFamilies = getTnDFamilyOptions(catalogs);
+      // Classify each base TnD seed for both grids once (selection-independent).
+      // Element is NOT rotation-invariant, so the family is derived from the
+      // box-transformed geometry — never carried over from the diamond catalog.
+      const baseCatalog = catalogs.find((c) => c.id === TND_BASE_CATALOG_ID);
+      const baseSeedIds = baseCatalog
+        ? baseCatalog.families.flatMap((f) => f.sequenceIds)
+        : [];
+      if (baseSeedIds.length > 0) {
+        const baseSeqs = await loadSequencesByIds(TND_BASE_CATALOG_ID, baseSeedIds);
+        rs.tndSeedClasses = buildTnDSeedClasses(baseSeqs);
+      }
       await releasesPromise;
       rebuildPool();
     } catch (err) {
@@ -143,6 +155,14 @@
     rs.selectedTnDFamilies = next;
   }
 
+  function handleSelectAllFamilies() {
+    rs.selectedTnDFamilies = new Set(rs.tndFamilies.map((f) => f.familyId));
+  }
+
+  function handleClearFamilies() {
+    rs.selectedTnDFamilies = new Set();
+  }
+
   function handleTnDTurnPatternToggle(tp: string) {
     const next = new Set(rs.selectedTnDTurnPatterns);
     if (next.has(tp)) {
@@ -157,13 +177,18 @@
     rs.selectedTnDTurnPatterns = patterns;
   }
 
+  // Family options are grid-aware: each base seed lands in its computed element
+  // per selected grid. Recompute when the seed classes or grid selection change.
+  $effect(() => {
+    rs.tndFamilies = getTnDFamilyOptions(rs.tndSeedClasses, [...rs.selectedGridModes]);
+  });
+
   const tndCardCount = $derived(
     buildTnDCards(
       rs.tndFamilies,
       rs.selectedTnDFamilies,
       rs.selectedTnDTurnPatterns,
       [...rs.selectedStartOriModes],
-      [...rs.selectedGridModes],
     ).length
   );
 
@@ -191,9 +216,24 @@
         rs.selectedTnDFamilies,
         rs.selectedTnDTurnPatterns,
         registers,
-        grids,
       );
-      return tndCards.map((c, i) => ({ ...c, position: i + 1 }));
+      // Deck-wide reversal (build-one-apply-all): stamp the strip's pattern onto
+      // every card's variation. Skip when the pattern reverses nothing (all "-"),
+      // so the no-reversal path stays free of needless re-derivation.
+      const rev = rs.reversalPattern;
+      const hasReversal = rev != null && /[PRB]/.test(rev.sequence);
+      return tndCards.map((c, i) => {
+        const card = { ...c, position: i + 1 };
+        if (!hasReversal) return card;
+        return {
+          ...card,
+          variation: {
+            ...(card.variation ?? {}),
+            reversalSequence: rev!.sequence,
+            reversalPatternId: rev!.id,
+          },
+        };
+      });
     }
     const cards = composeDeck(pool, rs.weights, rs.totalCards, { center: rs.notes });
     // Full enumeration: each composed card is emitted once per (register × grid
@@ -222,6 +262,10 @@
 
   async function handleDraw() {
     const gen = ++rs.drawGeneration;
+    // Fresh draw = a new, not-yet-named deck. Clear any name left over from a
+    // previously composed/released deck so the header shows the placeholder, not
+    // the last deck's title.
+    rs.name = "";
     rs.cards = composeFullDeck();
     await loadSelectedSequences(gen);
     if (gen !== rs.drawGeneration) return;
@@ -395,6 +439,8 @@
         onNotesChange={(n) => { rs.notes = n; }}
         onSliceTypeToggle={handleSliceTypeToggle}
         onTnDFamilyToggle={handleTnDFamilyToggle}
+        onSelectAllFamilies={handleSelectAllFamilies}
+        onClearFamilies={handleClearFamilies}
         onTnDTurnPatternToggle={handleTnDTurnPatternToggle}
         onTnDTurnPatternsSet={handleSetTnDTurnPatterns}
         onDraw={handleDraw}
@@ -404,6 +450,8 @@
         onToggleStartOriMode={(m) => rs.toggleStartOriMode(m)}
         gridModes={rs.selectedGridModes}
         onToggleGridMode={(m) => rs.toggleGridMode(m)}
+        reversalPattern={rs.reversalPattern}
+        onReversalChange={(p) => { rs.reversalPattern = p; rs.persist(); }}
       />
     {:else if rs.step === "review"}
       <ReviewStep
@@ -417,6 +465,7 @@
         isReleasing={rs.isReleasing}
         readOnly={rs.viewingRelease !== null}
         brokenLoopCount={rs.brokenLoopCount}
+        showRedraw={rs.deckMode === "loop"}
         {footers}
         {onContextMenu}
         onSwapCard={handleSwapCard}

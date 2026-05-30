@@ -251,10 +251,11 @@ function applyStartOriMode(seq: SequenceData, mode: StartOriMode | undefined): S
  * Re-render a diamond-authored sequence in box mode: rotate the hand path 45°,
  * direction per start-position family (alpha/gamma CW = +1, beta CCW = −1).
  * No-op when gridMode isn't "box" or the family is unsupported (zeta/eta).
- * Letters + element are rotation-invariant; positions + gridMode self-heal.
- * NEVER mutates `seq`.
+ * Positions + gridMode self-heal. The TnD element is NOT rotation-invariant —
+ * it must be recomputed from the box-transformed geometry via the deriver
+ * (see deck-composer TnD classification). NEVER mutates `seq`.
  */
-function applyBoxMode(
+export function applyBoxMode(
   seq: SequenceData,
   gridMode: CardVariation["gridMode"],
 ): SequenceData {

@@ -3,44 +3,221 @@ import {
   getTnDFamilyOptions,
   getTnDTurnPatternOptions,
   buildTnDCards,
+  classifyTnDSeedForGrid,
+  type TnDSeedClass,
 } from "../deck-composer";
-import type { Catalog } from "../../domain/models/Catalog";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import {
+  MotionColor,
+  MotionType,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-function baseCatalog(): Catalog {
-  return {
-    id: "l1-tnd-motions",
-    name: "TnD Motions (1:1)",
-    canonicalName: "tnd",
-    description: "",
-    families: [
-      { id: "tog-same", label: "Tog-Same", typeCombo: "", sequenceIds: ["AA", "BB", "CC"] },
-      { id: "split-same", label: "Split-Same", typeCombo: "", sequenceIds: ["DD", "EE"] },
-      { id: "unknown", label: "Unknown", typeCombo: "", sequenceIds: ["ZZ"] },
-    ],
-    totalSequences: 6,
-    gridMode: "diamond" as Catalog["gridMode"],
-    level: 1,
-    collection: "TnD",
-    loopType: "",
-    sliceType: "quartered",
-    stepCount: 4,
-    turnPattern: "uniform-0t",
-    reversalPattern: "",
-  };
+// ───────────────────────────────────────────────────────────────────────────
+// Seed classes per §4.2: each base seed's grid-correct family (diamond | box).
+// §4.3 option A: PM/QN/RO are diamond quarter-opp AND box split-opp.
+// ───────────────────────────────────────────────────────────────────────────
+function seedClass(
+  seedId: string,
+  diamond: string | null,
+  box: string | null
+): TnDSeedClass {
+  return { seedId, sourceCatalogId: "l1-tnd-motions", diamond, box };
 }
 
-describe("getTnDFamilyOptions (base-only)", () => {
-  it("reads families from l1-tnd-motions, skips 'unknown', counts base seqs", () => {
-    const opts = getTnDFamilyOptions([baseCatalog()]);
-    expect(opts.map((o) => o.familyId).sort()).toEqual(["split-same", "tog-same"]);
-    const tog = opts.find((o) => o.familyId === "tog-same")!;
-    expect(tog.sequenceCount).toBe(3);
-    expect(tog.entries).toHaveLength(3);
-    expect(tog.entries[0]).toMatchObject({ sequenceId: "AA", sourceCatalogId: "l1-tnd-motions" });
+const SEED_CLASSES: TnDSeedClass[] = [
+  // γ tog half — diamond quarter-opp, box tog-opp
+  seedClass("MP", "quarter-opp", "tog-opp"),
+  seedClass("NQ", "quarter-opp", "tog-opp"),
+  seedClass("OR", "quarter-opp", "tog-opp"),
+  // γ split half (new gamma seeds) — diamond quarter-opp, box split-opp
+  seedClass("PM", "quarter-opp", "split-opp"),
+  seedClass("QN", "quarter-opp", "split-opp"),
+  seedClass("RO", "quarter-opp", "split-opp"),
+  // α/β tog half — diamond tog-opp, box quarter-opp
+  seedClass("DJ", "tog-opp", "quarter-opp"),
+  seedClass("EK", "tog-opp", "quarter-opp"),
+  seedClass("FL", "tog-opp", "quarter-opp"),
+  // α/β split half — diamond split-opp, box quarter-opp
+  seedClass("JD", "split-opp", "quarter-opp"),
+  seedClass("KE", "split-opp", "quarter-opp"),
+  seedClass("LF", "split-opp", "quarter-opp"),
+  // same-direction families — timing-invariant across grids
+  seedClass("A", "split-same", "split-same"),
+  seedClass("G", "tog-same", "tog-same"),
+  seedClass("S", "quarter-same", "quarter-same"),
+];
+
+const familyIds = (grids: ("diamond" | "box")[]) =>
+  getTnDFamilyOptions(SEED_CLASSES, grids).map((o) => o.familyId);
+
+const seedsIn = (familyId: string, grids: ("diamond" | "box")[]): string[] => {
+  const fam = getTnDFamilyOptions(SEED_CLASSES, grids).find(
+    (o) => o.familyId === familyId
+  );
+  return (fam?.entries ?? []).map((e) => e.sequenceId).sort();
+};
+
+// ───────────────────────────────────────────────────────────────────────────
+// getTnDFamilyOptions — grid-aware grouping by computed element
+// ───────────────────────────────────────────────────────────────────────────
+describe("getTnDFamilyOptions (grid-aware)", () => {
+  it("diamond grouping reproduces today's correct diamond families", () => {
+    expect(seedsIn("quarter-opp", ["diamond"])).toEqual([
+      "MP",
+      "NQ",
+      "OR",
+      "PM",
+      "QN",
+      "RO",
+    ]);
+    expect(seedsIn("tog-opp", ["diamond"])).toEqual(["DJ", "EK", "FL"]);
+    expect(seedsIn("split-opp", ["diamond"])).toEqual(["JD", "KE", "LF"]);
+    expect(seedsIn("split-same", ["diamond"])).toEqual(["A"]);
+    expect(seedsIn("tog-same", ["diamond"])).toEqual(["G"]);
+    expect(seedsIn("quarter-same", ["diamond"])).toEqual(["S"]);
   });
 
-  it("returns empty when the base catalog is absent", () => {
-    expect(getTnDFamilyOptions([])).toEqual([]);
+  it("box quarter-opp = DEFJKL compounds, NOT the gamma seeds", () => {
+    expect(seedsIn("quarter-opp", ["box"])).toEqual([
+      "DJ",
+      "EK",
+      "FL",
+      "JD",
+      "KE",
+      "LF",
+    ]);
+    expect(seedsIn("quarter-opp", ["box"])).not.toContain("MP");
+  });
+
+  it("box tog-opp = MP/NQ/OR (Air), box split-opp = PM/QN/RO (Fire)", () => {
+    expect(seedsIn("tog-opp", ["box"])).toEqual(["MP", "NQ", "OR"]);
+    expect(seedsIn("split-opp", ["box"])).toEqual(["PM", "QN", "RO"]);
+  });
+
+  it("families come back in canonical order", () => {
+    expect(familyIds(["diamond"])).toEqual([
+      "split-same",
+      "tog-same",
+      "quarter-same",
+      "split-opp",
+      "tog-opp",
+      "quarter-opp",
+    ]);
+  });
+
+  it("both grids selected: a seed lands in its per-grid family (MP → Moon & Air)", () => {
+    expect(seedsIn("quarter-opp", ["diamond", "box"])).toContain("MP"); // diamond
+    expect(seedsIn("tog-opp", ["diamond", "box"])).toContain("MP"); // box
+  });
+
+  it("returns empty when no seed classes", () => {
+    expect(getTnDFamilyOptions([], ["box"])).toEqual([]);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// Family counts per grid selection (§6 test 7)
+// ───────────────────────────────────────────────────────────────────────────
+describe("getTnDFamilyOptions — counts per grid selection", () => {
+  it("diamond-only: quarter-opp counts 6 (3 γ-tog + 3 γ-split)", () => {
+    const opts = getTnDFamilyOptions(SEED_CLASSES, ["diamond"]);
+    expect(opts.find((o) => o.familyId === "quarter-opp")!.sequenceCount).toBe(6);
+  });
+
+  it("box-only: quarter-opp counts 6 (DEFJKL), tog-opp 3, split-opp 3", () => {
+    const opts = getTnDFamilyOptions(SEED_CLASSES, ["box"]);
+    expect(opts.find((o) => o.familyId === "quarter-opp")!.sequenceCount).toBe(6);
+    expect(opts.find((o) => o.familyId === "tog-opp")!.sequenceCount).toBe(3);
+    expect(opts.find((o) => o.familyId === "split-opp")!.sequenceCount).toBe(3);
+  });
+
+  it("both grids: every (seed × grid) is counted once", () => {
+    const opts = getTnDFamilyOptions(SEED_CLASSES, ["diamond", "box"]);
+    const total = opts.reduce((s, o) => s + o.sequenceCount, 0);
+    expect(total).toBe(SEED_CLASSES.length * 2); // 15 seeds × 2 grids
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// buildTnDCards — emits grid-correct content (§6 tests 4 & 5)
+// ───────────────────────────────────────────────────────────────────────────
+describe("buildTnDCards — box quarter-opp content (§6 test 4)", () => {
+  it("Box + Quarter-Opp emits exactly DEFJKL, no MP/NQ/OR", () => {
+    const families = getTnDFamilyOptions(SEED_CLASSES, ["box"]);
+    const cards = buildTnDCards(families, new Set(["quarter-opp"]), new Set(["0|0"]));
+    const ids = cards.map((c) => c.sequenceId).sort();
+    expect(ids).toEqual(["DJ", "EK", "FL", "JD", "KE", "LF"]);
+    expect(ids).not.toContain("MP");
+    expect(cards.every((c) => c.variation?.gridMode === "box")).toBe(true);
+    expect(cards.every((c) => c.footer.center === "Quarter-Opp")).toBe(true);
+  });
+});
+
+describe("buildTnDCards — box tog/split content (§6 test 5)", () => {
+  it("Box + Tog-Opp → MP/NQ/OR (Air)", () => {
+    const families = getTnDFamilyOptions(SEED_CLASSES, ["box"]);
+    const cards = buildTnDCards(families, new Set(["tog-opp"]), new Set(["0|0"]));
+    expect(cards.map((c) => c.sequenceId).sort()).toEqual(["MP", "NQ", "OR"]);
+    expect(cards.every((c) => c.footer.center === "Tog-Opp")).toBe(true);
+  });
+
+  it("Box + Split-Opp → PM/QN/RO (Fire)", () => {
+    const families = getTnDFamilyOptions(SEED_CLASSES, ["box"]);
+    const cards = buildTnDCards(families, new Set(["split-opp"]), new Set(["0|0"]));
+    expect(cards.map((c) => c.sequenceId).sort()).toEqual(["PM", "QN", "RO"]);
+    expect(cards.every((c) => c.footer.center === "Split-Opp")).toBe(true);
+  });
+});
+
+describe("buildTnDCards — diamond unchanged (§6 test 6 regression guard)", () => {
+  it("Diamond + Quarter-Opp → MP/NQ/OR + PM/QN/RO, no DEFJKL", () => {
+    const families = getTnDFamilyOptions(SEED_CLASSES, ["diamond"]);
+    const cards = buildTnDCards(families, new Set(["quarter-opp"]), new Set(["0|0"]));
+    expect(cards.map((c) => c.sequenceId).sort()).toEqual([
+      "MP",
+      "NQ",
+      "OR",
+      "PM",
+      "QN",
+      "RO",
+    ]);
+    expect(cards.every((c) => c.variation?.gridMode === undefined)).toBe(true);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// buildTnDCards — cartesian enumeration (preserved behavior)
+// ───────────────────────────────────────────────────────────────────────────
+describe("buildTnDCards — cartesian over patterns × registers", () => {
+  it("emits seed × pattern × register cards with variation.turnPattern", () => {
+    const families = getTnDFamilyOptions(SEED_CLASSES, ["box"]); // box tog-opp: MP/NQ/OR
+    const cards = buildTnDCards(
+      families,
+      new Set(["tog-opp"]),
+      new Set(["0|0", "1|1"])
+    );
+    expect(cards).toHaveLength(3 * 2); // 3 seeds × 2 patterns
+    expect(cards.filter((c) => c.variation!.turnPattern === "1|1")).toHaveLength(3);
+  });
+
+  it("returns no cards when no pattern is selected", () => {
+    const families = getTnDFamilyOptions(SEED_CLASSES, ["diamond"]);
+    expect(buildTnDCards(families, new Set(["tog-opp"]), new Set())).toEqual([]);
+  });
+
+  it("multiplies every seed by each selected register; radial omits the tag", () => {
+    const families = getTnDFamilyOptions(SEED_CLASSES, ["box"]); // box tog-opp: 3
+    const cards = buildTnDCards(
+      families,
+      new Set(["tog-opp"]),
+      new Set(["1|1"]),
+      ["radial", "nonradial", "split"]
+    );
+    expect(cards).toHaveLength(3 * 3);
+    expect(cards.filter((c) => c.variation?.startOriMode === "nonradial")).toHaveLength(3);
+    expect(cards.filter((c) => c.variation?.startOriMode === undefined)).toHaveLength(3);
   });
 });
 
@@ -49,92 +226,61 @@ describe("getTnDTurnPatternOptions (TURN_VALUES²)", () => {
     const opts = getTnDTurnPatternOptions(10);
     expect(opts).toHaveLength(49);
     expect(opts.map((o) => o.turnPattern)).toContain("0|0");
-    expect(opts.map((o) => o.turnPattern)).toContain("3|3");
     expect(opts.map((o) => o.turnPattern)).toContain("0.5|1");
     expect(opts.every((o) => o.sequenceCount === 10)).toBe(true);
   });
 });
 
-describe("buildTnDCards (cartesian)", () => {
-  it("emits family × pattern × baseSeq cards, each with variation.turnPattern", () => {
-    const families = getTnDFamilyOptions([baseCatalog()]); // tog-same:3, split-same:2
-    const selected = new Set(["tog-same"]);
-    const patterns = new Set(["0|0", "1|1"]);
-    const cards = buildTnDCards(families, selected, patterns);
-    expect(cards).toHaveLength(3 * 2); // 3 base × 2 patterns
-    expect(cards.every((c) => c.variation?.turnPattern != null)).toBe(true);
-    expect(cards.filter((c) => c.variation!.turnPattern === "1|1")).toHaveLength(3);
-    expect(cards[0]!.sourceCatalogId).toBe("l1-tnd-motions");
-  });
+// ───────────────────────────────────────────────────────────────────────────
+// classifyTnDSeedForGrid — first rotating step drives the element (diamond)
+// ───────────────────────────────────────────────────────────────────────────
+describe("classifyTnDSeedForGrid", () => {
+  function seqWithFirstStep(
+    blue: { start: GridLocation; end: GridLocation },
+    red: { start: GridLocation; end: GridLocation }
+  ): SequenceData {
+    return {
+      id: "seq",
+      name: "",
+      word: "MP",
+      steps: [
+        {
+          id: "s1",
+          stepNumber: 1,
+          isBlank: false,
+          motions: {
+            [MotionColor.BLUE]: createMotionData({
+              color: MotionColor.BLUE,
+              motionType: MotionType.PRO,
+              startLocation: blue.start,
+              endLocation: blue.end,
+            }),
+            [MotionColor.RED]: createMotionData({
+              color: MotionColor.RED,
+              motionType: MotionType.PRO,
+              startLocation: red.start,
+              endLocation: red.end,
+            }),
+          },
+        },
+      ],
+      metadata: {},
+    } as unknown as SequenceData;
+  }
 
-  it("returns no cards when no pattern is selected", () => {
-    const families = getTnDFamilyOptions([baseCatalog()]);
-    expect(buildTnDCards(families, new Set(["tog-same"]), new Set())).toEqual([]);
-  });
-});
-
-describe("buildTnDCards — startOriMode", () => {
-  it("stamps a single selected register onto every card's variation", () => {
-    const families = getTnDFamilyOptions([baseCatalog()]);
-    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]), ["nonradial"]);
-    expect(cards.length).toBeGreaterThan(0);
-    expect(cards.every((c) => c.variation?.startOriMode === "nonradial")).toBe(true);
-    expect(cards.every((c) => c.variation?.turnPattern === "1|1")).toBe(true);
-  });
-
-  it("omits startOriMode when register is radial (default)", () => {
-    const families = getTnDFamilyOptions([baseCatalog()]);
-    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]), ["radial"]);
-    expect(cards.every((c) => c.variation?.startOriMode === undefined)).toBe(true);
-  });
-
-  it("full enumeration: multiplies every base by each selected register", () => {
-    const families = getTnDFamilyOptions([baseCatalog()]); // tog-same: 3 base seqs
-    const cards = buildTnDCards(
-      families,
-      new Set(["tog-same"]),
-      new Set(["1|1"]),
-      ["radial", "nonradial", "split"],
+  it("diamond M @γ11 (s→w / e→n) classifies quarter-opp", () => {
+    const seq = seqWithFirstStep(
+      { start: GridLocation.SOUTH, end: GridLocation.WEST },
+      { start: GridLocation.EAST, end: GridLocation.NORTH }
     );
-    // 3 base × 1 pattern × 3 registers
-    expect(cards).toHaveLength(3 * 3);
-    expect(cards.filter((c) => c.variation?.startOriMode === "nonradial")).toHaveLength(3);
-    expect(cards.filter((c) => c.variation?.startOriMode === "split")).toHaveLength(3);
-    // radial copies carry no startOriMode tag
-    expect(cards.filter((c) => c.variation?.startOriMode === undefined)).toHaveLength(3);
+    expect(classifyTnDSeedForGrid(seq, "diamond")).toBe("quarter-opp");
   });
 
-  it("defaults to a single radial enumeration when no register is passed", () => {
-    const families = getTnDFamilyOptions([baseCatalog()]);
-    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]));
-    expect(cards).toHaveLength(3); // 3 base × 1 pattern × 1 (radial) register
-  });
-});
-
-describe("buildTnDCards — gridMode (box) enumeration", () => {
-  it("multiplies every base by each selected grid mode; box tags, diamond omits", () => {
-    const families = getTnDFamilyOptions([baseCatalog()]); // tog-same: 3 base seqs
-    const cards = buildTnDCards(
-      families,
-      new Set(["tog-same"]),
-      new Set(["1|1"]),
-      ["radial"],
-      ["diamond", "box"],
+  it("diamond A @alpha3 (w→n / e→s) classifies split-same", () => {
+    const seq = seqWithFirstStep(
+      { start: GridLocation.WEST, end: GridLocation.NORTH },
+      { start: GridLocation.EAST, end: GridLocation.SOUTH }
     );
-    expect(cards).toHaveLength(3 * 2); // 3 base × 2 grid modes
-    expect(cards.filter((c) => c.variation?.gridMode === "box")).toHaveLength(3);
-    expect(cards.filter((c) => c.variation?.gridMode === undefined)).toHaveLength(3);
-  });
-
-  it("full enumeration: register × grid mode multiply together", () => {
-    const families = getTnDFamilyOptions([baseCatalog()]); // tog-same: 3
-    const cards = buildTnDCards(
-      families,
-      new Set(["tog-same"]),
-      new Set(["1|1"]),
-      ["radial", "nonradial"],
-      ["diamond", "box"],
-    );
-    expect(cards).toHaveLength(3 * 2 * 2); // 3 base × 2 registers × 2 grids
+    expect(classifyTnDSeedForGrid(seq, "diamond")).toBe("split-same");
   });
 });

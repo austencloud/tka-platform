@@ -1,9 +1,10 @@
 import type { DeckRelease, DeckReleaseCard, StepCountWeight } from "../../domain/models/DeckRelease";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption } from "../../services/deck-composer";
+import type { CatalogSourceSummary, TnDFamilyOption, TnDTurnPatternOption, TnDSeedClass } from "../../services/deck-composer";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { DEFAULT_VARIATION_CONFIG, type VariationConfig, type StartOriMode } from "../../services/deck-variation";
+import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
 
 type Step = "configure" | "review" | "released";
 
@@ -22,6 +23,7 @@ interface PersistedSession {
   startOriMode?: StartOriMode;
   startOriModes?: StartOriMode[];
   gridModes?: ("diamond" | "box")[];
+  reversalPattern?: ResolvedReversalPattern | null;
 }
 
 function loadSession(): PersistedSession | null {
@@ -60,8 +62,17 @@ class DeckReleaserState {
   /** Selected grid modes (diamond/box). Multi-select → full enumeration
    *  (each base card emitted once per selected grid mode). Never empty. */
   selectedGridModes = $state<Set<"diamond" | "box">>(new Set(["diamond"]));
+  /** Deck-wide reversal pattern built in the strip (build-one-apply-all). Null
+   *  → no reversal. Stamped onto every card's variation at compose time. */
+  reversalPattern = $state<ResolvedReversalPattern | null>(null);
   get theme() {
-    return this.themeOverride ?? settingsService.settings.backgroundType ?? "cosmic";
+    // Fire Drums 2026: every deck-releaser card BACK ships the Rainbow theme,
+    // regardless of the user's current background OR a released deck's saved
+    // theme. Hardcoded until per-deck back-theme selection exists. `theme` only
+    // drives the back (+ info cards) — fronts are element-accent-colored — so
+    // this affects backs only. Returning a fixed value also rotates the card
+    // cache key, forcing stale (blue, pre-fix) cached backs to re-render fresh.
+    return "rainbow";
   }
   get bluePropType(): PropType {
     return this.bluePropOverride ?? settingsService.settings.bluePropType ?? PropType.STAFF;
@@ -73,6 +84,8 @@ class DeckReleaserState {
   releasedNumber = $state<number | null>(null);
   sourceSummaries = $state<CatalogSourceSummary[]>([]);
   selectedSliceTypes = $state<Set<"halved" | "quartered">>(new Set(["quartered"]));
+  /** Per-seed grid-correct TnD classification (selection-independent). */
+  tndSeedClasses = $state<TnDSeedClass[]>([]);
   tndFamilies = $state<TnDFamilyOption[]>([]);
   tndTurnPatterns = $state<TnDTurnPatternOption[]>([]);
   deckMode = $state<"loop" | "tnd">("loop");
@@ -104,6 +117,7 @@ class DeckReleaserState {
       if (saved.gridModes?.length) {
         this.selectedGridModes = new Set(saved.gridModes);
       }
+      if (saved.reversalPattern) this.reversalPattern = saved.reversalPattern;
     }
   }
 
@@ -119,6 +133,7 @@ class DeckReleaserState {
       variationConfig: this.variationConfig,
       startOriModes: [...this.selectedStartOriModes],
       gridModes: [...this.selectedGridModes],
+      reversalPattern: this.reversalPattern,
     });
   }
 

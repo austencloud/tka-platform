@@ -1,12 +1,17 @@
 import type { Catalog } from "../domain/models/Catalog";
 import type { CardFooter, DeckReleaseCard, StepCountWeight } from "../domain/models/DeckRelease";
-import type { StartOriMode } from "./deck-variation";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { applyBoxMode, type StartOriMode } from "./deck-variation";
 import { TND_BY_FAMILY } from "../domain/tnd-element";
+import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
+import { TnDMode } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { tokenizeWord } from "$lib/shared/pictograph/tka-glyph/utils/word-tokenizer";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
 import { TURN_VALUES } from "../domain/turn-pattern-parser";
+
+type GridModeKey = "diamond" | "box";
 
 /** Canonical zero-turn TnD base catalog; all turn-grid cells derive from it. */
 export const TND_BASE_CATALOG_ID = "l1-tnd-motions";
@@ -223,6 +228,8 @@ export interface TnDSequenceEntry {
   sourceCatalogId: string;
   turnRatio: string;
   turnPattern: string;
+  /** The grid mode this entry's element was computed for. */
+  gridMode: GridModeKey;
 }
 
 export interface TnDFamilyOption {
@@ -232,22 +239,104 @@ export interface TnDFamilyOption {
   entries: readonly TnDSequenceEntry[];
 }
 
-export function getTnDFamilyOptions(catalogs: Catalog[]): TnDFamilyOption[] {
-  const base = catalogs.find((c) => c.id === TND_BASE_CATALOG_ID);
-  if (!base) return [];
-  return base.families
-    .filter((f) => f.id && f.id !== "unknown")
-    .map((family) => ({
-      familyId: family.id,
-      label: family.label,
-      sequenceCount: family.sequenceIds.length,
-      entries: family.sequenceIds.map((id) => ({
-        sequenceId: id,
-        sourceCatalogId: base.id,
+/**
+ * One base seed's computed TnD family per grid mode. The element is NOT
+ * rotation-invariant: a diamond quarter-opp seed (MP) becomes box tog-opp, so the
+ * family is recomputed from the box-transformed geometry via the deriver — never
+ * carried over from the diamond catalog grouping. `null` = the seed is not a
+ * rotating-shift Type-1 in that grid (no TnD).
+ */
+export interface TnDSeedClass {
+  seedId: string;
+  sourceCatalogId: string;
+  diamond: string | null;
+  box: string | null;
+}
+
+const TND_MODE_TO_FAMILY: Readonly<Record<TnDMode, string>> = {
+  [TnDMode.SPLIT_SAME]: "split-same",
+  [TnDMode.SPLIT_OPP]: "split-opp",
+  [TnDMode.TOG_SAME]: "tog-same",
+  [TnDMode.TOG_OPP]: "tog-opp",
+  [TnDMode.QUARTER_SAME]: "quarter-same",
+  [TnDMode.QUARTER_OPP]: "quarter-opp",
+};
+
+/** Canonical family display order (mirrors TND_ELEMENTS). */
+const FAMILY_ORDER = [
+  "split-same",
+  "tog-same",
+  "quarter-same",
+  "split-opp",
+  "tog-opp",
+  "quarter-opp",
+];
+
+/**
+ * Classify a base seed in a single grid by deriving the element from the first
+ * rotating-shift step's geometry (box-transformed first when grid === "box").
+ */
+export function classifyTnDSeedForGrid(
+  seq: SequenceData,
+  grid: GridModeKey
+): string | null {
+  const transformed = grid === "box" ? applyBoxMode(seq, "box") : seq;
+  for (const step of transformed.steps) {
+    if (step.isBlank) continue;
+    const { tndMode } = deriveTnDFromPictograph(step);
+    if (tndMode) return TND_MODE_TO_FAMILY[tndMode];
+  }
+  return null;
+}
+
+/** Classify every base seed for both grids once (selection-independent). */
+export function buildTnDSeedClasses(seqs: SequenceData[]): TnDSeedClass[] {
+  return seqs.map((seq) => ({
+    seedId: seq.id,
+    sourceCatalogId: TND_BASE_CATALOG_ID,
+    diamond: classifyTnDSeedForGrid(seq, "diamond"),
+    box: classifyTnDSeedForGrid(seq, "box"),
+  }));
+}
+
+/**
+ * Group the seed classes into family options for the currently-selected grid
+ * modes. A seed contributes one (seed × grid) entry to whichever family it lands
+ * in per grid — so with both grids selected MP appears under Quarter-Opp (diamond)
+ * and Tog-Opp (box). Family + count are always computed, never the static catalog.
+ */
+export function getTnDFamilyOptions(
+  seedClasses: TnDSeedClass[],
+  grids: GridModeKey[] = ["diamond"]
+): TnDFamilyOption[] {
+  const activeGrids = grids.length > 0 ? grids : (["diamond"] as GridModeKey[]);
+  const byFamily = new Map<string, TnDSequenceEntry[]>();
+
+  for (const sc of seedClasses) {
+    for (const grid of activeGrids) {
+      const familyId = grid === "box" ? sc.box : sc.diamond;
+      if (!familyId) continue;
+      if (!byFamily.has(familyId)) byFamily.set(familyId, []);
+      byFamily.get(familyId)!.push({
+        sequenceId: sc.seedId,
+        sourceCatalogId: sc.sourceCatalogId,
         turnRatio: "1:1",
         turnPattern: "0|0",
-      })),
-    }));
+        gridMode: grid,
+      });
+    }
+  }
+
+  return [...byFamily.entries()]
+    .map(([familyId, entries]) => ({
+      familyId,
+      label: TND_BY_FAMILY[familyId]?.name ?? familyId,
+      sequenceCount: entries.length,
+      entries,
+    }))
+    .sort(
+      (a, b) => FAMILY_ORDER.indexOf(a.familyId) - FAMILY_ORDER.indexOf(b.familyId)
+    );
 }
 
 export function tndFooter(familyId: string, _turnRatio: string): CardFooter {
@@ -288,35 +377,33 @@ export function buildTnDCards(
   selectedFamilies: Set<string>,
   selectedTurnPatterns?: Set<string>,
   startOriModes: StartOriMode[] = ["radial"],
-  gridModes: ("diamond" | "box")[] = ["diamond"],
 ): DeckReleaseCard[] {
   const patterns = selectedTurnPatterns ? [...selectedTurnPatterns] : [];
   if (patterns.length === 0) return [];
-  // Full enumeration: every base × each register × each grid mode.
+  // Full enumeration: every (seed × grid) entry × each pattern × each register.
+  // The grid mode is baked into each family entry by getTnDFamilyOptions, so the
+  // card's family/footer match the grid-correct computed element.
   const registers = startOriModes.length > 0 ? startOriModes : (["radial"] as StartOriMode[]);
-  const grids = gridModes.length > 0 ? gridModes : (["diamond"] as ("diamond" | "box")[]);
   const cards: DeckReleaseCard[] = [];
   for (const fam of tndFamilies) {
     if (!selectedFamilies.has(fam.familyId)) continue;
     for (const pattern of patterns) {
       for (const entry of fam.entries) {
         for (const mode of registers) {
-          for (const grid of grids) {
-            cards.push({
-              sequenceId: entry.sequenceId,
-              sourceCatalogId: entry.sourceCatalogId,
-              stepCount: 4,
-              word: entry.sequenceId,
-              position: 0,
-              variation: {
-                turnPattern: pattern,
-                turnLabel: pattern,
-                ...(mode !== "radial" ? { startOriMode: mode } : {}),
-                ...(grid !== "diamond" ? { gridMode: grid } : {}),
-              },
-              footer: tndFooter(fam.familyId, entry.turnRatio),
-            });
-          }
+          cards.push({
+            sequenceId: entry.sequenceId,
+            sourceCatalogId: entry.sourceCatalogId,
+            stepCount: 4,
+            word: entry.sequenceId,
+            position: 0,
+            variation: {
+              turnPattern: pattern,
+              turnLabel: pattern,
+              ...(mode !== "radial" ? { startOriMode: mode } : {}),
+              ...(entry.gridMode !== "diamond" ? { gridMode: entry.gridMode } : {}),
+            },
+            footer: tndFooter(fam.familyId, entry.turnRatio),
+          });
         }
       }
     }
