@@ -1,5 +1,6 @@
 // src/lib/features/choreo-card/domain/canonical-card-visibility.ts
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import type { TnDElement } from "./tnd-element";
 
 /**
@@ -22,27 +23,30 @@ export const CANONICAL_DECK_CARD_PROFILE = Object.freeze({
   // Composition flags that are always-on for deck cards
   addWord: true,
   showQRCode: true,
+  printMode: true,
+  darkMode: false,
 });
 
 export interface CanonicalCardVisibility {
   /** Top-level compose option (NOT a visibilityOverrides member). */
   addWord: boolean;
   /** Spread into composeOptions.visibilityOverrides. */
-  visibilityOverrides: {
-    showGrid: boolean;
-    showTKA: boolean;
-    handPointVisibility: "all" | "active" | "none";
-    showNonRadialPoints: boolean;
-    showReversals: boolean;
-    showPositions: boolean;
-    showTnD: boolean;
-    showElemental: boolean;
-    showQRCode: boolean;
-    printMode: boolean;
-    darkMode: boolean;
-    bluePropType?: PropType;
-    redPropType?: PropType;
-  };
+  visibilityOverrides: Pick<
+    NonNullable<SequenceExportOptions["visibilityOverrides"]>,
+    | "showGrid"
+    | "showTKA"
+    | "handPointVisibility"
+    | "showNonRadialPoints"
+    | "showReversals"
+    | "showPositions"
+    | "showTnD"
+    | "showElemental"
+    | "showQRCode"
+    | "printMode"
+    | "darkMode"
+    | "bluePropType"
+    | "redPropType"
+  >;
 }
 
 /**
@@ -66,8 +70,8 @@ export function buildCanonicalCardVisibility(args: {
       showTnD: CANONICAL_DECK_CARD_PROFILE.showTnD,
       showElemental: args.tndElement != null,
       showQRCode: CANONICAL_DECK_CARD_PROFILE.showQRCode,
-      printMode: true,
-      darkMode: false,
+      printMode: CANONICAL_DECK_CARD_PROFILE.printMode,
+      darkMode: CANONICAL_DECK_CARD_PROFILE.darkMode,
       ...(args.bluePropType && { bluePropType: args.bluePropType }),
       ...(args.redPropType && { redPropType: args.redPropType }),
     },
