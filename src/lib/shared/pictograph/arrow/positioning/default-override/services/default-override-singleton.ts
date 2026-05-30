@@ -38,8 +38,8 @@ async function doInitialize(): Promise<void> {
     repositoryInstance = repository;
 
     // Register the Firestore-first resolver. Any new override now shadows JSON.
-    setDefaultOverrideResolver((gridMode, motionType, placementKey, turns) =>
-      repository.getValue(gridMode, motionType, placementKey, turns),
+    setDefaultOverrideResolver((gridMode, motionType, placementKey, turns, propType) =>
+      repository.getValue(gridMode, propType, motionType, placementKey, turns),
     );
     // Existing cached renders predate the resolver — invalidate so they repopulate.
     pictographPreparer.clearCache();

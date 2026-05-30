@@ -12,6 +12,7 @@ import { firestoreList, firestoreSet } from "$lib/shared/firestore";
 import {
   DefaultArrowPlacementDocSchema,
   generateDefaultDocId,
+  parseDefaultDocId,
   type DefaultArrowPlacementDoc,
   type PlacementValue,
 } from "../domain/DefaultArrowPlacement";
@@ -40,22 +41,24 @@ export class DefaultArrowPlacementPersister {
     }
   }
 
-  /** Merge a single base value into the {gridMode}_{motionType} doc. */
+  /** Merge a single base value into the {gridMode}_{propType}_{motionType} doc. */
   async saveValue(
     gridMode: string,
+    propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
     value: PlacementValue,
     userEmail: string,
   ): Promise<void> {
-    const id = generateDefaultDocId(gridMode, motionType);
+    const id = generateDefaultDocId(gridMode, propType, motionType);
     try {
       await firestoreSet(
         COLLECTION_NAME,
         id,
         {
           gridMode,
+          propType,
           motionType,
           placements: { [placementKey]: { [turns]: value } },
           updatedBy: userEmail,
@@ -72,11 +75,12 @@ export class DefaultArrowPlacementPersister {
   /** Remove a single base value (revert that key/turns to the JSON baseline). */
   async deleteValue(
     gridMode: string,
+    propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
   ): Promise<void> {
-    const id = generateDefaultDocId(gridMode, motionType);
+    const id = generateDefaultDocId(gridMode, propType, motionType);
     try {
       const firestore = await getFirestoreInstance();
       const docRef = doc(firestore, COLLECTION_NAME, id);
@@ -104,11 +108,13 @@ export class DefaultArrowPlacementPersister {
             snapshot.docChanges().forEach((change) => {
               if (change.type === "removed") return; // docs are never deleted wholesale
               const data = change.doc.data();
-              if (data.gridMode && data.motionType && data.placements) {
+              const decoded = parseDefaultDocId(change.doc.id);
+              if (decoded && data.placements) {
                 onChange({
                   id: change.doc.id,
-                  gridMode: data.gridMode,
-                  motionType: data.motionType,
+                  gridMode: data.gridMode ?? decoded.gridMode,
+                  propType: data.propType ?? decoded.propType,
+                  motionType: data.motionType ?? decoded.motionType,
                   placements: data.placements,
                   updatedAt: data.updatedAt,
                   updatedBy: data.updatedBy ?? "unknown",

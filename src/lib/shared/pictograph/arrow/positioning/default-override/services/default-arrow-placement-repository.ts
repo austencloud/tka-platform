@@ -64,25 +64,28 @@ export class DefaultArrowPlacementRepository {
   /** Firestore-first base value, or null when no override exists (resolver consumes this). */
   getValue(
     gridMode: string,
+    propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
   ): PlacementValue | null {
-    return this.state.getValue(gridMode, motionType, placementKey, turns);
+    return this.state.getValue(gridMode, propType, motionType, placementKey, turns);
   }
 
   hasValue(
     gridMode: string,
+    propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
   ): boolean {
-    return this.state.getValue(gridMode, motionType, placementKey, turns) !== null;
+    return this.state.getValue(gridMode, propType, motionType, placementKey, turns) !== null;
   }
 
   /** In-memory live preview during WASD (admin only). */
   saveDefaultLocal(
     gridMode: string,
+    propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
@@ -90,6 +93,7 @@ export class DefaultArrowPlacementRepository {
   ): void {
     this.state.setValue(
       gridMode,
+      propType,
       motionType,
       placementKey,
       turns,
@@ -101,16 +105,18 @@ export class DefaultArrowPlacementRepository {
   /** In-memory revert preview (admin only). */
   deleteDefaultLocal(
     gridMode: string,
+    propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
   ): void {
-    this.state.removeValue(gridMode, motionType, placementKey, turns);
+    this.state.removeValue(gridMode, propType, motionType, placementKey, turns);
   }
 
   /** Persist a single base value (admin only). */
   async saveDefault(
     gridMode: string,
+    propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
@@ -120,12 +126,13 @@ export class DefaultArrowPlacementRepository {
     if (email !== ADMIN_EMAIL) {
       throw new Error("Only admin can save default placement overrides");
     }
-    await this.persister.saveValue(gridMode, motionType, placementKey, turns, value, email);
+    await this.persister.saveValue(gridMode, propType, motionType, placementKey, turns, value, email);
   }
 
   /** Persist a single delete (admin only). */
   async deleteDefault(
     gridMode: string,
+    propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
@@ -134,8 +141,8 @@ export class DefaultArrowPlacementRepository {
     if (email !== ADMIN_EMAIL) {
       throw new Error("Only admin can delete default placement overrides");
     }
-    await this.persister.deleteValue(gridMode, motionType, placementKey, turns);
-    this.state.removeValue(gridMode, motionType, placementKey, turns);
+    await this.persister.deleteValue(gridMode, propType, motionType, placementKey, turns);
+    this.state.removeValue(gridMode, propType, motionType, placementKey, turns);
   }
 
   isAdmin(): boolean {
