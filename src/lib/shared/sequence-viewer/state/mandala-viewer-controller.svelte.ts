@@ -12,6 +12,7 @@ import {
   recordExportThroughput,
   hasDeviceMetrics,
 } from "$lib/shared/animation-panel/state/export-timing-tracker";
+import { downloadBlob } from "$lib/shared/foundation/services/file-downloader";
 
 export type MandalaExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
 export type MandalaExportResolution = 720 | 1080 | 2160;
@@ -378,12 +379,9 @@ export class MandalaViewerController {
         case "complete": {
           recordExportThroughput(resolution, totalFrames, performance.now() - startMs);
           const blob = new Blob([msg.buffer], { type: "video/mp4" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `mandala-${this.pathShape}-${this.preset}-${reps}x.mp4`;
-          a.click();
-          URL.revokeObjectURL(url);
+          const filename = `mandala-${this.pathShape}-${this.preset}-${reps}x.mp4`;
+          // Mobile: native share sheet (canShare files). Desktop: anchor download.
+          void downloadBlob(blob, filename);
           this.exportPhase = "complete";
           this.exporting = false;
           this.#disposeWorker();
