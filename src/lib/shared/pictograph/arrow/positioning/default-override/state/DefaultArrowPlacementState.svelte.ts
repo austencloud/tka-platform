@@ -18,19 +18,20 @@ export function createDefaultArrowPlacementState() {
     get lastError() { return lastError; },
     get count() { return docsMap.size; },
 
-    /** The merged placements map for a (gridMode, motionType), or null if no doc. */
-    getMap(gridMode: string, motionType: string): PlacementsMap | null {
-      return docsMap.get(generateDefaultDocId(gridMode, motionType))?.placements ?? null;
+    /** The merged placements map for a (gridMode, propType, motionType), or null if no doc. */
+    getMap(gridMode: string, propType: string, motionType: string): PlacementsMap | null {
+      return docsMap.get(generateDefaultDocId(gridMode, propType, motionType))?.placements ?? null;
     },
 
     /** A single base value, Firestore-first; null if no override exists. */
     getValue(
       gridMode: string,
+      propType: string,
       motionType: string,
       placementKey: string,
       turns: string,
     ): PlacementValue | null {
-      const map = this.getMap(gridMode, motionType);
+      const map = this.getMap(gridMode, propType, motionType);
       if (!map) return null;
       return unflattenValue(map, placementKey, turns);
     },
@@ -45,13 +46,14 @@ export function createDefaultArrowPlacementState() {
     /** Merge a single placementKey/turns value into a doc's map (live preview + local write). */
     setValue(
       gridMode: string,
+      propType: string,
       motionType: string,
       placementKey: string,
       turns: string,
       value: PlacementValue,
       updatedBy: string,
     ): void {
-      const id = generateDefaultDocId(gridMode, motionType);
+      const id = generateDefaultDocId(gridMode, propType, motionType);
       const existing = docsMap.get(id);
       const placements: PlacementsMap = existing
         ? structuredCloneMap(existing.placements)
@@ -68,6 +70,7 @@ export function createDefaultArrowPlacementState() {
       newMap.set(id, {
         id,
         gridMode,
+        propType,
         motionType,
         placements,
         updatedAt: existing?.updatedAt ?? fakeTimestamp,
@@ -79,11 +82,12 @@ export function createDefaultArrowPlacementState() {
     /** Remove a single placementKey/turns value (revert to JSON baseline). */
     removeValue(
       gridMode: string,
+      propType: string,
       motionType: string,
       placementKey: string,
       turns: string,
     ): void {
-      const id = generateDefaultDocId(gridMode, motionType);
+      const id = generateDefaultDocId(gridMode, propType, motionType);
       const existing = docsMap.get(id);
       if (!existing) return;
       const placements = structuredCloneMap(existing.placements);
