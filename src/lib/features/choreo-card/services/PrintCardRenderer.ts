@@ -18,6 +18,7 @@ import { renderCardBack } from "./card-back-dom-renderer";
 import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-renderer";
 import { buildBackJob } from "./card-back/card-back-job-builder";
 import { paintBackJob } from "./card-back/card-back-raster";
+import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
 
 
 // MPC poker card defaults
@@ -106,13 +107,20 @@ export class PrintCardRenderer {
     const accent = options.tndElement?.accentColor ?? "#999999";
     const dark = options.tndElement?.darkComplement ?? "#444444";
 
+    // Source word + pictograph visibility from the canonical locked profile.
+    const canonical = buildCanonicalCardVisibility({
+      tndElement: options.tndElement,
+      bluePropType: options.bluePropType,
+      redPropType: options.redPropType,
+    });
+
     // Render the sequence image (keep all existing options)
     const composeOptions: Partial<SequenceExportOptions> = {
       deckCard: { contentWidth: contentW, contentHeight: contentH },
       includeStartPosition: options.includeStartPosition,
       startPositionLayout: options.startPositionLayout ?? "row",
       addStepNumbers: true,
-      addWord: options.showWord,
+      addWord: canonical.addWord,
       addDifficultyLevel: false,
       stepSize: 300,
       stepScale: 1,
@@ -142,20 +150,9 @@ export class PrintCardRenderer {
       ...(options.deckId && { deckId: options.deckId }),
       ...(options.deckName && { deckName: options.deckName }),
       visibilityOverrides: {
-        showTKA: options.showTKA,
-        showTnD: false,
-        showElemental: false,
-        showPositions: false,
-        showReversals: true,
-        showNonRadialPoints: false,
-        showGrid: options.showGrid,
-        showQRCode: options.showQRCode ?? false,
+        ...canonical.visibilityOverrides,
+        // showMandala stays deck-config (mandala fills in empty cells).
         showMandala: options.showMandala ?? false,
-        printMode: true,
-        darkMode: false,
-        handPointVisibility: options.handPointsVisible ? "all" : "none",
-        ...(options.bluePropType && { bluePropType: options.bluePropType }),
-        ...(options.redPropType && { redPropType: options.redPropType }),
       },
     };
 
