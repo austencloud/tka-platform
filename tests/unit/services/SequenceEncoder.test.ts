@@ -71,6 +71,17 @@ describe("SequenceEncoder", () => {
 
   describe("encode/decode round-trip", () => {
     it("preserves all motion fields through uncompressed round-trip", () => {
+      // Derive-only codec: per-step orientations are NOT stored. Only the
+      // start-position seed (per hand) is encoded in the header; every step's
+      // startOrientation is the running chained orientation and its
+      // endOrientation is derived via the orientation algebra. So the fixture
+      // chain must be physically consistent:
+      //   blue seed IN -> STATIC start (preserves) -> step PRO 1 turn (odd =>
+      //     switch) yields IN -> OUT.
+      //   red seed CLOCK -> STATIC start (preserves) -> step ANTI 2 turns (even
+      //     => switch) yields CLOCK -> COUNTER.
+      // This still exercises round-trip fidelity of every motion field AND a
+      // non-default (CLOCK) seed surviving the header round-trip.
       const step = makeStep(
         1,
         {
@@ -80,7 +91,7 @@ describe("SequenceEncoder", () => {
           endLocation: GridLocation.EAST,
           startOrientation: Orientation.IN,
           endOrientation: Orientation.OUT,
-          turns: 2,
+          turns: 1,
           propType: PropType.STAFF,
         },
         {
@@ -90,7 +101,7 @@ describe("SequenceEncoder", () => {
           endLocation: GridLocation.WEST,
           startOrientation: Orientation.CLOCK,
           endOrientation: Orientation.COUNTER,
-          turns: 1,
+          turns: 2,
           propType: PropType.FAN,
         }
       );
@@ -110,8 +121,8 @@ describe("SequenceEncoder", () => {
             motionType: MotionType.STATIC,
             startLocation: GridLocation.SOUTH,
             endLocation: GridLocation.SOUTH,
-            startOrientation: Orientation.IN,
-            endOrientation: Orientation.IN,
+            startOrientation: Orientation.CLOCK,
+            endOrientation: Orientation.CLOCK,
             turns: 0,
             propType: PropType.FAN,
           }
@@ -129,9 +140,11 @@ describe("SequenceEncoder", () => {
       expect(blueMotion.rotationDirection).toBe(RotationDirection.CLOCKWISE);
       expect(blueMotion.startLocation).toBe(GridLocation.NORTH);
       expect(blueMotion.endLocation).toBe(GridLocation.EAST);
+      // startOrientation comes from the chained seed (IN); endOrientation is
+      // derived (PRO, 1 turn => switch) -> OUT.
       expect(blueMotion.startOrientation).toBe(Orientation.IN);
       expect(blueMotion.endOrientation).toBe(Orientation.OUT);
-      expect(blueMotion.turns).toBe(2);
+      expect(blueMotion.turns).toBe(1);
       expect(blueMotion.propType).toBe(PropType.STAFF);
 
       const redMotion = decoded.steps[0].motions.red!;
@@ -141,9 +154,12 @@ describe("SequenceEncoder", () => {
       );
       expect(redMotion.startLocation).toBe(GridLocation.SOUTH);
       expect(redMotion.endLocation).toBe(GridLocation.WEST);
+      // Non-default CLOCK seed survives the header round-trip and chains in as
+      // the step start orientation; endOrientation derived (ANTI, 2 turns =>
+      // switch) -> COUNTER.
       expect(redMotion.startOrientation).toBe(Orientation.CLOCK);
       expect(redMotion.endOrientation).toBe(Orientation.COUNTER);
-      expect(redMotion.turns).toBe(1);
+      expect(redMotion.turns).toBe(2);
       expect(redMotion.propType).toBe(PropType.FAN);
     });
 
@@ -413,7 +429,14 @@ describe("SequenceEncoder", () => {
       }
     });
 
-    it("preserves all orientation values", () => {
+    it("preserves all orientation values as start-position seeds", () => {
+      // Derive-only codec: orientation is stored ONLY as the start-position
+      // seed in the header, not per step. To prove each of the four radial
+      // orientations round-trips, set the seed (start-position startOrientation)
+      // to that value and chain it through a STATIC step. STATIC with 0 turns
+      // preserves orientation, so the seed flows unchanged into the step's
+      // derived start AND end orientation. Asserting both === seed verifies the
+      // seed survived the header round-trip and the deriver reproduced it.
       const orientations = [
         Orientation.IN,
         Orientation.OUT,
@@ -445,12 +468,18 @@ describe("SequenceEncoder", () => {
         const seq = buildTestSequence([
           makeStartPosition(
             {
+              // Seed lives here, on the start position. This is the ONLY place
+              // orientation is stored in the canonical format.
+              startOrientation: orient,
+              endOrientation: orient,
+              motionType: MotionType.STATIC,
               startLocation: GridLocation.NORTH,
               endLocation: GridLocation.NORTH,
               turns: 0,
               propType: PropType.STAFF,
             },
             {
+              motionType: MotionType.STATIC,
               startLocation: GridLocation.SOUTH,
               endLocation: GridLocation.SOUTH,
               turns: 0,
@@ -463,6 +492,11 @@ describe("SequenceEncoder", () => {
         const encoded = encodeSequence(seq);
         const decoded = decodeSequence(encoded);
 
+        // Seed round-trips onto the decoded start position.
+        expect(decoded.startPosition!.motions.blue!.startOrientation).toBe(
+          orient
+        );
+        // And chains (STATIC, 0 turns => preserve) into the step.
         expect(decoded.steps[0].motions.blue!.startOrientation).toBe(orient);
         expect(decoded.steps[0].motions.blue!.endOrientation).toBe(orient);
       }
