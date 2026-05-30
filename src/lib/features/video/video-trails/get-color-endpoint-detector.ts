@@ -1,4 +1,4 @@
-import type { IEndpointDetector } from './services/contracts/IEndpointDetector';
+import type { IEndpointDetector } from './services/IEndpointDetector';
 import { ColorEndpointDetector } from './services/color-endpoint-detector';
 
 let instance: IEndpointDetector | null = null;

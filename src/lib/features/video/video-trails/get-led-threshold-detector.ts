@@ -1,4 +1,4 @@
-import type { IEndpointDetector } from './services/contracts/IEndpointDetector';
+import type { IEndpointDetector } from './services/IEndpointDetector';
 import { LedThresholdDetector } from './services/led-threshold-detector';
 
 let instance: IEndpointDetector | null = null;

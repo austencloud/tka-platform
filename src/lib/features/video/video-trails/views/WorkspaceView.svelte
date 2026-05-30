@@ -8,7 +8,7 @@
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
   import type { ExportConfig, ExportState } from "../domain/types";
-  import type { IEndpointDetector } from "../services/contracts/IEndpointDetector";
+  import type { IEndpointDetector } from "../services/IEndpointDetector";
   import type * as EffectConfigMapperModule from "../services/effect-config-mapper";
   import type { VideoTipAdapter } from "../services/video-tip-adapter";
   import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
