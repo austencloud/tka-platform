@@ -13,6 +13,9 @@ import {
   hasDeviceMetrics,
 } from "$lib/shared/animation-panel/state/export-timing-tracker";
 import { downloadBlob } from "$lib/shared/foundation/services/file-downloader";
+// Vite emits the compiled export worker and gives back its URL as a string, so
+// we can append a cache-busting version query before instantiating the Worker.
+import exportWorkerUrl from "$lib/shared/mandala/workers/mandala-export.worker.ts?worker&url";
 
 export type MandalaExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
 export type MandalaExportResolution = 720 | 1080 | 2160;
@@ -342,10 +345,15 @@ export class MandalaViewerController {
     };
     if (typeof window !== "undefined") window.addEventListener("beforeunload", this.#beforeUnload);
 
-    const worker = new Worker(
-      new URL("../../mandala/workers/mandala-export.worker.ts", import.meta.url),
-      { type: "module" },
-    );
+    // Cache-bust the worker entry URL: a SW / HTTP cache (esp. over a tunnel
+    // host) can otherwise serve a stale worker bundle so codec/profile fixes
+    // never take. `?worker&url` (Vite-native) yields the compiled worker's URL
+    // as a string, which we tag with a unique version query before constructing
+    // the Worker — so the browser always refetches the entry. The same-file
+    // query is ignored server-side; only the browser cache key changes.
+    const workerUrl = new URL(exportWorkerUrl, window.location.href);
+    workerUrl.searchParams.set("v", String(Date.now()));
+    const worker = new Worker(workerUrl, { type: "module" });
     this.#worker = worker;
 
     worker.onmessage = (e: MessageEvent<MandalaExportOut>) => {
