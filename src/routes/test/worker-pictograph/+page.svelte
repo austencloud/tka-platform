@@ -16,9 +16,9 @@
   import { createPictographWorker } from "$lib/shared/render/workers/create-pictograph-worker";
   import type { WorkerInMessage, WorkerOutMessage } from "$lib/shared/render/workers/pictograph-render.worker";
   import { getCardFrontWorkerPool } from "$lib/shared/render/services/card-front-worker-pool";
-  import { composeCardFrontParallel } from "$lib/shared/render/services/compose-card-front-parallel";
   import { getImageComposer } from "$lib/shared/render/get-image-composer";
   import { computeCardFrontLayout } from "$lib/shared/render/services/card-front-assembler";
+  import { getQRCellScale } from "$lib/shared/qr/qr-cell-scale";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { buildCanonicalCardVisibility } from "$lib/features/choreo-card/domain/canonical-card-visibility";
@@ -281,10 +281,14 @@
     return c;
   }
 
+  // A rectangular region of the card, in card-pixel coordinates, over which to
+  // compute a localized diff percentage (used for the QR cell band).
+  type Rect = { x: number; y: number; w: number; h: number };
+
   // Generalized diff: counts pixels that differ beyond threshold over the full
   // w x h frame, plus (separately) the differing pixels within the header band
-  // (rows where y < headerH) and the footer band (rows where y >= h - footerH).
-  // Returns all three percentages plus a red-overlay canvas.
+  // (rows where y < headerH), the footer band (rows where y >= h - footerH), and
+  // an optional QR rect. Returns all percentages plus a red-overlay canvas.
   function diffCard(
     a: HTMLCanvasElement,
     b: HTMLCanvasElement,
@@ -292,7 +296,8 @@
     h: number,
     headerH: number,
     footerH: number,
-  ): { pct: number; headerPct: number; footerPct: number; canvas: HTMLCanvasElement } {
+    qrRect: Rect | null,
+  ): { pct: number; headerPct: number; footerPct: number; qrPct: number; canvas: HTMLCanvasElement } {
     const da = a.getContext("2d")!.getImageData(0, 0, w, h);
     const db = b.getContext("2d")!.getImageData(0, 0, w, h);
     const out = document.createElement("canvas");
@@ -303,11 +308,19 @@
     let differ = 0;
     let headerDiffer = 0;
     let footerDiffer = 0;
+    let qrDiffer = 0;
     const headerTotal = Math.max(0, Math.min(headerH, h)) * w;
     const footerTotal = Math.max(0, Math.min(footerH, h)) * w;
     const footerStartY = h - footerH;
     const total = w * h;
+    // Clamp the QR rect into the frame so the per-pixel test is bounds-safe.
+    const qx0 = qrRect ? Math.max(0, Math.floor(qrRect.x)) : 0;
+    const qy0 = qrRect ? Math.max(0, Math.floor(qrRect.y)) : 0;
+    const qx1 = qrRect ? Math.min(w, Math.ceil(qrRect.x + qrRect.w)) : 0;
+    const qy1 = qrRect ? Math.min(h, Math.ceil(qrRect.y + qrRect.h)) : 0;
+    const qrTotal = qrRect ? Math.max(0, qx1 - qx0) * Math.max(0, qy1 - qy0) : 0;
     for (let i = 0; i < da.data.length; i += 4) {
+      const px = (i / 4) % w;
       const py = Math.floor(i / 4 / w);
       const wgt = Math.max(
         Math.abs(da.data[i]! - db.data[i]!),
@@ -319,6 +332,7 @@
         differ++;
         if (py < headerH) headerDiffer++;
         if (py >= footerStartY) footerDiffer++;
+        if (qrRect && px >= qx0 && px < qx1 && py >= qy0 && py < qy1) qrDiffer++;
         od.data[i] = 255; od.data[i + 3] = 255;
       } else {
         const g = (da.data[i]! + da.data[i + 1]! + da.data[i + 2]!) / 3;
@@ -331,6 +345,7 @@
       pct: (differ / total) * 100,
       headerPct: headerTotal > 0 ? (headerDiffer / headerTotal) * 100 : 0,
       footerPct: footerTotal > 0 ? (footerDiffer / footerTotal) * 100 : 0,
+      qrPct: qrTotal > 0 ? (qrDiffer / qrTotal) * 100 : 0,
       canvas: out,
     };
   }
@@ -427,13 +442,17 @@
 
       cardStatus = "seeding worker pool…";
       const pool = getCardFrontWorkerPool();
+      // force=true: the parallel front flag (PARALLEL_FRONT_ENABLED) is OFF in
+      // production, so the harness force-seeds to exercise the worker path
+      // WITHOUT enabling it for real renders.
       await pool.seedForDeck(
         [seq],
         { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, theme: "front" },
         "fullcard-proof",
+        true,
       );
-      if (!pool.isReady()) {
-        cardStatus = "pool not ready (no OffscreenCanvas?)";
+      if (!pool.isSeeded()) {
+        cardStatus = "pool not seeded (no OffscreenCanvas?)";
         return;
       }
 
@@ -442,8 +461,19 @@
       const mainCard = toCardCanvas(mainCanvas as CanvasImageSource);
       show(cardMainSlot, mainCard);
 
-      cardStatus = "rendering PARALLEL card (worker pool)…";
-      const parallelCanvas = await composeCardFrontParallel(seq, frontOptions, pool);
+      cardStatus = "rendering PARALLEL card (full-card worker)…";
+      // Full-card-in-worker path: build the plain-data FrontJob on the main
+      // thread, then composeFront paints the entire card in one worker
+      // round-trip and transfers the assembled ImageBitmap back.
+      const { buildFrontJob } = await import("$lib/shared/render/services/build-front-job");
+      const job = await buildFrontJob(seq, frontOptions);
+      const bitmap = await pool.composeFront(job);
+      const parallelContent = document.createElement("canvas");
+      parallelContent.width = bitmap.width;
+      parallelContent.height = bitmap.height;
+      parallelContent.getContext("2d")!.drawImage(bitmap, 0, 0);
+      bitmap.close?.();
+      const parallelCanvas = parallelContent;
       const parallelCard = toCardCanvas(parallelCanvas as CanvasImageSource);
       show(cardParallelSlot, parallelCard);
 
@@ -465,11 +495,30 @@
       // Header + footer heights come from the same layout the renderers use.
       const visibility = await composer.resolveVisibilitySettings(frontOptions);
       const layout = computeCardFrontLayout(seq, frontOptions, visibility);
-      const headerH = layout.headerHeight;
-      const footerH = layout.footerHeight;
+      // diffCard works in CARD_W x CARD_H space; layout is in canvas space, so
+      // scale header/footer bands (and the QR rect below) by the same ratio
+      // toCardCanvas uses to normalize each canvas.
+      const sx = CARD_W / layout.canvasWidth;
+      const sy = CARD_H / layout.canvasHeight;
+      const headerH = layout.headerHeight * sy;
+      const footerH = layout.footerHeight * sy;
 
-      const { pct, headerPct, footerPct, canvas: dc } = diffCard(
-        mainCard, parallelCard, CARD_W, CARD_H, headerH, footerH,
+      // QR-cell band: derive the rect EXACTLY as build-front-job/paint-front-job
+      // place it. The QR backing fill covers the full empty grid cell at
+      // (cell.col*stepSize + gridOffsetX, cell.row*stepSize + gridOffsetY),
+      // stepSize x stepSize. job.qr is null when no empty cell / QR disabled.
+      let qrRect: Rect | null = null;
+      let qrMode: "exact-cell-rect" | "absent" = "absent";
+      if (job.qr) {
+        const { stepSize, gridOffsetX, gridOffsetY } = layout;
+        const cellX = job.qr.cell.col * stepSize + gridOffsetX;
+        const cellY = job.qr.cell.row * stepSize + gridOffsetY;
+        qrRect = { x: cellX * sx, y: cellY * sy, w: stepSize * sx, h: stepSize * sy };
+        qrMode = "exact-cell-rect";
+      }
+
+      const { pct, headerPct, footerPct, qrPct, canvas: dc } = diffCard(
+        mainCard, parallelCard, CARD_W, CARD_H, headerH, footerH, qrRect,
       );
       show(cardDiffSlot, dc);
 
@@ -482,14 +531,20 @@
           overallDiffPct: Number(pct.toFixed(4)),
           headerDiffPct: Number(headerPct.toFixed(4)),
           footerDiffPct: Number(footerPct.toFixed(4)),
-          headerHeight: headerH,
-          footerHeight: footerH,
+          qrDiffPct: Number(qrPct.toFixed(4)),
+          qrDiffMode: qrMode,
+          // qr-cell-scale is constant (0.80) — recorded so the rect can be
+          // understood: the band is the FULL cell (incl. backing fill), not just
+          // the inset QR square, matching paint-front-job's fillRect region.
+          qrCellScale: getQRCellScale(0),
+          headerHeight: Number(headerH.toFixed(1)),
+          footerHeight: Number(footerH.toFixed(1)),
           cardSize: { w: CARD_W, h: CARD_H },
         },
         null,
         2,
       );
-      cardStatus = `full card done — overall ${pct.toFixed(3)}% / header ${headerPct.toFixed(3)}% / footer ${footerPct.toFixed(3)}%`;
+      cardStatus = `full card done — overall ${pct.toFixed(3)}% / header ${headerPct.toFixed(3)}% / footer ${footerPct.toFixed(3)}% / qr ${qrPct.toFixed(3)}%`;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       cardStatus = "FULL CARD FAILED: " + msg;
@@ -558,15 +613,30 @@
 
       deckStatus = "seeding worker pool (once for the batch)…";
       const pool = getCardFrontWorkerPool();
+      // force=true: seed despite PARALLEL_FRONT_ENABLED being off (harness only).
+      // Time the seed so seedMs is reported alongside the render wall-times.
+      const seedT0 = performance.now();
       await pool.seedForDeck(
         seqs,
         { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, theme },
         "bench",
+        true,
       );
-      const poolReady = pool.isReady();
+      const seedMs = performance.now() - seedT0;
+      const poolReady = pool.isSeeded();
       if (!poolReady) {
         deckStatus = "worker pool unavailable (no OffscreenCanvas) — skipping parallel run";
       }
+
+      // Full-card-in-worker render: build the FrontJob on the main thread, then
+      // composeFront paints the whole card in one worker round-trip. One job per
+      // card. (buildFrontJob is imported once; the closure reuses it per card.)
+      const { buildFrontJob } = await import("$lib/shared/render/services/build-front-job");
+      const renderParallel = async (s: SequenceData) => {
+        const job = await buildFrontJob(s, frontOptions);
+        const bmp = await pool.composeFront(job);
+        bmp.close?.(); // discard — we only measure wall-time here
+      };
 
       // Warm-up (intentional): render 1-2 cards each way and discard so neither
       // timed window pays cold-cache cost (first-call asset decode, worker spin-up,
@@ -574,7 +644,7 @@
       deckStatus = "warming up…";
       const warm = seqs.slice(0, 2);
       if (poolReady) {
-        await runLanes(warm, BENCH_LANES, (s) => composeCardFrontParallel(s, frontOptions, pool));
+        await runLanes(warm, BENCH_LANES, renderParallel);
       }
       await runLanes(warm, BENCH_LANES, (s) => composer.composeSequenceImage(s, frontOptions));
 
@@ -584,7 +654,7 @@
       if (poolReady) {
         deckStatus = "timing PARALLEL run…";
         const t0 = performance.now();
-        await runLanes(seqs, BENCH_LANES, (s) => composeCardFrontParallel(s, frontOptions, pool));
+        await runLanes(seqs, BENCH_LANES, renderParallel);
         parallelMs = performance.now() - t0;
       }
 
@@ -603,6 +673,7 @@
               parallelMs: Math.round(parallelMs),
               mainMs: Math.round(mainMs),
               speedup: +(mainMs / parallelMs).toFixed(2),
+              seedMs: Math.round(seedMs),
             }
           : {
               cards: seqs.length,
@@ -610,6 +681,7 @@
               parallelMs: null,
               mainMs: Math.round(mainMs),
               speedup: null,
+              seedMs: Math.round(seedMs),
               note: "worker pool unavailable (no OffscreenCanvas) — parallel run skipped",
             },
         null,
@@ -657,12 +729,15 @@
   <h1>Full Card Front — Parallel (worker pool) vs Main</h1>
   <p>
     Renders an ENTIRE card front (header TKA glyphs, start position, all step
-    cells, chrome) through <code>composeCardFrontParallel</code> (worker pool) and
-    diffs it against the main-thread <code>ImageComposer.composeSequenceImage</code>.
-    Reports overall diff plus header-band and footer-band diffs so the TKA word
-    glyphs AND the element footer are verified specifically. Uses a REAL TnD
-    element so the accent-color tint + element footer are exercised on both the
-    main and parallel paths.
+    cells, chrome) via the full-card-in-worker path
+    (<code>buildFrontJob</code> on the main thread →
+    <code>CardFrontWorkerPool.composeFront</code> in a worker) and diffs it against
+    the main-thread <code>ImageComposer.composeSequenceImage</code>. Reports overall
+    diff plus header-band, footer-band, and QR-cell-band diffs so the TKA word
+    glyphs, the element footer, AND the QR are verified specifically. Uses a REAL
+    TnD element so the accent-color tint + element footer are exercised on both
+    the main and worker paths. The pool is FORCE-seeded (the parallel front flag
+    stays off in production).
   </p>
   <div class="elements">
     <span class="elabel">Element:</span>
@@ -708,11 +783,13 @@
   <h1>Deck Wall-Time Benchmark — Parallel Pool vs Main Thread</h1>
   <p>
     Renders a deck's worth of card fronts ({BENCH_CARDS} cards) BOTH ways and
-    measures wall-time. The worker pool is seeded once for the batch, then all
-    cards render through <code>composeCardFrontParallel</code> across {BENCH_LANES}
-    concurrent lanes (matching <code>PrintPreviewPages.renderAll</code>). The main
-    path uses the SAME lane shape via <code>composeSequenceImage</code> so the only
-    variable is where raster work runs. Speedup = mainMs / parallelMs.
+    measures wall-time. The worker pool is force-seeded once for the batch
+    (<code>seedMs</code>), then all cards render via the full-card-in-worker path
+    (<code>buildFrontJob</code> → <code>composeFront</code>, one job per card)
+    across {BENCH_LANES} concurrent lanes (matching
+    <code>PrintPreviewPages.renderAll</code>). The main path uses the SAME lane
+    shape via <code>composeSequenceImage</code> so the only variable is where
+    raster work runs. Speedup = mainMs / parallelMs.
   </p>
   <div class="controls">
     <button type="button" onclick={timeDeck} disabled={deckTiming || !!loadError}>

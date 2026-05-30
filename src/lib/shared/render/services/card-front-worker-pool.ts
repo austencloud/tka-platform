@@ -41,6 +41,17 @@ export class CardFrontWorkerPool {
     return this.booted && this.lanes.length > 0 && this.deckKey !== null && this.lanes.every((l) => l.seeded);
   }
 
+  /**
+   * Flag-INDEPENDENT readiness — same body as isReady() minus the
+   * PARALLEL_FRONT_ENABLED check. Lets the parity/timing harness verify the pool
+   * is seeded and exercise composeFront WITHOUT enabling the parallel path in
+   * production (production gates on isReady(), which stays flag-off). See the
+   * PARALLEL_FRONT_ENABLED note for why production stays on the main thread.
+   */
+  isSeeded(): boolean {
+    return this.booted && this.lanes.length > 0 && this.deckKey !== null && this.lanes.every((l) => l.seeded);
+  }
+
   private boot(): Promise<void> {
     if (this.booted) return Promise.resolve();
     if (this.bootPromise) return this.bootPromise;
@@ -57,13 +68,20 @@ export class CardFrontWorkerPool {
     return this.bootPromise;
   }
 
-  /** Build + seed the deck's AssetBundle into every lane. Idempotent per deckKey. */
+  /**
+   * Build + seed the deck's AssetBundle into every lane. Idempotent per deckKey.
+   *
+   * `force` bypasses the PARALLEL_FRONT_ENABLED gate so the parity/timing harness
+   * can seed + composeFront while production stays OFF. Production callers
+   * (PrintPreviewPages) pass no force, so the flag still gates them.
+   */
   async seedForDeck(
     sequences: SequenceData[],
     opts: { bluePropType: PropType; redPropType: PropType; theme: string },
     deckKey: string,
+    force = false,
   ): Promise<void> {
-    if (!PARALLEL_FRONT_ENABLED) return; // disabled — see PARALLEL_FRONT_ENABLED note
+    if (!PARALLEL_FRONT_ENABLED && !force) return; // disabled — see PARALLEL_FRONT_ENABLED note
     await this.boot();
     if (this.lanes.length === 0) return; // no OffscreenCanvas
     if (this.deckKey === deckKey && this.lanes.every((l) => l.seeded)) return;
@@ -118,7 +136,11 @@ export class CardFrontWorkerPool {
    * per-cell harness until it's retargeted.
    */
   async composeFront(job: import("./front-job").FrontJob): Promise<ImageBitmap> {
-    if (!this.isReady()) throw new Error("CardFrontWorkerPool not ready");
+    // Gates on isSeeded (flag-independent) not isReady (flag-gated): the harness
+    // force-seeds with the parallel flag OFF, so it must be able to compose even
+    // though isReady() is false. Production reaches composeFront only after its
+    // own isReady() gate (PrintCardRenderer), so this stays safe.
+    if (!this.isSeeded()) throw new Error("CardFrontWorkerPool not ready");
     const id = this.nextId++;
     const lane = this.pickLane();
     lane.pending++;
