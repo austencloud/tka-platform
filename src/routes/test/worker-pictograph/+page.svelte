@@ -22,10 +22,17 @@
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { buildCanonicalCardVisibility } from "$lib/features/choreo-card/domain/canonical-card-visibility";
+  import { wrapContentInCardFrame } from "$lib/features/choreo-card/services/card-front-frame";
   import { onMount, onDestroy } from "svelte";
 
   const SIZE = 600; // big single-cell render
   const CARD_W = 822, CARD_H = 1122; // full-card front dimensions
+  // Colored frame thickness, mirrors PrintCardRenderer/card-front-frame:
+  // border = round(36 * 1.3) = 47. Content insets by this on every side.
+  const CARD_BLEED = 36;
+  const CARD_BORDER = Math.round(CARD_BLEED * 1.3); // 47
+  const CONTENT_W = CARD_W - CARD_BORDER * 2; // 728
+  const CONTENT_H = CARD_H - CARD_BORDER * 2; // 1028
 
   const engine = createBrowseEngine({ persistKey: null, minColumns: 2, initialColumns: 3 });
 
@@ -45,6 +52,9 @@
   let cardMainSlot: HTMLDivElement;
   let cardParallelSlot: HTMLDivElement;
   let cardDiffSlot: HTMLDivElement;
+  // Framed (full 822x1122 card with colored border + glow) views for eyeballing.
+  let cardMainFramedSlot: HTMLDivElement;
+  let cardParallelFramedSlot: HTMLDivElement;
   // TnD element drives the accent-color tint + element footer on the full card.
   // 3 = Split-Opp / fire — a vivid orange, easy to eyeball.
   let selectedElementIdx = $state(3);
@@ -347,7 +357,7 @@
       const rightLabel = "TKA";
       const notes = tnd.name;
       const frontOptions = {
-        deckCard: { contentWidth: CARD_W, contentHeight: CARD_H },
+        deckCard: { contentWidth: CONTENT_W, contentHeight: CONTENT_H },
         includeStartPosition: true,
         startPositionLayout: "row",
         addStepNumbers: true,
@@ -395,6 +405,21 @@
       const parallelCanvas = await composeCardFrontParallel(seq, frontOptions, pool);
       const parallelCard = toCardCanvas(parallelCanvas as CanvasImageSource);
       show(cardParallelSlot, parallelCard);
+
+      // Wrap each raw content canvas in the production card frame (colored
+      // border + glow + thicker inset), via the SAME helper PrintCardRenderer
+      // uses, so the full framed card is visible. Border is identical on both
+      // by construction — these panels are for eyeballing, not diffing.
+      const mainFramed = wrapContentInCardFrame(mainCanvas as CanvasImageSource, {
+        accent: tnd.accentColor,
+        dark: tnd.darkComplement,
+      });
+      show(cardMainFramedSlot, mainFramed);
+      const parallelFramed = wrapContentInCardFrame(parallelCanvas as CanvasImageSource, {
+        accent: tnd.accentColor,
+        dark: tnd.darkComplement,
+      });
+      show(cardParallelFramedSlot, parallelFramed);
 
       // Header + footer heights come from the same layout the renderers use.
       const visibility = await getImageComposer().resolveVisibilitySettings(frontOptions);
@@ -497,6 +522,17 @@
     <figure><figcaption>PARALLEL CARD (worker pool)</figcaption><div bind:this={cardParallelSlot} class="slot"></div></figure>
     <figure><figcaption>DIFF (red = differs)</figcaption><div bind:this={cardDiffSlot} class="slot"></div></figure>
   </div>
+
+  <p>
+    Below: the SAME content wrapped in the production card frame
+    (<code>wrapContentInCardFrame</code>) — colored stripe border + edge glow +
+    thicker inset, with footer + cells. The border is identical on both by
+    construction, so these are for visual eyeballing only (not diffed).
+  </p>
+  <div class="duo">
+    <figure><figcaption>MAIN (framed)</figcaption><div bind:this={cardMainFramedSlot} class="slot"></div></figure>
+    <figure><figcaption>PARALLEL (framed)</figcaption><div bind:this={cardParallelFramedSlot} class="slot"></div></figure>
+  </div>
 </div>
 
 <style>
@@ -515,6 +551,7 @@
   .el:disabled { opacity: 0.5; cursor: default; }
   pre { background: #0c0c10; border: 1px solid #2a2a33; border-radius: 8px; padding: 12px; font-size: 12px; color: #b8c0cc; white-space: pre-wrap; }
   .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  .duo { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; max-width: 760px; }
   figure { margin: 0; }
   figcaption { font-size: 12px; color: #999; margin-bottom: 6px; }
   .slot { background: #fff; border: 1px solid #2a2a33; border-radius: 6px; min-height: 120px; }
