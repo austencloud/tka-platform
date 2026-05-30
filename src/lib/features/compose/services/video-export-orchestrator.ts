@@ -30,7 +30,7 @@ import type { VideoExporter } from "$lib/shared/animation-engine/services/video-
 import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/composite-video-renderer";
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/export-glyph-prerenderer";
 import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
-import { OffscreenExportRenderer } from "./offscreen-export-renderer";
+import { OffscreenExportRenderer } from "$lib/shared/video-export/services/offscreen-export-renderer";
 import { getRenderContextRegistry } from "$lib/shared/animation-engine/getRenderContextRegistry";
 import type { RenderContext } from "$lib/shared/animation-engine/services/render-context-registry";
 import type { ITrailOverlayCanvas } from "$lib/shared/animation-engine/services/ITrailOverlayCanvas";

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeTrailSubSteps } from "$lib/features/compose/services/export-substep";
+import { computeTrailSubSteps } from "$lib/shared/video-export/services/export-substep";
 
 describe("computeTrailSubSteps", () => {
   it("returns 1 for a zero/tiny advance", () => {
