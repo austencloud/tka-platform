@@ -84,6 +84,24 @@
   // into the global visibility manager (CanvasSurface), so the export path's
   // applyEffectOverrides finds the same config.
   const effectsConfigState = createEffectsConfigState();
+  // Activate trails + wire the config into the global VM SYNCHRONOUSLY at script
+  // init, BEFORE AnimatorCanvas mounts. If trails aren't active when the engine
+  // initializes, the trail capturer/overlay aren't created, getRenderContext
+  // returns null, and the canvas never registers in the render-context registry
+  // — which means the export's resize + trail-reset (keyed off liveContext)
+  // would silently no-op (production wires this pre-init; the bare test page
+  // must match).
+  effectsConfigState.setActiveEffect("trails");
+  {
+    const vm = getAnimationVisibilityManager();
+    vm.effectsConfigState = effectsConfigState;
+    vm.setActiveEffect("trails");
+    vm.setVisibility("wordHeader", false);
+    vm.setVisibility("progressBar", false);
+    vm.setVisibility("tkaGlyph", false);
+    vm.setVisibility("stepNumbers", false);
+    vm.setVisibility("pathLines", false);
+  }
   let playbackController: AnimationPlaybackController | null = null;
   let loadedSequence: SequenceData | null = null;
 
@@ -119,17 +137,7 @@
       propInterpolator
     );
     playbackController = new AnimationPlaybackController(orchestrator, loop);
-
-    // Pure trails: trails effect on (populates tipEffectMap), all chrome off.
-    effectsConfigState.setActiveEffect("trails");
-    const vm = getAnimationVisibilityManager();
-    vm.effectsConfigState = effectsConfigState;
-    vm.setActiveEffect("trails");
-    vm.setVisibility("wordHeader", false);
-    vm.setVisibility("progressBar", false);
-    vm.setVisibility("tkaGlyph", false);
-    vm.setVisibility("stepNumbers", false);
-    vm.setVisibility("pathLines", false);
+    // Trails + chrome-hiding configured synchronously at script init (above).
   });
 
   onDestroy(() => {
@@ -354,6 +362,17 @@
 
     try {
       if (!(await loadSequence())) return;
+
+      // Warm the trail accumulator the way a real user does — play and LOOP for
+      // a few seconds so the buffer holds a full ribbon (and a loop seam) before
+      // export. This reproduces the "stub already attached at frame 0" bug and
+      // verifies the export-start trail reset actually wipes it.
+      animationState.setShouldLoop(true);
+      playbackController!.togglePlayback();
+      status = "warming trail accumulator (play + loop 3s)…";
+      await new Promise((r) => setTimeout(r, 3000));
+      if (animationState.isPlaying) playbackController!.togglePlayback();
+      await raf();
 
       // Silence the orchestrator's DEV PNG dump during parity runs.
       (window as unknown as Record<string, unknown>).__tka_export_frame_dump =

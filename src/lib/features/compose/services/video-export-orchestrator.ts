@@ -32,6 +32,7 @@ import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/servic
 import { ExportFrameCompositor, type FrameCompositorConfig } from "./export-frame-compositor";
 import { getRenderContextRegistry } from "$lib/shared/animation-engine/getRenderContextRegistry";
 import type { RenderContext } from "$lib/shared/animation-engine/services/render-context-registry";
+import type { ITrailOverlayCanvas } from "$lib/shared/animation-engine/services/ITrailOverlayCanvas";
 
 import type { VideoExportFormat, VideoExportProgress, VideoEffectOverrides, IVideoExportOrchestrator, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 export type { VideoExportFormat, VideoExportProgress, VideoResolution, VideoEffectOverrides, VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
@@ -413,6 +414,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         if (liveContext) {
           liveContext.resizer.pauseObservation();
           liveContext.resize(outputCanvasSize);
+
+          // Reset trails to a clean slate before capturing. The export captures
+          // the WARM live engine, which may have been mid-loop — its trail
+          // accumulator still holds the previous loop's ribbon, so frame 0 shows
+          // a spurious stub already connected to the prop (visible ~0.5s as it
+          // fades, looking like it came from the final beat). Clear BOTH the
+          // capturer point buffers AND the overlay accumulator pixels so the
+          // exported sequence starts from an empty trail that builds up fresh.
+          liveContext.trailCapturer.clearTrails();
+          const trailOverlay = liveContext.effectManager.getRenderer(
+            "trails"
+          ) as unknown as ITrailOverlayCanvas | null;
+          trailOverlay?.clearBuffers();
+
           await this.waitForAnimationFrame();
         }
       }
