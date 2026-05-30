@@ -778,12 +778,21 @@ export class AnimationRenderLoop {
     }
   };
 
-  private render(params: RenderFrameParams, currentTime: number): void {
+  // providedDtSeconds: explicit sim timestep for deterministic (export) render.
+  // When omitted (live), derive it from the rAF-to-rAF gap so behavior is
+  // byte-identical to the renderers' previous wall-clock fallback.
+  private render(
+    params: RenderFrameParams,
+    currentTime: number,
+    providedDtSeconds?: number,
+  ): void {
     if (!this.renderer) return;
 
     // Measure RAF-to-RAF gap (includes browser layout, GC, other JS, vsync wait)
     const rafGap = this.lastFrameTime > 0 ? currentTime - this.lastFrameTime : 0;
     this.lastFrameTime = currentTime;
+
+    const dtSeconds = providedDtSeconds ?? (rafGap > 0 ? rafGap / 1000 : 0.016);
 
     // Frame budget monitoring: measure render time for adaptive quality
     const frameStart = this.frameBudgetMonitor?.beginFrame() ?? 0;
@@ -1066,6 +1075,7 @@ export class AnimationRenderLoop {
         const fireInput: FireFrameInput = {
           tips: allTips,
           currentTime,
+          dt: dtSeconds,
           canvasWidth: this.canvasSize,
           canvasHeight: this.canvasSize,
           darkMode: params.darkMode ?? false,
