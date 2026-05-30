@@ -1,5 +1,5 @@
 import { LOOPType } from "../domain/models/circular-models";
-import type { ILOOPExecutor } from "./contracts/ILOOPExecutor";
+import type { ILOOPExecutor } from "./ILOOPExecutor";
 
 /**
  * Service for selecting the appropriate LOOP executor based on LOOP type

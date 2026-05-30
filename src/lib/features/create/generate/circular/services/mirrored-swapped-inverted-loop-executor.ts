@@ -43,7 +43,7 @@ import {
   VERTICAL_MIRROR_POSITION_MAP,
 } from "../domain/constants/strict-loop-position-maps";
 import type { Period } from "../domain/models/circular-models";
-import type { ILOOPExecutor } from "./contracts/ILOOPExecutor";
+import type { ILOOPExecutor } from "./ILOOPExecutor";
 
 export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   constructor(

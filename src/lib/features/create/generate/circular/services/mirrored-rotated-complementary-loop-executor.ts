@@ -30,7 +30,7 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 
 import { Period } from "../domain/models/circular-models";
-import type { ILOOPExecutor } from "./contracts/ILOOPExecutor";
+import type { ILOOPExecutor } from "./ILOOPExecutor";
 
 export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
   constructor(
