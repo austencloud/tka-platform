@@ -291,13 +291,15 @@ export class CharcoalSparkRenderer {
 	renderCharcoal(input: FireFrameInput, _config: FireOverlayConfig): void {
 		if (!this.initialized || !this.gl || !this.canvas) return;
 
-		// Compute delta time
+		// Deterministic when an explicit dt (seconds) is supplied (export); else
+		// derive the wall-clock delta so the live path is byte-identical.
 		const now = input.currentTime;
-		let dt = Math.min((now - this.lastTime) / 1000, 0.033);
-		if (this.reducedMotion) dt *= 0.2;
+		const srcDt =
+			input.dt ?? (this.lastTime > 0 ? (now - this.lastTime) / 1000 : 0);
 		this.lastTime = now;
-
-		if (dt <= 0) return;
+		let dt = Math.min(srcDt, 0.033);
+		if (this.reducedMotion) dt *= 0.2;
+		if (dt <= 0) dt = 0.016;
 
 		// On loop: seamless sequences keep sparks continuous; non-seamless deactivate
 		// existing particles so they don't linger at old positions.
