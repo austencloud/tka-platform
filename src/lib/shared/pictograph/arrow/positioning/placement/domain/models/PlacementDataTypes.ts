@@ -25,10 +25,3 @@ export interface GridPlacementData {
     };
   };
 }
-
-/**
- * Complete placement data for all grid modes
- */
-export interface AllPlacementData {
-  [key: string]: GridPlacementData;
-}

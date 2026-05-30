@@ -42,6 +42,9 @@ export class ArrowPlacer {
   private loadedKeys = new Set<string>();
 
   // Props with their own seeded subfolder. Anything else resolves to staff root.
+  // MUST stay in sync with SEED_PROPS in scripts/seed-prop-default-placements.mjs —
+  // a prop listed here but not seeded there reads a <prop>/ folder that doesn't
+  // exist (silent staff fallback), and vice-versa.
   private static readonly SEEDED_PROPS = new Set([
     "fan", "bigfan", "club", "bigclub", "triad", "bigtriad",
     "minihoop", "bighoop", "buugeng", "bigbuugeng",
@@ -93,6 +96,9 @@ export class ArrowPlacer {
     }
     const key = `${gridMode}:${propType}`;
     if (this.loadedKeys.has(key)) return;
+    // loadPlacements swallows per-file fetch errors to {} (a missing file is a
+    // legitimate empty dataset), so the bucket is cached as-loaded even on a
+    // failed fetch — same contract as the pre-prop loader. Missing → {0,0}.
     await this.loadPlacements(gridMode, propType);
     this.loadedKeys.add(key);
   }
@@ -151,7 +157,10 @@ export class ArrowPlacer {
     gridMode: GridMode = GridMode.DIAMOND,
     propType: string = "staff",
   ): Promise<{ x: number; y: number }> {
-    await this.ensureLoaded(gridMode, propType);
+    // SEEDED_PROPS holds lowercase keys; normalize once so a non-lowercased
+    // caller can't silently miss its bucket and fall back to staff.
+    const prop = propType.toLowerCase();
+    await this.ensureLoaded(gridMode, prop);
     const turnsStr = this.formatTurnsForLookup(turns);
 
     // Firestore-first: an admin default override shadows the static JSON value.
@@ -161,13 +170,13 @@ export class ArrowPlacer {
           motionType as unknown as string,
           placementKey,
           turnsStr,
-          propType,
+          prop,
         )
       : null;
     if (override) return { x: override[0], y: override[1] };
 
     const adjustment =
-      this.allPlacements[gridMode]?.[propType]?.[motionType]?.[placementKey]?.[turnsStr];
+      this.allPlacements[gridMode]?.[prop]?.[motionType]?.[placementKey]?.[turnsStr];
     if (!adjustment) return { x: 0, y: 0 };
     return { x: adjustment[0], y: adjustment[1] };
   }
