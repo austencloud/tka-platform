@@ -386,7 +386,7 @@ Executed across multiple parallel sessions (the wave/cluster batches). What's la
 
 ### Not started
 
-- **Phase 5 (stateless class → function modules), ~328 classes.** This is the only remaining phase with a **measurable runtime benefit**: classes are not tree-shakeable per-method (import the class, ship every method); standalone function exports get per-function dead-code elimination → smaller client bundle. Phases 1–4 were pure source-org (zero bundle delta); Phase 5 moves the needle. Quantify with a before/after bundle diff.
+- **Phase 5 (stateless class → function modules).** Scope per the 2026-05-28 manifest is **51 pure stateless + 52 stateless-deps ≈ 103 classes** (~80 KB source, ~675 methods) — far below the spec's original 328 estimate; the waves converted the rest and a tighter audit reclassified. **Bundle benefit is negligible, despite the tree-shaking argument.** All stateless source is ~50 KB of a 17 MB client bundle (~0.3%); per-function DCE recovers only the unused-method slice of that — low single-digit KB gzipped, not perceptible. So Phase 5 is the *same kind of win as Phases 1–4: source-org + code deletion* (~51 class files + ~51 getters removed, 1 import instead of 3, no lazy-init getter), not a runtime/bundle improvement. Do it for the cleanup, not the bytes. Biggest individual targets: `LOOPDetector` (19 methods), `BrowseSectionManager` (16), `BrowseFilter` (21).
 - **Phase 6 (getter return-type simplification for ~200 stateful classes).**
 - **Phase 7 (validation sweep).**
 
