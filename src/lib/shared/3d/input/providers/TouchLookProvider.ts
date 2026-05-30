@@ -18,8 +18,8 @@ import type {
 	LookDelta,
 	MovementInput,
 	InputProviderConfig,
-} from "../contracts/IInputProvider";
-import { DEFAULT_INPUT_CONFIG } from "../contracts/IInputProvider";
+} from "../IInputProvider";
+import { DEFAULT_INPUT_CONFIG } from "../IInputProvider";
 
 interface TouchState {
 	id: number;

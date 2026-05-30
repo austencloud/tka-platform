@@ -15,8 +15,8 @@ import type {
 	LookDelta,
 	MovementInput,
 	InputProviderConfig,
-} from "../contracts/IInputProvider";
-import { DEFAULT_INPUT_CONFIG } from "../contracts/IInputProvider";
+} from "../IInputProvider";
+import { DEFAULT_INPUT_CONFIG } from "../IInputProvider";
 
 export class KeyboardProvider implements IInputProvider {
 	readonly type = "keyboard" as const;

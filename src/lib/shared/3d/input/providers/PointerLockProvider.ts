@@ -15,8 +15,8 @@ import type {
 	LookDelta,
 	MovementInput,
 	InputProviderConfig,
-} from "../contracts/IInputProvider";
-import { DEFAULT_INPUT_CONFIG } from "../contracts/IInputProvider";
+} from "../IInputProvider";
+import { DEFAULT_INPUT_CONFIG } from "../IInputProvider";
 
 export class PointerLockProvider implements IInputProvider {
 	readonly type = "pointerlock" as const;
