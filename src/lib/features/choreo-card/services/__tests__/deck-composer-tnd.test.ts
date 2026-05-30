@@ -74,9 +74,9 @@ describe("buildTnDCards (cartesian)", () => {
 });
 
 describe("buildTnDCards — startOriMode", () => {
-  it("stamps the deck-wide register onto every card's variation", () => {
+  it("stamps a single selected register onto every card's variation", () => {
     const families = getTnDFamilyOptions([baseCatalog()]);
-    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]), "nonradial");
+    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]), ["nonradial"]);
     expect(cards.length).toBeGreaterThan(0);
     expect(cards.every((c) => c.variation?.startOriMode === "nonradial")).toBe(true);
     expect(cards.every((c) => c.variation?.turnPattern === "1|1")).toBe(true);
@@ -84,7 +84,29 @@ describe("buildTnDCards — startOriMode", () => {
 
   it("omits startOriMode when register is radial (default)", () => {
     const families = getTnDFamilyOptions([baseCatalog()]);
-    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]), "radial");
+    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]), ["radial"]);
     expect(cards.every((c) => c.variation?.startOriMode === undefined)).toBe(true);
+  });
+
+  it("full enumeration: multiplies every base by each selected register", () => {
+    const families = getTnDFamilyOptions([baseCatalog()]); // tog-same: 3 base seqs
+    const cards = buildTnDCards(
+      families,
+      new Set(["tog-same"]),
+      new Set(["1|1"]),
+      ["radial", "nonradial", "split"],
+    );
+    // 3 base × 1 pattern × 3 registers
+    expect(cards).toHaveLength(3 * 3);
+    expect(cards.filter((c) => c.variation?.startOriMode === "nonradial")).toHaveLength(3);
+    expect(cards.filter((c) => c.variation?.startOriMode === "split")).toHaveLength(3);
+    // radial copies carry no startOriMode tag
+    expect(cards.filter((c) => c.variation?.startOriMode === undefined)).toHaveLength(3);
+  });
+
+  it("defaults to a single radial enumeration when no register is passed", () => {
+    const families = getTnDFamilyOptions([baseCatalog()]);
+    const cards = buildTnDCards(families, new Set(["tog-same"]), new Set(["1|1"]));
+    expect(cards).toHaveLength(3); // 3 base × 1 pattern × 1 (radial) register
   });
 });

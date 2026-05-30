@@ -37,8 +37,8 @@
     isLoading: boolean;
     variationConfig: VariationConfig;
     onVariationConfigChange: (config: VariationConfig) => void;
-    startOriMode: StartOriMode;
-    onStartOriModeChange: (mode: StartOriMode) => void;
+    startOriModes: Set<StartOriMode>;
+    onToggleStartOriMode: (mode: StartOriMode) => void;
   }
 
   let {
@@ -66,8 +66,8 @@
     isLoading,
     variationConfig,
     onVariationConfigChange,
-    startOriMode,
-    onStartOriModeChange,
+    startOriModes,
+    onToggleStartOriMode,
   }: Props = $props();
 
   const PRESETS = [
@@ -185,14 +185,15 @@
 
     <div class="control-group">
       <span class="control-label">Start Orientation</span>
+      <span class="control-hint">Select multiple for the full enumeration — each card is emitted once per register.</span>
       <div class="mode-row">
         {#each ORI_REGISTERS as r (r.id)}
           <button
             type="button"
             class="mode-btn"
-            class:selected={startOriMode === r.id}
-            aria-pressed={startOriMode === r.id}
-            onclick={() => onStartOriModeChange(r.id)}
+            class:selected={startOriModes.has(r.id)}
+            aria-pressed={startOriModes.has(r.id)}
+            onclick={() => onToggleStartOriMode(r.id)}
           >
             <i class="fas {r.icon}" aria-hidden="true"></i>
             {r.label}
@@ -470,6 +471,12 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+
+  .control-hint {
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    line-height: 1.3;
   }
 
   .mode-row {

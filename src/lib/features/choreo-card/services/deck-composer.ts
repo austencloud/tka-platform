@@ -287,28 +287,32 @@ export function buildTnDCards(
   tndFamilies: TnDFamilyOption[],
   selectedFamilies: Set<string>,
   selectedTurnPatterns?: Set<string>,
-  startOriMode: StartOriMode = "radial",
+  startOriModes: StartOriMode[] = ["radial"],
 ): DeckReleaseCard[] {
   const patterns = selectedTurnPatterns ? [...selectedTurnPatterns] : [];
   if (patterns.length === 0) return [];
+  // Full enumeration: every base × each selected register (radial/nonradial/split).
+  const registers = startOriModes.length > 0 ? startOriModes : (["radial"] as StartOriMode[]);
   const cards: DeckReleaseCard[] = [];
   for (const fam of tndFamilies) {
     if (!selectedFamilies.has(fam.familyId)) continue;
     for (const pattern of patterns) {
       for (const entry of fam.entries) {
-        cards.push({
-          sequenceId: entry.sequenceId,
-          sourceCatalogId: entry.sourceCatalogId,
-          stepCount: 4,
-          word: entry.sequenceId,
-          position: 0,
-          variation: {
-            turnPattern: pattern,
-            turnLabel: pattern,
-            ...(startOriMode !== "radial" ? { startOriMode } : {}),
-          },
-          footer: tndFooter(fam.familyId, entry.turnRatio),
-        });
+        for (const mode of registers) {
+          cards.push({
+            sequenceId: entry.sequenceId,
+            sourceCatalogId: entry.sourceCatalogId,
+            stepCount: 4,
+            word: entry.sequenceId,
+            position: 0,
+            variation: {
+              turnPattern: pattern,
+              turnLabel: pattern,
+              ...(mode !== "radial" ? { startOriMode: mode } : {}),
+            },
+            footer: tndFooter(fam.familyId, entry.turnRatio),
+          });
+        }
       }
     }
   }

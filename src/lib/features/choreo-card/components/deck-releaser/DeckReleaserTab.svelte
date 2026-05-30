@@ -16,7 +16,7 @@
     prunePool,
     type CatalogPoolFilter,
   } from "../../services/deck-composer";
-  import type { DeckRelease } from "../../domain/models/DeckRelease";
+  import type { DeckRelease, DeckReleaseCard } from "../../domain/models/DeckRelease";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { getNextDeckNumber, releaseDeck, getAllReleases, updateDeckMeta } from "../../services/deck-release-store";
   import ConfigureStep from "./ConfigureStep.svelte";
@@ -158,7 +158,12 @@
   }
 
   const tndCardCount = $derived(
-    buildTnDCards(rs.tndFamilies, rs.selectedTnDFamilies, rs.selectedTnDTurnPatterns).length
+    buildTnDCards(
+      rs.tndFamilies,
+      rs.selectedTnDFamilies,
+      rs.selectedTnDTurnPatterns,
+      [...rs.selectedStartOriModes],
+    ).length
   );
 
   const selectedFamilyBaseSeqs = $derived(
@@ -177,19 +182,36 @@
   }
 
   function composeFullDeck() {
+    const registers = [...rs.selectedStartOriModes];
     if (rs.deckMode === 'tnd') {
-      const tndCards = buildTnDCards(rs.tndFamilies, rs.selectedTnDFamilies, rs.selectedTnDTurnPatterns, rs.startOriMode);
+      const tndCards = buildTnDCards(
+        rs.tndFamilies,
+        rs.selectedTnDFamilies,
+        rs.selectedTnDTurnPatterns,
+        registers,
+      );
       return tndCards.map((c, i) => ({ ...c, position: i + 1 }));
     }
     const cards = composeDeck(pool, rs.weights, rs.totalCards, { center: rs.notes });
-    return cards.map((c) => {
+    // Full enumeration: each composed card is emitted once per selected register,
+    // sharing the same rolled reversal/turn so register is the pure axis.
+    const out: DeckReleaseCard[] = [];
+    let position = 1;
+    for (const c of cards) {
       const rolled = rollVariation(c.stepCount, rs.variationConfig, Math.random);
-      const variation = {
-        ...(rolled ?? {}),
-        ...(rs.startOriMode !== "radial" ? { startOriMode: rs.startOriMode } : {}),
-      };
-      return Object.keys(variation).length > 0 ? { ...c, variation } : c;
-    });
+      for (const mode of registers) {
+        const variation = {
+          ...(rolled ?? {}),
+          ...(mode !== "radial" ? { startOriMode: mode } : {}),
+        };
+        out.push(
+          Object.keys(variation).length > 0
+            ? { ...c, position: position++, variation }
+            : { ...c, position: position++ },
+        );
+      }
+    }
+    return out;
   }
 
   async function handleDraw() {
@@ -372,8 +394,8 @@
         onDraw={handleDraw}
         variationConfig={rs.variationConfig}
         onVariationConfigChange={(c) => { rs.variationConfig = c; }}
-        startOriMode={rs.startOriMode}
-        onStartOriModeChange={(m) => { rs.startOriMode = m; }}
+        startOriModes={rs.selectedStartOriModes}
+        onToggleStartOriMode={(m) => rs.toggleStartOriMode(m)}
       />
     {:else if rs.step === "review"}
       <ReviewStep

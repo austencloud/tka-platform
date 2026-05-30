@@ -18,7 +18,9 @@ interface PersistedSession {
   name: string;
   description: string;
   variationConfig?: VariationConfig;
+  /** @deprecated single-select — migrated to startOriModes (multi-select). */
   startOriMode?: StartOriMode;
+  startOriModes?: StartOriMode[];
 }
 
 function loadSession(): PersistedSession | null {
@@ -51,7 +53,9 @@ class DeckReleaserState {
   redPropOverride = $state<PropType | null>(null);
   brokenLoopCount = $state(0);
   variationConfig = $state<VariationConfig>({ ...DEFAULT_VARIATION_CONFIG });
-  startOriMode = $state<StartOriMode>("radial");
+  /** Selected start-orientation registers. Multi-select → full enumeration
+   *  (each base card is emitted once per selected register). Never empty. */
+  selectedStartOriModes = $state<Set<StartOriMode>>(new Set(["radial"]));
   get theme() {
     return this.themeOverride ?? settingsService.settings.backgroundType ?? "cosmic";
   }
@@ -87,7 +91,12 @@ class DeckReleaserState {
       this.name = saved.name ?? "";
       this.description = saved.description ?? "";
       if (saved.variationConfig) this.variationConfig = saved.variationConfig;
-      if (saved.startOriMode) this.startOriMode = saved.startOriMode;
+      if (saved.startOriModes?.length) {
+        this.selectedStartOriModes = new Set(saved.startOriModes);
+      } else if (saved.startOriMode) {
+        // Migrate legacy single-select sessions.
+        this.selectedStartOriModes = new Set([saved.startOriMode]);
+      }
     }
   }
 
@@ -101,8 +110,22 @@ class DeckReleaserState {
       name: this.name,
       description: this.description,
       variationConfig: this.variationConfig,
-      startOriMode: this.startOriMode,
+      startOriModes: [...this.selectedStartOriModes],
     });
+  }
+
+  /** Toggle a register in/out of the selection. Refuses to empty the set —
+   *  at least one register must always be active. Reassigns for reactivity. */
+  toggleStartOriMode(mode: StartOriMode) {
+    const next = new Set(this.selectedStartOriModes);
+    if (next.has(mode)) {
+      if (next.size === 1) return; // keep at least one
+      next.delete(mode);
+    } else {
+      next.add(mode);
+    }
+    this.selectedStartOriModes = next;
+    this.persist();
   }
 
   get savedViewingDeckNumber(): number | null {
