@@ -34,6 +34,34 @@
           ? "Done"
           : "",
   );
+
+  // ── Live export diagnostics (readable off-device, copyable to paste back) ──
+  const d = $derived(ctrl.lastExportDiag);
+  const mp = $derived(d ? +((d.resolution * d.resolution) / 1_000_000).toFixed(1) : 0);
+  const hwLabel = $derived(
+    !d ? "" : d.encoder === "wasm" ? "WASM (software)" : d.hwSupported ? "HW H.264" : "SW H.264",
+  );
+  const etaSec = $derived(
+    d && d.encodeFps > 0 ? Math.ceil((d.totalFrames - d.encodedFrames) / d.encodeFps) : 0,
+  );
+
+  let copied = $state(false);
+  let copyTimer: ReturnType<typeof setTimeout> | undefined;
+  function copyDiag() {
+    if (!d) return;
+    const lines = [
+      `mandala export diag`,
+      `res ${d.resolution}² (${mp}MP) · fps ${d.fps} · frames ${d.encodedFrames}/${d.totalFrames}`,
+      `encoder ${hwLabel} · codec ${d.codec}`,
+      `encode ${d.encodeFps}fps${etaSec ? ` · ~${etaSec}s left` : ""}`,
+      `render ${d.renderMs}ms · wait ${d.encodeWaitMs}ms · vframe ${d.vfMs}ms · mux ${d.muxMs}ms`,
+    ].join("\n");
+    navigator.clipboard?.writeText(lines).then(() => {
+      copied = true;
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(() => (copied = false), 1600);
+    });
+  }
 </script>
 
 {#if ctrl.exportPhase !== "idle"}
@@ -70,6 +98,32 @@
       {:else}
         <div class="takeover-bar"><div class="takeover-bar-fill" style:width="{pct}%"></div></div>
         <p class="takeover-phase">{phaseLabel}</p>
+
+        {#if d}
+          <div class="diag">
+            <div class="diag-row big">
+              <span class="diag-fps">{d.encodeFps}<small>fps</small></span>
+              {#if etaSec}<span class="diag-eta">~{etaSec}s left</span>{/if}
+            </div>
+            <div class="diag-grid">
+              <span class="k">res</span><span class="v">{d.resolution}² · {mp}MP</span>
+              <span class="k">encoder</span><span class="v" class:warn={d.encoder === "wasm" || !d.hwSupported}>{hwLabel}</span>
+              <span class="k">frames</span><span class="v">{d.encodedFrames}/{d.totalFrames}</span>
+              <span class="k">render</span><span class="v">{d.renderMs}ms</span>
+              <span class="k">enc&nbsp;wait</span><span class="v">{d.encodeWaitMs}ms</span>
+              <span class="k">vframe</span><span class="v">{d.vfMs}ms</span>
+              <span class="k">mux</span><span class="v">{d.muxMs}ms</span>
+              <span class="k">codec</span><span class="v small">{d.codec}</span>
+            </div>
+            {#if d.encoder === "wasm" || !d.hwSupported}
+              <p class="diag-note">No hardware H.264 — encoding in software. Lower the resolution for a big speedup.</p>
+            {/if}
+            <button class="takeover-btn ghost diag-copy" onclick={copyDiag}>
+              {copied ? "Copied ✓" : "Copy diagnostics"}
+            </button>
+          </div>
+        {/if}
+
         <p class="takeover-msg">Please don't navigate away.</p>
         {#if ctrl.exportPhase !== "complete"}
           <button class="takeover-btn ghost" onclick={() => ctrl.cancelExport()}>Cancel</button>
@@ -130,6 +184,52 @@
     line-height: 1.4;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
+
+  /* ── Live diagnostics readout ──────────────────────────────────── */
+  .diag {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-variant-numeric: tabular-nums;
+  }
+  .diag-row.big {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 12px;
+  }
+  .diag-fps {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--theme-text, #fff);
+    line-height: 1;
+  }
+  .diag-fps small { font-size: 13px; font-weight: 600; opacity: 0.6; margin-left: 2px; }
+  .diag-eta { font-size: 13px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.6)); }
+  .diag-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3px 14px;
+    font-size: 12.5px;
+    text-align: left;
+  }
+  .diag-grid .k { color: var(--theme-text-dim, rgba(255, 255, 255, 0.45)); white-space: nowrap; }
+  .diag-grid .v { color: var(--theme-text, rgba(255, 255, 255, 0.92)); text-align: right; }
+  .diag-grid .v.small { font-size: 10.5px; word-break: break-all; }
+  .diag-grid .v.warn { color: #fbbf24; font-weight: 700; }
+  .diag-note {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: #fbbf24;
+    text-align: left;
+  }
+  .diag-copy { width: 100%; min-height: 40px; padding: 6px 16px; font-size: 13px; }
   .takeover-msg.error { color: #fca5a5; font-weight: 600; font-size: 15px; }
   .takeover-sub {
     margin: 0;

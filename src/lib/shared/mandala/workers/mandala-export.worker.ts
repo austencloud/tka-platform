@@ -201,7 +201,7 @@ async function runExport(msg: StartMessage): Promise<void> {
           muxMs += performance.now() - m0;
           encodedCount++;
           post({ type: "progress", frameIndex: encodedCount, totalFrames });
-          if (encodedCount % 30 === 0) emitDiag("running");
+          if (encodedCount === 1 || encodedCount % 10 === 0) emitDiag("running");
         },
         error: (e) => {
           encoderErrored = true;
@@ -267,7 +267,7 @@ async function runExport(msg: StartMessage): Promise<void> {
         wasm!.addFrameRgba(data.data);
         encodedCount++;
         post({ type: "progress", frameIndex: encodedCount, totalFrames });
-        if (encodedCount % 30 === 0) emitDiag("running");
+        if (encodedCount === 1 || encodedCount % 10 === 0) emitDiag("running");
         if (i % 8 === 0) await nextTick(); // keep the worker event loop responsive to cancel
       }
     }
