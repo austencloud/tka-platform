@@ -79,11 +79,13 @@ type H264MP4Encoder = {
 };
 
 function selectCodec(width: number, height: number): string {
+  // High profile (0x64). Windows Media Foundation HW encoders typically only
+  // accelerate Main/High, not Baseline (0x42) — matches the proven 2D exporter.
   const px = width * height;
-  if (px <= 921_600) return "avc1.42001f";
-  if (px <= 2_073_600) return "avc1.420028";
-  if (px <= 8_912_896) return "avc1.420033";
-  return "avc1.42003c";
+  if (px <= 921_600) return "avc1.64001f";
+  if (px <= 2_073_600) return "avc1.640028";
+  if (px <= 8_912_896) return "avc1.640033";
+  return "avc1.64003c";
 }
 
 const nextTick = () => new Promise<void>((r) => setTimeout(r, 0));
@@ -154,7 +156,17 @@ async function runExport(msg: StartMessage): Promise<void> {
           post({ type: "error", error: `VideoEncoder error: ${e.message}` });
         },
       });
-      await videoEncoder.configure({ codec: selectCodec(size, size), width: size, height: size, bitrate, framerate: spec.fps });
+      {
+        // Request hardware H.264 (Media Foundation / VAAPI / VideoToolbox) with
+        // realtime single-pass latency — the fastest encode path. Falls back to
+        // the software default when the runtime can't hardware-accelerate the
+        // config. High profile (selectCodec) is what HW encoders accelerate.
+        const base = { codec: selectCodec(size, size), width: size, height: size, bitrate, framerate: spec.fps, latencyMode: "realtime" as const };
+        const hw = { ...base, hardwareAcceleration: "prefer-hardware" as const };
+        let support: VideoEncoderSupport | null = null;
+        try { support = await VideoEncoder.isConfigSupported(hw); } catch { support = null; }
+        await videoEncoder.configure(support?.supported ? hw : base);
+      }
     } else {
       const mod = await import("h264-mp4-encoder");
       const create = mod.createH264MP4Encoder ??
