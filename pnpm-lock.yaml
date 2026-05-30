@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   '@austencloud/scene-3d@0.1.2':
-    hash: 4ae4dc7bf900e90f8dc063d7d189aa011dbee68368dcfb37f72bdf04173f93d2
+    hash: 7450c98542d49dd9dd911ce8b4ae9ff16d73902a9c99a247cd44bbc0b92f1da4
     path: patches/@austencloud__scene-3d@0.1.2.patch
 
 importers:
@@ -54,7 +54,7 @@ importers:
         version: 0.1.0(svelte@5.49.2)
       '@austencloud/scene-3d':
         specifier: ^0.1.2
-        version: 0.1.2(patch_hash=4ae4dc7bf900e90f8dc063d7d189aa011dbee68368dcfb37f72bdf04173f93d2)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
+        version: 0.1.2(patch_hash=7450c98542d49dd9dd911ce8b4ae9ff16d73902a9c99a247cd44bbc0b92f1da4)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
       '@austencloud/theme':
         specifier: ^0.1.0
         version: 0.1.0(svelte@5.49.2)
@@ -7080,7 +7080,7 @@ snapshots:
       '@austencloud/media-tagging-types': 0.1.0
       svelte: 5.49.2
 
-  '@austencloud/scene-3d@0.1.2(patch_hash=4ae4dc7bf900e90f8dc063d7d189aa011dbee68368dcfb37f72bdf04173f93d2)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
+  '@austencloud/scene-3d@0.1.2(patch_hash=7450c98542d49dd9dd911ce8b4ae9ff16d73902a9c99a247cd44bbc0b92f1da4)(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)':
     dependencies:
       '@threlte/core': 8.3.1(svelte@5.49.2)(three@0.182.0)
       '@threlte/extras': 9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0)

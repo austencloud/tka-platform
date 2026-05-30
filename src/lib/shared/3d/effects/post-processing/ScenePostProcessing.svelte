@@ -19,6 +19,7 @@
   import { UnderwaterDistortionEffect } from "./ocean/UnderwaterDistortionEffect";
   import { RefractionCausticsEffect } from "./ocean/RefractionCausticsEffect";
   import { godraysLightStore } from "./godrays-light-store.svelte";
+  import { getQualityTierDetector } from "../quality/getQualityTierDetector";
 
   interface Props {
     children: Snippet;
@@ -52,7 +53,14 @@
     }
   });
 
-  const shouldCompose = $derived(isOcean && !viewer3DState.isExporting);
+  // Tier-gated glow: on HIGH/MEDIUM the effects quality tier enables bloom, so
+  // the consolidated 3D trail (HDR-emissive ribbon) blooms in ANY scene, not
+  // just ocean. On LOW the trail's in-shader halo alone carries the glow and no
+  // composer runs. Trails default-on in the viewer, so tier is the right gate.
+  const tierBloom = $derived(getQualityTierDetector().currentConfig.enableBloom);
+  const shouldCompose = $derived(
+    (isOcean || tierBloom) && !viewer3DState.isExporting,
+  );
 
   let composer: EffectComposer | null = null;
   let lastW = 0;
@@ -98,7 +106,10 @@
 
     const colorEffects: import("postprocessing").Effect[] = [];
 
-    if (enableBloom) {
+    // Ocean keeps its authored bloom toggle; non-ocean scenes bloom only when
+    // the quality tier allows it (HIGH/MEDIUM) so the HDR trail glows.
+    const wantBloom = isOcean ? enableBloom : tierBloom;
+    if (wantBloom) {
       colorEffects.push(
         new BloomEffect({
           intensity: 0.8,
@@ -112,20 +123,26 @@
       );
     }
 
-    colorEffects.push(
-      new VignetteEffect({
-        darkness: 0.3,
-        offset: 0.35,
-      }),
-    );
+    // Vignette + chromatic aberration are ocean-era polish. Keep non-ocean
+    // scenes clean — they get bloom only, nothing else changes.
+    if (isOcean) {
+      colorEffects.push(
+        new VignetteEffect({
+          darkness: 0.3,
+          offset: 0.35,
+        }),
+      );
+    }
 
-    composer.addPass(new EffectPass(cam, ...colorEffects));
+    if (colorEffects.length > 0) {
+      composer.addPass(new EffectPass(cam, ...colorEffects));
+    }
 
     if (isOcean) {
       composer.addPass(new EffectPass(cam, new UnderwaterDistortionEffect()));
     }
 
-    if (enableChromaticAberration) {
+    if (isOcean && enableChromaticAberration) {
       composer.addPass(
         new EffectPass(
           cam,

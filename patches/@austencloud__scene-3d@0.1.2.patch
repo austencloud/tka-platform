@@ -1,5 +1,5 @@
 diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
-index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..1fe369a38ea617d8bb4ec9d9f4452cf9e4f48785 100644
+index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..8cc147a1b43ffbad6de887f5385279b278ceaf88 100644
 --- a/src/lib/components/PerformerRig.svelte
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -78,6 +78,7 @@
@@ -10,7 +10,33 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..1fe369a38ea617d8bb4ec9d9f4452cf9
  
      // Vertical offset (museum platforms, stages)
      groundOffset?: number;
-@@ -132,7 +133,8 @@
+@@ -111,8 +112,23 @@
+ 
+     /** Optional grid component rendered at appropriate offset */
+     gridSlot?: Snippet;
+-    /** Optional effects component rendered in rig-local space */
+-    effectsSlot?: Snippet;
++    /**
++     * Optional effects component rendered in rig-local space. Receives the
++     * rig's live prop states, hand-anchor offsets, play flag, tip-effect map,
++     * staff half length, and the effects group ref so a consumer-mounted
++     * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
++     * in the correct rig-root-local frame without duplicating rig internals.
++     */
++    effectsSlot?: Snippet<[{
++      bluePropState: PropState3D | null;
++      redPropState: PropState3D | null;
++      blueHandPos: { x: number; z: number };
++      redHandPos: { x: number; z: number };
++      isPlaying: boolean;
++      tipEffectMap: TipEffectMap;
++      staffHalfLength: number;
++      effectsParentRef: Group | undefined;
++    }]>;
+   }
+ 
+   let {
+@@ -132,7 +148,8 @@
      redPropState: redPropStateOverride,
      tipEffectMap = {},
      isPlaying = false,
@@ -20,7 +46,7 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..1fe369a38ea617d8bb4ec9d9f4452cf9
      groundOffset = 0,
      avatarId,
      enableLocomotion = false,
-@@ -147,6 +149,10 @@
+@@ -147,6 +164,10 @@
      effectsSlot,
    }: Props = $props();
  
@@ -31,7 +57,7 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..1fe369a38ea617d8bb4ec9d9f4452cf9
    // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
    // rig's rotation is advanced by yawDelta from Avatar3D's onRootMotion
    // callback each frame (the turn clip drives the rotation). When the flag
-@@ -328,6 +334,7 @@
+@@ -328,6 +349,7 @@
              propType={bluePropType}
              propState={bluePropState}
              color="blue"
@@ -39,7 +65,7 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..1fe369a38ea617d8bb4ec9d9f4452cf9
            />
          {/if}
        </T.Group>
-@@ -351,6 +358,7 @@
+@@ -351,6 +373,7 @@
              propType={redPropType}
              propState={redPropState}
              color="red"
@@ -47,6 +73,24 @@ index 652d8e66a7376898104f4da45afd8e82cbcc2e6d..1fe369a38ea617d8bb4ec9d9f4452cf9
            />
          {/if}
        </T.Group>
+@@ -360,7 +383,16 @@
+   <!-- Effects (consumer-provided via effectsSlot) -->
+   {#if showEffects && effectsSlot}
+     <T.Group bind:ref={effectsGroupRef}>
+-      {@render effectsSlot()}
++      {@render effectsSlot({
++        bluePropState,
++        redPropState,
++        blueHandPos,
++        redHandPos,
++        isPlaying,
++        tipEffectMap,
++        staffHalfLength,
++        effectsParentRef: effectsGroupRef,
++      })}
+     </T.Group>
+   {/if}
+ </T.Group>
 diff --git a/src/lib/components/props/Buugeng3D.svelte b/src/lib/components/props/Buugeng3D.svelte
 index a9635fe66f94d37311d56d30aede4f639214a5c3..8b02d7960387431387d12a655ba4dddbeaf575a1 100644
 --- a/src/lib/components/props/Buugeng3D.svelte

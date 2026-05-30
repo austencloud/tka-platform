@@ -32,6 +32,7 @@
   import { buildTipEffectMap } from "$lib/features/coven-hub/domain/coven-effect-map";
   import type { LodBand } from "$lib/features/coven-hub/domain/coven-lod";
   import { useGltf } from "@threlte/extras";
+  import EffectOrchestrator3D from "$lib/shared/3d/effects/EffectOrchestrator3D.svelte";
 
   interface Props {
     stationId: string;
@@ -298,7 +299,20 @@
         {bluePropType}
         {redPropType}
         groundOffset={museumGroundOffset}
-      />
+      >
+        {#snippet effectsSlot({ bluePropState, redPropState, blueHandPos, redHandPos, isPlaying: rigPlaying, staffHalfLength, effectsParentRef })}
+          <EffectOrchestrator3D
+            {bluePropState}
+            {redPropState}
+            isPlaying={rigPlaying}
+            {staffHalfLength}
+            tipEffectMap={tipEffectMap}
+            {blueHandPos}
+            {redHandPos}
+            {effectsParentRef}
+          />
+        {/snippet}
+      </PerformerRig>
     {/if}
   {/each}
 

@@ -15,12 +15,13 @@
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D, resolveTrails3D, resolveFire3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D, resolveFire3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "@austencloud/scene-3d";
 
   // Effect components
-  import TrailRenderer from "./trails/TrailRenderer.svelte";
-  import RibbonTrail3D from "./trails/RibbonTrail3D.svelte";
+  // Trails are no longer mounted here. The single consolidated 3D trail
+  // (Trail3D ribbon) renders via EffectOrchestrator3D in PerformerRig's
+  // effectsSlot. EffectsLayer itself is currently unmounted (legacy).
   import FireEmitter from "./particles/FireEmitter.svelte";
   import SparkleEmitter from "./particles/SparkleEmitter.svelte";
   import ElectricityArc from "./energy/ElectricityArc.svelte";
@@ -122,16 +123,6 @@
   );
   const smokeShowRightEnd = $derived(
     smoke3D?.trackingMode === "right_end" || smoke3D?.trackingMode === "both_ends",
-  );
-  const trails3D = $derived(unifiedState ? resolveTrails3D(unifiedState.trails) : null);
-  const trailsEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "trails" : false,
-  );
-  const trailsShowLeftEnd = $derived(
-    trails3D?.trackingMode === "left_end" || trails3D?.trackingMode === "both_ends",
-  );
-  const trailsShowRightEnd = $derived(
-    trails3D?.trackingMode === "right_end" || trails3D?.trackingMode === "both_ends",
   );
   const fire3D = $derived(unifiedState ? resolveFire3D(unifiedState.fire) : null);
   const fireEnabled = $derived(
@@ -278,68 +269,8 @@
   });
 </script>
 
-<!-- =============================================================================
-     Trail Effects - Physics-based ribbons attached to prop ends
-     ============================================================================= -->
-{#if trailsEnabled && trails3D && isPlaying}
-  {@const isRainbow = trails3D.rainbow}
-  {@const blueColor = trails3D.blueColor}
-  {@const redColor = trails3D.redColor}
-  {@const width = trails3D.thickness}
-  {@const opacity = trails3D.brightness}
-
-  <!-- Blue prop ribbons -->
-  {#if blueEnds}
-    {#if trailsShowRightEnd}
-      <RibbonTrail3D
-        attachPoint={blueEnds.positive}
-        color={isRainbow ? "rainbow" : blueColor}
-        rainbow={isRainbow}
-        segments={12}
-        width={width}
-        opacity={opacity}
-        enabled={true}
-      />
-    {/if}
-    {#if trailsShowLeftEnd}
-      <RibbonTrail3D
-        attachPoint={blueEnds.negative}
-        color={isRainbow ? "rainbow" : blueColor}
-        rainbow={isRainbow}
-        segments={12}
-        width={width * 0.8}
-        opacity={opacity * 0.7}
-        enabled={true}
-      />
-    {/if}
-  {/if}
-
-  <!-- Red prop ribbons -->
-  {#if redEnds}
-    {#if trailsShowRightEnd}
-      <RibbonTrail3D
-        attachPoint={redEnds.positive}
-        color={isRainbow ? "rainbow" : redColor}
-        rainbow={isRainbow}
-        segments={12}
-        width={width}
-        opacity={opacity}
-        enabled={true}
-      />
-    {/if}
-    {#if trailsShowLeftEnd}
-      <RibbonTrail3D
-        attachPoint={redEnds.negative}
-        color={isRainbow ? "rainbow" : redColor}
-        rainbow={isRainbow}
-        segments={12}
-        width={width * 0.8}
-        opacity={opacity * 0.7}
-        enabled={true}
-      />
-    {/if}
-  {/if}
-{/if}
+<!-- Trails render via EffectOrchestrator3D (Trail3D ribbon) in the rig's
+     effectsSlot, not here. -->
 
 <!-- =============================================================================
      Fire Effects (on prop ends)

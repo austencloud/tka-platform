@@ -9,6 +9,17 @@ import {
 } from "three";
 import { createTrailMaterial } from "./TrailMaterial3D";
 import type { QualityTier } from "../types";
+import {
+  FADE_EXPONENT,
+  MIN_TAIL_WIDTH_RATIO,
+} from "$lib/shared/render-graph/math/trail-mesh";
+
+/**
+ * Ribbon is widened by this factor so the in-shader halo has room to fall off
+ * outside the solid core. Matches the 2D GLOW_RATIO. The shader's uCoreFrac
+ * (= 1 / TRAIL_GLOW_RATIO) keeps the solid core at the authored line width.
+ */
+const TRAIL_GLOW_RATIO = 2.5;
 
 export class TrailRingBuffer {
   private buffer: Vector3[];
@@ -109,6 +120,7 @@ export class TrailRenderer3D {
   private positions: Float32Array;
   private alphas: Float32Array;
   private colors: Float32Array;
+  private edges: Float32Array;
   private maxVertices: number;
   private readonly tempVec = new Vector3();
   private readonly tempTangent = new Vector3();
@@ -134,16 +146,26 @@ export class TrailRenderer3D {
     this.positions = new Float32Array(this.maxVertices * 3);
     this.alphas = new Float32Array(this.maxVertices);
     this.colors = new Float32Array(this.maxVertices * 3);
+    this.edges = new Float32Array(this.maxVertices);
 
     this.geometry = new BufferGeometry();
     this.geometry.setAttribute("position", new BufferAttribute(this.positions, 3));
     this.geometry.setAttribute("alpha", new BufferAttribute(this.alphas, 1));
     this.geometry.setAttribute("instanceColor", new BufferAttribute(this.colors, 3));
+    // Edge sign is fixed by vertex parity (even = left = -1, odd = right = +1)
+    // and never changes, so fill it once. The shader reads |edge| for the
+    // cross-ribbon halo profile.
+    for (let v = 0; v < this.maxVertices; v++) {
+      this.edges[v] = v % 2 === 0 ? -1 : 1;
+    }
+    this.geometry.setAttribute("edge", new BufferAttribute(this.edges, 1));
 
     const material = createTrailMaterial({
       color: this.config.color,
       opacity: this.config.opacity,
       rainbow: this.config.rainbow,
+      // Solid core stays at the authored line width inside the widened ribbon.
+      coreFrac: 1 / TRAIL_GLOW_RATIO,
     });
 
     this.mesh = new Mesh(this.geometry, material);
@@ -201,18 +223,25 @@ export class TrailRenderer3D {
         const toCamera = this.tempNormal.subVectors(cameraPosition, this.tempVec).normalize();
         const normal = this.tempNormal.crossVectors(this.tempTangent, toCamera).normalize();
 
+        // progress: 0 at the tail (oldest), 1 at the head (current tip).
         const progress = (seg * subdivisions + sub) / (totalInterpolatedPoints - 1);
-        const taper = 1.0 - progress * 0.8;
-        const halfWidth = this.config.width * 0.5 * taper;
+        // Head fat, tail thin — matches the 2D MIN_TAIL_WIDTH_RATIO ramp.
+        const taper = MIN_TAIL_WIDTH_RATIO + (1 - MIN_TAIL_WIDTH_RATIO) * progress;
+        // Widen by the glow ratio so the shader halo falls off outside the
+        // solid core (which the shader keeps at the authored line width).
+        const halfWidth = this.config.width * 0.5 * taper * TRAIL_GLOW_RATIO;
 
-        let alpha: number;
+        // Position fade: bright head → transparent tail (2D FADE_EXPONENT curve).
+        const positionAlpha = 1 - Math.pow(1 - progress, FADE_EXPONENT);
+        let alpha = positionAlpha;
         if (this.config.mode === "fade") {
+          // Multiply by per-point age so a stopped prop's trail keeps receding
+          // instead of freezing at full length.
           const now = performance.now() / 1000;
           const pointTime = this.ringBuffer.getTimestamp(Math.min(seg, pointCount - 1));
           const age = now - pointTime;
-          alpha = Math.max(0, 1.0 - age / this.config.fadeDuration);
-        } else {
-          alpha = 1.0 - progress;
+          const ageAlpha = Math.max(0, 1.0 - age / this.config.fadeDuration);
+          alpha = positionAlpha * ageAlpha;
         }
 
         const li = vertexIndex * 3;

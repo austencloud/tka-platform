@@ -27,6 +27,7 @@
   import { getSceneUndoManager } from "../undo/getSceneUndoManager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import AvatarSwapTransition from "./AvatarSwapTransition.svelte";
+  import EffectOrchestrator3D from "../effects/EffectOrchestrator3D.svelte";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -443,6 +444,18 @@
                 showLabels={viewer3DState.showGridLabels}
               />
             </T.Group>
+          {/snippet}
+          {#snippet effectsSlot({ bluePropState, redPropState, blueHandPos, redHandPos, isPlaying: rigPlaying, staffHalfLength, effectsParentRef })}
+            <EffectOrchestrator3D
+              {bluePropState}
+              {redPropState}
+              isPlaying={rigPlaying}
+              {staffHalfLength}
+              tipEffectMap={globalTipEffectMap}
+              {blueHandPos}
+              {redHandPos}
+              {effectsParentRef}
+            />
           {/snippet}
         </PerformerRig>
       {/snippet}
