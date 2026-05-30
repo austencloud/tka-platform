@@ -992,6 +992,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Default arrow placements — canonical baseline arrow positions (one doc per
+    // {gridMode}_{motionType}). Readable by all (every arrow render needs them,
+    // incl. guests / pre-auth), writable by admins.
+    match /default_arrow_adjustments/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ============================================================================
     // APP METRICS (Public Counters)
     // ============================================================================
