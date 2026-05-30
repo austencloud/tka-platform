@@ -57,7 +57,10 @@ interface PendingRequest {
   workerEntry: WorkerEntry;
 }
 
-const POOL_SIZE = Math.max(1, Math.min((navigator?.hardwareConcurrency || 4) - 1, 4));
+// One in-flight 1644x2244 RGBA card canvas per worker ≈ 14.7 MB; N = cores-1
+// → up to ~220 MB transient on a 16-core machine. Acceptable on the desktop
+// deck-rendering target. Revisit if memory profiling shows pressure.
+const POOL_SIZE = Math.max(1, (navigator?.hardwareConcurrency || 4) - 1);
 const INIT_TIMEOUT_MS = 15_000;
 
 export class CompositionDispatcher {
