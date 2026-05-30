@@ -71,6 +71,17 @@ export async function initializeChildServices(
       console.warn("⚠️ [authState] Special placement overrides initialization failed:", error);
     });
 
+  // Initialize default arrow placement overrides (non-blocking)
+  import("$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton")
+    .then(async ({ initializeDefaultOverrides }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await initializeDefaultOverrides();
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Default placement overrides initialization failed:", error);
+    });
+
   // Sync first-run status FROM cloud
   import("$lib/shared/onboarding/state/first-run-state.svelte")
     .then(async ({ firstRunState }) => {
