@@ -30,6 +30,9 @@
     footers?: CardFooter[];
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
     brokenLoopCount?: number;
+    /** Reroll only makes sense for randomly-rolled decks (LOOP). TnD is a finite,
+     *  deterministic enumeration, so the redraw button is hidden for it. */
+    showRedraw?: boolean;
   }
 
   let {
@@ -50,9 +53,9 @@
     footers,
     onContextMenu,
     brokenLoopCount = 0,
+    showRedraw = true,
   }: Props = $props();
 
-  const deckNumberLabel = $derived(`Deck #${String(nextDeckNumber).padStart(3, "0")}`);
   let nameDraft = $state(deckName);
   $effect(() => { nameDraft = deckName; });
 
@@ -163,7 +166,7 @@
     URL.revokeObjectURL(url);
   }
 
-  async function handleExportPDF(mode: PrintPDFMode = 'combined') {
+  async function handleExportPDF(mode: PrintPDFMode = 'combined', copies = 1) {
     if (renderedPairs.length === 0) return;
     isExporting = true;
     exportError = "";
@@ -172,11 +175,12 @@
     try {
       const { exportHomePrintPDF } = await import("$lib/features/choreo-card/services/print-pdf-exporter");
       const deckName = `Deck_${String(nextDeckNumber).padStart(3, "0")}`;
-      const suffix = mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print";
+      const copiesSuffix = copies > 1 ? `_x${copies}` : "";
+      const suffix = (mode === "fronts" ? "_fronts" : mode === "backs" ? "_backs" : "_print") + copiesSuffix;
       const blob = await exportHomePrintPDF(renderedPairs, deckName, cardSize, (current, total) => {
         exportProgress = current;
         exportTotal = total;
-      }, mode);
+      }, mode, { copies, elements: tndElements });
       triggerDownload(blob, `${deckName}${suffix}.pdf`);
     } catch (e) {
       exportError = `PDF export failed: ${e instanceof Error ? e.message : e}`;
@@ -231,7 +235,7 @@
           title="Click to rename"
         />
       {:else}
-        <h2 class="deck-number">{deckName || deckNumberLabel}</h2>
+        <h2 class="deck-number" class:placeholder={!deckName}>{deckName || "Untitled Deck"}</h2>
       {/if}
       <div class="deck-meta">
         <span class="meta-cards">{cards.length} cards</span>
@@ -251,10 +255,12 @@
 
     {#if !readOnly}
       <div class="action-buttons">
-        <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
-          <i class="fas fa-dice" aria-hidden="true"></i>
-          Redraw
-        </button>
+        {#if showRedraw}
+          <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
+            <i class="fas fa-dice" aria-hidden="true"></i>
+            Redraw
+          </button>
+        {/if}
         <button type="button" class="release-btn" onclick={onRelease} disabled={isReleasing || isRendering}>
           {#if isReleasing}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -400,6 +406,14 @@
     letter-spacing: -0.01em;
     color: var(--theme-text, #fff);
     text-align: center;
+  }
+
+  /* Unnamed draft: dim + italic so the placeholder reads as "not yet named"
+     rather than an actual deck title. */
+  .deck-number.placeholder {
+    font-weight: 600;
+    font-style: italic;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
   }
 
   .deck-name-input {
