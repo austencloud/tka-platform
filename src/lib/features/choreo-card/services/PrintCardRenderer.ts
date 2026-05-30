@@ -29,6 +29,13 @@ const MPC_HEIGHT = 1122;
 const MPC_BLEED = 36;
 const CONTENT_WIDTH = MPC_WIDTH - MPC_BLEED * 2;   // 750
 
+// Colored frame thickness as a multiple of the print bleed. >1 pushes the
+// stripe border PAST the trim line into the safe area, so an imprecise cut
+// still lands on colored border instead of white content (cutting tolerance).
+// 1.3 = 30% thicker than the prior frame, which sat exactly on the 36px bleed.
+// Content (cells + header + footer) shrinks to fit the smaller inner area.
+const BORDER_SCALE = 1.3;
+
 const OUTER_RADIUS = 0;
 const INNER_RADIUS = 0;
 
@@ -102,8 +109,11 @@ export class PrintCardRenderer {
     const canvasW = options.canvasWidth ?? MPC_WIDTH;
     const canvasH = options.canvasHeight ?? MPC_HEIGHT;
     const bleed = options.bleedPx ?? MPC_BLEED;
-    const contentW = canvasW - bleed * 2;
-    const contentH = canvasH - bleed * 2;
+    // Border (colored frame) is thicker than the bleed so it stays visible after
+    // an imprecise cut. Content insets by `border`, not `bleed`.
+    const border = Math.round(bleed * BORDER_SCALE);
+    const contentW = canvasW - border * 2;
+    const contentH = canvasH - border * 2;
 
     // Resolve element colors
     const accent = options.tndElement?.accentColor ?? "#999999";
@@ -192,17 +202,17 @@ export class PrintCardRenderer {
     // 3. Draw edge glow overlay
     this.drawEdgeGlow(ctx, canvasW, canvasH);
 
-    // 4. Clip inner content area (rounded rect inside bleed)
+    // 4. Clip inner content area (rounded rect inset by the colored border)
     ctx.save();
-    this.roundRectPath(ctx, bleed, bleed, contentW, contentH, innerRadius);
+    this.roundRectPath(ctx, border, border, contentW, contentH, innerRadius);
     ctx.clip();
 
     // 5. Fill inner area with white
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(bleed, bleed, contentW, contentH);
+    ctx.fillRect(border, border, contentW, contentH);
 
     // 6. Draw sequence image - deckCard mode produces exact content dimensions, draw 1:1
-    ctx.drawImage(sequenceCanvas, bleed, bleed, contentW, contentH);
+    ctx.drawImage(sequenceCanvas, border, border, contentW, contentH);
 
     ctx.restore(); // inner clip
     ctx.restore(); // outer clip
