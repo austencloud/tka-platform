@@ -1,4 +1,6 @@
-import { PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFFont, PDFImage, PDFPage, rgb, StandardFonts } from 'pdf-lib';
+import { planPrintSlots, type PrintSlot } from './print-slot-planner';
+import type { TnDElement } from '../domain/tnd-element';
 import type { CardPair } from "./types";
 import { CARD_SIZES, getPageLayout, type CardSizeId, type PageLayout } from '../domain/card-sizes';
 
@@ -50,13 +52,30 @@ export async function exportDeckPDF(
 
 export type PrintPDFMode = 'combined' | 'fronts' | 'backs';
 
+export interface HomePrintOptions {
+	/** Whole-deck copies. Each element block repeats N times. Default 1, min 1. */
+	copies?: number;
+	/** Element tag per pair, parallel to `pairs`. Absent → no grouping (single
+	 *  trailing bucket, tail-padded). */
+	elements?: (TnDElement | undefined)[];
+}
+
+/** Capitalize an element key for sheet labels: "fire" → "Fire". */
+function capitalize(s: string): string {
+	return s.length ? s[0]!.toUpperCase() + s.slice(1) : s;
+}
+
 /** Grid layout on Letter pages for double-sided home printing.
+ *
+ *  Cards are grouped by element (fixed TND_ELEMENTS order), each color
+ *  whole-block-repeated `copies` times and padded to whole sheets, so every
+ *  printed sheet holds exactly one element — a cut never crosses two colors.
  *
  *  Combined mode: all fronts → flip instruction → all backs → finishing tips
  *  Fronts mode: all fronts → finishing tips
  *  Backs mode: all backs (columns mirrored for long-edge duplex) → finishing tips
  *
- *  Every page gets: crop marks, sheet labels, flip hints.
+ *  Every page gets: crop marks, sheet labels (with element name), flip hints.
  */
 export async function exportHomePrintPDF(
 	pairs: CardPair[],
@@ -64,36 +83,62 @@ export async function exportHomePrintPDF(
 	cardSize: CardSizeId = 'poker',
 	onProgress?: (current: number, total: number) => void,
 	mode: PrintPDFMode = 'combined',
+	options: HomePrintOptions = {},
 ): Promise<Blob> {
 	const layout = getPageLayout(cardSize);
 	const { cols, cardsPerPage, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt } = layout;
 
+	const copies = Math.max(1, Math.floor(options.copies ?? 1));
+	const elements = options.elements ?? [];
+	const slots = planPrintSlots(pairs, elements, copies, cardsPerPage);
+	const totalSheets = slots.length / cardsPerPage; // integer by construction
+
 	const pdfDoc = await PDFDocument.create();
 	const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 	const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-	const totalSheets = Math.ceil(pairs.length / cardsPerPage);
 	const includeFronts = mode === 'combined' || mode === 'fronts';
 	const includeBacks = mode === 'combined' || mode === 'backs';
 	const progressTotal = (includeFronts ? totalSheets : 0) + (includeBacks ? totalSheets : 0);
 	let progressCount = 0;
 
+	// Embed each unique card PNG once; reuse the handle across all N copies.
+	const frontImages = new Map<HTMLCanvasElement, PDFImage>();
+	const backImages = new Map<HTMLCanvasElement, PDFImage>();
+	const embedFront = async (c: HTMLCanvasElement): Promise<PDFImage> => {
+		let img = frontImages.get(c);
+		if (!img) { img = await pdfDoc.embedPng(canvasToPngBytes(c)); frontImages.set(c, img); }
+		return img;
+	};
+	const embedBack = async (c: HTMLCanvasElement): Promise<PDFImage> => {
+		let img = backImages.get(c);
+		if (!img) { img = await pdfDoc.embedPng(canvasToPngBytes(c)); backImages.set(c, img); }
+		return img;
+	};
+
+	const sheetSide = (base: string, sheetSlots: PrintSlot[]): string => {
+		const el = sheetSlots[0]?.elementName ?? null;
+		return el ? `${base}  ·  ${capitalize(el)}` : base;
+	};
+
 	if (includeFronts) {
 		for (let sheet = 0; sheet < totalSheets; sheet++) {
 			const start = sheet * cardsPerPage;
-			const sheetPairs = pairs.slice(start, start + cardsPerPage);
+			const sheetSlots = slots.slice(start, start + cardsPerPage);
 			const frontsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
 
-			for (let i = 0; i < sheetPairs.length; i++) {
+			for (let i = 0; i < sheetSlots.length; i++) {
+				const slot = sheetSlots[i]!;
+				if (!slot.pair) continue;
 				const col = i % cols;
 				const row = Math.floor(i / cols);
 				const x = marginXPt + col * (cardWidthPt + gutterPt);
 				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-				const img = await pdfDoc.embedPng(canvasToPngBytes(sheetPairs[i]!.front));
+				const img = await embedFront(slot.pair.front);
 				frontsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
 			}
 
 			drawCropMarks(frontsPage, layout);
-			drawSheetLabel(frontsPage, font, fontBold, `FRONTS`, sheet + 1, totalSheets, deckName);
+			drawSheetLabel(frontsPage, font, fontBold, sheetSide('FRONTS', sheetSlots), sheet + 1, totalSheets, deckName);
 			drawFlipHint(frontsPage, font, "FRONT SIDE");
 			onProgress?.(++progressCount, progressTotal);
 		}
@@ -106,21 +151,23 @@ export async function exportHomePrintPDF(
 	if (includeBacks) {
 		for (let sheet = 0; sheet < totalSheets; sheet++) {
 			const start = sheet * cardsPerPage;
-			const sheetPairs = pairs.slice(start, start + cardsPerPage);
+			const sheetSlots = slots.slice(start, start + cardsPerPage);
 			const backsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
 
-			for (let i = 0; i < sheetPairs.length; i++) {
+			for (let i = 0; i < sheetSlots.length; i++) {
+				const slot = sheetSlots[i]!;
+				if (!slot.pair) continue;
 				const col = i % cols;
 				const row = Math.floor(i / cols);
 				const mirroredCol = cols - 1 - col;
 				const x = marginXPt + mirroredCol * (cardWidthPt + gutterPt);
 				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-				const img = await pdfDoc.embedPng(canvasToPngBytes(sheetPairs[i]!.back));
+				const img = await embedBack(slot.pair.back);
 				backsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
 			}
 
 			drawCropMarks(backsPage, layout);
-			drawSheetLabel(backsPage, font, fontBold, `BACKS`, sheet + 1, totalSheets, deckName);
+			drawSheetLabel(backsPage, font, fontBold, sheetSide('BACKS', sheetSlots), sheet + 1, totalSheets, deckName);
 			drawFlipHint(backsPage, font, "BACK SIDE — columns mirrored for long-edge flip");
 			onProgress?.(++progressCount, progressTotal);
 		}
