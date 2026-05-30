@@ -40,6 +40,7 @@
   import { getKeyFromArrow } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/attribute-key-generator";
   import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
   import { getPropGeometryRepository } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton";
+  import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
   import { derivePropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/prop-geometry-key-deriver";
   import type { PropGeometryKey } from "$lib/shared/pictograph/arrow/positioning/prop-geometry/domain/PropGeometryAdjustment";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
@@ -60,7 +61,7 @@
   );
   const diagnostics = $derived(activeColor === "red" ? redDiagnostics : blueDiagnostics);
 
-  let editTarget = $state<"global" | "special-json" | "prop-geometry">("global");
+  let editTarget = $state<"global" | "special-json" | "prop-geometry" | "default">("global");
   let editX = $state(0);
   let editY = $state(0);
   let activeLayer = $state<1 | 2 | 3>(2);
@@ -78,6 +79,7 @@
     { value: "global" as const, label: "Global" },
     { value: "special-json" as const, label: "Special JSON" },
     { value: "prop-geometry" as const, label: "Prop Geometry" },
+    { value: "default" as const, label: "Default" },
   ];
 
   const selectedArrowContext = $derived.by((): SelectedArrowContext | null => {
@@ -189,6 +191,39 @@
     return getPropGeometryRepository()?.hasAdjustment(propGeometryKey) ?? false;
   });
 
+  // The Default-tier lookup identity, surfaced by the diagnostics producer.
+  const defaultLookup = $derived.by((): {
+    gridMode: string;
+    motionType: string;
+    placementKey: string;
+    turns: string;
+  } | null => {
+    if (!diagnostics?.default) return null;
+    const d = diagnostics.default;
+    if (!d.gridMode || !d.motionType || !d.placementKey) return null;
+    return {
+      gridMode: d.gridMode,
+      motionType: d.motionType,
+      placementKey: d.placementKey,
+      turns: d.turns,
+    };
+  });
+
+  // Reactive "an override exists here" flag for the Revert button.
+  const defaultHasValue = $derived.by(() => {
+    const _ = globalAdjustmentVersion.version;
+    const lk = defaultLookup;
+    if (!lk) return false;
+    return (
+      getDefaultOverrideRepository()?.hasValue(
+        lk.gridMode,
+        lk.motionType,
+        lk.placementKey,
+        lk.turns,
+      ) ?? false
+    );
+  });
+
   // Layer value checks for the tab bar dots
   const layer1HasValue = $derived.by(() => {
     const _ = globalAdjustmentVersion.version;
@@ -232,10 +267,11 @@
     }
   }
 
-  function defaultEditTargetForActiveTier(): "global" | "special-json" | "prop-geometry" {
+  function defaultEditTargetForActiveTier(): "global" | "special-json" | "prop-geometry" | "default" {
     const active = diagnostics?.activeTier;
     if (active === "special-json") return "special-json";
     if (active === "prop-geometry") return "prop-geometry";
+    if (active === "default") return "default";
     return "global";
   }
 
@@ -290,10 +326,20 @@
         editX = 0;
         editY = 0;
       }
+    } else if (editTarget === "default") {
+      // diagnostics.default.value is already Firestore-first (resolver-sourced),
+      // so it reflects any existing override; seed the inputs from it.
+      if (diagnostics?.default) {
+        editX = diagnostics.default.value.x;
+        editY = diagnostics.default.value.y;
+      } else {
+        editX = 0;
+        editY = 0;
+      }
     }
   }
 
-  function selectEditTarget(tier: "global" | "special-json" | "prop-geometry") {
+  function selectEditTarget(tier: "global" | "special-json" | "prop-geometry" | "default") {
     editTarget = tier;
     hasLocalChanges = false;
     saveState = "idle";
@@ -355,8 +401,10 @@
       handleGlobalNumericUpdate();
     } else if (editTarget === "special-json") {
       handleSpecialJsonNumericUpdate();
-    } else {
+    } else if (editTarget === "prop-geometry") {
       handlePropGeometryNumericUpdate();
+    } else {
+      handleDefaultNumericUpdate();
     }
 
     const haptic = getHapticFeedback();
@@ -369,6 +417,9 @@
     }
     if (editTarget === "prop-geometry") {
       return handlePropGeometrySave();
+    }
+    if (editTarget === "default") {
+      return handleDefaultSave();
     }
     const repo = getGlobalAdjustmentRepository();
     if (!repo || !orchestrator || !selectedArrowContext) return;
@@ -404,6 +455,9 @@
     if (editTarget === "prop-geometry") {
       return handlePropGeometryDelete();
     }
+    if (editTarget === "default") {
+      return handleDefaultDelete();
+    }
     const repo = getGlobalAdjustmentRepository();
     if (!repo || !orchestrator || !selectedArrowContext) return;
     const targetKey = orchestrator.generateTargetKey(
@@ -429,8 +483,10 @@
       handleGlobalNumericUpdate();
     } else if (editTarget === "special-json") {
       handleSpecialJsonNumericUpdate();
-    } else {
+    } else if (editTarget === "prop-geometry") {
       handlePropGeometryNumericUpdate();
+    } else {
+      handleDefaultNumericUpdate();
     }
   }
 
@@ -598,6 +654,51 @@
       logger.error("Prop geometry delete failed:", error);
     }
   }
+
+  function handleDefaultNumericUpdate() {
+    const repo = getDefaultOverrideRepository();
+    const lk = defaultLookup;
+    if (!repo || !lk) return;
+    repo.saveDefaultLocal(lk.gridMode, lk.motionType, lk.placementKey, lk.turns, [editX, editY]);
+    pictographPreparer.clearCache();
+    globalAdjustmentVersion.increment();
+    hasLocalChanges = true;
+  }
+
+  async function handleDefaultSave() {
+    const repo = getDefaultOverrideRepository();
+    const lk = defaultLookup;
+    if (!repo || !lk) return;
+    try {
+      saveState = "saving";
+      await repo.saveDefault(lk.gridMode, lk.motionType, lk.placementKey, lk.turns, [editX, editY]);
+      saveState = "saved";
+      hasLocalChanges = false;
+      getHapticFeedback()?.trigger("success");
+      onDiagnosticsChanged?.();
+      setTimeout(() => { saveState = "idle"; }, 2000);
+    } catch (error) {
+      logger.error("Default save failed:", error);
+      saveState = "idle";
+    }
+  }
+
+  async function handleDefaultDelete() {
+    const repo = getDefaultOverrideRepository();
+    const lk = defaultLookup;
+    if (!repo || !lk) return;
+    try {
+      repo.deleteDefaultLocal(lk.gridMode, lk.motionType, lk.placementKey, lk.turns);
+      await repo.deleteDefault(lk.gridMode, lk.motionType, lk.placementKey, lk.turns);
+      pictographPreparer.clearCache();
+      globalAdjustmentVersion.increment();
+      hasLocalChanges = false;
+      getHapticFeedback()?.trigger("warning");
+      onDiagnosticsChanged?.();
+    } catch (error) {
+      logger.error("Default delete failed:", error);
+    }
+  }
 </script>
 
 <svelte:window onkeydown={(e) => { if (!activeColor) return; if (handleSaveHotkey(e)) return; handleKeydown(e); }} />
@@ -633,6 +734,8 @@
         <button class="btn btn-delete" onclick={handleDelete} title="Revert to original"><i class="fas fa-undo" aria-hidden="true"></i> Revert</button>
       {:else if editTarget === "prop-geometry" && propGeometryHasValue}
         <button class="btn btn-delete icon-only" onclick={handleDelete} aria-label="Delete prop geometry adjustment" title="Delete prop geometry adjustment"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+      {:else if editTarget === "default" && defaultHasValue}
+        <button class="btn btn-delete" onclick={handleDelete} title="Revert to JSON baseline"><i class="fas fa-undo" aria-hidden="true"></i> Revert</button>
       {:else if editTarget === "global" && (currentLayerValue || layer1HasValue || layer2HasValue || layer3HasValue)}
         <button class="btn btn-delete icon-only" onclick={handleDelete} aria-label="Delete at this layer" title="Delete at this layer"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
       {/if}
