@@ -20,13 +20,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import { CompositionDispatcher } from "$lib/shared/render/services/composition-dispatcher";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
 
-  // Render-schema version baked into every card cache key (memory + IndexedDB).
-  // Bump whenever the rendered pixels change for reasons NOT already captured by
-  // the keyed options below — e.g. the renderer now hides non-radial points or
-  // fits the elemental glyph to its natural aspect. Bumping rotates all keys so
-  // stale persisted renders (from older render logic) stop being served.
-  const CARD_RENDER_SCHEMA = "v2";
-
   interface Props {
     sequences: SequenceData[];
     cardSize: CardSizeId;
@@ -226,7 +219,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       ? getCatalogLayoutPolicy(stepCount)
       : "row";
     const optsPart = [
-      CARD_RENDER_SCHEMA,
       cardSize, theme, showGrid, showTKA, showWord,
       includeStartPosition, handPointsVisible,
       (tndElements?.[index]?.familyId ?? tndElement?.familyId ?? "none"),
