@@ -1,10 +1,8 @@
 import type { SequenceData } from "../../foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/StartPositionData";
-import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/PreparedPictographData";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
-import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { RenderCanvas, RenderContext2D } from "./types";
 import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
 import { getImageComposer } from "../get-image-composer";
@@ -16,35 +14,6 @@ import {
   buildCellLayerOptions,
 } from "./card-front-assembler";
 import type { CardFrontWorkerPool } from "./card-front-worker-pool";
-
-/**
- * Replica of ImageComposer.applyPropTypeOverride (private). Pure shallow clone
- * that stamps the resolved prop type onto each color's motion. Kept local so the
- * parallel path applies the exact same per-cell prop override the serial path does.
- */
-function applyPropTypeOverride<T extends StepData | PictographData | StartPositionData>(
-  data: T,
-  propType?: PropType,
-  bluePropType?: PropType,
-  redPropType?: PropType
-): T {
-  const finalBlueProp = bluePropType ?? propType;
-  const finalRedProp = redPropType ?? propType;
-
-  return {
-    ...data,
-    motions: {
-      blue:
-        data.motions.blue && finalBlueProp
-          ? { ...data.motions.blue, propType: finalBlueProp }
-          : data.motions.blue,
-      red:
-        data.motions.red && finalRedProp
-          ? { ...data.motions.red, propType: finalRedProp }
-          : data.motions.red,
-    },
-  };
-}
 
 interface ParallelCell {
   data: StepData | StartPositionData;
@@ -83,13 +52,24 @@ export async function composeCardFrontParallel(
   const visibility = await composer.resolveVisibilitySettings(options);
   const layout = computeCardFrontLayout(sequence, options, visibility);
 
+  // Mirror renderPictographAt's finalVisibilitySettings: the deck/card options
+  // carry per-color prop-type overrides that must flow into prop-asset selection.
+  // Layout is geometry only (prop type is irrelevant to it) so it keeps `visibility`.
+  const effectiveBluePropType = options.bluePropTypeOverride ?? options.propTypeOverride;
+  const effectiveRedPropType = options.redPropTypeOverride ?? options.propTypeOverride;
+  const cellVisibility = {
+    ...visibility,
+    bluePropType: effectiveBluePropType ?? visibility.bluePropType,
+    redPropType: effectiveRedPropType ?? visibility.redPropType,
+  };
+
   const canvas = createRenderCanvas(layout.canvasWidth, layout.canvasHeight);
   const ctx = canvas.getContext("2d") as RenderContext2D;
   paintCardFrontBackground(ctx as CanvasRenderingContext2D, layout, options);
 
   const { options: cellOpts, visibility: cellVis } = buildCellLayerOptions(
     layout.stepSize,
-    visibility
+    cellVisibility
   );
 
   const { pictographPreparer } = await import(
@@ -97,21 +77,16 @@ export async function composeCardFrontParallel(
   );
   const themeMode = visibility.darkMode ? "dark" : "light";
   const prepare = (data: StepData | StartPositionData): Promise<PreparedPictographData> =>
-    pictographPreparer.prepareSingle(data as unknown as PictographData, {
+    pictographPreparer.prepareSingle(data, {
       themeMode,
-      bluePropType: visibility.bluePropType,
-      redPropType: visibility.redPropType,
-      handPathMode: visibility.handPathMode ?? false,
-      showBlueMotion: visibility.showBlueMotion,
-      showRedMotion: visibility.showRedMotion,
+      bluePropType: cellVisibility.bluePropType,
+      redPropType: cellVisibility.redPropType,
+      handPathMode: cellVisibility.handPathMode ?? false,
+      showBlueMotion: cellVisibility.showBlueMotion,
+      showRedMotion: cellVisibility.showRedMotion,
     });
 
   // --- Build the cell list, mirroring composeSequenceImage EXACTLY -----------
-  const hasPropOverride =
-    options.propTypeOverride ||
-    options.bluePropTypeOverride ||
-    options.redPropTypeOverride;
-
   const cells: ParallelCell[] = [];
 
   // Start position cell. composeSequenceImage derives it from the first step
@@ -128,16 +103,8 @@ export async function composeCardFrontParallel(
 
   if (hasStartPosition && effectiveStartPosition) {
     const startStepNumber = options.addStepNumbers ? 0 : undefined;
-    const startPositionData = hasPropOverride
-      ? applyPropTypeOverride(
-          effectiveStartPosition,
-          options.propTypeOverride,
-          options.bluePropTypeOverride,
-          options.redPropTypeOverride
-        )
-      : effectiveStartPosition;
     cells.push({
-      data: startPositionData,
+      data: effectiveStartPosition,
       col: 0,
       row: 0,
       stepNumber: startStepNumber,
@@ -153,16 +120,8 @@ export async function composeCardFrontParallel(
     const col = startColumn + (i % stepsPerRow);
     const row = startRow + Math.floor(i / stepsPerRow);
     const stepNumber = options.addStepNumbers ? i + 1 : undefined;
-    const stepData = hasPropOverride
-      ? applyPropTypeOverride(
-          beat,
-          options.propTypeOverride,
-          options.bluePropTypeOverride,
-          options.redPropTypeOverride
-        )
-      : beat;
     cells.push({
-      data: stepData,
+      data: beat,
       col,
       row,
       stepNumber,
