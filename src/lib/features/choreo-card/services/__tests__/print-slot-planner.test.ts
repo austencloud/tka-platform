@@ -17,11 +17,11 @@ describe("planPrintSlots", () => {
     const slots = planPrintSlots(pairs, elements, 1, 9);
 
     expect(slots.length).toBe(18);
-    expect(slots[0]!.pair?.label).toBe("water1");
+    expect(slots[0]!.item?.label).toBe("water1");
     expect(slots[0]!.elementName).toBe("water");
-    expect(slots[1]!.pair).toBeNull();
+    expect(slots[1]!.item).toBeNull();
     expect(slots[1]!.elementName).toBe("water");
-    expect(slots[9]!.pair?.label).toBe("fire1");
+    expect(slots[9]!.item?.label).toBe("fire1");
     expect(slots[9]!.elementName).toBe("fire");
   });
 
@@ -30,10 +30,10 @@ describe("planPrintSlots", () => {
     const elements = [EL("fire"), EL("fire")];
     const slots = planPrintSlots(pairs, elements, 3, 9);
 
-    const labels = slots.slice(0, 6).map((s) => s.pair?.label);
+    const labels = slots.slice(0, 6).map((s) => s.item?.label);
     expect(labels).toEqual(["a", "b", "a", "b", "a", "b"]);
     expect(slots.length).toBe(9);
-    expect(slots[6]!.pair).toBeNull();
+    expect(slots[6]!.item).toBeNull();
   });
 
   it("puts untagged cards in a trailing bucket with null elementName", () => {
@@ -41,21 +41,21 @@ describe("planPrintSlots", () => {
     const elements = [undefined, EL("fire")];
     const slots = planPrintSlots(pairs, elements, 1, 9);
 
-    expect(slots[0]!.pair?.label).toBe("fire1");
-    expect(slots[9]!.pair?.label).toBe("u1");
+    expect(slots[0]!.item?.label).toBe("fire1");
+    expect(slots[9]!.item?.label).toBe("u1");
     expect(slots[9]!.elementName).toBeNull();
   });
 
   it("copies < 1 is clamped to 1", () => {
     const slots = planPrintSlots([pair("a")], [EL("fire")], 0, 9);
-    expect(slots.filter((s) => s.pair).length).toBe(1);
+    expect(slots.filter((s) => s.item).length).toBe(1);
   });
 
   it("passes through with no element data (single padded bucket)", () => {
     const pairs = [pair("a"), pair("b")];
     const slots = planPrintSlots(pairs, [], 1, 9);
     expect(slots.length).toBe(9);
-    expect(slots.slice(0, 2).map((s) => s.pair?.label)).toEqual(["a", "b"]);
+    expect(slots.slice(0, 2).map((s) => s.item?.label)).toEqual(["a", "b"]);
     expect(slots[0]!.elementName).toBeNull();
   });
 });

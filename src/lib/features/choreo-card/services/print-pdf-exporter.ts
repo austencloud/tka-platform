@@ -128,12 +128,12 @@ export async function exportHomePrintPDF(
 
 			for (let i = 0; i < sheetSlots.length; i++) {
 				const slot = sheetSlots[i]!;
-				if (!slot.pair) continue;
+				if (!slot.item) continue;
 				const col = i % cols;
 				const row = Math.floor(i / cols);
 				const x = marginXPt + col * (cardWidthPt + gutterPt);
 				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-				const img = await embedFront(slot.pair.front);
+				const img = await embedFront(slot.item.front);
 				frontsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
 			}
 
@@ -156,13 +156,13 @@ export async function exportHomePrintPDF(
 
 			for (let i = 0; i < sheetSlots.length; i++) {
 				const slot = sheetSlots[i]!;
-				if (!slot.pair) continue;
+				if (!slot.item) continue;
 				const col = i % cols;
 				const row = Math.floor(i / cols);
 				const mirroredCol = cols - 1 - col;
 				const x = marginXPt + mirroredCol * (cardWidthPt + gutterPt);
 				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-				const img = await embedBack(slot.pair.back);
+				const img = await embedBack(slot.item.back);
 				backsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
 			}
 
