@@ -90,6 +90,18 @@ describe("AvatarInstanceState — performer settings", () => {
     expect(a.settings.effect).toBeNull();
   });
 
+  it("displayName starts null and setDisplayName assigns / trims / clears", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    expect(a.displayName).toBeNull();
+    a.setDisplayName("  Jade  ");
+    expect(a.displayName).toBe("Jade"); // trimmed
+    a.setDisplayName("");
+    expect(a.displayName).toBeNull(); // empty clears the override
+    a.setDisplayName("Nova");
+    a.setDisplayName(null);
+    expect(a.displayName).toBeNull();
+  });
+
   it("resetAllOverrides clears all settings to null, preserves staffLengthCm", () => {
     const a = createAvatarInstanceState(makeConfig(), makeDeps());
     a.setProp(PropType.FAN);

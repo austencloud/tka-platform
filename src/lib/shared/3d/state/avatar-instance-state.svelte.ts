@@ -113,6 +113,8 @@ export interface AvatarInstanceConfig {
   positionX: number;
   positionZ?: number;
   avatarModelId?: AvatarId;
+  /** User-assigned display name; null = fall back to the avatar model's name. */
+  name?: string | null;
 }
 
 /**
@@ -150,6 +152,9 @@ export function createAvatarInstanceState(
   let avatarModelId = $state<AvatarId>(
     config.avatarModelId ?? DEFAULT_AVATAR_ID
   );
+
+  // User-assigned display name. null = inherit the avatar model's name.
+  let displayName = $state<string | null>(config.name ?? null);
 
   // ============================================
   // Performer Settings (declared early so derived computations can read them)
@@ -690,6 +695,15 @@ export function createAvatarInstanceState(
     avatarModelId = modelId;
   }
 
+  /**
+   * Set the user-assigned display name. Trims; an empty string clears the
+   * override so the avatar model's name shows through again.
+   */
+  function setDisplayName(name: string | null) {
+    const trimmed = name?.trim();
+    displayName = trimmed ? trimmed : null;
+  }
+
   // ============================================
   // Locomotion Methods
   // ============================================
@@ -961,6 +975,11 @@ export function createAvatarInstanceState(
       return avatarModelId;
     },
     setAvatarModel,
+    /** User-assigned display name; null = inherit the avatar model's name. */
+    get displayName() {
+      return displayName;
+    },
+    setDisplayName,
 
     // Sequence state
     get hasSequence() {

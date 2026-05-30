@@ -37,17 +37,19 @@
   const performerColor = $derived(
     selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff",
   );
-  const badgeLabel = $derived(
-    selectedIndex !== null ? `P${selectedIndex + 1}` : "ALL",
-  );
   const canRemove = $derived(allPerformers.length > 1);
 
   const avatarDef = $derived(
     AVATAR_DEFINITIONS.find((a) => a.id === performer?.avatarModelId) ??
       AVATAR_DEFINITIONS[0],
   );
+  // Resolved performer name: user-assigned override falls back to the avatar
+  // model's name. This is what the editable header field shows.
+  const performerName = $derived(
+    performer?.displayName ?? avatarDef?.name ?? "—",
+  );
   const avatarInitials = $derived(
-    avatarDef ? avatarDef.name.slice(0, 2).toUpperCase() : "?",
+    performerName !== "—" ? performerName.slice(0, 2).toUpperCase() : "?",
   );
 
   const sequence = $derived(performer?.loadedSequence ?? null);
@@ -56,6 +58,41 @@
 
   function pickAvatar(id: AvatarId) {
     performer?.setAvatarModel(id);
+  }
+
+  // ─── Inline name editing (input-swap pattern, mirrors TrackHeader) ───
+  let isEditingName = $state(false);
+  let nameDraft = $state("");
+  let nameInput = $state<HTMLInputElement | null>(null);
+
+  $effect(() => {
+    if (isEditingName && nameInput) {
+      nameInput.focus();
+      nameInput.select();
+    }
+  });
+
+  function startEditName() {
+    if (!performer) return;
+    nameDraft = performerName === "—" ? "" : performerName;
+    isEditingName = true;
+  }
+  function commitName() {
+    if (!isEditingName) return;
+    performer?.setDisplayName(nameDraft);
+    isEditingName = false;
+  }
+  function cancelEditName() {
+    isEditingName = false;
+  }
+  function handleNameKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitName();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelEditName();
+    }
   }
 
   // ─── Tabs ───
@@ -177,16 +214,36 @@
             <span class="avatar-initials">{avatarInitials}</span>
           </div>
           <div class="identity-meta">
-            <span class="performer-name">{avatarDef?.name ?? "—"}</span>
-            <div class="sub-row">
-              <span class="badge" style:background-color={performerColor}
-                >{badgeLabel}</span
+            {#if isEditingName}
+              <input
+                bind:this={nameInput}
+                class="name-input"
+                bind:value={nameDraft}
+                onblur={commitName}
+                onkeydown={handleNameKeydown}
+                maxlength="24"
+                placeholder={avatarDef?.name ?? "Name"}
+                aria-label="Performer name"
+              />
+            {:else}
+              <button
+                class="performer-name-btn"
+                onclick={startEditName}
+                title="Click to rename"
               >
+                <span class="performer-name">{performerName}</span>
+                <i class="fas fa-pen edit-hint" aria-hidden="true"></i>
+              </button>
+            {/if}
+            <div class="sub-row">
               {#if sequenceWord}
                 <span class="seq-chip">{sequenceWord}</span>
+                <span class="seq-dot" aria-hidden="true">·</span>
               {/if}
               {#if sequenceBeats !== null}
-                <span class="seq-beats">{sequenceBeats}b</span>
+                <span class="seq-beats">{sequenceBeats} beats</span>
+              {:else}
+                <span class="seq-beats muted">No sequence</span>
               {/if}
             </div>
           </div>
@@ -247,9 +304,9 @@
       {#if !isAllMode && activeTab === "sequence"}
         <div id="hub-panel-sequence" class="tab-pane active" role="tabpanel" aria-labelledby="hub-tab-sequence">
           <div class="sequence-section">
-            {#if sequenceWord}
+            {#if sequence}
               <div class="seq-display">
-                <div class="seq-word-large">{sequenceWord}</div>
+                <div class="seq-word-large">{sequenceWord ?? "Untitled sequence"}</div>
                 {#if sequenceBeats !== null}
                   <div class="seq-beat-count">{sequenceBeats} beats</div>
                 {/if}
@@ -465,14 +522,61 @@
     min-width: 0;
   }
 
+  .performer-name-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1px 4px 1px 0;
+    margin: 0 0 1px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: text;
+    min-width: 0;
+    max-width: 100%;
+    transition: background 140ms ease;
+  }
+
+  .performer-name-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
   .performer-name {
-    font-size: 14px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.95);
+    font-size: 18px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.98);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.2;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  .edit-hint {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.3);
+    opacity: 0;
+    flex-shrink: 0;
+    transition: opacity 140ms ease;
+  }
+
+  .performer-name-btn:hover .edit-hint {
+    opacity: 1;
+  }
+
+  .name-input {
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1.5px solid var(--performer-color);
+    border-radius: 6px;
+    padding: 1px 6px;
+    margin: 0 0 1px;
+    max-width: 100%;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    outline: none;
   }
 
   .sub-row {
@@ -499,10 +603,20 @@
     text-overflow: ellipsis;
   }
 
+  .seq-dot {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
   .seq-beats {
     font-size: 11px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .seq-beats.muted {
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
   }
 
   /* ─── Dividers ─── */
@@ -569,7 +683,7 @@
     border-radius: 7px;
     border: none;
     background: transparent;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.68);
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
@@ -580,7 +694,7 @@
   }
 
   .tab-btn:hover:not(.active) {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.92);
   }
 
   .tab-btn.active {

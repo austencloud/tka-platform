@@ -103,6 +103,8 @@ interface StoredPerformerSnapshot {
   facingAngle: number;
   customBluePlane: Plane;
   customRedPlane: Plane;
+  /** User-assigned display name; absent/null = inherit the avatar model's name. */
+  name?: string | null;
 }
 
 function loadPersistedMode(): "2d" | "3d" {
@@ -860,6 +862,7 @@ export function createViewer3DState() {
       facingAngle: p.facingAngle,
       customBluePlane: p.customBluePlane,
       customRedPlane: p.customRedPlane,
+      name: p.displayName,
     }));
     if (!_performersPersistReady) return;
     persistPerformers(snapshots);
@@ -910,6 +913,7 @@ export function createViewer3DState() {
           p.setFacingAngle(snap.facingAngle);
           p.setHandPlane("blue", snap.customBluePlane);
           p.setHandPlane("red", snap.customRedPlane);
+          p.setDisplayName(snap.name ?? null);
         });
       });
     }
