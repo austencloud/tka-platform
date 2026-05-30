@@ -2,10 +2,11 @@
   import { getFestivalContext } from "../../context/festival-context";
   import { auth } from "$lib/shared/auth/firebase";
   import type { FestivalRegion } from "../../domain/models/festival";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
 
   const { state } = getFestivalContext();
 
-  const REGIONS: { value: FestivalRegion | "all"; label: string }[] = [
+  const REGIONS: { value: string; label: string }[] = [
     { value: "all", label: "All Regions" },
     { value: "north-america", label: "N. America" },
     { value: "europe", label: "Europe" },
@@ -23,10 +24,10 @@
   ];
 
   const SEEKING: { value: string; label: string; icon: string }[] = [
-    { value: "all", label: "All", icon: "fa-globe" },
-    { value: "applications-open", label: "Apps Open", icon: "fa-door-open" },
-    { value: "instructors", label: "Instructors", icon: "fa-chalkboard-teacher" },
-    { value: "performers", label: "Performers", icon: "fa-fire" },
+    { value: "all", label: "All", icon: "fas fa-globe" },
+    { value: "applications-open", label: "Apps Open", icon: "fas fa-door-open" },
+    { value: "instructors", label: "Instructors", icon: "fas fa-chalkboard-teacher" },
+    { value: "performers", label: "Performers", icon: "fas fa-fire" },
   ];
 
   function applyFilters() {
@@ -64,57 +65,34 @@
 </script>
 
 <div class="filter-bar" role="search" aria-label="Festival filters">
-  <!-- Region chips -->
-  <div class="chip-group" role="radiogroup" aria-label="Filter by region">
-    {#each REGIONS as r (r.value)}
-      <button
-        class="chip"
-        class:active={activeRegion === r.value}
-        onclick={() => setRegion(r.value)}
-        role="radio"
-        aria-checked={activeRegion === r.value}
-        type="button"
-      >
-        {r.label}
-      </button>
-    {/each}
+  <div class="seg seg-region" role="group" aria-label="Filter by region">
+    <SegmentedControl
+      options={REGIONS}
+      value={activeRegion}
+      onchange={setRegion}
+      color="accent"
+      size="sm"
+    />
   </div>
 
-  <div class="divider"></div>
-
-  <!-- Time window chips -->
-  <div class="chip-group" role="radiogroup" aria-label="Filter by time">
-    {#each TIME_WINDOWS as t (t.value)}
-      <button
-        class="chip"
-        class:active={activeTime === t.value}
-        onclick={() => setTimeWindow(t.value)}
-        role="radio"
-        aria-checked={activeTime === t.value}
-        type="button"
-      >
-        {t.label}
-      </button>
-    {/each}
+  <div class="seg seg-time" role="group" aria-label="Filter by time">
+    <SegmentedControl
+      options={TIME_WINDOWS}
+      value={activeTime}
+      onchange={setTimeWindow}
+      color="accent"
+      size="sm"
+    />
   </div>
 
-  <div class="divider"></div>
-
-  <!-- Seeking chips -->
-  <div class="chip-group" role="radiogroup" aria-label="Filter by type">
-    {#each SEEKING as s (s.value)}
-      <button
-        class="chip"
-        class:active={activeSeeking === s.value}
-        onclick={() => setSeeking(s.value)}
-        role="radio"
-        aria-checked={activeSeeking === s.value}
-        type="button"
-      >
-        <i class="fas {s.icon}" aria-hidden="true"></i>
-        {s.label}
-      </button>
-    {/each}
+  <div class="seg seg-seeking" role="group" aria-label="Filter by type">
+    <SegmentedControl
+      options={SEEKING}
+      value={activeSeeking}
+      onchange={setSeeking}
+      color="accent"
+      size="sm"
+    />
   </div>
 </div>
 
@@ -134,63 +112,21 @@
     display: none;
   }
 
-  .chip-group {
-    display: flex;
-    gap: 6px;
+  /* Each segmented control gets a min-width so its segments stay legible; the
+     bar scrolls horizontally rather than crushing the 7-option region group. */
+  .seg {
     flex-shrink: 0;
   }
 
-  .chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    padding: 8px 16px;
-    background: transparent;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 22px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: border-color var(--transition-fast, 0.15s),
-      background var(--transition-fast, 0.15s),
-      color var(--transition-fast, 0.15s);
+  .seg-region {
+    min-width: 560px;
   }
 
-  .chip:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, #ffffff);
+  .seg-time {
+    min-width: 320px;
   }
 
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-    color: var(--theme-accent, #6366f1);
-  }
-
-  .chip i {
-    font-size: 11px;
-  }
-
-  .divider {
-    width: 1px;
-    height: 24px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    flex-shrink: 0;
-  }
-
-  /* ── Reduced motion ──────────────────────────────── */
-
-  @media (prefers-reduced-motion: reduce) {
-    .chip {
-      transition: none;
-    }
+  .seg-seeking {
+    min-width: 380px;
   }
 </style>
