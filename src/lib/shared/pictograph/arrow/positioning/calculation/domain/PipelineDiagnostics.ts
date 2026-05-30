@@ -47,6 +47,11 @@ export interface PropGeometryTierInfo {
 
 export interface DefaultTierInfo {
   value: TierValue;
+  /** Lookup identity so the editor can address the Firestore default field. */
+  gridMode: string;
+  motionType: string;
+  placementKey: string;
+  turns: string;
 }
 
 export interface PipelineDiagnostics {

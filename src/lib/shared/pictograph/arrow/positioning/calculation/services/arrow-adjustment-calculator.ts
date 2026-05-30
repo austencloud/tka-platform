@@ -382,12 +382,20 @@ export class ArrowAdjustmentCalculator {
 
     // --- Tier 4: Default (motion-type only) ---
     try {
+      const identity = await this.resolveDefaultLookupIdentity(
+        motionData,
+        pictographData
+      );
       const defaultResult = await this.calculateDefaultAdjustment(
         motionData,
         pictographData
       );
       diagnostics.default = {
         value: { x: defaultResult.x, y: defaultResult.y },
+        gridMode: identity.gridMode as unknown as string,
+        motionType: identity.motionType as unknown as string,
+        placementKey: identity.placementKey,
+        turns: identity.turns,
       };
     } catch (error) {
       console.warn("[getDiagnostics] Default tier probe failed:", error);
@@ -638,6 +646,66 @@ export class ArrowAdjustmentCalculator {
     return result ? result.adjustment : null;
   }
 
+  /**
+   * Resolve the Default-tier lookup identity (gridMode, motionType, placementKey,
+   * turns) for a motion. Shared by calculateDefaultAdjustment and getDiagnostics
+   * so the editor can address the exact Firestore default field.
+   *
+   * The turns formatting mirrors ArrowPlacer.formatTurnsForLookup: a string passes
+   * through, a whole number drops its fractional part, otherwise it stringifies. This
+   * keeps calculateDefaultAdjustment behavior-identical to the prior inline version,
+   * since the data service normalizes turns the same way during lookup.
+   */
+  private async resolveDefaultLookupIdentity(
+    motionData: MotionData,
+    pictographData: PictographData
+  ): Promise<{
+    gridMode: GridMode;
+    motionType: MotionType;
+    placementKey: string;
+    turns: string;
+  }> {
+    // Use gridMode from motion data if available, otherwise derive from locations
+    const gridMode = (motionData.gridMode ||
+      (pictographData.motions.blue && pictographData.motions.red
+        ? _deriveGridMode(
+            pictographData.motions.blue,
+            pictographData.motions.red
+          )
+        : GridMode.DIAMOND)) as GridMode;
+
+    const keys = await this.DefaultPlacer.getAvailablePlacementKeys(
+      motionData.motionType as MotionType,
+      gridMode
+    );
+    const defaultPlacements: Record<string, unknown> = Object.fromEntries(
+      (keys || []).map((k: string) => [k, true])
+    );
+
+    const availableKeys = Object.keys(defaultPlacements || []);
+
+    const placementKey = generatePlacementKey(
+      motionData,
+      pictographData,
+      availableKeys
+    );
+
+    const rawTurns = motionData.turns || 0;
+    const turns =
+      typeof rawTurns === "string"
+        ? rawTurns
+        : rawTurns === Math.floor(rawTurns)
+          ? Math.floor(rawTurns).toString()
+          : rawTurns.toString();
+
+    return {
+      gridMode,
+      motionType: motionData.motionType as MotionType,
+      placementKey,
+      turns,
+    };
+  }
+
   private async calculateDefaultAdjustment(
     motionData: MotionData,
     pictographData: PictographData
@@ -646,37 +714,14 @@ export class ArrowAdjustmentCalculator {
      * Calculate default adjustment - IDENTICAL to ArrowAdjustmentLookup.
      */
     try {
-      // Use gridMode from motion data if available, otherwise derive from locations
-      const gridMode =
-        motionData.gridMode ||
-        (pictographData.motions.blue && pictographData.motions.red
-          ? _deriveGridMode(
-              pictographData.motions.blue,
-              pictographData.motions.red
-            )
-          : GridMode.DIAMOND);
-
-      const keys = await this.DefaultPlacer.getAvailablePlacementKeys(
-        motionData.motionType as MotionType,
-        gridMode as GridMode
-      );
-      const defaultPlacements: Record<string, unknown> = Object.fromEntries(
-        (keys || []).map((k: string) => [k, true])
-      );
-
-      const availableKeys = Object.keys(defaultPlacements || []);
-
-      const placementKey = generatePlacementKey(
-        motionData,
-        pictographData,
-        availableKeys
-      );
+      const { gridMode, motionType, placementKey, turns } =
+        await this.resolveDefaultLookupIdentity(motionData, pictographData);
 
       const adjustmentPoint = await this.DefaultPlacer.getDefaultAdjustment(
         placementKey,
-        motionData.turns || 0,
-        motionData.motionType as MotionType,
-        gridMode as GridMode
+        turns,
+        motionType,
+        gridMode
       );
 
       return new Point(adjustmentPoint.x, adjustmentPoint.y);
