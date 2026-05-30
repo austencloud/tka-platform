@@ -71,6 +71,15 @@ export function getActiveFireInstanceCount(): number {
   return activeFireInstanceCount;
 }
 
+/** Pure: clamp the provided sim dt (seconds) the way the fire sim needs.
+ *  Max 0.066s (30fps floor), 0.2x under reduced motion, floor 0.016s. */
+export function computeFireStepDt(dt: number, reducedMotion: boolean): number {
+  let d = Math.min(dt, 0.066);
+  if (reducedMotion) d *= 0.2;
+  if (d <= 0) d = 0.016;
+  return d;
+}
+
 /**
  * Compute optimal Jacobi iterations based on how many fire renderers
  * are running simultaneously. Fire doesn't need precise pressure solving -
@@ -161,7 +170,6 @@ export class WebGLFireRenderer {
   private bloomMipSizes: [number, number][] = [];
 
   // Timing
-  private lastTime = 0;
   private lastRenderTime = -1;
   private reducedMotion = false;
 
@@ -266,7 +274,6 @@ export class WebGLFireRenderer {
       this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     }
 
-    this.lastTime = performance.now();
     this.initialized = true;
     activeFireInstanceCount++;
 
@@ -400,7 +407,7 @@ export class WebGLFireRenderer {
       const tipStr = tip0
         ? `tip0=(${Math.round(tip0.x)},${Math.round(tip0.y)}) spd=${Math.round(tip0.speed)} fs=${tip0.flameScale?.toFixed(2)}`
         : 'no-tips';
-      const rawDt = (input.currentTime - this.lastTime) / 1000;
+      const rawDt = input.dt;
       const subSteps = Math.max(1, Math.ceil(Math.min(Math.abs(rawDt), 0.066) / 0.017));
       console.log(
         `[fire-diag] frame ${this._diagFrameCount} | t=${input.currentTime.toFixed(1)} rawDt=${rawDt.toFixed(4)} subSteps=${subSteps} | ` +
@@ -719,11 +726,7 @@ export class WebGLFireRenderer {
     config: FireOverlayConfig
   ): void {
     const gl = this.gl!;
-    const now = input.currentTime;
-    let totalDt = Math.min((now - this.lastTime) / 1000, 0.066);
-    if (this.reducedMotion) totalDt *= 0.2;
-    this.lastTime = now;
-    if (totalDt <= 0) totalDt = 0.016;
+    const totalDt = computeFireStepDt(input.dt, this.reducedMotion);
 
     gl.viewport(0, 0, this.simWidth, this.simHeight);
     gl.disable(gl.BLEND);
