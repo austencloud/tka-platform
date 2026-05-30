@@ -9,9 +9,9 @@
  * - "red": Only transform red motion
  * - "both": Transform both motions (default, original behavior)
  *
- * For single-hand transforms, positions and letters are kept unchanged
- * since they're derived from both hands and remain valid. This ensures
- * instant synchronous transforms for smooth CSS animations.
+ * For single-hand transforms, positions are recomputed from both hands via
+ * reconcileStepDerived (a position is a function of BOTH locations). Letters are
+ * reconciled asynchronously by the calling sequence-transform operation.
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
@@ -21,6 +21,7 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import { reconcileStepDerived } from "$lib/shared/create/services/sequence-derived-fields";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_POSITION_MAP,
@@ -91,12 +92,14 @@ export async function mirrorBeat(
     });
   }
 
-  // For single-hand mode, keep existing positions and letter for instant animation
-  // Positions are derived from both hands, so they stay valid when only one changes
-  return createStepData({
-    ...step,
-    motions: mirroredMotions,
-  });
+  // Single-hand: positions depend on BOTH locations, so recompute them from the
+  // mutated motions. Letter is reconciled asynchronously by the caller.
+  return reconcileStepDerived(
+    createStepData({
+      ...step,
+      motions: mirroredMotions,
+    })
+  );
 }
 
 /**
@@ -136,12 +139,13 @@ export async function flipBeat(
     });
   }
 
-  // For single-hand mode, keep existing positions and letter for instant animation
-  // Positions are derived from both hands, so they stay valid when only one changes
-  return createStepData({
-    ...step,
-    motions: flippedMotions,
-  });
+  // Single-hand: recompute positions from the mutated motions (letter is async).
+  return reconcileStepDerived(
+    createStepData({
+      ...step,
+      motions: flippedMotions,
+    })
+  );
 }
 
 /**
@@ -201,12 +205,13 @@ export async function rotateBeat(
     });
   }
 
-  // For single-hand mode, keep existing positions and letter for instant animation
-  // Positions are derived from both hands, so they stay valid when only one changes
-  return createStepData({
-    ...step,
-    motions: rotatedMotions,
-  });
+  // Single-hand: recompute positions from the rotated motions (letter is async).
+  return reconcileStepDerived(
+    createStepData({
+      ...step,
+      motions: rotatedMotions,
+    })
+  );
 }
 
 /**
